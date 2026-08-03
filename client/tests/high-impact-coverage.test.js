@@ -801,7 +801,7 @@ describe('Vue template handler coverage', () => {
     ];
     for (const eventName of events) child.vm.$emit(eventName, { id: 1 });
     for (const eventName of events) expect(wrapper.emitted(eventName)).toBeTruthy();
-    await wrapper.get('.clickable').trigger('click');
+    await wrapper.get('.article-refresh-state').trigger('click');
     expect(wrapper.emitted('forceReload')).toHaveLength(1);
 
     await wrapper.setProps({ viewMode: 'full' });
@@ -1009,7 +1009,7 @@ describe('Vue template handler coverage', () => {
     for (const button of wrapper.findAll('.bulk-action-menu-item')) await button.trigger('click');
     await wrapper.get('.article-list-bulk-tag').trigger('click');
     await wrapper.get('.readerArticleListItem').trigger('keydown', { key: 'Enter' });
-    await wrapper.get('.clickable').trigger('click');
+    await wrapper.get('.article-refresh-state').trigger('click');
     expect(stores.selectionStore.setCurrentSelection).toHaveBeenCalledWith({ tag: 'AI' });
     expect(wrapper.emitted('bulk-action')).toBeTruthy();
     expect(wrapper.emitted('forceReload')).toHaveLength(1);

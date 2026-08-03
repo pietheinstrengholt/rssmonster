@@ -157,7 +157,11 @@
           @mark-all-read="$emit('flush-pool')"
           @dismiss="dismissReaderEndState"
         />
-        <p v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0 && unreadsSinceLastUpdate > 0" class="clickable" @click="$emit('forceReload')">{{ unreadsSinceLastUpdate }} new unread {{ unreadsSinceLastUpdate === 1 ? 'article' : 'articles' }} available! <br>Click here to refresh!</p>
+        <ArticleRefreshState
+          v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0 && unreadsSinceLastUpdate > 0"
+          :unread-count="unreadsSinceLastUpdate"
+          @refresh="$emit('forceReload')"
+        />
       </div>
       <div id="no-more" v-else>
         <p>Loading <BootstrapIcon icon="arrow-repeat" variant="dark" animation="spin"/></p>
@@ -191,6 +195,7 @@ import { useUiStore } from '../../store/ui.js';
 import ArticleItem from "./Article.vue";
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
+import ArticleRefreshState from "./ArticleRefreshState.vue";
 import DailyBriefingIntro from "../briefing/DailyBriefingIntro.vue";
 import UnreadSelectionContext from "./UnreadSelectionContext.vue";
 import { formatRelativeDate } from '../../utils/date';
@@ -206,6 +211,7 @@ export default {
     ArticleItem,
     ArticleEmptyState,
     ArticleEndState,
+    ArticleRefreshState,
     DailyBriefingIntro,
     UnreadSelectionContext
   },
@@ -1076,10 +1082,6 @@ export default {
 .readerArticlePanel {
   min-width: 0;
   overflow: visible;
-}
-
-.clickable {
-  cursor: pointer;
 }
 
 .article-load-sentinel {

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import ArticleEmptyState from '../src/components/articles/ArticleEmptyState.vue';
 import ArticleEndState from '../src/components/articles/ArticleEndState.vue';
 import ArticleLoadingState from '../src/components/articles/ArticleLoadingState.vue';
+import ArticleRefreshState from '../src/components/articles/ArticleRefreshState.vue';
 import SmartFoldersGridOverview from '../src/components/articles/SmartFoldersGridOverview.vue';
 
 describe('ArticleEmptyState', () => {
@@ -107,6 +108,32 @@ describe('ArticleEndState', () => {
     });
 
     expect(wrapper.get('.article-end-state-text').text()).toBe('4 unread articles were reviewed.');
+  });
+});
+
+describe('ArticleRefreshState', () => {
+  it('shows plural refresh copy and emits the refresh action', async () => {
+    const wrapper = mount(ArticleRefreshState, {
+      props: { unreadCount: 5 }
+    });
+
+    expect(wrapper.get('.article-refresh-state-title').text()).toBe('5 new unread articles');
+    expect(wrapper.get('.article-refresh-state-action').text()).toBe('Refresh to show them');
+    expect(wrapper.get('button').attributes('aria-label')).toBe('5 new unread articles. Refresh to show them.');
+
+    await wrapper.get('button').trigger('click');
+
+    expect(wrapper.emitted('refresh')).toHaveLength(1);
+  });
+
+  it('uses singular copy for one unread article', () => {
+    const wrapper = mount(ArticleRefreshState, {
+      props: { unreadCount: 1 }
+    });
+
+    expect(wrapper.get('.article-refresh-state-title').text()).toBe('1 new unread article');
+    expect(wrapper.get('.article-refresh-state-action').text()).toBe('Refresh to show it');
+    expect(wrapper.get('button').attributes('aria-label')).toBe('1 new unread article. Refresh to show it.');
   });
 });
 

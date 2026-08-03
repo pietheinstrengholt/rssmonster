@@ -49,7 +49,11 @@
         @mark-all-read="flushPool"
         @dismiss="dismissArticleEndState"
       />
-      <p v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0 && unreadsSinceLastUpdate > 0" class="clickable" v-on:click="this.$emit('forceReload')">{{ unreadsSinceLastUpdate }} new unread {{ unreadsSinceLastUpdate === 1 ? 'article' : 'articles' }} available! <br>Click here to refresh!</p>
+      <ArticleRefreshState
+        v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0 && unreadsSinceLastUpdate > 0"
+        :unread-count="unreadsSinceLastUpdate"
+        @refresh="$emit('forceReload')"
+      />
     </div>
     <div id="no-more" v-else>
       <ArticleLoadingState />
@@ -66,6 +70,7 @@ import ArticleItem from "./Article.vue";
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 import ArticleLoadingState from "./ArticleLoadingState.vue";
+import ArticleRefreshState from "./ArticleRefreshState.vue";
 import DailyBriefingIntro from "../briefing/DailyBriefingIntro.vue";
 import UnreadSelectionContext from "./UnreadSelectionContext.vue";
 
@@ -75,6 +80,7 @@ export default {
     ArticleEmptyState,
     ArticleEndState,
     ArticleLoadingState,
+    ArticleRefreshState,
     DailyBriefingIntro,
     UnreadSelectionContext
   },
@@ -444,10 +450,6 @@ export default {
   #articles.mobile-search-open {
     padding-top: 38px;
   }
-}
-
-.clickable {
-  cursor: pointer;
 }
 
 :global(:root[data-theme='dark']) {
