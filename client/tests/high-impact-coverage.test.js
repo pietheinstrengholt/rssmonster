@@ -1070,6 +1070,12 @@ describe('Vue template handler coverage', () => {
 
     wrapper.vm.overviewLoaded = true;
     await wrapper.vm.$nextTick();
+    wrapper.vm.connectivityStatus = 'browser-offline';
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.connectivity-status').text()).toContain('You are offline.');
+    expect(wrapper.find('.feed').exists()).toBe(true);
+    wrapper.vm.connectivityStatus = null;
+    await wrapper.vm.$nextTick();
     await wrapper.get('.sidebar').trigger('click');
     expect(wrapper.emitted('logout')).toHaveLength(1);
     wrapper.vm.showActionError('Recoverable');

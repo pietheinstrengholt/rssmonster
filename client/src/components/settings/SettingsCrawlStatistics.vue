@@ -189,7 +189,7 @@
   border-color: var(--border-color);
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   .crawl-statistics-toolbar {
     align-items: stretch;
     flex-direction: column;

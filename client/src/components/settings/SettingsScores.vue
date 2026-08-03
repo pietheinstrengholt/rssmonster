@@ -322,7 +322,7 @@
   border-color: var(--border-color);
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   .scores-explanation-grid {
     grid-template-columns: 1fr;
   }

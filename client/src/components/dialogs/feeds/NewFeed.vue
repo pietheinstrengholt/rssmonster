@@ -351,7 +351,7 @@
     color: var(--settings-orange-text);
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
     .feed-form-section {
         gap: 0.625rem;
     }

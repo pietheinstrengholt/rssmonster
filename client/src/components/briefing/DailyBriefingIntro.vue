@@ -154,11 +154,21 @@ export default {
 
 <style scoped>
 .daily-briefing-intro {
+  position: relative;
   width: 100%;
   flex: 0 0 auto;
   padding: 0.875rem;
   background-color: var(--bg-primary);
-  border-bottom: 1px solid var(--briefing-intro-border);
+}
+
+.daily-briefing-intro::after {
+  position: absolute;
+  right: 0.875rem;
+  bottom: 0;
+  left: 0.875rem;
+  height: 1px;
+  background-color: var(--briefing-intro-border);
+  content: '';
 }
 
 .daily-briefing-intro :deep(.briefing-context) {
@@ -235,6 +245,11 @@ export default {
     padding: 0.75rem;
   }
 
+  .daily-briefing-intro::after {
+    right: 0.75rem;
+    left: 0.75rem;
+  }
+
   .daily-briefing-intro :deep(.briefing-context) {
     margin-bottom: 0.75rem;
   }
@@ -268,7 +283,10 @@ export default {
 :global(:root[data-theme='dark'] .daily-briefing-intro) {
   color: var(--text-primary);
   background-color: var(--dark-page-surface, #0b0f14);
-  border-bottom-color: var(--briefing-intro-border, #2a3342);
+}
+
+:global(:root[data-theme='dark'] .daily-briefing-intro::after) {
+  background-color: var(--briefing-intro-border, #2a3342);
 }
 
 :global(:root[data-theme='dark'] .briefing-morning-summary) {

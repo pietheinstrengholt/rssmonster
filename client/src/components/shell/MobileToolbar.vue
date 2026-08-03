@@ -157,7 +157,7 @@
   border-bottom: 1px solid var(--border-color);
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   .mobile-toolbar {
     transition: transform 150ms ease;
     will-change: transform;
@@ -300,7 +300,7 @@
 }
 
 /* Keeps only the phone portrait brand row compact without affecting the filter dropdowns. */
-@media (max-width: 766px) and (orientation: portrait) {
+@media (max-width: 879px) and (orientation: portrait) {
   .mobile-toolbar-brand-row {
     min-height: 56px;
     margin: -10px -4px 0px;
@@ -514,7 +514,7 @@
   background-color: var(--toolbar-active-background);
 }
 
-@media (max-width: 766px) and (orientation: portrait) {
+@media (max-width: 879px) and (orientation: portrait) {
   :global(:root[data-theme='dark'] .mobile-toolbar-button),
   :global(:root[data-theme='dark'] .mobile-toolbar-button:hover),
   :global(:root[data-theme='dark'] .mobile-toolbar-button:focus-visible) {
@@ -538,7 +538,7 @@ import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
 import { useUiStore } from '../../store/ui.js';
-const MOBILE_LANDSCAPE_WIDTH = 767;
+const MOBILE_LANDSCAPE_WIDTH = 880;
 
 const statusCountMap = {
   briefing: 'briefingCount',

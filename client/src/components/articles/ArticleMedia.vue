@@ -188,7 +188,7 @@ export default {
   outline-offset: 2px;
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   .article-media-play {
     width: 54px;
     height: 54px;

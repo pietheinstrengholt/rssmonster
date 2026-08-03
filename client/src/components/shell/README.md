@@ -24,7 +24,7 @@ The shell should feel like the controls of a professional reader. New features s
 
 ## Responsive ownership
 
-At phone and small-tablet widths, roughly below 767 pixels, the application hides the fixed sidebar and desktop toolbar. The mobile toolbar becomes the top-level navigation surface and the article area fills the viewport width.
+Below 880 pixels, the desktop toolbar is replaced by the mobile toolbar. The fixed sidebar remains visible from 768 through 879 pixels, while narrower phone layouts hide it and let the article area fill the viewport width.
 
 At desktop widths, the mobile toolbar is hidden. The sidebar is fixed at the left, the content area is offset beside it, and the desktop toolbar is fixed across the top of that content area.
 

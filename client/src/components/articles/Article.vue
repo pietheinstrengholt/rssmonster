@@ -458,7 +458,7 @@ export default {
 }
 
 /* Landscape phones and portrait tablets */
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   .article-card {
     padding-top: 2px;
   }
@@ -471,7 +471,7 @@ export default {
 }
 
 /* Landscape phones and portrait tablets */
-@media (min-width: 767px) {
+@media (min-width: 880px) {
   .article-card {
     padding-top: 4px;
   }
@@ -975,7 +975,7 @@ export default {
 }
 
 /* Keep mobile portrait metadata and visible tags in one wrapping row. */
-@media (max-width: 766px) and (orientation: portrait) {
+@media (max-width: 879px) and (orientation: portrait) {
   .article-card .article-body {
     padding: 4px 8px 4px 8px;
   }
@@ -1053,7 +1053,7 @@ span.article-source a {
   text-decoration: none;
 }
 
-@media (min-width: 767px) {
+@media (min-width: 880px) {
   .article-card .meta-row,
   .article-card .article-meta {
     gap: 14px;
@@ -1193,7 +1193,7 @@ span.similar-badge {
   display: none;
 }
 
-@media (max-width: 766px) and (orientation: portrait) {
+@media (max-width: 879px) and (orientation: portrait) {
   .mobile-rule-tag {
     display: inline-flex;
     align-items: center;
@@ -1524,7 +1524,7 @@ span.similar-badge {
   background: var(--bg-page);
 }
 
-@media (max-width: 766px) and (orientation: portrait) {
+@media (max-width: 879px) and (orientation: portrait) {
   .mobile-swipe-shell {
     position: relative;
     overflow: hidden;

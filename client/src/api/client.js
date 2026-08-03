@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+export const CONNECTIVITY_ERROR_EVENT = 'app:connectivity-error';
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_VUE_APP_HOSTNAME + '/api',
   timeout: 15000
@@ -67,9 +69,9 @@ const handleApiError = error => {
     !isTimeoutError(error) &&
     !url.includes('/agent')
   ) {
-    window.dispatchEvent(new CustomEvent('app:error', {
+    window.dispatchEvent(new CustomEvent(CONNECTIVITY_ERROR_EVENT, {
       detail: {
-        type: 'offline',
+        type: 'backend-unreachable',
         message: 'Backend unreachable'
       }
     }));

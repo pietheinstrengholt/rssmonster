@@ -411,7 +411,7 @@ export default {
 
 <style scoped>
 /* Landscape phones and portrait tablets */
-@media (min-width: 767px) {
+@media (min-width: 880px) {
   #articles {
     margin-left: -15px;
     margin-right: -23px;
@@ -427,14 +427,14 @@ export default {
 }
 
 /* Removes the article offset when the mobile toolbar overlays portrait layouts. */
-@media (max-width: 766px) and (orientation: portrait) {
+@media (max-width: 879px) and (orientation: portrait) {
   #main-container #articles {
     padding-top: 0;
   }
 }
 
 /* Lets an empty article list fill the space below the mobile toolbar. */
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   #main-container {
     display: flex;
     flex: 1;
@@ -446,7 +446,7 @@ export default {
   padding-top: 98px;
 }
 
-@media (min-width: 767px) {
+@media (min-width: 880px) {
   #articles.mobile-search-open {
     padding-top: 38px;
   }
@@ -481,7 +481,7 @@ div.infinite-loading-container {
   }
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   #no-more {
     display: flex;
     flex: 1;

@@ -1,8 +1,8 @@
 <template>
   <div id="app">
-    <div class="row">
+    <div class="row app-shell-row">
       <div
-        v-if="isDesktopShell === true || mobileRefreshSidebarActive"
+        v-if="showPersistentSidebar || mobileRefreshSidebarActive"
         id="sidebar"
         ref="sidebarScrollRef"
         class="col-md-3 col-sm-0"
@@ -33,6 +33,13 @@
         <!-- Error handling -->
         <app-error v-if="uiStore.fatalError" :type="uiStore.fatalError.type" @retry="forceReload"/>
 
+        <connectivity-status
+          v-if="connectivityStatus"
+          :recovering="connectivityRecovering"
+          :status="connectivityStatus"
+          @retry="recoverConnectivity"
+        />
+
         <!-- Add reference to home for calling child loadContent component function -->
         <app-initial-feeds v-if="showOnboarding" @completed="completeOnboarding"></app-initial-feeds>
         <app-mobile-pull-to-refresh
@@ -61,8 +68,7 @@
 
 <style>
 /* Landscape phones and portrait tablets */
-@media (max-width: 766px) {
-  #sidebar,
+@media (max-width: 879px) {
   #desktop-toolbar {
     display: none;
   }
@@ -91,12 +97,26 @@
   }
 }
 
-/* Desktop */
-@media (min-width: 766px) {
+@media (max-width: 767px) {
+  #sidebar {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 879px) {
+  #home {
+    padding-left: 0;
+  }
+}
+
+@media (min-width: 880px) {
   .mobile-toolbar {
     display: none;
   }
+}
 
+/* Persistent sidebar and independently scrolling article pane. */
+@media (min-width: 768px) {
   #sidebar {
     height: 100%;
     font-weight: 500;
@@ -151,6 +171,10 @@
 }
 
 @media (min-width: 768px) {
+  .app-shell-row {
+    margin-left: 0;
+  }
+
   #sidebar {
     width: 280px;
     min-width: 280px;
@@ -169,6 +193,7 @@ div.row {
 
 #sidebar {
   position: fixed;
+  left: 0;
   --sidebar-scrollbar-thumb: var(--scrollbar-thumb-strong);
 }
 
@@ -217,9 +242,11 @@ import { useUiStore } from './store/ui.js';
 
 import { applyTheme, getPreferredTheme, setThemeMode, subscribeToSystemTheme } from './services/theme.js';
 import { ACTION_ERROR_EVENT } from './services/actionNotifications.js';
+import { CONNECTIVITY_ERROR_EVENT } from './api/client.js';
 
 import ArticleFeed from "./components/articles/ArticleFeed.vue";
 import ActionErrorNotice from './components/shared/ActionErrorNotice.vue';
+import ConnectivityStatus from './components/shared/ConnectivityStatus.vue';
 
 // This function identifies request timeouts that should preserve the current online state.
 const isOverviewTimeout = error =>
@@ -258,6 +285,7 @@ export default {
   emits: ['logout'],
   components: {
     ActionErrorNotice,
+    ConnectivityStatus,
     appSidebar: Sidebar,
     appArticleFeed: ArticleFeed,
     appDesktopToolbar: DesktopToolbar,
@@ -274,17 +302,22 @@ export default {
       actionErrorMessage: '',
       actionErrorTimer: null,
       category: {},
+      connectivityRecovering: false,
+      connectivityRecoveryPromise: null,
+      connectivityStatus: null,
       databaseRefreshActive: false,
       feed: {},
       isDesktopShell: null,
       mobile: null,
       mobileRefreshSidebarActive: false,
-      offlineStatus: false,
+      isUnmounting: false,
       overviewIntervalId: null,
       overviewLoaded: false,
       overviewReloading: false,
       pendingMobileFeedRefresh: false,
+      persistentSidebarQuery: null,
       responsiveShellQuery: null,
+      showPersistentSidebar: null,
       sidebarComponent: null,
       sidebarScrollTimeout: null,
       unsubscribeFromSystemTheme: null
@@ -297,10 +330,13 @@ export default {
   async created() {
     this.registerGlobalListeners();
 
-    //fetch all category and feed information for an complete overview including total read and unread counts
-    this.getOverview(true);
-
-    this.startOverviewPolling();
+    if (navigator.onLine === false) {
+      this.handleBrowserOffline();
+    } else {
+      // Fetch all category and feed information for a complete overview including counts.
+      this.getOverview(true);
+      this.startOverviewPolling();
+    }
 
     applyTheme(getPreferredTheme());
     this.unsubscribeFromSystemTheme = subscribeToSystemTheme(applyTheme);
@@ -310,6 +346,7 @@ export default {
     document.head.querySelector("meta[http-equiv=X-UA-Compatible]").content = "IE=edge";
   },
   beforeUnmount() {
+    this.isUnmounting = true;
     this.unsubscribeFromSystemTheme?.();
     this.removeGlobalListeners();
     this.teardownResponsiveShell();
@@ -331,20 +368,26 @@ export default {
     setupResponsiveShell() {
       if (typeof window === 'undefined') {
         this.isDesktopShell = true;
+        this.showPersistentSidebar = true;
         return;
       }
 
       if (typeof window.matchMedia !== 'function') {
-        this.isDesktopShell = window.innerWidth >= 767;
+        this.isDesktopShell = window.innerWidth >= 880;
+        this.showPersistentSidebar = window.innerWidth >= 768;
         return;
       }
 
-      this.responsiveShellQuery = window.matchMedia('(min-width: 767px)');
+      this.responsiveShellQuery = window.matchMedia('(min-width: 880px)');
+      this.persistentSidebarQuery = window.matchMedia('(min-width: 768px)');
       this.isDesktopShell = this.responsiveShellQuery.matches;
+      this.showPersistentSidebar = this.persistentSidebarQuery.matches;
       if (typeof this.responsiveShellQuery.addEventListener === 'function') {
         this.responsiveShellQuery.addEventListener('change', this.handleResponsiveShellChange);
+        this.persistentSidebarQuery.addEventListener('change', this.handlePersistentSidebarChange);
       } else {
         this.responsiveShellQuery.addListener?.(this.handleResponsiveShellChange);
+        this.persistentSidebarQuery.addListener?.(this.handlePersistentSidebarChange);
       }
     },
     // This function removes the responsive shell listener owned by this component.
@@ -354,7 +397,13 @@ export default {
       } else {
         this.responsiveShellQuery?.removeListener?.(this.handleResponsiveShellChange);
       }
+      if (typeof this.persistentSidebarQuery?.removeEventListener === 'function') {
+        this.persistentSidebarQuery.removeEventListener('change', this.handlePersistentSidebarChange);
+      } else {
+        this.persistentSidebarQuery?.removeListener?.(this.handlePersistentSidebarChange);
+      }
       this.responsiveShellQuery = null;
+      this.persistentSidebarQuery = null;
     },
     // This function swaps the mounted shell components when the application breakpoint changes.
     handleResponsiveShellChange(event) {
@@ -365,6 +414,10 @@ export default {
         this.mobileRefreshSidebarActive = false;
         this.pendingMobileFeedRefresh = false;
       }
+    },
+    // This function keeps the persistent sidebar mounted at tablet and desktop widths.
+    handlePersistentSidebarChange(event) {
+      this.showPersistentSidebar = event.matches;
     },
     // This function retains the async Sidebar instance and starts a pending mobile refresh after it loads.
     setSidebarRef(instance) {
@@ -382,27 +435,53 @@ export default {
     // This function handles fatal application error events.
     handleAppError(event) {
       if (event.detail?.type === 'offline') {
-        this.offlineStatus = true;
-        this.overviewLoaded = true;
-        this.stopOverviewPolling();
+        this.handleConnectivityError(event);
+        return;
       }
 
       this.uiStore.setFatalError(event.detail);
+    },
+    // This function enters degraded mode when Axios cannot reach the backend.
+    handleConnectivityError() {
+      this.connectivityStatus = navigator.onLine === false
+        ? 'browser-offline'
+        : 'backend-unreachable';
+      this.stopOverviewPolling();
+    },
+    // This function reacts immediately when the browser reports that its network is unavailable.
+    handleBrowserOffline() {
+      this.connectivityStatus = 'browser-offline';
+      this.stopOverviewPolling();
+    },
+    // This function verifies backend access before leaving degraded mode after a browser reconnect.
+    handleBrowserOnline() {
+      this.connectivityStatus = 'backend-unreachable';
+      void this.recoverConnectivity();
     },
     // This function registers the window listeners owned by the app shell.
     registerGlobalListeners() {
       this.removeGlobalListeners();
       window.addEventListener(ACTION_ERROR_EVENT, this.handleActionError);
+      window.addEventListener(CONNECTIVITY_ERROR_EVENT, this.handleConnectivityError);
       window.addEventListener('app:error', this.handleAppError);
+      window.addEventListener('offline', this.handleBrowserOffline);
+      window.addEventListener('online', this.handleBrowserOnline);
     },
     // This function removes the window listeners owned by the app shell.
     removeGlobalListeners() {
       window.removeEventListener(ACTION_ERROR_EVENT, this.handleActionError);
+      window.removeEventListener(CONNECTIVITY_ERROR_EVENT, this.handleConnectivityError);
       window.removeEventListener('app:error', this.handleAppError);
+      window.removeEventListener('offline', this.handleBrowserOffline);
+      window.removeEventListener('online', this.handleBrowserOnline);
     },
     // This function starts overview polling once per app shell instance.
     startOverviewPolling() {
-      if (this.overviewIntervalId !== null) return;
+      if (
+        this.overviewIntervalId !== null ||
+        this.connectivityStatus ||
+        this.isUnmounting
+      ) return;
 
       this.overviewIntervalId = setInterval(() => {
         this.getOverview(false);
@@ -500,10 +579,9 @@ export default {
       try {
         await this.overviewStore.fetchOverviewSplit({ initial });
 
-        if (['offline', 'overview'].includes(this.uiStore.fatalError?.type)) {
+        if (this.uiStore.fatalError?.type === 'overview') {
           this.uiStore.clearFatalError();
         }
-        this.offlineStatus = false;
         this.overviewLoaded = true;
 
         // Initial load: sync local selection
@@ -529,19 +607,14 @@ export default {
         return;
       }
 
-      this.stopOverviewPolling();
       this.overviewLoaded = true;
 
-      if (!error?.response) {
-        this.offlineStatus = true;
-        this.uiStore.setFatalError({
-          type: 'offline',
-          message: 'Backend unreachable'
-        });
+      if (error?.code === 'ERR_NETWORK') {
+        this.handleConnectivityError();
         return;
       }
 
-      this.offlineStatus = false;
+      this.stopOverviewPolling();
       this.uiStore.setFatalError({
         type: 'overview',
         message: 'Could not load the application overview'
@@ -565,31 +638,31 @@ export default {
         console.error('Error showing the new article notification:', error);
       }
     },
-    // This function coalesces retries and restores polling after one successful recovery.
+    // This function refreshes application data for ordinary retry and toolbar reload actions.
     async forceReload() {
+      if (this.connectivityStatus) {
+        return this.recoverConnectivity();
+      }
+
+      if (this.overviewReloading) return;
+
       const articleFeedRefs = Array.isArray(this.$refs.articleFeed)
         ? this.$refs.articleFeed
         : [this.$refs.articleFeed];
       const articleReloads = articleFeedRefs
-        .filter(ref => ref && typeof ref.fetchArticleIds === 'function')
-        .map(ref => ref.fetchArticleIds(this.selectionStore.currentSelection));
-
-      if (this.overviewReloading) {
-        await Promise.all(articleReloads);
-        return;
-      }
+        .filter(ref => ref && typeof ref.refreshArticleIds === 'function')
+        .map(ref => ref.refreshArticleIds(this.selectionStore.currentSelection));
 
       this.overviewReloading = true;
       try {
         // Refresh overview (this also fetches settings)
         await this.overviewStore.fetchOverviewSplit({ initial: true });
-        if (['offline', 'overview'].includes(this.uiStore.fatalError?.type)) {
+        await Promise.all(articleReloads);
+        if (this.uiStore.fatalError?.type === 'overview') {
           this.uiStore.clearFatalError();
         }
-        this.offlineStatus = false;
         this.overviewLoaded = true;
         this.startOverviewPolling();
-        await Promise.all(articleReloads);
       } catch (error) {
         console.error('Error reloading application data:', error);
         // Keep the retry surface aligned with the actual failure type.
@@ -597,6 +670,66 @@ export default {
       } finally {
         this.overviewReloading = false;
       }
+    },
+    // This function coalesces recovery triggers and restores polling only after all refreshes succeed.
+    recoverConnectivity() {
+      if (this.connectivityRecoveryPromise) {
+        return this.connectivityRecoveryPromise;
+      }
+
+      if (navigator.onLine === false) {
+        this.handleBrowserOffline();
+        return Promise.resolve(false);
+      }
+
+      this.connectivityStatus = 'backend-unreachable';
+      this.connectivityRecovering = true;
+      // This operation owns the single overview-and-article recovery sequence.
+      const recoveryPromise = (async () => {
+        try {
+          await this.overviewStore.fetchOverviewSplit({ initial: true });
+          await this.$nextTick();
+          const articleFeedRefs = Array.isArray(this.$refs.articleFeed)
+            ? this.$refs.articleFeed
+            : [this.$refs.articleFeed];
+          const articleReloads = articleFeedRefs
+            .filter(ref => ref && typeof ref.refreshArticleIds === 'function')
+            .map(ref => ref.refreshArticleIds(this.selectionStore.currentSelection));
+          await Promise.all(articleReloads);
+
+          if (this.isUnmounting) return false;
+          if (navigator.onLine === false) {
+            this.handleBrowserOffline();
+            return false;
+          }
+
+          this.connectivityStatus = null;
+          this.overviewLoaded = true;
+          this.startOverviewPolling();
+          return true;
+        } catch (error) {
+          if (!isOverviewTimeout(error)) {
+            console.error('Error recovering application connectivity:', error);
+          }
+
+          if (error?.response?.status === 401) {
+            this.connectivityStatus = null;
+          } else if (error?.response) {
+            this.connectivityStatus = null;
+            this.handleOverviewFailure(error);
+          } else if (error?.code === 'ERR_NETWORK') {
+            this.handleConnectivityError();
+          }
+          return false;
+        } finally {
+          if (this.connectivityRecoveryPromise === recoveryPromise) {
+            this.connectivityRecoveryPromise = null;
+            this.connectivityRecovering = false;
+          }
+        }
+      })();
+      this.connectivityRecoveryPromise = recoveryPromise;
+      return recoveryPromise;
     },
     // This function refreshes database-backed article results without clearing usable mobile content.
     async refreshArticlesFromDatabase() {
@@ -710,7 +843,6 @@ export default {
     // Shows the article feed only when application data is available for reading.
     showArticleFeed() {
       return this.overviewLoaded
-        && !this.offlineStatus
         && !this.uiStore.chatAssistantOpen
         && !this.uiStore.fatalError
         && !this.showOnboarding;
@@ -721,7 +853,10 @@ export default {
     },
     // Shows onboarding only after a successful empty overview load.
     showOnboarding() {
-      return this.overviewLoaded && !this.offlineStatus && !this.uiStore.fatalError && (this.overviewStore.categories.length === 0);
+      return this.overviewLoaded
+        && !this.connectivityStatus
+        && !this.uiStore.fatalError
+        && (this.overviewStore.categories.length === 0);
     }
   }
 };

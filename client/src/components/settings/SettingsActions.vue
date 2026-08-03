@@ -420,7 +420,7 @@
   }
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   .actions-intro-card {
     padding: 20px;
   }

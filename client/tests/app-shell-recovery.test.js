@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AppShell from '../src/AppShell.vue';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
@@ -6,6 +6,7 @@ import { createFocusedStores } from './helpers/focusedStores.js';
 const createRecoveryContext = () => {
   const stores = createFocusedStores({
     overview: {
+      categories: [{ id: 1, name: 'News', feeds: [] }],
       fetchOverview: vi.fn(),
       fetchOverviewSplit: vi.fn()
     },
@@ -14,18 +15,22 @@ const createRecoveryContext = () => {
     },
     ui: {
       clearFatalError: vi.fn(),
-      fatalError: { type: 'offline' },
+      fatalError: null,
       setFatalError: vi.fn()
     }
   });
   return {
     ...stores,
-    offlineStatus: true,
+    connectivityRecovering: false,
+    connectivityRecoveryPromise: null,
+    connectivityStatus: 'backend-unreachable',
+    databaseRefreshActive: false,
+    isUnmounting: false,
     overviewIntervalId: null,
     overviewLoaded: true,
     overviewReloading: false,
-    databaseRefreshActive: false,
     $refs: {},
+    $nextTick: vi.fn().mockResolvedValue(),
     startOverviewPolling: vi.fn(),
     stopOverviewPolling: vi.fn(),
     showActionError: vi.fn(),
@@ -33,52 +38,65 @@ const createRecoveryContext = () => {
   };
 };
 
-// This function connects overview methods that call each other on a component instance.
+// This function connects recovery methods that call each other on a component instance.
 const connectRecoveryMethods = context => {
+  context.handleBrowserOffline = () =>
+    AppShell.methods.handleBrowserOffline.call(context);
+  context.handleConnectivityError = () =>
+    AppShell.methods.handleConnectivityError.call(context);
   context.handleOverviewFailure = error =>
     AppShell.methods.handleOverviewFailure.call(context, error);
+  context.recoverConnectivity = () =>
+    AppShell.methods.recoverConnectivity.call(context);
   return context;
 };
 
-describe('AppShell offline recovery', () => {
-  it('keeps the current online state after a polling timeout', async () => {
+beforeEach(() => {
+  Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('AppShell connectivity recovery', () => {
+  it('keeps the current connectivity classification after a polling timeout', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
     const timeout = new Error('timeout of 15000ms exceeded');
     timeout.code = 'ECONNABORTED';
-    context.offlineStatus = false;
-    context.uiStore.fatalError = null;
+    context.connectivityStatus = null;
     context.overviewStore.fetchOverviewSplit.mockRejectedValue(timeout);
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await AppShell.methods.getOverview.call(context, false);
 
-    expect(context.offlineStatus).toBe(false);
+    expect(context.connectivityStatus).toBeNull();
     expect(context.overviewLoaded).toBe(true);
     expect(context.stopOverviewPolling).not.toHaveBeenCalled();
     expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
     expect(console.error).not.toHaveBeenCalled();
   });
 
-  it('retains authentication and enters offline mode after a connection failure', async () => {
+  it('enters backend-unreachable mode without clearing content or setting a fatal error', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
-    context.overviewStore.fetchOverviewSplit.mockRejectedValue(new Error('Network Error'));
+    const networkError = new Error('Network Error');
+    networkError.code = 'ERR_NETWORK';
+    context.connectivityStatus = null;
+    context.overviewStore.fetchOverviewSplit.mockRejectedValue(networkError);
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await AppShell.methods.getOverview.call(context, false);
 
     expect(context.stopOverviewPolling).toHaveBeenCalledOnce();
-    expect(context.offlineStatus).toBe(true);
-    expect(context.uiStore.setFatalError).toHaveBeenCalledWith({
-      message: 'Backend unreachable',
-      type: 'offline'
-    });
+    expect(context.connectivityStatus).toBe('backend-unreachable');
+    expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
+    expect(context.overviewStore.categories).toEqual([{ id: 1, name: 'News', feeds: [] }]);
   });
 
   it('leaves 401 session cleanup to the root authentication flow', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
-    context.offlineStatus = false;
-    context.uiStore.fatalError = null;
+    context.connectivityStatus = null;
     context.overviewStore.fetchOverviewSplit.mockRejectedValue({
       response: { status: 401 }
     });
@@ -88,12 +106,12 @@ describe('AppShell offline recovery', () => {
 
     expect(context.stopOverviewPolling).not.toHaveBeenCalled();
     expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
-    expect(context.offlineStatus).toBe(false);
+    expect(context.connectivityStatus).toBeNull();
   });
 
-  it('keeps the session online and exposes 5xx failures as retryable overview errors', async () => {
+  it('retains the existing fatal overview behavior for HTTP failures', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
-    context.uiStore.fatalError = null;
+    context.connectivityStatus = null;
     context.overviewStore.fetchOverviewSplit.mockRejectedValue({
       response: { status: 503 }
     });
@@ -102,56 +120,129 @@ describe('AppShell offline recovery', () => {
     await AppShell.methods.getOverview.call(context, false);
 
     expect(context.stopOverviewPolling).toHaveBeenCalledOnce();
-    expect(context.offlineStatus).toBe(false);
+    expect(context.connectivityStatus).toBeNull();
     expect(context.uiStore.setFatalError).toHaveBeenCalledWith({
       message: 'Could not load the application overview',
       type: 'overview'
     });
   });
 
-  it('restarts polling after a successful reconnect', async () => {
-    const context = connectRecoveryMethods(createRecoveryContext());
-    context.overviewStore.fetchOverviewSplit.mockResolvedValue();
-
-    await AppShell.methods.forceReload.call(context);
-
-    expect(context.uiStore.clearFatalError).toHaveBeenCalledOnce();
-    expect(context.overviewStore.fetchOverviewSplit).toHaveBeenCalledWith({ initial: true });
-    expect(context.offlineStatus).toBe(false);
-    expect(context.overviewLoaded).toBe(true);
-    expect(context.startOverviewPolling).toHaveBeenCalledOnce();
-    expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
-  });
-
   it('synchronizes the current selection after an initial overview succeeds', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
+    context.connectivityStatus = null;
     context.overviewStore.fetchOverviewSplit.mockResolvedValue();
 
     await AppShell.methods.getOverview.call(context, true);
 
     expect(context.overviewStore.fetchOverviewSplit).toHaveBeenCalledWith({ initial: true });
-    expect(context.offlineStatus).toBe(false);
     expect(context.overviewLoaded).toBe(true);
     expect(context.updateSelection)
       .toHaveBeenCalledWith(context.selectionStore.currentSelection);
   });
 
-  it('reloads every mounted article feed after reconnecting', async () => {
+  it('refreshes overview and current articles before clearing status and restarting polling', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
-    const firstFeed = { fetchArticleIds: vi.fn() };
-    const secondFeed = { fetchArticleIds: vi.fn() };
-    context.$refs.articleFeed = [firstFeed, null, secondFeed];
+    const articleFeed = { refreshArticleIds: vi.fn().mockResolvedValue(true) };
+    context.$refs.articleFeed = articleFeed;
     context.overviewStore.fetchOverviewSplit.mockResolvedValue();
 
-    await AppShell.methods.forceReload.call(context);
+    const recovered = await AppShell.methods.recoverConnectivity.call(context);
 
-    expect(firstFeed.fetchArticleIds)
+    expect(recovered).toBe(true);
+    expect(context.overviewStore.fetchOverviewSplit).toHaveBeenCalledWith({ initial: true });
+    expect(articleFeed.refreshArticleIds)
       .toHaveBeenCalledWith(context.selectionStore.currentSelection);
-    expect(secondFeed.fetchArticleIds)
-      .toHaveBeenCalledWith(context.selectionStore.currentSelection);
+    expect(context.connectivityStatus).toBeNull();
+    expect(context.startOverviewPolling).toHaveBeenCalledOnce();
+    expect(context.connectivityRecovering).toBe(false);
   });
 
-  it('refreshes database articles and overview counts without using the recovery reload path', async () => {
+  it('coalesces browser, API, and manual recovery triggers into one active operation', async () => {
+    let resolveOverview;
+    const context = connectRecoveryMethods(createRecoveryContext());
+    context.overviewStore.fetchOverviewSplit.mockReturnValue(new Promise(resolve => {
+      resolveOverview = resolve;
+    }));
+
+    const firstRetry = AppShell.methods.recoverConnectivity.call(context);
+    AppShell.methods.handleConnectivityError.call(context);
+    const repeatedRetry = AppShell.methods.recoverConnectivity.call(context);
+    const toolbarRetry = AppShell.methods.forceReload.call(context);
+
+    expect(repeatedRetry).toBe(firstRetry);
+    expect(context.overviewStore.fetchOverviewSplit).toHaveBeenCalledOnce();
+    expect(context.startOverviewPolling).not.toHaveBeenCalled();
+
+    resolveOverview();
+    await Promise.all([firstRetry, repeatedRetry, toolbarRetry]);
+
+    expect(context.startOverviewPolling).toHaveBeenCalledOnce();
+    expect(context.connectivityRecoveryPromise).toBeNull();
+  });
+
+  it('keeps backend-unreachable status and content when recovery gets a network error', async () => {
+    const context = connectRecoveryMethods(createRecoveryContext());
+    const failure = new Error('backend connection failed');
+    failure.code = 'ERR_NETWORK';
+    context.overviewStore.fetchOverviewSplit.mockRejectedValue(failure);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const recovered = await AppShell.methods.recoverConnectivity.call(context);
+
+    expect(recovered).toBe(false);
+    expect(context.connectivityStatus).toBe('backend-unreachable');
+    expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
+    expect(context.startOverviewPolling).not.toHaveBeenCalled();
+    expect(context.overviewStore.categories).toHaveLength(1);
+  });
+
+  it('preserves connectivity status when recovery times out', async () => {
+    const context = connectRecoveryMethods(createRecoveryContext());
+    const timeout = new Error('timeout of 15000ms exceeded');
+    timeout.code = 'ECONNABORTED';
+    context.overviewStore.fetchOverviewSplit.mockRejectedValue(timeout);
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const recovered = await AppShell.methods.recoverConnectivity.call(context);
+
+    expect(recovered).toBe(false);
+    expect(context.connectivityStatus).toBe('backend-unreachable');
+    expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
+    expect(context.startOverviewPolling).not.toHaveBeenCalled();
+  });
+
+  it('does not display a connectivity problem when recovery reaches a 401 response', async () => {
+    const context = connectRecoveryMethods(createRecoveryContext());
+    context.overviewStore.fetchOverviewSplit.mockRejectedValue({
+      response: { status: 401 }
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const recovered = await AppShell.methods.recoverConnectivity.call(context);
+
+    expect(recovered).toBe(false);
+    expect(context.connectivityStatus).toBeNull();
+    expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
+  });
+
+  it('does not declare recovery successful if the browser goes offline mid-request', async () => {
+    const context = connectRecoveryMethods(createRecoveryContext());
+    context.overviewStore.fetchOverviewSplit.mockResolvedValue();
+    const articleFeed = {
+      refreshArticleIds: vi.fn().mockImplementation(async () => {
+        Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+      })
+    };
+    context.$refs.articleFeed = articleFeed;
+
+    const recovered = await AppShell.methods.recoverConnectivity.call(context);
+
+    expect(recovered).toBe(false);
+    expect(context.connectivityStatus).toBe('browser-offline');
+    expect(context.startOverviewPolling).not.toHaveBeenCalled();
+  });
+
+  it('refreshes database articles and overview counts without clearing usable content first', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
     const articleFeed = { refreshArticleIds: vi.fn().mockResolvedValue(true) };
     context.$refs.articleFeed = articleFeed;
@@ -162,7 +253,6 @@ describe('AppShell offline recovery', () => {
     expect(context.overviewStore.fetchOverview).toHaveBeenCalledWith({ forceUpdate: true });
     expect(articleFeed.refreshArticleIds)
       .toHaveBeenCalledWith(context.selectionStore.currentSelection);
-    expect(context.overviewStore.fetchOverviewSplit).not.toHaveBeenCalled();
     expect(context.databaseRefreshActive).toBe(false);
   });
 
@@ -181,57 +271,5 @@ describe('AppShell offline recovery', () => {
       .toHaveBeenCalledWith('Could not refresh articles. Please try again.');
     expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
     expect(context.databaseRefreshActive).toBe(false);
-  });
-
-  it('reloads the article feed while an overview reload is already running', async () => {
-    const context = connectRecoveryMethods(createRecoveryContext());
-    const articleFeed = { fetchArticleIds: vi.fn().mockResolvedValue() };
-    context.$refs.articleFeed = articleFeed;
-    context.overviewReloading = true;
-
-    await AppShell.methods.forceReload.call(context);
-
-    expect(articleFeed.fetchArticleIds)
-      .toHaveBeenCalledWith(context.selectionStore.currentSelection);
-    expect(context.overviewStore.fetchOverviewSplit).not.toHaveBeenCalled();
-  });
-
-  it('returns to fatal offline state when reconnecting fails', async () => {
-    const failure = new Error('backend connection failed');
-    const context = connectRecoveryMethods(createRecoveryContext());
-    context.overviewStore.fetchOverviewSplit.mockRejectedValue(failure);
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    await AppShell.methods.forceReload.call(context);
-
-    expect(context.uiStore.setFatalError).toHaveBeenCalledWith({
-      message: 'Backend unreachable',
-      type: 'offline'
-    });
-    expect(context.startOverviewPolling).not.toHaveBeenCalled();
-    expect(console.error).toHaveBeenCalledWith(
-      'Error reloading application data:',
-      failure
-    );
-  });
-
-  it('coalesces repeated retries and starts polling once after recovery', async () => {
-    let resolveOverview;
-    const context = connectRecoveryMethods(createRecoveryContext());
-    context.overviewStore.fetchOverviewSplit.mockReturnValue(new Promise(resolve => {
-      resolveOverview = resolve;
-    }));
-
-    const firstRetry = AppShell.methods.forceReload.call(context);
-    const repeatedRetry = AppShell.methods.forceReload.call(context);
-
-    expect(context.overviewStore.fetchOverviewSplit).toHaveBeenCalledOnce();
-    expect(context.startOverviewPolling).not.toHaveBeenCalled();
-
-    resolveOverview();
-    await Promise.all([firstRetry, repeatedRetry]);
-
-    expect(context.startOverviewPolling).toHaveBeenCalledOnce();
-    expect(context.overviewReloading).toBe(false);
   });
 });

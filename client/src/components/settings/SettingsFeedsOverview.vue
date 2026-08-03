@@ -521,7 +521,7 @@
   background: var(--bg-danger-subtle) !important;
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   .feeds-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .feeds-toolbar,
   .feeds-toolbar-actions,

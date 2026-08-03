@@ -155,7 +155,7 @@ export default {
   }
 }
 
-@media (max-width: 766px) and (orientation: portrait) {
+@media (max-width: 879px) and (orientation: portrait) {
   .article-end-state {
     margin: 20px auto 28px;
     max-width: 100%;

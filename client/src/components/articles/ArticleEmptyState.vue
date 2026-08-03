@@ -277,7 +277,7 @@ export default {
   text-underline-offset: 3px;
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   .article-empty-state {
     flex: 1;
     min-height: 0;

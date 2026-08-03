@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AppShell from '../src/AppShell.vue';
+import { CONNECTIVITY_ERROR_EVENT } from '../src/api/client.js';
 import { ACTION_ERROR_EVENT } from '../src/services/actionNotifications.js';
 
 // This function creates the minimal context needed by AppShell lifecycle methods.
@@ -8,6 +9,12 @@ const createLifecycleContext = () => {
     actionErrorTimer: null,
     handleActionError: vi.fn(),
     handleAppError: vi.fn(),
+    handleBrowserOffline: vi.fn(),
+    handleBrowserOnline: vi.fn(),
+    handleConnectivityError: vi.fn(),
+    isUnmounting: false,
+    connectivityStatus: null,
+    persistentSidebarQuery: null,
     responsiveShellQuery: null,
     overviewIntervalId: null,
     sidebarScrollTimeout: null,
@@ -33,28 +40,50 @@ afterEach(() => {
 
 describe('AppShell lifecycle', () => {
   it.each([
-    [true, true],
-    [false, false]
-  ])('initializes the responsive shell from matchMedia matches=%s', (matches, expectedDesktopShell) => {
-    const mediaQuery = {
-      matches,
+    [true, true, true, true],
+    [false, true, false, true],
+    [false, false, false, false]
+  ])('initializes desktop=%s and sidebar=%s responsive shell states', (
+    desktopMatches,
+    sidebarMatches,
+    expectedDesktopShell,
+    expectedPersistentSidebar
+  ) => {
+    const desktopMediaQuery = {
+      matches: desktopMatches,
       addEventListener: vi.fn(),
       addListener: undefined
     };
-    vi.stubGlobal('matchMedia', vi.fn(() => mediaQuery));
+    const sidebarMediaQuery = {
+      matches: sidebarMatches,
+      addEventListener: vi.fn(),
+      addListener: undefined
+    };
+    vi.stubGlobal('matchMedia', vi.fn(query => (
+      query === '(min-width: 880px)' ? desktopMediaQuery : sidebarMediaQuery
+    )));
     const context = {
+      handlePersistentSidebarChange: vi.fn(),
       handleResponsiveShellChange: vi.fn(),
       isDesktopShell: null,
-      responsiveShellQuery: null
+      persistentSidebarQuery: null,
+      responsiveShellQuery: null,
+      showPersistentSidebar: null
     };
 
     AppShell.methods.setupResponsiveShell.call(context);
 
-    expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 767px)');
+    expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 880px)');
+    expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 768px)');
     expect(context.isDesktopShell).toBe(expectedDesktopShell);
-    expect(mediaQuery.addEventListener).toHaveBeenCalledWith(
+    expect(context.showPersistentSidebar).toBe(expectedPersistentSidebar);
+    expect(desktopMediaQuery.addEventListener).toHaveBeenCalledWith(
       'change',
       context.handleResponsiveShellChange
+    );
+    expect(sidebarMediaQuery.addEventListener).toHaveBeenCalledWith(
+      'change',
+      context.handlePersistentSidebarChange
     );
   });
 
@@ -77,21 +106,32 @@ describe('AppShell lifecycle', () => {
   });
 
   it('removes the responsive breakpoint listener during teardown', () => {
-    const mediaQuery = {
+    const desktopMediaQuery = {
+      removeEventListener: vi.fn(),
+      removeListener: undefined
+    };
+    const sidebarMediaQuery = {
       removeEventListener: vi.fn(),
       removeListener: undefined
     };
     const context = {
+      handlePersistentSidebarChange: vi.fn(),
       handleResponsiveShellChange: vi.fn(),
-      responsiveShellQuery: mediaQuery
+      persistentSidebarQuery: sidebarMediaQuery,
+      responsiveShellQuery: desktopMediaQuery
     };
 
     AppShell.methods.teardownResponsiveShell.call(context);
 
-    expect(mediaQuery.removeEventListener).toHaveBeenCalledWith(
+    expect(desktopMediaQuery.removeEventListener).toHaveBeenCalledWith(
       'change',
       context.handleResponsiveShellChange
     );
+    expect(sidebarMediaQuery.removeEventListener).toHaveBeenCalledWith(
+      'change',
+      context.handlePersistentSidebarChange
+    );
+    expect(context.persistentSidebarQuery).toBeNull();
     expect(context.responsiveShellQuery).toBeNull();
   });
 
@@ -144,11 +184,17 @@ describe('AppShell lifecycle', () => {
       detail: { message: 'Retry later' }
     }));
     window.dispatchEvent(new CustomEvent('app:error', {
-      detail: { type: 'offline' }
+      detail: { type: 'overview' }
     }));
+    window.dispatchEvent(new Event('offline'));
+    window.dispatchEvent(new Event('online'));
+    window.dispatchEvent(new CustomEvent(CONNECTIVITY_ERROR_EVENT));
 
     expect(context.handleActionError).toHaveBeenCalledOnce();
     expect(context.handleAppError).toHaveBeenCalledOnce();
+    expect(context.handleBrowserOffline).toHaveBeenCalledOnce();
+    expect(context.handleBrowserOnline).toHaveBeenCalledOnce();
+    expect(context.handleConnectivityError).toHaveBeenCalledOnce();
 
     AppShell.methods.removeGlobalListeners.call(context);
   });
@@ -167,12 +213,20 @@ describe('AppShell lifecycle', () => {
       context.handleActionError
     );
     expect(removeEventListenerSpy).toHaveBeenCalledWith('app:error', context.handleAppError);
+    expect(removeEventListenerSpy).toHaveBeenCalledWith(
+      CONNECTIVITY_ERROR_EVENT,
+      context.handleConnectivityError
+    );
+    expect(removeEventListenerSpy).toHaveBeenCalledWith('offline', context.handleBrowserOffline);
+    expect(removeEventListenerSpy).toHaveBeenCalledWith('online', context.handleBrowserOnline);
     expect(removeEventListenerSpy.mock.calls.some(([type]) => type === 'auth:expired')).toBe(false);
     expect(context.unsubscribeFromSystemTheme).toHaveBeenCalledOnce();
+    expect(context.persistentSidebarQuery).toBeNull();
     expect(context.responsiveShellQuery).toBeNull();
     expect(context.overviewIntervalId).toBeNull();
     expect(context.sidebarScrollTimeout).toBeNull();
     expect(context.actionErrorTimer).toBeNull();
+    expect(context.isUnmounting).toBe(true);
     expect(vi.getTimerCount()).toBe(0);
   });
 
@@ -200,11 +254,9 @@ describe('AppShell lifecycle', () => {
     expect(context.actionErrorTimer).toBeNull();
   });
 
-  it('routes offline events into the fatal flow and stops polling', () => {
+  it('routes legacy offline errors into degraded mode without using the fatal channel', () => {
     const context = {
-      offlineStatus: false,
-      overviewLoaded: false,
-      stopOverviewPolling: vi.fn(),
+      handleConnectivityError: vi.fn(),
       uiStore: {
         setFatalError: vi.fn()
       }
@@ -216,9 +268,31 @@ describe('AppShell lifecycle', () => {
 
     AppShell.methods.handleAppError.call(context, { detail: fatalError });
 
-    expect(context.uiStore.setFatalError).toHaveBeenCalledWith(fatalError);
+    expect(context.handleConnectivityError).toHaveBeenCalledOnce();
+    expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
+  });
+
+  it('shows browser-offline status immediately and stops polling', () => {
+    const context = {
+      connectivityStatus: null,
+      stopOverviewPolling: vi.fn()
+    };
+
+    AppShell.methods.handleBrowserOffline.call(context);
+
+    expect(context.connectivityStatus).toBe('browser-offline');
     expect(context.stopOverviewPolling).toHaveBeenCalledOnce();
-    expect(context.offlineStatus).toBe(true);
-    expect(context.overviewLoaded).toBe(true);
+  });
+
+  it('starts one recovery check when the browser reports online', () => {
+    const context = {
+      connectivityStatus: 'browser-offline',
+      recoverConnectivity: vi.fn().mockResolvedValue(true)
+    };
+
+    AppShell.methods.handleBrowserOnline.call(context);
+
+    expect(context.connectivityStatus).toBe('backend-unreachable');
+    expect(context.recoverConnectivity).toHaveBeenCalledOnce();
   });
 });

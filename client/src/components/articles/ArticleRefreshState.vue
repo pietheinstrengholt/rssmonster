@@ -99,7 +99,7 @@ export default {
   line-height: 1.4;
 }
 
-@media (max-width: 766px) and (orientation: portrait) {
+@media (max-width: 879px) and (orientation: portrait) {
   .article-refresh-state {
     max-width: 100%;
     min-height: 68px;

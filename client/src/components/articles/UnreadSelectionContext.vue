@@ -38,7 +38,7 @@ export default {
   border-bottom: 1px solid #e5e7eb;
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   .unread-selection-context {
     display: none;
   }

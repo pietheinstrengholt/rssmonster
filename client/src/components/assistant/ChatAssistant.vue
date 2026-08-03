@@ -219,7 +219,7 @@ div#inputArea {
 }
 
 /* Mobile responsive margins */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 879px) {
   div#inputArea {
     margin-left: 15px;
     margin-right: 15px;

@@ -654,7 +654,7 @@ body.modal-open {
     color: var(--text-disabled-strong) !important;
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
     .settings-overlay {
         padding: 0;
     }

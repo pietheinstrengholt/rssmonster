@@ -223,7 +223,7 @@
   }
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   .article-loading-state {
     padding: 36px 16px 24px;
   }

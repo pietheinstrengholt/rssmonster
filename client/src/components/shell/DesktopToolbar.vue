@@ -157,7 +157,9 @@
     padding-right: 10px;
     padding-left: 10px;
   }
+}
 
+@media (max-width: 1250px) {
   .toolbar-filter-label {
     display: none;
   }
@@ -219,7 +221,12 @@
 
 .toolbar-filter .dropdown-item {
   padding: 8px 10px;
+  margin-bottom: 4px;
   border-radius: 7px;
+}
+
+.toolbar-filter .dropdown-item:last-child {
+  margin-bottom: 0;
 }
 
 .dropdown-item {
@@ -514,9 +521,9 @@
   display: none;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 880px) {
   .desktop-toolbar {
-    left: 268px;
+    left: 280px;
   }
 }
 
@@ -589,7 +596,7 @@
   }
 }
 
-@media (max-width: 950px) {
+@media (max-width: 1149px) {
   .toolbar-theme-dropdown {
     right: 60px;
   }
@@ -604,14 +611,18 @@
   }
 }
 
-@media (max-width: 850px) {
-  .toolbar-chat-button {
+@media (max-width: 990px) {
+  .toolbar-search-button {
     display: none;
+  }
+
+  .toolbar-chat-button {
+    right: 108px;
   }
 }
 
-@media (max-width: 790px) {
-  .toolbar-search-button {
+@media (max-width: 940px) {
+  .toolbar-chat-button {
     display: none;
   }
 }

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import api, { setAuthToken } from '../src/api/client.js';
+import api, { CONNECTIVITY_ERROR_EVENT, setAuthToken } from '../src/api/client.js';
 
 // This function creates a successful adapter response for interceptor tests.
 const resolveResponse = ({
@@ -108,8 +108,8 @@ describe('shared API response interceptor', () => {
     expect(dispatchEvent.mock.calls[0][0].type).toBe('auth:expired');
   });
 
-  // This test verifies only Axios network failures enter the global offline flow.
-  it('dispatches offline errors for genuine network failures', async () => {
+  // This test verifies only Axios network failures enter the global connectivity flow.
+  it('dispatches connectivity errors for genuine network failures', async () => {
     const dispatchEvent = vi.spyOn(window, 'dispatchEvent');
     const request = api.get('/articles', {
       adapter: rejectAxiosError({ code: 'ERR_NETWORK', message: 'Network Error' })
@@ -118,9 +118,9 @@ describe('shared API response interceptor', () => {
     await expect(request).rejects.toMatchObject({ code: 'ERR_NETWORK' });
     expect(dispatchEvent).toHaveBeenCalledTimes(1);
     expect(dispatchEvent.mock.calls[0][0]).toMatchObject({
-      type: 'app:error',
+      type: CONNECTIVITY_ERROR_EVENT,
       detail: {
-        type: 'offline',
+        type: 'backend-unreachable',
         message: 'Backend unreachable'
       }
     });

@@ -266,7 +266,7 @@ describe('MobileToolbar behavior coverage', () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 700, writable: true });
     window.dispatchEvent(new Event('resize'));
     expect(wrapper.vm.showSearch).toBe(true);
-    window.innerWidth = 767;
+    window.innerWidth = 880;
     window.dispatchEvent(new Event('resize'));
     expect(wrapper.vm.showSearch).toBe(false);
     wrapper.unmount();

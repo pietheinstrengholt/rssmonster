@@ -33,7 +33,7 @@ export const articleMobileSwipeMethods = {
   // Sets up the listener that tracks mobile portrait orientation.
   setupMediaQueryListener() {
     if (typeof window === 'undefined' || !window.matchMedia) return;
-    this.mediaQuery = window.matchMedia('(max-width: 766px) and (orientation: portrait)');
+    this.mediaQuery = window.matchMedia('(max-width: 879px) and (orientation: portrait)');
     this.isMobilePortrait = this.mediaQuery.matches;
     if (this.mediaQuery.addEventListener) {
       this.mediaQuery.addEventListener('change', this.handleMediaChange);

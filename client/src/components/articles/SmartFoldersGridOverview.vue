@@ -218,7 +218,7 @@ export default {
   }
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   .smart-folder-grid-overview {
     margin-top: 0;
     padding: 22px 16px;

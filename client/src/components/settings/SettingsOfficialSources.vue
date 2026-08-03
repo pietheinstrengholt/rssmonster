@@ -290,7 +290,7 @@
   --official-sources-add-bg: var(--color-primary-hover);
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   .official-sources-header,
   .official-sources-list-heading {
     flex-direction: column;

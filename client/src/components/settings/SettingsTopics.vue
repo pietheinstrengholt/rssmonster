@@ -291,7 +291,7 @@
   }
 }
 
-@media (max-width: 766px) {
+@media (max-width: 879px) {
   .settings-metric-grid,
   .settings-panel-grid,
   .settings-compact-grid {
