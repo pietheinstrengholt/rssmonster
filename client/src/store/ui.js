@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+import { acceptHMRUpdate, defineStore } from 'pinia';
 
 // This function creates application presentation state for one user session.
 const initialUiState = () => ({
@@ -7,7 +7,17 @@ const initialUiState = () => ({
   mobileSearchOpen: false,
   searchQuery: '',
   themeMode: null,
-  fatalError: null
+  fatalError: null,
+  feedRefreshProgress: {
+    visible: false,
+    currentFeedLabel: 'Waiting to start...',
+    progressPercent: 0,
+    totalFeeds: 0,
+    processedFeeds: 0,
+    newArticles: 0,
+    errors: 0,
+    logs: []
+  }
 });
 
 export const useUiStore = defineStore('ui', {
@@ -45,6 +55,14 @@ export const useUiStore = defineStore('ui', {
       this.searchQuery = query;
     },
 
+    // This action shares the live feed-refresh presentation with mobile surfaces.
+    setFeedRefreshProgress(progress) {
+      this.feedRefreshProgress = {
+        ...progress,
+        logs: [...progress.logs]
+      };
+    },
+
     // This action publishes an unrecoverable application error.
     setFatalError(error) {
       this.fatalError = error;
@@ -56,3 +74,7 @@ export const useUiStore = defineStore('ui', {
     }
   }
 });
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useUiStore, import.meta.hot));
+}

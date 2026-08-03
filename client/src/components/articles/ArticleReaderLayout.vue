@@ -8,6 +8,7 @@
     class="readerEmptyState"
     :current-status="currentSelection"
     :selected-tag="selectedTag"
+    :refresh-progress="uiStore.feedRefreshProgress"
     @clear-filters="$emit('clear-filters')"
     @clear-tag="$emit('clear-tag')"
     @refresh-feeds="$emit('refresh-feeds')"
@@ -186,6 +187,7 @@
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
+import { useUiStore } from '../../store/ui.js';
 import ArticleItem from "./Article.vue";
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
@@ -302,7 +304,7 @@ export default {
     }
   },
   computed: {
-    ...mapStores(useSelectionStore, useOverviewStore),
+    ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
     // Shows the briefing introduction only for the unfiltered all-sources briefing.
     showDailyBriefingIntro() {
       const selection = this.selectionStore.currentSelection;

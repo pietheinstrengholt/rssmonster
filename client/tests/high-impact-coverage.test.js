@@ -94,6 +94,8 @@ function createListContext(overrides = {}) {
     currentViewUnreadCount: 0,
     currentViewSourceCount: null,
     distance: 0,
+    fetchCount: 20,
+    remainingItems: 0,
     viewMode: 'full',
     isFlushed: false,
     isArticleEndStateDismissed: false,
@@ -478,6 +480,8 @@ describe('ArticleListView high-impact decision coverage', () => {
     expect(compute(ArticleListView, 'unreadsSinceLastUpdate', context)).toBe(0);
     expect(compute(ArticleListView, 'hasReachedArticleListEnd', context)).toBe(true);
     expect(compute(ArticleListView, 'supportsArticleEndState', context)).toBe(true);
+    context.viewMode = 'reader';
+    expect(compute(ArticleListView, 'supportsArticleEndState', context)).toBe(true);
     context.hasReachedArticleListEnd = true;
     context.supportsArticleEndState = true;
     expect(compute(ArticleListView, 'showArticleEndState', context)).toBe(true);
@@ -485,6 +489,20 @@ describe('ArticleListView high-impact decision coverage', () => {
     context.currentSelection = 'unread';
     context.hasUnreadArticlesInCurrentView = true;
     expect(compute(ArticleListView, 'showArticleEndStateActions', context)).toBe(true);
+  });
+
+  it('recognizes an exhausted unread final page when the load distance trails the ID count', () => {
+    const context = createListContext({
+      container: Array.from({ length: 21 }, (_, index) => ({ id: index + 1 })),
+      distance: 20,
+      fetchCount: 20,
+      remainingItems: 1
+    });
+
+    expect(compute(ArticleListView, 'hasReachedArticleListEnd', context)).toBe(true);
+
+    context.currentSelection = 'read';
+    expect(compute(ArticleListView, 'hasReachedArticleListEnd', context)).toBe(false);
   });
 
   it('covers ref cleanup, dismissal, flush, and watcher callbacks', () => {

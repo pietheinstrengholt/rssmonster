@@ -43,6 +43,28 @@ describe('ArticleEmptyState', () => {
     expect(wrapper.emitted('view-tag-status')).toEqual([['read']]);
     expect(wrapper.emitted('clear-filters')).toBeUndefined();
   });
+
+  it('shows shared feed-refresh progress beneath the generic mobile recovery actions', () => {
+    const wrapper = mount(ArticleEmptyState, {
+      props: {
+        refreshProgress: {
+          visible: true,
+          currentFeedLabel: 'Example feed (1/2)',
+          progressPercent: 50,
+          totalFeeds: 2,
+          processedFeeds: 1,
+          newArticles: 3,
+          errors: 0,
+          logs: ['Refresh started.']
+        }
+      }
+    });
+
+    const progress = wrapper.get('.article-empty-state-refresh-progress');
+    expect(progress.text()).toContain('Example feed (1/2)');
+    expect(progress.text()).toContain('Processed: 1/2');
+    expect(progress.text()).toContain('New: 3');
+  });
 });
 
 describe('ArticleEndState', () => {

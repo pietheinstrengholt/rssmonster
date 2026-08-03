@@ -218,6 +218,13 @@ describe('Sidebar navigation and action coverage', () => {
 });
 
 describe('Sidebar refresh stream coverage', () => {
+  it('tolerates a pre-update UI store while hot replacement finishes', () => {
+    const progress = Sidebar.data().refreshProgress;
+    const context = { uiStore: {} };
+
+    expect(() => Sidebar.watch.refreshProgress.handler.call(context, progress)).not.toThrow();
+  });
+
   it('handles every progress event and invalid stream payloads', async () => {
     createStores();
     const { eventSource, handlers } = createEventSource();

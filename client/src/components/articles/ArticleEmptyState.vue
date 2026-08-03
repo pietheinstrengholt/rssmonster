@@ -33,6 +33,12 @@
       </button>
     </div>
 
+    <FeedRefreshProgress
+      v-if="!hasTagSelection && refreshProgress?.visible"
+      class="article-empty-state-refresh-progress"
+      :progress="refreshProgress"
+    />
+
     <div v-if="!hasTagSelection" class="article-empty-state-divider" aria-hidden="true">
       <span>OR</span>
     </div>
@@ -46,8 +52,12 @@
 
 <script>
 import { formatTagName } from '../../utils/tags.js';
+import FeedRefreshProgress from '../shared/FeedRefreshProgress.vue';
 
 export default {
+  components: {
+    FeedRefreshProgress
+  },
   emits: [
     'clear-filters',
     'clear-tag',
@@ -63,6 +73,10 @@ export default {
     currentStatus: {
       type: String,
       default: 'unread'
+    },
+    refreshProgress: {
+      type: Object,
+      default: null
     }
   },
   computed: {
@@ -180,6 +194,10 @@ export default {
   gap: 12px;
   justify-content: center;
   margin-top: 10px;
+}
+
+.article-empty-state-refresh-progress {
+  display: none;
 }
 
 .article-empty-state-primary,
@@ -300,6 +318,13 @@ export default {
 
   .article-empty-state-primary,
   .article-empty-state-secondary {
+    width: 100%;
+  }
+
+  .article-empty-state-refresh-progress {
+    display: block;
+    margin-top: 16px;
+    max-width: 360px;
     width: 100%;
   }
 }

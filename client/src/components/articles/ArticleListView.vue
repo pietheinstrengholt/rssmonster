@@ -35,6 +35,7 @@
         v-if="container.length === 0"
         :current-status="currentSelection"
         :selected-tag="selectedTag"
+        :refresh-progress="uiStore.feedRefreshProgress"
         @clear-filters="$emit('clear-filters')"
         @clear-tag="$emit('clear-tag')"
         @refresh-feeds="$emit('refresh-feeds')"
@@ -188,13 +189,18 @@ export default {
     unreadsSinceLastUpdate() {
       return this.overviewStore.unreadsSinceLastUpdate;
     },
-    // Returns whether the full article list has loaded every article in the current scope.
+    // Returns whether loading or unread-review progress has reached the collection boundary.
     hasReachedArticleListEnd() {
-      return this.container.length > 0 && this.distance >= this.container.length;
+      if (!this.container.length) return false;
+
+      const loadedEveryArticle = this.distance >= this.container.length;
+      const reviewedToFinalPage = this.currentSelection === 'unread'
+        && this.remainingItems < this.fetchCount;
+      return loadedEveryArticle || reviewedToFinalPage;
     },
-    // Returns whether this list view should use the modern article end state.
+    // Returns whether this stream supports the end state, including mobile Reader fallback.
     supportsArticleEndState() {
-      return ['full', 'summarized'].includes(this.viewMode);
+      return ['full', 'reader', 'summarized'].includes(this.viewMode);
     },
     // Returns whether the end state should appear for the current list mode.
     showArticleEndState() {

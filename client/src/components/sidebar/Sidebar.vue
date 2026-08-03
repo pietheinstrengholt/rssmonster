@@ -13,23 +13,11 @@
         @select="refreshFeeds"
       />
 
-      <div v-if="refreshProgress.visible" class="sidebar-refresh-progress-panel">
-        <div class="sidebar-refresh-progress-header">
-          <strong>Live refresh</strong>
-          <span>{{ refreshProgress.currentFeedLabel }}</span>
-        </div>
-        <div class="sidebar-refresh-progress-bar">
-          <div class="sidebar-refresh-progress-fill" :style="{ width: `${refreshProgress.progressPercent}%` }"></div>
-        </div>
-        <div class="sidebar-refresh-progress-stats">
-          <span>Processed: {{ refreshProgress.processedFeeds }}/{{ refreshProgress.totalFeeds }}</span>
-          <span>New: {{ refreshProgress.newArticles }}</span>
-          <span>Errors: {{ refreshProgress.errors }}</span>
-        </div>
-        <ul class="sidebar-refresh-progress-logs">
-          <li v-for="(line, index) in refreshProgress.logs" :key="`${line}-${index}`">{{ line }}</li>
-        </ul>
-      </div>
+      <FeedRefreshProgress
+        v-if="refreshProgress.visible"
+        class="sidebar-refresh-progress-panel"
+        :progress="refreshProgress"
+      />
 
       <SidebarActionButton
         icon="plus-square-fill"
@@ -406,56 +394,7 @@
 }
 
 .sidebar-refresh-progress-panel {
-  margin: 0px 12px 20px;
-  padding: 10px;
-  border-radius: 8px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
-}
-
-.sidebar-refresh-progress-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-  margin-bottom: 8px;
-}
-
-.sidebar-refresh-progress-bar {
-  width: 100%;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--scrollbar-track);
-  overflow: hidden;
-}
-
-.sidebar-refresh-progress-fill {
-  height: 100%;
-  background: var(--color-primary);
-  transition: width 0.25s ease;
-}
-
-.sidebar-refresh-progress-stats {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  font-size: 11px;
-  margin-top: 8px;
-}
-
-.sidebar-refresh-progress-logs {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  max-height: 120px;
-  overflow-y: auto;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.sidebar-refresh-progress-logs li {
-  margin-bottom: 4px;
+  margin: 0 12px 20px;
 }
 
 :global(:root[data-theme='dark']) {
@@ -485,6 +424,7 @@ import SidebarActionButton from './SidebarActionButton.vue';
 import SidebarCategoryGroup from './SidebarCategoryGroup.vue';
 import SidebarNavItem from './SidebarNavItem.vue';
 import SidebarSectionTitle from './SidebarSectionTitle.vue';
+import FeedRefreshProgress from '../shared/FeedRefreshProgress.vue';
 import { formatTagName } from '../../utils/tags';
 import { notifyActionError } from '../../services/actionNotifications.js';
 
@@ -499,6 +439,7 @@ const statusFilters = [
 
 export default {
   components: {
+    FeedRefreshProgress,
     SidebarActionButton,
     SidebarCategoryGroup,
     SidebarNavItem,
@@ -559,6 +500,16 @@ export default {
       return this.statusFilters.filter(
         filter => filter.status !== 'briefing' || this.selectionStore.currentSelection.AIEnabled
       );
+    }
+  },
+  watch: {
+    refreshProgress: {
+      // This publishes every live crawl update for the mobile empty-state progress panel.
+      handler(progress) {
+        this.uiStore.setFeedRefreshProgress?.(progress);
+      },
+      deep: true,
+      immediate: true
     }
   },
   // This loads supplemental sidebar navigation before the component mounts.
