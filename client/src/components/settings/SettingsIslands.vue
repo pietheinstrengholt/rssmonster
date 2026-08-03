@@ -14,7 +14,7 @@
       </div>
     </section>
 
-    <div v-if="loading" class="d-flex align-items-center gap-2 mb-3">
+    <div v-if="loading" class="settings-islands-loading d-flex align-items-center gap-2 mb-3">
       <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       <span>Loading interest islands...</span>
     </div>
@@ -184,6 +184,13 @@
 .settings-islands {
   max-width: 1100px;
   color: var(--text-primary);
+}
+
+.settings-islands-loading {
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .interest-island-row {
