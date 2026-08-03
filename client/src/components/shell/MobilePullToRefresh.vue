@@ -35,6 +35,7 @@ const PULL_RESISTANCE = 0.45;
 const PULL_THRESHOLD = 72;
 const PULL_MAX_DISTANCE = 112;
 const REFRESH_INDICATOR_HEIGHT = 46;
+const REFRESH_COLLAPSE_DURATION = 160;
 
 // This function returns the greatest active vertical scroll offset across mobile scroll roots.
 const getScrollTop = element => Math.max(
@@ -56,6 +57,8 @@ export default {
     return {
       axis: null,
       pullDistance: 0,
+      refreshFeedbackTimer: null,
+      refreshFeedbackVisible: false,
       refreshRequested: false,
       scrollRoot: null,
       startX: 0,
@@ -84,7 +87,7 @@ export default {
     },
     // This computed label communicates the current gesture or refresh state.
     statusLabel() {
-      if (this.isRefreshActive) return 'Refreshing articles…';
+      if (this.isRefreshActive || this.refreshFeedbackVisible) return 'Refreshing articles…';
       if (this.isReady) return 'Release to refresh';
       return 'Pull to refresh';
     }
@@ -93,12 +96,17 @@ export default {
     // This watcher transfers pending ownership to the parent once refreshing starts.
     refreshing(value, previousValue) {
       if (value) {
+        clearTimeout(this.refreshFeedbackTimer);
+        this.refreshFeedbackVisible = true;
         this.refreshRequested = false;
         this.pullDistance = REFRESH_INDICATOR_HEIGHT;
         return;
       }
 
-      if (previousValue) this.resetGesture();
+      if (previousValue) {
+        this.resetGesture();
+        this.finishRefreshFeedback();
+      }
     }
   },
   // This hook attaches gesture handling to the shared mobile scroll surface.
@@ -111,6 +119,7 @@ export default {
   },
   // This hook removes every gesture listener owned by the indicator.
   beforeUnmount() {
+    clearTimeout(this.refreshFeedbackTimer);
     this.scrollRoot?.removeEventListener('touchstart', this.handleTouchStart);
     this.scrollRoot?.removeEventListener('touchmove', this.handleTouchMove);
     this.scrollRoot?.removeEventListener('touchend', this.handleTouchEnd);
@@ -118,6 +127,14 @@ export default {
     this.scrollRoot = null;
   },
   methods: {
+    // This method preserves refresh copy while the completed indicator collapses out of view.
+    finishRefreshFeedback() {
+      clearTimeout(this.refreshFeedbackTimer);
+      this.refreshFeedbackTimer = setTimeout(() => {
+        this.refreshFeedbackVisible = false;
+        this.refreshFeedbackTimer = null;
+      }, REFRESH_COLLAPSE_DURATION);
+    },
     // This method starts a single-touch pull only from article content at the top of the page.
     handleTouchStart(event) {
       const ignoredTarget = event.target?.closest?.(

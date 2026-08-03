@@ -20,7 +20,13 @@
         class="col-md-9 offset-md-3 col-sm-12"
       >
         <!-- MobileToolbar events -->
-        <app-mobile-toolbar v-if="isDesktopShell === false" @mobile="mobileClick" @forceReload="forceReload"></app-mobile-toolbar>
+        <app-mobile-toolbar
+          v-if="isDesktopShell === false"
+          :refreshing="databaseRefreshActive"
+          @mobile="mobileClick"
+          @forceReload="forceReload"
+          @refresh="refreshArticlesFromDatabase"
+        ></app-mobile-toolbar>
         <!-- Toolbar events -->
         <app-desktop-toolbar v-if="isDesktopShell === true" id="desktop-toolbar" @forceReload="forceReload"></app-desktop-toolbar>
 

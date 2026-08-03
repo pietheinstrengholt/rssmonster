@@ -107,7 +107,7 @@ Settings sections can request a wider content refresh after saving. The toolbar 
 
 The mobile toolbar uses two rows:
 
-1. A brand row with the RSSMonster logo and name, search control, and options gear.
+1. A brand row with the RSSMonster logo and name, article refresh, search control, and options gear.
 2. A compact filter row for status, smart folders, and categories.
 
 Portrait presentation slightly reduces the logo, title, controls, and filter heights to preserve reading space. The toolbar remains touch-friendly and uses ellipsis rather than allowing the brand to push actions off screen.
@@ -146,6 +146,10 @@ The search icon toggles a full-width field directly below the mobile toolbar. Es
 The current mobile behavior applies the shared search selection on every input change. Unlike desktop search, it does not currently debounce or validate query syntax before applying it. Enter therefore acts primarily as confirmation and dismissal rather than the first point at which the query runs.
 
 The mobile search-open state is also shared with article layout so content can adjust while the field is visible. External focus-search requests open and focus this same field.
+
+### Article refresh
+
+The refresh button runs the same database-backed article and overview refresh as the pull-down gesture. It preserves the current article content while loading, does not reload the application or crawl publisher feeds, and disables itself until the active refresh finishes.
 
 ## Mobile Options sheet
 

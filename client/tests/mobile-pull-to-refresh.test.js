@@ -85,4 +85,21 @@ describe('MobilePullToRefresh', () => {
     expect(wrapper.vm.tracking).toBe(false);
     wrapper.unmount();
   });
+
+  it('shows refresh copy for a button-triggered refresh until the indicator collapses', async () => {
+    vi.useFakeTimers();
+    const wrapper = mountPullToRefresh();
+
+    await wrapper.setProps({ refreshing: true });
+    expect(wrapper.text()).toContain('Refreshing articles…');
+    expect(wrapper.text()).not.toContain('Pull to refresh');
+
+    await wrapper.setProps({ refreshing: false });
+    expect(wrapper.text()).toContain('Refreshing articles…');
+
+    await vi.advanceTimersByTimeAsync(160);
+    expect(wrapper.text()).toContain('Pull to refresh');
+    wrapper.unmount();
+    vi.useRealTimers();
+  });
 });

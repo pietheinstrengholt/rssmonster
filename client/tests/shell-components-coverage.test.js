@@ -294,6 +294,20 @@ describe('MobileToolbar behavior coverage', () => {
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.getStatusCount()).toBe(0);
   });
+
+  it('requests a database article refresh and reflects its active state', async () => {
+    const wrapper = mountMobileToolbar();
+    const refreshButton = wrapper.get('.mobile-refresh-button');
+
+    await refreshButton.trigger('click');
+    expect(wrapper.emitted('refresh')).toHaveLength(1);
+
+    await wrapper.setProps({ refreshing: true });
+    expect(refreshButton.attributes('disabled')).toBeDefined();
+    expect(refreshButton.attributes('aria-busy')).toBe('true');
+    expect(refreshButton.attributes('aria-label')).toBe('Refreshing articles…');
+    expect(refreshButton.get('svg').classes()).toContain('bi--animation-spin');
+  });
 });
 
 describe('MobileMenuOverlay behavior coverage', () => {

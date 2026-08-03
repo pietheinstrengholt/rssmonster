@@ -16,6 +16,21 @@
         <div class="mobile-toolbar-actions">
           <button
             type="button"
+            class="mobile-toolbar-button mobile-refresh-button"
+            :title="refreshing ? 'Refreshing articles…' : 'Refresh articles'"
+            :aria-label="refreshing ? 'Refreshing articles…' : 'Refresh articles'"
+            :aria-busy="refreshing"
+            :disabled="refreshing"
+            @click="$emit('refresh')"
+          >
+            <BootstrapIcon
+              icon="arrow-clockwise"
+              :animation="refreshing ? 'spin' : ''"
+              aria-hidden="true"
+            />
+          </button>
+          <button
+            type="button"
             class="mobile-toolbar-button mobile-search-toggle"
             title="Search"
             aria-label="Search articles"
@@ -202,6 +217,11 @@
 .mobile-toolbar-button:hover,
 .mobile-toolbar-button:focus-visible {
   background: var(--bg-muted);
+}
+
+.mobile-toolbar-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
 .mobile-toolbar-filters {
@@ -530,7 +550,13 @@ const statusCountMap = {
 };
 
 export default {
-  emits: ['mobile', 'forceReload'],
+  props: {
+    refreshing: {
+      type: Boolean,
+      default: false
+    }
+  },
+  emits: ['mobile', 'forceReload', 'refresh'],
   data() {
     return {
       showSearch: false
