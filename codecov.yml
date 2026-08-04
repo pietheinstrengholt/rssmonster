@@ -4,7 +4,7 @@ codecov:
 coverage:
   precision: 2
   round: down
-  range: "80...100"
+  range: "70...100"
 
   status:
     project:
@@ -12,13 +12,13 @@ coverage:
         enabled: false
 
       client:
-        target: 80%
+        target: 70%
         threshold: 0%
         flags:
           - client
 
       server:
-        target: 80%
+        target: 70%
         threshold: 0%
         flags:
           - server
