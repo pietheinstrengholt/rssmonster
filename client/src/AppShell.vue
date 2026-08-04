@@ -780,7 +780,6 @@ export default {
       try {
         const selection = { ...this.selectionStore.currentSelection };
         const articleReloads = reloadableFeeds.map(ref => ref.fetchArticleIds(selection));
-        this.scrollArticlePaneToTop();
         const reloadResults = await Promise.allSettled([
           this.overviewStore.fetchOverview({ forceUpdate: true }),
           ...articleReloads
@@ -789,22 +788,12 @@ export default {
           result => result.status === 'rejected' || result.value === false
         );
         if (failedReload) throw failedReload.reason || new Error('Article list reload failed');
-        await this.$nextTick();
-        this.scrollArticlePaneToTop();
       } catch (error) {
         console.error('Error reloading the article list from the database:', error);
         this.showActionError('Could not reload articles. Please try again.');
       } finally {
         this.articleListReloadActive = false;
       }
-    },
-    // This function returns the refreshed article collection to its first item across scroll layouts.
-    scrollArticlePaneToTop() {
-      const articlePane = document.getElementById('home');
-      if (articlePane) articlePane.scrollTop = 0;
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      window.scrollTo({ top: 0, behavior: 'auto' });
     },
     // This function starts feed refresh immediately or loads its Sidebar controller on mobile.
     refreshFeeds() {

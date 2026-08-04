@@ -53,13 +53,14 @@ const createLoadingContext = (dataStore = {
     ...stores,
     ...ArticleFeed.data(),
     fetchCount: 20,
-    $nextTick: callback => callback(),
+    $nextTick: callback => callback ? callback() : Promise.resolve(),
     observeArticles: vi.fn(),
     observeLoadMoreSentinel: vi.fn()
   };
 
   context.resetPool = () => ArticleFeed.methods.resetPool.call(context);
   context.getContent = requestId => ArticleFeed.methods.getContent.call(context, requestId);
+  context.scrollArticleListToTop = vi.fn();
   context.updateArticleStatusLocal = article =>
     ArticleFeed.methods.updateArticleStatusLocal.call(context, article);
 
@@ -204,7 +205,29 @@ describe('ArticleFeed loading races', () => {
 
     expect(context.container).toEqual([2, 3]);
     expect(context.pool).toEqual(new Set());
+    expect(context.scrollArticleListToTop).toHaveBeenCalledTimes(2);
     expect(markArticlesAsRead).not.toHaveBeenCalled();
+  });
+
+  it('resets both article-pane and page scroll roots for a rebuilt collection', () => {
+    document.body.innerHTML = '<main id="home"></main>';
+    const articlePane = document.getElementById('home');
+    articlePane.scrollTop = 240;
+    document.documentElement.scrollTop = 240;
+    document.body.scrollTop = 240;
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 240 });
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    ArticleFeed.methods.scrollArticleListToTop();
+
+    expect(articlePane.scrollTop).toBe(0);
+    expect(document.documentElement.scrollTop).toBe(0);
+    expect(document.body.scrollTop).toBe(0);
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
+
+    scrollTo.mockRestore();
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
+    document.body.innerHTML = '';
   });
 
   it('does not append stale detail responses after the selection changes', async () => {

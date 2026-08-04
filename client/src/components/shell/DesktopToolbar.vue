@@ -93,6 +93,7 @@
   box-sizing: border-box;
   border-bottom: 1px solid var(--color-transparent);
   border-color: var(--border-input);
+  top: 0;
   right: 0;
   overflow: visible;
   background-color: var(--desktop-toolbar-background);

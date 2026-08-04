@@ -265,11 +265,9 @@ describe('AppShell connectivity recovery', () => {
     };
     context.$refs.articleFeed = articleFeed;
     context.overviewStore.fetchOverview.mockResolvedValue(true);
-    context.scrollArticlePaneToTop = vi.fn();
 
     await AppShell.methods.reloadArticleListFromDatabase.call(context);
 
-    expect(context.scrollArticlePaneToTop).toHaveBeenCalledTimes(2);
     expect(context.overviewStore.fetchOverview).toHaveBeenCalledWith({ forceUpdate: true });
     expect(articleFeed.fetchArticleIds)
       .toHaveBeenCalledWith(context.selectionStore.currentSelection);

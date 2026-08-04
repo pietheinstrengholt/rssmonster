@@ -153,6 +153,8 @@ The refresh button rebuilds the complete article list from a snapshot of the cur
 
 This differs intentionally from the pull-down gesture, which preserves rendered articles until replacement data is ready and shows its own compact refresh indicator.
 
+Every complete article-list rebuild resets the shared responsive scroll roots before loading and again after the first page renders. Status, category, smart-folder, sort, grouping, and other selection changes therefore begin at the first article beneath the mobile toolbar instead of retaining the previous collection's viewport offset.
+
 ## Mobile Options sheet
 
 The mobile Options sheet replaces the dense desktop combination of sidebar management and toolbar actions. It appears as a bottom sheet over a dimmed backdrop, accounts for device safe areas, contains its own scrolling region, and locks background body scrolling while open.

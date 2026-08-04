@@ -30,6 +30,7 @@ export const articleFeedPaginationMethods = {
 
     try {
       await this.resetPool();
+      this.scrollArticleListToTop();
       this.hasLoadedContent = false; // Show spinner immediately
       this.isLoading = true;
 
@@ -56,6 +57,9 @@ export const articleFeedPaginationMethods = {
         this.hasLoadedContent = true;
         this.$nextTick(() => this.observeLoadMoreSentinel());
       }
+      await this.$nextTick();
+      if (requestId !== this.activeRequestId) return null;
+      this.scrollArticleListToTop();
       return true;
     } catch (error) {
       if (requestId !== this.activeRequestId) return null;
@@ -68,6 +72,16 @@ export const articleFeedPaginationMethods = {
         this.isLoading = false;
       }
     }
+  },
+
+  // Returns every fully rebuilt article collection to the beginning across responsive scroll roots.
+  scrollArticleListToTop() {
+    const windowWasScrolled = window.scrollY > 0;
+    const articlePane = document.getElementById('home');
+    if (articlePane) articlePane.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    if (windowWasScrolled) window.scrollTo({ top: 0, behavior: 'auto' });
   },
 
   // Refreshes the active selection while preserving rendered articles until replacement data is ready.
