@@ -612,19 +612,27 @@ export default {
     return {
       showSearch: false,
       toolbarHeight: 0,
+      toolbarMeasurementFrameId: null,
       toolbarResizeObserver: null
     };
   },
   mounted() {
     window.addEventListener('resize', this.handleResize);
+    window.addEventListener('orientationchange', this.handleResize);
     window.addEventListener('rssmonster:focus-search', this.focusSearchInput);
     this.$nextTick(this.setupToolbarMeasurement);
   },
   unmounted() {
     window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener('orientationchange', this.handleResize);
     window.removeEventListener('rssmonster:focus-search', this.focusSearchInput);
+    if (this.toolbarMeasurementFrameId !== null) {
+      window.cancelAnimationFrame?.(this.toolbarMeasurementFrameId);
+      this.toolbarMeasurementFrameId = null;
+    }
     this.toolbarResizeObserver?.disconnect();
     this.toolbarResizeObserver = null;
+    this.uiStore.setMobileSearchOpen(false);
   },
   methods: {
     // This function keeps the hybrid toolbar spacer equal to the rendered toolbar stack.
@@ -633,13 +641,33 @@ export default {
         this.$refs.toolbarContainer?.getBoundingClientRect().height || 0
       );
     },
+    // This function measures after rotation styles and the visual viewport have settled.
+    scheduleToolbarMeasurement() {
+      if (this.toolbarMeasurementFrameId !== null) {
+        window.cancelAnimationFrame?.(this.toolbarMeasurementFrameId);
+      }
+
+      if (typeof window.requestAnimationFrame !== 'function') {
+        this.toolbarMeasurementFrameId = null;
+        this.updateToolbarHeight();
+        return;
+      }
+
+      // Two frames avoid retaining dimensions from Safari's pre-rotation layout pass.
+      this.toolbarMeasurementFrameId = window.requestAnimationFrame(() => {
+        this.toolbarMeasurementFrameId = window.requestAnimationFrame(() => {
+          this.toolbarMeasurementFrameId = null;
+          this.updateToolbarHeight();
+        });
+      });
+    },
     // This function observes toolbar and search-panel height changes in the hybrid layout.
     setupToolbarMeasurement() {
-      this.updateToolbarHeight();
+      this.scheduleToolbarMeasurement();
       if (typeof ResizeObserver !== 'function' || !this.$refs.toolbarContainer) return;
 
       // This observer updates the spacer whenever responsive rows or search change height.
-      this.toolbarResizeObserver = new ResizeObserver(() => this.updateToolbarHeight());
+      this.toolbarResizeObserver = new ResizeObserver(() => this.scheduleToolbarMeasurement());
       this.toolbarResizeObserver.observe(this.$refs.toolbarContainer);
     },
     // This function emits a toolbar selection event.
@@ -648,7 +676,7 @@ export default {
     },
     // This function closes mobile search when the layout becomes wide enough.
     handleResize() {
-      this.updateToolbarHeight();
+      this.scheduleToolbarMeasurement();
       // Close search when switching from portrait to landscape
       if (this.showSearch && window.innerWidth >= MOBILE_LANDSCAPE_WIDTH) {
         this.toggleSearch();
@@ -662,13 +690,16 @@ export default {
     toggleSearch() {
       this.showSearch = !this.showSearch;
       this.uiStore.setMobileSearchOpen(this.showSearch);
-      this.$nextTick(this.updateToolbarHeight);
+      this.$nextTick(this.scheduleToolbarMeasurement);
     },
     // This function opens and focuses the mobile search input.
     focusSearchInput() {
       this.showSearch = true;
       this.uiStore.setMobileSearchOpen(true);
-      this.$nextTick(() => this.$refs.searchInput?.focus());
+      this.$nextTick(() => {
+        this.$refs.searchInput?.focus();
+        this.scheduleToolbarMeasurement();
+      });
     },
     // This function changes the grouping only when the value differs.
     setGrouping: function(value) {

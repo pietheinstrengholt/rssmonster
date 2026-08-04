@@ -269,7 +269,12 @@ describe('MobileToolbar behavior coverage', () => {
     window.innerWidth = 880;
     window.dispatchEvent(new Event('resize'));
     expect(wrapper.vm.showSearch).toBe(false);
+
+    window.dispatchEvent(new Event('rssmonster:focus-search'));
+    await wrapper.vm.$nextTick();
+    expect(stores.uiStore.mobileSearchOpen).toBe(true);
     wrapper.unmount();
+    expect(stores.uiStore.mobileSearchOpen).toBe(false);
   });
 
   it('routes grouping, sorting, menu events, and count fallbacks', async () => {

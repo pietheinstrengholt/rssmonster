@@ -461,6 +461,13 @@ export default {
   padding-top: 98px;
 }
 
+/* Lets the measured hybrid toolbar spacer account for the open search panel once. */
+@media (min-width: 768px) and (max-width: 879px) {
+  #articles.mobile-search-open {
+    padding-top: 0;
+  }
+}
+
 @media (min-width: 880px) {
   #articles.mobile-search-open {
     padding-top: 38px;
