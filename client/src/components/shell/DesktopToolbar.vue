@@ -92,7 +92,7 @@
   height: 56px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--color-transparent);
-  border-color: var(--border-input);
+  border-color: var(--border-subtle);
   top: 0;
   right: 0;
   overflow: visible;
@@ -132,7 +132,7 @@
   padding: 0 11px;
   color: var(--toolbar-text);
   background: var(--bg-input);
-  border: 1px solid var(--border-input);
+  border: 1px solid var(--border-control);
   border-radius: 8px;
   font-weight: 500;
   font-size: 14px;
@@ -193,7 +193,7 @@
 
 .toolbar-filter-button:hover {
   background-color: var(--bg-hover);
-  border-color: var(--border-subtle);
+  border-color: var(--border-strong);
 }
 
 .toolbar-filter-button:focus,
@@ -203,19 +203,19 @@
 }
 
 .toolbar-filter-button:focus-visible {
-  border-color: var(--color-primary);
+  border-color: var(--border-focus);
   box-shadow: 0 0 0 3px var(--overlay-primary-subtle);
 }
 
 .toolbar-filter-button[aria-expanded='true'] {
   background-color: var(--bg-hover);
-  border-color: var(--border-subtle);
+  border-color: var(--border-strong);
   color: var(--toolbar-text);
 }
 
 .toolbar-filter .dropdown-menu {
   padding: 6px;
-  border: 1px solid var(--border-input);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
   box-shadow: var(--shadow-modal);
 }
@@ -258,7 +258,7 @@
   right: 12px;
   width: 36px;
   height: 36px;
-  border: 1px solid var(--border-input);
+  border: 1px solid var(--border-control);
   border-radius: 999px;
   flex-shrink: 0;
   cursor: pointer;
@@ -287,7 +287,7 @@
 .toolbar-theme-menu {
   min-width: 132px;
   padding: 4px;
-  border-color: var(--border-input);
+  border-color: var(--border-default);
   border-radius: 6px;
   box-shadow: var(--shadow-modal);
 }
@@ -317,12 +317,12 @@
 :global(:root[data-theme='dark'] .toolbar-theme-button) {
   color: var(--text-inverted);
   background-color: var(--bg-control);
-  border-color: var(--border-subtle);
+  border-color: var(--border-control);
 }
 
 :global(:root[data-theme='dark'] .toolbar-theme-menu) {
   background-color: var(--bg-modal);
-  border-color: var(--border-subtle);
+  border-color: var(--border-default);
 }
 
 :global(:root[data-theme='dark'] .desktop-toolbar) {
@@ -331,7 +331,7 @@
 
 :global(:root[data-theme='dark'] .toolbar-theme-button:hover) {
   background-color: var(--toolbar-settings-hover-background-dark);
-  border-color: var(--border-color);
+  border-color: var(--border-strong);
 }
 
 :global(:root[data-theme='dark'] .toolbar-settings-button),
@@ -339,7 +339,7 @@
 :global(:root[data-theme='dark'] .toolbar-search-button) {
   color: var(--text-inverted);
   background-color: var(--bg-control);
-  border-color: var(--border-subtle);
+  border-color: var(--border-control);
 }
 
 :global(:root[data-theme='dark'] .toolbar-settings-button:hover),
@@ -350,18 +350,22 @@
 
 :global(:root[data-theme='dark'] .toolbar-settings-button:hover),
 :global(:root[data-theme='dark'] .toolbar-search-button:hover) {
-  border-color: var(--border-color);
+  border-color: var(--border-strong);
 }
 
 :global(:root[data-theme='dark'] .toolbar-search) {
   background-color: var(--bg-control);
-  border-color: var(--toolbar-search-border-dark);
+  border-color: var(--border-control);
 }
 
-:global(:root[data-theme='dark'] .toolbar-search:hover),
+:global(:root[data-theme='dark'] .toolbar-search:hover) {
+  background-color: var(--toolbar-settings-hover-background-dark);
+  border-color: var(--border-strong);
+}
+
 :global(:root[data-theme='dark'] .toolbar-search:focus-within) {
   background-color: var(--toolbar-settings-hover-background-dark);
-  border-color: var(--toolbar-search-border-dark);
+  border-color: var(--border-focus);
 }
 
 :global(:root[data-theme='dark'] .toolbar-search-input) {
@@ -381,11 +385,11 @@
 :global(:root[data-theme='dark'] .toolbar-filter-button:hover),
 :global(:root[data-theme='dark'] .toolbar-filter-button[aria-expanded='true']) {
   background-color: var(--toolbar-settings-hover-background-dark);
-  border-color: var(--border-color);
+  border-color: var(--border-strong);
 }
 
 :global(:root[data-theme='dark'] .toolbar-filter-button:focus-visible) {
-  border-color: var(--color-primary);
+  border-color: var(--border-focus);
   box-shadow: 0 0 0 3px var(--overlay-primary-strong);
 }
 
@@ -400,7 +404,7 @@
 
 :global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu.show) {
   background-color: var(--bg-modal);
-  border-color: var(--border-subtle);
+  border-color: var(--border-default);
 }
 
 :global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu .dropdown-item) {
@@ -417,7 +421,7 @@
 .toolbar-theme-button:hover,
 .toolbar-search-button:hover {
   background-color: var(--bg-hover);
-  border-color: var(--border-subtle);
+  border-color: var(--border-strong);
 }
 
 .toolbar-settings-button svg,
@@ -432,7 +436,7 @@
 .toolbar-chat-button {
   height: 36px;
   padding: 0 18px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-control);
   border-radius: 8px;
   background: var(--bg-input);
   font-weight: 600;
@@ -445,6 +449,10 @@
   color: var(--toolbar-text);
   font-size: 14px;
   flex-shrink: 0;
+}
+
+.toolbar-chat-button svg {
+  color: var(--text-muted);
 }
 
 .toolbar-chat-button:hover {
@@ -462,14 +470,18 @@
   margin: 0 130px 0 0;
   padding: 0 12px;
   background-color: var(--bg-input);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-control);
   border-radius: 8px;
 }
 
-.toolbar-search:hover,
+.toolbar-search:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
 .toolbar-search:focus-within {
   background-color: var(--bg-hover);
-  border-color: var(--border-subtle);
+  border-color: var(--border-focus);
 }
 
 .toolbar-search-icon {
@@ -518,7 +530,7 @@
 .toolbar-search-input.toolbar-search-input-invalid {
   background-color: var(--bg-danger-subtle);
   color: var(--text-danger);
-  border-color: var(--border-danger-subtle);
+  border-color: var(--border-danger);
 }
 
 .toolbar-search-input.toolbar-search-input-invalid::placeholder {
@@ -651,12 +663,12 @@
   .toolbar-chat-button {
     color: var(--text-inverted);
     background: var(--bg-control);
-    border-color: var(--border-color);
+    border-color: var(--border-control);
   }
 
   .dropdown-menu {
     background-color: var(--bg-modal);
-    border-color: var(--border-color);
+    border-color: var(--border-default);
   }
 
   .dropdown-item {
@@ -676,17 +688,17 @@
   .toolbar-filter-button {
     color: var(--text-inverted);
     background-color: var(--bg-control);
-    border-color: var(--border-subtle);
+    border-color: var(--border-control);
   }
 
   .toolbar-filter-button:hover,
   .toolbar-filter-button[aria-expanded='true'] {
     background-color: var(--toolbar-settings-hover-background-dark);
-    border-color: var(--border-color);
+    border-color: var(--border-strong);
   }
 
   .toolbar-filter-button:focus-visible {
-    border-color: var(--color-primary);
+    border-color: var(--border-focus);
     box-shadow: 0 0 0 3px var(--overlay-primary-strong);
   }
 
@@ -700,7 +712,7 @@
   .toolbar-search-button {
     color: var(--text-inverted);
     background-color: var(--bg-control);
-    border-color: var(--border-color);
+    border-color: var(--border-control);
   }
 
   .toolbar-settings-button:hover,
@@ -708,7 +720,7 @@
   .toolbar-chat-button:hover,
   .toolbar-search-button:hover {
     background-color: var(--toolbar-settings-hover-background-dark);
-    border-color: var(--border-color);
+    border-color: var(--border-strong);
   }
 
   .dropdown-item {
@@ -725,13 +737,17 @@
 
   .toolbar-search {
     background-color: var(--bg-control);
-    border-color: var(--toolbar-search-border-dark);
+    border-color: var(--border-control);
   }
 
-  .toolbar-search:hover,
+  .toolbar-search:hover {
+    background-color: var(--toolbar-settings-hover-background-dark);
+    border-color: var(--border-strong);
+  }
+
   .toolbar-search:focus-within {
     background-color: var(--toolbar-settings-hover-background-dark);
-    border-color: var(--toolbar-search-border-dark);
+    border-color: var(--border-focus);
   }
 
   .toolbar-search-input {
@@ -749,7 +765,7 @@
 
   .toolbar-search.toolbar-search-invalid .toolbar-search-input.toolbar-search-input-invalid {
     color: var(--text-danger);
-    border-color: var(--border-danger-subtle);
+    border-color: var(--border-danger);
   }
 
   .toolbar-search.toolbar-search-invalid .toolbar-search-input.toolbar-search-input-invalid::placeholder {
@@ -763,14 +779,14 @@
 :global(:root[data-theme='light'] .toolbar-search-button) {
   color: var(--toolbar-text);
   background-color: var(--bg-card);
-  border-color: var(--border-input);
+  border-color: var(--border-control);
 }
 
 :global(:root[data-theme='light'] .toolbar-settings-button:hover),
 :global(:root[data-theme='light'] .toolbar-theme-button:hover),
 :global(:root[data-theme='light'] .toolbar-search-button:hover) {
   background-color: var(--bg-hover);
-  border-color: var(--border-subtle);
+  border-color: var(--border-strong);
 }
 </style>
 

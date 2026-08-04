@@ -329,7 +329,7 @@ export default {
 
 .auth-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-default);
   border-radius: 16px;
   box-shadow: 0 24px 80px var(--shadow-card-subtle-color);
   max-width: 680px;
@@ -392,7 +392,7 @@ export default {
 
 .auth-page .form-outline .form-control {
   background-color: var(--bg-input);
-  border: 1px solid var(--border-input);
+  border: 1px solid var(--border-control);
   border-radius: 8px;
   color: var(--text-primary);
   min-height: 44px;
@@ -547,7 +547,7 @@ div.form-group.row {
 
 :root[data-theme='dark'] .auth-card {
   background: var(--bg-card);
-  border-color: var(--border-color);
+  border-color: var(--border-default);
   box-shadow: 0 24px 80px var(--shadow-settings-dialog-dark-color);
 }
 
@@ -573,7 +573,7 @@ div.form-group.row {
 
 :root[data-theme='dark'] .auth-page .form-outline .form-control {
   background-color: var(--bg-input);
-  border-color: var(--border-input);
+  border-color: var(--border-control);
   color: var(--text-primary);
 }
 
@@ -599,7 +599,7 @@ div.form-group.row {
 
 :root[data-theme='dark'] .auth-message {
   background: var(--bg-control);
-  border-color: var(--border-color);
+  border-color: var(--border-default);
   color: var(--text-secondary);
 }
 
@@ -609,7 +609,7 @@ div.form-group.row {
 
 :root[data-theme='dark'] .auth-divider::before,
 :root[data-theme='dark'] .auth-divider::after {
-  background: var(--border-color);
+  background: var(--border-subtle);
 }
 
 :root[data-theme='dark'] .auth-register a {

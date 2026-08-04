@@ -107,7 +107,7 @@ export default {
   padding: 8px;
   color: var(--text-secondary);
   background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-control);
   border-radius: 4px;
 }
 
@@ -119,7 +119,7 @@ export default {
 .category-icon-picker__option--selected {
   color: var(--color-primary);
   background: var(--color-primary-soft);
-  border-color: var(--color-primary);
+  border-color: var(--border-selected);
 }
 
 .category-icon-picker__option:focus-visible {
@@ -140,7 +140,7 @@ export default {
 :global(:root[data-theme='dark']) .category-icon-picker__option {
   color: var(--text-muted);
   background: var(--bg-control);
-  border-color: var(--border-color);
+  border-color: var(--border-control);
 }
 
 :global(:root[data-theme='dark']) .category-icon-picker__option:hover:not(:disabled) {
@@ -151,6 +151,6 @@ export default {
 :global(:root[data-theme='dark']) .category-icon-picker__option--selected {
   color: var(--text-inverted);
   background: var(--bg-selected);
-  border-color: var(--bg-selected);
+  border-color: var(--border-selected);
 }
 </style>

@@ -216,7 +216,7 @@
     width: 100%;
     height: 2.5rem;
     padding: 0 0.75rem;
-    border: 1px solid var(--border-input);
+    border: 1px solid var(--border-control);
     border-radius: 0.375rem;
     background: var(--bg-input);
     color: var(--text-primary);
@@ -230,7 +230,7 @@
 .feed-form-content input:focus,
 .feed-form-content select:focus {
     outline: none;
-    border-color: var(--color-primary);
+    border-color: var(--border-focus);
     box-shadow: 0 0 0 4px var(--overlay-primary-subtle);
 }
 
@@ -335,7 +335,7 @@
 :global(:root[data-theme='dark']) .feed-form-content input,
 :global(:root[data-theme='dark']) .feed-form-content select {
     background: var(--bg-control);
-    border-color: var(--border-input);
+    border-color: var(--border-control);
     color: var(--text-primary);
 }
 

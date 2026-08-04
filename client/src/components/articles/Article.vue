@@ -561,12 +561,12 @@ export default {
 }
 
 :root[data-theme='dark'] .article-divider {
-  background-color: var(--border-color);
+  background-color: var(--border-subtle);
 }
 
 :root[data-theme='dark'] .article-card .article-body {
   background-color: var(--dark-page-surface);
-  border-bottom-color: var(--border-color);
+  border-bottom-color: var(--border-subtle);
 }
 
 :root[data-theme='dark'] .article-card .article-body h5 a {
@@ -815,7 +815,7 @@ export default {
   display: inline-flex;
   align-items: center;
   background-color: var(--color-transparent);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-default);
   color: var(--text-secondary);
   padding: 3px 8px;
   border-radius: 6px;
@@ -1153,7 +1153,7 @@ span.similar-badge {
   grid-template-columns: 18px 24px minmax(0, 1fr) auto;
   column-gap: 12px;
   align-items: center;
-  border-bottom: 1px solid var(--article-border, var(--border-subtle, #E5E7EB));
+  border-bottom: 1px solid var(--article-border, var(--border-subtle));
   background: var(--bg-page);
   font-family: var(--font-family);
 }
@@ -1373,7 +1373,7 @@ span.similar-badge {
   margin: 0;
   padding: 10px 16px 12px 70px;
   background: var(--bg-page);
-  border-bottom: 1px solid var(--article-border, var(--border-subtle, #E5E7EB));
+  border-bottom: 1px solid var(--article-border, var(--border-subtle));
 }
 
 .article-list-card > .article-media {
@@ -1485,7 +1485,7 @@ span.similar-badge {
     color: var(--article-content-text);
     background: var(--dark-page-surface);
     border-color: var(--dark-page-surface);
-    border-bottom-color: var(--border-color);
+    border-bottom-color: var(--border-subtle);
     background-color: var(--dark-page-surface);
   }
 
@@ -1541,7 +1541,7 @@ span.similar-badge {
 
   .article-card .dropdown-menu {
     background-color: var(--article-dropdown-background-dark);
-    border-color: var(--bg-modal);
+    border-color: var(--border-default);
   }
 
   .article-card .dropdown-item {
@@ -1617,7 +1617,7 @@ span.similar-badge {
   .article-list-card,
   .article-list-row {
     background: var(--dark-bg-page, var(--dark-page-surface));
-    border-bottom-color: var(--dark-border, var(--border-color));
+    border-bottom-color: var(--border-subtle);
   }
 
   .article-list-row:hover {
@@ -1638,7 +1638,7 @@ span.similar-badge {
   .article-list-row.hot,
   .article-list-row.favorited {
     background-color: var(--dark-bg-page, var(--dark-page-surface));
-    border-color: var(--dark-border, var(--border-color));
+    border-color: var(--border-default);
   }
 
   .article-list-card.article-list-card-selected {
@@ -1679,7 +1679,7 @@ span.similar-badge {
 
   .article-list-card .article-content-wrapper {
     background: var(--dark-bg-page, var(--dark-page-surface));
-    border-bottom-color: var(--dark-border, var(--border-color));
+    border-bottom-color: var(--border-subtle);
   }
 
   .article-list-card > .article-media {

@@ -41,7 +41,7 @@ export default {
 .article-refresh-state {
   align-items: center;
   background: var(--color-primary-soft);
-  border: 1px solid var(--color-primary);
+  border: 1px solid var(--border-info);
   border-radius: 12px;
   box-sizing: border-box;
   color: var(--text-primary);
@@ -60,7 +60,7 @@ export default {
 
 .article-refresh-state:hover {
   background: var(--bg-selected);
-  border-color: var(--color-primary-hover);
+  border-color: var(--border-info-strong);
 }
 
 .article-refresh-state:focus-visible {
@@ -114,12 +114,12 @@ export default {
 
 :global(:root[data-theme='dark']) .article-refresh-state {
   background: var(--color-primary-surface-dark);
-  border-color: var(--color-primary-border-dark);
+  border-color: var(--border-info);
 }
 
 :global(:root[data-theme='dark']) .article-refresh-state:hover {
   background: var(--bg-hover);
-  border-color: var(--color-primary-icon-dark);
+  border-color: var(--border-info-strong);
 }
 
 :global(:root[data-theme='dark']) .article-refresh-state-title {

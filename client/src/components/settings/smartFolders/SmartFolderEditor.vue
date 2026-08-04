@@ -459,7 +459,7 @@ export default {
   gap: 12px;
   min-width: 0;
   padding: 16px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
   background: var(--bg-primary);
 }
@@ -532,7 +532,7 @@ export default {
   gap: 12px;
   margin-top: 16px;
   padding: 14px 16px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
   background: var(--bg-primary);
 }
@@ -577,12 +577,12 @@ export default {
 :global(:root[data-theme='dark']) .smart-folder-panel,
 :global(:root[data-theme='dark']) .smart-folder-generated-query {
   background: var(--bg-modal);
-  border-color: var(--border-color);
+  border-color: var(--border-default);
 }
 
 :global(:root[data-theme='dark']) .smart-folder-config {
   background: var(--bg-control);
-  border-color: var(--border-color);
+  border-color: var(--border-default);
 }
 
 @media (max-width: 1100px) {

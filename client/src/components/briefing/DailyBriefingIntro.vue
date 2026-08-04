@@ -286,7 +286,7 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .daily-briefing-intro::after) {
-  background-color: var(--briefing-intro-border, #2a3342);
+  background-color: var(--briefing-intro-border);
 }
 
 :global(:root[data-theme='dark'] .briefing-morning-summary) {

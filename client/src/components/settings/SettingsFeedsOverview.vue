@@ -190,7 +190,7 @@
   min-height: 86px;
   padding: 18px;
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-default);
   border-radius: 14px;
 }
 
@@ -251,7 +251,7 @@
 .feeds-status-filter {
   height: 42px;
   padding: 0 16px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-control);
   border-radius: 10px;
   background: var(--bg-card);
   color: var(--text-secondary);
@@ -268,7 +268,7 @@
 
 .feeds-toolbar-button:hover:not(:disabled) {
   background: var(--bg-page);
-  border-color: var(--border-color);
+  border-color: var(--border-strong);
 }
 
 .feeds-toolbar-button:disabled {
@@ -283,14 +283,14 @@
   align-items: center;
   gap: 8px;
   padding: 0 14px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-control);
   border-radius: 10px;
   background: var(--bg-card);
   color: var(--text-muted);
 }
 
 .feeds-search:focus-within {
-  border-color: var(--settings-orange-border);
+  border-color: var(--border-focus);
   box-shadow: 0 0 0 3px var(--shadow-warning-focus-color);
 }
 
@@ -306,7 +306,7 @@
 .feeds-table-card {
   overflow: hidden;
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
 }
 
@@ -352,7 +352,7 @@
 .feeds-table td {
   height: 58px;
   padding: 10px 14px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-subtle);
   vertical-align: middle;
   white-space: nowrap;
 }
@@ -404,7 +404,7 @@
   height: 3px;
   margin-top: 4px;
   overflow: hidden;
-  background: var(--border-color);
+  background: var(--bg-meter-track);
   border-radius: 999px;
 }
 
@@ -479,10 +479,10 @@
 :global(:root[data-theme='dark']) .feeds-toolbar-button,
 :global(:root[data-theme='dark']) .feeds-status-filter,
 :global(:root[data-theme='dark']) .feeds-search,
-:global(:root[data-theme='dark']) .feeds-table-card { background: var(--bg-modal); border-color: var(--border-color); color: var(--text-secondary); }
+:global(:root[data-theme='dark']) .feeds-table-card { background: var(--bg-modal); border-color: var(--border-default); color: var(--text-secondary); }
 :global(:root[data-theme='dark']) .feeds-search input { background: var(--color-transparent); color: var(--text-inverted); }
 :global(:root[data-theme='dark']) .feeds-table th { background: var(--bg-control); color: var(--text-secondary); }
-:global(:root[data-theme='dark']) .feeds-table td { border-color: var(--border-color); }
+:global(:root[data-theme='dark']) .feeds-table td { border-color: var(--border-subtle); }
 :global(:root[data-theme='dark']) .feeds-table tbody tr:hover { background: var(--bg-control); }
 
 :global(:root[data-theme='dark']) .feeds-overview,
@@ -501,7 +501,7 @@
 :global(:root[data-theme='dark']) .feeds-status-filter,
 :global(:root[data-theme='dark']) .feeds-search {
   background-color: var(--bg-modal) !important;
-  border-color: var(--border-color) !important;
+  border-color: var(--border-default) !important;
 }
 
 :global(:root[data-theme='dark']) .feeds-table th {
@@ -544,10 +544,10 @@
 :root[data-theme="dark"] .feeds-overview .feeds-table tbody tr,
 :root[data-theme="dark"] .feeds-overview .feeds-toolbar-button,
 :root[data-theme="dark"] .feeds-overview .feeds-status-filter,
-:root[data-theme="dark"] .feeds-overview .feeds-search { background: var(--bg-modal) !important; border-color: var(--border-color) !important; }
+:root[data-theme="dark"] .feeds-overview .feeds-search { background: var(--bg-modal) !important; border-color: var(--border-control) !important; }
 
 :root[data-theme="dark"] .feeds-overview .feeds-table th { background: var(--bg-control) !important; color: var(--text-secondary) !important; }
-:root[data-theme="dark"] .feeds-overview .feeds-table td { border-color: var(--border-color) !important; }
+:root[data-theme="dark"] .feeds-overview .feeds-table td { border-color: var(--border-subtle) !important; }
 :root[data-theme="dark"] .feeds-overview .feeds-header h3,
 :root[data-theme="dark"] .feeds-overview .feeds-stat-value,
 :root[data-theme="dark"] .feeds-overview .feeds-toolbar-button,

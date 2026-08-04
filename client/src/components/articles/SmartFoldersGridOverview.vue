@@ -115,7 +115,7 @@ export default {
 .smart-folder-card {
   align-items: flex-start;
   background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   color: var(--text-primary);
   cursor: pointer;
@@ -132,13 +132,13 @@ export default {
 }
 
 .smart-folder-card:hover {
-  border-color: var(--color-primary);
+  border-color: var(--border-strong);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
   transform: translateY(-1px);
 }
 
 .smart-folder-card:focus-visible {
-  border-color: var(--color-primary);
+  border-color: var(--border-focus);
   box-shadow: 0 0 0 4px var(--overlay-primary-subtle);
   outline: none;
 }
@@ -180,7 +180,7 @@ export default {
 
 .smart-folder-grid-empty {
   background: var(--bg-card);
-  border: 1px dashed var(--border-subtle);
+  border: 1px dashed var(--border-default);
   border-radius: 8px;
   color: var(--text-primary);
   display: grid;
@@ -263,7 +263,7 @@ export default {
 }
 
 :global(:root[data-theme='dark']) .smart-folder-card:hover {
-  border-color: var(--color-link);
+  border-color: var(--border-strong);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
 }
 

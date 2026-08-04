@@ -230,7 +230,7 @@ export default {
 :global(:root[data-theme='dark'] .sidebar-button.sidebar-bottom-action-button) {
   color: var(--toolbar-search-text-dark) !important;
   background-color: var(--toolbar-search-background-dark) !important;
-  border-color: var(--toolbar-search-border-dark) !important;
+  border-color: var(--border-control) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-button.sidebar-bottom-action-button:hover) {

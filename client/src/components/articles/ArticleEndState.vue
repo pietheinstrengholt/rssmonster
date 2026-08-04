@@ -58,7 +58,7 @@ export default {
 .article-end-state {
   animation: articleEndStateIn 0.18s ease-out;
   background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 14px;
   box-shadow: 0 10px 24px var(--shadow-card-subtle-color);
   box-sizing: border-box;
@@ -133,7 +133,7 @@ export default {
 
 .article-end-state-secondary {
   background: var(--bg-card);
-  border: 1px solid var(--badge-similar-bg);
+  border: 1px solid var(--border-control);
   color: var(--text-secondary);
   font-weight: 600;
 }
@@ -193,7 +193,7 @@ export default {
 
 :global(:root[data-theme='dark']) .article-end-state {
   background: var(--dark-bg-card, var(--bg-card));
-  border-color: var(--dark-border, var(--border-color));
+  border-color: var(--border-default);
   box-shadow: 0 14px 28px var(--shadow-settings-dialog-color);
 }
 
@@ -207,13 +207,13 @@ export default {
 
 :global(:root[data-theme='dark']) .article-end-state-secondary {
   background: var(--dark-bg-card, var(--bg-card));
-  border-color: var(--dark-border, var(--border-color));
+  border-color: var(--border-default);
   color: var(--dark-text-meta, var(--text-secondary));
 }
 
 :global(:root[data-theme='dark']) .article-end-state-secondary:hover {
   background: var(--dark-bg-toolbar, var(--bg-muted));
-  border-color: var(--color-link-hover);
+  border-color: var(--border-strong);
   color: var(--dark-text-primary, var(--text-primary));
 }
 </style>

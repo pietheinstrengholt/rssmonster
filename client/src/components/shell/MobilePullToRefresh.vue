@@ -250,7 +250,7 @@ export default {
 
 .mobile-pull-to-refresh__spinner {
   animation: mobile-pull-to-refresh-spin 700ms linear infinite;
-  border: 2px solid var(--border-color);
+  border: 2px solid var(--border-default);
   border-radius: 50%;
   border-top-color: var(--color-warning);
   height: 16px;

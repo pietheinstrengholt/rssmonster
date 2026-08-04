@@ -478,7 +478,7 @@ export default {
 .feed-controls-panel {
   margin: 1rem 0;
   padding: 1rem;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 0.5rem;
   background: var(--bg-muted);
 }

@@ -101,7 +101,7 @@
 .official-sources-header,
 .official-sources-list {
   background: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
 }
 
@@ -171,7 +171,7 @@
   gap: 8px;
   padding: 0 13px;
   background: var(--official-sources-add-bg, var(--settings-orange-text));
-  border: 1px solid var(--official-sources-add-bg, var(--settings-orange-text));
+  border: 1px solid var(--official-sources-add-bg, var(--border-warning));
   color: var(--text-inverted);
   font-size: 14px;
 }
@@ -272,13 +272,13 @@
 :global(:root[data-theme='dark'] .official-sources-header),
 :global(:root[data-theme='dark'] .official-sources-list) {
   background: var(--bg-modal);
-  border-color: var(--border-color);
+  border-color: var(--border-default);
 }
 
 :global(:root[data-theme='dark']) .official-sources-list-heading,
 :global(:root[data-theme='dark']) .official-sources-table th,
 :global(:root[data-theme='dark']) .official-sources-table td {
-  border-color: var(--border-color);
+  border-color: var(--border-default);
 }
 
 :global(:root[data-theme='dark']) .official-sources-add-button {

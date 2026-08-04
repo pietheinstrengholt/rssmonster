@@ -154,7 +154,7 @@ export default {
 :global(:root[data-theme='dark'] .briefing-context) {
   color: var(--briefing-supporting-text, #9ca3af);
   background-color: var(--briefing-context-surface, #222836);
-  border-color: var(--briefing-context-border, #2a3342);
+  border-color: var(--briefing-context-border);
 }
 
 :global(:root[data-theme='dark'] .briefing-context strong) {
@@ -172,6 +172,6 @@ export default {
 
 :global(:root[data-theme='dark'] .briefing-tune-action:focus-visible) {
   color: var(--color-link-hover, #93c5fd);
-  outline-color: var(--border-focus, #60a5fa);
+  outline-color: var(--border-focus);
 }
 </style>

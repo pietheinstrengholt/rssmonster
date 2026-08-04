@@ -116,7 +116,7 @@ export default {
   display: block;
   overflow: hidden;
   aspect-ratio: 16 / 9;
-  border: 1px solid rgba(17, 24, 39, 0.14);
+  border: 1px solid var(--border-media-overlay);
   border-radius: 8px;
   background: var(--article-media-surface);
   color: var(--text-inverted);
@@ -184,7 +184,7 @@ export default {
 }
 
 .article-media-link:focus-visible {
-  outline: 3px solid var(--border-focus, #2563eb);
+  outline: 3px solid var(--border-focus);
   outline-offset: 2px;
 }
 
@@ -201,11 +201,11 @@ export default {
 
 @media (prefers-color-scheme: dark) {
   .article-media-link {
-    border-color: rgba(255, 255, 255, 0.18);
+    border-color: var(--border-media-overlay);
   }
 }
 
 :global(:root[data-theme='dark']) .article-media-link {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: var(--border-media-overlay);
 }
 </style>

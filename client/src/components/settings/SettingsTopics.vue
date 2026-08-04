@@ -264,7 +264,7 @@
   gap: 16px;
   padding: 12px;
   background: var(--settings-neutral-bg);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
 }
 
@@ -280,7 +280,7 @@
 
 :global(:root[data-theme='dark']) .settings-object-row {
   background: var(--bg-control);
-  border-color: var(--border-color);
+  border-color: var(--border-default);
 }
 
 @media (max-width: 900px) {

@@ -147,7 +147,7 @@
 
 .options-sheet {
   background: var(--options-sheet-background, var(--bg-card));
-  border: 1px solid var(--options-border, var(--border-color));
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   box-shadow: var(--shadow-modal);
   box-sizing: border-box;
@@ -161,7 +161,7 @@
 
 .options-header {
   align-items: flex-start;
-  border-bottom: 1px solid var(--options-border, var(--border-subtle));
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   gap: 16px;
   justify-content: space-between;
@@ -253,7 +253,7 @@
 }
 
 .options-section + .options-section {
-  border-top: 1px solid var(--options-row-border, var(--border-subtle));
+  border-top: 1px solid var(--border-subtle);
 }
 
 .options-section-header {
@@ -298,7 +298,7 @@
 
 .options-row {
   align-items: center;
-  border-bottom: 1px solid var(--options-row-border, var(--bg-muted));
+  border-bottom: 1px solid var(--border-subtle);
   box-sizing: border-box;
   color: var(--options-text, var(--text-primary));
   cursor: pointer;
@@ -324,7 +324,7 @@
 }
 
 .options-row::after {
-  border: 2px solid var(--options-indicator-border, var(--mobile-option-indicator-border));
+  border: 2px solid var(--border-control);
   border-radius: 50%;
   content: "";
   height: 18px;
@@ -334,7 +334,7 @@
 
 .options-row.selected {
   background: var(--options-selected-background, var(--color-primary-soft));
-  border: 1px solid var(--options-selected-border, var(--color-primary));
+  border: 1px solid var(--border-selected);
   border-radius: 6px;
   color: var(--options-selected-text, var(--color-primary-strong));
   font-weight: 600;
@@ -343,13 +343,13 @@
 
 .options-row.selected::after {
   background: var(--options-selected-indicator, var(--color-primary));
-  border-color: var(--options-selected-indicator, var(--color-primary));
+  border-color: var(--border-selected);
   box-shadow: inset 0 0 0 4px var(--options-selected-background, var(--color-primary-soft));
 }
 
 .options-row.selected .options-row-icon {
   background: var(--options-control-background, var(--bg-card));
-  border: 1px solid var(--options-selected-border, var(--color-primary));
+  border: 1px solid var(--border-selected);
   color: var(--options-selected-indicator, var(--color-primary));
 }
 
@@ -361,7 +361,7 @@
 
 .options-view-card {
   background: var(--options-control-background, var(--bg-card));
-  border: 1px solid var(--options-border, var(--border-color));
+  border: 1px solid var(--border-control);
   border-radius: 6px;
   color: var(--options-text, var(--text-primary));
   display: flex;
@@ -373,8 +373,8 @@
 
 .options-view-card.selected {
   background: var(--options-selected-background, var(--color-primary-soft));
-  border-color: var(--options-selected-border, var(--color-primary));
-  box-shadow: inset 0 0 0 1px var(--options-selected-border, var(--color-primary));
+  border-color: var(--border-selected);
+  box-shadow: inset 0 0 0 1px var(--border-selected);
 }
 
 .options-view-title {
@@ -432,7 +432,7 @@
 }
 
 .options-action-button--neutral {
-  border-color: var(--options-border, var(--border-subtle));
+  border-color: var(--border-control);
   color: var(--options-text, var(--text-secondary));
 }
 
@@ -476,15 +476,10 @@
     --options-control-background: var(--bg-control);
     --options-text: var(--text-primary);
     --options-muted-text: var(--text-muted);
-    --options-border: var(--border-color);
-    --options-row-border: var(--border-color);
-    --options-indicator-border: var(--text-muted);
     --options-icon-background: var(--color-primary-surface-dark);
     --options-icon-color: var(--color-primary-icon-dark);
     --options-selected-background: var(--color-primary-surface-dark);
-    --options-selected-border: var(--color-primary-border-dark);
     --options-selected-text: var(--color-primary-soft);
-    --options-selected-indicator: var(--color-primary-border-dark);
     --options-refresh-background: var(--sidebar-action-refresh-background);
     --options-refresh-hover-background: var(--sidebar-action-refresh-hover-background);
     --options-refresh-border: var(--sidebar-action-refresh-border);
@@ -502,15 +497,10 @@
   --options-control-background: var(--bg-control);
   --options-text: var(--text-primary);
   --options-muted-text: var(--text-muted);
-  --options-border: var(--border-color);
-  --options-row-border: var(--border-color);
-  --options-indicator-border: var(--text-muted);
   --options-icon-background: var(--color-primary-surface-dark);
   --options-icon-color: var(--color-primary-icon-dark);
   --options-selected-background: var(--color-primary-surface-dark);
-  --options-selected-border: var(--color-primary-border-dark);
   --options-selected-text: var(--color-primary-soft);
-  --options-selected-indicator: var(--color-primary-border-dark);
   --options-refresh-background: var(--sidebar-action-refresh-background);
   --options-refresh-hover-background: var(--sidebar-action-refresh-hover-background);
   --options-refresh-border: var(--sidebar-action-refresh-border);

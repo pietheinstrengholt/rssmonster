@@ -792,7 +792,7 @@ export default {
 :global(:root[data-theme='dark'] .briefing-preferences-select option) {
   color: var(--text-primary);
   background-color: var(--bg-control);
-  border-color: var(--border-input);
+  border-color: var(--border-control);
 }
 
 :global(:root[data-theme='dark'] .briefing-period-option:has(input:checked)) {

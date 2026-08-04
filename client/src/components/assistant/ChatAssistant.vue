@@ -229,7 +229,7 @@ div#inputArea {
 :root[data-theme='dark'] #chatTextarea {
   color: var(--text-primary);
   background-color: var(--bg-input) !important;
-  border-color: var(--border-input);
+  border-color: var(--border-control);
 }
 
 :root[data-theme='dark'] #chatTextarea:focus {

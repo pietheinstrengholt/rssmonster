@@ -12,7 +12,7 @@
 .settings-section-state {
   align-items: flex-start;
   background: var(--bg-muted);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-danger);
   border-radius: 10px;
   color: var(--text-secondary);
   display: flex;
@@ -41,7 +41,7 @@
 @media (prefers-color-scheme: dark) {
   .settings-section-state {
     background: var(--bg-muted);
-    border-color: var(--border-color);
+    border-color: var(--border-danger);
     color: var(--text-secondary);
   }
 }

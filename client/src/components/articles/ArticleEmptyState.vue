@@ -228,13 +228,13 @@ export default {
 
 .article-empty-state-secondary {
   background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-control);
   color: var(--text-primary);
 }
 
 .article-empty-state-secondary:hover {
   background: var(--bg-selected-soft, var(--bg-selected));
-  border-color: var(--color-primary-soft);
+  border-color: var(--border-selected);
   color: var(--color-primary-text, var(--color-primary-hover));
 }
 
@@ -354,7 +354,7 @@ export default {
 
 :global(:root[data-theme='dark'] .article-empty-state-secondary) {
   background: var(--dark-bg-card, var(--bg-card));
-  border-color: var(--dark-border, var(--border-color));
+  border-color: var(--border-default);
   color: var(--dark-text-body, var(--text-secondary));
 }
 
@@ -369,7 +369,7 @@ export default {
 
 :global(:root[data-theme='dark'] .article-empty-state-divider::before),
 :global(:root[data-theme='dark'] .article-empty-state-divider::after) {
-  background: var(--dark-border, var(--border-color));
+  background: var(--border-subtle);
 }
 
 :global(:root[data-theme='dark'] .article-empty-state-link) {

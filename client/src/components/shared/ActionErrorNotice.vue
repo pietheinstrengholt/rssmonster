@@ -30,8 +30,8 @@ export default {
 .action-error-notice {
   align-items: flex-start;
   background: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--text-danger);
+  border: 1px solid var(--border-danger);
+  border-left: 3px solid var(--border-danger-strong);
   border-radius: 8px;
   bottom: 20px;
   box-shadow: var(--shadow-modal);
@@ -87,8 +87,8 @@ export default {
 @media (prefers-color-scheme: dark) {
   .action-error-notice {
     background: var(--bg-secondary);
-    border-color: var(--border-subtle);
-    border-left-color: var(--text-danger);
+    border-color: var(--border-danger);
+    border-left-color: var(--border-danger-strong);
   }
 }
 </style>

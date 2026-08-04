@@ -842,7 +842,7 @@ export default {
 
 .bulk-action-menu {
   background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   box-shadow: 0 16px 36px var(--shadow-reader-bulk-menu-color);
   max-width: calc(100vw - 24px);
@@ -1092,22 +1092,22 @@ export default {
 
 :global(:root[data-theme='dark']) .readerArticleList {
   --article-list-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
-  border-color: var(--border-color);
+  border-color: var(--border-subtle);
 }
 
 :global(:root[data-theme='dark']) .article-list-bulk-header {
   background: var(--bg-modal);
-  border-color: var(--border-color);
+  border-color: var(--border-subtle);
 }
 
 :global(:root[data-theme='dark']) .bulk-action-menu {
   background: var(--bg-modal);
-  border-color: var(--border-color);
+  border-color: var(--border-default);
   box-shadow: 0 18px 40px var(--shadow-reader-bulk-menu-color);
 }
 
 :global(:root[data-theme='dark']) .bulk-action-menu-section {
-  border-color: var(--border-color);
+  border-color: var(--border-subtle);
 }
 
 :global(:root[data-theme='dark']) .article-list-bulk-tag {

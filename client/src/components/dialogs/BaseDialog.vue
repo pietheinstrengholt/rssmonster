@@ -230,7 +230,7 @@ export default {
   overflow: hidden;
   color: var(--text-primary);
   background: var(--bg-modal);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 0.5rem;
   box-shadow: var(--shadow-modal);
 }
@@ -362,7 +362,7 @@ export default {
 :deep(.base-dialog__button--secondary) {
   color: var(--text-primary);
   background: var(--bg-card);
-  border-color: var(--border-input);
+  border-color: var(--border-control);
 }
 
 :deep(.base-dialog__button--secondary:hover:not(:disabled)) {
@@ -394,7 +394,7 @@ export default {
 
 :global(:root[data-theme='dark']) .base-dialog__panel {
   background: var(--bg-modal);
-  border-color: var(--border-color);
+  border-color: var(--border-default);
   box-shadow: 0 4px 12px var(--shadow-settings-dialog-dark-color);
 }
 
@@ -405,7 +405,7 @@ export default {
 :global(:root[data-theme='dark']) :deep(.base-dialog__button--secondary) {
   color: var(--text-primary);
   background: var(--bg-control);
-  border-color: var(--border-input);
+  border-color: var(--border-control);
 }
 
 @media (max-width: 575.98px) {

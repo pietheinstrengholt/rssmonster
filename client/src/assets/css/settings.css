@@ -28,7 +28,7 @@ body.modal-open {
     height: min(800px, calc(100vh - 48px));
     overflow: hidden;
     background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-default);
     border-radius: 16px;
     box-shadow: 0 24px 80px var(--shadow-settings-dialog-color);
 }
@@ -40,7 +40,7 @@ body.modal-open {
     align-items: center;
     justify-content: space-between;
     background: var(--bg-card);
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .settings-title {
@@ -67,7 +67,7 @@ body.modal-open {
     padding: 18px 12px;
     overflow-y: auto;
     background: var(--bg-page);
-    border-right: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-subtle);
 }
 
 .settings-sidebar-item {
@@ -142,7 +142,7 @@ body.modal-open {
 .settings-data-panel,
 .settings-metric-card {
     background: var(--bg-primary);
-    border: 1px solid var(--border-subtle);
+    border: 1px solid var(--border-default);
     border-radius: 14px;
 }
 
@@ -259,13 +259,13 @@ body.modal-open {
 }
 
 :root[data-theme='dark'] .settings-dialog {
-    border-color: var(--border-settings-dialog-dark);
+    border-color: var(--border-default);
     box-shadow: 0 24px 80px var(--shadow-settings-dialog-dark-color);
 }
 
 :root[data-theme='dark'] .settings-sidebar {
     background-color: var(--bg-control);
-    border-color: var(--border-color);
+    border-color: var(--border-subtle);
 }
 
 :root[data-theme='dark'] .settings-sidebar-item,
@@ -291,7 +291,7 @@ body.modal-open {
 }
 
 :root[data-theme='dark'] .settings-header {
-    border-color: var(--border-color);
+    border-color: var(--border-subtle);
 }
 
 :root[data-theme='dark'] .settings-dialog p {
@@ -322,16 +322,16 @@ body.modal-open {
 :root[data-theme='dark'] .settings-dialog .card {
     --bs-card-bg: var(--bg-modal);
     --bs-card-color: var(--text-inverted);
-    --bs-card-border-color: var(--border-color);
+    --bs-card-border-color: var(--border-default);
     background-color: var(--bg-modal);
     color: var(--text-inverted);
-    border-color: var(--border-color);
+    border-color: var(--border-default);
 }
 
 :root[data-theme='dark'] .settings-dialog .list-group {
     --bs-list-group-bg: var(--bg-modal);
     --bs-list-group-color: var(--text-inverted);
-    --bs-list-group-border-color: var(--border-color);
+    --bs-list-group-border-color: var(--border-subtle);
     --bs-list-group-action-hover-bg: var(--bg-control);
     --bs-list-group-action-hover-color: var(--text-inverted);
 }
@@ -339,18 +339,18 @@ body.modal-open {
 :root[data-theme='dark'] .settings-dialog .list-group-item {
     background-color: var(--bg-modal);
     color: var(--text-inverted);
-    border-color: var(--border-color);
+    border-color: var(--border-subtle);
 }
 
 :root[data-theme='dark'] .settings-insight-card {
     background: var(--bg-modal);
-    border-color: var(--border-color);
+    border-color: var(--border-default);
 }
 
 :root[data-theme='dark'] .settings-data-panel,
 :root[data-theme='dark'] .settings-metric-card {
     background: var(--bg-modal);
-    border-color: var(--border-color);
+    border-color: var(--border-default);
 }
 
 :root[data-theme='dark'] .settings-insight-icon {
@@ -383,7 +383,7 @@ body.modal-open {
 .form-select {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid var(--border-input);
+    border: 1px solid var(--border-control);
     border-radius: 4px;
     font-size: 14px;
     background-color: var(--bg-primary);
@@ -392,7 +392,7 @@ body.modal-open {
 
 .form-select:focus {
     outline: none;
-    border-color: var(--color-primary);
+    border-color: var(--border-focus);
     box-shadow: var(--shadow-focus-primary);
 }
 
@@ -457,7 +457,7 @@ body.modal-open {
 .action-row {
     margin-bottom: 15px;
     padding: 12px;
-    border: 1px solid var(--border-subtle);
+    border: 1px solid var(--border-default);
     border-radius: 4px;
     background-color: var(--settings-neutral-bg);
 }
@@ -488,7 +488,7 @@ body.modal-open {
 .form-control {
     width: 100%;
     padding: 6px 10px;
-    border: 1px solid var(--border-input);
+    border: 1px solid var(--border-control);
     border-radius: 4px;
     font-size: 14px;
     background-color: var(--bg-primary);
@@ -496,7 +496,7 @@ body.modal-open {
 
 .form-control:focus {
     outline: none;
-    border-color: var(--color-primary);
+    border-color: var(--border-focus);
     box-shadow: var(--shadow-focus-primary);
 }
 
@@ -542,7 +542,7 @@ body.modal-open {
 }
 
 :root[data-theme='dark'] .btn-add:hover {
-    background-color: var(--settings-orange-border);
+    background-color: var(--settings-orange-hover-background);
     border-color: var(--settings-orange-border);
     color: var(--text-inverted);
 }
@@ -640,12 +640,12 @@ body.modal-open {
 }
 
 .row-disabled {
-    background-color: var(--border-subtle) !important;
+    background-color: var(--bg-disabled-row) !important;
     color: var(--text-disabled-strong) !important;
 }
 
 .row-disabled td {
-    background-color: var(--border-subtle) !important;
+    background-color: var(--bg-disabled-row) !important;
     color: var(--text-disabled-strong) !important;
 }
 
@@ -678,7 +678,7 @@ body.modal-open {
         overflow-y: hidden;
         padding: 10px 12px;
         border-right: 0;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-subtle);
     }
 
     .settings-sidebar-item {
@@ -704,7 +704,7 @@ body.modal-open {
 
     .modal-header,
     .modal-footer {
-        border-color: var(--border-color);
+        border-color: var(--border-subtle);
     }
     .settings-group label {
         color: var(--text-inverted);
@@ -756,7 +756,7 @@ body.modal-open {
     .input-invalid {
         background-color: var(--settings-danger-bg);
         color: var(--settings-danger-text);
-        border-color: var(--border-danger-subtle);
+        border-color: var(--border-danger);
     }
 
     .input-invalid::placeholder {

@@ -186,7 +186,7 @@
 
 :global(:root[data-theme='dark']) .crawl-statistics-toolbar .form-select {
   background-color: var(--bg-modal);
-  border-color: var(--border-color);
+  border-color: var(--border-control);
 }
 
 @media (max-width: 879px) {

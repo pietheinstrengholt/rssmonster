@@ -46,6 +46,6 @@ export default {
 
 :global(:root[data-theme='dark'] .unread-selection-context) {
   background-color: var(--dark-page-surface, #0b0f14);
-  border-bottom-color: var(--border-color, #2a3342);
+  border-bottom-color: var(--border-subtle);
 }
 </style>

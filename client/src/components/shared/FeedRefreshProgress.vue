@@ -35,7 +35,7 @@ export default {
 <style scoped>
 .feed-refresh-progress-panel {
   background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   color: var(--text-primary);
   padding: 10px;
@@ -89,7 +89,7 @@ export default {
 @media (prefers-color-scheme: dark) {
   .feed-refresh-progress-panel {
     background: var(--bg-secondary);
-    border-color: var(--border-subtle);
+    border-color: var(--border-default);
     color: var(--text-primary);
   }
 }

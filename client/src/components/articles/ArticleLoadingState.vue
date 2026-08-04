@@ -125,7 +125,7 @@
 .article-loading-skeleton {
   align-items: center;
   background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   display: grid;
   gap: 16px;
@@ -255,7 +255,7 @@
 
 :global(:root[data-theme='dark']) .article-loading-skeleton {
   background: var(--dark-page-surface, var(--bg-page));
-  border-color: var(--border-color);
+  border-color: var(--border-default);
 }
 
 :global(:root[data-theme='dark']) .article-loading-skeleton__image,

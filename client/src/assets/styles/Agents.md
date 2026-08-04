@@ -4,7 +4,8 @@
 
 This folder contains the shared visual design system for RSSMonster.
 
-`theme.css` defines the global color language, surface hierarchy, button colors, badge colors, dark mode colors and reusable CSS variables.
+`theme.css` defines the global color language, surface hierarchy, button colors, badge colors, dark mode
+colors and reusable CSS variables. `../scss/global.scss` defines the shared application font stack.
 
 When editing files in this folder, preserve the existing RSSMonster design direction:
 
@@ -29,14 +30,23 @@ Colors should communicate meaning, not decoration.
 
 Use the following semantic rules:
 
-| Color Family | Meaning                                                                         |
-| ------------ | ------------------------------------------------------------------------------- |
-| Blue         | navigation, selected state, links, primary actions, similar articles, sentiment |
-| Orange       | refresh, attention, advertisement score, important utility actions              |
-| Green        | positive actions, AI/smart actions, writing quality                             |
-| Red          | quality warnings or negative quality signals                                    |
-| Purple       | rules, automation, smart folders, tag rules                                     |
-| Gray         | metadata, tags, neutral information, secondary UI                               |
+| Color Family | Meaning                                                    |
+| ------------ | ---------------------------------------------------------- |
+| Orange       | brand identity and feed-related creation                    |
+| Blue         | navigation, selected states, links and primary actions      |
+| Green        | successful completion and confirmed success states          |
+| Red / Pink   | favorites, warnings, errors and destructive states          |
+| Gray / Navy  | content, metadata, surfaces and structural interface chrome |
+
+This relationship is the default color language for both light and dark themes. A color should keep
+the same meaning everywhere; changing theme may change its tone or contrast, but not its semantic
+family. In particular, the brand remains orange in dark mode, primary actions remain blue, and green
+must not become a generic accent for smart or AI features.
+
+Purple, yellow, cyan and other accent families are not general-purpose UI semantics. Retain them only
+for an established, domain-specific data signal that cannot be expressed by the core families, and do
+not extend a legacy accent to new navigation, actions or structural UI. Prefer a core semantic token
+when adding or revisiting a component.
 
 Do not introduce new accent colors unless explicitly requested.
 
@@ -56,7 +66,62 @@ Do not introduce new accent colors unless explicitly requested.
 * Dark mode must be designed, not inverted.
 * Ensure normal text meets WCAG AA contrast.
 
-## Hard-coded color guard
+---
+
+# Typography
+
+Typography provides most of the hierarchy in RSSMonster. It should remain quiet, compact and
+comfortable during long reading sessions.
+
+## Font Families
+
+Use `--font-family` for application UI and article-reader chrome. It resolves to the native system
+sans-serif stack (`-apple-system`, `BlinkMacSystemFont`, `Segoe UI`, `Roboto`, `Helvetica`, `Arial`,
+and `sans-serif`) so the interface feels familiar on each platform and renders efficiently. Controls
+inherit this family from the global stylesheet.
+
+Do not add a display typeface for headings or branding. Use a monospace stack only for code, queries,
+identifiers and other technical values where character alignment or distinction is meaningful; it is
+not a general metadata or body-text treatment. Publisher article content may require compatibility
+overrides, but application-owned UI should return to the shared system stack.
+
+## Type Scale
+
+Use the smallest size that remains readable for the element's role. The established application scale
+has the following intent:
+
+| Size     | Intended use                                                                 |
+| -------- | ---------------------------------------------------------------------------- |
+| 11px     | Eyebrows, compact badges, uppercase metric labels and tertiary annotations   |
+| 12px     | Dense metadata, secondary table detail and compact supporting labels         |
+| 13px     | Article metadata, helper text, secondary controls and settings descriptions  |
+| 14px     | Default UI and reading text, form controls, buttons and ordinary body copy   |
+| 15–16px  | Emphasized body copy, list titles and higher-priority controls               |
+| 17–20px  | Section headings, dialog titles, expanded article titles and mobile headings |
+| 21–24px  | Page, settings and article-content headings                                  |
+| 26–28px  | Top-level page or empty-state headings used sparingly                        |
+
+Sizes above 28px are reserved for functional icons or exceptional focal states, not routine page
+headings or marketing-style hero text. Keep responsive reductions aligned with the same hierarchy.
+For article reading text, pair 14px body copy with a relaxed line height around `1.5`–`1.65`; compact
+labels and controls can use tighter line heights.
+
+## Font Weights
+
+| Weight | Intended use                                                                        |
+| ------ | ----------------------------------------------------------------------------------- |
+| 400    | Body copy, article content, descriptions and metadata                              |
+| 500    | Navigation rows and modest emphasis that should remain quieter than a heading       |
+| 600    | Selected navigation, labels, compact subheadings and emphasized metadata            |
+| 700    | Buttons, article titles, section/page headings, metric values and strong UI emphasis |
+
+Prefer these four weights. Existing `750` declarations are limited display emphasis; do not spread
+that weight to routine UI, and prefer `700` for new work. Avoid using weight alone to communicate a
+state when a semantic color, label or icon is also necessary.
+
+---
+
+# Hard-coded Color Guard
 
 Run `npm run check:hard-coded-colors` when changing Vue styles or client CSS/SCSS. The guard scans
 Vue `<style>` blocks and client-owned `.css`/`.scss` files. It excludes `theme.css`, because that file
@@ -111,7 +176,7 @@ the reduced count becomes the new ceiling. Never raise a baseline merely to make
 --color-primary-text: #1D4ED8;
 ```
 
-## Orange / Attention
+## Orange / Brand and Feed Creation
 
 ```css
 --color-orange: #EA650D;
@@ -121,7 +186,7 @@ the reduced count becomes the new ceiling. Never raise a baseline merely to make
 --color-orange-border: #FFC4A3;
 ```
 
-## Green / Positive
+## Green / Successful Completion
 
 ```css
 --color-green: #166534;
@@ -169,6 +234,9 @@ hover-color: #14532D;
 # Article / Settings Badge Colors
 
 These badge colors are also used in settings pages. Treat them as semantic colors, not article-only colors.
+Several values below are legacy evaluative or domain-specific accents and do not expand the core color
+relationship. Advertisement, sentiment, quality, writing and rule colors should be migration candidates
+when their components are revisited; do not reuse those colors for unrelated UI.
 
 ## Light Mode
 

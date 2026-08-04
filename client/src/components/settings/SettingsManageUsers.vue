@@ -173,7 +173,7 @@
 .manage-users__table-wrap {
   overflow-x: auto;
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
 }
 
@@ -200,7 +200,7 @@
 .manage-users__table td {
   height: 58px;
   padding: 10px 14px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-subtle);
   color: var(--text-secondary);
   vertical-align: middle;
   white-space: nowrap;
@@ -227,7 +227,7 @@
 .manage-users__avatar {
   align-items: center;
   background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-default);
   border-radius: 50%;
   color: var(--color-primary);
   display: inline-flex;
@@ -390,7 +390,7 @@
 .manage-users__field .form-control,
 .manage-users__field .form-select {
   background-color: var(--bg-input);
-  border-color: var(--border-input);
+  border-color: var(--border-control);
   color: var(--text-primary);
 }
 
@@ -432,7 +432,7 @@
 
 .manage-users__button--secondary {
   background: var(--bg-control);
-  border-color: var(--border-input);
+  border-color: var(--border-control);
   color: var(--text-primary);
 }
 
@@ -492,7 +492,7 @@
 
 :global(:root[data-theme='dark']) .manage-users__table-wrap {
   background: var(--bg-modal) !important;
-  border-color: var(--border-color);
+  border-color: var(--border-default);
 }
 
 :global(:root[data-theme='dark']) .manage-users__table,
@@ -507,7 +507,7 @@
 }
 
 :global(:root[data-theme='dark']) .manage-users__table td {
-  border-color: var(--border-color);
+  border-color: var(--border-subtle);
   color: var(--text-secondary);
 }
 
@@ -542,7 +542,7 @@
 :root[data-theme="dark"] .manage-users .manage-users__table tbody,
 :root[data-theme="dark"] .manage-users .manage-users__table tbody tr {
   background: var(--bg-modal) !important;
-  border-color: var(--border-color) !important;
+  border-color: var(--border-default) !important;
 }
 
 :root[data-theme="dark"] .manage-users .manage-users__table th {
@@ -552,7 +552,7 @@
 
 :root[data-theme="dark"] .manage-users .manage-users__table td {
   background: var(--bg-modal) !important;
-  border-color: var(--border-color) !important;
+  border-color: var(--border-subtle) !important;
   color: var(--text-inverted) !important;
 }
 

@@ -345,7 +345,7 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .unread-preferences-option + .unread-preferences-option) {
-  border-color: var(--border-color, #2a3342);
+  border-color: var(--border-default);
 }
 
 :global(:root[data-theme='dark'] .unread-preferences-option-icon) {
@@ -360,6 +360,6 @@ export default {
 :global(:root[data-theme='dark'] .unread-preferences-status-error) {
   color: var(--badge-danger-text);
   background-color: rgba(127, 29, 29, 0.28);
-  border-color: var(--badge-danger-bg);
+  border-color: var(--border-danger);
 }
 </style>

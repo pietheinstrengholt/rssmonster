@@ -48,7 +48,7 @@
 .actions-intro-card,
 .actions-list-section {
   background: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 14px;
 }
 
@@ -123,7 +123,7 @@
   gap: 10px;
   padding: 12px;
   background: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
 }
 
@@ -399,14 +399,14 @@
 :global(:root[data-theme='dark'] .actions-list-section),
 :global(:root[data-theme='dark'] .actions-type-card) {
   background: var(--bg-modal);
-  border-color: var(--border-color);
+  border-color: var(--border-default);
 }
 
 :global(:root[data-theme='dark']) .actions-list-heading,
 :global(:root[data-theme='dark']) .actions-list-row + .actions-list-row,
 :global(:root[data-theme='dark']) .actions-order-note,
 :global(:root[data-theme='dark']) .actions-note {
-  border-color: var(--border-color);
+  border-color: var(--border-default);
 }
 
 :global(:root[data-theme='dark']) .actions-order-note {

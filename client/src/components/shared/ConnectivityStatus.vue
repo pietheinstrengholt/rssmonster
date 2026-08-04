@@ -47,8 +47,8 @@ export default {
 .connectivity-status {
   align-items: center;
   background: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--color-warning);
+  border: 1px solid var(--border-warning);
+  border-left: 3px solid var(--border-warning-strong);
   border-radius: 8px;
   bottom: 16px;
   box-shadow: var(--shadow-modal);
@@ -81,7 +81,7 @@ export default {
 
 .connectivity-status__retry {
   background: var(--bg-control);
-  border: 1px solid var(--border-input);
+  border: 1px solid var(--border-control);
   border-radius: 8px;
   color: var(--text-primary);
   flex: 0 0 auto;
@@ -119,8 +119,8 @@ export default {
 @media (prefers-color-scheme: dark) {
   .connectivity-status {
     background: var(--bg-secondary);
-    border-color: var(--border-subtle);
-    border-left-color: var(--color-warning);
+    border-color: var(--border-warning);
+    border-left-color: var(--border-warning-strong);
   }
 }
 </style>

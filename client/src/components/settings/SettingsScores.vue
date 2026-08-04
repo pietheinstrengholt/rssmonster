@@ -101,7 +101,7 @@
 
 .scores-threshold-section {
   background: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 14px;
 }
 
@@ -138,7 +138,7 @@
   gap: 12px;
   padding: 16px;
   background: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
 }
 
@@ -217,7 +217,7 @@
   gap: 8px;
   padding: 0 12px;
   background: var(--color-transparent);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-control);
   border-radius: 8px;
   color: var(--text-secondary);
   font-size: 13px;
@@ -266,7 +266,7 @@
   height: 38px;
   padding: 0 9px;
   background: var(--bg-input);
-  border: 1px solid var(--border-input);
+  border: 1px solid var(--border-control);
   border-radius: 8px;
   color: var(--text-primary);
   font-size: 14px;
@@ -310,16 +310,16 @@
 :global(:root[data-theme='dark'] .scores-explanation),
 :global(:root[data-theme='dark'] .scores-threshold-section) {
   background: var(--bg-modal);
-  border-color: var(--border-color);
+  border-color: var(--border-default);
 }
 
 :global(:root[data-theme='dark']) .scores-threshold-heading,
 :global(:root[data-theme='dark']) .scores-threshold-row + .scores-threshold-row {
-  border-color: var(--border-color);
+  border-color: var(--border-default);
 }
 
 :global(:root[data-theme='dark']) .scores-info-row {
-  border-color: var(--border-color);
+  border-color: var(--border-default);
 }
 
 @media (max-width: 879px) {
