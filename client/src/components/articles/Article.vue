@@ -478,6 +478,7 @@ export default {
 }
 
 .article-card {
+  background-color: var(--bg-card);
   content-visibility: auto;
   contain-intrinsic-size: auto 720px;
   margin-bottom: 0px;
