@@ -65,6 +65,18 @@
 </template>
 
 <style>
+/* Prevents browser-level pull-to-refresh while preserving the app-owned article refresh gesture. */
+html {
+  overscroll-behavior-y: none;
+}
+
+body,
+#app,
+#home,
+#sidebar {
+  overscroll-behavior-y: contain;
+}
+
 /* Landscape phones and portrait tablets */
 @media (max-width: 879px) {
   #desktop-toolbar {
@@ -76,13 +88,6 @@
     flex-direction: column;
     min-height: 100vh;
     min-height: 100dvh;
-    overscroll-behavior-y: contain;
-  }
-
-  html,
-  body,
-  #app {
-    overscroll-behavior-y: contain;
   }
 
   .mobile-toolbar {
