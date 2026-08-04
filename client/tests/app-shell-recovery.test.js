@@ -276,6 +276,15 @@ describe('AppShell connectivity recovery', () => {
     expect(context.databaseRefreshActive).toBe(false);
   });
 
+  it('rebuilds the current article selection after screen rotation', () => {
+    const context = createRecoveryContext();
+    context.reloadArticleListFromDatabase = vi.fn().mockResolvedValue();
+
+    AppShell.methods.handleOrientationChange.call(context);
+
+    expect(context.reloadArticleListFromDatabase).toHaveBeenCalledOnce();
+  });
+
   it('preserves the shell and shows a recoverable notice when database refresh fails', async () => {
     const failure = new Error('refresh unavailable');
     const context = connectRecoveryMethods(createRecoveryContext());

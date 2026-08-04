@@ -453,6 +453,10 @@ export default {
       this.connectivityStatus = 'backend-unreachable';
       void this.recoverConnectivity();
     },
+    // This function rebuilds the current article selection after the viewport rotates.
+    handleOrientationChange() {
+      void this.reloadArticleListFromDatabase();
+    },
     // This function registers the window listeners owned by the app shell.
     registerGlobalListeners() {
       this.removeGlobalListeners();
@@ -461,6 +465,7 @@ export default {
       window.addEventListener('app:error', this.handleAppError);
       window.addEventListener('offline', this.handleBrowserOffline);
       window.addEventListener('online', this.handleBrowserOnline);
+      window.addEventListener('orientationchange', this.handleOrientationChange);
     },
     // This function removes the window listeners owned by the app shell.
     removeGlobalListeners() {
@@ -469,6 +474,7 @@ export default {
       window.removeEventListener('app:error', this.handleAppError);
       window.removeEventListener('offline', this.handleBrowserOffline);
       window.removeEventListener('online', this.handleBrowserOnline);
+      window.removeEventListener('orientationchange', this.handleOrientationChange);
     },
     // This function starts overview polling once per app shell instance.
     startOverviewPolling() {
