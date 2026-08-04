@@ -814,12 +814,13 @@ export default {
 .article-card .article-tags .tag-badge {
   display: inline-flex;
   align-items: center;
-  background-color: var(--article-category-badge-background);
-  color: var(--badge-tag-text);
+  background-color: var(--color-transparent);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   padding: 3px 8px;
   border-radius: 6px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.4;
   white-space: nowrap;
   cursor: pointer;
@@ -830,6 +831,7 @@ export default {
   display: inline-flex;
   align-items: center;
   background-color: var(--article-tag-background);
+  border: 1px solid var(--color-transparent);
   color: var(--badge-tag-text);
   padding: 3px 8px;
   border-radius: 6px;
@@ -1068,8 +1070,8 @@ span.similar-badge {
 }
 
 :root[data-theme='dark'] .article-card .article-tags .tag-badge {
-  background-color: var(--article-tag-background-dark);
-  color: var(--article-tag-text-dark);
+  background-color: var(--color-transparent);
+  color: var(--text-secondary);
 }
 
 :root[data-theme='dark'] .article-card .article-tags .tag {
@@ -1640,8 +1642,8 @@ span.similar-badge {
   }
 
   .article-card .article-tags .tag-badge {
-    background-color: var(--article-tag-background-dark);
-    color: var(--article-tag-text-dark);
+    background-color: var(--color-transparent);
+    color: var(--text-secondary);
   }
 
   .article-card .article-tags .tag.tag-rule {
