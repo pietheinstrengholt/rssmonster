@@ -105,7 +105,7 @@ Settings sections can request a wider content refresh after saving. The toolbar 
 
 ### Sticky toolbar
 
-The mobile toolbar uses two rows:
+On phone layouts, the mobile toolbar uses two rows:
 
 1. A brand row with the RSSMonster logo and name, article refresh, search control, and options gear.
 2. A compact filter row for status, smart folders, and categories.

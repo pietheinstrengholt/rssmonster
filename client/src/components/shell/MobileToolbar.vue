@@ -203,13 +203,7 @@
     display: block;
     flex: 0 0 auto;
     width: 100%;
-    height: 107px;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 879px) and (orientation: portrait) {
-  .mobile-toolbar-spacer {
-    height: 97px;
+    height: 59px;
   }
 }
 
@@ -437,6 +431,44 @@
     height: 34px;
     border-radius: 8px;
     font-size: 14px;
+  }
+}
+
+/* Uses the persistent sidebar as the sole brand surface in the hybrid layout. */
+@media (min-width: 768px) and (max-width: 879px) {
+  .mobile-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mobile-toolbar-brand-row {
+    flex: 0 0 auto;
+    order: 2;
+    min-height: 0;
+    margin: 0;
+  }
+
+  .mobile-toolbar-brand {
+    display: none;
+  }
+
+  .mobile-toolbar-filters {
+    flex: 1 1 auto;
+    order: 1;
+    min-width: 0;
+  }
+
+  .mobile-toolbar-filter {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-right: 0;
+  }
+
+  .mobile-filter-button {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
