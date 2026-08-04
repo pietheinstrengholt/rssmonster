@@ -7,15 +7,15 @@ export const EXCLUDED_COLOR_SOURCES = new Set([
 export const APPROVED_COLOR_EXCEPTIONS = [
   // Publisher/platform brand colors preserve the recognizable identity of article media sources.
   ...[
-    ['#dc2626', 1], ['#991b1b', 2],
-    ['#1185fe', 1], ['#0866c6', 2],
-    ['#ff4500', 1], ['#b83200', 2],
-    ['#000', 2], ['#fff', 4],
-    ['#6364ff', 1], ['#4547d9', 2],
-    ['#1e40af', 1], ['#1e3a8a', 2]
+    ['#dc2626', 1], ['#991b1b', 1],
+    ['#1185fe', 1], ['#0866c6', 1],
+    ['#ff4500', 1], ['#b83200', 1],
+    ['#000', 1], ['#fff', 1],
+    ['#6364ff', 1], ['#4547d9', 1],
+    ['#1e40af', 1], ['#1e3a8a', 1]
   ].map(([literal, maxOccurrences]) => ({
     category: 'publisher-platform-brand',
-    file: 'src/components/articles/Article.vue',
+    file: 'src/components/articles/articleSourceIcons.css',
     literal,
     maxOccurrences,
     reason: 'Preserves the current publisher or media-platform icon identity.'

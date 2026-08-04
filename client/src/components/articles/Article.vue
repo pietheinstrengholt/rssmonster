@@ -537,34 +537,6 @@ export default {
   color: var(--article-hot-icon);
 }
 
-.media-video-icon {
-  color: #dc2626;
-}
-
-.bluesky-icon {
-  color: #1185fe;
-}
-
-.reddit-icon {
-  color: #ff4500;
-}
-
-.github-icon {
-  color: #000;
-}
-
-.mastodon-icon {
-  color: #6364ff;
-}
-
-.medium-icon {
-  color: #000;
-}
-
-.podcast-icon {
-  color: #1e40af;
-}
-
 .event-icon {
   color: var(--article-hot-icon);
 }
@@ -573,64 +545,6 @@ export default {
   color: var(--article-hot-icon);
   font-size: 0.85rem;
   opacity: 0.8;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root[data-theme='dark'] .media-video-icon {
-    color: #991b1b;
-  }
-
-  :root[data-theme='dark'] .bluesky-icon {
-    color: #0866c6;
-  }
-
-  :root[data-theme='dark'] .reddit-icon {
-    color: #b83200;
-  }
-
-  :root[data-theme='dark'] .github-icon {
-    color: #fff;
-  }
-
-  :root[data-theme='dark'] .mastodon-icon {
-    color: #4547d9;
-  }
-
-  :root[data-theme='dark'] .medium-icon {
-    color: #fff;
-  }
-
-  :root[data-theme='dark'] .podcast-icon {
-    color: #1e3a8a;
-  }
-}
-
-:root[data-theme='dark'] .media-video-icon {
-  color: #991b1b;
-}
-
-:root[data-theme='dark'] .bluesky-icon {
-  color: #0866c6;
-}
-
-:root[data-theme='dark'] .reddit-icon {
-  color: #b83200;
-}
-
-:root[data-theme='dark'] .github-icon {
-  color: #fff;
-}
-
-:root[data-theme='dark'] .mastodon-icon {
-  color: #4547d9;
-}
-
-:root[data-theme='dark'] .medium-icon {
-  color: #fff;
-}
-
-:root[data-theme='dark'] .podcast-icon {
-  color: #1e3a8a;
 }
 
 .article-card .article-body {
@@ -923,6 +837,7 @@ export default {
   font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
+  cursor: pointer;
   vertical-align: middle;
 }
 
@@ -1153,8 +1068,8 @@ span.similar-badge {
 }
 
 :root[data-theme='dark'] .article-card .article-tags .tag-badge {
-  background-color: var(--bg-control);
-  color: var(--text-secondary);
+  background-color: var(--article-tag-background-dark);
+  color: var(--article-tag-text-dark);
 }
 
 :root[data-theme='dark'] .article-card .article-tags .tag {
@@ -1725,8 +1640,8 @@ span.similar-badge {
   }
 
   .article-card .article-tags .tag-badge {
-    background-color: var(--bg-control);
-    color: var(--text-secondary);
+    background-color: var(--article-tag-background-dark);
+    color: var(--article-tag-text-dark);
   }
 
   .article-card .article-tags .tag.tag-rule {

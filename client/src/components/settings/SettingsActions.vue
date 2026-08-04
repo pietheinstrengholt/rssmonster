@@ -337,6 +337,19 @@
   font-size: 14px;
 }
 
+@media (min-width: 901px) {
+  .actions-row-icon,
+  .actions-row-buttons {
+    align-self: end;
+    margin-bottom: 2px;
+  }
+
+  .actions-grip {
+    align-self: end;
+    margin-bottom: 10px;
+  }
+}
+
 .actions-empty-state {
   margin: 0;
   padding: 36px 24px;

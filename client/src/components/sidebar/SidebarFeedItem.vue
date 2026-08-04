@@ -95,6 +95,10 @@ export default {
   background-color: var(--color-primary-soft);
 }
 
+.sidebar-feed.selected:hover {
+  background-color: var(--sidebar-selected-hover-background);
+}
+
 .sidebar-feed.disabled .sidebar-item-title {
   color: inherit;
 }
@@ -170,6 +174,10 @@ export default {
 :global(:root[data-theme='dark'] .sidebar-feed.selected) {
   color: var(--sidebar-selected-text-dark) !important;
   background-color: var(--sidebar-selected-background-dark) !important;
+}
+
+:global(:root[data-theme='dark'] .sidebar-feed.selected:hover) {
+  background-color: var(--sidebar-selected-hover-background) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-feed:not(.selected):hover) {

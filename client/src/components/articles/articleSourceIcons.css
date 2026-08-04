@@ -1,0 +1,54 @@
+/* Fixed source identities stay separate from the reusable RSSMonster theme palette. */
+
+/* Generic media-type indicators. */
+.media-video-icon {
+  color: #dc2626;
+}
+
+.podcast-icon {
+  color: #1e40af;
+}
+
+/* Publisher and platform identities. */
+.bluesky-icon {
+  color: #1185fe;
+}
+
+.reddit-icon {
+  color: #ff4500;
+}
+
+.github-icon,
+.medium-icon {
+  color: #000;
+}
+
+.mastodon-icon {
+  color: #6364ff;
+}
+
+/* Dark-theme adjustments preserve each identity while maintaining icon visibility. */
+:root[data-theme='dark'] .media-video-icon {
+  color: #991b1b;
+}
+
+:root[data-theme='dark'] .podcast-icon {
+  color: #1e3a8a;
+}
+
+:root[data-theme='dark'] .bluesky-icon {
+  color: #0866c6;
+}
+
+:root[data-theme='dark'] .reddit-icon {
+  color: #b83200;
+}
+
+:root[data-theme='dark'] .github-icon,
+:root[data-theme='dark'] .medium-icon {
+  color: #fff;
+}
+
+:root[data-theme='dark'] .mastodon-icon {
+  color: #4547d9;
+}

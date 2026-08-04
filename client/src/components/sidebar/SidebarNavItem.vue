@@ -86,6 +86,10 @@ export default {
   box-shadow: none;
 }
 
+.sidebar-item.selected:hover {
+  background-color: var(--sidebar-selected-hover-background);
+}
+
 .sidebar-item:not(.selected):hover {
   background-color: var(--bg-hover);
 }
@@ -244,6 +248,10 @@ export default {
   color: var(--sidebar-selected-text-dark) !important;
   background-color: var(--sidebar-selected-background-dark) !important;
   background-image: none !important;
+}
+
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.selected:hover {
+  background-color: var(--sidebar-selected-hover-background) !important;
 }
 
 :global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-count,

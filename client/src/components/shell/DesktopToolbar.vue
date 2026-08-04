@@ -331,6 +331,7 @@
 
 :global(:root[data-theme='dark'] .toolbar-theme-button:hover) {
   background-color: var(--toolbar-settings-hover-background-dark);
+  border-color: var(--border-color);
 }
 
 :global(:root[data-theme='dark'] .toolbar-settings-button),
@@ -345,6 +346,11 @@
 :global(:root[data-theme='dark'] .toolbar-chat-button:hover),
 :global(:root[data-theme='dark'] .toolbar-search-button:hover) {
   background-color: var(--toolbar-settings-hover-background-dark);
+}
+
+:global(:root[data-theme='dark'] .toolbar-settings-button:hover),
+:global(:root[data-theme='dark'] .toolbar-search-button:hover) {
+  border-color: var(--border-color);
 }
 
 :global(:root[data-theme='dark'] .toolbar-search) {
@@ -410,7 +416,8 @@
 .toolbar-settings-button:hover,
 .toolbar-theme-button:hover,
 .toolbar-search-button:hover {
-  background-color: var(--border-input);
+  background-color: var(--bg-hover);
+  border-color: var(--border-subtle);
 }
 
 .toolbar-settings-button svg,
@@ -698,8 +705,10 @@
 
   .toolbar-settings-button:hover,
   .toolbar-theme-button:hover,
+  .toolbar-chat-button:hover,
   .toolbar-search-button:hover {
     background-color: var(--toolbar-settings-hover-background-dark);
+    border-color: var(--border-color);
   }
 
   .dropdown-item {
@@ -760,7 +769,8 @@
 :global(:root[data-theme='light'] .toolbar-settings-button:hover),
 :global(:root[data-theme='light'] .toolbar-theme-button:hover),
 :global(:root[data-theme='light'] .toolbar-search-button:hover) {
-  background-color: var(--border-input);
+  background-color: var(--bg-hover);
+  border-color: var(--border-subtle);
 }
 </style>
 

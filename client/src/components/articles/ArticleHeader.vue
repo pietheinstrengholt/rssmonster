@@ -91,3 +91,5 @@ export default {
   }
 };
 </script>
+
+<style src="./articleSourceIcons.css"></style>

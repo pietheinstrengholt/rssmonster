@@ -136,6 +136,10 @@ export default {
   box-shadow: none;
 }
 
+.sidebar-category.selected:hover {
+  background-color: var(--sidebar-selected-hover-background);
+}
+
 .sidebar-category:not(.selected):hover {
   background-color: var(--bg-hover);
 }
@@ -226,6 +230,10 @@ export default {
 :global(:root[data-theme='dark'] .sidebar-category.selected) {
   color: var(--sidebar-selected-text-dark) !important;
   background-color: var(--sidebar-selected-background-dark) !important;
+}
+
+:global(:root[data-theme='dark'] .sidebar-category.selected:hover) {
+  background-color: var(--sidebar-selected-hover-background) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-category:not(.selected):hover) {
