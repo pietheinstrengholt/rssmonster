@@ -17,8 +17,11 @@ const mountSettings = () => {
   });
 };
 
-// This function mounts a two-item reader list for keyboard navigation tests.
-const mountReaderLayout = () => {
+// This function mounts a reader list with the requested articles for keyboard and pane tests.
+const mountReaderLayout = (articles = [
+  { id: 1, title: 'First article', status: 'unread', tags: [] },
+  { id: 2, title: 'Second article', status: 'unread', tags: [] }
+]) => {
   const stores = createFocusedStores({
     overview: {
       categories: [],
@@ -40,11 +43,8 @@ const mountReaderLayout = () => {
   return mount(ArticleReaderLayout, {
   attachTo: document.body,
   props: {
-    articles: [
-      { id: 1, title: 'First article', status: 'unread', tags: [] },
-      { id: 2, title: 'Second article', status: 'unread', tags: [] }
-    ],
-    container: [1, 2],
+    articles,
+    container: articles.map(article => article.id),
     currentSelection: 'unread',
     currentViewUnreadCount: 2,
     currentViewSourceCount: 2,
@@ -213,6 +213,24 @@ describe('keyboard access and focus', () => {
     const items = wrapper.findAll('.readerArticleListItem');
     expect(document.activeElement).toBe(items[1].element);
     expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it('renders expanded similar articles in the reader panel instead of the article list', () => {
+    const wrapper = mountReaderLayout([
+      { id: 1, title: 'Selected article', status: 'unread', tags: [] },
+      {
+        id: 3,
+        title: 'Similar article',
+        status: 'unread',
+        tags: [],
+        isEventArticle: true,
+        clusterParentId: 1
+      }
+    ]);
+
+    expect(wrapper.findAll('.readerArticleListItem')).toHaveLength(1);
+    expect(wrapper.findAll('article-item-stub')).toHaveLength(2);
     wrapper.unmount();
   });
 });

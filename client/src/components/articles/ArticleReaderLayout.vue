@@ -83,7 +83,7 @@
                 <BootstrapIcon icon="arrow-up-short" aria-hidden="true" />
                 <span>Mark articles above as read</span>
               </button>
-              <button type="button" class="bulk-action-menu-item" role="menuitem" :disabled="selectedArticleIndex === -1 || selectedArticleIndex >= articles.length - 1" @click="runBulkAction('mark-below-read')">
+              <button type="button" class="bulk-action-menu-item" role="menuitem" :disabled="selectedArticleIndex === -1 || selectedArticleIndex >= readerListArticles.length - 1" @click="runBulkAction('mark-below-read')">
                 <BootstrapIcon icon="arrow-down-short" aria-hidden="true" />
                 <span>Mark articles below as read</span>
               </button>
@@ -103,7 +103,7 @@
       </div>
 
       <div
-        v-for="article in articles"
+        v-for="article in readerListArticles"
         :key="article.id"
         class="readerArticleListItem"
         :class="{ readerArticleListItemSelected: article.id === selectedArticleId }"
@@ -174,6 +174,19 @@
         ref="selectedArticleComponent"
         v-bind="selectedArticle"
         :key="selectedArticle.id"
+        @update-favorite="$emit('update-favorite', $event)"
+        @update-clicked="$emit('update-clicked', $event)"
+        @toggle-read-status="$emit('toggle-read-status', $event)"
+        @event-articles-loaded="$emit('event-articles-loaded', $event)"
+        @event-articles-collapsed="$emit('event-articles-collapsed', $event)"
+        @duplicate-articles-loaded="$emit('duplicate-articles-loaded', $event)"
+        @duplicate-articles-collapsed="$emit('duplicate-articles-collapsed', $event)"
+        @article-not-interested="$emit('article-not-interested', $event)"
+      />
+      <ArticleItem
+        v-for="article in selectedRelatedArticles"
+        :key="article.id"
+        v-bind="article"
         @update-favorite="$emit('update-favorite', $event)"
         @update-clicked="$emit('update-clicked', $event)"
         @toggle-read-status="$emit('toggle-read-status', $event)"
@@ -311,6 +324,10 @@ export default {
   },
   computed: {
     ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
+    // Keeps temporarily expanded related articles out of the reader's middle-pane list.
+    readerListArticles() {
+      return this.articles.filter(article => !article.clusterParentId);
+    },
     // Shows the briefing introduction only for the unfiltered all-sources briefing.
     showDailyBriefingIntro() {
       const selection = this.selectionStore.currentSelection;
@@ -323,9 +340,13 @@ export default {
     selectedArticle() {
       return this.articles.find(article => article.id === this.selectedArticleId) || null;
     },
+    // Returns related articles expanded beneath the selected article in the reader panel.
+    selectedRelatedArticles() {
+      return this.articles.filter(article => article.clusterParentId === this.selectedArticleId);
+    },
     // Returns the index of the article currently shown in the reader panel.
     selectedArticleIndex() {
-      return this.articles.findIndex(article => article.id === this.selectedArticleId);
+      return this.readerListArticles.findIndex(article => article.id === this.selectedArticleId);
     },
     // Returns the icon name that matches the active reader collection.
     selectionIcon() {
@@ -447,13 +468,15 @@ export default {
     articles: {
       immediate: true,
       handler(articles) {
-        if (!articles.length) {
+        const selectableArticles = articles.filter(article => !article.clusterParentId);
+
+        if (!selectableArticles.length) {
           this.selectedArticleId = null;
           return;
         }
 
-        if (!articles.some(article => article.id === this.selectedArticleId)) {
-          this.selectedArticleId = articles[0].id;
+        if (!selectableArticles.some(article => article.id === this.selectedArticleId)) {
+          this.selectedArticleId = selectableArticles[0].id;
         }
       }
     },
@@ -539,8 +562,8 @@ export default {
     },
     // Selects an article by index when keyboard navigation moves through the list.
     selectArticleByIndex(index) {
-      if (index < 0 || index >= this.articles.length) return;
-      const article = this.articles[index];
+      if (index < 0 || index >= this.readerListArticles.length) return;
+      const article = this.readerListArticles[index];
       this.selectArticle(article.id);
       this.$nextTick(() => this.focusSelectedListItem());
     },
@@ -576,12 +599,12 @@ export default {
       if (this.shouldIgnoreKeyboardEvent(event)) return;
       if (!['ArrowDown', 'ArrowUp', 'Enter', 'j', 'k', 'o', 'm', 'r', 's'].includes(event.key)) return;
 
-      const currentIndex = this.articles.findIndex(article => article.id === this.selectedArticleId);
+      const currentIndex = this.readerListArticles.findIndex(article => article.id === this.selectedArticleId);
       if (currentIndex === -1) return;
 
       if (['ArrowDown', 'j'].includes(event.key)) {
         event.preventDefault();
-        this.selectArticleByIndex(Math.min(currentIndex + 1, this.articles.length - 1));
+        this.selectArticleByIndex(Math.min(currentIndex + 1, this.readerListArticles.length - 1));
       } else if (['ArrowUp', 'k'].includes(event.key)) {
         event.preventDefault();
         this.selectArticleByIndex(Math.max(currentIndex - 1, 0));
