@@ -84,29 +84,24 @@ describe('ArticleMeta', () => {
     expect(wrapper.get('.ad-icon').attributes('title')).toBe('Promotional content detected (score: 1)');
   });
 
-  // Verifies grouping, duplicate, and rule-tag controls emit their domain events.
+  // Verifies grouping and duplicate controls emit their domain events.
   it('renders article relationship badges and emits selection events', async () => {
-    const tag = { id: 7, name: 'technology' };
     const wrapper = mountArticleMeta({
       event: { id: 12, sourceCount: 3 },
       eventArticleCountTotal: 3,
       duplicateCount: 1,
-      grouping: 'event',
-      ruleTags: [tag]
+      grouping: 'event'
     });
 
     expect(wrapper.get('.source-badge').text()).toContain('3 sources');
     expect(wrapper.get('.similar-badge').text()).toBe('+2 similar articles');
     expect(wrapper.get('.duplicate-badge').text()).toBe('1 duplicate');
-    expect(wrapper.get('.mobile-rule-tag').text()).toBe('Technology');
 
     await wrapper.get('.similar-badge').trigger('click');
     await wrapper.get('.duplicate-badge').trigger('click');
-    await wrapper.get('.mobile-rule-tag').trigger('click');
 
     expect(wrapper.emitted('view-event-articles')).toEqual([[12]]);
     expect(wrapper.emitted('view-duplicate-articles')).toEqual([[]]);
-    expect(wrapper.emitted('select-tag')).toEqual([[tag]]);
   });
 
   // Verifies relationship labels use singular and plural grammar at their boundaries.
@@ -136,6 +131,19 @@ describe('ArticleMeta', () => {
     });
 
     expect(wrapper.find('.mobile-score-icon').exists()).toBe(false);
+    expect(wrapper.find('.source-badge').exists()).toBe(false);
+    expect(wrapper.find('.similar-badge').exists()).toBe(false);
+  });
+
+  // Keeps expanded related articles from repeating their parent's relationship badges.
+  it('hides event relationship badges on expanded related articles', () => {
+    const wrapper = mountArticleMeta({
+      event: { id: 12, sourceCount: 3 },
+      eventArticleCountTotal: 3,
+      grouping: 'event',
+      isEventArticle: true
+    });
+
     expect(wrapper.find('.source-badge').exists()).toBe(false);
     expect(wrapper.find('.similar-badge').exists()).toBe(false);
   });
@@ -188,5 +196,24 @@ describe('ArticleTagsScores', () => {
     expect(wrapper.get('.ad-score').text()).toBe('Ads: 1');
     expect(wrapper.get('.sentiment-score').text()).toBe('Sentiment: 2');
     expect(wrapper.get('.quality-score').text()).toBe('Writing: 5');
+  });
+
+  // Verifies every analysis dimension uses the same score-severity thresholds.
+  it('assigns shared severity classes at the score boundaries', () => {
+    const wrapper = mountArticleTagsScores({
+      roundedQuality: 59,
+      advertisementScore: 60,
+      sentimentScore: 79,
+      qualityScore: 80,
+      showQuality: true,
+      showAdvertisement: true,
+      showSentiment: true,
+      showWritingQuality: true
+    });
+
+    expect(wrapper.get('.overall-score').classes()).toContain('score-poor');
+    expect(wrapper.get('.ad-score').classes()).toContain('score-medium');
+    expect(wrapper.get('.sentiment-score').classes()).toContain('score-medium');
+    expect(wrapper.get('.quality-score').classes()).toContain('score-good');
   });
 });

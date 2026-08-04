@@ -379,6 +379,7 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
     expect(context.hasArticlePreview({ description: 'Readable' })).toBe(true);
     expect(context.similarCount({ eventArticleCountTotal: 4 })).toBe(3);
     expect(context.similarCount({ eventArticleCountTotal: 1 })).toBe(0);
+    expect(context.similarCount({ eventArticleCountTotal: 4, isEventArticle: true })).toBe(0);
   });
 
   it('covers refs, selection, scrolling, menu positioning, and bulk actions', () => {

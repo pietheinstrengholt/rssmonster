@@ -148,8 +148,8 @@
   /* Article tags and category badges */
   --badge-similar-bg: #E8F2FE;
   --badge-similar-text: #1D4ED8;
-  --badge-duplicate-bg: #F5EEFD;
-  --badge-duplicate-text: #6D28D9;
+  --badge-duplicate-bg: #FDF2F8;
+  --badge-duplicate-text: #BE185D;
   --badge-tag-bg: #F3F4F6;
   --badge-tag-text: #4B5563;
   --badge-quality-bg: #EAF7EF;
@@ -164,13 +164,20 @@
   --badge-writing-text: #047857;
   --badge-tag-rule-bg: #F5EEFD;
   --badge-tag-rule-text: #6D28D9;
-  --article-category-badge-background: var(--badge-tag-bg);
   --article-tag-background: var(--badge-tag-bg);
   --article-rule-tag-background: var(--badge-tag-rule-bg);
   --article-rule-tag-text: var(--badge-tag-rule-text);
+  --article-source-diversity-background: #ECFEFF;
+  --article-source-diversity-text: #0E7490;
 
   /* Article score badges */
   --article-score-text: var(--badge-tag-text);
+  --article-score-poor-background: #FEF3F2;
+  --article-score-poor-text: #B42318;
+  --article-score-medium-background: #FFF4EB;
+  --article-score-medium-text: #B45309;
+  --article-score-good-background: #ECFDF3;
+  --article-score-good-text: #027A48;
   --article-overall-score-background: var(--badge-quality-bg);
   --article-overall-score-text: var(--badge-quality-text);
   --article-ad-score-background: var(--badge-ad-bg);
@@ -178,6 +185,7 @@
   --article-sentiment-score-background: var(--badge-sentiment-bg);
   --article-sentiment-score-text: var(--badge-sentiment-text);
   --article-sentiment-moderate: #D4A017;
+  --article-sentiment-poor: var(--badge-ad-text);
   --article-quality-background: var(--badge-writing-bg);
   --article-quality-positive: var(--badge-writing-text);
   --article-quality-good: #43A047;
@@ -287,8 +295,8 @@
   /* Dark semantic badge palette */
   --badge-similar-bg: #1E3A5F;
   --badge-similar-text: #93C5FD;
-  --badge-duplicate-bg: #35205F;
-  --badge-duplicate-text: #C4B5FD;
+  --badge-duplicate-bg: #4A1433;
+  --badge-duplicate-text: #F9A8D4;
   --badge-tag-bg: #2A2F3A;
   --badge-tag-text: #D1D5DB;
   --badge-quality-bg: #173D2A;
@@ -303,6 +311,14 @@
   --badge-writing-text: #6EE7B7;
   --badge-tag-rule-bg: #35205F;
   --badge-tag-rule-text: #C4B5FD;
+  --article-source-diversity-background: #12333B;
+  --article-source-diversity-text: #67E8F9;
+  --article-score-poor-background: #4A1F1F;
+  --article-score-poor-text: #FCA5A5;
+  --article-score-medium-background: #4A3410;
+  --article-score-medium-text: #FCD34D;
+  --article-score-good-background: #123B2F;
+  --article-score-good-text: #6EE7B7;
   --settings-info-border: #274C9F;
   --settings-orange-border: #9A4A1F;
   --settings-danger-border: #991B1B;
@@ -394,6 +410,7 @@
   --article-rule-tag-background-dark: var(--badge-tag-rule-bg);
   --article-rule-tag-text-dark: var(--badge-tag-rule-text);
   --article-overall-score-background-dark: var(--badge-quality-bg);
+  --article-overall-score-text-dark: var(--badge-quality-text);
   --article-ad-score-background-dark: var(--badge-ad-bg);
   --article-ad-score-text-dark: var(--badge-ad-text);
   --article-sentiment-background-dark: var(--badge-sentiment-bg);
@@ -401,6 +418,7 @@
   --article-sentiment-moderate-dark: var(--badge-sentiment-text);
   --article-sentiment-poor-dark: var(--badge-ad-text);
   --article-quality-background-dark: var(--badge-writing-bg);
+  --article-writing-score-text-dark: var(--badge-writing-text);
   --article-quality-good-dark: var(--badge-writing-text);
   --article-quality-okay-dark: var(--badge-ad-text);
   --article-quality-poor-dark: var(--badge-quality-text);

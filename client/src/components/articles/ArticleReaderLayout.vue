@@ -672,6 +672,7 @@ export default {
     },
     // Returns the related article count when available.
     similarCount(article) {
+      if (article.isEventArticle) return 0;
       return article.eventArticleCountTotal > 1 ? article.eventArticleCountTotal - 1 : 0;
     }
   }

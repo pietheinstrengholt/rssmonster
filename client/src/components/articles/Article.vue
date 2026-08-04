@@ -20,11 +20,11 @@
         <div class="article-list-meta">
           <span class="article-list-feed">{{ author || feed.feedName }}</span>
           <span class="article-list-dot">·</span>
-          <span v-if="event && eventArticleCountTotal > 1 && selectionStore.currentSelection.grouping !== 'none' && event.sourceCount >= 2" class="source-badge" :title="`${event.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ event.sourceCount }} sources</span>
+          <span v-if="!isEventArticle && event && eventArticleCountTotal > 1 && selectionStore.currentSelection.grouping !== 'none' && event.sourceCount >= 2" class="source-badge" :title="`${event.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ event.sourceCount }} sources</span>
           <BootstrapIcon v-if="isDevelopingStory" icon="lightning-charge-fill" class="developing-story-icon" title="Developing story" aria-label="Developing story" />
-          <span v-if="event && eventArticleCountTotal > 1 && selectionStore.currentSelection.grouping !== 'none'" class="similar-badge" @click.stop="viewEventArticles(event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</span>
+          <span v-if="!isEventArticle && event && eventArticleCountTotal > 1 && selectionStore.currentSelection.grouping !== 'none'" class="similar-badge" @click.stop="viewEventArticles(event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</span>
           <span v-if="duplicateCount > 0" class="duplicate-badge" @click.stop="viewDuplicateArticles">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</span>
-          <span v-for="tag in ruleTags" :key="'list-rule-' + tag.id" class="tag tag-rule mobile-rule-tag" @click.stop="selectTag(tag)">{{ formatTagName(tag.name) }}</span>
+          <span v-for="tag in ruleTags" :key="'list-rule-' + tag.id" class="tag tag-rule" @click.stop="selectTag(tag)">{{ formatTagName(tag.name) }}</span>
         </div>
         <div v-if="!hasArticlePreview" class="article-preview-empty">
           <span class="article-preview-empty__message">No preview available</span>
@@ -53,7 +53,7 @@
         <div class="article-layout">
           <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
           <div class="meta-row">
-            <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" />
+            <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" />
             <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
           </div>
           <div v-if="!hasArticlePreview" class="article-preview-empty">
@@ -614,7 +614,7 @@ export default {
   display: flex;
   flex-wrap: wrap;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   gap: 10px;
   margin: 12px 0 8px;
   padding: 10px 14px;
@@ -820,14 +820,15 @@ export default {
   padding: 3px 8px;
   border-radius: 6px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
   cursor: pointer;
   vertical-align: middle;
 }
 
-.article-card .article-tags .tag {
+.article-card .article-tags .tag,
+.article-card .article-list-meta .tag {
   display: inline-flex;
   align-items: center;
   background-color: var(--article-tag-background);
@@ -843,7 +844,8 @@ export default {
   vertical-align: middle;
 }
 
-.article-card .article-tags .tag.tag-rule {
+.article-card .article-tags .tag.tag-rule,
+.article-card .article-list-meta .tag.tag-rule {
   background-color: var(--article-rule-tag-background);
   color: var(--article-rule-tag-text);
 }
@@ -852,9 +854,10 @@ export default {
   display: inline-flex;
   align-items: center;
   padding: 3px 8px;
-  border-radius: 3px;
+  border: 1px solid var(--color-transparent);
+  border-radius: 6px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
   background-color: var(--bg-subtle);
@@ -862,28 +865,19 @@ export default {
   vertical-align: middle;
 }
 
-.article-card .article-tags .overall-score {
-  opacity: 0.85;
-  background-color: var(--article-overall-score-background);  /* Pale red */
-  color: var(--article-overall-score-text);             /* Darker red */
+.article-card .article-tags .score.score-poor {
+  background-color: var(--article-score-poor-background);
+  color: var(--article-score-poor-text);
 }
 
-.article-card .article-tags .ad-score {
-  opacity: 0.85;
-  background-color: var(--article-ad-score-background);
-  color: var(--article-ad-score-text);
+.article-card .article-tags .score.score-medium {
+  background-color: var(--article-score-medium-background);
+  color: var(--article-score-medium-text);
 }
 
-.article-card .article-tags .sentiment-score {
-  opacity: 0.85;
-  background-color: var(--article-sentiment-score-background);
-  color: var(--article-sentiment-score-text);
-}
-
-.article-card .article-tags .quality-score {
-  opacity: 0.85;
-  background-color: var(--article-quality-background);
-  color: var(--article-quality-positive);
+.article-card .article-tags .score.score-good {
+  background-color: var(--article-score-good-background);
+  color: var(--article-score-good-text);
 }
 
 .article-content-wrapper h1 {
@@ -923,11 +917,7 @@ export default {
     display: contents;
   }
 
-  .article-card .article-meta .mobile-rule-tag {
-    margin-left: 0;
-  }
-
-  .article-card .article-tags .tag {
+  .article-card .article-tags .tag:not(.tag-rule) {
     display: none;
   }
 
@@ -1002,6 +992,7 @@ span.similar-badge {
   display: inline-flex;
   align-items: center;
   background-color: var(--badge-similar-bg);
+  border: 1px solid var(--color-transparent);
   color: var(--badge-similar-text);
   padding: 3px 8px;
   border-radius: 6px;
@@ -1011,7 +1002,6 @@ span.similar-badge {
   white-space: nowrap;
   cursor: pointer;
   vertical-align: middle;
-  opacity: 0.85;
 }
 
 .developing-story-icon {
@@ -1027,6 +1017,7 @@ span.similar-badge {
   display: inline-flex;
   align-items: center;
   padding: 3px 8px;
+  border: 1px solid var(--color-transparent);
   border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
@@ -1035,7 +1026,6 @@ span.similar-badge {
   color: var(--badge-duplicate-text);
   white-space: nowrap;
   vertical-align: middle;
-  opacity: 0.85;
   cursor: pointer;
 }
 
@@ -1044,20 +1034,15 @@ span.similar-badge {
   align-items: center;
   gap: 3px;
   padding: 3px 8px;
+  background-color: var(--article-source-diversity-background);
+  border: 1px solid var(--color-transparent);
   border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
-  background-color: var(--article-quality-background);
-  color: var(--article-quality-positive);
+  color: var(--article-source-diversity-text);
   white-space: nowrap;
   vertical-align: middle;
-  opacity: 0.85;
-}
-
-:root[data-theme='dark'] .source-badge {
-  background-color: var(--article-quality-background-dark);
-  color: var(--article-quality-good-dark);
 }
 
 :root[data-theme='dark'] .developing-story-icon {
@@ -1074,65 +1059,20 @@ span.similar-badge {
   color: var(--text-secondary);
 }
 
-:root[data-theme='dark'] .article-card .article-tags .tag {
+:root[data-theme='dark'] .article-card .article-tags .tag,
+:root[data-theme='dark'] .article-card .article-list-meta .tag {
   background-color: var(--article-tag-background-dark);
   color: var(--article-tag-text-dark);
 }
 
-:root[data-theme='dark'] .article-card .article-tags .tag.tag-rule {
+:root[data-theme='dark'] .article-card .article-tags .tag.tag-rule,
+:root[data-theme='dark'] .article-card .article-list-meta .tag.tag-rule {
   background-color: var(--article-rule-tag-background-dark);
   color: var(--article-rule-tag-text-dark);
 }
 
-:root[data-theme='dark'] .article-card .article-tags .score {
-  background-color: var(--bg-modal);
-  color: var(--text-secondary);
-}
-
-:root[data-theme='dark'] .article-card .article-tags .overall-score {
-  background-color: var(--article-overall-score-background-dark);
-  color: var(--article-quality-poor-dark);
-}
-
-:root[data-theme='dark'] .article-card .article-tags .ad-score {
-  background-color: var(--article-ad-score-background-dark);
-  color: var(--article-ad-score-text-dark);
-}
-
-:root[data-theme='dark'] .article-card .article-tags .sentiment-score {
-  background-color: var(--article-sentiment-background-dark);
-  color: var(--article-sentiment-score-text-dark);
-}
-
-:root[data-theme='dark'] .article-card .article-tags .quality-score {
-  background-color: var(--article-quality-background-dark);
-  color: var(--article-quality-excellent);
-}
-
 .source-diversity-icon {
   font-size: 10px;
-}
-
-/* Rule-based tags shown inline with article-meta on mobile portrait only */
-.mobile-rule-tag {
-  display: none;
-}
-
-@media (max-width: 879px) and (orientation: portrait) {
-  .mobile-rule-tag {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 6px;
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1.4;
-    white-space: nowrap;
-    vertical-align: middle;
-    background-color: var(--article-rule-tag-background);
-    color: var(--article-rule-tag-text);
-  }
 }
 
 .mobile-score-icon {
@@ -1179,7 +1119,7 @@ span.similar-badge {
 }
 
 .mobile-score-icon.sentiment-poor {
-  color: var(--article-sentiment-poor-dark);
+  color: var(--article-sentiment-poor);
 }
 
 .mobile-score-icon.sentiment-very-poor {
@@ -1342,11 +1282,6 @@ span.similar-badge {
 
 .article-list-dot {
   color: var(--text-meta, var(--text-muted));
-}
-
-.article-list-meta .mobile-rule-tag {
-  display: inline-flex;
-  margin-left: 0;
 }
 
 .article-preview-empty {
@@ -1519,43 +1454,6 @@ span.similar-badge {
   }
 }
 
-.inline-mobile-tags {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-left: 6px;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.inline-mobile-tags .tag,
-.inline-mobile-tags .score {
-  background-color: var(--badge-tag-bg);
-  color: var(--article-score-text);
-  padding: 2px 6px;
-  border-radius: 3px;
-}
-
-.inline-mobile-tags .overall-score {
-  background-color: var(--article-overall-score-background);
-  color: var(--article-overall-score-text);
-}
-
-.inline-mobile-tags .ad-score {
-  background-color: var(--article-ad-score-background);
-  color: var(--article-ad-score-text);
-}
-
-.inline-mobile-tags .sentiment-score {
-  background-color: var(--article-sentiment-score-background);
-  color: var(--article-sentiment-score-text);
-}
-
-.inline-mobile-tags .quality-score {
-  background-color: var(--article-quality-background);
-  color: var(--article-quality-positive);
-}
-
 .media-content.enclosure img {
   max-width: 100%;
   height: auto;
@@ -1636,36 +1534,6 @@ span.similar-badge {
     background-color: var(--article-event-background-dark);
   }
 
-  .article-card .article-tags .tag {
-    background-color: var(--article-tag-background-dark);
-    color: var(--article-tag-text-dark);
-  }
-
-  .article-card .article-tags .tag-badge {
-    background-color: var(--color-transparent);
-    color: var(--text-secondary);
-  }
-
-  .article-card .article-tags .tag.tag-rule {
-    background-color: var(--article-rule-tag-background-dark);
-    color: var(--article-rule-tag-text-dark);
-  }
-
-  .mobile-rule-tag {
-    background-color: var(--article-rule-tag-background-dark);
-    color: var(--article-rule-tag-text-dark);
-  }
-
-  .article-card .article-tags .score {
-    background-color: var(--bg-modal);
-    color: var(--text-secondary);
-  }
-
- .article-card .article-tags .overall-score {
-    background-color: var(--article-overall-score-background-dark);  /* Dark reddish-brown */
-    color: var(--article-quality-poor-dark);             /* Bright red */
-  }
-
   .article-card .dropdown .btn {
     color: var(--text-inverted);
     opacity: 0.9;
@@ -1684,47 +1552,6 @@ span.similar-badge {
   .article-card .dropdown-item:focus {
     background-color: var(--bg-modal);
     color: var(--toolbar-text) !important;
-  }
-
-  .article-card .article-tags .ad-score {
-    background-color: var(--article-ad-score-background-dark);
-    color: var(--article-ad-score-text-dark);
-  }
-
-  .article-card .article-tags .sentiment-score {
-    background-color: var(--article-sentiment-background-dark);
-    color: var(--article-sentiment-score-text-dark);
-  }
-
-  .article-card .article-tags .quality-score {
-    background-color: var(--article-quality-background-dark);
-    color: var(--article-quality-excellent);
-  }
-
-  .inline-mobile-tags .tag,
-  .inline-mobile-tags .score {
-    background-color: var(--bg-modal);
-    color: var(--text-secondary);
-  }
-
-  .inline-mobile-tags .overall-score {
-    background-color: var(--article-overall-score-background-dark);
-    color: var(--article-quality-poor-dark);
-  }
-
-  .inline-mobile-tags .ad-score {
-    background-color: var(--article-ad-score-background-dark);
-    color: var(--article-ad-score-text-dark);
-  }
-
-  .inline-mobile-tags .sentiment-score {
-    background-color: var(--article-sentiment-background-dark);
-    color: var(--article-sentiment-score-text-dark);
-  }
-
-  .inline-mobile-tags .quality-score {
-    background-color: var(--article-quality-background-dark);
-    color: var(--article-quality-excellent);
   }
 
   .mobile-score-icon.quality-excellent {
@@ -1760,16 +1587,11 @@ span.similar-badge {
   }
 
   .mobile-score-icon.sentiment-poor {
-    color: var(--article-ad-score-text-dark);
+    color: var(--article-sentiment-poor-dark);
   }
 
   .mobile-score-icon.sentiment-very-poor {
     color: var(--article-quality-poor-dark);
-  }
-
-  .source-badge {
-    background-color: var(--article-quality-background-dark);
-    color: var(--article-quality-excellent);
   }
 
   .article-card .article-full-content a,
