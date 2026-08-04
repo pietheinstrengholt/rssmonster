@@ -146,4 +146,23 @@ describe('articleQueryParser.service', () => {
     expect(result.filters.titleExact).toBe(true);
     expect(result.text).toBe('openai');
   });
+
+  it('parses remaining field filters and unquoted title and author values', () => {
+    const fields = parseArticleQuery({
+      search: 'firstSeen:12h tag:security language:EN sort:quality'
+    });
+    const title = parseArticleQuery({ search: 'title:OpenAI' });
+    const author = parseArticleQuery({ search: 'author:Ada' });
+    const quotedAuthor = parseArticleQuery({ search: 'author:"Ada Lovelace"' });
+
+    expect(fields.filters).toMatchObject({
+      firstSeenAge: { value: 12, unit: 'h' },
+      tag: 'security',
+      language: 'en'
+    });
+    expect(fields.sort).toBe('quality');
+    expect(title.filters.title).toBe('OpenAI');
+    expect(author.filters.author).toBe('Ada');
+    expect(quotedAuthor.filters.author).toBe('Ada Lovelace');
+  });
 });

@@ -8,7 +8,8 @@ const mocks = vi.hoisted(() => ({
   taxonomyFindAll: vi.fn(),
   buildAudit: vi.fn(),
   evolveMemberships: vi.fn(),
-  disambiguate: vi.fn()
+  disambiguate: vi.fn(),
+  debugIsland: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -34,6 +35,15 @@ vi.mock('../../services/islands/islandNameDisambiguation.js', async (importOrigi
   return {
     ...original,
     disambiguateDuplicateIslandNamesForUser: mocks.disambiguate
+  };
+});
+
+vi.mock('../../services/islands/islandVectorUtils.js', async (importOriginal) => {
+  const original = await importOriginal();
+  return {
+    ...original,
+    ISLAND_DEBUG: true,
+    debugIsland: mocks.debugIsland
   };
 });
 
@@ -129,5 +139,88 @@ describe('island profile persistence', () => {
 
     expect(mocks.islandCreate).not.toHaveBeenCalled();
     expect(result).toHaveLength(0);
+  });
+
+  it('updates a semantic match from article-only behavioral evidence', async () => {
+    const island = existingIsland();
+    mocks.islandFindAll.mockResolvedValue([island]);
+    mocks.islandTopicFindAll.mockResolvedValue([]);
+
+    const result = await persistInterestIslandProfiles(3, [{
+      vector: [1, 0],
+      weight: 0.6,
+      label: 'Behavioral',
+      topics: [],
+      articles: [{
+        articleId: 8,
+        score: 3,
+        positiveSignals: { deepReads: 1 }
+      }],
+      positiveSignals: { deepReads: 1 }
+    }], 'tx');
+
+    expect(island.update).toHaveBeenCalled();
+    expect(mocks.evolveMemberships).not.toHaveBeenCalled();
+    expect(result.summary.updatedIslandCount).toBe(1);
+  });
+
+  it('creates an article-only island without topic memberships', async () => {
+    const created = existingIsland({ id: 11, label: 'Behavioral' });
+    mocks.islandFindAll.mockResolvedValue([]);
+    mocks.islandCreate.mockResolvedValue(created);
+
+    const result = await persistInterestIslandProfiles(3, [{
+      vector: [1, 0],
+      weight: 0.5,
+      label: 'Behavioral',
+      topics: [],
+      articles: [{ articleId: 12, score: 2 }],
+      positiveSignals: { clicks: 1 }
+    }], 'tx');
+
+    expect(mocks.islandTopicBulkCreate).not.toHaveBeenCalled();
+    expect(result.summary).toMatchObject({
+      createdIslandCount: 1,
+      totalMembershipCount: 0
+    });
+  });
+
+  it('describes each article engagement signal while updating distinct islands', async () => {
+    const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const signals = [
+      { stars: 1 },
+      { positives: 1 },
+      { clicks: 1 },
+      { negatives: 1 },
+      {}
+    ];
+    const islands = signals.map((_signal, index) => existingIsland({
+      id: 20 + index,
+      islandVector: signals.map((_value, vectorIndex) => vectorIndex === index ? 1 : 0)
+    }));
+    mocks.islandFindAll.mockResolvedValue(islands);
+    mocks.islandTopicFindAll.mockResolvedValue([]);
+
+    const profiles = signals.map((positiveSignals, index) => ({
+      vector: signals.map((_value, vectorIndex) => vectorIndex === index ? 1 : 0),
+      weight: 0.5,
+      label: `Behavior ${index}`,
+      topics: [],
+      articles: [{ articleId: 100 + index, score: 1, positiveSignals }],
+      positiveSignals
+    }));
+
+    const result = await persistInterestIslandProfiles(3, profiles, 'tx');
+
+    expect(result.summary.updatedIslandCount).toBe(5);
+    expect(consoleLog.mock.calls.map(([message]) => message)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('engagement=star'),
+        expect.stringContaining('engagement=positive'),
+        expect.stringContaining('engagement=click'),
+        expect.stringContaining('engagement=negative'),
+        expect.stringContaining('engagement=behavior')
+      ])
+    );
   });
 });

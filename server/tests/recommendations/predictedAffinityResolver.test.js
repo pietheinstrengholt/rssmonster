@@ -70,4 +70,27 @@ describe('resolvePredictedAffinity', () => {
     expect(result.predictedAffinity).toBe('deep');
     expect(result.confidence).toBeGreaterThan(0.6);
   });
+
+  it('uses a safe default when article or feed context is absent', () => {
+    expect(resolvePredictedAffinity({ article: null, feed: null })).toEqual({
+      predictedAffinity: 'medium',
+      confidence: 0.25,
+      source: 'default'
+    });
+  });
+
+  it('distinguishes skim value from consistently ignored feeds', () => {
+    const article = { attentionBucket: 0, status: 'unread' };
+    const skim = resolvePredictedAffinity({
+      article,
+      feed: { feedSkimRatio: 0.7, feedAttentionSampleSize: 20 }
+    });
+    const ignored = resolvePredictedAffinity({
+      article,
+      feed: { feedIgnoreRatio: 0.9, feedAttentionSampleSize: 20 }
+    });
+
+    expect(skim.predictedAffinity).toBe('skim');
+    expect(ignored.predictedAffinity).toBe('ignore');
+  });
 });

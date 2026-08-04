@@ -102,4 +102,30 @@ describe('hotlink batcher', () => {
     );
     consoleError.mockRestore();
   });
+
+  it('bounds pending URLs and logs queue overflow only once', async () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const batcher = createHotlinkBatcher(feed, {
+      flushThreshold: 10,
+      maxPendingUrls: 2
+    });
+
+    batcher.add([
+      'https://example.com/one',
+      'https://example.com/two',
+      'https://example.com/three'
+    ], 101);
+    batcher.add(['https://example.com/four'], 102);
+    await batcher.flush();
+
+    expect(consoleWarn).toHaveBeenCalledTimes(1);
+    expect(replaceMany).toHaveBeenCalledWith([
+      {
+        sourceArticleId: 101,
+        urls: ['https://example.com/one', 'https://example.com/two']
+      },
+      { sourceArticleId: 102, urls: [] }
+    ], feed.id, feed.userId);
+    consoleWarn.mockRestore();
+  });
 });

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { computeRecommended } from '../../services/recommendations/recommendedScore.js';
+import {
+  computeRecommended,
+  computeRecommendedBreakdown
+} from '../../services/recommendations/recommendedScore.js';
 
 describe('computeRecommended', () => {
   it('ranks larger corroborated events higher with equal freshness/quality', () => {
@@ -126,5 +129,52 @@ describe('computeRecommended', () => {
     expect(highInterestScore).toBeGreaterThan(lowInterestScore);
     expect(neutralInterestScore).toBeGreaterThan(lowInterestScore);
     expect(highInterestScore - lowInterestScore).toBeCloseTo(0.44, 3);
+  });
+
+  it('explains bounded recommendation signals and rule boosts', () => {
+    const breakdown = computeRecommendedBreakdown({
+      freshness: 0.8,
+      interestScore: 4,
+      quality: 0.9,
+      event: {
+        articleCount: 128,
+        sourceCount: 16,
+        sourceDiversityScore: 5
+      },
+      Tags: [{ tagType: 'rule' }]
+    });
+
+    expect(breakdown).toMatchObject({
+      freshness: 0.8,
+      interestScore: 1,
+      quality: 0.9,
+      coverage: 1,
+      crossSource: 1,
+      corroboration: 1,
+      eventBoost: 0.1,
+      ruleBoost: 0.15,
+      eventArticleCount: 128,
+      sourceCount: 16,
+      recommended: 1
+    });
+  });
+
+  it('explains defaults and invalid event metadata without producing NaN', () => {
+    const breakdown = computeRecommendedBreakdown({
+      interestScore: 'invalid',
+      get: key => key === 'event' ? { articleCount: 0, sourceCount: 0 } : undefined
+    });
+
+    expect(breakdown).toMatchObject({
+      freshness: 0.5,
+      interestScore: 0,
+      quality: 0.7,
+      coverage: 0,
+      eventBoost: 0,
+      ruleBoost: 0,
+      eventArticleCount: 1,
+      sourceCount: 1
+    });
+    expect(Number.isFinite(breakdown.recommended)).toBe(true);
   });
 });

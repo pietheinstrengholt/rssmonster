@@ -86,6 +86,17 @@ describe('feed management helpers', () => {
     vi.useRealTimers();
   });
 
+  it('falls back to seven days when the selector cannot be converted', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-31T12:00:00.000Z'));
+
+    expect(toCrawlSinceDate(Symbol('invalid'))).toEqual(
+      new Date('2026-07-24T12:00:00.000Z')
+    );
+
+    vi.useRealTimers();
+  });
+
   it('identifies public feed-management errors', () => {
     expect(isFeedManagementError(
       new FeedManagementError('INVALID_URL', 'Invalid')

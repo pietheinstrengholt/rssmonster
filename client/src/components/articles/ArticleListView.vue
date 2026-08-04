@@ -179,9 +179,12 @@ export default {
   },
   mounted() {
     window.addEventListener('keydown', this.handleMinimalKeydown);
+    window.addEventListener('resize', this.updateExpandedScrollbarMetrics);
+    this.$nextTick(this.updateExpandedScrollbarMetrics);
   },
   beforeUnmount() {
     window.removeEventListener('keydown', this.handleMinimalKeydown);
+    window.removeEventListener('resize', this.updateExpandedScrollbarMetrics);
 
     if (this.expandedArticleScrollTimeout) {
       clearTimeout(this.expandedArticleScrollTimeout);
@@ -238,11 +241,19 @@ export default {
     container() {
       this.isArticleEndStateDismissed = false;
     },
+    // Refreshes article focus and overlay-scrollbar geometry after content changes.
     articles() {
-      this.$nextTick(() => this.focusSelectedMinimalArticle({ preventScroll: true }));
+      this.$nextTick(() => {
+        this.focusSelectedMinimalArticle({ preventScroll: true });
+        this.updateExpandedScrollbarMetrics();
+      });
     },
     activeMinimalArticleId() {
       this.$nextTick(() => this.focusSelectedMinimalArticle({ preventScroll: true }));
+    },
+    // Refreshes overlay-scrollbar geometry when the active article presentation changes.
+    viewMode() {
+      this.$nextTick(this.updateExpandedScrollbarMetrics);
     }
   },
   methods: {
@@ -253,6 +264,7 @@ export default {
       const articleStream = this.$refs.expandedArticleScrollRef;
       if (!articleStream) return;
 
+      this.updateExpandedScrollbarMetrics();
       articleStream.classList.add('is-scrolling');
 
       if (this.expandedArticleScrollTimeout) {
@@ -263,6 +275,30 @@ export default {
         articleStream.classList.remove('is-scrolling');
         this.expandedArticleScrollTimeout = null;
       }, 1000);
+    },
+    // Positions the overlay scrollbar thumb without reducing the Expanded article width.
+    updateExpandedScrollbarMetrics() {
+      const articleStream = this.$refs?.expandedArticleScrollRef;
+      if (!articleStream || this.viewMode !== 'full') return;
+
+      const viewportHeight = articleStream.clientHeight;
+      const scrollRange = articleStream.scrollHeight - viewportHeight;
+      if (viewportHeight <= 0 || scrollRange <= 0) {
+        articleStream.style.setProperty('--expanded-scrollbar-height', '0px');
+        articleStream.style.setProperty('--expanded-scrollbar-offset', '0px');
+        return;
+      }
+
+      const thumbHeight = Math.min(
+        viewportHeight,
+        Math.max(32, Math.round((viewportHeight * viewportHeight) / articleStream.scrollHeight))
+      );
+      const thumbOffset = Math.round(
+        (articleStream.scrollTop / scrollRange) * (viewportHeight - thumbHeight)
+      );
+
+      articleStream.style.setProperty('--expanded-scrollbar-height', `${thumbHeight}px`);
+      articleStream.style.setProperty('--expanded-scrollbar-offset', `${thumbOffset}px`);
     },
     // Stores compact article component refs by article id.
     setMinimalArticleRef(element, articleId) {
@@ -443,37 +479,37 @@ export default {
 @media (min-width: 880px) {
   #main-container.expandedArticleLayout {
     --expanded-scrollbar-thumb: var(--scrollbar-thumb-strong);
+    --expanded-scrollbar-height: 0px;
+    --expanded-scrollbar-offset: 0px;
     height: calc(100vh - 58px);
-    margin-right: calc(-0.5 * var(--bs-gutter-x));
     margin-top: 58px;
-    margin-left: calc(-0.5 * var(--bs-gutter-x));
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
     scrollbar-color: var(--color-transparent) var(--color-transparent);
-    scrollbar-width: thin;
-    transition: scrollbar-color 0.2s ease;
+    scrollbar-width: none;
   }
 
   #main-container.expandedArticleLayout::-webkit-scrollbar {
-    height: 6px;
-    width: 6px;
+    height: 0;
+    width: 0;
   }
 
-  #main-container.expandedArticleLayout::-webkit-scrollbar-track {
-    background: var(--color-transparent);
-  }
-
-  #main-container.expandedArticleLayout::-webkit-scrollbar-thumb {
+  #main-container.expandedArticleLayout::after {
     background-color: var(--color-transparent);
+    border-radius: 999px;
+    content: '';
+    height: var(--expanded-scrollbar-height);
+    pointer-events: none;
+    position: fixed;
+    right: 0;
+    top: calc(58px + var(--expanded-scrollbar-offset));
     transition: background-color 0.2s ease;
+    width: 6px;
+    z-index: 999;
   }
 
-  #main-container.expandedArticleLayout.is-scrolling {
-    scrollbar-color: var(--expanded-scrollbar-thumb) var(--color-transparent);
-  }
-
-  #main-container.expandedArticleLayout.is-scrolling::-webkit-scrollbar-thumb {
+  #main-container.expandedArticleLayout.is-scrolling::after {
     background-color: var(--expanded-scrollbar-thumb);
   }
 
@@ -482,14 +518,8 @@ export default {
   }
 
   #main-container.expandedArticleLayout #articles {
-    margin-right: 0;
-    margin-left: 0;
     padding-top: 0;
-  }
-
-  #articles {
-    margin-left: -15px;
-    margin-right: -23px;
+    width: 100%;
   }
 }
 

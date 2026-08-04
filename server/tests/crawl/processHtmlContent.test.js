@@ -11,6 +11,23 @@ const feed = {
 };
 
 describe('crawl content sanitization', () => {
+  it('returns no content when the source is absent', () => {
+    expect(processHtmlContent(null, null, null, feed, 'Missing content')).toBeNull();
+  });
+
+  it('derives an untitled article title from the first plain-text sentence', () => {
+    const result = processHtmlContent(
+      'A useful first sentence. A second sentence provides enough language context.',
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Untitled'
+    );
+
+    expect(result.title).toBe('A useful first sentence.');
+    expect(result.html).toContain('<p>A useful first sentence.');
+  });
+
   it('strips executable tags, event attributes, unsafe URLs, and hostile embeds before storage', () => {
     const result = processHtmlContent(
       `

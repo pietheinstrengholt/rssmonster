@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import readNormalizedMedia from '../../services/crawl/media/processMedia.js';
-import { processStructuredMedia as processMedia } from '../../services/feeds/feedsmith/normalizeMedia.js';
+import {
+  normalizeImageCandidates,
+  processStructuredMedia as processMedia
+} from '../../services/feeds/feedsmith/normalizeMedia.js';
 
 describe('processMedia', () => {
   it('returns media already normalized by the feed adapter', () => {
@@ -343,6 +346,59 @@ describe('processMedia', () => {
         { url: 'not a URL', type: 'image/jpeg' }
       ]
     })).toBeNull();
+  });
+
+  it('infers media types from URL extensions without MIME metadata', () => {
+    expect(processMedia({ media: [{ url: 'https://cdn.example/video.webm' }] })).toMatchObject({
+      type: 'video',
+      url: 'https://cdn.example/video.webm'
+    });
+    expect(processMedia({ media: [{ url: 'https://cdn.example/audio.flac' }] })).toMatchObject({
+      type: 'audio',
+      url: 'https://cdn.example/audio.flac'
+    });
+    expect(processMedia({
+      media: [
+        { url: 'https://cdn.example/one.avif' },
+        { url: 'https://cdn.example/two.webp' }
+      ]
+    })).toMatchObject({ type: 'gallery' });
+  });
+
+  it('normalizes numeric duration and rejects provider MIME without direct content', () => {
+    expect(processMedia({
+      media: [{
+        player: { url: 'https://www.youtube.com/watch?v=gZUDEBbZSp4' },
+        type: 'video/mp4',
+        duration: Number.NaN
+      }]
+    })).not.toHaveProperty('mimeType');
+  });
+
+  it('collects grouped thumbnails while skipping non-image content and enclosures', () => {
+    const candidates = normalizeImageCandidates({
+      media: {
+        groups: [{
+          contents: [
+            { url: '/video.mp4', type: 'video/mp4' },
+            { url: '/image.jpg', medium: 'image', width: '640px' }
+          ],
+          thumbnails: [{ url: '/thumb.jpg', height: '360px' }]
+        }]
+      },
+      enclosures: [
+        { url: '/audio.mp3', type: 'audio/mpeg' },
+        { url: '/enclosure.png', type: 'image/png' }
+      ]
+    }, 'https://example.com/article');
+
+    expect(candidates).toEqual(expect.arrayContaining([
+      expect.objectContaining({ url: 'https://example.com/image.jpg', width: 640 }),
+      expect.objectContaining({ url: 'https://example.com/thumb.jpg', height: 360 }),
+      expect.objectContaining({ url: 'https://example.com/enclosure.png' })
+    ]));
+    expect(candidates.some(candidate => candidate.url.endsWith('video.mp4'))).toBe(false);
+    expect(candidates.some(candidate => candidate.url.endsWith('audio.mp3'))).toBe(false);
   });
 
   it('normalizes image/jpg gallery items to image/jpeg', () => {

@@ -199,4 +199,34 @@ describe('scoreArticlesFromIslandsForUser', () => {
     expect(readArticle.interestScore).toBe(0.9);
     expect(filteredArticle.interestScore).toBe(0.95);
   });
+
+  it('uses vector similarity when an unread article has no topic island', async () => {
+    const { user, feed } = await createUserGraph();
+    const suffix = randomUUID();
+    await Island.create({
+      userId: user.id,
+      label: 'Vector island',
+      weight: 0.6,
+      islandVector: [1, 0, 0],
+      archivedInd: false
+    });
+    const matchingArticle = await Article.create(articlePayload(user.id, feed.id, 1, suffix, {
+      articleVector: '[1, 0, 0]',
+      interestScore: 0.9
+    }));
+    const unrelatedArticle = await Article.create(articlePayload(user.id, feed.id, 2, suffix, {
+      articleVector: [0, 1, 0],
+      interestScore: 0.9
+    }));
+
+    const result = await scoreArticlesFromIslandsForUser(user.id, {
+      articleScoreThreshold: 0.8
+    });
+
+    await Promise.all([matchingArticle.reload(), unrelatedArticle.reload()]);
+
+    expect(result).toMatchObject({ topicScoredCount: 0, fallbackScoredCount: 1, updatedCount: 1 });
+    expect(matchingArticle.interestScore).toBe(0.6);
+    expect(unrelatedArticle.interestScore).toBe(0);
+  });
 });

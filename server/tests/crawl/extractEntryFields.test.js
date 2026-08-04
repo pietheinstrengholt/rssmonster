@@ -174,4 +174,43 @@ describe('extract entry fields', () => {
     expect(resolveUrlPublishedDate('https://example.com/2026/02/31/article-title')).toBeNull();
     expect(resolveUrlPublishedDate('https://example.com/article-2026-07-08-title')).toBeNull();
   });
+
+  it('covers format-specific date fallbacks and empty resolver inputs', () => {
+    expect(resolveEntryPublishedDate(null)).toBeNull();
+    expect(resolveEntryModifiedDate(null)).toBeNull();
+    expect(resolveFeedPublishedDate(null)).toBeNull();
+    expect(resolveUrlPublishedDate(null)).toBeNull();
+    expect(resolveEntryPublishedDate({
+      dc: { dates: ['invalid', '2026-08-01T10:00:00Z'] }
+    }, 'atom')).toBe('2026-08-01T10:00:00.000Z');
+    expect(resolveEntryPublishedDate({
+      dcterms: { dates: ['2026-08-02T10:00:00Z'] }
+    }, 'rdf')).toBe('2026-08-02T10:00:00.000Z');
+    expect(resolveEntryModifiedDate({
+      dcterms: { modified: '2026-08-03T10:00:00Z' }
+    }, 'atom')).toBe('2026-08-03T10:00:00.000Z');
+  });
+
+  it('normalizes author and category object shapes', () => {
+    const fields = normalizeEntry({
+      title: 'Object metadata',
+      link: 'https://example.com/object-metadata',
+      author: { name: 'Object Author' },
+      categories: [
+        null,
+        ' Direct ',
+        { term: 'Term' },
+        { $: { label: 'Label' } }
+      ]
+    });
+
+    expect(fields.author).toBe('Object Author');
+    expect(fields.categories).toEqual(['Direct', 'Term', 'Label']);
+  });
+
+  it('keeps malformed URL strings on the no-date path', () => {
+    expect(resolveUrlPublishedDate('https://[invalid/2026/08/04/story')).toBe(
+      '2026-08-04T00:00:00.000Z'
+    );
+  });
 });

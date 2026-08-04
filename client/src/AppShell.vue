@@ -1,11 +1,10 @@
 <template>
   <div id="app">
-    <div class="row app-shell-row">
+    <div class="app-shell-row">
       <div
         v-if="showPersistentSidebar || mobileRefreshSidebarActive"
         id="sidebar"
         ref="sidebarScrollRef"
-        class="col-md-3 col-sm-0"
         @scroll="handleSidebarScroll"
       >
         <!-- Sidebar events -->
@@ -17,7 +16,6 @@
       </div>
       <div
         id="home"
-        class="col-md-9 offset-md-3 col-sm-12"
       >
         <!-- MobileToolbar events -->
         <app-mobile-toolbar
@@ -71,10 +69,6 @@
 @media (max-width: 879px) {
   #desktop-toolbar {
     display: none;
-  }
-
-  div.col-md-9 {
-    padding-right: 0px;
   }
 
   #home {
@@ -175,10 +169,6 @@
 }
 
 @media (min-width: 768px) {
-  .app-shell-row {
-    margin-left: 0;
-  }
-
   #sidebar {
     width: 280px;
     min-width: 280px;

@@ -114,4 +114,42 @@ describe('selectLeadImage', () => {
       alt: null
     })).toBe(Number.NEGATIVE_INFINITY);
   });
+
+  it('rejects empty, tiny, tracking, and decorative image candidates', () => {
+    expect(selectLeadImage([
+      null,
+      { url: '', source: 'content' },
+      { url: 'https://cdn.example/pixel.jpg', width: 1, height: 1, source: 'content' },
+      { url: 'https://cdn.example/small.jpg', width: 50, height: 50, source: 'content' },
+      {
+        url: 'https://cdn.example/photo.jpg',
+        width: 300,
+        height: 170,
+        className: 'author portrait',
+        source: 'content'
+      }
+    ])).toBeNull();
+  });
+
+  it('scores candidates with only one known dimension', () => {
+    const widthOnly = scoreCandidate({
+      url: 'https://cdn.example/width.jpg',
+      width: 1200,
+      height: null,
+      source: 'content',
+      position: null,
+      alt: null
+    });
+    const heightOnly = scoreCandidate({
+      url: 'https://cdn.example/height.jpg',
+      width: null,
+      height: 675,
+      source: 'content',
+      position: null,
+      alt: null
+    });
+
+    expect(widthOnly).toBeGreaterThan(0);
+    expect(heightOnly).toBeGreaterThan(0);
+  });
 });

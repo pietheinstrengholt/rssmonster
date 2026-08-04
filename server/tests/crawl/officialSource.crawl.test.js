@@ -53,4 +53,32 @@ describe('official source crawl detection', () => {
       raw: true
     });
   });
+
+  it('normalizes wildcards and malformed values and returns empty metadata for misses', async () => {
+    mocked.officialSourceFindAll.mockResolvedValue([
+      { entity: 'Specific', domain: 'news.example.com' },
+      { entity: 'Example', domain: '*.example.com' }
+    ]);
+    const {
+      createEmptyOfficialSource,
+      doesHostnameMatchSourceDomain,
+      normalizeSourceHostname,
+      resolveOfficialSourceForArticle
+    } = await import('../../services/crawl/enrichment/officialSource.js');
+
+    expect(createEmptyOfficialSource()).toEqual({
+      isOfficialSource: false,
+      officialOrganization: null
+    });
+    expect(normalizeSourceHostname('  *.WWW.Example.com/path  ')).toBe('example.com');
+    expect(normalizeSourceHostname('https://[invalid/path')).toBe('https');
+    expect(normalizeSourceHostname('')).toBeNull();
+    expect(doesHostnameMatchSourceDomain('', 'example.com')).toBe(false);
+    await expect(resolveOfficialSourceForArticle(null, null)).resolves.toEqual(createEmptyOfficialSource());
+    await expect(resolveOfficialSourceForArticle(42, 'https://missing.test/story')).resolves.toEqual(createEmptyOfficialSource());
+    await expect(resolveOfficialSourceForArticle(42, 'https://news.example.com/story')).resolves.toEqual({
+      isOfficialSource: true,
+      officialOrganization: 'Specific'
+    });
+  });
 });
