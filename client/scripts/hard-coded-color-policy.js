@@ -86,69 +86,25 @@ export const APPROVED_COLOR_EXCEPTIONS = [
 // Legacy UI literals are tracked by file and normalized value; reducing a count ratchets the limit down.
 export const HARD_CODED_COLOR_BASELINE = {
   'src/components/articles/ArticleEmptyState.vue': {
-    'rgba(232,242,254,0.35)': 1,
     'rgba(30,58,138,0.24)': 1,
-    'rgba(30,58,138,0.72)': 1,
-    'rgba(37,99,235,0.18)': 1
-  },
-  'src/components/articles/ArticleEndState.vue': {
-    '#dbeafe': 1,
-    'rgba(0,0,0,0.32)': 1,
-    'rgba(15,23,42,0.08)': 1
+    'rgba(30,58,138,0.72)': 1
   },
   'src/components/articles/ArticleLoadingState.vue': {
     'rgba(255,255,255,0.12)': 1,
-    'rgba(255,255,255,0.45)': 1,
-    transparent: 4
+    'rgba(255,255,255,0.45)': 1
   },
   'src/components/articles/ArticleMedia.vue': {
-    '#11151b': 2,
-    '#20252d': 2,
-    '#fff': 3,
     'rgba(17,24,39,0.14)': 1,
     'rgba(17,24,39,0.88)': 2,
     'rgba(255,255,255,0.18)': 2
   },
   'src/components/articles/SmartFoldersGridOverview.vue': {
     'rgba(0,0,0,0.28)': 1,
-    'rgba(15,23,42,0.08)': 1,
-    'rgba(37,99,235,0.14)': 1
-  },
-  'src/components/articles/UnreadSelectionContext.vue': {
-    '#e5e7eb': 1,
-    '#ffffff': 1
-  },
-  'src/components/assistant/ChatAssistant.vue': {
-    transparent: 1
-  },
-  'src/components/dialogs/BaseDialog.vue': {
-    transparent: 2
+    'rgba(15,23,42,0.08)': 1
   },
   'src/components/dialogs/UnreadConfigurationModal.vue': {
-    '#2563eb': 2,
-    '#6b7280': 1,
-    '#7f1d1d': 1,
-    '#991b1b': 1,
-    '#e5e7eb': 1,
-    '#eff6ff': 1,
-    '#fecaca': 2,
-    '#fef2f2': 1,
-    '#ffffff': 2,
     'rgba(127,29,29,0.28)': 1,
     'rgba(15,23,42,0.2)': 1,
     'rgba(37,99,235,0.4)': 1
-  },
-  'src/components/dialogs/feeds/NewFeed.vue': {
-    'rgba(37,99,235,0.14)': 1
-  },
-  'src/components/shared/ActionErrorNotice.vue': {
-    transparent: 1
-  },
-  'src/components/shell/DesktopToolbar.vue': {
-    'rgba(37,99,235,0.12)': 1,
-    'rgba(37,99,235,0.24)': 2
-  },
-  'src/components/sidebar/Sidebar.vue': {
-    transparent: 2
   },
 };

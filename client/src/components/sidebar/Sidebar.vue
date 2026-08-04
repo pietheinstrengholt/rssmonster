@@ -271,7 +271,7 @@
 }
 
 .sidebar-brand {
-  background-color: transparent;
+  background-color: var(--color-transparent);
   background-image: url('../../assets/images/monster-ui-64.webp');
   background-image: image-set(
     url('../../assets/images/monster-ui-64.webp') 1x,
@@ -294,7 +294,7 @@
 }
 
 .sidebar-resource-error button {
-  background: transparent;
+  background: var(--color-transparent);
   border: 0;
   color: var(--accent-color);
   padding: 0;

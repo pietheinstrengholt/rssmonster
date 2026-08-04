@@ -311,7 +311,7 @@ export default {
   height: 2rem;
   padding: 0;
   color: var(--text-secondary);
-  background: transparent;
+  background: var(--color-transparent);
   border: 0;
   border-radius: 0.375rem;
   cursor: pointer;
@@ -351,7 +351,7 @@ export default {
   min-width: 5.5rem;
   min-height: 2.25rem;
   padding: 0.4rem 0.875rem;
-  border: 1px solid transparent;
+  border: 1px solid var(--color-transparent);
   border-radius: 0.375rem;
   font-size: 0.8125rem;
   font-weight: 600;

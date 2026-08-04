@@ -22,7 +22,7 @@
 }
 
 .settings-section-state .bi {
-  color: var(--text-danger);
+  color: var(--settings-danger-text);
   flex: 0 0 auto;
   font-size: 20px;
   margin-top: 2px;

@@ -62,6 +62,8 @@
   --overlay-backdrop: rgba(0, 0, 0, 0.5);
   --overlay-backdrop-strong: rgba(15, 23, 42, 0.55);
   --overlay-mobile-backdrop: rgba(17, 24, 39, 0.45);
+  --overlay-primary-subtle: rgba(37, 99, 235, 0.12);
+  --overlay-primary-strong: rgba(37, 99, 235, 0.24);
   --shadow-settings-dialog-color: rgba(15, 23, 42, 0.28);
   --shadow-card-subtle-color: rgba(15, 23, 42, 0.04);
   --shadow-mobile-sheet-color: rgba(17, 24, 39, 0.16);
@@ -93,19 +95,15 @@
   --settings-info-border: #D6E6FD;
   --settings-neutral-bg: var(--badge-tag-bg);
   --settings-neutral-text: var(--badge-tag-text);
-  --settings-neutral-border: #E5E7EB;
-  --settings-orange-bg: #FFF1E8;
-  --settings-orange-hover-bg: #FFE6D5;
-  --settings-orange-text: #EA650D;
+  --settings-orange-bg: var(--badge-ad-bg);
+  --settings-orange-text: var(--badge-ad-text);
   --settings-orange-hover-text: #C2410C;
   --settings-orange-border: #FFC4A3;
-  --settings-success-bg: #EAF7EF;
-  --settings-success-hover-bg: #DDF2E5;
-  --settings-success-text: #166534;
+  --settings-success-bg: var(--badge-writing-bg);
+  --settings-success-text: var(--badge-writing-text);
   --settings-success-hover-text: #14532D;
-  --settings-success-border: #B9DFC6;
-  --settings-danger-bg: var(--badge-quality-bg);
-  --settings-danger-text: var(--badge-quality-text);
+  --settings-danger-bg: var(--badge-danger-bg);
+  --settings-danger-text: var(--badge-danger-text);
   --settings-danger-border: var(--color-danger-border);
   --settings-rule-bg: var(--badge-tag-rule-bg);
   --settings-rule-text: var(--badge-tag-rule-text);
@@ -113,20 +111,6 @@
   --settings-code-text: var(--settings-info-text);
   --settings-query-code-bg: var(--settings-rule-bg);
   --settings-query-code-text: var(--settings-rule-text);
-  --settings-icon-primary-bg: var(--settings-info-bg);
-  --settings-icon-primary-text: var(--settings-info-text);
-  --settings-icon-yellow-bg: var(--settings-orange-bg);
-  --settings-icon-yellow-text: var(--settings-orange-text);
-  --settings-icon-orange-bg: var(--settings-orange-bg);
-  --settings-icon-orange-text: var(--settings-orange-text);
-  --settings-icon-success-bg: var(--settings-success-bg);
-  --settings-icon-success-text: var(--settings-success-text);
-  --settings-icon-danger-bg: var(--settings-danger-bg);
-  --settings-icon-danger-text: var(--settings-danger-text);
-  --settings-icon-purple-bg: var(--settings-rule-bg);
-  --settings-icon-purple-text: var(--settings-rule-text);
-  --settings-icon-violet-bg: var(--settings-rule-bg);
-  --settings-icon-violet-text: var(--settings-rule-text);
   --mobile-option-indicator-border: #b8c0cc;
   --mobile-sheet-handle-bg: #c7cdd6;
   --sidebar-success-action-text: #166534;
@@ -174,6 +158,7 @@
   --article-starred-background: #FFFAFA;
   --article-highlight-border: #F3A712;
   --article-event-background: #f6f9fe;
+  --article-media-surface: #222836;
   --shadow-article: 0 2px 4px rgba(0, 0, 0, 0.08);
   --article-signal-surface: #FFF7ED;
   --article-signal-border: #FED7AA;
@@ -196,6 +181,8 @@
   --badge-tag-text: #4B5563;
   --badge-quality-bg: #EAF7EF;
   --badge-quality-text: #1F5E3A;
+  --badge-danger-bg: #FEEAEA;
+  --badge-danger-text: #B42318;
   --badge-ad-bg: #FFEDD5;
   --badge-ad-text: #EA650D;
   --badge-sentiment-bg: #EEF2FF;
@@ -352,6 +339,8 @@
   --badge-tag-text: #D1D5DB;
   --badge-quality-bg: #173D2A;
   --badge-quality-text: #86EFAC;
+  --badge-danger-bg: #4A1F1F;
+  --badge-danger-text: #FCA5A5;
   --badge-ad-bg: #5C2A14;
   --badge-ad-text: #FDBA74;
   --badge-sentiment-bg: #252C63;
@@ -361,13 +350,7 @@
   --badge-tag-rule-bg: #35205F;
   --badge-tag-rule-text: #C4B5FD;
   --settings-info-border: #274C9F;
-  --settings-neutral-border: #3A4250;
-  --settings-orange-bg: var(--badge-ad-bg);
-  --settings-orange-text: var(--badge-ad-text);
   --settings-orange-border: #9A4A1F;
-  --settings-success-bg: var(--badge-writing-bg);
-  --settings-success-text: var(--badge-writing-text);
-  --settings-success-border: #1F7A43;
   --settings-danger-border: #991B1B;
 
   /* Dark shared foundations */
@@ -418,20 +401,6 @@
   --briefing-preferences-error-border: #F87171;
   --settings-nav-active-bg-dark: #1E3A8A;
   --settings-nav-active-text-dark: #FFFFFF;
-  --settings-icon-primary-bg-dark: var(--badge-similar-bg);
-  --settings-icon-primary-text-dark: var(--badge-similar-text);
-  --settings-icon-info-bg-dark: var(--badge-similar-bg);
-  --settings-icon-info-text-dark: var(--badge-similar-text);
-  --settings-icon-success-bg-dark: var(--badge-writing-bg);
-  --settings-icon-success-text-dark: var(--badge-writing-text);
-  --settings-icon-danger-bg-dark: var(--badge-quality-bg);
-  --settings-icon-danger-text-dark: var(--badge-quality-text);
-  --settings-icon-yellow-bg-dark: var(--badge-ad-bg);
-  --settings-icon-yellow-text-dark: var(--badge-ad-text);
-  --settings-icon-orange-bg-dark: var(--badge-ad-bg);
-  --settings-icon-orange-text-dark: var(--badge-ad-text);
-  --settings-icon-purple-bg-dark: var(--badge-tag-rule-bg);
-  --settings-icon-purple-text-dark: var(--badge-tag-rule-text);
   --sidebar-danger-surface-dark: #2b1b1e;
   --sidebar-warning-surface-dark: #3a2328;
   --sidebar-selected-background-dark: rgba(37, 99, 235, 0.22);
@@ -459,6 +428,7 @@
   /* Dark article colors */
   --article-surface-dark: #1A202C;
   --article-event-background-dark: #11161D;
+  --article-media-surface: var(--bg-secondary);
   --article-content-text: #D1D5DB;
   --article-heading-text: #E5E7EB;
   --article-signal-surface: rgba(124, 45, 18, 0.22);

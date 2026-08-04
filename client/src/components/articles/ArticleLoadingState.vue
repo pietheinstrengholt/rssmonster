@@ -193,9 +193,9 @@
   animation: article-loading-shimmer 1.4s ease-in-out infinite;
   background: linear-gradient(
     90deg,
-    transparent,
+    var(--color-transparent),
     rgba(255, 255, 255, 0.45),
-    transparent
+    var(--color-transparent)
   );
   content: "";
   inset: 0;
@@ -273,9 +273,9 @@
 :global(:root[data-theme='dark']) .article-loading-skeleton__action::after {
   background: linear-gradient(
     90deg,
-    transparent,
+    var(--color-transparent),
     rgba(255, 255, 255, 0.12),
-    transparent
+    var(--color-transparent)
   );
 }
 

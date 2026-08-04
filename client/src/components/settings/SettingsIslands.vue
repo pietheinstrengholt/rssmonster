@@ -399,8 +399,8 @@
 }
 
 :global(:root[data-theme='dark']) .interest-island-icon {
-  background: var(--settings-icon-primary-bg-dark);
-  color: var(--settings-icon-primary-text-dark);
+  background: var(--settings-info-bg);
+  color: var(--settings-info-text);
 }
 
 :global(:root[data-theme='dark']) .settings-coverage-track,

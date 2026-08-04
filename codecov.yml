@@ -1,3 +1,32 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  range: "80...100"
+
+  status:
+    project:
+      default:
+        enabled: false
+
+      client:
+        target: 80%
+        threshold: 0%
+        flags:
+          - client
+
+      server:
+        target: 80%
+        threshold: 0%
+        flags:
+          - server
+
+    patch:
+      default:
+        enabled: false
+
 flags:
   client:
     paths:
@@ -9,6 +38,8 @@ flags:
     carryforward: false
 
 comment:
-  layout: "reach, diff, flags, files"
+  layout: "header, diff, flags, files"
   behavior: default
   require_changes: false
+  require_base: false
+  require_head: true

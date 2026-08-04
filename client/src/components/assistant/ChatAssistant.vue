@@ -155,7 +155,7 @@ div#inputArea {
 
 .agent-chat-button--secondary {
   color: var(--color-primary);
-  background: transparent;
+  background: var(--color-transparent);
   border: 1px solid var(--color-primary);
 }
 

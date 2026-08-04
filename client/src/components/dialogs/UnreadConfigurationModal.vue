@@ -221,8 +221,8 @@ export default {
   flex: 0 0 auto;
   width: 2rem;
   height: 2rem;
-  color: #2563eb;
-  background-color: #eff6ff;
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
   border-radius: 0.375rem;
 }
 
@@ -238,9 +238,9 @@ export default {
 }
 
 .unread-preferences-status-error {
-  color: #991b1b;
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
+  color: var(--badge-danger-text);
+  background-color: var(--badge-danger-bg);
+  border: 1px solid var(--settings-danger-border);
 }
 
 .unread-preferences-option {
@@ -253,7 +253,7 @@ export default {
 }
 
 .unread-preferences-option + .unread-preferences-option {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .unread-preferences-option-content {
@@ -270,7 +270,7 @@ export default {
 }
 
 .unread-preferences-option-description {
-  color: #6b7280;
+  color: var(--text-muted);
   font-size: 0.75rem;
   line-height: 1.4;
 }
@@ -308,7 +308,7 @@ export default {
   left: 0.1875rem;
   width: 0.875rem;
   height: 0.875rem;
-  background-color: #ffffff;
+  background-color: var(--text-inverted);
   border-radius: 50%;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
   content: "";
@@ -316,7 +316,7 @@ export default {
 }
 
 .unread-switch input:checked + .unread-switch-control {
-  background-color: #2563eb;
+  background-color: var(--color-primary);
 }
 
 .unread-switch input:checked + .unread-switch-control::after {
@@ -325,7 +325,7 @@ export default {
 
 .unread-switch input:focus-visible + .unread-switch-control {
   box-shadow:
-    0 0 0 2px #ffffff,
+    0 0 0 2px var(--text-inverted),
     0 0 0 4px rgba(37, 99, 235, 0.4);
 }
 
@@ -358,8 +358,8 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .unread-preferences-status-error) {
-  color: #fecaca;
+  color: var(--badge-danger-text);
   background-color: rgba(127, 29, 29, 0.28);
-  border-color: #7f1d1d;
+  border-color: var(--badge-danger-bg);
 }
 </style>

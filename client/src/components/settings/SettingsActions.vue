@@ -2,7 +2,7 @@
   <div class="actions-settings">
     <!-- Info text -->
     <section class="settings-insight-card settings-insight-card--stacked actions-intro-card" aria-labelledby="actions-intro-title">
-      <header class="actions-intro-heading"><span class="settings-insight-icon" aria-hidden="true"><BootstrapIcon icon="lightning-charge-fill" /></span><div><p class="actions-eyebrow">Automation</p><h3 id="actions-intro-title">How Actions work</h3><p>Actions automatically process incoming articles during the crawl. When an article’s content or title matches a regular expression, the selected action is applied.</p></div></header>
+      <header class="actions-intro-heading"><span class="settings-insight-icon" aria-hidden="true"><BootstrapIcon icon="lightning-charge-fill" /></span><div><p class="settings-page-eyebrow">Settings — Automation</p><h3 id="actions-intro-title">How Actions work</h3><p>Actions automatically process incoming articles during the crawl. When an article’s content or title matches a regular expression, the selected action is applied.</p></div></header>
       <div class="actions-type-grid" aria-label="Available action types">
         <article v-for="actionType in actionTypes" :key="actionType.value" class="actions-type-card"><span class="actions-type-icon" :class="actionType.iconClass" aria-hidden="true"><BootstrapIcon :icon="actionType.icon" /></span><div><h4>{{ actionType.label }}</h4><p>{{ actionType.description }}</p></div></article>
       </div>
@@ -53,7 +53,6 @@
 }
 
 .actions-intro-card {
-  padding: 26px;
   background: var(--settings-info-bg);
   border-color: var(--settings-info-border);
 }
@@ -69,7 +68,7 @@
 
 .actions-load-state--error {
   flex-direction: column;
-  color: var(--text-danger);
+  color: var(--settings-danger-text);
 }
 
 .actions-intro-heading,
@@ -89,15 +88,6 @@
   border-radius: 10px;
 }
 
-.actions-eyebrow {
-  margin: 0 0 4px;
-  color: var(--color-primary);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
 .actions-intro-heading h3,
 .actions-list-heading h3 {
   margin: 0;
@@ -106,7 +96,7 @@
   font-weight: 700;
 }
 
-.actions-intro-heading p:not(.actions-eyebrow),
+.actions-intro-heading p:not(.settings-page-eyebrow),
 .actions-list-heading p,
 .actions-type-card p,
 .actions-field label,
@@ -114,7 +104,7 @@
   color: var(--text-muted);
 }
 
-.actions-intro-heading p:not(.actions-eyebrow) {
+.actions-intro-heading p:not(.settings-page-eyebrow) {
   max-width: 720px;
   margin: 6px 0 0;
   font-size: 14px;
@@ -153,13 +143,13 @@
 }
 
 .actions-type-icon--star {
-  background: var(--settings-orange-bg);
-  color: var(--settings-orange-text);
+  background: var(--badge-quality-bg);
+  color: var(--badge-quality-text);
 }
 
 .actions-type-icon--read {
-  background: var(--settings-success-bg);
-  color: var(--settings-success-text);
+  background: var(--settings-info-bg);
+  color: var(--settings-info-text);
 }
 
 .actions-type-icon--clicked {
@@ -173,8 +163,8 @@
 }
 
 .actions-type-icon--badquality {
-  background: var(--settings-danger-bg);
-  color: var(--settings-danger-text);
+  background: var(--badge-quality-bg);
+  color: var(--badge-quality-text);
 }
 
 .actions-type-icon--tag {
@@ -421,10 +411,6 @@
 }
 
 @media (max-width: 879px) {
-  .actions-intro-card {
-    padding: 20px;
-  }
-
   .actions-type-grid {
     grid-template-columns: 1fr;
   }
@@ -453,13 +439,6 @@
 </style>
 
 <style>
-:root[data-theme="dark"] .actions-settings .actions-type-icon--discard { background: var(--settings-icon-danger-bg-dark); color: var(--settings-icon-danger-text-dark); }
-:root[data-theme="dark"] .actions-settings .actions-type-icon--star { background: var(--settings-icon-yellow-bg-dark); color: var(--settings-icon-yellow-text-dark); }
-:root[data-theme="dark"] .actions-settings .actions-type-icon--read { background: var(--settings-icon-primary-bg-dark); color: var(--settings-icon-primary-text-dark); }
-:root[data-theme="dark"] .actions-settings .actions-type-icon--clicked { background: var(--settings-icon-info-bg-dark); color: var(--settings-icon-info-text-dark); }
-:root[data-theme="dark"] .actions-settings .actions-type-icon--advertisement { background: var(--settings-icon-orange-bg-dark); color: var(--settings-icon-orange-text-dark); }
-:root[data-theme="dark"] .actions-settings .actions-type-icon--badquality { background: var(--settings-icon-purple-bg-dark); color: var(--settings-icon-purple-text-dark); }
-:root[data-theme="dark"] .actions-settings .actions-type-icon--tag { background: var(--settings-icon-success-bg-dark); color: var(--settings-icon-success-text-dark); }
 :root[data-theme="dark"] .actions-settings .actions-type-icon--default { background: var(--bg-control); color: var(--text-muted); }
 :root[data-theme="dark"] .actions-settings .actions-add-button {
   background: var(--settings-orange-bg);

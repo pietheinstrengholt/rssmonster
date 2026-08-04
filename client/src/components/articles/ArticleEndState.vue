@@ -60,7 +60,7 @@ export default {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 24px var(--shadow-card-subtle-color);
   box-sizing: border-box;
   margin: 28px auto 36px;
   max-width: 420px;
@@ -133,7 +133,7 @@ export default {
 
 .article-end-state-secondary {
   background: var(--bg-card);
-  border: 1px solid #DBEAFE;
+  border: 1px solid var(--badge-similar-bg);
   color: var(--text-secondary);
   font-weight: 600;
 }
@@ -194,7 +194,7 @@ export default {
 :global(:root[data-theme='dark']) .article-end-state {
   background: var(--dark-bg-card, var(--bg-card));
   border-color: var(--dark-border, var(--border-color));
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.32);
+  box-shadow: 0 14px 28px var(--shadow-settings-dialog-color);
 }
 
 :global(:root[data-theme='dark']) .article-end-state-title {

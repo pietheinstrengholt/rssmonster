@@ -151,7 +151,7 @@ export default {
 
 .article-empty-state-circle {
   align-items: center;
-  background: linear-gradient(180deg, var(--color-primary-soft) 0%, rgba(232, 242, 254, 0.35) 100%);
+  background: linear-gradient(180deg, var(--color-primary-soft) 0%, var(--overlay-primary-subtle) 100%);
   border-radius: 999px;
   color: var(--color-primary-text, var(--color-primary-hover));
   display: inline-flex;
@@ -218,7 +218,7 @@ export default {
 .article-empty-state-primary {
   background: var(--color-primary);
   border: 0;
-  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
+  box-shadow: 0 10px 22px var(--overlay-primary-subtle);
   color: var(--text-inverted);
 }
 

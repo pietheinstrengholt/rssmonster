@@ -555,7 +555,7 @@ export default {
 
 .smart-folder-query-error {
   margin: 8px 0 0;
-  color: var(--text-danger);
+  color: var(--settings-danger-text);
   font-size: 13px;
 }
 

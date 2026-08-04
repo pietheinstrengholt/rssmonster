@@ -118,8 +118,8 @@ export default {
   aspect-ratio: 16 / 9;
   border: 1px solid rgba(17, 24, 39, 0.14);
   border-radius: 8px;
-  background: #20252d;
-  color: #fff;
+  background: var(--article-media-surface);
+  color: var(--text-inverted);
   text-decoration: none;
 }
 
@@ -135,7 +135,7 @@ export default {
 }
 
 .article-media-placeholder {
-  background: #20252d;
+  background: var(--article-media-surface);
 }
 
 .article-media-badge,
@@ -145,7 +145,7 @@ export default {
   left: 12px;
   border-radius: 4px;
   background: rgba(17, 24, 39, 0.88);
-  color: #fff;
+  color: var(--text-inverted);
   font-size: 12px;
   line-height: 1;
 }
@@ -173,7 +173,7 @@ export default {
   place-items: center;
   border-radius: 50%;
   background: rgba(17, 24, 39, 0.88);
-  color: #fff;
+  color: var(--text-inverted);
   transform: translate(-50%, -50%);
 }
 
@@ -202,12 +202,10 @@ export default {
 @media (prefers-color-scheme: dark) {
   .article-media-link {
     border-color: rgba(255, 255, 255, 0.18);
-    background: #11151b;
   }
 }
 
 :global(:root[data-theme='dark']) .article-media-link {
   border-color: rgba(255, 255, 255, 0.18);
-  background: #11151b;
 }
 </style>

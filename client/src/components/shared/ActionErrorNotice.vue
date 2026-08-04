@@ -60,7 +60,7 @@ export default {
 
 .action-error-notice__dismiss {
   align-items: center;
-  background: transparent;
+  background: var(--color-transparent);
   border: 0;
   color: var(--text-secondary);
   display: inline-flex;

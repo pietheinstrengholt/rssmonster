@@ -231,7 +231,7 @@
 .feed-form-content select:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+    box-shadow: 0 0 0 4px var(--overlay-primary-subtle);
 }
 
 .feed-modal-tip {

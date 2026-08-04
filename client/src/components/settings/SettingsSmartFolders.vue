@@ -2,11 +2,12 @@
     <div class="settings-section settings-smart-folders">
         <!-- Info text -->
         <div class="settings-insight-card smart-folders-hero">
-            <div class="smart-folders-hero__icon" aria-hidden="true">
+            <span class="settings-insight-icon" aria-hidden="true">
                 <BootstrapIcon icon="folder-fill" />
-            </div>
+            </span>
 
             <div class="smart-folders-hero__content">
+                <p class="settings-page-eyebrow">Settings — Smart Folders</p>
                 <h3>Smart Folders</h3>
                 <p>
                     Create dynamic saved searches that automatically organize your articles.
@@ -169,7 +170,7 @@
 
 .smart-folders-load-state--error {
   flex-direction: column;
-  color: var(--text-danger);
+  color: var(--settings-danger-text);
 }
 
 .smart-folders-surface__notice {
@@ -179,9 +180,8 @@
 }
 
 .smart-folders-hero {
-  align-items: center;
+  align-items: flex-start;
   margin: 0;
-  padding: 20px 22px;
   background: var(--settings-info-bg);
   border-color: var(--settings-info-border);
 }
@@ -199,7 +199,6 @@
   margin-bottom: 0;
 }
 
-.smart-folders-hero__icon,
 .smart-folders-list-header__icon,
 .smart-folder-row__icon {
   display: inline-flex;
@@ -207,14 +206,6 @@
   justify-content: center;
   border-radius: 10px;
   color: var(--color-primary);
-}
-
-.smart-folders-hero__icon {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 48px;
-  background: var(--bg-card);
-  font-size: 22px;
 }
 
 .smart-folders-hero__content {
@@ -229,7 +220,6 @@
   font-weight: 700;
 }
 
-.smart-folders-hero__content p,
 .smart-folders-list-header p {
   margin: 6px 0 0;
   color: var(--text-muted);
@@ -424,23 +414,17 @@
 }
 
 :global(:root[data-theme='dark'] .smart-folders-surface__footer),
-:global(:root[data-theme='dark'] .smart-folders-hero__icon),
 :global(:root[data-theme='dark'] .smart-folders-list-header__icon),
 :global(:root[data-theme='dark'] .smart-folder-row__icon),
 :global(:root[data-theme='dark'] .smart-folder-row__limit) {
   background: var(--bg-control);
 }
 
-:global(:root[data-theme='dark'] .smart-folders-hero__icon),
 :global(:root[data-theme='dark'] .smart-folders-list-header__icon) {
   color: var(--settings-info-text);
 }
 
 @media (max-width: 760px) {
-  .smart-folders-hero {
-    padding: 18px;
-  }
-
   .smart-folders-surface__section {
     padding: 18px;
   }
@@ -477,12 +461,6 @@
 @media (max-width: 480px) {
   .smart-folders-hero {
     gap: 12px;
-  }
-
-  .smart-folders-hero__icon {
-    width: 44px;
-    height: 44px;
-    flex-basis: 44px;
   }
 
   .smart-folders-list {

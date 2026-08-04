@@ -34,8 +34,8 @@ export default {
 .unread-selection-context {
   width: 100%;
   padding: 0.875rem;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--reader-list-item-background);
+  border-bottom: 1px solid var(--reader-list-item-border);
 }
 
 @media (max-width: 767px) {

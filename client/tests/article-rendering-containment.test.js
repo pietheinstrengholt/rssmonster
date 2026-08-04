@@ -74,4 +74,10 @@ describe('Article rendering containment', () => {
     expect(articleSource).toMatch(/\.article-list-card\s*\{[^}]*contain-intrinsic-size:\s*auto 72px;/s);
     expect(articleSource).toMatch(/@media print\s*\{\s*\.article-card\s*\{[^}]*content-visibility:\s*visible;[^}]*contain-intrinsic-size:\s*none;/s);
   });
+
+  // Verifies an open actions menu escapes article containment and stacks above surrounding content.
+  it('raises an article while its actions menu is open', () => {
+    expect(articleSource).toMatch(/\.article-card:has\(\.article-actions \.dropdown-menu\.show\)\s*\{[^}]*content-visibility:\s*visible;[^}]*position:\s*relative;[^}]*z-index:\s*1040;/s);
+    expect(articleSource).toMatch(/\.article-card \.dropdown-menu\s*\{[^}]*z-index:\s*1041;/s);
+  });
 });

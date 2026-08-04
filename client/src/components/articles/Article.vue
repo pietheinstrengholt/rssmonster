@@ -483,6 +483,13 @@ export default {
   margin-bottom: 0px;
 }
 
+/* Lets an open article menu escape rendering containment and overlay surrounding content. */
+.article-card:has(.article-actions .dropdown-menu.show) {
+  content-visibility: visible;
+  position: relative;
+  z-index: 1040;
+}
+
 .article-card.event-article {
   background-color: var(--article-event-background);
 }
@@ -855,6 +862,7 @@ export default {
 
 .article-card .dropdown-menu {
   min-width: 120px !important;
+  z-index: 1041;
 }
 
 .article-card .dropdown-item {

@@ -100,6 +100,7 @@ jobs:
           files: ./server/coverage/clover.xml
           disable_search: true
           flags: server
+          name: server
           fail_ci_if_error: true
 
       # -----------------------
@@ -136,4 +137,5 @@ jobs:
           files: ./client/coverage/lcov.info
           disable_search: true
           flags: client
+          name: client
           fail_ci_if_error: true

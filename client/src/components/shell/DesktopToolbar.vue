@@ -204,7 +204,7 @@
 
 .toolbar-filter-button:focus-visible {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 0 0 3px var(--overlay-primary-subtle);
 }
 
 .toolbar-filter-button[aria-expanded='true'] {
@@ -380,7 +380,7 @@
 
 :global(:root[data-theme='dark'] .toolbar-filter-button:focus-visible) {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.24);
+  box-shadow: 0 0 0 3px var(--overlay-primary-strong);
 }
 
 :global(:root[data-theme='dark'] .toolbar-filter-label),
@@ -680,7 +680,7 @@
 
   .toolbar-filter-button:focus-visible {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.24);
+    box-shadow: 0 0 0 3px var(--overlay-primary-strong);
   }
 
   .toolbar-filter-label,

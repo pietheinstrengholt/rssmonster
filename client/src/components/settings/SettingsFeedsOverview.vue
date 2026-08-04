@@ -149,7 +149,7 @@
   font-weight: 700;
 }
 
-.feeds-header p {
+.feeds-header p:not(.settings-page-eyebrow) {
   margin: 6px 0 0;
   color: var(--text-muted);
   font-size: 14px;
@@ -471,7 +471,7 @@
 :global(:root[data-theme='dark']) .feeds-header h3,
 :global(:root[data-theme='dark']) .feeds-stat-value,
 :global(:root[data-theme='dark']) .feeds-name-cell strong { color: var(--text-inverted); }
-:global(:root[data-theme='dark']) .feeds-header p,
+:global(:root[data-theme='dark']) .feeds-header p:not(.settings-page-eyebrow),
 :global(:root[data-theme='dark']) .feeds-helper-text,
 :global(:root[data-theme='dark']) .feeds-stat-label,
 :global(:root[data-theme='dark']) .feeds-footer { color: var(--text-muted); }
@@ -518,7 +518,7 @@
 
 :global(:root[data-theme='dark']) .feeds-table-row--error,
 :global(:root[data-theme='dark']) .feeds-table-row--error:hover {
-  background: var(--bg-danger-subtle) !important;
+  background: var(--settings-danger-bg) !important;
 }
 
 @media (max-width: 879px) {
@@ -555,7 +555,7 @@
 :root[data-theme="dark"] .feeds-overview .feeds-name-cell span,
 :root[data-theme="dark"] .feeds-overview .feeds-stat-label,
 :root[data-theme="dark"] .feeds-overview .feeds-footer,
-:root[data-theme="dark"] .feeds-overview .feeds-header p,
+:root[data-theme="dark"] .feeds-overview .feeds-header p:not(.settings-page-eyebrow),
 :root[data-theme="dark"] .feeds-overview .feeds-helper-text { color: var(--text-muted) !important; }
 :root[data-theme="dark"] .feeds-overview .feeds-search input {
   background: var(--color-transparent) !important;

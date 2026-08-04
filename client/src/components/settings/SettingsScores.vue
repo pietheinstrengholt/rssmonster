@@ -167,8 +167,8 @@
 }
 
 .scores-icon-tile--advertisement { background: var(--settings-orange-bg); color: var(--settings-orange-text); }
-.scores-icon-tile--sentiment { background: var(--settings-info-bg); color: var(--settings-info-text); }
-.scores-icon-tile--quality { background: var(--settings-rule-bg); color: var(--settings-rule-text); }
+.scores-icon-tile--sentiment { background: var(--badge-sentiment-bg); color: var(--badge-sentiment-text); }
+.scores-icon-tile--quality { background: var(--badge-quality-bg); color: var(--badge-quality-text); }
 
 .scores-info-row {
   display: flex;
@@ -344,12 +344,6 @@
     grid-column: 2;
   }
 }
-</style>
-
-<style>
-:root[data-theme="dark"] .scores-settings .scores-icon-tile--advertisement { background: var(--settings-icon-orange-bg-dark); color: var(--settings-icon-orange-text-dark); }
-:root[data-theme="dark"] .scores-settings .scores-icon-tile--sentiment { background: var(--settings-icon-yellow-bg-dark); color: var(--settings-icon-yellow-text-dark); }
-:root[data-theme="dark"] .scores-settings .scores-icon-tile--quality { background: var(--settings-icon-purple-bg-dark); color: var(--settings-icon-purple-text-dark); }
 </style>
 
 <script>
