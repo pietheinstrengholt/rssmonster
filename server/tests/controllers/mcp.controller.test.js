@@ -174,6 +174,41 @@ describe('MCP controller', () => {
     });
   });
 
+  it('turns dependency failures from every data tool into MCP errors', async () => {
+    mocked.articleFindAll.mockRejectedValue(new Error('article query unavailable'));
+    mocked.categoryFindAll.mockRejectedValue(new Error('category query unavailable'));
+    mocked.categoryFindOne.mockRejectedValue(new Error('category lookup unavailable'));
+    mocked.feedFindAll.mockRejectedValue(new Error('feed query unavailable'));
+    mocked.feedFindOne.mockRejectedValue(new Error('feed lookup unavailable'));
+    mocked.tagFindAll.mockRejectedValue(new Error('tag query unavailable'));
+    await mcpController.postMcp(createRequest(), createResponse());
+
+    const toolCalls = [
+      ['feeds', {}],
+      ['search_feed_by_name', { feed_name: 'Security' }],
+      ['search_articles_by_keyword', { search: 'security', status: 'unread' }],
+      ['search_articles_by_time', { seconds: 3600, status: 'unread' }],
+      ['articles_by_feed_id', { feedId: 2, status: 'unread' }],
+      ['favorite_articles', { status: 'read' }],
+      ['hot_articles', { sort: 'DESC', status: 'unread' }],
+      ['feeds_by_category_id', { category_id: '3' }],
+      ['popular_tags', {}],
+      ['articles_by_tag', { tag: 'security' }],
+      ['search_tag_by_keyword', { keyword: 'sec' }],
+      ['search_clicked_articles', {}],
+      ['tags_clicked_articles', {}],
+      ['category_details', { categoryId: '3' }]
+    ];
+
+    // Invokes each registered data tool with valid input so its dependency error path runs.
+    const results = await Promise.all(toolCalls.map(([name, input]) => (
+      mocked.handlers.get(name)(input)
+    )));
+
+    expect(results).toHaveLength(toolCalls.length);
+    expect(results.every(result => result.isError)).toBe(true);
+  });
+
   it('renders keyword search results as linked HTML', async () => {
     const articles = [
       {

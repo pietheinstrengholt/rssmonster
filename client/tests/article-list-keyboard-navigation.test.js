@@ -139,6 +139,20 @@ describe('ArticleListView keyboard navigation', () => {
     expect(context.selectedArticle()).toBeNull();
   });
 
+  // Verifies Expanded mode measures keyboard navigation from its own scroll region.
+  it('uses the Expanded-mode scroll region as the reading viewport', () => {
+    const expandedArticlePane = document.createElement('div');
+    expandedArticlePane.className = 'expandedArticleLayout';
+    expandedArticlePane.getBoundingClientRect = vi.fn().mockReturnValue({ top: 60 });
+    document.body.appendChild(expandedArticlePane);
+    const context = createContext();
+
+    context.minimalArticleRefs[1].$el.getBoundingClientRect = vi.fn().mockReturnValue({ top: 180 });
+    context.minimalArticleRefs[2].$el.getBoundingClientRect = vi.fn().mockReturnValue({ top: 70 });
+
+    expect(context.closestArticleIdToViewport()).toBe(2);
+  });
+
   // Verifies compact focus and tabindex state follow the active article.
   it('focuses and scrolls only the active compact article', () => {
     const context = createContext({

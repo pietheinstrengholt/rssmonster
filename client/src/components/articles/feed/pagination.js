@@ -77,7 +77,9 @@ export const articleFeedPaginationMethods = {
   // Returns every fully rebuilt article collection to the beginning across responsive scroll roots.
   scrollArticleListToTop() {
     const windowWasScrolled = window.scrollY > 0;
+    const expandedArticlePane = document.querySelector('.expandedArticleLayout');
     const articlePane = document.getElementById('home');
+    if (expandedArticlePane) expandedArticlePane.scrollTop = 0;
     if (articlePane) articlePane.scrollTop = 0;
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;

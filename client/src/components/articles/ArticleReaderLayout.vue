@@ -742,6 +742,7 @@ export default {
   display: grid;
   grid-template-columns: minmax(340px, 38%) minmax(0, 1fr);
   height: 100vh;
+  margin-right: calc(-0.5 * var(--bs-gutter-x));
   overflow: hidden;
   padding-top: 58px;
 }

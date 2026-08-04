@@ -210,9 +210,11 @@ describe('ArticleFeed loading races', () => {
   });
 
   it('resets both article-pane and page scroll roots for a rebuilt collection', () => {
-    document.body.innerHTML = '<main id="home"></main>';
+    document.body.innerHTML = '<main id="home"><div class="expandedArticleLayout"></div></main>';
     const articlePane = document.getElementById('home');
+    const expandedArticlePane = document.querySelector('.expandedArticleLayout');
     articlePane.scrollTop = 240;
+    expandedArticlePane.scrollTop = 240;
     document.documentElement.scrollTop = 240;
     document.body.scrollTop = 240;
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 240 });
@@ -220,6 +222,7 @@ describe('ArticleFeed loading races', () => {
 
     ArticleFeed.methods.scrollArticleListToTop();
 
+    expect(expandedArticlePane.scrollTop).toBe(0);
     expect(articlePane.scrollTop).toBe(0);
     expect(document.documentElement.scrollTop).toBe(0);
     expect(document.body.scrollTop).toBe(0);

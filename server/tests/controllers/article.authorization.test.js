@@ -738,6 +738,71 @@ describe('article ownership authorization', () => {
     expect(event.developingArticleId).toBe(article.id);
   });
 
+  it('mark-as-read with topic grouping updates every event and reports topic article counts', async () => {
+    const owner = await createUser(uniqueName('topic-read-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    const topic = await Topic.create({
+      userId: owner.id,
+      name: `${owner.username} topic`,
+      topicKey: uniqueName('topic-read-key')
+    });
+    const firstEvent = await Event.create({
+      userId: owner.id,
+      topicId: topic.id,
+      representativeArticleId: article.id,
+      name: `${owner.username} first topic event`,
+      articleCount: 1
+    });
+    const relatedArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/topic-read-related`,
+      title: `${owner.username} topic read related`,
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+    const secondEvent = await Event.create({
+      userId: owner.id,
+      topicId: topic.id,
+      representativeArticleId: relatedArticle.id,
+      name: `${owner.username} second topic event`,
+      articleCount: 1
+    });
+    await article.update({ eventId: firstEvent.id, topicId: topic.id });
+    await relatedArticle.update({ eventId: secondEvent.id, topicId: topic.id });
+
+    const detailsResponse = await request(app)
+      .post('/api/articles/details')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ articleIds: String(article.id) });
+    const readResponse = await request(app)
+      .post('/api/articles/markasread')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ grouping: 'topic' });
+
+    await Promise.all([article.reload(), relatedArticle.reload()]);
+
+    expect(detailsResponse.status).toBe(200);
+    expect(detailsResponse.body[0].event.topicArticleCount).toBe(2);
+    expect(readResponse.status).toBe(200);
+    expect(readResponse.body.matchedCount).toBe(1);
+    expect(readResponse.body.expandedEventCount).toBe(2);
+    expect(article.status).toBe('read');
+    expect(relatedArticle.status).toBe('read');
+
+    await Article.update(
+      { status: 'unread', readAt: null },
+      { where: { id: [article.id, relatedArticle.id] } }
+    );
+    const eventReadResponse = await request(app)
+      .post('/api/articles/markasread')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ grouping: 'event' });
+
+    expect(eventReadResponse.status).toBe(200);
+    expect(eventReadResponse.body.expandedEventCount).toBe(2);
+  });
+
   it('clears readAt when an article is marked unread', async () => {
     const owner = await createUser(uniqueName('mark-unread-owner'));
     const { article } = await createArticleFor(owner);

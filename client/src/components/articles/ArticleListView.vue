@@ -1,5 +1,10 @@
 <template>
-  <div id="main-container">
+  <div
+    id="main-container"
+    ref="expandedArticleScrollRef"
+    :class="{ expandedArticleLayout: viewMode === 'full' }"
+    @scroll="handleExpandedArticleScroll"
+  >
     <div id="articles" :class="{ 'mobile-search-open': mobileSearchOpen }">
       <DailyBriefingIntro v-if="showDailyBriefingIntro" />
       <UnreadSelectionContext
@@ -168,7 +173,8 @@ export default {
     return {
       minimalArticleRefs: {},
       selectedArticleId: null,
-      isArticleEndStateDismissed: false
+      isArticleEndStateDismissed: false,
+      expandedArticleScrollTimeout: null
     };
   },
   mounted() {
@@ -176,6 +182,10 @@ export default {
   },
   beforeUnmount() {
     window.removeEventListener('keydown', this.handleMinimalKeydown);
+
+    if (this.expandedArticleScrollTimeout) {
+      clearTimeout(this.expandedArticleScrollTimeout);
+    }
   },
   computed: {
     ...mapStores(useOverviewStore, useSelectionStore, useUiStore),
@@ -236,6 +246,24 @@ export default {
     }
   },
   methods: {
+    // Shows the Expanded-mode scrollbar while the article stream is actively scrolling.
+    handleExpandedArticleScroll() {
+      if (this.viewMode !== 'full') return;
+
+      const articleStream = this.$refs.expandedArticleScrollRef;
+      if (!articleStream) return;
+
+      articleStream.classList.add('is-scrolling');
+
+      if (this.expandedArticleScrollTimeout) {
+        clearTimeout(this.expandedArticleScrollTimeout);
+      }
+
+      this.expandedArticleScrollTimeout = setTimeout(() => {
+        articleStream.classList.remove('is-scrolling');
+        this.expandedArticleScrollTimeout = null;
+      }, 1000);
+    },
     // Stores compact article component refs by article id.
     setMinimalArticleRef(element, articleId) {
       if (element) {
@@ -325,7 +353,8 @@ export default {
     },
     // Returns the article nearest to the top of the reading viewport.
     closestArticleIdToViewport() {
-      const scrollRoot = document.getElementById('home');
+      const scrollRoot = document.querySelector('.expandedArticleLayout')
+        || document.getElementById('home');
       const viewportTop = scrollRoot?.getBoundingClientRect?.().top || 0;
       let closestArticleId = null;
       let closestDistance = Infinity;
@@ -412,6 +441,52 @@ export default {
 <style scoped>
 /* Landscape phones and portrait tablets */
 @media (min-width: 880px) {
+  #main-container.expandedArticleLayout {
+    --expanded-scrollbar-thumb: var(--scrollbar-thumb-strong);
+    height: calc(100vh - 58px);
+    margin-right: calc(-0.5 * var(--bs-gutter-x));
+    margin-top: 58px;
+    margin-left: calc(-0.5 * var(--bs-gutter-x));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-color: var(--color-transparent) var(--color-transparent);
+    scrollbar-width: thin;
+    transition: scrollbar-color 0.2s ease;
+  }
+
+  #main-container.expandedArticleLayout::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+
+  #main-container.expandedArticleLayout::-webkit-scrollbar-track {
+    background: var(--color-transparent);
+  }
+
+  #main-container.expandedArticleLayout::-webkit-scrollbar-thumb {
+    background-color: var(--color-transparent);
+    transition: background-color 0.2s ease;
+  }
+
+  #main-container.expandedArticleLayout.is-scrolling {
+    scrollbar-color: var(--expanded-scrollbar-thumb) var(--color-transparent);
+  }
+
+  #main-container.expandedArticleLayout.is-scrolling::-webkit-scrollbar-thumb {
+    background-color: var(--expanded-scrollbar-thumb);
+  }
+
+  :global(:root[data-theme='dark']) #main-container.expandedArticleLayout {
+    --expanded-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
+  }
+
+  #main-container.expandedArticleLayout #articles {
+    margin-right: 0;
+    margin-left: 0;
+    padding-top: 0;
+  }
+
   #articles {
     margin-left: -15px;
     margin-right: -23px;
