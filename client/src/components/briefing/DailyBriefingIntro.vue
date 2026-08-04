@@ -157,15 +157,15 @@ export default {
   position: relative;
   width: 100%;
   flex: 0 0 auto;
-  padding: 0.875rem;
+  padding: 0.875rem 0;
   background-color: var(--bg-primary);
 }
 
 .daily-briefing-intro::after {
   position: absolute;
-  right: 0.875rem;
+  right: 0;
   bottom: 0;
-  left: 0.875rem;
+  left: 0;
   height: 1px;
   background-color: var(--briefing-intro-border);
   content: '';
@@ -242,12 +242,12 @@ export default {
 
 @media (max-width: 575.98px) and (orientation: portrait) {
   .daily-briefing-intro {
-    padding: 0.75rem;
+    padding: 0.75rem 0;
   }
 
   .daily-briefing-intro::after {
-    right: 0.75rem;
-    left: 0.75rem;
+    right: 0;
+    left: 0;
   }
 
   .daily-briefing-intro :deep(.briefing-context) {

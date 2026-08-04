@@ -33,7 +33,7 @@ export default {
 <style scoped>
 .unread-selection-context {
   width: 100%;
-  padding: 0.875rem;
+  padding: 0.875rem 0;
   background-color: var(--reader-list-item-background);
   border-bottom: 1px solid var(--reader-list-item-border);
 }
