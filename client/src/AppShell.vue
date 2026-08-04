@@ -103,12 +103,6 @@
   }
 }
 
-@media (min-width: 768px) and (max-width: 879px) {
-  #home {
-    padding-left: 0;
-  }
-}
-
 @media (min-width: 880px) {
   .mobile-toolbar {
     display: none;
@@ -167,6 +161,16 @@
       background-color: var(--bg-secondary);
       --sidebar-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
     }
+  }
+}
+
+/* Uses document scrolling for the hybrid mobile toolbar and persistent sidebar layout. */
+@media (min-width: 768px) and (max-width: 879px) {
+  #home {
+    display: block;
+    height: auto;
+    padding-left: 0;
+    overflow: visible;
   }
 }
 

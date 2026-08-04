@@ -426,6 +426,21 @@ export default {
   left: 0;
 }
 
+/* Removes the desktop toolbar offset from the wider mobile layout. */
+@media (min-width: 690px) and (max-width: 767px) {
+  #articles {
+    padding-top: 0;
+  }
+}
+
+/* Lets the hybrid document scroll surface receive trackpad scrolling without an inner overflow trap. */
+@media (min-width: 768px) and (max-width: 879px) {
+  #articles {
+    padding-top: 0;
+    overflow: visible;
+  }
+}
+
 /* Removes the article offset when the mobile toolbar overlays portrait layouts. */
 @media (max-width: 879px) and (orientation: portrait) {
   #main-container #articles {

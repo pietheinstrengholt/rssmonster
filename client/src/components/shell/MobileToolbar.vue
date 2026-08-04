@@ -1,5 +1,5 @@
 <template>
-  <div class="mobile-toolbar-container">
+  <div ref="toolbarContainer" class="mobile-toolbar-container">
     <nav id="mobile-toolbar" class="mobile-toolbar" aria-label="Mobile article toolbar">
       <div class="mobile-toolbar-brand-row">
         <div class="mobile-toolbar-brand">
@@ -139,11 +139,20 @@
       />
     </div>
   </div>
+  <div
+    class="mobile-toolbar-spacer"
+    :style="toolbarHeight > 0 ? { height: `${toolbarHeight}px` } : null"
+    aria-hidden="true"
+  ></div>
 </template>
 
 <style scoped>
 .mobile-toolbar-container {
   display: contents;
+}
+
+.mobile-toolbar-spacer {
+  display: none;
 }
 
 .mobile-toolbar {
@@ -165,6 +174,42 @@
 
   .mobile-toolbar.hide {
     transform: translateY(-100%);
+  }
+}
+
+/* Keeps the hybrid toolbar fixed while a measured spacer preserves its place in the article flow. */
+@media (min-width: 768px) and (max-width: 879px) {
+  .mobile-toolbar-container {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 280px;
+    z-index: 9999;
+    display: block;
+    pointer-events: none;
+  }
+
+  .mobile-toolbar,
+  .mobile-search-panel {
+    pointer-events: auto;
+  }
+
+  .mobile-toolbar {
+    position: relative;
+    top: auto;
+  }
+
+  .mobile-toolbar-spacer {
+    display: block;
+    flex: 0 0 auto;
+    width: 100%;
+    height: 107px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 879px) and (orientation: portrait) {
+  .mobile-toolbar-spacer {
+    height: 97px;
   }
 }
 
@@ -299,46 +344,13 @@
   }
 }
 
-/* Keeps only the phone portrait brand row compact without affecting the filter dropdowns. */
-@media (max-width: 879px) and (orientation: portrait) {
-  .mobile-toolbar-brand-row {
-    min-height: 56px;
-    margin: -10px -4px 0px;
-  }
-
-  .mobile-toolbar-brand {
-    flex: 1 1 auto;
-    min-width: 0;
-    gap: 10px;
-    font-size: 20px;
-  }
-
-  .mobile-toolbar-brand span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .mobile-toolbar-logo {
-    flex: 0 0 auto;
-    width: 38px;
-    height: 38px;
-  }
-
-  .mobile-toolbar-actions {
-    flex: 0 0 auto;
-    gap: 2px;
-  }
-
+/* Preserves the circular action surfaces across portrait and landscape mobile toolbar layouts. */
+@media (max-width: 879px) {
   .mobile-toolbar-button {
     position: relative;
     isolation: isolate;
-    width: 40px;
-    height: 40px;
     color: var(--toolbar-text);
     background: var(--color-transparent);
-    font-size: 20px;
   }
 
   .mobile-toolbar-button::before {
@@ -374,6 +386,45 @@
     width: 20px;
     height: 20px;
     margin-bottom: 0;
+  }
+}
+
+/* Keeps only the phone portrait brand row compact without affecting the filter dropdowns. */
+@media (max-width: 879px) and (orientation: portrait) {
+  .mobile-toolbar-brand-row {
+    min-height: 56px;
+    margin: -10px -4px 0px;
+  }
+
+  .mobile-toolbar-brand {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 10px;
+    font-size: 20px;
+  }
+
+  .mobile-toolbar-brand span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-toolbar-logo {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+  }
+
+  .mobile-toolbar-actions {
+    flex: 0 0 auto;
+    gap: 2px;
+  }
+
+  .mobile-toolbar-button {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
   }
 
   .mobile-filter-button {
@@ -514,7 +565,7 @@
   background-color: var(--toolbar-active-background);
 }
 
-@media (max-width: 879px) and (orientation: portrait) {
+@media (max-width: 879px) {
   :global(:root[data-theme='dark'] .mobile-toolbar-button),
   :global(:root[data-theme='dark'] .mobile-toolbar-button:hover),
   :global(:root[data-theme='dark'] .mobile-toolbar-button:focus-visible) {
@@ -559,24 +610,45 @@ export default {
   emits: ['mobile', 'forceReload', 'refresh'],
   data() {
     return {
-      showSearch: false
+      showSearch: false,
+      toolbarHeight: 0,
+      toolbarResizeObserver: null
     };
   },
   mounted() {
     window.addEventListener('resize', this.handleResize);
     window.addEventListener('rssmonster:focus-search', this.focusSearchInput);
+    this.$nextTick(this.setupToolbarMeasurement);
   },
   unmounted() {
     window.removeEventListener('resize', this.handleResize);
     window.removeEventListener('rssmonster:focus-search', this.focusSearchInput);
+    this.toolbarResizeObserver?.disconnect();
+    this.toolbarResizeObserver = null;
   },
   methods: {
+    // This function keeps the hybrid toolbar spacer equal to the rendered toolbar stack.
+    updateToolbarHeight() {
+      this.toolbarHeight = Math.ceil(
+        this.$refs.toolbarContainer?.getBoundingClientRect().height || 0
+      );
+    },
+    // This function observes toolbar and search-panel height changes in the hybrid layout.
+    setupToolbarMeasurement() {
+      this.updateToolbarHeight();
+      if (typeof ResizeObserver !== 'function' || !this.$refs.toolbarContainer) return;
+
+      // This observer updates the spacer whenever responsive rows or search change height.
+      this.toolbarResizeObserver = new ResizeObserver(() => this.updateToolbarHeight());
+      this.toolbarResizeObserver.observe(this.$refs.toolbarContainer);
+    },
     // This function emits a toolbar selection event.
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);
     },
     // This function closes mobile search when the layout becomes wide enough.
     handleResize() {
+      this.updateToolbarHeight();
       // Close search when switching from portrait to landscape
       if (this.showSearch && window.innerWidth >= MOBILE_LANDSCAPE_WIDTH) {
         this.toggleSearch();
@@ -590,6 +662,7 @@ export default {
     toggleSearch() {
       this.showSearch = !this.showSearch;
       this.uiStore.setMobileSearchOpen(this.showSearch);
+      this.$nextTick(this.updateToolbarHeight);
     },
     // This function opens and focuses the mobile search input.
     focusSearchInput() {
