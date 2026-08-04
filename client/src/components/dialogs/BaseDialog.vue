@@ -213,7 +213,7 @@ export default {
 .base-dialog__overlay {
   position: fixed;
   inset: 0;
-  z-index: 1050;
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
