@@ -177,60 +177,76 @@ These badge colors are also used in settings pages. Treat them as semantic color
 --badge-similar-bg: #E8F2FE;
 --badge-similar-text: #1D4ED8;
 
+/* Duplicate Articles */
+--badge-duplicate-bg: #FDF2F8;
+--badge-duplicate-text: #BE185D;
+
 /* Tags */
 --badge-tag-bg: #F3F4F6;
 --badge-tag-text: #4B5563;
 
 /* Quality */
---badge-quality-bg: #FEE2E2;
---badge-quality-text: #B91C1C;
+--badge-quality-bg: #EAF7EF;
+--badge-quality-text: #1F5E3A;
+
+/* Danger */
+--badge-danger-bg: #FEEAEA;
+--badge-danger-text: #B42318;
 
 /* Ad Score */
 --badge-ad-bg: #FFEDD5;
 --badge-ad-text: #EA650D;
 
 /* Sentiment */
---badge-sentiment-bg: #E8ECFC;
---badge-sentiment-text: #1D4ED8;
+--badge-sentiment-bg: #EEF2FF;
+--badge-sentiment-text: #4338CA;
 
 /* Writing */
---badge-writing-bg: #E6F4EA;
---badge-writing-text: #1F5E3A;
+--badge-writing-bg: #ECFDF5;
+--badge-writing-text: #047857;
 
 /* Tag Rule */
---badge-tag-rule-bg: #F3E8FF;
---badge-tag-rule-text: #7C3AED;
+--badge-tag-rule-bg: #F5EEFD;
+--badge-tag-rule-text: #6D28D9;
 ```
 
 ## Dark Mode
 
 ```css
 /* Similar Articles */
---badge-similar-bg: #1E3A8A;
+--badge-similar-bg: #1E3A5F;
 --badge-similar-text: #93C5FD;
+
+/* Duplicate Articles */
+--badge-duplicate-bg: #4A1433;
+--badge-duplicate-text: #F9A8D4;
 
 /* Tags */
 --badge-tag-bg: #2A2F3A;
 --badge-tag-text: #D1D5DB;
 
 /* Quality */
---badge-quality-bg: #7F1D1D;
---badge-quality-text: #FCA5A5;
+--badge-quality-bg: #173D2A;
+--badge-quality-text: #86EFAC;
+
+/* Danger */
+--badge-danger-bg: #4A1F1F;
+--badge-danger-text: #FCA5A5;
 
 /* Ad Score */
---badge-ad-bg: #7C2D12;
+--badge-ad-bg: #5C2A14;
 --badge-ad-text: #FDBA74;
 
 /* Sentiment */
---badge-sentiment-bg: #1E2A78;
+--badge-sentiment-bg: #252C63;
 --badge-sentiment-text: #A5B4FC;
 
 /* Writing */
---badge-writing-bg: #14532D;
---badge-writing-text: #86EFAC;
+--badge-writing-bg: #123F35;
+--badge-writing-text: #6EE7B7;
 
 /* Tag Rule */
---badge-tag-rule-bg: #3B1D6E;
+--badge-tag-rule-bg: #35205F;
 --badge-tag-rule-text: #C4B5FD;
 ```
 

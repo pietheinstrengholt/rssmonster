@@ -256,7 +256,7 @@
           href="https://github.com/pietheinstrengholt/rssmonster/"
           target="_blank"
           rel="noopener noreferrer"
-        >RSSMonster v1.0.0</a>
+        >RSSMonster v2.0.0</a>
       </div>
     </div>
   </div>

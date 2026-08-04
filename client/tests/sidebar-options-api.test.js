@@ -323,4 +323,30 @@ describe('Options API sidebar contracts', () => {
     expect(group.emitted('select-category')).toEqual([[category]]);
     expect(group.emitted('select-feed')).toEqual([[feed]]);
   });
+
+  // This verifies loading sidebar actions expose their busy state and suppress duplicate selection.
+  it('keeps loading sidebar actions accessible and non-interactive', async () => {
+    const action = mount(SidebarActionButton, {
+      props: {
+        icon: 'arrow-repeat',
+        label: 'Refresh feeds',
+        variant: 'sidebar-button sidebar-button-refresh',
+        loading: true
+      },
+      global: {
+        stubs: {
+          BootstrapIcon: true
+        }
+      }
+    });
+
+    expect(action.element.tagName).toBe('BUTTON');
+    expect(action.attributes('aria-busy')).toBe('true');
+    expect(action.attributes()).toHaveProperty('disabled');
+    expect(action.classes()).toContain('sidebar-button-refresh');
+
+    await action.trigger('click');
+
+    expect(action.emitted('select')).toBeUndefined();
+  });
 });

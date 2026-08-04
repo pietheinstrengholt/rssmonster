@@ -1,5 +1,11 @@
 <template>
-  <div :class="buttonClasses" @click="$emit('select')">
+  <button
+    type="button"
+    :class="buttonClasses"
+    :aria-busy="loading"
+    :disabled="loading"
+    @click="$emit('select')"
+  >
     <div>
       <span class="sidebar-icon">
         <BootstrapIcon :icon="icon" color="currentColor" />
@@ -9,7 +15,7 @@
         <BootstrapIcon icon="arrow-clockwise" color="currentColor" animation="spin" />
       </span>
     </div>
-  </div>
+  </button>
 </template>
 
 <script>
@@ -45,10 +51,12 @@ export default {
 <style scoped>
 .sidebar-button,
 .sidebar-management-button {
+  appearance: none;
   margin-left: 12px;
   padding: 6px;
   color: var(--text-primary);
   background-color: var(--bg-secondary);
+  border: 0;
   border-radius: 8px;
   text-indent: 4px;
   margin-bottom: 20px;
@@ -56,6 +64,8 @@ export default {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+  font-family: inherit;
+  font-size: inherit;
 }
 
 .sidebar-button {
@@ -68,6 +78,7 @@ export default {
   display: flex;
   align-items: center;
   font-weight: 500;
+  text-align: left;
 }
 
 .sidebar-button > div {
@@ -87,38 +98,70 @@ export default {
 }
 
 .sidebar-button-refresh,
-.sidebar-button-add-feed { width: calc(100% - 24px); }
-
-.sidebar-button-refresh {
-  color: var(--sidebar-action-refresh-text);
-  background: var(--sidebar-action-refresh-background);
-  border-color: var(--sidebar-action-refresh-border);
+.sidebar-button-add-feed,
+.sidebar-button-mark-read {
+  width: calc(100% - 24px);
+  color: var(--action-color);
+  background-color: var(--sidebar-primary-action-background);
+  border-color: var(--action-border);
+  font-weight: 600;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 
-.sidebar-button-refresh:hover {
-  background-color: var(--sidebar-action-refresh-hover-background);
+.sidebar-button-refresh {
+  --action-color: var(--sidebar-primary-action-refresh-text);
+  --action-border: var(--sidebar-primary-action-refresh-border);
+  --action-hover-background: var(--sidebar-primary-action-refresh-hover-background);
+  --action-hover-border: var(--sidebar-primary-action-refresh-hover-border);
+  --action-active-background: var(--sidebar-primary-action-refresh-active-background);
+  --action-focus: var(--sidebar-primary-action-refresh-focus);
 }
 
 .sidebar-button-add-feed {
-  color: var(--sidebar-action-add-text);
-  background-color: var(--sidebar-action-add-background);
-  border-color: var(--sidebar-action-add-border);
-}
-
-.sidebar-button-add-feed:hover {
-  color: var(--sidebar-action-add-hover-text);
-  background-color: var(--sidebar-action-add-hover-background);
+  --action-color: var(--sidebar-primary-action-add-text);
+  --action-border: var(--sidebar-primary-action-add-border);
+  --action-hover-background: var(--sidebar-primary-action-add-hover-background);
+  --action-hover-border: var(--sidebar-primary-action-add-hover-border);
+  --action-active-background: var(--sidebar-primary-action-add-active-background);
+  --action-focus: var(--sidebar-primary-action-add-focus);
 }
 
 .sidebar-button-mark-read {
-  color: var(--sidebar-action-mark-as-read-text);
-  background-color: var(--sidebar-action-mark-as-read-background);
-  border-color: var(--sidebar-action-mark-as-read-border);
+  --action-color: var(--sidebar-primary-action-read-text);
+  --action-border: var(--sidebar-primary-action-read-border);
+  --action-hover-background: var(--sidebar-primary-action-read-hover-background);
+  --action-hover-border: var(--sidebar-primary-action-read-hover-border);
+  --action-active-background: var(--sidebar-primary-action-read-active-background);
+  --action-focus: var(--sidebar-primary-action-read-focus);
 }
 
-.sidebar-button-mark-read:hover {
-  color: var(--sidebar-action-mark-as-read-hover-text);
-  background-color: var(--sidebar-action-mark-as-read-hover-background);
+.sidebar-button-refresh:hover:not(:disabled),
+.sidebar-button-add-feed:hover:not(:disabled),
+.sidebar-button-mark-read:hover:not(:disabled) {
+  color: var(--action-color);
+  background-color: var(--action-hover-background);
+  border-color: var(--action-hover-border);
+}
+
+.sidebar-button-refresh:active:not(:disabled),
+.sidebar-button-add-feed:active:not(:disabled),
+.sidebar-button-mark-read:active:not(:disabled) {
+  background-color: var(--action-active-background);
+  border-color: var(--action-hover-border);
+}
+
+.sidebar-button-refresh:focus-visible,
+.sidebar-button-add-feed:focus-visible,
+.sidebar-button-mark-read:focus-visible {
+  outline: 2px solid var(--action-focus);
+  outline-offset: 2px;
+}
+
+.sidebar-button-refresh:disabled,
+.sidebar-button-add-feed:disabled,
+.sidebar-button-mark-read:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .sidebar-bottom-action-button {
@@ -182,38 +225,6 @@ export default {
   .sidebar-management-button :deep(svg) {
     fill: var(--text-inverted);
   }
-}
-
-:global(:root[data-theme='dark'] .sidebar-button.sidebar-button-refresh) {
-  color: var(--sidebar-action-refresh-text) !important;
-  background: var(--sidebar-action-refresh-background) !important;
-  border-color: var(--sidebar-action-refresh-border) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-button.sidebar-button-refresh:hover) {
-  background-color: var(--sidebar-action-refresh-hover-background) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-button.sidebar-button-add-feed) {
-  color: var(--sidebar-action-add-text) !important;
-  background-color: var(--sidebar-action-add-background) !important;
-  border-color: var(--sidebar-action-add-border) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-button.sidebar-button-add-feed:hover) {
-  color: var(--sidebar-action-add-hover-text) !important;
-  background-color: var(--sidebar-action-add-hover-background) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-button.sidebar-button-mark-read) {
-  color: var(--sidebar-action-mark-as-read-text) !important;
-  background-color: var(--sidebar-action-mark-as-read-background) !important;
-  border-color: var(--sidebar-action-mark-as-read-border) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-button.sidebar-button-mark-read:hover) {
-  color: var(--sidebar-action-mark-as-read-hover-text) !important;
-  background-color: var(--sidebar-action-mark-as-read-hover-background) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-button.sidebar-bottom-action-button) {

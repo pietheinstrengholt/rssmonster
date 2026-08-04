@@ -77,8 +77,8 @@
   --settings-orange-text: var(--badge-ad-text);
   --settings-orange-hover-text: #C2410C;
   --settings-orange-border: #FFC4A3;
-  --settings-success-bg: var(--badge-writing-bg);
-  --settings-success-text: var(--badge-writing-text);
+  --settings-success-bg: var(--badge-quality-bg);
+  --settings-success-text: var(--badge-quality-text);
   --settings-success-hover-text: #14532D;
   --settings-danger-bg: var(--badge-danger-bg);
   --settings-danger-text: var(--badge-danger-text);
@@ -218,6 +218,25 @@
   --sidebar-action-mark-as-read-hover-text: #14532D;
   --sidebar-action-mark-as-read-border: #B9DFC6;
   --sidebar-action-mark-as-read-text: #166534;
+  --sidebar-primary-action-background: #FFFFFF;
+  --sidebar-primary-action-refresh-text: #1D4ED8;
+  --sidebar-primary-action-refresh-border: #BFDBFE;
+  --sidebar-primary-action-refresh-hover-background: #EFF6FF;
+  --sidebar-primary-action-refresh-hover-border: #93C5FD;
+  --sidebar-primary-action-refresh-active-background: #DBEAFE;
+  --sidebar-primary-action-refresh-focus: #1D4ED8;
+  --sidebar-primary-action-add-text: #C2410C;
+  --sidebar-primary-action-add-border: #FED7AA;
+  --sidebar-primary-action-add-hover-background: #FFF7ED;
+  --sidebar-primary-action-add-hover-border: #FDBA74;
+  --sidebar-primary-action-add-active-background: #FFEDD5;
+  --sidebar-primary-action-add-focus: #C2410C;
+  --sidebar-primary-action-read-text: #166534;
+  --sidebar-primary-action-read-border: #BBF7D0;
+  --sidebar-primary-action-read-hover-background: #F0FDF4;
+  --sidebar-primary-action-read-hover-border: #86EFAC;
+  --sidebar-primary-action-read-active-background: #DCFCE7;
+  --sidebar-primary-action-read-focus: #166534;
 
   /* Reader layout */
   --reader-list-item-background: #FFFFFF;
@@ -444,6 +463,25 @@
   --sidebar-action-mark-as-read-hover-text: #BBF7D0;
   --sidebar-action-mark-as-read-border: #34D399;
   --sidebar-action-mark-as-read-text: #BBF7D0;
+  --sidebar-primary-action-background: #171C25;
+  --sidebar-primary-action-refresh-text: #93C5FD;
+  --sidebar-primary-action-refresh-border: #294A73;
+  --sidebar-primary-action-refresh-hover-background: #1B2B40;
+  --sidebar-primary-action-refresh-hover-border: #3B6594;
+  --sidebar-primary-action-refresh-active-background: #203754;
+  --sidebar-primary-action-refresh-focus: #60A5FA;
+  --sidebar-primary-action-add-text: #FDBA74;
+  --sidebar-primary-action-add-border: #674126;
+  --sidebar-primary-action-add-hover-background: #302218;
+  --sidebar-primary-action-add-hover-border: #8A5630;
+  --sidebar-primary-action-add-active-background: #3A281A;
+  --sidebar-primary-action-add-focus: #FB923C;
+  --sidebar-primary-action-read-text: #86EFAC;
+  --sidebar-primary-action-read-border: #28583A;
+  --sidebar-primary-action-read-hover-background: #192C22;
+  --sidebar-primary-action-read-hover-border: #39764D;
+  --sidebar-primary-action-read-active-background: #203827;
+  --sidebar-primary-action-read-focus: #4ADE80;
 }
 
 :root[data-theme="dark"] .form-select {
