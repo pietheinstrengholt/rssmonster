@@ -681,9 +681,11 @@ export default {
 
 <style scoped>
 .readerLayout {
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: minmax(340px, 38%) minmax(0, 1fr);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   padding-top: 58px;
 }
 
@@ -1081,8 +1083,10 @@ export default {
 }
 
 .readerArticlePanel {
+  min-height: 0;
   min-width: 0;
-  overflow: visible;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 .article-load-sentinel {
