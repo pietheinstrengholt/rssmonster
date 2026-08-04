@@ -106,6 +106,7 @@ describe('UnreadSelectionContext', () => {
     expect(wrapper.text()).not.toContain('events');
     expect(wrapper.text()).not.toContain('topics');
     expect(wrapper.text()).not.toContain('interest areas');
+    expect(wrapper.classes()).not.toContain('unread-selection-context--reader');
 
     const action = wrapper.get('.briefing-tune-action');
     expect(action.text()).toBe('Tune your unread selection');
@@ -140,6 +141,7 @@ describe('UnreadSelectionContext', () => {
 
     const context = wrapper.getComponent(UnreadSelectionContext);
     expect(context.props()).toMatchObject({ articleCount: 76, sourceCount: 22 });
+    expect(context.props('readerMode')).toBe(false);
   });
 
   it('appears once in the loaded reader unread list', () => {
@@ -163,6 +165,7 @@ describe('UnreadSelectionContext', () => {
     });
 
     expect(wrapper.findAllComponents(UnreadSelectionContext)).toHaveLength(1);
+    expect(wrapper.getComponent(UnreadSelectionContext).props('readerMode')).toBe(true);
   });
 
   it.each([

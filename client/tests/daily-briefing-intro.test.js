@@ -153,6 +153,7 @@ describe('DailyBriefingIntro', () => {
   it('loads and renders API context and morning-summary items', async () => {
     const wrapper = mountDailyBriefingIntro();
 
+    expect(wrapper.classes()).not.toContain('daily-briefing-intro--reader');
     expect(wrapper.get('.briefing-context').text()).toContain('Loading briefing context');
 
     await flushPromises();
@@ -178,6 +179,7 @@ describe('DailyBriefingIntro', () => {
     await wrapper.setProps({ readerMode: true });
     await flushPromises();
 
+    expect(wrapper.classes()).toContain('daily-briefing-intro--reader');
     expect(wrapper.find('.briefing-morning-summary-text').exists()).toBe(false);
     expect(wrapper.get('#briefing-morning-title').text()).toBe('The stories shaping your morning');
   });

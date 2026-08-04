@@ -28,6 +28,7 @@
         v-if="currentSelection === 'unread' && container.length > 0 && currentViewSourceCount !== null"
         :article-count="currentViewUnreadCount"
         :source-count="currentViewSourceCount"
+        reader-mode
       />
       <div class="article-list-bulk-header" @click.stop>
         <div class="article-list-bulk-summary">
@@ -168,7 +169,12 @@
       </div>
     </aside>
 
-    <section class="readerArticlePanel" aria-label="Reader">
+    <section
+      ref="readerArticlePanelRef"
+      class="readerArticlePanel"
+      aria-label="Reader"
+      @scroll="handleReaderArticlePanelScroll"
+    >
       <ArticleItem
         v-if="selectedArticle"
         ref="selectedArticleComponent"
@@ -303,6 +309,7 @@ export default {
       isBulkMenuOpen: false,
       bulkMenuStyle: {},
       articleListScrollTimeout: null,
+      readerArticlePanelScrollTimeout: null,
       pendingClickedArticleIds: new Set()
     };
   },
@@ -321,12 +328,16 @@ export default {
     if (this.articleListScrollTimeout) {
       clearTimeout(this.articleListScrollTimeout);
     }
+
+    if (this.readerArticlePanelScrollTimeout) {
+      clearTimeout(this.readerArticlePanelScrollTimeout);
+    }
   },
   computed: {
     ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
     // Keeps temporarily expanded related articles out of the reader's middle-pane list.
     readerListArticles() {
-      return this.articles.filter(article => !article.clusterParentId);
+      return this.getReaderListArticles();
     },
     // Shows the briefing introduction only for the unfiltered all-sources briefing.
     showDailyBriefingIntro() {
@@ -346,7 +357,7 @@ export default {
     },
     // Returns the index of the article currently shown in the reader panel.
     selectedArticleIndex() {
-      return this.readerListArticles.findIndex(article => article.id === this.selectedArticleId);
+      return this.getReaderListArticles().findIndex(article => article.id === this.selectedArticleId);
     },
     // Returns the icon name that matches the active reader collection.
     selectionIcon() {
@@ -486,6 +497,10 @@ export default {
     }
   },
   methods: {
+    // Returns the primary collection articles that belong in the reader's middle pane.
+    getReaderListArticles() {
+      return this.articles.filter(article => !article.clusterParentId);
+    },
     // Shows the article-list scrollbar while the user is actively scrolling.
     handleArticleListScroll() {
       const articleList = this.$refs.articleListScrollRef;
@@ -501,6 +516,23 @@ export default {
       this.articleListScrollTimeout = setTimeout(() => {
         articleList.classList.remove('is-scrolling');
         this.articleListScrollTimeout = null;
+      }, 1000);
+    },
+    // Shows the reader-panel scrollbar while the user is actively scrolling.
+    handleReaderArticlePanelScroll() {
+      const articlePanel = this.$refs.readerArticlePanelRef;
+
+      if (!articlePanel) return;
+
+      articlePanel.classList.add('is-scrolling');
+
+      if (this.readerArticlePanelScrollTimeout) {
+        clearTimeout(this.readerArticlePanelScrollTimeout);
+      }
+
+      this.readerArticlePanelScrollTimeout = setTimeout(() => {
+        articlePanel.classList.remove('is-scrolling');
+        this.readerArticlePanelScrollTimeout = null;
       }, 1000);
     },
     // Formats stored tag names for display.
@@ -562,8 +594,9 @@ export default {
     },
     // Selects an article by index when keyboard navigation moves through the list.
     selectArticleByIndex(index) {
-      if (index < 0 || index >= this.readerListArticles.length) return;
-      const article = this.readerListArticles[index];
+      const readerListArticles = this.getReaderListArticles();
+      if (index < 0 || index >= readerListArticles.length) return;
+      const article = readerListArticles[index];
       this.selectArticle(article.id);
       this.$nextTick(() => this.focusSelectedListItem());
     },
@@ -599,12 +632,13 @@ export default {
       if (this.shouldIgnoreKeyboardEvent(event)) return;
       if (!['ArrowDown', 'ArrowUp', 'Enter', 'j', 'k', 'o', 'm', 'r', 's'].includes(event.key)) return;
 
-      const currentIndex = this.readerListArticles.findIndex(article => article.id === this.selectedArticleId);
+      const readerListArticles = this.getReaderListArticles();
+      const currentIndex = readerListArticles.findIndex(article => article.id === this.selectedArticleId);
       if (currentIndex === -1) return;
 
       if (['ArrowDown', 'j'].includes(event.key)) {
         event.preventDefault();
-        this.selectArticleByIndex(Math.min(currentIndex + 1, this.readerListArticles.length - 1));
+        this.selectArticleByIndex(Math.min(currentIndex + 1, readerListArticles.length - 1));
       } else if (['ArrowUp', 'k'].includes(event.key)) {
         event.preventDefault();
         this.selectArticleByIndex(Math.max(currentIndex - 1, 0));
@@ -1106,10 +1140,36 @@ export default {
 }
 
 .readerArticlePanel {
+  --reader-article-panel-scrollbar-thumb: var(--scrollbar-thumb-strong);
   min-height: 0;
   min-width: 0;
   overflow-y: auto;
   overscroll-behavior-y: contain;
+  scrollbar-color: var(--color-transparent) var(--color-transparent);
+  scrollbar-width: thin;
+  transition: scrollbar-color 0.2s ease;
+}
+
+.readerArticlePanel::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.readerArticlePanel::-webkit-scrollbar-track {
+  background: var(--color-transparent);
+}
+
+.readerArticlePanel::-webkit-scrollbar-thumb {
+  background-color: var(--color-transparent);
+  transition: background-color 0.2s ease;
+}
+
+.readerArticlePanel.is-scrolling {
+  scrollbar-color: var(--reader-article-panel-scrollbar-thumb) var(--color-transparent);
+}
+
+.readerArticlePanel.is-scrolling::-webkit-scrollbar-thumb {
+  background-color: var(--reader-article-panel-scrollbar-thumb);
 }
 
 .article-load-sentinel {
@@ -1120,6 +1180,10 @@ export default {
 :global(:root[data-theme='dark']) .readerArticleList {
   --article-list-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
   border-color: var(--border-subtle);
+}
+
+:global(:root[data-theme='dark']) .readerArticlePanel {
+  --reader-article-panel-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
 }
 
 :global(:root[data-theme='dark']) .article-list-bulk-header {

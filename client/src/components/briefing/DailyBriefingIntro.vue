@@ -1,5 +1,8 @@
 <template>
-  <div class="daily-briefing-intro">
+  <div
+    class="daily-briefing-intro"
+    :class="{ 'daily-briefing-intro--reader': readerMode }"
+  >
     <BriefingContextText
       :article-count="context?.articleCount ?? null"
       :source-count="context?.sourceCount ?? null"
@@ -157,18 +160,28 @@ export default {
   position: relative;
   width: 100%;
   flex: 0 0 auto;
-  padding: 0.875rem 0;
+  padding: 0.875rem;
   background-color: var(--bg-primary);
 }
 
 .daily-briefing-intro::after {
   position: absolute;
-  right: 0;
+  right: 0.875rem;
   bottom: 0;
-  left: 0;
+  left: 0.875rem;
   height: 1px;
   background-color: var(--briefing-intro-border);
   content: '';
+}
+
+.daily-briefing-intro.daily-briefing-intro--reader {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.daily-briefing-intro.daily-briefing-intro--reader::after {
+  right: 0;
+  left: 0;
 }
 
 .daily-briefing-intro :deep(.briefing-context) {
@@ -242,12 +255,12 @@ export default {
 
 @media (max-width: 575.98px) and (orientation: portrait) {
   .daily-briefing-intro {
-    padding: 0.75rem 0;
+    padding: 0.75rem;
   }
 
   .daily-briefing-intro::after {
-    right: 0;
-    left: 0;
+    right: 0.75rem;
+    left: 0.75rem;
   }
 
   .daily-briefing-intro :deep(.briefing-context) {

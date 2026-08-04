@@ -1,5 +1,8 @@
 <template>
-  <div class="unread-selection-context">
+  <div
+    class="unread-selection-context"
+    :class="{ 'unread-selection-context--reader': readerMode }"
+  >
     <BriefingContextText
       :article-count="articleCount"
       :source-count="sourceCount"
@@ -25,6 +28,10 @@ export default {
     sourceCount: {
       type: Number,
       required: true
+    },
+    readerMode: {
+      type: Boolean,
+      default: false
     }
   }
 };
@@ -33,9 +40,14 @@ export default {
 <style scoped>
 .unread-selection-context {
   width: 100%;
-  padding: 0.875rem 0;
+  padding: 0.875rem;
   background-color: var(--reader-list-item-background);
   border-bottom: 1px solid var(--reader-list-item-border);
+}
+
+.unread-selection-context--reader {
+  padding-right: 0;
+  padding-left: 0;
 }
 
 @media (max-width: 767px) {
