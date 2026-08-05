@@ -1,29 +1,29 @@
 /* Fixed source identities stay separate from the reusable RSSMonster theme palette. */
 
 /* Generic media-type indicators. */
-.media-video-icon {
+.article-kind-icon.media-video-icon {
   color: #dc2626;
 }
 
-.podcast-icon {
+.article-kind-icon.podcast-icon {
   color: #1e40af;
 }
 
 /* Publisher and platform identities. */
-.bluesky-icon {
+.article-kind-icon.bluesky-icon {
   color: #1185fe;
 }
 
-.reddit-icon {
+.article-kind-icon.reddit-icon {
   color: #ff4500;
 }
 
-.github-icon,
-.medium-icon {
+.article-kind-icon.github-icon,
+.article-kind-icon.medium-icon {
   color: #000;
 }
 
-.mastodon-icon {
+.article-kind-icon.mastodon-icon {
   color: #6364ff;
 }
 
