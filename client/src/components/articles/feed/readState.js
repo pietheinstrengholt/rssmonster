@@ -45,6 +45,8 @@ export const articleFeedReadStateMethods = {
       this.articles = this.articles.map(article => ({ ...article, status: 'read' }));
       this.isFlushed = true;
       await this.overviewStore.fetchOverviewSplit({ forceUpdate: true });
+      await this.$nextTick();
+      this.scrollArticleListToTop();
     } catch (error) {
       console.error('Error marking all articles as read:', error);
       notifyActionError('Could not mark these articles as read. Please try again.', error);

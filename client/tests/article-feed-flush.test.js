@@ -37,7 +37,9 @@ describe('ArticleFeed final read reconciliation', () => {
         { id: 102, status: 'unread' },
         { id: 103, status: 'unread' }
       ],
-      isFlushed: false
+      isFlushed: false,
+      $nextTick: vi.fn().mockResolvedValue(),
+      scrollArticleListToTop: vi.fn()
     };
 
     await ArticleFeed.methods.flushPool.call(context);
@@ -50,6 +52,8 @@ describe('ArticleFeed final read reconciliation', () => {
     ]);
     expect(context.isFlushed).toBe(true);
     expect(fetchOverviewSplit).toHaveBeenCalledWith({ forceUpdate: true });
+    expect(context.$nextTick).toHaveBeenCalledOnce();
+    expect(context.scrollArticleListToTop).toHaveBeenCalledOnce();
   });
 
   it('preserves local state when full-container reconciliation fails', async () => {
@@ -69,7 +73,9 @@ describe('ArticleFeed final read reconciliation', () => {
         { id: 201, status: 'read' },
         { id: 202, status: 'unread' }
       ],
-      isFlushed: false
+      isFlushed: false,
+      $nextTick: vi.fn().mockResolvedValue(),
+      scrollArticleListToTop: vi.fn()
     };
     markArticlesAsRead.mockRejectedValue(error);
 
@@ -79,6 +85,7 @@ describe('ArticleFeed final read reconciliation', () => {
     expect(context.articles.map(article => article.status)).toEqual(['read', 'unread']);
     expect(context.isFlushed).toBe(false);
     expect(fetchOverviewSplit).not.toHaveBeenCalled();
+    expect(context.scrollArticleListToTop).not.toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalledWith(
       'Error marking all articles as read:',
       error

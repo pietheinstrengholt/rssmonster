@@ -102,6 +102,7 @@ describe('ArticleFeed loading races', () => {
     expect(context.currentViewSourceCount).toBe(1);
     expect(context.distance).toBe(1);
     expect(context.hasLoadedContent).toBe(true);
+    expect(context.scrollArticleListToTop).toHaveBeenCalledOnce();
   });
 
   it('keeps existing articles and reports a current database refresh failure', async () => {
@@ -210,11 +211,21 @@ describe('ArticleFeed loading races', () => {
   });
 
   it('resets both article-pane and page scroll roots for a rebuilt collection', () => {
-    document.body.innerHTML = '<main id="home"><div class="expandedArticleLayout"></div></main>';
+    document.body.innerHTML = `
+      <main id="home">
+        <div class="expandedArticleLayout"></div>
+        <aside class="readerArticleList"></aside>
+        <section class="readerArticlePanel"></section>
+      </main>
+    `;
     const articlePane = document.getElementById('home');
     const expandedArticlePane = document.querySelector('.expandedArticleLayout');
+    const readerArticleList = document.querySelector('.readerArticleList');
+    const readerArticlePanel = document.querySelector('.readerArticlePanel');
     articlePane.scrollTop = 240;
     expandedArticlePane.scrollTop = 240;
+    readerArticleList.scrollTop = 240;
+    readerArticlePanel.scrollTop = 240;
     document.documentElement.scrollTop = 240;
     document.body.scrollTop = 240;
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 240 });
@@ -224,6 +235,8 @@ describe('ArticleFeed loading races', () => {
 
     expect(expandedArticlePane.scrollTop).toBe(0);
     expect(articlePane.scrollTop).toBe(0);
+    expect(readerArticleList.scrollTop).toBe(0);
+    expect(readerArticlePanel.scrollTop).toBe(0);
     expect(document.documentElement.scrollTop).toBe(0);
     expect(document.body.scrollTop).toBe(0);
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });

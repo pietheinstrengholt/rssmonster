@@ -79,8 +79,12 @@ export const articleFeedPaginationMethods = {
     const windowWasScrolled = window.scrollY > 0;
     const expandedArticlePane = document.querySelector('.expandedArticleLayout');
     const articlePane = document.getElementById('home');
+    const readerArticleList = document.querySelector('.readerArticleList');
+    const readerArticlePanel = document.querySelector('.readerArticlePanel');
     if (expandedArticlePane) expandedArticlePane.scrollTop = 0;
     if (articlePane) articlePane.scrollTop = 0;
+    if (readerArticleList) readerArticleList.scrollTop = 0;
+    if (readerArticlePanel) readerArticlePanel.scrollTop = 0;
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
     if (windowWasScrolled) window.scrollTo({ top: 0, behavior: 'auto' });
@@ -121,6 +125,9 @@ export const articleFeedPaginationMethods = {
         this.observeArticles();
         this.observeLoadMoreSentinel();
       });
+      await this.$nextTick();
+      if (requestId !== this.activeRequestId) return false;
+      this.scrollArticleListToTop();
       return true;
     } catch (error) {
       if (requestId !== this.activeRequestId) return false;
