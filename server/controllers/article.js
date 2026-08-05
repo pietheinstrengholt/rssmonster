@@ -341,6 +341,9 @@ const markAsRead = async (req, res, _next) => {
     const articleIds = Array.isArray(body.articleIds)
       ? body.articleIds
       : String(body.articleIds || '').split(',').filter(Boolean);
+    const snapshotArticleIds = Array.isArray(body.snapshotArticleIds)
+      ? body.snapshotArticleIds
+      : String(body.snapshotArticleIds || '').split(',').filter(Boolean);
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
@@ -432,7 +435,13 @@ const markAsRead = async (req, res, _next) => {
       persistSettings: false
     });
 
-    const itemIds = result.itemIds || [];
+    // Combines live matches with the original list snapshot while normalizing mixed ID types.
+    const itemIds = [
+      ...new Map(
+        [...(result.itemIds || []), ...snapshotArticleIds]
+          .map(id => [String(id), id])
+      ).values()
+    ];
 
     if (itemIds.length === 0) {
       return res.status(200).json({

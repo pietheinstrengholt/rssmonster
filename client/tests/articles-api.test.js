@@ -37,4 +37,15 @@ describe('articles API', () => {
 
     expect(post).toHaveBeenCalledWith('/articles/markasread', currentSelection);
   });
+
+  it('includes the original list snapshot in matching mark-read requests', () => {
+    const currentSelection = { status: 'unread', grouping: 'event' };
+
+    markAllAsRead(currentSelection, [10, 11]);
+
+    expect(post).toHaveBeenCalledWith('/articles/markasread', {
+      ...currentSelection,
+      snapshotArticleIds: [10, 11]
+    });
+  });
 });

@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
-import { markArticlesAsRead } from '../src/api/articles.js';
+import { markAllAsRead } from '../src/api/articles.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
   fetchArticleIds: vi.fn(),
   fetchArticleDetails: vi.fn(),
+  markAllAsRead: vi.fn(),
   markArticlesAsRead: vi.fn(),
   markArticleUnread: vi.fn(),
   markArticleSeen: vi.fn(),
@@ -16,18 +17,25 @@ vi.mock('../src/api/articles.js', () => ({
 }));
 
 beforeEach(() => {
-  markArticlesAsRead.mockReset();
-  markArticlesAsRead.mockResolvedValue({ data: { articles: [] } });
+  markAllAsRead.mockReset();
+  markAllAsRead.mockResolvedValue({ data: { updatedCount: 3 } });
 });
 
 describe('ArticleFeed final read reconciliation', () => {
-  it('marks the complete container snapshot instead of only pooled or remaining IDs', async () => {
+  it('marks the live selection instead of the stale container snapshot', async () => {
     const fetchOverviewSplit = vi.fn().mockResolvedValue();
+    const currentSelection = {
+      status: 'unread',
+      categoryId: '%',
+      feedId: '%',
+      grouping: 'event',
+      sort: 'desc'
+    };
     const context = {
       ...createFocusedStores({
         overview: { fetchOverviewSplit },
         selection: {
-          currentSelection: { grouping: 'none' }
+          currentSelection
         }
       }),
       container: [101, 102, 103, 103],
@@ -44,7 +52,10 @@ describe('ArticleFeed final read reconciliation', () => {
 
     await ArticleFeed.methods.flushPool.call(context);
 
-    expect(markArticlesAsRead).toHaveBeenCalledWith([101, 102, 103], 'none');
+    expect(markAllAsRead).toHaveBeenCalledWith(
+      context.selectionStore.currentSelection,
+      [101, 102, 103]
+    );
     expect(context.articles.map(article => article.status)).toEqual([
       'read',
       'read',
@@ -77,11 +88,14 @@ describe('ArticleFeed final read reconciliation', () => {
       $nextTick: vi.fn().mockResolvedValue(),
       scrollArticleListToTop: vi.fn()
     };
-    markArticlesAsRead.mockRejectedValue(error);
+    markAllAsRead.mockRejectedValue(error);
 
     await ArticleFeed.methods.flushPool.call(context);
 
-    expect(markArticlesAsRead).toHaveBeenCalledWith([201, 202], 'event');
+    expect(markAllAsRead).toHaveBeenCalledWith(
+      context.selectionStore.currentSelection,
+      [201, 202]
+    );
     expect(context.articles.map(article => article.status)).toEqual(['read', 'unread']);
     expect(context.isFlushed).toBe(false);
     expect(fetchOverviewSplit).not.toHaveBeenCalled();

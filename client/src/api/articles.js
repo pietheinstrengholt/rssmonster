@@ -77,8 +77,10 @@ export const markMoreLikeThis = (articleId) =>
 /**
  * Mark all matching articles as read
  */
-export const markAllAsRead = (currentSelection) =>
-  api.post('/articles/markasread', currentSelection);
+export const markAllAsRead = (currentSelection, snapshotArticleIds) =>
+  api.post('/articles/markasread', snapshotArticleIds
+    ? { ...currentSelection, snapshotArticleIds }
+    : currentSelection);
 
 /**
  * Mark selected articles as read

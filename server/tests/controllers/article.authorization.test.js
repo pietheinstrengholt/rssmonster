@@ -736,6 +736,30 @@ describe('article ownership authorization', () => {
     expect([article, ...siblingArticles].every(item => item.readAt instanceof Date)).toBe(true);
     expect(event.representativeArticleId).toBe(article.id);
     expect(event.developingArticleId).toBe(article.id);
+
+    await Article.update(
+      { status: 'unread', readAt: null },
+      { where: { id: [article.id, ...siblingArticles.map(item => item.id)] } }
+    );
+    await article.update({ status: 'read', readAt: new Date() });
+
+    const selectionResponse = await request(app)
+      .post('/api/articles/markasread')
+      .set('Authorization', authHeaderFor(owner))
+      .send({
+        grouping: 'event',
+        snapshotArticleIds: [article.id]
+      });
+
+    await Promise.all([article.reload(), ...siblingArticles.map(item => item.reload())]);
+
+    expect(selectionResponse.status).toBe(200);
+    expect(selectionResponse.body.expandedEventCount).toBe(1);
+    expect([article, ...siblingArticles].map(item => item.status)).toEqual([
+      'read',
+      'read',
+      'read'
+    ]);
   });
 
   it('mark-as-read with topic grouping updates every event and reports topic article counts', async () => {

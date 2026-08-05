@@ -14,6 +14,7 @@ import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
+  markAllAsRead: vi.fn(),
   markArticlesAsRead: vi.fn(),
   markArticleSeen: vi.fn(),
   markArticleUnread: vi.fn()

@@ -1,4 +1,5 @@
 import {
+  markAllAsRead,
   markArticlesAsRead,
   markArticleSeen,
   markArticleUnread
@@ -32,15 +33,14 @@ export const articleFeedReadStateMethods = {
     this.addToPool(poolArticleId);
   },
 
-  // Reconciles every article from the loaded list as read.
+  // Marks every article matching the live selection as read, including grouped siblings and new arrivals.
   async flushPool() {
     if (!this.container.length || this.isFlushed) return;
 
     try {
-      const articleIds = [...new Set(this.container)];
-      await markArticlesAsRead(
-        articleIds,
-        this.selectionStore.currentSelection.grouping
+      await markAllAsRead(
+        this.selectionStore.currentSelection,
+        [...new Set(this.container)]
       );
       this.articles = this.articles.map(article => ({ ...article, status: 'read' }));
       this.isFlushed = true;

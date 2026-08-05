@@ -8,6 +8,7 @@ import { createFocusedStores } from './helpers/focusedStores.js';
 vi.mock('../src/api/articles.js', () => ({
   fetchArticleDetails: vi.fn(),
   fetchArticleIds: vi.fn(),
+  markAllAsRead: vi.fn(),
   markArticleSeen: vi.fn(),
   markArticlesAsRead: vi.fn(),
   markArticleUnread: vi.fn(),
