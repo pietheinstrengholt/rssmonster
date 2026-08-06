@@ -46,14 +46,15 @@ describe('ArticleFeed final read reconciliation', () => {
         { id: 103, status: 'unread' }
       ],
       isFlushed: false,
-      $nextTick: vi.fn().mockResolvedValue(),
-      scrollArticleListToTop: vi.fn()
+      activeRequestId: 4,
+      refreshArticleIds: vi.fn().mockResolvedValue(true)
     };
+    const activeSelection = { ...context.selectionStore.currentSelection };
 
     await ArticleFeed.methods.flushPool.call(context);
 
     expect(markAllAsRead).toHaveBeenCalledWith(
-      context.selectionStore.currentSelection,
+      activeSelection,
       [101, 102, 103]
     );
     expect(context.articles.map(article => article.status)).toEqual([
@@ -63,8 +64,9 @@ describe('ArticleFeed final read reconciliation', () => {
     ]);
     expect(context.isFlushed).toBe(true);
     expect(fetchOverviewSplit).toHaveBeenCalledWith({ forceUpdate: true });
-    expect(context.$nextTick).toHaveBeenCalledOnce();
-    expect(context.scrollArticleListToTop).toHaveBeenCalledOnce();
+    expect(context.refreshArticleIds).toHaveBeenCalledWith(activeSelection);
+    expect(markAllAsRead.mock.invocationCallOrder[0])
+      .toBeLessThan(context.refreshArticleIds.mock.invocationCallOrder[0]);
   });
 
   it('preserves local state when full-container reconciliation fails', async () => {
@@ -85,8 +87,8 @@ describe('ArticleFeed final read reconciliation', () => {
         { id: 202, status: 'unread' }
       ],
       isFlushed: false,
-      $nextTick: vi.fn().mockResolvedValue(),
-      scrollArticleListToTop: vi.fn()
+      activeRequestId: 4,
+      refreshArticleIds: vi.fn()
     };
     markAllAsRead.mockRejectedValue(error);
 
@@ -99,12 +101,43 @@ describe('ArticleFeed final read reconciliation', () => {
     expect(context.articles.map(article => article.status)).toEqual(['read', 'unread']);
     expect(context.isFlushed).toBe(false);
     expect(fetchOverviewSplit).not.toHaveBeenCalled();
-    expect(context.scrollArticleListToTop).not.toHaveBeenCalled();
+    expect(context.refreshArticleIds).not.toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalledWith(
       'Error marking all articles as read:',
       error
     );
 
     consoleError.mockRestore();
+  });
+
+  it('does not replace a newer selection when the mark request finishes late', async () => {
+    let finishMarking;
+    markAllAsRead.mockReturnValueOnce(new Promise(resolve => {
+      finishMarking = resolve;
+    }));
+    const fetchOverviewSplit = vi.fn().mockResolvedValue();
+    const context = {
+      ...createFocusedStores({
+        overview: { fetchOverviewSplit },
+        selection: {
+          currentSelection: { status: 'unread', feedId: '1' }
+        }
+      }),
+      container: [301],
+      articles: [{ id: 301, status: 'unread' }],
+      isFlushed: false,
+      activeRequestId: 7,
+      refreshArticleIds: vi.fn()
+    };
+
+    const flush = ArticleFeed.methods.flushPool.call(context);
+    context.activeRequestId = 8;
+    context.articles = [{ id: 401, status: 'unread' }];
+    finishMarking({ data: { updatedCount: 1 } });
+    await flush;
+
+    expect(context.articles).toEqual([{ id: 401, status: 'unread' }]);
+    expect(context.refreshArticleIds).not.toHaveBeenCalled();
+    expect(fetchOverviewSplit).toHaveBeenCalledWith({ forceUpdate: true });
   });
 });

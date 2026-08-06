@@ -49,15 +49,15 @@ export default {
   background: var(--bg-primary);
   border: 1px solid var(--border-warning);
   border-left: 3px solid var(--border-warning-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   bottom: 16px;
   box-shadow: var(--shadow-modal);
   color: var(--text-primary);
   display: flex;
   gap: 10px;
-  left: calc(280px + 16px);
+  left: calc(var(--sidebar-width) + 16px);
   margin: 0 auto;
-  max-width: min(680px, calc(100vw - 312px));
+  max-width: min(680px, calc(100vw - var(--sidebar-width) - 32px));
   padding: 9px 10px 9px 12px;
   position: fixed;
   right: 16px;
@@ -74,7 +74,7 @@ export default {
 
 .connectivity-status p {
   flex: 1;
-  font-size: 14px;
+  font-size: var(--font-size-ui-default);
   line-height: 1.4;
   margin: 0;
 }
@@ -82,12 +82,12 @@ export default {
 .connectivity-status__retry {
   background: var(--bg-control);
   border: 1px solid var(--border-control);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   color: var(--text-primary);
   flex: 0 0 auto;
-  font-size: 14px;
+  font-size: var(--font-size-ui-default);
   font-weight: 700;
-  min-height: 40px;
+  min-height: var(--control-height-default);
   padding: 8px 14px;
 }
 
@@ -96,10 +96,10 @@ export default {
 }
 
 .connectivity-status__retry:focus-visible {
-  border-color: var(--border-focus);
-  box-shadow: var(--shadow-focus-primary);
-  outline: 2px solid var(--border-focus);
-  outline-offset: 2px;
+  border-color: var(--focus-ring-color);
+  box-shadow: var(--focus-ring-shadow);
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .connectivity-status__retry:disabled {
@@ -116,11 +116,9 @@ export default {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .connectivity-status {
-    background: var(--bg-secondary);
-    border-color: var(--border-warning);
-    border-left-color: var(--border-warning-strong);
-  }
+:global(:root[data-theme='dark']) .connectivity-status {
+  background: var(--bg-secondary);
+  border-color: var(--border-warning);
+  border-left-color: var(--border-warning-strong);
 }
 </style>

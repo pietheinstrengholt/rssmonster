@@ -1,9 +1,9 @@
 <template>
     <div v-if="selectionStore.currentSelection.AIEnabled" id="inputArea">
-        <div class="mb-3">
-            <label for="chatTextarea" class="form-label">What would you like to know?</label>
+        <div class="agent-chat-field">
+            <label for="chatTextarea" class="app-form-label">What would you like to know?</label>
             <textarea
-                class="form-control" 
+                class="app-form-control"
                 id="chatTextarea" 
                 rows="2" 
                 v-model="chatInput"
@@ -21,10 +21,10 @@
             <button type="button" class="agent-chat-button agent-chat-button--secondary" :disabled="messages.length === 0" @click="clearConversation">Clear</button>
         </div>
         <div v-if="isLoading" class="loading-spinner">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+            <div class="app-loading-indicator app-loading-indicator--accent" role="status">
+                <span class="app-visually-hidden">Loading...</span>
             </div>
-            <span class="ms-2">Agent is thinking...</span>
+            <span>Agent is thinking...</span>
         </div>
         <div v-if="messages.length > 0">
             <h5 class="agent-chat-response-heading">Response:</h5>
@@ -38,7 +38,7 @@
               </div>
         </div>
     </div>
-    <div v-else class="alert alert-warning mt-4">
+    <div v-else class="app-notice app-notice--warning agent-chat-disabled-notice" role="status">
       <strong>Agentic features are not enabled.</strong><br>
       Please contact your administrator or set up the required API key to use AI-powered chat features.
     </div>
@@ -47,6 +47,7 @@
 <style>
 div#inputArea {
   margin-top: 70px;
+  margin-inline: 15px;
   font-family: var(--font-family);
   color: var(--text-primary);
   font-size: 14px;
@@ -54,7 +55,7 @@ div#inputArea {
   line-height: 1.65;
 }
 
-#inputArea .form-label,
+#inputArea .app-form-label,
 .agent-chat-response-heading {
   color: var(--text-primary);
   font-size: 14px;
@@ -119,8 +120,17 @@ div#inputArea {
 .loading-spinner {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   margin-bottom: 20px;
   color: var(--chat-loading-spinner);
+}
+
+.agent-chat-field {
+  margin-bottom: 1rem;
+}
+
+.agent-chat-disabled-notice {
+  margin-top: 1.5rem;
 }
 
 .agent-chat-actions {
@@ -216,14 +226,6 @@ div#inputArea {
 .article-card .article-content-wrapper img {
   max-width: 100%;
   height: auto !important;
-}
-
-/* Mobile responsive margins */
-@media screen and (max-width: 879px) {
-  div#inputArea {
-    margin-left: 15px;
-    margin-right: 15px;
-  }
 }
 
 :root[data-theme='dark'] #chatTextarea {

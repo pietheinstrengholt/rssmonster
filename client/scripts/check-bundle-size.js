@@ -58,8 +58,7 @@ export const identifyBundleAssets = manifest => {
     initialJavaScript: collectInitialJavaScript(entryKey),
     mainCss: entry.css,
     vueVendor: requireNamedChunk('vue-vendor'),
-    axiosVendor: requireNamedChunk('axios-vendor'),
-    bootstrapVendor: requireNamedChunk('bootstrap-vendor')
+    axiosVendor: requireNamedChunk('axios-vendor')
   };
 };
 

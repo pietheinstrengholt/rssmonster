@@ -34,7 +34,7 @@
     </div>
 
     <FeedRefreshProgress
-      v-if="!hasTagSelection && refreshProgress?.visible"
+      v-if="showRefreshProgress && !hasTagSelection && refreshProgress?.visible"
       class="article-empty-state-refresh-progress"
       :progress="refreshProgress"
     />
@@ -77,6 +77,10 @@ export default {
     refreshProgress: {
       type: Object,
       default: null
+    },
+    showRefreshProgress: {
+      type: Boolean,
+      default: true
     }
   },
   computed: {
@@ -130,12 +134,13 @@ export default {
 <style scoped>
 .article-empty-state {
   align-items: center;
+  box-sizing: border-box;
   color: var(--text-primary);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: calc(100vh - 96px);
-  padding: 72px 24px;
+  min-height: calc(100vh - 58px);
+  padding: 0 24px;
   text-align: center;
 }
 
@@ -281,7 +286,7 @@ export default {
   .article-empty-state {
     flex: 1;
     min-height: 0;
-    padding: 48px 18px;
+    padding: 0 18px;
   }
 
   .article-empty-state-illustration {
@@ -326,6 +331,79 @@ export default {
     margin-top: 16px;
     max-width: 360px;
     width: 100%;
+  }
+}
+
+/* Keeps every recovery action reachable in short landscape viewports. */
+@media (max-height: 560px) and (min-width: 480px) {
+  .article-empty-state {
+    height: calc(100vh - 58px);
+    justify-content: flex-start;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .article-empty-state > :first-child {
+    margin-top: auto;
+  }
+
+  .article-empty-state > :last-child {
+    margin-bottom: auto;
+  }
+
+  .article-empty-state-illustration {
+    height: 72px;
+    margin-bottom: 8px;
+    width: 120px;
+  }
+
+  .article-empty-state-circle {
+    font-size: 32px;
+    height: 72px;
+    width: 72px;
+  }
+
+  .article-empty-state-plane {
+    font-size: 16px;
+    right: 14px;
+    top: 8px;
+  }
+
+  .article-empty-state-title {
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+
+  .article-empty-state-text {
+    font-size: 14px;
+    line-height: 1.4;
+    margin: 6px 0 12px;
+  }
+
+  .article-empty-state-actions {
+    flex-direction: row;
+    margin-top: 0;
+    max-width: none;
+    width: auto;
+  }
+
+  .article-empty-state-primary,
+  .article-empty-state-secondary {
+    height: 40px;
+    width: auto;
+  }
+
+  .article-empty-state-refresh-progress {
+    margin-top: 10px;
+  }
+
+  .article-empty-state-divider {
+    margin: 12px 0 10px;
+  }
+
+  .article-empty-state-link {
+    font-size: 14px;
   }
 }
 

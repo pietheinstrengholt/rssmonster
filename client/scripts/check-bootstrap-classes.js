@@ -5,45 +5,7 @@ import { fileURLToPath } from 'node:url';
 const scriptPath = fileURLToPath(import.meta.url);
 const clientRoot = resolve(dirname(scriptPath), '..');
 const defaultSourceDirectory = resolve(clientRoot, 'src');
-
-export const ENABLED_COMPONENT_FAMILIES = new Set([
-  'alert',
-  'badge',
-  'buttons',
-  'close',
-  'dropdown',
-  'forms',
-  'grid',
-  'helpers',
-  'list-group',
-  'modal',
-  'spinners',
-  'transitions',
-  'type'
-]);
-
-export const ENABLED_UTILITY_FAMILIES = new Set([
-  'align-items',
-  'align-self',
-  'color',
-  'display',
-  'flex-grow',
-  'font-weight',
-  'gap',
-  'justify-content',
-  'margin-bottom',
-  'margin-end',
-  'margin-start',
-  'margin-top',
-  'text-transform'
-]);
-
-export const ENABLED_RESPONSIVE_UTILITY_FAMILIES = new Set();
-
-// Enumerates finite outcomes for Bootstrap-looking runtime templates that static analysis cannot resolve.
-export const DYNAMIC_CLASS_ESCAPES = new Map([
-  ['alert-${setupMessageType}', ['alert-danger', 'alert-warning']]
-]);
+const defaultRootFiles = [resolve(clientRoot, 'index.html'), resolve(clientRoot, 'vite.config.js')];
 
 const COMPONENT_CLASSIFIERS = [
   { family: 'accordion', pattern: /^accordion(?:-|$)/ },
@@ -63,7 +25,7 @@ const COMPONENT_CLASSIFIERS = [
   { family: 'toast', pattern: /^toast(?:-|$)/ },
   { family: 'tooltip', pattern: /^tooltip(?:-|$)/ },
   { family: 'close', pattern: /^btn-close(?:-|$)/ },
-  { family: 'forms', pattern: /^(?:form|input-group|valid|invalid|was-validated)(?:-|$)/ },
+  { family: 'forms', pattern: /^(?:form|input-group|is-(?:valid|invalid)|valid|invalid|was-validated)(?:-|$)/ },
   { family: 'buttons', pattern: /^btn(?:-|$)/ },
   { family: 'dropdown', pattern: /^(?:dropdown|dropup|dropend|dropstart)(?:-|$)/ },
   { family: 'badge', pattern: /^badge$/ },
@@ -76,7 +38,7 @@ const COMPONENT_CLASSIFIERS = [
     family: 'helpers',
     pattern: /^(?:clearfix|fixed-top|ratio|sticky-top|stretched-link|text-truncate|vstack|hstack|visually-hidden|vr)(?:-|$)/
   },
-  { family: 'type', pattern: /^(?:blockquote|display-[1-6]|initialism|lead|list-inline|mark|small)(?:-|$)/ },
+  { family: 'type', pattern: /^(?:(?:blockquote|display-[1-6]|initialism|lead|list-inline|mark)(?:-|$)|small$)/ },
   {
     family: 'grid',
     pattern: /^(?:container(?:-fluid|-sm|-md|-lg|-xl|-xxl)?|row|col(?:-(?:sm|md|lg|xl|xxl))?(?:-(?:auto|\d+))?|offset(?:-(?:sm|md|lg|xl|xxl))?-\d+|g[xy]?(?:-(?:sm|md|lg|xl|xxl))?-\d+)$/
@@ -90,71 +52,47 @@ const UTILITY_CLASSIFIERS = [
   { family: 'object-fit', pattern: /^object-fit(?:-(?:sm|md|lg|xl|xxl))?-(?:contain|cover|fill|scale|none)$/ },
   { family: 'opacity', pattern: /^opacity-(?:0|25|50|75|100)$/ },
   { family: 'overflow', pattern: /^overflow(?:-[xy])?-(?:auto|hidden|visible|scroll)$/ },
-  {
-    family: 'display',
-    pattern: /^d(?:-(?:sm|md|lg|xl|xxl))?-(?:none|inline|inline-block|block|grid|inline-grid|table|table-row|table-cell|flex|inline-flex)$/
-  },
+  { family: 'display', pattern: /^d(?:-(?:sm|md|lg|xl|xxl))?-(?:none|inline|inline-block|block|grid|inline-grid|table|table-row|table-cell|flex|inline-flex)$/ },
   { family: 'shadow', pattern: /^shadow(?:-sm|-lg|-none)?$/ },
   { family: 'focus-ring', pattern: /^focus-ring(?:-|$)/ },
   { family: 'position', pattern: /^(?:position-(?:static|relative|absolute|fixed|sticky)|(?:top|bottom|start|end)-(?:0|50|100)|translate-middle(?:-[xy])?)$/ },
   { family: 'border', pattern: /^border(?:-(?:top|end|bottom|start))?(?:-(?:0|1|2|3|4|5|primary|secondary|success|info|warning|danger|light|dark|black|white))?$/ },
   { family: 'border', pattern: /^rounded(?:-(?:top|end|bottom|start|circle|pill|0|1|2|3|4|5))?$/ },
-  { family: 'sizing', pattern: /^(?:w|h)-(?:25|50|75|100|auto)$/ },
-  { family: 'sizing', pattern: /^(?:mw|mh)-100$|^(?:vw|vh)-100$|^min-v[wh]-100$/ },
+  { family: 'sizing', pattern: /^(?:(?:w|h)-(?:25|50|75|100|auto)|(?:mw|mh|vw|vh)-100|min-v[wh]-100)$/ },
   { family: 'flex-grow', pattern: /^flex(?:-(?:sm|md|lg|xl|xxl))?-grow-[01]$/ },
   { family: 'justify-content', pattern: /^justify-content(?:-(?:sm|md|lg|xl|xxl))?-(?:start|end|center|between|around|evenly)$/ },
   { family: 'align-items', pattern: /^align-items(?:-(?:sm|md|lg|xl|xxl))?-(?:start|end|center|baseline|stretch)$/ },
   { family: 'align-self', pattern: /^align-self(?:-(?:sm|md|lg|xl|xxl))?-(?:auto|start|end|center|baseline|stretch)$/ },
-  {
-    family: 'flex',
-    pattern: /^(?:flex(?:-(?:sm|md|lg|xl|xxl))?-(?:row|row-reverse|column|column-reverse|grow-0|grow-1|shrink-0|shrink-1|wrap|nowrap|wrap-reverse|fill)|justify-content(?:-(?:sm|md|lg|xl|xxl))?-(?:start|end|center|between|around|evenly)|align-(?:items|content|self)(?:-(?:sm|md|lg|xl|xxl))?-(?:start|end|center|baseline|stretch)|order(?:-(?:sm|md|lg|xl|xxl))?-(?:first|last|0|1|2|3|4|5))$/
-  },
-  { family: 'margin', pattern: /^m(?:-(?:sm|md|lg|xl|xxl))?-(?:n?[0-5]|auto)$/ },
-  { family: 'margin-x', pattern: /^mx(?:-(?:sm|md|lg|xl|xxl))?-(?:n?[0-5]|auto)$/ },
-  { family: 'margin-y', pattern: /^my(?:-(?:sm|md|lg|xl|xxl))?-(?:n?[0-5]|auto)$/ },
-  { family: 'margin-top', pattern: /^mt(?:-(?:sm|md|lg|xl|xxl))?-(?:n?[0-5]|auto)$/ },
-  { family: 'margin-end', pattern: /^me(?:-(?:sm|md|lg|xl|xxl))?-(?:n?[0-5]|auto)$/ },
-  { family: 'margin-bottom', pattern: /^mb(?:-(?:sm|md|lg|xl|xxl))?-(?:n?[0-5]|auto)$/ },
-  { family: 'margin-start', pattern: /^ms(?:-(?:sm|md|lg|xl|xxl))?-(?:n?[0-5]|auto)$/ },
-  { family: 'padding', pattern: /^p(?:-(?:sm|md|lg|xl|xxl))?-[0-5]$/ },
-  { family: 'padding-x', pattern: /^px(?:-(?:sm|md|lg|xl|xxl))?-[0-5]$/ },
-  { family: 'padding-y', pattern: /^py(?:-(?:sm|md|lg|xl|xxl))?-[0-5]$/ },
-  { family: 'padding-top', pattern: /^pt(?:-(?:sm|md|lg|xl|xxl))?-[0-5]$/ },
-  { family: 'padding-end', pattern: /^pe(?:-(?:sm|md|lg|xl|xxl))?-[0-5]$/ },
-  { family: 'padding-bottom', pattern: /^pb(?:-(?:sm|md|lg|xl|xxl))?-[0-5]$/ },
-  { family: 'padding-start', pattern: /^ps(?:-(?:sm|md|lg|xl|xxl))?-[0-5]$/ },
+  { family: 'flex', pattern: /^(?:flex(?:-(?:sm|md|lg|xl|xxl))?-(?:row|row-reverse|column|column-reverse|grow-0|grow-1|shrink-0|shrink-1|wrap|nowrap|wrap-reverse|fill)|align-content(?:-(?:sm|md|lg|xl|xxl))?-(?:start|end|center|between|around|stretch)|order(?:-(?:sm|md|lg|xl|xxl))?-(?:first|last|0|1|2|3|4|5))$/ },
+  { family: 'spacing', pattern: /^(?:m[trblxyse]?|p[trblxyse]?)(?:-(?:sm|md|lg|xl|xxl))?-(?:n?[0-5]|auto)$/ },
   { family: 'gap', pattern: /^(?:gap|row-gap|column-gap)(?:-(?:sm|md|lg|xl|xxl))?-[0-5]$/ },
-  { family: 'text', pattern: /^font-(?:monospace|sans-serif|serif)$/ },
+  { family: 'text', pattern: /^(?:font-(?:monospace|sans-serif|serif)|fs-[1-6]|fst-(?:italic|normal)|lh-(?:1|sm|base|lg))$/ },
   { family: 'font-weight', pattern: /^fw-(?:lighter|light|normal|medium|semibold|bold|bolder)$/ },
-  { family: 'text', pattern: /^fs-[1-6]$|^fst-(?:italic|normal)$/ },
-  { family: 'text', pattern: /^lh-(?:1|sm|base|lg)$/ },
   { family: 'text', pattern: /^text(?:-(?:sm|md|lg|xl|xxl))?-(?:start|end|center)$/ },
-  { family: 'text-transform', pattern: /^text-(?:lowercase|uppercase|capitalize)$/ },
-  { family: 'text', pattern: /^text-(?:wrap|nowrap|break|decoration-none|decoration-underline|decoration-line-through)$/ },
-  {
-    family: 'color',
-    pattern: /^text-(?:primary|secondary|success|info|warning|danger|light|dark|black|white|body|muted|black-50|white-50|body-secondary|body-tertiary|body-emphasis|reset)(?:-emphasis)?$/
-  },
-  { family: 'text', pattern: /^text-opacity-(?:25|50|75|100)$/ },
-  { family: 'text', pattern: /^link-(?:opacity|offset|underline|underline-opacity)(?:-|$)/ },
-  {
-    family: 'background',
-    pattern: /^bg-(?:primary|secondary|success|info|warning|danger|light|dark|black|white|body|transparent|body-secondary|body-tertiary)(?:-subtle)?$/
-  },
-  { family: 'background', pattern: /^bg-opacity-(?:10|25|50|75|100)$|^bg-gradient$/ },
-  { family: 'user-select', pattern: /^user-select-(?:all|auto|none)$/ },
-  { family: 'pointer-events', pattern: /^pe-(?:auto|none)$/ },
-  { family: 'visibility', pattern: /^(?:visible|invisible)$/ },
-  { family: 'z-index', pattern: /^z-(?:n1|0|1|2|3)$/ }
+  { family: 'text', pattern: /^text-(?:lowercase|uppercase|capitalize|wrap|nowrap|break|decoration-none|decoration-underline|decoration-line-through)$/ },
+  { family: 'color', pattern: /^text-(?:primary|secondary|success|info|warning|danger|light|dark|black|white|body|muted|black-50|white-50|body-secondary|body-tertiary|body-emphasis|reset)(?:-emphasis)?$/ },
+  { family: 'background', pattern: /^(?:text-opacity-(?:25|50|75|100)|bg-(?:primary|secondary|success|info|warning|danger|light|dark|black|white|body|transparent|body-secondary|body-tertiary)(?:-subtle)?|bg-opacity-(?:10|25|50|75|100)|bg-gradient)$/ },
+  { family: 'interaction', pattern: /^(?:user-select-(?:all|auto|none)|pe-(?:auto|none)|visible|invisible|z-(?:n1|0|1|2|3))$/ }
 ];
 
 const STATIC_CLASS_ATTRIBUTE_PATTERN = /(?<![:\w-])class\s*=\s*(["'])([\s\S]*?)\1/g;
 const BOUND_CLASS_ATTRIBUTE_PATTERN = /(?:^|\s)(?::class|v-bind:class)\s*=\s*(["'])([\s\S]*?)\1/g;
 const STRING_LITERAL_PATTERN = /(["'`])([^"'`]*?)\1/g;
-const RETURNED_STRING_PATTERN = /\breturn\s+(["'`])([^"'`]*?)\1/g;
+const RETURN_EXPRESSION_PATTERN = /\breturn\s+([^;]+);/g;
 const ARROW_STRING_PATTERN = /=>\s*(["'`])([^"'`]*?)\1/g;
+const STYLE_BLOCK_PATTERN = /<style\b[^>]*>([\s\S]*?)<\/style>/g;
+const CSS_CLASS_SELECTOR_PATTERN = /\.([A-Za-z_-][\w-]*)/g;
 const DYNAMIC_SEGMENT_PATTERN = /\$\{[^}]+\}/g;
-const RESPONSIVE_UTILITY_PATTERN = /-(?:sm|md|lg|xl|xxl)-/;
+const DATA_BS_ATTRIBUTE_PATTERN = /\b(data-bs-[\w-]+)\s*=/g;
+const BOOTSTRAP_CSS_VARIABLE_PATTERN = /(--bs-[\w-]+)/g;
+const BOOTSTRAP_API_PATTERN = /\bbootstrap\.(Alert|Button|Carousel|Collapse|Dropdown|Modal|Offcanvas|Popover|ScrollSpy|Tab|Toast|Tooltip)\b/g;
+const FRAMEWORK_MODULE_SOURCE = '(bootstrap(?:\\/[^"\']*)?|bootswatch(?:\\/[^"\']*)?|@popperjs\\/core(?:\\/[^"\']*)?)';
+const FRAMEWORK_IMPORT_PATTERNS = [
+  new RegExp(`\\bimport\\s+(?:[^'"\\n;]+?\\s+from\\s+)?(["'])${FRAMEWORK_MODULE_SOURCE}\\1`, 'g'),
+  new RegExp(`\\bimport\\s*\\(\\s*(["'])${FRAMEWORK_MODULE_SOURCE}\\1\\s*\\)`, 'g'),
+  new RegExp(`\\brequire\\s*\\(\\s*(["'])${FRAMEWORK_MODULE_SOURCE}\\1\\s*\\)`, 'g'),
+  new RegExp(`@(?:use|import)\\s+(?:url\\(\\s*)?(["'])${FRAMEWORK_MODULE_SOURCE}\\1`, 'g')
+];
 
 // Converts a whitespace-delimited class string into source-located candidates.
 const addClassTokens = (candidates, value, index, origin) => {
@@ -167,12 +105,8 @@ const addClassTokens = (candidates, value, index, origin) => {
 const extractBoundClassStrings = expression => {
   const values = [];
   let match;
-
   STRING_LITERAL_PATTERN.lastIndex = 0;
-  while ((match = STRING_LITERAL_PATTERN.exec(expression)) !== null) {
-    values.push(match[2]);
-  }
-
+  while ((match = STRING_LITERAL_PATTERN.exec(expression)) !== null) values.push(match[2]);
   return values;
 };
 
@@ -180,218 +114,209 @@ const extractBoundClassStrings = expression => {
 export const extractClassCandidates = source => {
   const candidates = [];
   let match;
-
   STATIC_CLASS_ATTRIBUTE_PATTERN.lastIndex = 0;
   while ((match = STATIC_CLASS_ATTRIBUTE_PATTERN.exec(source)) !== null) {
     addClassTokens(candidates, match[2], match.index, 'static class attribute');
   }
-
   BOUND_CLASS_ATTRIBUTE_PATTERN.lastIndex = 0;
   while ((match = BOUND_CLASS_ATTRIBUTE_PATTERN.exec(source)) !== null) {
-    extractBoundClassStrings(match[2]).forEach(value => {
-      addClassTokens(candidates, value, match.index, 'bound class string');
-    });
+    extractBoundClassStrings(match[2]).forEach(value => addClassTokens(
+      candidates, value, match.index, 'bound class string'
+    ));
   }
-
-  for (const pattern of [RETURNED_STRING_PATTERN, ARROW_STRING_PATTERN]) {
-    pattern.lastIndex = 0;
-    while ((match = pattern.exec(source)) !== null) {
-      addClassTokens(candidates, match[2], match.index, 'returned class string');
-    }
+  RETURN_EXPRESSION_PATTERN.lastIndex = 0;
+  while ((match = RETURN_EXPRESSION_PATTERN.exec(source)) !== null) {
+    extractBoundClassStrings(match[1]).forEach(value => addClassTokens(
+      candidates, value, match.index, 'returned class string'
+    ));
   }
-
+  ARROW_STRING_PATTERN.lastIndex = 0;
+  while ((match = ARROW_STRING_PATTERN.exec(source)) !== null) {
+    addClassTokens(candidates, match[2], match.index, 'returned class string');
+  }
   return candidates;
 };
 
-// Resolves a recognized Bootstrap class to its component or generated utility family.
-export const classifyBootstrapClass = className => {
-  const component = COMPONENT_CLASSIFIERS.find(classifier => classifier.pattern.test(className));
-  if (component) {
-    return { family: component.family, kind: 'component' };
+// Extracts class selectors from CSS or Vue style blocks for compatibility-style enforcement.
+export const extractStyleClassCandidates = (source, extension = '.css') => {
+  const candidates = [];
+  const fragments = [];
+  if (extension === '.vue') {
+    let styleMatch;
+    STYLE_BLOCK_PATTERN.lastIndex = 0;
+    while ((styleMatch = STYLE_BLOCK_PATTERN.exec(source)) !== null) {
+      fragments.push({ source: styleMatch[1], offset: styleMatch.index + styleMatch[0].indexOf(styleMatch[1]) });
+    }
+  } else if (['.css', '.scss'].includes(extension)) {
+    fragments.push({ source, offset: 0 });
   }
 
-  const utility = UTILITY_CLASSIFIERS.find(classifier => classifier.pattern.test(className));
-  if (utility) {
-    return {
-      family: utility.family,
-      kind: 'utility',
-      responsive: RESPONSIVE_UTILITY_PATTERN.test(className)
-    };
-  }
-
-  return null;
+  fragments.forEach(fragment => {
+    let classMatch;
+    CSS_CLASS_SELECTOR_PATTERN.lastIndex = 0;
+    while ((classMatch = CSS_CLASS_SELECTOR_PATTERN.exec(fragment.source)) !== null) {
+      candidates.push({
+        className: classMatch[1],
+        index: fragment.offset + classMatch.index,
+        origin: 'style class selector'
+      });
+    }
+  });
+  return candidates;
 };
 
-// Calculates a one-based line number for an extracted class candidate.
+// Extracts declarative Bootstrap runtime attributes from one source file.
+export const extractDataBsAttributes = source => {
+  const candidates = [];
+  let match;
+  DATA_BS_ATTRIBUTE_PATTERN.lastIndex = 0;
+  while ((match = DATA_BS_ATTRIBUTE_PATTERN.exec(source)) !== null) {
+    candidates.push({ value: match[1], index: match.index, origin: 'Bootstrap data attribute' });
+  }
+  return candidates;
+};
+
+// Extracts framework imports while deliberately excluding the independent bootstrap-icons package.
+export const extractForbiddenFrameworkImports = source => {
+  const candidates = [];
+  FRAMEWORK_IMPORT_PATTERNS.forEach(pattern => {
+    pattern.lastIndex = 0;
+    let match;
+    while ((match = pattern.exec(source)) !== null) {
+      candidates.push({ value: match[2], index: match.index, origin: 'retired framework import' });
+    }
+  });
+  return candidates;
+};
+
+// Extracts Bootstrap-owned CSS custom properties from application styles.
+export const extractBootstrapCssVariables = source => {
+  const candidates = [];
+  let match;
+  BOOTSTRAP_CSS_VARIABLE_PATTERN.lastIndex = 0;
+  while ((match = BOOTSTRAP_CSS_VARIABLE_PATTERN.exec(source)) !== null) {
+    candidates.push({ value: match[1], index: match.index, origin: 'Bootstrap CSS variable' });
+  }
+  return candidates;
+};
+
+// Extracts direct use of Bootstrap's global JavaScript component API.
+export const extractBootstrapApis = source => {
+  const candidates = [];
+  let match;
+  BOOTSTRAP_API_PATTERN.lastIndex = 0;
+  while ((match = BOOTSTRAP_API_PATTERN.exec(source)) !== null) {
+    candidates.push({ value: `bootstrap.${match[1]}`, index: match.index, origin: 'Bootstrap JavaScript API' });
+  }
+  return candidates;
+};
+
+// Resolves a recognized Bootstrap class to its former component or utility family.
+export const classifyBootstrapClass = className => {
+  const component = COMPONENT_CLASSIFIERS.find(classifier => classifier.pattern.test(className));
+  if (component) return { family: component.family, kind: 'component' };
+  const utility = UTILITY_CLASSIFIERS.find(classifier => classifier.pattern.test(className));
+  return utility ? { family: utility.family, kind: 'utility' } : null;
+};
+
+// Calculates a one-based line number for an extracted candidate.
 const lineNumberAt = (source, index) => source.slice(0, index).split('\n').length;
 
-// Validates extracted classes against enabled families and explicit runtime-template outcomes.
+// Rejects every recognized Bootstrap class, including unresolved runtime templates.
 export const validateClassCandidates = (
   source,
   candidates,
-  {
-    dynamicClassEscapes = DYNAMIC_CLASS_ESCAPES,
-    enabledComponentFamilies = ENABLED_COMPONENT_FAMILIES,
-    enabledResponsiveUtilityFamilies = ENABLED_RESPONSIVE_UTILITY_FAMILIES,
-    enabledUtilityFamilies = ENABLED_UTILITY_FAMILIES,
-    filePath = '<source>'
-  } = {}
-) => {
-  const failures = [];
+  { filePath = '<source>' } = {}
+) => candidates.flatMap(candidate => {
+  const normalizedClass = candidate.className.includes('${')
+    ? candidate.className.replace(DYNAMIC_SEGMENT_PATTERN, 'dynamic')
+    : candidate.className;
+  const classification = classifyBootstrapClass(normalizedClass);
+  if (!classification) return [];
+  return [{
+    ...candidate,
+    classification,
+    filePath,
+    line: lineNumberAt(source, candidate.index),
+    reason: `"${candidate.className}" belongs to retired Bootstrap ${classification.kind} family "${classification.family}".`
+  }];
+});
 
-  candidates.forEach(candidate => {
-    if (candidate.className.includes('${')) {
-      const templateClassification = classifyBootstrapClass(
-        candidate.className.replace(DYNAMIC_SEGMENT_PATTERN, 'dynamic')
-      );
-      if (!templateClassification) {
-        return;
-      }
+// Rejects framework imports, runtime attributes, CSS variables, and global Bootstrap APIs.
+export const validateForbiddenFrameworkUsage = (
+  source,
+  { filePath = '<source>' } = {}
+) => [
+  ...extractForbiddenFrameworkImports(source),
+  ...extractDataBsAttributes(source),
+  ...extractBootstrapCssVariables(source),
+  ...extractBootstrapApis(source)
+].map(candidate => ({
+  ...candidate,
+  className: candidate.value,
+  filePath,
+  line: lineNumberAt(source, candidate.index),
+  reason: `${candidate.origin} "${candidate.value}" is not allowed after Bootstrap retirement.`
+}));
 
-      const outcomes = dynamicClassEscapes.get(candidate.className);
-      if (!outcomes) {
-        failures.push({
-          ...candidate,
-          filePath,
-          line: lineNumberAt(source, candidate.index),
-          reason: `Bootstrap-looking runtime template "${candidate.className}" cannot be resolved; `
-            + 'enumerate its finite outcomes in DYNAMIC_CLASS_ESCAPES.'
-        });
-        return;
-      }
-
-      outcomes.forEach(className => {
-        const classification = classifyBootstrapClass(className);
-        const enabledFamilies = classification?.kind === 'component'
-          ? enabledComponentFamilies
-          : enabledUtilityFamilies;
-        if (!classification || !enabledFamilies.has(classification.family)) {
-          failures.push({
-            ...candidate,
-            className,
-            filePath,
-            line: lineNumberAt(source, candidate.index),
-            reason: `Dynamic outcome "${className}" is not covered by an enabled Bootstrap family.`
-          });
-        }
-      });
-      return;
-    }
-
-    const classification = classifyBootstrapClass(candidate.className);
-    if (!classification) {
-      return;
-    }
-
-    const enabledFamilies = classification.kind === 'component'
-      ? enabledComponentFamilies
-      : enabledUtilityFamilies;
-    if (!enabledFamilies.has(classification.family)) {
-      failures.push({
-        ...candidate,
-        classification,
-        filePath,
-        line: lineNumberAt(source, candidate.index),
-        reason: `"${candidate.className}" requires Bootstrap ${classification.kind} family `
-          + `"${classification.family}", which is not enabled.`
-      });
-      return;
-    }
-
-    if (
-      classification.kind === 'utility'
-      && classification.responsive
-      && !enabledResponsiveUtilityFamilies.has(classification.family)
-    ) {
-      failures.push({
-        ...candidate,
-        classification,
-        filePath,
-        line: lineNumberAt(source, candidate.index),
-        reason: `"${candidate.className}" requires responsive generation for Bootstrap utility family `
-          + `"${classification.family}", which is not enabled.`
-      });
-    }
-  });
-
-  return failures;
-};
-
-// Finds Vue and JavaScript source files without traversing dependencies or generated output.
+// Finds application source files without traversing dependencies or generated output.
 const listSourceFiles = directory => {
   const files = [];
-
   readdirSync(directory, { withFileTypes: true }).forEach(entry => {
     const entryPath = join(directory, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...listSourceFiles(entryPath));
-      return;
-    }
-
-    if (entry.isFile() && ['.js', '.vue'].includes(extname(entry.name))) {
+    if (entry.isDirectory()) files.push(...listSourceFiles(entryPath));
+    else if (entry.isFile() && ['.css', '.html', '.js', '.scss', '.vue'].includes(extname(entry.name))) {
       files.push(entryPath);
     }
   });
-
   return files;
 };
 
-// Scans the client source tree and returns actionable Bootstrap boundary violations.
-export const scanSourceDirectory = (sourceDirectory = defaultSourceDirectory) => {
-  const files = listSourceFiles(sourceDirectory);
+// Scans production source and build entry configuration for retired Bootstrap usage.
+export const scanSourceDirectory = (
+  sourceDirectory = defaultSourceDirectory,
+  rootFiles = sourceDirectory === defaultSourceDirectory ? defaultRootFiles : []
+) => {
+  const files = [...listSourceFiles(sourceDirectory), ...rootFiles];
   const failures = [];
   let candidateCount = 0;
-
   files.forEach(filePath => {
     const source = readFileSync(filePath, 'utf8');
-    const candidates = extractClassCandidates(source);
+    const candidates = [
+      ...extractClassCandidates(source),
+      ...extractStyleClassCandidates(source, extname(filePath))
+    ];
+    const relativeFilePath = relative(clientRoot, filePath).replaceAll('\\', '/');
     candidateCount += candidates.length;
-    failures.push(...validateClassCandidates(source, candidates, {
-      filePath: relative(clientRoot, filePath).replaceAll('\\', '/')
-    }));
+    failures.push(...validateClassCandidates(source, candidates, { filePath: relativeFilePath }));
+    failures.push(...validateForbiddenFrameworkUsage(source, { filePath: relativeFilePath }));
   });
-
-  return {
-    candidateCount,
-    failures,
-    fileCount: files.length
-  };
+  return { candidateCount, failures, fileCount: files.length };
 };
 
-// Formats violations with the safe steps required to extend the Bootstrap boundary.
+// Formats zero-usage violations for local and CI output.
 export const formatGuardReport = ({ candidateCount, failures, fileCount }) => {
   if (!failures.length) {
-    return `Bootstrap class guard passed: scanned ${candidateCount} class candidates in ${fileCount} source files.`;
+    return `Bootstrap retirement guard passed: scanned ${candidateCount} class candidates in ${fileCount} production files.`;
   }
-
-  const lines = ['Bootstrap class guard failed:'];
-  failures.forEach(failure => {
-    lines.push(`- ${failure.filePath}:${failure.line}: ${failure.reason}`);
-  });
-  lines.push(
+  return [
+    'Bootstrap retirement guard failed:',
+    ...failures.map(failure => `- ${failure.filePath}:${failure.line}: ${failure.reason}`),
     '',
-    'Enable the required SCSS module or utility-map family first, then update the matching allowlist.',
-    'For a finite runtime template, audit every outcome and add them to DYNAMIC_CLASS_ESCAPES.',
-    'Do not allowlist a class merely to silence this guard.'
-  );
-
-  return lines.join('\n');
+    'Use an RSSMonster-owned primitive or selector. Bootstrap Icons remain allowed through bootstrap-icons.'
+  ].join('\n');
 };
 
-// Runs the Bootstrap class boundary check as a command-line program.
+// Runs the Bootstrap retirement check as a command-line program.
 const run = () => {
   try {
     const report = scanSourceDirectory();
     console.log(formatGuardReport(report));
-    if (report.failures.length) {
-      process.exitCode = 1;
-    }
+    if (report.failures.length) process.exitCode = 1;
   } catch (error) {
-    console.error(`Bootstrap class guard failed: ${error.message}`);
+    console.error(`Bootstrap retirement guard failed: ${error.message}`);
     process.exitCode = 1;
   }
 };
 
-if (resolve(process.argv[1] || '') === scriptPath) {
-  run();
-}
+if (resolve(process.argv[1] || '') === scriptPath) run();

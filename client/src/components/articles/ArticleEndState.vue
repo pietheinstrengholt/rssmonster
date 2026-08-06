@@ -22,7 +22,7 @@
         Mark {{ unreadCount }} as read
       </button>
 
-      <button class="article-end-state-secondary" type="button" @click="$emit('dismiss')">
+      <button v-if="showDismiss" class="article-end-state-secondary" type="button" @click="$emit('dismiss')">
         Not now
       </button>
     </div>
@@ -40,6 +40,10 @@ export default {
     showActions: {
       type: Boolean,
       required: true
+    },
+    showDismiss: {
+      type: Boolean,
+      default: true
     }
   },
   computed: {

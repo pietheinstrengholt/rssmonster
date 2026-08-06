@@ -47,19 +47,41 @@ describe('ArticleMeta', () => {
   it('renders the publication date and author link', () => {
     const wrapper = mountArticleMeta({ author: 'Jane Reporter' });
 
+    expect(wrapper.get('.article-provenance').exists()).toBe(true);
     expect(wrapper.get('.article-published').text()).toBe('2 hours ago');
+    expect(wrapper.get('.article-provenance-separator').attributes('aria-hidden')).toBe('true');
     expect(wrapper.get('.article-source a').text()).toBe('Jane Reporter');
     expect(wrapper.get('.article-source a').attributes('href')).toBe('https://example.com');
     expect(wrapper.props('formatDate')).toHaveBeenCalledWith('2026-07-31T08:00:00.000Z');
     expect(wrapper.props('mainURL')).toHaveBeenCalledWith('https://example.com/feed.xml');
   });
 
-  // Verifies missing feed metadata falls back to the component's safe default shape.
-  it('renders safely without feed metadata', () => {
-    const wrapper = mountArticleMeta({ feed: undefined });
+  // Verifies a publication date renders without a dangling separator when the source is absent.
+  it('renders date-only provenance without a separator', () => {
+    const wrapper = mountArticleMeta({ author: '', feed: undefined });
 
-    expect(wrapper.get('.article-source a').text()).toBe('');
-    expect(wrapper.props('mainURL')).toHaveBeenCalledWith(undefined);
+    expect(wrapper.get('.article-published').text()).toBe('2 hours ago');
+    expect(wrapper.find('.article-provenance-separator').exists()).toBe(false);
+    expect(wrapper.find('.article-source').exists()).toBe(false);
+    expect(wrapper.props('mainURL')).not.toHaveBeenCalled();
+  });
+
+  // Verifies source-only provenance keeps the existing link and omits the separator.
+  it('renders source-only provenance without a separator', () => {
+    const wrapper = mountArticleMeta({ publishedAt: '', author: 'Jane Reporter' });
+
+    expect(wrapper.find('.article-published').exists()).toBe(false);
+    expect(wrapper.find('.article-provenance-separator').exists()).toBe(false);
+    expect(wrapper.get('.article-source a').text()).toBe('Jane Reporter');
+    expect(wrapper.get('.article-source a').attributes('href')).toBe('https://example.com');
+  });
+
+  // Verifies an empty metadata payload does not render an empty provenance group.
+  it('omits provenance when date and source are absent', () => {
+    const wrapper = mountArticleMeta({ publishedAt: '', author: '', feed: undefined });
+
+    expect(wrapper.find('.article-provenance').exists()).toBe(false);
+    expect(wrapper.find('.article-provenance-separator').exists()).toBe(false);
   });
 
   // Verifies mobile metadata exposes each non-neutral score with accessible detail.
@@ -96,12 +118,63 @@ describe('ArticleMeta', () => {
     expect(wrapper.get('.source-badge').text()).toContain('3 sources');
     expect(wrapper.get('.similar-badge').text()).toBe('+2 similar articles');
     expect(wrapper.get('.duplicate-badge').text()).toBe('1 duplicate');
+    expect(wrapper.get('.similar-badge').element.tagName).toBe('BUTTON');
+    expect(wrapper.get('.similar-badge').attributes()).toMatchObject({
+      type: 'button',
+      'aria-label': 'Show 2 similar articles',
+      'aria-expanded': 'false'
+    });
+    expect(wrapper.get('.duplicate-badge').element.tagName).toBe('BUTTON');
+    expect(wrapper.get('.duplicate-badge').attributes('aria-label')).toBe('Show 1 duplicate article');
 
     await wrapper.get('.similar-badge').trigger('click');
     await wrapper.get('.duplicate-badge').trigger('click');
 
     expect(wrapper.emitted('view-event-articles')).toEqual([[12]]);
     expect(wrapper.emitted('view-duplicate-articles')).toEqual([[]]);
+  });
+
+  // Verifies expanded relationship controls expose their current toggle state.
+  it('labels expanded relationship controls as collapse actions', () => {
+    const wrapper = mountArticleMeta({
+      event: { id: 12, sourceCount: 3 },
+      eventArticleCountTotal: 3,
+      duplicateCount: 2,
+      grouping: 'event',
+      eventExpanded: true,
+      duplicatesExpanded: true
+    });
+
+    expect(wrapper.get('.similar-badge').attributes()).toMatchObject({
+      'aria-label': 'Hide 2 similar articles',
+      'aria-expanded': 'true'
+    });
+    expect(wrapper.get('.duplicate-badge').attributes()).toMatchObject({
+      'aria-label': 'Hide 2 duplicate articles',
+      'aria-expanded': 'true'
+    });
+  });
+
+  // Verifies long mobile provenance remains grouped alongside quality and relationship metadata.
+  it('keeps long mobile provenance grouped with quality and relationship badges', () => {
+    const sourceName = 'A very long publication name that can wrap without detaching from its date';
+    const wrapper = mountArticleMeta({
+      author: sourceName,
+      isMobilePortrait: true,
+      quality: 4.4,
+      roundedQuality: 4,
+      event: { id: 12, sourceCount: 3 },
+      eventArticleCountTotal: 3,
+      duplicateCount: 1,
+      grouping: 'event'
+    });
+
+    expect(wrapper.get('.article-provenance .article-source').text()).toBe(sourceName);
+    expect(wrapper.get('.article-provenance-separator').exists()).toBe(true);
+    expect(wrapper.get('.quality-icon').exists()).toBe(true);
+    expect(wrapper.get('.source-badge').exists()).toBe(true);
+    expect(wrapper.get('.similar-badge').exists()).toBe(true);
+    expect(wrapper.get('.duplicate-badge').exists()).toBe(true);
   });
 
   // Verifies relationship labels use singular and plural grammar at their boundaries.
@@ -170,12 +243,40 @@ describe('ArticleTagsScores', () => {
     expect(wrapper.findAll('.tag').map(tag => tag.text())).toEqual(['Science', 'Culture']);
     expect(wrapper.findAll('.tag')[0].classes()).toContain('tag-rule');
     expect(wrapper.findAll('.tag')[1].classes()).not.toContain('tag-rule');
+    expect(wrapper.get('.tag-badge').element.tagName).toBe('BUTTON');
+    expect(wrapper.get('.tag-badge').attributes()).toMatchObject({
+      type: 'button',
+      'aria-label': 'Filter articles by category News'
+    });
+    expect(wrapper.findAll('.tag').every(tag => tag.element.tagName === 'BUTTON')).toBe(true);
+    expect(wrapper.findAll('.tag')[0].attributes('aria-label')).toBe('Filter articles by tag Science');
 
     await wrapper.get('.tag-badge').trigger('click');
     await wrapper.findAll('.tag')[0].trigger('click');
 
     expect(wrapper.emitted('select-category')).toEqual([[]]);
     expect(wrapper.emitted('select-tag')).toEqual([[ruleTag]]);
+  });
+
+  // Verifies nested metadata buttons do not bubble into a clickable article surface.
+  it('keeps tag activation from triggering a parent article click', async () => {
+    const parentClick = vi.fn();
+    const wrapper = mount(ArticleTagsScores, {
+      props: {
+        categoryName: 'News',
+        tags: [{ id: 1, name: 'science', tagType: 'manual' }],
+        neutralScore: 3,
+        scoreLabel: vi.fn(() => 'Good')
+      },
+      attrs: { onClick: parentClick }
+    });
+
+    await wrapper.get('.tag-badge').trigger('click');
+    await wrapper.get('.tag').trigger('click');
+
+    expect(wrapper.emitted('select-category')).toEqual([[]]);
+    expect(wrapper.emitted('select-tag')).toHaveLength(1);
+    expect(parentClick).not.toHaveBeenCalled();
   });
 
   // Verifies every enabled score renders its value and explanatory title.
@@ -196,6 +297,7 @@ describe('ArticleTagsScores', () => {
     expect(wrapper.get('.ad-score').text()).toBe('Ads: 1');
     expect(wrapper.get('.sentiment-score').text()).toBe('Sentiment: 2');
     expect(wrapper.get('.quality-score').text()).toBe('Writing: 5');
+    expect(wrapper.findAll('.score').every(score => score.element.tagName === 'SPAN')).toBe(true);
   });
 
   // Verifies every analysis dimension uses the same score-severity thresholds.

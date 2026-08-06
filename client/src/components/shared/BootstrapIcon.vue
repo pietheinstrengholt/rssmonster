@@ -2,7 +2,9 @@
   <svg
     xmlns="http://www.w3.org/2000/svg"
     :class="iconClasses"
-    role="graphics-document"
+    :role="iconRole"
+    :aria-hidden="isDecorative ? 'true' : undefined"
+    :aria-label="isDecorative ? undefined : label || undefined"
   >
     <g :transform="iconTransform" transform-origin="center">
       <use :href="`#${icon}`" />
@@ -41,17 +43,40 @@ export default {
     animation: {
       type: String,
       default: ''
+    },
+    context: {
+      type: String,
+      default: 'inline',
+      validator: value => ['inline', 'control'].includes(value)
+    },
+    decorative: {
+      type: Boolean,
+      default: false
+    },
+    label: {
+      type: String,
+      default: ''
     }
   },
   computed: {
     // Returns compatibility classes for the icon's visual options.
     iconClasses() {
       return [
+        'app-icon',
+        `app-icon--${this.context}`,
         'bi',
         this.variant ? `bi--variant-${this.variant}` : null,
         this.size ? `bi--size-${this.size}` : null,
         this.animation ? `bi--animation-${this.animation}` : null
       ];
+    },
+    // Returns the image role only when assistive technology should announce the icon.
+    iconRole() {
+      return this.isDecorative ? undefined : 'img';
+    },
+    // Treats the component prop and existing aria-hidden usage as the same decorative contract.
+    isDecorative() {
+      return this.decorative || this.$attrs['aria-hidden'] === true || this.$attrs['aria-hidden'] === 'true';
     },
     // Returns the combined flip and rotation transform applied around the icon center.
     iconTransform() {
@@ -73,23 +98,34 @@ export default {
 </script>
 
 <style scoped>
-.bi {
+.app-icon {
   width: 1em;
   height: 1em;
-  margin-bottom: 0.125em;
+  flex: 0 0 auto;
   fill: currentColor;
   font-size: 1em;
+}
+
+.app-icon--inline {
+  display: inline-block;
+  margin-bottom: 0.125em;
   vertical-align: middle;
 }
 
-.bi--variant-success { color: var(--bs-success); }
-.bi--variant-warning { color: var(--bs-warning); }
-.bi--variant-danger { color: var(--bs-danger); }
-.bi--variant-info { color: var(--bs-info); }
-.bi--variant-primary { color: var(--bs-primary); }
-.bi--variant-secondary { color: var(--bs-secondary); }
-.bi--variant-dark { color: var(--bs-dark); }
-.bi--variant-light { color: var(--bs-light); }
+.app-icon--control {
+  display: block;
+  margin: 0;
+  vertical-align: initial;
+}
+
+.bi--variant-success { color: var(--color-success); }
+.bi--variant-warning { color: var(--color-warning); }
+.bi--variant-danger { color: var(--color-danger); }
+.bi--variant-info { color: var(--color-info-strong); }
+.bi--variant-primary { color: var(--color-primary); }
+.bi--variant-secondary { color: var(--color-secondary); }
+.bi--variant-dark { color: var(--text-secondary); }
+.bi--variant-light { color: var(--text-inverted); }
 .bi--size-sm { font-size: 0.75em; }
 .bi--size-md { font-size: 1.25rem; }
 .bi--size-lg { font-size: 1.33333333rem; }
@@ -97,24 +133,12 @@ export default {
 .bi--size-3x { font-size: 3rem; }
 .bi--size-4x { font-size: 4rem; }
 .bi--size-5x { font-size: 5rem; }
-.bi--animation-cylon { animation: bi-animation-cylon 0.75s ease-in-out infinite alternate; }
-.bi--animation-cylon-vertical { animation: bi-animation-cylon-vertical 0.75s ease-in-out infinite alternate; }
 .bi--animation-fade { animation: bi-animation-fade 0.75s ease-in-out infinite alternate; }
 .bi--animation-spin { animation: bi-animation-spin 2s linear infinite normal; }
 .bi--animation-spin-reverse { animation: bi-animation-spin 2s linear infinite reverse; }
 .bi--animation-spin-pulse { animation: bi-animation-spin 1s steps(8) infinite normal; }
 .bi--animation-spin-reverse-pulse { animation: bi-animation-spin 1s steps(8) infinite reverse; }
 .bi--animation-throb { animation: bi-animation-throb 0.75s ease-in-out infinite alternate; }
-
-@keyframes bi-animation-cylon {
-  0% { transform: translate(-25%); }
-  100% { transform: translate(25%); }
-}
-
-@keyframes bi-animation-cylon-vertical {
-  0% { transform: translateY(25%); }
-  100% { transform: translateY(-25%); }
-}
 
 @keyframes bi-animation-fade {
   0% { opacity: 0.1; }

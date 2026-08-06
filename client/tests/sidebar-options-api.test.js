@@ -332,11 +332,6 @@ describe('Options API sidebar contracts', () => {
         label: 'Refresh feeds',
         variant: 'sidebar-button sidebar-button-refresh',
         loading: true
-      },
-      global: {
-        stubs: {
-          BootstrapIcon: true
-        }
       }
     });
 
@@ -344,6 +339,9 @@ describe('Options API sidebar contracts', () => {
     expect(action.attributes('aria-busy')).toBe('true');
     expect(action.attributes()).toHaveProperty('disabled');
     expect(action.classes()).toContain('sidebar-button-refresh');
+    expect(action.findAll('.app-icon--control')).toHaveLength(2);
+    expect(action.findAll('[aria-hidden="true"]')).toHaveLength(2);
+    expect(action.get('.spinner .bi--animation-spin').exists()).toBe(true);
 
     await action.trigger('click');
 

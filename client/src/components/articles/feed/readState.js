@@ -33,23 +33,40 @@ export const articleFeedReadStateMethods = {
     this.addToPool(poolArticleId);
   },
 
-  // Marks every article matching the live selection as read, including grouped siblings and new arrivals.
+  // Marks the live selection as read, then rebuilds that collection from the database.
   async flushPool() {
     if (!this.container.length || this.isFlushed) return;
 
+    const selection = { ...this.selectionStore.currentSelection };
+    const activeRequestId = this.activeRequestId;
+
     try {
       await markAllAsRead(
-        this.selectionStore.currentSelection,
+        selection,
         [...new Set(this.container)]
       );
-      this.articles = this.articles.map(article => ({ ...article, status: 'read' }));
-      this.isFlushed = true;
-      await this.overviewStore.fetchOverviewSplit({ forceUpdate: true });
-      await this.$nextTick();
-      this.scrollArticleListToTop();
     } catch (error) {
       console.error('Error marking all articles as read:', error);
       notifyActionError('Could not mark these articles as read. Please try again.', error);
+      return;
+    }
+
+    if (activeRequestId !== this.activeRequestId) {
+      await this.overviewStore.fetchOverviewSplit({ forceUpdate: true });
+      return;
+    }
+
+    this.articles = this.articles.map(article => ({ ...article, status: 'read' }));
+    this.isFlushed = true;
+
+    try {
+      await Promise.all([
+        this.overviewStore.fetchOverviewSplit({ forceUpdate: true }),
+        this.refreshArticleIds(selection)
+      ]);
+    } catch (error) {
+      console.error('Error refreshing articles after marking all as read:', error);
+      notifyActionError('Articles were marked as read, but the list could not be refreshed. Please refresh and try again.', error);
     }
   },
 

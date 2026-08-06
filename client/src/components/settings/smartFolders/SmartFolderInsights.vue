@@ -7,22 +7,23 @@
 
         <button
             type="button"
-            class="btn btn-primary"
+            class="app-button app-button--primary"
             @click="fetchInsights"
             :disabled="loading"
+            :aria-busy="loading ? 'true' : 'false'"
         >
-            <span v-if="loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span v-if="loading" class="app-loading-indicator app-loading-indicator--small" role="status" aria-hidden="true"></span>
             <BootstrapIcon v-else icon="stars" />
             <span>{{ loading ? 'Loading...' : 'Get insights' }}</span>
         </button>
     </div>
 
-    <div v-if="loading" class="settings-group d-flex align-items-center gap-2">
-        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <div v-if="loading" class="settings-group smart-folder-insight__loading">
+        <span class="app-loading-indicator app-loading-indicator--small" role="status" aria-hidden="true"></span>
         <span>Loading smart folder insights...</span>
     </div>
 
-    <div v-if="error" class="settings-group text-danger">
+    <div v-if="error" class="settings-group smart-folder-insight__error">
         {{ error }}
     </div>
 
@@ -39,16 +40,16 @@
             :key="'rec-' + index"
             class="action-row"
         >
-            <div class="d-flex justify-content-between align-items-start gap-3">
-                <div class="flex-grow-1">
+            <div class="smart-folder-insight__recommendation">
+                <div class="smart-folder-insight__content">
                     <strong>{{ recommendation.name }}</strong>
-                    <div class="text-muted small mt-1">{{ recommendation.reason }}</div>
-                    <code class="d-block mt-2">{{ recommendation.query }}</code>
+                    <div class="smart-folder-insight__metadata smart-folder-insight__reason">{{ recommendation.reason }}</div>
+                    <code class="smart-folder-insight__query">{{ recommendation.query }}</code>
                 </div>
 
                 <button
                     type="button"
-                    class="btn btn-add"
+                    class="app-button settings-add-button"
                     @click="$emit('add', recommendation)"
                 >
                     <BootstrapIcon icon="plus-circle-fill" />
@@ -60,7 +61,7 @@
 
     <div
         v-else-if="loaded && !loading && !error"
-        class="settings-group text-muted small"
+        class="settings-group smart-folder-insight__metadata"
     >
         No smart folder insights available yet.
     </div>
@@ -124,13 +125,44 @@ export default {
   font-size: 13px;
 }
 
-.smart-folders-toolbar .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 700;
+.smart-folders-toolbar .app-button {
   white-space: nowrap;
+}
+
+.smart-folder-insight__metadata {
+  color: var(--text-muted);
+  font-size: 0.875em;
+}
+
+.smart-folder-insight__loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.smart-folder-insight__error {
+  color: var(--text-danger);
+}
+
+.smart-folder-insight__recommendation {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.smart-folder-insight__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.smart-folder-insight__reason {
+  margin-top: 0.25rem;
+}
+
+.smart-folder-insight__query {
+  display: block;
+  margin-top: 0.5rem;
 }
 
 @media (max-width: 760px) {
@@ -139,7 +171,7 @@ export default {
     flex-direction: column;
   }
 
-  .smart-folders-toolbar .btn {
+  .smart-folders-toolbar .app-button {
     width: 100%;
   }
 }

@@ -35,8 +35,22 @@ describe('Bootstrap icon delivery', () => {
     });
 
     expect(wrapper.element.tagName.toLowerCase()).toBe('svg');
+    expect(wrapper.classes()).toContain('app-icon');
+    expect(wrapper.classes()).toContain('app-icon--inline');
     expect(wrapper.classes()).toContain('bi');
     expect(wrapper.get('use').attributes('href')).toBe('#box-arrow-up-right');
+  });
+
+  it('renders control icons without the inline alignment context', () => {
+    const wrapper = mount(BootstrapIcon, {
+      props: {
+        context: 'control',
+        icon: 'check-lg'
+      }
+    });
+
+    expect(wrapper.classes()).toContain('app-icon--control');
+    expect(wrapper.classes()).not.toContain('app-icon--inline');
   });
 
   it('preserves icon option classes and transforms', () => {
@@ -58,6 +72,45 @@ describe('Bootstrap icon delivery', () => {
       'bi--variant-primary'
     ]));
     expect(wrapper.get('g').attributes('transform')).toBe('scale(-1 1)rotate(90)');
+  });
+
+  it('hides decorative icons from assistive technology', () => {
+    const wrapper = mount(BootstrapIcon, {
+      props: {
+        decorative: true,
+        icon: 'check-lg'
+      }
+    });
+
+    expect(wrapper.attributes('aria-hidden')).toBe('true');
+    expect(wrapper.attributes('role')).toBeUndefined();
+  });
+
+  it('preserves existing aria-hidden usage as decorative', () => {
+    const wrapper = mount(BootstrapIcon, {
+      attrs: {
+        'aria-hidden': 'true'
+      },
+      props: {
+        icon: 'check-lg'
+      }
+    });
+
+    expect(wrapper.attributes('aria-hidden')).toBe('true');
+    expect(wrapper.attributes('role')).toBeUndefined();
+  });
+
+  it('labels meaningful icons through the component contract', () => {
+    const wrapper = mount(BootstrapIcon, {
+      props: {
+        icon: 'exclamation-circle-fill',
+        label: 'Feed refresh failed'
+      }
+    });
+
+    expect(wrapper.attributes('aria-label')).toBe('Feed refresh failed');
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined();
+    expect(wrapper.attributes('role')).toBe('img');
   });
 
   it('injects the sprite once and rejects non-SVG markup', () => {

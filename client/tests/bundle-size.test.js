@@ -9,10 +9,6 @@ const manifest = {
     file: 'assets/axios-vendor-hash.js',
     name: 'axios-vendor'
   },
-  '_bootstrap-vendor.js': {
-    file: 'assets/bootstrap-vendor-hash.js',
-    name: 'bootstrap-vendor'
-  },
   '_runtime.js': {
     file: 'assets/runtime-hash.js',
     name: 'runtime'
@@ -25,7 +21,7 @@ const manifest = {
   'index.html': {
     css: ['assets/index-hash.css'],
     file: 'assets/index-hash.js',
-    imports: ['_vue-vendor.js', '_axios-vendor.js', '_bootstrap-vendor.js'],
+    imports: ['_vue-vendor.js', '_axios-vendor.js'],
     isEntry: true,
     src: 'index.html'
   }
@@ -35,14 +31,12 @@ describe('bundle-size checking', () => {
   it('identifies hashed assets through stable manifest metadata', () => {
     expect(identifyBundleAssets(manifest)).toEqual({
       axiosVendor: ['assets/axios-vendor-hash.js'],
-      bootstrapVendor: ['assets/bootstrap-vendor-hash.js'],
       entryJavaScript: ['assets/index-hash.js'],
       initialJavaScript: [
         'assets/index-hash.js',
         'assets/vue-vendor-hash.js',
         'assets/runtime-hash.js',
-        'assets/axios-vendor-hash.js',
-        'assets/bootstrap-vendor-hash.js'
+        'assets/axios-vendor-hash.js'
       ],
       mainCss: ['assets/index-hash.css'],
       vueVendor: ['assets/vue-vendor-hash.js']

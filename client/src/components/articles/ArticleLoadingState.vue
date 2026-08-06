@@ -46,7 +46,7 @@
       </article>
     </div>
 
-    <span class="visually-hidden">Loading articles</span>
+    <span class="app-visually-hidden">Loading articles</span>
   </section>
 </template>
 

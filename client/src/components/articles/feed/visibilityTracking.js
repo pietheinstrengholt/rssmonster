@@ -6,6 +6,18 @@ const waitBeforeSeenRetry = attempt => new Promise(resolve => {
   window.setTimeout(resolve, SEEN_RETRY_BASE_DELAY_MS * attempt);
 });
 
+// Returns the top edge where articles leave the active reading viewport.
+const readingViewportTop = () => {
+  const scrollContainer = document.querySelector('#main-container.expandedArticleLayout');
+  const overflowY = scrollContainer
+    ? window.getComputedStyle(scrollContainer).overflowY
+    : null;
+  if (!['auto', 'scroll', 'overlay'].includes(overflowY)) return 0;
+
+  const top = scrollContainer?.getBoundingClientRect?.().top;
+  return Number.isFinite(top) ? top : 0;
+};
+
 // Creates observer and timing state for rendered feed articles.
 export function createArticleFeedVisibilityState() {
   return {
@@ -118,7 +130,8 @@ export const articleFeedVisibilityMethods = {
       const automaticUnreadTransitionDisabled = selection.status === 'unread'
         && selection.markAsReadOnScroll === false;
 
-      if (entry.boundingClientRect.bottom <= 0 && !automaticUnreadTransitionDisabled) {
+      const articlePassedViewport = entry.boundingClientRect.bottom <= readingViewportTop();
+      if (articlePassedViewport && !automaticUnreadTransitionDisabled) {
         this.addToPool(articleId);
       }
     }

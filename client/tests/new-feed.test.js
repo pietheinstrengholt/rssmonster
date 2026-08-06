@@ -366,7 +366,7 @@ describe('NewFeed', () => {
     await wrapper.vm.$nextTick();
 
     expect(createFeed).toHaveBeenCalledOnce();
-    expect(wrapper.get('.feed-modal-action.btn-primary').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('.feed-modal-action.base-dialog__button--primary').attributes('disabled')).toBeDefined();
 
     deferred.resolve({
       status: 201,

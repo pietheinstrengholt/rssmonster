@@ -20,6 +20,11 @@ describe('PWA cache policy', () => {
       'index.html',
       'assets/index-*.js',
       'assets/AppShell-*.js',
+      'assets/AppDropdown-*.js',
+      'assets/AppDropdown-*.css',
+      'assets/FeedRefreshProgress-*.js',
+      'assets/FeedRefreshProgress-*.css',
+      'assets/settings-api-*.js',
       'assets/authenticatedShell-*.js',
       'assets/Sidebar-*.js',
       'assets/DesktopToolbar-*.js',
@@ -30,6 +35,8 @@ describe('PWA cache policy', () => {
     expect(PRECACHE_GLOB_PATTERNS).not.toContain('**/*.js');
     expect(PRECACHE_GLOB_PATTERNS).not.toContain('**/*.css');
     expect(PRECACHE_GLOB_PATTERNS).not.toContain('**/*.png');
+    expect(PRECACHE_GLOB_PATTERNS).not.toContain('assets/settings-*.js');
+    expect(PRECACHE_GLOB_PATTERNS).not.toContain('assets/articles-*.js');
   });
 
   it('selects only the standard 192px and 512px install icons', () => {

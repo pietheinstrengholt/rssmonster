@@ -19,7 +19,7 @@
       <select
         id="crawl-statistics-days"
         v-model.number="days"
-        class="form-select form-select-sm"
+        class="app-form-select app-form-control--compact"
         :disabled="loading"
         @change="reload"
       >
@@ -30,16 +30,16 @@
       </select>
     </div>
 
-    <div v-if="loading" class="d-flex align-items-center gap-2 mb-3">
-      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <div v-if="loading" class="crawl-statistics-loading">
+      <span class="app-loading-indicator app-loading-indicator--small" role="status" aria-hidden="true"></span>
       <span>Loading crawl statistics...</span>
     </div>
 
-    <div v-else-if="error" class="alert alert-danger mb-3" role="alert">
+    <div v-else-if="error" class="app-notice app-notice--danger" role="alert">
       {{ error }}
     </div>
 
-    <div v-else-if="!crawlStatistics.length" class="alert alert-info mb-3">
+    <div v-else-if="!crawlStatistics.length" class="app-notice app-notice--info" role="status">
       No crawl statistics are available for this period.
     </div>
 
@@ -84,12 +84,17 @@
   </div>
 </template>
 
-<style src="../../assets/css/settings.css"></style>
-
 <style scoped>
 .crawl-statistics-settings {
   max-width: 1100px;
   color: var(--text-primary);
+}
+
+.crawl-statistics-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .crawl-statistics-toolbar {
@@ -106,7 +111,7 @@
   font-weight: 600;
 }
 
-.crawl-statistics-toolbar .form-select {
+.crawl-statistics-toolbar .app-form-select {
   width: 160px;
   color: var(--text-primary);
   background-color: var(--bg-primary);
@@ -184,7 +189,7 @@
   border-bottom: 0;
 }
 
-:global(:root[data-theme='dark']) .crawl-statistics-toolbar .form-select {
+:global(:root[data-theme='dark']) .crawl-statistics-toolbar .app-form-select {
   background-color: var(--bg-modal);
   border-color: var(--border-control);
 }
@@ -195,7 +200,7 @@
     flex-direction: column;
   }
 
-  .crawl-statistics-toolbar .form-select {
+  .crawl-statistics-toolbar .app-form-select {
     width: 100%;
   }
 

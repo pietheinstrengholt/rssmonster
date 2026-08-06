@@ -44,21 +44,23 @@
                   :id="`official-source-entity-${index}`"
                   v-model="source.entity"
                   type="text"
-                  class="form-control"
+                  class="app-form-control"
                   placeholder="Nintendo"
+                  :aria-label="`Organization ${index + 1}`"
                 />
               </td>
               <td>
                 <input
                   v-model="source.domain"
                   type="text"
-                  class="form-control"
+                  class="app-form-control"
                   placeholder="nintendo.com"
+                  :aria-label="`Domain ${index + 1}`"
                 />
               </td>
               <td>
                 <label class="official-sources-toggle">
-                  <input v-model="source.enabled" type="checkbox" />
+                  <input v-model="source.enabled" class="app-form-check-input" type="checkbox" />
                   <span>{{ source.enabled ? 'On' : 'Off' }}</span>
                 </label>
               </td>
@@ -91,7 +93,6 @@
   </div>
 </template>
 
-<style src="../../assets/css/settings.css"></style>
 <style scoped>
 .official-sources-settings {
   max-width: 1100px;
@@ -199,7 +200,7 @@
   font-weight: 700;
 }
 
-.official-sources-table .form-control {
+.official-sources-table .app-form-control {
   min-width: 180px;
   height: 36px;
 }
@@ -230,6 +231,8 @@
   margin: 0;
   padding: 32px 22px;
   text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .official-sources-message {

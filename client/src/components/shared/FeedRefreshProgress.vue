@@ -36,7 +36,7 @@ export default {
 .feed-refresh-progress-panel {
   background: var(--bg-secondary);
   border: 1px solid var(--border-default);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   color: var(--text-primary);
   padding: 10px;
   text-align: left;
@@ -52,7 +52,7 @@ export default {
 
 .feed-refresh-progress-bar {
   background: var(--scrollbar-track);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   height: 6px;
   overflow: hidden;
   width: 100%;
@@ -86,11 +86,9 @@ export default {
   margin-bottom: 4px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .feed-refresh-progress-panel {
-    background: var(--bg-secondary);
-    border-color: var(--border-default);
-    color: var(--text-primary);
-  }
+:global(:root[data-theme='dark']) .feed-refresh-progress-panel {
+  background: var(--bg-secondary);
+  border-color: var(--border-default);
+  color: var(--text-primary);
 }
 </style>

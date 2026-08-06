@@ -23,8 +23,8 @@ If a request conflicts with these principles, call out the risk and choose the s
 
 - Monorepo with:
   - `server/`: Express 5 + Sequelize + MySQL
-  - `client/`: Vue 3 + Vite + Pinia + Bootstrap 5
-- Node.js 20+
+  - `client/`: Vue 3 + Vite + Pinia + RSSMonster-owned native CSS
+- Node.js 22+
 - ESM in app packages (`"type": "module"`)
 
 Key entry points:
@@ -88,7 +88,7 @@ Use this sequence for most tasks:
 ### 4.6 Frontend Architecture
 - Use Vue 3 **Options API** in this repo.
 - Do not introduce `<script setup>` patterns.
-- Use Bootstrap 5 and Bootstrap Icons.
+- Use RSSMonster-owned native styles and Bootstrap Icons; do not add Bootstrap framework dependencies, classes, or runtime APIs.
 - Always follow the styling agent instructions in `client/src/assets/styles/Agents.md` for any UI or styling work.
 - Add dark-mode styling support for new UI styles:
   `@media (prefers-color-scheme: dark)`.
@@ -234,7 +234,7 @@ Build a calm, content-first reading experience inspired by Feedbin, Reeder, Read
 
 ### Default Buttons
 
-- Use app-owned semantic button classes instead of relying on Bootstrap variant styling for new or updated controls.
+- Use app-owned semantic button classes for new or updated controls.
 - Default buttons are compact: 40px minimum height, 8px radius, 14px text, and 700 font weight.
 - Primary actions use a solid `--color-primary` background with inverted text and `--color-primary-hover` on hover.
 - Secondary actions use `--bg-control`, `--border-input`, and `--text-primary`, with `--bg-hover` on hover.

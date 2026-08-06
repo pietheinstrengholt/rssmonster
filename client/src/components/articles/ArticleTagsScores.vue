@@ -1,7 +1,7 @@
 <template>
   <div v-if="categoryName || tags.length || showQuality || showAdvertisement || showSentiment || showWritingQuality" class="article-tags">
-    <span v-if="categoryName" class="tag-badge" @click.stop="$emit('select-category')">{{ categoryName }}</span>
-    <span v-for="tag in tags" :key="tag.id" :class="['tag', { 'tag-rule': tag.tagType === 'rule' }]" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name) }}</span>
+    <button v-if="categoryName" type="button" class="tag-badge" :aria-label="`Filter articles by category ${categoryName}`" @click.stop="$emit('select-category')">{{ categoryName }}</button>
+    <button v-for="tag in tags" :key="tag.id" type="button" :class="['tag', { 'tag-rule': tag.tagType === 'rule' }]" :aria-label="`Filter articles by tag ${formatTagName(tag.name)}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name) }}</button>
     <span v-if="showQuality" :class="['score', 'overall-score', scoreSeverityClass(roundedQuality)]" :title="`Overall quality: ${roundedQuality} (${scoreLabel(roundedQuality)})`">Quality: {{ roundedQuality }} · {{ scoreLabel(roundedQuality) }}</span>
     <span v-if="showAdvertisement" :class="['score', 'ad-score', scoreSeverityClass(advertisementScore)]" :title="`Promotional content detected (score: ${advertisementScore})`">Ads: {{ advertisementScore }}</span>
     <span v-if="showSentiment" :class="['score', 'sentiment-score', scoreSeverityClass(sentimentScore)]" :title="`Tone quality: ${sentimentScore}`">Sentiment: {{ sentimentScore }}</span>

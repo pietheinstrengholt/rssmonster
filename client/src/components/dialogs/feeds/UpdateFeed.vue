@@ -12,36 +12,39 @@
     <form @submit.prevent>
       <fieldset class="update-feed__fieldset" :disabled="isBusy">
             <!-- Feed name -->
-            <div class="mb-3">
-              <label class="form-label">Feed name</label>
+            <div class="update-feed__field">
+              <label class="app-form-label" for="update-feed-name">Feed name</label>
               <input
+                id="update-feed-name"
                 type="text"
-                class="form-control"
+                class="app-form-control"
                 placeholder="Feed name"
                 v-model="feed.feedName"
               />
             </div>
 
             <!-- Feed URL (only when errors) -->
-            <div class="mb-3" v-if="(feed.errorSince || feed.status === 'error') && selectionStore.currentSelection.AIEnabled">
-              <label class="form-label">Feed URL</label>
+            <div class="update-feed__field" v-if="(feed.errorSince || feed.status === 'error') && selectionStore.currentSelection.AIEnabled">
+              <label class="app-form-label" for="update-feed-url">Feed URL</label>
               <input
+                id="update-feed-url"
                 type="text"
-                class="form-control"
+                class="app-form-control"
                 placeholder="Feed URL"
                 v-model="feed.url"
               />
-              <div class="form-text">
+              <div class="app-form-help">
                 This feed has errors. You can update the URL or rediscover it.
               </div>
             </div>
 
             <!-- Rediscover RSS -->
-            <div class="mb-3" v-if="(feed.errorSince || feed.status === 'error') && selectionStore.currentSelection.AIEnabled">
+            <div class="update-feed__field" v-if="(feed.errorSince || feed.status === 'error') && selectionStore.currentSelection.AIEnabled">
               <button
                 type="button"
-                class="btn btn-warning btn-sm"
+                class="app-button app-button--warning app-button--compact"
                 :disabled="isBusy"
+                :aria-busy="rediscovering ? 'true' : 'false'"
                 @click="rediscoverRss"
               >
                 {{ rediscovering ? 'Searching…' : 'Rediscover RSS feed using AI' }}
@@ -50,38 +53,39 @@
 
             <!-- Rediscovery result -->
             <div
-              class="mb-3"
+              class="update-feed__field"
               v-if="rediscoveredRss && selectionStore.currentSelection.AIEnabled"
             >
-              <div v-if="rediscoveredRss.url" class="alert alert-info">
-                <div class="fw-semibold mb-1">
+              <div v-if="rediscoveredRss.url" class="app-notice app-notice--info" role="status">
+                <div class="update-feed__notice-title">
                   Suggested feed found
                 </div>
-                <small class="d-block">
+                <small class="update-feed__notice-metadata update-feed__notice-confidence">
                   <strong>Confidence:</strong> {{ rediscoveredRss.confidence }}%
                 </small>
-                <small>{{ rediscoveredRss.reason }}</small>
+                <small class="update-feed__notice-metadata">{{ rediscoveredRss.reason }}</small>
               </div>
-              <div v-else class="alert alert-warning">
-                <div class="fw-semibold mb-1">
+              <div v-else class="app-notice app-notice--warning" role="status">
+                <div class="update-feed__notice-title">
                   No feed found
                 </div>
-                <small class="d-block">
+                <small class="update-feed__notice-metadata update-feed__notice-confidence">
                   <strong>Confidence:</strong> {{ rediscoveredRss.confidence }}%
                 </small>
-                <small>{{ rediscoveredRss.reason }}</small>
+                <small class="update-feed__notice-metadata">{{ rediscoveredRss.reason }}</small>
               </div>
             </div>
 
             <!-- Description -->
             <div
-              class="mb-3"
+              class="update-feed__field"
               v-if="overviewStore.categories.length > 0"
             >
-              <label class="form-label">Feed description</label>
+              <label class="app-form-label" for="update-feed-description">Feed description</label>
               <input
+                id="update-feed-description"
                 type="text"
-                class="form-control"
+                class="app-form-control"
                 placeholder="Optional description"
                 v-model="feed.feedDesc"
               />
@@ -89,12 +93,13 @@
 
             <!-- Category -->
             <div
-              class="mb-3"
+              class="update-feed__field"
               v-if="overviewStore.categories.length > 0"
             >
-              <label class="form-label">Category</label>
+              <label class="app-form-label" for="update-feed-category">Category</label>
               <select
-                class="form-select"
+                id="update-feed-category"
+                class="app-form-select"
                 v-model="feed.categoryId"
               >
                 <option
@@ -109,12 +114,13 @@
 
             <!-- Status -->
             <div
-              class="mb-3"
+              class="update-feed__field"
               v-if="overviewStore.categories.length > 0"
             >
-              <label class="form-label">Status</label>
+              <label class="app-form-label" for="update-feed-status">Status</label>
               <select
-                class="form-select"
+                id="update-feed-status"
+                class="app-form-select"
                 v-model="feed.status"
               >
                 <option value="active">Active</option>
@@ -124,13 +130,13 @@
 
             <!-- Feed processing controls -->
             <div class="feed-controls-panel">
-              <div class="mb-3">
-                <label class="form-label" for="feed-update-interval">
+              <div class="update-feed__field">
+                <label class="app-form-label" for="feed-update-interval">
                   Update interval
                 </label>
                 <select
                   id="feed-update-interval"
-                  class="form-select"
+                  class="app-form-select"
                   v-model="feed.updateIntervalMinutes"
                 >
                   <option
@@ -141,59 +147,59 @@
                     {{ option.label }}
                   </option>
                 </select>
-                <div class="form-text">
+                <div class="app-form-help">
                   Minimum time between feed fetches.
                 </div>
               </div>
 
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label" for="feed-generate-embeddings">
+              <div class="update-feed__processing-grid">
+                <div>
+                  <label class="app-form-label" for="feed-generate-embeddings">
                     Generate embeddings
                   </label>
                   <select
                     id="feed-generate-embeddings"
-                    class="form-select"
+                    class="app-form-select"
                     v-model="feed.generateEmbeddings"
                   >
                     <option :value="true">Yes</option>
                     <option :value="false">No</option>
                   </select>
-                  <div class="form-text">
+                  <div class="app-form-help">
                     Whether articles from this feed get vectors.
                   </div>
                 </div>
 
-                <div class="col-md-6">
-                  <label class="form-label" for="feed-apply-ai-analysis">
+                <div>
+                  <label class="app-form-label" for="feed-apply-ai-analysis">
                     Apply AI analysis
                   </label>
                   <select
                     id="feed-apply-ai-analysis"
-                    class="form-select"
+                    class="app-form-select"
                     v-model="feed.applyAiAnalysis"
                   >
                     <option :value="true">Yes</option>
                     <option :value="false">No</option>
                   </select>
-                  <div class="form-text">
+                  <div class="app-form-help">
                     Whether articles get AI summary, tags, sentiment, quality, and ad score.
                   </div>
                 </div>
               </div>
 
-              <div class="mt-3">
-                <label class="form-label" for="feed-tags">
+              <div class="update-feed__tags-field">
+                <label class="app-form-label" for="feed-tags">
                   Feed tags
                 </label>
                 <input
                   id="feed-tags"
                   type="text"
-                  class="form-control"
+                  class="app-form-control"
                   placeholder="ai, security, must-read"
                   v-model="feedTagsInput"
                 />
-                <div class="form-text">
+                <div class="app-form-help">
                   Separate labels with spaces or commas.
                 </div>
               </div>
@@ -201,17 +207,17 @@
 
             <!-- Error info -->
             <div
-              class="mb-3"
+              class="update-feed__field"
               v-if="feed.errorCount > 0 && feed.errorMessage"
             >
-              <div class="alert alert-danger">
-                <div class="fw-semibold mb-1">
+              <div class="app-notice app-notice--danger" role="alert">
+                <div class="update-feed__notice-title">
                   Feed error
                 </div>
-                <small class="d-block">
+                <small class="update-feed__notice-metadata update-feed__notice-confidence">
                   <strong>Error count:</strong> {{ feed.errorCount }}
                 </small>
-                <small>{{ feed.errorMessage }}</small>
+                <small class="update-feed__notice-metadata">{{ feed.errorMessage }}</small>
               </div>
             </div>
       </fieldset>
@@ -221,23 +227,25 @@
       <div class="update-feed__footer">
       <button
         type="button"
-        class="base-dialog__button base-dialog__button--danger btn btn-danger update-feed__delete"
+        class="app-button app-button--danger base-dialog__button base-dialog__button--danger update-feed__delete"
         :disabled="isBusy"
+        :aria-busy="deleting ? 'true' : 'false'"
         @click="deleteFeed"
       >
         {{ deleting ? 'Deleting…' : 'Delete feed' }}
       </button>
       <button
         type="button"
-        class="base-dialog__button base-dialog__button--primary btn btn-primary update-feed__save"
+        class="app-button app-button--primary base-dialog__button base-dialog__button--primary update-feed__save"
         :disabled="isBusy"
+        :aria-busy="updating ? 'true' : 'false'"
         @click="updateFeed"
       >
         {{ updating ? 'Updating…' : 'Update feed' }}
       </button>
       <button
         type="button"
-        class="base-dialog__button base-dialog__button--secondary btn btn-secondary update-feed__cancel"
+        class="app-button app-button--secondary base-dialog__button base-dialog__button--secondary update-feed__cancel"
         :disabled="isBusy"
         @click="closeDialog"
       >
@@ -475,6 +483,32 @@ export default {
   border: 0;
 }
 
+.update-feed__notice-title {
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.update-feed__notice-metadata {
+  font-size: 0.875em;
+}
+
+.update-feed__notice-confidence {
+  display: block;
+}
+
+.update-feed__field {
+  margin-bottom: 1rem;
+}
+
+.update-feed__processing-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.update-feed__tags-field {
+  margin-top: 1rem;
+}
+
 .feed-controls-panel {
   margin: 1rem 0;
   padding: 1rem;
@@ -505,6 +539,12 @@ export default {
 :global(:root[data-theme='dark']) .feed-controls-panel {
   background: var(--bg-card);
   border-color: var(--border-subtle);
+}
+
+@media (min-width: 768px) {
+  .update-feed__processing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 575.98px) {

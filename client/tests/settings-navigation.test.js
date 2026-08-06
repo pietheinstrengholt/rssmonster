@@ -56,6 +56,15 @@ afterEach(() => {
 });
 
 describe('Settings navigation', () => {
+  // Verifies the modal exposes the stable feature boundary that contains shared Settings CSS.
+  it('renders the Settings ownership boundary', () => {
+    const wrapper = mountSettings();
+
+    expect(wrapper.get('.settings-surface').classes()).toContain('settings-overlay');
+    expect(wrapper.get('.settings-surface .settings-dialog').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
   it('shows Smart Folders when AI features are disabled', () => {
     const navigation = getSettingsNavigation(false);
     const smartFolders = navigation.find(item => item.key === 'smartfolders');

@@ -9,7 +9,6 @@ afterEach(() => {
   vi.doUnmock('../src/AppShell.vue');
   vi.doUnmock('../src/services/authenticatedShell.js');
   vi.doUnmock('../src/services/bootstrapIcons.js');
-  vi.doUnmock('bootstrap/js/dist/dropdown.js');
   vi.doUnmock('virtual:bootstrap-icons-sprite');
   vi.resetModules();
 });
@@ -64,7 +63,6 @@ describe('application shell loader', () => {
 describe('authenticated shell runtime', () => {
   it('injects the generated icon sprite when the boundary loads', async () => {
     const injectBootstrapIcons = vi.fn();
-    vi.doMock('bootstrap/js/dist/dropdown.js', () => ({}));
     vi.doMock('../src/services/bootstrapIcons.js', () => ({ injectBootstrapIcons }));
 
     await import('../src/services/authenticatedShell.js');

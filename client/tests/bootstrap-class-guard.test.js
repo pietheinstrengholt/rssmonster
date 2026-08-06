@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  extractBootstrapCssVariables,
   extractClassCandidates,
+  extractDataBsAttributes,
+  extractForbiddenFrameworkImports,
+  extractStyleClassCandidates,
   formatGuardReport,
-  validateClassCandidates
+  validateClassCandidates,
+  validateForbiddenFrameworkUsage
 } from '../scripts/check-bootstrap-classes.js';
 
 // Validates an inline fixture through the same extraction and allowlist path as the command.
@@ -12,23 +17,79 @@ const validateSource = source => validateClassCandidates(
   { filePath: 'fixture.vue' }
 );
 
-// Exercises accepted source forms, disabled families, and the explicit runtime escape hatch.
+// Exercises accepted source forms and disabled Bootstrap families.
 describe('Bootstrap class guard', () => {
-  // This test covers every supported extraction form and current dynamic badge outcomes.
-  it('accepts current static, bound, returned, and escaped dynamic classes', () => {
+  // This test covers every supported extraction form with native application classes.
+  it('accepts current native static, bound, and returned classes', () => {
     const source = `
-      <div class="row col-md-9 alert badge text-bg-primary d-flex mt-2"></div>
-      <span :class="condition ? 'text-bg-secondary' : 'text-bg-success'"></span>
-      <span :class="\`alert-\${setupMessageType}\`"></span>
+      <div class="app-form-control"></div>
+      <span :class="condition ? 'app-form-select' : 'app-form-label'"></span>
       <script>
-      function evidenceClass(type) {
-        if (type === 'info') return 'text-bg-info';
-        return 'text-bg-dark';
+      function controlClass(type) {
+        if (type === 'select') return 'app-form-select';
+        return 'app-form-label';
       }
       </script>
     `;
 
     expect(validateSource(source)).toEqual([]);
+  });
+
+  // This test prevents Bootstrap form presentation classes from returning.
+  it('rejects migrated Bootstrap form classes', () => {
+    const failures = validateSource(`
+      <label class="form-label"><input class="form-control is-invalid"><select class="form-select"></select></label>
+    `);
+
+    expect(failures).toHaveLength(4);
+    expect(failures.every(failure => failure.reason.includes(
+      'retired Bootstrap component family "forms"'
+    ))).toBe(true);
+  });
+
+  // This test prevents Bootstrap button presentation classes from returning.
+  it('rejects migrated Bootstrap button classes', () => {
+    const failures = validateSource(`
+      <button class="btn btn-primary btn-outline-secondary btn-sm">Save</button>
+    `);
+
+    expect(failures).toHaveLength(4);
+    expect(failures.every(failure => failure.reason.includes(
+      'retired Bootstrap component family "buttons"'
+    ))).toBe(true);
+  });
+
+  // This test prevents retired selectors from surviving only as compatibility CSS.
+  it('rejects Bootstrap class selectors in component styles', () => {
+    const source = '<style>.modal-body, .dropdown-menu { padding: 0; }</style>';
+    const failures = validateClassCandidates(
+      source,
+      extractStyleClassCandidates(source, '.vue'),
+      { filePath: 'fixture.vue' }
+    );
+
+    expect(failures).toHaveLength(2);
+    expect(failures.every(failure => failure.origin === 'style class selector')).toBe(true);
+  });
+
+  // This test prevents Bootstrap grid and generated utility classes from returning.
+  it('rejects migrated grid, layout, spacing, alignment, and color utilities', () => {
+    const failures = validateSource(`
+      <div class="row col-md-9 d-flex mt-2 gap-2 align-items-center text-danger"></div>
+    `);
+
+    expect(failures).toHaveLength(7);
+    expect(failures.every(failure => failure.reason.includes('retired Bootstrap'))).toBe(true);
+  });
+
+  // This test prevents the migrated small-presentation Bootstrap families from returning.
+  it('rejects migrated notices, badges, spinners, helpers, and font-weight utilities', () => {
+    const failures = validateSource(`
+      <div class="alert alert-danger badge text-bg-primary spinner-border visually-hidden small fw-semibold"></div>
+    `);
+
+    expect(failures).toHaveLength(8);
+    expect(failures.every(failure => failure.reason.includes('retired Bootstrap'))).toBe(true);
   });
 
   // This test proves disabled component families produce actionable failures.
@@ -43,8 +104,20 @@ describe('Bootstrap class guard', () => {
 
     expect(failures).toHaveLength(2);
     expect(report).toContain('fixture.vue:1');
-    expect(report).toContain('component family "accordion", which is not enabled');
-    expect(report).toContain('Enable the required SCSS module or utility-map family first');
+    expect(report).toContain('retired Bootstrap component family "accordion"');
+    expect(report).toContain('Use an RSSMonster-owned primitive or selector');
+  });
+
+  // This test prevents Bootstrap dropdown presentation classes from returning after native migration.
+  it('rejects Bootstrap dropdown classes', () => {
+    const failures = validateSource(
+      '<div class="dropdown"><button class="dropdown-toggle"></button><div class="dropdown-menu"></div></div>'
+    );
+
+    expect(failures).toHaveLength(3);
+    expect(failures.every(failure => failure.reason.includes(
+      'retired Bootstrap component family "dropdown"'
+    ))).toBe(true);
   });
 
   // This test proves pruned generated utility families cannot re-enter source unnoticed.
@@ -53,18 +126,16 @@ describe('Bootstrap class guard', () => {
     const failures = validateSource(source);
 
     expect(failures).toHaveLength(1);
-    expect(failures[0].reason).toContain('utility family "padding", which is not enabled');
+    expect(failures[0].reason).toContain('retired Bootstrap utility family "spacing"');
   });
 
-  // This test keeps responsive utility generation aligned with responsive source usage.
-  it('rejects a responsive variant when its utility family only emits base classes', () => {
+  // This test keeps removed responsive utility variants from returning.
+  it('rejects a responsive variant when its utility family is disabled', () => {
     const source = '<div class="d-md-flex"></div>';
     const failures = validateSource(source);
 
     expect(failures).toHaveLength(1);
-    expect(failures[0].reason).toContain(
-      'responsive generation for Bootstrap utility family "display", which is not enabled'
-    );
+    expect(failures[0].reason).toContain('retired Bootstrap utility family "display"');
   });
 
   // This test prevents unresolved Bootstrap runtime templates from bypassing the boundary.
@@ -73,6 +144,54 @@ describe('Bootstrap class guard', () => {
     const failures = validateSource(source);
 
     expect(failures).toHaveLength(1);
-    expect(failures[0].reason).toContain('enumerate its finite outcomes in DYNAMIC_CLASS_ESCAPES');
+    expect(failures[0].reason).toContain('retired Bootstrap component family "alert"');
+  });
+
+  // This test preserves the independent Bootstrap Icons build-time package.
+  it('allows bootstrap-icons imports while rejecting framework packages', () => {
+    const iconsSource = "import icons from 'bootstrap-icons/icons/rss.svg';";
+    expect(extractForbiddenFrameworkImports(iconsSource)).toEqual([]);
+
+    const frameworkSource = `
+      import Modal from 'bootstrap/js/dist/modal.js';
+      import theme from 'bootswatch/dist/flatly/variables';
+      const popper = import('@popperjs/core');
+      @use "bootstrap/scss/reboot";
+    `;
+
+    expect(extractForbiddenFrameworkImports(frameworkSource).map(candidate => candidate.value))
+      .toEqual([
+        'bootstrap/js/dist/modal.js',
+        'bootswatch/dist/flatly/variables',
+        '@popperjs/core',
+        'bootstrap/scss/reboot'
+      ]);
+  });
+
+  // This test covers declarative behavior, imports, CSS variables, and the global JavaScript API.
+  it('rejects retired Bootstrap runtime and styling entry points', () => {
+    const source = `
+      import Dropdown from 'bootstrap/js/dist/dropdown.js';
+      const modulePromise = import('bootstrap/js/dist/modal.js');
+      <button data-bs-toggle="dropdown" style="color: var(--bs-primary)">Open</button>
+      bootstrap.Dropdown.getOrCreateInstance(button);
+    `;
+
+    expect(extractDataBsAttributes(source).map(candidate => candidate.value))
+      .toEqual(['data-bs-toggle']);
+    expect(extractForbiddenFrameworkImports(source).map(candidate => candidate.value))
+      .toEqual(['bootstrap/js/dist/dropdown.js', 'bootstrap/js/dist/modal.js']);
+    expect(extractBootstrapCssVariables(source).map(candidate => candidate.value))
+      .toEqual(['--bs-primary']);
+
+    const failures = validateForbiddenFrameworkUsage(source, {
+      filePath: 'fixture.vue'
+    });
+
+    expect(failures).toHaveLength(5);
+    expect(failures.map(failure => failure.reason).join('\n')).toContain('Bootstrap data attribute');
+    expect(failures.map(failure => failure.reason).join('\n')).toContain('retired framework import');
+    expect(failures.map(failure => failure.reason).join('\n')).toContain('Bootstrap CSS variable');
+    expect(failures.map(failure => failure.reason).join('\n')).toContain('Bootstrap JavaScript API');
   });
 });

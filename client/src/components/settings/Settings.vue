@@ -1,5 +1,5 @@
 <template>
-  <div class="settings-overlay">
+  <div class="settings-surface settings-overlay">
     <section
       ref="settingsDialog"
       class="settings-dialog"
@@ -147,12 +147,12 @@ export default {
   },
   // This function locks page scrolling and moves initial focus into Settings.
   mounted() {
-    document.body.classList.add('modal-open');
+    document.body.classList.add('settings-overlay-open');
     this.$nextTick(() => this.$refs.settingsCloseButton?.focus());
   },
   // This function releases page scrolling before Settings is removed.
   beforeUnmount() {
-    document.body.classList.remove('modal-open');
+    document.body.classList.remove('settings-overlay-open');
   },
   // This function restores focus to the connected opener after Settings closes.
   unmounted() {

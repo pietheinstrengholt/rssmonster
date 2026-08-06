@@ -1,4 +1,27 @@
 :root {
+  /* Structural foundations shared by application-owned UI controls and surfaces. */
+  --control-height-compact: 2rem;
+  --control-height-default: 2.5rem;
+  --control-height-touch: 2.75rem;
+  --radius-compact: 0.375rem;
+  --radius-control: 0.5rem;
+  --radius-panel: 0.875rem;
+  --radius-pill: 999px;
+  --focus-ring-color: var(--border-focus);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-shadow: var(--shadow-focus-primary);
+  --sidebar-width: 266px;
+  --layer-sticky: 100;
+  --layer-dropdown: 1000;
+  --layer-overlay: 9999;
+  --layer-dialog: 10000;
+  --layer-notification: 11000;
+  --motion-duration-fast: 0.15s;
+  --motion-duration-normal: 0.2s;
+  --motion-easing-standard: ease;
+  --font-size-ui-default: 0.875rem;
+
   /* Foundation colors */
   --color-brand: #EA650D;
   --color-primary: #2563EB;
@@ -52,6 +75,7 @@
   --text-disabled-strong: #616161;
   --text-placeholder: #6B7280;
   --text-icon: #111827;
+  --app-form-select-arrow: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
   --color-primary-hover: #1D4ED8;
   --color-secondary: #6B6863;
   --color-secondary-hover: #585650;
@@ -96,7 +120,6 @@
   --settings-orange-border: var(--border-warning);
   --settings-success-bg: var(--badge-quality-bg);
   --settings-success-text: var(--badge-quality-text);
-  --settings-success-hover-text: #14532D;
   --settings-danger-bg: var(--badge-danger-bg);
   --settings-danger-text: var(--badge-danger-text);
   --settings-danger-border: var(--border-danger);
@@ -200,7 +223,6 @@
   --article-overall-score-text: var(--badge-quality-text);
   --article-ad-score-background: var(--badge-ad-bg);
   --article-ad-score-text: var(--badge-ad-text);
-  --article-sentiment-score-background: var(--badge-sentiment-bg);
   --article-sentiment-score-text: var(--badge-sentiment-text);
   --article-sentiment-moderate: #D4A017;
   --article-sentiment-poor: var(--badge-ad-text);
@@ -323,6 +345,7 @@
   --text-danger: #FFBABA;
   --text-placeholder: #6B7280;
   --text-icon: #E5E7EB;
+  --app-form-select-arrow: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23E5E7EB' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
 
   /* Dark neutral borders */
   --border-subtle: #232B38;
@@ -457,21 +480,14 @@
   --article-link-hover-dark: var(--color-link-hover);
   --article-link-visited-dark: var(--color-link-visited);
   --article-link-active-dark: var(--color-link-active);
-  --article-dropdown-background-dark: #1A202C;
   --article-tag-background-dark: var(--badge-tag-bg);
   --article-tag-text-dark: var(--badge-tag-text);
   --article-rule-tag-background-dark: var(--badge-tag-rule-bg);
   --article-rule-tag-text-dark: var(--badge-tag-rule-text);
-  --article-overall-score-background-dark: var(--badge-quality-bg);
-  --article-overall-score-text-dark: var(--badge-quality-text);
-  --article-ad-score-background-dark: var(--badge-ad-bg);
   --article-ad-score-text-dark: var(--badge-ad-text);
-  --article-sentiment-background-dark: var(--badge-sentiment-bg);
   --article-sentiment-score-text-dark: var(--badge-sentiment-text);
   --article-sentiment-moderate-dark: var(--badge-sentiment-text);
   --article-sentiment-poor-dark: var(--badge-ad-text);
-  --article-quality-background-dark: var(--badge-writing-bg);
-  --article-writing-score-text-dark: var(--badge-writing-text);
   --article-quality-good-dark: var(--badge-writing-text);
   --article-quality-okay-dark: var(--badge-ad-text);
   --article-quality-poor-dark: var(--badge-quality-text);
@@ -517,13 +533,129 @@
   --sidebar-primary-action-read-focus: #4ADE80;
 }
 
-:root[data-theme="dark"] .form-select {
-  --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23E5E7EB' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+/* Shared presentation primitives cover only the application patterns that use them. */
+.app-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
-/* This keeps Bootstrap danger alerts aligned with the application theme. */
-.alert-danger {
-  --bs-alert-bg: var(--bg-danger-subtle);
-  --bs-alert-border-color: var(--border-danger);
-  --bs-alert-color: var(--text-danger);
+.app-loading-indicator {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  vertical-align: -0.125em;
+  border: 0.25em solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: app-loading-indicator-spin 0.75s linear infinite;
+}
+
+.app-loading-indicator--small {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.2em;
+}
+
+.app-loading-indicator--accent {
+  color: var(--color-primary);
+}
+
+@keyframes app-loading-indicator-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.app-notice {
+  position: relative;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+}
+
+.app-notice--info {
+  padding: 15px;
+  color: var(--settings-info-text);
+  background-color: var(--settings-info-bg);
+  border-color: var(--settings-info-border);
+  border-radius: 4px;
+}
+
+.app-notice--warning {
+  color: var(--settings-orange-text);
+  background-color: var(--settings-orange-bg);
+  border-color: var(--settings-orange-border);
+}
+
+.app-notice--danger {
+  color: var(--settings-danger-text);
+  background-color: var(--settings-danger-bg);
+  border-color: var(--settings-danger-border);
+}
+
+.app-notice--info code {
+  padding: 2px 6px;
+  color: var(--settings-code-text);
+  background-color: var(--settings-code-bg);
+  border-radius: 3px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 90%;
+  font-weight: 600;
+}
+
+.app-notice--info ul {
+  padding-left: 20px;
+  margin-bottom: 0;
+}
+
+.app-notice--info li {
+  margin-bottom: 4px;
+}
+
+.app-status-badge {
+  display: inline-block;
+  padding: 0.35em 0.65em;
+  border-radius: 0.375rem;
+  font-size: 0.75em;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+
+.app-status-badge:empty {
+  display: none;
+}
+
+.app-status-badge--info,
+.app-status-badge--primary {
+  color: var(--settings-info-text);
+  background-color: var(--settings-info-bg);
+}
+
+.app-status-badge--success {
+  color: var(--settings-success-text);
+  background-color: var(--settings-success-bg);
+}
+
+.app-status-badge--neutral,
+.app-status-badge--dark {
+  color: var(--settings-neutral-text);
+  background-color: var(--settings-neutral-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loading-indicator {
+    animation-duration: 1.5s;
+  }
 }

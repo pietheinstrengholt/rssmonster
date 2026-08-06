@@ -1,6 +1,6 @@
 <template>
   <section class="settings-section-state" role="status" aria-live="polite" aria-atomic="true">
-    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+    <span class="app-loading-indicator app-loading-indicator--small" aria-hidden="true"></span>
     <p>Loading settings…</p>
   </section>
 </template>
@@ -20,9 +20,4 @@
   margin: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-section-state {
-    color: var(--text-secondary);
-  }
-}
 </style>

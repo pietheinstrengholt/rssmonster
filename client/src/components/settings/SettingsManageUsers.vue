@@ -31,22 +31,22 @@
               </div>
               <div class="manage-users__field">
                 <label for="username">Username</label>
-                <input id="username" disabled class="form-control" type="text" v-model="user.username" />
+                <input id="username" disabled class="app-form-control" type="text" v-model="user.username" />
               </div>
               <div class="manage-users__field">
                 <label for="role">Role</label>
-                <select id="role" class="form-select" v-model="user.role" aria-label="Select role">
+                <select id="role" class="app-form-select" v-model="user.role" aria-label="Select role">
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
               <div class="manage-users__field">
                 <label for="password">New password <span>Optional</span></label>
-                <input id="password" class="form-control" type="password" placeholder="Leave blank to keep the current password" />
+                <input id="password" class="app-form-control" type="password" placeholder="Leave blank to keep the current password" />
               </div>
               <div class="manage-users__field">
                 <label for="password-repeat">Confirm new password</label>
-                <input id="password-repeat" class="form-control" type="password" placeholder="Repeat the new password" />
+                <input id="password-repeat" class="app-form-control" type="password" placeholder="Repeat the new password" />
               </div>
               <div class="manage-users__form-actions">
                 <button type="button" class="manage-users__button manage-users__button--primary" @click="updateUser">Save changes</button>
@@ -56,12 +56,12 @@
             </div>
 
     <div v-else class="manage-users__directory">
-              <section class="settings-insight-card" aria-labelledby="manage-users-title">
-                <span class="settings-insight-icon" aria-hidden="true">
+              <section class="manage-users__insight-card" aria-labelledby="manage-users-title">
+                <span class="manage-users__insight-icon" aria-hidden="true">
                   <BootstrapIcon icon="people-fill" />
                 </span>
                 <div>
-                  <p class="settings-page-eyebrow">Settings — Manage Users</p>
+                  <p class="manage-users__page-eyebrow">Settings — Manage Users</p>
                   <h3 id="manage-users-title">Users Overview</h3>
                   <p>Review RSSMonster accounts, update roles, and manage user access from one place.</p>
                 </div>
@@ -123,10 +123,68 @@
   max-width: 1100px;
 }
 
-.manage-users__header {
-  align-items: flex-start;
-  border-bottom: 1px solid var(--border-subtle);
-  padding: 24px 28px 20px;
+.manage-users__insight-card {
+  background: var(--settings-info-bg);
+  border: 1px solid var(--settings-info-border);
+  border-radius: 14px;
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 24px;
+}
+
+.manage-users__insight-icon {
+  align-items: center;
+  background: var(--bg-primary);
+  border-radius: 12px;
+  color: var(--settings-info-text);
+  display: inline-flex;
+  flex: 0 0 42px;
+  font-size: 20px;
+  height: 42px;
+  justify-content: center;
+  line-height: 1;
+  width: 42px;
+}
+
+.manage-users__insight-icon .bi,
+.manage-users__insight-icon svg {
+  display: block;
+  height: 20px;
+  width: 20px;
+}
+
+.manage-users__page-eyebrow {
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+.manage-users__insight-card h3 {
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.manage-users__insight-card p:not(.manage-users__page-eyebrow) {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 6px 0 0;
+  max-width: 760px;
+}
+
+:global(:root[data-theme='dark']) .manage-users__insight-card {
+  background: var(--bg-modal);
+  border-color: var(--border-default);
+}
+
+:global(:root[data-theme='dark']) .manage-users__insight-icon {
+  background: var(--bg-control);
 }
 
 .manage-users__eyebrow {
@@ -138,36 +196,10 @@
   text-transform: uppercase;
 }
 
-.manage-users__header .modal-title,
 .manage-users__section-heading h6,
 .manage-users__confirmation h6 {
   color: var(--text-primary);
   font-weight: 600;
-}
-
-.manage-users__header .modal-title {
-  font-size: 20px;
-}
-
-.manage-users__subtitle {
-  margin: 5px 0 0;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
-.manage-users__count {
-  background: var(--bg-secondary);
-  border-radius: 999px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
-  margin-top: 4px;
-  padding: 7px 10px;
-}
-
-.modal-body {
-  padding: 0;
 }
 
 .manage-users__table-wrap {
@@ -387,14 +419,14 @@
   font-weight: 400;
 }
 
-.manage-users__field .form-control,
-.manage-users__field .form-select {
+.manage-users__field .app-form-control,
+.manage-users__field .app-form-select {
   background-color: var(--bg-input);
   border-color: var(--border-control);
   color: var(--text-primary);
 }
 
-.manage-users__field .form-control:disabled {
+.manage-users__field .app-form-control:disabled {
   background: var(--bg-secondary);
   color: var(--text-secondary);
   opacity: 1;
@@ -516,7 +548,6 @@
 }
 
 @media (max-width: 600px) {
-  .manage-users__header,
   .manage-users__editor,
   .manage-users__confirmation {
     padding-left: 20px;

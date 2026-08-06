@@ -22,9 +22,9 @@
           <span class="article-list-dot">·</span>
           <span v-if="!isEventArticle && event && eventArticleCountTotal > 1 && selectionStore.currentSelection.grouping !== 'none' && event.sourceCount >= 2" class="source-badge" :title="`${event.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ event.sourceCount }} sources</span>
           <BootstrapIcon v-if="isDevelopingStory" icon="lightning-charge-fill" class="developing-story-icon" title="Developing story" aria-label="Developing story" />
-          <span v-if="!isEventArticle && event && eventArticleCountTotal > 1 && selectionStore.currentSelection.grouping !== 'none'" class="similar-badge" @click.stop="viewEventArticles(event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</span>
-          <span v-if="duplicateCount > 0" class="duplicate-badge" @click.stop="viewDuplicateArticles">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</span>
-          <span v-for="tag in ruleTags" :key="'list-rule-' + tag.id" class="tag tag-rule" @click.stop="selectTag(tag)">{{ formatTagName(tag.name) }}</span>
+          <button v-if="!isEventArticle && event && eventArticleCountTotal > 1 && selectionStore.currentSelection.grouping !== 'none'" type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="viewEventArticles(event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
+          <button v-if="duplicateCount > 0" type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="viewDuplicateArticles">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>
+          <button v-for="tag in ruleTags" :key="'list-rule-' + tag.id" type="button" class="tag tag-rule" :aria-label="`Filter articles by tag ${formatTagName(tag.name)}`" @click.stop="selectTag(tag)">{{ formatTagName(tag.name) }}</button>
         </div>
         <div v-if="!hasArticlePreview" class="article-preview-empty">
           <span class="article-preview-empty__message">No preview available</span>
@@ -53,7 +53,7 @@
         <div class="article-layout">
           <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
           <div class="meta-row">
-            <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" />
+            <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" />
             <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
           </div>
           <div v-if="!hasArticlePreview" class="article-preview-empty">
@@ -395,7 +395,7 @@ export default {
       }
 
       if (this.selectionStore.currentSelection.viewMode === 'minimal') {
-        if (event.target?.closest?.('a, button, .dropdown-menu')) return;
+        if (event.target?.closest?.('a, button, .app-dropdown__menu')) return;
         if (this.isMinimalContentOpen) {
           this.$emit('minimal-article-closed', { id: this.id });
           return;
@@ -485,7 +485,7 @@ export default {
 }
 
 /* Lets an open article menu escape rendering containment and overlay surrounding content. */
-.article-card:has(.article-actions .dropdown-menu.show) {
+.article-card:has(.article-actions .app-dropdown__menu--open) {
   content-visibility: visible;
   position: relative;
   z-index: 1040;
@@ -526,12 +526,6 @@ export default {
 
 .clicked-icon {
   color: var(--article-clicked-icon);
-}
-
-.read-icon {
-  color: var(--color-success);
-  margin-right: 4px;
-  vertical-align: middle;
 }
 
 .hot-icon {
@@ -592,7 +586,7 @@ export default {
   color: var(--text-secondary);
 }
 
-:root[data-theme='dark'] .article-card .article-actions .btn {
+:root[data-theme='dark'] .article-card .article-actions__trigger {
   color: var(--text-secondary);
   opacity: 0.9;
 }
@@ -694,7 +688,7 @@ export default {
   color: var(--text-primary);
   font-size: 22px;
   line-height: 1;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
   text-decoration: none;
   border-bottom: none;
@@ -713,7 +707,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-family: Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-family);
   gap: 8px;
 }
 
@@ -753,15 +747,12 @@ export default {
   margin-bottom: 0 !important;
 }
 
-.article-card .dropdown {
-  position: relative;
-}
-
-.article-card .dropdown .btn {
-  width: 30px !important;
-  height: 30px !important;
-  padding: 0 !important;
-  border: none !important;
+.article-card .article-actions__trigger {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: var(--color-transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -770,25 +761,30 @@ export default {
   transition: opacity 0.2s;
 }
 
-.article-card .dropdown .btn:hover {
+.article-card .article-actions__trigger:hover {
   opacity: 1;
-  background-color: var(--color-transparent) !important;
+  background-color: var(--color-transparent);
 }
 
-.article-card .dropdown-menu {
+.article-actions__trigger:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.article-card .article-actions .app-dropdown__menu {
   min-width: 120px !important;
   z-index: 1041;
 }
 
-.article-card .dropdown-item {
+.article-card .article-actions .app-dropdown__item {
   color: var(--toolbar-text) !important;
   font-size: 14px !important;
   font-weight: 500;
   padding: 6px 8px !important;
 }
 
-.article-card .dropdown-item:hover,
-.article-card .dropdown-item:focus {
+.article-card .article-actions .app-dropdown__item:hover,
+.article-card .article-actions .app-dropdown__item:focus-visible {
   color: var(--text-inverted) !important;
 }
 
@@ -800,7 +796,9 @@ export default {
   color: var(--text-muted);
   font-size: 13px;
   line-height: 1.3;
+  max-width: 100%;
   margin: 0;
+  min-width: 0;
   font-weight: 400;
 }
 
@@ -813,6 +811,7 @@ export default {
 }
 
 .article-card .article-tags .tag-badge {
+  appearance: none;
   display: inline-flex;
   align-items: center;
   background-color: var(--color-transparent);
@@ -821,6 +820,7 @@ export default {
   padding: 3px 8px;
   border-radius: 6px;
   font-size: 11px;
+  font-family: inherit;
   font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
@@ -830,6 +830,7 @@ export default {
 
 .article-card .article-tags .tag,
 .article-card .article-list-meta .tag {
+  appearance: none;
   display: inline-flex;
   align-items: center;
   background-color: var(--article-tag-background);
@@ -838,6 +839,7 @@ export default {
   padding: 3px 8px;
   border-radius: 6px;
   font-size: 11px;
+  font-family: inherit;
   font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
@@ -881,20 +883,7 @@ export default {
   color: var(--article-score-good-text);
 }
 
-.article-content-wrapper h1 {
-  font-size: 24px !important;
-  line-height: 1.2;
-}
-
-.article-content-wrapper h2 {
-  font-size: 20px !important;
-}
-
-.article-content-wrapper h3 {
-  font-size: 18px !important;
-}
-
-/* Keep mobile portrait metadata and visible tags in one wrapping row. */
+/* Keeps mobile portrait metadata and visible rule tags as distinct wrapping groups. */
 @media (max-width: 879px) and (orientation: portrait) {
   .article-card .article-body {
     padding: 4px 8px 4px 8px;
@@ -910,12 +899,10 @@ export default {
     gap: 8px;
   }
 
-  .article-card .article-meta {
-    display: contents;
-  }
-
+  .article-card .article-meta,
   .article-card .article-tags {
-    display: contents;
+    gap: 8px;
+    min-width: 0;
   }
 
   .article-card .article-tags .tag:not(.tag-rule) {
@@ -935,9 +922,19 @@ export default {
   background-color: var(--article-active-background);
 }
 
-.article-published {
-  margin-right: -3px;
-  margin-top: -1px;
+.article-provenance {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 1 auto;
+  gap: 4px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.article-published,
+.article-provenance-separator {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .article-card .article-meta .article-published,
@@ -945,11 +942,9 @@ export default {
   color: var(--text-muted);
 }
 
-.break {
-  margin-left: -3px;
-  margin-right: -3px;
-  margin-top: -1px;
+.article-provenance-separator {
   font-size: 16px;
+  line-height: 1;
 }
 
 /* Override css that comes from other websites */
@@ -959,13 +954,12 @@ export default {
   margin-top: 10px;
 }
 
-span.article-source {
-  margin-left: -3px;
-  margin-top: -1px;
-  margin-right: 10px;
+.article-source {
+  min-width: 0;
 }
 
-span.article-source a {
+.article-source a {
+  overflow-wrap: anywhere;
   text-decoration: none;
 }
 
@@ -974,22 +968,10 @@ span.article-source a {
   .article-card .article-meta {
     gap: 14px;
   }
-
-  .article-published {
-    margin-right: -1px;
-  }
-
-  .break {
-    margin-left: -1px;
-    margin-right: -1px;
-  }
-
-  span.article-source {
-    margin-left: -1px;
-  }
 }
 
-span.similar-badge {
+.similar-badge {
+  appearance: none;
   display: inline-flex;
   align-items: center;
   background-color: var(--badge-similar-bg);
@@ -998,6 +980,7 @@ span.similar-badge {
   padding: 3px 8px;
   border-radius: 6px;
   font-size: 11px;
+  font-family: inherit;
   font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
@@ -1015,12 +998,14 @@ span.similar-badge {
 }
 
 .duplicate-badge {
+  appearance: none;
   display: inline-flex;
   align-items: center;
   padding: 3px 8px;
   border: 1px solid var(--color-transparent);
   border-radius: 6px;
   font-size: 11px;
+  font-family: inherit;
   font-weight: 600;
   line-height: 1.4;
   background-color: var(--badge-duplicate-bg);
@@ -1050,7 +1035,7 @@ span.similar-badge {
   color: var(--article-developing-icon);
 }
 
-:root[data-theme='dark'] span.similar-badge {
+:root[data-theme='dark'] .similar-badge {
   background-color: var(--badge-similar-bg);
   color: var(--badge-similar-text);
 }
@@ -1074,6 +1059,14 @@ span.similar-badge {
 
 .source-diversity-icon {
   font-size: 10px;
+}
+
+.article-card .tag-badge:focus-visible,
+.article-card .tag:focus-visible,
+.article-card .similar-badge:focus-visible,
+.article-card .duplicate-badge:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }
 
 .mobile-score-icon {
@@ -1125,13 +1118,6 @@ span.similar-badge {
 
 .mobile-score-icon.sentiment-very-poor {
   color: var(--text-danger-placeholder);
-}
-
-.article-card span.favicon img.favicon {
-  margin-right: 5px;
-  height: 18px;
-  width: 18px;
-  margin-top: -1px;
 }
 
 .article-list-card {
@@ -1186,8 +1172,13 @@ span.similar-badge {
   background: var(--color-transparent);
 }
 
-.article-list-card.article-list-card-selected:focus {
-  outline: 0;
+.article-list-card:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.article-list-card:focus-visible {
+  outline: 3px solid var(--border-focus);
+  outline-offset: -3px;
 }
 
 .article-list-card.article-list-card-selected .article-list-row {
@@ -1345,25 +1336,25 @@ span.similar-badge {
 }
 
 .article-list-action-button,
-.article-list-actions .dropdown .btn {
-  width: 34px !important;
-  height: 34px !important;
-  border: 1px solid var(--color-transparent) !important;
-  border-radius: 8px !important;
+.article-list-actions .article-actions__trigger {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-transparent);
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-transparent) !important;
-  color: var(--text-meta, var(--text-muted)) !important;
+  background: var(--color-transparent);
+  color: var(--text-meta, var(--text-muted));
   cursor: pointer;
   opacity: 1;
-  padding: 0 !important;
+  padding: 0;
 }
 
 .article-list-action-button:hover,
-.article-list-actions .dropdown .btn:hover {
-  background: var(--bg-menu-item, var(--bg-subtle)) !important;
-  color: var(--article-heading-text) !important;
+.article-list-actions .article-actions__trigger:hover {
+  background: var(--bg-menu-item, var(--bg-subtle));
+  color: var(--article-heading-text);
 }
 
 .article-list-favorite-button .bi {
@@ -1490,7 +1481,7 @@ span.similar-badge {
     background-color: var(--dark-page-surface);
   }
 
-  .article-card a, .article-card .article-body h5 a, .article-card .article-content-wrapper, .article-card span.article-source a {
+  .article-card a, .article-card .article-body h5 a, .article-card .article-content-wrapper, .article-card .article-source a {
     color: var(--text-primary);
   }
 
@@ -1535,22 +1526,17 @@ span.similar-badge {
     background-color: var(--article-event-background-dark);
   }
 
-  .article-card .dropdown .btn {
+  .article-card .article-actions__trigger {
     color: var(--text-inverted);
     opacity: 0.9;
   }
 
-  .article-card .dropdown-menu {
-    background-color: var(--article-dropdown-background-dark);
-    border-color: var(--border-default);
-  }
-
-  .article-card .dropdown-item {
+  .article-card .article-actions .app-dropdown__item {
     color: var(--toolbar-text) !important;
   }
 
-  .article-card .dropdown-item:hover,
-  .article-card .dropdown-item:focus {
+  .article-card .article-actions .app-dropdown__item:hover,
+  .article-card .article-actions .app-dropdown__item:focus-visible {
     background-color: var(--bg-modal);
     color: var(--toolbar-text) !important;
   }
@@ -1646,10 +1632,6 @@ span.similar-badge {
     background: var(--color-transparent);
   }
 
-  .article-list-card.article-list-card-selected:focus {
-    outline: 0;
-  }
-
   .article-list-card.article-list-card-selected .article-list-row {
     background: var(--reader-list-item-selected-background);
   }
@@ -1663,8 +1645,8 @@ span.similar-badge {
   .article-list-time,
   .article-list-source,
   .article-list-action-button,
-  .article-list-actions .dropdown .btn {
-    color: var(--dark-text-meta, var(--text-secondary)) !important;
+  .article-list-actions .article-actions__trigger {
+    color: var(--dark-text-meta, var(--text-secondary));
   }
 
   .article-list-title a,
@@ -1673,9 +1655,9 @@ span.similar-badge {
   }
 
   .article-list-action-button:hover,
-  .article-list-actions .dropdown .btn:hover {
-    background: var(--dark-bg-hover, var(--bg-control)) !important;
-    color: var(--dark-text-primary, var(--text-primary)) !important;
+  .article-list-actions .article-actions__trigger:hover {
+    background: var(--dark-bg-hover, var(--bg-control));
+    color: var(--dark-text-primary, var(--text-primary));
   }
 
   .article-list-card .article-content-wrapper {

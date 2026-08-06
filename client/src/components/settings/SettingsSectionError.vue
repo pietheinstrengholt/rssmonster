@@ -38,11 +38,9 @@
   margin: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .settings-section-state {
-    background: var(--bg-muted);
-    border-color: var(--border-danger);
-    color: var(--text-secondary);
-  }
+:global(:root[data-theme='dark']) .settings-section-state {
+  background: var(--bg-muted);
+  border-color: var(--border-danger);
+  color: var(--text-secondary);
 }
 </style>

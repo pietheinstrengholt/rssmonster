@@ -4,7 +4,7 @@
     @click="$emit('select')"
   >
     <span class="sidebar-icon">
-      <BootstrapIcon :icon="icon" :class="iconClass" color="currentColor" />
+      <BootstrapIcon :icon="icon" :class="iconClass" context="control" decorative color="currentColor" />
     </span>
     <span class="sidebar-item-title">{{ title }}</span>
     <span v-if="count !== null && count !== undefined" class="sidebar-count-wrapper">
@@ -108,14 +108,13 @@ export default {
 }
 
 .sidebar-icon {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  line-height: 1;
   margin-right: 5px;
   min-width: 13px;
   flex: 0 0 auto;
-}
-
-/* This adjusts the All feeds status icons without changing tag or smart-folder rows. */
-.sidebar-status-item .sidebar-icon {
-  margin-top: -1px;
 }
 
 .sidebar-status-item .sidebar-item-title {

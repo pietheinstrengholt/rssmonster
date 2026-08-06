@@ -199,12 +199,6 @@ export default {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .article-media-link {
-    border-color: var(--border-media-overlay);
-  }
-}
-
 :global(:root[data-theme='dark']) .article-media-link {
   border-color: var(--border-media-overlay);
 }

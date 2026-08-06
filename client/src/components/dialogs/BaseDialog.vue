@@ -32,7 +32,7 @@
           <button
             v-if="showClose"
             type="button"
-            class="base-dialog__close"
+            class="app-icon-button app-icon-button--compact base-dialog__close"
             :aria-label="closeLabel"
             :disabled="closeDisabled"
             @click="requestClose"
@@ -213,7 +213,7 @@ export default {
 .base-dialog__overlay {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: var(--layer-dialog);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -231,7 +231,7 @@ export default {
   color: var(--text-primary);
   background: var(--bg-modal);
   border: 1px solid var(--border-default);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-control);
   box-shadow: var(--shadow-modal);
 }
 
@@ -289,7 +289,7 @@ export default {
   height: 2rem;
   color: var(--color-primary);
   background: var(--color-primary-soft);
-  border-radius: 0.375rem;
+  border-radius: var(--radius-compact);
   font-size: 1.1rem;
 }
 
@@ -302,29 +302,6 @@ export default {
 
 .base-dialog__description--with-icon {
   margin-left: 2.75rem;
-}
-
-.base-dialog__close {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  color: var(--text-secondary);
-  background: var(--color-transparent);
-  border: 0;
-  border-radius: 0.375rem;
-  cursor: pointer;
-}
-
-.base-dialog__close:hover:not(:disabled) {
-  color: var(--text-primary);
-  background: var(--bg-hover);
-}
-
-.base-dialog__close:focus-visible {
-  outline: 2px solid var(--border-focus);
-  outline-offset: 2px;
 }
 
 .base-dialog__close:disabled,
@@ -352,7 +329,7 @@ export default {
   min-height: 2.25rem;
   padding: 0.4rem 0.875rem;
   border: 1px solid var(--color-transparent);
-  border-radius: 0.375rem;
+  border-radius: var(--radius-compact);
   font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1.25;

@@ -35,12 +35,17 @@
       />
     </div>
     <div id="article-load-sentinel" class="article-load-sentinel" aria-hidden="true"></div>
-    <div id="no-more" v-if="hasLoadedContent">
+    <div
+      id="no-more"
+      v-if="hasLoadedContent"
+      :class="{ 'article-empty-state-container': container.length === 0 }"
+    >
       <ArticleEmptyState
         v-if="container.length === 0"
         :current-status="currentSelection"
         :selected-tag="selectedTag"
         :refresh-progress="uiStore.feedRefreshProgress"
+        :show-refresh-progress="showFeedRefreshProgress"
         @clear-filters="$emit('clear-filters')"
         @clear-tag="$emit('clear-tag')"
         @refresh-feeds="$emit('refresh-feeds')"
@@ -51,6 +56,7 @@
         v-if="showArticleEndState"
         :unread-count="currentViewUnreadCount"
         :show-actions="showArticleEndStateActions"
+        :show-dismiss="showArticleEndStateDismiss"
         @mark-all-read="flushPool"
         @dismiss="dismissArticleEndState"
       />
@@ -167,6 +173,10 @@ export default {
     activeMinimalArticleId: {
       type: [Number, String],
       default: null
+    },
+    showFeedRefreshProgress: {
+      type: Boolean,
+      default: true
     }
   },
   data() {
@@ -235,6 +245,10 @@ export default {
         && !this.isFlushed
         && this.currentViewUnreadCount > 0
         && this.hasUnreadArticlesInCurrentView;
+    },
+    // Hides the redundant dismissal action when scrolling automatically marks reviewed articles as read.
+    showArticleEndStateDismiss() {
+      return this.selectionStore.currentSelection.markAsReadOnScroll !== true;
     }
   },
   watch: {
@@ -590,15 +604,13 @@ export default {
 </style>
 
 <style>
-div.infinite-loading-container {
-  display: block;
-  min-height: 50px;
-  padding-top: 20px;
-}
-
 #no-more {
   padding-top: 10px;
   text-align: center;
+}
+
+#no-more.article-empty-state-container {
+  padding-top: 0;
 }
 
 @media (orientation: portrait) {
@@ -621,7 +633,7 @@ div.infinite-loading-container {
 }
 
 #no-more p {
-  margin: 0px;
+  margin: 0 0 10px;
   vertical-align: middle;
 }
 
@@ -631,13 +643,6 @@ div.infinite-loading-container {
 }
 
 :root[data-theme='dark'] {
-  div.infinite-loading-container {
-    color: var(--text-inverted);
-    background: var(--dark-page-surface);
-    border-color: var(--dark-page-surface);
-    border-bottom-color: var(--text-inverted);
-  }
-
   #no-more p {
     color: var(--text-inverted);
   }

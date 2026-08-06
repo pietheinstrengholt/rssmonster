@@ -13,6 +13,165 @@
   background: #000;
 }
 
+/* Sanitized publisher markup receives typography only inside the article boundary. */
+.article-card .article-full-content {
+  min-width: 0;
+  color: var(--article-content-text);
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.article-card .article-full-content h1,
+.article-card .article-full-content h2,
+.article-card .article-full-content h3,
+.article-card .article-full-content h4,
+.article-card .article-full-content h5,
+.article-card .article-full-content h6 {
+  margin: 1.25em 0 0.5em;
+  color: var(--article-heading-text);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.article-card .article-full-content h1 { font-size: 24px; }
+.article-card .article-full-content h2 { font-size: 20px; }
+.article-card .article-full-content h3 { font-size: 18px; }
+.article-card .article-full-content h4 { font-size: 16px; }
+.article-card .article-full-content h5 { font-size: 15px; }
+.article-card .article-full-content h6 { font-size: 14px; }
+
+.article-card .article-full-content p {
+  display: block !important;
+  margin: 0 0 1em;
+}
+
+.article-card .article-full-content ol,
+.article-card .article-full-content ul,
+.article-card .article-full-content dl {
+  margin: 0 0 1em;
+}
+
+.article-card .article-full-content ol,
+.article-card .article-full-content ul {
+  padding-inline-start: 1.5rem;
+}
+
+.article-card .article-full-content ol ol,
+.article-card .article-full-content ol ul,
+.article-card .article-full-content ul ol,
+.article-card .article-full-content ul ul {
+  margin-bottom: 0;
+}
+
+.article-card .article-full-content blockquote {
+  margin: 1rem 0;
+  padding-inline-start: 1rem;
+  border-inline-start: 3px solid var(--border-strong);
+  color: var(--text-secondary);
+}
+
+.article-card .article-full-content a {
+  overflow-wrap: anywhere;
+}
+
+.article-card .article-full-content pre,
+.article-card .article-full-content code,
+.article-card .article-full-content kbd,
+.article-card .article-full-content samp {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.article-card .article-full-content pre {
+  max-width: 100%;
+  margin: 1rem 0;
+  padding: 0.75rem;
+  overflow: auto;
+  border: 1px solid var(--border-default);
+  border-radius: 0.5rem;
+  background: var(--bg-muted);
+  color: var(--article-content-text);
+  white-space: pre;
+}
+
+.article-card .article-full-content code {
+  padding: 0.1em 0.3em;
+  border-radius: 0.25rem;
+  background: var(--bg-muted);
+  color: var(--article-content-text);
+  font-size: 0.875em;
+}
+
+.article-card .article-full-content pre code {
+  padding: 0;
+  background: var(--color-transparent);
+  color: inherit;
+  font-size: inherit;
+}
+
+.article-card .article-full-content table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin: 1rem 0;
+  overflow-x: auto;
+  border-collapse: collapse;
+  white-space: normal;
+}
+
+.article-card .article-full-content th,
+.article-card .article-full-content td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-default);
+  text-align: start;
+  vertical-align: top;
+}
+
+.article-card .article-full-content th {
+  background: var(--bg-muted);
+  font-weight: 700;
+}
+
+.article-card .article-full-content figure {
+  max-width: 100%;
+  margin: 1rem 0 !important;
+}
+
+.article-card .article-full-content figcaption {
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.article-card .article-full-content picture,
+.article-card .article-full-content img,
+.article-card .article-full-content video,
+.article-card .article-full-content iframe,
+.article-card .article-full-content embed,
+.article-card .article-full-content object {
+  max-width: 100%;
+}
+
+.article-card .article-full-content img,
+.article-card .article-full-content video {
+  height: auto;
+}
+
+.article-card .article-full-content hr {
+  margin: 1.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border-default);
+  opacity: 1;
+}
+
+.article-card .article-full-content > :first-child {
+  margin-top: 0;
+}
+
+.article-card .article-full-content > :last-child {
+  margin-bottom: 0;
+}
+
 /* Override css that comes from other websites */
 .article-content-wrapper img, .article-content-wrapper div {
   float: none !important;
@@ -75,13 +234,4 @@
   .article-card .article-content-wrapper img {
     max-width: 80% !important;
   }
-}
-
-.article-card .article-content-wrapper p {
-  display: inline !important;
-}
-
-/* Remove position: relative from all elements in article body */
-.article-full-content * {
-  position: static !important;
 }

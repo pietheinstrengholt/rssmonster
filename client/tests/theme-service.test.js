@@ -8,6 +8,13 @@ import {
   setThemeMode,
   subscribeToSystemTheme
 } from '../src/services/theme.js';
+import articleMediaSource from '../src/components/articles/ArticleMedia.vue?raw';
+import settingsSectionErrorSource from '../src/components/settings/SettingsSectionError.vue?raw';
+import settingsSectionLoadingSource from '../src/components/settings/SettingsSectionLoading.vue?raw';
+import actionErrorNoticeSource from '../src/components/shared/ActionErrorNotice.vue?raw';
+import connectivityStatusSource from '../src/components/shared/ConnectivityStatus.vue?raw';
+import feedRefreshProgressSource from '../src/components/shared/FeedRefreshProgress.vue?raw';
+import sidebarSource from '../src/components/sidebar/Sidebar.vue?raw';
 
 const THEME_OVERRIDE_STORAGE_KEY = 'rssmonster-theme-override';
 
@@ -74,6 +81,37 @@ describe('theme preferences', () => {
     window.localStorage.setItem(THEME_OVERRIDE_STORAGE_KEY, 'dark');
 
     expect(getPreferredTheme()).toBe('dark');
+  });
+
+  it.each([
+    [false, 'system', 'light'],
+    [true, 'system', 'dark'],
+    [true, 'light', 'light'],
+    [false, 'dark', 'dark']
+  ])('resolves OS dark=%s with %s mode to %s', (systemDark, mode, expectedTheme) => {
+    mockSystemTheme(systemDark);
+    window.localStorage.setItem(THEME_OVERRIDE_STORAGE_KEY, mode);
+
+    const resolvedTheme = getPreferredTheme();
+    applyTheme(resolvedTheme);
+
+    expect(resolvedTheme).toBe(expectedTheme);
+    expect(document.documentElement.dataset.theme).toBe(expectedTheme);
+  });
+
+  // Verifies component presentation reads the resolved root theme instead of OS media state.
+  it('keeps direct system-preference detection out of component styles', () => {
+    const componentSources = [
+      articleMediaSource,
+      settingsSectionErrorSource,
+      settingsSectionLoadingSource,
+      actionErrorNoticeSource,
+      connectivityStatusSource,
+      feedRefreshProgressSource,
+      sidebarSource
+    ];
+
+    expect(componentSources.every(source => !source.includes('prefers-color-scheme'))).toBe(true);
   });
 });
 

@@ -31,7 +31,7 @@ Every ranking decision is explainable. Every view is customizable. Every signal 
 
 ## Key Features
 
-- **Lightweight & Responsive**: Built with Vue.js 3 and Express, styled with Bootstrap 5 for a fluid experience across all devices
+- **Lightweight & Responsive**: Built with Vue.js 3 and Express, with an RSSMonster-owned responsive design system for a fluid experience across all devices
 - **Different Reading Modes**: Choose the reading experience that fits your workflow. Use **Reader Mode** to browse article summaries alongside a details panel, **List Mode** to scan headlines quickly, or **Expanded Mode** to read full articles without distractions.
 - **Keyboard Shortcuts**: Navigate articles with the arrow keys or `j`/`k`, open an article with `Enter` or `o`, toggle its read status with `m` or `r`, save it with `s`, focus search with `/`, or refresh feeds with `Shift+R`.
 - **Advanced Search Expressions**: Composable filters using field operators (`favorite:true`, `star:true`, `unread:false`, `read:true`, `clicked:true`, `seen:false`, `hot:true`, `tag:tech`, `title:javascript`), article age filters (`firstSeen:24h`, `firstSeen:7d`), score thresholds (`quality:>0.6`, `freshness:>=0.5`), semantic filters (`event:true`, `event:false`, `eventCount:>=3`, `island:true`, `island:false`), sorting (`sort:asc`, `sort:desc`, `sort:trust`, `sort:recommended`, `sort:quality`, `sort:attention`), and flexible date filters (`@2025-12-14`, `@today`, `@yesterday`, `@lastweek`, `@"3 days ago"`, `@"last Monday"`). `island:true` keeps articles whose event is linked through a topic to one of the user's active interest islands. Example: `title:javascript ai @today island:true quality:>0.6 sort:recommended`
@@ -498,7 +498,7 @@ RSSMonster is built with the following frameworks and libraries:
 - **[Node.js](https://nodejs.org/)** - JavaScript runtime
 - **[Express](https://expressjs.com/)** - Web framework
 - **[Vue.js 3](https://vuejs.org/)** - Frontend framework
-- **[Bootstrap](https://getbootstrap.com/)** - UI framework
+- **[Bootstrap Icons](https://icons.getbootstrap.com/)** - Icon library
 - **[Sequelize](https://sequelize.org/)** - ORM for database management
 - **[feedsmith](https://github.com/macieklamberski/feedsmith)** - RSS/Atom feed parsing
 

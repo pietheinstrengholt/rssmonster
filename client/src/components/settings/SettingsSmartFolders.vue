@@ -17,13 +17,13 @@
         </div>
 
         <div v-if="loading" class="smart-folders-load-state" role="status" aria-live="polite">
-            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <span class="app-loading-indicator app-loading-indicator--small" aria-hidden="true"></span>
             <span>Loading Smart Folders…</span>
         </div>
 
         <div v-else-if="loadError" class="smart-folders-load-state smart-folders-load-state--error" role="alert">
             <span>{{ loadError }}</span>
-            <button type="button" class="btn btn-outline-secondary btn-sm" @click="fetchSmartFolders">Retry</button>
+            <button type="button" class="app-button app-button--outline-secondary app-button--compact" @click="fetchSmartFolders">Retry</button>
         </div>
 
         <fieldset v-else-if="loaded" class="smart-folders-editor smart-folders-surface" :disabled="saving" :aria-busy="saving ? 'true' : 'false'">
@@ -33,7 +33,7 @@
                 role="status"
             >
                 <span>Smart Folder counts may be outdated. Your folders are still available.</span>
-                <button type="button" class="btn btn-outline-secondary btn-sm" @click="overviewStore.fetchSmartFolderCounts()">Retry counts</button>
+                <button type="button" class="app-button app-button--outline-secondary app-button--compact" @click="overviewStore.fetchSmartFolderCounts()">Retry counts</button>
             </div>
 
             <section v-if="aiEnabled" class="smart-folders-surface__section smart-folders-surface__insights">
@@ -53,7 +53,7 @@
                         </div>
                     </div>
 
-                    <button type="button" class="btn btn-add" @click="addSmartFolder">
+                    <button type="button" class="app-button settings-add-button" @click="addSmartFolder">
                         <BootstrapIcon icon="plus-circle-fill" />
                         Add Smart Folder
                     </button>
@@ -102,8 +102,9 @@
 
                             <button
                                 type="button"
-                                class="btn btn-icon smart-folder-row__more"
+                                class="app-button app-button--icon-only smart-folder-row__more"
                                 title="Remove smart folder"
+                                aria-label="Remove smart folder"
                                 @click.stop="removeSmartFolder(index)"
                             >
                                 <BootstrapIcon icon="three-dots-vertical" />
@@ -126,13 +127,11 @@
             </section>
 
             <div class="settings-section__actions smart-folders-surface__footer">
-                <button class="btn btn-primary smart-folders-save" type="button" @click="save" :disabled="hasInvalidSmartFolders || saving">{{ saving ? 'Saving…' : 'Save Changes' }}</button>
+                <button class="app-button app-button--primary smart-folders-save" type="button" @click="save" :disabled="hasInvalidSmartFolders || saving" :aria-busy="saving ? 'true' : 'false'">{{ saving ? 'Saving…' : 'Save Changes' }}</button>
             </div>
         </fieldset>
     </div>
 </template>
-
-<style src="../../assets/css/settings.css"></style>
 
 <style scoped>
 .settings-section {
@@ -249,13 +248,7 @@
   font-size: 15px;
 }
 
-.smart-folders-list-header .btn {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 700;
+.smart-folders-list-header .settings-add-button {
   white-space: nowrap;
 }
 
@@ -368,27 +361,10 @@
 }
 
 .smart-folders-save {
-  display: inline-flex;
   height: 42px;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  background: var(--color-primary) !important;
-  border: 0;
-  border-radius: 8px;
-  color: var(--text-inverted);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.smart-folders-save:hover:not(:disabled) {
-  background: var(--color-primary-hover) !important;
 }
 
 .smart-folders-save:disabled {
-  cursor: not-allowed;
   opacity: 0.90;
 }
 
@@ -444,7 +420,7 @@
     display: none;
   }
 
-  .smart-folders-list-header .btn {
+  .smart-folders-list-header .settings-add-button {
     width: 100%;
   }
 

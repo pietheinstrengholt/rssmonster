@@ -25,7 +25,7 @@
 
         <div class="preferences-dialog__footer-actions">
           <button
-            class="base-dialog__button base-dialog__button--secondary preferences-dialog__button preferences-dialog__button--secondary"
+            class="app-button app-button--secondary preferences-dialog__button preferences-dialog__button--secondary"
             type="button"
             :disabled="saving"
             @click="requestClose"
@@ -33,10 +33,11 @@
             {{ cancelLabel }}
           </button>
           <button
-            class="base-dialog__button base-dialog__button--primary preferences-dialog__button preferences-dialog__button--primary"
+            class="app-button app-button--primary preferences-dialog__button preferences-dialog__button--primary"
             type="submit"
             :form="formId"
             :disabled="submitDisabled || saving"
+            :aria-busy="saving ? 'true' : 'false'"
           >
             {{ saving ? pendingLabel : confirmLabel }}
           </button>
@@ -149,7 +150,7 @@ export default {
     order: -1;
   }
 
-  :deep(.base-dialog__button) {
+  .preferences-dialog__footer-actions .app-button {
     flex: 1;
   }
 }

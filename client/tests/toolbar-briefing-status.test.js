@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { config, flushPromises, mount, shallowMount } from '@vue/test-utils';
+import { config, flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 
 import DesktopToolbar from '../src/components/shell/DesktopToolbar.vue';
@@ -66,7 +66,7 @@ function desktopSortDropdown(wrapper) {
 describe('toolbar Daily Briefing status', () => {
   it('opens and closes the lazy Settings workspace from the desktop toolbar', async () => {
     createStore(true);
-    const wrapper = shallowMount(DesktopToolbar, {
+    const wrapper = mount(DesktopToolbar, {
       global: {
         stubs: {
           Settings: {
@@ -90,18 +90,16 @@ describe('toolbar Daily Briefing status', () => {
 
   it.each([DesktopToolbar, MobileToolbar])('hides Briefing in %s when AI mode is disabled', (component) => {
     createStore(false);
-    const wrapper = component === DesktopToolbar
-      ? shallowMount(component)
-      : mount(component);
+    const wrapper = mount(component);
 
     expect(wrapper.text()).not.toContain('Daily briefing');
   });
 
   it('shows and selects Daily Briefing in the desktop status dropdown', async () => {
     const store = createStore(true);
-    const wrapper = shallowMount(DesktopToolbar);
+    const wrapper = mount(DesktopToolbar);
     const statusDropdown = desktopStatusDropdown(wrapper);
-    const briefingOption = statusDropdown.findAll('.dropdown-item')
+    const briefingOption = statusDropdown.findAll('[role="menuitem"]')
       .find(option => option.text() === 'Daily briefing');
 
     expect(briefingOption).toBeDefined();
@@ -113,7 +111,7 @@ describe('toolbar Daily Briefing status', () => {
   it('shows the Daily Briefing count and selects it from the mobile status dropdown', async () => {
     const store = createStore(true);
     const wrapper = mount(MobileToolbar);
-    const briefingOption = wrapper.findAll('#readModeDropdown + .dropdown-menu .dropdown-item')
+    const briefingOption = wrapper.findAll('#readModeDropdown-menu [role="menuitem"]')
       .find(option => option.text() === 'Daily briefing 8');
 
     expect(briefingOption).toBeDefined();
@@ -125,9 +123,7 @@ describe('toolbar Daily Briefing status', () => {
   // This test preserves the toolbar reload behavior for an ordinary current status.
   it.each([DesktopToolbar, MobileToolbar])('reloads the current status in %s', async (component) => {
     const store = createStore(true);
-    const wrapper = component === DesktopToolbar
-      ? shallowMount(component)
-      : mount(component);
+    const wrapper = mount(component);
 
     wrapper.vm.statusClicked('unread');
 
@@ -139,9 +135,7 @@ describe('toolbar Daily Briefing status', () => {
   it.each([DesktopToolbar, MobileToolbar])('leaves a smart folder through the current status in %s', async (component) => {
     const store = createStore(true);
     store.selectionStore.currentSelection.smartFolderId = 42;
-    const wrapper = component === DesktopToolbar
-      ? shallowMount(component)
-      : mount(component);
+    const wrapper = mount(component);
 
     wrapper.vm.statusClicked('unread');
 
@@ -153,12 +147,10 @@ describe('toolbar Daily Briefing status', () => {
 describe('toolbar Trust sort option', () => {
   it.each([DesktopToolbar, MobileToolbar])('shows and selects Trust in %s', async (component) => {
     const store = createStore(false);
-    const wrapper = component === DesktopToolbar
-      ? shallowMount(component)
-      : mount(component);
+    const wrapper = mount(component);
     const options = component === DesktopToolbar
-      ? desktopSortDropdown(wrapper).findAll('.dropdown-item')
-      : wrapper.findAll('#readModeDropdown + .dropdown-menu .dropdown-item');
+      ? desktopSortDropdown(wrapper).findAll('[role="menuitem"]')
+      : wrapper.findAll('#readModeDropdown-menu [role="menuitem"]');
     const trustOption = options.find(option => option.text() === 'Trust');
 
     expect(trustOption).toBeDefined();

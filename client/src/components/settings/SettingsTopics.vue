@@ -13,12 +13,12 @@
       </div>
     </section>
 
-    <div v-if="loading" class="settings-topics-loading d-flex align-items-center gap-2 mb-3">
-      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <div v-if="loading" class="settings-topics-loading">
+      <span class="app-loading-indicator app-loading-indicator--small" role="status" aria-hidden="true"></span>
       <span>Loading events and topics...</span>
     </div>
 
-    <div v-else-if="error" class="alert alert-danger mb-3">
+    <div v-else-if="error" class="app-notice app-notice--danger" role="alert">
       {{ error }}
     </div>
 
@@ -85,7 +85,7 @@
           <h4 id="event-statuses-title">Event statuses</h4>
           <div v-if="eventStatuses.length" class="settings-compact-list">
             <div v-for="status in eventStatuses" :key="status.status">
-              <span class="text-capitalize">{{ status.status }}</span>
+              <span class="settings-compact-label">{{ status.status }}</span>
               <strong>{{ status.count }}</strong>
             </div>
           </div>
@@ -95,7 +95,7 @@
           <h4 id="topic-types-title">Topic types</h4>
           <div v-if="topicTypes.length" class="settings-compact-list">
             <div v-for="type in topicTypes" :key="type.topicType">
-              <span class="text-capitalize">{{ type.topicType }}</span>
+              <span class="settings-compact-label">{{ type.topicType }}</span>
               <strong>{{ type.count }}</strong>
             </div>
           </div>
@@ -103,7 +103,7 @@
         </section>
       </div>
 
-      <div v-if="!events.length && !topics.length" class="alert alert-info mb-3">
+      <div v-if="!events.length && !topics.length" class="app-notice app-notice--info" role="status">
         Events and topics will appear here after articles have been clustered.
       </div>
 
@@ -118,7 +118,7 @@
                   {{ event.articleCount }} articles &middot; {{ event.topicCount }} topics &middot; {{ formatDate(event.updatedAt) }}
                 </p>
               </div>
-              <span class="badge align-self-start" :class="statusClass(event.status)">
+              <span class="app-status-badge" :class="statusClass(event.status)">
                 {{ event.status }}
               </span>
             </article>
@@ -135,7 +135,7 @@
                   {{ topic.linkedEventCount }} events &middot; {{ topic.linkedArticleCount }} articles &middot; {{ formatDate(topic.lastActivityAt) }}
                 </p>
               </div>
-              <span class="badge align-self-start" :class="topicTypeClass(topic.topicType)">
+              <span class="app-status-badge" :class="topicTypeClass(topic.topicType)">
                 {{ topic.topicType }}
               </span>
             </article>
@@ -153,8 +153,6 @@
   </div>
 </template>
 
-<style src="../../assets/css/settings.css"></style>
-
 <style scoped>
 .settings-topics {
   max-width: 1100px;
@@ -162,6 +160,10 @@
 }
 
 .settings-topics-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
   color: var(--text-muted);
   font-family: var(--font-family);
   font-size: 14px;
@@ -248,6 +250,10 @@
   color: var(--text-primary);
 }
 
+.settings-compact-label {
+  text-transform: capitalize;
+}
+
 .settings-empty-text {
   margin: 0;
   font-size: 13px;
@@ -276,6 +282,10 @@
 .settings-object-row p {
   margin: 3px 0 0;
   font-size: 12px;
+}
+
+.settings-object-row .app-status-badge {
+  align-self: flex-start;
 }
 
 :global(:root[data-theme='dark']) .settings-object-row {
@@ -359,14 +369,14 @@ export default {
       return date.toLocaleDateString();
     },
     statusClass(status) {
-      return status === 'archived' ? 'text-bg-secondary' : 'text-bg-success';
+      return status === 'archived' ? 'app-status-badge--neutral' : 'app-status-badge--success';
     },
     topicTypeClass(topicType) {
       return {
-        event: 'text-bg-primary',
-        behavioral: 'text-bg-info',
-        hybrid: 'text-bg-success'
-      }[topicType] || 'text-bg-secondary';
+        event: 'app-status-badge--primary',
+        behavioral: 'app-status-badge--info',
+        hybrid: 'app-status-badge--success'
+      }[topicType] || 'app-status-badge--neutral';
     },
     async reload() {
       this.loading = true;

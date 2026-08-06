@@ -112,7 +112,7 @@ describe('SettingsIslands', () => {
     expect(wrapper.vm.formatNormalizedAffinity(undefined)).toBe('0.00');
     expect(wrapper.vm.formatCountLabel(1, 'topic')).toBe('1 topic');
     expect(wrapper.vm.formatCountLabel(2, 'topic')).toBe('2 topics');
-    expect(wrapper.vm.evidenceBadgeClass('deepRead')).toBe('text-bg-info');
+    expect(wrapper.vm.evidenceBadgeClass('deepRead')).toBe('app-status-badge--info');
     expect(wrapper.vm.formatDate(null)).toBe('Unknown date');
     expect(wrapper.text()).toContain('do not have any interest islands');
 
@@ -192,7 +192,7 @@ describe('SettingsTopics', () => {
     expect(wrapper.text()).toContain('Event #3');
     expect(wrapper.text()).toContain('Artificial intelligence');
     expect(wrapper.text()).toContain('No activity yet');
-    expect(wrapper.get('.text-bg-secondary').text()).toContain('archived');
+    expect(wrapper.get('.app-status-badge--neutral').text()).toContain('archived');
   });
 
   // Verifies empty defaults and all classification formatter branches.
@@ -208,11 +208,11 @@ describe('SettingsTopics', () => {
     expect(wrapper.vm.formatPercent(undefined)).toBe('0.0%');
     expect(wrapper.vm.formatNumber(null)).toBe('0.0');
     expect(wrapper.vm.formatDate('invalid')).toBe('No activity yet');
-    expect(wrapper.vm.statusClass('active')).toBe('text-bg-success');
-    expect(wrapper.vm.topicTypeClass('event')).toBe('text-bg-primary');
-    expect(wrapper.vm.topicTypeClass('behavioral')).toBe('text-bg-info');
-    expect(wrapper.vm.topicTypeClass('hybrid')).toBe('text-bg-success');
-    expect(wrapper.vm.topicTypeClass('unknown')).toBe('text-bg-secondary');
+    expect(wrapper.vm.statusClass('active')).toBe('app-status-badge--success');
+    expect(wrapper.vm.topicTypeClass('event')).toBe('app-status-badge--primary');
+    expect(wrapper.vm.topicTypeClass('behavioral')).toBe('app-status-badge--info');
+    expect(wrapper.vm.topicTypeClass('hybrid')).toBe('app-status-badge--success');
+    expect(wrapper.vm.topicTypeClass('unknown')).toBe('app-status-badge--neutral');
   });
 
   // Verifies overview failures clear loading state and display the error.

@@ -41,6 +41,22 @@ const BootstrapIconStub = {
   template: '<span class="bootstrap-icon-stub" :data-icon="icon"></span>'
 };
 
+const ARTICLE_TYPOGRAPHY_FIXTURE = `
+  <h1>Heading one</h1><h2>Heading two</h2><h3>Heading three</h3>
+  <h4>Heading four</h4><h5>Heading five</h5><h6>Heading six</h6>
+  <p>Paragraph with <strong>strong text</strong>, <em>emphasized text</em>, and
+    <a href="https://example.com/a/very/long/publisher/path/that/must/wrap/without-breaking-the-reader">a long publisher URL</a>.</p>
+  <ul><li>First item<ol><li>Nested item</li></ol></li></ul>
+  <blockquote><p>Quoted publisher text.</p></blockquote>
+  <p>Use <code>inlineCode()</code> in prose.</p>
+  <pre><code>const example = "a deliberately wide block of publisher code";</code></pre>
+  <table><caption>Publisher data</caption><thead><tr><th>Column</th><th>Value</th></tr></thead>
+    <tbody><tr><td>Long cell</td><td>Value</td></tr></tbody></table>
+  <figure><img src="https://example.com/figure.jpg" alt="Fixture image"><figcaption>Fixture caption</figcaption></figure>
+  <hr><p><strong>Malformed ending <em>repaired by the browser parser.</p>
+  <figure class="rssmonster-embed" data-provider="youtube" data-video-id="gZUDEBbZSp4"></figure>
+`;
+
 // Mounts article content with representative full-view defaults.
 const mountArticleContent = (props = {}) => mount(ArticleContent, {
   props: {
@@ -97,7 +113,7 @@ describe('ArticleActionsMenu', () => {
       props: { favoriteInd: 1 },
       global: { stubs: { BootstrapIcon: BootstrapIconStub } }
     });
-    const items = wrapper.findAll('.dropdown-item');
+    const items = wrapper.findAll('[role="menuitem"]');
 
     expect(items.map(item => item.text())).toEqual([
       'Unmark favorite',
@@ -107,6 +123,8 @@ describe('ArticleActionsMenu', () => {
       'Ignore this topic',
       'Mute Feed for 7 Days'
     ]);
+    expect(items.every(item => item.element.tagName === 'BUTTON')).toBe(true);
+    expect(items.every(item => item.attributes('role') === 'menuitem')).toBe(true);
 
     for (const item of items) {
       await item.trigger('click');
@@ -126,12 +144,31 @@ describe('ArticleActionsMenu', () => {
       global: { stubs: { BootstrapIcon: BootstrapIconStub } }
     });
 
-    expect(wrapper.get('.dropdown-item').text()).toBe('Mark as favorite');
+    expect(wrapper.get('[role="menuitem"]').text()).toBe('Mark as favorite');
   });
 
 });
 
 describe('ArticleContent presentation', () => {
+  // Verifies the publisher typography fixture retains every supported semantic structure.
+  it('renders the representative sanitized publisher typography fixture', () => {
+    const wrapper = mountArticleContent({ content: ARTICLE_TYPOGRAPHY_FIXTURE });
+    const content = wrapper.get('.article-full-content');
+
+    expect(content.findAll('h1, h2, h3, h4, h5, h6')).toHaveLength(6);
+    expect(content.findAll('ul > li > ol > li')).toHaveLength(1);
+    expect(content.get('blockquote').text()).toBe('Quoted publisher text.');
+    expect(content.get('p code').text()).toBe('inlineCode()');
+    expect(content.get('pre code').text()).toContain('deliberately wide block');
+    expect(content.get('table caption').text()).toBe('Publisher data');
+    expect(content.get('figure figcaption').text()).toBe('Fixture caption');
+    expect(content.get('img').attributes('loading')).toBe('lazy');
+    expect(content.get('hr').exists()).toBe(true);
+    expect(content.get('iframe.rssmonster-youtube-frame').attributes('src'))
+      .toBe('https://www.youtube.com/embed/gZUDEBbZSp4');
+    expect(content.text()).toContain('Malformed ending repaired by the browser parser.');
+  });
+
   // Verifies summary modes limit their content and provide an empty fallback.
   it('renders summarized text and bounded summary bullets', async () => {
     const summarized = mountArticleContent({

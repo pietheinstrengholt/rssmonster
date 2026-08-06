@@ -359,6 +359,10 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
     expect(compute(ArticleReaderLayout, 'hasUnreadArticlesInCurrentView', context)).toBe(true);
     context.hasUnreadArticlesInCurrentView = true;
     expect(compute(ArticleReaderLayout, 'showReaderEndStateActions', context)).toBe(true);
+    context.selectionStore.currentSelection.markAsReadOnScroll = true;
+    expect(compute(ArticleReaderLayout, 'showReaderEndStateDismiss', context)).toBe(false);
+    context.selectionStore.currentSelection.markAsReadOnScroll = false;
+    expect(compute(ArticleReaderLayout, 'showReaderEndStateDismiss', context)).toBe(true);
     context.currentViewSourceCount = 9;
     expect(compute(ArticleReaderLayout, 'sourceCount', context)).toBe(9);
   });
@@ -490,6 +494,10 @@ describe('ArticleListView high-impact decision coverage', () => {
     context.currentSelection = 'unread';
     context.hasUnreadArticlesInCurrentView = true;
     expect(compute(ArticleListView, 'showArticleEndStateActions', context)).toBe(true);
+    context.selectionStore.currentSelection.markAsReadOnScroll = true;
+    expect(compute(ArticleListView, 'showArticleEndStateDismiss', context)).toBe(false);
+    context.selectionStore.currentSelection.markAsReadOnScroll = false;
+    expect(compute(ArticleListView, 'showArticleEndStateDismiss', context)).toBe(true);
   });
 
   it('recognizes an exhausted unread final page when the load distance trails the ID count', () => {
@@ -1068,6 +1076,8 @@ describe('Vue template handler coverage', () => {
       }
     });
     await flushPromises();
+
+    expect(wrapper.get('.app-shell').element.id).toBe('');
 
     wrapper.vm.overviewLoaded = true;
     await wrapper.vm.$nextTick();

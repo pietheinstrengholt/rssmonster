@@ -237,6 +237,29 @@ describe('DesktopToolbar behavior coverage', () => {
 });
 
 describe('MobileToolbar behavior coverage', () => {
+  // Verifies the spacer follows the rendered toolbar stack as search changes its height.
+  it('remeasures the toolbar stack for search and responsive layout changes', async () => {
+    const wrapper = mountMobileToolbar();
+    const toolbarContainer = wrapper.get('.mobile-toolbar-container').element;
+    const measure = vi.spyOn(toolbarContainer, 'getBoundingClientRect');
+    const scheduleMeasurement = vi.spyOn(wrapper.vm, 'scheduleToolbarMeasurement');
+
+    measure.mockReturnValue({ height: 101.2 });
+    wrapper.vm.updateToolbarHeight();
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.toolbarHeight).toBe(102);
+    expect(wrapper.get('.mobile-toolbar-spacer').attributes('style')).toContain('height: 102px');
+
+    measure.mockReturnValue({ height: 159.1 });
+    await wrapper.get('.mobile-search-toggle').trigger('click');
+    wrapper.vm.updateToolbarHeight();
+    expect(wrapper.vm.toolbarHeight).toBe(160);
+
+    window.dispatchEvent(new Event('resize'));
+    window.dispatchEvent(new Event('orientationchange'));
+    expect(scheduleMeasurement).toHaveBeenCalled();
+  });
+
   it('opens, applies, closes, and responsively dismisses mobile search', async () => {
     const stores = createStores();
     const selectSearch = vi.spyOn(stores.selectionStore, 'setSelectedSearch')

@@ -66,6 +66,26 @@ describe('ArticleEmptyState', () => {
     expect(progress.text()).toContain('Processed: 1/2');
     expect(progress.text()).toContain('New: 3');
   });
+
+  it('hides shared feed-refresh progress when the persistent sidebar owns it', () => {
+    const wrapper = mount(ArticleEmptyState, {
+      props: {
+        showRefreshProgress: false,
+        refreshProgress: {
+          visible: true,
+          currentFeedLabel: 'Example feed (1/2)',
+          progressPercent: 50,
+          totalFeeds: 2,
+          processedFeeds: 1,
+          newArticles: 3,
+          errors: 0,
+          logs: ['Refresh started.']
+        }
+      }
+    });
+
+    expect(wrapper.find('.article-empty-state-refresh-progress').exists()).toBe(false);
+  });
 });
 
 describe('ArticleEndState', () => {
@@ -108,6 +128,19 @@ describe('ArticleEndState', () => {
     });
 
     expect(wrapper.get('.article-end-state-text').text()).toBe('4 unread articles were reviewed.');
+  });
+
+  it('hides the dismissal action when requested', () => {
+    const wrapper = mount(ArticleEndState, {
+      props: {
+        unreadCount: 4,
+        showActions: true,
+        showDismiss: false
+      }
+    });
+
+    expect(wrapper.find('.article-end-state-secondary').exists()).toBe(false);
+    expect(wrapper.find('.article-end-state-primary').exists()).toBe(true);
   });
 });
 
@@ -154,7 +187,7 @@ describe('ArticleLoadingState', () => {
     });
     expect(wrapper.findAll('.article-loading-skeleton')).toHaveLength(5);
     expect(wrapper.findAll('.article-loading-state__dots span')).toHaveLength(3);
-    expect(wrapper.get('.visually-hidden').text()).toBe('Loading articles');
+    expect(wrapper.get('.app-visually-hidden').text()).toBe('Loading articles');
   });
 });
 

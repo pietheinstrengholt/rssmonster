@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div class="app-shell">
     <div class="app-shell-row">
       <div
         v-if="showPersistentSidebar || mobileRefreshSidebarActive"
@@ -45,7 +45,13 @@
           :refreshing="databaseRefreshActive"
           @refresh="refreshArticlesFromDatabase"
         />
-        <app-article-feed v-if="showArticleFeed" ref="articleFeed" @forceReload="forceReload" @refresh-feeds="refreshFeeds"></app-article-feed>
+        <app-article-feed
+          v-if="showArticleFeed"
+          ref="articleFeed"
+          :show-feed-refresh-progress="showPersistentSidebar === false"
+          @forceReload="forceReload"
+          @refresh-feeds="refreshFeeds"
+        ></app-article-feed>
         <!-- Show chat assistant -->
         <app-chat-assistant v-if="uiStore.chatAssistantOpen"></app-chat-assistant>
       </div>
@@ -71,7 +77,7 @@ html {
 }
 
 body,
-#app,
+.app-shell,
 #home,
 #sidebar {
   overscroll-behavior-y: contain;
@@ -119,7 +125,7 @@ body,
     overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: var(--color-transparent) var(--color-transparent);
-    transition: scrollbar-color 0.2s ease;
+    transition: scrollbar-color var(--motion-duration-normal) var(--motion-easing-standard);
   }
 
   #sidebar::-webkit-scrollbar {
@@ -133,7 +139,7 @@ body,
 
   #sidebar::-webkit-scrollbar-thumb {
     background-color: var(--color-transparent);
-    transition: background-color 0.2s ease;
+    transition: background-color var(--motion-duration-normal) var(--motion-easing-standard);
   }
 
   #sidebar.is-scrolling {
@@ -175,19 +181,15 @@ body,
 
 @media (min-width: 768px) {
   #sidebar {
-    width: 280px;
-    min-width: 280px;
-    max-width: 280px;
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    max-width: var(--sidebar-width);
   }
 
   #home {
-    width: calc(100% - 280px);
-    margin-left: 280px;
+    width: calc(100% - var(--sidebar-width));
+    margin-left: var(--sidebar-width);
   }
-}
-
-div.row {
-  margin-right: 0px;
 }
 
 #sidebar {
@@ -201,16 +203,16 @@ div.row {
   text-align: center;
 }
 
-html, #app {
+html, .app-shell {
   background-color: var(--bg-primary);
 }
 
-html, #app, body {
+html, .app-shell, body {
     height: 100%;
 }
 
 :root[data-theme='dark'] {
-  html, #app {
+  html, .app-shell {
     background-color: var(--bg-primary);
   }
 

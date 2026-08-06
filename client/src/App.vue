@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div class="app-root">
     <!-- Loading state during session validation -->
     <div v-if="isLoading" class="loading-container">
       <p>Loading...</p>
@@ -24,25 +24,25 @@
           <p class="auth-form-title" id="signin">{{ showSignup ? 'Create your account' : 'Sign in to RSSMonster' }}</p>
         
           <!-- Username input -->
-          <div class="form-outline">
-            <input class="form-control" type="text" id="username" v-model="username" />
-            <label class="form-label" for="username">Username</label>
+          <div class="auth-field">
+            <input class="app-form-control" type="text" id="username" v-model="username" />
+            <label class="app-form-label" for="username">Username</label>
           </div>
 
           <!-- Password input -->
-          <div class="form-outline">
-            <input class="form-control" type="password" id="password" v-model="password" />
-            <label class="form-label" for="password">Password</label>
+          <div class="auth-field">
+            <input class="app-form-control" type="password" id="password" v-model="password" />
+            <label class="app-form-label" for="password">Password</label>
           </div>
 
           <!-- Password repeat input (signup only) -->
-          <div v-if="showSignup" class="form-outline">
-            <input class="form-control" type="password" id="password_repeat" v-model="password_repeat" />
-            <label class="form-label" for="password_repeat">Password (repeat)</label>
+          <div v-if="showSignup" class="auth-field">
+            <input class="app-form-control" type="password" id="password_repeat" v-model="password_repeat" />
+            <label class="app-form-label" for="password_repeat">Password (repeat)</label>
           </div>
 
           <!-- Submit button -->
-          <button type="submit" class="auth-submit btn-block" :disabled="isSubmitting">
+          <button type="submit" class="auth-submit auth-submit--block" :disabled="isSubmitting">
             {{ isSubmitting ? (showSignup ? 'Registering...' : 'Signing in...') : (showSignup ? 'Register' : 'Sign in') }}
           </button>
 
@@ -383,31 +383,31 @@ export default {
   font-weight: 700;
 }
 
-.auth-page .form-outline {
+.auth-page .auth-field {
   display: flex;
   flex-direction: column-reverse;
   gap: 7px;
   position: relative;
 }
 
-.auth-page .form-outline .form-control {
+.auth-page .auth-field .app-form-control {
   background-color: var(--bg-input);
   border: 1px solid var(--border-control);
   border-radius: 8px;
   color: var(--text-primary);
-  min-height: 44px;
+  min-height: var(--control-height-touch);
   padding: 10px 12px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-.auth-page .form-outline .form-control:focus {
+.auth-page .auth-field .app-form-control:focus-visible {
   background-color: var(--bg-input);
   border-color: var(--border-focus);
   box-shadow: var(--shadow-focus-primary);
   color: var(--text-primary);
 }
 
-.auth-page .form-outline .form-label {
+.auth-page .auth-field .app-form-label {
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
@@ -426,7 +426,7 @@ export default {
   font: inherit;
   font-weight: 700;
   justify-content: center;
-  min-height: 44px;
+  min-height: var(--control-height-touch);
   margin-top: 2px;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
@@ -447,7 +447,7 @@ export default {
   opacity: 0.65;
 }
 
-.btn-block {
+.auth-submit--block {
   width: 100%;
 }
 
@@ -527,17 +527,13 @@ export default {
   color: var(--text-muted);
 }
 
-html, body, #app {
+html, body, #app, .app-root {
   height: 100%;
 }
 
 #main,
 #main #home {
   height: 100%;
-}
-
-div.form-group.row {
-  margin-bottom: 1rem;
 }
 
 :root[data-theme='dark'] .auth-page {
@@ -567,17 +563,17 @@ div.form-group.row {
 :root[data-theme='dark'] .auth-brand p,
 :root[data-theme='dark'] .auth-register,
 :root[data-theme='dark'] .auth-footer,
-:root[data-theme='dark'] .auth-page .form-outline .form-label {
+:root[data-theme='dark'] .auth-page .auth-field .app-form-label {
   color: var(--text-secondary);
 }
 
-:root[data-theme='dark'] .auth-page .form-outline .form-control {
+:root[data-theme='dark'] .auth-page .auth-field .app-form-control {
   background-color: var(--bg-input);
   border-color: var(--border-control);
   color: var(--text-primary);
 }
 
-:root[data-theme='dark'] .auth-page .form-outline .form-control:focus {
+:root[data-theme='dark'] .auth-page .auth-field .app-form-control:focus-visible {
   background-color: var(--bg-input);
   border-color: var(--border-focus);
   box-shadow: var(--shadow-focus-primary);

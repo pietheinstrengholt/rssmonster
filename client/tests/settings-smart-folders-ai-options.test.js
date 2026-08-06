@@ -83,7 +83,7 @@ describe('SettingsSmartFolders AI options', () => {
   it('creates non-AI folders without a hidden AI sort', async () => {
     const wrapper = await mountSettings(false);
 
-    await wrapper.get('.smart-folders-list-header .btn-add').trigger('click');
+    await wrapper.get('.smart-folders-list-header .settings-add-button').trigger('click');
 
     expect(wrapper.vm.smartFolders.at(-1).query).toBe('limit:50');
     expect(wrapper.findComponent(SmartFolderEditor).vm.generatedSmartFolderQuery).toBe('limit:50');

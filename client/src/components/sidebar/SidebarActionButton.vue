@@ -8,11 +8,11 @@
   >
     <div>
       <span class="sidebar-icon">
-        <BootstrapIcon :icon="icon" color="currentColor" />
+        <BootstrapIcon :icon="icon" context="control" decorative color="currentColor" />
       </span>
       <div class="sidebar-item-title">{{ label }}</div>
       <span v-if="loading" class="spinner">
-        <BootstrapIcon icon="arrow-clockwise" color="currentColor" animation="spin" />
+        <BootstrapIcon icon="arrow-clockwise" context="control" decorative color="currentColor" animation="spin" />
       </span>
     </div>
   </button>
@@ -93,8 +93,11 @@ export default {
 }
 
 .spinner {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  line-height: 1;
   margin-left: 6px;
-  margin-top: -2px;
 }
 
 .sidebar-button-refresh,
@@ -199,12 +202,11 @@ export default {
 
 .sidebar-button .sidebar-icon,
 .sidebar-management-button .sidebar-icon {
-  float: left;
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  line-height: 1;
   min-width: 13px;
-}
-
-.sidebar-button .sidebar-icon {
-  margin-top: -2px;
 }
 
 .sidebar-management-button .sidebar-item-title {

@@ -6,14 +6,14 @@
                 <input
                     v-model.trim="draftConfig.name"
                     type="text"
-                    class="form-control"
+                    class="app-form-control"
                     placeholder="e.g. Hot AI Articles"
                 />
             </label>
 
             <label class="smart-folder-field smart-folder-field--limit">
                 <span>Maximum articles</span>
-                <select v-model.number="draftConfig.limitCount" class="form-select">
+                <select v-model.number="draftConfig.limitCount" class="app-form-select">
                     <option :value="50">50</option>
                     <option :value="100">100</option>
                     <option :value="250">250</option>
@@ -34,6 +34,7 @@
                     <input
                         v-model="draftConfig.status.unread"
                         type="checkbox"
+                        class="app-form-check-input"
                         :disabled="draftConfig.status.read"
                         @change="onStatusFilterChange('unread')"
                     />
@@ -45,6 +46,7 @@
                     <input
                         v-model="draftConfig.status.read"
                         type="checkbox"
+                        class="app-form-check-input"
                         :disabled="draftConfig.status.unread"
                         @change="onStatusFilterChange('read')"
                     />
@@ -53,19 +55,19 @@
                 </label>
 
                 <label class="smart-folder-check">
-                    <input v-model="draftConfig.status.favorite" type="checkbox" />
+                    <input v-model="draftConfig.status.favorite" class="app-form-check-input" type="checkbox" />
                     <BootstrapIcon icon="bookmark-fill" />
                     Favorited
                 </label>
 
                 <label class="smart-folder-check">
-                    <input v-model="draftConfig.status.clicked" type="checkbox" />
+                    <input v-model="draftConfig.status.clicked" class="app-form-check-input" type="checkbox" />
                     <BootstrapIcon icon="arrow-up-right-square-fill" />
                     Clicked
                 </label>
 
                 <label class="smart-folder-check">
-                    <input v-model="draftConfig.status.hot" type="checkbox" />
+                    <input v-model="draftConfig.status.hot" class="app-form-check-input" type="checkbox" />
                     <BootstrapIcon icon="fire" />
                     Hot
                 </label>
@@ -80,7 +82,7 @@
 
                 <label class="smart-folder-field">
                     <span>Date range</span>
-                    <select v-model="draftConfig.date.preset" class="form-select" :disabled="draftConfig.date.useRelative">
+                    <select v-model="draftConfig.date.preset" class="app-form-select" :disabled="draftConfig.date.useRelative">
                         <option value="">Any time</option>
                         <option value="@today">Today</option>
                         <option value="@yesterday">Yesterday</option>
@@ -91,7 +93,7 @@
                 </label>
 
                 <label class="smart-folder-check smart-folder-check--switch">
-                    <input v-model="draftConfig.date.useRelative" type="checkbox" />
+                    <input v-model="draftConfig.date.useRelative" class="app-form-check-input" type="checkbox" />
                     Relative range
                 </label>
 
@@ -101,10 +103,10 @@
                         type="number"
                         min="1"
                         max="365"
-                        class="form-control"
+                        class="app-form-control"
                     />
 
-                    <select v-model="draftConfig.date.relativeUnit" class="form-select">
+                    <select v-model="draftConfig.date.relativeUnit" class="app-form-select">
                         <option value="h">hours</option>
                         <option value="d">days</option>
                     </select>
@@ -125,7 +127,7 @@
                     <input
                         v-model.trim="draftConfig.content.tags"
                         type="text"
-                        class="form-control"
+                        class="app-form-control"
                         placeholder="ai"
                         @keydown="preventTagSeparator"
                         @input="normalizeDraftTag"
@@ -137,7 +139,7 @@
                     <input
                         v-model.trim="draftConfig.content.title"
                         type="text"
-                        class="form-control"
+                        class="app-form-control"
                         placeholder="e.g. javascript"
                     />
                 </label>
@@ -147,7 +149,7 @@
                     <input
                         v-model.trim="draftConfig.content.author"
                         type="text"
-                        class="form-control"
+                        class="app-form-control"
                         placeholder="e.g. John Doe"
                     />
                 </label>
@@ -157,7 +159,7 @@
                     <input
                         v-model.trim="draftConfig.content.text"
                         type="text"
-                        class="form-control"
+                        class="app-form-control"
                         placeholder="Search in article text"
                     />
                 </label>
@@ -206,6 +208,7 @@
                     <input
                         v-model="draftConfig.events.isEvent"
                         type="checkbox"
+                        class="app-form-check-input"
                         :disabled="draftConfig.events.useMinimumCount"
                         @change="onEventFilterChange('isEvent')"
                     />
@@ -216,6 +219,7 @@
                     <input
                         v-model="draftConfig.events.isNotEvent"
                         type="checkbox"
+                        class="app-form-check-input"
                         :disabled="draftConfig.events.useMinimumCount"
                         @change="onEventFilterChange('isNotEvent')"
                     />
@@ -223,12 +227,12 @@
                 </label>
 
                 <label class="smart-folder-check">
-                    <input v-model="draftConfig.events.useMinimumCount" type="checkbox" @change="onEventFilterChange('useMinimumCount')" />
+                    <input v-model="draftConfig.events.useMinimumCount" class="app-form-check-input" type="checkbox" @change="onEventFilterChange('useMinimumCount')" />
                     Minimum articles in event / cluster
                 </label>
 
                 <div v-if="draftConfig.events.useMinimumCount" class="smart-folder-inline-fields">
-                    <select v-model.number="draftConfig.events.minimumCount" class="form-select">
+                    <select v-model.number="draftConfig.events.minimumCount" class="app-form-select">
                         <option :value="2">2</option>
                         <option :value="3">3</option>
                         <option :value="5">5</option>
@@ -248,7 +252,7 @@
 
                 <label class="smart-folder-field">
                     <span>Sort by</span>
-                    <select v-model="draftConfig.sort.field" class="form-select">
+                    <select v-model="draftConfig.sort.field" class="app-form-select">
                         <option value="">None</option>
                         <option value="trust">Trust</option>
                         <option v-if="aiEnabled" value="recommended">Recommended</option>
@@ -261,7 +265,7 @@
 
                 <label class="smart-folder-field">
                     <span>Language</span>
-                    <select v-model="draftConfig.content.language" class="form-select">
+                    <select v-model="draftConfig.content.language" class="app-form-select">
                         <option value="">Any language</option>
                         <option value="en">English</option>
                         <option value="nl">Dutch</option>
@@ -280,8 +284,9 @@
 
             <button
                 type="button"
-                class="btn btn-icon"
+                class="app-button app-button--icon-only smart-folder-query-copy"
                 title="Copy query"
+                aria-label="Copy generated query"
                 @click="copyGeneratedQuery"
             >
                 <BootstrapIcon icon="copy" />
@@ -293,20 +298,20 @@
         </p>
 
         <div class="smart-folder-config-actions">
-            <button type="button" class="btn btn-outline-danger smart-folder-config-delete" @click="$emit('delete')">
+            <button type="button" class="app-button app-button--outline-danger smart-folder-config-delete" @click="$emit('delete')">
                 <BootstrapIcon icon="trash3-fill" />
                 Delete
             </button>
 
-            <button type="button" class="btn btn-outline-secondary" @click="$emit('cancel')">
+            <button type="button" class="app-button app-button--outline-secondary" @click="$emit('cancel')">
                 Cancel
             </button>
 
-            <button type="button" class="btn btn-outline-secondary" @click="saveAsCopy">
+            <button type="button" class="app-button app-button--outline-secondary" @click="saveAsCopy">
                 Save as copy
             </button>
 
-            <button type="submit" class="btn btn-primary" :disabled="generatedQueryInvalid">
+            <button type="submit" class="app-button app-button--primary" :disabled="generatedQueryInvalid">
                 Save and close
             </button>
         </div>
@@ -498,7 +503,6 @@ export default {
   font-size: 13px;
 }
 
-.smart-folder-check input,
 .smart-folder-range input {
   accent-color: var(--color-primary);
 }
@@ -510,8 +514,8 @@ export default {
   color: var(--text-secondary);
 }
 
-.smart-folder-inline-fields .form-control,
-.smart-folder-inline-fields .form-select {
+.smart-folder-inline-fields .app-form-control,
+.smart-folder-inline-fields .app-form-select {
   max-width: 112px;
 }
 
@@ -566,11 +570,7 @@ export default {
   margin-top: 16px;
 }
 
-.smart-folder-config-actions .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+.smart-folder-config-actions .app-button {
   white-space: nowrap;
 }
 
@@ -609,7 +609,7 @@ export default {
     flex-direction: column-reverse;
   }
 
-  .smart-folder-config-actions .btn {
+  .smart-folder-config-actions .app-button {
     width: 100%;
   }
 }

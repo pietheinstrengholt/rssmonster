@@ -71,7 +71,7 @@ describe('NewCategory', () => {
 
     await wrapper.get('#new-category-name').setValue('Engineering');
     await wrapper.get('[aria-label="Technology"]').trigger('click');
-    await wrapper.get('.btn-primary').trigger('click');
+    await wrapper.get('.base-dialog__button--primary').trigger('click');
     await flushPromises();
 
     expect(setAuthToken).toHaveBeenCalledWith('token');
@@ -88,8 +88,8 @@ describe('NewCategory', () => {
   it('does not create an unnamed category and supports closing', async () => {
     const { store } = mountCategoryModal(NewCategory);
 
-    await wrapper.get('.btn-primary').trigger('click');
-    await wrapper.get('.btn-secondary').trigger('click');
+    await wrapper.get('.base-dialog__button--primary').trigger('click');
+    await wrapper.get('.base-dialog__button--secondary').trigger('click');
 
     expect(createCategory).not.toHaveBeenCalled();
     expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
@@ -100,9 +100,9 @@ describe('NewCategory', () => {
     mountCategoryModal(NewCategory);
 
     await wrapper.get('#new-category-name').setValue('   ');
-    await wrapper.get('.btn-primary').trigger('click');
+    await wrapper.get('.base-dialog__button--primary').trigger('click');
 
-    expect(wrapper.get('.btn-primary').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('.base-dialog__button--primary').attributes('disabled')).toBeDefined();
     expect(createCategory).not.toHaveBeenCalled();
   });
 
@@ -113,7 +113,7 @@ describe('NewCategory', () => {
     mountCategoryModal(NewCategory);
 
     await wrapper.get('#new-category-name').setValue('  Engineering  ');
-    const saveButton = wrapper.get('.btn-primary');
+    const saveButton = wrapper.get('.base-dialog__button--primary');
     await saveButton.trigger('click');
     await saveButton.trigger('click');
 
@@ -136,7 +136,7 @@ describe('NewCategory', () => {
     const { store } = mountCategoryModal(NewCategory);
 
     await wrapper.get('#new-category-name').setValue('Engineering');
-    await wrapper.get('.btn-primary').trigger('click');
+    await wrapper.get('.base-dialog__button--primary').trigger('click');
     await flushPromises();
 
     expect(store.overviewStore.addCategory).not.toHaveBeenCalled();
@@ -157,11 +157,11 @@ describe('RenameCategory', () => {
     expect(setAuthToken).toHaveBeenCalledWith('token');
     expect(wrapper.get('#category-name').element.value).toBe('News');
     expect(wrapper.get('[aria-label="Folder"]').attributes('aria-checked')).toBe('true');
-    expect(wrapper.get('.btn-primary').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('.base-dialog__button--primary').attributes('disabled')).toBeDefined();
 
     await wrapper.get('[aria-label="Books"]').trigger('click');
 
-    expect(wrapper.get('.btn-primary').attributes('disabled')).toBeUndefined();
+    expect(wrapper.get('.base-dialog__button--primary').attributes('disabled')).toBeUndefined();
     expect(category.iconName).toBe('unsupported-icon');
   });
 
@@ -174,9 +174,9 @@ describe('RenameCategory', () => {
 
     await wrapper.get('#category-name').setValue('Reading');
     await wrapper.get('[aria-label="Books"]').trigger('click');
-    await wrapper.get('.btn-primary').trigger('click');
+    await wrapper.get('.base-dialog__button--primary').trigger('click');
     await flushPromises();
-    await wrapper.get('.btn-secondary').trigger('click');
+    await wrapper.get('.base-dialog__button--secondary').trigger('click');
 
     expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'book-fill');
     expect(store.overviewStore.updateCategory).toHaveBeenCalledWith(7, {
@@ -194,7 +194,7 @@ describe('RenameCategory', () => {
     const { store } = mountCategoryModal(RenameCategory);
 
     await wrapper.get('#category-name').setValue('Reading');
-    await wrapper.get('.btn-primary').trigger('click');
+    await wrapper.get('.base-dialog__button--primary').trigger('click');
     await flushPromises();
 
     expect(store.overviewStore.updateCategory).not.toHaveBeenCalled();
@@ -210,9 +210,9 @@ describe('RenameCategory', () => {
     mountCategoryModal(RenameCategory);
 
     await wrapper.get('#category-name').setValue('   ');
-    await wrapper.get('.btn-primary').trigger('click');
+    await wrapper.get('.base-dialog__button--primary').trigger('click');
 
-    expect(wrapper.get('.btn-primary').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('.base-dialog__button--primary').attributes('disabled')).toBeDefined();
     expect(updateCategory).not.toHaveBeenCalled();
   });
 
@@ -223,7 +223,7 @@ describe('RenameCategory', () => {
     mountCategoryModal(RenameCategory);
 
     await wrapper.get('#category-name').setValue('  Reading  ');
-    const saveButton = wrapper.get('.btn-primary');
+    const saveButton = wrapper.get('.base-dialog__button--primary');
     await saveButton.trigger('click');
     await saveButton.trigger('click');
 

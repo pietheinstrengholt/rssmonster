@@ -39,7 +39,7 @@ describe('SmartFolderInsights', () => {
 
     expect(wrapper.text()).toContain('Security');
     expect(wrapper.text()).toContain('Frequently read');
-    await wrapper.get('.action-row .btn-add').trigger('click');
+    await wrapper.get('.action-row .settings-add-button').trigger('click');
     expect(wrapper.emitted('add')?.[0]?.[0]).toEqual(recommendation);
   });
 

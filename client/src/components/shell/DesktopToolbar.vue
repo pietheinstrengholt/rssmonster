@@ -2,16 +2,20 @@
   <nav class="desktop-toolbar" aria-label="Article toolbar">
     <!-- Article filter dropdowns -->
     <div class="toolbar-filters">
-      <div v-for="dropdown in toolbarDropdowns" :key="dropdown.id" class="dropdown toolbar-filter">
-        <button class="dropdown-toggle toolbar-filter-button" type="button" :id="dropdown.id" data-bs-toggle="dropdown" aria-expanded="false">
-          <span class="toolbar-filter-label">{{ dropdown.label }}:</span>
-          <span class="toolbar-filter-value">{{ dropdown.selectedLabel }}</span>
-          <span class="toolbar-filter-chevron" aria-hidden="true"></span>
-        </button>
-        <div class="dropdown-menu" :aria-labelledby="dropdown.id">
-          <button v-for="option in dropdown.options" :key="option.value" type="button" class="dropdown-item" :class="{ active: dropdown.selectedValue === option.value }" @click="dropdownOptionClicked(dropdown.type, option.value)">{{ option.label }}</button>
-        </div>
-      </div>
+      <AppDropdown v-for="dropdown in toolbarDropdowns" :id="dropdown.id" :key="dropdown.id" :close-key="selectionCloseKey" class="toolbar-filter">
+        <template #trigger="{ triggerProps }">
+          <button v-bind="triggerProps" class="toolbar-filter-button" type="button">
+            <span class="toolbar-filter-label">{{ dropdown.label }}:</span>
+            <span class="toolbar-filter-value">{{ dropdown.selectedLabel }}</span>
+            <span class="toolbar-filter-chevron" aria-hidden="true"></span>
+          </button>
+        </template>
+        <template #menu="{ menuProps }">
+          <div v-bind="menuProps">
+            <button v-for="option in dropdown.options" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': dropdown.selectedValue === option.value }" role="menuitem" @click="dropdownOptionClicked(dropdown.type, option.value)">{{ option.label }}</button>
+          </div>
+        </template>
+      </AppDropdown>
     </div>
 
     <div class="toolbar-actions">
@@ -45,26 +49,30 @@
           <path d="M6.5 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11m0-1a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m7.854 4.146-3.85-3.85a1 1 0 0 0-1.414 1.415l3.85 3.85a1 1 0 0 0 1.414-1.415" />
         </svg>
       </button>
-      <div class="dropdown toolbar-theme-dropdown">
-        <button id="themeModeDropdown" type="button" class="dropdown-toggle toolbar-theme-button" title="Choose theme" data-bs-toggle="dropdown" aria-expanded="false">
-          <BootstrapIcon icon="brightness-high" size="20" />
-          <span class="visually-hidden">Choose theme</span>
-        </button>
-        <div class="dropdown-menu dropdown-menu-end toolbar-theme-menu" aria-labelledby="themeModeDropdown">
-          <button type="button" class="dropdown-item" :class="{ active: selectedThemeMode === 'system' }" role="menuitemradio" :aria-checked="selectedThemeMode === 'system'" @click="selectThemeMode('system')">
+      <AppDropdown id="themeModeDropdown" :close-key="selectedThemeMode" align="end" class="toolbar-theme-dropdown">
+        <template #trigger="{ triggerProps }">
+          <button v-bind="triggerProps" type="button" class="toolbar-theme-button" title="Choose theme">
+            <BootstrapIcon icon="brightness-high" size="20" />
+            <span class="app-visually-hidden">Choose theme</span>
+          </button>
+        </template>
+        <template #menu="{ menuProps }">
+          <div v-bind="menuProps" class="toolbar-theme-menu">
+          <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': selectedThemeMode === 'system' }" role="menuitemradio" :aria-checked="selectedThemeMode === 'system'" @click="selectThemeMode('system')">
             <BootstrapIcon icon="laptop" size="16" />
             System
           </button>
-          <button type="button" class="dropdown-item" :class="{ active: selectedThemeMode === 'light' }" role="menuitemradio" :aria-checked="selectedThemeMode === 'light'" @click="selectThemeMode('light')">
+          <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': selectedThemeMode === 'light' }" role="menuitemradio" :aria-checked="selectedThemeMode === 'light'" @click="selectThemeMode('light')">
             <BootstrapIcon icon="sun" size="16" />
             Light
           </button>
-          <button type="button" class="dropdown-item" :class="{ active: selectedThemeMode === 'dark' }" role="menuitemradio" :aria-checked="selectedThemeMode === 'dark'" @click="selectThemeMode('dark')">
+          <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': selectedThemeMode === 'dark' }" role="menuitemradio" :aria-checked="selectedThemeMode === 'dark'" @click="selectThemeMode('dark')">
             <BootstrapIcon icon="moon-stars" size="16" />
             Dark
           </button>
-        </div>
-      </div>
+          </div>
+        </template>
+      </AppDropdown>
       <button
         ref="settingsButton"
         type="button"
@@ -213,38 +221,45 @@
   color: var(--toolbar-text);
 }
 
-.toolbar-filter .dropdown-menu {
+.toolbar-filter .app-dropdown__menu {
   padding: 6px;
   border: 1px solid var(--border-default);
   border-radius: 10px;
   box-shadow: var(--shadow-modal);
 }
 
-.toolbar-filter .dropdown-item {
+.toolbar-filter .app-dropdown__item {
   padding: 8px 10px;
   margin-bottom: 4px;
   border-radius: 7px;
 }
 
-.toolbar-filter .dropdown-item:last-child {
+.toolbar-filter .app-dropdown__item:last-child {
   margin-bottom: 0;
 }
 
-.dropdown-item {
+.app-dropdown__item {
   color: var(--toolbar-text);
   font-size: 14px;
   font-weight: 500;
 }
 
-.dropdown-item.active,
-.dropdown-item:hover {
+.app-dropdown__item--active,
+.app-dropdown__item:hover,
+.app-dropdown__item:focus-visible {
   color: var(--text-inverted);
 }
 
-.dropdown-item.active {
+.app-dropdown__item--active {
   color: var(--color-primary);
   background-color: var(--color-primary-soft);
   border-radius: 4px;
+}
+
+.toolbar-filter .app-dropdown__item--active:hover,
+.toolbar-filter .app-dropdown__item--active:focus-visible {
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
 }
 
 .toolbar-settings-button,
@@ -280,10 +295,6 @@
   border: none;
 }
 
-.toolbar-theme-button::after {
-  display: none;
-}
-
 .toolbar-theme-menu {
   min-width: 132px;
   padding: 4px;
@@ -292,7 +303,7 @@
   box-shadow: var(--shadow-modal);
 }
 
-.toolbar-theme-menu .dropdown-item {
+.toolbar-theme-menu .app-dropdown__item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -301,15 +312,15 @@
   border-radius: 4px;
 }
 
-.toolbar-theme-menu .dropdown-item:last-child {
+.toolbar-theme-menu .app-dropdown__item:last-child {
   margin-bottom: 0;
 }
 
-.toolbar-theme-menu .dropdown-item svg {
+.toolbar-theme-menu .app-dropdown__item svg {
   flex-shrink: 0;
 }
 
-.toolbar-theme-menu .dropdown-item.active {
+.toolbar-theme-menu .app-dropdown__item--active {
   color: var(--color-primary);
   background-color: var(--color-primary-soft);
 }
@@ -402,17 +413,18 @@
   color: var(--text-inverted);
 }
 
-:global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu.show) {
+:global(:root[data-theme='dark'] .desktop-toolbar .app-dropdown__menu--open) {
   background-color: var(--bg-modal);
   border-color: var(--border-default);
 }
 
-:global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu .dropdown-item) {
+:global(:root[data-theme='dark'] .desktop-toolbar .app-dropdown__menu .app-dropdown__item) {
   color: var(--text-secondary);
 }
 
-:global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu .dropdown-item:hover),
-:global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu .dropdown-item.active) {
+:global(:root[data-theme='dark'] .desktop-toolbar .app-dropdown__menu .app-dropdown__item:hover),
+:global(:root[data-theme='dark'] .desktop-toolbar .app-dropdown__menu .app-dropdown__item:focus-visible),
+:global(:root[data-theme='dark'] .desktop-toolbar .app-dropdown__menu .app-dropdown__item--active) {
   color: var(--text-inverted);
   background-color: var(--toolbar-active-background);
 }
@@ -543,7 +555,7 @@
 
 @media (min-width: 880px) {
   .desktop-toolbar {
-    left: 280px;
+    left: var(--sidebar-width);
   }
 }
 
@@ -648,16 +660,11 @@
 }
 
 :global(:root[data-theme='dark']) {
-  .desktop-toolbar,
-  .dropdownmenu .item {
+  .desktop-toolbar {
     color: var(--text-inverted);
     background: var(--desktop-toolbar-background);
     border-color: var(--border-subtle);
     border-bottom-color: var(--border-subtle);
-  }
-
-  .dropdown {
-    border-left: 0;
   }
 
   .toolbar-chat-button {
@@ -666,21 +673,22 @@
     border-color: var(--border-control);
   }
 
-  .dropdown-menu {
+  .app-dropdown__menu {
     background-color: var(--bg-modal);
     border-color: var(--border-default);
   }
 
-  .dropdown-item {
+  .app-dropdown__item {
     color: var(--text-secondary);
   }
 
-  .dropdown-item:hover {
+  .app-dropdown__item:hover,
+  .app-dropdown__item:focus-visible {
     background-color: var(--bg-control);
     color: var(--text-inverted);
   }
 
-  .dropdown-item.active {
+  .app-dropdown__item--active {
     background-color: var(--toolbar-active-background);
     color: var(--text-inverted);
   }
@@ -723,16 +731,12 @@
     border-color: var(--border-strong);
   }
 
-  .dropdown-item {
+  .app-dropdown__item {
     color: var(--text-inverted);
   }
 
   .toolbar-filter-value {
     color: var(--text-inverted);
-  }
-
-  .dropdown-menu .item {
-    border-color: var(--border-subtle);
   }
 
   .toolbar-search {
@@ -799,6 +803,7 @@ import { saveThemeMode as saveThemeModeAPI } from '../../api/settings.js';
 import { notifyActionError } from '../../services/actionNotifications.js';
 import { validateSearchQuery } from '../../services/queryValidation.js';
 import { getThemeMode, setThemeMode } from '../../services/theme.js';
+import AppDropdown from '../shared/AppDropdown.vue';
 
 const SEARCH_DEBOUNCE_DELAY = 300;
 
@@ -807,6 +812,7 @@ const Settings = defineAsyncComponent(() => import('../settings/Settings.vue'));
 
 export default {
   components: {
+    AppDropdown,
     Settings
   },
   // This function initializes the toolbar's local state and dropdown options.
@@ -989,6 +995,11 @@ export default {
     // This function returns the currently active article selection from the store.
     currentSelection() {
       return this.selectionStore.currentSelection;
+    },
+    // This function closes open toolbar menus when the active article view changes.
+    selectionCloseKey() {
+      const selection = this.currentSelection;
+      return [selection.status, selection.viewMode, selection.sort, selection.grouping, selection.smartFolderId, selection.categoryId].join(':');
     },
     // This function reports whether AI-powered toolbar options are available.
     isAIEnabled() {

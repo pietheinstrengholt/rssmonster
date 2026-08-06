@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils';
 
 import Article from '../src/components/articles/Article.vue';
 import articleSource from '../src/components/articles/Article.vue?raw';
+import readerLayoutSource from '../src/components/articles/ArticleReaderLayout.vue?raw';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 // Mounts one article in the requested presentation while preserving its public root attributes.
@@ -77,7 +78,15 @@ describe('Article rendering containment', () => {
 
   // Verifies an open actions menu escapes article containment and stacks above surrounding content.
   it('raises an article while its actions menu is open', () => {
-    expect(articleSource).toMatch(/\.article-card:has\(\.article-actions \.dropdown-menu\.show\)\s*\{[^}]*content-visibility:\s*visible;[^}]*position:\s*relative;[^}]*z-index:\s*1040;/s);
-    expect(articleSource).toMatch(/\.article-card \.dropdown-menu\s*\{[^}]*z-index:\s*1041;/s);
+    expect(articleSource).toMatch(/\.article-card:has\(\.article-actions \.app-dropdown__menu--open\)\s*\{[^}]*content-visibility:\s*visible;[^}]*position:\s*relative;[^}]*z-index:\s*1040;/s);
+    expect(articleSource).toMatch(/\.article-card \.article-actions \.app-dropdown__menu\s*\{[^}]*z-index:\s*1041;/s);
+  });
+
+  // Verifies keyboard focus is visible on both compact and Reader article rows.
+  it('defines focus-visible rings independently from article selection', () => {
+    expect(articleSource).toMatch(/\.article-list-card:focus-visible\s*\{[^}]*outline:\s*3px solid var\(--border-focus\);/s);
+    expect(readerLayoutSource).toMatch(/\.readerArticleListItem:focus-visible\s*\{[^}]*outline:\s*3px solid var\(--border-focus\);/s);
+    expect(articleSource).not.toMatch(/\.article-list-card\.article-list-card-selected:focus\s*\{[^}]*outline:\s*0;/s);
+    expect(readerLayoutSource).not.toMatch(/\.readerArticleListItem:focus-visible\s*\{[^}]*outline:\s*none;/s);
   });
 });

@@ -4,7 +4,7 @@
     <h1>{{ title }}</h1>
     <p>{{ message }}</p>
 
-    <button v-if="retry" @click="$emit('retry')" class="btn btn-primary">
+    <button v-if="retry" type="button" @click="$emit('retry')" class="app-button app-button--primary">
       Retry
     </button>
   </div>

@@ -1,7 +1,7 @@
 import Cookies from 'js-cookie';
 import { createPinia } from 'pinia';
 import { flushPromises, mount } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App.vue';
 import * as authApi from '../src/api/auth';
 
@@ -58,15 +58,47 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
+afterEach(() => {
+  document.body.innerHTML = '';
+});
+
 describe('App authentication form', () => {
-  it('uses the application primary styling instead of Bootstrap primary styling', async () => {
+  // Verifies the mount host retains the sole application ID across authentication branches.
+  it('uses semantic roots without duplicating the Vue mount ID', async () => {
+    const mountHost = document.createElement('div');
+    mountHost.id = 'app';
+    document.body.appendChild(mountHost);
+    const wrapper = mount(App, {
+      attachTo: mountHost,
+      global: {
+        plugins: [createPinia()],
+        stubs: {
+          AppShell: { template: '<div class="app-shell">Authenticated shell</div>' }
+        }
+      }
+    });
+    await flushPromises();
+
+    expect(document.querySelectorAll('#app')).toHaveLength(1);
+    expect(wrapper.get('.app-root').element.id).toBe('');
+    expect(wrapper.get('.auth-page').exists()).toBe(true);
+
+    await wrapper.setData({ isAuthenticated: true, isLoading: false });
+    await flushPromises();
+
+    expect(document.querySelectorAll('#app')).toHaveLength(1);
+    expect(wrapper.get('.app-root').element.id).toBe('');
+    expect(wrapper.get('#main').exists()).toBe(true);
+    expect(wrapper.get('.app-shell').text()).toBe('Authenticated shell');
+    wrapper.unmount();
+  });
+
+  it('uses the application-owned submit-button styling', async () => {
     const wrapper = await mountAuthForm();
 
     const submitButton = wrapper.get('button[type="submit"]');
 
     expect(submitButton.classes()).toContain('auth-submit');
-    expect(submitButton.classes()).not.toContain('btn');
-    expect(submitButton.classes()).not.toContain('btn-primary');
   });
 
   it('submits login through the form when Enter is pressed in a login field', async () => {

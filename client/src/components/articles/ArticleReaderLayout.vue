@@ -9,6 +9,7 @@
     :current-status="currentSelection"
     :selected-tag="selectedTag"
     :refresh-progress="uiStore.feedRefreshProgress"
+    :show-refresh-progress="showFeedRefreshProgress"
     @clear-filters="$emit('clear-filters')"
     @clear-tag="$emit('clear-tag')"
     @refresh-feeds="$emit('refresh-feeds')"
@@ -155,6 +156,7 @@
           v-if="showReaderEndState"
           :unread-count="currentViewUnreadCount"
           :show-actions="showReaderEndStateActions"
+          :show-dismiss="showReaderEndStateDismiss"
           @mark-all-read="$emit('flush-pool')"
           @dismiss="dismissReaderEndState"
         />
@@ -299,6 +301,10 @@ export default {
     distance: {
       type: Number,
       required: true
+    },
+    showFeedRefreshProgress: {
+      type: Boolean,
+      default: true
     }
   },
   data() {
@@ -473,6 +479,10 @@ export default {
         && !this.isFlushed
         && this.currentViewUnreadCount > 0
         && this.hasUnreadArticlesInCurrentView;
+    },
+    // Hides the redundant dismissal action when scrolling automatically marks reviewed articles as read.
+    showReaderEndStateDismiss() {
+      return this.selectionStore.currentSelection.markAsReadOnScroll !== true;
     }
   },
   watch: {
@@ -591,6 +601,12 @@ export default {
         this.$emit('mark-previous-article-read', this.selectedArticleId);
       }
       this.selectedArticleId = articleId;
+      this.$nextTick(() => this.resetReaderArticlePanelScroll());
+    },
+    // Starts each newly selected reader article at the top of its panel.
+    resetReaderArticlePanelScroll() {
+      const articlePanel = this.$refs.readerArticlePanelRef;
+      if (articlePanel) articlePanel.scrollTop = 0;
     },
     // Selects an article by index when keyboard navigation moves through the list.
     selectArticleByIndex(index) {
@@ -737,6 +753,10 @@ export default {
 </script>
 
 <style scoped>
+.readerEmptyState {
+  margin-top: 58px;
+}
+
 .readerLayout {
   box-sizing: border-box;
   display: grid;
@@ -981,10 +1001,13 @@ export default {
   border-color: var(--reader-list-item-hover-border);
 }
 
-.readerArticleListItem:focus,
-.readerArticleListItem:focus-visible {
-  box-shadow: none;
+.readerArticleListItem:focus:not(:focus-visible) {
   outline: none;
+}
+
+.readerArticleListItem:focus-visible {
+  outline: 3px solid var(--border-focus);
+  outline-offset: -3px;
 }
 
 .readerArticleListItemSelected {
@@ -1129,14 +1152,6 @@ export default {
   height: 72px;
   object-fit: cover;
   width: 96px;
-}
-
-.readerArticleListItemMeta {
-  color: var(--text-muted);
-  display: block;
-  font-size: 12px;
-  line-height: 1.35;
-  margin-top: 4px;
 }
 
 .readerArticlePanel {

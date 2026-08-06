@@ -43,7 +43,9 @@ describe('ConfirmDialog', () => {
     expect(dialogWrapper.emitted('confirm')).toHaveLength(1);
     expect(dialogWrapper.emitted('cancel')).toHaveLength(1);
     expect(dialogWrapper.emitted('close')).toHaveLength(1);
-    expect(dialogWrapper.get('.confirm-dialog__confirm').classes()).toContain('btn-danger');
+    expect(dialogWrapper.get('.confirm-dialog__confirm').text()).toBe('Delete');
+    expect(dialogWrapper.get('.confirm-dialog__confirm').classes()).toContain('app-button--danger');
+    expect(dialogWrapper.get('.confirm-dialog__cancel').classes()).toContain('app-button--secondary');
   });
 
   // Verifies busy confirmations disable actions and ignore programmatic duplicate requests.
@@ -63,7 +65,9 @@ describe('ConfirmDialog', () => {
 
     expect(confirmButton.attributes('disabled')).toBeDefined();
     expect(cancelButton.attributes('disabled')).toBeDefined();
-    expect(confirmButton.classes()).toContain('btn-warning');
+    expect(confirmButton.text()).toBe('Delete');
+    expect(confirmButton.classes()).toContain('app-button--warning');
+    expect(confirmButton.attributes('aria-busy')).toBe('true');
     expect(dialogWrapper.emitted('confirm')).toBeUndefined();
     expect(dialogWrapper.emitted('cancel')).toBeUndefined();
     expect(dialogWrapper.emitted('close')).toBeUndefined();

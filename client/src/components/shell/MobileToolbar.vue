@@ -53,37 +53,44 @@
       </div>
       <div class="mobile-toolbar-filters">
         <!-- Read Mode Dropdown -->
-        <div class="dropdown mobile-toolbar-filter">
-      <button class="dropdown-toggle mobile-filter-button" type="button" id="readModeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ currentStatus === 'briefing' ? 'Daily briefing' : capitalize(currentStatus) }} {{ getStatusCount() }}
-      </button>
-      <div class="dropdown-menu" aria-labelledby="readModeDropdown">
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentStatus === 'briefing' }" @click="statusClicked('briefing')">Daily briefing {{ overviewStore.briefingCount }}</button>
-        <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'unread' }" @click="statusClicked('unread')">Unread {{ overviewStore.unreadCount }}</button>
-        <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'favorite' }" @click="statusClicked('favorite')">Favorite {{ overviewStore.favoriteCount }}</button>
-        <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'hot' }" @click="statusClicked('hot')">Hot {{ overviewStore.hotCount }}</button>
-        <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'clicked' }" @click="statusClicked('clicked')">Clicked {{ overviewStore.clickedCount }}</button>
-        <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'read' }" @click="statusClicked('read')">Read {{ overviewStore.readCount }}</button>
-        <li><hr class="dropdown-divider"></li>
-        <button type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'asc' }" @click="sortClicked('asc')">Oldest</button>
-        <button type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'desc' }" @click="sortClicked('desc')">Newest</button>
-        <button type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'trust' }" @click="sortClicked('trust')">Trust</button>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'recommended' }" @click="sortClicked('recommended')">Recommended</button>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'quality' }" @click="sortClicked('quality')">Quality</button>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'attention' }" @click="sortClicked('attention')">Most Engaged</button>
-        <li v-if="isAIEnabled" ><hr class="dropdown-divider"></li>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.grouping === 'none' }" @click="setGrouping('none')">All articles</button>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.grouping === 'event' }" @click="setGrouping('event')">Cluster per event</button>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.grouping === 'topic' }" @click="setGrouping('topic')">Cluster per topic</button>
-      </div>
-    </div>
+        <AppDropdown id="readModeDropdown" :close-key="selectionCloseKey" class="mobile-toolbar-filter">
+          <template #trigger="{ triggerProps }">
+            <button v-bind="triggerProps" class="mobile-filter-button" type="button">
+              {{ currentStatus === 'briefing' ? 'Daily briefing' : capitalize(currentStatus) }} {{ getStatusCount() }}
+            </button>
+          </template>
+          <template #menu="{ menuProps }">
+            <div v-bind="menuProps">
+        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === 'briefing' }" role="menuitem" @click="statusClicked('briefing')">Daily briefing {{ overviewStore.briefingCount }}</button>
+        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === 'unread' }" role="menuitem" @click="statusClicked('unread')">Unread {{ overviewStore.unreadCount }}</button>
+        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === 'favorite' }" role="menuitem" @click="statusClicked('favorite')">Favorite {{ overviewStore.favoriteCount }}</button>
+        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === 'hot' }" role="menuitem" @click="statusClicked('hot')">Hot {{ overviewStore.hotCount }}</button>
+        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === 'clicked' }" role="menuitem" @click="statusClicked('clicked')">Clicked {{ overviewStore.clickedCount }}</button>
+        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === 'read' }" role="menuitem" @click="statusClicked('read')">Read {{ overviewStore.readCount }}</button>
+        <hr class="app-dropdown__divider">
+        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === 'asc' }" role="menuitem" @click="sortClicked('asc')">Oldest</button>
+        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === 'desc' }" role="menuitem" @click="sortClicked('desc')">Newest</button>
+        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === 'trust' }" role="menuitem" @click="sortClicked('trust')">Trust</button>
+        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === 'recommended' }" role="menuitem" @click="sortClicked('recommended')">Recommended</button>
+        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === 'quality' }" role="menuitem" @click="sortClicked('quality')">Quality</button>
+        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === 'attention' }" role="menuitem" @click="sortClicked('attention')">Most Engaged</button>
+        <hr v-if="isAIEnabled" class="app-dropdown__divider">
+        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.grouping === 'none' }" role="menuitem" @click="setGrouping('none')">All articles</button>
+        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.grouping === 'event' }" role="menuitem" @click="setGrouping('event')">Cluster per event</button>
+        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.grouping === 'topic' }" role="menuitem" @click="setGrouping('topic')">Cluster per topic</button>
+            </div>
+          </template>
+        </AppDropdown>
         <!-- Smart Folder Dropdown -->
-        <div class="dropdown mobile-toolbar-filter">
-          <button class="dropdown-toggle mobile-filter-button" type="button" id="smartFoldersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ 'Smart folders' }}
-      </button>
-      <div class="dropdown-menu" aria-labelledby="smartFoldersDropdown">
-        <button type="button" class="dropdown-item" :class="{ active: currentSelection.smartFolderId === null }"
+        <AppDropdown id="smartFoldersDropdown" :close-key="selectionCloseKey" class="mobile-toolbar-filter">
+          <template #trigger="{ triggerProps }">
+            <button v-bind="triggerProps" class="mobile-filter-button" type="button">
+              {{ 'Smart folders' }}
+            </button>
+          </template>
+          <template #menu="{ menuProps }">
+            <div v-bind="menuProps">
+        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.smartFolderId === null }" role="menuitem"
           @click="selectionStore.setSmartFolder(null)"
         >
           {{ 'No smart folder' }}
@@ -91,22 +98,27 @@
         <button
           v-for="folder in smartFolders"
           :key="folder.id"
-          class="dropdown-item"
-          :class="{ active: currentSelection.smartFolderId === folder.id }"
+          class="app-dropdown__item"
+          :class="{ 'app-dropdown__item--active': currentSelection.smartFolderId === folder.id }"
           type="button"
+          role="menuitem"
           @click="selectionStore.setSmartFolder(folder)"
         >
           {{ folder.name }} {{ folder.ArticleCount }}
         </button>
-      </div>
-    </div>
+            </div>
+          </template>
+        </AppDropdown>
         <!-- Categories Dropdown -->
-        <div class="dropdown mobile-toolbar-filter">
-          <button class="dropdown-toggle mobile-filter-button" type="button" id="categoriesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ 'Categories' }}
-      </button>
-      <div class="dropdown-menu" aria-labelledby="categoriesDropdown">
-        <button type="button" class="dropdown-item" :class="{ active: currentSelection.categoryId === '%' }"
+        <AppDropdown id="categoriesDropdown" :close-key="selectionCloseKey" class="mobile-toolbar-filter">
+          <template #trigger="{ triggerProps }">
+            <button v-bind="triggerProps" class="mobile-filter-button" type="button">
+              {{ 'Categories' }}
+            </button>
+          </template>
+          <template #menu="{ menuProps }">
+            <div v-bind="menuProps">
+        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.categoryId === '%' }" role="menuitem"
           @click="selectionStore.selectCategory('%')"
         >
           {{ 'All categories' }}
@@ -114,15 +126,17 @@
         <button
           v-for="category in categories"
           :key="category.id"
-          class="dropdown-item"
-          :class="{ active: Number(currentSelection.categoryId) === category.id }"
+          class="app-dropdown__item"
+          :class="{ 'app-dropdown__item--active': Number(currentSelection.categoryId) === category.id }"
           type="button"
+          role="menuitem"
           @click="selectionStore.selectCategory(category.id)"
         >
           {{ category.name }} {{ getCategoryCount(category) }}
         </button>
-      </div>
-        </div>
+            </div>
+          </template>
+        </AppDropdown>
       </div>
     </nav>
     <div v-if="showSearch" class="mobile-search-panel">
@@ -156,11 +170,20 @@
 }
 
 .mobile-toolbar {
+  --mobile-toolbar-block-start: 8px;
+  --mobile-toolbar-block-end: 8px;
+  --mobile-toolbar-inline-padding: 12px;
+  --mobile-toolbar-row-gap: 8px;
+  --mobile-toolbar-filter-gap: 16px;
+
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: var(--layer-sticky);
+  display: grid;
+  row-gap: var(--mobile-toolbar-row-gap);
   width: 100%;
-  padding: 8px 12px 8px;
+  padding-block: var(--mobile-toolbar-block-start) var(--mobile-toolbar-block-end);
+  padding-inline: var(--mobile-toolbar-inline-padding);
   color: var(--text-primary);
   background-color: var(--desktop-toolbar-background);
   border-bottom: 1px solid var(--border-subtle);
@@ -183,7 +206,7 @@
     position: fixed;
     top: 0;
     right: 0;
-    left: 280px;
+    left: var(--sidebar-width);
     z-index: 9999;
     display: block;
     pointer-events: none;
@@ -217,7 +240,8 @@
 
 .mobile-toolbar-brand-row {
   justify-content: space-between;
-  margin-bottom: 8px;
+  min-width: 0;
+  margin: 0;
 }
 
 .mobile-toolbar-brand {
@@ -264,13 +288,15 @@
 }
 
 .mobile-toolbar-filters {
-  gap: 8px;
+  gap: var(--mobile-toolbar-filter-gap);
+  min-width: 0;
   overflow: visible;
 }
 
 .mobile-toolbar-filter {
-  flex: 0 0 auto;
-  margin-right: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-right: 0;
 }
 
 .mobile-search-panel {
@@ -294,6 +320,7 @@
 }
 
 .mobile-filter-button {
+  max-width: 100%;
   height: 40px;
   padding: 0 6px;
   color: var(--text-primary);
@@ -304,19 +331,14 @@
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
 }
 
-.dropdown-menu.show,
-.dropdown-menu.show .dropdown-item {
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
-}
-
 .mobile-filter-button:hover,
-.mobile-filter-button.show {
+.mobile-filter-button[aria-expanded='true'] {
   color: var(--text-primary);
   background: var(--bg-page);
   border-color: var(--border-strong);
@@ -331,12 +353,19 @@
 }
 
 .mobile-filter-button::after {
+  display: inline-block;
   margin-left: 6px;
+  vertical-align: 0.255em;
+  content: '';
+  border-top: 0.3em solid;
+  border-right: 0.3em solid var(--color-transparent);
+  border-bottom: 0;
+  border-left: 0.3em solid var(--color-transparent);
 }
 
 @media (max-width: 360px) {
-  .mobile-toolbar-filters {
-    gap: 6px;
+  .mobile-toolbar {
+    --mobile-toolbar-filter-gap: 14px;
   }
 
   .mobile-filter-button {
@@ -389,11 +418,18 @@
   }
 }
 
-/* Keeps only the phone portrait brand row compact without affecting the filter dropdowns. */
+/* Lets the toolbar own phone portrait compaction and the filter row's inner alignment. */
 @media (max-width: 879px) and (orientation: portrait) {
+  .mobile-toolbar {
+    --mobile-toolbar-block-start: 0px;
+    --mobile-toolbar-block-end: 8px;
+    --mobile-toolbar-inline-padding: 8px;
+    --mobile-toolbar-row-gap: 0px;
+  }
+
   .mobile-toolbar-brand-row {
-    min-height: 56px;
-    margin: -10px -4px 0px;
+    min-height: 54px;
+    margin: 0;
   }
 
   .mobile-toolbar-brand {
@@ -432,11 +468,21 @@
     border-radius: 8px;
     font-size: 14px;
   }
+
+  .mobile-toolbar-filters {
+    padding-inline: 4px;
+  }
 }
 
 /* Uses the persistent sidebar as the sole brand surface in the hybrid layout. */
 @media (min-width: 768px) and (max-width: 879px) {
   .mobile-toolbar {
+    --mobile-toolbar-block-start: 8px;
+    --mobile-toolbar-block-end: 8px;
+    --mobile-toolbar-inline-padding: 12px;
+    --mobile-toolbar-row-gap: 8px;
+    --mobile-toolbar-filter-gap: 8px;
+
     display: flex;
     align-items: center;
     gap: 8px;
@@ -457,6 +503,7 @@
     flex: 1 1 auto;
     order: 1;
     min-width: 0;
+    padding-inline: 0;
   }
 
   .mobile-toolbar-filter {
@@ -472,11 +519,6 @@
   }
 }
 
-.dropdown-item.active {
-  color: var(--color-primary);
-  background-color: var(--color-primary-soft);
-}
-
 :global(:root[data-theme='dark']) {
   .mobile-toolbar {
     color: var(--text-inverted);
@@ -489,7 +531,7 @@
   .mobile-filter-button,
   .mobile-filter-button:hover,
   .mobile-filter-button:focus,
-  .mobile-filter-button.show {
+  .mobile-filter-button[aria-expanded='true'] {
     color: var(--text-inverted) !important;
   }
 
@@ -504,7 +546,7 @@
   }
 
   .mobile-filter-button:hover,
-  .mobile-filter-button.show {
+  .mobile-filter-button[aria-expanded='true'] {
     background: var(--bg-control);
     border-color: var(--border-strong);
   }
@@ -529,24 +571,6 @@
     color: var(--text-muted);
   }
 
-  .dropdown-menu {
-    background-color: var(--bg-modal);
-    border-color: var(--border-default);
-  }
-
-  .dropdown-item {
-    color: var(--text-secondary);
-  }
-
-  .dropdown-item:hover {
-    background-color: var(--bg-control);
-    color: var(--text-inverted);
-  }
-
-  .dropdown-item.active {
-    background-color: var(--toolbar-active-background);
-    color: var(--text-inverted);
-  }
 }
 
 :global(:root[data-theme='dark'] .mobile-toolbar) {
@@ -560,7 +584,7 @@
 :global(:root[data-theme='dark'] .mobile-filter-button),
 :global(:root[data-theme='dark'] .mobile-filter-button:hover),
 :global(:root[data-theme='dark'] .mobile-filter-button:focus),
-:global(:root[data-theme='dark'] .mobile-filter-button.show) {
+:global(:root[data-theme='dark'] .mobile-filter-button[aria-expanded='true']) {
   color: var(--text-inverted) !important;
 }
 
@@ -575,7 +599,7 @@
 }
 
 :global(:root[data-theme='dark'] .mobile-filter-button:hover),
-:global(:root[data-theme='dark'] .mobile-filter-button.show) {
+:global(:root[data-theme='dark'] .mobile-filter-button[aria-expanded='true']) {
   background: var(--bg-control);
   border-color: var(--border-strong);
 }
@@ -598,25 +622,6 @@
 
 :global(:root[data-theme='dark'] .mobile-search-input::placeholder) {
   color: var(--text-muted);
-}
-
-:global(:root[data-theme='dark'] .dropdown-menu) {
-  background-color: var(--bg-modal);
-  border-color: var(--border-default);
-}
-
-:global(:root[data-theme='dark'] .dropdown-item) {
-  color: var(--text-secondary);
-}
-
-:global(:root[data-theme='dark'] .dropdown-item:hover) {
-  color: var(--text-inverted);
-  background-color: var(--bg-control);
-}
-
-:global(:root[data-theme='dark'] .dropdown-item.active) {
-  color: var(--text-inverted);
-  background-color: var(--toolbar-active-background);
 }
 
 @media (max-width: 879px) {
@@ -643,6 +648,7 @@ import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
 import { useUiStore } from '../../store/ui.js';
+import AppDropdown from '../shared/AppDropdown.vue';
 const MOBILE_LANDSCAPE_WIDTH = 880;
 
 const statusCountMap = {
@@ -655,6 +661,7 @@ const statusCountMap = {
 };
 
 export default {
+  components: { AppDropdown },
   props: {
     refreshing: {
       type: Boolean,
@@ -805,6 +812,11 @@ export default {
     },
     currentSelection() {
       return this.selectionStore.currentSelection;
+    },
+    // This function closes open mobile menus when the active article view changes.
+    selectionCloseKey() {
+      const selection = this.currentSelection;
+      return [selection.status, selection.viewMode, selection.sort, selection.grouping, selection.smartFolderId, selection.categoryId].join(':');
     },
     smartFolders() {
       return this.overviewStore.smartFolders;

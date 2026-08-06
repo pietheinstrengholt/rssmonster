@@ -14,12 +14,12 @@
       </div>
     </section>
 
-    <div v-if="loading" class="settings-islands-loading d-flex align-items-center gap-2 mb-3">
-      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <div v-if="loading" class="settings-islands-loading">
+      <span class="app-loading-indicator app-loading-indicator--small" role="status" aria-hidden="true"></span>
       <span>Loading interest islands...</span>
     </div>
 
-    <div v-else-if="error" class="alert alert-danger mb-3">
+    <div v-else-if="error" class="app-notice app-notice--danger" role="alert">
       {{ error }}
     </div>
 
@@ -66,7 +66,7 @@
         </p>
       </section>
 
-      <div v-if="!islands.length" class="settings-islands-empty alert alert-info mb-3">
+      <div v-if="!islands.length" class="settings-islands-empty app-notice app-notice--info" role="status">
         You do not have any interest islands yet. Favorite articles, click through articles, or keep reading in a topic to grow one.
       </div>
 
@@ -100,10 +100,10 @@
             </div>
 
             <div class="interest-island-badges">
-              <span class="badge text-bg-secondary">
+              <span class="app-status-badge app-status-badge--neutral">
                 {{ formatCountLabel(island.evidenceSignalCount, 'behavioral signal') }}
               </span>
-              <span class="badge" :class="island.archivedInd ? 'text-bg-dark' : 'text-bg-success'">
+              <span class="app-status-badge" :class="island.archivedInd ? 'app-status-badge--dark' : 'app-status-badge--success'">
                 {{ island.archivedInd ? 'Archived' : 'Active' }}
               </span>
             </div>
@@ -130,7 +130,7 @@
                   <span
                     v-for="signal in article.evidence"
                     :key="`${article.id}-${signal.type}`"
-                    class="badge"
+                    class="app-status-badge"
                     :class="evidenceBadgeClass(signal.type)"
                   >
                     {{ signal.label }}
@@ -157,7 +157,7 @@
                   <p>{{ article.feedName || 'Unknown feed' }} &middot; {{ formatDate(article.publishedAt) }}</p>
                 </div>
                 <div class="interest-article-meta">
-                  <span v-if="article.isPopulationSource" class="badge text-bg-primary">Source article</span>
+                  <span v-if="article.isPopulationSource" class="app-status-badge app-status-badge--primary">Source article</span>
                   <small v-for="topic in article.connectionTopics" :key="`${article.id}-topic-${topic.id}`">
                     Via {{ topic.name }}
                   </small>
@@ -178,8 +178,6 @@
   </div>
 </template>
 
-<style src="../../assets/css/settings.css"></style>
-
 <style scoped>
 .settings-islands {
   max-width: 1100px;
@@ -187,6 +185,10 @@
 }
 
 .settings-islands-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
   color: var(--text-muted);
   font-family: var(--font-family);
   font-size: 14px;
@@ -387,12 +389,6 @@
   text-align: right;
 }
 
-.alert-danger {
-  background-color: var(--settings-danger-bg);
-  border-color: var(--settings-danger-border);
-  color: var(--settings-danger-text);
-}
-
 :global(:root[data-theme='dark']) .interest-island-row {
   background: var(--bg-modal);
   border-color: var(--border-default);
@@ -478,12 +474,12 @@ export default {
       const count = Number(value || 0);
       return `${count} ${singular}${count === 1 ? '' : 's'}`;
     },
-    // This function maps behavioral evidence to an existing Bootstrap badge color.
+    // This function maps behavioral evidence to the shared status-badge palette.
     evidenceBadgeClass(type) {
-      if (type === 'favorite' || type === 'positive') return 'text-bg-primary';
-      if (type === 'click' || type === 'deepRead') return 'text-bg-info';
-      if (type === 'negative') return 'text-bg-dark';
-      return 'text-bg-secondary';
+      if (type === 'favorite' || type === 'positive') return 'app-status-badge--primary';
+      if (type === 'click' || type === 'deepRead') return 'app-status-badge--info';
+      if (type === 'negative') return 'app-status-badge--dark';
+      return 'app-status-badge--neutral';
     },
     // This function avoids repeating source articles in the topic-connected list.
     topicRelatedArticles(island) {

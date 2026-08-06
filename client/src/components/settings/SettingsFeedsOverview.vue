@@ -94,7 +94,7 @@
                   <th>Per Day</th>
                   <th>Trust</th>
                   <th>Duplication</th>
-                  <th><span class="visually-hidden">Edit</span></th>
+                  <th><span class="app-visually-hidden">Edit</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -133,8 +133,6 @@
     </template>
   </div>
 </template>
-
-<style src="../../assets/css/settings.css"></style>
 
 <style scoped>
 .feeds-overview {

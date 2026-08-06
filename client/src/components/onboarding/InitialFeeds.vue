@@ -1,42 +1,61 @@
 <template>
   <div class="onboarding">
-    <h2>Welcome to RSSMonster</h2>
+    <header class="onboarding__header">
+      <div class="onboarding__icon" aria-hidden="true">
+        <BootstrapIcon icon="rss-fill" />
+      </div>
+      <div>
+        <p class="onboarding__eyebrow">Quick setup</p>
+        <h2>Welcome to RSSMonster</h2>
+        <p class="onboarding__intro">
+          We’ll add a few high-quality feeds so you can explore
+          Smart Folders, recommended ranking, and clustering.
+        </p>
+      </div>
+    </header>
 
-    <div class="alert alert-info mb-3">
-      <p class="mb-2">
-        We’ll add a few high-quality feeds so you can explore
-        Smart Folders, recommended ranking, and clustering.
-      </p>
-    </div>
+    <section class="onboarding__selection" aria-labelledby="starter-feeds-heading">
+      <div class="onboarding__section-heading">
+        <div>
+          <h3 id="starter-feeds-heading">Choose your starter feeds</h3>
+          <p>You can add, remove, or reorganize feeds at any time.</p>
+        </div>
+      </div>
 
-    <ul class="list-group mb-3">
-      <li
-        v-for="feed in feeds"
-        :key="feed.url"
-        class="list-group-item d-flex align-items-center"
-      >
-        <input
-          type="checkbox"
-          class="form-check-input me-2"
-          v-model="feed.selected"
-          :id="`feed-${feed.url}`"
-        />
-        <label class="mb-0" :for="`feed-${feed.url}`">{{ feed.title }}</label>
-      </li>
-    </ul>
+      <ul class="onboarding__feed-list">
+        <li
+          v-for="feed in feeds"
+          :key="feed.url"
+          class="onboarding__feed-item"
+        >
+          <label class="onboarding__feed-option" :for="`feed-${feed.url}`">
+            <input
+              type="checkbox"
+              v-model="feed.selected"
+              :id="`feed-${feed.url}`"
+            />
+            <span class="onboarding__feed-copy">
+              <span class="onboarding__feed-title">{{ feed.title }}</span>
+              <span class="onboarding__feed-category">{{ feed.category }}</span>
+            </span>
+          </label>
+        </li>
+      </ul>
+    </section>
 
     <div
       v-if="setupMessage"
-      class="alert"
-      :class="`alert-${setupMessageType}`"
+      class="onboarding__message"
+      :class="`onboarding__message--${setupMessageType}`"
       role="alert"
     >
       {{ setupMessage }}
     </div>
 
     <div class="actions">
-      <button type="button" class="btn btn-primary" :disabled="setupPending" @click="start">
+      <button type="button" class="onboarding__start" :disabled="setupPending" @click="start">
         {{ setupPending ? 'Adding selected feeds…' : 'Start with selected feeds' }}
+        <BootstrapIcon v-if="!setupPending" icon="arrow-right" aria-hidden="true" />
       </button>
     </div>
   </div>
@@ -44,7 +63,244 @@
 
 <style scoped>
 .onboarding {
-  margin-top: 60px;
+  box-sizing: border-box;
+  width: min(100%, 1080px);
+  margin: 0 auto;
+  padding: 48px 40px 64px;
+  color: var(--text-primary);
+}
+
+.onboarding__header {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.onboarding__icon {
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--settings-orange-bg);
+  color: var(--color-brand);
+  font-size: 21px;
+}
+
+.onboarding__eyebrow {
+  margin: 1px 0 4px;
+  color: var(--color-brand);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.onboarding h2 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.onboarding__intro {
+  max-width: 680px;
+  margin: 9px 0 0;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.onboarding__selection {
+  margin-top: 36px;
+}
+
+.onboarding__section-heading h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.onboarding__section-heading p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.onboarding__feed-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.onboarding__feed-option {
+  display: flex;
+  min-height: 64px;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.onboarding__feed-option:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+}
+
+.onboarding__feed-option:has(input:checked) {
+  border-color: var(--border-selected);
+  background: var(--color-primary-soft);
+}
+
+.onboarding__feed-option input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.onboarding__feed-option:has(input:focus-visible) {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.onboarding__feed-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.onboarding__feed-title {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onboarding__feed-category {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.onboarding__message {
+  margin-top: 20px;
+  padding: 11px 13px;
+  border: 1px solid var(--border-danger);
+  border-radius: 8px;
+  background: var(--settings-danger-bg);
+  color: var(--settings-danger-text);
+  font-size: 13px;
+}
+
+.onboarding__message--warning {
+  border-color: var(--border-warning);
+  background: var(--settings-orange-bg);
+  color: var(--settings-orange-text);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.onboarding__start {
+  display: inline-flex;
+  min-height: 40px;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--text-inverted);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.onboarding__start:hover:not(:disabled) {
+  border-color: var(--color-primary-hover);
+  background: var(--color-primary-hover);
+}
+
+.onboarding__start:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.onboarding__start:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+:global(:root[data-theme='dark'] .onboarding__feed-option:has(input:checked)) {
+  border-color: var(--border-selected);
+  background: var(--color-primary-surface-dark);
+}
+
+@media (min-width: 880px) {
+  .onboarding {
+    width: 100%;
+    height: calc(100vh - 56px);
+    margin: 56px 0 0;
+    padding: 48px max(40px, calc(50% - 500px)) 64px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+}
+
+@media (max-width: 767px) {
+  .onboarding {
+    padding: 32px 20px 48px;
+  }
+
+  .onboarding__header {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 13px;
+  }
+
+  .onboarding__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    font-size: 18px;
+  }
+
+  .onboarding__selection {
+    margin-top: 30px;
+  }
+
+  .onboarding__feed-list {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    justify-content: stretch;
+  }
+
+  .onboarding__start {
+    width: 100%;
+  }
 }
 </style>
 

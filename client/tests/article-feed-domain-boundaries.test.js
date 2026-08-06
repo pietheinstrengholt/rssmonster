@@ -111,6 +111,68 @@ describe('ArticleFeed visibility tracking', () => {
     expect(context.markArticleSeen).toHaveBeenCalledWith(7, 2);
   });
 
+  it('marks articles passed above the inset full-view scroll container', () => {
+    vi.spyOn(document, 'querySelector').mockImplementation(selector => (
+      selector === '#main-container.expandedArticleLayout'
+        ? { getBoundingClientRect: () => ({ top: 58 }) }
+        : null
+    ));
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue({ overflowY: 'auto' });
+    const context = {
+      ...createFocusedStores({
+        selection: {
+          currentSelection: {
+            status: 'unread',
+            markAsReadOnScroll: true
+          }
+        }
+      }),
+      visibleMap: new Map([[7, true]]),
+      visibleSince: new Map([[7, 1000]]),
+      finalizeVisibleDuration: vi.fn(),
+      addToPool: vi.fn()
+    };
+
+    articleFeedVisibilityMethods.handleArticleIntersections.call(context, [{
+      target: { id: 'article-7' },
+      isIntersecting: false,
+      boundingClientRect: { bottom: 58 }
+    }]);
+
+    expect(context.addToPool).toHaveBeenCalledWith(7);
+  });
+
+  it('uses the browser viewport when the full-view wrapper does not scroll on mobile', () => {
+    vi.spyOn(document, 'querySelector').mockImplementation(selector => (
+      selector === '#main-container.expandedArticleLayout'
+        ? { getBoundingClientRect: () => ({ top: -400 }) }
+        : null
+    ));
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue({ overflowY: 'visible' });
+    const context = {
+      ...createFocusedStores({
+        selection: {
+          currentSelection: {
+            status: 'unread',
+            markAsReadOnScroll: true
+          }
+        }
+      }),
+      visibleMap: new Map([[7, true]]),
+      visibleSince: new Map([[7, 1000]]),
+      finalizeVisibleDuration: vi.fn(),
+      addToPool: vi.fn()
+    };
+
+    articleFeedVisibilityMethods.handleArticleIntersections.call(context, [{
+      target: { id: 'article-7' },
+      isIntersecting: false,
+      boundingClientRect: { bottom: -1 }
+    }]);
+
+    expect(context.addToPool).toHaveBeenCalledWith(7);
+  });
+
   it('keeps passed unread articles unread when automatic scrolling transitions are disabled', () => {
     const context = {
       ...createFocusedStores({

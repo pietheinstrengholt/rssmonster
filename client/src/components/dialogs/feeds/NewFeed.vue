@@ -26,7 +26,7 @@
                         </span>
 
                         <div class="feed-form-content">
-                            <label for="feed-url">Feed or website URL</label>
+                            <label class="app-form-label" for="feed-url">Feed or website URL</label>
                             <input
                                 id="feed-url"
                                 v-model="url"
@@ -34,6 +34,7 @@
                                 inputmode="url"
                                 placeholder="Enter feed or website URL..."
                                 autocomplete="url"
+                                class="app-form-control"
                             >
                             <p class="feed-form-help">Examples: https://example.com/feed, https://example.com</p>
                         </div>
@@ -45,9 +46,9 @@
                         </span>
 
                         <div class="feed-form-content">
-                            <label for="feed-category">Category</label>
+                            <label class="app-form-label" for="feed-category">Category</label>
                             <p class="feed-form-description">Choose a category for this feed.</p>
-                            <select id="feed-category" v-model="selectedCategory" aria-label="Select Category">
+                            <select id="feed-category" v-model="selectedCategory" class="app-form-select" aria-label="Select Category">
                                 <option v-for="category in overviewStore.categories" :value="category.id" :key="category.id" v-bind:id="category.id">{{ category.name }}</option>
                             </select>
                         </div>
@@ -60,9 +61,9 @@
                         </span>
 
                         <div class="feed-form-content">
-                            <label for="feed-crawl-since">Crawl since</label>
+                            <label class="app-form-label" for="feed-crawl-since">Crawl since</label>
                             <p class="feed-form-description">Only fetch articles published within this period.</p>
-                            <select id="feed-crawl-since" v-model="crawlSince" aria-label="Select how far back to crawl">
+                            <select id="feed-crawl-since" v-model="crawlSince" class="app-form-select" aria-label="Select how far back to crawl">
                                 <option value="7d">Last 7 days (default)</option>
                                 <option value="1m">Last 1 month</option>
                                 <option value="3m">Last 3 months</option>
@@ -90,12 +91,12 @@
 
                 <div class="feed-modal-status" aria-live="polite">
                     <span v-if="ajaxRequest">Please wait…</span>
-                    <span class="text-danger" v-if="error_msg">{{ error_msg }}</span>
+                    <span class="feed-modal-error" v-if="error_msg">{{ error_msg }}</span>
                 </div>
 
                 <div v-if="isCloudflare" class="feed-cloudflare-warning">
                     <p>You can still add this feed manually. The feed will be crawled, but may experience intermittent fetch failures due to bot protection.</p>
-                    <button type="button" class="btn btn-warning btn-sm" :disabled="isBusy" @click="forceAdd">
+                    <button type="button" class="app-button app-button--warning app-button--compact" :disabled="isBusy" :aria-busy="forceAdding ? 'true' : 'false'" @click="forceAdd">
                         <BootstrapIcon icon="shield-exclamation" aria-hidden="true" />
                         {{ forceAdding ? 'Adding…' : 'Add feed anyway' }}
                     </button>
@@ -108,8 +109,8 @@
                         </span>
 
                         <div class="feed-form-content">
-                            <label for="inputFeedName">Feed name</label>
-                            <input id="inputFeedName" type="text" v-model="feed.feedName" placeholder="Feed name">
+                            <label class="app-form-label" for="inputFeedName">Feed name</label>
+                            <input id="inputFeedName" type="text" v-model="feed.feedName" class="app-form-control" placeholder="Feed name">
                         </div>
                     </section>
 
@@ -119,8 +120,8 @@
                         </span>
 
                         <div class="feed-form-content">
-                            <label for="inputFeedDescription">Feed description</label>
-                            <input id="inputFeedDescription" type="text" v-model="feed.feedDesc" placeholder="Feed description">
+                            <label class="app-form-label" for="inputFeedDescription">Feed description</label>
+                            <input id="inputFeedDescription" type="text" v-model="feed.feedDesc" class="app-form-control" placeholder="Feed description">
                         </div>
                     </section>
                 </div>
@@ -129,11 +130,11 @@
             </form>
 
         <template #footer>
-            <button type="button" class="base-dialog__button base-dialog__button--secondary btn btn-secondary feed-modal-action" :disabled="isBusy" @click="closeDialog">
+            <button type="button" class="app-button app-button--secondary base-dialog__button base-dialog__button--secondary feed-modal-action" :disabled="isBusy" @click="closeDialog">
                 Cancel
             </button>
 
-            <button v-if="feed.feedName" type="button" class="base-dialog__button base-dialog__button--primary btn btn-primary feed-modal-action" :disabled="isBusy" @click="newFeed">
+            <button v-if="feed.feedName" type="button" class="app-button app-button--primary base-dialog__button base-dialog__button--primary feed-modal-action" :disabled="isBusy" :aria-busy="saving ? 'true' : 'false'" @click="newFeed">
                 <BootstrapIcon icon="check2" aria-hidden="true" />
                 {{ saving ? 'Saving…' : 'Save changes' }}
             </button>
@@ -142,8 +143,9 @@
                 v-else-if="overviewStore.categories.length > 0"
                 type="submit"
                 form="new-feed-form"
-                class="base-dialog__button base-dialog__button--primary btn btn-primary feed-modal-action"
+                class="app-button app-button--primary base-dialog__button base-dialog__button--primary feed-modal-action"
                 :disabled="isBusy || !hasValidUrl"
+                :aria-busy="ajaxRequest ? 'true' : 'false'"
             >
                 {{ ajaxRequest ? 'Validating…' : 'Validate feed' }}
             </button>
@@ -211,27 +213,11 @@
     margin: 0.375rem 0 0;
 }
 
-.feed-form-content input,
-.feed-form-content select {
-    width: 100%;
+.feed-form-content .app-form-control,
+.feed-form-content .app-form-select {
     height: 2.5rem;
-    padding: 0 0.75rem;
-    border: 1px solid var(--border-control);
     border-radius: 0.375rem;
-    background: var(--bg-input);
-    color: var(--text-primary);
     font-size: 0.8125rem;
-}
-
-.feed-form-content input::placeholder {
-    color: var(--text-placeholder);
-}
-
-.feed-form-content input:focus,
-.feed-form-content select:focus {
-    outline: none;
-    border-color: var(--border-focus);
-    box-shadow: 0 0 0 4px var(--overlay-primary-subtle);
 }
 
 .feed-modal-tip {
@@ -286,7 +272,7 @@
     font-size: 14px;
 }
 
-.text-danger {
+.feed-modal-error {
     color: var(--text-error);
 }
 
@@ -330,13 +316,6 @@
 
 :global(:root[data-theme='dark'] .feed-form-icon) {
     background: var(--color-primary-surface-dark);
-}
-
-:global(:root[data-theme='dark']) .feed-form-content input,
-:global(:root[data-theme='dark']) .feed-form-content select {
-    background: var(--bg-control);
-    border-color: var(--border-control);
-    color: var(--text-primary);
 }
 
 :global(:root[data-theme='dark']) .feed-modal-tip {

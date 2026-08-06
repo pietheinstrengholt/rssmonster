@@ -10,27 +10,27 @@
         <template #title>Add new category</template>
         <template #description>Create a category to organize related feeds.</template>
 
-        <div class="mb-4">
-            <label class="form-label" for="new-category-name">Category name</label>
+        <div class="category-dialog__name-field">
+            <label class="app-form-label" for="new-category-name">Category name</label>
             <input
                 id="new-category-name"
                 v-model="categoryName"
-                class="form-control"
+                class="app-form-control"
                 type="text"
                 placeholder="Enter new category name.."
                 :disabled="isPending"
             >
         </div>
         <div>
-            <div class="form-label mb-2">Category icon</div>
+            <div class="app-form-label category-dialog__icon-label">Category icon</div>
             <CategoryIconPicker v-model="iconName" :disabled="isPending" />
         </div>
 
         <template #footer>
-            <button type="button" class="base-dialog__button base-dialog__button--secondary btn btn-secondary" :disabled="isPending" @click="closeDialog">
+            <button type="button" class="app-button app-button--secondary base-dialog__button base-dialog__button--secondary" :disabled="isPending" @click="closeDialog">
                 Close
             </button>
-            <button type="button" class="base-dialog__button base-dialog__button--primary btn btn-primary" :disabled="isSaveDisabled" @click="saveCategory">
+            <button type="button" class="app-button app-button--primary base-dialog__button base-dialog__button--primary" :disabled="isSaveDisabled" @click="saveCategory">
                 Add category
             </button>
         </template>
@@ -109,3 +109,13 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.category-dialog__name-field {
+    margin-bottom: 1.5rem;
+}
+
+.category-dialog__icon-label {
+    margin-bottom: 0.5rem;
+}
+</style>

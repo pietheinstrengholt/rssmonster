@@ -32,7 +32,7 @@ export default {
   background: var(--bg-primary);
   border: 1px solid var(--border-danger);
   border-left: 3px solid var(--border-danger-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   bottom: 20px;
   box-shadow: var(--shadow-modal);
   color: var(--text-primary);
@@ -42,7 +42,7 @@ export default {
   padding: 12px 12px 12px 14px;
   position: fixed;
   right: 20px;
-  z-index: 11000;
+  z-index: var(--layer-notification);
 }
 
 .action-error-notice__icon {
@@ -53,7 +53,7 @@ export default {
 
 .action-error-notice p {
   flex: 1;
-  font-size: 14px;
+  font-size: var(--font-size-ui-default);
   line-height: 1.4;
   margin: 0;
 }
@@ -84,11 +84,9 @@ export default {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .action-error-notice {
-    background: var(--bg-secondary);
-    border-color: var(--border-danger);
-    border-left-color: var(--border-danger-strong);
-  }
+:global(:root[data-theme='dark']) .action-error-notice {
+  background: var(--bg-secondary);
+  border-color: var(--border-danger);
+  border-left-color: var(--border-danger-strong);
 }
 </style>

@@ -15,7 +15,7 @@
     <template #footer>
       <button
         type="button"
-        class="base-dialog__button base-dialog__button--secondary btn btn-secondary confirm-dialog__cancel"
+        class="app-button app-button--secondary confirm-dialog__cancel"
         :disabled="busy"
         autofocus
         @click="requestCancel"
@@ -24,9 +24,10 @@
       </button>
       <button
         type="button"
-        class="base-dialog__button btn confirm-dialog__confirm"
-        :class="[confirmButtonClass, dialogButtonClass]"
+        class="app-button confirm-dialog__confirm"
+        :class="confirmButtonClass"
         :disabled="busy"
+        :aria-busy="busy ? 'true' : 'false'"
         @click="requestConfirm"
       >
         {{ confirmLabel }}
@@ -83,15 +84,9 @@ export default {
     dialogIcon() {
       return this.variant === 'warning' ? 'exclamation-triangle' : 'exclamation-triangle-fill';
     },
-    // This function maps destructive intent to the shared dialog action treatment.
-    dialogButtonClass() {
-      return this.variant === 'warning'
-        ? 'base-dialog__button--warning'
-        : 'base-dialog__button--danger';
-    },
-    // This function maps destructive intent to the corresponding Bootstrap action treatment.
+    // This function maps destructive intent to the shared native button treatment.
     confirmButtonClass() {
-      return this.variant === 'warning' ? 'btn-warning' : 'btn-danger';
+      return this.variant === 'warning' ? 'app-button--warning' : 'app-button--danger';
     }
   },
   methods: {
@@ -116,3 +111,12 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.confirm-dialog__message {
+  font-family: var(--font-family);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.55;
+}
+</style>

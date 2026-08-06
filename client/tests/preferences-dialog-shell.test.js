@@ -39,9 +39,31 @@ describe('PreferencesDialogShell', () => {
 
     const form = wrapper.get('#preferences-form');
     const primaryButton = wrapper.get('.preferences-dialog__button--primary');
+    const secondaryButton = wrapper.get('.preferences-dialog__button--secondary');
 
     expect(primaryButton.attributes('form')).toBe('preferences-form');
     expect(primaryButton.element.form).toBe(form.element);
+    expect(primaryButton.classes()).toEqual(expect.arrayContaining([
+      'app-button',
+      'app-button--primary'
+    ]));
+    expect(secondaryButton.classes()).toEqual(expect.arrayContaining([
+      'app-button',
+      'app-button--secondary'
+    ]));
+  });
+
+  // Verifies the dialog close control uses the compact icon primitive and remains named.
+  it('renders an accessibly named shared icon close control', () => {
+    mountShell({ closeLabel: 'Close reading preferences' });
+
+    const closeButton = wrapper.get('.base-dialog__close');
+
+    expect(closeButton.classes()).toEqual(expect.arrayContaining([
+      'app-icon-button',
+      'app-icon-button--compact'
+    ]));
+    expect(closeButton.attributes('aria-label')).toBe('Close reading preferences');
   });
 
   // Verifies the shared saving rule blocks every user dismissal path.
@@ -60,5 +82,11 @@ describe('PreferencesDialogShell', () => {
     expect(
       wrapper.get('.preferences-dialog__button--secondary').attributes('disabled')
     ).toBeDefined();
+    expect(
+      wrapper.get('.preferences-dialog__button--primary').attributes('disabled')
+    ).toBeDefined();
+    expect(
+      wrapper.get('.preferences-dialog__button--primary').attributes('aria-busy')
+    ).toBe('true');
   });
 });

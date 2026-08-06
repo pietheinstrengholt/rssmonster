@@ -23,10 +23,5 @@
     "label": "Axios vendor chunk",
     "rawBytes": 49000,
     "gzipBytes": 19000
-  },
-  "bootstrapVendor": {
-    "label": "Bootstrap vendor chunk",
-    "rawBytes": 43000,
-    "gzipBytes": 15500
   }
 }

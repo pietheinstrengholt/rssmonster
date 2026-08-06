@@ -42,7 +42,7 @@ describe('ChatAssistant', () => {
   it('shows the unavailable notice when agentic features are disabled', () => {
     const wrapper = mountChatAssistant(false);
 
-    expect(wrapper.get('.alert').text()).toContain('Agentic features are not enabled.');
+    expect(wrapper.get('.app-notice--warning').text()).toContain('Agentic features are not enabled.');
     expect(wrapper.find('#chatTextarea').exists()).toBe(false);
   });
 

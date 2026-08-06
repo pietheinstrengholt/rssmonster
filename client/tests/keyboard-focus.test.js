@@ -202,6 +202,8 @@ describe('keyboard access and focus', () => {
   it('moves focus with reader keyboard navigation', async () => {
     const wrapper = mountReaderLayout();
     await wrapper.setData({ selectedArticleId: 1 });
+    const readerArticlePanel = wrapper.get('.readerArticlePanel').element;
+    readerArticlePanel.scrollTop = 240;
 
     window.dispatchEvent(new KeyboardEvent('keydown', {
       key: 'ArrowDown',
@@ -213,6 +215,7 @@ describe('keyboard access and focus', () => {
     const items = wrapper.findAll('.readerArticleListItem');
     expect(document.activeElement).toBe(items[1].element);
     expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
+    expect(readerArticlePanel.scrollTop).toBe(0);
     wrapper.unmount();
   });
 

@@ -12,21 +12,21 @@
     <section class="actions-list-section" aria-labelledby="actions-list-title" :aria-busy="loading ? 'true' : 'false'">
       <header class="actions-list-heading"><div><h3 id="actions-list-title">Your Actions</h3><p>Actions are evaluated in the order shown below.</p></div><button type="button" class="actions-add-button" :disabled="!loaded || saving" @click="addAction"><BootstrapIcon icon="plus-circle-fill" aria-hidden="true" />Add Action</button></header>
       <div v-if="loading" class="actions-load-state" role="status" aria-live="polite">
-        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        <span class="app-loading-indicator app-loading-indicator--small" aria-hidden="true"></span>
         <span>Loading actions…</span>
       </div>
       <div v-else-if="loadError" class="actions-load-state actions-load-state--error" role="alert">
         <span>{{ loadError }}</span>
-        <button type="button" class="btn btn-outline-secondary btn-sm" @click="fetchActions">Retry</button>
+        <button type="button" class="app-button app-button--outline-secondary app-button--compact" @click="fetchActions">Retry</button>
       </div>
       <div v-else-if="loaded && actions.length" class="actions-list">
         <article v-for="(action, index) in actions" :key="index" class="actions-list-row">
           <BootstrapIcon class="actions-grip" icon="grip-vertical" aria-hidden="true" /><span class="actions-row-icon" :class="actionTypeMeta(action.actionType).iconClass" aria-hidden="true"><BootstrapIcon :icon="actionTypeMeta(action.actionType).icon" /></span>
           <div class="actions-row-fields">
-            <div class="actions-field"><label :for="`action-name-${index}`">Name</label><input :id="`action-name-${index}`" v-model="action.name" type="text" class="form-control" placeholder="Action name" :disabled="saving" /></div>
-            <div class="actions-field"><label :for="`action-type-${index}`">Type</label><div class="actions-type-control"><select :id="`action-type-${index}`" v-model="action.actionType" class="form-select" :disabled="saving"><option value="">Select action type</option><option v-for="actionType in actionTypes" :key="actionType.value" :value="actionType.value">{{ actionType.selectLabel }}</option></select><span v-if="action.actionType" class="actions-type-pill">{{ actionTypeMeta(action.actionType).label }}</span></div></div>
-            <div v-if="action.actionType === 'tag'" class="actions-field"><label :for="`action-tag-${index}`">Tag value</label><input :id="`action-tag-${index}`" v-model="action.tagValue" type="text" class="form-control" placeholder="e.g., important" :disabled="saving" /></div>
-            <div class="actions-field actions-field--regex"><label :for="`action-regex-${index}`">Regular Expression</label><input :id="`action-regex-${index}`" v-model="action.regularExpression" type="text" class="form-control" placeholder="e.g., /keyword|phrase/i" :disabled="saving" /></div>
+            <div class="actions-field"><label :for="`action-name-${index}`">Name</label><input :id="`action-name-${index}`" v-model="action.name" type="text" class="app-form-control" placeholder="Action name" :disabled="saving" /></div>
+            <div class="actions-field"><label :for="`action-type-${index}`">Type</label><div class="actions-type-control"><select :id="`action-type-${index}`" v-model="action.actionType" class="app-form-select" :disabled="saving"><option value="">Select action type</option><option v-for="actionType in actionTypes" :key="actionType.value" :value="actionType.value">{{ actionType.selectLabel }}</option></select><span v-if="action.actionType" class="actions-type-pill">{{ actionTypeMeta(action.actionType).label }}</span></div></div>
+            <div v-if="action.actionType === 'tag'" class="actions-field"><label :for="`action-tag-${index}`">Tag value</label><input :id="`action-tag-${index}`" v-model="action.tagValue" type="text" class="app-form-control" placeholder="e.g., important" :disabled="saving" /></div>
+            <div class="actions-field actions-field--regex"><label :for="`action-regex-${index}`">Regular Expression</label><input :id="`action-regex-${index}`" v-model="action.regularExpression" type="text" class="app-form-control" placeholder="e.g., /keyword|phrase/i" :disabled="saving" /></div>
           </div>
           <div class="actions-row-buttons"><button type="button" class="actions-edit-button" :disabled="saving" :aria-label="`Edit ${action.name || 'action'}`" @click="focusActionName(index)"><BootstrapIcon icon="pencil" aria-hidden="true" /><span>Edit</span></button><button type="button" class="actions-delete-button" :disabled="saving" :aria-label="`Delete ${action.name || 'action'}`" @click="removeAction(index)"><BootstrapIcon icon="trash-fill" aria-hidden="true" /></button></div>
         </article>
@@ -38,7 +38,6 @@
   </div>
 </template>
 
-<style src="../../assets/css/settings.css"></style>
 <style scoped>
 .actions-settings {
   max-width: 1100px;
@@ -273,8 +272,8 @@
   font-weight: 700;
 }
 
-.actions-field .form-control,
-.actions-field .form-select {
+.actions-field .app-form-control,
+.actions-field .app-form-select {
   height: 38px;
   min-width: 0;
   padding: 6px 10px;
@@ -286,7 +285,7 @@
   gap: 6px;
 }
 
-.actions-type-control .form-select {
+.actions-type-control .app-form-select {
   flex: 1;
 }
 
@@ -354,6 +353,8 @@
   margin: 0;
   padding: 36px 24px;
   text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .actions-order-note {

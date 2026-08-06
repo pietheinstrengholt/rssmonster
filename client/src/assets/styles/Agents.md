@@ -66,6 +66,26 @@ Do not introduce new accent colors unless explicitly requested.
 * Dark mode must be designed, not inverted.
 * Ensure normal text meets WCAG AA contrast.
 
+## Structural Tokens
+
+`theme.css` owns both semantic color tokens and the small structural foundation used by shared
+application controls and surfaces. Color tokens describe meaning and theme-dependent presentation;
+structural tokens describe recurring control heights, radii, focus rings, shell dimensions, layers,
+motion timing and default UI type.
+
+Use `--control-height-compact` for dense secondary controls, `--control-height-default` for ordinary
+buttons and fields, and `--control-height-touch` when a primary touch target needs the 44px minimum.
+New shared controls should use these heights before introducing another fixed value.
+
+Map stacking requirements to the semantic `--layer-*` scale. Do not add an arbitrary z-index when an
+existing sticky, dropdown, overlay, dialog or notification layer describes the element's ownership.
+Component-specific dimensions, media geometry, article-content typography and one-off animation
+timing should remain local until they represent a repeated application concept.
+
+RSSMonster intentionally uses semantic components and a small token vocabulary instead of a general
+utility-class framework. Add a token only when multiple owners share the concept; do not create
+spacing or sizing aliases merely to replace every literal.
+
 ---
 
 # Typography

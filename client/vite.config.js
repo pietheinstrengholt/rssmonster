@@ -62,15 +62,6 @@ export default defineConfig({
       replacement: resolve(__dirname, 'node_modules/vue/dist/vue.runtime.esm-bundler.js')
     }]
   },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        quietDeps: true,
-        includePaths: ['node_modules'],
-        silenceDeprecations: ['color-functions', 'global-builtin', 'import'] // Suppress deprecation warnings: https://github.com/twbs/bootstrap/issues/40962
-      }
-    }
-  },
   plugins: [
       vue(),
       bootstrapIconsSprite(),
@@ -102,10 +93,10 @@ export default defineConfig({
       rollupOptions: {
         output: {
           manualChunks(id) {
+            if (id.endsWith('/src/api/settings.js')) return 'settings-api';
             if (id.includes('node_modules')) {
               if (id.includes('/vue/') || id.includes('/@vue/') || id.includes('/pinia/')) return 'vue-vendor';
               if (id.includes('/axios/')) return 'axios-vendor';
-              if (id.includes('/bootstrap/') || id.includes('/@popperjs/')) return 'bootstrap-vendor';
             }
           }
         }
