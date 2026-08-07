@@ -322,7 +322,7 @@
   color: var(--settings-orange-text);
 }
 
-:global(:root[data-theme='dark']) .actions-edit-button:hover {
+:global(:root[data-theme='dark'] .actions-settings .actions-edit-button:hover) {
   background: var(--settings-orange-bg);
   color: var(--settings-orange-text);
 }
@@ -385,32 +385,37 @@
   background: var(--color-primary-hover);
 }
 
-:global(:root[data-theme='dark']) .actions-add-button {
+:global(:root[data-theme='dark'] .actions-settings .actions-type-icon--default) {
+  background: var(--bg-control);
+  color: var(--text-muted);
+}
+
+:global(:root[data-theme='dark'] .actions-settings .actions-add-button) {
   background: var(--settings-orange-bg);
   color: var(--settings-orange-text);
   border: 1px solid var(--settings-orange-border);
 }
 
-:global(:root[data-theme='dark']) .actions-add-button:hover {
+:global(:root[data-theme='dark'] .actions-settings .actions-add-button:hover) {
   background: var(--settings-orange-bg);
   color: var(--settings-orange-text);
 }
 
-:global(:root[data-theme='dark'] .actions-intro-card),
-:global(:root[data-theme='dark'] .actions-list-section),
-:global(:root[data-theme='dark'] .actions-type-card) {
+:global(:root[data-theme='dark'] .actions-settings .actions-intro-card),
+:global(:root[data-theme='dark'] .actions-settings .actions-list-section),
+:global(:root[data-theme='dark'] .actions-settings .actions-type-card) {
   background: var(--bg-modal);
   border-color: var(--border-default);
 }
 
-:global(:root[data-theme='dark']) .actions-list-heading,
-:global(:root[data-theme='dark']) .actions-list-row + .actions-list-row,
-:global(:root[data-theme='dark']) .actions-order-note,
-:global(:root[data-theme='dark']) .actions-note {
+:global(:root[data-theme='dark'] .actions-settings .actions-list-heading),
+:global(:root[data-theme='dark'] .actions-settings .actions-list-row + .actions-list-row),
+:global(:root[data-theme='dark'] .actions-settings .actions-order-note),
+:global(:root[data-theme='dark'] .actions-settings .actions-note) {
   border-color: var(--border-default);
 }
 
-:global(:root[data-theme='dark']) .actions-order-note {
+:global(:root[data-theme='dark'] .actions-settings .actions-order-note) {
   background: var(--bg-control);
 }
 
@@ -449,19 +454,6 @@
     grid-column: 3;
     justify-content: flex-end;
   }
-}
-</style>
-
-<style>
-:root[data-theme="dark"] .actions-settings .actions-type-icon--default { background: var(--bg-control); color: var(--text-muted); }
-:root[data-theme="dark"] .actions-settings .actions-add-button {
-  background: var(--settings-orange-bg);
-  border: 1px solid var(--settings-orange-border);
-  color: var(--settings-orange-text);
-}
-:root[data-theme="dark"] .actions-settings .actions-add-button:hover {
-  background: var(--settings-orange-bg);
-  color: var(--settings-orange-text);
 }
 </style>
 

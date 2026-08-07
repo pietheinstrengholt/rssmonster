@@ -44,7 +44,7 @@
     </div>
 </template>
 
-<style>
+<style scoped>
 div#inputArea {
   margin-top: 70px;
   margin-inline: 15px;
@@ -101,19 +101,19 @@ div#inputArea {
   white-space: pre-wrap;
 }
 
-.assistant-message-content > :first-child {
+.assistant-message-content :deep(> :first-child) {
   margin-top: 0;
 }
 
-.assistant-message-content > :last-child {
+.assistant-message-content :deep(> :last-child) {
   margin-bottom: 0;
 }
 
-.assistant-message-content a {
+.assistant-message-content :deep(a) {
   color: var(--color-link);
 }
 
-.assistant-message-content a:hover {
+.assistant-message-content :deep(a:hover) {
   color: var(--color-link-hover);
 }
 
@@ -185,67 +185,24 @@ div#inputArea {
   opacity: 0.55;
 }
 
-/* Override css that comes from other websites */
-.article-body {
-  max-width: 100% !important;
-}
-
-.article-card .article-content-wrapper img, .article-card .article-content-wrapper figure {
-  display: block;
-  width: 100% !important;
-  height: auto !important;
-  margin-bottom: 10px !important;
-}
-
-.article-card .article-content-wrapper p {
-  display: inline !important;
-}
-
-.article-card .article-body {
-  padding-top: 2px;
-  width: 100%;
-}
-
-.article-card .article-content-wrapper {
-  color: var(--article-content-text);
-  font-size: 14px;
-  margin-bottom: 5px;
-  margin-top: 1px;
-  margin-left: 0px;
-}
-
-.article-card .article-body h5 a {
-  color: var(--article-heading-text);
-  font-weight: 600;
-  font-size: 19px;
-  text-decoration: none;
-  border-bottom: none;
-}
-
-/* Override css that comes from other websites */
-.article-card .article-content-wrapper img {
-  max-width: 100%;
-  height: auto !important;
-}
-
-:root[data-theme='dark'] #chatTextarea {
+:global(:root[data-theme='dark'] #chatTextarea) {
   color: var(--text-primary);
-  background-color: var(--bg-input) !important;
+  background-color: var(--bg-input);
   border-color: var(--border-control);
 }
 
-:root[data-theme='dark'] #chatTextarea:focus {
-  background-color: var(--bg-input) !important;
+:global(:root[data-theme='dark'] #chatTextarea:focus) {
+  background-color: var(--bg-input);
   border-color: var(--border-focus);
   box-shadow: var(--shadow-focus-primary);
 }
 
-:root[data-theme='dark'] .agent-chat-button--secondary {
+:global(:root[data-theme='dark'] .agent-chat-button--secondary) {
   color: var(--color-link);
   border-color: var(--color-link);
 }
 
-:root[data-theme='dark'] .agent-chat-button--secondary:not(:disabled):hover {
+:global(:root[data-theme='dark'] .agent-chat-button--secondary:not(:disabled):hover) {
   color: var(--color-link-hover);
   background: var(--color-primary-surface-dark);
   border-color: var(--color-link-hover);

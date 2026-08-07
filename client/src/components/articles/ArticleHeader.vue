@@ -92,4 +92,125 @@ export default {
 };
 </script>
 
-<style src="./articleSourceIcons.css"></style>
+<style scoped src="./articleSourceIcons.css"></style>
+
+<style scoped>
+.article-header {
+  margin: 0 0 8px;
+  line-height: 1;
+}
+
+.article-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-family);
+  gap: 8px;
+}
+
+.article-header-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.article-header-left svg {
+  margin-bottom: 0 !important;
+}
+
+.article-link {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--article-title-size, 22px);
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  border-bottom: none;
+  display: flex;
+  align-items: center;
+}
+
+.article-header-actions {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.article-read-status-button {
+  align-items: center;
+  background: var(--color-transparent);
+  border: 0;
+  color: var(--article-heading-text);
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  line-height: 1;
+  opacity: 0.7;
+  padding: 0;
+  width: 30px;
+}
+
+.article-read-status-button svg {
+  margin-bottom: 0 !important;
+}
+
+.article-kind-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--article-warning-text);
+  margin-right: 8px;
+  flex-shrink: 0;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.article-kind-icon svg {
+  margin-bottom: 0;
+}
+
+.star-icon {
+  color: var(--article-star-icon);
+}
+
+.clicked-icon {
+  color: var(--article-clicked-icon);
+}
+
+.hot-icon,
+.event-icon {
+  color: var(--article-hot-icon);
+}
+
+.recommendation-icon {
+  color: var(--article-hot-icon);
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.developing-story-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--article-developing-icon);
+  font-size: 0.875rem;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+:global(:root[data-theme='dark'] .article-card .article-header .article-link) {
+  color: var(--text-primary);
+}
+
+:global(:root[data-theme='dark'] .article-card.event-article .article-header) {
+  background-color: var(--article-event-background-dark);
+}
+
+:global(:root[data-theme='dark'] .article-card .developing-story-icon) {
+  color: var(--article-developing-icon);
+}
+</style>

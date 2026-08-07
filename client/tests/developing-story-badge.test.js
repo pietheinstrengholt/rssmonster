@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { shallowMount } from '@vue/test-utils';
+import { mount, shallowMount } from '@vue/test-utils';
 
 import Article from '../src/components/articles/Article.vue';
 import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
@@ -37,7 +37,7 @@ function createStore(viewMode = 'minimal') {
 // This function mounts the compact article row with API-provided developing-story state.
 function mountArticle(id, isDevelopingStory = false) {
   const stores = createStore();
-  return shallowMount(Article, {
+  return mount(Article, {
     props: {
       id,
       title: 'Event coverage',

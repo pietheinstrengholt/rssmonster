@@ -20,3 +20,105 @@ const scoreSeverityClass = score => {
 
 export default { emits: ['select-category', 'select-tag'], props: { categoryName: { type: String, default: '' }, tags: { type: Array, default: () => [] }, roundedQuality: { type: Number, default: 0 }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, qualityScore: { type: Number, default: undefined }, neutralScore: { type: Number, required: true }, scoreLabel: { type: Function, required: true }, showQuality: { type: Boolean, default: false }, showAdvertisement: { type: Boolean, default: false }, showSentiment: { type: Boolean, default: false }, showWritingQuality: { type: Boolean, default: false } }, methods: { formatTagName, scoreSeverityClass } };
 </script>
+
+<style scoped>
+.article-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+
+.tag-badge,
+.tag,
+.score {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.tag-badge,
+.tag {
+  appearance: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.tag-badge {
+  background-color: var(--color-transparent);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+}
+
+.tag {
+  background-color: var(--article-tag-background);
+  border: 1px solid var(--color-transparent);
+  color: var(--badge-tag-text);
+}
+
+.tag.tag-rule {
+  background-color: var(--article-rule-tag-background);
+  color: var(--article-rule-tag-text);
+}
+
+.score {
+  border: 1px solid var(--color-transparent);
+  background-color: var(--bg-subtle);
+  color: var(--article-score-text);
+}
+
+.score.score-poor {
+  background-color: var(--article-score-poor-background);
+  color: var(--article-score-poor-text);
+}
+
+.score.score-medium {
+  background-color: var(--article-score-medium-background);
+  color: var(--article-score-medium-text);
+}
+
+.score.score-good {
+  background-color: var(--article-score-good-background);
+  color: var(--article-score-good-text);
+}
+
+.tag-badge:focus-visible,
+.tag:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  .article-tags {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .tag:not(.tag-rule),
+  .score {
+    display: none;
+  }
+}
+
+:global(:root[data-theme='dark'] .article-card .article-tags .tag-badge) {
+  background-color: var(--color-transparent);
+  color: var(--text-secondary);
+}
+
+:global(:root[data-theme='dark'] .article-card .article-tags .tag) {
+  background-color: var(--article-tag-background-dark);
+  color: var(--article-tag-text-dark);
+}
+
+:global(:root[data-theme='dark'] .article-card .article-tags .tag.tag-rule) {
+  background-color: var(--article-rule-tag-background-dark);
+  color: var(--article-rule-tag-text-dark);
+}
+</style>

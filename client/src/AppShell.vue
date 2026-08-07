@@ -70,13 +70,7 @@
   </div>
 </template>
 
-<style>
-/* Prevents browser-level pull-to-refresh while preserving the app-owned article refresh gesture. */
-html {
-  overscroll-behavior-y: none;
-}
-
-body,
+<style scoped>
 .app-shell,
 #home,
 #sidebar {
@@ -96,7 +90,7 @@ body,
     min-height: 100dvh;
   }
 
-  .mobile-toolbar {
+  :deep(.mobile-toolbar) {
     position: sticky;
     z-index: 9999;
   }
@@ -109,7 +103,7 @@ body,
 }
 
 @media (min-width: 880px) {
-  .mobile-toolbar {
+  :deep(.mobile-toolbar) {
     display: none;
   }
 }
@@ -161,11 +155,9 @@ body,
     display: none;
   }
 
-  :root[data-theme='dark'] {
-    #sidebar {
-      background-color: var(--bg-secondary);
-      --sidebar-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
-    }
+  :global(:root[data-theme='dark'] #sidebar) {
+    background-color: var(--bg-secondary);
+    --sidebar-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
   }
 }
 
@@ -203,34 +195,34 @@ body,
   text-align: center;
 }
 
-html, .app-shell {
+.app-shell {
   background-color: var(--bg-primary);
 }
 
-html, .app-shell, body {
-    height: 100%;
+.app-shell {
+  height: 100%;
 }
 
-:root[data-theme='dark'] {
-  html, .app-shell {
-    background-color: var(--bg-primary);
-  }
+:global(:root[data-theme='dark'] .app-shell) {
+  background-color: var(--bg-primary);
+}
 
-  #home {
-    background: var(--bg-bounce);
-  }
+:global(:root[data-theme='dark'] .app-shell #home) {
+  background: var(--bg-bounce);
+}
 
-  img {
-    filter: brightness(.8) contrast(1.2);
-  }
+:global(:root[data-theme='dark'] .app-shell img) {
+  filter: brightness(.8) contrast(1.2);
+}
 
-  body svg.icon path {
-    fill: var(--text-icon);
-  }
+:global(:root[data-theme='dark'] .app-shell svg.icon path) {
+  fill: var(--text-icon);
+}
 
-  a:visited, a:active, a:link {
-    color: var(--color-link);
-  }
+:global(:root[data-theme='dark'] .app-shell a:visited),
+:global(:root[data-theme='dark'] .app-shell a:active),
+:global(:root[data-theme='dark'] .app-shell a:link) {
+  color: var(--color-link);
 }
 </style>
 

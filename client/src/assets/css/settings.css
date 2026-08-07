@@ -1,3 +1,4 @@
+/* Feature-wide Settings shell styles; keep selectors under .settings-surface except the body scroll lock. */
 .settings-surface {
     position: fixed;
     inset: 0;
@@ -109,12 +110,12 @@ body.settings-overlay-open {
     align-items: center;
     justify-content: center;
     background: var(--color-transparent);
-    color: var(--text-primary) !important;
+    color: var(--text-primary);
     cursor: pointer;
 }
 
 .settings-surface .settings-close-button .bi {
-    color: inherit !important;
+    color: inherit;
 }
 
 .settings-surface .settings-close-button:hover {
@@ -260,7 +261,7 @@ body.settings-overlay-open {
 
 :root[data-theme='dark'] .settings-surface .settings-sidebar-item,
 :root[data-theme='dark'] .settings-surface .settings-close-button {
-    color: var(--text-secondary) !important;
+    color: var(--text-secondary);
 }
 
 :root[data-theme='dark'] .settings-surface .settings-sidebar-item:hover,

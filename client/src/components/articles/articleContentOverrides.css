@@ -1,3 +1,4 @@
+/* Intentionally global compatibility rules for sanitized publisher HTML inside article boundaries. */
 .article-card .article-full-content iframe {
   display: none;
 }
@@ -71,7 +72,20 @@
 }
 
 .article-card .article-full-content a {
+  color: var(--color-link);
   overflow-wrap: anywhere;
+}
+
+.article-card .article-full-content a:hover {
+  color: var(--color-link-hover);
+}
+
+.article-card .article-full-content a:visited {
+  color: var(--color-link-visited);
+}
+
+.article-card .article-full-content a:active {
+  color: var(--color-link-active);
 }
 
 .article-card .article-full-content pre,
@@ -195,6 +209,10 @@
   margin-bottom: 10px !important;
 }
 
+.article-card .article-content-wrapper img {
+  margin-top: 10px;
+}
+
 .article-card .article-content-wrapper figure {
   margin: 0 0 10px !important;
   padding: 0 !important;
@@ -234,4 +252,20 @@
   .article-card .article-content-wrapper img {
     max-width: 80% !important;
   }
+}
+
+:root[data-theme='dark'] .article-card .article-full-content a {
+  color: var(--article-link-dark);
+}
+
+:root[data-theme='dark'] .article-card .article-full-content a:hover {
+  color: var(--article-link-hover-dark);
+}
+
+:root[data-theme='dark'] .article-card .article-full-content a:visited {
+  color: var(--article-link-visited-dark);
+}
+
+:root[data-theme='dark'] .article-card .article-full-content a:active {
+  color: var(--article-link-active-dark);
 }

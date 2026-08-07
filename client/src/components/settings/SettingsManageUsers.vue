@@ -178,12 +178,12 @@
   max-width: 760px;
 }
 
-:global(:root[data-theme='dark']) .manage-users__insight-card {
+:global(:root[data-theme='dark'] .manage-users .manage-users__insight-card) {
   background: var(--bg-modal);
   border-color: var(--border-default);
 }
 
-:global(:root[data-theme='dark']) .manage-users__insight-icon {
+:global(:root[data-theme='dark'] .manage-users .manage-users__insight-icon) {
   background: var(--bg-control);
 }
 
@@ -247,7 +247,7 @@
 }
 
 .manage-users__actions-heading {
-  text-align: right !important;
+  text-align: right;
 }
 
 .manage-users__identity {
@@ -339,12 +339,12 @@
   opacity: 0.45;
 }
 
-:global(:root[data-theme='dark']) .manage-users__action:not(:disabled):hover {
+:global(:root[data-theme='dark'] .manage-users .manage-users__action:not(:disabled):hover) {
   background: var(--settings-orange-bg);
   color: var(--settings-orange-text);
 }
 
-:global(:root[data-theme='dark']) .manage-users__action--remove:not(:disabled):hover {
+:global(:root[data-theme='dark'] .manage-users .manage-users__action--remove:not(:disabled):hover) {
   background: var(--settings-danger-bg);
   color: var(--settings-danger-text);
 }
@@ -522,28 +522,28 @@
   margin: 0;
 }
 
-:global(:root[data-theme='dark']) .manage-users__table-wrap {
-  background: var(--bg-modal) !important;
+:global(:root[data-theme='dark'] .manage-users .manage-users__table-wrap),
+:global(:root[data-theme='dark'] .manage-users .manage-users__table),
+:global(:root[data-theme='dark'] .manage-users .manage-users__table thead),
+:global(:root[data-theme='dark'] .manage-users .manage-users__table tbody),
+:global(:root[data-theme='dark'] .manage-users .manage-users__table tbody tr) {
+  background: var(--bg-modal);
   border-color: var(--border-default);
 }
 
-:global(:root[data-theme='dark']) .manage-users__table,
-:global(:root[data-theme='dark']) .manage-users__table tbody,
-:global(:root[data-theme='dark']) .manage-users__table tbody tr {
-  background: var(--bg-modal) !important;
-}
-
-:global(:root[data-theme='dark']) .manage-users__table th {
+:global(:root[data-theme='dark'] .manage-users .manage-users__table th) {
   background: var(--bg-control);
   color: var(--text-secondary);
 }
 
-:global(:root[data-theme='dark']) .manage-users__table td {
+:global(:root[data-theme='dark'] .manage-users .manage-users__table td) {
+  background: var(--bg-modal);
   border-color: var(--border-subtle);
-  color: var(--text-secondary);
+  color: var(--text-inverted);
 }
 
-:global(:root[data-theme='dark']) .manage-users__table tbody tr:hover {
+:global(:root[data-theme='dark'] .manage-users .manage-users__table tbody tr:hover),
+:global(:root[data-theme='dark'] .manage-users .manage-users__table tbody tr:hover td) {
   background: var(--bg-control);
 }
 
@@ -563,33 +563,6 @@
   .manage-users__actions {
     gap: 0;
   }
-}
-</style>
-
-<style>
-:root[data-theme="dark"] .manage-users .manage-users__table-wrap,
-:root[data-theme="dark"] .manage-users .manage-users__table,
-:root[data-theme="dark"] .manage-users .manage-users__table thead,
-:root[data-theme="dark"] .manage-users .manage-users__table tbody,
-:root[data-theme="dark"] .manage-users .manage-users__table tbody tr {
-  background: var(--bg-modal) !important;
-  border-color: var(--border-default) !important;
-}
-
-:root[data-theme="dark"] .manage-users .manage-users__table th {
-  background: var(--bg-control) !important;
-  color: var(--text-secondary) !important;
-}
-
-:root[data-theme="dark"] .manage-users .manage-users__table td {
-  background: var(--bg-modal) !important;
-  border-color: var(--border-subtle) !important;
-  color: var(--text-inverted) !important;
-}
-
-:root[data-theme="dark"] .manage-users .manage-users__table tbody tr:hover,
-:root[data-theme="dark"] .manage-users .manage-users__table tbody tr:hover td {
-  background: var(--bg-control) !important;
 }
 </style>
 

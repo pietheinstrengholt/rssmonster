@@ -31,3 +31,81 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.article-actions__trigger {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: var(--color-transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--article-heading-text);
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.article-actions__trigger:hover {
+  opacity: 1;
+  background-color: var(--color-transparent);
+}
+
+.article-actions__trigger:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.app-dropdown__menu {
+  min-width: 120px !important;
+  z-index: 1041;
+}
+
+.app-dropdown__item {
+  color: var(--toolbar-text) !important;
+  font-size: 14px !important;
+  font-weight: 500;
+  padding: 6px 8px !important;
+}
+
+.app-dropdown__item:hover,
+.app-dropdown__item:focus-visible {
+  color: var(--text-inverted) !important;
+}
+
+.recommendation-action-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recommendation-action-icon {
+  width: 14px;
+  flex: 0 0 auto;
+}
+
+.recommendation-positive-icon {
+  color: var(--recommendation-positive-icon);
+}
+
+.recommendation-negative-icon,
+.recommendation-ignore-icon {
+  color: var(--color-danger);
+}
+
+:global(:root[data-theme='dark'] .article-actions__trigger) {
+  color: var(--text-inverted);
+  opacity: 0.9;
+}
+
+:global(:root[data-theme='dark'] .article-actions .app-dropdown__item) {
+  color: var(--toolbar-text) !important;
+}
+
+:global(:root[data-theme='dark'] .article-actions .app-dropdown__item:hover),
+:global(:root[data-theme='dark'] .article-actions .app-dropdown__item:focus-visible) {
+  background-color: var(--bg-modal);
+  color: var(--toolbar-text) !important;
+}
+</style>

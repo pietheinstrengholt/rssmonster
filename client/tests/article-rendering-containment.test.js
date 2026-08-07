@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 
 import Article from '../src/components/articles/Article.vue';
+import articleActionsSource from '../src/components/articles/ArticleActionsMenu.vue?raw';
 import articleSource from '../src/components/articles/Article.vue?raw';
 import readerLayoutSource from '../src/components/articles/ArticleReaderLayout.vue?raw';
 import { createFocusedStores } from './helpers/focusedStores.js';
@@ -78,8 +79,8 @@ describe('Article rendering containment', () => {
 
   // Verifies an open actions menu escapes article containment and stacks above surrounding content.
   it('raises an article while its actions menu is open', () => {
-    expect(articleSource).toMatch(/\.article-card:has\(\.article-actions \.app-dropdown__menu--open\)\s*\{[^}]*content-visibility:\s*visible;[^}]*position:\s*relative;[^}]*z-index:\s*1040;/s);
-    expect(articleSource).toMatch(/\.article-card \.article-actions \.app-dropdown__menu\s*\{[^}]*z-index:\s*1041;/s);
+    expect(articleSource).toMatch(/\.article-card:has\(\.article-actions \.app-dropdown__menu--open\)\)\s*\{[^}]*content-visibility:\s*visible;[^}]*position:\s*relative;[^}]*z-index:\s*1040;/s);
+    expect(articleActionsSource).toMatch(/\.app-dropdown__menu\s*\{[^}]*z-index:\s*1041;/s);
   });
 
   // Verifies keyboard focus is visible on both compact and Reader article rows.

@@ -1,7 +1,7 @@
 <template>
   <div v-if="viewMode === 'full' || viewMode === 'reader'" class="article-content-wrapper" :class="{ 'article-content-with-thumbnail': shouldShowFallbackImage && isInlineLeadImage }"><div v-if="shouldShowFallbackImage" :class="['media-content', 'enclosure', 'article-lead-image', `article-lead-image--${imageDisplayMode}`]" :style="thumbnailStyle"><img class="article-lead-image__media" :src="imageUrl" :width="leadImageDimensions.width || undefined" :height="leadImageDimensions.height || undefined" alt="" loading="lazy" decoding="async" @load="handleLeadImageLoad" @error="handleLeadImageError" /></div><div v-if="hasContent" class="article-full-content" v-html="renderedContent"></div></div>
   <div v-else-if="viewMode === 'summarized'" class="article-content-wrapper"><p v-if="hasContent" class="article-full-content">{{ stripHTML(content) }}</p></div>
-  <div v-else-if="viewMode === 'minimal' && showMinimalContent" class="article-content-wrapper"><div v-if="hasContent" class="article-full-content" v-html="renderedContent"></div></div>
+  <div v-else-if="viewMode === 'minimal' && showMinimalContent" class="article-content-wrapper article-content-wrapper--minimal"><div v-if="hasContent" class="article-full-content" v-html="renderedContent"></div></div>
   <div v-else-if="viewMode === 'summaryBullets'" class="article-content-wrapper"><ul v-if="contentSummaryBullets && contentSummaryBullets.length" class="article-summary"><li v-for="(bullet, index) in contentSummaryBullets.slice(0, visibleBulletCount)" :key="index">{{ bullet }}</li></ul><p v-else class="article-full-content">No summary available.</p></div>
 </template>
 <script>
@@ -261,6 +261,59 @@ export default {
 </script>
 
 <style scoped>
+.article-content-wrapper {
+  color: var(--text-primary);
+  padding-top: 6px;
+  font-size: 14px;
+  line-height: 1.65;
+  font-weight: 400;
+  margin: 1px 0 5px;
+}
+
+.article-full-content {
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.65;
+  font-weight: 400;
+}
+
+.article-content-wrapper--minimal {
+  margin: 0;
+  padding: 10px 16px 12px 70px;
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--article-border, var(--border-subtle));
+}
+
+.article-summary {
+  margin: 5px 0;
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.article-summary li {
+  color: var(--article-content-text);
+  font-family: var(--font-family);
+  font-size: 14px;
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+:global(:root[data-theme='dark'] .article-card .article-content-wrapper) {
+  color: var(--text-primary);
+  background: var(--dark-page-surface);
+  border-color: var(--dark-page-surface);
+  border-bottom-color: var(--border-subtle);
+}
+
+:global(:root[data-theme='dark'] .article-card.event-article .article-content-wrapper) {
+  background-color: var(--article-event-background-dark);
+}
+
+:global(:root[data-theme='dark'] .article-card .article-summary li) {
+  color: var(--article-content-text);
+}
+
 .article-lead-image {
   margin: 0 0 14px;
 }
@@ -357,5 +410,17 @@ export default {
     object-fit: cover;
     object-position: center;
   }
+}
+
+@media (max-width: 879px) and (orientation: portrait) {
+  .article-content-wrapper--minimal {
+    padding-left: 40px;
+    padding-right: 10px;
+  }
+}
+
+:global(:root[data-theme='dark'] .article-card .article-content-wrapper--minimal) {
+  background: var(--dark-bg-page, var(--dark-page-surface));
+  border-bottom-color: var(--border-subtle);
 }
 </style>

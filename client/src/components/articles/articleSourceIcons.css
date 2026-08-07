@@ -28,27 +28,27 @@
 }
 
 /* Dark-theme adjustments preserve each identity while maintaining icon visibility. */
-:root[data-theme='dark'] .media-video-icon {
+:global(:root[data-theme='dark'] .article-header .media-video-icon) {
   color: #991b1b;
 }
 
-:root[data-theme='dark'] .podcast-icon {
+:global(:root[data-theme='dark'] .article-header .podcast-icon) {
   color: #1e3a8a;
 }
 
-:root[data-theme='dark'] .bluesky-icon {
+:global(:root[data-theme='dark'] .article-header .bluesky-icon) {
   color: #0866c6;
 }
 
-:root[data-theme='dark'] .reddit-icon {
+:global(:root[data-theme='dark'] .article-header .reddit-icon) {
   color: #b83200;
 }
 
-:root[data-theme='dark'] .github-icon,
-:root[data-theme='dark'] .medium-icon {
+:global(:root[data-theme='dark'] .article-header .github-icon),
+:global(:root[data-theme='dark'] .article-header .medium-icon) {
   color: #fff;
 }
 
-:root[data-theme='dark'] .mastodon-icon {
+:global(:root[data-theme='dark'] .article-header .mastodon-icon) {
   color: #4547d9;
 }

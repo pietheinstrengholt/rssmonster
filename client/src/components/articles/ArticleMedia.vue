@@ -199,7 +199,7 @@ export default {
   }
 }
 
-:global(:root[data-theme='dark']) .article-media-link {
+:global(:root[data-theme='dark'] .article-card .article-media-link) {
   border-color: var(--border-media-overlay);
 }
 </style>

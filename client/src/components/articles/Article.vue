@@ -5,44 +5,45 @@
         <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-x-fill' : 'bookmark-fill'" aria-hidden="true" />
         <span>{{ favoriteInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
       </div>
-      <div class="article-list-row mobile-swipe-content" :class="{ 'is-read': status === 'read', favorited: favoriteInd === 1, hot: hotInd === 1 }" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
-      <button class="article-list-status" type="button" :aria-label="statusToggleLabel" :title="statusToggleLabel" @click.stop="toggleMinimalReadStatus">
-        <BootstrapIcon :icon="status === 'read' ? 'circle-fill' : 'record-circle-fill'" aria-hidden="true" />
-      </button>
-      <div class="article-list-source" aria-hidden="true">
-        <img v-if="feedFavicon" :src="feedFavicon" class="favicon" alt="" />
-        <BootstrapIcon v-else icon="rss-fill" />
-      </div>
-      <div class="article-list-main">
-        <h5 class="article-list-title">
-          <a class="article-link" target="_blank" :href="url" v-text="title" @click="articleClicked"></a>
-        </h5>
-        <div class="article-list-meta">
-          <span class="article-list-feed">{{ author || feed.feedName }}</span>
-          <span class="article-list-dot">·</span>
-          <span v-if="!isEventArticle && event && eventArticleCountTotal > 1 && selectionStore.currentSelection.grouping !== 'none' && event.sourceCount >= 2" class="source-badge" :title="`${event.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ event.sourceCount }} sources</span>
-          <BootstrapIcon v-if="isDevelopingStory" icon="lightning-charge-fill" class="developing-story-icon" title="Developing story" aria-label="Developing story" />
-          <button v-if="!isEventArticle && event && eventArticleCountTotal > 1 && selectionStore.currentSelection.grouping !== 'none'" type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="viewEventArticles(event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
-          <button v-if="duplicateCount > 0" type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="viewDuplicateArticles">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>
-          <button v-for="tag in ruleTags" :key="'list-rule-' + tag.id" type="button" class="tag tag-rule" :aria-label="`Filter articles by tag ${formatTagName(tag.name)}`" @click.stop="selectTag(tag)">{{ formatTagName(tag.name) }}</button>
-        </div>
-        <div v-if="!hasArticlePreview" class="article-preview-empty">
-          <span class="article-preview-empty__message">No preview available</span>
-          <span aria-hidden="true" class="article-preview-empty__separator">-</span>
-          <a :href="url" class="article-preview-empty__link" target="_blank" rel="noopener noreferrer" aria-label="Open original article in a new tab" @click.stop="articleClicked">
-            <span>Open original article</span>
-            <BootstrapIcon icon="box-arrow-up-right" aria-hidden="true" />
-          </a>
-        </div>
-      </div>
-      <div class="article-list-actions">
-        <span class="article-list-time">{{ formatDate(publishedAt) }}</span>
-        <ArticleActionsMenu :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
-        <button class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" :disabled="favoriteMutationPending" @click.stop="markAsFavorite">
-          <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
-        </button>
-      </div>
-      </div>
+      <ArticleHeadlineRow
+        :url="url"
+        :title="title"
+        :status="status"
+        :favorite-ind="favoriteInd"
+        :favorite-pending="favoriteMutationPending"
+        :hot-ind="hotInd"
+        :mobile-swipe-style="mobileSwipeStyle"
+        :feed-favicon="feedFavicon"
+        :source-label="author || feed.feedName"
+        :event-id="event?.id"
+        :source-count="event?.sourceCount || 0"
+        :event-article-count-total="eventArticleCountTotal"
+        :grouping="selectionStore.currentSelection.grouping"
+        :is-event-article="isEventArticle"
+        :is-developing-story="isDevelopingStory"
+        :duplicate-count="duplicateCount"
+        :event-expanded="eventExpanded"
+        :duplicates-expanded="duplicatesExpanded"
+        :tags="tags || []"
+        :published-at="publishedAt"
+        :has-article-preview="hasArticlePreview"
+        @article-clicked="articleClicked"
+        @article-touched="articleTouched"
+        @swipe-touch-start="onSwipeTouchStart"
+        @swipe-touch-move="onSwipeTouchMove"
+        @swipe-touch-end="onSwipeTouchEnd"
+        @swipe-cancel="resetSwipe"
+        @toggle-read-status="toggleMinimalReadStatus"
+        @view-event-articles="viewEventArticles"
+        @view-duplicate-articles="viewDuplicateArticles"
+        @select-tag="selectTag"
+        @toggle-favorite="markAsFavorite"
+        @not-interested="markNotInterested"
+        @more-like-this="moreLikeThis"
+        @less-like-this="lessLikeThis"
+        @ignore-topic="ignoreTopic"
+        @mute-feed="muteFeedSevenDays"
+      />
     </div>
     <div v-else class="mobile-swipe-shell">
       <div class="mobile-swipe-action" aria-hidden="true">
@@ -56,14 +57,7 @@
             <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" />
             <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
           </div>
-          <div v-if="!hasArticlePreview" class="article-preview-empty">
-            <span class="article-preview-empty__message">No preview available</span>
-            <span aria-hidden="true" class="article-preview-empty__separator">-</span>
-            <a :href="url" class="article-preview-empty__link" target="_blank" rel="noopener noreferrer" aria-label="Open original article in a new tab" @click.stop="articleClicked">
-              <span>Open original article</span>
-              <BootstrapIcon icon="box-arrow-up-right" aria-hidden="true" />
-            </a>
-          </div>
+          <ArticlePreviewFallback v-if="!hasArticlePreview" :url="url" @open-original="articleClicked" />
           <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
             <template v-for="(signal, index) in articleSignals" :key="signal.label">
               <span v-if="index > 0" class="signal-divider" aria-hidden="true"></span>
@@ -92,8 +86,9 @@ import ArticleHeader from './ArticleHeader.vue';
 import ArticleMeta from './ArticleMeta.vue';
 import ArticleTagsScores from './ArticleTagsScores.vue';
 import ArticleContent from './ArticleContent.vue';
+import ArticleHeadlineRow from './ArticleHeadlineRow.vue';
 import ArticleMedia from './ArticleMedia.vue';
-import ArticleActionsMenu from './ArticleActionsMenu.vue';
+import ArticlePreviewFallback from './ArticlePreviewFallback.vue';
 import { articleActionMethods } from './helpers/articleActions.js';
 import {
   createArticleExpansionState,
@@ -106,14 +101,13 @@ import {
   articleMobileSwipeMethods
 } from './helpers/mobileSwipe.js';
 import { formatRelativeDate } from '../../utils/date';
-import { formatTagName } from '../../utils/tags';
 import { hasRenderableContent } from '../../utils/content';
 
 const NEUTRAL_SCORE = 70;
 
 export default {
   inheritAttrs: false,
-  components: { ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent, ArticleMedia, ArticleActionsMenu },
+  components: { ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent, ArticleHeadlineRow, ArticleMedia, ArticlePreviewFallback },
   emits: ['update-favorite', 'update-clicked', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'event-articles-loaded', 'event-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed', 'article-not-interested'],
   props: {
     id: { type: [Number, String], required: true },
@@ -218,10 +212,6 @@ export default {
       ].forEach(attribute => delete attrs[attribute]);
       return attrs;
     },
-    // Returns tags that were assigned by rules.
-    ruleTags() {
-      return (this.tags || []).filter(t => t.tagType === 'rule');
-    },
     // Returns the article feed's category name.
     categoryName() {
       if (!this.feed?.categoryId) return '';
@@ -316,14 +306,6 @@ export default {
     isMinimalView() {
       return this.selectionStore.currentSelection.viewMode === 'minimal';
     },
-    // Returns the accessible label for the favorite toggle.
-    favoriteLabel() {
-      return this.favoriteInd === 1 ? 'Unmark favorite' : 'Mark as favorite';
-    },
-    // Returns the accessible label for the compact read status control.
-    statusToggleLabel() {
-      return this.status === 'read' ? 'Mark article as unread' : 'Mark article as read';
-    },
     // Returns whether the minimal content panel should be visible.
     shouldShowMinimalContent() {
       return this.isMinimalView ? this.isMinimalContentOpen : this.showMinimalContent;
@@ -348,8 +330,6 @@ export default {
     ...articleExpansionMethods,
     ...articleMobileSwipeMethods,
 
-    // Formats stored tag names for display.
-    formatTagName,
     // Converts score values stored as either 0-1 or 0-100 into percentages.
     scoreAsPercent(value) {
       const score = Number(value);
@@ -424,37 +404,17 @@ export default {
 
 <style src="./articleContentOverrides.css"></style>
 
-<style>
+<style scoped>
 .article-body.affinity-muted {
   opacity: 0.55;
 }
 
-.article-body.affinity-compact h5 a {
-  font-size: 17px;
+.article-body.affinity-compact {
+  --article-title-size: 17px;
 }
 
-.article-body.affinity-expanded h5 a {
-  font-size: 20px;
-}
-
-.recommendation-action-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-  
-.recommendation-action-icon {
-  width: 14px;
-  flex: 0 0 auto;
-}
-
-.recommendation-positive-icon {
-  color: var(--recommendation-positive-icon);
-}
-
-.recommendation-negative-icon,
-.recommendation-ignore-icon {
-  color: var(--color-danger);
+.article-body.affinity-expanded {
+  --article-title-size: 20px;
 }
 
 /* Landscape phones and portrait tablets */
@@ -485,7 +445,7 @@ export default {
 }
 
 /* Lets an open article menu escape rendering containment and overlay surrounding content. */
-.article-card:has(.article-actions .app-dropdown__menu--open) {
+:global(.article-card:has(.article-actions .app-dropdown__menu--open)) {
   content-visibility: visible;
   position: relative;
   z-index: 1040;
@@ -503,45 +463,6 @@ export default {
   border-color: var(--article-highlight-border);
 }
 
-.article-kind-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  color: var(--article-warning-text);
-  margin-right: 8px;
-  flex-shrink: 0;
-  line-height: 1;
-  vertical-align: middle;
-}
-
-.article-kind-icon svg {
-  margin-bottom: 0;
-}
-
-.star-icon {
-  color: var(--article-star-icon);
-}
-
-.clicked-icon {
-  color: var(--article-clicked-icon);
-}
-
-.hot-icon {
-  color: var(--article-hot-icon);
-}
-
-.event-icon {
-  color: var(--article-hot-icon);
-}
-
-.recommendation-icon {
-  color: var(--article-hot-icon);
-  font-size: 0.85rem;
-  opacity: 0.8;
-}
-
 .article-card .article-body {
   padding: 4px 48px 4px 16px;
   font-family: var(--font-family);
@@ -555,40 +476,18 @@ export default {
   background-color: var(--border-subtle);
 }
 
-:root[data-theme='dark'] .article-divider {
+:global(:root[data-theme='dark'] .article-card .article-divider) {
   background-color: var(--border-subtle);
 }
 
-:root[data-theme='dark'] .article-card .article-body {
+:global(:root[data-theme='dark'] .article-card .article-body) {
   background-color: var(--dark-page-surface);
   border-bottom-color: var(--border-subtle);
 }
 
-:root[data-theme='dark'] .article-card .article-body h5 a {
-  color: var(--text-primary);
-}
-
-:root[data-theme='dark'] .article-card .article-full-content {
-  color: var(--article-content-text);
-}
-
-:root[data-theme='dark'] .article-card.event-article,
-:root[data-theme='dark'] .article-card.event-article .article-body,
-:root[data-theme='dark'] .article-card.event-article .article-content-wrapper,
-:root[data-theme='dark'] .article-card.event-article h5.article-header,
-:root[data-theme='dark'] .article-card.event-article .article-meta {
+:global(:root[data-theme='dark'] .article-card.event-article),
+:global(:root[data-theme='dark'] .article-card.event-article .article-body) {
   background-color: var(--article-event-background-dark);
-}
-
-:root[data-theme='dark'] .article-card .article-meta,
-:root[data-theme='dark'] .article-card .article-meta .article-published,
-:root[data-theme='dark'] .article-card .article-meta .article-source a {
-  color: var(--text-secondary);
-}
-
-:root[data-theme='dark'] .article-card .article-actions__trigger {
-  color: var(--text-secondary);
-  opacity: 0.9;
 }
 
 .article-card .meta-row {
@@ -634,253 +533,14 @@ export default {
   width: 1px;
 }
 
-:root[data-theme='dark'] .article-signal-bar {
+:global(:root[data-theme='dark'] .article-card .article-signal-bar) {
   background: var(--article-signal-surface);
   border-color: var(--article-signal-border);
   color: var(--article-signal-text);
 }
 
-:root[data-theme='dark'] .signal-divider {
+:global(:root[data-theme='dark'] .article-card .signal-divider) {
   background: var(--article-signal-divider);
-}
-
-.article-card .article-content-wrapper {
-  color: var(--text-primary);
-  padding-top: 6px;
-  font-size: 14px;
-  line-height: 1.65;
-  font-weight: 400;
-  margin-bottom: 5px;
-  margin-top: 1px;
-  margin-left: 0px;
-}
-
-.article-card .article-full-content {
-  font-family: var(--font-family);
-  color: var(--text-primary);
-  font-size: 14px;
-  line-height: 1.65;
-  font-weight: 400;
-}
-
-.article-card .article-full-content a,
-.article-card .article-content-wrapper a {
-  color: var(--color-link);
-}
-
-.article-card .article-full-content a:hover,
-.article-card .article-content-wrapper a:hover {
-  color: var(--color-link-hover);
-}
-
-.article-card .article-full-content a:visited,
-.article-card .article-content-wrapper a:visited {
-  color: var(--color-link-visited);
-}
-
-.article-card .article-full-content a:active,
-.article-card .article-content-wrapper a:active {
-  color: var(--color-link-active);
-}
-
-.article-card .article-body h5 a {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 22px;
-  line-height: 1;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  text-decoration: none;
-  border-bottom: none;
-  display: flex;
-  align-items: center;
-  line-height: 1.25;
-}
-
-.article-card .article-body h5.article-header {
-  margin: 0;
-  line-height: 1;
-  margin-bottom: 8px;
-}
-
-.article-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-family: var(--font-family);
-  gap: 8px;
-}
-
-.article-header-left {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  min-width: 0;
-}
-
-.article-header-left svg {
-  margin-bottom: 0 !important;
-}
-
-.article-header-actions {
-  align-items: center;
-  display: flex;
-  flex-shrink: 0;
-  gap: 2px;
-}
-
-.article-read-status-button {
-  align-items: center;
-  background: var(--color-transparent);
-  border: 0;
-  color: var(--article-heading-text);
-  display: inline-flex;
-  height: 30px;
-  justify-content: center;
-  line-height: 1;
-  opacity: 0.7;
-  padding: 0;
-  width: 30px;
-}
-
-.article-read-status-button svg {
-  margin-bottom: 0 !important;
-}
-
-.article-card .article-actions__trigger {
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: none;
-  background: var(--color-transparent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--article-heading-text);
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.article-card .article-actions__trigger:hover {
-  opacity: 1;
-  background-color: var(--color-transparent);
-}
-
-.article-actions__trigger:focus-visible {
-  outline: 2px solid var(--border-focus);
-  outline-offset: 2px;
-}
-
-.article-card .article-actions .app-dropdown__menu {
-  min-width: 120px !important;
-  z-index: 1041;
-}
-
-.article-card .article-actions .app-dropdown__item {
-  color: var(--toolbar-text) !important;
-  font-size: 14px !important;
-  font-weight: 500;
-  padding: 6px 8px !important;
-}
-
-.article-card .article-actions .app-dropdown__item:hover,
-.article-card .article-actions .app-dropdown__item:focus-visible {
-  color: var(--text-inverted) !important;
-}
-
-.article-card .article-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1.3;
-  max-width: 100%;
-  margin: 0;
-  min-width: 0;
-  font-weight: 400;
-}
-
-.article-card .article-tags {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin: 0;
-}
-
-.article-card .article-tags .tag-badge {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  background-color: var(--color-transparent);
-  border: 1px solid var(--border-default);
-  color: var(--text-secondary);
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-family: inherit;
-  font-weight: 600;
-  line-height: 1.4;
-  white-space: nowrap;
-  cursor: pointer;
-  vertical-align: middle;
-}
-
-.article-card .article-tags .tag,
-.article-card .article-list-meta .tag {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  background-color: var(--article-tag-background);
-  border: 1px solid var(--color-transparent);
-  color: var(--badge-tag-text);
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-family: inherit;
-  font-weight: 600;
-  line-height: 1.4;
-  white-space: nowrap;
-  cursor: pointer;
-  vertical-align: middle;
-}
-
-.article-card .article-tags .tag.tag-rule,
-.article-card .article-list-meta .tag.tag-rule {
-  background-color: var(--article-rule-tag-background);
-  color: var(--article-rule-tag-text);
-}
-
-.article-card .article-tags .score {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  border: 1px solid var(--color-transparent);
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.4;
-  white-space: nowrap;
-  background-color: var(--bg-subtle);
-  color: var(--article-score-text);
-  vertical-align: middle;
-}
-
-.article-card .article-tags .score.score-poor {
-  background-color: var(--article-score-poor-background);
-  color: var(--article-score-poor-text);
-}
-
-.article-card .article-tags .score.score-medium {
-  background-color: var(--article-score-medium-background);
-  color: var(--article-score-medium-text);
-}
-
-.article-card .article-tags .score.score-good {
-  background-color: var(--article-score-good-background);
-  color: var(--article-score-good-text);
 }
 
 /* Keeps mobile portrait metadata and visible rule tags as distinct wrapping groups. */
@@ -899,22 +559,8 @@ export default {
     gap: 8px;
   }
 
-  .article-card .article-meta,
-  .article-card .article-tags {
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .article-card .article-tags .tag:not(.tag-rule) {
-    display: none;
-  }
-
-  .article-card .article-tags .score {
-    display: none;
-  }
-
-  .article-card .article-body h5 a {
-    font-size: 18px;
+  .article-card .article-body {
+    --article-title-size: 18px;
   }
 }
 
@@ -922,202 +568,10 @@ export default {
   background-color: var(--article-active-background);
 }
 
-.article-provenance {
-  align-items: center;
-  display: inline-flex;
-  flex: 0 1 auto;
-  gap: 4px;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.article-published,
-.article-provenance-separator {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-.article-card .article-meta .article-published,
-.article-card .article-meta .article-source a {
-  color: var(--text-muted);
-}
-
-.article-provenance-separator {
-  font-size: 16px;
-  line-height: 1;
-}
-
-/* Override css that comes from other websites */
-.article-card .article-content-wrapper img {
-  max-width: 100%;
-  height: auto !important;
-  margin-top: 10px;
-}
-
-.article-source {
-  min-width: 0;
-}
-
-.article-source a {
-  overflow-wrap: anywhere;
-  text-decoration: none;
-}
-
 @media (min-width: 880px) {
-  .article-card .meta-row,
-  .article-card .article-meta {
+  .article-card .meta-row {
     gap: 14px;
   }
-}
-
-.similar-badge {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  background-color: var(--badge-similar-bg);
-  border: 1px solid var(--color-transparent);
-  color: var(--badge-similar-text);
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-family: inherit;
-  font-weight: 600;
-  line-height: 1.4;
-  white-space: nowrap;
-  cursor: pointer;
-  vertical-align: middle;
-}
-
-.developing-story-icon {
-  display: inline-flex;
-  align-items: center;
-  color: var(--article-developing-icon);
-  font-size: 0.875rem;
-  line-height: 1;
-  vertical-align: middle;
-}
-
-.duplicate-badge {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  border: 1px solid var(--color-transparent);
-  border-radius: 6px;
-  font-size: 11px;
-  font-family: inherit;
-  font-weight: 600;
-  line-height: 1.4;
-  background-color: var(--badge-duplicate-bg);
-  color: var(--badge-duplicate-text);
-  white-space: nowrap;
-  vertical-align: middle;
-  cursor: pointer;
-}
-
-.source-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 3px 8px;
-  background-color: var(--article-source-diversity-background);
-  border: 1px solid var(--color-transparent);
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--article-source-diversity-text);
-  white-space: nowrap;
-  vertical-align: middle;
-}
-
-:root[data-theme='dark'] .developing-story-icon {
-  color: var(--article-developing-icon);
-}
-
-:root[data-theme='dark'] .similar-badge {
-  background-color: var(--badge-similar-bg);
-  color: var(--badge-similar-text);
-}
-
-:root[data-theme='dark'] .article-card .article-tags .tag-badge {
-  background-color: var(--color-transparent);
-  color: var(--text-secondary);
-}
-
-:root[data-theme='dark'] .article-card .article-tags .tag,
-:root[data-theme='dark'] .article-card .article-list-meta .tag {
-  background-color: var(--article-tag-background-dark);
-  color: var(--article-tag-text-dark);
-}
-
-:root[data-theme='dark'] .article-card .article-tags .tag.tag-rule,
-:root[data-theme='dark'] .article-card .article-list-meta .tag.tag-rule {
-  background-color: var(--article-rule-tag-background-dark);
-  color: var(--article-rule-tag-text-dark);
-}
-
-.source-diversity-icon {
-  font-size: 10px;
-}
-
-.article-card .tag-badge:focus-visible,
-.article-card .tag:focus-visible,
-.article-card .similar-badge:focus-visible,
-.article-card .duplicate-badge:focus-visible {
-  outline: 2px solid var(--border-focus);
-  outline-offset: 2px;
-}
-
-.mobile-score-icon {
-  font-size: 11px;
-  margin-right: 3px;
-  vertical-align: middle;
-}
-
-.mobile-score-icon.quality-excellent {
-  color: var(--article-quality-positive);
-  margin-bottom: 2px;
-}
-
-.mobile-score-icon.quality-good {
-  color: var(--article-quality-good);
-  margin-bottom: 2px;
-}
-
-.mobile-score-icon.quality-okay {
-  color: var(--article-quality-okay);
-  margin-bottom: 2px;
-}
-
-.mobile-score-icon.quality-weak {
-  color: var(--article-quality-weak);
-  margin-bottom: 2px;
-}
-
-.mobile-score-icon.quality-poor {
-  color: var(--article-overall-score-text);
-  margin-bottom: 2px;
-}
-
-.mobile-score-icon.ad-icon {
-  color: var(--article-ad-score-text);
-}
-
-.mobile-score-icon.sentiment-icon {
-  color: var(--article-sentiment-score-text);
-}
-
-.mobile-score-icon.sentiment-moderate {
-  color: var(--article-sentiment-moderate);
-}
-
-.mobile-score-icon.sentiment-poor {
-  color: var(--article-sentiment-poor);
-}
-
-.mobile-score-icon.sentiment-very-poor {
-  color: var(--text-danger-placeholder);
 }
 
 .article-list-card {
@@ -1133,38 +587,7 @@ export default {
   }
 }
 
-.article-list-row {
-  min-height: 68px;
-  padding: 12px 16px;
-  display: grid;
-  grid-template-columns: 18px 24px minmax(0, 1fr) auto;
-  column-gap: 12px;
-  align-items: center;
-  border-bottom: 1px solid var(--article-border, var(--border-subtle));
-  background: var(--bg-page);
-  font-family: var(--font-family);
-}
-
-.article-list-row:hover {
-  background: var(--bg-sidebar, var(--bg-menu-item, var(--bg-subtle)));
-}
-
-.article-list-row.active,
-.article-list-row.selected,
-.article-card.active .article-list-row {
-  background: var(--bg-selected-soft, var(--article-active-background));
-}
-
-.article-list-row.hot {
-  border-color: var(--article-highlight-border);
-}
-
-.article-list-row.favorited {
-  background-color: var(--desktop-toolbar-background);
-}
-
-.article-list-card.event-article,
-.article-list-card.event-article .article-list-row {
+.article-list-card.event-article {
   background-color: var(--article-event-background);
 }
 
@@ -1181,191 +604,12 @@ export default {
   outline-offset: -3px;
 }
 
-.article-list-card.article-list-card-selected .article-list-row {
-  background: var(--reader-list-item-selected-background);
-}
-
-.article-list-card.article-list-card-selected .article-list-row:hover {
-  background: var(--reader-list-selected-hover-background);
-}
-
 .article-list-card .article-divider {
   display: none;
 }
 
 .mobile-swipe-action {
   display: none;
-}
-
-.article-list-status {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 34px;
-  padding: 0;
-  border: 0;
-  background: var(--color-transparent);
-  color: var(--color-primary);
-  cursor: pointer;
-  font-size: 13px;
-  line-height: 1;
-}
-
-.article-list-source {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-meta, var(--text-muted));
-  font-size: 15px;
-}
-
-.article-list-source img,
-.article-list-source .favicon {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  object-fit: cover;
-}
-
-.article-list-main {
-  min-width: 0;
-}
-
-.article-list-title {
-  margin: 0;
-  min-width: 0;
-}
-
-.article-list-title a {
-  color: var(--article-heading-text);
-  font-size: 16px;
-  line-height: 1.35;
-  font-weight: 700;
-  text-decoration: none;
-  display: block;
-  overflow-wrap: anywhere;
-}
-
-.article-list-title a:hover {
-  color: var(--article-heading-text);
-  text-decoration: none;
-}
-
-.article-list-meta {
-  margin-top: 4px;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  color: var(--text-meta, var(--text-muted));
-  font-size: 13px;
-  line-height: 1.3;
-}
-
-.article-list-meta .article-list-feed {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.article-list-dot {
-  color: var(--text-meta, var(--text-muted));
-}
-
-.article-preview-empty {
-  align-items: center;
-  color: var(--reader-empty-preview-text);
-  display: flex;
-  flex-wrap: wrap;
-  font-size: 0.8125rem;
-  gap: 0.3rem;
-  line-height: 1.35;
-  margin-top: 0.45rem;
-}
-
-.article-preview-empty__message,
-.article-preview-empty__separator {
-  color: inherit;
-}
-
-.article-preview-empty__link {
-  align-items: center;
-  color: var(--reader-empty-preview-text);
-  display: inline-flex;
-  font-weight: 500;
-  gap: 0.25rem;
-  text-decoration: none;
-}
-
-.article-preview-empty__link:hover {
-  color: var(--color-link);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.article-preview-empty__link:focus-visible {
-  border-radius: 0.2rem;
-  color: var(--color-link);
-  outline: 2px solid var(--color-link);
-  outline-offset: 2px;
-}
-
-.article-preview-empty__link .bi {
-  flex: 0 0 auto;
-  font-size: 0.75rem;
-}
-
-.article-list-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  align-self: center;
-  white-space: nowrap;
-}
-
-.article-list-time {
-  color: var(--text-meta, var(--text-muted));
-  font-size: 13px;
-  min-width: 72px;
-  text-align: right;
-}
-
-.article-list-action-button,
-.article-list-actions .article-actions__trigger {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--color-transparent);
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-transparent);
-  color: var(--text-meta, var(--text-muted));
-  cursor: pointer;
-  opacity: 1;
-  padding: 0;
-}
-
-.article-list-action-button:hover,
-.article-list-actions .article-actions__trigger:hover {
-  background: var(--bg-menu-item, var(--bg-subtle));
-  color: var(--article-heading-text);
-}
-
-.article-list-favorite-button .bi {
-  color: var(--article-star-icon);
-}
-
-.article-list-card .article-content-wrapper {
-  margin: 0;
-  padding: 10px 16px 12px 70px;
-  background: var(--bg-page);
-  border-bottom: 1px solid var(--article-border, var(--border-subtle));
 }
 
 .article-list-card > .article-media {
@@ -1412,272 +656,68 @@ export default {
     touch-action: pan-y pinch-zoom;
   }
 
-  .article-list-row {
-    grid-template-columns: 18px minmax(0, 1fr) auto;
-    column-gap: 10px;
-    padding: 12px 10px;
-  }
-
-  .article-list-source {
-    display: none;
-  }
-
-  .article-list-time {
-    display: none;
-  }
-
-  .article-list-actions {
-    gap: 4px;
-  }
-
-  .article-list-card .article-content-wrapper,
   .article-list-card > .article-media {
     padding-left: 40px;
     padding-right: 10px;
   }
 
-  :root[data-theme='dark'] .mobile-swipe-shell,
-  :root[data-theme='dark'] .mobile-swipe-action {
+  :global(:root[data-theme='dark'] .article-card .mobile-swipe-shell),
+  :global(:root[data-theme='dark'] .article-card .mobile-swipe-action) {
     color: var(--text-primary);
   }
 
-  :root[data-theme='dark'] .mobile-swipe-content {
+  :global(:root[data-theme='dark'] .article-card .mobile-swipe-content) {
     background: var(--bg-card);
   }
 }
 
-.media-content.enclosure img {
-  max-width: 100%;
-  height: auto;
-  padding-bottom: 5px;
-}
-
-.article-summary {
-  margin: 5px 0;
-  padding-left: 20px;
-  list-style-type: disc;
-}
-
-.article-summary li {
+:global(:root[data-theme='dark'] .article-card),
+:global(:root[data-theme='dark'] .article-card .article-body) {
   color: var(--article-content-text);
-  font-family: var(--font-family);
-  font-size: 14px;
-  margin-bottom: 6px;
-  line-height: 1.5;
+  background: var(--dark-page-surface);
+  border-color: var(--dark-page-surface);
+  border-bottom-color: var(--border-subtle);
+  background-color: var(--dark-page-surface);
 }
 
-:root[data-theme='dark'] {
-  .article-summary li {
-    color: var(--article-content-text);
-  }
+:global(:root[data-theme='dark'] .article-card) {
+  border-bottom-color: var(--dark-page-surface);
 }
 
-:root[data-theme='dark'] {
-  .article-card, .article-card .article-body, .article-content-wrapper, h5.article-header, .article-card .article-meta {
-    color: var(--article-content-text);
-    background: var(--dark-page-surface);
-    border-color: var(--dark-page-surface);
-    border-bottom-color: var(--border-subtle);
-    background-color: var(--dark-page-surface);
-  }
+:global(:root[data-theme='dark'] .article-card .article-body) {
+  border-bottom-color: var(--dark-contrast);
+  border-width: 0px;
+  border-radius: 0px;
+}
 
-  .article-card a, .article-card .article-body h5 a, .article-card .article-content-wrapper, .article-card .article-source a {
-    color: var(--text-primary);
-  }
+:global(:root[data-theme='dark'] .article-card .article-body.hot) {
+  background-color: var(--dark-page-surface);
+  border-color: var(--dark-page-surface);
+}
 
-  .article-card {
-    border-bottom-color: var(--dark-page-surface);
-  }
+:global(:root[data-theme='dark'] .article-card .article-body.favorited) {
+  background-color: var(--dark-page-surface);
+}
 
-  .article-body h1.article-header, .article-body h2.article-header {
-    color: var(--text-primary);
-  }
+:global(:root[data-theme='dark'] .article-card.event-article),
+:global(:root[data-theme='dark'] .article-card.event-article .article-body) {
+  background-color: var(--article-event-background-dark);
+}
 
-  .article-body h1.article-header a {
-    color: var(--text-primary);
-  }
+:global(:root[data-theme='dark'] .article-card.article-list-card) {
+  background: var(--dark-bg-page, var(--dark-page-surface));
+  border-bottom-color: var(--border-subtle);
+}
 
-  .article-card .article-body {
-    border-bottom-color: var(--dark-contrast);
-    border-width: 0px;
-    border-radius: 0px;
-  }
+:global(:root[data-theme='dark'] .article-card.article-list-card.event-article) {
+  background-color: var(--article-event-background-dark);
+}
 
-  .article-card .article-body.hot {
-    background-color: var(--dark-page-surface);
-    border-color: var(--dark-page-surface);
-  }
+:global(:root[data-theme='dark'] .article-card.article-list-card.article-list-card-selected) {
+  background: var(--color-transparent);
+}
 
-  .article-card .article-body.favorited {
-    background-color: var(--dark-page-surface);
-  }
-
-  .article-card.event-article {
-    background-color: var(--article-event-background-dark);
-  }
-
-  .article-card.event-article .article-body {
-    background-color: var(--article-event-background-dark);
-  }
-
-  .article-card.event-article .article-content-wrapper,
-  .article-card.event-article h5.article-header,
-  .article-card.event-article .article-meta {
-    background-color: var(--article-event-background-dark);
-  }
-
-  .article-card .article-actions__trigger {
-    color: var(--text-inverted);
-    opacity: 0.9;
-  }
-
-  .article-card .article-actions .app-dropdown__item {
-    color: var(--toolbar-text) !important;
-  }
-
-  .article-card .article-actions .app-dropdown__item:hover,
-  .article-card .article-actions .app-dropdown__item:focus-visible {
-    background-color: var(--bg-modal);
-    color: var(--toolbar-text) !important;
-  }
-
-  .mobile-score-icon.quality-excellent {
-    color: var(--article-quality-excellent);
-  }
-
-  .mobile-score-icon.quality-good {
-    color: var(--article-quality-good-dark);
-  }
-
-  .mobile-score-icon.quality-okay {
-    color: var(--article-quality-okay-dark);
-  }
-
-  .mobile-score-icon.quality-weak {
-    color: var(--article-ad-score-text-dark);
-  }
-
-  .mobile-score-icon.quality-poor {
-    color: var(--article-quality-poor-dark);
-  }
-
-  .mobile-score-icon.ad-icon {
-    color: var(--article-ad-score-text-dark);
-  }
-
-  .mobile-score-icon.sentiment-icon {
-    color: var(--article-sentiment-score-text-dark);
-  }
-
-  .mobile-score-icon.sentiment-moderate {
-    color: var(--article-sentiment-moderate-dark);
-  }
-
-  .mobile-score-icon.sentiment-poor {
-    color: var(--article-sentiment-poor-dark);
-  }
-
-  .mobile-score-icon.sentiment-very-poor {
-    color: var(--article-quality-poor-dark);
-  }
-
-  .article-card .article-full-content a,
-  .article-card .article-content-wrapper a {
-    color: var(--article-link-dark);
-  }
-
-  .article-card .article-full-content a:hover,
-  .article-card .article-content-wrapper a:hover {
-    color: var(--article-link-hover-dark);
-  }
-
-  .article-card .article-full-content a:visited,
-  .article-card .article-content-wrapper a:visited {
-    color: var(--article-link-visited-dark);
-  }
-
-  .article-card .article-full-content a:active,
-  .article-card .article-content-wrapper a:active {
-    color: var(--article-link-active-dark);
-  }
-
-  .article-list-card,
-  .article-list-row {
-    background: var(--dark-bg-page, var(--dark-page-surface));
-    border-bottom-color: var(--border-subtle);
-  }
-
-  .article-list-row:hover {
-    background: var(--dark-bg-hover, var(--bg-control));
-  }
-
-  .article-list-row.active,
-  .article-list-row.selected,
-  .article-card.active .article-list-row {
-    background: var(--bg-selected);
-  }
-
-  .article-list-card.event-article,
-  .article-list-card.event-article .article-list-row {
-    background-color: var(--article-event-background-dark);
-  }
-
-  .article-list-row.hot,
-  .article-list-row.favorited {
-    background-color: var(--dark-bg-page, var(--dark-page-surface));
-    border-color: var(--border-default);
-  }
-
-  .article-list-card.article-list-card-selected {
-    background: var(--color-transparent);
-  }
-
-  .article-list-card.article-list-card-selected .article-list-row {
-    background: var(--reader-list-item-selected-background);
-  }
-
-  .article-list-card.article-list-card-selected .article-list-row:hover {
-    background: var(--reader-list-selected-hover-background);
-  }
-
-  .article-list-meta,
-  .article-list-dot,
-  .article-list-time,
-  .article-list-source,
-  .article-list-action-button,
-  .article-list-actions .article-actions__trigger {
-    color: var(--dark-text-meta, var(--text-secondary));
-  }
-
-  .article-list-title a,
-  .article-list-title a:hover {
-    color: var(--article-heading-text);
-  }
-
-  .article-list-action-button:hover,
-  .article-list-actions .article-actions__trigger:hover {
-    background: var(--dark-bg-hover, var(--bg-control));
-    color: var(--dark-text-primary, var(--text-primary));
-  }
-
-  .article-list-card .article-content-wrapper {
-    background: var(--dark-bg-page, var(--dark-page-surface));
-    border-bottom-color: var(--border-subtle);
-  }
-
-  .article-list-card > .article-media {
-    background: var(--dark-bg-page, var(--dark-page-surface));
-  }
-
-  .article-preview-empty,
-  .article-preview-empty__link {
-    color: var(--reader-empty-preview-text);
-  }
-
-  .article-preview-empty__link:hover,
-  .article-preview-empty__link:focus-visible {
-    color: var(--color-link);
-    outline-color: var(--color-link);
-  }
+:global(:root[data-theme='dark'] .article-card.article-list-card > .article-media) {
+  background: var(--dark-bg-page, var(--dark-page-surface));
 }
 </style>

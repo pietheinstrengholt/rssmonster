@@ -444,7 +444,7 @@
   background: var(--settings-orange-bg);
 }
 
-:global(:root[data-theme='dark']) .feeds-edit-button:hover {
+:global(:root[data-theme='dark'] .feeds-overview .feeds-edit-button:hover) {
   background: var(--settings-orange-bg);
   color: var(--settings-orange-text);
 }
@@ -465,58 +465,67 @@
   font-size: 13px;
 }
 
-:global(:root[data-theme='dark']) .feeds-overview { color: var(--text-secondary); }
-:global(:root[data-theme='dark']) .feeds-header h3,
-:global(:root[data-theme='dark']) .feeds-stat-value,
-:global(:root[data-theme='dark']) .feeds-name-cell strong { color: var(--text-inverted); }
-:global(:root[data-theme='dark']) .feeds-header p:not(.settings-page-eyebrow),
-:global(:root[data-theme='dark']) .feeds-helper-text,
-:global(:root[data-theme='dark']) .feeds-stat-label,
-:global(:root[data-theme='dark']) .feeds-footer { color: var(--text-muted); }
-:global(:root[data-theme='dark']) .feeds-stat-card,
-:global(:root[data-theme='dark']) .feeds-toolbar-button,
-:global(:root[data-theme='dark']) .feeds-status-filter,
-:global(:root[data-theme='dark']) .feeds-search,
-:global(:root[data-theme='dark']) .feeds-table-card { background: var(--bg-modal); border-color: var(--border-default); color: var(--text-secondary); }
-:global(:root[data-theme='dark']) .feeds-search input { background: var(--color-transparent); color: var(--text-inverted); }
-:global(:root[data-theme='dark']) .feeds-table th { background: var(--bg-control); color: var(--text-secondary); }
-:global(:root[data-theme='dark']) .feeds-table td { border-color: var(--border-subtle); }
-:global(:root[data-theme='dark']) .feeds-table tbody tr:hover { background: var(--bg-control); }
-
-:global(:root[data-theme='dark']) .feeds-overview,
-:global(:root[data-theme='dark']) .feeds-table td,
-:global(:root[data-theme='dark']) .feeds-search input,
-:global(:root[data-theme='dark']) .feeds-name-cell strong {
-  color: var(--text-inverted) !important;
+:global(:root[data-theme='dark'] .feeds-overview) {
+  color: var(--text-inverted);
 }
 
-:global(:root[data-theme='dark']) .feeds-stat-card,
-:global(:root[data-theme='dark']) .feeds-table-card,
-:global(:root[data-theme='dark']) .feeds-table,
-:global(:root[data-theme='dark']) .feeds-table tbody,
-:global(:root[data-theme='dark']) .feeds-table tbody tr,
-:global(:root[data-theme='dark']) .feeds-toolbar-button,
-:global(:root[data-theme='dark']) .feeds-status-filter,
-:global(:root[data-theme='dark']) .feeds-search {
-  background-color: var(--bg-modal) !important;
-  border-color: var(--border-default) !important;
+:global(:root[data-theme='dark'] .feeds-overview .feeds-header h3),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-stat-value),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-name-cell strong),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-toolbar-button),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-status-filter) {
+  color: var(--text-inverted);
 }
 
-:global(:root[data-theme='dark']) .feeds-table th {
-  background-color: var(--bg-control) !important;
-  color: var(--text-secondary) !important;
+:global(:root[data-theme='dark'] .feeds-overview .feeds-header p:not(.settings-page-eyebrow)),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-helper-text),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-name-cell span),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-stat-label),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-footer),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-empty-state) {
+  color: var(--text-muted);
 }
 
-:global(:root[data-theme='dark']) .feeds-name-cell span,
-:global(:root[data-theme='dark']) .feeds-stat-label,
-:global(:root[data-theme='dark']) .feeds-footer,
-:global(:root[data-theme='dark']) .feeds-empty-state {
-  color: var(--text-muted) !important;
+:global(:root[data-theme='dark'] .feeds-overview .feeds-stat-card),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-table-card),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-table),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-table tbody),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-table tbody tr),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-toolbar-button),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-status-filter),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-search) {
+  background: var(--bg-modal);
+  border-color: var(--border-control);
 }
 
-:global(:root[data-theme='dark']) .feeds-table-row--error,
-:global(:root[data-theme='dark']) .feeds-table-row--error:hover {
-  background: var(--settings-danger-bg) !important;
+:global(:root[data-theme='dark'] .feeds-overview .feeds-table th) {
+  background: var(--bg-control);
+  color: var(--text-secondary);
+}
+
+:global(:root[data-theme='dark'] .feeds-overview .feeds-table td) {
+  background: var(--bg-modal);
+  border-color: var(--border-subtle);
+  color: var(--text-inverted);
+}
+
+:global(:root[data-theme='dark'] .feeds-overview .feeds-table tbody tr:hover),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-table tbody tr:hover td) {
+  background: var(--bg-control);
+}
+
+:global(:root[data-theme='dark'] .feeds-overview .feeds-table-row--error),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-table-row--error:hover) {
+  background: var(--settings-danger-bg);
+}
+
+:global(:root[data-theme='dark'] .feeds-overview .feeds-search input) {
+  background: var(--color-transparent);
+  color: var(--text-inverted);
+}
+
+:global(:root[data-theme='dark'] .feeds-overview .feeds-search input::placeholder) {
+  color: var(--text-muted);
 }
 
 @media (max-width: 879px) {
@@ -528,38 +537,6 @@
   .feeds-status-filter,
   .feeds-search { width: 100%; }
 }
-</style>
-
-<style>
-:root[data-theme="dark"] .feeds-overview,
-:root[data-theme="dark"] .feeds-overview .feeds-table td,
-:root[data-theme="dark"] .feeds-overview .feeds-name-cell strong { color: var(--text-inverted) !important; }
-
-:root[data-theme="dark"] .feeds-overview .feeds-stat-card,
-:root[data-theme="dark"] .feeds-overview .feeds-table-card,
-:root[data-theme="dark"] .feeds-overview .feeds-table,
-:root[data-theme="dark"] .feeds-overview .feeds-table tbody,
-:root[data-theme="dark"] .feeds-overview .feeds-table tbody tr,
-:root[data-theme="dark"] .feeds-overview .feeds-toolbar-button,
-:root[data-theme="dark"] .feeds-overview .feeds-status-filter,
-:root[data-theme="dark"] .feeds-overview .feeds-search { background: var(--bg-modal) !important; border-color: var(--border-control) !important; }
-
-:root[data-theme="dark"] .feeds-overview .feeds-table th { background: var(--bg-control) !important; color: var(--text-secondary) !important; }
-:root[data-theme="dark"] .feeds-overview .feeds-table td { border-color: var(--border-subtle) !important; }
-:root[data-theme="dark"] .feeds-overview .feeds-header h3,
-:root[data-theme="dark"] .feeds-overview .feeds-stat-value,
-:root[data-theme="dark"] .feeds-overview .feeds-toolbar-button,
-:root[data-theme="dark"] .feeds-overview .feeds-status-filter { color: var(--text-inverted) !important; }
-:root[data-theme="dark"] .feeds-overview .feeds-name-cell span,
-:root[data-theme="dark"] .feeds-overview .feeds-stat-label,
-:root[data-theme="dark"] .feeds-overview .feeds-footer,
-:root[data-theme="dark"] .feeds-overview .feeds-header p:not(.settings-page-eyebrow),
-:root[data-theme="dark"] .feeds-overview .feeds-helper-text { color: var(--text-muted) !important; }
-:root[data-theme="dark"] .feeds-overview .feeds-search input {
-  background: var(--color-transparent) !important;
-  color: var(--text-inverted) !important;
-}
-:root[data-theme="dark"] .feeds-overview .feeds-search input::placeholder { color: var(--text-muted) !important; }
 </style>
 
 <script>

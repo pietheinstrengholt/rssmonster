@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import Article from '../src/components/articles/Article.vue';
+import ArticleHeadlineRow from '../src/components/articles/ArticleHeadlineRow.vue';
 import ArticleListView from '../src/components/articles/ArticleListView.vue';
 import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
 import AppShell from '../src/AppShell.vue';
@@ -133,10 +134,10 @@ describe('Article high-impact decision coverage', () => {
   });
 
   it('resolves content, category, tags, score, and URL fallbacks', () => {
-    expect(compute(Article, 'ruleTags', {
+    expect(compute(ArticleHeadlineRow, 'ruleTags', {
       tags: [{ name: 'Rule', tagType: 'rule' }, { name: 'Normal' }]
     })).toEqual([{ name: 'Rule', tagType: 'rule' }]);
-    expect(compute(Article, 'ruleTags', { tags: null })).toEqual([]);
+    expect(compute(ArticleHeadlineRow, 'ruleTags', { tags: null })).toEqual([]);
     expect(compute(Article, 'categoryName', {
       feed: { categoryId: 2 },
       overviewStore: { categories: [{ id: 2, name: 'Tech' }] }
@@ -212,10 +213,10 @@ describe('Article high-impact decision coverage', () => {
     })).toBe(0);
     expect(compute(Article, 'hasInterestScore', { interestScore: '0.25' })).toBe(true);
     expect(compute(Article, 'hasInterestScore', { interestScore: 'invalid' })).toBe(false);
-    expect(compute(Article, 'favoriteLabel', { favoriteInd: 1 })).toBe('Unmark favorite');
-    expect(compute(Article, 'favoriteLabel', { favoriteInd: 0 })).toBe('Mark as favorite');
-    expect(compute(Article, 'statusToggleLabel', { status: 'read' })).toContain('unread');
-    expect(compute(Article, 'statusToggleLabel', { status: 'unread' })).toContain('read');
+    expect(compute(ArticleHeadlineRow, 'favoriteLabel', { favoriteInd: 1 })).toBe('Unmark favorite');
+    expect(compute(ArticleHeadlineRow, 'favoriteLabel', { favoriteInd: 0 })).toBe('Mark as favorite');
+    expect(compute(ArticleHeadlineRow, 'statusToggleLabel', { status: 'read' })).toContain('unread');
+    expect(compute(ArticleHeadlineRow, 'statusToggleLabel', { status: 'unread' })).toContain('read');
 
     expect(compute(Article, 'feedFavicon', {
       feed: { favicon: 'direct.ico' },

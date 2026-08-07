@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 
 import Article from '../src/components/articles/Article.vue';
 import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
-import articleSource from '../src/components/articles/Article.vue?raw';
+import previewFallbackSource from '../src/components/articles/ArticlePreviewFallback.vue?raw';
 import { markClicked } from '../src/api/articles';
 import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
@@ -185,9 +185,9 @@ describe('ArticleReaderLayout empty previews', () => {
   });
 
   it('defines readable light and dark semantic colors', () => {
-    expect(articleSource).toContain('color: var(--reader-empty-preview-text)');
-    expect(articleSource).toContain('color: var(--color-link)');
-    expect(articleSource).toContain("root[data-theme='dark']");
+    expect(previewFallbackSource).toContain('color: var(--reader-empty-preview-text)');
+    expect(previewFallbackSource).toContain('color: var(--color-link)');
+    expect(previewFallbackSource).toContain("root[data-theme='dark']");
     expect(themeSource).toContain('--reader-empty-preview-text: #6B7280;');
     expect(themeSource).toContain('--reader-empty-preview-text: #9CA3AF;');
     expect(themeSource).toContain('--color-link: #2563EB;');
@@ -204,10 +204,7 @@ describe('Article empty previews', () => {
     }, viewMode);
 
     expect(wrapper.get('.article-preview-empty').text()).toContain('No preview available');
-    expect(
-      wrapper.findAllComponents({ name: 'BootstrapIcon' })
-        .some(icon => icon.props('icon') === 'box-arrow-up-right')
-    ).toBe(true);
+    expect(wrapper.html()).toContain('icon="box-arrow-up-right"');
   });
 
   it('shows the fallback when a standalone image URL is not rendered without article content', () => {
