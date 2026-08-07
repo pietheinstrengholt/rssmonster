@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../../models/index.js';
 import { searchArticles } from '../../services/articleSearch/articleSearch.service.js';
@@ -170,6 +170,22 @@ describe('articleSearch.service', () => {
     await Tag.create({ articleId: articles.recent.id, userId: user.id, name: 'framework' });
     await Tag.create({ articleId: articles.starred.id, userId: user.id, name: 'rust' });
     await Tag.create({ articleId: articles.clicked.id, userId: user.id, name: 'docker' });
+  });
+
+  describe('debug logging', () => {
+    it('suppresses article search debug logs outside development mode', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      try {
+        process.env.NODE_ENV = 'production';
+        await searchArticles({ userId: user.id });
+        expect(logSpy).not.toHaveBeenCalled();
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+        logSpy.mockRestore();
+      }
+    });
   });
 
   // ============================
