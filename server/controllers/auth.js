@@ -8,6 +8,38 @@ import {
   createFeverCredentialHash
 } from '../utils/apiCredentials.js';
 
+// This function reports whether explicit development login is safely enabled.
+const isDevelopmentLoginEnabled = () =>
+  process.env.NODE_ENV === 'development' &&
+  process.env.ENABLE_DEVELOPMENT_LOGIN === 'true';
+
+// This function creates the standard JWT response shared by supported login flows.
+const createAuthenticatedSession = async (user) => {
+  const expiresInSeconds = Number(process.env.JWT_EXPIRES_IN) || 86400;
+  const token = jwt.sign(
+    {
+      username: user.username,
+      userId: user.id,
+    },
+    getJwtSecret(),
+    {
+      expiresIn: expiresInSeconds
+    }
+  );
+
+  await user.update({
+    lastLogin: new Date()
+  });
+
+  return {
+    message: 'Connected!',
+    token,
+    user,
+    expiresInSeconds,
+    agenticFeaturesEnabled: Boolean(process.env.OPENAI_API_KEY)
+  };
+};
+
 const register = async (req, res, _next) => {
   try {        
     const { username, password } = req.body;
@@ -72,37 +104,48 @@ const login = async (req, res, _next) => {
       });  
     }
 
-    // Get JWT expiry in seconds (default to 86400 = 1 day)
-    const expiresInSeconds = Number(process.env.JWT_EXPIRES_IN) || 86400;
-
-    // Generate JWT token
-    const token = jwt.sign(
-      {
-        username: user.username,
-        userId: user.id,
-      },
-      getJwtSecret(),
-      {
-        expiresIn: expiresInSeconds
-      }
-    );
-
-    // Update the last login date
-    await user.update({
-      lastLogin: new Date()
-    });
-
-    return res.status(200).json({ 
-      message: 'Connected!', 
-      token, 
-      user,
-      expiresInSeconds,
-      agenticFeaturesEnabled: Boolean(process.env.OPENAI_API_KEY)
-    });
+    return res.status(200).json(await createAuthenticatedSession(user));
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({
-      message: err.message || 'An error occurred during login'  
+      message: err.message || 'An error occurred during login'
+    });
+  }
+};
+
+// This function establishes a normal session for the explicitly configured development user.
+const developmentLogin = async (_req, res, _next) => {
+  if (!isDevelopmentLoginEnabled()) {
+    return res.status(404).json({ message: 'Not found.' });
+  }
+
+  const configuredUserId = process.env.DEVELOPMENT_LOGIN_USER_ID;
+  if (!/^[1-9]\d*$/.test(configuredUserId || '')) {
+    console.error(
+      'Development login error: DEVELOPMENT_LOGIN_USER_ID must identify an existing user.'
+    );
+    return res.status(503).json({
+      message: 'Development login is unavailable.'
+    });
+  }
+
+  try {
+    const user = await User.findByPk(Number(configuredUserId));
+
+    if (!user) {
+      console.error(
+        `Development login error: User ${configuredUserId} was not found.`
+      );
+      return res.status(503).json({
+        message: 'Development login is unavailable.'
+      });
+    }
+
+    return res.status(200).json(await createAuthenticatedSession(user));
+  } catch (err) {
+    console.error('Development login error:', err);
+    return res.status(500).json({
+      message: 'Development login is unavailable.'
     });
   }
 };
@@ -140,5 +183,6 @@ const validate = async (req, res, _next) => {
 export default {
   register,
   login,
+  developmentLogin,
   validate
 };

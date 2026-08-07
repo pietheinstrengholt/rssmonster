@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import db from '../../models/index.js';
@@ -13,6 +13,13 @@ let app;
 
 const uniqueName = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
+// This function restores authentication flags so each environment case is isolated.
+const resetDevelopmentLoginEnvironment = () => {
+  process.env.NODE_ENV = 'test';
+  delete process.env.ENABLE_DEVELOPMENT_LOGIN;
+  delete process.env.DEVELOPMENT_LOGIN_USER_ID;
+};
+
 describe('auth controller', () => {
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
@@ -24,6 +31,11 @@ describe('auth controller', () => {
 
     await sequelize.authenticate();
   }, 50_000);
+
+  afterEach(() => {
+    resetDevelopmentLoginEnvironment();
+    vi.restoreAllMocks();
+  });
 
   it('stores a protected Fever credential when registering', async () => {
     const username = uniqueName('registered-user');
@@ -82,6 +94,91 @@ describe('auth controller', () => {
     );
     expect(validateRes.body.agenticFeaturesEnabled).toBe(
       loginRes.body.agenticFeaturesEnabled
+    );
+  });
+
+  it('automatically authenticates the configured user when development login is enabled', async () => {
+    const username = uniqueName('development-login-user');
+    const password = 'development-password';
+    const user = await User.create({
+      username,
+      password: await bcrypt.hash(password, 10),
+      feverCredentialHash: createFeverCredentialHash(
+        createFeverApiKey(username, password)
+      ),
+      role: 'user'
+    });
+    process.env.NODE_ENV = 'development';
+    process.env.ENABLE_DEVELOPMENT_LOGIN = 'true';
+    process.env.DEVELOPMENT_LOGIN_USER_ID = String(user.id);
+
+    const loginRes = await request(app)
+      .post('/api/auth/development-login');
+
+    expect(loginRes.status).toBe(200);
+    expect(loginRes.body.token).toBeTruthy();
+    expect(loginRes.body.user).toMatchObject({ id: user.id, username });
+    expect(loginRes.body.user).not.toHaveProperty('password');
+    expect(loginRes.body.user).not.toHaveProperty('feverCredentialHash');
+
+    const validateRes = await request(app)
+      .post('/api/auth/validate')
+      .set('Authorization', `Bearer ${loginRes.body.token}`);
+
+    expect(validateRes.status).toBe(200);
+    expect(validateRes.body.user.id).toBe(user.id);
+  });
+
+  it('keeps normal authentication required when development login is disabled', async () => {
+    process.env.NODE_ENV = 'development';
+    process.env.ENABLE_DEVELOPMENT_LOGIN = 'false';
+    process.env.DEVELOPMENT_LOGIN_USER_ID = '1';
+
+    const loginRes = await request(app)
+      .post('/api/auth/development-login');
+    const validateRes = await request(app)
+      .post('/api/auth/validate');
+
+    expect(loginRes.status).toBe(404);
+    expect(loginRes.body).not.toHaveProperty('token');
+    expect(validateRes.status).toBe(400);
+  });
+
+  it('never enables development login in production', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.ENABLE_DEVELOPMENT_LOGIN = 'true';
+    process.env.DEVELOPMENT_LOGIN_USER_ID = '1';
+
+    const loginRes = await request(app)
+      .post('/api/auth/development-login');
+
+    expect(loginRes.status).toBe(404);
+    expect(loginRes.body).not.toHaveProperty('token');
+  });
+
+  it.each([
+    ['missing user id', undefined],
+    ['unknown user', '2147483647']
+  ])('fails safely for a %s', async (_label, configuredUserId) => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    process.env.NODE_ENV = 'development';
+    process.env.ENABLE_DEVELOPMENT_LOGIN = 'true';
+    if (configuredUserId) {
+      process.env.DEVELOPMENT_LOGIN_USER_ID = configuredUserId;
+    } else {
+      delete process.env.DEVELOPMENT_LOGIN_USER_ID;
+    }
+
+    const loginRes = await request(app)
+      .post('/api/auth/development-login');
+
+    expect(loginRes.status).toBe(503);
+    expect(loginRes.body).toEqual({
+      message: 'Development login is unavailable.'
+    });
+    expect(loginRes.body).not.toHaveProperty('token');
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining('Development login error:')
     );
   });
 });

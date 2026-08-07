@@ -138,7 +138,7 @@ export default {
       const token = Cookies.get('token');
 
       if (!token) {
-        this.logout();
+        await this.tryDevelopmentLogin();
         return;
       }
 
@@ -164,6 +164,25 @@ export default {
         if (!this.authStore.isSessionRequestCurrent(requestId)) return;
         console.error('Session validation error:', error);
         this.logout();
+      }
+    },
+    // This function bootstraps the configured development user while retaining normal login fallback.
+    async tryDevelopmentLogin() {
+      const requestId = this.authStore.beginSessionRequest();
+
+      try {
+        const response = await authApi.developmentLogin();
+        if (!this.authStore.isSessionRequestCurrent(requestId)) return;
+        this.establishSession(response);
+      } catch (error) {
+        if (!this.authStore.isSessionRequestCurrent(requestId)) return;
+        this.logout();
+
+        if (error.response?.status >= 500) {
+          console.error('Development login error:', error);
+          this.message = error.response.data?.message ||
+            'Development login is unavailable.';
+        }
       }
     },
     // This function submits the operation for the active authentication mode once.
@@ -203,20 +222,7 @@ export default {
         this.message = response.message;
 
         if (!response?.token) return;
-
-        const expiresInDays = (response.expiresInSeconds || 86400) / 86400;
-
-        Cookies.set('token', response.token, { expires: expiresInDays });
-
-        setAuthToken(response.token);
-
-        this.authStore.setSession({
-          token: response.token,
-          role: response.user.role,
-          userId: response.user.id
-        });
-
-        this.isAuthenticated = true;
+        this.establishSession(response);
 
         // clear form
         this.username = '';
@@ -249,6 +255,19 @@ export default {
         this.message = error.response?.data?.message ||
           'Login failed. Please try again.';
       }
+    },
+    // This function persists the standard server authentication response for every login flow.
+    establishSession(response) {
+      const expiresInDays = (response.expiresInSeconds || 86400) / 86400;
+
+      Cookies.set('token', response.token, { expires: expiresInDays });
+      setAuthToken(response.token);
+      this.authStore.setSession({
+        token: response.token,
+        role: response.user.role,
+        userId: response.user.id
+      });
+      this.isAuthenticated = true;
     },
     // This function creates an account and returns to sign-in after confirmed success.
     async register() {

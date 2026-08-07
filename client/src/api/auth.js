@@ -21,6 +21,14 @@ export const login = async (credentials) => {
   return response.data;
 };
 
+// This function requests the server-gated development session without sending credentials.
+export const developmentLogin = async () => {
+  const response = await api.post('/auth/development-login', undefined, {
+    suppressGlobalError: true
+  });
+  return response.data;
+};
+
 /**
  * Register new user
  */

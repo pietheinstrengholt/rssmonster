@@ -11,6 +11,7 @@ import { useAuthStore } from '../src/store/auth.js';
 
 vi.mock('../src/api/auth', () => ({
   applyAuthToken: vi.fn(),
+  developmentLogin: vi.fn(),
   login: vi.fn(),
   register: vi.fn(),
   validateSession: vi.fn()
@@ -24,15 +25,21 @@ vi.mock('../src/services/appShellLoader.js', () => ({
 }));
 
 // This function creates the component state needed by authentication methods.
-const createAuthContext = () => ({
-  authStore: useAuthStore(),
-  isAuthenticated: false,
-  message: 'old message',
-  password: 'secret',
-  password_repeat: 'secret',
-  showSignup: true,
-  username: 'reader'
-});
+const createAuthContext = () => {
+  const context = {
+    authStore: useAuthStore(),
+    isAuthenticated: false,
+    message: 'old message',
+    password: 'secret',
+    password_repeat: 'secret',
+    showSignup: true,
+    username: 'reader'
+  };
+  // This function supplies the Vue method binding used by direct method tests.
+  context.establishSession = response =>
+    App.methods.establishSession.call(context, response);
+  return context;
+};
 
 // This function creates an authentication response controlled by the session-transition test.
 const deferred = () => {
@@ -51,6 +58,9 @@ beforeEach(() => {
   loadAppShell.mockResolvedValue({
     name: 'AppShellTestStub',
     template: '<div data-test="app-shell"></div>'
+  });
+  authApi.developmentLogin.mockRejectedValue({
+    response: { status: 404 }
   });
   setAuthToken(null);
 });
@@ -92,14 +102,39 @@ describe('authentication lifecycle', () => {
     expect(context.isAuthenticated).toBe(true);
   });
 
-  it('does not load the authenticated shell without a saved token', async () => {
+  it('tries development login without loading the shell when no token is saved', async () => {
     vi.spyOn(Cookies, 'get').mockReturnValue(undefined);
-    const logout = vi.fn();
+    const tryDevelopmentLogin = vi.fn().mockResolvedValue();
 
-    await App.methods.checkSession.call({ ...createAuthContext(), logout });
+    await App.methods.checkSession.call({
+      ...createAuthContext(),
+      tryDevelopmentLogin
+    });
 
     expect(loadAppShell).not.toHaveBeenCalled();
-    expect(logout).toHaveBeenCalledOnce();
+    expect(tryDevelopmentLogin).toHaveBeenCalledOnce();
+  });
+
+  it('establishes the standard session when development login succeeds', async () => {
+    vi.spyOn(Cookies, 'set').mockImplementation(() => {});
+    authApi.developmentLogin.mockResolvedValueOnce({
+      message: 'Connected!',
+      token: 'development-token',
+      expiresInSeconds: 86400,
+      user: { id: 9, role: 'user' }
+    });
+    const context = createAuthContext();
+
+    await App.methods.tryDevelopmentLogin.call(context);
+
+    expect(context.authStore.token).toBe('development-token');
+    expect(context.authStore.userId).toBe(9);
+    expect(context.isAuthenticated).toBe(true);
+    expect(Cookies.set).toHaveBeenCalledWith(
+      'token',
+      'development-token',
+      { expires: 1 }
+    );
   });
 
   it('starts shell preloading before saved-session validation resolves', async () => {

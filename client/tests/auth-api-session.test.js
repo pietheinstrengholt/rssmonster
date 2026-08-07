@@ -1,7 +1,10 @@
 import axios from 'axios';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import api from '../src/api/client.js';
-import { validateSession } from '../src/api/auth.js';
+import {
+  developmentLogin,
+  validateSession
+} from '../src/api/auth.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -38,5 +41,20 @@ describe('session validation API', () => {
 
     await expect(validateSession()).rejects.toThrow('No token');
     expect(post).not.toHaveBeenCalled();
+  });
+
+  it('requests development login without credentials or global error handling', async () => {
+    const post = vi.spyOn(api, 'post').mockResolvedValue({
+      data: { token: 'development-token' }
+    });
+
+    await expect(developmentLogin()).resolves.toEqual({
+      token: 'development-token'
+    });
+    expect(post).toHaveBeenCalledWith(
+      '/auth/development-login',
+      undefined,
+      { suppressGlobalError: true }
+    );
   });
 });

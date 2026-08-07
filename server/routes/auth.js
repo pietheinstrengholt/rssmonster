@@ -7,6 +7,7 @@ export const router = express.Router();
 // POST /api/auth
 router.post('/register', userMiddleware.validateRegister, authController.register);
 router.post('/login', authController.login);
+router.post('/development-login', authController.developmentLogin);
 router.post('/validate', userMiddleware.isLoggedIn, authController.validate);
 
 export default router;
