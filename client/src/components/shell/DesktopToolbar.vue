@@ -673,6 +673,10 @@
     border-color: var(--border-control);
   }
 
+  .toolbar-chat-button svg {
+    color: var(--text-inverted);
+  }
+
   .app-dropdown__menu {
     background-color: var(--bg-modal);
     border-color: var(--border-default);

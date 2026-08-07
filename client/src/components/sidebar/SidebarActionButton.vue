@@ -105,13 +105,14 @@ export default {
 .sidebar-button-mark-read {
   width: calc(100% - 24px);
   color: var(--action-color);
-  background-color: var(--sidebar-primary-action-background);
+  background-color: var(--action-background);
   border-color: var(--action-border);
   font-weight: 600;
   transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 
 .sidebar-button-refresh {
+  --action-background: var(--sidebar-primary-action-refresh-background);
   --action-color: var(--sidebar-primary-action-refresh-text);
   --action-border: var(--sidebar-primary-action-refresh-border);
   --action-hover-background: var(--sidebar-primary-action-refresh-hover-background);
@@ -121,6 +122,7 @@ export default {
 }
 
 .sidebar-button-add-feed {
+  --action-background: var(--sidebar-primary-action-add-background);
   --action-color: var(--sidebar-primary-action-add-text);
   --action-border: var(--sidebar-primary-action-add-border);
   --action-hover-background: var(--sidebar-primary-action-add-hover-background);
@@ -130,6 +132,7 @@ export default {
 }
 
 .sidebar-button-mark-read {
+  --action-background: var(--sidebar-primary-action-read-background);
   --action-color: var(--sidebar-primary-action-read-text);
   --action-border: var(--sidebar-primary-action-read-border);
   --action-hover-background: var(--sidebar-primary-action-read-hover-background);
