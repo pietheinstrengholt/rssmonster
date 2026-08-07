@@ -82,5 +82,8 @@
   },
   "optionalDependencies": {
     "fsevents": "^2.3.3"
+  },
+  "overrides": {
+    "brace-expansion": "2.1.2"
   }
 }
