@@ -94,7 +94,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Upload server coverage reports to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./server/coverage/clover.xml
@@ -131,7 +131,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Upload client coverage reports to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./client/coverage/lcov.info
