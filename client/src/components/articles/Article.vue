@@ -499,6 +499,12 @@ export default {
   margin-top: 6px;
 }
 
+/* Lets every metadata badge share one wrapping row across child components. */
+.article-card .meta-row :deep(.article-meta),
+.article-card .meta-row :deep(.article-tags) {
+  display: contents;
+}
+
 .article-signal-bar {
   align-items: center;
   background: var(--article-signal-surface);
@@ -543,7 +549,6 @@ export default {
   background: var(--article-signal-divider);
 }
 
-/* Keeps mobile portrait metadata and visible rule tags as distinct wrapping groups. */
 @media (max-width: 879px) and (orientation: portrait) {
   .article-card .article-body {
     padding: 4px 8px 4px 8px;

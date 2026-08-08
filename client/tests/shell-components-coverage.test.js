@@ -336,6 +336,31 @@ describe('MobileToolbar behavior coverage', () => {
     expect(refreshButton.attributes('aria-label')).toBe('Refreshing articles…');
     expect(refreshButton.get('svg').classes()).toContain('bi--animation-spin');
   });
+
+  it('opens the active briefing or unread settings from the mobile toolbar', async () => {
+    const stores = createStores();
+    const setShowModal = vi.spyOn(stores.uiStore, 'setShowModal');
+    const wrapper = mountMobileToolbar();
+    const settingsButton = wrapper.get('.mobile-selection-settings-button');
+
+    expect(settingsButton.element.nextElementSibling.classList.contains('mobile-refresh-button')).toBe(true);
+    expect(settingsButton.attributes('aria-label')).toBe('Open unread settings');
+    expect(settingsButton.get('svg').classes()).toEqual(
+      expect.arrayContaining(['app-icon', 'app-icon--inline', 'bi'])
+    );
+    await settingsButton.trigger('click');
+    expect(setShowModal).toHaveBeenLastCalledWith('UnreadConfiguration');
+
+    stores.selectionStore.currentSelection.status = 'briefing';
+    await wrapper.vm.$nextTick();
+    expect(settingsButton.attributes('aria-label')).toBe('Open briefing settings');
+    await settingsButton.trigger('click');
+    expect(setShowModal).toHaveBeenLastCalledWith('BriefingPreferences');
+
+    stores.selectionStore.currentSelection.status = 'favorite';
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('.mobile-selection-settings-button').exists()).toBe(false);
+  });
 });
 
 describe('MobileMenuOverlay behavior coverage', () => {

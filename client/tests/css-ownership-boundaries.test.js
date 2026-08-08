@@ -77,4 +77,14 @@ describe('CSS ownership boundaries', () => {
     expect(articleSource).not.toContain('.article-list-row');
     expect(articleSource).not.toContain('.article-preview-empty');
   });
+
+  // Verifies metadata children contribute their badges to one shared wrapping row at every width.
+  it('flattens article metadata presentation wrappers', () => {
+    const sharedMetadataRuleIndex = articleSource.indexOf('.article-card .meta-row :deep(.article-meta),');
+    const mobileMetadataQueryIndex = articleSource.indexOf('@media (max-width: 879px) and (orientation: portrait)');
+
+    expect(articleSource).toMatch(/\.meta-row :deep\(\.article-meta\),\s*\.article-card \.meta-row :deep\(\.article-tags\)\s*\{\s*display: contents;/s);
+    expect(sharedMetadataRuleIndex).toBeGreaterThanOrEqual(0);
+    expect(sharedMetadataRuleIndex).toBeLessThan(mobileMetadataQueryIndex);
+  });
 });

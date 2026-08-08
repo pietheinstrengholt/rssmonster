@@ -86,6 +86,29 @@ describe('MobilePullToRefresh', () => {
     wrapper.unmount();
   });
 
+  it.each(['expandedArticleLayout', 'readerArticleList'])(
+    'uses the %s scroll surface when the tablet layout owns scrolling',
+    scrollRootClass => {
+      const wrapper = mountPullToRefresh();
+      const home = document.getElementById('home');
+      const nestedScrollRoot = document.createElement('div');
+      const nestedArticle = document.createElement('article');
+      nestedScrollRoot.className = scrollRootClass;
+      nestedScrollRoot.appendChild(nestedArticle);
+      home.appendChild(nestedScrollRoot);
+
+      nestedScrollRoot.scrollTop = 10;
+      wrapper.vm.handleTouchStart(touchEvent({ target: nestedArticle }));
+      expect(wrapper.vm.tracking).toBe(false);
+
+      nestedScrollRoot.scrollTop = 0;
+      wrapper.vm.handleTouchStart(touchEvent({ target: nestedArticle }));
+      expect(wrapper.vm.tracking).toBe(true);
+      expect(wrapper.vm.gestureScrollRoot).toBe(nestedScrollRoot);
+      wrapper.unmount();
+    }
+  );
+
   it('shows refresh copy for a button-triggered refresh until the indicator collapses', async () => {
     vi.useFakeTimers();
     const wrapper = mountPullToRefresh();

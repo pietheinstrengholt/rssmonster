@@ -30,7 +30,7 @@ At desktop widths, the mobile toolbar is hidden. The sidebar is fixed at the lef
 
 The desktop sidebar and article pane scroll independently. The sidebar reveals a subtle scrollbar only while it is being scrolled. The mobile toolbar is sticky so collection controls remain reachable while the article content scrolls. In the 768–879 pixel hybrid range, it uses a fixed layer above the document-scrolling article pane and preserves its initial layout space with a measured spacer. That spacer is remeasured after orientation changes and owns the open search panel's offset in this range.
 
-At the top of an active mobile article collection, a resisted downward pull refreshes the current database-backed article query and overview counts. The gesture preserves rendered articles while the request is active, keeps the toolbar visible, and never starts the longer feed-crawl workflow.
+At the top of an active mobile or compact touch-tablet article collection, a resisted downward pull refreshes the current database-backed article query and overview counts. The gesture preserves rendered articles while the request is active, keeps the toolbar visible, and never starts the longer feed-crawl workflow.
 
 The breakpoint behavior belongs to the application shell rather than to individual article views. Changes must be checked on both sides of the breakpoint, including portrait and landscape orientations.
 

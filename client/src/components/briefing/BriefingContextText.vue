@@ -145,11 +145,9 @@ export default {
   outline-offset: 2px;
 }
 
-@media (max-width: 575.98px) and (orientation: portrait) {
+@media (max-width: 879px) and (orientation: portrait) {
   .briefing-context {
-    padding: 0.625rem 0.75rem;
-    font-size: 0.8125rem;
-    line-height: 1.45;
+    display: none;
   }
 }
 

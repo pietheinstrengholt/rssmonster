@@ -15,6 +15,16 @@
         </div>
         <div class="mobile-toolbar-actions">
           <button
+            v-if="selectionSettingsAction"
+            type="button"
+            class="mobile-toolbar-button mobile-selection-settings-button"
+            :title="selectionSettingsAction.label"
+            :aria-label="selectionSettingsAction.label"
+            @click="openSelectionSettings"
+          >
+            <BootstrapIcon icon="sliders2" aria-hidden="true" />
+          </button>
+          <button
             type="button"
             class="mobile-toolbar-button mobile-refresh-button"
             :title="refreshing ? 'Refreshing articles…' : 'Refresh articles'"
@@ -287,6 +297,10 @@
   cursor: wait;
 }
 
+.mobile-selection-settings-button {
+  display: none;
+}
+
 .mobile-toolbar-filters {
   gap: var(--mobile-toolbar-filter-gap);
   min-width: 0;
@@ -461,6 +475,10 @@
     width: 40px;
     height: 40px;
     font-size: 20px;
+  }
+
+  .mobile-selection-settings-button {
+    display: inline-flex;
   }
 
   .mobile-filter-button {
@@ -735,6 +753,11 @@ export default {
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);
     },
+    // This function opens the settings dialog for the active configurable selection.
+    openSelectionSettings() {
+      if (!this.selectionSettingsAction) return;
+      this.uiStore.setShowModal(this.selectionSettingsAction.modalName);
+    },
     // This function closes mobile search when the layout becomes wide enough.
     handleResize() {
       this.scheduleToolbarMeasurement();
@@ -826,6 +849,24 @@ export default {
     },
     currentStatus() {
       return this.currentSelection.status;
+    },
+    // This function maps configurable article selections to their mobile settings dialogs.
+    selectionSettingsAction() {
+      if (this.currentStatus === 'briefing') {
+        return {
+          label: 'Open briefing settings',
+          modalName: 'BriefingPreferences'
+        };
+      }
+
+      if (this.currentStatus === 'unread') {
+        return {
+          label: 'Open unread settings',
+          modalName: 'UnreadConfiguration'
+        };
+      }
+
+      return null;
     },
     isAIEnabled() {
       return this.currentSelection.AIEnabled;

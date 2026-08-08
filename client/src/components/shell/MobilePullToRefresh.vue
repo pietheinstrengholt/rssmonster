@@ -36,6 +36,7 @@ const PULL_THRESHOLD = 72;
 const PULL_MAX_DISTANCE = 112;
 const REFRESH_INDICATOR_HEIGHT = 46;
 const REFRESH_COLLAPSE_DURATION = 160;
+const NESTED_SCROLL_ROOT_SELECTOR = '.readerArticleList, .readerArticlePanel, .expandedArticleLayout';
 
 // This function returns the greatest active vertical scroll offset across mobile scroll roots.
 const getScrollTop = element => Math.max(
@@ -57,6 +58,7 @@ export default {
     return {
       axis: null,
       pullDistance: 0,
+      gestureScrollRoot: null,
       refreshFeedbackTimer: null,
       refreshFeedbackVisible: false,
       refreshRequested: false,
@@ -140,10 +142,12 @@ export default {
       const ignoredTarget = event.target?.closest?.(
         '.mobile-toolbar-container, .mobile-options-overlay, [role="dialog"], input, textarea, select'
       );
+      const gestureScrollRoot = event.target?.closest?.(NESTED_SCROLL_ROOT_SELECTOR)
+        || this.scrollRoot;
       if (
         this.isRefreshActive
         || event.touches.length !== 1
-        || getScrollTop(this.scrollRoot) > 0
+        || getScrollTop(gestureScrollRoot) > 0
         || ignoredTarget
       ) {
         this.resetGesture();
@@ -154,6 +158,7 @@ export default {
       this.startX = touch.clientX;
       this.startY = touch.clientY;
       this.axis = null;
+      this.gestureScrollRoot = gestureScrollRoot;
       this.tracking = true;
       this.pullDistance = 0;
       document.getElementById('mobile-toolbar')?.classList.remove('hide');
@@ -161,7 +166,7 @@ export default {
     // This method converts a confirmed vertical drag into a resisted indicator distance.
     handleTouchMove(event) {
       if (!this.tracking || this.isRefreshActive) return;
-      if (event.touches.length !== 1 || getScrollTop(this.scrollRoot) > 0) {
+      if (event.touches.length !== 1 || getScrollTop(this.gestureScrollRoot) > 0) {
         this.resetGesture();
         return;
       }
@@ -192,6 +197,7 @@ export default {
       const shouldRefresh = this.isReady;
       this.tracking = false;
       this.axis = null;
+      this.gestureScrollRoot = null;
 
       if (shouldRefresh) {
         this.refreshRequested = true;
@@ -209,6 +215,7 @@ export default {
     // This method returns gesture state to its idle position.
     resetGesture() {
       this.axis = null;
+      this.gestureScrollRoot = null;
       this.pullDistance = 0;
       this.refreshRequested = false;
       this.tracking = false;
@@ -255,6 +262,12 @@ export default {
   border-top-color: var(--color-warning);
   height: 16px;
   width: 16px;
+}
+
+.mobile-pull-to-refresh--tablet {
+  position: sticky;
+  top: 56px;
+  z-index: var(--layer-sticky);
 }
 
 @keyframes mobile-pull-to-refresh-spin {

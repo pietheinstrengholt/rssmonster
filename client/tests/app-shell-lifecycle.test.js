@@ -15,6 +15,7 @@ const createLifecycleContext = () => {
     isUnmounting: false,
     connectivityStatus: null,
     persistentSidebarQuery: null,
+    pullToRefreshQuery: null,
     responsiveShellQuery: null,
     overviewIntervalId: null,
     sidebarScrollTimeout: null,
@@ -59,24 +60,41 @@ describe('AppShell lifecycle', () => {
       addEventListener: vi.fn(),
       addListener: undefined
     };
+    const pullToRefreshMediaQuery = {
+      matches: true,
+      addEventListener: vi.fn(),
+      addListener: undefined
+    };
     vi.stubGlobal('matchMedia', vi.fn(query => (
-      query === '(min-width: 880px)' ? desktopMediaQuery : sidebarMediaQuery
+      query === '(min-width: 880px)'
+        ? desktopMediaQuery
+        : query === '(min-width: 768px)'
+          ? sidebarMediaQuery
+          : pullToRefreshMediaQuery
     )));
+    Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, value: 1 });
     const context = {
       handlePersistentSidebarChange: vi.fn(),
+      handlePullToRefreshLayoutChange: vi.fn(),
       handleResponsiveShellChange: vi.fn(),
       isDesktopShell: null,
+      isTabletPullRefreshLayout: null,
       persistentSidebarQuery: null,
+      pullToRefreshQuery: null,
       responsiveShellQuery: null,
-      showPersistentSidebar: null
+      showPersistentSidebar: null,
+      supportsTouch: false
     };
 
     AppShell.methods.setupResponsiveShell.call(context);
 
     expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 880px)');
     expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 768px)');
+    expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 1199px)');
     expect(context.isDesktopShell).toBe(expectedDesktopShell);
+    expect(context.isTabletPullRefreshLayout).toBe(true);
     expect(context.showPersistentSidebar).toBe(expectedPersistentSidebar);
+    expect(context.supportsTouch).toBe(true);
     expect(desktopMediaQuery.addEventListener).toHaveBeenCalledWith(
       'change',
       context.handleResponsiveShellChange
@@ -84,6 +102,10 @@ describe('AppShell lifecycle', () => {
     expect(sidebarMediaQuery.addEventListener).toHaveBeenCalledWith(
       'change',
       context.handlePersistentSidebarChange
+    );
+    expect(pullToRefreshMediaQuery.addEventListener).toHaveBeenCalledWith(
+      'change',
+      context.handlePullToRefreshLayoutChange
     );
   });
 
@@ -105,6 +127,48 @@ describe('AppShell lifecycle', () => {
     });
   });
 
+  it.each([
+    ['iPad portrait at 820 x 1180', false, true, true, true],
+    ['iPad landscape at 1180 x 820', true, true, true, true],
+    ['smaller tablet at 768 x 1024', false, true, true, true],
+    ['mobile at 390 x 844', false, true, true, true],
+    ['desktop at 1440 x 900', true, false, false, false],
+    ['non-touch desktop below 1200px', true, true, false, false]
+  ])('resolves pull-to-refresh eligibility for %s', (
+    _viewport,
+    isDesktopShell,
+    isTabletPullRefreshLayout,
+    supportsTouch,
+    expected
+  ) => {
+    const eligible = AppShell.computed.showMobileArticleRefresh.call({
+      isDesktopShell,
+      isTabletPullRefreshLayout,
+      showArticleFeed: true,
+      supportsTouch
+    });
+
+    expect(eligible).toBe(expected);
+  });
+
+  it('keeps pull-to-refresh eligible while a touch tablet rotates across the shell breakpoint', () => {
+    const context = {
+      isDesktopShell: false,
+      isTabletPullRefreshLayout: true,
+      mobile: null,
+      mobileRefreshSidebarActive: false,
+      pendingMobileFeedRefresh: false,
+      showArticleFeed: true,
+      supportsTouch: true
+    };
+
+    AppShell.methods.handleResponsiveShellChange.call(context, { matches: true });
+    expect(AppShell.computed.showMobileArticleRefresh.call(context)).toBe(true);
+
+    AppShell.methods.handleResponsiveShellChange.call(context, { matches: false });
+    expect(AppShell.computed.showMobileArticleRefresh.call(context)).toBe(true);
+  });
+
   it('removes the responsive breakpoint listener during teardown', () => {
     const desktopMediaQuery = {
       removeEventListener: vi.fn(),
@@ -114,10 +178,16 @@ describe('AppShell lifecycle', () => {
       removeEventListener: vi.fn(),
       removeListener: undefined
     };
+    const pullToRefreshMediaQuery = {
+      removeEventListener: vi.fn(),
+      removeListener: undefined
+    };
     const context = {
       handlePersistentSidebarChange: vi.fn(),
+      handlePullToRefreshLayoutChange: vi.fn(),
       handleResponsiveShellChange: vi.fn(),
       persistentSidebarQuery: sidebarMediaQuery,
+      pullToRefreshQuery: pullToRefreshMediaQuery,
       responsiveShellQuery: desktopMediaQuery
     };
 
@@ -131,7 +201,12 @@ describe('AppShell lifecycle', () => {
       'change',
       context.handlePersistentSidebarChange
     );
+    expect(pullToRefreshMediaQuery.removeEventListener).toHaveBeenCalledWith(
+      'change',
+      context.handlePullToRefreshLayoutChange
+    );
     expect(context.persistentSidebarQuery).toBeNull();
+    expect(context.pullToRefreshQuery).toBeNull();
     expect(context.responsiveShellQuery).toBeNull();
   });
 

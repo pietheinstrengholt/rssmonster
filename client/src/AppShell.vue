@@ -42,6 +42,7 @@
         <app-initial-feeds v-if="showOnboarding" @completed="completeOnboarding"></app-initial-feeds>
         <app-mobile-pull-to-refresh
           v-if="showMobileArticleRefresh"
+          :class="{ 'mobile-pull-to-refresh--tablet': isDesktopShell === true }"
           :refreshing="databaseRefreshActive"
           @refresh="refreshArticlesFromDatabase"
         />
@@ -164,7 +165,7 @@
 /* Uses document scrolling for the hybrid mobile toolbar and persistent sidebar layout. */
 @media (min-width: 768px) and (max-width: 879px) {
   #home {
-    display: block;
+    display: flex;
     height: auto;
     padding-left: 0;
     overflow: visible;
@@ -310,7 +311,10 @@ export default {
       overviewReloading: false,
       pendingMobileFeedRefresh: false,
       persistentSidebarQuery: null,
+      pullToRefreshQuery: null,
       responsiveShellQuery: null,
+      supportsTouch: false,
+      isTabletPullRefreshLayout: false,
       showPersistentSidebar: null,
       sidebarComponent: null,
       sidebarScrollTimeout: null,
@@ -362,26 +366,34 @@ export default {
     setupResponsiveShell() {
       if (typeof window === 'undefined') {
         this.isDesktopShell = true;
+        this.isTabletPullRefreshLayout = false;
         this.showPersistentSidebar = true;
+        this.supportsTouch = false;
         return;
       }
 
+      this.supportsTouch = Number(navigator.maxTouchPoints) > 0;
       if (typeof window.matchMedia !== 'function') {
         this.isDesktopShell = window.innerWidth >= 880;
+        this.isTabletPullRefreshLayout = window.innerWidth < 1200;
         this.showPersistentSidebar = window.innerWidth >= 768;
         return;
       }
 
       this.responsiveShellQuery = window.matchMedia('(min-width: 880px)');
       this.persistentSidebarQuery = window.matchMedia('(min-width: 768px)');
+      this.pullToRefreshQuery = window.matchMedia('(max-width: 1199px)');
       this.isDesktopShell = this.responsiveShellQuery.matches;
+      this.isTabletPullRefreshLayout = this.pullToRefreshQuery.matches;
       this.showPersistentSidebar = this.persistentSidebarQuery.matches;
       if (typeof this.responsiveShellQuery.addEventListener === 'function') {
         this.responsiveShellQuery.addEventListener('change', this.handleResponsiveShellChange);
         this.persistentSidebarQuery.addEventListener('change', this.handlePersistentSidebarChange);
+        this.pullToRefreshQuery.addEventListener('change', this.handlePullToRefreshLayoutChange);
       } else {
         this.responsiveShellQuery.addListener?.(this.handleResponsiveShellChange);
         this.persistentSidebarQuery.addListener?.(this.handlePersistentSidebarChange);
+        this.pullToRefreshQuery.addListener?.(this.handlePullToRefreshLayoutChange);
       }
     },
     // This function removes the responsive shell listener owned by this component.
@@ -396,8 +408,14 @@ export default {
       } else {
         this.persistentSidebarQuery?.removeListener?.(this.handlePersistentSidebarChange);
       }
+      if (typeof this.pullToRefreshQuery?.removeEventListener === 'function') {
+        this.pullToRefreshQuery.removeEventListener('change', this.handlePullToRefreshLayoutChange);
+      } else {
+        this.pullToRefreshQuery?.removeListener?.(this.handlePullToRefreshLayoutChange);
+      }
       this.responsiveShellQuery = null;
       this.persistentSidebarQuery = null;
+      this.pullToRefreshQuery = null;
     },
     // This function swaps the mounted shell components when the application breakpoint changes.
     handleResponsiveShellChange(event) {
@@ -412,6 +430,10 @@ export default {
     // This function keeps the persistent sidebar mounted at tablet and desktop widths.
     handlePersistentSidebarChange(event) {
       this.showPersistentSidebar = event.matches;
+    },
+    // This function keeps touch-tablet pull-to-refresh eligibility reactive across rotations.
+    handlePullToRefreshLayoutChange(event) {
+      this.isTabletPullRefreshLayout = event.matches;
     },
     // This function retains the async Sidebar instance and starts a pending mobile refresh after it loads.
     setSidebarRef(instance) {
@@ -880,9 +902,10 @@ export default {
         && !this.uiStore.fatalError
         && !this.showOnboarding;
     },
-    // Shows pull-to-refresh only for the active mobile article collection.
+    // Shows pull-to-refresh for active mobile collections and compact touch-tablet layouts.
     showMobileArticleRefresh() {
-      return this.isDesktopShell === false && this.showArticleFeed;
+      const isTouchTabletLayout = this.supportsTouch && this.isTabletPullRefreshLayout;
+      return this.showArticleFeed && (this.isDesktopShell === false || isTouchTabletLayout);
     },
     // Shows onboarding only after a successful empty overview load.
     showOnboarding() {
