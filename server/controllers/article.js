@@ -7,6 +7,7 @@ import {
   getDailyBriefing as getDailyBriefingService
 } from '../services/dailyBriefing/dailyBriefing.service.js';
 import { resolvePredictedAffinity } from '../services/recommendations/predictedAffinityResolver.js';
+import { getArticleRecommendations as getArticleRecommendationsService } from '../services/recommendations/articleRecommendations.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
 // This function normalizes article grouping values used by API consumers.
@@ -335,6 +336,35 @@ const getArticle = async (req, res, _next) => {
   } catch (err) {
     console.error("Error in getArticle:", err);
     return res.status(500).json({ error: 'Unable to load article' });
+  }
+};
+
+// This function returns recent semantic recommendations for one owned canonical article.
+const getArticleRecommendations = async (req, res, _next) => {
+  const userId = req.userData?.userId;
+  const articleId = Number(req.params.articleId);
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized: missing userId' });
+  }
+
+  if (!Number.isSafeInteger(articleId) || articleId <= 0) {
+    return res.status(400).json({ error: 'Invalid articleId' });
+  }
+
+  try {
+    const result = await getArticleRecommendationsService({ userId, articleId });
+    if (!result) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    return res.status(200).json({
+      sourceArticleId: result.sourceArticleId,
+      articles: result.articles
+    });
+  } catch (err) {
+    console.error('Error in getArticleRecommendations:', err);
+    return res.status(500).json({ error: 'Unable to load article recommendations' });
   }
 };
 
@@ -1116,6 +1146,7 @@ export default {
   getArticles,
   getDuplicateArticles,
   getArticle,
+  getArticleRecommendations,
   markAsRead,
   markClicked,
   markNotInterested,

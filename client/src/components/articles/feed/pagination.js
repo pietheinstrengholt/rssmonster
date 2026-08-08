@@ -18,7 +18,8 @@ export function createArticleFeedPaginationState() {
     hasLoadedContent: false,
     isLoading: false,
     currentViewSourceCount: null,
-    activeRequestId: 0
+    activeRequestId: 0,
+    activeReaderRecommendationRequestId: 0
   };
 }
 
@@ -158,7 +159,11 @@ export const articleFeedPaginationMethods = {
       }
 
       this.distance += response.data.length;
-      this.articles = [...this.articles, ...response.data];
+      const loadedArticleIds = new Set(response.data.map(article => String(article.id)));
+      const retainedArticles = this.articles.filter(article => (
+        !article.readerRecommendationInd || !loadedArticleIds.has(String(article.id))
+      ));
+      this.articles = [...retainedArticles, ...response.data];
 
       this.$nextTick(() => {
         this.observeArticles();
@@ -174,8 +179,36 @@ export const articleFeedPaginationMethods = {
     }
   },
 
+  // Loads one recommendation through the existing detail API without changing the middle-pane collection.
+  async loadReaderRecommendationArticle(articleId) {
+    const requestId = ++this.activeReaderRecommendationRequestId;
+    const existingArticle = this.articles.find(article => String(article.id) === String(articleId));
+    if (existingArticle) return existingArticle;
+
+    const collectionRequestId = this.activeRequestId;
+    const response = await fetchArticleDetails(
+      [articleId],
+      this.selectionStore.currentSelection.sort
+    );
+    if (
+      requestId !== this.activeReaderRecommendationRequestId
+      || collectionRequestId !== this.activeRequestId
+    ) return null;
+
+    const article = response.data?.[0];
+    if (!article) return null;
+
+    const readerArticle = {
+      ...article,
+      readerRecommendationInd: true
+    };
+    this.articles = [...this.articles, readerArticle];
+    return readerArticle;
+  },
+
   // Resets only pagination-owned collection state for a new selection.
   resetPaginationState() {
+    this.activeReaderRecommendationRequestId += 1;
     this.articles = [];
     this.container = [];
     this.distance = 0;

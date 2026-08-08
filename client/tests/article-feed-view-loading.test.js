@@ -2,12 +2,13 @@ import { flushPromises, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
-import { fetchArticleIds } from '../src/api/articles.js';
+import { fetchArticleIds, fetchArticleRecommendations } from '../src/api/articles.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
   fetchArticleDetails: vi.fn(),
   fetchArticleIds: vi.fn(),
+  fetchArticleRecommendations: vi.fn(),
   markAllAsRead: vi.fn(),
   markArticleSeen: vi.fn(),
   markArticlesAsRead: vi.fn(),
@@ -81,6 +82,20 @@ beforeEach(() => {
 });
 
 describe('ArticleFeed view loading', () => {
+  it('does not request recommendations in expanded or mobile Reader layouts', async () => {
+    const wrapper = mountArticleFeed();
+    await flushPromises();
+
+    wrapper.vm.selectionStore.currentSelection.viewMode = 'reader';
+    await flushPromises();
+
+    expect(wrapper.find('.article-list-view-stub').exists()).toBe(true);
+    expect(wrapper.find('.article-reader-layout-stub').exists()).toBe(false);
+    expect(fetchArticleRecommendations).not.toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
+
   it('switches among the eager list and lazy reader and Smart Folder views', async () => {
     const wrapper = mountArticleFeed();
     await flushPromises();

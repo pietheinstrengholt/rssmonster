@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   fetchArticleDetails,
   fetchArticleIds,
+  fetchArticleRecommendations,
   fetchDailyBriefing,
   fetchDuplicateArticles,
   markAllAsRead,
@@ -45,6 +46,7 @@ describe('article content API contracts', () => {
     fetchArticleIds(selection);
     fetchDailyBriefing({ selectionPeriod: '24h' });
     fetchArticleDetails([3, 7], 'desc');
+    fetchArticleRecommendations(11);
     fetchDuplicateArticles('article/5');
 
     expect(get).toHaveBeenNthCalledWith(1, '/articles', {
@@ -63,6 +65,11 @@ describe('article content API contracts', () => {
     });
     expect(get).toHaveBeenNthCalledWith(
       3,
+      '/articles/11/recommendations',
+      { suppressGlobalError: true }
+    );
+    expect(get).toHaveBeenNthCalledWith(
+      4,
       '/articles/duplicates/article/5'
     );
   });

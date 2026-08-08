@@ -8,6 +8,7 @@ export const router = express.Router();
 router.get('/', userMiddleware.isLoggedIn, articleController.getArticles);
 router.get('/briefing', userMiddleware.isLoggedIn, articleController.getDailyBriefing);
 router.get('/duplicates/:articleId', userMiddleware.isLoggedIn, articleController.getDuplicateArticles);
+router.get('/:articleId/recommendations', userMiddleware.isLoggedIn, articleController.getArticleRecommendations);
 router.get('/:articleId', userMiddleware.isLoggedIn, articleController.getArticle);
 router.post('/markasread', userMiddleware.isLoggedIn, articleController.markAsRead);
 router.post('/markclicked', userMiddleware.isLoggedIn, articleController.markClicked);

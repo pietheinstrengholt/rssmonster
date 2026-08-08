@@ -4,7 +4,7 @@
     :smart-folders="overviewStore.smartFolders"
     @selectSmartFolder="selectSmartFolderFromOverview"
   />
-  <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
+  <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @select-recommendation="openReaderRecommendation" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
   </ArticleReaderLayout>
   <ArticleListView v-else ref="articleLayout" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
   </ArticleListView>
@@ -375,22 +375,40 @@ export default {
     async handleReaderBulkAction({ action, selectedArticleId }) {
       if (this.selectionStore.currentSelection.viewMode !== 'reader') return;
 
+      const readerCollectionArticles = this.articles.filter(article => !article.readerRecommendationInd);
+
       try {
         if (action === 'favorite-visible') {
-          await this.favoriteReaderArticles(this.articles);
+          await this.favoriteReaderArticles(readerCollectionArticles);
           return;
         }
 
         if (action === 'mark-visible-clicked') {
-          await this.markReaderArticlesClicked(this.articles);
+          await this.markReaderArticlesClicked(readerCollectionArticles);
           return;
         }
 
-        const articles = this.getReaderBulkReadArticles(action, selectedArticleId);
+        const articles = this.getReaderBulkReadArticles(action, selectedArticleId)
+          .filter(article => !article.readerRecommendationInd);
         await this.markReaderArticlesRead(articles);
       } catch (error) {
         console.error('Error handling reader bulk action:', error);
         notifyActionError('Could not update the selected articles. Please try again.', error);
+      }
+    },
+
+    // Opens a recommendation through the Reader's existing selection and scroll-reset behavior.
+    async openReaderRecommendation(articleId) {
+      if (!this.isReaderLayoutActive) return;
+
+      try {
+        const article = await this.loadReaderRecommendationArticle(articleId);
+        if (!article || !this.isReaderLayoutActive) return;
+
+        await this.$nextTick();
+        this.$refs.articleLayout?.selectArticle(article.id);
+      } catch (error) {
+        console.error(`Error loading Reader recommendation ${articleId}:`, error);
       }
     },
 

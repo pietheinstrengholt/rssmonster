@@ -335,6 +335,29 @@ describe('ArticleFeed loading races', () => {
     expect(context.isLoading).toBe(false);
   });
 
+  it('loads a recommendation through article details and selects it in the existing Reader', async () => {
+    fetchArticleDetails.mockResolvedValueOnce({
+      data: [{ id: 9, title: 'Recommended article' }]
+    });
+    const selectArticle = vi.fn();
+    const context = createLoadingContext();
+    context.isReaderLayoutActive = true;
+    context.$refs = { articleLayout: { selectArticle } };
+    context.loadReaderRecommendationArticle = articleId => (
+      ArticleFeed.methods.loadReaderRecommendationArticle.call(context, articleId)
+    );
+
+    await ArticleFeed.methods.openReaderRecommendation.call(context, 9);
+
+    expect(fetchArticleDetails).toHaveBeenCalledWith([9], 'desc');
+    expect(context.articles).toEqual([{
+      id: 9,
+      title: 'Recommended article',
+      readerRecommendationInd: true
+    }]);
+    expect(selectArticle).toHaveBeenCalledWith(9);
+  });
+
   it('reconciles every article returned as read by the server', async () => {
     const context = createLoadingContext();
     context.articles = [

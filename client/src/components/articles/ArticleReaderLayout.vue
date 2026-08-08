@@ -213,6 +213,11 @@
         @duplicate-articles-collapsed="$emit('duplicate-articles-collapsed', $event)"
         @article-not-interested="$emit('article-not-interested', $event)"
       />
+      <ArticleRecommendations
+        v-if="selectedArticle && recommendations.length"
+        :articles="recommendations"
+        @select="handleRecommendationSelect"
+      />
     </section>
   </div>
 </template>
@@ -232,6 +237,7 @@ import {
   getArticleKeyboardCommand
 } from '../../services/articleKeyboardCommands.js';
 import ArticleItem from "./Article.vue";
+import ArticleRecommendations from './ArticleRecommendations.vue';
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 import ArticleRefreshState from "./ArticleRefreshState.vue";
@@ -240,7 +246,10 @@ import UnreadSelectionContext from "./UnreadSelectionContext.vue";
 import { formatRelativeDate } from '../../utils/date';
 import { formatTagName } from '../../utils/tags';
 import { hasRenderableContent, usableHttpUrl } from '../../utils/content';
-import { markClicked as markArticleClickedAPI } from '../../api/articles';
+import {
+  fetchArticleRecommendations,
+  markClicked as markArticleClickedAPI
+} from '../../api/articles';
 import { notifyActionError } from '../../services/actionNotifications.js';
 import { getArticleStatusOption } from '../../config/articleSelectionOptions.js';
 
@@ -249,6 +258,7 @@ const PREVIEW_LENGTH = 150;
 export default {
   components: {
     ArticleItem,
+    ArticleRecommendations,
     ArticleEmptyState,
     ArticleEndState,
     ArticleRefreshState,
@@ -274,7 +284,8 @@ export default {
     'open-smart-folders',
     'view-tag-status',
     'forceReload',
-    'bulk-action'
+    'bulk-action',
+    'select-recommendation'
   ],
   props: {
     articles: {
@@ -304,7 +315,11 @@ export default {
       bulkMenuStyle: {},
       articleListScrollTimeout: null,
       readerArticlePanelScrollTimeout: null,
-      pendingClickedArticleIds: new Set()
+      pendingClickedArticleIds: new Set(),
+      recommendations: [],
+      recommendationsLoading: false,
+      recommendationsError: false,
+      recommendationRequestId: 0
     };
   },
   mounted() {
@@ -314,6 +329,7 @@ export default {
     document.addEventListener('click', this.closeBulkMenu);
   },
   beforeUnmount() {
+    this.recommendationRequestId += 1;
     window.removeEventListener('keydown', this.handleReaderKeydown);
     window.removeEventListener('resize', this.updateBulkMenuPosition);
     window.removeEventListener('scroll', this.updateBulkMenuPosition, true);
@@ -432,7 +448,7 @@ export default {
     // Returns the distinct event count in the loaded reader list.
     eventCount() {
       const eventIds = new Set();
-      for (const article of this.articles) {
+      for (const article of this.articles.filter(item => !item.readerRecommendationInd)) {
         const eventId = article.event?.id || article.eventId;
         if (eventId) eventIds.add(eventId);
       }
@@ -444,12 +460,15 @@ export default {
         return this.currentViewSourceCount;
       }
 
-      return new Set(this.articles.map(article => article.feedId || article.feed?.id).filter(Boolean)).size;
+      return new Set(this.articles
+        .filter(article => !article.readerRecommendationInd)
+        .map(article => article.feedId || article.feed?.id)
+        .filter(Boolean)).size;
     },
     // Returns the most frequent tags in the loaded reader list.
     topVisibleTags() {
       const counts = new Map();
-      for (const article of this.articles) {
+      for (const article of this.articles.filter(item => !item.readerRecommendationInd)) {
         for (const tag of article.tags || article.Tags || []) {
           if (!tag?.name) continue;
           counts.set(tag.name, (counts.get(tag.name) || 0) + 1);
@@ -477,7 +496,7 @@ export default {
         status: this.currentSelection,
         isFlushed: this.isFlushed,
         unreadCount: this.currentViewUnreadCount,
-        articles: this.articles,
+        articles: this.articles.filter(article => !article.readerRecommendationInd),
         markAsReadOnScroll: this.selectionStore.effectiveMarkAsReadOnScroll,
         unreadsSinceLastUpdate: this.unreadsSinceLastUpdate,
         articleCount: this.container.length
@@ -488,16 +507,25 @@ export default {
     articles: {
       immediate: true,
       handler(articles) {
-        const selectableArticles = articles.filter(article => !article.clusterParentId);
+        const selectableArticles = articles.filter(article => (
+          !article.clusterParentId && !article.readerRecommendationInd
+        ));
 
         if (!selectableArticles.length) {
           this.selectedArticleId = null;
           return;
         }
 
-        if (!selectableArticles.some(article => article.id === this.selectedArticleId)) {
+        if (!articles.some(article => article.id === this.selectedArticleId)) {
           this.selectedArticleId = selectableArticles[0].id;
         }
+      }
+    },
+    selectedArticleId: {
+      immediate: true,
+      // Refreshes recommendations independently whenever the Reader selection changes.
+      handler(articleId) {
+        this.loadRecommendations(articleId);
       }
     },
     container() {
@@ -530,7 +558,39 @@ export default {
     },
     // Returns the primary collection articles that belong in the reader's middle pane.
     getReaderListArticles() {
-      return this.articles.filter(article => !article.clusterParentId);
+      return this.articles.filter(article => (
+        !article.clusterParentId && !article.readerRecommendationInd
+      ));
+    },
+    // Fetches recommendations without blocking or surfacing failures in the article pane.
+    async loadRecommendations(articleId) {
+      const requestId = ++this.recommendationRequestId;
+      this.recommendations = [];
+      this.recommendationsError = false;
+      this.recommendationsLoading = Boolean(articleId);
+
+      if (!articleId) return;
+
+      try {
+        const response = await fetchArticleRecommendations(articleId);
+        if (requestId !== this.recommendationRequestId) return;
+
+        this.recommendations = Array.isArray(response.data?.articles)
+          ? response.data.articles.slice(0, 4)
+          : [];
+      } catch {
+        if (requestId !== this.recommendationRequestId) return;
+        this.recommendationsError = true;
+      } finally {
+        if (requestId === this.recommendationRequestId) {
+          this.recommendationsLoading = false;
+        }
+      }
+    },
+    // Delegates recommendation selection to the feed that owns article detail loading.
+    handleRecommendationSelect(article) {
+      if (!article?.id) return;
+      this.$emit('select-recommendation', article.id);
     },
     // Shows the article-list scrollbar while the user is actively scrolling.
     handleArticleListScroll() {

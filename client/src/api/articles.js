@@ -19,6 +19,12 @@ export const fetchArticleDetails = (articleIds, sort) =>
     sort
   });
 
+// This function fetches semantic recommendations for one selected Reader article.
+export const fetchArticleRecommendations = articleId =>
+  api.get(`/articles/${articleId}/recommendations`, {
+    suppressGlobalError: true
+  });
+
 // This function fetches duplicates belonging to one canonical article.
 export const fetchDuplicateArticles = articleId =>
   api.get(`/articles/duplicates/${articleId}`);
