@@ -10,7 +10,6 @@ const mocked = vi.hoisted(() => ({
   jwtSign: vi.fn(),
   settingFindOne: vi.fn(),
   settingFindOrCreate: vi.fn(),
-  transaction: vi.fn(),
   userCount: vi.fn(),
   userCreate: vi.fn(),
   userFindOne: vi.fn()
@@ -53,9 +52,6 @@ vi.mock('../../models/index.js', () => ({
       count: mocked.userCount,
       create: mocked.userCreate,
       findOne: mocked.userFindOne
-    },
-    sequelize: {
-      transaction: mocked.transaction
     }
   }
 }));
@@ -102,11 +98,10 @@ const validPreferences = (overrides = {}) => ({
   ...overrides
 });
 
-// Resets dependency behavior and reinstates the transaction callback contract.
+// Resets dependency behavior before each controller edge-case test.
 const resetMocks = () => {
   vi.resetAllMocks();
   vi.spyOn(console, 'error').mockImplementation(() => {});
-  mocked.transaction.mockImplementation(async callback => callback({ id: 'transaction' }));
 };
 
 describe('auth controller edge cases', () => {
@@ -220,7 +215,7 @@ describe('briefing controller edge cases', () => {
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ error });
-    expect(mocked.transaction).not.toHaveBeenCalled();
+    expect(mocked.briefingUpsert).not.toHaveBeenCalled();
   });
 
   it('reports preference read and write failures with stable errors', async () => {
@@ -232,7 +227,7 @@ describe('briefing controller edge cases', () => {
       error: 'Unable to load Briefing Preferences'
     });
 
-    mocked.transaction.mockRejectedValueOnce(new Error('write failed'));
+    mocked.briefingUpsert.mockRejectedValueOnce(new Error('write failed'));
     const writeRes = createResponse();
     await briefingController.updateBriefingPreferences(
       createRequest({ body: { preferences: validPreferences() } }),
