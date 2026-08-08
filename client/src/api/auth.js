@@ -1,4 +1,4 @@
-import api, { setAuthToken } from './client';
+import api from './client';
 
 // This function validates a saved session without persisting its bootstrap token.
 export const validateSession = async (token) => {
@@ -35,11 +35,4 @@ export const developmentLogin = async () => {
 export const register = async (credentials) => {
   const response = await api.post('/auth/register', credentials);
   return response.data;
-};
-
-/**
- * Apply token globally after successful auth
- */
-export const applyAuthToken = (token) => {
-  setAuthToken(token);
 };

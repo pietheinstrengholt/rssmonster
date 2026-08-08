@@ -1,35 +1,14 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
-import Article from '../src/components/articles/Article.vue';
-import { createFocusedStores } from './helpers/focusedStores.js';
+import ArticleMeta from '../src/components/articles/ArticleMeta.vue';
 
-// This function mounts an article with the store shape used by the component.
+// This function mounts article metadata with the publication date under test.
 function mountArticle(props = {}) {
-  const stores = createFocusedStores({
-    overview: { categories: [] },
-    selection: { currentSelection: { viewMode: 'minimal', grouping: 'none' } }
-  });
-  return mount(Article, {
+  return mount(ArticleMeta, {
     props: {
-      id: 1,
-      title: 'Test article',
-      url: 'https://example.com/article',
       publishedAt: '2026-06-07T10:00:00.000Z',
-      feed: {
-        url: 'https://example.com/feed.xml',
-        feedName: 'Example Feed'
-      },
-      status: 'unread',
-      favoriteInd: 0,
-      hotInd: 0,
-      clickedAmount: 0,
+      neutralScore: 70,
       ...props
-    },
-    global: {
-      stubs: {
-        BootstrapIcon: true
-      },
-      plugins: [stores.pinia]
     }
   });
 }
@@ -47,7 +26,7 @@ describe('Article date formatting', () => {
       publishedAt: '2026-06-07T10:07:00.000Z'
     });
 
-    expect(wrapper.vm.formatDate(wrapper.props('publishedAt'))).toBe('7 minutes ago');
+    expect(wrapper.get('.article-published').text()).toBe('7 minutes ago');
   });
 
   it('keeps normal relative time formatting for past publication dates', () => {
@@ -58,6 +37,6 @@ describe('Article date formatting', () => {
       publishedAt: '2026-06-07T10:00:00.000Z'
     });
 
-    expect(wrapper.vm.formatDate(wrapper.props('publishedAt'))).toBe('7 minutes ago');
+    expect(wrapper.get('.article-published').text()).toBe('7 minutes ago');
   });
 });

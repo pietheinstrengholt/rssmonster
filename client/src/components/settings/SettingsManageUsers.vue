@@ -56,16 +56,14 @@
             </div>
 
     <div v-else class="manage-users__directory">
-              <section class="manage-users__insight-card" aria-labelledby="manage-users-title">
-                <span class="manage-users__insight-icon" aria-hidden="true">
-                  <BootstrapIcon icon="people-fill" />
-                </span>
-                <div>
-                  <p class="manage-users__page-eyebrow">Settings — Manage Users</p>
-                  <h3 id="manage-users-title">Users Overview</h3>
-                  <p>Review RSSMonster accounts, update roles, and manage user access from one place.</p>
-                </div>
-              </section>
+              <SettingsPageIntro
+                eyebrow="Settings — Manage Users"
+                icon="people-fill"
+                title="Users Overview"
+                title-id="manage-users-title"
+              >
+                Review RSSMonster accounts, update roles, and manage user access from one place.
+              </SettingsPageIntro>
               <p
                 v-if="message"
                 class="manage-users__message"
@@ -121,70 +119,6 @@
 <style scoped>
 .manage-users {
   max-width: 1100px;
-}
-
-.manage-users__insight-card {
-  background: var(--settings-info-bg);
-  border: 1px solid var(--settings-info-border);
-  border-radius: 14px;
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding: 24px;
-}
-
-.manage-users__insight-icon {
-  align-items: center;
-  background: var(--bg-primary);
-  border-radius: 12px;
-  color: var(--settings-info-text);
-  display: inline-flex;
-  flex: 0 0 42px;
-  font-size: 20px;
-  height: 42px;
-  justify-content: center;
-  line-height: 1;
-  width: 42px;
-}
-
-.manage-users__insight-icon .bi,
-.manage-users__insight-icon svg {
-  display: block;
-  height: 20px;
-  width: 20px;
-}
-
-.manage-users__page-eyebrow {
-  color: var(--color-primary);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  margin: 0 0 4px;
-  text-transform: uppercase;
-}
-
-.manage-users__insight-card h3 {
-  color: var(--text-primary);
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.manage-users__insight-card p:not(.manage-users__page-eyebrow) {
-  color: var(--text-muted);
-  font-size: 14px;
-  line-height: 1.5;
-  margin: 6px 0 0;
-  max-width: 760px;
-}
-
-:global(:root[data-theme='dark'] .manage-users .manage-users__insight-card) {
-  background: var(--bg-modal);
-  border-color: var(--border-default);
-}
-
-:global(:root[data-theme='dark'] .manage-users .manage-users__insight-icon) {
-  background: var(--bg-control);
 }
 
 .manage-users__eyebrow {
@@ -570,15 +504,17 @@
 import { mapStores } from 'pinia';
 import { useAuthStore } from '../../store/auth.js';
 import { fetchUsers, updateUser, deleteUser } from '../../api/users';
-import { setAuthToken } from '../../api/client';
 import { isFatalActionError } from '../../services/actionNotifications.js';
+import SettingsPageIntro from './SettingsPageIntro.vue';
 
 export default {
     name: 'SettingsManageUsers',
+    components: {
+      SettingsPageIntro
+    },
     emits: ['close'],
-    // This function applies authentication and loads the admin-only user directory.
+    // This function loads the admin-only user directory after confirming access.
     created: function() {
-        setAuthToken(this.authStore.token);
         if (!this.isAdmin) {
           this.message = 'You need admin rights to manage users.';
           return;

@@ -88,16 +88,17 @@ function mountArticleList(currentSelection = 'briefing', selectionOverrides = {}
   return shallowMount(ArticleListView, {
     props: {
       articles: [{ id: 1 }],
-      pool: new Set(),
       container: [1],
-      currentSelection,
-      currentViewUnreadCount: 0,
+      collectionSummary: {
+        status: currentSelection, selectedTag: '', unreadCount: 0, sourceCount: null
+      },
+      collectionProgress: {
+        hasLoadedContent: false,
+        isFlushed: false,
+        hasReachedEnd: false,
+        showFeedRefreshProgress: true
+      },
       viewMode: 'full',
-      remainingItems: 1,
-      fetchCount: 20,
-      hasLoadedContent: false,
-      isFlushed: false,
-      distance: 0
     },
     global: {
       plugins: [stores.pinia]
@@ -129,14 +130,15 @@ function mountReaderLayout(hasLoadedContent, selectionOverrides = {}) {
     props: {
       articles: [],
       container: [],
-      currentSelection: 'briefing',
-      currentViewUnreadCount: 0,
-      currentViewSourceCount: 0,
-      remainingItems: 0,
-      fetchCount: 20,
-      hasLoadedContent,
-      isFlushed: false,
-      distance: 0
+      collectionSummary: {
+        status: 'briefing', selectedTag: '', unreadCount: 0, sourceCount: 0
+      },
+      collectionProgress: {
+        hasLoadedContent,
+        isFlushed: false,
+        hasReachedEnd: false,
+        showFeedRefreshProgress: true
+      }
     },
     global: {
       plugins: [stores.pinia]
@@ -232,7 +234,11 @@ describe('DailyBriefingIntro', () => {
       wrapper.html().indexOf('article-item-stub')
     );
 
-    await wrapper.setProps({ currentSelection: 'unread' });
+    await wrapper.setProps({
+      collectionSummary: {
+        status: 'unread', selectedTag: '', unreadCount: 0, sourceCount: null
+      }
+    });
 
     expect(wrapper.findComponent(DailyBriefingIntro).exists()).toBe(false);
   });

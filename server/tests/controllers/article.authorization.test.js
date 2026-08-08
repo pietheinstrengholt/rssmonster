@@ -348,7 +348,9 @@ describe('article ownership authorization', () => {
     expect(res.body.briefingCount).toBe(2);
     expect(res.body.briefingSelectionPeriod).toBe('7d');
     expect(res.body.briefingIncludeOnlyUnreadArticles).toBe(false);
+    expect(res.body.briefingMarkAsReadOnScroll).toBe(false);
     expect(res.body.briefingPrioritizeHighTrust).toBe(false);
+    expect(res.body.briefingShowOnlyDevelopingEventArticles).toBe(false);
     expect(res.body.unreadCount).toBe(1);
     expect(res.body.categories[0].briefingCount).toBe(2);
     expect(res.body.categories[0].feeds[0].briefingCount).toBe(2);
@@ -373,7 +375,7 @@ describe('article ownership authorization', () => {
     expect(oneDayResponse.body.categories[0].feeds[0].briefingCount).toBe(1);
 
     await BriefingPreference.update(
-      { includeOnlyUnreadArticles: true },
+      { includeOnlyUnreadArticles: true, markAsReadOnScroll: true },
       { where: { userId: owner.id } }
     );
 
@@ -384,6 +386,7 @@ describe('article ownership authorization', () => {
 
     expect(unreadOnlyResponse.status).toBe(200);
     expect(unreadOnlyResponse.body.briefingIncludeOnlyUnreadArticles).toBe(true);
+    expect(unreadOnlyResponse.body.briefingMarkAsReadOnScroll).toBe(true);
     expect(unreadOnlyResponse.body.briefingCount).toBe(0);
     expect(unreadOnlyResponse.body.categories[0].briefingCount).toBe(0);
     expect(unreadOnlyResponse.body.categories[0].feeds[0].briefingCount).toBe(0);
@@ -760,6 +763,50 @@ describe('article ownership authorization', () => {
       'read',
       'read'
     ]);
+  });
+
+  // Verifies a final list snapshot cannot be broadened by a new live unread search.
+  it('treats snapshot article IDs as the complete mark-as-read scope', async () => {
+    const owner = await createUser(uniqueName('snapshot-read-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    const excludedArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/excluded-from-snapshot`,
+      title: `${owner.username} excluded from snapshot`,
+      publishedAt: new Date('2026-05-01T12:00:00Z')
+    });
+
+    const response = await request(app)
+      .post('/api/articles/markasread')
+      .set('Authorization', authHeaderFor(owner))
+      .send({
+        grouping: 'none',
+        snapshotArticleIds: [article.id]
+      });
+
+    await Promise.all([article.reload(), excludedArticle.reload()]);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ updatedCount: 1, matchedCount: 1 });
+    expect(article.status).toBe('read');
+    expect(excludedArticle.status).toBe('unread');
+    expect(excludedArticle.readAt).toBeNull();
+
+    const emptySnapshotResponse = await request(app)
+      .post('/api/articles/markasread')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ grouping: 'none', snapshotArticleIds: [] });
+
+    await excludedArticle.reload();
+
+    expect(emptySnapshotResponse.status).toBe(200);
+    expect(emptySnapshotResponse.body).toMatchObject({
+      updatedCount: 0,
+      matchedCount: 0
+    });
+    expect(excludedArticle.status).toBe('unread');
   });
 
   it('mark-as-read with topic grouping updates every event and reports topic article counts', async () => {

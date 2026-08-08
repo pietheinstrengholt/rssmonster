@@ -1,18 +1,14 @@
 <template>
   <div class="settings-group">
-    <section class="settings-insight-card" aria-labelledby="settings-welcome-title">
-      <span class="settings-insight-icon" aria-hidden="true">
-        <BootstrapIcon icon="info-circle-fill" />
-      </span>
-      <div>
-        <p class="settings-page-eyebrow">Settings — Overview</p>
-        <h3 id="settings-welcome-title">Welcome to Settings</h3>
-        <p>
-          RSSMonster provides powerful automation and filtering tools to help you take control of your reading experience.
-          Configure how articles are processed, filtered, and organized to surface the content that matters most to you.
-        </p>
-      </div>
-    </section>
+    <SettingsPageIntro
+      eyebrow="Settings — Overview"
+      icon="info-circle-fill"
+      title="Welcome to Settings"
+      title-id="settings-welcome-title"
+    >
+      RSSMonster provides powerful automation and filtering tools to help you take control of your reading experience.
+      Configure how articles are processed, filtered, and organized to surface the content that matters most to you.
+    </SettingsPageIntro>
 
     <div v-if="selectionStore.currentSelection.AIEnabled" class="settings-welcome__section">
       <h6><strong>Smart Folders</strong></h6>
@@ -112,7 +108,11 @@
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useAuthStore } from '../../store/auth.js';
+import SettingsPageIntro from './SettingsPageIntro.vue';
 export default {
+  components: {
+    SettingsPageIntro
+  },
   computed: {
     ...mapStores(useSelectionStore, useAuthStore)
   },

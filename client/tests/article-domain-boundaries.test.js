@@ -15,7 +15,13 @@ import {
   createArticleExpansionState,
   articleExpansionMethods
 } from '../src/components/articles/helpers/articleExpansion.js';
-import { articleSignalComputed } from '../src/components/articles/helpers/articleSignals.js';
+import {
+  articleSignalComputed,
+  createArticleSignals,
+  getEventSourceScore,
+  hasHighQualityArticleSignal,
+  hasTrustedSourceSignal
+} from '../src/components/articles/helpers/articleSignals.js';
 import {
   createArticleMobileSwipeState,
   articleMobileSwipeMethods
@@ -117,6 +123,17 @@ afterEach(() => {
 });
 
 describe('Article mobile swipe behavior', () => {
+  it('resets swipe state when the shared portrait query stops matching', () => {
+    const context = createSwipeContext();
+    context.resetSwipe = vi.fn();
+
+    Article.watch.isMobilePortrait.call(context, true);
+    expect(context.resetSwipe).not.toHaveBeenCalled();
+
+    Article.watch.isMobilePortrait.call(context, false);
+    expect(context.resetSwipe).toHaveBeenCalledOnce();
+  });
+
   it('caps horizontal movement and favorites after crossing the threshold', () => {
     vi.useFakeTimers();
     const context = createSwipeContext();
@@ -198,6 +215,26 @@ describe('Article related-article expansion', () => {
 });
 
 describe('Article relevance signals', () => {
+  it('classifies explicit article inputs without a Vue component instance', () => {
+    const article = {
+      author: 'Reporter',
+      event: { sourceCount: '5' },
+      feed: { feedName: 'Trusted Feed', feedTrust: '0.9' },
+      isOfficialSource: false,
+      qualityScore: 91,
+      recommendationScore: 0
+    };
+
+    expect(createArticleSignals(article)).toEqual([
+      { label: 'High quality', icon: 'stars' },
+      { label: 'Trending', icon: 'graph-up-arrow' },
+      { label: 'Trusted source (Trusted Feed)', icon: 'shield-fill-check' }
+    ]);
+    expect(hasHighQualityArticleSignal(article)).toBe(true);
+    expect(hasTrustedSourceSignal(article.feed)).toBe(true);
+    expect(getEventSourceScore({ sourceCount: 'invalid' })).toBe(0);
+  });
+
   it('prioritizes major events and official sources over lower-tier signals', () => {
     const wrapper = mountArticle({
       qualityScore: 0.95,

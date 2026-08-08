@@ -1,18 +1,14 @@
 <template>
   <div class="settings-islands">
-    <section class="settings-insight-card" aria-labelledby="islands-title">
-      <span class="settings-insight-icon" aria-hidden="true">
-        <BootstrapIcon icon="compass-fill" />
-      </span>
-      <div>
-        <p class="settings-page-eyebrow">Settings — Island Insights</p>
-        <h3 id="islands-title">Your evolving interests</h3>
-        <p>
-          Interest islands capture the topics your reading, favorites, and clicks keep reinforcing. Review what is growing,
-          what it is connected to, and how much of your library is covered.
-        </p>
-      </div>
-    </section>
+    <SettingsPageIntro
+      eyebrow="Settings — Island Insights"
+      icon="compass-fill"
+      title="Your evolving interests"
+      title-id="islands-title"
+    >
+      Interest islands capture the topics your reading, favorites, and clicks keep reinforcing. Review what is growing,
+      what it is connected to, and how much of your library is covered.
+    </SettingsPageIntro>
 
     <div v-if="loading" class="settings-islands-loading">
       <span class="app-loading-indicator app-loading-indicator--small" role="status" aria-hidden="true"></span>
@@ -25,22 +21,10 @@
 
     <div v-else>
       <div class="settings-metric-grid">
-        <article class="settings-metric-card">
-          <span class="settings-metric-label">Interest islands</span>
-          <strong>{{ totals.islandCount }}</strong>
-        </article>
-        <article class="settings-metric-card">
-          <span class="settings-metric-label">Island articles</span>
-          <strong>{{ totals.islandArticles }}</strong>
-        </article>
-        <article class="settings-metric-card">
-          <span class="settings-metric-label">Outside islands</span>
-          <strong>{{ totals.nonIslandArticles }}</strong>
-        </article>
-        <article class="settings-metric-card">
-          <span class="settings-metric-label">Coverage</span>
-          <strong>{{ formatPercent(totals.islandCoveragePercent) }}</strong>
-        </article>
+        <SettingsMetric label="Interest islands" :value="totals.islandCount" />
+        <SettingsMetric label="Island articles" :value="totals.islandArticles" />
+        <SettingsMetric label="Outside islands" :value="totals.nonIslandArticles" />
+        <SettingsMetric label="Coverage" :value="formatPercent(totals.islandCoveragePercent)" />
       </div>
 
       <section class="settings-data-panel settings-coverage-panel" aria-labelledby="island-coverage-title">
@@ -227,10 +211,6 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 18px;
-}
-
-.settings-metric-card {
-  padding: 16px;
 }
 
 .settings-data-panel {
@@ -439,9 +419,15 @@
 
 <script>
 import { fetchIslandsOverview } from '../../api/settings';
+import SettingsMetric from './SettingsMetric.vue';
+import SettingsPageIntro from './SettingsPageIntro.vue';
 
 export default {
   name: 'SettingsIslands',
+  components: {
+    SettingsMetric,
+    SettingsPageIntro
+  },
   emits: ['close'],
   data() {
     return {

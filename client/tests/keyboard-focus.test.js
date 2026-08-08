@@ -45,14 +45,15 @@ const mountReaderLayout = (articles = [
   props: {
     articles,
     container: articles.map(article => article.id),
-    currentSelection: 'unread',
-    currentViewUnreadCount: 2,
-    currentViewSourceCount: 2,
-    remainingItems: 0,
-    fetchCount: 20,
-    hasLoadedContent: true,
-    isFlushed: false,
-    distance: 2
+    collectionSummary: {
+      status: 'unread', selectedTag: '', unreadCount: 2, sourceCount: 2
+    },
+    collectionProgress: {
+      hasLoadedContent: true,
+      isFlushed: false,
+      hasReachedEnd: true,
+      showFeedRefreshProgress: true
+    }
   },
   global: {
     plugins: [stores.pinia],

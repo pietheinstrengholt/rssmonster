@@ -77,6 +77,12 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: false
       },
+      // Stores whether unread coverage should eventually favor reliable feeds.
+      prioritizeHighTrust: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       // Selects system, light, or dark color appearance.
       themeMode: {
         type: DataTypes.STRING(10),

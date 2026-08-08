@@ -15,7 +15,8 @@ const {
   Island,
   IslandTopic,
   Tag,
-  Setting
+  Setting,
+  BriefingPreference
 } = db;
 
 describe('articleSearch.service', () => {
@@ -482,6 +483,85 @@ describe('articleSearch.service', () => {
     });
   });
 
+  describe('developing story filtering', () => {
+    it('returns only the unread non-representative article selected by its event', async () => {
+      const createdArticles = [];
+      let developingEvent;
+      let readDevelopingEvent;
+
+      try {
+        for (const values of [
+          { slug: 'representative', status: 'unread' },
+          { slug: 'developing', status: 'unread' },
+          { slug: 'read-representative', status: 'unread' },
+          { slug: 'read-developing', status: 'read' }
+        ]) {
+          createdArticles.push(await Article.create({
+            userId: user.id,
+            feedId: feed.id,
+            url: `https://example.com/article-${values.slug}`,
+            title: `Developing filter ${values.slug}`,
+            status: values.status,
+            publishedAt: new Date(),
+            advertisementScore: 80,
+            sentimentScore: 80,
+            qualityScore: 80
+          }));
+        }
+
+        const [representative, developing, readRepresentative, readDeveloping] = createdArticles;
+        developingEvent = await Event.create({
+          userId: user.id,
+          representativeArticleId: representative.id,
+          developingArticleId: developing.id,
+          articleCount: 2
+        });
+        readDevelopingEvent = await Event.create({
+          userId: user.id,
+          representativeArticleId: readRepresentative.id,
+          developingArticleId: readDeveloping.id,
+          articleCount: 2
+        });
+        await representative.update({ eventId: developingEvent.id });
+        await developing.update({ eventId: developingEvent.id });
+        await readRepresentative.update({ eventId: readDevelopingEvent.id });
+        await readDeveloping.update({ eventId: readDevelopingEvent.id });
+
+        const included = await searchArticles({
+          userId: user.id,
+          search: 'developing:true',
+          status: '%',
+          grouping: 'none',
+          includeDevelopingEvents: false,
+          persistSettings: true
+        });
+        const excluded = await searchArticles({
+          userId: user.id,
+          search: 'developing:false',
+          status: '%'
+        });
+
+        expect(included.itemIds).toEqual([developing.id]);
+        expect(excluded.itemIds).not.toContain(developing.id);
+        expect(excluded.itemIds).toContain(representative.id);
+        expect(excluded.itemIds).toContain(readDeveloping.id);
+        const persistedSettings = await Setting.findOne({ where: { userId: user.id } });
+        expect(persistedSettings.grouping).toBe('event');
+        expect(Boolean(persistedSettings.includeDevelopingEvents)).toBe(true);
+      } finally {
+        if (developingEvent) await developingEvent.destroy();
+        if (readDevelopingEvent) await readDevelopingEvent.destroy();
+        for (const article of createdArticles) {
+          await article.destroy();
+        }
+        await Setting.update(
+          { grouping: 'none', includeDevelopingEvents: false },
+          { where: { userId: user.id } }
+        );
+      }
+    });
+  });
+
   describe('briefing filtering', () => {
     it('combines nonzero interest scores and multi-article event membership', async () => {
       const createdArticles = [];
@@ -552,7 +632,10 @@ describe('articleSearch.service', () => {
         expect(included.itemIds).toContain(eventMemberTwo.id);
         expect(included.itemIds).not.toContain(singleEvent.id);
         expect(included.itemIds).not.toContain(notBriefing.id);
-        expect(includedByStatus.itemIds).toEqual(included.itemIds);
+        expect(includedByStatus.itemIds).toContain(positiveInterest.id);
+        expect(includedByStatus.itemIds).toContain(negativeInterest.id);
+        expect(includedByStatus.itemIds).toContain(eventMemberOne.id);
+        expect(includedByStatus.itemIds).not.toContain(eventMemberTwo.id);
 
         expect(excluded.itemIds).not.toContain(positiveInterest.id);
         expect(excluded.itemIds).not.toContain(negativeInterest.id);
@@ -887,6 +970,133 @@ describe('articleSearch.service', () => {
         if (highCoverageArticle) {
           await Article.destroy({ where: { id: highCoverageArticle.id } });
         }
+      }
+    });
+
+    it('applies unread and briefing high-trust recommendation boosts independently', async () => {
+      const testSuffix = `${Date.now()}-${Math.random()}`;
+      const highTrustFeed = await Feed.create({
+        userId: user.id,
+        categoryId: category.id,
+        feedName: 'Recommendation High Trust Feed',
+        url: `https://example.com/recommended-high-trust-${testSuffix}.xml`,
+        feedTrust: 0.9
+      });
+      const lowTrustFeed = await Feed.create({
+        userId: user.id,
+        categoryId: category.id,
+        feedName: 'Recommendation Low Trust Feed',
+        url: `https://example.com/recommended-low-trust-${testSuffix}.xml`,
+        feedTrust: 0.1
+      });
+      const sharedPublishedAt = new Date();
+      const highTrustArticle = await Article.create({
+        userId: user.id,
+        feedId: highTrustFeed.id,
+        url: `https://example.com/recommended-high-trust-${testSuffix}`,
+        title: 'High trust recommendation candidate',
+        status: 'unread',
+        publishedAt: sharedPublishedAt,
+        advertisementScore: 70,
+        sentimentScore: 70,
+        qualityScore: 70,
+        interestScore: 0.1
+      });
+      const lowTrustArticle = await Article.create({
+        userId: user.id,
+        feedId: lowTrustFeed.id,
+        url: `https://example.com/recommended-low-trust-${testSuffix}`,
+        title: 'Low trust recommendation candidate',
+        status: 'unread',
+        publishedAt: sharedPublishedAt,
+        advertisementScore: 70,
+        sentimentScore: 70,
+        qualityScore: 70,
+        interestScore: 0.5
+      });
+      const [briefingPreference, briefingPreferenceCreated] =
+        await BriefingPreference.findOrCreate({
+          where: { userId: user.id },
+          defaults: { prioritizeHighTrust: false }
+        });
+      const originalBriefingPrioritizeHighTrust = Boolean(
+        briefingPreference.prioritizeHighTrust
+      );
+
+      try {
+        await Setting.update(
+          { prioritizeHighTrust: true },
+          { where: { userId: user.id } }
+        );
+        await briefingPreference.update({ prioritizeHighTrust: false });
+
+        // Loads every generic Unread sort that should blend in the stored trust preference.
+        const unreadBoostedResults = await Promise.all(
+          ['recommended', 'desc', 'asc', 'quality', 'attention'].map(sortValue => searchArticles({
+            userId: user.id,
+            status: 'unread',
+            sort: sortValue
+          }))
+        );
+        const exactTrustSort = await searchArticles({
+          userId: user.id,
+          status: 'unread',
+          sort: 'trust'
+        });
+        const briefingNotBoosted = await searchArticles({
+          userId: user.id,
+          status: 'briefing',
+          sort: 'asc'
+        });
+
+        for (const unreadBoosted of unreadBoostedResults) {
+          expect(unreadBoosted.itemIds.indexOf(highTrustArticle.id))
+            .toBeLessThan(unreadBoosted.itemIds.indexOf(lowTrustArticle.id));
+        }
+        expect(exactTrustSort.itemIds.indexOf(highTrustArticle.id))
+          .toBeLessThan(exactTrustSort.itemIds.indexOf(lowTrustArticle.id));
+        expect(briefingNotBoosted.itemIds.indexOf(lowTrustArticle.id))
+          .toBeLessThan(briefingNotBoosted.itemIds.indexOf(highTrustArticle.id));
+
+        await Setting.update(
+          { prioritizeHighTrust: false },
+          { where: { userId: user.id } }
+        );
+        await briefingPreference.update({ prioritizeHighTrust: true });
+
+        const unreadNotBoosted = await searchArticles({
+          userId: user.id,
+          status: 'unread',
+          sort: 'recommended'
+        });
+        const briefingBoosted = await searchArticles({
+          userId: user.id,
+          status: 'briefing',
+          sort: 'recommended'
+        });
+
+        expect(unreadNotBoosted.itemIds.indexOf(lowTrustArticle.id))
+          .toBeLessThan(unreadNotBoosted.itemIds.indexOf(highTrustArticle.id));
+        expect(briefingBoosted.itemIds.indexOf(highTrustArticle.id))
+          .toBeLessThan(briefingBoosted.itemIds.indexOf(lowTrustArticle.id));
+      } finally {
+        await Setting.update(
+          { prioritizeHighTrust: false },
+          { where: { userId: user.id } }
+        );
+        if (briefingPreferenceCreated) {
+          await briefingPreference.destroy();
+        } else {
+          await briefingPreference.update({
+            prioritizeHighTrust: originalBriefingPrioritizeHighTrust
+          });
+        }
+        await Article.destroy({
+          where: { id: [highTrustArticle.id, lowTrustArticle.id] }
+        });
+        await Feed.destroy({
+          where: { id: [highTrustFeed.id, lowTrustFeed.id] }
+        });
       }
     });
   });

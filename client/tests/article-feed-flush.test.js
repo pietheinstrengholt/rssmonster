@@ -22,6 +22,26 @@ beforeEach(() => {
 });
 
 describe('ArticleFeed final read reconciliation', () => {
+  // Verifies Briefing end-state totals exclude read and expanded related articles.
+  it('counts only unread articles from the Briefing collection snapshot', () => {
+    const context = {
+      ...createFocusedStores({
+        selection: {
+          currentSelection: { status: 'briefing' }
+        }
+      }),
+      container: [101, '102', 103],
+      articles: [
+        { id: '101', status: 'unread' },
+        { id: 102, status: 'read' },
+        { id: 103, status: 'unread' },
+        { id: 104, status: 'unread', clusterParentId: 103 }
+      ]
+    };
+
+    expect(ArticleFeed.computed.currentViewUnreadCount.call(context)).toBe(2);
+  });
+
   it('marks the live selection instead of the stale container snapshot', async () => {
     const fetchOverviewSplit = vi.fn().mockResolvedValue();
     const currentSelection = {

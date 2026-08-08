@@ -57,6 +57,39 @@
                   type="checkbox"
                   role="switch"
                   v-model="form.includeOnlyUnreadArticles"
+                  :disabled="isLoading || isSaving"
+                  @change="handleOnlyUnreadChange"
+                />
+
+                <span class="briefing-switch-control" aria-hidden="true"></span>
+              </span>
+            </label>
+
+            <label
+              v-if="form.includeOnlyUnreadArticles"
+              class="briefing-preferences-option briefing-preferences-option-dependent"
+            >
+              <span class="briefing-preferences-option-icon" aria-hidden="true">
+                <BootstrapIcon icon="check2-circle" />
+              </span>
+
+              <span class="briefing-preferences-option-content">
+                <span class="briefing-preferences-option-title">
+                  Mark as read while scrolling
+                </span>
+
+                <span class="briefing-preferences-option-description">
+                  Automatically mark unread briefing articles as read after you scroll past them. This does not run in Headlines mode.
+                </span>
+              </span>
+
+              <span class="briefing-switch">
+                <input
+                  name="markAsReadOnScroll"
+                  type="checkbox"
+                  role="switch"
+                  v-model="form.markAsReadOnScroll"
+                  :disabled="isLoading || isSaving || !form.includeOnlyUnreadArticles"
                 />
 
                 <span class="briefing-switch-control" aria-hidden="true"></span>
@@ -74,7 +107,7 @@
                 </span>
 
                 <span class="briefing-preferences-option-description">
-                  Include new coverage for events you have already seen.
+                  Use new coverage for events in the morning summary.
                 </span>
               </span>
 
@@ -125,11 +158,11 @@
 
               <span class="briefing-preferences-option-content">
                 <span class="briefing-preferences-option-title">
-                  Show only developing/event articles
+                  Show only developing stories
                 </span>
 
                 <span class="briefing-preferences-option-description">
-                  Limit the briefing to articles belonging to developing events.
+                  Limit the briefing to unread articles selected as new event coverage.
                 </span>
               </span>
 
@@ -301,7 +334,8 @@ import PreferencesDialogShell from '../dialogs/PreferencesDialogShell.vue';
 
 const BRIEFING_RESET_DEFAULTS = Object.freeze({
   includeOnlyUnreadArticles: false,
-  includeDevelopingEvents: true,
+  markAsReadOnScroll: false,
+  includeDevelopingEvents: false,
   showOnlyInterestMatchedArticles: false,
   showOnlyDevelopingEventArticles: false,
   minDistinctSources: 1,
@@ -322,6 +356,7 @@ export default {
     return {
       form: {
         includeOnlyUnreadArticles: false,
+        markAsReadOnScroll: false,
         includeDevelopingEvents: false,
         showOnlyInterestMatchedArticles: false,
         showOnlyDevelopingEventArticles: false,
@@ -363,6 +398,9 @@ export default {
           && this.form.showOnlyDevelopingEventArticles) {
           this.form.showOnlyDevelopingEventArticles = false;
         }
+        if (!this.form.includeOnlyUnreadArticles) {
+          this.form.markAsReadOnScroll = false;
+        }
       } catch (error) {
         if (requestId !== this.activeRequestId) return;
         console.error('Error loading Briefing Preferences:', error);
@@ -371,6 +409,12 @@ export default {
         if (requestId === this.activeRequestId) {
           this.isLoading = false;
         }
+      }
+    },
+    // This function clears the dependent scrolling preference when unread filtering is disabled.
+    handleOnlyUnreadChange() {
+      if (!this.form.includeOnlyUnreadArticles) {
+        this.form.markAsReadOnScroll = false;
       }
     },
     // This function keeps the two article-type filters mutually exclusive.
@@ -406,10 +450,10 @@ export default {
         this.selectionStore.setBriefingFilters({
           selectionPeriod: data.preferences.selectionPeriod,
           includeOnlyUnreadArticles: data.preferences.includeOnlyUnreadArticles,
-          prioritizeHighTrust: data.preferences.prioritizeHighTrust
-        });
-        this.selectionStore.setCurrentSelection({
-          includeDevelopingEvents: data.preferences.includeDevelopingEvents
+          markAsReadOnScroll: data.preferences.markAsReadOnScroll,
+          prioritizeHighTrust: data.preferences.prioritizeHighTrust,
+          showOnlyDevelopingEventArticles:
+            data.preferences.showOnlyDevelopingEventArticles
         });
         this.selectionStore.refreshBriefingSelection();
         void this.selectionStore.refreshOverviewCounts();
@@ -469,6 +513,10 @@ export default {
 
 .briefing-preferences-option + .briefing-preferences-option {
   border-top: 1px solid var(--briefing-preferences-option-border);
+}
+
+.briefing-preferences-option-dependent {
+  padding-left: 2.75rem;
 }
 
 .briefing-preferences-option-icon {

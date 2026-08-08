@@ -12,7 +12,7 @@ The sidebar reflects one shared selection at a time. That selection can identify
 
 The top of the sidebar displays the RSSMonster logo and name, followed by three primary actions:
 
-- **Refresh feeds** starts a feed crawl. While it runs, the sidebar shows live progress, including the current feed, processed feeds, new articles, errors, and recent status messages. A standard refresh is used if live progress is unavailable. Completing the refresh reloads the overview and article list.
+- **Refresh feeds** asks the application feed-refresh store to start a feed crawl. While it runs, the sidebar projects shared live progress, including the current feed, processed feeds, new articles, errors, and recent status messages. A standard refresh is used if live progress is unavailable. Completing the refresh reloads the overview and article list even if the Sidebar is not mounted.
 - **Add new feed** opens the feed-creation flow.
 - **Mark as read** marks all articles covered by the current selection as read and then reloads the overview and article list.
 

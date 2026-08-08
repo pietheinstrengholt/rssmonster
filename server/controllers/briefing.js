@@ -1,11 +1,12 @@
 import db from '../models/index.js';
 
-const { BriefingPreference, Setting } = db;
+const { BriefingPreference } = db;
 const SELECTION_PERIODS = new Set(['24h', '7d']);
 
 // This function returns only the public Daily Briefing preference fields.
 const serializePreferences = preference => ({
   includeOnlyUnreadArticles: Boolean(preference.includeOnlyUnreadArticles),
+  markAsReadOnScroll: Boolean(preference.markAsReadOnScroll),
   includeDevelopingEvents: Boolean(preference.includeDevelopingEvents),
   showOnlyInterestMatchedArticles: Boolean(preference.showOnlyInterestMatchedArticles),
   showOnlyDevelopingEventArticles: Boolean(preference.showOnlyDevelopingEventArticles),
@@ -22,6 +23,7 @@ const validatePreferencesPayload = preferences => {
 
   const booleanFields = [
     'includeOnlyUnreadArticles',
+    'markAsReadOnScroll',
     'includeDevelopingEvents',
     'showOnlyInterestMatchedArticles',
     'showOnlyDevelopingEventArticles',
@@ -35,6 +37,10 @@ const validatePreferencesPayload = preferences => {
   if (preferences.showOnlyInterestMatchedArticles
     && preferences.showOnlyDevelopingEventArticles) {
     return 'Only one article-type filter can be enabled';
+  }
+
+  if (!preferences.includeOnlyUnreadArticles && preferences.markAsReadOnScroll) {
+    return 'markAsReadOnScroll requires includeOnlyUnreadArticles';
   }
 
   if (!Number.isInteger(preferences.minDistinctSources)
@@ -59,20 +65,13 @@ export const getBriefingPreferences = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const [storedPreferences, settings] = await Promise.all([
-      BriefingPreference.findOne({ where: { userId }, raw: true }),
-      Setting.findOne({
-        where: { userId },
-        attributes: ['includeDevelopingEvents'],
-        raw: true
-      })
-    ]);
+    const storedPreferences = await BriefingPreference.findOne({
+      where: { userId },
+      raw: true
+    });
 
     const effectivePreferences = storedPreferences
       || BriefingPreference.build({ userId }).get({ plain: true });
-    if (settings) {
-      effectivePreferences.includeDevelopingEvents = Boolean(settings.includeDevelopingEvents);
-    }
 
     return res.status(200).json({
       preferences: serializePreferences(effectivePreferences)
@@ -102,6 +101,7 @@ export const updateBriefingPreferences = async (req, res, _next) => {
     const storedPreferences = {
       userId,
       includeOnlyUnreadArticles: preferences.includeOnlyUnreadArticles,
+      markAsReadOnScroll: preferences.markAsReadOnScroll,
       includeDevelopingEvents: preferences.includeDevelopingEvents,
       showOnlyInterestMatchedArticles: preferences.showOnlyInterestMatchedArticles,
       showOnlyDevelopingEventArticles: preferences.showOnlyDevelopingEventArticles,
@@ -110,23 +110,7 @@ export const updateBriefingPreferences = async (req, res, _next) => {
       selectionPeriod: preferences.selectionPeriod
     };
 
-    await db.sequelize.transaction(async transaction => {
-      await BriefingPreference.upsert(storedPreferences, { transaction });
-
-      const [settings, created] = await Setting.findOrCreate({
-        where: { userId },
-        defaults: {
-          includeDevelopingEvents: preferences.includeDevelopingEvents
-        },
-        transaction
-      });
-
-      if (!created) {
-        await settings.update({
-          includeDevelopingEvents: preferences.includeDevelopingEvents
-        }, { transaction });
-      }
-    });
+    await BriefingPreference.upsert(storedPreferences);
 
     return res.status(200).json({
       preferences: serializePreferences(storedPreferences)

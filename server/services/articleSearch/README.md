@@ -96,10 +96,17 @@ Boolean filters accept `true` or `false`, case-insensitively.
 | `island:false` | Articles without an applicable active interest island, including articles without an event. |
 | `briefing:true` | Articles with a nonzero interest score or belonging to an event containing more than one article. |
 | `briefing:false` | Articles with a zero interest score that do not belong to a multi-article event. |
+| `developing:true` | Unread articles selected as their event's developing article, when that differs from its representative article. |
+| `developing:false` | Articles that do not currently meet the developing-story conditions. |
 
 Do not specify contradictory state filters such as `read:true unread:true`.
 They target the same database field, and the later executor rule (`read`) wins
 rather than producing a logical contradiction.
+
+`developing:true` always uses event grouping with developing-event selection enabled.
+This is required because the developing article deliberately replaces the event's
+normal representative. The server enforces this presentation even when callers
+send another grouping mode.
 
 ## Metadata filters
 
@@ -166,15 +173,21 @@ restrict this combined set:
   one preserves the base behavior, including qualifying standalone articles.
 - `showOnlyInterestMatchedArticles` replaces the base union with only articles
   whose stored `interestScore` is nonzero.
-- `showOnlyDevelopingEventArticles` replaces the base union with only articles
-  belonging to a user-owned event where `articleCount > 1`.
+- `showOnlyDevelopingEventArticles` replaces the base union with only unread
+  articles selected as a user-owned event's non-representative developing article.
 
 The two `showOnly` preferences are mutually exclusive. When both are disabled,
 the normal interest-matched and developing-event union is used.
 
-When `prioritizeHighTrust` is enabled, the Daily Briefing adds `sort:trust`.
-This changes ordering to feed trust descending, then publication time and
-article ID descending. It does not change eligibility or the sidebar count.
+Daily Briefing always uses `sort:recommended` and event grouping, regardless of
+sort or grouping supplied by a caller. When its `prioritizeHighTrust`
+preference is enabled, each candidate feed's bounded `feedTrust` value is added
+to the runtime recommendation score. The generic Unread
+preference adds the same bounded trust value to Recommended, Newest, Oldest,
+Quality, and Most Engaged ranking. Explicit Trust sorting remains an exact
+database ordering by feed trust, publication date, and article ID. The two
+stored preferences are resolved independently and do not change eligibility or
+sidebar counts.
 
 Tag values should currently be a single unquoted token. Quoted tag values retain
 their quote characters and therefore should not be used.

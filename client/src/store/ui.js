@@ -7,17 +7,7 @@ const initialUiState = () => ({
   mobileSearchOpen: false,
   searchQuery: '',
   themeMode: null,
-  fatalError: null,
-  feedRefreshProgress: {
-    visible: false,
-    currentFeedLabel: 'Waiting to start...',
-    progressPercent: 0,
-    totalFeeds: 0,
-    processedFeeds: 0,
-    newArticles: 0,
-    errors: 0,
-    logs: []
-  }
+  fatalError: null
 });
 
 export const useUiStore = defineStore('ui', {
@@ -53,14 +43,6 @@ export const useUiStore = defineStore('ui', {
     // This action records the current local search input.
     setSearchQuery(query) {
       this.searchQuery = query;
-    },
-
-    // This action shares the live feed-refresh presentation with mobile surfaces.
-    setFeedRefreshProgress(progress) {
-      this.feedRefreshProgress = {
-        ...progress,
-        logs: [...progress.logs]
-      };
     },
 
     // This action publishes an unrecoverable application error.

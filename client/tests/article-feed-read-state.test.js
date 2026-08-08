@@ -29,6 +29,7 @@ const createContext = (overrides = {}) => {
   const stores = createFocusedStores({
     overview: {
       increaseReadCount: vi.fn(),
+      decreaseBriefingCount: vi.fn(),
       decreaseReadCount: vi.fn(),
       fetchOverviewSplit: vi.fn().mockResolvedValue()
     },
@@ -125,6 +126,63 @@ describe('article feed read-state reconciliation', () => {
     });
     expect(context.articles.map(article => article.status)).toEqual(['read', 'read', 'read']);
     expect(context.overviewStore.increaseReadCount).toHaveBeenCalledTimes(2);
+  });
+
+  // Verifies Briefing scrolling translates its enabled preference into an unread transition.
+  it('marks passed briefing articles read and reconciles unread counts', async () => {
+    const context = createContext();
+    context.selectionStore.currentSelection.status = 'briefing';
+    context.selectionStore.briefingIncludeOnlyUnreadArticles = true;
+    context.selectionStore.briefingMarkAsReadOnScroll = true;
+    markArticleSeen.mockResolvedValue({
+      data: {
+        ...context.articles[0],
+        status: 'read',
+        readArticles: [context.articles[0], context.articles[2]]
+      }
+    });
+
+    const persisted = await context.markArticleSeen(1, 3);
+
+    expect(persisted).toBe(true);
+    expect(markArticleSeen).toHaveBeenCalledWith(1, {
+      grouping: 'event',
+      visibleSeconds: 3,
+      selectedStatus: 'unread'
+    });
+    expect(context.articles[0].status).toBe('read');
+    expect(context.overviewStore.increaseReadCount).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 1, feedId: 10 })
+    );
+    expect(context.overviewStore.increaseReadCount).toHaveBeenCalledTimes(2);
+    expect(context.overviewStore.decreaseBriefingCount).toHaveBeenCalledOnce();
+    expect(context.overviewStore.decreaseBriefingCount).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 1, feedId: 10 })
+    );
+  });
+
+  // Verifies Briefing keeps read transitions disabled when its own preference is off.
+  it('records passed briefing articles as seen without changing unread counts when disabled', async () => {
+    const context = createContext();
+    context.selectionStore.currentSelection.status = 'briefing';
+    context.selectionStore.briefingMarkAsReadOnScroll = false;
+    markArticleSeen.mockResolvedValue({
+      data: {
+        ...context.articles[0],
+        firstSeen: '2026-08-08T10:00:00Z'
+      }
+    });
+
+    const persisted = await context.markArticleSeen(1, 3);
+
+    expect(persisted).toBe(true);
+    expect(markArticleSeen).toHaveBeenCalledWith(1, {
+      grouping: 'event',
+      visibleSeconds: 3,
+      selectedStatus: 'briefing'
+    });
+    expect(context.articles[0].status).toBe('unread');
+    expect(context.overviewStore.increaseReadCount).not.toHaveBeenCalled();
   });
 
   // Verifies a transient automatic read failure is retried without duplicating count updates.

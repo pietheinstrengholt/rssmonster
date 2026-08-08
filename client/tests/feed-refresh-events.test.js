@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import api, { setAuthToken } from '../src/api/client.js';
-import { openFeedRefreshEvents } from '../src/api/feeds.js';
+import { openFeedRefreshEvents } from '../src/services/feedRefreshStream.js';
 
 // This function creates a one-chunk response body for deterministic SSE parsing.
 const createEventResponse = eventText => {
@@ -21,8 +21,10 @@ const createEventResponse = eventText => {
 };
 
 afterEach(() => {
+  vi.useRealTimers();
   setAuthToken(null);
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe('feed refresh event stream', () => {
@@ -59,5 +61,80 @@ describe('feed refresh event stream', () => {
       Accept: 'text/event-stream',
       Authorization: api.defaults.headers.common.Authorization
     });
+  });
+
+  // Verifies fragmented chunks, multiline data, comments, and named events retain SSE semantics.
+  it('parses fragmented and multiline event blocks', async () => {
+    const reader = {
+      read: vi.fn()
+        .mockResolvedValueOnce({
+          done: false,
+          value: new TextEncoder().encode(': keepalive\nevent: progress\ndata: {"part":')
+        })
+        .mockResolvedValueOnce({
+          done: false,
+          value: new TextEncoder().encode('1}\ndata: second line\n\n')
+        })
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      body: { getReader: () => reader },
+      ok: true,
+      status: 200
+    }));
+
+    const eventStream = openFeedRefreshEvents('fragmented-job');
+    const progress = new Promise(resolve => {
+      eventStream.addEventListener('progress', event => {
+        eventStream.close();
+        resolve(event);
+      });
+    });
+
+    await expect(progress).resolves.toMatchObject({
+      data: '{"part":1}\nsecond line',
+      type: 'progress'
+    });
+  });
+
+  // Verifies retry fields control reconnect timing after an otherwise clean disconnect.
+  it('reconnects after the server-provided retry delay', async () => {
+    vi.useFakeTimers();
+    const disconnectedResponse = {
+      body: {
+        getReader: () => ({
+          read: vi.fn()
+            .mockResolvedValueOnce({
+              done: false,
+              value: new TextEncoder().encode('retry: 25\n\n')
+            })
+            .mockResolvedValueOnce({ done: true })
+        })
+      },
+      ok: true,
+      status: 200
+    };
+    const fetchMock = vi.fn().mockResolvedValue(disconnectedResponse);
+    vi.stubGlobal('fetch', fetchMock);
+
+    const eventStream = openFeedRefreshEvents('retry-job');
+    await vi.advanceTimersByTimeAsync(24);
+    expect(fetchMock).toHaveBeenCalledOnce();
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    eventStream.close();
+  });
+
+  // Verifies client errors remain terminal while server failures remain eligible for reconnect.
+  it('does not reconnect after a non-retryable HTTP response', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 400 });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const eventStream = openFeedRefreshEvents('terminal-job');
+    await vi.advanceTimersByTimeAsync(10000);
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    eventStream.close();
   });
 });

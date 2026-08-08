@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   saveIncludeDevelopingEvents,
   saveMarkAsReadOnScroll,
+  savePrioritizeHighTrust,
   saveStartupViewMode
 } from '../src/api/settings.js';
 
@@ -37,6 +38,14 @@ describe('settings API', () => {
 
     expect(patch).toHaveBeenCalledWith('/setting/mark-as-read-on-scroll', {
       markAsReadOnScroll: false
+    });
+  });
+
+  it('sends the generic high-trust preference to its dedicated endpoint', () => {
+    savePrioritizeHighTrust(true);
+
+    expect(patch).toHaveBeenCalledWith('/setting/prioritize-high-trust', {
+      prioritizeHighTrust: true
     });
   });
 });

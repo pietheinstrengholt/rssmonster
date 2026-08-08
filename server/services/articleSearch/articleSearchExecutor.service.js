@@ -3,6 +3,7 @@
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { applyBriefingEligibility } from './briefingEligibility.service.js';
+import { applyDevelopingStoryEligibility } from './developingStoryEligibility.service.js';
 
 // Provides the shared dependencies used by this service.
 const { Article, Event, Feed, Tag } = db;
@@ -26,6 +27,7 @@ export const buildArticleSearchQuery = ({
   sortQuality,
   sortAttention,
   sortTrust,
+  prioritizeHighTrust = false,
   workingSort,
   qualityFilter,
   freshnessFilter,
@@ -39,6 +41,7 @@ export const buildArticleSearchQuery = ({
   hasSearchIntent,
   event,
   islandFilter,
+  developingFilter,
   briefingFilter,
   briefingMinDistinctSources,
   briefingShowOnlyInterestMatchedArticles,
@@ -56,9 +59,12 @@ export const buildArticleSearchQuery = ({
   // Derives the needs quality required while building article search query.
   const needsQuality = qualityFilter || sortQuality;
   // Derives the needs freshness required while building article search query.
-  const needsFreshness = freshnessFilter || sortRecommended;
+  const needsFreshness = freshnessFilter
+    || sortRecommended
+    || (prioritizeHighTrust && !sortTrust && ['asc', 'desc'].includes(workingSort));
   const needsAttention = sortAttention;
   const needsInterestScore = sortRecommended;
+  const needsFeedTrust = prioritizeHighTrust && !sortTrust;
   // Derives the needs published required while building article search query.
   const needsPublished = !smartFolderSearch || needsFreshness || sortTrust;
 
@@ -99,7 +105,7 @@ export const buildArticleSearchQuery = ({
   };
 
   // Handles the case where sort recommended is available or needs quality is available or sort trust is available.
-  if (sortRecommended || needsQuality || sortTrust) {
+  if (sortRecommended || needsQuality || sortTrust || needsFeedTrust) {
     articleQuery.include = [
       {
         model: Feed,
@@ -251,6 +257,11 @@ export const buildArticleSearchQuery = ({
           AND island_event.userId = articles.userId
       )
     `));
+  }
+
+  // Applies the exact persisted conditions exposed by Article.isDevelopingStory.
+  if (developingFilter !== null) {
+    applyDevelopingStoryEligibility(articleQuery.where, developingFilter);
   }
 
   // Handles the case where briefing filter is not value.

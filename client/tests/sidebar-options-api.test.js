@@ -25,7 +25,6 @@ vi.mock('../src/api/crawl', () => ({
 }));
 
 vi.mock('../src/api/feeds', () => ({
-  openFeedRefreshEvents: vi.fn(),
   startFeedRefresh: vi.fn()
 }));
 

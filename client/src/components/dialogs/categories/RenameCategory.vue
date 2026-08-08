@@ -42,7 +42,6 @@ import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../../store/selection.js';
 import { useOverviewStore } from '../../../store/overview.js';
 import { useUiStore } from '../../../store/ui.js';
-import { useAuthStore } from '../../../store/auth.js';
 import BaseDialog from '../BaseDialog.vue';
 import CategoryIconPicker from './CategoryIconPicker.vue';
 import {
@@ -50,7 +49,6 @@ import {
     DEFAULT_CATEGORY_ICON
 } from './categoryIconOptions.js';
 import { updateCategory } from '../../../api/categories';
-import { setAuthToken } from '../../../api/client';
 import helper from '../../../services/helper.js';
 import { notifyActionError } from '../../../services/actionNotifications.js';
 
@@ -72,7 +70,6 @@ export default {
     },
     // This function clones the selected category and normalizes unsupported icons for editing.
     created: function() {
-        setAuthToken(this.authStore.token);
         this.index = helper.findIndexById(this.overviewStore.categories, this.selectionStore.currentSelection.categoryId);
         this.category = JSON.parse(JSON.stringify(this.overviewStore.categories[this.index]));
         this.originalName = this.category.name;
@@ -83,7 +80,7 @@ export default {
         this.originalIconName = this.category.iconName;
     },
     computed: {
-      ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useAuthStore),
+      ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
         // This function normalizes the edited category name for validation and submission.
         trimmedCategoryName() {
             return this.category.name?.trim() || '';

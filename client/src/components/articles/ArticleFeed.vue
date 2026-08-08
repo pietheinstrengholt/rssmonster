@@ -4,9 +4,9 @@
     :smart-folders="overviewStore.smartFolders"
     @selectSmartFolder="selectSmartFolderFromOverview"
   />
-  <ArticleReaderLayout v-else-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="selectionStore.currentSelection.status" :selected-tag="selectionStore.currentSelection.tag" :current-view-unread-count="currentViewUnreadCount" :current-view-source-count="currentViewSourceCount" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" :show-feed-refresh-progress="showFeedRefreshProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
+  <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
   </ArticleReaderLayout>
-  <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="selectionStore.currentSelection.status" :selected-tag="selectionStore.currentSelection.tag" :current-view-unread-count="currentViewUnreadCount" :current-view-source-count="currentViewSourceCount" :view-mode="selectionStore.currentSelection.viewMode" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" :activeMinimalArticleId="activeMinimalArticleId" :show-feed-refresh-progress="showFeedRefreshProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
+  <ArticleListView v-else ref="articleLayout" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
   </ArticleListView>
 </template>
 
@@ -36,6 +36,9 @@ import {
   articleFeedVisibilityMethods
 } from './feed/visibilityTracking.js';
 import { notifyActionError } from '../../services/actionNotifications.js';
+import { isArticleKeyboardEventEligible } from '../../services/articleKeyboardCommands.js';
+import { useMediaQuery } from '../../composables/useMediaQuery.js';
+import { hasReachedArticleCollectionEnd } from '../../services/articleCollectionState.js';
 
 // This async boundary defers the desktop-only reader layout until it is selected.
 const ArticleReaderLayout = defineAsyncComponent(() => import("./ArticleReaderLayout.vue"));
@@ -51,10 +54,21 @@ export default {
   },
 
   props: {
+    scrollRoot: {
+      type: Object,
+      default: null
+    },
     showFeedRefreshProgress: {
       type: Boolean,
       default: true
     }
+  },
+
+  // Exposes the desktop Reader breakpoint while preserving Options API component logic.
+  setup() {
+    return {
+      isDesktopReaderWidth: useMediaQuery('(min-width: 1024px)')
+    };
   },
 
   // Initializes article feed state and observer bookkeeping.
@@ -68,8 +82,6 @@ export default {
       prevScroll: 0,
       scrollDirection: "down",
       scrollContainer: null,
-      desktopReaderQuery: null,
-      isDesktopReaderWidth: false,
       showSmartFoldersOverview: false,
       pendingFavoriteArticleIds: new Set()
     };
@@ -98,6 +110,14 @@ export default {
     // Returns the unread count for the currently selected article scope.
     currentViewUnreadCount() {
       const selection = this.selectionStore.currentSelection;
+      if (selection.status === 'briefing') {
+        const collectionArticleIds = new Set(this.container.map(id => String(id)));
+        return this.articles.filter(article => (
+          collectionArticleIds.has(String(article.id))
+          && article.status !== 'read'
+        )).length;
+      }
+
       if (selection.status !== 'unread') return 0;
 
       if (selection.smartFolderId !== null) {
@@ -121,10 +141,57 @@ export default {
       }
 
       return this.overviewStore.unreadCount;
+    },
+
+    // Groups the stable collection labels and counts rendered by either layout.
+    collectionSummary() {
+      return {
+        status: this.selectionStore.currentSelection.status,
+        selectedTag: this.selectionStore.currentSelection.tag,
+        unreadCount: this.currentViewUnreadCount,
+        sourceCount: this.currentViewSourceCount
+      };
+    },
+
+    // Derives stream loading and completion presentation from feed-owned pagination state.
+    streamCollectionProgress() {
+      return {
+        hasLoadedContent: this.hasLoadedContent,
+        isFlushed: this.isFlushed,
+        hasReachedEnd: hasReachedArticleCollectionEnd({
+          articleCount: this.container.length,
+          distance: this.distance,
+          status: this.selectionStore.currentSelection.status,
+          remainingItems: this.remainingItems,
+          fetchCount: this.fetchCount,
+          allowUnreadFinalPage: true
+        }),
+        showFeedRefreshProgress: this.showFeedRefreshProgress
+      };
+    },
+
+    // Derives Reader loading and completion presentation without stream final-page semantics.
+    readerCollectionProgress() {
+      return {
+        hasLoadedContent: this.hasLoadedContent,
+        isFlushed: this.isFlushed,
+        hasReachedEnd: hasReachedArticleCollectionEnd({
+          articleCount: this.container.length,
+          distance: this.distance,
+          status: this.selectionStore.currentSelection.status,
+          remainingItems: this.remainingItems,
+          fetchCount: this.fetchCount
+        }),
+        showFeedRefreshProgress: this.showFeedRefreshProgress
+      };
     }
   },
 
   watch: {
+    // Reconnects scrolling behavior when the app shell supplies a replacement scroll surface.
+    scrollRoot(value) {
+      this.connectScrollContainer(value);
+    },
     "selectionStore.currentSelection": {
       // Reloads articles when the active selection changes.
       handler(data) {
@@ -139,18 +206,18 @@ export default {
         this.observeArticles();
         this.observeLoadMoreSentinel();
       });
+    },
+    // Reconnects article observers when the Reader breakpoint crosses either direction.
+    isDesktopReaderWidth() {
+      this.handleReaderWidthChange();
     }
   },
 
   // Starts scroll handling and article observers after mounting.
   mounted() {
-    this.scrollContainer = document.getElementById("home");
-    this.desktopReaderQuery = window.matchMedia('(min-width: 1024px)');
-    this.isDesktopReaderWidth = this.desktopReaderQuery.matches;
-    this.desktopReaderQuery.addEventListener('change', this.handleReaderWidthChange);
+    this.connectScrollContainer(this.scrollRoot);
     window.addEventListener("scroll", this.handleScroll, { passive: true });
     window.addEventListener("keydown", this.handleGlobalShortcut);
-    this.scrollContainer?.addEventListener("scroll", this.handleScroll, { passive: true });
     this.setupObservers();
   },
 
@@ -158,8 +225,7 @@ export default {
   unmounted() {
     window.removeEventListener("scroll", this.handleScroll);
     window.removeEventListener("keydown", this.handleGlobalShortcut);
-    this.scrollContainer?.removeEventListener("scroll", this.handleScroll);
-    this.desktopReaderQuery?.removeEventListener('change', this.handleReaderWidthChange);
+    this.connectScrollContainer(null);
     this.teardownObservers();
   },
 
@@ -169,9 +235,48 @@ export default {
     ...articleFeedReadStateMethods,
     ...articleFeedClusterInsertionMethods,
 
+    // Resets each helper-owned state group before pagination installs a new collection.
+    resetCollectionState() {
+      this.resetVisibilityTracking();
+      this.resetReadTracking();
+      this.resetPaginationState();
+    },
+
+    // Connects scroll handling to the shell-owned article surface without querying shell markup.
+    connectScrollContainer(scrollContainer) {
+      if (this.scrollContainer === scrollContainer) return;
+      this.scrollContainer?.removeEventListener("scroll", this.handleScroll);
+      this.scrollContainer = scrollContainer;
+      this.scrollContainer?.addEventListener("scroll", this.handleScroll, { passive: true });
+    },
+
+    // Restores every owned article layout and shared page scroll surface to the beginning.
+    scrollArticleListToTop() {
+      const windowWasScrolled = window.scrollY > 0;
+      this.$refs.articleLayout?.scrollToTop?.();
+      if (this.scrollContainer) this.scrollContainer.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      if (windowWasScrolled) window.scrollTo({ top: 0, behavior: 'auto' });
+    },
+
+    // Returns an article element through the active layout's explicit DOM contract.
+    getArticleElement(articleId) {
+      return this.$refs.articleLayout?.getArticleElement?.(articleId) || null;
+    },
+
+    // Returns the active layout's pagination sentinel without querying descendant markup.
+    getLoadMoreSentinel() {
+      return this.$refs.articleLayout?.getLoadMoreSentinel?.() || null;
+    },
+
+    // Returns the active layout's reading viewport edge for visibility transitions.
+    getReadingViewportTop() {
+      return this.$refs.articleLayout?.getReadingViewportTop?.() || 0;
+    },
+
     // Updates reader layout activation when the desktop breakpoint changes.
-    handleReaderWidthChange(event) {
-      this.isDesktopReaderWidth = event.matches;
+    handleReaderWidthChange() {
       this.$nextTick(() => {
         this.observeArticles();
         this.observeLoadMoreSentinel();
@@ -180,14 +285,13 @@ export default {
 
     // Shows or hides the mobile toolbar based on scroll direction.
     handleScroll() {
-      const mobileToolbar = document.getElementById("mobile-toolbar");
       const curScroll =
         Math.ceil(this.scrollContainer?.scrollTop) ||
         Math.ceil(window.scrollY) ||
         Math.ceil(document.documentElement.scrollTop);
 
       if (curScroll <= 0) {
-        mobileToolbar?.classList.remove("hide");
+        this.$emit('mobile-toolbar-visibility', true);
         this.prevScroll = 0;
         this.scrollDirection = "up";
         return;
@@ -201,11 +305,11 @@ export default {
           : this.scrollDirection;
 
       if (direction !== this.scrollDirection && direction === "up") {
-        mobileToolbar?.classList.remove("hide");
+        this.$emit('mobile-toolbar-visibility', true);
       }
 
       if (direction === "down" && curScroll > 200) {
-        mobileToolbar?.classList.add("hide");
+        this.$emit('mobile-toolbar-visibility', false);
       }
 
       this.prevScroll = curScroll;
@@ -213,7 +317,10 @@ export default {
     },
     // Handles shortcuts that apply to every article view mode.
     handleGlobalShortcut(event) {
-      if (this.shouldIgnoreGlobalShortcut(event)) return;
+      if (!isArticleKeyboardEventEligible(event, {
+        allowShiftKey: true,
+        allowInteractiveTarget: true
+      })) return;
 
       if (event.key === 'R') {
         event.preventDefault();
@@ -226,17 +333,6 @@ export default {
         window.dispatchEvent(new CustomEvent('rssmonster:focus-search'));
       }
     },
-    // Returns whether a global shortcut should ignore the current target.
-    shouldIgnoreGlobalShortcut(event) {
-      const target = event.target;
-      const tagName = target?.tagName?.toLowerCase();
-      const isEditableTarget = ['input', 'textarea', 'select'].includes(tagName)
-        || target?.isContentEditable
-        || Boolean(target?.closest?.('[contenteditable="true"], [contenteditable=""]'));
-
-      return Boolean(event.altKey || event.ctrlKey || event.metaKey || isEditableTarget);
-    },
-
     // Toggles an article favorite state from a keyboard shortcut.
     async toggleShortcutArticleFavorite({ id }) {
       const article = this.articles.find(item => String(item.id) === String(id));
@@ -371,19 +467,7 @@ export default {
     clearFilters() {
       this.showSmartFoldersOverview = false;
       this.uiStore.setSearchQuery('');
-      this.selectionStore.setCurrentSelection({
-        status: 'unread',
-        categoryId: '%',
-        feedId: '%',
-        search: null,
-        tag: null,
-        smartFolderId: null,
-        minAdvertisementScore: 0,
-        minSentimentScore: 0,
-        minQualityScore: 0,
-        grouping: 'none',
-        sort: 'desc'
-      });
+      this.selectionStore.resetArticleFilters();
     },
 
     // Clears only the selected tag while preserving the active article state.

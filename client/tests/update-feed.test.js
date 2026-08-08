@@ -7,7 +7,6 @@ import {
   rediscoverRss,
   updateFeed
 } from '../src/api/feeds';
-import { setAuthToken } from '../src/api/client';
 import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
@@ -15,10 +14,6 @@ vi.mock('../src/api/feeds', () => ({
   deleteFeed: vi.fn(),
   rediscoverRss: vi.fn(),
   updateFeed: vi.fn()
-}));
-
-vi.mock('../src/api/client', () => ({
-  setAuthToken: vi.fn()
 }));
 
 vi.mock('../src/services/actionNotifications.js', () => ({
@@ -416,11 +411,4 @@ describe('UpdateFeed', () => {
   });
 
   // Verifies the component authenticates API calls during creation.
-  it('sets the shared API token when created', () => {
-    const context = createContext();
-
-    UpdateFeed.created.call(context);
-
-    expect(setAuthToken).toHaveBeenCalledWith('token');
-  });
 });

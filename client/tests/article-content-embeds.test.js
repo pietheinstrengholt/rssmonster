@@ -59,6 +59,18 @@ describe('ArticleContent embeds', () => {
     expect(wrapper.text()).toContain('Watch on YouTube');
   });
 
+  it('uses a valid legacy YouTube link when placeholder metadata is invalid', () => {
+    const wrapper = mountArticleContent(`
+      <figure class="rssmonster-embed" data-provider="youtube" data-video-id="invalid">
+        <a href="https://youtube.com/shorts/gZUDEBbZSp4">Watch on YouTube</a>
+      </figure>
+    `);
+
+    expect(wrapper.find('iframe.rssmonster-youtube-frame').attributes('src'))
+      .toBe('https://www.youtube.com/embed/gZUDEBbZSp4');
+    expect(wrapper.text()).not.toContain('Watch on YouTube');
+  });
+
   it('normalizes article images lazily during the cached content pass', async () => {
     const parseSpy = vi.spyOn(DOMParser.prototype, 'parseFromString');
     const wrapper = mountArticleContent(
@@ -83,5 +95,36 @@ describe('ArticleContent embeds', () => {
     await wrapper.setProps({ imageUrl: 'https://example.com/image.jpg' });
     expect(parseSpy).toHaveBeenCalledTimes(initialParseCount + 1);
     expect(wrapper.vm.normalizedContent.containsFallbackImage).toBe(true);
+  });
+
+  it('matches relative body images against an absolute fallback URL', () => {
+    const relativeImageUrl = '/publisher/image.jpg';
+    const wrapper = mount(ArticleContent, {
+      props: {
+        viewMode: 'full',
+        content: `<p>Intro</p><img src="${relativeImageUrl}">`,
+        imageUrl: new URL(relativeImageUrl, window.location.href).href
+      }
+    });
+
+    expect(wrapper.vm.normalizedContent.containsFallbackImage).toBe(true);
+    expect(wrapper.vm.shouldShowFallbackImage).toBe(false);
+  });
+
+  it('keeps media-only markup while treating it as unreadable article text', () => {
+    const wrapper = mount(ArticleContent, {
+      props: {
+        viewMode: 'full',
+        content: '<picture><img src="https://example.com/image.jpg" alt="Publisher image"></picture>',
+        imageUrl: 'https://example.com/fallback.jpg'
+      }
+    });
+
+    expect(wrapper.get('.article-full-content img').exists()).toBe(true);
+    expect(wrapper.vm.normalizedContent).toMatchObject({
+      hasReadableContent: false,
+      containsFallbackImage: false
+    });
+    expect(wrapper.vm.shouldShowFallbackImage).toBe(false);
   });
 });

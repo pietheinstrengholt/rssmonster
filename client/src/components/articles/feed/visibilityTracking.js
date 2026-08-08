@@ -6,18 +6,6 @@ const waitBeforeSeenRetry = attempt => new Promise(resolve => {
   window.setTimeout(resolve, SEEN_RETRY_BASE_DELAY_MS * attempt);
 });
 
-// Returns the top edge where articles leave the active reading viewport.
-const readingViewportTop = () => {
-  const scrollContainer = document.querySelector('#main-container.expandedArticleLayout');
-  const overflowY = scrollContainer
-    ? window.getComputedStyle(scrollContainer).overflowY
-    : null;
-  if (!['auto', 'scroll', 'overlay'].includes(overflowY)) return 0;
-
-  const top = scrollContainer?.getBoundingClientRect?.().top;
-  return Number.isFinite(top) ? top : 0;
-};
-
 // Creates observer and timing state for rendered feed articles.
 export function createArticleFeedVisibilityState() {
   return {
@@ -68,6 +56,19 @@ export const articleFeedVisibilityMethods = {
     this.observedArticleElements.clear();
   },
 
+  // Clears visibility observations and timing state before a collection is replaced.
+  resetVisibilityTracking() {
+    this.visibilityObserver?.takeRecords?.();
+    for (const element of this.observedArticleElements.values()) {
+      this.visibilityObserver?.unobserve(element);
+    }
+
+    this.observedArticleElements.clear();
+    this.visibleMap.clear();
+    this.visibleSince.clear();
+    this.visibleDuration.clear();
+  },
+
   // Observes rendered articles and removes observers for stale elements.
   observeArticles() {
     if (!this.visibilityObserver) return;
@@ -87,7 +88,7 @@ export const articleFeedVisibilityMethods = {
       const articleId = String(article.id);
       if (this.observedArticleElements.has(articleId)) continue;
 
-      const element = document.getElementById(`article-${article.id}`);
+      const element = this.getArticleElement(article.id);
       if (!element) continue;
 
       this.visibilityObserver.observe(element);
@@ -99,7 +100,7 @@ export const articleFeedVisibilityMethods = {
   observeLoadMoreSentinel() {
     if (!this.loadMoreObserver) return;
 
-    const sentinel = document.getElementById('article-load-sentinel');
+    const sentinel = this.getLoadMoreSentinel();
     if (sentinel) {
       this.loadMoreObserver.disconnect();
       this.loadMoreObserver.observe(sentinel);
@@ -127,10 +128,12 @@ export const articleFeedVisibilityMethods = {
       this.visibleMap.set(articleId, false);
 
       const selection = this.selectionStore.currentSelection;
-      const automaticUnreadTransitionDisabled = selection.status === 'unread'
-        && selection.markAsReadOnScroll === false;
+      const effectiveMarkAsReadOnScroll = this.selectionStore.effectiveMarkAsReadOnScroll
+        ?? selection.markAsReadOnScroll;
+      const automaticUnreadTransitionDisabled = ['unread', 'briefing'].includes(selection.status)
+        && effectiveMarkAsReadOnScroll === false;
 
-      const articlePassedViewport = entry.boundingClientRect.bottom <= readingViewportTop();
+      const articlePassedViewport = entry.boundingClientRect.bottom <= this.getReadingViewportTop();
       if (articlePassedViewport && !automaticUnreadTransitionDisabled) {
         this.addToPool(articleId);
       }

@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia';
+import { setAuthToken } from '../api/client.js';
 import { useOverviewStore } from './overview.js';
 import { useSelectionStore } from './selection.js';
 import { useUiStore } from './ui.js';
+import { useFeedRefreshStore } from './feedRefresh.js';
 
 export const useAuthStore = defineStore('auth', {
   // This function creates a logged-out authentication state.
@@ -25,6 +27,7 @@ export const useAuthStore = defineStore('auth', {
       if (this.token && this.token !== token) {
         this.clearSession();
       }
+      setAuthToken(token);
       this.token = token;
       this.role = role;
       this.userId = userId;
@@ -34,8 +37,10 @@ export const useAuthStore = defineStore('auth', {
       const selectionStore = useSelectionStore();
       const overviewStore = useOverviewStore();
       const uiStore = useUiStore();
+      const feedRefreshStore = useFeedRefreshStore();
 
       this.sessionRequestId++;
+      setAuthToken(null);
       selectionStore.invalidateSessionRequests();
       overviewStore.invalidateSessionRequests();
 
@@ -45,6 +50,7 @@ export const useAuthStore = defineStore('auth', {
       selectionStore.resetSessionState();
       overviewStore.resetSessionState();
       uiStore.resetSessionState();
+      feedRefreshStore.resetSessionState();
     }
   },
 });

@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-const { BriefingPreference, CrawlRun, Island, OfficialSource, Setting } = db;
+const { CrawlRun, Island, OfficialSource, Setting } = db;
 
 const DEFAULT_CRAWL_STATISTICS_DAYS = 30;
 const MAX_CRAWL_STATISTICS_DAYS = 365;
@@ -233,6 +233,7 @@ export const getSettings = async (req, res, _next) => {
     let viewMode = aiEnabled ? "reader" : "full";
     let grouping = aiEnabled ? "event" : "none";
     let includeDevelopingEvents = aiEnabled;
+    let prioritizeHighTrust = false;
     let themeMode = 'system';
     let startupViewMode = 'last-used';
     let markAsReadOnScroll = true;
@@ -245,6 +246,7 @@ export const getSettings = async (req, res, _next) => {
       minSentimentScore = settings.minSentimentScore || 0;
       minQualityScore = settings.minQualityScore || 0;
       includeDevelopingEvents = Boolean(settings.includeDevelopingEvents);
+      prioritizeHighTrust = Boolean(settings.prioritizeHighTrust);
       themeMode = settings.themeMode || 'system';
       startupViewMode = settings.startupViewMode || 'last-used';
       markAsReadOnScroll = settings.markAsReadOnScroll == null
@@ -276,6 +278,7 @@ export const getSettings = async (req, res, _next) => {
       viewMode: viewMode,
       grouping: String(grouping),
       includeDevelopingEvents,
+      prioritizeHighTrust,
       themeMode: themeMode,
       startupViewMode,
       markAsReadOnScroll,
@@ -298,7 +301,8 @@ export const setSettings = async (req, res, _next) => {
       minAdvertisementScore,
       minSentimentScore,
       minQualityScore,
-      includeDevelopingEvents
+      includeDevelopingEvents,
+      prioritizeHighTrust
     } = req.body;
 
     // Validate score values (0-100)
@@ -321,6 +325,13 @@ export const setSettings = async (req, res, _next) => {
         return res.status(400).json({ error: 'includeDevelopingEvents must be a boolean' });
       }
       validatedSettings.includeDevelopingEvents = includeDevelopingEvents;
+    }
+
+    if (prioritizeHighTrust !== undefined) {
+      if (typeof prioritizeHighTrust !== 'boolean') {
+        return res.status(400).json({ error: 'prioritizeHighTrust must be a boolean' });
+      }
+      validatedSettings.prioritizeHighTrust = prioritizeHighTrust;
     }
 
     // Find or create settings for user
@@ -364,27 +375,14 @@ export const setIncludeDevelopingEvents = async (req, res, _next) => {
       return res.status(400).json({ error: 'includeDevelopingEvents must be a boolean' });
     }
 
-    await db.sequelize.transaction(async transaction => {
-      const [settings, settingsCreated] = await Setting.findOrCreate({
-        where: { userId },
-        defaults: { includeDevelopingEvents },
-        transaction
-      });
-
-      if (!settingsCreated) {
-        await settings.update({ includeDevelopingEvents }, { transaction });
-      }
-
-      const [briefingPreference, briefingPreferenceCreated] = await BriefingPreference.findOrCreate({
-        where: { userId },
-        defaults: { includeDevelopingEvents },
-        transaction
-      });
-
-      if (!briefingPreferenceCreated) {
-        await briefingPreference.update({ includeDevelopingEvents }, { transaction });
-      }
+    const [settings, created] = await Setting.findOrCreate({
+      where: { userId },
+      defaults: { includeDevelopingEvents }
     });
+
+    if (!created) {
+      await settings.update({ includeDevelopingEvents });
+    }
 
     return res.status(200).json({
       success: true,
@@ -484,6 +482,36 @@ export const setMarkAsReadOnScroll = async (req, res, _next) => {
     return res.status(200).json({ success: true, markAsReadOnScroll });
   } catch (err) {
     console.error('Error in setMarkAsReadOnScroll:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// This function saves the generic unread high-trust preference for future ranking behavior.
+export const setPrioritizeHighTrust = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+    const { prioritizeHighTrust } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    if (typeof prioritizeHighTrust !== 'boolean') {
+      return res.status(400).json({ error: 'prioritizeHighTrust must be a boolean' });
+    }
+
+    const [settings, created] = await Setting.findOrCreate({
+      where: { userId },
+      defaults: { prioritizeHighTrust }
+    });
+
+    if (!created) {
+      await settings.update({ prioritizeHighTrust });
+    }
+
+    return res.status(200).json({ success: true, prioritizeHighTrust });
+  } catch (err) {
+    console.error('Error in setPrioritizeHighTrust:', err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -1193,6 +1221,7 @@ export default {
   setThemeMode,
   setStartupViewMode,
   setMarkAsReadOnScroll,
+  setPrioritizeHighTrust,
   getIslandsOverview,
   getTopicsOverview
 }

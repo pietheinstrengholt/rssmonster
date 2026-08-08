@@ -34,7 +34,7 @@
         @article-not-interested="$emit('article-not-interested', $event)"
       />
     </div>
-    <div id="article-load-sentinel" class="article-load-sentinel" aria-hidden="true"></div>
+    <div id="article-load-sentinel" ref="loadMoreSentinel" class="article-load-sentinel" aria-hidden="true"></div>
     <div
       id="no-more"
       v-if="hasLoadedContent"
@@ -44,7 +44,7 @@
         v-if="container.length === 0"
         :current-status="currentSelection"
         :selected-tag="selectedTag"
-        :refresh-progress="uiStore.feedRefreshProgress"
+        :refresh-progress="feedRefreshStore.progress"
         :show-refresh-progress="showFeedRefreshProgress"
         @clear-filters="$emit('clear-filters')"
         @clear-tag="$emit('clear-tag')"
@@ -53,15 +53,15 @@
         @view-tag-status="$emit('view-tag-status', $event)"
       />
       <ArticleEndState
-        v-if="showArticleEndState"
+        v-if="collectionTailState.showEndState"
         :unread-count="currentViewUnreadCount"
-        :show-actions="showArticleEndStateActions"
-        :show-dismiss="showArticleEndStateDismiss"
+        :show-actions="collectionTailState.showEndStateActions"
+        :show-dismiss="collectionTailState.showEndStateDismiss"
         @mark-all-read="flushPool"
         @dismiss="dismissArticleEndState"
       />
       <ArticleRefreshState
-        v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0 && unreadsSinceLastUpdate > 0"
+        v-if="collectionTailState.showRefreshState"
         :unread-count="unreadsSinceLastUpdate"
         @refresh="$emit('forceReload')"
       />
@@ -77,6 +77,15 @@ import { mapStores } from 'pinia';
 import { useOverviewStore } from '../../store/overview.js';
 import { useSelectionStore } from '../../store/selection.js';
 import { useUiStore } from '../../store/ui.js';
+import { useFeedRefreshStore } from '../../store/feedRefresh.js';
+import {
+  getArticleCollectionTailState,
+  shouldShowDailyBriefingIntro
+} from '../../services/articleCollectionState.js';
+import {
+  ARTICLE_KEYBOARD_COMMAND,
+  getArticleKeyboardCommand
+} from '../../services/articleKeyboardCommands.js';
 import ArticleItem from "./Article.vue";
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
@@ -118,65 +127,33 @@ export default {
     'forceReload'
   ],
   props: {
+    scrollRoot: {
+      type: Object,
+      default: null
+    },
     articles: {
       type: Array,
-      required: true
-    },
-    pool: {
-      type: Set,
       required: true
     },
     container: {
       type: Array,
       required: true
     },
-    currentSelection: {
-      type: String,
+    collectionSummary: {
+      type: Object,
       required: true
     },
-    selectedTag: {
-      type: String,
-      default: ''
-    },
-    currentViewUnreadCount: {
-      type: Number,
+    collectionProgress: {
+      type: Object,
       required: true
-    },
-    currentViewSourceCount: {
-      type: Number,
-      default: null
     },
     viewMode: {
       type: String,
       required: true
     },
-    remainingItems: {
-      type: Number,
-      required: true
-    },
-    fetchCount: {
-      type: Number,
-      required: true
-    },
-    hasLoadedContent: {
-      type: Boolean,
-      required: true
-    },
-    isFlushed: {
-      type: Boolean,
-      required: true
-    },
-    distance: {
-      type: Number,
-      required: true
-    },
     activeMinimalArticleId: {
       type: [Number, String],
       default: null
-    },
-    showFeedRefreshProgress: {
-      type: Boolean,
-      default: true
     }
   },
   data() {
@@ -201,14 +178,44 @@ export default {
     }
   },
   computed: {
-    ...mapStores(useOverviewStore, useSelectionStore, useUiStore),
+    ...mapStores(useOverviewStore, useSelectionStore, useUiStore, useFeedRefreshStore),
+    // Exposes the active status from the explicit collection presentation contract.
+    currentSelection() {
+      return this.collectionSummary.status;
+    },
+    // Exposes the active tag from the explicit collection presentation contract.
+    selectedTag() {
+      return this.collectionSummary.selectedTag;
+    },
+    // Exposes the current unread count from the collection presentation contract.
+    currentViewUnreadCount() {
+      return this.collectionSummary.unreadCount;
+    },
+    // Exposes the current source count from the collection presentation contract.
+    currentViewSourceCount() {
+      return this.collectionSummary.sourceCount;
+    },
+    // Exposes whether the initial collection request has completed.
+    hasLoadedContent() {
+      return this.collectionProgress.hasLoadedContent;
+    },
+    // Exposes whether the current unread collection was explicitly flushed.
+    isFlushed() {
+      return this.collectionProgress.isFlushed;
+    },
+    // Exposes whether feed refresh feedback belongs in the empty state.
+    showFeedRefreshProgress() {
+      return this.collectionProgress.showFeedRefreshProgress;
+    },
     // Shows the briefing introduction only for the unfiltered all-sources briefing.
     showDailyBriefingIntro() {
       const selection = this.selectionStore.currentSelection;
-      return this.currentSelection === 'briefing'
-        && selection.categoryId === '%'
-        && selection.feedId === '%'
-        && !selection.tag;
+      return shouldShowDailyBriefingIntro({
+        status: this.currentSelection,
+        categoryId: selection.categoryId,
+        feedId: selection.feedId,
+        tag: selection.tag
+      });
     },
     // Returns whether the mobile search dialog is currently open.
     mobileSearchOpen() {
@@ -220,35 +227,26 @@ export default {
     },
     // Returns whether loading or unread-review progress has reached the collection boundary.
     hasReachedArticleListEnd() {
-      if (!this.container.length) return false;
-
-      const loadedEveryArticle = this.distance >= this.container.length;
-      const reviewedToFinalPage = this.currentSelection === 'unread'
-        && this.remainingItems < this.fetchCount;
-      return loadedEveryArticle || reviewedToFinalPage;
+      return this.collectionProgress.hasReachedEnd;
     },
     // Returns whether this stream supports the end state, including mobile Reader fallback.
     supportsArticleEndState() {
       return ['full', 'reader', 'summarized'].includes(this.viewMode);
     },
-    // Returns whether the end state should appear for the current list mode.
-    showArticleEndState() {
-      return this.supportsArticleEndState && this.hasReachedArticleListEnd && !this.isArticleEndStateDismissed;
-    },
-    // Returns whether the fully loaded current article list still contains unread articles.
-    hasUnreadArticlesInCurrentView() {
-      return this.articles.some(article => article.status !== 'read');
-    },
-    // Returns whether the end state should offer the mark-all-read action.
-    showArticleEndStateActions() {
-      return this.currentSelection === 'unread'
-        && !this.isFlushed
-        && this.currentViewUnreadCount > 0
-        && this.hasUnreadArticlesInCurrentView;
-    },
-    // Hides the redundant dismissal action when scrolling automatically marks reviewed articles as read.
-    showArticleEndStateDismiss() {
-      return this.selectionStore.currentSelection.markAsReadOnScroll !== true;
+    // Returns the shared end, action, dismissal, and refresh presentation state.
+    collectionTailState() {
+      return getArticleCollectionTailState({
+        supportsEndState: this.supportsArticleEndState,
+        hasReachedEnd: this.hasReachedArticleListEnd,
+        isDismissed: this.isArticleEndStateDismissed,
+        status: this.currentSelection,
+        isFlushed: this.isFlushed,
+        unreadCount: this.currentViewUnreadCount,
+        articles: this.articles,
+        markAsReadOnScroll: this.selectionStore.effectiveMarkAsReadOnScroll,
+        unreadsSinceLastUpdate: this.unreadsSinceLastUpdate,
+        articleCount: this.container.length
+      });
     }
   },
   watch: {
@@ -271,6 +269,32 @@ export default {
     }
   },
   methods: {
+    // Returns the rendered article root owned through this layout's component refs.
+    getArticleElement(articleId) {
+      return this.minimalArticleRefs[articleId]?.$el || null;
+    },
+    // Returns the component-owned pagination sentinel.
+    getLoadMoreSentinel() {
+      return this.$refs.loadMoreSentinel || null;
+    },
+    // Returns the active inset viewport edge when Expanded mode owns scrolling.
+    getReadingViewportTop() {
+      const scrollContainer = this.viewMode === 'full'
+        ? this.$refs.expandedArticleScrollRef
+        : null;
+      const overflowY = scrollContainer
+        ? window.getComputedStyle(scrollContainer).overflowY
+        : null;
+      if (!['auto', 'scroll', 'overlay'].includes(overflowY)) return 0;
+
+      const top = scrollContainer?.getBoundingClientRect?.().top;
+      return Number.isFinite(top) ? top : 0;
+    },
+    // Restores the component-owned expanded article surface to the beginning.
+    scrollToTop() {
+      const articleStream = this.$refs.expandedArticleScrollRef;
+      if (articleStream) articleStream.scrollTop = 0;
+    },
     // Shows the Expanded-mode scrollbar while the article stream is actively scrolling.
     handleExpandedArticleScroll() {
       if (this.viewMode !== 'full') return;
@@ -339,54 +363,36 @@ export default {
     flushPool() {
       this.$emit('flush-pool');
     },
-    // Returns whether keyboard navigation should ignore the current event target.
-    shouldIgnoreKeyboardEvent(event) {
-      const target = event.target;
-      const tagName = target?.tagName?.toLowerCase();
-      const isEditableTarget = ['input', 'textarea', 'select'].includes(tagName)
-        || target?.isContentEditable
-        || Boolean(target?.closest?.('[contenteditable="true"], [contenteditable=""]'));
-      const isInteractiveElement = ['a', 'button'].includes(tagName);
-
-      return Boolean(
-        event.altKey ||
-        event.ctrlKey ||
-        event.metaKey ||
-        event.shiftKey ||
-        isEditableTarget ||
-        isInteractiveElement
-      );
-    },
     // Handles compact headline keyboard navigation.
     handleMinimalKeydown(event) {
-      if (this.shouldIgnoreKeyboardEvent(event)) return;
-      if (!['ArrowDown', 'ArrowUp', 'Enter', 'j', 'k', 'o', 'm', 'r', 's'].includes(event.key)) return;
+      const command = getArticleKeyboardCommand(event);
+      if (!command) return;
       if (!this.articles.length) return;
 
-      if (['Enter', 'o'].includes(event.key)) {
+      if (command === ARTICLE_KEYBOARD_COMMAND.OPEN) {
         event.preventDefault();
         this.openSelectedArticle();
         return;
       }
 
-      if (['m', 'r'].includes(event.key)) {
+      if (command === ARTICLE_KEYBOARD_COMMAND.TOGGLE_READ) {
         event.preventDefault();
         this.toggleSelectedReadStatus();
         return;
       }
 
-      if (event.key === 's') {
+      if (command === ARTICLE_KEYBOARD_COMMAND.TOGGLE_FAVORITE) {
         event.preventDefault();
         this.toggleSelectedFavorite();
         return;
       }
 
       const currentIndex = this.selectedArticleIndex();
-      const isNextKey = ['ArrowDown', 'j'].includes(event.key);
-      const fallbackIndex = isNextKey ? 0 : this.articles.length - 1;
+      const isNextCommand = command === ARTICLE_KEYBOARD_COMMAND.NEXT;
+      const fallbackIndex = isNextCommand ? 0 : this.articles.length - 1;
       const nextIndex = currentIndex === -1
         ? fallbackIndex
-        : isNextKey
+        : isNextCommand
           ? Math.min(currentIndex + 1, this.articles.length - 1)
           : Math.max(currentIndex - 1, 0);
 
@@ -403,8 +409,9 @@ export default {
     },
     // Returns the article nearest to the top of the reading viewport.
     closestArticleIdToViewport() {
-      const scrollRoot = document.querySelector('.expandedArticleLayout')
-        || document.getElementById('home');
+      const scrollRoot = this.viewMode === 'full'
+        ? this.$refs.expandedArticleScrollRef
+        : this.scrollRoot;
       const viewportTop = scrollRoot?.getBoundingClientRect?.().top || 0;
       let closestArticleId = null;
       let closestDistance = Infinity;
@@ -467,8 +474,7 @@ export default {
       if (!selectedArticle) return;
 
       const selectedComponent = this.minimalArticleRefs[selectedArticle.id];
-      const articleLink = selectedComponent?.$el?.querySelector('.article-link');
-      articleLink?.click();
+      selectedComponent?.openOriginalArticle?.();
     },
     // Requests a read status toggle for the selected article.
     toggleSelectedReadStatus() {
@@ -593,17 +599,15 @@ export default {
   }
 }
 
-:global(:root[data-theme='dark']) {
-  #articles {
-    color: var(--text-inverted);
-    background: var(--dark-page-surface);
-    border-color: var(--dark-page-surface);
-    border-bottom-color: var(--text-inverted);
-  }
+:global(:root[data-theme='dark'] #articles) {
+  color: var(--text-inverted);
+  background: var(--dark-page-surface);
+  border-color: var(--dark-page-surface);
+  border-bottom-color: var(--text-inverted);
 }
 </style>
 
-<style>
+<style scoped>
 #no-more {
   padding-top: 10px;
   text-align: center;
@@ -628,7 +632,7 @@ export default {
   }
 }
 
-:root[data-theme='dark'] #no-more {
+:global(:root[data-theme='dark'] #no-more) {
   color: var(--text-inverted);
 }
 
@@ -642,9 +646,7 @@ export default {
   width: 100%;
 }
 
-:root[data-theme='dark'] {
-  #no-more p {
-    color: var(--text-inverted);
-  }
+:global(:root[data-theme='dark'] #no-more p) {
+  color: var(--text-inverted);
 }
 </style>

@@ -368,33 +368,6 @@ body.settings-overlay-open {
     color: var(--text-inverted);
 }
 
-.settings-surface .feeds-table-wrapper {
-    max-height: 60vh;
-    overflow-y: auto;
-}
-
-.settings-surface .feeds-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-}
-
-.settings-surface .feeds-table th,
-.settings-surface .feeds-table td {
-    padding: 8px;
-    border: 1px solid var(--border-subtle);
-    vertical-align: top;
-}
-
-.settings-surface .feeds-table th {
-    background-color: var(--settings-neutral-bg);
-    font-weight: 600;
-}
-
-.settings-surface .feeds-table td {
-    background-color: var(--bg-primary);
-}
-
 @media (max-width: 879px) {
     .settings-surface {
         padding: 0;
@@ -459,12 +432,4 @@ body.settings-overlay-open {
 
 :root[data-theme='dark'] .settings-surface .input-invalid::placeholder {
     color: var(--settings-danger-text);
-}
-
-:root[data-theme='dark'] .settings-surface .feeds-table th {
-    background-color: var(--bg-subtle);
-}
-
-:root[data-theme='dark'] .settings-surface .feeds-table td {
-    background-color: var(--bg-modal);
 }

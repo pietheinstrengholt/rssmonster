@@ -9,6 +9,7 @@ import {
   getTopicsOverview,
   setIncludeDevelopingEvents,
   setMarkAsReadOnScroll,
+  setPrioritizeHighTrust,
   setOfficialSources,
   setSettings,
   setStartupViewMode,
@@ -42,6 +43,7 @@ describe('settings controller branch behavior', () => {
     [setSettings, { body: {} }],
     [setIncludeDevelopingEvents, { body: {} }],
     [setMarkAsReadOnScroll, { body: {} }],
+    [setPrioritizeHighTrust, { body: {} }],
     [setThemeMode, { body: {} }],
     [setStartupViewMode, { body: {} }],
     [getIslandsOverview, {}],
@@ -202,7 +204,8 @@ describe('settings controller branch behavior', () => {
   it.each([
     [setThemeMode, { themeMode: 'system' }],
     [setStartupViewMode, { startupViewMode: 'last-used' }],
-    [setMarkAsReadOnScroll, { markAsReadOnScroll: true }]
+    [setMarkAsReadOnScroll, { markAsReadOnScroll: true }],
+    [setPrioritizeHighTrust, { prioritizeHighTrust: true }]
   ])('handles preference persistence failure for handler %#', async (handler, body) => {
     vi.spyOn(Setting, 'findOrCreate').mockRejectedValue(new Error('write failed'));
     vi.spyOn(console, 'error').mockImplementation(() => {});

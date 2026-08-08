@@ -59,7 +59,10 @@ const createLoadingContext = (dataStore = {
     observeLoadMoreSentinel: vi.fn()
   };
 
-  context.resetPool = () => ArticleFeed.methods.resetPool.call(context);
+  context.resetVisibilityTracking = () => ArticleFeed.methods.resetVisibilityTracking.call(context);
+  context.resetReadTracking = () => ArticleFeed.methods.resetReadTracking.call(context);
+  context.resetPaginationState = () => ArticleFeed.methods.resetPaginationState.call(context);
+  context.resetCollectionState = () => ArticleFeed.methods.resetCollectionState.call(context);
   context.getContent = requestId => ArticleFeed.methods.getContent.call(context, requestId);
   context.scrollArticleListToTop = vi.fn();
   context.updateArticleStatusLocal = article =>
@@ -212,39 +215,27 @@ describe('ArticleFeed loading races', () => {
   });
 
   it('resets both article-pane and page scroll roots for a rebuilt collection', () => {
-    document.body.innerHTML = `
-      <main id="home">
-        <div class="expandedArticleLayout"></div>
-        <aside class="readerArticleList"></aside>
-        <section class="readerArticlePanel"></section>
-      </main>
-    `;
-    const articlePane = document.getElementById('home');
-    const expandedArticlePane = document.querySelector('.expandedArticleLayout');
-    const readerArticleList = document.querySelector('.readerArticleList');
-    const readerArticlePanel = document.querySelector('.readerArticlePanel');
+    const articlePane = document.createElement('main');
+    const scrollToTop = vi.fn();
     articlePane.scrollTop = 240;
-    expandedArticlePane.scrollTop = 240;
-    readerArticleList.scrollTop = 240;
-    readerArticlePanel.scrollTop = 240;
     document.documentElement.scrollTop = 240;
     document.body.scrollTop = 240;
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 240 });
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
-    ArticleFeed.methods.scrollArticleListToTop();
+    ArticleFeed.methods.scrollArticleListToTop.call({
+      $refs: { articleLayout: { scrollToTop } },
+      scrollContainer: articlePane
+    });
 
-    expect(expandedArticlePane.scrollTop).toBe(0);
+    expect(scrollToTop).toHaveBeenCalledOnce();
     expect(articlePane.scrollTop).toBe(0);
-    expect(readerArticleList.scrollTop).toBe(0);
-    expect(readerArticlePanel.scrollTop).toBe(0);
     expect(document.documentElement.scrollTop).toBe(0);
     expect(document.body.scrollTop).toBe(0);
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
 
     scrollTo.mockRestore();
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
-    document.body.innerHTML = '';
   });
 
   it('does not append stale detail responses after the selection changes', async () => {

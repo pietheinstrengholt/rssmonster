@@ -5,6 +5,20 @@ import { normalizeResourceError } from './resourceState.js';
 import { useUiStore } from './ui.js';
 
 const DEFAULT_BRIEFING_SELECTION_PERIOD = '7d';
+// This selection subset defines the canonical unfiltered article collection.
+const DEFAULT_ARTICLE_FILTERS = Object.freeze({
+  status: 'unread',
+  categoryId: '%',
+  feedId: '%',
+  search: null,
+  tag: null,
+  smartFolderId: null,
+  minAdvertisementScore: 0,
+  minSentimentScore: 0,
+  minQualityScore: 0,
+  sort: 'desc',
+  grouping: 'none'
+});
 const SUPPORTED_SELECTION_FIELDS = [
   'AIEnabled',
   'status',
@@ -32,30 +46,19 @@ const briefingDateFilter = selectionPeriod => (
 // This function builds the existing article-search query for configured Briefing filters.
 const briefingSearchQuery = ({
   selectionPeriod,
-  includeOnlyUnreadArticles,
-  prioritizeHighTrust
+  includeOnlyUnreadArticles
 }) => [
   'briefing:true',
   includeOnlyUnreadArticles ? 'unread:true' : null,
   briefingDateFilter(selectionPeriod),
-  prioritizeHighTrust ? 'sort:trust' : null
+  'sort:recommended'
 ].filter(Boolean).join(' ');
 
 // This function creates the default article selection contract.
 const defaultSelection = () => ({
   AIEnabled: false,
-  status: 'unread',
-  categoryId: '%',
-  feedId: '%',
-  search: null,
-  tag: null,
-  smartFolderId: null,
-  minAdvertisementScore: 0,
-  minSentimentScore: 0,
-  minQualityScore: 0,
-  sort: 'desc',
+  ...DEFAULT_ARTICLE_FILTERS,
   viewMode: 'full',
-  grouping: 'none',
   includeDevelopingEvents: false,
   markAsReadOnScroll: true,
   briefingRevision: 0
@@ -83,6 +86,22 @@ const removeSortTokens = query => {
   return cleaned || null;
 };
 
+// This function returns the final developing filter value represented by a query.
+const developingFilterFromQuery = query => {
+  const matches = Array.from(
+    String(query ?? '').matchAll(/(?:^|[\s,])developing:(true|false)(?=$|[\s,.;])/gi)
+  );
+  if (matches.length === 0) return null;
+  return matches.at(-1)[1].toLowerCase() === 'true';
+};
+
+// This function forces the presentation required to select an event's developing article.
+const developingSelection = query => (
+  developingFilterFromQuery(query) === true
+    ? { grouping: 'event', includeDevelopingEvents: true }
+    : {}
+);
+
 // This function restricts grouping to the supported event and topic modes.
 const normalizeGrouping = value => {
   const normalized = String(value ?? 'none');
@@ -103,7 +122,9 @@ const initialSelectionState = () => ({
   currentSelection: defaultSelection(),
   briefingSelectionPeriod: DEFAULT_BRIEFING_SELECTION_PERIOD,
   briefingIncludeOnlyUnreadArticles: false,
+  briefingMarkAsReadOnScroll: false,
   briefingPrioritizeHighTrust: false,
+  briefingShowOnlyDevelopingEventArticles: false,
   settingsStatus: 'idle',
   settingsError: null,
   settingsRequestId: 0
@@ -113,7 +134,21 @@ export const useSelectionStore = defineStore('selection', {
   // This state owns article selection, display filters, and Briefing preferences.
   state: initialSelectionState,
 
+  getters: {
+    // This getter selects the scrolling behavior owned by the active article collection.
+    effectiveMarkAsReadOnScroll: state => (
+      state.currentSelection.status === 'briefing'
+        ? state.briefingMarkAsReadOnScroll
+        : state.currentSelection.markAsReadOnScroll
+    )
+  },
+
   actions: {
+    // This action clears collection filters while preserving presentation and capability settings.
+    resetArticleFilters() {
+      this.setCurrentSelection(DEFAULT_ARTICLE_FILTERS);
+    },
+
     // This action makes every settings request from the previous session obsolete.
     invalidateSessionRequests() {
       this.settingsRequestId++;
@@ -207,11 +242,14 @@ export const useSelectionStore = defineStore('selection', {
         search: status === 'briefing'
           ? briefingSearchQuery({
             selectionPeriod: this.briefingSelectionPeriod,
-            includeOnlyUnreadArticles: this.briefingIncludeOnlyUnreadArticles,
-            prioritizeHighTrust: this.briefingPrioritizeHighTrust
+            includeOnlyUnreadArticles: this.briefingIncludeOnlyUnreadArticles
           })
           : null,
-        smartFolderId: null
+        smartFolderId: null,
+        ...(status === 'briefing' ? { sort: 'recommended', grouping: 'event' } : {}),
+        ...(status === 'briefing' && this.briefingShowOnlyDevelopingEventArticles
+          ? { includeDevelopingEvents: true }
+          : {})
       });
     },
 
@@ -219,30 +257,47 @@ export const useSelectionStore = defineStore('selection', {
     setBriefingFilters({
       selectionPeriod,
       includeOnlyUnreadArticles,
-      prioritizeHighTrust
+      markAsReadOnScroll,
+      prioritizeHighTrust,
+      showOnlyDevelopingEventArticles
     }) {
       const previousSelectionPeriod = this.briefingSelectionPeriod;
       const previousIncludeOnlyUnreadArticles = this.briefingIncludeOnlyUnreadArticles;
+      const previousShowOnlyDevelopingEventArticles =
+        this.briefingShowOnlyDevelopingEventArticles;
       const normalizedPeriod = selectionPeriod === '24h'
         ? '24h'
         : DEFAULT_BRIEFING_SELECTION_PERIOD;
       this.briefingSelectionPeriod = normalizedPeriod;
       this.briefingIncludeOnlyUnreadArticles = Boolean(includeOnlyUnreadArticles);
+      this.briefingMarkAsReadOnScroll = this.briefingIncludeOnlyUnreadArticles
+        && Boolean(markAsReadOnScroll);
       this.briefingPrioritizeHighTrust = Boolean(prioritizeHighTrust);
+      this.briefingShowOnlyDevelopingEventArticles = Boolean(
+        showOnlyDevelopingEventArticles
+      );
 
       if (this.currentSelection.status !== 'briefing') return;
 
       const search = briefingSearchQuery({
         selectionPeriod: normalizedPeriod,
-        includeOnlyUnreadArticles: this.briefingIncludeOnlyUnreadArticles,
-        prioritizeHighTrust: this.briefingPrioritizeHighTrust
+        includeOnlyUnreadArticles: this.briefingIncludeOnlyUnreadArticles
       });
       if (this.currentSelection.search !== search) {
         this.currentSelection.search = search;
       }
+      const groupingChanged = this.currentSelection.grouping !== 'event';
+      this.currentSelection.sort = 'recommended';
+      this.currentSelection.grouping = 'event';
+      if (this.briefingShowOnlyDevelopingEventArticles) {
+        this.currentSelection.includeDevelopingEvents = true;
+      }
       if (
         normalizedPeriod !== previousSelectionPeriod ||
-        this.briefingIncludeOnlyUnreadArticles !== previousIncludeOnlyUnreadArticles
+        this.briefingIncludeOnlyUnreadArticles !== previousIncludeOnlyUnreadArticles ||
+        this.briefingShowOnlyDevelopingEventArticles
+          !== previousShowOnlyDevelopingEventArticles ||
+        groupingChanged
       ) {
         void useOverviewStore().fetchTopTags();
       }
@@ -253,7 +308,10 @@ export const useSelectionStore = defineStore('selection', {
       this.setBriefingFilters({
         selectionPeriod,
         includeOnlyUnreadArticles: this.briefingIncludeOnlyUnreadArticles,
-        prioritizeHighTrust: this.briefingPrioritizeHighTrust
+        markAsReadOnScroll: this.briefingMarkAsReadOnScroll,
+        prioritizeHighTrust: this.briefingPrioritizeHighTrust,
+        showOnlyDevelopingEventArticles:
+          this.briefingShowOnlyDevelopingEventArticles
       });
     },
 
@@ -307,7 +365,8 @@ export const useSelectionStore = defineStore('selection', {
     setSelectedSearch(search) {
       this.applySelection({
         search,
-        tag: null
+        tag: null,
+        ...developingSelection(search)
       });
     },
 
@@ -344,7 +403,8 @@ export const useSelectionStore = defineStore('selection', {
         sort: 'desc',
         tag: null,
         smartFolderId: smartFolder?.id ?? null,
-        search
+        search,
+        ...developingSelection(search)
       });
     },
 

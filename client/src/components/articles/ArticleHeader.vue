@@ -17,13 +17,10 @@
           <BootstrapIcon v-if="hasInterestScore && !hasSourceIcon && !isDeveloping" icon="award-fill" class="article-kind-icon recommendation-icon" />
           <BootstrapIcon v-else-if="isGroupedView && eventArticleCountTotal > 1 && !hasSourceIcon && !isDeveloping" icon="megaphone-fill" class="article-kind-icon event-icon" />
         </template>
-        <a class="article-link" target="_blank" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
+        <a ref="originalArticleLink" class="article-link" target="_blank" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
       </div>
       <div class="article-header-actions">
-        <button v-if="isReaderMode" class="article-read-status-button" type="button" :aria-label="statusLabel" :title="statusLabel" @click.stop="$emit('toggle-read-status')">
-          <BootstrapIcon :icon="statusIcon" />
-        </button>
-        <ArticleActionsMenu :favoriteInd="favoriteInd" :favoritePending="favoritePending" @toggle-favorite="$emit('toggle-favorite')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @less-like-this="$emit('less-like-this')" @ignore-topic="$emit('ignore-topic')" @mute-feed="$emit('mute-feed')" />
+        <ArticleActionsMenu :favoriteInd="favoriteInd" :favoritePending="favoritePending" :isReaderMode="isReaderMode" :status="status" @toggle-favorite="$emit('toggle-favorite')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" />
       </div>
     </div>
   </h5>
@@ -34,7 +31,7 @@ import ArticleActionsMenu from './ArticleActionsMenu.vue';
 
 export default {
   components: { ArticleActionsMenu },
-  emits: ['article-clicked', 'toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'less-like-this', 'ignore-topic', 'mute-feed'],
+  emits: ['article-clicked', 'toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed'],
   props: {
     url: { type: String, default: '' }, title: { type: String, default: '' }, clickedAmount: { type: Number, default: 0 },
     favoriteInd: { type: Number, default: 0 }, favoritePending: { type: Boolean, default: false }, hotInd: { type: Number, default: 0 }, status: { type: String, default: '' },
@@ -79,14 +76,12 @@ export default {
     // Returns whether the article is displayed in the reader layout.
     isReaderMode() {
       return this.viewMode === 'reader';
-    },
-    // Returns the status icon shown beside the article actions menu.
-    statusIcon() {
-      return this.status === 'read' ? 'circle-fill' : 'record-circle-fill';
-    },
-    // Returns the accessible label for the current read status.
-    statusLabel() {
-      return this.status === 'read' ? 'Article is read' : 'Article is unread';
+    }
+  },
+  methods: {
+    // Opens the original article through the header-owned link behavior.
+    openOriginalArticle() {
+      this.$refs.originalArticleLink?.click();
     }
   }
 };
@@ -137,24 +132,6 @@ export default {
   display: flex;
   flex-shrink: 0;
   gap: 2px;
-}
-
-.article-read-status-button {
-  align-items: center;
-  background: var(--color-transparent);
-  border: 0;
-  color: var(--article-heading-text);
-  display: inline-flex;
-  height: 30px;
-  justify-content: center;
-  line-height: 1;
-  opacity: 0.7;
-  padding: 0;
-  width: 30px;
-}
-
-.article-read-status-button svg {
-  margin-bottom: 0 !important;
 }
 
 .article-kind-icon {

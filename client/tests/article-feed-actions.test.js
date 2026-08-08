@@ -36,7 +36,7 @@ const createContext = (overrides = {}) => {
     },
     selection: {
       currentSelection: { viewMode: 'reader' },
-      setCurrentSelection: vi.fn(),
+      resetArticleFilters: vi.fn(),
       setSmartFolder: vi.fn()
     },
     ui: {
@@ -255,19 +255,7 @@ describe('ArticleFeed actions', () => {
     context.selectSmartFolderFromOverview(folder);
 
     expect(context.uiStore.setSearchQuery).toHaveBeenCalledWith('');
-    expect(context.selectionStore.setCurrentSelection).toHaveBeenCalledWith({
-      status: 'unread',
-      categoryId: '%',
-      feedId: '%',
-      search: null,
-      tag: null,
-      smartFolderId: null,
-      minAdvertisementScore: 0,
-      minSentimentScore: 0,
-      minQualityScore: 0,
-      grouping: 'none',
-      sort: 'desc'
-    });
+    expect(context.selectionStore.resetArticleFilters).toHaveBeenCalledOnce();
     expect(context.overviewStore.fetchSmartFolders).toHaveBeenCalledOnce();
     expect(context.selectionStore.setSmartFolder).toHaveBeenCalledWith(folder);
     expect(context.showSmartFoldersOverview).toBe(false);

@@ -1,47 +1,16 @@
 <template>
   <div v-if="viewMode === 'full' || viewMode === 'reader'" class="article-content-wrapper" :class="{ 'article-content-with-thumbnail': shouldShowFallbackImage && isInlineLeadImage }"><div v-if="shouldShowFallbackImage" :class="['media-content', 'enclosure', 'article-lead-image', `article-lead-image--${imageDisplayMode}`]" :style="thumbnailStyle"><img class="article-lead-image__media" :src="imageUrl" :width="leadImageDimensions.width || undefined" :height="leadImageDimensions.height || undefined" alt="" loading="lazy" decoding="async" @load="handleLeadImageLoad" @error="handleLeadImageError" /></div><div v-if="hasContent" class="article-full-content" v-html="renderedContent"></div></div>
-  <div v-else-if="viewMode === 'summarized'" class="article-content-wrapper"><p v-if="hasContent" class="article-full-content">{{ stripHTML(content) }}</p></div>
+  <div v-else-if="viewMode === 'summarized'" class="article-content-wrapper"><p v-if="hasContent" class="article-full-content">{{ summarizedContent }}</p></div>
   <div v-else-if="viewMode === 'minimal' && showMinimalContent" class="article-content-wrapper article-content-wrapper--minimal"><div v-if="hasContent" class="article-full-content" v-html="renderedContent"></div></div>
   <div v-else-if="viewMode === 'summaryBullets'" class="article-content-wrapper"><ul v-if="contentSummaryBullets && contentSummaryBullets.length" class="article-summary"><li v-for="(bullet, index) in contentSummaryBullets.slice(0, visibleBulletCount)" :key="index">{{ bullet }}</li></ul><p v-else class="article-full-content">No summary available.</p></div>
 </template>
 <script>
-const NULL_CONTENT = '<html><head></head><body>null</body></html>';
-const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
-
-// This function classifies a lead image from its known dimensions.
-const classifyLeadImage = (width, height) => {
-  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return 'pending';
-
-  const area = width * height;
-  const aspectRatio = width / height;
-  const isNearSquare = aspectRatio >= 0.8 && aspectRatio <= 1.25;
-
-  if (width <= 2 || height <= 2 || (width < 96 && height < 96) || aspectRatio > 4.5 || aspectRatio < 0.18) return 'hidden';
-  if (width >= 640 && height >= 320 && area >= 300000 && aspectRatio > 1.25 && aspectRatio <= 3.2) return 'hero';
-  if (width >= 500 && height >= 700 && height / width > 1.35) return 'portrait';
-  if (isNearSquare || width < 640 || height < 320) return 'thumbnail';
-
-  return 'thumbnail';
-};
-
-// This function normalizes image URLs without discarding meaningful query parameters.
-const normalizeImageUrl = value => {
-  const decodedUrl = String(value || '').trim().replace(/&amp;/gi, '&');
-  if (!decodedUrl) return '';
-
-  try {
-    const baseUrl = typeof window !== 'undefined' ? window.location.href : undefined;
-    const parsedUrl = baseUrl ? new URL(decodedUrl, baseUrl) : new URL(decodedUrl);
-
-    if (parsedUrl.pathname.length > 1) {
-      parsedUrl.pathname = parsedUrl.pathname.replace(/\/+$/, '');
-    }
-
-    return parsedUrl.href;
-  } catch {
-    return decodedUrl.length > 1 ? decodedUrl.replace(/\/+$/, '') : decodedUrl;
-  }
-};
+import {
+  NULL_ARTICLE_CONTENT,
+  classifyArticleLeadImage,
+  normalizeArticleContent,
+  summarizeArticleContent
+} from '../../services/articleContentService.js';
 
 export default {
   props: { viewMode: { type: String, default: '' }, content: { type: String, default: '' }, imageUrl: { type: String, default: '' }, imageWidth: { type: [Number, String], default: null }, imageHeight: { type: [Number, String], default: null }, imageMimeType: { type: String, default: '' }, imageSource: { type: String, default: '' }, contentSummaryBullets: { type: Array, default: () => [] }, visibleBulletCount: { type: Number, default: Infinity }, shouldShowImage: { type: Boolean, default: true }, showMinimalContent: { type: Boolean, default: false } },
@@ -55,13 +24,15 @@ export default {
   },
   computed: {
     // Returns whether this article has renderable content.
-    hasContent() { return this.content !== NULL_CONTENT; },
+    hasContent() { return this.content !== NULL_ARTICLE_CONTENT; },
     // Returns cached display HTML and image metadata from one normalization pass.
-    normalizedContent() { return this.normalizeArticleContent(this.content, this.imageUrl); },
+    normalizedContent() { return normalizeArticleContent(this.content, this.imageUrl); },
     // Returns article content with known compatibility markup normalized for display.
     renderedContent() { return this.normalizedContent.html; },
     // Returns whether the article body contains readable text.
     hasArticleContent() { return this.normalizedContent.hasReadableContent; },
+    // Returns stripped and bounded text for summarized article previews.
+    summarizedContent() { return summarizeArticleContent(this.content); },
     // Returns the persisted dimensions, or natural dimensions discovered after loading.
     leadImageDimensions() {
       const persistedWidth = Number(this.imageWidth);
@@ -81,7 +52,7 @@ export default {
     imageDisplayMode() {
       const imageUrl = String(this.imageUrl || '');
       if (imageUrl && this.failedImageUrl === imageUrl) return 'hidden';
-      return classifyLeadImage(this.leadImageDimensions.width, this.leadImageDimensions.height);
+      return classifyArticleLeadImage(this.leadImageDimensions.width, this.leadImageDimensions.height);
     },
     // Returns whether the lead image uses the compact, text-wrapping layout.
     isThumbnailLeadImage() { return this.imageDisplayMode === 'thumbnail' || this.imageDisplayMode === 'pending'; },
@@ -107,154 +78,6 @@ export default {
     // This function hides a lead image that fails to load.
     handleLeadImageError() {
       this.failedImageUrl = String(this.imageUrl || '');
-    },
-    // This function strips HTML for summarized article previews.
-    stripHTML(value) { return value.replace(/<(.|\n)*?>/g, '').split(/\s+/).slice(0, 100).join(' '); },
-    // This function normalizes display markup, readable text, and fallback-image membership in one DOM pass.
-    normalizeArticleContent(value, fallbackImageUrl = '') {
-      const html = String(value || '');
-
-      if (typeof DOMParser === 'undefined') {
-        return this.fallbackNormalizedContent(html, fallbackImageUrl);
-      }
-
-      try {
-        const document = new DOMParser().parseFromString(html, 'text/html');
-        this.normalizeMastodonLinks(document);
-        const embedFigures = document.querySelectorAll('figure.rssmonster-embed[data-provider="youtube"], figure.embed-youtube');
-
-        embedFigures.forEach(figure => {
-          const videoId = this.youtubeVideoIdFromFigure(figure);
-          if (!videoId) return;
-
-          figure.replaceWith(this.createYouTubeEmbed(document, videoId));
-        });
-
-        const normalizedFallbackImageUrl = normalizeImageUrl(fallbackImageUrl);
-        let containsFallbackImage = false;
-
-        document.querySelectorAll('img, source').forEach(element => {
-          if (element.tagName.toLowerCase() === 'img') {
-            element.setAttribute('loading', 'lazy');
-            element.setAttribute('decoding', 'async');
-          }
-
-          if (!normalizedFallbackImageUrl || containsFallbackImage) return;
-
-          const src = element.getAttribute('src');
-          const srcset = String(element.getAttribute('srcset') || '')
-            .split(',')
-            .map(candidate => candidate.trim().split(/\s+/)[0]);
-          containsFallbackImage = [src, ...srcset]
-            .some(candidate => normalizeImageUrl(candidate) === normalizedFallbackImageUrl);
-        });
-
-        const hasReadableContent = html !== NULL_CONTENT
-          && Boolean(String(document.body.textContent || '').replace(/\u00a0/g, ' ').trim());
-
-        return {
-          html: document.body.innerHTML,
-          hasReadableContent,
-          containsFallbackImage
-        };
-      } catch {
-        return this.fallbackNormalizedContent(html, fallbackImageUrl);
-      }
-    },
-    // This function preserves safe string-based normalization when DOMParser is unavailable.
-    fallbackNormalizedContent(html, fallbackImageUrl = '') {
-      const normalizedFallbackImageUrl = normalizeImageUrl(fallbackImageUrl);
-      const decodedHtml = html.replace(/&amp;/gi, '&');
-      const rawFallbackImageUrl = String(fallbackImageUrl || '').trim().replace(/&amp;/gi, '&');
-      const text = html.replace(/<(.|\n)*?>/g, ' ').replace(/&nbsp;/gi, ' ').trim();
-
-      return {
-        html,
-        hasReadableContent: html !== NULL_CONTENT && text.length > 0,
-        containsFallbackImage: Boolean(normalizedFallbackImageUrl) && (
-          decodedHtml.includes(rawFallbackImageUrl) || decodedHtml.includes(normalizedFallbackImageUrl)
-        )
-      };
-    },
-    // This function makes every segment of legacy Mastodon-formatted links visible.
-    normalizeMastodonLinks(document) {
-      document.querySelectorAll('a').forEach(link => {
-        const children = Array.from(link.children);
-        const visibleParts = children.filter(child => child.matches('span:not(.invisible)'));
-        const invisibleParts = children.filter(child => child.matches('span.invisible'));
-        const hasUnexpectedText = Array.from(link.childNodes)
-          .some(child => child.nodeType === 3 && child.textContent.trim());
-
-        if (
-          visibleParts.length !== 1 ||
-          invisibleParts.length === 0 ||
-          children.length !== visibleParts.length + invisibleParts.length ||
-          hasUnexpectedText
-        ) {
-          return;
-        }
-
-        invisibleParts.forEach(part => part.classList.remove('invisible'));
-        children.forEach(part => {
-          if (!String(part.getAttribute('class') || '').trim()) part.removeAttribute('class');
-        });
-      });
-    },
-    // This function extracts a validated YouTube video id from known figure formats.
-    youtubeVideoIdFromFigure(figure) {
-      const dataVideoId = figure.dataset?.videoId;
-
-      if (this.isValidYouTubeVideoId(dataVideoId)) {
-        return dataVideoId;
-      }
-
-      const href = figure.querySelector('a[href]')?.getAttribute('href');
-      return this.youtubeVideoIdFromUrl(href);
-    },
-    // This function extracts a YouTube video id from a supported URL.
-    youtubeVideoIdFromUrl(value = '') {
-      try {
-        const parsed = new URL(String(value), window.location.origin);
-        const hostname = parsed.hostname.toLowerCase().replace(/^www\./, '');
-        let videoId = null;
-
-        if (hostname === 'youtu.be') {
-          videoId = parsed.pathname.split('/').filter(Boolean)[0];
-        } else if (hostname === 'youtube.com' && parsed.pathname === '/watch') {
-          videoId = parsed.searchParams.get('v');
-        } else if (hostname === 'youtube.com' && parsed.pathname.startsWith('/embed/')) {
-          videoId = parsed.pathname.split('/').filter(Boolean)[1];
-        } else if (hostname === 'youtube.com' && parsed.pathname.startsWith('/shorts/')) {
-          videoId = parsed.pathname.split('/').filter(Boolean)[1];
-        }
-
-        return this.isValidYouTubeVideoId(videoId) ? videoId : null;
-      } catch {
-        return null;
-      }
-    },
-    // This function checks whether a value is shaped like a YouTube video id.
-    isValidYouTubeVideoId(value) {
-      return YOUTUBE_VIDEO_ID_PATTERN.test(String(value || ''));
-    },
-    // This function creates the safe iframe wrapper used for YouTube videos.
-    createYouTubeEmbed(document, videoId) {
-      const figure = document.createElement('figure');
-      const iframe = document.createElement('iframe');
-
-      figure.className = 'rssmonster-embed rssmonster-youtube-embed';
-      figure.dataset.provider = 'youtube';
-      figure.dataset.videoId = videoId;
-
-      iframe.className = 'rssmonster-youtube-frame';
-      iframe.src = `https://www.youtube.com/embed/${videoId}`;
-      iframe.title = 'YouTube video player';
-      iframe.loading = 'lazy';
-      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-      iframe.allowFullscreen = true;
-
-      figure.appendChild(iframe);
-      return figure;
     }
   }
 };

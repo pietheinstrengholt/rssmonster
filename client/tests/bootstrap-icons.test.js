@@ -22,7 +22,8 @@ describe('Bootstrap icon delivery', () => {
     'pencil-square',
     'lightning-charge-fill',
     'box-arrow-up-right',
-    'shield-lock'
+    'shield-lock',
+    'exclamation-circle'
   ])('includes %s in the generated sprite', icon => {
     expect(bootstrapIconNames).toContain(icon);
   });

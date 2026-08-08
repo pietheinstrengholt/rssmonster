@@ -206,7 +206,7 @@ async function createBriefingFixture() {
     return article;
   });
 
-  await createArticle({
+  const eventThreeDevelopingMember = await createArticle({
     user: owner,
     feed: secondFeed,
     slug: 'event-three-member',
@@ -214,6 +214,7 @@ async function createBriefingFixture() {
     publishedAt: hoursAgo(1),
     interestScore: 0.9
   }).then(article => article.update({ eventId: eventThree.id, topicId: topic.id }));
+  await eventThree.update({ developingArticleId: eventThreeDevelopingMember.id });
 
   await Article.create({
     userId: owner.id,
@@ -395,6 +396,29 @@ describe('GET /api/articles/briefing', () => {
     expect(items.every(item => Object.hasOwn(item, 'text'))).toBe(true);
   });
 
+  // Applies only the Briefing preference when selecting morning-summary event coverage.
+  it('uses the stored Briefing developing-events preference in the morning summary', async () => {
+    const preference = await BriefingPreference.create({
+      userId: fixture.owner.id,
+      includeDevelopingEvents: true
+    });
+
+    try {
+      const response = await request(app)
+        .get('/api/articles/briefing')
+        .set('Authorization', authHeaderFor(fixture.owner));
+
+      expect(response.status).toBe(200);
+      expect(response.body.filters.includeDevelopingEvents).toBe(true);
+      expect(response.body.morningSummary.items[0]).toMatchObject({
+        eventId: fixture.events.eventThree.id,
+        representativeArticleId: fixture.events.eventThree.developingArticleId
+      });
+    } finally {
+      await preference.destroy();
+    }
+  });
+
   it('applies rolling-period and unread filters without changing the response shape', async () => {
     const [todayResponse, unreadResponse] = await Promise.all([
       request(app)
@@ -426,9 +450,13 @@ describe('GET /api/articles/briefing', () => {
   });
 
   it.each([
-    ['showOnlyInterestMatchedArticles', 6],
-    ['showOnlyDevelopingEventArticles', 2]
-  ])('applies the stored %s filter consistently', async (preferenceField, expectedCount) => {
+    ['showOnlyInterestMatchedArticles', 6, 5],
+    ['showOnlyDevelopingEventArticles', 1, 1]
+  ])('applies the stored %s filter consistently', async (
+    preferenceField,
+    expectedCandidateCount,
+    expectedGroupedCount
+  ) => {
     const preference = await BriefingPreference.create({
       userId: fixture.owner.id,
       [preferenceField]: true
@@ -447,15 +475,18 @@ describe('GET /api/articles/briefing', () => {
         request(app)
           .post('/api/manager/overview-counts')
           .set('Authorization', authHeaderFor(fixture.owner))
-          .send({ grouping: 'none' })
+          .send({
+            grouping: 'event',
+            includeDevelopingEvents: preferenceField === 'showOnlyDevelopingEventArticles'
+          })
       ]);
 
       expect(summaryResponse.status).toBe(200);
-      expect(summaryResponse.body.context.articleCount).toBe(expectedCount);
+      expect(summaryResponse.body.context.articleCount).toBe(expectedCandidateCount);
       expect(articleListResponse.status).toBe(200);
-      expect(articleListResponse.body.itemIds).toHaveLength(expectedCount);
+      expect(articleListResponse.body.itemIds).toHaveLength(expectedGroupedCount);
       expect(countsResponse.status).toBe(200);
-      expect(countsResponse.body.briefingCount).toBe(expectedCount);
+      expect(countsResponse.body.briefingCount).toBe(expectedGroupedCount);
     } finally {
       await preference.destroy();
     }
@@ -496,7 +527,7 @@ describe('GET /api/articles/briefing', () => {
     }
   });
 
-  it('adds trust sorting to the stored Daily Briefing article query', async () => {
+  it('applies stored high-trust ranking to the Briefing list and morning summary', async () => {
     const preference = await BriefingPreference.create({
       userId: fixture.owner.id,
       selectionPeriod: '7d',
@@ -508,20 +539,27 @@ describe('GET /api/articles/briefing', () => {
     ]);
 
     try {
-      const response = await request(app)
-        .get('/api/articles')
-        .query({
-          status: 'briefing',
-          search: 'briefing:true @lastweek',
-          sort: 'desc'
-        })
-        .set('Authorization', authHeaderFor(fixture.owner));
+      const [response, summaryResponse] = await Promise.all([
+        request(app)
+          .get('/api/articles')
+          .query({
+            status: 'briefing',
+            search: 'briefing:true @lastweek',
+            sort: 'desc'
+          })
+          .set('Authorization', authHeaderFor(fixture.owner)),
+        request(app)
+          .get('/api/articles/briefing')
+          .set('Authorization', authHeaderFor(fixture.owner))
+      ]);
 
       expect(response.status).toBe(200);
       expect(response.body.itemIds.indexOf(fixture.representatives.eventOneReadMember.id))
         .toBeLessThan(
           response.body.itemIds.indexOf(fixture.representatives.eventOneRepresentative.id)
         );
+      expect(summaryResponse.status).toBe(200);
+      expect(summaryResponse.body.filters.prioritizeHighTrust).toBe(true);
     } finally {
       await preference.destroy();
       await Promise.all([

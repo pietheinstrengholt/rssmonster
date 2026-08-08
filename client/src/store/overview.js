@@ -242,7 +242,11 @@ export const useOverviewStore = defineStore('overview', {
 
         this.updateOverviewStructure(data, { initial, forceUpdate });
         this.overviewStructureStatus = 'success';
-        void this.fetchOverviewCounts({ initial, forceUpdate });
+        const countsRequest = this.fetchOverviewCounts({ initial, forceUpdate });
+        // Initial Briefing content must wait until its server-owned filters stabilize selection.
+        if (initial && selectionStore.currentSelection.status === 'briefing') {
+          await countsRequest;
+        }
         return true;
       } catch (error) {
         if (requestId === this.overviewStructureRequestId) {
@@ -259,7 +263,9 @@ export const useOverviewStore = defineStore('overview', {
         briefingCount,
         briefingSelectionPeriod,
         briefingIncludeOnlyUnreadArticles,
+        briefingMarkAsReadOnScroll,
         briefingPrioritizeHighTrust,
+        briefingShowOnlyDevelopingEventArticles,
         unreadCount,
         readCount,
         favoriteCount,
@@ -277,8 +283,12 @@ export const useOverviewStore = defineStore('overview', {
           ?? useSelectionStore().briefingSelectionPeriod,
         includeOnlyUnreadArticles: briefingIncludeOnlyUnreadArticles
           ?? useSelectionStore().briefingIncludeOnlyUnreadArticles,
+        markAsReadOnScroll: briefingMarkAsReadOnScroll
+          ?? useSelectionStore().briefingMarkAsReadOnScroll,
         prioritizeHighTrust: briefingPrioritizeHighTrust
-          ?? useSelectionStore().briefingPrioritizeHighTrust
+          ?? useSelectionStore().briefingPrioritizeHighTrust,
+        showOnlyDevelopingEventArticles: briefingShowOnlyDevelopingEventArticles
+          ?? useSelectionStore().briefingShowOnlyDevelopingEventArticles
       });
       this.unreadCount = unreadCount;
       this.readCount = readCount;
@@ -315,7 +325,9 @@ export const useOverviewStore = defineStore('overview', {
         briefingCount,
         briefingSelectionPeriod,
         briefingIncludeOnlyUnreadArticles,
+        briefingMarkAsReadOnScroll,
         briefingPrioritizeHighTrust,
+        briefingShowOnlyDevelopingEventArticles,
         unreadCount,
         readCount,
         favoriteCount,
@@ -333,8 +345,12 @@ export const useOverviewStore = defineStore('overview', {
         selectionPeriod: briefingSelectionPeriod ?? selectionStore.briefingSelectionPeriod,
         includeOnlyUnreadArticles: briefingIncludeOnlyUnreadArticles
           ?? selectionStore.briefingIncludeOnlyUnreadArticles,
+        markAsReadOnScroll: briefingMarkAsReadOnScroll
+          ?? selectionStore.briefingMarkAsReadOnScroll,
         prioritizeHighTrust: briefingPrioritizeHighTrust
-          ?? selectionStore.briefingPrioritizeHighTrust
+          ?? selectionStore.briefingPrioritizeHighTrust,
+        showOnlyDevelopingEventArticles: briefingShowOnlyDevelopingEventArticles
+          ?? selectionStore.briefingShowOnlyDevelopingEventArticles
       });
       this.unreadCount = unreadCount;
       this.readCount = readCount;
@@ -634,25 +650,24 @@ export const useOverviewStore = defineStore('overview', {
 
     // This action reconciles an unread-to-read transition across owned counters.
     increaseReadCount(article) {
+      const categoryId = article.feed?.categoryId ?? article.Feed?.categoryId;
       const category = this.categories.find(
-        item => item.id === article.feed.categoryId
+        item => idsMatch(item.id, categoryId)
       );
       if (!category) {
-        console.warn('[increaseReadCount] Category not found for categoryId:', article.feed.categoryId);
-        return;
+        console.warn('[increaseReadCount] Category not found for categoryId:', categoryId);
       }
 
-      const feed = category.feeds?.find(item => item.id === article.feedId);
-      if (!feed) {
+      const feed = category?.feeds?.find(item => idsMatch(item.id, article.feedId));
+      if (category && !feed) {
         console.warn('[increaseReadCount] Feed not found for feedId:', article.feedId);
-        return;
       }
 
-      if (category.unreadCount > 0) {
+      if (category?.unreadCount > 0) {
         category.unreadCount--;
         category.readCount++;
       }
-      if (feed.unreadCount > 0) {
+      if (feed?.unreadCount > 0) {
         feed.unreadCount--;
         feed.readCount++;
       }
@@ -662,27 +677,50 @@ export const useOverviewStore = defineStore('overview', {
       }
     },
 
+    // This action removes one displayed unread-only Briefing group from cached counters.
+    decreaseBriefingCount(article) {
+      const selectionStore = useSelectionStore();
+      if (
+        selectionStore.currentSelection.status !== 'briefing' ||
+        !selectionStore.briefingIncludeOnlyUnreadArticles
+      ) {
+        return false;
+      }
+
+      const categoryId = article.feed?.categoryId ?? article.Feed?.categoryId;
+      const category = this.categories.find(item => idsMatch(item.id, categoryId));
+      const feed = category?.feeds?.find(item => idsMatch(item.id, article.feedId));
+
+      this.briefingCount = normalizeCount(this.briefingCount - 1);
+      if (category) {
+        category.briefingCount = normalizeCount(category.briefingCount - 1);
+      }
+      if (feed) {
+        feed.briefingCount = normalizeCount(feed.briefingCount - 1);
+      }
+      return true;
+    },
+
     // This action reconciles a read-to-unread transition across owned counters.
     decreaseReadCount(article) {
+      const categoryId = article.feed?.categoryId ?? article.Feed?.categoryId;
       const category = this.categories.find(
-        item => item.id === article.feed.categoryId
+        item => idsMatch(item.id, categoryId)
       );
       if (!category) {
-        console.warn('[decreaseReadCount] Category not found for categoryId:', article.feed.categoryId);
-        return;
+        console.warn('[decreaseReadCount] Category not found for categoryId:', categoryId);
       }
 
-      const feed = category.feeds?.find(item => item.id === article.feedId);
-      if (!feed) {
+      const feed = category?.feeds?.find(item => idsMatch(item.id, article.feedId));
+      if (category && !feed) {
         console.warn('[decreaseReadCount] Feed not found for feedId:', article.feedId);
-        return;
       }
 
-      if (category.readCount > 0) {
+      if (category?.readCount > 0) {
         category.readCount--;
         category.unreadCount++;
       }
-      if (feed.readCount > 0) {
+      if (feed?.readCount > 0) {
         feed.readCount--;
         feed.unreadCount++;
       }

@@ -137,6 +137,7 @@ const loadBriefingCountConfig = async userId => {
     attributes: [
       'selectionPeriod',
       'includeOnlyUnreadArticles',
+      'markAsReadOnScroll',
       'minDistinctSources',
       'prioritizeHighTrust',
       'showOnlyInterestMatchedArticles',
@@ -151,6 +152,9 @@ const loadBriefingCountConfig = async userId => {
   const briefingIncludeOnlyUnreadArticles = Boolean(
     Number(briefingPreferences?.includeOnlyUnreadArticles)
   );
+  const briefingMarkAsReadOnScroll = briefingIncludeOnlyUnreadArticles && Boolean(
+    Number(briefingPreferences?.markAsReadOnScroll)
+  );
   const briefingStatusCondition = briefingIncludeOnlyUnreadArticles
     ? "AND articles.status = 'unread'"
     : '';
@@ -158,21 +162,24 @@ const loadBriefingCountConfig = async userId => {
   const briefingPrioritizeHighTrust = Boolean(
     Number(briefingPreferences?.prioritizeHighTrust)
   );
+  const briefingShowOnlyDevelopingEventArticles = Boolean(
+    Number(briefingPreferences?.showOnlyDevelopingEventArticles)
+  );
   const briefingEligibility = briefingEligibilitySql({
     minDistinctSources: briefingMinDistinctSources,
     showOnlyInterestMatchedArticles: Boolean(
       Number(briefingPreferences?.showOnlyInterestMatchedArticles)
     ),
-    showOnlyDevelopingEventArticles: Boolean(
-      Number(briefingPreferences?.showOnlyDevelopingEventArticles)
-    )
+    showOnlyDevelopingEventArticles: briefingShowOnlyDevelopingEventArticles
   });
 
   return {
     briefingSelectionPeriod,
     briefingIncludeOnlyUnreadArticles,
+    briefingMarkAsReadOnScroll,
     briefingMinDistinctSources,
     briefingPrioritizeHighTrust,
+    briefingShowOnlyDevelopingEventArticles,
     countSql: `COUNT(CASE WHEN
       articles.publishedAt >= NOW() - INTERVAL ${briefingWindowDays} DAY
       AND articles.publishedAt <= NOW()
@@ -200,8 +207,11 @@ const loadOverviewTotals = async (baseWhere, briefingConfig) => {
   return {
     briefingSelectionPeriod: briefingConfig.briefingSelectionPeriod,
     briefingIncludeOnlyUnreadArticles: briefingConfig.briefingIncludeOnlyUnreadArticles,
+    briefingMarkAsReadOnScroll: briefingConfig.briefingMarkAsReadOnScroll,
     briefingMinDistinctSources: briefingConfig.briefingMinDistinctSources,
     briefingPrioritizeHighTrust: briefingConfig.briefingPrioritizeHighTrust,
+    briefingShowOnlyDevelopingEventArticles:
+      briefingConfig.briefingShowOnlyDevelopingEventArticles,
     briefingCount: Number(totals?.briefingCount) || 0,
     unreadCount: Number(totals?.unreadCount) || 0,
     readCount: Number(totals?.readCount) || 0,

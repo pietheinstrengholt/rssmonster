@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { sendChatMessages } from '../src/api/agent.js';
 import {
-  applyAuthToken,
   login,
   register,
   validateSession
@@ -17,12 +16,11 @@ import {
   updateUser
 } from '../src/api/users.js';
 
-const { del, get, post, put, setAuthToken } = vi.hoisted(() => ({
+const { del, get, post, put } = vi.hoisted(() => ({
   del: vi.fn(),
   get: vi.fn(),
   post: vi.fn(),
-  put: vi.fn(),
-  setAuthToken: vi.fn()
+  put: vi.fn()
 }));
 
 vi.mock('../src/api/client', () => ({
@@ -31,8 +29,7 @@ vi.mock('../src/api/client', () => ({
     get,
     post,
     put
-  },
-  setAuthToken
+  }
 }));
 
 beforeEach(() => {
@@ -99,12 +96,6 @@ describe('authentication API contracts', () => {
     );
   });
 
-  // Verifies authenticated application state delegates to the shared client setter.
-  it('applies a token through the shared client', () => {
-    applyAuthToken('new-token');
-
-    expect(setAuthToken).toHaveBeenCalledWith('new-token');
-  });
 });
 
 describe('user and preference API contracts', () => {

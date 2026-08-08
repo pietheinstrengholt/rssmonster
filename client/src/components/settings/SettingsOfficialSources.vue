@@ -307,15 +307,9 @@
 </style>
 
 <script>
-import { mapStores } from 'pinia';
-import { useAuthStore } from '../../store/auth.js';
 import { fetchOfficialSources, saveOfficialSources } from '../../api/settings';
-import { setAuthToken } from '../../api/client';
 
 export default {
-  computed: {
-    ...mapStores(useAuthStore)
-  },
   name: 'SettingsOfficialSources',
   emits: ['saved'],
   data() {
@@ -329,7 +323,6 @@ export default {
     };
   },
   async created() {
-    setAuthToken(this.authStore.token);
     await this.loadOfficialSources();
   },
   methods: {

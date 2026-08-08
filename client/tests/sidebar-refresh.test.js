@@ -3,9 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Sidebar from '../src/components/sidebar/Sidebar.vue';
 import { triggerCrawl } from '../src/api/crawl';
 import {
-  openFeedRefreshEvents,
   startFeedRefresh
 } from '../src/api/feeds';
+import { openFeedRefreshEvents } from '../src/services/feedRefreshStream.js';
 import { ACTION_ERROR_EVENT } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
@@ -18,8 +18,12 @@ vi.mock('../src/api/crawl', () => ({
 }));
 
 vi.mock('../src/api/feeds', () => ({
-  openFeedRefreshEvents: vi.fn(),
   startFeedRefresh: vi.fn()
+}));
+
+vi.mock('../src/services/feedRefreshStream.js', async importOriginal => ({
+  ...await importOriginal(),
+  openFeedRefreshEvents: vi.fn()
 }));
 
 vi.mock('../src/api/manager', () => ({
@@ -58,7 +62,7 @@ const mountSidebar = () => {
     },
     ui: { setShowModal: vi.fn() }
   });
-  return mount(Sidebar, {
+  const wrapper = mount(Sidebar, {
     global: {
       plugins: [stores.pinia],
       stubs: {
@@ -69,6 +73,7 @@ const mountSidebar = () => {
       }
     }
   });
+  return { stores, wrapper };
 };
 
 // This function creates an event source whose server events are controlled by the test.
@@ -107,7 +112,7 @@ describe('Sidebar feed refresh', () => {
       }
     });
     openFeedRefreshEvents.mockReturnValue(eventSource);
-    const wrapper = mountSidebar();
+    const { stores, wrapper } = mountSidebar();
 
     await wrapper.vm.refreshFeeds();
     await wrapper.vm.refreshFeeds();
@@ -140,7 +145,7 @@ describe('Sidebar feed refresh', () => {
 
     await vi.advanceTimersByTimeAsync(500);
 
-    expect(wrapper.emitted('forceReload')).toHaveLength(1);
+    expect(stores.feedRefreshStore.successfulCompletionId).toBe(1);
     expect(wrapper.find('.sidebar-refresh-progress-panel').exists()).toBe(false);
   });
 
@@ -154,7 +159,7 @@ describe('Sidebar feed refresh', () => {
     startFeedRefresh.mockRejectedValue(liveFailure);
     triggerCrawl.mockRejectedValue(fallbackFailure);
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    const wrapper = mountSidebar();
+    const { wrapper } = mountSidebar();
 
     await wrapper.vm.refreshFeeds();
     await flushPromises();
@@ -182,11 +187,14 @@ describe('Sidebar feed refresh', () => {
       }
     });
     openFeedRefreshEvents.mockReturnValue(eventSource);
-    const wrapper = mountSidebar();
+    const { stores, wrapper } = mountSidebar();
 
     await wrapper.vm.refreshFeeds();
     wrapper.unmount();
 
+    expect(eventSource.close).not.toHaveBeenCalled();
+
+    stores.feedRefreshStore.teardown();
     expect(eventSource.removeEventListener).toHaveBeenCalledTimes(9);
     expect(eventSource.close).toHaveBeenCalledOnce();
     expect(eventSource.onopen).toBeNull();

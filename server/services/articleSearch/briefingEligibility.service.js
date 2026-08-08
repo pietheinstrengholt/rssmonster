@@ -1,5 +1,6 @@
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
+import { DEVELOPING_STORY_ELIGIBILITY_SQL } from './developingStoryEligibility.service.js';
 
 // Provides the shared dependencies used by this service.
 const { Article } = db;
@@ -18,15 +19,6 @@ export const BRIEFING_ELIGIBILITY_SQL = `(
 
 // Defines the interest matched eligibility sql enforced by this service.
 const INTEREST_MATCHED_ELIGIBILITY_SQL = 'articles.interestScore <> 0';
-// Defines the developing event eligibility sql enforced by this service.
-const DEVELOPING_EVENT_ELIGIBILITY_SQL = `EXISTS (
-  SELECT 1
-  FROM events briefing_event
-  WHERE briefing_event.id = articles.eventId
-    AND briefing_event.userId = articles.userId
-    AND briefing_event.articleCount > 1
-)`;
-
 // This function normalizes the configured distinct-source threshold.
 const normalizeMinimumDistinctSources = value => {
   // Coerces the numeric value into the representation required while normalizing minimum distinct sources.
@@ -49,7 +41,7 @@ export function briefingEligibilitySql({
   const baseEligibilitySql = showOnlyInterestMatchedArticles
     ? INTEREST_MATCHED_ELIGIBILITY_SQL
     : (showOnlyDevelopingEventArticles
-      ? DEVELOPING_EVENT_ELIGIBILITY_SQL
+      ? DEVELOPING_STORY_ELIGIBILITY_SQL
       : BRIEFING_ELIGIBILITY_SQL);
   // Collects the conditions while performing briefing eligibility sql.
   const conditions = [baseEligibilitySql];

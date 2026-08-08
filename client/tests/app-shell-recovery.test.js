@@ -35,7 +35,7 @@ const createRecoveryContext = () => {
     startOverviewPolling: vi.fn(),
     stopOverviewPolling: vi.fn(),
     showActionError: vi.fn(),
-    updateSelection: vi.fn()
+    showMobileToolbar: vi.fn(),
   };
 };
 
@@ -128,7 +128,7 @@ describe('AppShell connectivity recovery', () => {
     });
   });
 
-  it('synchronizes the current selection after an initial overview succeeds', async () => {
+  it('loads initial overview data without duplicating selection projections', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
     context.connectivityStatus = null;
     context.overviewStore.fetchOverviewSplit.mockResolvedValue();
@@ -137,8 +137,6 @@ describe('AppShell connectivity recovery', () => {
 
     expect(context.overviewStore.fetchOverviewSplit).toHaveBeenCalledWith({ initial: true });
     expect(context.overviewLoaded).toBe(true);
-    expect(context.updateSelection)
-      .toHaveBeenCalledWith(context.selectionStore.currentSelection);
   });
 
   it('refreshes overview and current articles before clearing status and restarting polling', async () => {

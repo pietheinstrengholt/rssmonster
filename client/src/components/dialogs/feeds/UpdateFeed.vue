@@ -261,10 +261,8 @@ import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../../store/selection.js';
 import { useOverviewStore } from '../../../store/overview.js';
 import { useUiStore } from '../../../store/ui.js';
-import { useAuthStore } from '../../../store/auth.js';
 import BaseDialog from '../BaseDialog.vue';
 import { deleteFeed as deleteFeedAPI, rediscoverRss, updateFeed } from '../../../api/feeds';
-import { setAuthToken } from '../../../api/client';
 import { notifyActionError } from '../../../services/actionNotifications.js';
 
 export default {
@@ -295,11 +293,6 @@ export default {
       ]
     };
   },
-  // This function configures the authenticated API client for feed operations.
-  created() {
-    setAuthToken(this.authStore.token);
-  },
-
   watch: {
     'overviewStore.categories': {
       // This function refreshes editable state when the feed overview changes.
@@ -320,7 +313,7 @@ export default {
 
   computed: {
 
-    ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useAuthStore),
+    ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
     // This function locks incompatible controls while any feed operation is active.
     isBusy() {
       return this.updating || this.deleting || this.rediscovering;

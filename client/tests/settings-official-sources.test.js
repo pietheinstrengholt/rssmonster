@@ -5,16 +5,11 @@ import {
   fetchOfficialSources,
   saveOfficialSources
 } from '../src/api/settings';
-import { setAuthToken } from '../src/api/client';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/settings', () => ({
   fetchOfficialSources: vi.fn(),
   saveOfficialSources: vi.fn()
-}));
-
-vi.mock('../src/api/client', () => ({
-  setAuthToken: vi.fn()
 }));
 
 // This function mounts official-source administration with an authenticated store.
@@ -60,7 +55,6 @@ describe('official-source administration', () => {
     const wrapper = mountOfficialSources();
     await flushPromises();
 
-    expect(setAuthToken).toHaveBeenCalledWith('admin-token');
     expect(wrapper.vm.sources).toMatchObject([{
       domain: 'example.org',
       enabled: false,

@@ -9,6 +9,7 @@ import {
   fetchSettings,
   saveIncludeDevelopingEvents,
   saveMarkAsReadOnScroll,
+  savePrioritizeHighTrust,
   saveStartupViewMode
 } from '../src/api/settings.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
@@ -17,6 +18,7 @@ vi.mock('../src/api/settings.js', () => ({
   fetchSettings: vi.fn(),
   saveIncludeDevelopingEvents: vi.fn(),
   saveMarkAsReadOnScroll: vi.fn(),
+  savePrioritizeHighTrust: vi.fn(),
   saveStartupViewMode: vi.fn()
 }));
 
@@ -55,6 +57,7 @@ beforeEach(() => {
     data: {
       includeDevelopingEvents: true,
       markAsReadOnScroll: true,
+      prioritizeHighTrust: true,
       startupViewMode: 'default',
       minAdvertisementScore: 10,
       minSentimentScore: 20,
@@ -71,6 +74,12 @@ beforeEach(() => {
   saveMarkAsReadOnScroll.mockResolvedValue({
     data: {
       markAsReadOnScroll: false
+    }
+  });
+  savePrioritizeHighTrust.mockReset();
+  savePrioritizeHighTrust.mockResolvedValue({
+    data: {
+      prioritizeHighTrust: false
     }
   });
   saveStartupViewMode.mockReset();
@@ -122,17 +131,17 @@ describe('UnreadSelectionContext', () => {
     wrapper = shallowMount(ArticleListView, {
       props: {
         articles: [{ id: 1 }],
-        pool: new Set(),
         container: [1],
-        currentSelection: 'unread',
-        currentViewUnreadCount: 76,
-        currentViewSourceCount: 22,
+        collectionSummary: {
+          status: 'unread', selectedTag: '', unreadCount: 76, sourceCount: 22
+        },
+        collectionProgress: {
+          hasLoadedContent: true,
+          isFlushed: false,
+          hasReachedEnd: false,
+          showFeedRefreshProgress: true
+        },
         viewMode: 'full',
-        remainingItems: 1,
-        fetchCount: 20,
-        hasLoadedContent: true,
-        isFlushed: false,
-        distance: 0
       },
       global: {
         plugins: [stores.pinia]
@@ -150,14 +159,15 @@ describe('UnreadSelectionContext', () => {
       props: {
         articles: [{ id: 1, status: 'unread' }],
         container: [1],
-        currentSelection: 'unread',
-        currentViewUnreadCount: 76,
-        currentViewSourceCount: 22,
-        remainingItems: 1,
-        fetchCount: 20,
-        hasLoadedContent: true,
-        isFlushed: false,
-        distance: 0
+        collectionSummary: {
+          status: 'unread', selectedTag: '', unreadCount: 76, sourceCount: 22
+        },
+        collectionProgress: {
+          hasLoadedContent: true,
+          isFlushed: false,
+          hasReachedEnd: false,
+          showFeedRefreshProgress: true
+        }
       },
       global: {
         plugins: [stores.pinia]
@@ -169,7 +179,7 @@ describe('UnreadSelectionContext', () => {
   });
 
   it.each([
-    ['standard', ArticleListView, { pool: new Set(), viewMode: 'full' }],
+    ['standard', ArticleListView, { viewMode: 'full' }],
     ['reader', ArticleReaderLayout, {}]
   ])('is hidden in the loaded %s unread list when no posts are found', (_mode, component, extraProps) => {
     const stores = createStore();
@@ -177,14 +187,15 @@ describe('UnreadSelectionContext', () => {
       props: {
         articles: [],
         container: [],
-        currentSelection: 'unread',
-        currentViewUnreadCount: 0,
-        currentViewSourceCount: 0,
-        remainingItems: 0,
-        fetchCount: 20,
-        hasLoadedContent: true,
-        isFlushed: false,
-        distance: 0,
+        collectionSummary: {
+          status: 'unread', selectedTag: '', unreadCount: 0, sourceCount: 0
+        },
+        collectionProgress: {
+          hasLoadedContent: true,
+          isFlushed: false,
+          hasReachedEnd: false,
+          showFeedRefreshProgress: true
+        },
         ...extraProps
       },
       global: {
@@ -213,14 +224,19 @@ describe('UnreadConfigurationModal', () => {
     );
     expect(wrapper.findAll('.unread-preferences-option-title').map(node => node.text())).toEqual([
       'Developing events',
+      'Prioritize high-trust coverage',
       'Mark as read while scrolling',
       'Use default view on startup'
     ]);
     expect(wrapper.findAll('.unread-preferences-option-description')[0].text()).toBe(
       'Include new coverage for events you have already seen.'
     );
-    expect(wrapper.findAll('[role="switch"]')).toHaveLength(3);
+    expect(wrapper.findAll('.unread-preferences-option-description')[2].text()).toContain(
+      'This does not run in Headlines mode.'
+    );
+    expect(wrapper.findAll('[role="switch"]')).toHaveLength(4);
     expect(wrapper.get('[name="includeDevelopingEvents"]').element.checked).toBe(true);
+    expect(wrapper.get('[name="prioritizeHighTrust"]').element.checked).toBe(true);
     expect(wrapper.get('[name="markAsReadOnScroll"]').element.checked).toBe(true);
     expect(wrapper.get('[name="useDefaultStartupView"]').element.checked).toBe(true);
   });
@@ -237,12 +253,14 @@ describe('UnreadConfigurationModal', () => {
     await flushPromises();
 
     await wrapper.get('[name="includeDevelopingEvents"]').setValue(false);
+    await wrapper.get('[name="prioritizeHighTrust"]').setValue(false);
     await wrapper.get('[name="markAsReadOnScroll"]').setValue(false);
     await wrapper.get('[name="useDefaultStartupView"]').setValue(false);
     await wrapper.get('.unread-preferences-form').trigger('submit');
     await flushPromises();
 
     expect(saveIncludeDevelopingEvents).toHaveBeenCalledWith(false);
+    expect(savePrioritizeHighTrust).toHaveBeenCalledWith(false);
     expect(saveMarkAsReadOnScroll).toHaveBeenCalledWith(false);
     expect(saveStartupViewMode).toHaveBeenCalledWith('last-used');
     expect(setCurrentSelection).toHaveBeenCalledWith({

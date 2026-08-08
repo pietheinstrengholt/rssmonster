@@ -345,9 +345,7 @@
 import { mapStores } from 'pinia';
 import { useOverviewStore } from '../../../store/overview.js';
 import { useUiStore } from '../../../store/ui.js';
-import { useAuthStore } from '../../../store/auth.js';
 import { validateFeed, createFeed } from '../../../api/feeds';
-import { setAuthToken } from '../../../api/client';
 import { notifyActionError } from '../../../services/actionNotifications.js';
 import BaseDialog from '../BaseDialog.vue';
 
@@ -355,10 +353,6 @@ export default {
     name: 'NewFeed',
     components: {
         BaseDialog
-    },
-    // Configures authentication before the feed workflow can make requests.
-    created: function() {
-        setAuthToken(this.authStore.token);
     },
     // Initializes the feed discovery workflow state.
     data() {
@@ -377,7 +371,7 @@ export default {
         };
     },
     computed: {
-      ...mapStores(useOverviewStore, useUiStore, useAuthStore),
+      ...mapStores(useOverviewStore, useUiStore),
         // Locks incompatible actions while any feed request is pending.
         isBusy() {
             return this.ajaxRequest || this.forceAdding || this.saving;

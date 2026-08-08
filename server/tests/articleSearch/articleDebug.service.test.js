@@ -66,9 +66,10 @@ describe('articleDebug.service', () => {
       { article: getterArticle, recommended: 0.98765 },
       { article: plainArticle, recommended: 0.4 },
       { article: noEventArticle, recommended: 0.1 }
-    ]);
+    ], { prioritizeHighTrust: true });
 
     expect(console.log).toHaveBeenCalledTimes(2);
+    expect(console.log.mock.calls[0][0]).toContain('feedTrustBoost');
     expect(console.log.mock.calls[1][0]).toContain('articlesWithEvents=2');
     expect(console.log.mock.calls[1][0]).toContain('events=1');
     expect(console.log.mock.calls[1][0]).toContain('eventCoverage=66.7%');
@@ -81,6 +82,10 @@ describe('articleDebug.service', () => {
       }),
       expect.objectContaining({ articleId: 3, eventName: '' })
     ]));
+    expect(mocked.computeRecommendedBreakdown).toHaveBeenCalledWith(
+      expect.any(Object),
+      { prioritizeHighTrust: true }
+    );
   });
 
   // Handles an empty ranking result without dividing by zero.

@@ -96,16 +96,6 @@ export const articleActionMethods = {
     });
   },
 
-  // Marks the article as less similar to the user's interests.
-  lessLikeThis() {
-    this.markNotInterested();
-  },
-
-  // Ignores the topic by marking the article as not interesting.
-  ignoreTopic() {
-    this.markNotInterested();
-  },
-
   // Mutes the article feed for seven days after confirmation.
   muteFeedSevenDays() {
     if (confirm(`Mute "${this.feed.feedName}" for 7 days?`)) {

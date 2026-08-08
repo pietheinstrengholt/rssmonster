@@ -4,10 +4,6 @@ import SettingsSmartFolders from '../src/components/settings/SettingsSmartFolder
 import SmartFolderEditor from '../src/components/settings/smartFolders/SmartFolderEditor.vue';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
-vi.mock('../src/api/client', () => ({
-  setAuthToken: vi.fn()
-}));
-
 vi.mock('../src/api/smartfolders', () => ({
   fetchSmartFolderInsights: vi.fn(),
   saveSmartFolders: vi.fn()

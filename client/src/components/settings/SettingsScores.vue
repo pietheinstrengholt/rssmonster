@@ -25,7 +25,7 @@
         </article>
       </div>
 
-      <div class="scores-info-row">
+      <div class="scores-info-row scores-info-row--filtering">
         <BootstrapIcon icon="funnel" aria-hidden="true" />
         <p><strong>Filtering:</strong> Articles scoring above your threshold are automatically hidden. Set a threshold to 100 to see everything.</p>
       </div>
@@ -170,7 +170,7 @@
 
 .scores-info-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   margin-top: 14px;
   padding-top: 14px;
@@ -178,14 +178,14 @@
   color: var(--settings-info-text);
 }
 
-.scores-info-row .bi {
-  margin-top: 2px;
-}
-
 .scores-info-row p {
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
+}
+
+.scores-info-row--filtering .bi {
+  transform: translateY(2px);
 }
 
 .scores-threshold-section {

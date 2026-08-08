@@ -3,6 +3,7 @@ import { useAuthStore } from '../../src/store/auth.js';
 import { useOverviewStore } from '../../src/store/overview.js';
 import { useSelectionStore } from '../../src/store/selection.js';
 import { useUiStore } from '../../src/store/ui.js';
+import { useFeedRefreshStore } from '../../src/store/feedRefresh.js';
 
 // This function applies test state and action overrides to one explicit Pinia store.
 const applyStoreOverrides = (store, overrides = {}) => {
@@ -21,6 +22,7 @@ const applyStoreOverrides = (store, overrides = {}) => {
 // This function creates isolated focused stores with optional explicit test overrides.
 export function createFocusedStores({
   auth = {},
+  feedRefresh = {},
   overview = {},
   selection = {},
   ui = {}
@@ -30,6 +32,7 @@ export function createFocusedStores({
 
   const stores = {
     authStore: useAuthStore(pinia),
+    feedRefreshStore: useFeedRefreshStore(pinia),
     overviewStore: useOverviewStore(pinia),
     pinia,
     selectionStore: useSelectionStore(pinia),
@@ -37,6 +40,7 @@ export function createFocusedStores({
   };
 
   applyStoreOverrides(stores.authStore, auth);
+  applyStoreOverrides(stores.feedRefreshStore, feedRefresh);
   applyStoreOverrides(stores.overviewStore, overview);
   applyStoreOverrides(stores.selectionStore, selection);
   applyStoreOverrides(stores.uiStore, ui);

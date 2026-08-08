@@ -10,7 +10,6 @@ import { loadAppShell } from '../src/services/appShellLoader.js';
 import { useAuthStore } from '../src/store/auth.js';
 
 vi.mock('../src/api/auth', () => ({
-  applyAuthToken: vi.fn(),
   developmentLogin: vi.fn(),
   login: vi.fn(),
   register: vi.fn(),
@@ -95,10 +94,10 @@ describe('authentication lifecycle', () => {
     await App.methods.checkSession.call(context);
 
     expect(authApi.validateSession).toHaveBeenCalledWith('saved-token');
-    expect(authApi.applyAuthToken).toHaveBeenCalledWith('saved-token');
     expect(context.authStore.token).toBe('saved-token');
     expect(context.authStore.role).toBe('admin');
     expect(context.authStore.userId).toBe(7);
+    expect(api.defaults.headers.common.Authorization).toBe('Bearer saved-token');
     expect(context.isAuthenticated).toBe(true);
   });
 
@@ -270,8 +269,8 @@ describe('authentication lifecycle', () => {
     oldValidation.resolve({ user: { role: 'admin' } });
     await validation;
 
-    expect(authApi.applyAuthToken).not.toHaveBeenCalled();
     expect(context.authStore).toMatchObject({ token: null, role: null });
+    expect(api.defaults.headers.common.Authorization).toBeUndefined();
     expect(context.isAuthenticated).toBe(false);
   });
 
@@ -297,7 +296,7 @@ describe('authentication lifecycle', () => {
 
     expect(context.authStore).toMatchObject({ token: 'new-token', role: 'admin' });
     expect(context.isAuthenticated).toBe(true);
-    expect(authApi.applyAuthToken).not.toHaveBeenCalledWith('old-token');
+    expect(api.defaults.headers.common.Authorization).toBe('Bearer new-token');
   });
 
   it('clears store, cookie, and every Authorization default during logout', () => {
@@ -307,7 +306,6 @@ describe('authentication lifecycle', () => {
       token: 'active-token',
       role: 'admin'
     });
-    setAuthToken('active-token');
     axios.defaults.headers.common.Authorization = 'Bearer stale-bootstrap-token';
 
     expect(api.defaults.headers.common.Authorization).toBe('Bearer active-token');

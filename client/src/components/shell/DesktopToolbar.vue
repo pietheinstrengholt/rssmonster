@@ -4,7 +4,13 @@
     <div class="toolbar-filters">
       <AppDropdown v-for="dropdown in toolbarDropdowns" :id="dropdown.id" :key="dropdown.id" :close-key="selectionCloseKey" class="toolbar-filter">
         <template #trigger="{ triggerProps }">
-          <button v-bind="triggerProps" class="toolbar-filter-button" type="button">
+          <button
+            v-bind="triggerProps"
+            class="toolbar-filter-button"
+            type="button"
+            :disabled="dropdown.disabled"
+            :title="dropdown.disabled ? briefingPresentationDisabledTitle : null"
+          >
             <span class="toolbar-filter-label">{{ dropdown.label }}:</span>
             <span class="toolbar-filter-value">{{ dropdown.selectedLabel }}</span>
             <span class="toolbar-filter-chevron" aria-hidden="true"></span>
@@ -202,6 +208,14 @@
 .toolbar-filter-button:hover {
   background-color: var(--bg-hover);
   border-color: var(--border-strong);
+}
+
+.toolbar-filter-button:disabled {
+  color: var(--text-muted);
+  background: var(--bg-input);
+  border-color: var(--border-control);
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .toolbar-filter-button:focus,
@@ -804,6 +818,13 @@ import { useSelectionStore } from '../../store/selection.js';
 import { useUiStore } from '../../store/ui.js';
 import { defineAsyncComponent } from 'vue';
 import { saveThemeMode as saveThemeModeAPI } from '../../api/settings.js';
+import {
+  ARTICLE_GROUPING_OPTIONS,
+  ARTICLE_SORT_OPTIONS,
+  ARTICLE_STATUS_OPTIONS,
+  ARTICLE_VIEW_MODE_OPTIONS,
+  getAvailableArticleOptions
+} from '../../config/articleSelectionOptions.js';
 import { notifyActionError } from '../../services/actionNotifications.js';
 import { validateSearchQuery } from '../../services/queryValidation.js';
 import { getThemeMode, setThemeMode } from '../../services/theme.js';
@@ -827,34 +848,10 @@ export default {
       searchDebounceTimer: null,
       selectedThemeMode: getThemeMode(),
       windowWidth: window.innerWidth,
-      statusOptions: [
-        { value: 'briefing', label: 'Daily briefing', requiresAI: true },
-        { value: 'unread', label: 'Unread' },
-        { value: 'favorite', label: 'Favorite' },
-        { value: 'hot', label: 'Hot' },
-        { value: 'clicked', label: 'Clicked' },
-        { value: 'read', label: 'Read' }
-      ],
-      viewModeOptions: [
-        { value: 'reader', label: 'Reader' },
-        { value: 'full', label: 'Expanded' },
-        { value: 'summarized', label: 'Summarized' },
-        { value: 'summaryBullets', label: 'Summary Bullets', requiresAI: true },
-        { value: 'minimal', label: 'Headlines' }
-      ],
-      sortOptions: [
-        { value: 'asc', label: 'Oldest' },
-        { value: 'desc', label: 'Newest' },
-        { value: 'trust', label: 'Trust' },
-        { value: 'recommended', label: 'Recommended', requiresAI: true },
-        { value: 'quality', label: 'Quality', requiresAI: true },
-        { value: 'attention', label: 'Most Engaged', requiresAI: true }
-      ],
-      groupingOptions: [
-        { value: 'none', label: 'None' },
-        { value: 'event', label: 'Events' },
-        { value: 'topic', label: 'Topics' }
-      ]
+      statusOptions: ARTICLE_STATUS_OPTIONS,
+      viewModeOptions: ARTICLE_VIEW_MODE_OPTIONS,
+      sortOptions: ARTICLE_SORT_OPTIONS,
+      groupingOptions: ARTICLE_GROUPING_OPTIONS
     };
   },
   mounted() {
@@ -902,6 +899,7 @@ export default {
     },
     // This function changes the grouping only when the value differs.
     setGrouping: function(value) {
+      if (this.briefingPresentationControlsDisabled) return;
       if (this.selectionStore.currentSelection.grouping === value) {
         return;
       }
@@ -922,6 +920,7 @@ export default {
     },
     // This function updates the active article sort order.
     sortClicked: function(sort) {
+      if (this.briefingPresentationControlsDisabled) return;
       this.selectionStore.setSelectedSort(sort);
     },
     // This function routes a configured dropdown option to its matching handler.
@@ -1029,10 +1028,20 @@ export default {
     selectedSort() {
       return this.currentSelection.sort;
     },
+    // This function disables presentation controls whose values are owned by Briefing settings.
+    briefingPresentationControlsDisabled() {
+      return this.currentSelection.status === 'briefing';
+    },
+    // This function explains why Briefing presentation controls cannot be changed here.
+    briefingPresentationDisabledTitle() {
+      return 'Briefing sorting and grouping are managed in Briefing settings.';
+    },
     // This function builds the configured view, show, and sort dropdowns.
     toolbarDropdowns() {
-      // This function filters out AI-only options when AI is unavailable.
-      const visibleOptions = (options) => options.filter((option) => this.isAIEnabled || !option.requiresAI);
+      // This function filters configured options against the active desktop capabilities.
+      const visibleOptions = (options) => getAvailableArticleOptions(options, {
+        aiEnabled: this.isAIEnabled
+      });
       const selectedSortOption = this.sortOptions.find((option) => option.value === this.selectedSort);
       const selectedViewModeOption = this.viewModeOptions.find((option) => option.value === this.selectedViewMode);
       const selectedStatusOption = this.statusOptions.find((option) => option.value === this.selectedStatus);
@@ -1061,7 +1070,8 @@ export default {
           label: 'Sort',
           selectedLabel: selectedSortOption ? selectedSortOption.label : '',
           selectedValue: this.selectedSort,
-          options: visibleOptions(this.sortOptions)
+          options: visibleOptions(this.sortOptions),
+          disabled: this.briefingPresentationControlsDisabled
         }
       ];
 
@@ -1072,7 +1082,8 @@ export default {
           label: 'Grouping',
           selectedLabel: selectedGroupingOption ? selectedGroupingOption.label : 'None',
           selectedValue: this.currentSelection.grouping,
-          options: this.groupingOptions
+          options: this.groupingOptions,
+          disabled: this.briefingPresentationControlsDisabled
         });
       }
 

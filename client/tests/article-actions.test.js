@@ -195,17 +195,6 @@ describe('articleActionMethods', () => {
     );
   });
 
-  // Verifies both negative-interest aliases share the not-interested behavior.
-  it('delegates less-like-this and ignore-topic actions', () => {
-    const markNotInterestedMethod = vi.fn();
-    const context = createContext({ markNotInterested: markNotInterestedMethod });
-
-    context.lessLikeThis();
-    context.ignoreTopic();
-
-    expect(markNotInterestedMethod).toHaveBeenCalledTimes(2);
-  });
-
   // Verifies declining confirmation leaves the feed unchanged.
   it('does not mute a feed when confirmation is declined', () => {
     vi.stubGlobal('confirm', vi.fn(() => false));

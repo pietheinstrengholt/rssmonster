@@ -64,21 +64,9 @@
             <h3 id="view-options-heading">Choose content view</h3>
           </div>
           <div class="options-view-grid">
-            <button @click="selectViewMode('full')" type="button" class="options-view-card" :class="{ selected: selectionStore.currentSelection.viewMode === 'full' }">
-              <span class="options-view-title">Expanded</span>
-              <span class="options-view-description">Show the full article content</span>
-            </button>
-            <button @click="selectViewMode('summarized')" type="button" class="options-view-card" :class="{ selected: selectionStore.currentSelection.viewMode === 'summarized' }">
-              <span class="options-view-title">Summarized content</span>
-              <span class="options-view-description">Show the AI generated summary</span>
-            </button>
-            <button v-if="selectionStore.currentSelection.AIEnabled" @click="selectViewMode('summaryBullets')" type="button" class="options-view-card" :class="{ selected: selectionStore.currentSelection.viewMode === 'summaryBullets' }">
-              <span class="options-view-title">Summary bullets</span>
-              <span class="options-view-description">Show short summaries as bullet points</span>
-            </button>
-            <button @click="selectViewMode('minimal')" type="button" class="options-view-card" :class="{ selected: selectionStore.currentSelection.viewMode === 'minimal' }">
-              <span class="options-view-title">Headlines</span>
-              <span class="options-view-description">Show only the article titles</span>
+            <button v-for="option in visibleViewModeOptions" :key="option.value" @click="selectViewMode(option.value)" type="button" class="options-view-card" :class="{ selected: selectionStore.currentSelection.viewMode === option.value }">
+              <span class="options-view-title">{{ option.mobileLabel || option.label }}</span>
+              <span class="options-view-description">{{ option.mobileDescription }}</span>
             </button>
           </div>
         </section>
@@ -522,6 +510,10 @@ import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
 import { useUiStore } from '../../store/ui.js';
+import {
+  ARTICLE_VIEW_MODE_OPTIONS,
+  getAvailableArticleOptions
+} from '../../config/articleSelectionOptions.js';
 export default {
   props: ["mobile"],
   data() {
@@ -533,6 +525,13 @@ export default {
   },
   computed: {
     ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
+    // This function exposes view modes supported by the active mobile capabilities.
+    visibleViewModeOptions() {
+      return getAvailableArticleOptions(ARTICLE_VIEW_MODE_OPTIONS, {
+        aiEnabled: this.selectionStore.currentSelection.AIEnabled,
+        mobile: true
+      });
+    },
     notificationButtonDisabled() {
       return this.notificationRequestPending ||
         this.notificationPermission === 'granted' ||

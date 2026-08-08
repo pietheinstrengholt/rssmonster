@@ -32,6 +32,7 @@ describe('BriefingPreference model', () => {
     expect(preference).toMatchObject({
       userId: user.id,
       includeOnlyUnreadArticles: false,
+      markAsReadOnScroll: false,
       includeDevelopingEvents: false,
       showOnlyInterestMatchedArticles: false,
       showOnlyDevelopingEventArticles: false,

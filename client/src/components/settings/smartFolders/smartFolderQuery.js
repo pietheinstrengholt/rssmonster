@@ -30,6 +30,8 @@ export function createEmptySmartFolderConfig() {
         events: {
             isEvent: false,
             isNotEvent: false,
+            isDeveloping: false,
+            isNotDeveloping: false,
             useMinimumCount: false,
             minimumCount: 2
         },
@@ -131,6 +133,8 @@ export function parseSmartFolderQuery(query, initialConfig = createEmptySmartFol
         else if (/^freshness:/i.test(cleaned)) config.scores.freshness = parseSmartFolderScoreToken(cleaned);
         else if (lower === 'event:true') config.events.isEvent = true;
         else if (lower === 'event:false') config.events.isNotEvent = true;
+        else if (lower === 'developing:true') config.events.isDeveloping = true;
+        else if (lower === 'developing:false') config.events.isNotDeveloping = true;
         else if (/^eventcount:/i.test(cleaned)) applyEventCountToken(config, cleaned);
         else if (/^sort:/i.test(cleaned)) applySortToken(config, cleaned);
         else if (/^limit:/i.test(cleaned)) config.limitCount = Number(cleaned.split(':')[1]) || 50;
@@ -175,6 +179,8 @@ export function buildSmartFolderQuery(config) {
 
     if (config.events.isEvent) parts.push('event:true');
     if (config.events.isNotEvent) parts.push('event:false');
+    if (config.events.isDeveloping) parts.push('developing:true');
+    if (config.events.isNotDeveloping) parts.push('developing:false');
     if (config.events.useMinimumCount) parts.push(`eventCount:>=${config.events.minimumCount}`);
 
     if (config.sort.field === 'published-desc') {

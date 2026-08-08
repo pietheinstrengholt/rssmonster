@@ -4,17 +4,12 @@ import { flushPromises, mount } from '@vue/test-utils';
 import NewCategory from '../src/components/dialogs/categories/NewCategory.vue';
 import RenameCategory from '../src/components/dialogs/categories/RenameCategory.vue';
 import { createCategory, updateCategory } from '../src/api/categories';
-import { setAuthToken } from '../src/api/client';
 import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/categories', () => ({
   createCategory: vi.fn(),
   updateCategory: vi.fn()
-}));
-
-vi.mock('../src/api/client', () => ({
-  setAuthToken: vi.fn()
 }));
 
 vi.mock('../src/services/actionNotifications.js', () => ({
@@ -74,7 +69,6 @@ describe('NewCategory', () => {
     await wrapper.get('.base-dialog__button--primary').trigger('click');
     await flushPromises();
 
-    expect(setAuthToken).toHaveBeenCalledWith('token');
     expect(createCategory).toHaveBeenCalledWith('Engineering', 'cpu-fill');
     expect(store.overviewStore.addCategory).toHaveBeenCalledWith({
       id: 8,
@@ -154,7 +148,6 @@ describe('RenameCategory', () => {
     const category = { id: 7, name: 'News', iconName: 'unsupported-icon' };
     mountCategoryModal(RenameCategory, category);
 
-    expect(setAuthToken).toHaveBeenCalledWith('token');
     expect(wrapper.get('#category-name').element.value).toBe('News');
     expect(wrapper.get('[aria-label="Folder"]').attributes('aria-checked')).toBe('true');
     expect(wrapper.get('.base-dialog__button--primary').attributes('disabled')).toBeDefined();

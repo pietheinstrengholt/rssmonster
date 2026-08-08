@@ -132,6 +132,16 @@ describe('articleQueryParser.service', () => {
     expect(excluded.textMode).toBe('none');
   });
 
+  it('parses developing boolean filters', () => {
+    const included = parseArticleQuery({ search: 'developing:true' });
+    const excluded = parseArticleQuery({ search: 'developing:false' });
+
+    expect(included.filters.developing).toBe(true);
+    expect(excluded.filters.developing).toBe(false);
+    expect(included.textMode).toBe('none');
+    expect(excluded.textMode).toBe('none');
+  });
+
   it('parses normal article view and event count shorthand', () => {
     const result = parseArticleQuery({ search: 'event:false eventCount:2' });
 

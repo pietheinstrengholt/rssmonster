@@ -21,6 +21,16 @@ export function createArticleFeedReadState() {
 
 // Groups local and server read-state reconciliation across feed view modes.
 export const articleFeedReadStateMethods = {
+  // Clears read-tracking state before a new article collection becomes active.
+  resetReadTracking() {
+    this.pool = new Set();
+    this.activeMinimalArticleId = null;
+    this.pendingReadStatusArticleIds.clear();
+    this.pendingSeenArticleIds.clear();
+    this.seenPersistenceAttempts.clear();
+    this.isFlushed = false;
+  },
+
   // Marks the previously selected reader article as read before navigating away.
   markReaderPreviousArticleRead(articleId) {
     if (this.selectionStore.currentSelection.viewMode !== 'reader') return;
@@ -72,15 +82,22 @@ export const articleFeedReadStateMethods = {
 
   // Persists an article's seen status and updates local read state.
   async markArticleSeen(articleId, visibleSeconds = 0) {
+    const selection = this.selectionStore.currentSelection;
+    const shouldMarkRead = selection.status === 'unread'
+      || (
+        selection.status === 'briefing'
+        && this.selectionStore.effectiveMarkAsReadOnScroll === true
+      );
+
     try {
       const response = await markArticleSeen(articleId, {
-        grouping: this.selectionStore.currentSelection.grouping,
+        grouping: selection.grouping,
         visibleSeconds,
-        selectedStatus: this.selectionStore.currentSelection.status
+        selectedStatus: shouldMarkRead ? 'unread' : selection.status
       });
 
       this.applyArticleSeenResponse(response.data, {
-        updateReadCounts: this.selectionStore.currentSelection.status === 'unread'
+        updateReadCounts: shouldMarkRead
       });
       return true;
     } catch (error) {
@@ -105,6 +122,9 @@ export const articleFeedReadStateMethods = {
     if (updateReadCounts) {
       for (const readArticle of readArticles) {
         this.overviewStore.increaseReadCount(readArticle);
+      }
+      if (readArticles.length > 0) {
+        this.overviewStore.decreaseBriefingCount(updatedArticle);
       }
     }
   },

@@ -58,6 +58,32 @@
 
           <label class="unread-preferences-option">
             <span class="unread-preferences-option-icon" aria-hidden="true">
+              <BootstrapIcon icon="shield-fill-check" />
+            </span>
+
+            <span class="unread-preferences-option-content">
+              <span class="unread-preferences-option-title">
+                Prioritize high-trust coverage
+              </span>
+              <span class="unread-preferences-option-description">
+                Rank events from reliable feeds more prominently.
+              </span>
+            </span>
+
+            <span class="unread-switch">
+              <input
+                v-model="form.prioritizeHighTrust"
+                name="prioritizeHighTrust"
+                type="checkbox"
+                role="switch"
+                :disabled="isLoading || isSaving"
+              />
+              <span class="unread-switch-control" aria-hidden="true"></span>
+            </span>
+          </label>
+
+          <label class="unread-preferences-option">
+            <span class="unread-preferences-option-icon" aria-hidden="true">
               <BootstrapIcon icon="check2-circle" />
             </span>
 
@@ -66,7 +92,7 @@
                 Mark as read while scrolling
               </span>
               <span class="unread-preferences-option-description">
-                Automatically mark unread articles as read after you scroll past them.
+                Automatically mark unread articles as read after you scroll past them. This does not run in Headlines mode.
               </span>
             </span>
 
@@ -121,6 +147,7 @@ import {
   fetchSettings as fetchSettingsAPI,
   saveIncludeDevelopingEvents as saveIncludeDevelopingEventsAPI,
   saveMarkAsReadOnScroll as saveMarkAsReadOnScrollAPI,
+  savePrioritizeHighTrust as savePrioritizeHighTrustAPI,
   saveStartupViewMode as saveStartupViewModeAPI
 } from '../../api/settings.js';
 import PreferencesDialogShell from './PreferencesDialogShell.vue';
@@ -139,6 +166,7 @@ export default {
       form: {
         includeDevelopingEvents: false,
         markAsReadOnScroll: true,
+        prioritizeHighTrust: false,
         useDefaultStartupView: false
       },
       isLoading: true,
@@ -169,6 +197,7 @@ export default {
 
         this.form.includeDevelopingEvents = Boolean(data.includeDevelopingEvents);
         this.form.markAsReadOnScroll = data.markAsReadOnScroll !== false;
+        this.form.prioritizeHighTrust = Boolean(data.prioritizeHighTrust);
         this.form.useDefaultStartupView = data.startupViewMode === 'default';
       } catch (error) {
         if (requestId !== this.activeRequestId) return;
@@ -189,15 +218,22 @@ export default {
 
       try {
         const startupViewMode = this.form.useDefaultStartupView ? 'default' : 'last-used';
-        const [{ data: unreadData }, { data: scrollingData }] = await Promise.all([
+        const [
+          { data: unreadData },
+          { data: scrollingData }
+        ] = await Promise.all([
           saveIncludeDevelopingEventsAPI(this.form.includeDevelopingEvents),
           saveMarkAsReadOnScrollAPI(this.form.markAsReadOnScroll),
+          savePrioritizeHighTrustAPI(this.form.prioritizeHighTrust),
           saveStartupViewModeAPI(startupViewMode)
         ]);
         const includeDevelopingEvents = Boolean(unreadData.includeDevelopingEvents);
         const markAsReadOnScroll = Boolean(scrollingData.markAsReadOnScroll);
 
-        this.selectionStore.setCurrentSelection({ includeDevelopingEvents, markAsReadOnScroll });
+        this.selectionStore.setCurrentSelection({
+          includeDevelopingEvents,
+          markAsReadOnScroll
+        });
         this.closeModal();
       } catch (error) {
         console.error('Error saving Unread Preferences:', error);

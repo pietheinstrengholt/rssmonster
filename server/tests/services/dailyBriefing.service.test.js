@@ -17,9 +17,11 @@ vi.mock('../../models/index.js', () => ({
     Article: { findAll: mocked.articleFindAll, sequelize: { literal: mocked.literal } },
     Event: { findAll: mocked.eventFindAll },
     EventTopic: { findAll: mocked.eventTopicFindAll },
+    Feed: {},
     Island: { findAll: mocked.islandFindAll },
     IslandTopic: { findAll: mocked.islandTopicFindAll },
     Setting: { findOne: mocked.settingFindOne },
+    Tag: {},
     Topic: { findAll: mocked.topicFindAll }
   }
 }));
@@ -195,6 +197,112 @@ describe('dailyBriefing.service', () => {
     expect(result.morningSummary.items[1]).toMatchObject({
       headline: 'First title',
       island: { id: 3, name: 'Three' }
+    });
+  });
+
+  // Promotes trusted representative sources in the summary only when the Briefing preference is active.
+  it('applies high-trust recommendation ranking to morning summary events', async () => {
+    const generatedAt = new Date('2026-07-31T12:00:00Z');
+    mocked.articleFindAll
+      .mockResolvedValueOnce([
+        { id: 1, eventId: 1, feedId: 10, topicId: null },
+        { id: 2, eventId: 2, feedId: 20, topicId: null }
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 101,
+          title: 'Strong low-trust event',
+          contentText: 'This low-trust event has enough useful detail for the morning summary.',
+          publishedAt: generatedAt,
+          freshness: 0.5,
+          interestScore: 0,
+          quality: 0.7,
+          Feed: { feedTrust: 0.1 },
+          Tags: []
+        },
+        {
+          id: 102,
+          title: 'Trusted event',
+          contentText: 'This trusted event has enough useful detail for the morning summary.',
+          publishedAt: generatedAt,
+          freshness: 0.5,
+          interestScore: 0,
+          quality: 0.7,
+          Feed: { feedTrust: 0.9 },
+          Tags: []
+        }
+      ]);
+    mocked.eventFindAll.mockResolvedValue([
+      {
+        id: 1,
+        representativeArticleId: 101,
+        eventStrength: 20,
+        articleCount: 1,
+        sourceCount: 1,
+        sourceDiversityScore: 0,
+        createdAt: generatedAt
+      },
+      {
+        id: 2,
+        representativeArticleId: 102,
+        eventStrength: 1,
+        articleCount: 1,
+        sourceCount: 1,
+        sourceDiversityScore: 0,
+        createdAt: generatedAt
+      }
+    ]);
+
+    const result = await getDailyBriefing({
+      userId: 9,
+      generatedAt,
+      prioritizeHighTrust: true
+    });
+
+    expect(result.filters.prioritizeHighTrust).toBe(true);
+    expect(result.morningSummary.items.map(item => item.eventId)).toEqual([2, 1]);
+  });
+
+  // Selects the independently configured developing article for morning-summary content.
+  it('uses developing event articles in the morning summary when enabled', async () => {
+    const generatedAt = new Date('2026-07-31T12:00:00Z');
+    mocked.articleFindAll
+      .mockResolvedValueOnce([
+        { id: 1, eventId: 1, feedId: 10, topicId: null }
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 201,
+          title: 'Developing coverage',
+          contentText: 'Developing coverage adds substantial new detail for briefing readers.',
+          publishedAt: generatedAt,
+          Feed: { feedTrust: 0.5 },
+          Tags: []
+        }
+      ]);
+    mocked.eventFindAll.mockResolvedValue([{
+      id: 1,
+      name: '',
+      representativeArticleId: 101,
+      developingArticleId: 201,
+      eventStrength: 10,
+      articleCount: 2,
+      sourceCount: 1,
+      sourceDiversityScore: 0,
+      createdAt: generatedAt
+    }]);
+
+    const result = await getDailyBriefing({
+      userId: 9,
+      generatedAt,
+      includeDevelopingEvents: true
+    });
+
+    expect(mocked.articleFindAll.mock.calls[1][0].where.id[Op.in]).toEqual([201]);
+    expect(result.filters.includeDevelopingEvents).toBe(true);
+    expect(result.morningSummary.items[0]).toMatchObject({
+      representativeArticleId: 201,
+      headline: 'Developing coverage'
     });
   });
 

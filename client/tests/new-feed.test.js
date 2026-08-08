@@ -3,17 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils';
 
 import NewFeed from '../src/components/dialogs/feeds/NewFeed.vue';
 import { createFeed, validateFeed } from '../src/api/feeds';
-import { setAuthToken } from '../src/api/client';
 import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/feeds', () => ({
   createFeed: vi.fn(),
   validateFeed: vi.fn()
-}));
-
-vi.mock('../src/api/client', () => ({
-  setAuthToken: vi.fn()
 }));
 
 vi.mock('../src/services/actionNotifications.js', () => ({
@@ -68,11 +63,10 @@ afterEach(() => {
 });
 
 describe('NewFeed', () => {
-  // Verifies the modal initializes authentication and explains the category prerequisite.
+  // Verifies the modal explains the category prerequisite and supports closing.
   it('renders the empty category state and supports closing', async () => {
     const { store } = mountNewFeed([]);
 
-    expect(setAuthToken).toHaveBeenCalledWith('token');
     expect(wrapper.text()).toContain('First create a new category');
     expect(wrapper.find('button[type="submit"]').exists()).toBe(false);
 

@@ -123,11 +123,11 @@ export default {
   methods: {
     // This function locates the trigger rendered through the scoped slot.
     getTrigger() {
-      return document.getElementById(this.triggerId);
+      return this.$refs.root?.querySelector('.app-dropdown__trigger') || null;
     },
     // This function locates the menu rendered through the scoped slot.
     getMenu() {
-      return document.getElementById(this.menuId);
+      return this.$refs.root?.querySelector('.app-dropdown__menu') || null;
     },
     // This function returns enabled menu actions in their rendered order.
     getMenuItems() {
@@ -273,54 +273,63 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .app-dropdown {
+  --app-dropdown-active-background: var(--color-primary-soft);
+  --app-dropdown-active-color: var(--color-primary);
+  --app-dropdown-hover-background: var(--toolbar-active-background);
+  --app-dropdown-hover-color: var(--text-inverted);
+  --app-dropdown-item-color: var(--text-secondary);
+  --app-dropdown-menu-background: var(--bg-card);
+  --app-dropdown-menu-color: var(--text-primary);
+
   position: relative;
 }
 
-.app-dropdown__trigger {
+/* Scoped-slot controls remain descendants of the dropdown root and use its explicit class contract. */
+:deep(.app-dropdown__trigger) {
   white-space: nowrap;
 }
 
-.app-dropdown__menu {
+:deep(.app-dropdown__menu) {
   position: absolute;
   z-index: var(--layer-dropdown);
   display: none;
   min-width: 160px;
   padding: 8px 0;
   margin: 0;
-  color: var(--text-primary);
+  color: var(--app-dropdown-menu-color);
   font-size: var(--font-size-ui-default);
   line-height: 20px;
   text-align: left;
   list-style: none;
-  background-color: var(--bg-card);
+  background-color: var(--app-dropdown-menu-background);
   background-clip: padding-box;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-compact);
   box-shadow: var(--shadow-modal);
 }
 
-.app-dropdown__menu--align-start {
+:deep(.app-dropdown__menu--align-start) {
   right: auto;
   left: 0;
 }
 
-.app-dropdown__menu--align-end {
+:deep(.app-dropdown__menu--align-end) {
   right: 0;
   left: auto;
 }
 
-.app-dropdown__menu--open {
+:deep(.app-dropdown__menu--open) {
   display: block;
 }
 
-.app-dropdown__item {
+:deep(.app-dropdown__item) {
   display: block;
   width: 100%;
   padding: 4px 16px;
   clear: both;
-  color: var(--text-secondary);
+  color: var(--app-dropdown-item-color);
   font: inherit;
   font-weight: 500;
   text-align: inherit;
@@ -331,29 +340,29 @@ export default {
   border-radius: 0;
 }
 
-.app-dropdown__item:hover,
-.app-dropdown__menu .app-dropdown__item:focus-visible {
-  color: var(--text-inverted);
-  background-color: var(--toolbar-active-background);
+:deep(.app-dropdown__item:hover),
+:deep(.app-dropdown__menu .app-dropdown__item:focus-visible) {
+  color: var(--app-dropdown-hover-color);
+  background-color: var(--app-dropdown-hover-background);
   outline: none;
 }
 
-.app-dropdown__item--active,
-.app-dropdown__item:active {
-  color: var(--color-primary);
-  background-color: var(--color-primary-soft);
+:deep(.app-dropdown__item--active),
+:deep(.app-dropdown__item:active) {
+  color: var(--app-dropdown-active-color);
+  background-color: var(--app-dropdown-active-background);
 }
 
-.app-dropdown__item--disabled,
-.app-dropdown__item:disabled,
-.app-dropdown__item[aria-disabled='true'] {
+:deep(.app-dropdown__item--disabled),
+:deep(.app-dropdown__item:disabled),
+:deep(.app-dropdown__item[aria-disabled='true']) {
   color: var(--text-muted);
   pointer-events: none;
   background-color: var(--color-transparent);
   opacity: 0.65;
 }
 
-.app-dropdown__divider {
+:deep(.app-dropdown__divider) {
   height: 0;
   margin: 8px 0;
   overflow: hidden;
@@ -362,25 +371,13 @@ export default {
   opacity: 1;
 }
 
-:root[data-theme='dark'] .app-dropdown__menu {
-  color: var(--text-inverted);
-  background-color: var(--bg-modal);
-  border-color: var(--border-default);
-}
-
-:root[data-theme='dark'] .app-dropdown__item {
-  color: var(--text-secondary);
-}
-
-:root[data-theme='dark'] .app-dropdown__item:hover,
-:root[data-theme='dark'] .app-dropdown__menu .app-dropdown__item:focus-visible {
-  color: var(--text-inverted);
-  background-color: var(--bg-control);
-}
-
-:root[data-theme='dark'] .app-dropdown__item--active,
-:root[data-theme='dark'] .app-dropdown__item:active {
-  color: var(--text-inverted);
-  background-color: var(--toolbar-active-background);
+:global(:root[data-theme='dark'] .app-dropdown) {
+  --app-dropdown-active-background: var(--toolbar-active-background);
+  --app-dropdown-active-color: var(--text-inverted);
+  --app-dropdown-hover-background: var(--bg-control);
+  --app-dropdown-hover-color: var(--text-inverted);
+  --app-dropdown-item-color: var(--text-secondary);
+  --app-dropdown-menu-background: var(--bg-modal);
+  --app-dropdown-menu-color: var(--text-inverted);
 }
 </style>

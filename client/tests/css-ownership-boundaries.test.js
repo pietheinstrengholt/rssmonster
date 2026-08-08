@@ -12,16 +12,19 @@ import articleHeadlineSource from '../src/components/articles/ArticleHeadlineRow
 import articleMetaSource from '../src/components/articles/ArticleMeta.vue?raw';
 import articlePreviewFallbackSource from '../src/components/articles/ArticlePreviewFallback.vue?raw';
 import articleTagsSource from '../src/components/articles/ArticleTagsScores.vue?raw';
+import articleListSource from '../src/components/articles/ArticleListView.vue?raw';
 import chatAssistantSource from '../src/components/assistant/ChatAssistant.vue?raw';
 import settingsActionsSource from '../src/components/settings/SettingsActions.vue?raw';
 import settingsFeedsSource from '../src/components/settings/SettingsFeedsOverview.vue?raw';
 import settingsUsersSource from '../src/components/settings/SettingsManageUsers.vue?raw';
+import appDropdownSource from '../src/components/shared/AppDropdown.vue?raw';
 
 const articleOverrides = readFileSync(
   resolve(process.cwd(), 'src/components/articles/articleContentOverrides.css'),
   'utf8'
 );
 const globalStyles = readFileSync(resolve(process.cwd(), 'src/assets/scss/global.scss'), 'utf8');
+const settingsStyles = readFileSync(resolve(process.cwd(), 'src/assets/css/settings.css'), 'utf8');
 
 describe('CSS ownership boundaries', () => {
   // Verifies chat styles cannot mutate article presentation and still reach rendered response HTML explicitly.
@@ -47,6 +50,21 @@ describe('CSS ownership boundaries', () => {
       expect(source.match(/<style/g)).toHaveLength(1);
       expect(source).toContain('<style scoped>');
     }
+  });
+
+  // Verifies list-tail and dropdown application styles remain with their markup owners.
+  it('scopes remaining article-list and dropdown presentation', () => {
+    expect(articleListSource.match(/<style scoped>/g)).toHaveLength(2);
+    expect(articleListSource).not.toContain('<style>');
+    expect(appDropdownSource).toContain('<style scoped>');
+    expect(appDropdownSource).toContain(':deep(.app-dropdown__menu)');
+  });
+
+  // Verifies the feed overview owns its table presentation instead of settings.css.
+  it('keeps feed-table presentation in SettingsFeedsOverview', () => {
+    expect(settingsFeedsSource).toContain('.feeds-table-wrapper');
+    expect(settingsFeedsSource).toContain('.feeds-table th');
+    expect(settingsStyles).not.toContain('.settings-surface .feeds-table');
   });
 
   // Verifies publisher compatibility rules remain explicitly global and owned by Article.

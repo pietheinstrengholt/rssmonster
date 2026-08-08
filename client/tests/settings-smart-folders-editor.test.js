@@ -5,10 +5,6 @@ import { saveSmartFolders } from '../src/api/smartfolders';
 import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
-vi.mock('../src/api/client', () => ({
-  setAuthToken: vi.fn()
-}));
-
 vi.mock('../src/api/smartfolders', () => ({
   fetchSmartFolderInsights: vi.fn(),
   saveSmartFolders: vi.fn()

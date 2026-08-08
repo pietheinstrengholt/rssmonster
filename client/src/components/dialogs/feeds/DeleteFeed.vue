@@ -17,15 +17,13 @@ import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../../store/selection.js';
 import { useOverviewStore } from '../../../store/overview.js';
 import { useUiStore } from '../../../store/ui.js';
-import { useAuthStore } from '../../../store/auth.js';
 import ConfirmDialog from '../ConfirmDialog.vue';
 import { deleteFeed } from '../../../api/feeds';
-import { setAuthToken } from '../../../api/client';
 import { notifyActionError } from '../../../services/actionNotifications.js';
 
 export default {
   computed: {
-    ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useAuthStore)
+    ...mapStores(useSelectionStore, useOverviewStore, useUiStore)
   },
     name: 'DeleteFeed',
     components: {
@@ -36,10 +34,6 @@ export default {
         return {
             isPending: false
         };
-    },
-    // This function configures the authenticated API client for feed deletion.
-    created: function() {
-        setAuthToken(this.authStore.token);
     },
     methods: {
         // This function deletes the selected feed and restores the all-feeds selection.

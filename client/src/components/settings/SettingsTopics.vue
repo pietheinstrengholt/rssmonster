@@ -1,17 +1,13 @@
 <template>
   <div class="settings-topics">
-    <section class="settings-insight-card" aria-labelledby="topics-title">
-      <span class="settings-insight-icon" aria-hidden="true">
-        <BootstrapIcon icon="diagram-3-fill" />
-      </span>
-      <div>
-        <p class="settings-page-eyebrow">Settings — Topic Insights</p>
-        <h3 id="topics-title">Events and topics</h3>
-        <p>
-          Events group related articles into current stories. Topics connect those events and articles into longer-running themes.
-        </p>
-      </div>
-    </section>
+    <SettingsPageIntro
+      eyebrow="Settings — Topic Insights"
+      icon="diagram-3-fill"
+      title="Events and topics"
+      title-id="topics-title"
+    >
+      Events group related articles into current stories. Topics connect those events and articles into longer-running themes.
+    </SettingsPageIntro>
 
     <div v-if="loading" class="settings-topics-loading">
       <span class="app-loading-indicator app-loading-indicator--small" role="status" aria-hidden="true"></span>
@@ -24,22 +20,10 @@
 
     <div v-else>
       <div class="settings-metric-grid">
-        <article class="settings-metric-card">
-          <span class="settings-metric-label">Active events</span>
-          <strong>{{ totals.activeEventCount }}</strong>
-        </article>
-        <article class="settings-metric-card">
-          <span class="settings-metric-label">Topics</span>
-          <strong>{{ totals.topicCount }}</strong>
-        </article>
-        <article class="settings-metric-card">
-          <span class="settings-metric-label">Event articles</span>
-          <strong>{{ totals.eventLinkedArticles }}</strong>
-        </article>
-        <article class="settings-metric-card">
-          <span class="settings-metric-label">Topic coverage</span>
-          <strong>{{ formatPercent(totals.topicCoveragePercent) }}</strong>
-        </article>
+        <SettingsMetric label="Active events" :value="totals.activeEventCount" />
+        <SettingsMetric label="Topics" :value="totals.topicCount" />
+        <SettingsMetric label="Event articles" :value="totals.eventLinkedArticles" />
+        <SettingsMetric label="Topic coverage" :value="formatPercent(totals.topicCoveragePercent)" />
       </div>
 
       <div class="settings-panel-grid">
@@ -196,10 +180,6 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.settings-metric-card {
-  padding: 16px;
-}
-
 .settings-data-panel {
   padding: 20px;
 }
@@ -316,6 +296,8 @@
 
 <script>
 import { fetchTopicsOverview } from '../../api/settings';
+import SettingsMetric from './SettingsMetric.vue';
+import SettingsPageIntro from './SettingsPageIntro.vue';
 
 const defaultTotals = () => ({
   totalArticles: 0,
@@ -339,6 +321,10 @@ const defaultTotals = () => ({
 
 export default {
   name: 'SettingsTopics',
+  components: {
+    SettingsMetric,
+    SettingsPageIntro
+  },
   emits: ['close'],
   data() {
     return {

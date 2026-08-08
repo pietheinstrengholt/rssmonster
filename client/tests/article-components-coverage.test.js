@@ -18,6 +18,10 @@ import {
   createArticleMobileSwipeState
 } from '../src/components/articles/helpers/mobileSwipe.js';
 import { notifyActionError } from '../src/services/actionNotifications.js';
+import {
+  normalizeArticleContent,
+  youtubeVideoIdFromUrl
+} from '../src/services/articleContentService.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
@@ -37,8 +41,8 @@ vi.mock('../src/services/actionNotifications.js', () => ({
 }));
 
 const BootstrapIconStub = {
-  props: ['icon'],
-  template: '<span class="bootstrap-icon-stub" :data-icon="icon"></span>'
+  props: ['context', 'icon'],
+  template: '<span class="bootstrap-icon-stub" :data-context="context" :data-icon="icon"></span>'
 };
 
 const ARTICLE_TYPOGRAPHY_FIXTURE = `
@@ -85,8 +89,8 @@ const createExpansionContext = (grouping = 'event') => {
 const createSwipeContext = (overrides = {}) => {
   const context = {
     ...createArticleMobileSwipeState(),
+    isMobilePortrait: false,
     markAsFavorite: vi.fn(),
-    handleMediaChange: vi.fn(),
     ...overrides
   };
   context.resetSwipe = vi.fn(clearSuppressClick =>
@@ -117,12 +121,15 @@ describe('ArticleActionsMenu', () => {
 
     expect(items.map(item => item.text())).toEqual([
       'Unmark favorite',
-      'Not Interested',
       'More like this',
-      'Less like this',
-      'Ignore this topic',
+      'Not Interested',
       'Mute Feed for 7 Days'
     ]);
+    expect(items[0].get('.recommendation-favorite-icon').attributes('data-icon')).toBe('bookmark-fill');
+    expect(items[0].get('.recommendation-favorite-icon').attributes('data-context')).toBe('control');
+    expect(items[2].get('.recommendation-negative-icon').attributes('data-icon')).toBe('hand-thumbs-down-fill');
+    expect(items[3].get('.recommendation-mute-icon').attributes('data-icon')).toBe('slash-circle');
+    expect(items[3].get('.recommendation-mute-icon').attributes('data-context')).toBe('control');
     expect(items.every(item => item.element.tagName === 'BUTTON')).toBe(true);
     expect(items.every(item => item.attributes('role') === 'menuitem')).toBe(true);
 
@@ -133,8 +140,6 @@ describe('ArticleActionsMenu', () => {
     expect(wrapper.emitted('toggle-favorite')).toEqual([[]]);
     expect(wrapper.emitted('not-interested')).toEqual([[]]);
     expect(wrapper.emitted('more-like-this')).toEqual([[]]);
-    expect(wrapper.emitted('less-like-this')).toEqual([[]]);
-    expect(wrapper.emitted('ignore-topic')).toEqual([[]]);
     expect(wrapper.emitted('mute-feed')).toEqual([[]]);
   });
 
@@ -144,7 +149,52 @@ describe('ArticleActionsMenu', () => {
       global: { stubs: { BootstrapIcon: BootstrapIconStub } }
     });
 
-    expect(wrapper.get('[role="menuitem"]').text()).toBe('Mark as favorite');
+    const favoriteItem = wrapper.get('[role="menuitem"]');
+    expect(favoriteItem.text()).toBe('Mark as favorite');
+    expect(favoriteItem.get('.recommendation-favorite-icon').attributes('data-icon')).toBe('bookmark');
+  });
+
+  // Verifies reader mode adds the current read-state action directly below Favorite.
+  it('offers a reader-only read-status toggle', async () => {
+    const wrapper = mount(ArticleActionsMenu, {
+      props: { favoriteInd: 1, isReaderMode: true, status: 'read' },
+      global: { stubs: { BootstrapIcon: BootstrapIconStub } }
+    });
+
+    await wrapper.get('.article-actions__trigger').trigger('click');
+    let items = wrapper.findAll('[role="menuitem"]');
+
+    expect(items.map(item => item.text())).toEqual([
+      'Unmark favorite',
+      'Mark as unread',
+      'More like this',
+      'Not Interested',
+      'Mute Feed for 7 Days'
+    ]);
+    expect(items[1].get('.recommendation-status-icon').attributes('data-icon')).toBe('circle-fill');
+
+    await items[1].trigger('click');
+    expect(wrapper.emitted('toggle-read-status')).toEqual([[]]);
+
+    await wrapper.setProps({ status: 'unread' });
+    items = wrapper.findAll('[role="menuitem"]');
+    expect(items[1].text()).toBe('Mark as read');
+    expect(items[1].get('.recommendation-status-icon').attributes('data-icon')).toBe('record-circle-fill');
+  });
+
+  // Verifies Reader menus expand leftward while other article menus retain start alignment.
+  it('aligns the menu away from the Reader pane edge', async () => {
+    const wrapper = mount(ArticleActionsMenu, {
+      global: { stubs: { BootstrapIcon: BootstrapIconStub } }
+    });
+
+    await wrapper.get('.article-actions__trigger').trigger('click');
+    expect(wrapper.get('.app-dropdown__menu').classes()).toContain('app-dropdown__menu--align-start');
+
+    await wrapper.get('.article-actions__trigger').trigger('click');
+    await wrapper.setProps({ isReaderMode: true });
+    await wrapper.get('.article-actions__trigger').trigger('click');
+    expect(wrapper.get('.app-dropdown__menu').classes()).toContain('app-dropdown__menu--align-end');
   });
 
 });
@@ -296,9 +346,7 @@ describe('ArticleContent compatibility markup', () => {
     ['https://example.com/watch?v=gZUDEBbZSp4', null],
     ['http://[invalid', null]
   ])('extracts the YouTube id from %s', (url, expected) => {
-    const wrapper = mountArticleContent();
-
-    expect(wrapper.vm.youtubeVideoIdFromUrl(url)).toBe(expected);
+    expect(youtubeVideoIdFromUrl(url)).toBe(expected);
   });
 
   // Verifies unrelated Mastodon-like markup is preserved without normalization.
@@ -313,10 +361,9 @@ describe('ArticleContent compatibility markup', () => {
 
   // Verifies content can still pass through when DOM parsing is unavailable.
   it('returns original HTML without DOMParser support', () => {
-    const wrapper = mountArticleContent();
     vi.stubGlobal('DOMParser', undefined);
 
-    expect(wrapper.vm.normalizeArticleContent('<p>Original</p>')).toEqual({
+    expect(normalizeArticleContent('<p>Original</p>')).toEqual({
       html: '<p>Original</p>',
       hasReadableContent: true,
       containsFallbackImage: false
@@ -325,8 +372,8 @@ describe('ArticleContent compatibility markup', () => {
 });
 
 describe('ArticleHeader actions', () => {
-  // Verifies reader controls expose read state and forward every action event.
-  it('renders read status and forwards menu events', async () => {
+  // Verifies reader status is delegated to the dropdown without a standalone button.
+  it('forwards reader status through the actions menu', async () => {
     const wrapper = mount(ArticleHeader, {
       props: {
         title: 'Article',
@@ -341,40 +388,49 @@ describe('ArticleHeader actions', () => {
         stubs: {
           BootstrapIcon: BootstrapIconStub,
           ArticleActionsMenu: {
-            emits: ['toggle-favorite', 'not-interested', 'more-like-this', 'less-like-this', 'ignore-topic', 'mute-feed'],
-            template: '<button class="actions-stub" @click="$emit(\'toggle-favorite\')"></button>'
+            props: ['isReaderMode', 'status'],
+            emits: ['toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed'],
+            template: '<button class="actions-stub" :data-reader="isReaderMode" :data-status="status" @click="$emit(\'toggle-read-status\')"></button>'
           }
         }
       }
     });
 
-    expect(wrapper.get('.article-read-status-button').attributes('aria-label')).toBe('Article is read');
+    expect(wrapper.find('.article-read-status-button').exists()).toBe(false);
+    expect(wrapper.get('.actions-stub').attributes()).toMatchObject({
+      'data-reader': 'true',
+      'data-status': 'read'
+    });
     expect(wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon')))
-      .toEqual(['arrow-up-right-square-fill', 'bookmark-fill', 'fire', 'circle-fill']);
+      .toEqual(['arrow-up-right-square-fill', 'bookmark-fill', 'fire']);
 
     await wrapper.get('.article-link').trigger('click');
-    await wrapper.get('.article-read-status-button').trigger('click');
     await wrapper.get('.actions-stub').trigger('click');
 
     expect(wrapper.emitted('article-clicked')).toEqual([[]]);
     expect(wrapper.emitted('toggle-read-status')).toEqual([[]]);
-    expect(wrapper.emitted('toggle-favorite')).toEqual([[]]);
   });
 
-  // Verifies unread reader controls use the unread icon and label.
-  it('labels unread reader state', () => {
+  // Verifies unread reader state is passed to the dropdown contract.
+  it('passes unread reader state to the actions menu', () => {
     const wrapper = mount(ArticleHeader, {
       props: { viewMode: 'reader', status: 'unread' },
       global: {
         stubs: {
           BootstrapIcon: BootstrapIconStub,
-          ArticleActionsMenu: true
+          ArticleActionsMenu: {
+            props: ['isReaderMode', 'status'],
+            template: '<span class="actions-stub" :data-reader="isReaderMode" :data-status="status"></span>'
+          }
         }
       }
     });
 
-    expect(wrapper.get('.article-read-status-button').attributes('title')).toBe('Article is unread');
-    expect(wrapper.get('.bootstrap-icon-stub').attributes('data-icon')).toBe('record-circle-fill');
+    expect(wrapper.find('.article-read-status-button').exists()).toBe(false);
+    expect(wrapper.get('.actions-stub').attributes()).toMatchObject({
+      'data-reader': 'true',
+      'data-status': 'unread'
+    });
   });
 });
 
@@ -452,18 +508,22 @@ describe('Article relevance signal coverage', () => {
 
   // Verifies threshold, labeling, and invalid-metadata boundaries.
   it('computes individual relevance signal boundaries', () => {
-    const scoreAsPercent = value => Number(value) * 100;
-
     expect(evaluate('hasHighQualitySignal', {
       qualityScore: 0.91,
-      recommendationScore: 0,
-      scoreAsPercent
+      recommendationScore: 0
     })).toBe(true);
     expect(evaluate('hasHighQualitySignal', {
       qualityScore: 0,
-      recommendationScore: 0.91,
-      scoreAsPercent
+      recommendationScore: 0.91
     })).toBe(true);
+    expect(evaluate('hasHighQualitySignal', {
+      qualityScore: 91,
+      recommendationScore: 0
+    })).toBe(true);
+    expect(evaluate('hasHighQualitySignal', {
+      qualityScore: 'invalid',
+      recommendationScore: 0
+    })).toBe(false);
     expect(evaluate('hasOfficialSourceSignal', { isOfficialSource: true })).toBe(true);
     expect(evaluate('officialSourceLabel', { officialOrganization: '' })).toBe('Official Feed');
     expect(evaluate('hasTrustedSourceSignal', { feed: { feedTrust: 'invalid' } })).toBe(false);
@@ -473,19 +533,20 @@ describe('Article relevance signal coverage', () => {
     })).toBe('Trusted source (Daily News)');
     expect(evaluate('trustedSourceLabel', { author: '', feed: {} })).toBe('Trusted source');
     expect(evaluate('eventSourceScore', { event: { sourceCount: 'invalid' } })).toBe(0);
-    expect(evaluate('hasTrendingSignal', { eventSourceScore: 5 })).toBe(true);
-    expect(evaluate('hasMajorEventSignal', { eventSourceScore: 7 })).toBe(true);
+    expect(evaluate('hasTrendingSignal', { event: { sourceCount: 5 } })).toBe(true);
+    expect(evaluate('hasMajorEventSignal', { event: { sourceCount: 7 } })).toBe(true);
   });
 
   // Verifies aggregate signals select trending and trusted-source fallbacks.
   it('builds trending and trusted-source signals', () => {
     expect(evaluate('articleSignals', {
-      hasHighQualitySignal: false,
-      hasMajorEventSignal: false,
-      hasTrendingSignal: true,
-      hasOfficialSourceSignal: false,
-      hasTrustedSourceSignal: true,
-      trustedSourceLabel: 'Trusted source'
+      author: '',
+      event: { sourceCount: 5 },
+      feed: { feedTrust: 0.9 },
+      isOfficialSource: false,
+      officialOrganization: '',
+      qualityScore: 0,
+      recommendationScore: 0
     })).toEqual([
       { label: 'Trending', icon: 'graph-up-arrow' },
       { label: 'Trusted source', icon: 'shield-fill-check' }
@@ -494,60 +555,6 @@ describe('Article relevance signal coverage', () => {
 });
 
 describe('Article mobile swipe coverage', () => {
-  // Verifies modern media-query listeners initialize and tear down cleanly.
-  it('manages a modern portrait media-query listener', () => {
-    const mediaQuery = {
-      matches: true,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn()
-    };
-    vi.stubGlobal('matchMedia', vi.fn(() => mediaQuery));
-    const context = createSwipeContext();
-
-    articleMobileSwipeMethods.setupMediaQueryListener.call(context);
-    expect(context.isMobilePortrait).toBe(true);
-    expect(mediaQuery.addEventListener).toHaveBeenCalledWith('change', context.handleMediaChange);
-
-    articleMobileSwipeMethods.teardownMediaQueryListener.call(context);
-    expect(mediaQuery.removeEventListener).toHaveBeenCalledWith('change', context.handleMediaChange);
-    expect(context.mediaQuery).toBeNull();
-  });
-
-  // Verifies legacy media-query APIs remain supported.
-  it('manages a legacy media-query listener', () => {
-    const mediaQuery = {
-      matches: false,
-      addListener: vi.fn(),
-      removeListener: vi.fn()
-    };
-    vi.stubGlobal('matchMedia', vi.fn(() => mediaQuery));
-    const context = createSwipeContext();
-
-    articleMobileSwipeMethods.setupMediaQueryListener.call(context);
-    expect(mediaQuery.addListener).toHaveBeenCalledWith(context.handleMediaChange);
-    articleMobileSwipeMethods.teardownMediaQueryListener.call(context);
-    expect(mediaQuery.removeListener).toHaveBeenCalledWith(context.handleMediaChange);
-  });
-
-  // Verifies unsupported environments leave portrait tracking untouched.
-  it('ignores setup without matchMedia', () => {
-    vi.stubGlobal('matchMedia', undefined);
-    const context = createSwipeContext();
-
-    articleMobileSwipeMethods.setupMediaQueryListener.call(context);
-    expect(context.mediaQuery).toBeNull();
-  });
-
-  // Verifies leaving portrait mode resets any active gesture.
-  it('updates media state and resets only outside portrait mode', () => {
-    const context = createSwipeContext();
-
-    articleMobileSwipeMethods.handleMediaChange.call(context, { matches: true });
-    expect(context.resetSwipe).not.toHaveBeenCalled();
-    articleMobileSwipeMethods.handleMediaChange.call(context, { matches: false });
-    expect(context.resetSwipe).toHaveBeenCalledOnce();
-  });
-
   // Verifies invalid touch starts and multi-touch moves cancel tracking.
   it('rejects invalid touch gestures', () => {
     const context = createSwipeContext({ isMobilePortrait: false });

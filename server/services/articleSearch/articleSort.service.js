@@ -31,8 +31,29 @@ const sortByScore = (articles, scorer) =>
     .sort((a, b) => b.score - a.score)
     .map(({ article }) => article);
 
+// Returns the bounded feed-trust value used by generic Unread sort boosts.
+const feedTrustScore = article => {
+  const feed = article.get?.('Feed') ?? article.Feed ?? article.feed;
+  const feedTrust = Number(feed?.feedTrust);
+  return Number.isFinite(feedTrust) ? Math.max(0, Math.min(1, feedTrust)) : 0;
+};
+
+// Adds the optional Unread feed-trust boost to a normalized base sort score.
+const boostedSortScore = (article, baseScore, prioritizeHighTrust) => (
+  Number(baseScore || 0) + (prioritizeHighTrust ? feedTrustScore(article) : 0)
+);
+
 // Applies runtime filters and optional score-based ordering to a list of article models.
-export function sortArticles(articles, { sortRecommended, sortQuality, sortAttention, qualityFilter, freshnessFilter }) {
+export function sortArticles(articles, {
+  sortRecommended,
+  sortQuality,
+  sortAttention,
+  sortTrust = false,
+  sortDirection = 'desc',
+  qualityFilter,
+  freshnessFilter,
+  prioritizeHighTrust = false
+}) {
   // Apply quality score filter if present
   if (qualityFilter) {
     const beforeQualityCount = articles.length;
@@ -51,17 +72,40 @@ export function sortArticles(articles, { sortRecommended, sortQuality, sortAtten
 
   // Unified sorting logic
   if (sortRecommended) {
-    articles = sortByScore(articles, computeRecommended);
+    const recommendationOptions = { prioritizeHighTrust };
+    articles = sortByScore(
+      articles,
+      article => computeRecommended(article, recommendationOptions)
+    );
     // Maps source values into the result produced while performing sort articles.
-    debugRecommendedScores(articles.map(article => ({ article, recommended: computeRecommended(article) })));
+    debugRecommendedScores(
+      articles.map(article => ({
+        article,
+        recommended: computeRecommended(article, recommendationOptions)
+      })),
+      recommendationOptions
+    );
   // Handles the case where sort quality is available.
   } else if (sortQuality) {
     // Runs the callback required while performing sort articles.
-    articles = sortByScore(articles, article => article.quality);
+    articles = sortByScore(
+      articles,
+      article => boostedSortScore(article, article.quality, prioritizeHighTrust)
+    );
   // Handles the case where sort attention is available.
   } else if (sortAttention) {
     // Runs the callback required while performing sort articles.
-    articles = sortByScore(articles, article => article.attentionScore || 0);
+    articles = sortByScore(
+      articles,
+      article => boostedSortScore(article, article.attentionScore, prioritizeHighTrust)
+    );
+  // Applies the Unread trust boost to chronological sorts without changing exact Trust sorting.
+  } else if (prioritizeHighTrust && !sortTrust && ['asc', 'desc'].includes(sortDirection)) {
+    articles = sortByScore(articles, article => {
+      const freshness = Number(article.freshness || 0);
+      const chronologicalScore = sortDirection === 'asc' ? 1 - freshness : freshness;
+      return boostedSortScore(article, chronologicalScore, true);
+    });
   }
 
   return articles;

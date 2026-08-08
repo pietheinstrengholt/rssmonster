@@ -7,7 +7,6 @@ import * as authApi from '../src/api/auth';
 import { loadAppShell } from '../src/services/appShellLoader.js';
 
 vi.mock('../src/api/auth', () => ({
-  applyAuthToken: vi.fn(),
   login: vi.fn(),
   register: vi.fn(),
   validateSession: vi.fn()

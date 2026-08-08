@@ -237,6 +237,15 @@ describe('DesktopToolbar behavior coverage', () => {
 });
 
 describe('MobileToolbar behavior coverage', () => {
+  // Verifies shell-owned visibility state controls the toolbar without external DOM mutation.
+  it('applies its hidden class from the shell prop', async () => {
+    const wrapper = mountMobileToolbar();
+
+    expect(wrapper.get('.mobile-toolbar').classes()).not.toContain('hide');
+    await wrapper.setProps({ hidden: true });
+    expect(wrapper.get('.mobile-toolbar').classes()).toContain('hide');
+  });
+
   // Verifies the spacer follows the rendered toolbar stack as search changes its height.
   it('remeasures the toolbar stack for search and responsive layout changes', async () => {
     const wrapper = mountMobileToolbar();

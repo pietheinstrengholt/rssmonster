@@ -16,6 +16,12 @@ Most sections are loaded only when selected. A shared loading state is shown whi
 
 The header subtitle changes with the selected section. Selecting another navigation item replaces only the content panel; it does not close Settings.
 
+## Presentation primitives
+
+`SettingsPageIntro` owns the repeated informational section heading structure used by ordinary Settings overview pages. It accepts the icon, eyebrow, title, and heading identifier while the section supplies its own descriptive text. Its visual treatment remains in the Settings feature stylesheet so light and dark presentation stay consistent at the Settings surface boundary.
+
+`SettingsMetric` owns the compact label-and-value card used by Topics and Islands. Metric grids remain with their sections because responsive grid composition belongs to each page. Icon-led feed statistics, stacked instructional cards, and Smart Folder hero content remain separate because their structure and presentation are intentionally different.
+
 ## Visibility and access
 
 Navigation is tailored to the current installation and user:

@@ -63,6 +63,12 @@ function desktopSortDropdown(wrapper) {
   return wrapper.findAll('.toolbar-filter').find(filter => filter.get('.toolbar-filter-label').text() === 'Sort:');
 }
 
+// This function finds the grouping dropdown rendered by the desktop toolbar.
+function desktopGroupingDropdown(wrapper) {
+  return wrapper.findAll('.toolbar-filter')
+    .find(filter => filter.get('.toolbar-filter-label').text() === 'Grouping:');
+}
+
 describe('toolbar Daily Briefing status', () => {
   it('opens and closes the lazy Settings workspace from the desktop toolbar', async () => {
     createStore(true);
@@ -141,6 +147,45 @@ describe('toolbar Daily Briefing status', () => {
 
     expect(store.selectionStore.setSelectedStatus).toHaveBeenCalledWith('unread');
     expect(wrapper.emitted('forceReload')).toBeUndefined();
+  });
+
+  it('keeps desktop sort and grouping visible but disabled for Briefing', async () => {
+    const store = createStore(true);
+    store.selectionStore.currentSelection.status = 'briefing';
+    const wrapper = mount(DesktopToolbar);
+    const sortButton = desktopSortDropdown(wrapper).get('.toolbar-filter-button');
+    const groupingButton = desktopGroupingDropdown(wrapper).get('.toolbar-filter-button');
+
+    expect(sortButton.element.disabled).toBe(true);
+    expect(groupingButton.element.disabled).toBe(true);
+    expect(sortButton.attributes('title')).toContain('Briefing settings');
+
+    wrapper.vm.sortClicked('trust');
+    wrapper.vm.setGrouping('topic');
+
+    expect(store.selectionStore.setSelectedSort).not.toHaveBeenCalled();
+    expect(store.selectionStore.setGrouping).not.toHaveBeenCalled();
+  });
+
+  it('keeps mobile sort and grouping options visible but disabled for Briefing', async () => {
+    const store = createStore(true);
+    store.selectionStore.currentSelection.status = 'briefing';
+    const wrapper = mount(MobileToolbar);
+    const sortOption = wrapper.findAll('#readModeDropdown-menu [role="menuitem"]')
+      .find(option => option.text() === 'Trust');
+    const groupingOption = wrapper.findAll('#readModeDropdown-menu [role="menuitem"]')
+      .find(option => option.text() === 'Cluster per topic');
+
+    expect(sortOption).toBeDefined();
+    expect(groupingOption).toBeDefined();
+    expect(sortOption.element.disabled).toBe(true);
+    expect(groupingOption.element.disabled).toBe(true);
+
+    wrapper.vm.sortClicked('trust');
+    wrapper.vm.setGrouping('topic');
+
+    expect(store.selectionStore.setSelectedSort).not.toHaveBeenCalled();
+    expect(store.selectionStore.setGrouping).not.toHaveBeenCalled();
   });
 });
 

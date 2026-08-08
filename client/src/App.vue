@@ -73,7 +73,6 @@
 import Cookies from 'js-cookie';
 import { mapStores } from 'pinia';
 import { defineAsyncComponent } from 'vue';
-import { setAuthToken } from './api/client';
 import * as authApi from './api/auth';
 import AppShellLoadError from './components/shared/AppShellLoadError.vue';
 import { loadAppShell } from './services/appShellLoader.js';
@@ -151,8 +150,6 @@ export default {
       try {
         const data = await authApi.validateSession(token);
         if (!this.authStore.isSessionRequestCurrent(requestId)) return;
-
-        authApi.applyAuthToken(token);
 
         this.authStore.setSession({
           token,
@@ -261,7 +258,6 @@ export default {
       const expiresInDays = (response.expiresInSeconds || 86400) / 86400;
 
       Cookies.set('token', response.token, { expires: expiresInDays });
-      setAuthToken(response.token);
       this.authStore.setSession({
         token: response.token,
         role: response.user.role,
@@ -318,8 +314,6 @@ export default {
     },
     // This function clears Axios, Pinia, and cookie authentication state together.
     logout() {
-      setAuthToken(null);
-
       this.authStore.clearSession();
       Cookies.remove('token');
 

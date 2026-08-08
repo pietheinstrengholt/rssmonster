@@ -458,16 +458,10 @@
 </style>
 
 <script>
-import { mapStores } from 'pinia';
-import { useAuthStore } from '../../store/auth.js';
 import { fetchActions, saveActions } from '../../api/actions';
-import { setAuthToken } from '../../api/client';
 import { notifyActionError } from '../../services/actionNotifications.js';
 
 export default {
-  computed: {
-    ...mapStores(useAuthStore)
-  },
   emits: ['close', 'saved'],
   data() {
     return {
@@ -487,9 +481,8 @@ export default {
       ]
     };
   },
-  // This function authenticates and loads authoritative actions before enabling the editor.
+  // This function loads authoritative actions before enabling the editor.
   async created() {
-    setAuthToken(this.authStore.token);
     await this.fetchActions();
   },
   methods: {

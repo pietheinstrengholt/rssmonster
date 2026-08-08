@@ -6,7 +6,6 @@ import MobileMenuOverlay from '../src/components/shell/MobileMenuOverlay.vue';
 import MobileToolbar from '../src/components/shell/MobileToolbar.vue';
 import Sidebar from '../src/components/sidebar/Sidebar.vue';
 import { markAllAsRead } from '../src/api/articles';
-import { triggerCrawl } from '../src/api/crawl';
 import { updateCategoryOrder } from '../src/api/manager';
 import { useAuthStore } from '../src/store/auth.js';
 import { useOverviewStore } from '../src/store/overview.js';
@@ -15,15 +14,6 @@ import { useUiStore } from '../src/store/ui.js';
 
 vi.mock('../src/api/articles', () => ({
   markAllAsRead: vi.fn()
-}));
-
-vi.mock('../src/api/crawl', () => ({
-  triggerCrawl: vi.fn()
-}));
-
-vi.mock('../src/api/feeds', () => ({
-  openFeedRefreshEvents: vi.fn(),
-  startFeedRefresh: vi.fn()
 }));
 
 vi.mock('../src/api/manager', () => ({
@@ -169,8 +159,10 @@ describe('fatal application error presentation', () => {
     expect(wrapper.get('h1').text()).toBe(title);
     expect(wrapper.get('p').text()).toContain(message);
     expect(wrapper.find('button').exists()).toBe(retry);
+    expect(wrapper.attributes('role')).toBe('alert');
 
     if (retry) {
+      expect(wrapper.get('.app-error__guidance').text()).toBeTruthy();
       await wrapper.get('button').trigger('click');
       expect(wrapper.emitted('retry')).toHaveLength(1);
     }
@@ -340,7 +332,7 @@ describe('mobile options menu actions', () => {
 });
 
 describe('sidebar navigation helpers', () => {
-  it('covers selection, count, filtering, and bounded-log behavior', () => {
+  it('covers selection, count, and filtering behavior', () => {
     const store = createStore();
     const wrapper = mountSidebar();
 
@@ -373,48 +365,18 @@ describe('sidebar navigation helpers', () => {
     expect(store.selectionStore.setTag).toHaveBeenNthCalledWith(2, '');
     expect(store.selectionStore.setSmartFolder).toHaveBeenCalledWith({ id: 21 });
 
-    for (let index = 0; index < 10; index += 1) {
-      wrapper.vm.appendRefreshLog(`Entry ${index}`);
-    }
-    expect(wrapper.vm.refreshProgress.logs).toHaveLength(8);
-
-    wrapper.vm.updateProgressFromEvent(null);
-    wrapper.vm.updateProgressFromEvent({
-      currentFeed: 3,
-      errors: 1,
-      feedName: 'Example',
-      newArticles: 4,
-      processedFeeds: 2,
-      totalFeeds: 3
-    });
-    expect(wrapper.vm.refreshProgress).toMatchObject({
-      currentFeedLabel: 'Example (3/3)',
-      errors: 1,
-      newArticles: 4,
-      processedFeeds: 2,
-      progressPercent: 67,
-      totalFeeds: 3
-    });
   });
 
-  it('marks selections read and completes the legacy refresh fallback', async () => {
+  it('marks selections read through the sidebar action', async () => {
     createStore();
     const wrapper = mountSidebar();
     markAllAsRead.mockResolvedValue({});
-    triggerCrawl.mockResolvedValue({});
 
     await wrapper.vm.markAsRead({ status: 'unread' });
     expect(markAllAsRead).toHaveBeenCalledWith({ status: 'unread' });
     expect(wrapper.emitted('forceReload')).toHaveLength(1);
     expect(wrapper.vm.markingAsRead).toBe(false);
 
-    wrapper.vm.refreshing = true;
-    wrapper.vm.refreshProgress.visible = true;
-    await wrapper.vm.fallbackRefresh(new Error('live unavailable'));
-    await vi.advanceTimersByTimeAsync(2000);
-    expect(triggerCrawl).toHaveBeenCalledOnce();
-    expect(wrapper.vm.refreshing).toBe(false);
-    expect(wrapper.vm.refreshProgress.visible).toBe(false);
   });
 
   it('reports read and category-order failures without corrupting local state', async () => {

@@ -51,9 +51,13 @@ export default {
     refreshing: {
       type: Boolean,
       default: false
+    },
+    scrollRoot: {
+      type: Object,
+      default: null
     }
   },
-  emits: ['refresh'],
+  emits: ['refresh', 'show-mobile-toolbar'],
   data() {
     return {
       axis: null,
@@ -62,7 +66,6 @@ export default {
       refreshFeedbackTimer: null,
       refreshFeedbackVisible: false,
       refreshRequested: false,
-      scrollRoot: null,
       startX: 0,
       startY: 0,
       tracking: false
@@ -95,6 +98,11 @@ export default {
     }
   },
   watch: {
+    // This watcher reconnects gesture listeners when the shell replaces its scroll surface.
+    scrollRoot(value, previousValue) {
+      this.detachScrollRoot(previousValue);
+      this.attachScrollRoot(value);
+    },
     // This watcher transfers pending ownership to the parent once refreshing starts.
     refreshing(value, previousValue) {
       if (value) {
@@ -113,22 +121,28 @@ export default {
   },
   // This hook attaches gesture handling to the shared mobile scroll surface.
   mounted() {
-    this.scrollRoot = document.getElementById('home');
-    this.scrollRoot?.addEventListener('touchstart', this.handleTouchStart, { passive: true });
-    this.scrollRoot?.addEventListener('touchmove', this.handleTouchMove, { passive: false });
-    this.scrollRoot?.addEventListener('touchend', this.handleTouchEnd, { passive: true });
-    this.scrollRoot?.addEventListener('touchcancel', this.handleTouchCancel, { passive: true });
+    this.attachScrollRoot(this.scrollRoot);
   },
   // This hook removes every gesture listener owned by the indicator.
   beforeUnmount() {
     clearTimeout(this.refreshFeedbackTimer);
-    this.scrollRoot?.removeEventListener('touchstart', this.handleTouchStart);
-    this.scrollRoot?.removeEventListener('touchmove', this.handleTouchMove);
-    this.scrollRoot?.removeEventListener('touchend', this.handleTouchEnd);
-    this.scrollRoot?.removeEventListener('touchcancel', this.handleTouchCancel);
-    this.scrollRoot = null;
+    this.detachScrollRoot(this.scrollRoot);
   },
   methods: {
+    // This method attaches touch handling to the shell-owned article scroll surface.
+    attachScrollRoot(scrollRoot) {
+      scrollRoot?.addEventListener('touchstart', this.handleTouchStart, { passive: true });
+      scrollRoot?.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+      scrollRoot?.addEventListener('touchend', this.handleTouchEnd, { passive: true });
+      scrollRoot?.addEventListener('touchcancel', this.handleTouchCancel, { passive: true });
+    },
+    // This method removes touch handling from a replaced or unmounted scroll surface.
+    detachScrollRoot(scrollRoot) {
+      scrollRoot?.removeEventListener('touchstart', this.handleTouchStart);
+      scrollRoot?.removeEventListener('touchmove', this.handleTouchMove);
+      scrollRoot?.removeEventListener('touchend', this.handleTouchEnd);
+      scrollRoot?.removeEventListener('touchcancel', this.handleTouchCancel);
+    },
     // This method preserves refresh copy while the completed indicator collapses out of view.
     finishRefreshFeedback() {
       clearTimeout(this.refreshFeedbackTimer);
@@ -161,7 +175,7 @@ export default {
       this.gestureScrollRoot = gestureScrollRoot;
       this.tracking = true;
       this.pullDistance = 0;
-      document.getElementById('mobile-toolbar')?.classList.remove('hide');
+      this.$emit('show-mobile-toolbar');
     },
     // This method converts a confirmed vertical drag into a resisted indicator distance.
     handleTouchMove(event) {

@@ -165,7 +165,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     // Simplified boolean filter parsing
     let matchedBooleanFilter = false;
     // Processes each entry entry in turn.
-    for (const key of ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'hot', 'island', 'briefing']) {
+    for (const key of ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'hot', 'island', 'briefing', 'developing']) {
       // Parses the boolean filter while parsing article query.
       const value = parseBooleanFilter(cleaned, key);
       // Handles the case where value is not value.

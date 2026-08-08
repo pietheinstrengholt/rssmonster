@@ -160,7 +160,9 @@ export const getDailyBriefing = async (req, res, _next) => {
       attributes: [
         'selectionPeriod',
         'includeOnlyUnreadArticles',
+        'includeDevelopingEvents',
         'minDistinctSources',
+        'prioritizeHighTrust',
         'showOnlyInterestMatchedArticles',
         'showOnlyDevelopingEventArticles'
       ],
@@ -173,6 +175,10 @@ export const getDailyBriefing = async (req, res, _next) => {
         ? (Number(briefingPreferences.includeOnlyUnreadArticles) ? 'unread' : 'all')
         : req.query.status,
       minDistinctSources: Number(briefingPreferences?.minDistinctSources) || 1,
+      includeDevelopingEvents: Boolean(
+        Number(briefingPreferences?.includeDevelopingEvents)
+      ),
+      prioritizeHighTrust: Boolean(Number(briefingPreferences?.prioritizeHighTrust)),
       showOnlyInterestMatchedArticles: Boolean(
         Number(briefingPreferences?.showOnlyInterestMatchedArticles)
       ),
@@ -341,6 +347,10 @@ const markAsRead = async (req, res, _next) => {
     const articleIds = Array.isArray(body.articleIds)
       ? body.articleIds
       : String(body.articleIds || '').split(',').filter(Boolean);
+    const hasSnapshotArticleIds = Object.prototype.hasOwnProperty.call(
+      body,
+      'snapshotArticleIds'
+    );
     const snapshotArticleIds = Array.isArray(body.snapshotArticleIds)
       ? body.snapshotArticleIds
       : String(body.snapshotArticleIds || '').split(',').filter(Boolean);
@@ -419,26 +429,30 @@ const markAsRead = async (req, res, _next) => {
       return Number.isFinite(numericValue) ? numericValue : 0;
     };
 
-    const result = await searchArticles({
-      userId,
-      search: search ? String(search) : '',
-      categoryId: categoryId ?? '%',
-      feedId: feedId ?? '%',
-      status: 'unread',
-      minAdvertisementScore: toScoreThreshold(minAdvertisementScore),
-      minSentimentScore: toScoreThreshold(minSentimentScore),
-      minQualityScore: toScoreThreshold(minQualityScore),
-      sort: sort || 'desc',
-      tag,
-      viewMode,
-      grouping: normalizedGrouping,
-      persistSettings: false
-    });
+    let liveItemIds = [];
+    if (!hasSnapshotArticleIds) {
+      const result = await searchArticles({
+        userId,
+        search: search ? String(search) : '',
+        categoryId: categoryId ?? '%',
+        feedId: feedId ?? '%',
+        status: 'unread',
+        minAdvertisementScore: toScoreThreshold(minAdvertisementScore),
+        minSentimentScore: toScoreThreshold(minSentimentScore),
+        minQualityScore: toScoreThreshold(minQualityScore),
+        sort: sort || 'desc',
+        tag,
+        viewMode,
+        grouping: normalizedGrouping,
+        persistSettings: false
+      });
+      liveItemIds = result.itemIds || [];
+    }
 
-    // Combines live matches with the original list snapshot while normalizing mixed ID types.
+    // Treats a supplied list snapshot as the complete selection scope.
     const itemIds = [
       ...new Map(
-        [...(result.itemIds || []), ...snapshotArticleIds]
+        (hasSnapshotArticleIds ? snapshotArticleIds : liveItemIds)
           .map(id => [String(id), id])
       ).values()
     ];

@@ -25,6 +25,13 @@ describe('model schema declarations', () => {
     });
   });
 
+  it('declares generic high-trust prioritization disabled by default', () => {
+    expect(Setting.rawAttributes.prioritizeHighTrust).toMatchObject({
+      allowNull: false,
+      defaultValue: false
+    });
+  });
+
   it('declares last-used as the default startup view mode', () => {
     expect(Setting.rawAttributes.startupViewMode).toMatchObject({
       allowNull: false,

@@ -6,7 +6,6 @@ import App from '../src/App.vue';
 import * as authApi from '../src/api/auth';
 
 vi.mock('../src/api/auth', () => ({
-  applyAuthToken: vi.fn(),
   login: vi.fn(),
   register: vi.fn(),
   validateSession: vi.fn()

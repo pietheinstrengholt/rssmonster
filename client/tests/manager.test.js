@@ -35,6 +35,27 @@ describe('Sidebar manager', () => {
 		expect(store.currentSelection.markAsReadOnScroll).toBe(false);
 	});
 
+	it('forces event grouping when a search selects developing stories', () => {
+		setActivePinia(createPinia());
+		const store = useSelectionStore();
+
+		store.setSelectedSearch('quality:0.5 developing:true');
+
+		expect(store.currentSelection.grouping).toBe('event');
+		expect(store.currentSelection.includeDevelopingEvents).toBe(true);
+
+		store.setSmartFolder({ id: 9, query: 'developing:true', limitCount: 20 });
+
+		expect(store.currentSelection.grouping).toBe('event');
+		expect(store.currentSelection.includeDevelopingEvents).toBe(true);
+
+		store.setCurrentSelection({ grouping: 'none', includeDevelopingEvents: false });
+		store.setSelectedSearch('developing:true developing:false');
+
+		expect(store.currentSelection.grouping).toBe('none');
+		expect(store.currentSelection.includeDevelopingEvents).toBe(false);
+	});
+
 	it('uses the briefing query for the Daily briefing pseudo-status', () => {
 		setActivePinia(createPinia());
 		const store = useSelectionStore();
@@ -42,35 +63,53 @@ describe('Sidebar manager', () => {
 		store.setSelectedStatus('briefing');
 
 		expect(store.currentSelection.status).toBe('briefing');
-		expect(store.currentSelection.search).toBe('briefing:true @lastweek');
+		expect(store.currentSelection.search).toBe('briefing:true @lastweek sort:recommended');
+		expect(store.currentSelection.sort).toBe('recommended');
+		expect(store.currentSelection.grouping).toBe('event');
 
 		store.setBriefingSelectionPeriod('24h');
 
 		expect(store.briefingSelectionPeriod).toBe('24h');
-		expect(store.currentSelection.search).toBe('briefing:true @today');
+		expect(store.currentSelection.search).toBe('briefing:true @today sort:recommended');
 
 		store.setBriefingSelectionPeriod('7d');
 
-		expect(store.currentSelection.search).toBe('briefing:true @lastweek');
+		expect(store.currentSelection.search).toBe('briefing:true @lastweek sort:recommended');
 
 		store.setBriefingFilters({
 			selectionPeriod: '7d',
 			includeOnlyUnreadArticles: true,
+			markAsReadOnScroll: true,
 			prioritizeHighTrust: false
 		});
 
 		expect(store.briefingIncludeOnlyUnreadArticles).toBe(true);
-		expect(store.currentSelection.search).toBe('briefing:true unread:true @lastweek');
+		expect(store.briefingMarkAsReadOnScroll).toBe(true);
+		expect(store.effectiveMarkAsReadOnScroll).toBe(true);
+		expect(store.currentSelection.search).toBe('briefing:true unread:true @lastweek sort:recommended');
 
 		store.setBriefingFilters({
 			selectionPeriod: '7d',
 			includeOnlyUnreadArticles: true,
+			markAsReadOnScroll: false,
 			prioritizeHighTrust: true
 		});
 
 		expect(store.briefingPrioritizeHighTrust).toBe(true);
 		expect(store.currentSelection.search)
-			.toBe('briefing:true unread:true @lastweek sort:trust');
+			.toBe('briefing:true unread:true @lastweek sort:recommended');
+
+		store.setBriefingFilters({
+			selectionPeriod: '7d',
+			includeOnlyUnreadArticles: true,
+			markAsReadOnScroll: false,
+			prioritizeHighTrust: true,
+			showOnlyDevelopingEventArticles: true
+		});
+
+		expect(store.briefingShowOnlyDevelopingEventArticles).toBe(true);
+		expect(store.currentSelection.grouping).toBe('event');
+		expect(store.currentSelection.includeDevelopingEvents).toBe(true);
 
 		store.refreshBriefingSelection();
 

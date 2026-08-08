@@ -64,6 +64,7 @@ describe('settings controller', () => {
         viewMode: 'full',
         grouping: 'none',
         includeDevelopingEvents: false,
+        prioritizeHighTrust: false,
         themeMode: 'system',
         startupViewMode: 'last-used',
         markAsReadOnScroll: true,
@@ -97,6 +98,7 @@ describe('settings controller', () => {
         viewMode: 'reader',
         grouping: 'event',
         includeDevelopingEvents: true,
+        prioritizeHighTrust: false,
         themeMode: 'system',
         startupViewMode: 'last-used',
         markAsReadOnScroll: true,
@@ -125,6 +127,7 @@ describe('settings controller', () => {
       viewMode: 'minimal',
       grouping: 'topic',
       includeDevelopingEvents: true,
+      prioritizeHighTrust: true,
       themeMode: 'dark',
       startupViewMode: 'default',
       markAsReadOnScroll: false
@@ -147,6 +150,7 @@ describe('settings controller', () => {
         viewMode: 'full',
         grouping: 'none',
         includeDevelopingEvents: true,
+        prioritizeHighTrust: true,
         themeMode: 'dark',
         startupViewMode: 'default',
         markAsReadOnScroll: false,
@@ -211,7 +215,8 @@ describe('settings controller', () => {
         minAdvertisementScore: 0,
         minSentimentScore: 0,
         minQualityScore: 0,
-        includeDevelopingEvents: true
+        includeDevelopingEvents: true,
+        prioritizeHighTrust: true
       });
 
     const settings = await Setting.findOne({ where: { userId: user.id } });
@@ -221,9 +226,12 @@ describe('settings controller', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.includeDevelopingEvents).toBe(true);
+    expect(response.body.prioritizeHighTrust).toBe(true);
     expect(Boolean(settings.includeDevelopingEvents)).toBe(true);
+    expect(Boolean(settings.prioritizeHighTrust)).toBe(true);
     expect(hydratedResponse.status).toBe(200);
     expect(hydratedResponse.body.includeDevelopingEvents).toBe(true);
+    expect(hydratedResponse.body.prioritizeHighTrust).toBe(true);
   });
 
   it('rejects a non-boolean developing-events setting', async () => {
@@ -240,6 +248,22 @@ describe('settings controller', () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error).toBe('includeDevelopingEvents must be a boolean');
+  });
+
+  it('rejects a non-boolean high-trust setting', async () => {
+    const user = await createUser();
+    const response = await request(app)
+      .post('/api/setting')
+      .set('Authorization', authHeaderFor(user))
+      .send({
+        minAdvertisementScore: 0,
+        minSentimentScore: 0,
+        minQualityScore: 0,
+        prioritizeHighTrust: 'true'
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('prioritizeHighTrust must be a boolean');
   });
 
   it('updates only the current user developing-events setting', async () => {
@@ -295,7 +319,7 @@ describe('settings controller', () => {
       minQualityScore: 35
     });
     expect(Boolean(otherSettings.includeDevelopingEvents)).toBe(false);
-    expect(Boolean(briefingPreference.includeDevelopingEvents)).toBe(true);
+    expect(Boolean(briefingPreference.includeDevelopingEvents)).toBe(false);
     expect(briefingPreference).toMatchObject({
       minDistinctSources: 4,
       selectionPeriod: '24h'
@@ -322,7 +346,7 @@ describe('settings controller', () => {
     expect(invalidResponse.body.error).toBe('includeDevelopingEvents must be a boolean');
     expect(validResponse.status).toBe(200);
     expect(Boolean(settings.includeDevelopingEvents)).toBe(true);
-    expect(Boolean(briefingPreference.includeDevelopingEvents)).toBe(true);
+    expect(briefingPreference).toBeNull();
   });
 
   it('validates and persists the startup view mode for the current user', async () => {
@@ -373,5 +397,36 @@ describe('settings controller', () => {
     expect(validResponse.body).toMatchObject({ success: true, markAsReadOnScroll: false });
     expect(Boolean(settings.markAsReadOnScroll)).toBe(false);
     expect(Boolean(otherSettings.markAsReadOnScroll)).toBe(true);
+  });
+
+  it('validates and persists generic high-trust prioritization for the current user', async () => {
+    const user = await createUser();
+    const otherUser = await createUser();
+    await Setting.create({ userId: otherUser.id });
+    await BriefingPreference.create({ userId: user.id, prioritizeHighTrust: false });
+
+    const invalidResponse = await request(app)
+      .patch('/api/setting/prioritize-high-trust')
+      .set('Authorization', authHeaderFor(user))
+      .send({ prioritizeHighTrust: 'true' });
+    const validResponse = await request(app)
+      .patch('/api/setting/prioritize-high-trust')
+      .set('Authorization', authHeaderFor(user))
+      .send({ prioritizeHighTrust: true });
+
+    const settings = await Setting.findOne({ where: { userId: user.id }, raw: true });
+    const otherSettings = await Setting.findOne({ where: { userId: otherUser.id }, raw: true });
+    const briefingPreference = await BriefingPreference.findOne({
+      where: { userId: user.id },
+      raw: true
+    });
+
+    expect(invalidResponse.status).toBe(400);
+    expect(invalidResponse.body.error).toBe('prioritizeHighTrust must be a boolean');
+    expect(validResponse.status).toBe(200);
+    expect(validResponse.body).toMatchObject({ success: true, prioritizeHighTrust: true });
+    expect(Boolean(settings.prioritizeHighTrust)).toBe(true);
+    expect(Boolean(otherSettings.prioritizeHighTrust)).toBe(false);
+    expect(Boolean(briefingPreference.prioritizeHighTrust)).toBe(false);
   });
 });

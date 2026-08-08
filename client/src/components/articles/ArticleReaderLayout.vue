@@ -8,7 +8,7 @@
     class="readerEmptyState"
     :current-status="currentSelection"
     :selected-tag="selectedTag"
-    :refresh-progress="uiStore.feedRefreshProgress"
+    :refresh-progress="feedRefreshStore.progress"
     :show-refresh-progress="showFeedRefreshProgress"
     @clear-filters="$emit('clear-filters')"
     @clear-tag="$emit('clear-tag')"
@@ -149,25 +149,33 @@
         <img v-if="thumbnailUrl(article)" class="readerArticleListThumbnail" :src="thumbnailUrl(article)" alt="" loading="lazy" />
       </div>
 
-      <div id="article-load-sentinel" class="article-load-sentinel" aria-hidden="true"></div>
+      <div id="article-load-sentinel" ref="loadMoreSentinel" class="article-load-sentinel" aria-hidden="true"></div>
 
       <div id="no-more" v-if="hasLoadedContent">
         <ArticleEndState
-          v-if="showReaderEndState"
+          v-if="collectionTailState.showEndState"
           :unread-count="currentViewUnreadCount"
-          :show-actions="showReaderEndStateActions"
-          :show-dismiss="showReaderEndStateDismiss"
+          :show-actions="collectionTailState.showEndStateActions"
+          :show-dismiss="collectionTailState.showEndStateDismiss"
           @mark-all-read="$emit('flush-pool')"
           @dismiss="dismissReaderEndState"
         />
         <ArticleRefreshState
-          v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0 && unreadsSinceLastUpdate > 0"
+          v-if="collectionTailState.showRefreshState"
           :unread-count="unreadsSinceLastUpdate"
           @refresh="$emit('forceReload')"
         />
       </div>
-      <div id="no-more" v-else>
-        <p>Loading <BootstrapIcon icon="arrow-repeat" variant="dark" animation="spin"/></p>
+      <div v-else class="reader-loading-state" role="status" aria-label="Loading articles">
+        <div class="reader-loading-state__items" aria-hidden="true">
+          <div v-for="index in 4" :key="index" class="reader-loading-skeleton">
+            <span class="reader-loading-skeleton__title"></span>
+            <span class="reader-loading-skeleton__title reader-loading-skeleton__title--short"></span>
+            <span class="reader-loading-skeleton__preview"></span>
+            <span class="reader-loading-skeleton__meta"></span>
+          </div>
+        </div>
+        <span class="app-visually-hidden">Loading articles</span>
       </div>
     </aside>
 
@@ -194,6 +202,7 @@
       <ArticleItem
         v-for="article in selectedRelatedArticles"
         :key="article.id"
+        :ref="element => setRelatedArticleRef(element, article.id)"
         v-bind="article"
         @update-favorite="$emit('update-favorite', $event)"
         @update-clicked="$emit('update-clicked', $event)"
@@ -213,6 +222,15 @@ import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
 import { useUiStore } from '../../store/ui.js';
+import { useFeedRefreshStore } from '../../store/feedRefresh.js';
+import {
+  getArticleCollectionTailState,
+  shouldShowDailyBriefingIntro
+} from '../../services/articleCollectionState.js';
+import {
+  ARTICLE_KEYBOARD_COMMAND,
+  getArticleKeyboardCommand
+} from '../../services/articleKeyboardCommands.js';
 import ArticleItem from "./Article.vue";
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
@@ -224,6 +242,7 @@ import { formatTagName } from '../../utils/tags';
 import { hasRenderableContent, usableHttpUrl } from '../../utils/content';
 import { markClicked as markArticleClickedAPI } from '../../api/articles';
 import { notifyActionError } from '../../services/actionNotifications.js';
+import { getArticleStatusOption } from '../../config/articleSelectionOptions.js';
 
 const PREVIEW_LENGTH = 150;
 
@@ -266,50 +285,19 @@ export default {
       type: Array,
       required: true
     },
-    currentSelection: {
-      type: String,
+    collectionSummary: {
+      type: Object,
       required: true
     },
-    selectedTag: {
-      type: String,
-      default: ''
-    },
-    currentViewUnreadCount: {
-      type: Number,
+    collectionProgress: {
+      type: Object,
       required: true
-    },
-    currentViewSourceCount: {
-      type: Number,
-      default: null
-    },
-    remainingItems: {
-      type: Number,
-      required: true
-    },
-    fetchCount: {
-      type: Number,
-      required: true
-    },
-    hasLoadedContent: {
-      type: Boolean,
-      required: true
-    },
-    isFlushed: {
-      type: Boolean,
-      required: true
-    },
-    distance: {
-      type: Number,
-      required: true
-    },
-    showFeedRefreshProgress: {
-      type: Boolean,
-      default: true
     }
   },
   data() {
     return {
       articleItemRefs: {},
+      relatedArticleRefs: {},
       selectedArticleId: null,
       isReaderEndStateDismissed: false,
       isBulkMenuOpen: false,
@@ -340,7 +328,35 @@ export default {
     }
   },
   computed: {
-    ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
+    ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useFeedRefreshStore),
+    // Exposes the active status from the explicit collection presentation contract.
+    currentSelection() {
+      return this.collectionSummary.status;
+    },
+    // Exposes the active tag from the explicit collection presentation contract.
+    selectedTag() {
+      return this.collectionSummary.selectedTag;
+    },
+    // Exposes the current unread count from the collection presentation contract.
+    currentViewUnreadCount() {
+      return this.collectionSummary.unreadCount;
+    },
+    // Exposes the current source count from the collection presentation contract.
+    currentViewSourceCount() {
+      return this.collectionSummary.sourceCount;
+    },
+    // Exposes whether the initial collection request has completed.
+    hasLoadedContent() {
+      return this.collectionProgress.hasLoadedContent;
+    },
+    // Exposes whether the current unread collection was explicitly flushed.
+    isFlushed() {
+      return this.collectionProgress.isFlushed;
+    },
+    // Exposes whether feed refresh feedback belongs in the empty state.
+    showFeedRefreshProgress() {
+      return this.collectionProgress.showFeedRefreshProgress;
+    },
     // Keeps temporarily expanded related articles out of the reader's middle-pane list.
     readerListArticles() {
       return this.getReaderListArticles();
@@ -348,10 +364,12 @@ export default {
     // Shows the briefing introduction only for the unfiltered all-sources briefing.
     showDailyBriefingIntro() {
       const selection = this.selectionStore.currentSelection;
-      return this.currentSelection === 'briefing'
-        && selection.categoryId === '%'
-        && selection.feedId === '%'
-        && !selection.tag;
+      return shouldShowDailyBriefingIntro({
+        status: this.currentSelection,
+        categoryId: selection.categoryId,
+        feedId: selection.feedId,
+        tag: selection.tag
+      });
     },
     // Returns the article currently shown in the reader panel.
     selectedArticle() {
@@ -368,26 +386,20 @@ export default {
     // Returns the icon name that matches the active reader collection.
     selectionIcon() {
       const selection = this.selectionStore.currentSelection;
+      const statusOption = getArticleStatusOption(selection.status);
       if (selection.smartFolderId !== null) return 'folder-fill';
       if (selection.tag) return 'tag-fill';
-      if (selection.status === 'briefing') return 'sunrise-fill';
+      if (selection.status === 'briefing') return statusOption?.icon || 'collection-fill';
       if (selection.search) return 'search';
       if (selection.feedId !== '%') return 'rss-fill';
       if (selection.categoryId !== '%') return 'folder-fill';
 
-      const icons = {
-        unread: 'record-circle-fill',
-        read: 'circle-fill',
-        favorite: 'bookmark-fill',
-        hot: 'fire',
-        clicked: 'arrow-up-right-square-fill'
-      };
-
-      return icons[selection.status] || 'collection-fill';
+      return statusOption?.icon || 'collection-fill';
     },
     // Returns the display name for the active reader collection.
     selectionTitle() {
       const selection = this.selectionStore.currentSelection;
+      const statusOption = getArticleStatusOption(selection.status);
 
       if (selection.smartFolderId !== null) {
         const smartFolder = this.overviewStore.smartFolders.find(folder => folder.id === selection.smartFolderId);
@@ -395,7 +407,7 @@ export default {
       }
 
       if (selection.tag) return this.formatTagName(selection.tag);
-      if (selection.status === 'briefing') return 'Daily briefing';
+      if (selection.status === 'briefing') return statusOption?.label || 'All articles';
       if (selection.search) return `Search: ${selection.search}`;
 
       const categoryId = Number(selection.categoryId);
@@ -411,15 +423,7 @@ export default {
 
       if (category?.name) return category.name;
 
-      const labels = {
-        unread: 'Unread',
-        read: 'Read',
-        favorite: 'Favorites',
-        hot: 'Hot',
-        clicked: 'Clicked'
-      };
-
-      return labels[selection.status] || 'All articles';
+      return statusOption?.sidebarLabel || statusOption?.label || 'All articles';
     },
     // Returns the formatted unread count for the active reader collection.
     formattedUnreadCount() {
@@ -463,26 +467,21 @@ export default {
     },
     // Returns whether the reader list has loaded every article in the current scope.
     hasReachedArticleListEnd() {
-      return this.container.length > 0 && this.distance >= this.container.length;
+      return this.collectionProgress.hasReachedEnd;
     },
-    // Returns whether the end state should appear below the final reader list item.
-    showReaderEndState() {
-      return this.hasReachedArticleListEnd && !this.isReaderEndStateDismissed;
-    },
-    // Returns whether the fully loaded reader list still contains unread articles.
-    hasUnreadArticlesInCurrentView() {
-      return this.articles.some(article => article.status !== 'read');
-    },
-    // Returns whether the end state should offer the mark-all-read action.
-    showReaderEndStateActions() {
-      return this.currentSelection === 'unread'
-        && !this.isFlushed
-        && this.currentViewUnreadCount > 0
-        && this.hasUnreadArticlesInCurrentView;
-    },
-    // Hides the redundant dismissal action when scrolling automatically marks reviewed articles as read.
-    showReaderEndStateDismiss() {
-      return this.selectionStore.currentSelection.markAsReadOnScroll !== true;
+    // Returns the shared end, action, dismissal, and refresh presentation state.
+    collectionTailState() {
+      return getArticleCollectionTailState({
+        hasReachedEnd: this.hasReachedArticleListEnd,
+        isDismissed: this.isReaderEndStateDismissed,
+        status: this.currentSelection,
+        isFlushed: this.isFlushed,
+        unreadCount: this.currentViewUnreadCount,
+        articles: this.articles,
+        markAsReadOnScroll: this.selectionStore.effectiveMarkAsReadOnScroll,
+        unreadsSinceLastUpdate: this.unreadsSinceLastUpdate,
+        articleCount: this.container.length
+      });
     }
   },
   watch: {
@@ -507,6 +506,28 @@ export default {
     }
   },
   methods: {
+    // Returns the rendered Reader article root through component-owned article refs.
+    getArticleElement(articleId) {
+      if (String(this.selectedArticle?.id) === String(articleId)) {
+        return this.$refs.selectedArticleComponent?.$el || null;
+      }
+      return this.relatedArticleRefs[articleId]?.$el || null;
+    },
+    // Returns the Reader-owned pagination sentinel.
+    getLoadMoreSentinel() {
+      return this.$refs.loadMoreSentinel || null;
+    },
+    // Returns the browser viewport edge used by Reader visibility tracking.
+    getReadingViewportTop() {
+      return 0;
+    },
+    // Restores both Reader-owned scroll surfaces to the beginning.
+    scrollToTop() {
+      const articleList = this.$refs.articleListScrollRef;
+      const articlePanel = this.$refs.readerArticlePanelRef;
+      if (articleList) articleList.scrollTop = 0;
+      if (articlePanel) articlePanel.scrollTop = 0;
+    },
     // Returns the primary collection articles that belong in the reader's middle pane.
     getReaderListArticles() {
       return this.articles.filter(article => !article.clusterParentId);
@@ -594,6 +615,14 @@ export default {
         delete this.articleItemRefs[articleId];
       }
     },
+    // Stores related Reader article component refs by article id.
+    setRelatedArticleRef(element, articleId) {
+      if (element) {
+        this.relatedArticleRefs[articleId] = element;
+      } else {
+        delete this.relatedArticleRefs[articleId];
+      }
+    },
     // Selects the article displayed in the reader panel.
     selectArticle(articleId) {
       if (articleId === this.selectedArticleId) return;
@@ -623,21 +652,6 @@ export default {
       selectedItem.focus({ preventScroll: true });
       selectedItem.scrollIntoView({ block: 'nearest' });
     },
-    // Returns whether keyboard navigation should ignore the current event target.
-    shouldIgnoreKeyboardEvent(event) {
-      const target = event.target;
-      const tagName = target?.tagName?.toLowerCase();
-      const isReaderListItem = target?.classList?.contains('readerArticleListItem');
-      const isInteractiveElement = ['a', 'button', 'input', 'textarea', 'select'].includes(tagName);
-      return Boolean(
-        event.altKey ||
-        event.ctrlKey ||
-        event.metaKey ||
-        event.shiftKey ||
-        target?.isContentEditable ||
-        (isInteractiveElement && !isReaderListItem)
-      );
-    },
     // Handles reader-mode keyboard navigation.
     handleReaderKeydown(event) {
       if (event.key === 'Escape' && this.isBulkMenuOpen) {
@@ -645,23 +659,26 @@ export default {
         return;
       }
 
-      if (this.shouldIgnoreKeyboardEvent(event)) return;
-      if (!['ArrowDown', 'ArrowUp', 'Enter', 'j', 'k', 'o', 'm', 'r', 's'].includes(event.key)) return;
+      const command = getArticleKeyboardCommand(event, {
+        allowInteractiveTarget: event.target?.classList?.contains('readerArticleListItem'),
+        checkEditableAncestors: false
+      });
+      if (!command) return;
 
       const readerListArticles = this.getReaderListArticles();
       const currentIndex = readerListArticles.findIndex(article => article.id === this.selectedArticleId);
       if (currentIndex === -1) return;
 
-      if (['ArrowDown', 'j'].includes(event.key)) {
+      if (command === ARTICLE_KEYBOARD_COMMAND.NEXT) {
         event.preventDefault();
         this.selectArticleByIndex(Math.min(currentIndex + 1, readerListArticles.length - 1));
-      } else if (['ArrowUp', 'k'].includes(event.key)) {
+      } else if (command === ARTICLE_KEYBOARD_COMMAND.PREVIOUS) {
         event.preventDefault();
         this.selectArticleByIndex(Math.max(currentIndex - 1, 0));
-      } else if (['Enter', 'o'].includes(event.key)) {
+      } else if (command === ARTICLE_KEYBOARD_COMMAND.OPEN) {
         event.preventDefault();
         this.openSelectedArticle();
-      } else if (['m', 'r'].includes(event.key)) {
+      } else if (command === ARTICLE_KEYBOARD_COMMAND.TOGGLE_READ) {
         event.preventDefault();
         this.toggleSelectedReadStatus();
       } else {
@@ -671,8 +688,7 @@ export default {
     },
     // Opens the selected article through the existing article link behavior.
     openSelectedArticle() {
-      const articleLink = this.$refs.selectedArticleComponent?.$el?.querySelector('.article-link');
-      articleLink?.click();
+      this.$refs.selectedArticleComponent?.openOriginalArticle?.();
     },
     // Requests a read status toggle for the selected reader article.
     toggleSelectedReadStatus() {
@@ -1190,6 +1206,69 @@ export default {
 .article-load-sentinel {
   height: 1px;
   width: 100%;
+}
+
+.reader-loading-state {
+  padding-top: 2px;
+}
+
+.reader-loading-state__items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reader-loading-skeleton {
+  background: var(--reader-list-item-background);
+  border: 1px solid var(--reader-list-item-border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.reader-loading-skeleton span {
+  animation: reader-loading-pulse 1.4s ease-in-out infinite;
+  background: var(--bg-muted);
+  border-radius: 4px;
+  display: block;
+}
+
+.reader-loading-skeleton__title {
+  height: 11px;
+  margin-bottom: 7px;
+  width: 88%;
+}
+
+.reader-loading-skeleton__title--short {
+  width: 62%;
+}
+
+.reader-loading-skeleton__preview {
+  height: 8px;
+  margin-top: 12px;
+  width: 94%;
+}
+
+.reader-loading-skeleton__meta {
+  height: 7px;
+  margin-top: 10px;
+  width: 38%;
+}
+
+@keyframes reader-loading-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-loading-skeleton span {
+    animation: none;
+  }
 }
 
 :global(:root[data-theme='dark']) .readerArticleList {

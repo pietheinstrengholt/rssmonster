@@ -29,7 +29,7 @@ export const articleFeedPaginationMethods = {
     const requestId = ++this.activeRequestId;
 
     try {
-      await this.resetPool();
+      await this.resetCollectionState();
       this.scrollArticleListToTop();
       this.hasLoadedContent = false; // Show spinner immediately
       this.isLoading = true;
@@ -74,22 +74,6 @@ export const articleFeedPaginationMethods = {
     }
   },
 
-  // Returns every fully rebuilt article collection to the beginning across responsive scroll roots.
-  scrollArticleListToTop() {
-    const windowWasScrolled = window.scrollY > 0;
-    const expandedArticlePane = document.querySelector('.expandedArticleLayout');
-    const articlePane = document.getElementById('home');
-    const readerArticleList = document.querySelector('.readerArticleList');
-    const readerArticlePanel = document.querySelector('.readerArticlePanel');
-    if (expandedArticlePane) expandedArticlePane.scrollTop = 0;
-    if (articlePane) articlePane.scrollTop = 0;
-    if (readerArticleList) readerArticleList.scrollTop = 0;
-    if (readerArticlePanel) readerArticlePanel.scrollTop = 0;
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-    if (windowWasScrolled) window.scrollTo({ top: 0, behavior: 'auto' });
-  },
-
   // Refreshes the active selection while preserving rendered articles until replacement data is ready.
   async refreshArticleIds(data) {
     const requestId = ++this.activeRequestId;
@@ -111,7 +95,7 @@ export const articleFeedPaginationMethods = {
         nextArticles = detailResponse.data || [];
       }
 
-      await this.resetPool();
+      await this.resetCollectionState();
       if (requestId !== this.activeRequestId) return false;
 
       this.container = nextContainer;
@@ -190,27 +174,11 @@ export const articleFeedPaginationMethods = {
     }
   },
 
-  // Resets article, visibility, and observer state for a new selection.
-  async resetPool() {
-    this.visibilityObserver?.takeRecords?.();
-    for (const element of this.observedArticleElements.values()) {
-      this.visibilityObserver?.unobserve(element);
-    }
-
+  // Resets only pagination-owned collection state for a new selection.
+  resetPaginationState() {
     this.articles = [];
     this.container = [];
-    this.pool = new Set();
-    this.activeMinimalArticleId = null;
-    this.pendingReadStatusArticleIds.clear();
-    this.pendingSeenArticleIds.clear();
-    this.seenPersistenceAttempts.clear();
     this.distance = 0;
-    this.isFlushed = false;
     this.currentViewSourceCount = null;
-
-    this.observedArticleElements.clear();
-    this.visibleMap.clear();
-    this.visibleSince.clear();
-    this.visibleDuration.clear();
   }
 };

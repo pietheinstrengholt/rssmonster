@@ -44,6 +44,7 @@ describe('Briefing Preferences API', () => {
     await BriefingPreference.create({
       userId: user.id,
       includeOnlyUnreadArticles: false,
+      markAsReadOnScroll: false,
       includeDevelopingEvents: false,
       showOnlyInterestMatchedArticles: true,
       showOnlyDevelopingEventArticles: false,
@@ -59,6 +60,7 @@ describe('Briefing Preferences API', () => {
     expect(response.status).toBe(200);
     expect(response.body.preferences).toEqual({
       includeOnlyUnreadArticles: false,
+      markAsReadOnScroll: false,
       includeDevelopingEvents: false,
       showOnlyInterestMatchedArticles: true,
       showOnlyDevelopingEventArticles: false,
@@ -79,6 +81,7 @@ describe('Briefing Preferences API', () => {
     expect(response.status).toBe(200);
     expect(response.body.preferences).toEqual({
       includeOnlyUnreadArticles: false,
+      markAsReadOnScroll: false,
       includeDevelopingEvents: false,
       showOnlyInterestMatchedArticles: false,
       showOnlyDevelopingEventArticles: false,
@@ -90,7 +93,7 @@ describe('Briefing Preferences API', () => {
     expect(await BriefingPreference.count({ where: { userId: user.id } })).toBe(0);
   });
 
-  it('uses the shared developing-events setting when stored preferences have drifted', async () => {
+  it('returns the Briefing developing-events preference independently', async () => {
     const user = await createUser();
     await BriefingPreference.create({
       userId: user.id,
@@ -106,7 +109,7 @@ describe('Briefing Preferences API', () => {
       .set('Authorization', authHeaderFor(user));
 
     expect(response.status).toBe(200);
-    expect(response.body.preferences.includeDevelopingEvents).toBe(true);
+    expect(response.body.preferences.includeDevelopingEvents).toBe(false);
   });
 
   it('replaces preferences', async () => {
@@ -132,6 +135,7 @@ describe('Briefing Preferences API', () => {
       .send({
         preferences: {
           includeOnlyUnreadArticles: false,
+          markAsReadOnScroll: false,
           includeDevelopingEvents: true,
           showOnlyInterestMatchedArticles: true,
           showOnlyDevelopingEventArticles: false,
@@ -144,6 +148,7 @@ describe('Briefing Preferences API', () => {
     expect(response.status).toBe(200);
     expect(response.body.preferences).toEqual({
       includeOnlyUnreadArticles: false,
+      markAsReadOnScroll: false,
       includeDevelopingEvents: true,
       showOnlyInterestMatchedArticles: true,
       showOnlyDevelopingEventArticles: false,
@@ -158,6 +163,7 @@ describe('Briefing Preferences API', () => {
       raw: true
     });
     expect(Boolean(storedPreferences.includeOnlyUnreadArticles)).toBe(false);
+    expect(Boolean(storedPreferences.markAsReadOnScroll)).toBe(false);
     expect(Boolean(storedPreferences.includeDevelopingEvents)).toBe(true);
     expect(Boolean(storedPreferences.showOnlyInterestMatchedArticles)).toBe(true);
     expect(Boolean(storedPreferences.showOnlyDevelopingEventArticles)).toBe(false);
@@ -170,7 +176,7 @@ describe('Briefing Preferences API', () => {
     const settings = await Setting.findOne({ where: { userId: user.id }, raw: true });
     const otherSettings = await Setting.findOne({ where: { userId: otherUser.id }, raw: true });
 
-    expect(Boolean(settings.includeDevelopingEvents)).toBe(true);
+    expect(Boolean(settings.includeDevelopingEvents)).toBe(false);
     expect(settings).toMatchObject({
       minAdvertisementScore: 15,
       minSentimentScore: 25,
@@ -188,6 +194,7 @@ describe('Briefing Preferences API', () => {
       .send({
         preferences: {
           includeOnlyUnreadArticles: true,
+          markAsReadOnScroll: true,
           includeDevelopingEvents: true,
           showOnlyInterestMatchedArticles: false,
           showOnlyDevelopingEventArticles: false,
@@ -211,6 +218,7 @@ describe('Briefing Preferences API', () => {
       .send({
         preferences: {
           includeOnlyUnreadArticles: false,
+          markAsReadOnScroll: false,
           includeDevelopingEvents: false,
           showOnlyInterestMatchedArticles: true,
           showOnlyDevelopingEventArticles: true,
@@ -222,6 +230,32 @@ describe('Briefing Preferences API', () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ error: 'Only one article-type filter can be enabled' });
+    expect(await BriefingPreference.count({ where: { userId: user.id } })).toBe(0);
+  });
+
+  it('rejects scrolling read behavior when unread filtering is disabled', async () => {
+    const user = await createUser();
+
+    const response = await request(app)
+      .put('/api/briefing/preferences')
+      .set('Authorization', authHeaderFor(user))
+      .send({
+        preferences: {
+          includeOnlyUnreadArticles: false,
+          markAsReadOnScroll: true,
+          includeDevelopingEvents: false,
+          showOnlyInterestMatchedArticles: false,
+          showOnlyDevelopingEventArticles: false,
+          minDistinctSources: 1,
+          prioritizeHighTrust: false,
+          selectionPeriod: '7d'
+        }
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      error: 'markAsReadOnScroll requires includeOnlyUnreadArticles'
+    });
     expect(await BriefingPreference.count({ where: { userId: user.id } })).toBe(0);
   });
 });

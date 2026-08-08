@@ -20,5 +20,10 @@ router.patch(
   userMiddleware.isLoggedIn,
   settingController.setMarkAsReadOnScroll
 );
+router.patch(
+  '/prioritize-high-trust',
+  userMiddleware.isLoggedIn,
+  settingController.setPrioritizeHighTrust
+);
 
 export default router;

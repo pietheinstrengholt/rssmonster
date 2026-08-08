@@ -131,6 +131,37 @@ describe('computeRecommended', () => {
     expect(highInterestScore - lowInterestScore).toBeCloseTo(0.44, 3);
   });
 
+  it('adds bounded feed trust only when high-trust prioritization is enabled', () => {
+    const article = {
+      freshness: 0,
+      quality: 0,
+      interestScore: 0,
+      Feed: { feedTrust: 0.8 },
+      event: { articleCount: 1, sourceCount: 1, sourceDiversityScore: 0 },
+      Tags: []
+    };
+
+    expect(computeRecommended(article)).toBe(0);
+    expect(computeRecommended(article, { prioritizeHighTrust: true })).toBe(0.8);
+  });
+
+  it('clamps invalid and out-of-range feed trust boosts', () => {
+    const baseArticle = {
+      freshness: 0,
+      quality: 0,
+      interestScore: 0,
+      event: { articleCount: 1, sourceCount: 1, sourceDiversityScore: 0 },
+      Tags: []
+    };
+
+    expect(computeRecommended({ ...baseArticle, Feed: { feedTrust: 4 } }, {
+      prioritizeHighTrust: true
+    })).toBe(1);
+    expect(computeRecommended({ ...baseArticle, Feed: { feedTrust: 'invalid' } }, {
+      prioritizeHighTrust: true
+    })).toBe(0);
+  });
+
   it('explains bounded recommendation signals and rule boosts', () => {
     const breakdown = computeRecommendedBreakdown({
       freshness: 0.8,
@@ -176,5 +207,19 @@ describe('computeRecommended', () => {
       sourceCount: 1
     });
     expect(Number.isFinite(breakdown.recommended)).toBe(true);
+  });
+
+  it('includes the optional feed-trust boost in the score breakdown', () => {
+    const breakdown = computeRecommendedBreakdown({
+      freshness: 0,
+      quality: 0,
+      interestScore: 0,
+      Feed: { feedTrust: 0.65 },
+      event: { articleCount: 1, sourceCount: 1, sourceDiversityScore: 0 },
+      Tags: []
+    }, { prioritizeHighTrust: true });
+
+    expect(breakdown.feedTrustBoost).toBe(0.65);
+    expect(breakdown.recommended).toBe(0.65);
   });
 });

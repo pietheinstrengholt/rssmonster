@@ -24,6 +24,10 @@ export const saveStartupViewMode = startupViewMode =>
 export const saveMarkAsReadOnScroll = markAsReadOnScroll =>
   api.patch('/setting/mark-as-read-on-scroll', { markAsReadOnScroll });
 
+// This function saves the generic unread high-trust preference.
+export const savePrioritizeHighTrust = prioritizeHighTrust =>
+  api.patch('/setting/prioritize-high-trust', { prioritizeHighTrust });
+
 export const fetchIslandsOverview = () =>
   api.get('/setting/islands');
 

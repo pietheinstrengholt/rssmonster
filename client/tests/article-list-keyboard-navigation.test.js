@@ -28,8 +28,15 @@ const createContext = (overrides = {}) => {
     viewMode: 'full',
     activeMinimalArticleId: null,
     selectedArticleId: null,
+    scrollRoot: {
+      getBoundingClientRect: vi.fn().mockReturnValue({ top: 10 })
+    },
+    $refs: {},
     minimalArticleRefs: Object.fromEntries(
-      [...elements].map(([id, element]) => [id, { $el: element }])
+      [...elements].map(([id, element]) => [id, {
+        $el: element,
+        openOriginalArticle: vi.fn()
+      }])
     ),
     $emit: vi.fn(),
     $nextTick: vi.fn(callback => callback()),
@@ -44,21 +51,6 @@ beforeEach(() => {
 });
 
 describe('ArticleListView keyboard navigation', () => {
-  // Verifies ignored targets include form, interactive, editable, and modified events.
-  it('ignores keyboard navigation from interactive contexts', () => {
-    const context = createContext();
-    const editable = document.createElement('div');
-    editable.setAttribute('contenteditable', 'true');
-    const child = document.createElement('span');
-    editable.appendChild(child);
-
-    expect(context.shouldIgnoreKeyboardEvent({ target: document.createElement('input') })).toBe(true);
-    expect(context.shouldIgnoreKeyboardEvent({ target: document.createElement('button') })).toBe(true);
-    expect(context.shouldIgnoreKeyboardEvent({ target: child })).toBe(true);
-    expect(context.shouldIgnoreKeyboardEvent({ target: document.body, metaKey: true })).toBe(true);
-    expect(context.shouldIgnoreKeyboardEvent({ target: document.body })).toBe(false);
-  });
-
   // Verifies J/K and arrow keys establish selection and stop at list boundaries.
   it('navigates forward and backward with stable boundaries', () => {
     const context = createContext();
@@ -101,9 +93,6 @@ describe('ArticleListView keyboard navigation', () => {
   // Verifies open, read, and favorite shortcuts act on the selected article.
   it('routes open, read, and favorite shortcuts for the selected article', () => {
     const context = createContext({ selectedArticleId: 2 });
-    const articleLink = { click: vi.fn() };
-    context.minimalArticleRefs[2].$el.querySelector.mockReturnValue(articleLink);
-
     for (const key of ['Enter', 'm', 's']) {
       context.handleMinimalKeydown({
         key,
@@ -112,7 +101,7 @@ describe('ArticleListView keyboard navigation', () => {
       });
     }
 
-    expect(articleLink.click).toHaveBeenCalledOnce();
+    expect(context.minimalArticleRefs[2].openOriginalArticle).toHaveBeenCalledOnce();
     expect(context.$emit).toHaveBeenCalledWith(
       'shortcut-toggle-read',
       { id: 2, status: 'read' }
@@ -125,11 +114,7 @@ describe('ArticleListView keyboard navigation', () => {
 
   // Verifies viewport selection chooses the closest mounted article.
   it('selects the article closest to the reading viewport', () => {
-    const home = document.createElement('div');
-    home.id = 'home';
-    home.getBoundingClientRect = vi.fn().mockReturnValue({ top: 10 });
-    document.body.appendChild(home);
-    const context = createContext();
+    const context = createContext({ viewMode: 'summarized' });
 
     expect(context.closestArticleIdToViewport()).toBe(2);
     expect(context.selectedArticle().id).toBe(2);
@@ -144,8 +129,9 @@ describe('ArticleListView keyboard navigation', () => {
     const expandedArticlePane = document.createElement('div');
     expandedArticlePane.className = 'expandedArticleLayout';
     expandedArticlePane.getBoundingClientRect = vi.fn().mockReturnValue({ top: 60 });
-    document.body.appendChild(expandedArticlePane);
-    const context = createContext();
+    const context = createContext({
+      $refs: { expandedArticleScrollRef: expandedArticlePane }
+    });
 
     context.minimalArticleRefs[1].$el.getBoundingClientRect = vi.fn().mockReturnValue({ top: 180 });
     context.minimalArticleRefs[2].$el.getBoundingClientRect = vi.fn().mockReturnValue({ top: 70 });
@@ -196,16 +182,17 @@ describe('ArticleListView keyboard navigation', () => {
     const wrapper = shallowMount(ArticleListView, {
       props: {
         articles: [],
-        pool: new Set(),
         container: [],
-        currentSelection: 'unread',
-        currentViewUnreadCount: 0,
-        viewMode: 'minimal',
-        remainingItems: 0,
-        fetchCount: 50,
-        hasLoadedContent: true,
-        isFlushed: false,
-        distance: 0
+        collectionSummary: {
+          status: 'unread', selectedTag: '', unreadCount: 0, sourceCount: null
+        },
+        collectionProgress: {
+          hasLoadedContent: true,
+          isFlushed: false,
+          hasReachedEnd: false,
+          showFeedRefreshProgress: true
+        },
+        viewMode: 'minimal'
       }
     });
     const handler = wrapper.vm.handleMinimalKeydown;

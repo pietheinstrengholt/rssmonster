@@ -6,6 +6,7 @@
         <span>{{ favoriteInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
       </div>
       <ArticleHeadlineRow
+        ref="articleHeading"
         :url="url"
         :title="title"
         :status="status"
@@ -40,8 +41,6 @@
         @toggle-favorite="markAsFavorite"
         @not-interested="markNotInterested"
         @more-like-this="moreLikeThis"
-        @less-like-this="lessLikeThis"
-        @ignore-topic="ignoreTopic"
         @mute-feed="muteFeedSevenDays"
       />
     </div>
@@ -52,10 +51,10 @@
       </div>
       <div class="article-body mobile-swipe-content" :class="[{ favorited: favoriteInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
         <div class="article-layout">
-          <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
+          <ArticleHeader ref="articleHeading" :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" />
           <div class="meta-row">
-            <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" />
-            <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
+            <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" />
+            <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
           </div>
           <ArticlePreviewFallback v-if="!hasArticlePreview" :url="url" @open-original="articleClicked" />
           <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
@@ -100,8 +99,8 @@ import {
   articleMobileSwipeComputed,
   articleMobileSwipeMethods
 } from './helpers/mobileSwipe.js';
-import { formatRelativeDate } from '../../utils/date';
 import { hasRenderableContent } from '../../utils/content';
+import { useMediaQuery } from '../../composables/useMediaQuery.js';
 
 const NEUTRAL_SCORE = 70;
 
@@ -146,6 +145,12 @@ export default {
     presentation: { type: Object, default: null },
     isMinimalContentOpen: { type: Boolean, default: false }
   },
+  // Exposes portrait eligibility while swipe gesture behavior remains component-owned.
+  setup() {
+    return {
+      isMobilePortrait: useMediaQuery('(max-width: 879px) and (orientation: portrait)')
+    };
+  },
   data() {
     return {
       ...createArticleExpansionState(),
@@ -156,11 +161,11 @@ export default {
       NEUTRAL_SCORE
     };
   },
-  mounted() {
-    this.setupMediaQueryListener();
-  },
-  beforeUnmount() {
-    this.teardownMediaQueryListener();
+  watch: {
+    // This function cancels an active swipe when portrait eligibility ends.
+    isMobilePortrait(matches) {
+      if (!matches) this.resetSwipe();
+    }
   },
   computed: {
     ...mapStores(useSelectionStore, useOverviewStore),
@@ -231,21 +236,6 @@ export default {
     // Converts the quality score to a percentage.
     roundedQuality() {
       return Math.round((this.quality || 0) * 100);
-    },
-    // Formats publication dates as elapsed time.
-    formatDate() {
-      return formatRelativeDate;
-    },
-    // Extracts the origin URL from a URL value.
-    mainURL() {
-      return value => {
-        try {
-          const url = new URL(value);
-          return `${url.protocol}//${url.host}/`;
-        } catch {
-          return value;
-        }
-      };
     },
     // Returns the predicted reading affinity.
     predictedAffinity() {
@@ -330,42 +320,11 @@ export default {
     ...articleExpansionMethods,
     ...articleMobileSwipeMethods,
 
-    // Converts score values stored as either 0-1 or 0-100 into percentages.
-    scoreAsPercent(value) {
-      const score = Number(value);
-      if (!Number.isFinite(score)) return 0;
-      return score <= 1 ? score * 100 : score;
+    // Opens the original article through the active presentation component's public contract.
+    openOriginalArticle() {
+      this.$refs.articleHeading?.openOriginalArticle?.();
     },
-    // Returns the icon name for a quality score.
-    getQualityIcon(score) {
-      if (score >= 90) return 'patch-check-fill';
-      if (score >= 80) return 'patch-check-fill';
-      if (score >= 70) return 'exclamation-circle-fill';
-      if (score >= 60) return 'exclamation-triangle-fill';
-      return 'x-octagon-fill';
-    },
-    // Returns the CSS class for a quality score.
-    getQualityClass(score) {
-      if (score >= 90) return 'quality-excellent';
-      if (score >= 80) return 'quality-good';
-      if (score >= 70) return 'quality-okay';
-      if (score >= 60) return 'quality-weak';
-      return 'quality-poor';
-    },
-    // Returns the CSS class for a sentiment score.
-    getSentimentClass(score) {
-      if (score >= 50) return 'sentiment-moderate';
-      if (score >= 30) return 'sentiment-poor';
-      return 'sentiment-very-poor';
-    },
-    // Returns the display label for a score.
-    scoreLabel(score) {
-      if (score >= 90) return 'Excellent';
-      if (score >= 80) return 'Good';
-      if (score >= 70) return 'Okay';
-      if (score >= 60) return 'Weak';
-      return 'Poor';
-    },
+
     // Toggles minimal article content when the article is touched.
     articleTouched(event) {
       if (this.swipeSuppressClick) {

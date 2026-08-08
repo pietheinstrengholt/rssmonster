@@ -16,6 +16,7 @@ vi.mock('../src/api/briefing.js', () => ({
 const preferencesResponse = {
   preferences: {
     includeOnlyUnreadArticles: false,
+    markAsReadOnScroll: false,
     includeDevelopingEvents: false,
     showOnlyInterestMatchedArticles: true,
     showOnlyDevelopingEventArticles: false,
@@ -89,6 +90,7 @@ describe('BriefingPreferencesModal dismissal', () => {
 
     expect(fetchBriefingPreferences).toHaveBeenCalledTimes(1);
     expect(wrapper.get('[name="includeOnlyUnreadArticles"]').element.checked).toBe(false);
+    expect(wrapper.find('[name="markAsReadOnScroll"]').exists()).toBe(false);
     expect(wrapper.get('[name="includeDevelopingEvents"]').element.checked).toBe(false);
     expect(wrapper.get('[name="showOnlyInterestMatchedArticles"]').element.checked).toBe(true);
     expect(wrapper.get('[name="showOnlyDevelopingEventArticles"]').element.checked).toBe(false);
@@ -97,6 +99,26 @@ describe('BriefingPreferencesModal dismissal', () => {
     expect(wrapper.get('[name="prioritizeHighTrust"]').element.checked).toBe(false);
 
     expect(wrapper.text()).not.toContain('Muted interests');
+  });
+
+  it('shows and clears scrolling behavior with the unread-only dependency', async () => {
+    const { wrapper } = mountModal();
+    await flushPromises();
+
+    const unreadOnly = wrapper.get('[name="includeOnlyUnreadArticles"]');
+    expect(wrapper.find('[name="markAsReadOnScroll"]').exists()).toBe(false);
+
+    await unreadOnly.setValue(true);
+    const markAsReadOnScroll = wrapper.get('[name="markAsReadOnScroll"]');
+    expect(markAsReadOnScroll.attributes('disabled')).toBeUndefined();
+    expect(wrapper.get('.briefing-preferences-option-dependent').text()).toContain(
+      'This does not run in Headlines mode.'
+    );
+    await markAsReadOnScroll.setValue(true);
+
+    await unreadOnly.setValue(false);
+    expect(wrapper.find('[name="markAsReadOnScroll"]').exists()).toBe(false);
+    expect(wrapper.vm.form.markAsReadOnScroll).toBe(false);
   });
 
   it('prevents replacing preferences when the current values fail to load', async () => {
@@ -144,7 +166,7 @@ describe('BriefingPreferencesModal dismissal', () => {
     await wrapper.get('.briefing-preferences-reset').trigger('click');
 
     expect(wrapper.get('[name="includeOnlyUnreadArticles"]').element.checked).toBe(false);
-    expect(wrapper.get('[name="includeDevelopingEvents"]').element.checked).toBe(true);
+    expect(wrapper.get('[name="includeDevelopingEvents"]').element.checked).toBe(false);
     expect(wrapper.get('[name="showOnlyInterestMatchedArticles"]').element.checked).toBe(false);
     expect(wrapper.get('[name="showOnlyDevelopingEventArticles"]').element.checked).toBe(false);
     expect(wrapper.get('[name="selectionPeriod"][value="7d"]').element.checked).toBe(true);
@@ -157,7 +179,8 @@ describe('BriefingPreferencesModal dismissal', () => {
 
     expect(saveBriefingPreferences).toHaveBeenCalledWith({
       includeOnlyUnreadArticles: false,
-      includeDevelopingEvents: true,
+      markAsReadOnScroll: false,
+      includeDevelopingEvents: false,
       showOnlyInterestMatchedArticles: false,
       showOnlyDevelopingEventArticles: false,
       minDistinctSources: 1,
@@ -182,6 +205,7 @@ describe('BriefingPreferencesModal dismissal', () => {
 
     expect(saveBriefingPreferences).toHaveBeenCalledWith({
       includeOnlyUnreadArticles: false,
+      markAsReadOnScroll: false,
       includeDevelopingEvents: false,
       showOnlyInterestMatchedArticles: true,
       showOnlyDevelopingEventArticles: false,
@@ -192,11 +216,11 @@ describe('BriefingPreferencesModal dismissal', () => {
     expect(setBriefingFilters).toHaveBeenCalledWith({
       selectionPeriod: '24h',
       includeOnlyUnreadArticles: false,
-      prioritizeHighTrust: false
+      markAsReadOnScroll: false,
+      prioritizeHighTrust: false,
+      showOnlyDevelopingEventArticles: false
     });
-    expect(setCurrentSelection).toHaveBeenCalledWith({
-      includeDevelopingEvents: false
-    });
+    expect(setCurrentSelection).not.toHaveBeenCalled();
     expect(refreshBriefingSelection).toHaveBeenCalledTimes(1);
     expect(refreshOverviewCounts).toHaveBeenCalledTimes(1);
     expect(setShowModal).toHaveBeenCalledWith('');

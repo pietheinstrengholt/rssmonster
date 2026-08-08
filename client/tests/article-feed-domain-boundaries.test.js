@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
-import { articleFeedClusterInsertionMethods } from '../src/components/articles/feed/clusterInsertion.js';
+import {
+  articleFeedClusterInsertionMethods,
+  insertClusterArticlesIntoCollection,
+  insertDuplicateArticlesIntoCollection
+} from '../src/components/articles/feed/clusterInsertion.js';
 import { articleFeedVisibilityMethods } from '../src/components/articles/feed/visibilityTracking.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
@@ -22,6 +26,44 @@ beforeEach(() => {
 });
 
 describe('ArticleFeed cluster insertion', () => {
+  it('transforms cluster collections through explicit inputs without mutating the source array', () => {
+    const articles = [
+      { id: 2, title: 'Existing title', status: 'read' },
+      { id: 1, title: 'Parent' },
+      { id: 3, title: 'Following article' }
+    ];
+
+    const result = insertClusterArticlesIntoCollection(articles, {
+      articleId: 1,
+      articles: [
+        { id: 1, title: 'Parent' },
+        { id: 2, title: 'Server title' },
+        { id: 4, title: 'New related article' }
+      ]
+    });
+
+    expect(result.map(article => article.id)).toEqual([1, 2, 4, 3]);
+    expect(result[1]).toMatchObject({
+      title: 'Server title',
+      status: 'read',
+      clusterParentId: 1
+    });
+    expect(articles.map(article => article.id)).toEqual([2, 1, 3]);
+  });
+
+  it('reports an explicit missing-parent error while returning the remaining collection', () => {
+    const reportError = vi.fn();
+
+    const result = insertDuplicateArticlesIntoCollection(
+      [{ id: 2, duplicateParentId: 9 }, { id: 3 }],
+      { articleId: 9, articles: [{ id: 4 }] },
+      reportError
+    );
+
+    expect(result).toEqual([{ id: 3 }]);
+    expect(reportError).toHaveBeenCalledWith('Could not find canonical article in articles list');
+  });
+
   it('re-homes existing related articles after their parent in server order', () => {
     const parent = { id: 1, title: 'Parent' };
     const existingRelated = { id: 2, title: 'Existing title', status: 'read' };
@@ -84,6 +126,7 @@ describe('ArticleFeed visibility tracking', () => {
       pool: new Set(),
       pendingSeenArticleIds: new Set(),
       seenPersistenceAttempts: new Map(),
+      getReadingViewportTop: () => 0,
       visibleMap: new Map(),
       visibleSince: new Map(),
       visibleDuration: new Map(),
@@ -112,12 +155,6 @@ describe('ArticleFeed visibility tracking', () => {
   });
 
   it('marks articles passed above the inset full-view scroll container', () => {
-    vi.spyOn(document, 'querySelector').mockImplementation(selector => (
-      selector === '#main-container.expandedArticleLayout'
-        ? { getBoundingClientRect: () => ({ top: 58 }) }
-        : null
-    ));
-    vi.spyOn(window, 'getComputedStyle').mockReturnValue({ overflowY: 'auto' });
     const context = {
       ...createFocusedStores({
         selection: {
@@ -127,6 +164,7 @@ describe('ArticleFeed visibility tracking', () => {
           }
         }
       }),
+      getReadingViewportTop: () => 58,
       visibleMap: new Map([[7, true]]),
       visibleSince: new Map([[7, 1000]]),
       finalizeVisibleDuration: vi.fn(),
@@ -143,12 +181,6 @@ describe('ArticleFeed visibility tracking', () => {
   });
 
   it('uses the browser viewport when the full-view wrapper does not scroll on mobile', () => {
-    vi.spyOn(document, 'querySelector').mockImplementation(selector => (
-      selector === '#main-container.expandedArticleLayout'
-        ? { getBoundingClientRect: () => ({ top: -400 }) }
-        : null
-    ));
-    vi.spyOn(window, 'getComputedStyle').mockReturnValue({ overflowY: 'visible' });
     const context = {
       ...createFocusedStores({
         selection: {
@@ -158,6 +190,7 @@ describe('ArticleFeed visibility tracking', () => {
           }
         }
       }),
+      getReadingViewportTop: () => 0,
       visibleMap: new Map([[7, true]]),
       visibleSince: new Map([[7, 1000]]),
       finalizeVisibleDuration: vi.fn(),
@@ -183,6 +216,35 @@ describe('ArticleFeed visibility tracking', () => {
           }
         }
       }),
+      getReadingViewportTop: () => 0,
+      visibleMap: new Map([[7, true]]),
+      visibleSince: new Map([[7, 1000]]),
+      finalizeVisibleDuration: vi.fn(),
+      addToPool: vi.fn()
+    };
+
+    articleFeedVisibilityMethods.handleArticleIntersections.call(context, [{
+      target: { id: 'article-7' },
+      isIntersecting: false,
+      boundingClientRect: { bottom: -1 }
+    }]);
+
+    expect(context.finalizeVisibleDuration).toHaveBeenCalledWith(7);
+    expect(context.addToPool).not.toHaveBeenCalled();
+  });
+
+  it('uses the briefing-specific scrolling preference for briefing articles', () => {
+    const context = {
+      ...createFocusedStores({
+        selection: {
+          currentSelection: {
+            status: 'briefing',
+            markAsReadOnScroll: true
+          },
+          briefingMarkAsReadOnScroll: false
+        }
+      }),
+      getReadingViewportTop: () => 0,
       visibleMap: new Map([[7, true]]),
       visibleSince: new Map([[7, 1000]]),
       finalizeVisibleDuration: vi.fn(),
@@ -209,6 +271,7 @@ describe('ArticleFeed visibility tracking', () => {
           }
         }
       }),
+      getReadingViewportTop: () => 0,
       visibleMap: new Map([[7, false]]),
       visibleSince: new Map(),
       finalizeVisibleDuration: vi.fn(),

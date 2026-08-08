@@ -3,15 +3,18 @@ import { Op } from 'sequelize';
 import { resolveDateFilterToRange } from '../articleSearch/articleDateParser.service.js';
 import { applyBriefingEligibility } from '../articleSearch/briefingEligibility.service.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { computeRecommended } from '../recommendations/recommendedScore.js';
 
 // Provides the shared dependencies used by this service.
 const {
   Article,
   Event,
   EventTopic,
+  Feed,
   Island,
   IslandTopic,
   Setting,
+  Tag,
   Topic
 } = db;
 
@@ -313,8 +316,40 @@ const resolveEventIsland = ({ eventId, eventTopicMap, islandLinksByTopic, island
     : null;
 };
 
-// This function orders events by strength, representative publication time, and stable ID.
-const compareSummaryEvents = (left, right, representativeMap) => {
+// This function builds the representative scoring input for one morning-summary event.
+const buildSummaryRecommendationArticle = (event, representativeArticle) => ({
+  freshness: representativeArticle.freshness,
+  interestScore: representativeArticle.interestScore,
+  quality: representativeArticle.quality,
+  Feed: representativeArticle.Feed ?? representativeArticle.feed,
+  Tags: representativeArticle.Tags ?? [],
+  event
+});
+
+// This function selects the article representing an event in the morning summary.
+const summaryArticleIdForEvent = (event, includeDevelopingEvents) => (
+  includeDevelopingEvents && event.developingArticleId != null
+    ? event.developingArticleId
+    : event.representativeArticleId
+);
+
+// This function orders events by optional recommendation rank, strength, publication time, and stable ID.
+const compareSummaryEvents = (left, right, representativeMap, prioritizeHighTrust) => {
+  if (prioritizeHighTrust) {
+    const leftRepresentative = representativeMap.get(String(left.representativeArticleId));
+    const rightRepresentative = representativeMap.get(String(right.representativeArticleId));
+    const leftScore = computeRecommended(
+      buildSummaryRecommendationArticle(left, leftRepresentative),
+      { prioritizeHighTrust: true }
+    );
+    const rightScore = computeRecommended(
+      buildSummaryRecommendationArticle(right, rightRepresentative),
+      { prioritizeHighTrust: true }
+    );
+    const recommendationDelta = rightScore - leftScore;
+    if (recommendationDelta) return recommendationDelta;
+  }
+
   // Derives the strength delta required while performing compare summary events.
   const strengthDelta = Number(right.eventStrength || 0) - Number(left.eventStrength || 0);
   // Returns early when strength delta is available.
@@ -331,7 +366,14 @@ const compareSummaryEvents = (left, right, representativeMap) => {
 };
 
 // This function creates up to four unique, deterministic morning-summary items.
-const buildMorningSummaryItems = ({ events, representativeMap, eventTopicMap, islandLinksByTopic, islandMap }) => {
+const buildMorningSummaryItems = ({
+  events,
+  representativeMap,
+  eventTopicMap,
+  islandLinksByTopic,
+  islandMap,
+  prioritizeHighTrust
+}) => {
   // Collects the items while building morning summary items.
   const items = [];
   // Tracks distinct seen event id while building morning summary items.
@@ -342,7 +384,12 @@ const buildMorningSummaryItems = ({ events, representativeMap, eventTopicMap, is
   // Derives the ordered events through sort while building morning summary items.
   const orderedEvents = events
     .filter(event => representativeMap.has(String(event.representativeArticleId)))
-    .sort((left, right) => compareSummaryEvents(left, right, representativeMap));
+    .sort((left, right) => compareSummaryEvents(
+      left,
+      right,
+      representativeMap,
+      prioritizeHighTrust
+    ));
 
   // Processes each ordered events entry in turn.
   for (const event of orderedEvents) {
@@ -385,6 +432,8 @@ export async function getDailyBriefing({
   minDistinctSources = 1,
   showOnlyInterestMatchedArticles = false,
   showOnlyDevelopingEventArticles = false,
+  includeDevelopingEvents = false,
+  prioritizeHighTrust = false,
   generatedAt = new Date()
 }) {
   // Rejects processing when user id is unavailable.
@@ -420,6 +469,10 @@ export async function getDailyBriefing({
         'name',
         'topicId',
         'representativeArticleId',
+        'developingArticleId',
+        'articleCount',
+        'sourceCount',
+        'sourceDiversityScore',
         'eventStrength',
         'createdAt'
       ],
@@ -429,8 +482,15 @@ export async function getDailyBriefing({
 
   // Transforms source values into the owned event id required while performing get daily briefing.
   const ownedEventIds = events.map(event => event.id);
+  // Selects the independently configured article used to represent each morning-summary event.
+  const summaryEvents = events.map(event => ({
+    ...event,
+    representativeArticleId: summaryArticleIdForEvent(event, includeDevelopingEvents)
+  }));
   // Derives the representative article id through unique id while performing get daily briefing.
-  const representativeArticleIds = uniqueIds(events.map(event => event.representativeArticleId));
+  const representativeArticleIds = uniqueIds(
+    summaryEvents.map(event => event.representativeArticleId)
+  );
   // Selects the values based on whether owned event id is non-empty.
   const [eventTopicRows, representativeArticles] = await Promise.all([
     ownedEventIds.length
@@ -454,8 +514,28 @@ export async function getDailyBriefing({
           userId,
           ...canonicalArticleWhere()
         },
-        attributes: ['id', 'title', 'contentText', 'publishedAt'],
-        raw: true
+        attributes: [
+          'id',
+          'title',
+          'contentText',
+          'publishedAt',
+          'interestScore',
+          'advertisementScore',
+          'sentimentScore',
+          'qualityScore'
+        ],
+        include: [
+          {
+            model: Feed,
+            attributes: ['id', 'feedTrust', 'feedDuplicationRate', 'feedAttentionSampleSize'],
+            required: false
+          },
+          {
+            model: Tag,
+            attributes: ['id', 'tagType'],
+            required: false
+          }
+        ]
       })
       : []
   ]);
@@ -530,6 +610,8 @@ export async function getDailyBriefing({
       period: filters.period,
       status: filters.status,
       minDistinctSources: Number(minDistinctSources) || 1,
+      includeDevelopingEvents: Boolean(includeDevelopingEvents),
+      prioritizeHighTrust: Boolean(prioritizeHighTrust),
       dateFrom: filters.dateFrom.toISOString()
     },
     context: {
@@ -542,11 +624,12 @@ export async function getDailyBriefing({
     },
     morningSummary: {
       items: buildMorningSummaryItems({
-        events,
+        events: summaryEvents,
         representativeMap,
         eventTopicMap,
         islandLinksByTopic,
-        islandMap
+        islandMap,
+        prioritizeHighTrust
       })
     }
   };

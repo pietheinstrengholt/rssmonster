@@ -3,8 +3,6 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Sidebar from '../src/components/sidebar/Sidebar.vue';
 import { markAllAsRead } from '../src/api/articles';
-import { triggerCrawl } from '../src/api/crawl';
-import { openFeedRefreshEvents, startFeedRefresh } from '../src/api/feeds';
 import { updateCategoryOrder } from '../src/api/manager';
 import { ACTION_ERROR_EVENT } from '../src/services/actionNotifications.js';
 import { useAuthStore } from '../src/store/auth.js';
@@ -14,15 +12,6 @@ import { useUiStore } from '../src/store/ui.js';
 
 vi.mock('../src/api/articles', () => ({
   markAllAsRead: vi.fn()
-}));
-
-vi.mock('../src/api/crawl', () => ({
-  triggerCrawl: vi.fn()
-}));
-
-vi.mock('../src/api/feeds', () => ({
-  openFeedRefreshEvents: vi.fn(),
-  startFeedRefresh: vi.fn()
 }));
 
 vi.mock('../src/api/manager', () => ({
@@ -91,21 +80,6 @@ const mountSidebar = () => mount(Sidebar, {
     }
   }
 });
-
-// This function creates a controllable EventSource-compatible refresh stream.
-const createEventSource = () => {
-  const handlers = {};
-  const eventSource = {
-    addEventListener: vi.fn((type, handler) => {
-      handlers[type] = handler;
-    }),
-    close: vi.fn(),
-    removeEventListener: vi.fn(),
-    onerror: null,
-    onopen: null
-  };
-  return { eventSource, handlers };
-};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -214,98 +188,5 @@ describe('Sidebar navigation and action coverage', () => {
     wrapper.vm.updateSortOrder();
     await flushPromises();
     expect(console.error).toHaveBeenCalledWith('Error saving category order:', error);
-  });
-});
-
-describe('Sidebar refresh stream coverage', () => {
-  it('tolerates a pre-update UI store while hot replacement finishes', () => {
-    const progress = Sidebar.data().refreshProgress;
-    const context = { uiStore: {} };
-
-    expect(() => Sidebar.watch.refreshProgress.handler.call(context, progress)).not.toThrow();
-  });
-
-  it('handles every progress event and invalid stream payloads', async () => {
-    createStores();
-    const { eventSource, handlers } = createEventSource();
-    startFeedRefresh.mockResolvedValue({
-      data: {
-        jobId: 'job-events',
-        reused: false
-      }
-    });
-    openFeedRefreshEvents.mockReturnValue(eventSource);
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    const wrapper = mountSidebar();
-
-    await wrapper.vm.refreshFeeds();
-    eventSource.onopen();
-    for (const [type, payload] of [
-      ['refresh_started', { totalFeeds: 2 }],
-      ['feed_started', { feedId: 1 }],
-      ['feed_parsed', { entries: 4, feedName: 'Feed A' }],
-      ['articles_inserted_updated', { feedId: 1, feedNewArticles: 2, feedUpdatedArticles: 1 }],
-      ['feed_error', { feedId: 1 }],
-      ['feed_completed', { feedName: 'Feed A' }],
-      ['progress', { currentFeed: 1, errors: 1, newArticles: 2, totalFeeds: 2 }]
-    ]) {
-      handlers[type]({ data: JSON.stringify(payload), type });
-    }
-    handlers.progress({ data: '{invalid', type: 'progress' });
-    await wrapper.vm.$nextTick();
-
-    expect(wrapper.vm.refreshProgress.progressPercent).toBe(50);
-    expect(wrapper.vm.refreshProgress.currentFeedLabel).toBe('1/2 feeds');
-    expect(wrapper.vm.refreshProgress.logs.join(' ')).toContain('Received invalid progress payload');
-    expect(console.log).toHaveBeenCalledWith('Invalid SSE payload', expect.any(SyntaxError));
-
-    eventSource.onerror();
-    await vi.advanceTimersByTimeAsync(500);
-    expect(wrapper.emitted('forceReload')).toBeUndefined();
-    expect(wrapper.vm.refreshing).toBe(false);
-  });
-
-  it('ignores stale stream callbacks and handles an explicit terminal error', async () => {
-    createStores();
-    const { eventSource, handlers } = createEventSource();
-    openFeedRefreshEvents.mockReturnValue(eventSource);
-    const wrapper = mountSidebar();
-
-    wrapper.vm.openRefreshEventStream('job-stale');
-    wrapper.vm.closeRefreshEventSource();
-    handlers.progress({
-      data: JSON.stringify({ processedFeeds: 1, totalFeeds: 1 }),
-      type: 'progress'
-    });
-    eventSource.onopen?.();
-    eventSource.onerror?.();
-    expect(wrapper.vm.refreshProgress.processedFeeds).toBe(0);
-
-    const nextStream = createEventSource();
-    openFeedRefreshEvents.mockReturnValue(nextStream.eventSource);
-    wrapper.vm.openRefreshEventStream('job-error');
-    nextStream.handlers.error({
-      data: JSON.stringify({ message: 'Refresh failed safely.' }),
-      type: 'error'
-    });
-    await vi.advanceTimersByTimeAsync(500);
-    expect(wrapper.vm.refreshProgress.logs.join(' ')).toContain('Refresh failed safely');
-    expect(wrapper.emitted('forceReload')).toBeUndefined();
-  });
-
-  it('uses and dismisses the standard fallback when live startup lacks a job id', async () => {
-    createStores();
-    startFeedRefresh.mockResolvedValue({ data: {} });
-    triggerCrawl.mockResolvedValue({});
-    const wrapper = mountSidebar();
-
-    await wrapper.vm.refreshFeeds();
-    expect(triggerCrawl).toHaveBeenCalledOnce();
-    expect(wrapper.vm.refreshProgress.visible).toBe(true);
-
-    await vi.advanceTimersByTimeAsync(2000);
-    expect(wrapper.vm.refreshProgress.visible).toBe(false);
-    expect(wrapper.vm.refreshing).toBe(false);
-    expect(wrapper.vm.refreshProgress.logs[0]).toContain('Standard refresh completed');
   });
 });

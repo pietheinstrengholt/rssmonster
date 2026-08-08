@@ -51,6 +51,7 @@ const createOverview = (overrides = {}) => ({
   briefingCount: 2,
   briefingSelectionPeriod: '7d',
   briefingIncludeOnlyUnreadArticles: false,
+  briefingMarkAsReadOnScroll: false,
   briefingPrioritizeHighTrust: false,
   unreadCount: 5,
   readCount: 4,
@@ -197,6 +198,42 @@ describe('data store overview and count behavior', () => {
     expect(store.unreadsSinceLastUpdate).toBe(3);
   });
 
+  // Verifies Briefing preferences settle before the shell can mount its initial article feed.
+  it('waits for initial Briefing filters before completing split overview loading', async () => {
+    const counts = deferred();
+    fetchSettings.mockResolvedValueOnce({
+      data: {
+        status: 'briefing',
+        themeMode: 'system'
+      }
+    });
+    fetchOverviewCounts.mockReturnValueOnce(counts.promise);
+    const store = createStore();
+    const selectionStore = useSelectionStore();
+    let overviewResolved = false;
+
+    const overviewRequest = store.fetchOverviewSplit({ initial: true }).then(result => {
+      overviewResolved = true;
+      return result;
+    });
+    await vi.waitFor(() => expect(fetchOverviewCounts).toHaveBeenCalledOnce());
+
+    expect(overviewResolved).toBe(false);
+    expect(selectionStore.currentSelection.search).toBeNull();
+
+    counts.resolve({
+      data: createOverview({
+        briefingSelectionPeriod: '24h',
+        briefingIncludeOnlyUnreadArticles: true,
+        briefingPrioritizeHighTrust: true
+      })
+    });
+
+    await expect(overviewRequest).resolves.toBe(true);
+    expect(selectionStore.currentSelection.search)
+      .toBe('briefing:true unread:true @today sort:recommended');
+  });
+
   // Verifies count-free structure refreshes retain known counts when the count refresh fails.
   it('preserves existing category and feed counts across overview-lite refresh failure', async () => {
     const store = createStore();
@@ -320,7 +357,7 @@ describe('data store overview and count behavior', () => {
     fetchTopTags.mockClear();
     selectionStore.setSelectedStatus('briefing');
     await vi.waitFor(() => {
-      expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'none', status: 'briefing' });
+      expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'event', status: 'briefing' });
     });
     expect(store.topTags).toEqual([]);
   });
@@ -336,10 +373,11 @@ describe('data store overview and count behavior', () => {
     selectionStore.setBriefingFilters({
       selectionPeriod: '24h',
       includeOnlyUnreadArticles: true,
+      markAsReadOnScroll: true,
       prioritizeHighTrust: false
     });
     await vi.waitFor(() => {
-      expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'none', status: 'briefing' });
+      expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'event', status: 'briefing' });
     });
 
     fetchTopTags.mockClear();
@@ -409,21 +447,25 @@ describe('data store overview and count behavior', () => {
     const store = useSelectionStore();
 
     store.setSelectedStatus('briefing');
-    expect(store.currentSelection.search).toBe('briefing:true @lastweek');
+    expect(store.currentSelection.search).toBe('briefing:true @lastweek sort:recommended');
+    expect(store.currentSelection.sort).toBe('recommended');
+    expect(store.currentSelection.grouping).toBe('event');
 
     store.setBriefingFilters({
       selectionPeriod: '24h',
       includeOnlyUnreadArticles: true,
+      markAsReadOnScroll: true,
       prioritizeHighTrust: true
     });
     expect(store.briefingSelectionPeriod).toBe('24h');
+    expect(store.briefingMarkAsReadOnScroll).toBe(true);
     expect(store.currentSelection.search)
-      .toBe('briefing:true unread:true @today sort:trust');
+      .toBe('briefing:true unread:true @today sort:recommended');
 
     store.setBriefingSelectionPeriod('invalid');
     expect(store.briefingSelectionPeriod).toBe('7d');
     expect(store.currentSelection.search)
-      .toBe('briefing:true unread:true @lastweek sort:trust');
+      .toBe('briefing:true unread:true @lastweek sort:recommended');
 
     const revision = store.currentSelection.briefingRevision;
     store.refreshBriefingSelection();
@@ -467,7 +509,31 @@ describe('data store overview and count behavior', () => {
     expect(store).toMatchObject({ unreadCount: 0, readCount: 0 });
   });
 
-  // Verifies missing read-count ownership is ignored while mixed IDs work for favorite counts.
+  // Verifies scroll-reading reconciles the displayed unread-only Briefing group once.
+  it('decrements briefing counts only for an active unread-only Briefing', () => {
+    const store = createStore();
+    const selectionStore = useSelectionStore();
+    store.updateOverview(createOverview({ briefingIncludeOnlyUnreadArticles: true }));
+    selectionStore.currentSelection.status = 'briefing';
+    const article = {
+      feedId: 10,
+      feed: { categoryId: 1 }
+    };
+
+    expect(store.decreaseBriefingCount(article)).toBe(true);
+    expect(store.briefingCount).toBe(1);
+    expect(store.categories[0].briefingCount).toBe(1);
+    expect(store.categories[0].feeds[0].briefingCount).toBe(1);
+
+    selectionStore.briefingIncludeOnlyUnreadArticles = false;
+
+    expect(store.decreaseBriefingCount(article)).toBe(false);
+    expect(store.briefingCount).toBe(1);
+    expect(store.categories[0].briefingCount).toBe(1);
+    expect(store.categories[0].feeds[0].briefingCount).toBe(1);
+  });
+
+  // Verifies global read counts survive missing ownership while mixed IDs reconcile nested counts.
   it('handles missing ownership and mixed identifier types safely', () => {
     const store = createStore();
     store.updateOverview(createOverview());
@@ -477,10 +543,22 @@ describe('data store overview and count behavior', () => {
       feedId: 10,
       feed: { categoryId: 999 }
     });
+    expect(store).toMatchObject({ unreadCount: 4, readCount: 5 });
+
     store.decreaseReadCount({
       feedId: 999,
       feed: { categoryId: 1 }
     });
+    expect(store).toMatchObject({ unreadCount: 5, readCount: 4 });
+    expect(store.categories[0]).toMatchObject({ unreadCount: 6, readCount: 3 });
+
+    store.increaseReadCount({
+      feedId: '10',
+      Feed: { categoryId: '1' }
+    });
+    expect(store.categories[0]).toMatchObject({ unreadCount: 5, readCount: 4 });
+    expect(store.categories[0].feeds[0]).toMatchObject({ unreadCount: 4, readCount: 5 });
+
     store.applyFavoriteDelta({
       categoryId: '1',
       feedId: '10',

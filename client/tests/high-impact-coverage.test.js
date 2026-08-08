@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import Article from '../src/components/articles/Article.vue';
 import ArticleHeadlineRow from '../src/components/articles/ArticleHeadlineRow.vue';
+import ArticleMeta from '../src/components/articles/ArticleMeta.vue';
 import ArticleListView from '../src/components/articles/ArticleListView.vue';
 import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
+import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
 import AppShell from '../src/AppShell.vue';
 import UpdateFeed from '../src/components/dialogs/feeds/UpdateFeed.vue';
 import SettingsActions from '../src/components/settings/SettingsActions.vue';
@@ -68,14 +70,22 @@ function createReaderContext(overrides = {}) {
     currentViewUnreadCount: 0,
     currentViewSourceCount: null,
     distance: 0,
+    fetchCount: 20,
+    remainingItems: 0,
     isFlushed: false,
+    collectionProgress: {
+      hasLoadedContent: true,
+      isFlushed: false,
+      hasReachedEnd: false,
+      showFeedRefreshProgress: true
+    },
     isReaderEndStateDismissed: false,
     selectedArticleId: null,
     articleItemRefs: {},
     isBulkMenuOpen: false,
     bulkMenuStyle: {},
     pendingClickedArticleIds: new Set(),
-    selectionStore: { currentSelection: selection },
+    selectionStore: { currentSelection: selection, effectiveMarkAsReadOnScroll: false },
     overviewStore: { categories: [], smartFolders: [], unreadsSinceLastUpdate: 0 },
     formatTagName: value => value.toUpperCase(),
     $emit: vi.fn(),
@@ -99,11 +109,20 @@ function createListContext(overrides = {}) {
     remainingItems: 0,
     viewMode: 'full',
     isFlushed: false,
+    collectionProgress: {
+      hasLoadedContent: true,
+      isFlushed: false,
+      hasReachedEnd: false,
+      showFeedRefreshProgress: true
+    },
     isArticleEndStateDismissed: false,
     activeMinimalArticleId: null,
     selectedArticleId: null,
     minimalArticleRefs: {},
-    selectionStore: { currentSelection: { categoryId: '%', feedId: '%', tag: '' } },
+    selectionStore: {
+      currentSelection: { categoryId: '%', feedId: '%', tag: '' },
+      effectiveMarkAsReadOnScroll: false
+    },
     overviewStore: { unreadsSinceLastUpdate: 0 },
     uiStore: { mobileSearchOpen: false },
     $emit: vi.fn(),
@@ -150,9 +169,14 @@ describe('Article high-impact decision coverage', () => {
     })).toBe('Fallback');
     expect(compute(Article, 'roundedQuality', { quality: 0.846 })).toBe(85);
 
-    const mainURL = compute(Article, 'mainURL', {});
-    expect(mainURL('https://example.com/path')).toBe('https://example.com/');
-    expect(mainURL('not a URL')).toBe('not a URL');
+    expect(compute(ArticleMeta, 'sourceUrl', {
+      hasSource: true,
+      feed: { url: 'https://example.com/path' }
+    })).toBe('https://example.com/');
+    expect(compute(ArticleMeta, 'sourceUrl', {
+      hasSource: true,
+      feed: { url: 'not a URL' }
+    })).toBe('not a URL');
   });
 
   it('covers affinity-specific summary and image decisions', () => {
@@ -248,19 +272,6 @@ describe('Article high-impact decision coverage', () => {
       $emit: vi.fn()
     };
 
-    expect(Article.methods.scoreAsPercent('bad')).toBe(0);
-    expect(Article.methods.scoreAsPercent(0.7)).toBe(70);
-    expect(Article.methods.scoreAsPercent(72)).toBe(72);
-    expect([95, 85, 75, 65, 50].map(Article.methods.getQualityClass)).toEqual([
-      'quality-excellent', 'quality-good', 'quality-okay', 'quality-weak', 'quality-poor'
-    ]);
-    expect([95, 85, 75, 65, 50].map(Article.methods.scoreLabel)).toEqual([
-      'Excellent', 'Good', 'Okay', 'Weak', 'Poor'
-    ]);
-    expect([55, 35, 10].map(Article.methods.getSentimentClass)).toEqual([
-      'sentiment-moderate', 'sentiment-poor', 'sentiment-very-poor'
-    ]);
-
     Article.methods.articleTouched.call(context, { target: document.body });
     expect(context.$emit).toHaveBeenCalledWith('minimal-article-opened', { id: 9, status: 'unread' });
     context.isMinimalContentOpen = true;
@@ -282,7 +293,7 @@ describe('Article high-impact decision coverage', () => {
     expect(context.selectionStore.selectCategory).toHaveBeenCalledWith(3);
   });
 
-  it('covers remaining simple computed branches and quality icon boundaries', () => {
+  it('covers remaining simple computed branches', () => {
     expect(compute(Article, 'predictedAffinity', { presentation: { predictedAffinity: 'deep' } })).toBe('deep');
     expect(compute(Article, 'predictedAffinity', { presentation: null })).toBeNull();
     expect(compute(Article, 'isUnread', { status: 'unread' })).toBe(true);
@@ -299,10 +310,6 @@ describe('Article high-impact decision coverage', () => {
     expect(compute(Article, 'shouldShowMinimalContent', {
       isMinimalView: false, isMinimalContentOpen: false, showMinimalContent: true
     })).toBe(true);
-    expect([95, 85, 75, 65, 50].map(Article.methods.getQualityIcon)).toEqual([
-      'patch-check-fill', 'patch-check-fill', 'exclamation-circle-fill',
-      'exclamation-triangle-fill', 'x-octagon-fill'
-    ]);
   });
 });
 
@@ -349,7 +356,12 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
       articles,
       container: articles,
       currentViewUnreadCount: 1234,
-      distance: 3
+      collectionProgress: {
+        hasLoadedContent: true,
+        isFlushed: false,
+        hasReachedEnd: true,
+        showFeedRefreshProgress: true
+      }
     });
 
     expect(compute(ArticleReaderLayout, 'formattedUnreadCount', context)).toMatch(/1.?234/);
@@ -357,13 +369,18 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
     expect(compute(ArticleReaderLayout, 'sourceCount', context)).toBe(2);
     expect(compute(ArticleReaderLayout, 'topVisibleTags', context)).toEqual(['AI', 'News', 'Vue']);
     expect(compute(ArticleReaderLayout, 'hasReachedArticleListEnd', context)).toBe(true);
-    expect(compute(ArticleReaderLayout, 'hasUnreadArticlesInCurrentView', context)).toBe(true);
-    context.hasUnreadArticlesInCurrentView = true;
-    expect(compute(ArticleReaderLayout, 'showReaderEndStateActions', context)).toBe(true);
-    context.selectionStore.currentSelection.markAsReadOnScroll = true;
-    expect(compute(ArticleReaderLayout, 'showReaderEndStateDismiss', context)).toBe(false);
-    context.selectionStore.currentSelection.markAsReadOnScroll = false;
-    expect(compute(ArticleReaderLayout, 'showReaderEndStateDismiss', context)).toBe(true);
+    context.hasReachedArticleListEnd = true;
+    context.unreadsSinceLastUpdate = 0;
+    expect(compute(ArticleReaderLayout, 'collectionTailState', context)).toMatchObject({
+      hasUnreadArticles: true,
+      showEndState: true,
+      showEndStateActions: true,
+      showEndStateDismiss: true,
+      showRefreshState: false
+    });
+    context.selectionStore.effectiveMarkAsReadOnScroll = true;
+    expect(compute(ArticleReaderLayout, 'collectionTailState', context).showEndStateDismiss).toBe(false);
+    context.selectionStore.effectiveMarkAsReadOnScroll = false;
     context.currentViewSourceCount = 9;
     expect(compute(ArticleReaderLayout, 'sourceCount', context)).toBe(9);
   });
@@ -446,8 +463,6 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
     context.isBulkMenuOpen = true;
     context.handleReaderKeydown({ key: 'Escape', target: document.body });
     expect(context.isBulkMenuOpen).toBe(false);
-    expect(context.shouldIgnoreKeyboardEvent({ target: document.createElement('input') })).toBe(true);
-    expect(context.shouldIgnoreKeyboardEvent({ target: document.body })).toBe(false);
   });
 
   it('covers article and container watcher resets', () => {
@@ -476,7 +491,12 @@ describe('ArticleListView high-impact decision coverage', () => {
       articles: [{ status: 'unread' }],
       container: [{ id: 1 }],
       currentViewUnreadCount: 1,
-      distance: 1
+      collectionProgress: {
+        hasLoadedContent: true,
+        isFlushed: false,
+        hasReachedEnd: true,
+        showFeedRefreshProgress: true
+      }
     });
 
     expect(compute(ArticleListView, 'showDailyBriefingIntro', context)).toBe(false);
@@ -490,29 +510,44 @@ describe('ArticleListView high-impact decision coverage', () => {
     expect(compute(ArticleListView, 'supportsArticleEndState', context)).toBe(true);
     context.hasReachedArticleListEnd = true;
     context.supportsArticleEndState = true;
-    expect(compute(ArticleListView, 'showArticleEndState', context)).toBe(true);
-    expect(compute(ArticleListView, 'hasUnreadArticlesInCurrentView', context)).toBe(true);
     context.currentSelection = 'unread';
-    context.hasUnreadArticlesInCurrentView = true;
-    expect(compute(ArticleListView, 'showArticleEndStateActions', context)).toBe(true);
-    context.selectionStore.currentSelection.markAsReadOnScroll = true;
-    expect(compute(ArticleListView, 'showArticleEndStateDismiss', context)).toBe(false);
-    context.selectionStore.currentSelection.markAsReadOnScroll = false;
-    expect(compute(ArticleListView, 'showArticleEndStateDismiss', context)).toBe(true);
+    context.unreadsSinceLastUpdate = 0;
+    expect(compute(ArticleListView, 'collectionTailState', context)).toMatchObject({
+      hasUnreadArticles: true,
+      showEndState: true,
+      showEndStateActions: true,
+      showEndStateDismiss: true,
+      showRefreshState: false
+    });
+    context.selectionStore.effectiveMarkAsReadOnScroll = true;
+    expect(compute(ArticleListView, 'collectionTailState', context).showEndStateDismiss).toBe(false);
+    context.selectionStore.effectiveMarkAsReadOnScroll = false;
   });
 
-  it('recognizes an exhausted unread final page when the load distance trails the ID count', () => {
-    const context = createListContext({
+  it('derives layout-specific progress before crossing the layout boundary', () => {
+    const context = {
       container: Array.from({ length: 21 }, (_, index) => ({ id: index + 1 })),
       distance: 20,
       fetchCount: 20,
-      remainingItems: 1
+      remainingItems: 1,
+      hasLoadedContent: true,
+      isFlushed: false,
+      showFeedRefreshProgress: true,
+      selectionStore: {
+        currentSelection: { status: 'unread', tag: '' }
+      },
+      currentViewUnreadCount: 4,
+      currentViewSourceCount: 2
+    };
+
+    expect(compute(ArticleFeed, 'collectionSummary', context)).toEqual({
+      status: 'unread', selectedTag: '', unreadCount: 4, sourceCount: 2
     });
+    expect(compute(ArticleFeed, 'streamCollectionProgress', context).hasReachedEnd).toBe(true);
+    expect(compute(ArticleFeed, 'readerCollectionProgress', context).hasReachedEnd).toBe(false);
 
-    expect(compute(ArticleListView, 'hasReachedArticleListEnd', context)).toBe(true);
-
-    context.currentSelection = 'read';
-    expect(compute(ArticleListView, 'hasReachedArticleListEnd', context)).toBe(false);
+    context.selectionStore.currentSelection.status = 'read';
+    expect(compute(ArticleFeed, 'streamCollectionProgress', context).hasReachedEnd).toBe(false);
   });
 
   it('covers ref cleanup, dismissal, flush, and watcher callbacks', () => {
@@ -683,7 +718,7 @@ describe('SmartFolderEditor high-impact decision coverage', () => {
 });
 
 describe('Vue template handler coverage', () => {
-  it('covers AppShell lookup, selection, notification, badge, and scroll branches', async () => {
+  it('covers AppShell notification, badge, mobile, and scroll branches', async () => {
     vi.useFakeTimers();
     const sidebarElement = { classList: { add: vi.fn(), remove: vi.fn() } };
     const context = {
@@ -698,13 +733,6 @@ describe('Vue template handler coverage', () => {
       getOverview: vi.fn()
     };
 
-    expect(context.lookupFeedById(2).feedName).toBe('Feed');
-    expect(context.lookupFeedById(99)).toBeUndefined();
-    expect(context.lookupCategoryById(1).id).toBe(1);
-    expect(context.lookupCategoryById(99)).toBeUndefined();
-    context.updateSelection({ categoryId: 1, feedId: 2 });
-    expect(context.category.id).toBe(1);
-    expect(context.feed.id).toBe(2);
     context.mobileClick('menu');
     expect(context.mobile).toBe('menu');
     context.completeOnboarding();
@@ -779,17 +807,17 @@ describe('Vue template handler coverage', () => {
     const wrapper = mount(ArticleListView, {
       props: {
         articles: [article],
-        pool: new Set(),
         container: [article],
-        currentSelection: 'unread',
-        currentViewUnreadCount: 1,
-        currentViewSourceCount: 1,
+        collectionSummary: {
+          status: 'unread', selectedTag: '', unreadCount: 1, sourceCount: 1
+        },
+        collectionProgress: {
+          hasLoadedContent: true,
+          isFlushed: true,
+          hasReachedEnd: true,
+          showFeedRefreshProgress: true
+        },
         viewMode: 'minimal',
-        remainingItems: 0,
-        fetchCount: 20,
-        hasLoadedContent: true,
-        isFlushed: true,
-        distance: 1,
         activeMinimalArticleId: 1
       },
       global: {
@@ -933,8 +961,6 @@ describe('Vue template handler coverage', () => {
       'toggle-favorite': 'markAsFavorite',
       'not-interested': 'markNotInterested',
       'more-like-this': 'moreLikeThis',
-      'less-like-this': 'lessLikeThis',
-      'ignore-topic': 'ignoreTopic',
       'mute-feed': 'muteFeedSevenDays',
       'select-category': 'selectCategory',
       'select-tag': 'selectTag',
@@ -989,14 +1015,15 @@ describe('Vue template handler coverage', () => {
       props: {
         articles: [article],
         container: [article],
-        currentSelection: 'unread',
-        currentViewUnreadCount: 1,
-        currentViewSourceCount: 1,
-        remainingItems: 0,
-        fetchCount: 20,
-        hasLoadedContent: true,
-        isFlushed: true,
-        distance: 1
+        collectionSummary: {
+          status: 'unread', selectedTag: '', unreadCount: 1, sourceCount: 1
+        },
+        collectionProgress: {
+          hasLoadedContent: true,
+          isFlushed: true,
+          hasReachedEnd: true,
+          showFeedRefreshProgress: true
+        }
       },
       global: {
         plugins: [stores.pinia],

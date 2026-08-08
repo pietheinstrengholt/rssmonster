@@ -7,7 +7,6 @@ import DeleteFeed from '../src/components/dialogs/feeds/DeleteFeed.vue';
 import { cleanupOldArticles } from '../src/api/cleanup';
 import { deleteCategory } from '../src/api/categories';
 import { deleteFeed } from '../src/api/feeds';
-import { setAuthToken } from '../src/api/client';
 import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
@@ -21,10 +20,6 @@ vi.mock('../src/api/categories', () => ({
 
 vi.mock('../src/api/feeds', () => ({
   deleteFeed: vi.fn()
-}));
-
-vi.mock('../src/api/client', () => ({
-  setAuthToken: vi.fn()
 }));
 
 vi.mock('../src/services/actionNotifications.js', () => ({
@@ -87,7 +82,6 @@ describe('Cleanup', () => {
     await wrapper.get('.confirm-dialog__confirm').trigger('click');
     await flushPromises();
 
-    expect(setAuthToken).toHaveBeenCalledWith('token');
     expect(cleanupOldArticles).toHaveBeenCalledOnce();
     expect(store.selectionStore.selectCategory).toHaveBeenCalledWith('%');
     expect(reload).toHaveBeenCalledOnce();

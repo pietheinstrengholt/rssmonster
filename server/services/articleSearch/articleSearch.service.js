@@ -13,7 +13,7 @@ import { buildTextSearchWhereClause } from './articleTextSearch.service.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 
 // Defines the default briefing search enforced by this service.
-const DEFAULT_BRIEFING_SEARCH = 'briefing:true @lastweek';
+const DEFAULT_BRIEFING_SEARCH = 'briefing:true @lastweek sort:recommended';
 
 // Emits article-search diagnostics only during local development.
 const debugLog = (...args) => {
@@ -40,7 +40,7 @@ const normalizeSort = sortValue => {
 /**
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: favorite:true/false, unread:true/false, clicked:true/false,
- * event:true/false, island:true/false, briefing:true/false, eventCount:>=2, tag:name, title:text, author:text, language:en,
+ * event:true/false, island:true/false, briefing:true/false, developing:true/false, eventCount:>=2, tag:name, title:text, author:text, language:en,
  * sort:desc/asc/trust/recommended/quality/attention, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
 // Searches article ids for a user using query-string filters, score thresholds, feed/category scope, and optional ranking.
@@ -76,13 +76,20 @@ export const searchArticles = async ({
      */
     let userSettings = null;
     // Handles the case where persist settings is available or min advertisement score is value or min sentiment score is value or min quality score is value.
-    if (persistSettings || minAdvertisementScore === null || minSentimentScore === null || minQualityScore === null) {
+    if (
+      persistSettings ||
+      status === 'unread' ||
+      minAdvertisementScore === null ||
+      minSentimentScore === null ||
+      minQualityScore === null
+    ) {
         userSettings = await Setting.findOne({
             where: { userId },
             attributes: [
               'minAdvertisementScore',
               'minSentimentScore',
               'minQualityScore',
+              'prioritizeHighTrust',
               'themeMode',
               'startupViewMode'
             ]
@@ -103,6 +110,8 @@ export const searchArticles = async ({
     let briefingMinDistinctSources = 1;
     let briefingShowOnlyInterestMatchedArticles = false;
     let briefingShowOnlyDevelopingEventArticles = false;
+    let prioritizeHighTrust = status === 'unread'
+      && Boolean(Number(userSettings?.prioritizeHighTrust));
 
     // Handles the case where status is briefing.
     if (status === 'briefing') {
@@ -129,12 +138,13 @@ export const searchArticles = async ({
             briefingShowOnlyDevelopingEventArticles = Boolean(
                 Number(briefingPreferences.showOnlyDevelopingEventArticles)
             );
+            prioritizeHighTrust = Boolean(Number(briefingPreferences.prioritizeHighTrust));
             // Selects the result based on whether number succeeds.
             rawSearch = [
                 'briefing:true',
                 Number(briefingPreferences.includeOnlyUnreadArticles) ? 'unread:true' : null,
                 briefingPreferences.selectionPeriod === '24h' ? '@today' : '@lastweek',
-                Number(briefingPreferences.prioritizeHighTrust) ? 'sort:trust' : null
+                'sort:recommended'
             ].filter(Boolean).join(' ');
         }
     }
@@ -166,12 +176,22 @@ export const searchArticles = async ({
       event = null,
       hot: hotFilter = null,
       island: islandFilter = null,
+      developing: developingFilter = null,
       briefing: parsedBriefingFilter = null
     } = filters;
     // Selects the briefing filter based on whether status is briefing.
     const briefingFilter = parsedBriefingFilter ?? (status === 'briefing' ? true : null);
     // Selects the event count filter based on whether filters event count is finite.
     const eventCountFilter = Number.isFinite(filters.eventCount) ? filters.eventCount : null;
+    // Developing stories are event selections whose developing article must replace the representative.
+    const requiresDevelopingEventSelection = developingFilter === true
+      || briefingShowOnlyDevelopingEventArticles;
+    const effectiveGrouping = status === 'briefing' || requiresDevelopingEventSelection
+      ? 'event'
+      : grouping;
+    const effectiveIncludeDevelopingEvents = requiresDevelopingEventSelection
+      ? true
+      : includeDevelopingEvents;
 
     let dateRange = null;
     let dateToken = null;
@@ -290,6 +310,7 @@ export const searchArticles = async ({
       sortQuality,
       sortAttention,
       sortTrust,
+      prioritizeHighTrust,
       workingSort: databaseSort,
       qualityFilter,
       freshnessFilter,
@@ -303,12 +324,13 @@ export const searchArticles = async ({
       hasSearchIntent,
       event,
       islandFilter,
+      developingFilter,
       briefingFilter,
       briefingMinDistinctSources,
       briefingShowOnlyInterestMatchedArticles,
       briefingShowOnlyDevelopingEventArticles,
-      includeDevelopingEvents,
-      grouping,
+      includeDevelopingEvents: effectiveIncludeDevelopingEvents,
+      grouping: effectiveGrouping,
       eventCountFilter,
       firstSeenAgeFilter,
       authorFilter,
@@ -361,8 +383,26 @@ export const searchArticles = async ({
     debugLog(`\x1b[33mFetched ${articles.length} articles from database (before in-memory filters)\x1b[0m`);
 
     // Delegate all in-memory sorting and filtering to sortArticles
-    if (!smartFolderSearch || sortRecommended || sortQuality || sortAttention || qualityFilter || freshnessFilter) {
-      articles = sortArticles(articles, { sortRecommended, sortQuality, sortAttention, qualityFilter, freshnessFilter });
+    const needsHighTrustRuntimeSort = prioritizeHighTrust && !sortTrust;
+    if (
+      !smartFolderSearch
+      || sortRecommended
+      || sortQuality
+      || sortAttention
+      || qualityFilter
+      || freshnessFilter
+      || needsHighTrustRuntimeSort
+    ) {
+      articles = sortArticles(articles, {
+        sortRecommended,
+        sortQuality,
+        sortAttention,
+        sortTrust,
+        sortDirection: logicalSort,
+        qualityFilter,
+        freshnessFilter,
+        prioritizeHighTrust
+      });
     } else {
       debugLog(`\x1b[33mSkipping sort for smart folder search\x1b[0m`);
     }
@@ -428,8 +468,9 @@ export const searchArticles = async ({
         minSentimentScore: finalMinSentimentScore,
         minQualityScore: finalMinQualityScore,
         viewMode: viewMode,
-        grouping,
-        includeDevelopingEvents,
+        grouping: effectiveGrouping,
+        includeDevelopingEvents: effectiveIncludeDevelopingEvents,
+        prioritizeHighTrust: Boolean(userSettings?.prioritizeHighTrust),
         themeMode: userSettings?.themeMode ?? 'system',
         startupViewMode: userSettings?.startupViewMode ?? 'last-used'
       };

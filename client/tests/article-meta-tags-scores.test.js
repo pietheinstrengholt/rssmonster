@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 
 import ArticleMeta from '../src/components/articles/ArticleMeta.vue';
@@ -9,7 +9,7 @@ const BootstrapIconStub = {
   template: '<span class="bootstrap-icon-stub" :data-icon="icon"></span>'
 };
 
-// Mounts article metadata with representative formatting and score helpers.
+// Mounts article metadata with representative provenance and score values.
 const mountArticleMeta = (props = {}) => mount(ArticleMeta, {
   props: {
     publishedAt: '2026-07-31T08:00:00.000Z',
@@ -18,12 +18,6 @@ const mountArticleMeta = (props = {}) => mount(ArticleMeta, {
       feedName: 'Example Feed'
     },
     neutralScore: 3,
-    formatDate: vi.fn(() => '2 hours ago'),
-    mainURL: vi.fn(() => 'https://example.com'),
-    getQualityIcon: vi.fn(() => 'award-fill'),
-    getQualityClass: vi.fn(() => 'quality-high'),
-    getSentimentClass: vi.fn(() => 'sentiment-low'),
-    scoreLabel: vi.fn(() => 'Good'),
     ...props
   },
   global: {
@@ -33,17 +27,22 @@ const mountArticleMeta = (props = {}) => mount(ArticleMeta, {
   }
 });
 
-// Mounts article tags and scores with the required score-label contract.
+// Mounts article tags and scores with representative defaults.
 const mountArticleTagsScores = (props = {}) => mount(ArticleTagsScores, {
-  props: {
-    neutralScore: 3,
-    scoreLabel: vi.fn(() => 'Good'),
-    ...props
-  }
+  props
+});
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-07-31T10:00:00.000Z'));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('ArticleMeta', () => {
-  // Verifies source metadata uses the supplied display and URL helpers.
+  // Verifies source metadata owns its date and origin presentation.
   it('renders the publication date and author link', () => {
     const wrapper = mountArticleMeta({ author: 'Jane Reporter' });
 
@@ -51,9 +50,7 @@ describe('ArticleMeta', () => {
     expect(wrapper.get('.article-published').text()).toBe('2 hours ago');
     expect(wrapper.get('.article-provenance-separator').attributes('aria-hidden')).toBe('true');
     expect(wrapper.get('.article-source a').text()).toBe('Jane Reporter');
-    expect(wrapper.get('.article-source a').attributes('href')).toBe('https://example.com');
-    expect(wrapper.props('formatDate')).toHaveBeenCalledWith('2026-07-31T08:00:00.000Z');
-    expect(wrapper.props('mainURL')).toHaveBeenCalledWith('https://example.com/feed.xml');
+    expect(wrapper.get('.article-source a').attributes('href')).toBe('https://example.com/');
   });
 
   // Verifies a publication date renders without a dangling separator when the source is absent.
@@ -63,7 +60,6 @@ describe('ArticleMeta', () => {
     expect(wrapper.get('.article-published').text()).toBe('2 hours ago');
     expect(wrapper.find('.article-provenance-separator').exists()).toBe(false);
     expect(wrapper.find('.article-source').exists()).toBe(false);
-    expect(wrapper.props('mainURL')).not.toHaveBeenCalled();
   });
 
   // Verifies source-only provenance keeps the existing link and omits the separator.
@@ -73,7 +69,7 @@ describe('ArticleMeta', () => {
     expect(wrapper.find('.article-published').exists()).toBe(false);
     expect(wrapper.find('.article-provenance-separator').exists()).toBe(false);
     expect(wrapper.get('.article-source a').text()).toBe('Jane Reporter');
-    expect(wrapper.get('.article-source a').attributes('href')).toBe('https://example.com');
+    expect(wrapper.get('.article-source a').attributes('href')).toBe('https://example.com/');
   });
 
   // Verifies an empty metadata payload does not render an empty provenance group.
@@ -96,13 +92,13 @@ describe('ArticleMeta', () => {
     const icons = wrapper.findAll('.bootstrap-icon-stub');
 
     expect(icons.map(icon => icon.attributes('data-icon'))).toEqual([
-      'award-fill',
+      'x-octagon-fill',
       'megaphone-fill',
       'arrow-down-circle-fill'
     ]);
-    expect(wrapper.get('.quality-icon').classes()).toContain('quality-high');
-    expect(wrapper.get('.sentiment-icon').classes()).toContain('sentiment-low');
-    expect(wrapper.get('.quality-icon').attributes('title')).toBe('Overall quality: 4 (Good)');
+    expect(wrapper.get('.quality-icon').classes()).toContain('quality-poor');
+    expect(wrapper.get('.sentiment-icon').classes()).toContain('sentiment-very-poor');
+    expect(wrapper.get('.quality-icon').attributes('title')).toBe('Overall quality: 4 (Poor)');
     expect(wrapper.get('.ad-icon').attributes('title')).toBe('Promotional content detected (score: 1)');
   });
 
@@ -264,9 +260,7 @@ describe('ArticleTagsScores', () => {
     const wrapper = mount(ArticleTagsScores, {
       props: {
         categoryName: 'News',
-        tags: [{ id: 1, name: 'science', tagType: 'manual' }],
-        neutralScore: 3,
-        scoreLabel: vi.fn(() => 'Good')
+        tags: [{ id: 1, name: 'science', tagType: 'manual' }]
       },
       attrs: { onClick: parentClick }
     });
@@ -293,7 +287,7 @@ describe('ArticleTagsScores', () => {
     });
 
     expect(wrapper.get('.overall-score').text()).toContain('Quality: 4');
-    expect(wrapper.get('.overall-score').attributes('title')).toBe('Overall quality: 4 (Good)');
+    expect(wrapper.get('.overall-score').attributes('title')).toBe('Overall quality: 4 (Poor)');
     expect(wrapper.get('.ad-score').text()).toBe('Ads: 1');
     expect(wrapper.get('.sentiment-score').text()).toBe('Sentiment: 2');
     expect(wrapper.get('.quality-score').text()).toBe('Writing: 5');
@@ -317,5 +311,23 @@ describe('ArticleTagsScores', () => {
     expect(wrapper.get('.ad-score').classes()).toContain('score-medium');
     expect(wrapper.get('.sentiment-score').classes()).toContain('score-medium');
     expect(wrapper.get('.quality-score').classes()).toContain('score-good');
+  });
+
+  // Verifies child contracts contain data and events rather than injected presentation functions.
+  it('does not expose function props on article metadata components', () => {
+    const removedFunctionProps = [
+      'formatDate',
+      'mainURL',
+      'getQualityIcon',
+      'getQualityClass',
+      'getSentimentClass',
+      'scoreLabel'
+    ];
+
+    for (const functionProp of removedFunctionProps) {
+      expect(Object.keys(ArticleMeta.props)).not.toContain(functionProp);
+    }
+    expect(Object.keys(ArticleTagsScores.props)).not.toContain('scoreLabel');
+    expect(Object.keys(ArticleTagsScores.props)).not.toContain('neutralScore');
   });
 });

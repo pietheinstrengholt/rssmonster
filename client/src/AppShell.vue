@@ -2,24 +2,22 @@
   <div class="app-shell">
     <div class="app-shell-row">
       <div
-        v-if="showPersistentSidebar || mobileRefreshSidebarActive"
+        v-if="showPersistentSidebar"
         id="sidebar"
         ref="sidebarScrollRef"
         @scroll="handleSidebarScroll"
       >
         <!-- Sidebar events -->
-        <app-sidebar
-          :ref="setSidebarRef"
-          @forceReload="forceReload"
-          @logout="$emit('logout')"
-        ></app-sidebar>
+        <app-sidebar @forceReload="forceReload" @logout="$emit('logout')"></app-sidebar>
       </div>
       <div
         id="home"
+        ref="articleScrollRootRef"
       >
         <!-- MobileToolbar events -->
         <app-mobile-toolbar
           v-if="isDesktopShell === false"
+          :hidden="mobileToolbarHidden"
           :refreshing="articleListReloadActive"
           @mobile="mobileClick"
           @forceReload="forceReload"
@@ -44,13 +42,17 @@
           v-if="showMobileArticleRefresh"
           :class="{ 'mobile-pull-to-refresh--tablet': isDesktopShell === true }"
           :refreshing="databaseRefreshActive"
+          :scroll-root="articleScrollRoot"
           @refresh="refreshArticlesFromDatabase"
+          @show-mobile-toolbar="showMobileToolbar"
         />
         <app-article-feed
           v-if="showArticleFeed"
           ref="articleFeed"
+          :scroll-root="articleScrollRoot"
           :show-feed-refresh-progress="showPersistentSidebar === false"
           @forceReload="forceReload"
+          @mobile-toolbar-visibility="setMobileToolbarVisibility"
           @refresh-feeds="refreshFeeds"
         ></app-article-feed>
         <!-- Show chat assistant -->
@@ -191,11 +193,6 @@
   --sidebar-scrollbar-thumb: var(--scrollbar-thumb-strong);
 }
 
-.app-error {
-  margin-top: 50px;
-  text-align: center;
-}
-
 .app-shell {
   background-color: var(--bg-primary);
 }
@@ -232,11 +229,13 @@ import { mapStores } from 'pinia';
 import { useSelectionStore } from './store/selection.js';
 import { useOverviewStore } from './store/overview.js';
 import { useUiStore } from './store/ui.js';
+import { useFeedRefreshStore } from './store/feedRefresh.js';
 // client/src/AppShell.vue
 
 import { applyTheme, getPreferredTheme, setThemeMode, subscribeToSystemTheme } from './services/theme.js';
 import { ACTION_ERROR_EVENT } from './services/actionNotifications.js';
 import { CONNECTIVITY_ERROR_EVENT } from './api/client.js';
+import { useMediaQuery } from './composables/useMediaQuery.js';
 
 import ArticleFeed from "./components/articles/ArticleFeed.vue";
 import ActionErrorNotice from './components/shared/ActionErrorNotice.vue';
@@ -290,40 +289,49 @@ export default {
     appError: Error,
     appInitialFeeds: InitialFeeds
   },
+  // Exposes shared media-query state without changing the component's Options API ownership.
+  setup() {
+    return {
+      isDesktopShell: useMediaQuery(
+        '(min-width: 880px)',
+        () => typeof window === 'undefined' || window.innerWidth >= 880
+      ),
+      isTabletPullRefreshLayout: useMediaQuery(
+        '(max-width: 1199px)',
+        () => typeof window !== 'undefined' && window.innerWidth < 1200
+      ),
+      showPersistentSidebar: useMediaQuery(
+        '(min-width: 768px)',
+        () => typeof window === 'undefined' || window.innerWidth >= 768
+      )
+    };
+  },
   data() {
     return {
       actionErrorId: 0,
       actionErrorMessage: '',
       actionErrorTimer: null,
       articleListReloadActive: false,
-      category: {},
+      articleScrollRoot: null,
       connectivityRecovering: false,
       connectivityRecoveryPromise: null,
       connectivityStatus: null,
       databaseRefreshActive: false,
-      feed: {},
-      isDesktopShell: null,
       mobile: null,
-      mobileRefreshSidebarActive: false,
+      mobileToolbarHidden: false,
       isUnmounting: false,
       overviewIntervalId: null,
       overviewLoaded: false,
       overviewReloading: false,
-      pendingMobileFeedRefresh: false,
-      persistentSidebarQuery: null,
-      pullToRefreshQuery: null,
-      responsiveShellQuery: null,
       supportsTouch: false,
-      isTabletPullRefreshLayout: false,
-      showPersistentSidebar: null,
-      sidebarComponent: null,
       sidebarScrollTimeout: null,
       unsubscribeFromSystemTheme: null
     };
   },
-  // Initializes the responsive shell before its async components are rendered.
+  // Initializes non-media responsive capability state before async components render.
   beforeMount() {
-    this.setupResponsiveShell();
+    this.supportsTouch = typeof navigator !== 'undefined'
+      && Number(navigator.maxTouchPoints) > 0;
   },
   async created() {
     this.registerGlobalListeners();
@@ -343,11 +351,15 @@ export default {
     document.head.querySelector("meta[name=viewport]").content = "width=device-width, initial-scale=1";
     document.head.querySelector("meta[http-equiv=X-UA-Compatible]").content = "IE=edge";
   },
+  // Exposes the shell-owned article scroll surface to mounted feature components.
+  mounted() {
+    this.articleScrollRoot = this.$refs.articleScrollRootRef || null;
+  },
   beforeUnmount() {
     this.isUnmounting = true;
+    this.feedRefreshStore?.teardown?.();
     this.unsubscribeFromSystemTheme?.();
     this.removeGlobalListeners();
-    this.teardownResponsiveShell();
 
     if (this.actionErrorTimer !== null) {
       clearTimeout(this.actionErrorTimer);
@@ -362,87 +374,10 @@ export default {
     }
   },
   methods: {
-    // This function initializes the shell breakpoint without requiring browser globals during state creation.
-    setupResponsiveShell() {
-      if (typeof window === 'undefined') {
-        this.isDesktopShell = true;
-        this.isTabletPullRefreshLayout = false;
-        this.showPersistentSidebar = true;
-        this.supportsTouch = false;
-        return;
-      }
-
-      this.supportsTouch = Number(navigator.maxTouchPoints) > 0;
-      if (typeof window.matchMedia !== 'function') {
-        this.isDesktopShell = window.innerWidth >= 880;
-        this.isTabletPullRefreshLayout = window.innerWidth < 1200;
-        this.showPersistentSidebar = window.innerWidth >= 768;
-        return;
-      }
-
-      this.responsiveShellQuery = window.matchMedia('(min-width: 880px)');
-      this.persistentSidebarQuery = window.matchMedia('(min-width: 768px)');
-      this.pullToRefreshQuery = window.matchMedia('(max-width: 1199px)');
-      this.isDesktopShell = this.responsiveShellQuery.matches;
-      this.isTabletPullRefreshLayout = this.pullToRefreshQuery.matches;
-      this.showPersistentSidebar = this.persistentSidebarQuery.matches;
-      if (typeof this.responsiveShellQuery.addEventListener === 'function') {
-        this.responsiveShellQuery.addEventListener('change', this.handleResponsiveShellChange);
-        this.persistentSidebarQuery.addEventListener('change', this.handlePersistentSidebarChange);
-        this.pullToRefreshQuery.addEventListener('change', this.handlePullToRefreshLayoutChange);
-      } else {
-        this.responsiveShellQuery.addListener?.(this.handleResponsiveShellChange);
-        this.persistentSidebarQuery.addListener?.(this.handlePersistentSidebarChange);
-        this.pullToRefreshQuery.addListener?.(this.handlePullToRefreshLayoutChange);
-      }
-    },
-    // This function removes the responsive shell listener owned by this component.
-    teardownResponsiveShell() {
-      if (typeof this.responsiveShellQuery?.removeEventListener === 'function') {
-        this.responsiveShellQuery.removeEventListener('change', this.handleResponsiveShellChange);
-      } else {
-        this.responsiveShellQuery?.removeListener?.(this.handleResponsiveShellChange);
-      }
-      if (typeof this.persistentSidebarQuery?.removeEventListener === 'function') {
-        this.persistentSidebarQuery.removeEventListener('change', this.handlePersistentSidebarChange);
-      } else {
-        this.persistentSidebarQuery?.removeListener?.(this.handlePersistentSidebarChange);
-      }
-      if (typeof this.pullToRefreshQuery?.removeEventListener === 'function') {
-        this.pullToRefreshQuery.removeEventListener('change', this.handlePullToRefreshLayoutChange);
-      } else {
-        this.pullToRefreshQuery?.removeListener?.(this.handlePullToRefreshLayoutChange);
-      }
-      this.responsiveShellQuery = null;
-      this.persistentSidebarQuery = null;
-      this.pullToRefreshQuery = null;
-    },
     // This function swaps the mounted shell components when the application breakpoint changes.
     handleResponsiveShellChange(event) {
       this.isDesktopShell = event.matches;
       this.mobile = null;
-
-      if (!event.matches) {
-        this.mobileRefreshSidebarActive = false;
-        this.pendingMobileFeedRefresh = false;
-      }
-    },
-    // This function keeps the persistent sidebar mounted at tablet and desktop widths.
-    handlePersistentSidebarChange(event) {
-      this.showPersistentSidebar = event.matches;
-    },
-    // This function keeps touch-tablet pull-to-refresh eligibility reactive across rotations.
-    handlePullToRefreshLayoutChange(event) {
-      this.isTabletPullRefreshLayout = event.matches;
-    },
-    // This function retains the async Sidebar instance and starts a pending mobile refresh after it loads.
-    setSidebarRef(instance) {
-      this.sidebarComponent = instance || null;
-
-      if (!instance || !this.pendingMobileFeedRefresh) return;
-
-      this.pendingMobileFeedRefresh = false;
-      instance.refreshFeeds();
     },
     // This function handles recoverable action error events.
     handleActionError(event) {
@@ -561,41 +496,6 @@ export default {
       // Mark onboarding as complete and refresh overview
       this.getOverview(true);
     },
-    lookupFeedById(feedId) {
-      for (let x = 0; x < this.overviewStore.categories.length; x++) {
-        for (let i = 0; i < this.overviewStore.categories[x].feeds.length; i++) {
-          if (this.overviewStore.categories[x].feeds[i].id === feedId) {
-            return this.overviewStore.categories[x].feeds[i];
-          }
-        }
-      }
-    },
-    lookupCategoryById(categoryId) {
-      for (let x = 0; x < this.overviewStore.categories.length; x++) {
-        if (this.overviewStore.categories[x].id === categoryId) {
-          return this.overviewStore.categories[x];
-        }
-      }
-    },
-    updateSelection(data) {
-      //only update the local values of some categories exist
-      if (this.overviewStore.categories.length) {
-        //set the feed to empty when the store changes, e.g. change can be that only a category is selected
-        this.feed = {};
-
-        //lookup category name based on the categoryId received
-        if (data.categoryId) {
-          const category = this.overviewStore.categories.filter(function(a) {
-            return a.id == data.categoryId;
-          })[0];
-          this.category = category;
-        }
-        //lookup feed name based on the feedId
-        if (data.feedId) {
-          this.feed = this.lookupFeedById(data.feedId);
-        }
-      }
-    },
     // This function refreshes overview data without conflating auth, timeout, and connectivity failures.
     async getOverview(initial) {
       try {
@@ -606,10 +506,6 @@ export default {
         }
         this.overviewLoaded = true;
 
-        // Initial load: sync local selection
-        if (initial === true) {
-          this.updateSelection(this.selectionStore.currentSelection);
-        }
       } catch (error) {
         if (!isOverviewTimeout(error)) {
           console.error('Error loading the application overview:', error);
@@ -766,7 +662,7 @@ export default {
       if (!refreshableFeeds.length) return;
 
       this.databaseRefreshActive = true;
-      document.getElementById('mobile-toolbar')?.classList.remove('hide');
+      this.showMobileToolbar();
 
       try {
         const selection = { ...this.selectionStore.currentSelection };
@@ -796,7 +692,7 @@ export default {
       if (!reloadableFeeds.length) return;
 
       this.articleListReloadActive = true;
-      document.getElementById('mobile-toolbar')?.classList.remove('hide');
+      this.showMobileToolbar();
 
       try {
         const selection = { ...this.selectionStore.currentSelection };
@@ -816,15 +712,17 @@ export default {
         this.articleListReloadActive = false;
       }
     },
-    // This function starts feed refresh immediately or loads its Sidebar controller on mobile.
+    // This function starts application-owned feed refresh from any shell surface.
     refreshFeeds() {
-      if (this.sidebarComponent) {
-        this.sidebarComponent.refreshFeeds();
-        return;
-      }
-
-      this.pendingMobileFeedRefresh = true;
-      this.mobileRefreshSidebarActive = true;
+      return this.feedRefreshStore.startRefresh();
+    },
+    // This function reveals the shell-owned mobile toolbar before a manual article refresh.
+    showMobileToolbar() {
+      this.mobileToolbarHidden = false;
+    },
+    // This function applies article-scroll visibility requests to shell-owned toolbar state.
+    setMobileToolbarVisibility(isVisible) {
+      this.mobileToolbarHidden = isVisible === false;
     },
     // Safely set/clear the app badge to avoid range/type errors
     setBadge(count) {
@@ -854,25 +752,22 @@ export default {
       }
     }
   },
-  //watch the store.currentSelection, set local data (category, feed) based on current selection
   watch: {
+    // This function applies shell-specific cleanup when the shared desktop query changes.
+    isDesktopShell(matches) {
+      this.handleResponsiveShellChange({ matches });
+    },
+    // This function reloads overview and articles after a successful feed-refresh job.
+    'feedRefreshStore.successfulCompletionId'(completionId, previousCompletionId) {
+      if (completionId > previousCompletionId) {
+        this.forceReload();
+      }
+    },
     // This function applies a theme mode loaded from the user's settings.
     "uiStore.themeMode": function(themeMode) {
       if (themeMode) {
         setThemeMode(themeMode);
       }
-    },
-    "selectionStore.currentSelection": {
-      handler: function(data) {
-        this.updateSelection(data);
-      },
-      deep: true
-    },
-    "selectionStore.currentSelection.categoryId": {
-      handler: function() {
-        this.feed = {};
-      },
-      deep: true
     },
     "overviewStore.unreadsSinceLastUpdate": {
       handler: function(count) {
@@ -890,7 +785,7 @@ export default {
     }
   },
   computed: {
-    ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
+    ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useFeedRefreshStore),
     // Resolves only explicitly supported modal identifiers to their lazy components.
     activeDialogComponent() {
       return DIALOG_COMPONENTS[this.uiStore.showModal] || null;

@@ -87,16 +87,16 @@ Compact icons before the title explain the article type or why it may deserve at
 
 Source-specific and media-specific icons take precedence where they explain the format more clearly than a generic relevance icon. The intent is to provide fast recognition without turning the header into a crowded badge row.
 
-Reader mode also keeps the current read state available beside the article actions.
+Reader mode keeps the read/unread toggle inside the article actions menu.
 
 ## Article actions
 
 The three-dot menu holds actions that should remain available without occupying the main reading surface. These include:
 
 - Marking or unmarking a favorite.
+- Marking the article as read or unread in reader mode.
 - Marking an article as not interesting.
-- Asking for more or less content like the current article.
-- Ignoring the current topic.
+- Asking for more content like the current article.
 - Muting the feed for seven days after confirmation.
 
 Marking an article as not interesting removes it from the current rendered collection. Favorite and clicked changes are reflected in the article and in applicable collection counts. Repeated input is ignored while the same change is still being saved, preventing accidental double updates.
@@ -228,6 +228,23 @@ The article area always explains what is happening:
 Motion in loading and completion states is restrained and respects reduced-motion preferences.
 
 Mobile pull-to-refresh uses a separate content-preserving request path. Existing articles remain rendered until the refreshed ID list and first page are ready, and stale refresh responses cannot replace a newer selection. This database refresh does not crawl publisher feeds.
+
+## Options API helper contracts
+
+Article helpers remain grouped by behavior rather than merged back into `Article.vue` or `ArticleFeed.vue`. Their contracts are intentionally different:
+
+| Helper | Contract | External component dependencies |
+| --- | --- | --- |
+| `feed/clusterInsertion.js` | Pure collection transforms with a thin Options API adapter | The adapter reads and replaces only `articles`; missing-parent reporting is an explicit pure-function input. |
+| `helpers/articleSignals.js` | Pure presentation functions with thin computed adapters | The adapters read article props: quality and recommendation scores, official-source metadata, author, feed, and event. Pure callers pass these explicitly. |
+| `feed/pagination.js` | Options API lifecycle helper | Pagination state, `fetchCount`, selection sorting, `$nextTick`, the component-owned `resetCollectionState` orchestration method, observation methods, and owned document scroll roots. Request generation intentionally remains shared with read-state refreshes. |
+| `feed/visibilityTracking.js` | Options API observer/lifecycle helper | Article and observer collections, selection and effective scroll-read settings, read-state retry collections, `markArticleSeen`, `$nextTick`, layout-provided element and viewport accessors, `IntersectionObserver`, and timing APIs. Its reset method owns only observer and visibility-timing state. |
+| `feed/readState.js` | Options API domain reconciliation helper | Article/container state, request generation, selection and overview stores, read-state collections, pagination refresh, and its own status-update methods. Its reset method owns only pool, pending-read, and seen-retry state. |
+| `helpers/articleActions.js` | Options API action helper | Article identifiers and props, mutation guards, overview reconciliation, `$emit`, confirmation, and API-backed action methods. |
+| `helpers/articleExpansion.js` | Options API action helper | Article identifier, expansion flags, selection grouping, and `$emit`. |
+| `helpers/mobileSwipe.js` | Options API gesture helper | Component-owned swipe state, portrait eligibility, favorite action, reset method, touch events, and the suppression timer. |
+
+The lifecycle helpers deliberately retain Options API instance access for behavior that still coordinates component and store state. Collection replacement is explicit in `ArticleFeed`: pagination requests one orchestration method, which delegates to owner-specific pagination, visibility, and read-tracking resets. A future controller extraction should inject named getters and actions; passing the entire component instance as a generic context would only rename the hidden coupling.
 
 ## Responsive and visual intent
 

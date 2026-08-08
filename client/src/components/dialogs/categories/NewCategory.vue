@@ -41,12 +41,10 @@
 import { mapStores } from 'pinia';
 import { useOverviewStore } from '../../../store/overview.js';
 import { useUiStore } from '../../../store/ui.js';
-import { useAuthStore } from '../../../store/auth.js';
 import BaseDialog from '../BaseDialog.vue';
 import CategoryIconPicker from './CategoryIconPicker.vue';
 import { DEFAULT_CATEGORY_ICON } from './categoryIconOptions.js';
 import { createCategory } from '../../../api/categories';
-import { setAuthToken } from '../../../api/client';
 import { notifyActionError } from '../../../services/actionNotifications.js';
 
 export default {
@@ -65,7 +63,7 @@ export default {
         };
     },
     computed: {
-      ...mapStores(useOverviewStore, useUiStore, useAuthStore),
+      ...mapStores(useOverviewStore, useUiStore),
         // This function normalizes the category name used for validation and submission.
         trimmedCategoryName() {
             return this.categoryName.trim();
@@ -74,10 +72,6 @@ export default {
         isSaveDisabled() {
             return !this.trimmedCategoryName || this.isPending;
         }
-    },
-    // This function configures the authenticated API client for category creation.
-    created: function() {
-        setAuthToken(this.authStore.token);
     },
     methods: {
         // This function creates a valid category and reconciles the API response through the store.

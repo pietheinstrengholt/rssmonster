@@ -309,7 +309,9 @@
 }
 
 .feeds-table-wrapper {
+  max-height: 60vh;
   overflow-x: auto;
+  overflow-y: auto;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   scrollbar-width: thin;
 }
@@ -421,6 +423,10 @@
   background: var(--settings-danger-bg);
 }
 
+.feeds-table tbody .feeds-table-row--error:hover {
+  background: var(--settings-danger-bg);
+}
+
 .feeds-table-row--disabled {
   background: var(--bg-page);
   color: var(--text-muted);
@@ -515,7 +521,8 @@
 }
 
 :global(:root[data-theme='dark'] .feeds-overview .feeds-table-row--error),
-:global(:root[data-theme='dark'] .feeds-overview .feeds-table-row--error:hover) {
+:global(:root[data-theme='dark'] .feeds-overview .feeds-table-row--error:hover),
+:global(:root[data-theme='dark'] .feeds-overview .feeds-table-row--error:hover td) {
   background: var(--settings-danger-bg);
 }
 

@@ -1,5 +1,5 @@
 // Computes recommendation ranking scores from article freshness, user interest, quality, event coverage, and source diversity.
-// Feed trust is already included in article.quality through the Article model virtual field.
+// Feed trust is included gently in article.quality and can also be an explicit preference boost.
 
 // Defines the recommended weights enforced by this service.
 const RECOMMENDED_WEIGHTS = {
@@ -22,8 +22,18 @@ function normalizeInterestScore(rawInterestScore) {
   return Math.max(-1, Math.min(1, rawInterestScore));
 }
 
+// Returns the optional bounded trust boost from the article's loaded feed association.
+function resolveFeedTrustBoost(article, prioritizeHighTrust) {
+  if (!prioritizeHighTrust) return 0;
+
+  const feed = article.get?.('Feed') ?? article.Feed ?? article.feed;
+  const rawFeedTrust = Number(feed?.feedTrust);
+  if (!Number.isFinite(rawFeedTrust)) return 0;
+  return Math.max(0, Math.min(1, rawFeedTrust));
+}
+
 // Computes the bounded runtime recommended score for an article.
-export function computeRecommended(article) {
+export function computeRecommended(article, { prioritizeHighTrust = false } = {}) {
   // Time decay: newer articles score higher
   const freshness = article.freshness ?? 0.5;
 
@@ -86,6 +96,8 @@ export function computeRecommended(article) {
     eventArticleCount >= 8 ? 0.10 :
     eventArticleCount >= 4 ? 0.05 :
     0;
+  // Applies the explicit feed-trust preference independently from the quality signal.
+  const feedTrustBoost = resolveFeedTrustBoost(article, prioritizeHighTrust);
 
   // Weighted sum: emphasizes event importance while preserving freshness,
   // personalization, quality, and rule-based relevance.
@@ -97,13 +109,14 @@ export function computeRecommended(article) {
     RECOMMENDED_WEIGHTS.crossSource * crossSource +
     RECOMMENDED_WEIGHTS.corroboration * corroboration +
     eventBoost +
-    ruleBoost;
+    ruleBoost +
+    feedTrustBoost;
 
   return Math.max(0, Math.min(1, recommended));
 }
 
 // Returns the per-signal breakdown used to explain a recommended score.
-export function computeRecommendedBreakdown(article) {
+export function computeRecommendedBreakdown(article, { prioritizeHighTrust = false } = {}) {
   // Derives the freshness required while computing recommended breakdown.
   const freshness = article.freshness ?? 0.5;
   // Coerces the raw interest score into the representation required while computing recommended breakdown.
@@ -153,6 +166,8 @@ export function computeRecommendedBreakdown(article) {
     eventArticleCount >= 8 ? 0.10 :
     eventArticleCount >= 4 ? 0.05 :
     0;
+  // Applies the same optional feed-trust boost used by the final score.
+  const feedTrustBoost = resolveFeedTrustBoost(article, prioritizeHighTrust);
 
   // Derives the recommended through max while computing recommended breakdown.
   const recommended = Math.max(0, Math.min(1,
@@ -163,7 +178,8 @@ export function computeRecommendedBreakdown(article) {
     RECOMMENDED_WEIGHTS.crossSource * crossSource +
     RECOMMENDED_WEIGHTS.corroboration * corroboration +
     eventBoost +
-    ruleBoost
+    ruleBoost +
+    feedTrustBoost
   ));
 
   return {
@@ -175,6 +191,7 @@ export function computeRecommendedBreakdown(article) {
     corroboration,
     eventBoost,
     ruleBoost,
+    feedTrustBoost,
     eventArticleCount,
     sourceCount,
     recommended

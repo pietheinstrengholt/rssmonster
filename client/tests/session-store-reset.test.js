@@ -6,6 +6,7 @@ import { useAuthStore } from '../src/store/auth.js';
 import { useOverviewStore } from '../src/store/overview.js';
 import { useSelectionStore } from '../src/store/selection.js';
 import { useUiStore } from '../src/store/ui.js';
+import { useFeedRefreshStore } from '../src/store/feedRefresh.js';
 
 vi.mock('../src/api/settings', () => ({
   fetchSettings: vi.fn()
@@ -49,11 +50,14 @@ describe('coordinated Pinia session reset', () => {
     const selectionStore = useSelectionStore();
     const overviewStore = useOverviewStore();
     const uiStore = useUiStore();
+    const feedRefreshStore = useFeedRefreshStore();
 
     authStore.setSession({ token: 'old-token', role: 'admin' });
     selectionStore.$patch({
       briefingIncludeOnlyUnreadArticles: true,
+      briefingMarkAsReadOnScroll: true,
       briefingPrioritizeHighTrust: true,
+      briefingShowOnlyDevelopingEventArticles: true,
       briefingSelectionPeriod: '24h',
       currentSelection: {
         ...selectionStore.currentSelection,
@@ -93,6 +97,17 @@ describe('coordinated Pinia session reset', () => {
       showModal: 'Settings',
       themeMode: 'dark'
     });
+    feedRefreshStore.$patch({
+      currentJobId: 'private-job',
+      running: true,
+      completionStatus: 'running',
+      progress: {
+        ...feedRefreshStore.progress,
+        visible: true,
+        logs: ['Private feed name']
+      }
+    });
+    const oldRefreshGeneration = feedRefreshStore.refreshGeneration;
 
     const oldRequest = overviewStore.fetchTopTags();
     const oldRequestIds = {
@@ -115,7 +130,9 @@ describe('coordinated Pinia session reset', () => {
     });
     expect(selectionStore).toMatchObject({
       briefingIncludeOnlyUnreadArticles: false,
+      briefingMarkAsReadOnScroll: false,
       briefingPrioritizeHighTrust: false,
+      briefingShowOnlyDevelopingEventArticles: false,
       briefingSelectionPeriod: '7d',
       settingsError: null,
       settingsStatus: 'idle'
@@ -160,6 +177,17 @@ describe('coordinated Pinia session reset', () => {
       showModal: '',
       themeMode: null
     });
+    expect(feedRefreshStore).toMatchObject({
+      completionStatus: 'idle',
+      currentJobId: null,
+      error: null,
+      running: false
+    });
+    expect(feedRefreshStore.progress).toMatchObject({
+      logs: [],
+      visible: false
+    });
+    expect(feedRefreshStore.refreshGeneration).toBeGreaterThan(oldRefreshGeneration);
 
     oldTags.resolve({ data: { tags: [{ name: 'leaked', count: 99 }] } });
     await expect(oldRequest).resolves.toBe(false);

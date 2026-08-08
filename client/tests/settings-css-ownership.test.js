@@ -24,12 +24,13 @@ describe('Settings CSS ownership', () => {
     expect(settingsSource).toContain('class="settings-surface settings-overlay"');
   });
 
-  // Verifies collision-prone and dark-theme rules remain beneath the feature boundary.
+  // Verifies shared selectors remain feature-wide while feed-table presentation stays local.
   it('contains shared Settings selectors beneath settings-surface', () => {
-    for (const selector of ['action-row', 'info-icon', 'feeds-table', 'input-invalid']) {
+    for (const selector of ['action-row', 'info-icon', 'input-invalid']) {
       expect(settingsStyles).toContain(`.settings-surface .${selector}`);
     }
 
+    expect(settingsStyles).not.toContain('.settings-surface .feeds-table');
     expect(settingsStyles).toContain(":root[data-theme='dark'] .settings-surface .settings-dialog p");
     expect(settingsStyles).not.toMatch(/:root\[data-theme='dark'\]\s*\{[^}]*\bp\s*\{/s);
   });

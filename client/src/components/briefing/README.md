@@ -26,7 +26,7 @@ The default briefing:
 
 The selection period is persisted as either `24h` or `7d`; `7d` is the default. The Daily Briefing preference record is one-to-one with its owning user. A user must never have multiple briefing preference rows.
 
-The same saved eligibility preferences feed the article search, briefing count, context statistics, and story summary. Their navigation scope is not identical: the sidebar count and structured introduction describe the user's global briefing across subscriptions, while the visible article list can also be narrowed by an active category, feed, or tag. The briefing respects the user's global article score thresholds and normal article safety and filtering rules.
+The saved eligibility preferences feed the article search, briefing count, context statistics, and story summary. The Briefing-specific developing-events preference is presentation-only: it selects developing coverage for the morning summary without changing article-search results. Their navigation scope is not identical: the sidebar count and structured introduction describe the user's global briefing across subscriptions, while the visible article list can also be narrowed by an active category, feed, or tag. The briefing respects the user's global article score thresholds and normal article safety and filtering rules.
 
 ## Briefing introduction
 
@@ -71,15 +71,18 @@ The modal loads the authenticated user's effective preferences when opened. If n
 The available article-selection controls are:
 
 - **Only unread articles** excludes articles already marked as read.
+- **Mark as read while scrolling** automatically marks briefing articles as read after they pass the viewport. It is available only when the unread-only filter is enabled.
 - **Developing events** includes new coverage for events the user has already seen.
 - **Show only interest-matched articles** restricts eligibility to positive interest matches.
-- **Show only developing/event articles** restricts eligibility to articles belonging to developing events.
+- **Show only developing stories** restricts eligibility to unread articles selected as an event's developing article when that differs from its representative.
 
 The two “show only” choices are mutually exclusive. Enabling one disables the other in the draft, and the server rejects any payload that enables both. This exclusivity is a business rule and must remain enforced in both the interface and persistence layer.
 
-“Developing events” and “show only developing/event articles” have different meanings. The former permits continuing coverage to participate in the active article selection. The latter is a strict briefing eligibility filter that removes non-event articles.
+The briefing scrolling preference is independent from the equivalent unread-selection setting. Disabling “Only unread articles” hides and clears the briefing preference, and the server rejects a saved enabled value without unread-only filtering.
 
-The developing-events preference is synchronized with the wider user setting and current article selection so briefing behavior and other event-aware views do not drift apart.
+“Developing events” and “show only developing stories” have different meanings. The former selects continuing coverage for morning-summary events without changing the article list. The latter applies the exact `isDevelopingStory` conditions and forces event grouping with developing-event selection. Users can apply `developing:true` when they explicitly want the same developing-story condition in a normal search.
+
+The developing-events preference is stored independently from the wider user setting and never updates the generic article selection.
 
 ### Selection period
 
@@ -96,7 +99,7 @@ The current article query and structured introduction interpret `24h` through th
 
 Minimum distinct sources requires an eligible event to be represented by a chosen number of separate feeds. The current interface offers values from one through five sources. Higher values favor stories corroborated across more subscriptions but can substantially reduce the briefing.
 
-Prioritize high-trust coverage changes article-result ordering so coverage from more reliable feeds receives greater prominence. It affects priority rather than acting as a strict trust cutoff. The structured morning summary currently keeps its own deterministic event-strength ordering and does not use the trust-priority preference.
+Prioritize high-trust coverage uses recommended ordering and adds the feed's bounded trust score to each article's runtime recommendation score. It affects priority rather than acting as a strict trust cutoff. The structured morning summary currently keeps its own deterministic event-strength ordering and does not use the trust-priority preference.
 
 ### Saving
 
@@ -104,14 +107,14 @@ Saving replaces the complete preference set for the current user. Partial prefer
 
 During a save, duplicate submission is disabled. A failed save keeps the modal open, preserves the draft, and shows an error. A successful save:
 
-- Applies the saved period, unread choice, trust priority, and developing-event state to current client selection
+- Applies the saved period, unread and scrolling choices, trust priority, and article-type filter to the current Briefing selection
 - Invalidates the currently displayed structured briefing so it reloads
 - Requests refreshed overview counts
 - Closes the modal
 
 Interest matching, strict event-only filtering, and minimum-source changes may not be visible in the simple article-query text. They still trigger a briefing revision so the article list and structured summary are fetched using the newly persisted server preferences.
 
-Reset to defaults restores the local draft to a seven-day briefing with developing events enabled, one required source, and all other eligibility and trust filters disabled. The reset is persisted only when Save Changes succeeds.
+Reset to defaults restores the local draft to a seven-day briefing with one required source and all optional eligibility, scrolling, developing-event, and trust settings disabled. The reset is persisted only when Save Changes succeeds.
 
 ## Data refresh behavior
 
@@ -148,7 +151,7 @@ Future briefing changes should preserve:
 - Per-user ownership and the one-row-per-user preference invariant
 - The `24h` and `7d` period contract with `7d` as the default
 - Mutual exclusivity of interest-only and developing-event-only filters
-- Clear separation between including continuing coverage and requiring event membership
+- Clear separation between including continuing coverage and requiring the current developing story
 - Consistent saved eligibility rules across article results, overview counts, context, and morning summary, while preserving their documented scope differences
 - Deterministic, source-grounded morning summaries with no invented text
 - Separate loading, empty, and failure states

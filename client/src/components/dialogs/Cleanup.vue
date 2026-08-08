@@ -18,15 +18,13 @@
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useUiStore } from '../../store/ui.js';
-import { useAuthStore } from '../../store/auth.js';
 import ConfirmDialog from './ConfirmDialog.vue';
 import { cleanupOldArticles } from '../../api/cleanup';
-import { setAuthToken } from '../../api/client';
 import { notifyActionError } from '../../services/actionNotifications.js';
 
 export default {
   computed: {
-    ...mapStores(useSelectionStore, useUiStore, useAuthStore)
+    ...mapStores(useSelectionStore, useUiStore)
   },
     name: 'Cleanup',
     components: {
@@ -37,10 +35,6 @@ export default {
         return {
             isPending: false
         };
-    },
-    // This function configures the authenticated API client for cleanup requests.
-    created: function() {
-        setAuthToken(this.authStore.token);
     },
     methods: {
         // This function removes old non-favorited articles and refreshes the all-articles view.

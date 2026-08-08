@@ -7,6 +7,9 @@ const mountPullToRefresh = () => {
   document.body.innerHTML = '<div id="home"><div id="pull-mount"></div><article id="article-target"></article></div>';
   return mount(MobilePullToRefresh, {
     attachTo: '#pull-mount',
+    props: {
+      scrollRoot: document.getElementById('home')
+    },
     global: {
       stubs: {
         BootstrapIcon: {
@@ -45,6 +48,7 @@ describe('MobilePullToRefresh', () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.text()).toContain('Release to refresh');
+    expect(wrapper.emitted('show-mobile-toolbar')).toHaveLength(1);
     expect(move.preventDefault).toHaveBeenCalledOnce();
 
     wrapper.vm.handleTouchEnd();

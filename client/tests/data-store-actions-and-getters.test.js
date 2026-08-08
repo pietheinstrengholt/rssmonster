@@ -118,6 +118,49 @@ describe('data store remaining actions and getters', () => {
     expect(store.currentSelection.search).toBe('plain words');
   });
 
+  // Verifies filter resets use the store-owned defaults without resetting user preferences.
+  it('resets article filters while preserving selection preferences', () => {
+    const { selectionStore: store } = createStores();
+    store.setCurrentSelection({
+      status: 'favorite',
+      categoryId: 4,
+      feedId: 9,
+      search: 'science',
+      tag: 'vue',
+      smartFolderId: 3,
+      minAdvertisementScore: 0.8,
+      minSentimentScore: 0.6,
+      minQualityScore: 0.7,
+      sort: 'quality',
+      grouping: 'event',
+      viewMode: 'reader',
+      AIEnabled: true,
+      includeDevelopingEvents: false,
+      markAsReadOnScroll: true
+    });
+
+    store.resetArticleFilters();
+
+    expect(store.currentSelection).toEqual({
+      status: 'unread',
+      categoryId: '%',
+      feedId: '%',
+      search: null,
+      tag: null,
+      smartFolderId: null,
+      minAdvertisementScore: 0,
+      minSentimentScore: 0,
+      minQualityScore: 0,
+      sort: 'desc',
+      grouping: 'none',
+      viewMode: 'reader',
+      AIEnabled: true,
+      includeDevelopingEvents: false,
+      markAsReadOnScroll: true,
+      briefingRevision: 0
+    });
+  });
+
   // Verifies compatibility selection actions and smart-folder query construction.
   it('applies category, feed, and smart-folder selections', () => {
     const { selectionStore: store, uiStore } = createStores();

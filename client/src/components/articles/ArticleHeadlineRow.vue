@@ -18,7 +18,7 @@
     </div>
     <div class="article-list-main">
       <h5 class="article-list-title">
-        <a class="article-link" target="_blank" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
+        <a ref="originalArticleLink" class="article-link" target="_blank" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
       </h5>
       <div class="article-list-meta">
         <span class="article-list-feed">{{ sourceLabel }}</span>
@@ -33,7 +33,7 @@
     </div>
     <div class="article-list-actions">
       <span class="article-list-time">{{ formatDate(publishedAt) }}</span>
-      <ArticleActionsMenu :favoriteInd="favoriteInd" :favoritePending="favoritePending" @toggle-favorite="$emit('toggle-favorite')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @less-like-this="$emit('less-like-this')" @ignore-topic="$emit('ignore-topic')" @mute-feed="$emit('mute-feed')" />
+      <ArticleActionsMenu :favoriteInd="favoriteInd" :favoritePending="favoritePending" @toggle-favorite="$emit('toggle-favorite')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" />
       <button class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" :disabled="favoritePending" @click.stop="$emit('toggle-favorite')">
         <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
       </button>
@@ -49,7 +49,7 @@ import { formatTagName } from '../../utils/tags';
 
 export default {
   components: { ArticleActionsMenu, ArticlePreviewFallback },
-  emits: ['article-clicked', 'article-touched', 'ignore-topic', 'less-like-this', 'more-like-this', 'mute-feed', 'not-interested', 'select-tag', 'swipe-cancel', 'swipe-touch-end', 'swipe-touch-move', 'swipe-touch-start', 'toggle-favorite', 'toggle-read-status', 'view-duplicate-articles', 'view-event-articles'],
+  emits: ['article-clicked', 'article-touched', 'more-like-this', 'mute-feed', 'not-interested', 'select-tag', 'swipe-cancel', 'swipe-touch-end', 'swipe-touch-move', 'swipe-touch-start', 'toggle-favorite', 'toggle-read-status', 'view-duplicate-articles', 'view-event-articles'],
   props: {
     url: { type: String, default: '' },
     title: { type: String, default: '' },
@@ -96,6 +96,10 @@ export default {
     }
   },
   methods: {
+    // Opens the original article through the compact row's owned link behavior.
+    openOriginalArticle() {
+      this.$refs.originalArticleLink?.click();
+    },
     // Formats stored tag names for display.
     formatTagName,
     // Formats publication dates as elapsed time.

@@ -1,18 +1,14 @@
 <template>
   <div class="crawl-statistics-settings">
-    <section class="settings-insight-card" aria-labelledby="crawl-statistics-title">
-      <span class="settings-insight-icon" aria-hidden="true">
-        <BootstrapIcon icon="clipboard-data-fill" />
-      </span>
-      <div>
-        <p class="settings-page-eyebrow">Settings — Crawl Statistics</p>
-        <h3 id="crawl-statistics-title">Daily crawl activity</h3>
-        <p>
-          Review how many articles were added or updated and how each day&rsquo;s user crawls
-          finished.
-        </p>
-      </div>
-    </section>
+    <SettingsPageIntro
+      eyebrow="Settings — Crawl Statistics"
+      icon="clipboard-data-fill"
+      title="Daily crawl activity"
+      title-id="crawl-statistics-title"
+    >
+      Review how many articles were added or updated and how each day&rsquo;s user crawls
+      finished.
+    </SettingsPageIntro>
 
     <div class="crawl-statistics-toolbar">
       <label for="crawl-statistics-days">Date range</label>
@@ -259,9 +255,13 @@
 
 <script>
 import { fetchCrawlStatistics } from '../../api/settings';
+import SettingsPageIntro from './SettingsPageIntro.vue';
 
 export default {
   name: 'SettingsCrawlStatistics',
+  components: {
+    SettingsPageIntro
+  },
   data() {
     return {
       crawlStatistics: [],

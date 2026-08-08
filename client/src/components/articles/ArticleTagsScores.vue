@@ -10,6 +10,7 @@
 </template>
 <script>
 import { formatTagName } from '../../utils/tags';
+import { scoreLabel } from '../../services/articlePresentation.js';
 
 // Maps every analysis score onto the shared poor, medium, or good visual scale.
 const scoreSeverityClass = score => {
@@ -18,7 +19,7 @@ const scoreSeverityClass = score => {
   return 'score-poor';
 };
 
-export default { emits: ['select-category', 'select-tag'], props: { categoryName: { type: String, default: '' }, tags: { type: Array, default: () => [] }, roundedQuality: { type: Number, default: 0 }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, qualityScore: { type: Number, default: undefined }, neutralScore: { type: Number, required: true }, scoreLabel: { type: Function, required: true }, showQuality: { type: Boolean, default: false }, showAdvertisement: { type: Boolean, default: false }, showSentiment: { type: Boolean, default: false }, showWritingQuality: { type: Boolean, default: false } }, methods: { formatTagName, scoreSeverityClass } };
+export default { emits: ['select-category', 'select-tag'], props: { categoryName: { type: String, default: '' }, tags: { type: Array, default: () => [] }, roundedQuality: { type: Number, default: 0 }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, qualityScore: { type: Number, default: undefined }, showQuality: { type: Boolean, default: false }, showAdvertisement: { type: Boolean, default: false }, showSentiment: { type: Boolean, default: false }, showWritingQuality: { type: Boolean, default: false } }, methods: { formatTagName, scoreLabel, scoreSeverityClass } };
 </script>
 
 <style scoped>

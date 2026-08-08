@@ -1,11 +1,9 @@
 const SWIPE_MAX = 128;
 const SWIPE_THRESHOLD = 86;
 
-// Creates touch and portrait-orientation state for article swipe gestures.
+// Creates component-owned touch state for article swipe gestures.
 export function createArticleMobileSwipeState() {
   return {
-    isMobilePortrait: false,
-    mediaQuery: null,
     swipeStartX: 0,
     swipeStartY: 0,
     swipeTranslateX: 0,
@@ -28,38 +26,8 @@ export const articleMobileSwipeComputed = {
   }
 };
 
-// Groups portrait detection and right-swipe favorite behavior.
+// Groups right-swipe favorite behavior for portrait eligibility supplied by Article.
 export const articleMobileSwipeMethods = {
-  // Sets up the listener that tracks mobile portrait orientation.
-  setupMediaQueryListener() {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    this.mediaQuery = window.matchMedia('(max-width: 879px) and (orientation: portrait)');
-    this.isMobilePortrait = this.mediaQuery.matches;
-    if (this.mediaQuery.addEventListener) {
-      this.mediaQuery.addEventListener('change', this.handleMediaChange);
-    } else if (this.mediaQuery.addListener) {
-      this.mediaQuery.addListener(this.handleMediaChange);
-    }
-  },
-
-  // Removes the listener that tracks mobile portrait orientation.
-  teardownMediaQueryListener() {
-    if (this.mediaQuery) {
-      if (this.mediaQuery.removeEventListener) {
-        this.mediaQuery.removeEventListener('change', this.handleMediaChange);
-      } else if (this.mediaQuery.removeListener) {
-        this.mediaQuery.removeListener(this.handleMediaChange);
-      }
-      this.mediaQuery = null;
-    }
-  },
-
-  // Updates the portrait state when the media query changes.
-  handleMediaChange(event) {
-    this.isMobilePortrait = event.matches;
-    if (!event.matches) this.resetSwipe();
-  },
-
   // Starts tracking a right-swipe favorite gesture in mobile portrait mode.
   onSwipeTouchStart(event) {
     if (!this.isMobilePortrait || event.touches.length !== 1) {

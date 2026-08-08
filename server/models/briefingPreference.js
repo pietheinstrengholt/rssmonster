@@ -22,6 +22,12 @@ export default (sequelize) => sequelize.define(
       allowNull: false,
       defaultValue: false
     },
+    // When true, scrolling past an unread briefing article marks it as read.
+    markAsReadOnScroll: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
     // When true, allows developing events to contribute briefing articles.
     includeDevelopingEvents: {
       type: DataTypes.BOOLEAN,

@@ -38,6 +38,7 @@ const buildQuery = overrides => buildArticleSearchQuery({
   sortQuality: false,
   sortAttention: false,
   sortTrust: false,
+  prioritizeHighTrust: false,
   workingSort: 'desc',
   qualityFilter: null,
   freshnessFilter: null,
@@ -51,6 +52,7 @@ const buildQuery = overrides => buildArticleSearchQuery({
   hasSearchIntent: false,
   event: null,
   islandFilter: null,
+  developingFilter: null,
   briefingFilter: null,
   grouping: 'none',
   eventCountFilter: null,
@@ -75,6 +77,16 @@ describe('articleSearchExecutor.service', () => {
 
     expect(query.attributes).toEqual(expect.arrayContaining(['attentionBucket', 'clickedAmount']));
     expect(query).not.toHaveProperty('order');
+  });
+
+  // Loads freshness and feed trust when Unread chronological ordering needs the runtime boost.
+  it('selects high-trust inputs for chronological sorting', () => {
+    const query = buildQuery({ prioritizeHighTrust: true, workingSort: 'desc' });
+
+    expect(query.attributes).toContain('publishedAt');
+    expect(query.include).toEqual(expect.arrayContaining([
+      expect.objectContaining({ model: expect.objectContaining({ name: 'Feed' }) })
+    ]));
   });
 
   // Applies age, author, and language predicates without dropping the base feed scope.
@@ -143,6 +155,17 @@ describe('articleSearchExecutor.service', () => {
 
     expect(query.where[Op.and][0][Op.or][1].sql)
       .toContain('COALESCE(grouped_event.developingArticleId, grouped_event.representativeArticleId)');
+  });
+
+  // Matches the exact unread, non-representative event pointer used by isDevelopingStory.
+  it('applies the developing story predicate', () => {
+    const query = buildQuery({ developingFilter: true });
+    const predicate = query.where[Op.and][0].sql;
+
+    expect(predicate).toContain("articles.status = 'unread'");
+    expect(predicate).toContain('developing_story_event.developingArticleId = articles.id');
+    expect(predicate).toContain('developing_story_event.developingArticleId <> developing_story_event.representativeArticleId');
+    expect(predicate).toContain('developing_story_event.userId = articles.userId');
   });
 
   // Builds topic grouping around one strongest representative per user-owned topic.

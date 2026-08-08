@@ -46,6 +46,7 @@ describe('query validation supported expressions', () => {
     'clicked:true',
     'seen:false',
     'event:true',
+    'developing:true',
     'hot:false',
     'tag:ai',
     'title:"machine learning"',
@@ -155,6 +156,26 @@ describe('query validation briefing filters', () => {
     expect(validateSearchQuery('briefing:maybe')).toEqual({
       valid: false,
       error: 'Invalid expression: "briefing:maybe"'
+    });
+  });
+});
+
+describe('query validation developing filters', () => {
+  it('accepts developing:true and developing:false in searches and smart folders', () => {
+    expect(validateSearchQuery('developing:true')).toEqual({ valid: true, error: '' });
+    expect(validateSmartFolderQuery('unread:true developing:false'))
+      .toEqual({ valid: true, error: '' });
+    expect(knownKeywords).toContain('developing');
+  });
+
+  it('reports invalid developing filter syntax', () => {
+    expect(validateSearchQuery('developing=yes')).toEqual({
+      valid: false,
+      error: 'Use colon (:) not equals (=). Example: quality:0.6'
+    });
+    expect(validateSearchQuery('developing:maybe')).toEqual({
+      valid: false,
+      error: 'Invalid expression: "developing:maybe"'
     });
   });
 });

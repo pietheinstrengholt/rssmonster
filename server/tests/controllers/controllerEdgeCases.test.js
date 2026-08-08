@@ -92,6 +92,7 @@ const createRequest = (overrides = {}) => ({
 // Supplies a complete valid preference replacement for validation-focused tests.
 const validPreferences = (overrides = {}) => ({
   includeOnlyUnreadArticles: false,
+  markAsReadOnScroll: false,
   includeDevelopingEvents: false,
   showOnlyInterestMatchedArticles: false,
   showOnlyDevelopingEventArticles: false,
@@ -207,6 +208,7 @@ describe('briefing controller edge cases', () => {
   it.each([
     [null, 'preferences must be an object'],
     [validPreferences({ includeOnlyUnreadArticles: 1 }), 'Briefing preference flags must be boolean values'],
+    [validPreferences({ markAsReadOnScroll: true }), 'markAsReadOnScroll requires includeOnlyUnreadArticles'],
     [validPreferences({ minDistinctSources: 0 }), 'minDistinctSources must be an integer between 1 and 127']
   ])('rejects malformed preference payloads', async (preferences, error) => {
     const res = createResponse();

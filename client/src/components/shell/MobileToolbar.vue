@@ -1,6 +1,11 @@
 <template>
   <div ref="toolbarContainer" class="mobile-toolbar-container">
-    <nav id="mobile-toolbar" class="mobile-toolbar" aria-label="Mobile article toolbar">
+    <nav
+      id="mobile-toolbar"
+      class="mobile-toolbar"
+      :class="{ hide: hidden }"
+      aria-label="Mobile article toolbar"
+    >
       <div class="mobile-toolbar-brand-row">
         <div class="mobile-toolbar-brand">
           <img
@@ -66,28 +71,16 @@
         <AppDropdown id="readModeDropdown" :close-key="selectionCloseKey" class="mobile-toolbar-filter">
           <template #trigger="{ triggerProps }">
             <button v-bind="triggerProps" class="mobile-filter-button" type="button">
-              {{ currentStatus === 'briefing' ? 'Daily briefing' : capitalize(currentStatus) }} {{ getStatusCount() }}
+              {{ currentStatusLabel }} {{ getStatusCount() }}
             </button>
           </template>
           <template #menu="{ menuProps }">
             <div v-bind="menuProps">
-        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === 'briefing' }" role="menuitem" @click="statusClicked('briefing')">Daily briefing {{ overviewStore.briefingCount }}</button>
-        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === 'unread' }" role="menuitem" @click="statusClicked('unread')">Unread {{ overviewStore.unreadCount }}</button>
-        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === 'favorite' }" role="menuitem" @click="statusClicked('favorite')">Favorite {{ overviewStore.favoriteCount }}</button>
-        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === 'hot' }" role="menuitem" @click="statusClicked('hot')">Hot {{ overviewStore.hotCount }}</button>
-        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === 'clicked' }" role="menuitem" @click="statusClicked('clicked')">Clicked {{ overviewStore.clickedCount }}</button>
-        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === 'read' }" role="menuitem" @click="statusClicked('read')">Read {{ overviewStore.readCount }}</button>
+        <button v-for="option in visibleStatusOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === option.value }" role="menuitem" @click="statusClicked(option.value)">{{ option.label }} {{ getStatusCount(option.value) }}</button>
         <hr class="app-dropdown__divider">
-        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === 'asc' }" role="menuitem" @click="sortClicked('asc')">Oldest</button>
-        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === 'desc' }" role="menuitem" @click="sortClicked('desc')">Newest</button>
-        <button type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === 'trust' }" role="menuitem" @click="sortClicked('trust')">Trust</button>
-        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === 'recommended' }" role="menuitem" @click="sortClicked('recommended')">Recommended</button>
-        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === 'quality' }" role="menuitem" @click="sortClicked('quality')">Quality</button>
-        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === 'attention' }" role="menuitem" @click="sortClicked('attention')">Most Engaged</button>
+        <button v-for="option in visibleSortOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === option.value }" role="menuitem" :disabled="briefingPresentationControlsDisabled" :title="briefingPresentationControlsDisabled ? briefingPresentationDisabledTitle : null" @click="sortClicked(option.value)">{{ option.label }}</button>
         <hr v-if="isAIEnabled" class="app-dropdown__divider">
-        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.grouping === 'none' }" role="menuitem" @click="setGrouping('none')">All articles</button>
-        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.grouping === 'event' }" role="menuitem" @click="setGrouping('event')">Cluster per event</button>
-        <button v-if="isAIEnabled" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.grouping === 'topic' }" role="menuitem" @click="setGrouping('topic')">Cluster per topic</button>
+        <button v-for="option in visibleGroupingOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.grouping === option.value }" role="menuitem" :disabled="briefingPresentationControlsDisabled" :title="briefingPresentationControlsDisabled ? briefingPresentationDisabledTitle : null" @click="setGrouping(option.value)">{{ option.mobileLabel }}</button>
             </div>
           </template>
         </AppDropdown>
@@ -666,21 +659,23 @@ import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
 import { useUiStore } from '../../store/ui.js';
+import {
+  ARTICLE_GROUPING_OPTIONS,
+  ARTICLE_SORT_OPTIONS,
+  ARTICLE_STATUS_OPTIONS,
+  getArticleStatusOption,
+  getAvailableArticleOptions
+} from '../../config/articleSelectionOptions.js';
 import AppDropdown from '../shared/AppDropdown.vue';
 const MOBILE_LANDSCAPE_WIDTH = 880;
-
-const statusCountMap = {
-  briefing: 'briefingCount',
-  unread: 'unreadCount',
-  favorite: 'favoriteCount',
-  hot: 'hotCount',
-  clicked: 'clickedCount',
-  read: 'readCount'
-};
 
 export default {
   components: { AppDropdown },
   props: {
+    hidden: {
+      type: Boolean,
+      default: false
+    },
     refreshing: {
       type: Boolean,
       default: false
@@ -787,6 +782,7 @@ export default {
     },
     // This function changes the grouping only when the value differs.
     setGrouping: function(value) {
+      if (this.briefingPresentationControlsDisabled) return;
       // Don't trigger if already at the selected value
       if (this.selectionStore.currentSelection.grouping === value) {
         return;
@@ -802,6 +798,7 @@ export default {
     },
     // This function updates the active article sort order.
     sortClicked: function(sort) {
+      if (this.briefingPresentationControlsDisabled) return;
       this.selectionStore.setSelectedSort(sort);
     },
     // This function updates the selected status, clearing smart folders before reloading.
@@ -814,12 +811,14 @@ export default {
       }
     },
     // This function returns the count for the active article status.
-    getStatusCount() {
-      return this.overviewStore[statusCountMap[this.currentStatus]] ?? 0;
+    getStatusCount(status = this.currentStatus) {
+      const countKey = getArticleStatusOption(status)?.countKey;
+      return this.overviewStore[countKey] ?? 0;
     },
     // This function returns a category count for the active article status.
     getCategoryCount(category) {
-      return category[statusCountMap[this.currentStatus]] ?? 0;
+      const countKey = getArticleStatusOption(this.currentStatus)?.countKey;
+      return category[countKey] ?? 0;
     }
   },
   computed: {
@@ -849,6 +848,36 @@ export default {
     },
     currentStatus() {
       return this.currentSelection.status;
+    },
+    // This function disables presentation controls whose values are owned by Briefing settings.
+    briefingPresentationControlsDisabled() {
+      return this.currentStatus === 'briefing';
+    },
+    // This function explains why Briefing presentation controls cannot be changed here.
+    briefingPresentationDisabledTitle() {
+      return 'Briefing sorting and grouping are managed in Briefing settings.';
+    },
+    // This function returns the configured status label with a fallback for unknown values.
+    currentStatusLabel() {
+      return getArticleStatusOption(this.currentStatus)?.label ?? this.capitalize(this.currentStatus);
+    },
+    // This function exposes status options supported by the active mobile capabilities.
+    visibleStatusOptions() {
+      return getAvailableArticleOptions(ARTICLE_STATUS_OPTIONS, {
+        aiEnabled: this.isAIEnabled,
+        mobile: true
+      });
+    },
+    // This function exposes sort options supported by the active mobile capabilities.
+    visibleSortOptions() {
+      return getAvailableArticleOptions(ARTICLE_SORT_OPTIONS, {
+        aiEnabled: this.isAIEnabled,
+        mobile: true
+      });
+    },
+    // This function exposes grouping choices only when AI capabilities are available.
+    visibleGroupingOptions() {
+      return this.isAIEnabled ? ARTICLE_GROUPING_OPTIONS : [];
     },
     // This function maps configurable article selections to their mobile settings dialogs.
     selectionSettingsAction() {

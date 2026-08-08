@@ -60,14 +60,15 @@ function mountReader(article) {
     props: {
       articles: [article],
       container: [article.id],
-      currentSelection: 'unread',
-      currentViewUnreadCount: 1,
-      currentViewSourceCount: 1,
-      remainingItems: 1,
-      fetchCount: 20,
-      hasLoadedContent: true,
-      isFlushed: false,
-      distance: 0
+      collectionSummary: {
+        status: 'unread', selectedTag: '', unreadCount: 1, sourceCount: 1
+      },
+      collectionProgress: {
+        hasLoadedContent: true,
+        isFlushed: false,
+        hasReachedEnd: false,
+        showFeedRefreshProgress: true
+      }
     },
     global: {
       plugins: [stores.pinia]

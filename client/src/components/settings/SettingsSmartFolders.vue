@@ -472,9 +472,7 @@
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
-import { useAuthStore } from '../../store/auth.js';
 import { saveSmartFolders } from '../../api/smartfolders';
-import { setAuthToken } from '../../api/client';
 import { validateSmartFolderQuery } from '../../services/queryValidation';
 import { notifyActionError } from '../../services/actionNotifications.js';
 import SmartFolderEditor from './smartFolders/SmartFolderEditor.vue';
@@ -499,13 +497,12 @@ export default {
             saving: false
         };
     },
-    // This function authenticates and loads authoritative Smart Folders before enabling the editor.
+    // This function loads authoritative Smart Folders before enabling the editor.
     async created() {
-        setAuthToken(this.authStore.token);
         await this.fetchSmartFolders();
     },
     computed: {
-      ...mapStores(useSelectionStore, useOverviewStore, useAuthStore),
+      ...mapStores(useSelectionStore, useOverviewStore),
         // This function reports whether AI-powered Smart Folder controls are available.
         aiEnabled() {
             return Boolean(this.selectionStore.currentSelection.AIEnabled);

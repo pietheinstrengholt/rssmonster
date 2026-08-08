@@ -20,7 +20,7 @@ There is no monolithic compatibility store. Consumers should use the focused own
 
 | Domain | Owns | Does not own |
 | --- | --- | --- |
-| Authentication | Active token, user role, and session-transition generation | Cookie persistence, API header mechanics, login form state, or user profile data |
+| Authentication | Active token, user role and identifier, session-transition generation, and synchronization with the shared API client | Cookie persistence, login form state, or user profile data |
 | Selection | Article status, navigation scope, query, tag, sorting, view mode, grouping, score thresholds, AI capability, developing-event choice, and briefing filter state | Category/feed records, counts, modal visibility, or the local search input draft |
 | Overview | Category and feed hierarchy, global and hierarchical counts, Smart Folders, Top Tags, unread-arrival delta, and their resource states | The active selection, authentication, or dialog state |
 | UI | Active dialog identifier, assistant visibility, mobile-search visibility, search input draft, selected theme mode, and fatal application error | Article query semantics, server resource collections, or authentication authority |
@@ -33,7 +33,7 @@ Pinia is installed before any stateful component mounts. Each focused domain is 
 
 Store state is in memory for the current browser session. No Pinia persistence plugin writes the stores wholesale to local storage. Persistence is deliberately handled elsewhere:
 
-- The authentication token is stored in a cookie and applied to the shared API client.
+- The authentication token is stored in a cookie by the root flow and applied to the shared API client by the authentication store.
 - User settings and domain records are persisted through their APIs.
 - The theme preference is also mirrored through the theme service and browser storage.
 - Article search requests may persist supported reading preferences on the server.
@@ -42,7 +42,7 @@ On application startup, a saved token is validated before authenticated state is
 
 ## Authentication and session isolation
 
-Authentication state contains only the current token and role. The role drives administrator-only presentation, while server authorization remains authoritative.
+Authentication state contains the current token, role, and user identifier. The role drives administrator-only presentation, while server authorization remains authoritative.
 
 Every authentication attempt belongs to a session generation. If an older validation or login response arrives after a newer attempt, logout, or user change, it is ignored.
 
@@ -56,7 +56,7 @@ Changing from one non-empty token to another first clears the previous user's st
 
 Request-generation counters survive the state reset at their newer values. This is essential: a late response from the previous user must never repopulate a cleared store or overwrite the next user's state.
 
-Clearing Pinia state does not by itself remove the cookie or API authorization header. The root authentication flow coordinates all three layers so logout is complete.
+The authentication store applies or clears the shared API authorization header whenever its session changes. The root authentication flow owns cookie persistence and delegates every accepted login, restored session, logout, and expiry transition to that store.
 
 ## Article selection
 
@@ -108,7 +108,7 @@ The selection domain keeps the subset of briefing preferences needed to construc
 - Whether only unread articles are included
 - Whether high-trust ordering is preferred
 
-When Daily Briefing is selected, these values produce the briefing marker, date filter, optional unread filter, and optional trust sort used by article search. If a relevant preference changes while Briefing is active, the query is rebuilt.
+When Daily Briefing is selected, these values produce the briefing marker, date filter, optional unread filter, and optional trust-boosted recommended sort used by article search. If a relevant preference changes while Briefing is active, the query is rebuilt.
 
 Other briefing preferences are enforced by the server and may not appear in query text. A numeric briefing revision invalidates the active collection after those non-query preferences change, allowing consumers to reload without inventing a fake query term.
 
@@ -195,6 +195,11 @@ Read-state transitions reconcile unread and read totals at three levels:
 2. Owning category
 3. Owning feed
 
+While an unread-only Daily Briefing is active, a scroll-reading transition also
+decrements the global, owning-category, and owning-feed Briefing counters once
+for the displayed event group. Briefings that include read articles leave these
+counters unchanged.
+
 Favorite transitions reconcile the favorite total across the same hierarchy. Deltas can represent one or several articles and are clamped at zero. A no-op transition must not change a count.
 
 If the owning category or feed cannot be found, hierarchical reconciliation stops and a diagnostic is logged. The next authoritative overview refresh repairs any drift.
@@ -209,6 +214,12 @@ Subscription mutations keep the cached hierarchy coherent:
 - Removing a category or feed subtracts its contribution from applicable global and category totals.
 
 Current immediate organizational reconciliation covers read, unread, and favorite counts. Hot and clicked contributions are carried in authoritative overview snapshots but are not adjusted by local category/feed move or removal bookkeeping. Those dimensions rely on the next overview refresh after subscription changes. Future work should expand the local reconciliation deliberately if all five dimensions must update before that refresh.
+
+## Feed refresh state
+
+Feed refresh is application-domain state rather than Sidebar state. The feed-refresh store owns the current job identifier, running and completion state, progress metrics, bounded logs, fallback behavior, delayed completion presentation, and generation guards. Sidebar, mobile options, empty states, and AppShell consume this shared state without mounting one another to reach the refresh controller.
+
+The streaming service owns authenticated SSE transport, wire-format parsing, reconnect timing, and connection teardown. The store interprets named domain events and decides how they affect refresh progress. Successful live completion increments a generation observed by AppShell, which then performs the existing overview and article reload. Session reset closes transport resources and invalidates startup, fallback, stream, and timer callbacks from the previous user.
 
 ## UI state
 
@@ -228,7 +239,7 @@ Fatal error state is reserved for application-level replacement surfaces. Recove
 
 Focused ownership does not mean the domains never coordinate. Coordination occurs only where a business transition crosses boundaries:
 
-- Authentication reset invalidates and clears selection, overview, and UI state.
+- Authentication reset invalidates and clears selection, overview, feed-refresh, and UI state.
 - Loading persisted settings places theme in UI ownership and article filters in selection ownership.
 - Overview responses synchronize briefing filter metadata into selection ownership.
 - Status changes refresh status-scoped tags, while grouping changes refresh overview counts and invalidate any older tag request.

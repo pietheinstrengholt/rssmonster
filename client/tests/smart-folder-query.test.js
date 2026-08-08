@@ -52,7 +52,7 @@ describe('Smart Folder query domain', () => {
     const config = parseSmartFolderQuery(
       'read:true favorite:true clicked:true hot:true firstSeen:12h '
       + 'tag:"machine learning" title:"Daily Brief" author:Jane language:nl '
-      + 'quality:>=0.80 freshness:>=.45 eventCount:>=4 sort:asc '
+      + 'quality:>=0.80 freshness:>=.45 developing:true sort:asc '
       + 'limit:75 unknown:value "free phrase"'
     );
 
@@ -82,8 +82,8 @@ describe('Smart Folder query domain', () => {
         freshness: 0.45
       },
       events: {
-        useMinimumCount: true,
-        minimumCount: 4
+        isDeveloping: true,
+        isNotDeveloping: false
       },
       sort: { field: 'published-asc' }
     });
@@ -152,4 +152,13 @@ describe('Smart Folder query domain', () => {
 
     expect(buildSmartFolderQuery(parseSmartFolderQuery(query))).toBe(query);
   });
+
+  it.each(['developing:true', 'developing:false'])(
+    'round-trips the developing story filter %s',
+    developingFilter => {
+      const query = `${developingFilter} limit:50`;
+
+      expect(buildSmartFolderQuery(parseSmartFolderQuery(query))).toBe(query);
+    }
+  );
 });

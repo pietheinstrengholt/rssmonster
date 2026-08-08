@@ -201,7 +201,7 @@
             <fieldset v-if="aiEnabled" class="smart-folder-panel">
                 <legend>
                     Events & Clusters
-                    <BootstrapIcon icon="info-circle-fill" title="Filter for event articles, non-event articles, or events with a minimum article count." />
+                    <BootstrapIcon icon="info-circle-fill" title="Filter by event membership, developing-story state, or minimum event size." />
                 </legend>
 
                 <label class="smart-folder-check">
@@ -209,7 +209,7 @@
                         v-model="draftConfig.events.isEvent"
                         type="checkbox"
                         class="app-form-check-input"
-                        :disabled="draftConfig.events.useMinimumCount"
+                        :disabled="draftConfig.events.useMinimumCount || draftConfig.events.isDeveloping || draftConfig.events.isNotDeveloping"
                         @change="onEventFilterChange('isEvent')"
                     />
                     Is event
@@ -220,14 +220,36 @@
                         v-model="draftConfig.events.isNotEvent"
                         type="checkbox"
                         class="app-form-check-input"
-                        :disabled="draftConfig.events.useMinimumCount"
+                        :disabled="draftConfig.events.useMinimumCount || draftConfig.events.isDeveloping || draftConfig.events.isNotDeveloping"
                         @change="onEventFilterChange('isNotEvent')"
                     />
                     Is not event
                 </label>
 
                 <label class="smart-folder-check">
-                    <input v-model="draftConfig.events.useMinimumCount" class="app-form-check-input" type="checkbox" @change="onEventFilterChange('useMinimumCount')" />
+                    <input
+                        v-model="draftConfig.events.isDeveloping"
+                        type="checkbox"
+                        class="app-form-check-input"
+                        :disabled="draftConfig.events.isNotEvent || draftConfig.events.isNotDeveloping"
+                        @change="onEventFilterChange('isDeveloping')"
+                    />
+                    Is developing story
+                </label>
+
+                <label class="smart-folder-check">
+                    <input
+                        v-model="draftConfig.events.isNotDeveloping"
+                        type="checkbox"
+                        class="app-form-check-input"
+                        :disabled="draftConfig.events.isDeveloping"
+                        @change="onEventFilterChange('isNotDeveloping')"
+                    />
+                    Is not developing story
+                </label>
+
+                <label class="smart-folder-check">
+                    <input v-model="draftConfig.events.useMinimumCount" class="app-form-check-input" type="checkbox" :disabled="draftConfig.events.isDeveloping || draftConfig.events.isNotDeveloping" @change="onEventFilterChange('useMinimumCount')" />
                     Minimum articles in event / cluster
                 </label>
 
@@ -397,17 +419,37 @@ export default {
         onEventFilterChange(changedKey) {
             if (changedKey === 'isEvent' && this.draftConfig.events.isEvent) {
                 this.draftConfig.events.isNotEvent = false;
+                this.draftConfig.events.isDeveloping = false;
+                this.draftConfig.events.isNotDeveloping = false;
                 this.draftConfig.events.useMinimumCount = false;
             }
 
             if (changedKey === 'isNotEvent' && this.draftConfig.events.isNotEvent) {
                 this.draftConfig.events.isEvent = false;
+                this.draftConfig.events.isDeveloping = false;
+                this.draftConfig.events.isNotDeveloping = false;
+                this.draftConfig.events.useMinimumCount = false;
+            }
+
+            if (changedKey === 'isDeveloping' && this.draftConfig.events.isDeveloping) {
+                this.draftConfig.events.isEvent = false;
+                this.draftConfig.events.isNotEvent = false;
+                this.draftConfig.events.isNotDeveloping = false;
+                this.draftConfig.events.useMinimumCount = false;
+            }
+
+            if (changedKey === 'isNotDeveloping' && this.draftConfig.events.isNotDeveloping) {
+                this.draftConfig.events.isEvent = false;
+                this.draftConfig.events.isNotEvent = false;
+                this.draftConfig.events.isDeveloping = false;
                 this.draftConfig.events.useMinimumCount = false;
             }
 
             if (changedKey === 'useMinimumCount' && this.draftConfig.events.useMinimumCount) {
                 this.draftConfig.events.isEvent = false;
                 this.draftConfig.events.isNotEvent = false;
+                this.draftConfig.events.isDeveloping = false;
+                this.draftConfig.events.isNotDeveloping = false;
             }
         },
         // This function reduces tag input to the single supported tag.
