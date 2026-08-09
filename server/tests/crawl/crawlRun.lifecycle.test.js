@@ -253,6 +253,7 @@ describe('crawl run lifecycle', () => {
       markFeedLookupStarted = resolve;
     });
     vi.spyOn(db.Feed, 'findAll').mockImplementation(() => new Promise(resolve => {
+      console.log('DEBUG Feed.findAll mocked');
       releaseFeedLookup = () => resolve([]);
       markFeedLookupStarted();
     }));
@@ -263,6 +264,7 @@ describe('crawl run lifecycle', () => {
       feedLookupStarted,
       Promise.race([firstAcquisition, secondAcquisition])
     ]);
+    console.log('DEBUG race settled');
 
     expect(rejectedAcquisition).toMatchObject({
       userId: atomicUser.id,
@@ -271,8 +273,11 @@ describe('crawl run lifecycle', () => {
       reason: 'crawl_already_running'
     });
 
+    console.log('DEBUG releasing lookup');
     releaseFeedLookup();
+    console.log('DEBUG lookup released');
     const results = await Promise.all([firstAcquisition, secondAcquisition]);
+    console.log('DEBUG acquisitions settled');
     const crawlRuns = await CrawlRun.findAll({
       where: { userId: atomicUser.id }
     });
