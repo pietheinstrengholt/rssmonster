@@ -498,6 +498,12 @@ export default {
     },
     // This function refreshes overview data without conflating auth, timeout, and connectivity failures.
     async getOverview(initial) {
+      if (initial) {
+        void this.overviewStore.fetchSmartFolders().catch(error => {
+          console.error('Error loading Smart Folders:', error);
+        });
+      }
+
       try {
         await this.overviewStore.fetchOverviewSplit({ initial });
 

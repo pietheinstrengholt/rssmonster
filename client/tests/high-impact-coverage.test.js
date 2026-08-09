@@ -1068,7 +1068,8 @@ describe('Vue template handler coverage', () => {
     const stores = createFocusedStores({
       overview: {
         categories: [{ id: 1, name: 'News', feeds: [] }],
-        fetchOverviewSplit: vi.fn().mockResolvedValue()
+        fetchOverviewSplit: vi.fn().mockResolvedValue(),
+        fetchSmartFolders: vi.fn().mockResolvedValue()
       },
       ui: {
         chatAssistantOpen: false,

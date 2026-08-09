@@ -8,7 +8,8 @@ const createRecoveryContext = () => {
     overview: {
       categories: [{ id: 1, name: 'News', feeds: [] }],
       fetchOverview: vi.fn(),
-      fetchOverviewSplit: vi.fn()
+      fetchOverviewSplit: vi.fn(),
+      fetchSmartFolders: vi.fn().mockResolvedValue()
     },
     selection: {
       currentSelection: { status: 'unread' }
@@ -128,7 +129,7 @@ describe('AppShell connectivity recovery', () => {
     });
   });
 
-  it('loads initial overview data without duplicating selection projections', async () => {
+  it('loads initial overview and Smart Folder data without relying on the sidebar', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
     context.connectivityStatus = null;
     context.overviewStore.fetchOverviewSplit.mockResolvedValue();
@@ -136,6 +137,7 @@ describe('AppShell connectivity recovery', () => {
     await AppShell.methods.getOverview.call(context, true);
 
     expect(context.overviewStore.fetchOverviewSplit).toHaveBeenCalledWith({ initial: true });
+    expect(context.overviewStore.fetchSmartFolders).toHaveBeenCalledOnce();
     expect(context.overviewLoaded).toBe(true);
   });
 

@@ -480,10 +480,6 @@ export default {
       });
     }
   },
-  // This loads supplemental sidebar navigation before the component mounts.
-  beforeMount() {
-    void this.overviewStore.fetchSmartFolders();
-  },
   methods: {
     // This function loads drag-and-drop support only when category reordering is requested.
     async toggleCategoryReordering() {
