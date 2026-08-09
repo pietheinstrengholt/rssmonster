@@ -11,6 +11,7 @@ import {
   countArticleHotlinks,
   persistAcceptedHotlinks
 } from '../runtime/hotlinkService.js';
+import { throwIfExecutionExpired } from '../../feeds/executionDeadline.js';
 
 // Defines the rate limit delay ms enforced by this service.
 const RATE_LIMIT_DELAY_MS = 3000;
@@ -48,8 +49,11 @@ const processArticleRevision = async ({
   hotlinkBatcher,
   duplicateCache,
   precomputedActionResult = null,
-  precomputedAnalysis = null
+  precomputedAnalysis = null,
+  execution = {}
 }) => {
+  const hasExecution = Boolean(execution.signal || execution.deadlineAt);
+  throwIfExecutionExpired(execution);
   const { articleData, actionArticle, hotlinkUrls } = candidate;
 
   // Publisher revisions preserve creation-time semantic state by design.
@@ -70,6 +74,7 @@ const processArticleRevision = async ({
   const actions = requiresActions
     ? await resolveArticleActions(feed, preloadedActions)
     : null;
+  throwIfExecutionExpired(execution);
   // Selects the action result based on whether requires actions is available.
   const actionResult = requiresActions
     ? precomputedActionResult || applyActions(actions, actionArticle)
@@ -87,7 +92,8 @@ const processArticleRevision = async ({
       updatePlan,
       derivedValues,
       tagUpdates: null,
-      userId: feed.userId
+      userId: feed.userId,
+      ...(hasExecution ? { execution } : {})
     });
     refreshDuplicateCache(duplicateCache, previousArticleState, article);
 
@@ -115,6 +121,7 @@ const processArticleRevision = async ({
           })
     );
     analysis = applyAnalysisScoreOverrides(analysis, actionResult);
+    throwIfExecutionExpired(execution);
   }
 
   // Handles the case where analysis is available.
@@ -141,12 +148,14 @@ const processArticleRevision = async ({
   if (changes.urlChanged) {
     // Resolves the official source for article while processing article revision.
     const officialSource = await resolveOfficialSourceForArticle(feed.userId, articleData.link);
+    throwIfExecutionExpired(execution);
     // Derives the hotlink count through count article hotlinks while processing article revision.
     const hotlinkCount = await countArticleHotlinks(
       feed,
       updatePlan.updateValues.normalizedUrl,
       hotlinkCountCache
     );
+    throwIfExecutionExpired(execution);
     Object.assign(derivedValues, {
       isOfficialSource: officialSource.isOfficialSource,
       officialOrganization: officialSource.officialOrganization,
@@ -169,17 +178,20 @@ const processArticleRevision = async ({
     updatePlan,
     derivedValues,
     tagUpdates,
-    userId: feed.userId
+    userId: feed.userId,
+    ...(hasExecution ? { execution } : {})
   });
   refreshDuplicateCache(duplicateCache, previousArticleState, article);
 
   // Hotlinks are persisted only after the article transaction commits.
-  await persistAcceptedHotlinks(
+  const hotlinkArguments = [
     hotlinkUrls,
     feed,
     article.id,
-    hotlinkBatcher
-  );
+    hotlinkBatcher,
+  ];
+  if (hasExecution) hotlinkArguments.push(execution);
+  await persistAcceptedHotlinks(...hotlinkArguments);
 
   return {
     article,

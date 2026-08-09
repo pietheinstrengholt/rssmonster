@@ -32,6 +32,8 @@ export const PRECACHE_GLOB_PATTERNS = Object.freeze([
   'assets/InitialFeeds-*.css',
   'assets/categories-*.js',
   'assets/AppError-*.js',
+  'assets/AppError-*.css',
+  'assets/articleSelectionOptions-*.js',
   'assets/FeedRefreshProgress-*.js',
   'assets/FeedRefreshProgress-*.css',
   'img/icons/android-chrome-192x192.png',

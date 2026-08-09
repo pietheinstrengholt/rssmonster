@@ -1,6 +1,10 @@
 import db from '../../../models/index.js';
 import { saveArticleTags } from './tags.js';
 import buildArticlePersistenceValues from './buildArticlePersistenceValues.js';
+import {
+  assertExecutionLeaseOwnership,
+  throwIfExecutionExpired
+} from '../../feeds/executionDeadline.js';
 
 // Provides the shared dependencies used by this service.
 const { Article, sequelize } = db;
@@ -109,7 +113,8 @@ const findConcurrentWinner = async ({ articleValues, error }) => {
    ------------------------------------------------------
    Persists article and generated tags
 ====================================================== */
-async function saveArticle(feed, data, analysis, actionResult) {
+async function saveArticle(feed, data, analysis, actionResult, execution = {}) {
+  throwIfExecutionExpired(execution);
   // Validate userId presence
   if (!feed || !feed.userId) {
     throw new Error('Invalid feed: userId is missing. Cannot save article without valid userId.');
@@ -137,8 +142,11 @@ async function saveArticle(feed, data, analysis, actionResult) {
   try {
     // Derives the article through transaction while performing save article.
     const article = await sequelize.transaction(async transaction => {
+      throwIfExecutionExpired(execution);
+      await assertExecutionLeaseOwnership(execution, { transaction });
       // Performs the create operation while performing save article.
       const createdArticle = await Article.create(articleValues, { transaction });
+      throwIfExecutionExpired(execution);
 
       // Handles the case where is discard match is unavailable.
       if (!isDiscardMatch) {
@@ -150,6 +158,7 @@ async function saveArticle(feed, data, analysis, actionResult) {
           ruleTags: actionResult.tags,
           transaction
         });
+        throwIfExecutionExpired(execution);
       }
 
       return createdArticle;
@@ -157,6 +166,7 @@ async function saveArticle(feed, data, analysis, actionResult) {
 
     return { article, created: true };
   } catch (err) {
+    throwIfExecutionExpired(execution);
     // Rejects processing when err name is not sequelize unique constraint error.
     if (err.name !== 'SequelizeUniqueConstraintError') throw err;
 

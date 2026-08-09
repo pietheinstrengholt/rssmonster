@@ -113,14 +113,18 @@ describe('AppShell lifecycle', () => {
     expect(context.mobileToolbarHidden).toBe(false);
   });
 
-  it('reloads application data only for a newer successful refresh completion', () => {
-    const context = { forceReload: vi.fn() };
+  it('refreshes database data once without reloading settings after crawl completion', () => {
+    const context = {
+      forceReload: vi.fn(),
+      refreshArticlesFromDatabase: vi.fn()
+    };
     const watcher = AppShell.watch['feedRefreshStore.successfulCompletionId'];
 
     watcher.call(context, 1, 0);
     watcher.call(context, 1, 1);
 
-    expect(context.forceReload).toHaveBeenCalledOnce();
+    expect(context.refreshArticlesFromDatabase).toHaveBeenCalledOnce();
+    expect(context.forceReload).not.toHaveBeenCalled();
   });
 
   it('polls every five minutes without notification or service-worker support', () => {

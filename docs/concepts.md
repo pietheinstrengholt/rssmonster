@@ -108,6 +108,20 @@ Trust is **earned over time**, not configured manually.
 
 High-trust feeds influence ranking more, but never silence others.
 
+## Adaptive feed scheduling
+
+RSSMonster estimates publisher activity from valid, non-future entry timestamps,
+including entries that were already known, deduplicated, or filtered locally. It
+sorts and deduplicates the timestamps, derives adjacent publication intervals,
+and feeds their median into a bounded EWMA. A first feed snapshot records only
+the newest publication time; it does not infer cadence from a potentially large
+historical backlog.
+
+This intentionally differs from CommaFeed’s arithmetic average over one feed
+snapshot. RSSMonster uses publisher evidence across observations and a median
+sample so duplicates, ordering, and one long gap have less influence. Adaptive
+fetch intervals remain bounded between five minutes and four hours.
+
 ---
 
 ## Engagement Signals

@@ -14,7 +14,7 @@ Copyright (c) 2026 Piethein Strengholt, piethein@strengholt-online.nl
 
 RSSMonster is not just another RSS reader — it is an **intelligent reading engine** designed to help you cut through information overload and focus on what actually matters.
 
-Where traditional RSS aggregators like Feedly and Inoreader primarily deliver **chronological lists of articles**, RSSMonster takes a fundamentally different approach: it **understands, evaluates, and prioritizes content** on your behalf — transparently and under your control.
+Where traditional RSS aggregators like Feedbin, CommaFeed, Feedly and Inoreader primarily deliver **chronological lists of articles**, RSSMonster takes a fundamentally different approach: it **understands, evaluates, and prioritizes content** on your behalf — transparently and under your control.
 
 ![Screenshot](docs/assets/screenshot04.png)
 

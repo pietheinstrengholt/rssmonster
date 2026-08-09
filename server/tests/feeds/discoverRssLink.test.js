@@ -1,9 +1,13 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 
 const fetchURL = vi.fn();
+const mockedHttp = vi.hoisted(() => ({ requests: [] }));
 
-vi.mock('../../utils/fetchURL.js', () => ({
-  fetchURL
+vi.mock('../../services/feeds/http/acquireHttp.js', () => ({
+  acquireHttp: request => {
+    mockedHttp.requests.push(request);
+    return fetchURL(request.url, request.retries, request.timeoutMs);
+  }
 }));
 
 const { discoverRssLink } = await import('../../services/feeds/discoverRssLink.js');
@@ -21,24 +25,77 @@ const responseFor = ({
   server = '',
   body = ''
 }) => ({
-  ok,
-  url,
-  status,
-  headers: {
-    get: name => {
-      if (name === 'content-type') return contentType;
-      if (name === 'server') return server;
-      return null;
-    }
+  type: ok ? 'changed' : 'permanent_failure',
+  response: {
+    url,
+    status,
+    headers: {
+      'content-type': contentType,
+      server
+    },
+    redirects: [],
+    body: null
   },
-  text: async () => body
+  bodyText: body,
+  error: ok ? undefined : {
+    type: 'permanent_failure',
+    message: `Server returned HTTP ${status}`,
+    status
+  }
 });
 
 afterEach(() => {
   vi.useRealTimers();
+  mockedHttp.requests.length = 0;
 });
 
 describe('discoverRssLink', () => {
+  it('resolves and validates a relative Atom self URL against the final response URL', async () => {
+    fetchURL.mockReset();
+    const sourceUrl = 'https://origin.example.test/start';
+    const finalUrl = 'https://cdn.example.test/feeds/current/feed.xml';
+    const selfUrl = 'https://cdn.example.test/feeds/canonical.xml';
+    // Builds equivalent source and validation feeds with different self declarations.
+    const atom = selfDeclaration => `
+      <feed xmlns="http://www.w3.org/2005/Atom">
+        <title>Redirected publisher</title>
+        <id>urn:feed:redirected</id>
+        <updated>2026-08-09T10:00:00Z</updated>
+        <link rel="self" href="${selfDeclaration}" />
+        <entry>
+          <title>Stable entry</title>
+          <id>entry-1</id>
+          <updated>2026-08-09T10:00:00Z</updated>
+          <link href="https://publisher.example.test/articles/1" />
+        </entry>
+      </feed>`;
+    fetchURL
+      .mockResolvedValueOnce(responseFor({
+        url: finalUrl,
+        contentType: 'application/atom+xml',
+        body: atom('../canonical.xml')
+      }))
+      .mockResolvedValueOnce(responseFor({
+        url: selfUrl,
+        contentType: 'application/atom+xml',
+        body: atom(selfUrl)
+      }));
+
+    const result = await discoverRssLink(sourceUrl, undefined, {
+      includeParsedFeed: true
+    });
+
+    expect(result.publisherSelf).toMatchObject({
+      accepted: true,
+      resolvedUrl: selfUrl,
+      status: 'validated',
+      fetched: true,
+      evidence: { sameOrigin: true, sharedEntries: 1 }
+    });
+    expect(fetchURL).toHaveBeenCalledTimes(2);
+    expect(fetchURL.mock.calls[1][0]).toBe(selfUrl);
+  });
+
   it('recognizes only explicitly allowed YouTube hosts', () => {
     expect(isYoutubeUrl('https://youtube.com/channel/example')).toBe(true);
     expect(isYoutubeUrl('https://www.youtube.com/@example')).toBe(true);
@@ -98,7 +155,9 @@ describe('discoverRssLink', () => {
       'https://www.youtube.com/feeds/videos.xml?channel_id=UC12345678901234567890'
     );
     expect(fetchURL).toHaveBeenCalledWith(
-      'https://www.youtube.com/@rssmonster'
+      'https://www.youtube.com/@rssmonster',
+      undefined,
+      undefined
     );
   });
 
@@ -124,7 +183,10 @@ describe('discoverRssLink', () => {
   it('returns no YouTube feed when the profile request or metadata is unusable', async () => {
     fetchURL.mockReset();
     fetchURL
-      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({
+        type: 'transient_failure',
+        error: { type: 'transient_failure', message: 'offline' }
+      })
       .mockResolvedValueOnce(responseFor({
         ok: false,
         url: 'https://www.youtube.com/@missing'
@@ -145,7 +207,61 @@ describe('discoverRssLink', () => {
     ).resolves.toBeUndefined();
   });
 
-  it('records invalid discovery input without throwing on persistence failure', async () => {
+  it('applies the shared response limit to YouTube discovery pages', async () => {
+    const previousLimit = process.env.FEED_RESPONSE_MAX_BYTES;
+    process.env.FEED_RESPONSE_MAX_BYTES = '8';
+    fetchURL.mockReset();
+    fetchURL.mockResolvedValue({
+      type: 'too_large',
+      error: {
+        type: 'too_large',
+        message: 'Response body exceeds the configured limit of 8 bytes'
+      }
+    });
+
+    try {
+      await expect(
+        getYoutubeRssFromHandle('oversized')
+      ).rejects.toMatchObject({ code: 'RESPONSE_TOO_LARGE' });
+    } finally {
+      if (previousLimit === undefined) {
+        delete process.env.FEED_RESPONSE_MAX_BYTES;
+      } else {
+        process.env.FEED_RESPONSE_MAX_BYTES = previousLimit;
+      }
+    }
+  });
+
+  it('does not persist shared-limit failures inside discovery', async () => {
+    const previousLimit = process.env.FEED_RESPONSE_MAX_BYTES;
+    process.env.FEED_RESPONSE_MAX_BYTES = '8';
+    fetchURL.mockReset();
+    const pageUrl = 'https://example.com/news';
+    const feed = {
+      errorCount: 0,
+      update: vi.fn().mockResolvedValue(undefined)
+    };
+    fetchURL.mockResolvedValue({
+      type: 'too_large',
+      error: {
+        type: 'too_large',
+        message: 'Response body exceeds the configured limit of 8 bytes'
+      }
+    });
+
+    try {
+      await expect(discoverRssLink(pageUrl, feed)).resolves.toBeUndefined();
+      expect(feed.update).not.toHaveBeenCalled();
+    } finally {
+      if (previousLimit === undefined) {
+        delete process.env.FEED_RESPONSE_MAX_BYTES;
+      } else {
+        process.env.FEED_RESPONSE_MAX_BYTES = previousLimit;
+      }
+    }
+  });
+
+  it('returns invalid discovery input without mutating feed failure state', async () => {
     fetchURL.mockReset();
     const feed = {
       errorCount: 25,
@@ -154,15 +270,11 @@ describe('discoverRssLink', () => {
 
     await expect(discoverRssLink('invalid', feed)).resolves.toBeUndefined();
 
-    expect(feed.update).toHaveBeenCalledWith({
-      errorCount: 26,
-      errorMessage: 'Invalid URL',
-      status: 'error'
-    });
+    expect(feed.update).not.toHaveBeenCalled();
     expect(fetchURL).not.toHaveBeenCalled();
   });
 
-  it('reports Cloudflare protection and increments the feed error state', async () => {
+  it('reports Cloudflare protection without mutating feed failure state', async () => {
     fetchURL.mockReset();
     const url = 'https://protected.example.com';
     const feed = {
@@ -180,10 +292,7 @@ describe('discoverRssLink', () => {
       cloudflare: true,
       url
     });
-    expect(feed.update).toHaveBeenCalledWith({
-      errorCount: 1,
-      errorMessage: 'Cloudflare bot protection detected'
-    });
+    expect(feed.update).not.toHaveBeenCalled();
   });
 
   it('accepts Reddit RSS URL directly', async () => {
@@ -192,24 +301,19 @@ describe('discoverRssLink', () => {
 
     fetchURL.mockImplementation(async (candidate) => {
       if (candidate === rssUrl) {
-        return {
-          ok: true,
+        return responseFor({
           url: rssUrl,
-          headers: {
-            get: (name) => (name === 'content-type' ? 'application/rss+xml; charset=utf-8' : null)
-          },
-          text: async () => '<rss version="2.0"><channel><title>Reddit</title></channel></rss>'
-        };
+          contentType: 'application/rss+xml; charset=utf-8',
+          body: '<rss version="2.0"><channel><title>Reddit</title></channel></rss>'
+        });
       }
 
-      return {
+      return responseFor({
         ok: false,
         url: candidate,
-        headers: {
-          get: () => null
-        },
-        text: async () => ''
-      };
+        contentType: '',
+        body: ''
+      });
     });
 
     await expect(discoverRssLink(rssUrl)).resolves.toBe(rssUrl);
@@ -220,14 +324,11 @@ describe('discoverRssLink', () => {
     fetchURL.mockReset();
     const rssUrl = 'https://www.reddit.com/.rss';
 
-    fetchURL.mockResolvedValue({
-      ok: true,
+    fetchURL.mockResolvedValue(responseFor({
       url: rssUrl,
-      headers: {
-        get: (name) => (name === 'content-type' ? 'application/atom+xml; charset=utf-8' : null)
-      },
-      text: async () => '<feed xmlns="http://www.w3.org/2005/Atom"><title>Reddit</title></feed>'
-    });
+      contentType: 'application/atom+xml; charset=utf-8',
+      body: '<feed xmlns="http://www.w3.org/2005/Atom"><title>Reddit</title></feed>'
+    }));
 
     const result = await discoverRssLink(
       rssUrl,
@@ -243,6 +344,40 @@ describe('discoverRssLink', () => {
     });
     expect(fetchURL).toHaveBeenCalledTimes(1);
   });
+
+  it.each(['unchanged', 'not_modified'])(
+    'returns a direct %s outcome without parsing or fallback requests',
+    async type => {
+      fetchURL.mockReset();
+      const rssUrl = 'https://example.com/feed.xml';
+      const conditionalRequest = {
+        headers: { 'if-none-match': '"feed-v2"' },
+        previousContentHash: 'accepted-hash'
+      };
+      fetchURL.mockResolvedValue({
+        type,
+        response: {
+          status: type === 'not_modified' ? 304 : 200,
+          url: rssUrl,
+          headers: {},
+          redirects: [],
+          body: null
+        },
+        bodyHash: 'accepted-hash'
+      });
+
+      await expect(discoverRssLink(rssUrl, undefined, {
+        includeParsedFeed: true,
+        conditionalRequest
+      })).resolves.toMatchObject({
+        url: rssUrl,
+        parsedFeed: null,
+        fetchOutcome: { type }
+      });
+      expect(fetchURL).toHaveBeenCalledTimes(1);
+      expect(mockedHttp.requests[0]).toMatchObject(conditionalRequest);
+    }
+  );
 
   it('discovers and persists a relative feed link from an HTML head', async () => {
     fetchURL.mockReset();
@@ -328,6 +463,138 @@ describe('discoverRssLink', () => {
     await expect(discoverRssLink(pageUrl)).resolves.toBe(feedUrl);
   });
 
+  it('discovers a declared feed from the homepage after a stored endpoint disappears', async () => {
+    fetchURL.mockReset();
+    const oldFeedUrl = 'https://publisher.example.test/obsolete.xml';
+    const homepageUrl = 'https://publisher.example.test';
+    const recoveredUrl = 'https://publisher.example.test/feeds/current.atom';
+    const feed = {
+      url: oldFeedUrl,
+      update: vi.fn().mockResolvedValue(undefined)
+    };
+    fetchURL.mockImplementation(async candidate => {
+      if (candidate === oldFeedUrl) {
+        return responseFor({ ok: false, url: candidate, status: 404 });
+      }
+      if (candidate === homepageUrl) {
+        return responseFor({
+          url: homepageUrl,
+          body: '<html><head><link rel="alternate" ' +
+            'type="application/atom+xml" href="/feeds/current.atom"></head></html>'
+        });
+      }
+      if (candidate === recoveredUrl) {
+        return responseFor({
+          url: recoveredUrl,
+          contentType: 'application/atom+xml',
+          body: '<feed xmlns="http://www.w3.org/2005/Atom"><title>Recovered</title></feed>'
+        });
+      }
+      return responseFor({ ok: false, url: candidate, status: 404 });
+    });
+
+    await expect(discoverRssLink(oldFeedUrl, feed)).resolves.toBe(recoveredUrl);
+    expect(fetchURL.mock.calls.map(([candidate]) => candidate)).toEqual([
+      oldFeedUrl,
+      homepageUrl,
+      recoveredUrl
+    ]);
+    expect(feed.update).toHaveBeenCalledWith({ url: recoveredUrl });
+  });
+
+  it('checks the homepage when a stored endpoint becomes an HTML placeholder', async () => {
+    fetchURL.mockReset();
+    const oldFeedUrl = 'https://publisher.example.test/retired-feed';
+    const homepageUrl = 'https://publisher.example.test';
+    const recoveredUrl = 'https://publisher.example.test/feed.json';
+    const feed = {
+      url: oldFeedUrl,
+      update: vi.fn().mockResolvedValue(undefined)
+    };
+    fetchURL.mockImplementation(async candidate => {
+      if (candidate === oldFeedUrl) {
+        return responseFor({
+          url: candidate,
+          body: '<html><body>This feed endpoint has moved.</body></html>'
+        });
+      }
+      if (candidate === homepageUrl) {
+        return responseFor({
+          url: homepageUrl,
+          body: '<html><head><link rel="alternate" ' +
+            'type="application/feed+json" href="/feed.json"></head></html>'
+        });
+      }
+      if (candidate === recoveredUrl) {
+        return responseFor({
+          url: recoveredUrl,
+          contentType: 'application/feed+json',
+          body: JSON.stringify({
+            version: 'https://jsonfeed.org/version/1.1',
+            title: 'Recovered JSON Feed',
+            items: []
+          })
+        });
+      }
+      return responseFor({ ok: false, url: candidate, status: 404 });
+    });
+
+    await expect(discoverRssLink(oldFeedUrl, feed)).resolves.toBe(recoveredUrl);
+    expect(fetchURL.mock.calls.map(([candidate]) => candidate)).toEqual([
+      oldFeedUrl,
+      homepageUrl,
+      recoveredUrl
+    ]);
+    expect(feed.update).toHaveBeenCalledWith({ url: recoveredUrl });
+  });
+
+  it.each([
+    ['rate limiting', {
+      type: 'rate_limited',
+      response: { status: 429, headers: {}, redirects: [], body: null },
+      error: { type: 'rate_limited', status: 429, message: 'HTTP 429' }
+    }],
+    ['transient network failure', {
+      type: 'transient_failure',
+      error: { type: 'transient_failure', message: 'connection reset' }
+    }],
+    ['security rejection', {
+      type: 'security_rejected',
+      error: { type: 'security_rejected', message: 'blocked' }
+    }]
+  ])('does not probe fallback endpoints after %s', async (_label, outcome) => {
+    fetchURL.mockReset().mockResolvedValue(outcome);
+
+    await expect(
+      discoverRssLink('https://example.com/old-feed.xml')
+    ).resolves.toBeUndefined();
+
+    expect(fetchURL).toHaveBeenCalledTimes(1);
+  });
+
+  it('limits missing-endpoint recovery to five conventional paths', async () => {
+    fetchURL.mockReset();
+    const oldFeedUrl = 'https://example.com/old-feed.xml';
+    const homepageUrl = 'https://example.com';
+    fetchURL.mockImplementation(async candidate => responseFor({
+      ok: false,
+      url: candidate,
+      status: 404
+    }));
+
+    await expect(discoverRssLink(oldFeedUrl)).resolves.toBeUndefined();
+
+    expect(fetchURL.mock.calls.map(([candidate]) => candidate)).toEqual([
+      oldFeedUrl,
+      homepageUrl,
+      'https://example.com/feed',
+      'https://example.com/feed.xml',
+      'https://example.com/rss',
+      'https://example.com/rss.xml',
+      'https://example.com/atom.xml'
+    ]);
+  });
+
   it('does not rewrite a feed that already has the discovered URL', async () => {
     fetchURL.mockReset();
     const rssUrl = 'https://example.com/feed.xml';
@@ -353,17 +620,13 @@ describe('discoverRssLink', () => {
 
     fetchURL.mockImplementation(async (candidate) => {
       if (candidate === rssUrl) {
-        return {
-          ok: true,
+        return responseFor({
           url: rssUrl,
-          text: async () => '<rss version="2.0"><channel><title>Bluesky</title></channel></rss>'
-        };
+          body: '<rss version="2.0"><channel><title>Bluesky</title></channel></rss>'
+        });
       }
 
-      return {
-        ok: false,
-        url: candidate
-      };
+      return responseFor({ ok: false, url: candidate, status: 404 });
     });
 
     await expect(discoverRssLink(profileUrl)).resolves.toBe(rssUrl);
@@ -377,17 +640,13 @@ describe('discoverRssLink', () => {
 
     fetchURL.mockImplementation(async (candidate) => {
       if (candidate === rssUrl) {
-        return {
-          ok: true,
+        return responseFor({
           url: rssUrl,
-          text: async () => '<rss version="2.0"><channel><title>Mastodon</title></channel></rss>'
-        };
+          body: '<rss version="2.0"><channel><title>Mastodon</title></channel></rss>'
+        });
       }
 
-      return {
-        ok: false,
-        url: candidate
-      };
+      return responseFor({ ok: false, url: candidate, status: 404 });
     });
 
     await expect(discoverRssLink(profileUrl)).resolves.toBe(rssUrl);
@@ -398,7 +657,10 @@ describe('discoverRssLink', () => {
     fetchURL.mockReset();
     const pageUrl = 'https://example.com/news';
 
-    fetchURL.mockRejectedValue(new Error('fetch failed'));
+    fetchURL.mockResolvedValue({
+      type: 'transient_failure',
+      error: { type: 'transient_failure', message: 'fetch failed' }
+    });
 
     await expect(discoverRssLink(pageUrl)).resolves.toBeUndefined();
 
@@ -408,16 +670,17 @@ describe('discoverRssLink', () => {
     expect(originalCalls).toHaveLength(1);
   });
 
-  it('limits all candidate fetches to the overall discovery budget', async () => {
+  it('stops discovery after the initial request times out', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
     fetchURL.mockReset();
 
     fetchURL.mockImplementation(async (_candidate, _retries, timeoutMs) => {
       vi.setSystemTime(Date.now() + timeoutMs);
-      const error = new Error('The fetch operation timed out');
-      error.name = 'TimeoutError';
-      throw error;
+      return {
+        type: 'timed_out',
+        error: { type: 'timed_out', message: 'The fetch operation timed out' }
+      };
     });
 
     await expect(
@@ -428,13 +691,57 @@ describe('discoverRssLink', () => {
       (total, call) => total + call[2],
       0
     );
-    expect(allocatedMs).toBe(15000);
+    expect(allocatedMs).toBe(5000);
     expect(fetchURL.mock.calls[0]).toEqual([
       'https://example.com/news',
       1,
       5000
     ]);
-    expect(fetchURL.mock.calls.slice(1).every((call) => call[1] === 0)).toBe(true);
+    expect(fetchURL).toHaveBeenCalledTimes(1);
 
+  });
+
+  it('reports primary and speculative failure provenance separately', async () => {
+    fetchURL.mockReset();
+    const primaryUrl = 'https://example.com/section.xml';
+    const fetchEvents = [];
+    const parseEvents = [];
+    fetchURL.mockImplementation(async candidate => {
+      if (candidate === primaryUrl) {
+        return responseFor({
+          url: primaryUrl,
+          contentType: 'application/rss+xml',
+          body: '<rss><channel><item></rss>'
+        });
+      }
+      return responseFor({ ok: false, url: candidate, status: 404 });
+    });
+
+    await expect(discoverRssLink(primaryUrl, undefined, {
+      onFetchOutcome: (outcome, provenance) => {
+        fetchEvents.push({ outcome, provenance });
+      },
+      onParseFailure: (diagnostic, provenance) => {
+        parseEvents.push({ diagnostic, provenance });
+      }
+    })).resolves.toBeUndefined();
+
+    expect(fetchEvents[0]).toMatchObject({
+      outcome: { type: 'changed' },
+      provenance: {
+        role: 'primary',
+        kind: 'primary',
+        requestedUrl: primaryUrl
+      }
+    });
+    expect(parseEvents[0]).toMatchObject({
+      diagnostic: { code: 'MALFORMED_FEED_BODY' },
+      provenance: { role: 'primary', kind: 'primary' }
+    });
+    expect(fetchEvents.slice(1).every(event => (
+      event.provenance.role === 'candidate' &&
+      event.provenance.kind === 'conventional_path' &&
+      event.provenance.speculative === true
+    ))).toBe(true);
   });
 });

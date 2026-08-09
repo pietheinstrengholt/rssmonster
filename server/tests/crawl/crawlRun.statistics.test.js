@@ -2,15 +2,13 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
 
 const mocked = vi.hoisted(() => ({
-  discoverRssLink: vi.fn(),
+  acquireFeed: vi.fn(),
   processArticle: vi.fn(),
   runPostCrawlSemanticPipeline: vi.fn()
 }));
 
-vi.mock('../../services/feeds/discoverRssLink.js', () => ({
-  default: {
-    discoverRssLink: mocked.discoverRssLink
-  }
+vi.mock('../../services/feeds/feedAcquisition.js', () => ({
+  acquireFeed: mocked.acquireFeed
 }));
 
 vi.mock('../../services/crawl/index.js', () => ({
@@ -54,7 +52,8 @@ describe('crawl run article statistics', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
-    mocked.discoverRssLink.mockReset().mockImplementation(async (_url, feed) => ({
+    mocked.acquireFeed.mockReset().mockImplementation(async ({ feed }) => ({
+      type: 'changed',
       url: feed.url,
       parsedFeed: {
         format: 'rss',
@@ -90,6 +89,42 @@ describe('crawl run article statistics', () => {
     });
   });
 
+  it('emits one final feed result and one compact crawl summary', async () => {
+    const { user, feed } = await createUserFeed('structuredcrawlresult');
+    mocked.acquireFeed.mockResolvedValue({
+      type: 'changed',
+      url: 'https://example.com/recovered.xml',
+      discovery: {
+        attempts: 2,
+        recovered: true,
+        resolvedUrl: 'https://example.com/recovered.xml'
+      },
+      parsedFeed: {
+        format: 'rss',
+        title: feed.feedName,
+        entries: [{ externalId: 'new' }]
+      }
+    });
+    mocked.processArticle.mockResolvedValue({
+      newArticles: 1,
+      updatedArticles: 0,
+      errors: 0
+    });
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const result = await crawlController.performCrawl(user.id);
+
+    const crawlLines = log.mock.calls
+      .map(([line]) => line)
+      .filter(line => String(line).startsWith('[CRAWL]'));
+    expect(crawlLines).toHaveLength(2);
+    expect(crawlLines[0]).toContain('[CRAWL] RECOVERED');
+    expect(crawlLines[0]).toContain('items=1 attempts=2');
+    expect(crawlLines[1]).toContain('[CRAWL] SUMMARY');
+    expect(crawlLines[1]).toContain('outcomes=RECOVERED:1');
+    expect(result.crawlOutcomes).toEqual({ RECOVERED: 1 });
+  });
+
   it('does not count filtered inserts as new visible articles', async () => {
     const { user } = await createUserFeed('filteredcrawlstats');
     mocked.processArticle
@@ -118,7 +153,99 @@ describe('crawl run article statistics', () => {
     });
   });
 
-  it('persists article errors and leaves the feed in an error state', async () => {
+  it.each(['unchanged', 'not_modified'])(
+    'treats %s acquisition as success without article processing',
+    async type => {
+      const { user, feed } = await createUserFeed(`${type}crawlstats`);
+      const completedAt = new Date();
+      const cacheFreshUntil = new Date(completedAt.getTime() + 300000);
+      await feed.update({
+        etag: '"feed-v1"',
+        contentHash: 'accepted-hash',
+        lastPublishedAt: new Date(),
+        observedEntryIntervalMs: 10 * 60 * 1000,
+        consecutiveFailures: 2
+      });
+      mocked.acquireFeed.mockResolvedValue({
+        type,
+        bodyHash: 'accepted-hash',
+        policy: {
+          etag: '"feed-v2"',
+          lastModified: null,
+          cacheFreshUntil,
+          retryAfterAt: null
+        }
+      });
+
+      const result = await crawlController.performCrawl(user.id);
+      await feed.reload();
+
+      expect(result).toMatchObject({ processed: 1, errors: 0 });
+      expect(mocked.processArticle).not.toHaveBeenCalled();
+      expect(feed.lastFetchOutcome).toBe(type);
+      expect(feed.lastSuccessAt).toBeInstanceOf(Date);
+      expect(feed.lastChangedAt).toBeNull();
+      expect(feed.lastPublishedAt).toBeInstanceOf(Date);
+      expect(Number(feed.observedEntryIntervalMs)).toBe(10 * 60 * 1000);
+      expect(feed.consecutiveFailures).toBe(0);
+      expect(feed.etag).toBe('"feed-v2"');
+      expect(feed.nextFetchAt.getTime()).toBeGreaterThanOrEqual(
+        Math.floor(cacheFreshUntil.getTime() / 1000) * 1000
+      );
+      expect(feed.nextFetchAt.getTime()).toBeLessThanOrEqual(
+        Math.floor(cacheFreshUntil.getTime() / 1000) * 1000 + 62000
+      );
+    }
+  );
+
+  it('updates cadence from publisher entries regardless of insertion outcome', async () => {
+    const { user, feed } = await createUserFeed('cadencecrawlstats');
+    await feed.update({
+      lastPublishedAt: new Date('2026-07-01T08:00:00.000Z'),
+      observedEntryIntervalMs: 2 * 60 * 60 * 1000
+    });
+    mocked.acquireFeed.mockResolvedValue({
+      type: 'changed',
+      url: feed.url,
+      parsedFeed: {
+        format: 'rss',
+        title: feed.feedName,
+        entries: [
+          {
+            externalId: 'new',
+            publishedAt: new Date('2026-07-01T10:00:00.000Z')
+          },
+          {
+            externalId: 'updated',
+            publishedAt: new Date('2026-07-01T11:00:00.000Z')
+          },
+          {
+            externalId: 'filtered',
+            publishedAt: new Date('2026-07-01T11:30:00.000Z')
+          }
+        ]
+      }
+    });
+    mocked.processArticle
+      .mockResolvedValueOnce({ newArticles: 1, updatedArticles: 0, errors: 0 })
+      .mockResolvedValueOnce({ newArticles: 0, updatedArticles: 1, errors: 0 })
+      .mockResolvedValueOnce({
+        newArticles: 0,
+        filteredArticles: 1,
+        updatedArticles: 0,
+        errors: 0
+      });
+
+    await crawlController.performCrawl(user.id);
+    await feed.reload();
+
+    expect(feed.lastPublishedAt).toEqual(
+      new Date('2026-07-01T11:30:00.000Z')
+    );
+    expect(Number(feed.observedEntryIntervalMs)).toBe(105 * 60 * 1000);
+  });
+
+  it('records article errors without relabeling a successful fetch', async () => {
     const { user, feed } = await createUserFeed('articleerrorcrawlstats');
     const onProgress = vi.fn();
     mocked.processArticle
@@ -145,8 +272,13 @@ describe('crawl run article statistics', () => {
       timedOutFeeds: 0,
       durationMs: expect.any(Number)
     });
-    expect(feed.errorCount).toBe(1);
-    expect(feed.errorMessage).toBe('2 articles failed during processing');
+    expect(feed).toMatchObject({
+      lastFetchOutcome: 'changed',
+      consecutiveFailures: 0,
+      errorCount: 0,
+      errorMessage: null,
+      status: 'active'
+    });
     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({
       type: 'progress',
       status: 'error',
@@ -155,20 +287,35 @@ describe('crawl run article statistics', () => {
   });
 
   it('persists accumulated totals when the crawl fails after article writes', async () => {
-    const { user } = await createUserFeed('failedcrawlstats');
+    const { user, feed } = await createUserFeed('failedcrawlstats');
     const crawlError = new Error('Unable to update feed metadata');
     mocked.processArticle
       .mockResolvedValueOnce({ newArticles: 1, updatedArticles: 0, errors: 0 })
       .mockResolvedValueOnce({ newArticles: 0, updatedArticles: 1, errors: 0 });
-    vi.spyOn(Feed.prototype, 'update').mockRejectedValue(crawlError);
+    const originalUpdate = Feed.update;
+    // Fails the owner-checked terminal write that includes feed metadata.
+    vi.spyOn(Feed, 'update').mockImplementation(function (values, options) {
+      if (Object.hasOwn(values, 'feedType')) {
+        return Promise.reject(crawlError);
+      }
+      return originalUpdate.call(this, values, options);
+    });
 
-    await expect(crawlController.performCrawl(user.id)).rejects.toBe(crawlError);
+    const crawlStartedAt = Date.now();
+    const result = await crawlController.performCrawl(user.id);
 
     const crawlRun = await CrawlRun.findOne({ where: { userId: user.id } });
+    await feed.reload();
 
+    expect(result).toMatchObject({
+      totalNewArticles: 1,
+      totalUpdatedArticles: 1,
+      errors: 1,
+      failedFeeds: 1
+    });
     expect(crawlRun).toMatchObject({
-      status: 'failed',
-      errorMessage: crawlError.message,
+      status: 'completed',
+      errorMessage: null,
       newArticles: 1,
       updatedArticles: 1,
       articleErrors: 0,
@@ -178,6 +325,14 @@ describe('crawl run article statistics', () => {
       timedOutFeeds: 0,
       durationMs: expect.any(Number)
     });
+    expect(feed).toMatchObject({
+      lastFetchOutcome: 'transient_failure',
+      consecutiveFailures: 1,
+      status: 'active',
+      leaseOwner: null,
+      leaseUntil: null
+    });
+    expect(feed.nextFetchAt.getTime()).toBeGreaterThan(crawlStartedAt);
   });
 
   it('records scheduled crawls separately from API crawls', async () => {
@@ -192,5 +347,75 @@ describe('crawl run article statistics', () => {
 
     const crawlRun = await CrawlRun.findOne({ where: { userId: user.id } });
     expect(crawlRun.triggerType).toBe('scheduled');
+  });
+
+  it.each([
+    ['transient_failure', 500, 0, 'active', true, 4 * 60 * 60 * 1000],
+    ['rate_limited', 503, 0, 'active', true, 4 * 60 * 60 * 1000],
+    ['permanent_failure', 404, 0, 'active', true, 24 * 60 * 60 * 1000],
+    ['permanent_failure', 410, 1, 'active', true, 24 * 60 * 60 * 1000],
+    ['malformed', null, 0, 'active', true, 6 * 60 * 60 * 1000],
+    ['malformed', null, 2, 'error', false, null],
+    ['security_rejected', null, 0, 'error', false, null]
+  ])('persists one atomic terminal transition for %s', async (
+    outcomeType,
+    statusCode,
+    priorFailures,
+    expectedStatus,
+    retryable,
+    minimumDelayMs
+  ) => {
+    const { user, feed } = await createUserFeed(`terminal${outcomeType}`);
+    await feed.update({ consecutiveFailures: priorFailures });
+    const retryAfterAt = outcomeType === 'rate_limited'
+      ? new Date(Date.now() + minimumDelayMs)
+      : null;
+    mocked.acquireFeed.mockResolvedValue({
+      type: outcomeType,
+      response: statusCode === null ? null : { status: statusCode },
+      policy: { retryAfterAt },
+      error: {
+        type: outcomeType,
+        status: statusCode,
+        message: `Diagnostic for ${outcomeType}`
+      }
+    });
+    const updateSpy = vi.spyOn(Feed, 'update');
+    const startedAt = Date.now();
+
+    const result = await crawlController.performCrawl(user.id);
+
+    const terminalCalls = updateSpy.mock.calls.filter(
+      ([values]) => Object.hasOwn(values, 'lastFetchOutcome')
+    );
+    expect(terminalCalls).toHaveLength(1);
+    expect(terminalCalls[0][0]).toMatchObject({
+      lastFetchOutcome: outcomeType,
+      consecutiveFailures: priorFailures + 1,
+      errorCount: priorFailures + 1,
+      errorMessage: `Diagnostic for ${outcomeType}`,
+      status: expectedStatus,
+      nextFetchAt: retryable ? expect.any(Date) : null
+    });
+    await feed.reload();
+    expect(feed).toMatchObject({
+      lastFetchOutcome: outcomeType,
+      consecutiveFailures: priorFailures + 1,
+      errorCount: priorFailures + 1,
+      errorMessage: `Diagnostic for ${outcomeType}`,
+      status: expectedStatus
+    });
+    expect(result).toMatchObject({ errors: 1, failedFeeds: 1 });
+    expect(mocked.processArticle).not.toHaveBeenCalled();
+    if (retryable) {
+      expect(feed.nextFetchAt.getTime()).toBeGreaterThanOrEqual(
+        startedAt + minimumDelayMs
+      );
+      expect(feed.nextFetchAt.getTime()).toBeLessThanOrEqual(
+        Date.now() + minimumDelayMs + 62000
+      );
+    } else {
+      expect(feed.nextFetchAt).toBeNull();
+    }
   });
 });

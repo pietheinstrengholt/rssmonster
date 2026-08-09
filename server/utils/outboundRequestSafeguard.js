@@ -55,6 +55,13 @@ const createBlockedRequestError = message => {
   return error;
 };
 
+// Creates a distinct redirect failure so crawl reporting does not misclassify it as SSRF rejection.
+const createRedirectLimitError = maxRedirects => {
+  const error = new Error(`Redirect limit of ${maxRedirects} was exceeded`);
+  error.code = 'REDIRECT_LIMIT_EXCEEDED';
+  return error;
+};
+
 // Normalizes URL and connector hostnames for comparisons and DNS resolution.
 const normalizeHostname = hostname => {
   const value = String(hostname || '').trim().toLowerCase();
@@ -313,36 +320,44 @@ export const fetchWithOutboundRequestSafeguard = async (
   input,
   options = {},
   maxRedirects = DEFAULT_MAX_REDIRECTS,
-  fetchImplementation = undiciFetch
+  fetchImplementation = undiciFetch,
+  onRedirect,
+  requestLifecycle = {}
 ) => {
   let currentUrl = validateOutboundUrl(input);
 
   for (let redirectCount = 0; ; redirectCount += 1) {
     let response;
+    let lifecycleToken;
     try {
+      lifecycleToken = await requestLifecycle.beforeRequest?.(
+        currentUrl.toString()
+      );
       response = await fetchImplementation(currentUrl, {
         ...options,
         redirect: 'manual',
         dispatcher: guardedDispatcher
       });
     } catch (error) {
+      await requestLifecycle.afterRequest?.(lifecycleToken);
       throw unwrapBlockedRequestError(error);
     }
 
     if (!REDIRECT_STATUSES.has(response.status)) {
+      requestLifecycle.finalResponse?.(lifecycleToken);
       return response;
     }
 
     const location = response.headers.get('location');
     if (!location) {
+      requestLifecycle.finalResponse?.(lifecycleToken);
       return response;
     }
 
     if (redirectCount >= maxRedirects) {
       await cancelResponseBody(response);
-      throw createBlockedRequestError(
-        `redirect limit of ${maxRedirects} was exceeded`
-      );
+      await requestLifecycle.afterRequest?.(lifecycleToken);
+      throw createRedirectLimitError(maxRedirects);
     }
 
     let nextUrl;
@@ -350,10 +365,17 @@ export const fetchWithOutboundRequestSafeguard = async (
       nextUrl = new URL(location, currentUrl);
     } catch {
       await cancelResponseBody(response);
+      await requestLifecycle.afterRequest?.(lifecycleToken);
       throw createBlockedRequestError('a redirect URL is invalid');
     }
 
     await cancelResponseBody(response);
+    await requestLifecycle.afterRequest?.(lifecycleToken);
+    onRedirect?.({
+      fromUrl: currentUrl.toString(),
+      toUrl: nextUrl.toString(),
+      status: response.status
+    });
     currentUrl = validateOutboundUrl(nextUrl);
   }
 };

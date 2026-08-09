@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   discoverRssLink: vi.fn(),
+  findAlias: vi.fn(),
   findFeed: vi.fn(),
-  parseFeed: vi.fn()
+  parseFeed: vi.fn(),
+  registerAliases: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -30,6 +32,12 @@ vi.mock('../../services/feeds/parser.js', () => ({
   }
 }));
 
+vi.mock('../../services/feeds/feedUrlAliases.js', () => ({
+  FeedUrlAliasConflictError: class FeedUrlAliasConflictError extends Error {},
+  findFeedByUrlAlias: mocked.findAlias,
+  registerFeedUrlAliases: mocked.registerAliases
+}));
+
 const {
   FeedManagementError,
   discoverFeedSubscription,
@@ -41,8 +49,10 @@ const {
 describe('feed management helpers', () => {
   beforeEach(() => {
     mocked.discoverRssLink.mockReset();
+    mocked.findAlias.mockReset().mockResolvedValue(null);
     mocked.findFeed.mockReset().mockResolvedValue(null);
     mocked.parseFeed.mockReset();
+    mocked.registerAliases.mockReset();
   });
 
   it('normalizes safe feed URLs and rejects malformed, credentialed, or non-HTTP URLs', () => {
@@ -168,6 +178,7 @@ describe('feed management helpers', () => {
       faviconUrl: 'https://example.com/icon.png'
     });
     mocked.findFeed
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(canonicalFeed);
 

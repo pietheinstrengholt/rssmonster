@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import crawlController, { withTimeout } from '../../controllers/crawl.js';
+import crawlController, {
+  resolveFeedMaxCount,
+  resolveFeedParallelConcurrency,
+  withTimeout
+} from '../../controllers/crawl.js';
 import db from '../../models/index.js';
 
 describe('crawl interval controls', () => {
@@ -9,7 +13,7 @@ describe('crawl interval controls', () => {
 
   it('allows feeds whose interval has elapsed', () => {
     const feed = {
-      lastFetched: new Date('2026-07-01T00:00:00Z'),
+      nextFetchAt: new Date('2026-07-01T00:20:00Z'),
       updateIntervalMinutes: 20
     };
     const now = new Date('2026-07-01T00:30:00Z');
@@ -17,9 +21,25 @@ describe('crawl interval controls', () => {
     expect(crawlController.shouldCrawlFeed(feed, now)).toBe(true);
   });
 
+  it('prefers FEED_MAX_COUNT while temporarily accepting legacy MAX_FEEDCOUNT', () => {
+    expect(resolveFeedMaxCount({ FEED_MAX_COUNT: '25', MAX_FEEDCOUNT: '12' }))
+      .toBe(25);
+    expect(resolveFeedMaxCount({ MAX_FEEDCOUNT: '12' })).toBe(12);
+    expect(resolveFeedMaxCount({})).toBe(10);
+    expect(resolveFeedMaxCount({ FEED_MAX_COUNT: 'invalid', MAX_FEEDCOUNT: '12' }))
+      .toBe(10);
+  });
+
+  it('uses a conservative configurable parallel feed concurrency', () => {
+    expect(resolveFeedParallelConcurrency({ FEED_PARALLEL_CONCURRENCY: '4' })).toBe(4);
+    expect(resolveFeedParallelConcurrency({ FEED_PARALLEL_CONCURRENCY: '0' })).toBe(3);
+    expect(resolveFeedParallelConcurrency({ FEED_PARALLEL_CONCURRENCY: 'invalid' })).toBe(3);
+    expect(resolveFeedParallelConcurrency({})).toBe(3);
+  });
+
   it('skips feeds whose interval has not elapsed', () => {
     const feed = {
-      lastFetched: new Date('2026-07-01T00:00:00Z'),
+      nextFetchAt: new Date('2026-07-01T00:20:00Z'),
       updateIntervalMinutes: 20
     };
     const now = new Date('2026-07-01T00:10:00Z');
@@ -27,14 +47,21 @@ describe('crawl interval controls', () => {
     expect(crawlController.shouldCrawlFeed(feed, now)).toBe(false);
   });
 
-  it('allows feeds without lastFetched or interval values', () => {
-    expect(crawlController.shouldCrawlFeed({ lastFetched: null, updateIntervalMinutes: 60 })).toBe(true);
-    expect(crawlController.shouldCrawlFeed({ lastFetched: new Date(), updateIntervalMinutes: null })).toBe(true);
+  it('treats a missing nextFetchAt as no automatic schedule', () => {
+    expect(crawlController.shouldCrawlFeed({ nextFetchAt: null, updateIntervalMinutes: 60 })).toBe(false);
+    expect(crawlController.shouldCrawlFeed({ nextFetchAt: null, updateIntervalMinutes: null })).toBe(false);
+  });
+
+  it('honors nextFetchAt when no manual interval is configured', () => {
+    expect(crawlController.shouldCrawlFeed({
+      nextFetchAt: new Date('2026-07-01T01:00:00Z'),
+      updateIntervalMinutes: null
+    }, new Date('2026-07-01T00:00:00Z'))).toBe(false);
   });
 
   it('skips feeds set to never crawl automatically', () => {
     const feed = {
-      lastFetched: new Date('2026-07-01T00:00:00Z'),
+      nextFetchAt: null,
       updateIntervalMinutes: 0
     };
     const now = new Date('2026-07-01T00:30:00Z');
@@ -42,15 +69,23 @@ describe('crawl interval controls', () => {
     expect(crawlController.shouldCrawlFeed(feed, now)).toBe(false);
   });
 
-  it('allows feeds with invalid intervals or fetch timestamps to recover', () => {
+  it('allows feeds with invalid intervals or scheduling timestamps to recover', () => {
     expect(crawlController.shouldCrawlFeed({
-      lastFetched: new Date(),
+      nextFetchAt: new Date(),
       updateIntervalMinutes: -1
     })).toBe(true);
     expect(crawlController.shouldCrawlFeed({
-      lastFetched: 'not-a-date',
+      nextFetchAt: 'not-a-date',
       updateIntervalMinutes: 60
     })).toBe(true);
+  });
+
+  it('does not use legacy lastFetched as the scheduling authority', () => {
+    expect(crawlController.shouldCrawlFeed({
+      lastFetched: new Date('2099-01-01T00:00:00Z'),
+      nextFetchAt: null,
+      updateIntervalMinutes: 60
+    }, new Date('2026-07-01T00:00:00Z'))).toBe(false);
   });
 
   it('acknowledges HTTP crawl triggers and contains asynchronous failures', async () => {
@@ -74,7 +109,7 @@ describe('crawl interval controls', () => {
     await vi.waitFor(() => {
       expect(errorSpy).toHaveBeenCalledWith(
         'Error during async crawl:',
-        expect.any(Error)
+        expect.stringContaining('SequelizeForeignKeyConstraintError:')
       );
     });
     logSpy.mockRestore();
@@ -105,13 +140,13 @@ describe('crawl interval controls', () => {
     expect(res.status).toHaveBeenCalledWith(200);
     await vi.waitFor(() => {
       expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Crawl completed:')
+        expect.stringContaining('[CRAWL] SUMMARY')
       );
     });
     logSpy.mockRestore();
   });
 
-  it('waits for timed-out feed work to settle before rejecting', async () => {
+  it('rejects timed-out feed work without waiting for cooperative settlement', async () => {
     vi.useFakeTimers();
     let resolveOperation;
     let operationSignal;
@@ -130,13 +165,12 @@ describe('crawl interval controls', () => {
     await vi.advanceTimersByTimeAsync(1000);
 
     expect(operationSignal.aborted).toBe(true);
-    expect(completed).toBe(false);
-
-    resolveOperation();
-
+    expect(completed).toBe(true);
     await expect(resultPromise).rejects.toThrow(
       'Feed processing timed out after 1 seconds'
     );
+    resolveOperation();
+    await Promise.resolve();
     expect(completed).toBe(true);
   });
 });

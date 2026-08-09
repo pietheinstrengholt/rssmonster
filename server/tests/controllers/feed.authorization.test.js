@@ -200,6 +200,41 @@ describe('feed ownership authorization', () => {
     expect(feed.applyAiAnalysis).toBe(false);
   });
 
+  it('PUT feed disables and re-enables automatic crawling predictably', async () => {
+    const owner = await createUser(uniqueName('feed-owner'));
+    const { feed } = await createFeedFor(owner);
+    const payload = {
+      feedName: feed.feedName,
+      feedDesc: feed.feedDesc,
+      categoryId: feed.categoryId,
+      url: feed.url,
+      favicon: '',
+      status: 'active'
+    };
+
+    const disabled = await request(app)
+      .put(`/api/feeds/${feed.id}`)
+      .set('Authorization', authHeaderFor(owner))
+      .send({ ...payload, updateIntervalMinutes: 0 });
+
+    expect(disabled.status).toBe(200);
+    expect(disabled.body.feed.updateIntervalMinutes).toBe(0);
+    expect(disabled.body.feed.nextFetchAt).toBeNull();
+
+    const beforeReenable = Date.now();
+    const reenabled = await request(app)
+      .put(`/api/feeds/${feed.id}`)
+      .set('Authorization', authHeaderFor(owner))
+      .send({ ...payload, updateIntervalMinutes: null });
+    const afterReenable = Date.now();
+    const nextFetchTimestamp = new Date(reenabled.body.feed.nextFetchAt).getTime();
+
+    expect(reenabled.status).toBe(200);
+    expect(reenabled.body.feed.updateIntervalMinutes).toBeNull();
+    expect(nextFetchTimestamp).toBeGreaterThanOrEqual(beforeReenable - 1000);
+    expect(nextFetchTimestamp).toBeLessThanOrEqual(afterReenable + 60 * 1000);
+  });
+
   it('POST feed rejects foreign-user category', async () => {
     const owner = await createUser(uniqueName('feed-owner'));
     const foreignUser = await createUser(uniqueName('feed-category-owner'));

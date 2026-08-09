@@ -1,6 +1,10 @@
 // Resolves YouTube channel, handle, or custom URLs to YouTube's RSS feed endpoint.
 // Video URLs are rejected because they do not represent a channel feed.
-import { fetchURL as fetchURLInternal } from '../../utils/fetchURL.js';
+import { acquireHttp } from './http/acquireHttp.js';
+import {
+  FETCH_OUTCOMES,
+  isSuccessfulFetchOutcome
+} from './http/contracts.js';
 
 // Defines the youtube hostnames enforced by this service.
 const YOUTUBE_HOSTNAMES = new Set([
@@ -24,7 +28,7 @@ export const isYoutubeUrl = (input) => {
 };
 
 // Converts supported YouTube inputs into the corresponding channel RSS URL.
-export const getYoutubeRssFromHandle = async (input) => {
+export const getYoutubeRssFromHandle = async (input, execution = {}) => {
   let url;
 
   try {
@@ -51,18 +55,15 @@ export const getYoutubeRssFromHandle = async (input) => {
   }
 
   // Fetch HTML for @handle or /c/ URLs
-  let res;
-  try {
-    res = await fetchURLInternal(url.toString());
-  } catch {
-    return undefined;
+  const outcome = await acquireHttp({ url: url.toString(), ...execution });
+  if (outcome.type === FETCH_OUTCOMES.TOO_LARGE) {
+    const error = new Error(outcome.error.message);
+    error.code = 'RESPONSE_TOO_LARGE';
+    throw error;
   }
+  if (!isSuccessfulFetchOutcome(outcome)) return undefined;
 
-  // Returns early when ok is unavailable.
-  if (!res?.ok) return undefined;
-
-  // Derives the html through text while performing get youtube rss from handle.
-  const html = await res.text();
+  const html = outcome.bodyText;
 
   // YouTube embeds channelId in page JSON
   const match = html.match(/"channelId":"(UC[a-zA-Z0-9_-]{20,})"/);

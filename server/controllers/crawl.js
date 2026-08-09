@@ -1,27 +1,109 @@
 import db from '../models/index.js';
-const { Action, Article, CrawlRun, Feed, Hotlink } = db;
-import discoverRssLink from '../services/feeds/discoverRssLink.js';
-import parseFeed from '../services/feeds/parser.js';
+const { Action, Article, CrawlRun, Hotlink } = db;
+import { acquireFeed } from '../services/feeds/feedAcquisition.js';
+import {
+  classifyCrawlOutcome,
+  formatCrawlResultLine,
+  formatCrawlSummaryLine
+} from '../services/feeds/crawlResult.js';
+import {
+  logFeedDebug,
+  sanitizeFeedLogValue
+} from '../services/feeds/feedLogging.js';
+import {
+  DEFAULT_FEED_LEASE_MS,
+  assertFeedLeaseOwnership,
+  claimDueFeeds,
+  completeFeedLease,
+  createFeedLeaseLostError,
+  releaseFeedLease,
+  startFeedLeaseHeartbeat,
+  updateOwnedFeedLease
+} from '../services/feeds/feedClaims.js';
+import {
+  buildFetchAttemptState,
+  buildFetchOutcomeState
+} from '../services/feeds/feedFetchState.js';
+import {
+  calculateNextFetchAt,
+  classifyFetchRetry,
+  updateCadenceObservation
+} from '../services/feeds/feedScheduling.js';
+import {
+  FETCH_OUTCOMES,
+  createFetchOutcome,
+  isSuccessfulFetchOutcome
+} from '../services/feeds/http/contracts.js';
 import {
   processArticle,
   runPostCrawlSemanticPipeline
 } from '../services/crawl/index.js';
+import { withExecutionTimeout } from '../services/feeds/executionDeadline.js';
 import createArticleDuplicateCache, {
   addSharedUserArticleHashes,
   createSharedUserArticleHashIds
 } from '../services/crawl/identity/articleDuplicateCache.js';
 import createHotlinkCountCache from '../services/crawl/runtime/hotlinkCountCache.js';
 import createHotlinkBatcher from '../services/crawl/runtime/hotlinkBatcher.js';
+import { sanitizeFeedPersistenceMetadata } from '../services/feeds/feedPersistenceMetadata.js';
 
 /* ------------------------------------------------------------------
  * Configuration
  * ------------------------------------------------------------------ */
 
-//set the maximum number of feeds to be processed at once
-const feedCount = parseInt(process.env.MAX_FEEDCOUNT) || 10;
+// Resolves the renamed crawl batch limit while temporarily honoring legacy deployments.
+export const resolveFeedMaxCount = (environment = process.env) => {
+  const configured = Number.parseInt(
+    environment.FEED_MAX_COUNT ?? environment.MAX_FEEDCOUNT ?? '',
+    10
+  );
+  return Number.isInteger(configured) && configured > 0 ? configured : 10;
+};
+
+// Resolves the application-wide parallel feed worker setting with a conservative default.
+export const resolveFeedParallelConcurrency = (environment = process.env) => {
+  const configured = Number.parseInt(environment.FEED_PARALLEL_CONCURRENCY ?? '', 10);
+  return Number.isInteger(configured) && configured > 0 ? configured : 3;
+};
+
+// Sets the maximum number of feeds processed by one crawl invocation.
+const feedCount = resolveFeedMaxCount();
+
+// Bounds simultaneous feed work across all crawl invocations.
+const feedParallelConcurrency = resolveFeedParallelConcurrency();
+const parallelFeedSlots = { active: 0, waiters: [] };
+
+// Starts queued parallel feed work only while the shared process limit has capacity.
+const drainParallelFeedSlots = () => {
+  while (parallelFeedSlots.waiters.length > 0) {
+    const waiter = parallelFeedSlots.waiters[0];
+    if (parallelFeedSlots.active >= waiter.limit) return;
+    parallelFeedSlots.waiters.shift();
+    parallelFeedSlots.active += 1;
+    let released = false;
+    waiter.resolve(() => {
+      if (released) return;
+      released = true;
+      parallelFeedSlots.active -= 1;
+      drainParallelFeedSlots();
+    });
+  }
+};
+
+// Acquires one process-wide feed slot shared by every concurrent crawl invocation.
+const acquireParallelFeedSlot = limit => new Promise(resolve => {
+  parallelFeedSlots.waiters.push({ limit, resolve });
+  drainParallelFeedSlots();
+});
 
 // Timeout wrapper for feed processing (default 60 seconds)
 const FEED_TIMEOUT_MS = parseInt(process.env.FEED_TIMEOUT_MS) || 60000;
+
+// Keeps claims beyond the feed deadline while allowing crashed workers to recover.
+const FEED_LEASE_MS = Math.max(
+  Number.parseInt(process.env.FEED_LEASE_MS, 10) || DEFAULT_FEED_LEASE_MS,
+  FEED_TIMEOUT_MS * 2
+);
 
 // Overall crawl deadline (default 10 minutes)
 const CRAWL_TIMEOUT_MS = parseInt(process.env.CRAWL_TIMEOUT_MS) || 10 * 60 * 1000;
@@ -70,25 +152,8 @@ const throwIfAborted = signal => {
     : new Error('Feed processing aborted');
 };
 
-// This function aborts overdue work but waits for the active operation to settle safely.
-export const withTimeout = async (operation, timeoutMs) => {
-  const controller = new AbortController();
-  const timeoutError = new Error(
-    `Feed processing timed out after ${timeoutMs / 1000} seconds`
-  );
-  const timeoutId = setTimeout(() => controller.abort(timeoutError), timeoutMs);
-
-  try {
-    const result = await operation(controller.signal);
-    throwIfAborted(controller.signal);
-    return result;
-  } catch (err) {
-    throwIfAborted(controller.signal);
-    throw err;
-  } finally {
-    clearTimeout(timeoutId);
-  }
-};
+// This function preserves the crawl controller's timeout helper contract.
+export const withTimeout = withExecutionTimeout;
 
 // Reset rate limit delay after crawl completes
 const resetRateLimitDelay = () => {
@@ -98,82 +163,98 @@ const resetRateLimitDelay = () => {
   }
 };
 
-// This function checks whether a feed is due for crawling based on its interval.
+// This function uses nextFetchAt as the scheduling authority for eligible feeds.
 const shouldCrawlFeed = (feed, now = new Date()) => {
-  const interval = feed.updateIntervalMinutes;
+  if (!feed.nextFetchAt) return false;
 
-  if (interval === null || typeof interval === 'undefined') {
-    return true;
-  }
+  const nextFetchTime = new Date(feed.nextFetchAt).getTime();
+  if (Number.isNaN(nextFetchTime)) return true;
 
-  if (Number(interval) === 0) {
-    return false;
-  }
+  return nextFetchTime <= now.getTime();
+};
 
-  const intervalMinutes = Number(interval);
+// Calculates one adaptive deadline from durable feed and neutral outcome state.
+const resolveNextFetchAt = (
+  feed,
+  outcome,
+  from,
+  activityState = feed
+) => {
+  const successful =
+    outcome.type === FETCH_OUTCOMES.CHANGED ||
+    outcome.type === FETCH_OUTCOMES.UNCHANGED ||
+    outcome.type === FETCH_OUTCOMES.NOT_MODIFIED;
+  const consecutiveFailures = successful
+    ? 0
+    : Number(feed.consecutiveFailures || 0) + 1;
 
-  if (!Number.isInteger(intervalMinutes) || intervalMinutes < 0) {
-    return true;
-  }
+  return calculateNextFetchAt({
+    feedIdentity: feed.id ?? feed.url,
+    updateIntervalMinutes: feed.updateIntervalMinutes,
+    lastPublishedAt: activityState.lastPublishedAt,
+    observedEntryIntervalMs: activityState.observedEntryIntervalMs,
+    cacheFreshUntil: outcome.policy?.cacheFreshUntil,
+    retryAfterAt: outcome.policy?.retryAfterAt,
+    outcomeType: outcome.type,
+    httpStatus: outcome.response?.status ?? outcome.error?.status,
+    consecutiveFailures
+  }, { clock: () => from });
+};
 
-  if (!feed.lastFetched) {
-    return true;
-  }
+// Builds one atomic terminal fetch mutation from the classified neutral outcome.
+const buildTerminalFetchState = (
+  feed,
+  outcome,
+  completedAt,
+  activityState = feed
+) => {
+  const failureCount = Number(feed.consecutiveFailures || 0) + 1;
+  const retryClassification = classifyFetchRetry({
+    outcomeType: outcome.type,
+    httpStatus: outcome.response?.status ?? outcome.error?.status,
+    consecutiveFailures: failureCount
+  });
 
-  const lastFetchedTime = new Date(feed.lastFetched).getTime();
+  return buildFetchOutcomeState({
+    feed,
+    outcome,
+    completedAt,
+    nextFetchAt: resolveNextFetchAt(
+      feed,
+      outcome,
+      completedAt,
+      activityState
+    ),
+    diagnosticMessage: outcome.error?.message,
+    quarantined: retryClassification.quarantined
+  });
+};
 
-  if (Number.isNaN(lastFetchedTime)) {
-    return true;
-  }
-
-  return lastFetchedTime + intervalMinutes * MINUTE_MS <= now.getTime();
+// Converts a neutral Retry-After deadline into a compact non-negative delay.
+const retryAfterSeconds = (outcome, now = new Date()) => {
+  const retryAfterAt = outcome?.policy?.retryAfterAt || outcome?.error?.retryAfter;
+  if (!retryAfterAt) return null;
+  const delayMs = new Date(retryAfterAt).getTime() - now.getTime();
+  return Number.isFinite(delayMs) ? Math.max(0, Math.ceil(delayMs / 1000)) : null;
 };
 
 /* ------------------------------------------------------------------
  * Feed fetching
  * ------------------------------------------------------------------ */
 
-//this function crawls feeds for a specific user or all users when userId is omitted
-const getFeeds = async (userId = null) => {
-  try {
-    //only get feeds with an errorCount lower than 25
-    const where = {
-      status: 'active',
-      // DEBUG: Filter for specific URL - remove this line after debugging
-      // url: 'http://www.engadget.com/rss.xml',
-      // Exclude muted feeds (mutedUntil is null OR mutedUntil is in the past)
-      [db.Sequelize.Op.or]: [
-        { mutedUntil: { [db.Sequelize.Op.is]: null } },
-        { mutedUntil: { [db.Sequelize.Op.lte]: new Date() } }
-      ]
-    };
-
-    // If userId is provided (HTTP-triggered crawl), scope feeds to that user
-    if (userId) {
-      where.userId = userId;
-    }
-
-    const crawlCandidates = await Feed.findAll({
-      where,
-      order: [['updatedAt', 'ASC']]
-    });
-
-    const now = new Date();
-    const dueFeeds = crawlCandidates.filter(feed => shouldCrawlFeed(feed, now));
-    const feeds = dueFeeds.slice(0, feedCount);
-
-    const skippedCount = crawlCandidates.length - dueFeeds.length;
-
-    if (skippedCount > 0) {
-      console.log(`[Crawl] Skipped ${skippedCount} feeds because their update interval has not elapsed.`);
-    }
-
-    return feeds;
-  } catch (err) {
-    console.error('Error fetching feeds from database:', err.message);
-    return [];
-  }
-};
+// Claims one indexed due-feed batch for a user or the scheduled global worker.
+const getFeeds = async (
+  userId = null,
+  limit = feedCount,
+  leaseMs = FEED_LEASE_MS,
+  excludeIds = []
+) => claimDueFeeds({
+  userId,
+  limit,
+  leaseMs,
+  excludeIds,
+  now: new Date()
+});
 
 // This function loads each crawl user's actions once for the selected feed batch.
 const getActionsByUserId = async (feeds) => {
@@ -216,7 +297,7 @@ const getDuplicateCachesByFeedId = async (feeds) => {
 
   const duplicateCacheSince = new Date(Date.now() - DUPLICATE_CACHE_DAYS * 24 * 60 * 60 * 1000);
 
-  console.log(`[Crawl] Building duplicate cache for articles published in the last ${DUPLICATE_CACHE_DAYS} days.`);
+  logFeedDebug(`[Crawl] Building duplicate cache for articles published in the last ${DUPLICATE_CACHE_DAYS} days.`);
 
   const [feedArticleLists, userContentSourceHashArticles] = await Promise.all([
     Promise.all(feeds.map(feed => Article.findAll({
@@ -303,6 +384,9 @@ const getHotlinkCountCachesByUserId = async (feeds) => {
 // This function performs the feed-level work for one crawl invocation.
 const runCrawl = async (userId = null, options = {}) => {
   const crawlStartedAt = new Date();
+  const crawlTimeoutMs = options.crawlTimeoutMs || CRAWL_TIMEOUT_MS;
+  const feedLeaseMs = options.feedLeaseMs || FEED_LEASE_MS;
+  const feedTimeoutMs = options.feedTimeoutMs || FEED_TIMEOUT_MS;
   const crawlStats = options.crawlStats || {
     newArticles: 0,
     updatedArticles: 0,
@@ -320,14 +404,37 @@ const runCrawl = async (userId = null, options = {}) => {
     try {
       options.onProgress(event);
     } catch (err) {
-      console.error('Error in onProgress callback:', err);
+      console.error('Error in onProgress callback:', sanitizeFeedLogValue(err));
     }
   };
 
-  const feeds = await getFeeds(userId);
-  const actionsByUserId = await getActionsByUserId(feeds);
-  const duplicateCachesByFeedId = await getDuplicateCachesByFeedId(feeds);
-  const hotlinkCountCachesByUserId = await getHotlinkCountCachesByUserId(feeds);
+  const runParallel = options.parallel ?? PARALLELPROCESSFLAG === 1;
+  const requestedParallelConcurrency = resolveFeedParallelConcurrency({
+    FEED_PARALLEL_CONCURRENCY:
+      options.parallelConcurrency ?? feedParallelConcurrency
+  });
+  const parallelConcurrency = Math.min(
+    feedParallelConcurrency,
+    requestedParallelConcurrency
+  );
+  const feeds = [];
+  let initialSequentialSlotRelease = null;
+  if (!runParallel) {
+    initialSequentialSlotRelease = await acquireParallelFeedSlot(
+      parallelConcurrency
+    );
+    try {
+      feeds.push(...await getFeeds(userId, 1, feedLeaseMs));
+    } catch (error) {
+      initialSequentialSlotRelease();
+      initialSequentialSlotRelease = null;
+      throw error;
+    }
+    if (feeds.length === 0) {
+      initialSequentialSlotRelease();
+      initialSequentialSlotRelease = null;
+    }
+  }
 
   let processedCount = 0;
   let errorCount = 0;
@@ -338,6 +445,14 @@ const runCrawl = async (userId = null, options = {}) => {
   let totalArticleErrors = 0;
   let failedFeedCount = 0;
   const feedErrorIds = new Set();
+  const terminalFetchFeedIds = new Set();
+  const terminalPersistenceAttemptedFeedIds = new Set();
+  const survivingFeedsByClaimedFeedId = new Map();
+  const acquisitionOutcomesByClaimedFeedId = new Map();
+  const activeClaimByResolvedFeedId = new Map();
+  const resolvedFeedIdByClaimedFeedId = new Map();
+  const supersededClaimedFeedIds = new Set();
+  const outcomeCounts = {};
 
   // This function records one terminal error outcome per feed.
   const recordFeedError = (feed, timedOut = false) => {
@@ -357,9 +472,42 @@ const runCrawl = async (userId = null, options = {}) => {
     crawlStats.failedFeeds = failedFeedCount;
   };
 
-  const crawlDeadline = Date.now() + CRAWL_TIMEOUT_MS;
+  // Emits and counts exactly one terminal operational result for an attempted feed.
+  const recordCrawlResult = ({
+    feed,
+    requestedUrl,
+    outcome = null,
+    error = null,
+    parsedFeed = false,
+    itemCount = null,
+    durationMs
+  }) => {
+    const category = classifyCrawlOutcome({
+      outcome,
+      error,
+      parsedFeed,
+      itemCount
+    });
+    outcomeCounts[category] = Number(outcomeCounts[category] || 0) + 1;
+    const resolvedUrl = outcome?.discovery?.resolvedUrl || outcome?.url || feed?.url;
+    console.log(formatCrawlResultLine({
+      category,
+      feedUrl: requestedUrl || feed?.url,
+      resolvedUrl,
+      itemCount,
+      attempts: outcome?.discovery?.attempts ?? outcome?.attempts ?? 1,
+      durationMs,
+      httpStatus: outcome?.response?.status ?? outcome?.error?.status ?? null,
+      retryAfterSeconds: retryAfterSeconds(outcome),
+      errorCode: outcome?.error?.code || error?.code || null,
+      message: error?.message || outcome?.error?.message || null
+    }));
+    return category;
+  };
 
-  console.log(`Starting crawl for ${feeds.length} feeds (timeout=${CRAWL_TIMEOUT_MS / 1000}s)...`);
+  const crawlDeadline = Date.now() + crawlTimeoutMs;
+
+  logFeedDebug(`Starting crawl for ${feeds.length} feeds (timeout=${crawlTimeoutMs / 1000}s)...`);
 
   emitProgress({
     type: 'refresh_started',
@@ -375,7 +523,7 @@ const runCrawl = async (userId = null, options = {}) => {
     processedFeeds: 0
   });
 
-  if (feeds.length === 0) {
+  if (!runParallel && feeds.length === 0) {
     if (!options.suppressDoneEvent) {
       emitProgress({
         type: 'done',
@@ -394,7 +542,7 @@ const runCrawl = async (userId = null, options = {}) => {
       });
     }
 
-    return {
+    const emptyResult = {
       total: 0,
       processed: 0,
       errors: 0,
@@ -406,41 +554,103 @@ const runCrawl = async (userId = null, options = {}) => {
       totalUpdatedArticles: 0,
       totalArticleErrors: 0,
       failedFeeds: 0,
-      timedOutFeeds: 0
+      timedOutFeeds: 0,
+      crawlOutcomes: {}
     };
+    console.log(formatCrawlSummaryLine({
+      total: 0,
+      processed: 0,
+      durationMs: Date.now() - crawlStartedAt.getTime(),
+      outcomeCounts
+    }));
+    return emptyResult;
   }
 
-  const runParallel = PARALLELPROCESSFLAG === 1;
-
-  const markError = async (feed, errMsg) => {
-    const newErrorCount = feed.errorCount + 1;
-    const updateData = {
-      errorCount: newErrorCount,
-      errorMessage: errMsg
-    };
-
-    if (!feed.errorSince) {
-      updateData.errorSince = new Date();
+  // Persists exactly one terminal fetch transition for each selected feed.
+  const persistTerminalFetchOutcome = async (
+    feed,
+    outcome,
+    completedAt = new Date(),
+    activityState = feed,
+    additionalState = {}
+  ) => {
+    if (terminalPersistenceAttemptedFeedIds.has(feed.id)) return false;
+    terminalPersistenceAttemptedFeedIds.add(feed.id);
+    let completed;
+    try {
+      completed = await completeFeedLease(feed, {
+        ...buildTerminalFetchState(
+          feed,
+          outcome,
+          completedAt,
+          activityState
+        ),
+        ...additionalState
+      }, { now: completedAt });
+    } catch (error) {
+      const fallbackAt = new Date();
+      const fallbackOutcome = createFetchOutcome(
+        FETCH_OUTCOMES.TRANSIENT_FAILURE,
+        {
+          error: {
+            type: FETCH_OUTCOMES.TRANSIENT_FAILURE,
+            message: 'Feed terminal metadata persistence failed'
+          }
+        }
+      );
+      const fallbackCompleted = await completeFeedLease(
+        feed,
+        buildTerminalFetchState(feed, fallbackOutcome, fallbackAt),
+        { now: fallbackAt }
+      );
+      if (!fallbackCompleted) throw createFeedLeaseLostError(feed.id);
+      terminalFetchFeedIds.add(feed.id);
+      throw error;
     }
-
-    if (feed.errorSince) {
-      const daysSinceFirstError = (new Date() - new Date(feed.errorSince)) / (1000 * 60 * 60 * 24);
-      if (daysSinceFirstError >= 7) {
-        updateData.status = 'error';
-        console.log(`[Error] Feed marked as error after ${daysSinceFirstError.toFixed(1)} days of failures: ${feed.url}`);
-      }
+    if (!completed) {
+      throw createFeedLeaseLostError(feed.id);
     }
-
-    await feed.update(updateData);
+    terminalFetchFeedIds.add(feed.id);
+    return true;
   };
 
-  const processSingleFeed = async (feed, currentFeed, signal) => {
+  const processSingleFeed = async (
+    feed,
+    currentFeed,
+    signal,
+    deadlineAt,
+    execution,
+    heartbeat
+  ) => {
     let feedNewArticles = 0;
     let feedUpdatedArticles = 0;
     let feedArticleErrors = 0;
 
     try {
       throwIfAborted(signal);
+      const attemptedAt = new Date();
+      const attemptUpdated = await updateOwnedFeedLease(
+        feed,
+        buildFetchAttemptState(attemptedAt),
+        attemptedAt
+      );
+      if (!attemptUpdated) throw createFeedLeaseLostError(feed.id);
+
+      let actionsByUserId;
+      let duplicateCachesByFeedId;
+      let hotlinkCountCachesByUserId;
+      try {
+        [actionsByUserId, duplicateCachesByFeedId, hotlinkCountCachesByUserId] =
+          await Promise.all([
+            getActionsByUserId([feed]),
+            getDuplicateCachesByFeedId([feed]),
+            getHotlinkCountCachesByUserId([feed])
+          ]);
+      } catch (error) {
+        error.crawlSetupError = true;
+        throw error;
+      }
+      await assertFeedLeaseOwnership(execution.lease);
       emitProgress({
         type: 'feed_started',
         feedId: feed.id,
@@ -455,38 +665,116 @@ const runCrawl = async (userId = null, options = {}) => {
         processedFeeds: processedCount
       });
 
-      //discover RssLink
+      // Acquires feed data through the HTTP-client-independent outcome contract.
       const discoveryInputUrl = feed.url;
-      const discoveryResult = await discoverRssLink.discoverRssLink(
-        discoveryInputUrl,
+      const acquisitionOutcome = await acquireFeed({
+        url: discoveryInputUrl,
         feed,
-        { includeParsedFeed: true }
+        execution
+      });
+      acquisitionOutcomesByClaimedFeedId.set(feed.id, acquisitionOutcome);
+      throwIfAborted(signal);
+      const activeFeed = acquisitionOutcome.feed || feed;
+      survivingFeedsByClaimedFeedId.set(feed.id, activeFeed);
+      const activeClaimedFeedId = activeClaimByResolvedFeedId.get(activeFeed.id);
+
+      if (
+        (activeClaimedFeedId && activeClaimedFeedId !== feed.id) ||
+        (
+          activeFeed.id !== feed.id &&
+          activeFeed.leaseOwner !== feed.leaseOwner
+        )
+      ) {
+        supersededClaimedFeedIds.add(feed.id);
+        processedCount++;
+        crawlStats.processedFeeds = processedCount;
+        emitProgress({
+          type: 'feed_completed',
+          feedId: activeFeed.id,
+          feedName: activeFeed.feedName,
+          currentFeed,
+          totalFeeds: feeds.length,
+          feedNewArticles,
+          feedUpdatedArticles,
+          feedArticleErrors,
+          newArticles: totalNewArticles,
+          updatedArticles: totalUpdatedArticles,
+          articleErrors: totalArticleErrors,
+          errors: errorCount,
+          timeouts: timeoutCount,
+          processedFeeds: processedCount
+        });
+        return {
+          status: 'success',
+          message: null,
+          feedId: activeFeed.id,
+          outcome: acquisitionOutcome,
+          parsedFeed: Boolean(acquisitionOutcome.parsedFeed),
+          itemCount: acquisitionOutcome.parsedFeed?.entries?.length ?? null
+        };
+      }
+
+      activeClaimByResolvedFeedId.set(activeFeed.id, feed.id);
+      resolvedFeedIdByClaimedFeedId.set(feed.id, activeFeed.id);
+
+      execution.lease = {
+        feedId: activeFeed.id,
+        leaseOwner: activeFeed.leaseOwner
+      };
+      heartbeat.retarget(activeFeed);
+      await assertFeedLeaseOwnership(execution.lease);
+
+      if (
+        acquisitionOutcome.type === FETCH_OUTCOMES.UNCHANGED ||
+        acquisitionOutcome.type === FETCH_OUTCOMES.NOT_MODIFIED
+      ) {
+        await persistTerminalFetchOutcome(activeFeed, acquisitionOutcome);
+        processedCount++;
+        crawlStats.processedFeeds = processedCount;
+        emitProgress({
+          type: 'feed_completed',
+          feedId: activeFeed.id,
+          feedName: activeFeed.feedName,
+          currentFeed,
+          totalFeeds: feeds.length,
+          feedNewArticles,
+          feedUpdatedArticles,
+          feedArticleErrors,
+          newArticles: totalNewArticles,
+          updatedArticles: totalUpdatedArticles,
+          articleErrors: totalArticleErrors,
+          errors: errorCount,
+          timeouts: timeoutCount,
+          processedFeeds: processedCount
+        });
+        return {
+          status: 'success',
+          message: null,
+          outcome: acquisitionOutcome,
+          parsedFeed: false,
+          itemCount: null
+        };
+      }
+
+      if (!isSuccessfulFetchOutcome(acquisitionOutcome)) {
+        const acquisitionError = new Error(
+          acquisitionOutcome.error?.message || 'Feed acquisition failed'
+        );
+        acquisitionError.fetchOutcome = acquisitionOutcome;
+        throw acquisitionError;
+      }
+
+      const parsedFeed = sanitizeFeedPersistenceMetadata(
+        acquisitionOutcome.parsedFeed
       );
       throwIfAborted(signal);
-
-      // If Cloudflare blocks discovery, fall back to the original URL so the parser can try it directly
-      const url = typeof discoveryResult === 'string'
-        ? discoveryResult
-        : discoveryResult?.url;
-
-      if (!url) {
-        throw new Error('Unable to discover RSS/Atom URL');
-      }
-
-      const parsedFeed = discoveryResult?.parsedFeed || await parseFeed.process(url);
-      throwIfAborted(signal);
-
-      // Sanity check
-      if (!parsedFeed) {
-        throw new Error('No valid feed data returned');
-      }
 
       const entries = parsedFeed.entries || [];
 
       emitProgress({
         type: 'feed_parsed',
-        feedId: feed.id,
-        feedName: feed.feedName,
+        feedId: activeFeed.id,
+        feedName: activeFeed.feedName,
         currentFeed,
         totalFeeds: feeds.length,
         entries: entries.length,
@@ -499,14 +787,20 @@ const runCrawl = async (userId = null, options = {}) => {
       });
 
       // Process each article entry. This will add newly discovered articles to the database
-      const preloadedActions = actionsByUserId.get(feed.userId) || [];
-      const duplicateCache = duplicateCachesByFeedId.get(feed.id);
-      const hotlinkCountCache = hotlinkCountCachesByUserId.get(feed.userId);
-      const hotlinkBatcher = createHotlinkBatcher(feed);
+      const preloadedActions = actionsByUserId.get(activeFeed.userId) || [];
+      const duplicateCache = activeFeed.id === feed.id
+        ? duplicateCachesByFeedId.get(feed.id)
+        : (await getDuplicateCachesByFeedId([activeFeed])).get(activeFeed.id);
+      const hotlinkCountCache = hotlinkCountCachesByUserId.get(activeFeed.userId);
+      const hotlinkBatcher = createHotlinkBatcher(activeFeed, { execution });
+      const publicationTimestamps = entries
+        .map(entry => entry.publishedAt)
+        .filter(publishedAt => publishedAt !== null && publishedAt !== undefined);
       try {
         for (const entry of entries) {
+          await assertFeedLeaseOwnership(execution.lease);
           const articleResult = await processArticle(
-            feed,
+            activeFeed,
             entry,
             preloadedActions,
             duplicateCache,
@@ -514,7 +808,8 @@ const runCrawl = async (userId = null, options = {}) => {
             hotlinkBatcher,
             parsedFeed.publishedAt,
             parsedFeed.title,
-            parsedFeed.format
+            parsedFeed.format,
+            execution
           );
           const newArticles = Number(articleResult?.newArticles || 0);
           const updatedArticles = Number(articleResult?.updatedArticles || 0);
@@ -529,22 +824,32 @@ const runCrawl = async (userId = null, options = {}) => {
           crawlStats.updatedArticles = totalUpdatedArticles;
           crawlStats.articleErrors = totalArticleErrors;
           throwIfAborted(signal);
+          await assertFeedLeaseOwnership(execution.lease);
         }
       } finally {
-        await hotlinkBatcher.flush();
+        if (!signal.aborted && Date.now() < deadlineAt) {
+          await hotlinkBatcher.flush();
+        }
       }
 
       throwIfAborted(signal);
+      await assertFeedLeaseOwnership(execution.lease);
 
       if (feedArticleErrors > 0) {
         const articleLabel = feedArticleErrors === 1 ? 'article' : 'articles';
         throw new Error(`${feedArticleErrors} ${articleLabel} failed during processing`);
       }
 
+      const schedulingAt = new Date();
+      const activityState = updateCadenceObservation({
+        lastPublishedAt: activeFeed.lastPublishedAt,
+        observedEntryIntervalMs: activeFeed.observedEntryIntervalMs,
+        publicationTimestamps
+      }, { clock: () => schedulingAt });
       emitProgress({
         type: 'articles_inserted_updated',
-        feedId: feed.id,
-        feedName: feed.feedName,
+        feedId: activeFeed.id,
+        feedName: activeFeed.feedName,
         currentFeed,
         totalFeeds: feeds.length,
         feedNewArticles,
@@ -562,23 +867,33 @@ const runCrawl = async (userId = null, options = {}) => {
       const updateData = {
         feedType: parsedFeed.format || null,
         favicon: parsedFeed.faviconUrl,
-        url: url,
-        errorCount: 0,
-        errorMessage: null,
-        errorSince: null,
-        status: 'active'
+        status: activeFeed.status
       };
-      await feed.update(updateData);
       throwIfAborted(signal);
+      await persistTerminalFetchOutcome(
+        activeFeed,
+        acquisitionOutcome,
+        schedulingAt,
+        activityState,
+        {
+          ...activityState,
+          nextFetchAt: resolveNextFetchAt(
+            activeFeed,
+            acquisitionOutcome,
+            schedulingAt,
+            activityState
+          ),
+          ...updateData
+        }
+      );
 
       processedCount++;
       crawlStats.processedFeeds = processedCount;
-      console.log( `[Success] Successfully processed feed: ${feed.url} with ${entries.length} items.`);
 
       emitProgress({
         type: 'feed_completed',
-        feedId: feed.id,
-        feedName: feed.feedName,
+        feedId: activeFeed.id,
+        feedName: activeFeed.feedName,
         currentFeed,
         totalFeeds: feeds.length,
         feedNewArticles,
@@ -592,18 +907,39 @@ const runCrawl = async (userId = null, options = {}) => {
         processedFeeds: processedCount
       });
 
-      return { status: 'success', message: null };
+      return {
+        status: 'success',
+        message: null,
+        feedId: activeFeed.id,
+        outcome: acquisitionOutcome,
+        parsedFeed: true,
+        itemCount: entries.length
+      };
     } catch (err) {
+      if (err?.crawlSetupError) throw err;
       throwIfAborted(signal);
+      const failureFeed = survivingFeedsByClaimedFeedId.get(feed.id) || feed;
       const errMsg = err?.message || String(err) || 'Unknown error';
-      console.log(`[Error] Failed to process feed: ${feed.url} - ${errMsg}`);
-      recordFeedError(feed);
-      await markError(feed, errMsg);
+      recordFeedError(failureFeed);
+      if (
+        !terminalFetchFeedIds.has(failureFeed.id) &&
+        !terminalPersistenceAttemptedFeedIds.has(failureFeed.id)
+      ) {
+        const terminalOutcome = err.fetchOutcome ||
+          acquisitionOutcomesByClaimedFeedId.get(feed.id) ||
+          createFetchOutcome(FETCH_OUTCOMES.TRANSIENT_FAILURE, {
+            error: {
+              type: FETCH_OUTCOMES.TRANSIENT_FAILURE,
+              message: errMsg
+            }
+          });
+        await persistTerminalFetchOutcome(failureFeed, terminalOutcome);
+      }
 
       emitProgress({
         type: 'feed_error',
-        feedId: feed.id,
-        feedName: feed.feedName,
+        feedId: failureFeed.id,
+        feedName: failureFeed.feedName,
         currentFeed,
         totalFeeds: feeds.length,
         newArticles: totalNewArticles,
@@ -617,8 +953,8 @@ const runCrawl = async (userId = null, options = {}) => {
 
       emitProgress({
         type: 'feed_completed',
-        feedId: feed.id,
-        feedName: feed.feedName,
+        feedId: failureFeed.id,
+        feedName: failureFeed.feedName,
         currentFeed,
         totalFeeds: feeds.length,
         feedNewArticles,
@@ -632,42 +968,89 @@ const runCrawl = async (userId = null, options = {}) => {
         processedFeeds: processedCount
       });
 
-      return { status: 'error', message: errMsg };
-    } finally {
-      //update lastFetched
-      await feed.update({
-        lastFetched: new Date()
-      });
+      const outcome = err.fetchOutcome ||
+        acquisitionOutcomesByClaimedFeedId.get(feed.id) || null;
+      return {
+        status: 'error',
+        message: errMsg,
+        outcome,
+        error: err,
+        parsedFeed: Boolean(outcome?.parsedFeed),
+        itemCount: outcome?.parsedFeed?.entries?.length ?? null
+      };
     }
   };
 
-  const processedUserIds = new Set();
+  const processedUserIds = new Set(userId ? [userId] : []);
 
   const runFeedWithTimeout = async (feed, currentFeed) => {
     let status = 'success';
     let message = null;
+    let finalResult = null;
+    const requestedUrl = feed.url;
+    const startedAt = Date.now();
+    const heartbeat = startFeedLeaseHeartbeat(feed, { leaseMs: feedLeaseMs });
 
     try {
       const feedResult = await withTimeout(
-        signal => processSingleFeed(feed, currentFeed, signal),
-        FEED_TIMEOUT_MS
+        (signal, deadlineAt) => {
+          const execution = {
+            signal,
+            deadlineAt,
+            lease: { feedId: feed.id, leaseOwner: feed.leaseOwner },
+            leaseState: heartbeat.state
+          };
+          execution.assertLeaseOwnership = ownershipOptions =>
+            assertFeedLeaseOwnership(execution.lease, ownershipOptions);
+          execution.retargetLease = nextFeed => {
+            execution.lease = {
+              feedId: nextFeed.id,
+              leaseOwner: nextFeed.leaseOwner
+            };
+            heartbeat.retarget(nextFeed);
+          };
+          return processSingleFeed(
+            feed,
+            currentFeed,
+            signal,
+            deadlineAt,
+            execution,
+            heartbeat
+          );
+        },
+        feedTimeoutMs
       );
       status = feedResult.status;
       message = feedResult.message;
+      finalResult = feedResult;
     } catch (err) {
+      if (err?.crawlSetupError) throw err;
+      const failureFeed = survivingFeedsByClaimedFeedId.get(feed.id) || feed;
       const errMsg = err?.message || String(err) || 'Unknown error';
 
       if (errMsg.includes('timed out')) {
-        console.log(`Timeout processing feed: ${feed.url} - skipping to next feed`);
         status = 'timeout';
         message = errMsg;
-        recordFeedError(feed, true);
-        await markError(feed, errMsg);
+        recordFeedError(failureFeed, true);
+        if (
+          !terminalFetchFeedIds.has(failureFeed.id) &&
+          !terminalPersistenceAttemptedFeedIds.has(failureFeed.id)
+        ) {
+          await persistTerminalFetchOutcome(failureFeed, createFetchOutcome(
+            FETCH_OUTCOMES.TIMED_OUT,
+            {
+              error: {
+                type: FETCH_OUTCOMES.TIMED_OUT,
+                message: errMsg
+              }
+            }
+          ));
+        }
 
         emitProgress({
           type: 'feed_error',
-          feedId: feed.id,
-          feedName: feed.feedName,
+          feedId: failureFeed.id,
+          feedName: failureFeed.feedName,
           currentFeed,
           totalFeeds: feeds.length,
           newArticles: totalNewArticles,
@@ -679,13 +1062,51 @@ const runCrawl = async (userId = null, options = {}) => {
           message: errMsg
         });
       } else {
-        console.log(`Failed to process feed: ${feed.url} - ${errMsg}`);
         status = 'error';
         message = errMsg;
-        recordFeedError(feed);
-        await markError(feed, errMsg);
+        recordFeedError(failureFeed);
+        if (
+          !terminalFetchFeedIds.has(failureFeed.id) &&
+          !terminalPersistenceAttemptedFeedIds.has(failureFeed.id)
+        ) {
+          await persistTerminalFetchOutcome(failureFeed, createFetchOutcome(
+            FETCH_OUTCOMES.TRANSIENT_FAILURE,
+            {
+              error: {
+                type: FETCH_OUTCOMES.TRANSIENT_FAILURE,
+                message: errMsg
+              }
+            }
+          ));
+        }
       }
+      const outcome = acquisitionOutcomesByClaimedFeedId.get(feed.id) || null;
+      finalResult = {
+        outcome,
+        error: err,
+        parsedFeed: Boolean(outcome?.parsedFeed),
+        itemCount: outcome?.parsedFeed?.entries?.length ?? null
+      };
     } finally {
+      await heartbeat.stop();
+      const releasableFeed = survivingFeedsByClaimedFeedId.get(feed.id) || feed;
+      if (!supersededClaimedFeedIds.has(feed.id)) {
+        await releaseFeedLease(releasableFeed);
+      }
+      const resolvedFeedId = resolvedFeedIdByClaimedFeedId.get(feed.id);
+      if (activeClaimByResolvedFeedId.get(resolvedFeedId) === feed.id) {
+        activeClaimByResolvedFeedId.delete(resolvedFeedId);
+      }
+      const finalFeed = survivingFeedsByClaimedFeedId.get(feed.id) || feed;
+      recordCrawlResult({
+        feed: finalFeed,
+        requestedUrl,
+        outcome: finalResult?.outcome || null,
+        error: finalResult?.error || null,
+        parsedFeed: Boolean(finalResult?.parsedFeed),
+        itemCount: finalResult?.itemCount ?? null,
+        durationMs: Date.now() - startedAt
+      });
       if (feed.userId) processedUserIds.add(feed.userId);
 
       emitProgress({
@@ -709,13 +1130,53 @@ const runCrawl = async (userId = null, options = {}) => {
   };
 
   if (runParallel) {
-    console.log('[Parallel Mode] Processing feeds in parallel...');
-    const remaining = CRAWL_TIMEOUT_MS - (Date.now() - (crawlDeadline - CRAWL_TIMEOUT_MS));
+    const workerCount = Math.min(parallelConcurrency, feedCount);
+    logFeedDebug(
+      `[Parallel Mode] Processing feeds with ${workerCount} concurrent workers...`
+    );
+    const remaining = crawlTimeoutMs - (Date.now() - (crawlDeadline - crawlTimeoutMs));
+    const results = [];
+    let nextClaimIndex = 0;
+    let noFeedsRemaining = false;
+    // Each worker acquires global capacity before claiming one feed just in time.
+    const runWorker = async () => {
+      while (
+        !crawlTimedOut &&
+        !noFeedsRemaining &&
+        Date.now() < crawlDeadline
+      ) {
+        const releaseSlot = await acquireParallelFeedSlot(parallelConcurrency);
+        try {
+          if (crawlTimedOut || noFeedsRemaining || Date.now() >= crawlDeadline) return;
+          const index = nextClaimIndex;
+          nextClaimIndex += 1;
+          if (index >= feedCount) return;
+          const [feed] = await getFeeds(
+            userId,
+            1,
+            feedLeaseMs,
+            feeds.map(claimedFeed => claimedFeed.id)
+          );
+          if (!feed) {
+            noFeedsRemaining = true;
+            return;
+          }
+          feeds.push(feed);
+          await runFeedWithTimeout(feed, index + 1);
+          results[index] = { status: 'fulfilled' };
+        } catch (reason) {
+          results.push({ status: 'rejected', reason });
+        } finally {
+          releaseSlot();
+        }
+      }
+      if (!noFeedsRemaining && nextClaimIndex < feedCount) crawlTimedOut = true;
+    };
     const feedRuns = Promise.all(
-      feeds.map((feed, index) => runFeedWithTimeout(feed, index + 1))
+      Array.from({ length: workerCount }, () => runWorker())
     );
     let crawlTimeoutId;
-    const results = await Promise.race([
+    const raceResult = await Promise.race([
       feedRuns,
       new Promise(resolve => {
         crawlTimeoutId = setTimeout(() => {
@@ -725,21 +1186,43 @@ const runCrawl = async (userId = null, options = {}) => {
       })
     ]);
     clearTimeout(crawlTimeoutId);
-    if (results === 'timeout') {
-      console.log(`[Crawl] Crawl timed out after ${CRAWL_TIMEOUT_MS / 1000}s (parallel mode)`);
+    if (raceResult === 'timeout') {
+      logFeedDebug(`[Crawl] Crawl timed out after ${crawlTimeoutMs / 1000}s (parallel mode)`);
       // Do not release the crawl run while timed-out feed work is still settling.
       await feedRuns;
     }
+    const rejectedRun = results.find(result => result?.status === 'rejected');
+    if (rejectedRun) {
+      throw rejectedRun.reason;
+    }
   } else {
-    console.log('[Sequential Mode] Processing feeds sequentially...');
-    for (let index = 0; index < feeds.length; index++) {
-      const feed = feeds[index];
-      if (Date.now() >= crawlDeadline) {
-        crawlTimedOut = true;
-        console.log(`[Crawl] Crawl timed out after ${CRAWL_TIMEOUT_MS / 1000}s — skipping remaining ${feeds.length - processedCount - errorCount} feeds`);
-        break;
+    logFeedDebug('[Sequential Mode] Processing feeds sequentially...');
+    for (let index = 0; index < feedCount; index++) {
+      const releaseSlot = initialSequentialSlotRelease ||
+        await acquireParallelFeedSlot(parallelConcurrency);
+      initialSequentialSlotRelease = null;
+      try {
+        if (Date.now() >= crawlDeadline) {
+          crawlTimedOut = true;
+          logFeedDebug(`[Crawl] Crawl timed out after ${crawlTimeoutMs / 1000}s before another feed could be claimed`);
+          break;
+        }
+        let feed = feeds[index];
+        if (!feed) {
+          const [nextFeed] = await getFeeds(
+            userId,
+            1,
+            feedLeaseMs,
+            feeds.map(claimedFeed => claimedFeed.id)
+          );
+          if (!nextFeed) break;
+          feeds.push(nextFeed);
+          feed = nextFeed;
+        }
+        await runFeedWithTimeout(feed, index + 1);
+      } finally {
+        releaseSlot();
       }
-      await runFeedWithTimeout(feed, index + 1);
     }
   }
 
@@ -755,7 +1238,8 @@ const runCrawl = async (userId = null, options = {}) => {
     totalUpdatedArticles,
     totalArticleErrors,
     failedFeeds: failedFeedCount,
-    timedOutFeeds: timeoutCount
+    timedOutFeeds: timeoutCount,
+    crawlOutcomes: { ...outcomeCounts }
   };
 
   if (!options.suppressDoneEvent) {
@@ -775,6 +1259,13 @@ const runCrawl = async (userId = null, options = {}) => {
       crawlTimedOut: result.crawlTimedOut
     });
   }
+
+  console.log(formatCrawlSummaryLine({
+    total: result.total,
+    processed: result.processed,
+    durationMs: Date.now() - crawlStartedAt.getTime(),
+    outcomeCounts
+  }));
 
   return result;
 };
@@ -983,7 +1474,10 @@ const performCrawl = async (userId = null, options = {}) => {
           durationMs: calculateCrawlDurationMs(crawlRun.startedAt, completedAt)
         });
       } catch (crawlRunErr) {
-        console.error('Error recording failed crawl run:', crawlRunErr);
+        console.error(
+          'Error recording failed crawl run:',
+          sanitizeFeedLogValue(crawlRunErr)
+        );
       }
     }
 
@@ -1072,24 +1566,24 @@ const performCrawlWithSemanticGrouping = async (userId = null, options = {}) => 
 
 const crawlRssLinks = catchAsync(async (req, res, next) => {
   const userId = req.userData?.userId || null;
-  console.log(`[Crawl] HTTP trigger by userId: ${userId ?? 'unknown'}`);
+  logFeedDebug(`[Crawl] HTTP trigger by userId: ${userId ?? 'unknown'}`);
   try {
     // For HTTP requests, start crawling asynchronously and return immediately
     performCrawlWithSemanticGrouping(userId, { triggerType: 'api' })
       .then(async result => {
         resetRateLimitDelay();
-        console.log(
+        logFeedDebug(
           `Crawl completed: ${result.processed} feeds processed, ${result.errors} errors, ${result.timeouts} timeouts`
         );
       })
       .catch(err => {
         resetRateLimitDelay();
-        console.error('Error during async crawl:', err);
+        console.error('Error during async crawl:', sanitizeFeedLogValue(err));
       });
 
     return res.status(200).json({ message: 'Crawling started.' });
   } catch (err) {
-    console.error('Error in crawlRssLinks:', err);
+    console.error('Error in crawlRssLinks:', sanitizeFeedLogValue(err));
     return next(err);
   }
 });

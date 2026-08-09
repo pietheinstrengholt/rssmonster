@@ -238,8 +238,7 @@ const updateFeed = async (req, res, _next) => {
         updateIntervalMinutes,
         feedTags,
         generateEmbeddings,
-        applyAiAnalysis,
-        errorCount: 0
+        applyAiAnalysis
       }
     });
     return res.status(200).json({ feed: updatedFeed });
@@ -373,7 +372,7 @@ const rediscoverFeedRss = async (req, res) => {
     const result = await rediscoverRssUrl({
       feedName: feed.feedName,
       websiteUrl: feed.url,
-      oldUrl: feed.url
+      oldRssUrl: feed.url
     });
 
     if (!result.url) {

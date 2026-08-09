@@ -100,7 +100,10 @@ describe('fetchWithOutboundRequestSafeguard', () => {
 
     await expect(fetchWithOutboundRequestSafeguard(
       'https://example.com/start', {}, 0, vi.fn().mockResolvedValue(redirect)
-    )).rejects.toMatchObject({ code: 'SSRF_BLOCKED', message: expect.stringContaining('redirect limit') });
+    )).rejects.toMatchObject({
+      code: 'REDIRECT_LIMIT_EXCEEDED',
+      message: expect.stringContaining('Redirect limit')
+    });
     expect(cancel).toHaveBeenCalledOnce();
   });
 

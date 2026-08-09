@@ -1,4 +1,8 @@
 import normalizeEntry, { resolveFeedPublishedDate } from './normalizeEntry.js';
+import {
+  assertFeedEntryCount,
+  getFeedInputLimits
+} from './feedInputLimits.js';
 
 // This function reads a URL from common Feedsmith scalar and object shapes.
 const readUrl = value => {
@@ -21,6 +25,10 @@ export default function normalizeFeed(parsedFeed) {
   const format = parsedFeed?.format || null;
   // Derives the source entries required while normalizing feed.
   const sourceEntries = sourceFeed.entries ?? sourceFeed.items ?? [];
+  const normalizedSourceEntries = Array.isArray(sourceEntries)
+    ? sourceEntries
+    : [];
+  assertFeedEntryCount(normalizedSourceEntries, getFeedInputLimits());
   // Selects the self link based on whether source feed links is an array.
   const selfLink = (Array.isArray(sourceFeed.links) ? sourceFeed.links : [])
     .find(link => link?.rel === 'self' && link?.href)?.href;
@@ -39,7 +47,6 @@ export default function normalizeFeed(parsedFeed) {
       selfLink ||
       readUrl(sourceFeed.feed_url) ||
       null,
-    entries: (Array.isArray(sourceEntries) ? sourceEntries : [])
-      .map(entry => normalizeEntry(entry, format))
+    entries: normalizedSourceEntries.map(entry => normalizeEntry(entry, format))
   };
 }

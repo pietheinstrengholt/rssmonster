@@ -1,4 +1,5 @@
 import hotlink from '../../../controllers/hotlink.js';
+import { throwIfExecutionExpired } from '../../feeds/executionDeadline.js';
 
 // Defines the default flush threshold enforced by this service.
 const DEFAULT_FLUSH_THRESHOLD = 250;
@@ -11,6 +12,8 @@ const createHotlinkBatcher = (feed, options = {}) => {
   const flushThreshold = options.flushThreshold || DEFAULT_FLUSH_THRESHOLD;
   // Derives the max pending url required while creating hotlink batcher.
   const maxPendingUrls = options.maxPendingUrls || DEFAULT_MAX_PENDING_URLS;
+  const execution = options.execution || {};
+  const hasExecution = Boolean(execution.signal || execution.deadlineAt);
   // Derives the pending url by article id required while creating hotlink batcher.
   const pendingUrlsByArticleId = new Map();
   let pendingUrlCount = 0;
@@ -19,6 +22,7 @@ const createHotlinkBatcher = (feed, options = {}) => {
 
   // This function flushes the queued URLs without allowing failures to interrupt crawling.
   const flush = async () => {
+    throwIfExecutionExpired(execution);
     // Repeats this processing step while eligible work remains.
     while (flushPromise || pendingUrlsByArticleId.size > 0) {
       // Handles the case where flush promise is available.
@@ -32,14 +36,16 @@ const createHotlinkBatcher = (feed, options = {}) => {
       pendingUrlsByArticleId.clear();
       pendingUrlCount = 0;
       // Maps source values into the result produced while performing flush.
-      flushPromise = hotlink.replaceMany(
+      const replacementArguments = [
         pendingWrites.map(([sourceArticleId, urls]) => ({
           sourceArticleId,
           urls: [...urls]
         })),
         feed.id,
         feed.userId
-      )
+      ];
+      if (hasExecution) replacementArguments.push(execution);
+      flushPromise = hotlink.replaceMany(...replacementArguments)
         .catch(err => {
           console.error(`Error saving hotlink batch for feed ${feed.id}:`, err);
         })
@@ -48,12 +54,14 @@ const createHotlinkBatcher = (feed, options = {}) => {
         });
 
       await flushPromise;
+      throwIfExecutionExpired(execution);
     }
   };
 
   return {
     // This function queues one article's unique URLs and starts a best-effort periodic flush.
     add(urls, sourceArticleId) {
+      throwIfExecutionExpired(execution);
       // Returns early when source article id is unavailable.
       if (!sourceArticleId) return;
 

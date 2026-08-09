@@ -22,6 +22,7 @@ import {
   OpmlImportError,
   importOpmlSubscriptions
 } from '../services/feeds/opmlImport.js';
+import { findFeedByUrlAlias } from '../services/feeds/feedUrlAliases.js';
 import {
   LABEL_PREFIX,
   READING_LIST_STREAM,
@@ -117,17 +118,24 @@ const feedStreamId = (feed) => `feed/${encodeURIComponent(feed.url)}`;
 
 const isIntegerString = (value) => /^\d+$/.test(String(value));
 
+// Resolves Reader feed references through IDs, aliases, and legacy exact URLs.
 const findFeedByStreamId = async (streamId, userId) => {
   const feedRef = decodeFeedRef(streamId);
   if (!feedRef) {
     return null;
   }
 
-  const where = isIntegerString(feedRef)
-    ? { id: Number(feedRef), userId }
-    : { url: feedRef, userId };
+  if (isIntegerString(feedRef)) {
+    return Feed.findOne({ where: { id: Number(feedRef), userId } });
+  }
 
-  return Feed.findOne({ where });
+  try {
+    const aliasMatch = await findFeedByUrlAlias({ userId, url: feedRef });
+    if (aliasMatch) return aliasMatch.feed;
+  } catch {
+    // Non-URL stream references retain the protocol's existing not-found behavior.
+  }
+  return Feed.findOne({ where: { url: feedRef, userId } });
 };
 
 // This function converts one Reader crawl timestamp into an exact microsecond string.

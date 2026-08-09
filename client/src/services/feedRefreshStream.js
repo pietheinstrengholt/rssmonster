@@ -29,6 +29,7 @@ export function openFeedRefreshEvents(jobId) {
   let closed = false;
   let reconnectDelayMs = 3000;
   let reconnectTimer = null;
+  let terminalEventReceived = false;
 
   // Delivers one parsed server event through the EventSource-compatible interface.
   const dispatchEvent = (type, data = '', error = null) => {
@@ -68,6 +69,7 @@ export function openFeedRefreshEvents(jobId) {
     }
 
     if (dataLines.length > 0) {
+      terminalEventReceived = eventType === 'done' || eventType === 'error';
       dispatchEvent(eventType, dataLines.join('\n'));
     }
   };
@@ -95,7 +97,7 @@ export function openFeedRefreshEvents(jobId) {
 
   // Schedules the same automatic reconnect behavior expected from EventSource.
   const scheduleReconnect = () => {
-    if (closed || reconnectTimer) return;
+    if (closed || terminalEventReceived || reconnectTimer) return;
 
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null;
@@ -128,12 +130,12 @@ export function openFeedRefreshEvents(jobId) {
       dispatchEvent('open');
       await consumeResponse(response);
 
-      if (!closed) {
+      if (!closed && !terminalEventReceived) {
         dispatchEvent('error');
         scheduleReconnect();
       }
     } catch (error) {
-      if (closed || error?.name === 'AbortError') return;
+      if (closed || terminalEventReceived || error?.name === 'AbortError') return;
 
       dispatchEvent('error', '', error);
       if (error?.retryable !== false) {

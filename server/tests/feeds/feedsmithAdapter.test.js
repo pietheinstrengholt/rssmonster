@@ -3,6 +3,24 @@ import { describe, expect, it } from 'vitest';
 import { parseFeedSource } from '../../services/feeds/feedsmith/parseFeed.js';
 
 describe('Feedsmith adapter', () => {
+  it('preserves Atom self declarations for resolution after the final fetch URL is known', () => {
+    const feed = parseFeedSource(`
+      <feed xmlns="http://www.w3.org/2005/Atom">
+        <title>Relative self feed</title>
+        <id>urn:feed:relative-self</id>
+        <updated>2026-08-09T10:00:00Z</updated>
+        <link rel="self" href="../canonical.xml" />
+        <entry>
+          <title>Stable entry</title>
+          <id>entry-1</id>
+          <updated>2026-08-09T10:00:00Z</updated>
+        </entry>
+      </feed>
+    `);
+
+    expect(feed.selfUrl).toBe('../canonical.xml');
+  });
+
   it('returns the RSSMonster canonical feed and entry contract', () => {
     const feed = parseFeedSource(`
       <rss version="2.0"

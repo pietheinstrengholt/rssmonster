@@ -29,7 +29,7 @@ vi.mock('../../services/feeds/discoverRssLink.js', () => ({
   }
 }));
 
-const { Article, Category, Feed, User, sequelize } = db;
+const { Article, Category, Feed, FeedUrlAlias, User, sequelize } = db;
 
 let app;
 let ownedUserIds = [];
@@ -173,12 +173,108 @@ describe('shared feed-management integration', () => {
     expect(regularFeed.crawlSince).toBeInstanceOf(Date);
     expect(readerFeed.crawlSince).toBeInstanceOf(Date);
     expect(readerCategory.name).toBe('Uncategorized');
+    const regularAliases = await FeedUrlAlias.findAll({
+      where: { userId: regularUser.id, feedId: regularFeed.id }
+    });
+    expect(regularAliases).toHaveLength(2);
+    expect(regularAliases.map(alias => alias.aliasType).sort()).toEqual([
+      'final',
+      'input'
+    ]);
+    expect(regularAliases.map(alias => alias.originalUrl)).toEqual(
+      expect.arrayContaining([inputUrl, expectedUrl])
+    );
+    expect(await FeedUrlAlias.count({
+      where: { userId: readerUser.id, feedId: readerFeed.id }
+    })).toBe(2);
     expect(readerResponse.body).toMatchObject({
       query: inputUrl,
       numResults: 1,
       streamId: `feed/${encodeURIComponent(expectedUrl)}`,
       streamName: 'Discovered Publisher Feed',
       streamUrl: `feed/${encodeURIComponent(expectedUrl)}`
+    });
+  });
+
+  it('records every accepted subscription redirect with stable endpoint provenance', async () => {
+    const user = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    const inputUrl = 'https://redirect-subscribe.example.test/source';
+    const intermediateUrl = 'https://edge-subscribe.example.test/feed.xml';
+    const finalUrl = 'https://redirect-subscribe.example.test/canonical.xml';
+    const discovery = discoveredFeedFor(inputUrl);
+    mocked.discoverRssLink.mockResolvedValue({
+      ...discovery,
+      fetchOutcome: {
+        type: 'changed',
+        response: {
+          url: finalUrl,
+          redirects: [
+            { fromUrl: inputUrl, toUrl: intermediateUrl, status: 301 },
+            { fromUrl: intermediateUrl, toUrl: finalUrl, status: 308 }
+          ]
+        }
+      }
+    });
+
+    const response = await request(app)
+      .post('/api/feeds')
+      .set('Authorization', regularAuthHeaderFor(user))
+      .send({ categoryId: category.id, url: inputUrl, status: 'active' });
+    const feed = await Feed.findOne({ where: { userId: user.id } });
+    const aliases = await FeedUrlAlias.findAll({ where: { feedId: feed.id } });
+
+    expect(response.status).toBe(201);
+    expect(aliases.map(alias => ({
+      url: alias.originalUrl,
+      type: alias.aliasType
+    }))).toEqual(expect.arrayContaining([
+      { url: inputUrl, type: 'input' },
+      { url: intermediateUrl, type: 'redirect' },
+      { url: finalUrl, type: 'final' }
+    ]));
+  });
+
+  it('discards oversized optional publisher metadata before creating a feed', async () => {
+    const user = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    const inputUrl = 'https://hostile-metadata.example.test/feed.xml';
+    mocked.discoverRssLink.mockResolvedValue({
+      url: inputUrl,
+      parsedFeed: {
+        title: 't'.repeat(256),
+        description: 'd'.repeat(65_536),
+        format: 'rss',
+        faviconUrl: `https://hostile-metadata.example.test/${'i'.repeat(220)}`,
+        selfUrl: `https://hostile-metadata.example.test/${'s'.repeat(8192)}`,
+        entries: []
+      },
+      publisherSelf: {
+        accepted: false,
+        declaredUrl: `https://hostile-metadata.example.test/${'s'.repeat(8192)}`,
+        resolvedUrl: null,
+        status: 'unrelated',
+        diagnostic: 'Oversized declaration',
+        aliases: []
+      }
+    });
+    const { addFeedSubscription } = await import(
+      '../../services/feeds/feedManagement.js'
+    );
+
+    const result = await addFeedSubscription({
+      userId: user.id,
+      inputUrl,
+      categoryId: category.id
+    });
+    await result.feed.reload();
+
+    expect(result.feed).toMatchObject({
+      feedName: 'hostile-metadata.example.test',
+      feedDesc: null,
+      favicon: null,
+      publisherSelfUrl: null,
+      publisherSelfStatus: 'unrelated'
     });
   });
 
@@ -377,6 +473,131 @@ describe('shared feed-management integration', () => {
     expect(feed.categoryId).toBe(targetCategory.id);
   });
 
+  it('reactivates a corrected quarantined feed with clean endpoint state', async () => {
+    const user = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    const oldUrl = 'https://manual-reset.example.test/broken.xml';
+    const nextUrl = 'https://manual-reset.example.test/corrected.xml';
+    const now = new Date('2026-08-09T12:00:00.000Z');
+    const feed = await Feed.create({
+      userId: user.id,
+      categoryId: category.id,
+      feedName: 'Quarantined feed',
+      url: oldUrl,
+      status: 'error',
+      etag: '"broken"',
+      lastModified: 'Sat, 08 Aug 2026 00:00:00 GMT',
+      contentHash: 'broken-content-hash',
+      cacheFreshUntil: new Date('2026-08-10T00:00:00.000Z'),
+      publisherSelfUrl: 'https://manual-reset.example.test/self.xml',
+      publisherSelfStatus: 'unrelated',
+      publisherSelfCheckedAt: new Date('2026-08-08T00:00:00.000Z'),
+      publisherSelfDiagnostic: 'Old endpoint identity did not match',
+      errorCount: 4,
+      errorMessage: 'Malformed feed',
+      errorSince: new Date('2026-08-01T00:00:00.000Z'),
+      consecutiveFailures: 4,
+      lastFetchOutcome: 'malformed',
+      nextFetchAt: null
+    });
+    const [{ updateFeedSubscription }, { deterministicJitterMs }] = await Promise.all([
+      import('../../services/feeds/feedManagement.js'),
+      import('../../services/feeds/feedScheduling.js')
+    ]);
+
+    await updateFeedSubscription({
+      userId: user.id,
+      feedId: feed.id,
+      updates: { url: nextUrl, feedName: 'Corrected feed' },
+      clock: () => now
+    });
+    await feed.reload();
+
+    expect(feed).toMatchObject({
+      url: nextUrl,
+      feedName: 'Corrected feed',
+      status: 'active',
+      etag: null,
+      lastModified: null,
+      contentHash: null,
+      cacheFreshUntil: null,
+      publisherSelfUrl: null,
+      publisherSelfStatus: null,
+      publisherSelfCheckedAt: null,
+      publisherSelfDiagnostic: null,
+      errorCount: 0,
+      errorMessage: null,
+      errorSince: null,
+      consecutiveFailures: 0,
+      lastFetchOutcome: null
+    });
+    expect(feed.nextFetchAt.getTime()).toBe(
+      Math.floor((now.getTime() + deterministicJitterMs(feed.id)) / 1000) * 1000
+    );
+    const aliases = await FeedUrlAlias.findAll({ where: { feedId: feed.id } });
+    expect(aliases.map(alias => alias.originalUrl)).toEqual(
+      expect.arrayContaining([oldUrl, nextUrl])
+    );
+  });
+
+  it('preserves endpoint state when the normalized URL is unchanged', async () => {
+    const user = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    const url = 'https://manual-reset.example.test/stable.xml';
+    const cacheFreshUntil = new Date('2026-08-10T00:00:00.000Z');
+    const errorSince = new Date('2026-08-01T00:00:00.000Z');
+    const feed = await Feed.create({
+      userId: user.id,
+      categoryId: category.id,
+      feedName: 'Stable endpoint',
+      url,
+      status: 'error',
+      etag: '"stable"',
+      lastModified: 'Sat, 08 Aug 2026 00:00:00 GMT',
+      contentHash: 'stable-content-hash',
+      cacheFreshUntil,
+      publisherSelfUrl: 'https://manual-reset.example.test/self.xml',
+      publisherSelfStatus: 'validated',
+      publisherSelfCheckedAt: new Date('2026-08-08T00:00:00.000Z'),
+      publisherSelfDiagnostic: 'Validated endpoint',
+      errorCount: 3,
+      errorMessage: 'Temporary failure',
+      errorSince,
+      consecutiveFailures: 3,
+      lastFetchOutcome: 'malformed',
+      nextFetchAt: null
+    });
+    const { updateFeedSubscription } = await import(
+      '../../services/feeds/feedManagement.js'
+    );
+
+    await updateFeedSubscription({
+      userId: user.id,
+      feedId: feed.id,
+      updates: { url: `${url}#ignored`, feedName: 'Renamed endpoint' }
+    });
+    await feed.reload();
+
+    expect(feed).toMatchObject({
+      url,
+      feedName: 'Renamed endpoint',
+      status: 'error',
+      etag: '"stable"',
+      lastModified: 'Sat, 08 Aug 2026 00:00:00 GMT',
+      contentHash: 'stable-content-hash',
+      cacheFreshUntil,
+      publisherSelfUrl: 'https://manual-reset.example.test/self.xml',
+      publisherSelfStatus: 'validated',
+      publisherSelfDiagnostic: 'Validated endpoint',
+      errorCount: 3,
+      errorMessage: 'Temporary failure',
+      errorSince,
+      consecutiveFailures: 3,
+      lastFetchOutcome: 'malformed',
+      nextFetchAt: null
+    });
+  });
+
   it('serializes concurrent default-category creation without duplicates', async () => {
     const user = trackUser(await createGreaderUser());
     const add = quickadd => request(app)
@@ -399,6 +620,275 @@ describe('shared feed-management integration', () => {
     expect(responses.map(response => response.status)).toEqual([200, 200]);
     expect(defaultCategories).toHaveLength(1);
     expect(await Feed.count({ where: { userId: user.id } })).toBe(2);
+  });
+
+  it('resolves conservative input URL variants before repeating discovery', async () => {
+    const user = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    const firstInput =
+      'HTTPS://Identity.Example.Test:443/a/../feeds/%66eed.xml#first';
+    const equivalentInput =
+      'https://identity.example.test/feeds/feed.xml#second';
+
+    const first = await request(app)
+      .post('/api/feeds')
+      .set('Authorization', regularAuthHeaderFor(user))
+      .send({ categoryId: category.id, url: firstInput, status: 'active' });
+    const callsAfterFirst = mocked.discoverRssLink.mock.calls.length;
+    const second = await request(app)
+      .post('/api/feeds')
+      .set('Authorization', regularAuthHeaderFor(user))
+      .send({ categoryId: category.id, url: equivalentInput, status: 'active' });
+
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(409);
+    expect(mocked.discoverRssLink).toHaveBeenCalledTimes(callsAfterFirst);
+    expect(await Feed.count({ where: { userId: user.id } })).toBe(1);
+  });
+
+  it('keeps case-sensitive path and meaningful query variants distinct', async () => {
+    const user = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    mocked.discoverRssLink.mockImplementation(async input => ({
+      url: input,
+      parsedFeed: {
+        title: `Feed ${input}`,
+        description: null,
+        format: 'rss',
+        faviconUrl: null,
+        entries: []
+      }
+    }));
+
+    for (const url of [
+      'https://distinct.example.test/Feed.xml',
+      'https://distinct.example.test/feed.xml',
+      'https://distinct.example.test/query.xml?view=full',
+      'https://distinct.example.test/query.xml?view=summary'
+    ]) {
+      const response = await request(app)
+        .post('/api/feeds')
+        .set('Authorization', regularAuthHeaderFor(user))
+        .send({ categoryId: category.id, url, status: 'active' });
+      expect(response.status).toBe(201);
+    }
+
+    expect(await Feed.count({ where: { userId: user.id } })).toBe(4);
+  });
+
+  it('uses the same aliases for regular, Google Reader, and OPML additions', async () => {
+    const user = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    const inputUrl = 'https://shared-alias.example.test/source#regular';
+    const regular = await request(app)
+      .post('/api/feeds')
+      .set('Authorization', regularAuthHeaderFor(user))
+      .send({ categoryId: category.id, url: inputUrl, status: 'active' });
+    const callsAfterRegular = mocked.discoverRssLink.mock.calls.length;
+
+    const reader = await request(app)
+      .post('/api/greader/reader/api/0/subscription/quickadd')
+      .type('form')
+      .send({
+        quickadd: 'https://SHARED-ALIAS.example.test:443/source#reader',
+        T: greaderActionTokenFor(user)
+      })
+      .set('Authorization', greaderAuthHeaderFor(user));
+    const readerEdit = await request(app)
+      .post('/api/greader/reader/api/0/subscription/edit')
+      .type('form')
+      .send({
+        s: `feed/${encodeURIComponent(
+          'https://shared-alias.example.test/source#edit'
+        )}`,
+        ac: 'edit',
+        t: 'Alias-aware Reader edit',
+        T: greaderActionTokenFor(user)
+      })
+      .set('Authorization', greaderAuthHeaderFor(user));
+    const opml = Buffer.from(`<?xml version="1.0"?>
+      <opml version="2.0"><body><outline type="rss" text="Same feed"
+        xmlUrl="https://shared-alias.example.test/source#opml" /></body></opml>`);
+    const imported = await request(app)
+      .post('/api/opml/import')
+      .set('Authorization', regularAuthHeaderFor(user))
+      .attach('opmlFile', opml, 'aliases.opml');
+
+    expect(regular.status).toBe(201);
+    expect(reader.status).toBe(200);
+    expect(reader.body.numResults).toBe(1);
+    expect(readerEdit.status).toBe(200);
+    expect(imported.status).toBe(200);
+    expect(imported.body).toMatchObject({ feedsCreated: 0, feedsExisting: 1 });
+    expect(mocked.discoverRssLink).toHaveBeenCalledTimes(callsAfterRegular);
+    expect(await Feed.count({ where: { userId: user.id } })).toBe(1);
+    expect(await Feed.count({
+      where: { userId: user.id, feedName: 'Alias-aware Reader edit' }
+    })).toBe(1);
+  });
+
+  it('serializes concurrent aliases for one discovered feed', async () => {
+    const user = trackUser(await createGreaderUser());
+    const finalUrl = 'https://concurrent-alias.example.test/final.xml';
+    mocked.discoverRssLink.mockResolvedValue({
+      url: finalUrl,
+      parsedFeed: {
+        title: 'Concurrent alias feed',
+        description: null,
+        format: 'rss',
+        faviconUrl: null,
+        entries: []
+      }
+    });
+    const { addFeedSubscription } = await import(
+      '../../services/feeds/feedManagement.js'
+    );
+
+    const results = await Promise.all([
+      addFeedSubscription({
+        userId: user.id,
+        inputUrl: 'https://concurrent-alias.example.test/one',
+        useDefaultCategory: true,
+        allowExisting: true
+      }),
+      addFeedSubscription({
+        userId: user.id,
+        inputUrl: 'https://concurrent-alias.example.test/two',
+        useDefaultCategory: true,
+        allowExisting: true
+      })
+    ]);
+    const feeds = await Feed.findAll({ where: { userId: user.id } });
+    const aliases = await FeedUrlAlias.findAll({ where: { userId: user.id } });
+
+    expect(results.filter(result => result.created)).toHaveLength(1);
+    expect(feeds).toHaveLength(1);
+    expect(new Set(aliases.map(alias => alias.normalizedUrl)).size).toBe(3);
+    expect(new Set(aliases.map(alias => alias.feedId))).toEqual(new Set([feeds[0].id]));
+  });
+
+  it('treats a validated publisher self URL and CDN endpoint as one subscription', async () => {
+    const user = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    const cdnUrl = 'https://cdn-self.example.test/feed.xml';
+    const selfUrl = 'https://publisher-self.example.test/canonical.xml';
+    mocked.discoverRssLink.mockResolvedValue({
+      url: cdnUrl,
+      parsedFeed: {
+        title: 'Publisher self feed',
+        description: null,
+        format: 'atom',
+        faviconUrl: null,
+        selfUrl,
+        entries: []
+      },
+      publisherSelf: {
+        accepted: true,
+        declaredUrl: selfUrl,
+        resolvedUrl: selfUrl,
+        status: 'validated',
+        diagnostic: 'Validated by stable feed evidence',
+        aliases: [{ originalUrl: selfUrl, aliasType: 'publisher_self' }]
+      }
+    });
+    const { addFeedSubscription } = await import(
+      '../../services/feeds/feedManagement.js'
+    );
+
+    const first = await addFeedSubscription({
+      userId: user.id,
+      inputUrl: cdnUrl,
+      categoryId: category.id,
+      allowExisting: true
+    });
+    const callsAfterFirst = mocked.discoverRssLink.mock.calls.length;
+    const second = await addFeedSubscription({
+      userId: user.id,
+      inputUrl: selfUrl,
+      categoryId: category.id,
+      allowExisting: true
+    });
+
+    expect(first.created).toBe(true);
+    expect(second).toMatchObject({ created: false, feed: { id: first.feed.id } });
+    expect(mocked.discoverRssLink).toHaveBeenCalledTimes(callsAfterFirst);
+    expect(await Feed.count({ where: { userId: user.id } })).toBe(1);
+    expect(await FeedUrlAlias.findOne({
+      where: { userId: user.id, aliasType: 'publisher_self' }
+    })).toMatchObject({ feedId: first.feed.id, originalUrl: selfUrl });
+  });
+
+  it('serializes crawl promotion with a concurrent subscription to the same final URL', async () => {
+    const user = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    const existing = await Feed.create({
+      userId: user.id,
+      categoryId: category.id,
+      feedName: 'Existing crawl subscription',
+      url: 'https://crawl-subscribe.example.test/original.xml',
+      lastSuccessAt: new Date('2026-08-08T00:00:00.000Z')
+    });
+    const finalUrl = 'https://crawl-subscribe.example.test/final.xml';
+    mocked.discoverRssLink.mockResolvedValue({
+      url: finalUrl,
+      parsedFeed: {
+        title: 'Concurrent crawl subscription',
+        description: null,
+        format: 'rss',
+        faviconUrl: null,
+        entries: []
+      }
+    });
+    const [{ addFeedSubscription }, { persistDiscoveredFeedUrl, registerFeedUrlAliases }] =
+      await Promise.all([
+        import('../../services/feeds/feedManagement.js'),
+        import('../../services/feeds/feedUrlAliases.js')
+      ]);
+    await registerFeedUrlAliases({
+      userId: user.id,
+      feedId: existing.id,
+      candidates: [{ originalUrl: existing.url, aliasType: 'input' }]
+    });
+
+    const [promoted, subscribed] = await Promise.all([
+      persistDiscoveredFeedUrl({ feed: existing, discoveredUrl: finalUrl }),
+      addFeedSubscription({
+        userId: user.id,
+        inputUrl: 'https://crawl-subscribe.example.test/new-subscription',
+        categoryId: category.id,
+        allowExisting: true
+      })
+    ]);
+    const feeds = await Feed.findAll({ where: { userId: user.id } });
+    const aliases = await FeedUrlAlias.findAll({ where: { userId: user.id } });
+
+    expect(feeds).toHaveLength(1);
+    expect(promoted.id).toBe(feeds[0].id);
+    expect(subscribed.feed.id).toBe(feeds[0].id);
+    expect(new Set(aliases.map(alias => alias.feedId))).toEqual(new Set([feeds[0].id]));
+  });
+
+  it('keeps equivalent aliases strictly user scoped', async () => {
+    const firstUser = trackUser(await createGreaderUser());
+    const secondUser = trackUser(await createGreaderUser());
+    const inputUrl = 'https://user-scoped-alias.example.test/source';
+
+    for (const user of [firstUser, secondUser]) {
+      const response = await request(app)
+        .post('/api/greader/reader/api/0/subscription/quickadd')
+        .type('form')
+        .send({ quickadd: inputUrl, T: greaderActionTokenFor(user) })
+        .set('Authorization', greaderAuthHeaderFor(user));
+      expect(response.status).toBe(200);
+      expect(response.body.numResults).toBe(1);
+    }
+
+    expect(await Feed.count({
+      where: { userId: { [Op.in]: [firstUser.id, secondUser.id] } }
+    })).toBe(2);
+    expect(await FeedUrlAlias.count({
+      where: { userId: { [Op.in]: [firstUser.id, secondUser.id] } }
+    })).toBe(4);
   });
 
   it('uses complete article cleanup for regular delete and Reader unsubscribe', async () => {

@@ -148,7 +148,7 @@
                   </option>
                 </select>
                 <div class="app-form-help">
-                  Minimum time between feed fetches.
+                  Base cadence; cache and retry deadlines can delay a fetch.
                 </div>
               </div>
 
@@ -280,7 +280,7 @@ export default {
       deleting: false,
       updating: false,
       updateIntervalOptions: [
-        { label: 'Global setting', value: null },
+        { label: 'Adaptive (publisher activity)', value: null },
         { label: 'Every 5 minutes', value: 5 },
         { label: 'Every 15 minutes', value: 15 },
         { label: 'Every 30 minutes', value: 30 },

@@ -45,6 +45,7 @@ import HotlinkModel from './hotlink.js';
 import OfficialSourceModel from './officialSource.js';
 import CrawlRunModel from './crawlRun.js';
 import BriefingPreferenceModel from './briefingPreference.js';
+import FeedUrlAliasModel from './feedUrlAlias.js';
 
 // ---- Initialize models ----
 const User = UserModel(sequelize);
@@ -66,6 +67,7 @@ const Hotlink = HotlinkModel(sequelize);
 const OfficialSource = OfficialSourceModel(sequelize);
 const CrawlRun = CrawlRunModel(sequelize);
 const BriefingPreference = BriefingPreferenceModel(sequelize);
+const FeedUrlAlias = FeedUrlAliasModel(sequelize);
 
 // ---- Associations ----
 
@@ -80,6 +82,14 @@ Category.belongsTo(User, { foreignKey: 'userId' });
 // User ↔ Feed
 User.hasMany(Feed, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Feed.belongsTo(User, { foreignKey: 'userId' });
+
+// User ↔ Feed URL Alias
+User.hasMany(FeedUrlAlias, {
+  foreignKey: 'userId',
+  as: 'feedUrlAliases',
+  onDelete: 'CASCADE'
+});
+FeedUrlAlias.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 // User ↔ Article
 User.hasMany(Article, { foreignKey: 'userId', onDelete: 'CASCADE' });
@@ -104,6 +114,14 @@ BriefingPreference.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 // Category ↔ Feed
 Category.hasMany(Feed, { foreignKey: 'categoryId', onDelete: 'CASCADE' });
 Feed.belongsTo(Category, { foreignKey: 'categoryId' });
+
+// Feed ↔ Feed URL Alias
+Feed.hasMany(FeedUrlAlias, {
+  foreignKey: 'feedId',
+  as: 'urlAliases',
+  onDelete: 'CASCADE'
+});
+FeedUrlAlias.belongsTo(Feed, { foreignKey: 'feedId', as: 'feed' });
 
 // Feed ↔ Article
 Feed.hasMany(Article, { foreignKey: 'feedId', onDelete: 'CASCADE' });
@@ -256,5 +274,6 @@ export default {
   Hotlink,
   OfficialSource,
   CrawlRun,
-  BriefingPreference
+  BriefingPreference,
+  FeedUrlAlias
 };

@@ -17,6 +17,7 @@ import {
   persistAcceptedHotlinks
 } from '../runtime/hotlinkService.js';
 import processArticleRevision from './processArticleRevision.js';
+import { throwIfExecutionExpired } from '../../feeds/executionDeadline.js';
 
 // Defines the rate limit delay ms enforced by this service.
 const RATE_LIMIT_DELAY_MS = 3000;
@@ -34,19 +35,24 @@ const processNewArticle = async ({
   preloadedActions,
   duplicateCache,
   hotlinkCountCache,
-  hotlinkBatcher
+  hotlinkBatcher,
+  execution = {}
 }) => {
+  const hasExecution = Boolean(execution.signal || execution.deadlineAt);
+  throwIfExecutionExpired(execution);
   const { articleData, actionArticle, hotlinkUrls, identityInput } = candidate;
   // Builds the article identity while processing new article.
   const articleIdentity = buildArticleIdentity(identityInput);
 
   // Derives the duplicate match through match article duplicate while processing new article.
   const duplicateMatch = await matchArticleDuplicate(articleIdentity, duplicateCache);
+  throwIfExecutionExpired(execution);
   // Returns early when duplicate match is available.
   if (duplicateMatch) return emptyArticleResult;
 
   // Retrieve actions before enrichment so discard matches can take the persistence-only path.
   const actions = await resolveArticleActions(feed, preloadedActions);
+  throwIfExecutionExpired(execution);
   // Derives the action result through apply actions while processing new article.
   const actionResult = applyActions(actions, actionArticle);
 
@@ -65,6 +71,7 @@ const processNewArticle = async ({
         rateLimitDelayMs: RATE_LIMIT_DELAY_MS
       });
     analysis = applyAnalysisScoreOverrides(analysis, actionResult);
+    throwIfExecutionExpired(execution);
 
     // Hotness is derived only for articles accepted into the normal reading pipeline.
     hotlinkCount = await countArticleHotlinks(
@@ -72,12 +79,14 @@ const processNewArticle = async ({
       articleData.normalizedUrl,
       hotlinkCountCache
     );
+    throwIfExecutionExpired(execution);
   }
 
   // Selects the official source based on whether action result should discard is available.
   const officialSource = actionResult.shouldDiscard
     ? createEmptyOfficialSource()
     : await resolveOfficialSourceForArticle(feed.userId, articleData.link);
+  throwIfExecutionExpired(execution);
   // Builds the persistence data assembled while processing new article.
   const persistenceData = {
     ...articleData,
@@ -88,18 +97,24 @@ const processNewArticle = async ({
 
   // Filtered articles remain eligible for publisher identity matching,
   // but must not suppress active articles through content hashes.
-  const saveResult = await saveArticle(
+  const saveArguments = [
     feed,
     persistenceData,
     analysis,
     actionResult
-  );
+  ];
+  if (hasExecution) saveArguments.push(execution);
+  const saveResult = await saveArticle(...saveArguments);
   const savedArticle = saveResult.article;
 
   // Handles the case where save result created is unavailable.
   if (!saveResult.created) {
     // Classify the exact winning row so a URL race cannot target a different article.
-    const concurrentUpdate = await updateArticle(feed, articleData, { article: savedArticle });
+    const concurrentUpdate = await updateArticle(feed, articleData, {
+      article: savedArticle,
+      ...(hasExecution ? { execution } : {})
+    });
+    throwIfExecutionExpired(execution);
     // Handles the case where concurrent update changed is unavailable.
     if (!concurrentUpdate.changed) {
       duplicateCache?.add(savedArticle);
@@ -115,7 +130,8 @@ const processNewArticle = async ({
       hotlinkBatcher,
       duplicateCache,
       precomputedActionResult: actionResult,
-      precomputedAnalysis: analysis
+      precomputedAnalysis: analysis,
+      ...(hasExecution ? { execution } : {})
     });
   }
 
@@ -123,12 +139,14 @@ const processNewArticle = async ({
   // Handles the case where action result should discard is unavailable.
   if (!actionResult.shouldDiscard) {
     // Hotlinks are persisted only after the article transaction commits.
-    await persistAcceptedHotlinks(
+    const hotlinkArguments = [
       hotlinkUrls,
       feed,
       savedArticle.id,
-      hotlinkBatcher
-    );
+      hotlinkBatcher,
+    ];
+    if (hasExecution) hotlinkArguments.push(execution);
+    await persistAcceptedHotlinks(...hotlinkArguments);
   }
 
   // Selects the result based on whether action result should discard is available.

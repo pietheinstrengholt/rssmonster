@@ -2,6 +2,7 @@ import { Op } from 'sequelize';
 
 import hotlink from '../../../controllers/hotlink.js';
 import db from '../../../models/index.js';
+import { throwIfExecutionExpired } from '../../feeds/executionDeadline.js';
 
 // Provides the shared dependencies used by this service.
 const { Hotlink } = db;
@@ -26,20 +27,33 @@ export const persistAcceptedHotlinks = async (
   urls,
   feed,
   sourceArticleId,
-  hotlinkBatcher
+  hotlinkBatcher,
+  execution = {}
 ) => {
   // Returns early when source article id is unavailable.
   if (!sourceArticleId) return;
 
   try {
+    throwIfExecutionExpired(execution);
     // Handles the case where hotlink batcher is available.
     if (hotlinkBatcher) {
       hotlinkBatcher.add(urls, sourceArticleId);
       return;
     }
 
-    await hotlink.setMany(urls, feed.id, feed.userId, sourceArticleId);
+    const setManyArguments = [
+      urls,
+      feed.id,
+      feed.userId,
+      sourceArticleId
+    ];
+    if (execution.signal || execution.deadlineAt) {
+      setManyArguments.push(execution);
+    }
+    await hotlink.setMany(...setManyArguments);
+    throwIfExecutionExpired(execution);
   } catch (err) {
+    throwIfExecutionExpired(execution);
     console.error(`Error saving hotlinks for accepted article in feed ${feed.id}:`, err);
   }
 };

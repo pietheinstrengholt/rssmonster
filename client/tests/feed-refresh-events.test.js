@@ -125,6 +125,42 @@ describe('feed refresh event stream', () => {
     eventStream.close();
   });
 
+  // Verifies a completed job cannot reconnect and replay its terminal event indefinitely.
+  it('does not reconnect after receiving a terminal refresh event', async () => {
+    vi.useFakeTimers();
+    const terminalResponse = {
+      body: {
+        getReader: () => ({
+          read: vi.fn()
+            .mockResolvedValueOnce({
+              done: false,
+              value: new TextEncoder().encode(
+                'event: done\ndata: {"processedFeeds":2,"totalFeeds":2}\n\n'
+              )
+            })
+            .mockResolvedValueOnce({ done: true })
+        })
+      },
+      ok: true,
+      status: 200
+    };
+    const fetchMock = vi.fn().mockResolvedValue(terminalResponse);
+    vi.stubGlobal('fetch', fetchMock);
+    const terminalEvents = [];
+
+    const eventStream = openFeedRefreshEvents('completed-job');
+    eventStream.addEventListener('done', event => terminalEvents.push(event));
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(terminalEvents).toHaveLength(1);
+    expect(terminalEvents[0]).toMatchObject({
+      data: '{"processedFeeds":2,"totalFeeds":2}',
+      type: 'done'
+    });
+    eventStream.close();
+  });
+
   // Verifies client errors remain terminal while server failures remain eligible for reconnect.
   it('does not reconnect after a non-retryable HTTP response', async () => {
     vi.useFakeTimers();

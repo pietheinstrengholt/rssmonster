@@ -1,6 +1,7 @@
 // Uses OpenAI to suggest a replacement RSS or Atom URL when an existing feed stops working.
 // The response is expected to be strict JSON with a URL, confidence score, and user-facing reason.
 import OpenAI from 'openai';
+import { logFeedDebug } from './feedLogging.js';
 
 // Coerces the has api key into the representation required for this service.
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
@@ -73,7 +74,7 @@ export async function rediscoverRssUrl({
   });
 
   const raw = response.choices?.[0]?.message?.content;
-  console.log('Rediscover RSS raw response:', raw);
+  logFeedDebug('Rediscover RSS raw response:', raw);
 
   try {
     return JSON.parse(raw);

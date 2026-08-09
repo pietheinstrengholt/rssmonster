@@ -763,10 +763,10 @@ export default {
     isDesktopShell(matches) {
       this.handleResponsiveShellChange({ matches });
     },
-    // This function reloads overview and articles after a successful feed-refresh job.
+    // This function refreshes database-backed data once after a successful feed-refresh job.
     'feedRefreshStore.successfulCompletionId'(completionId, previousCompletionId) {
       if (completionId > previousCompletionId) {
-        this.forceReload();
+        void this.refreshArticlesFromDatabase();
       }
     },
     // This function applies a theme mode loaded from the user's settings.

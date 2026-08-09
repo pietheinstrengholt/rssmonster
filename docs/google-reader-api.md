@@ -133,5 +133,7 @@ still be recorded during release smoke testing.
   canonical URL handling, metadata initialization, and duplicate handling as
   regular feed creation. Uploads are held in memory and are limited to 1 MiB;
   no user-controlled filename is written.
-- `MAX_FEEDCOUNT` controls crawl concurrency in RSSMonster. It is not a
-  subscription-count cap, so the API does not misrepresent it as one.
+- `FEED_MAX_COUNT` controls the maximum claimed crawl batch size. Deployments
+  using the previous `MAX_FEEDCOUNT` name remain temporarily supported when the
+  new name is absent. This is not a subscription-count cap, so the API does not
+  misrepresent it as one.

@@ -5,6 +5,10 @@ import buildArticlePersistenceValues, {
   selectMutableArticleSourceValues
 } from './buildArticlePersistenceValues.js';
 import { replaceArticleDerivedTags } from './tags.js';
+import {
+  assertExecutionLeaseOwnership,
+  throwIfExecutionExpired
+} from '../../feeds/executionDeadline.js';
 
 // Provides the shared dependencies used by this service.
 const { Article, sequelize } = db;
@@ -422,6 +426,8 @@ const buildStoredSourceValues = (feed, article) => selectMutableArticleSourceVal
 
 // This function classifies a prospective update without mutating the matched article.
 async function updateArticle(feed, data, options = {}) {
+  const execution = options.execution || {};
+  throwIfExecutionExpired(execution);
   // Returns early when id is unavailable or user id is unavailable.
   if (!feed?.id || !feed?.userId) {
     return { article: null, matched: false, changed: false, changes: null };
@@ -445,6 +451,7 @@ async function updateArticle(feed, data, options = {}) {
         externalIdType: data.externalIdType
       }
     });
+    throwIfExecutionExpired(execution);
   }
 
   // Returns early when article is unavailable.
@@ -498,12 +505,16 @@ export const applyArticleUpdate = async ({
   updatePlan,
   derivedValues = {},
   tagUpdates = null,
-  userId
+  userId,
+  execution = {}
 }) => sequelize.transaction(async transaction => {
+  throwIfExecutionExpired(execution);
+  await assertExecutionLeaseOwnership(execution, { transaction });
   await updatePlan.article.update({
     ...updatePlan.updateValues,
     ...derivedValues
   }, { transaction });
+  throwIfExecutionExpired(execution);
 
   // Handles the case where tag updates is available.
   if (tagUpdates) {
@@ -513,6 +524,7 @@ export const applyArticleUpdate = async ({
       ...tagUpdates,
       transaction
     });
+    throwIfExecutionExpired(execution);
   }
 
   return updatePlan.article;

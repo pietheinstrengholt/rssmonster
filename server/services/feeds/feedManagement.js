@@ -2,6 +2,22 @@ import db from '../../models/index.js';
 import discoverRssLink from './discoverRssLink.js';
 import parseFeed from './parser.js';
 import { Op } from 'sequelize';
+import {
+  FeedUrlAliasConflictError,
+  findFeedByUrlAlias,
+  registerFeedUrlAliases
+} from './feedUrlAliases.js';
+import { isSuccessfulFetchOutcome } from './http/contracts.js';
+import {
+  calculateIntervalChangeNextFetchAt,
+  deterministicJitterMs
+} from './feedScheduling.js';
+import {
+  FEED_PERSISTENCE_LIMITS,
+  assertFeedPersistenceUrl,
+  boundedOptionalMetadata,
+  sanitizeFeedPersistenceMetadata
+} from './feedPersistenceMetadata.js';
 
 // Provides the shared dependencies used by this service.
 const { Article, Category, Feed, User, sequelize } = db;
@@ -49,7 +65,134 @@ export const normalizeFeedUrl = input => {
   }
 
   url.hash = '';
-  return url.toString();
+  try {
+    return assertFeedPersistenceUrl(url.toString());
+  } catch (error) {
+    if (error?.code !== 'FEED_PERSISTENCE_URL_TOO_LONG') throw error;
+    throw new FeedManagementError('INVALID_URL', error.message, {
+      field: error.field,
+      limit: error.limit
+    });
+  }
+};
+
+// Collects input, redirect, and final URLs verified by one discovery operation.
+const discoveryAliasCandidates = ({
+  inputUrl,
+  query,
+  feedUrl,
+  result,
+  observedOutcomes = []
+}) => {
+  const candidates = [{
+    originalUrl: String(inputUrl || query).trim(),
+    aliasType: 'input'
+  }, {
+    originalUrl: feedUrl,
+    aliasType: 'final'
+  }];
+  const inputOutcome = observedOutcomes.find(isSuccessfulFetchOutcome);
+  const verifiedOutcomes = [inputOutcome, result?.fetchOutcome]
+    .filter(outcome => outcome?.response);
+  for (const outcome of verifiedOutcomes) {
+    for (const redirect of outcome.response.redirects || []) {
+      if (redirect.fromUrl) {
+        candidates.push({ originalUrl: redirect.fromUrl, aliasType: 'redirect' });
+      }
+      if (redirect.toUrl) {
+        candidates.push({ originalUrl: redirect.toUrl, aliasType: 'redirect' });
+      }
+    }
+  }
+  if (result?.publisherSelf?.accepted) {
+    candidates.push(...result.publisherSelf.aliases);
+  }
+  return candidates;
+};
+
+// Builds nullable feed fields from the latest publisher-self validation result.
+const publisherSelfState = validation => validation
+  ? {
+      publisherSelfUrl: boundedOptionalMetadata(
+        validation.resolvedUrl || validation.declaredUrl,
+        { maxCharacters: FEED_PERSISTENCE_LIMITS.selfUrlCharacters }
+      ),
+      publisherSelfStatus: validation.status,
+      publisherSelfCheckedAt: new Date(),
+      publisherSelfDiagnostic: validation.diagnostic
+        ? String(validation.diagnostic).slice(0, 4096)
+        : null
+    }
+  : {};
+
+// Clears state that is valid only for the previously configured endpoint.
+const buildEndpointReplacementState = ({ feed, updates, clock }) => {
+  const updateIntervalMinutes = updates.updateIntervalMinutes !== undefined
+    ? updates.updateIntervalMinutes
+    : feed.updateIntervalMinutes;
+  const automaticCrawlingDisabled = updateIntervalMinutes !== null &&
+    Number(updateIntervalMinutes) === 0;
+  const now = new Date(clock());
+  if (Number.isNaN(now.getTime())) {
+    throw new TypeError('The feed update clock is invalid');
+  }
+
+  return {
+    etag: null,
+    lastModified: null,
+    contentHash: null,
+    cacheFreshUntil: null,
+    publisherSelfUrl: null,
+    publisherSelfStatus: null,
+    publisherSelfCheckedAt: null,
+    publisherSelfDiagnostic: null,
+    lastFetched: null,
+    lastAttemptAt: null,
+    lastSuccessAt: null,
+    lastChangedAt: null,
+    lastPublishedAt: null,
+    observedEntryIntervalMs: null,
+    errorCount: 0,
+    errorMessage: null,
+    errorSince: null,
+    consecutiveFailures: 0,
+    lastFetchOutcome: null,
+    leaseUntil: null,
+    leaseOwner: null,
+    status: 'active',
+    nextFetchAt: automaticCrawlingDisabled
+      ? null
+      : new Date(now.getTime() + deterministicJitterMs(feed.id ?? feed.url))
+  };
+};
+
+// Finds an existing subscription through aliases first and exact fetch URLs second.
+const findExistingFeedForUrls = async ({
+  userId,
+  candidates,
+  transaction,
+  lock = false
+}) => {
+  for (const candidate of candidates) {
+    const match = await findFeedByUrlAlias({
+      userId,
+      url: candidate.originalUrl,
+      transaction,
+      lock
+    });
+    if (match) return match.feed;
+  }
+
+  for (const candidate of candidates) {
+    const url = normalizeFeedUrl(candidate.originalUrl);
+    const feed = await Feed.findOne({
+      where: { userId, url },
+      transaction,
+      ...(lock && transaction ? { lock: transaction.LOCK.UPDATE } : {})
+    });
+    if (feed) return feed;
+  }
+  return null;
 };
 
 // This function maps the regular feed crawl-history selector to a timestamp.
@@ -305,9 +448,17 @@ const resolveCategory = async ({
 export const discoverFeedSubscription = async ({ userId, inputUrl }) => {
   // Normalizes the query before performing discover feed subscription.
   const query = normalizeFeedUrl(inputUrl);
-  // Selects the direct existing feed based on whether user id is available.
+  const inputAliases = discoveryAliasCandidates({
+    inputUrl,
+    query,
+    feedUrl: query
+  });
+  // Selects the direct existing feed based on conservative alias identity.
   const directExistingFeed = userId
-    ? await Feed.findOne({ where: { userId, url: query } })
+    ? await findExistingFeedForUrls({
+      userId,
+      candidates: inputAliases
+    })
     : null;
   // Returns early when direct existing feed is available.
   if (directExistingFeed) {
@@ -318,16 +469,23 @@ export const discoverFeedSubscription = async ({ userId, inputUrl }) => {
       feedDesc: directExistingFeed.feedDesc,
       feedType: directExistingFeed.feedType,
       favicon: directExistingFeed.favicon,
-      existingFeed: directExistingFeed
+      existingFeed: directExistingFeed,
+      aliases: inputAliases
     };
   }
 
   let discoveryResult;
+  const observedOutcomes = [];
   try {
     discoveryResult = await discoverRssLink.discoverRssLink(
       query,
       undefined,
-      { includeParsedFeed: true }
+      {
+        includeParsedFeed: true,
+        userId,
+        // Retains redirect evidence from the input request and accepted feed.
+        onFetchOutcome: outcome => observedOutcomes.push(outcome)
+      }
     );
   } catch {
     throw new FeedManagementError(
@@ -359,6 +517,13 @@ export const discoverFeedSubscription = async ({ userId, inputUrl }) => {
 
   // Normalizes the feed url before performing discover feed subscription.
   const feedUrl = normalizeFeedUrl(discoveredUrl);
+  const aliases = discoveryAliasCandidates({
+    inputUrl,
+    query,
+    feedUrl,
+    result: discoveryResult,
+    observedOutcomes
+  });
   let parsedFeed = discoveryResult?.parsedFeed;
   // Handles the case where parsed feed is unavailable.
   if (!parsedFeed) {
@@ -378,10 +543,11 @@ export const discoverFeedSubscription = async ({ userId, inputUrl }) => {
       'The discovered feed has no metadata'
     );
   }
+  parsedFeed = sanitizeFeedPersistenceMetadata(parsedFeed);
 
   // Selects the existing feed based on whether user id is available.
   const existingFeed = userId
-    ? await Feed.findOne({ where: { userId, url: feedUrl } })
+    ? await findExistingFeedForUrls({ userId, candidates: aliases })
     : null;
 
   return {
@@ -392,7 +558,9 @@ export const discoverFeedSubscription = async ({ userId, inputUrl }) => {
     feedType: parsedFeed.format || null,
     favicon: parsedFeed.faviconUrl || null,
     parsedFeed,
-    existingFeed
+    existingFeed,
+    aliases,
+    publisherSelf: discoveryResult?.publisherSelf || null
   };
 };
 
@@ -404,7 +572,8 @@ export const updateFeedSubscription = async ({
   categoryId,
   categoryName,
   removeCategory = false,
-  transaction: externalTransaction
+  transaction: externalTransaction,
+  clock = () => new Date()
 }) => {
   // Performs the operation operation.
   const operation = async transaction => {
@@ -418,6 +587,72 @@ export const updateFeedSubscription = async ({
     // Rejects processing when feed is unavailable.
     if (!feed) {
       throw new FeedManagementError('FEED_NOT_FOUND', 'Feed not found');
+    }
+
+    let normalizedUpdates = updates;
+    let endpointChanged = false;
+    if (updates.url !== undefined) {
+      const nextUrl = normalizeFeedUrl(updates.url);
+      endpointChanged = nextUrl !== normalizeFeedUrl(feed.url);
+      const aliasOwner = await findFeedByUrlAlias({
+        userId,
+        url: nextUrl,
+        transaction,
+        lock: true
+      });
+      const exactOwner = await Feed.findOne({
+        where: { userId, url: nextUrl },
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
+      if (
+        (aliasOwner && aliasOwner.feed.id !== feed.id) ||
+        (exactOwner && exactOwner.id !== feed.id)
+      ) {
+        throw new FeedManagementError('FEED_EXISTS', 'Feed already exists');
+      }
+
+      await registerFeedUrlAliases({
+        userId,
+        feedId: feed.id,
+        candidates: [
+          { originalUrl: feed.url, aliasType: 'historical' },
+          { originalUrl: nextUrl, aliasType: 'manual' }
+        ],
+        transaction
+      });
+      normalizedUpdates = { ...updates, url: nextUrl };
+    }
+
+    if (
+      normalizedUpdates.updateIntervalMinutes !== undefined &&
+      normalizedUpdates.updateIntervalMinutes !== feed.updateIntervalMinutes
+    ) {
+      normalizedUpdates = {
+        ...normalizedUpdates,
+        nextFetchAt: calculateIntervalChangeNextFetchAt({
+          feedIdentity: feed.id ?? feed.url,
+          previousUpdateIntervalMinutes: feed.updateIntervalMinutes,
+          updateIntervalMinutes: normalizedUpdates.updateIntervalMinutes,
+          lastPublishedAt: feed.lastPublishedAt,
+          observedEntryIntervalMs: feed.observedEntryIntervalMs,
+          cacheFreshUntil: feed.cacheFreshUntil,
+          currentNextFetchAt: feed.nextFetchAt,
+          lastFetchOutcome: feed.lastFetchOutcome,
+          consecutiveFailures: feed.consecutiveFailures
+        }, { clock })
+      };
+    }
+
+    if (endpointChanged) {
+      normalizedUpdates = {
+        ...normalizedUpdates,
+        ...buildEndpointReplacementState({
+          feed,
+          updates: normalizedUpdates,
+          clock
+        })
+      };
     }
 
     let targetCategory;
@@ -447,17 +682,27 @@ export const updateFeedSubscription = async ({
 
     // Selects the result based on whether target category is available.
     await feed.update({
-      ...updates,
+      ...normalizedUpdates,
       ...(targetCategory ? { categoryId: targetCategory.id } : {})
     }, { transaction });
 
     return feed;
   };
 
-  // Selects the result based on whether external transaction is available.
-  return externalTransaction
-    ? operation(externalTransaction)
-    : sequelize.transaction(operation);
+  try {
+    // Selects the result based on whether external transaction is available.
+    return await (externalTransaction
+      ? operation(externalTransaction)
+      : sequelize.transaction(operation));
+  } catch (error) {
+    if (
+      error instanceof FeedUrlAliasConflictError ||
+      error?.name === 'SequelizeUniqueConstraintError'
+    ) {
+      throw new FeedManagementError('FEED_EXISTS', 'Feed already exists');
+    }
+    throw error;
+  }
 };
 
 // This function discovers and creates one subscription through the shared feed flow.
@@ -493,66 +738,81 @@ export const addFeedSubscription = async ({
   // Derives the discovery through discover feed subscription while performing add feed subscription.
   const discovery = await discoverFeedSubscription({ userId, inputUrl });
 
-  // Runs the callback required while performing add feed subscription.
-  return sequelize.transaction(async transaction => {
-    await lockUser(userId, transaction);
-    // Loads the existing feed needed while performing add feed subscription.
-    let existingFeed = await Feed.findOne({
-      where: { userId, url: discovery.feedUrl },
-      transaction,
-      lock: transaction.LOCK.UPDATE
-    });
+  try {
+    // Serializes alias assignment and feed creation within the user's identity namespace.
+    const result = await sequelize.transaction(async transaction => {
+      await lockUser(userId, transaction);
+      // Rechecks every verified alias after locking to close discovery-time races.
+      let existingFeed = await findExistingFeedForUrls({
+        userId,
+        candidates: discovery.aliases,
+        transaction,
+        lock: true
+      });
 
-    // Handles the case where existing feed is available.
-    if (existingFeed) {
-      // Rejects processing when allow existing is unavailable.
-      if (!allowExisting) {
-        throw new FeedManagementError(
-          'FEED_EXISTS',
-          'Feed already exists',
-          { feed: existingFeed }
-        );
-      }
-
-      // Handles the case where update existing is available and title is available or category id is not undefined or category name is available.
-      if (
-        updateExisting &&
-        (title || categoryId !== undefined || categoryName)
-      ) {
-        // Selects the result based on whether title is available.
-        existingFeed = await updateFeedSubscription({
+      // Handles the case where existing feed is available.
+      if (existingFeed) {
+        await registerFeedUrlAliases({
           userId,
           feedId: existingFeed.id,
-          updates: title ? { feedName: title } : {},
-          categoryId,
-          categoryName,
+          candidates: discovery.aliases,
           transaction
         });
+        if (discovery.publisherSelf) {
+          await existingFeed.update(
+            publisherSelfState(discovery.publisherSelf),
+            { transaction }
+          );
+        }
+        // Rejects processing when allow existing is unavailable.
+        if (!allowExisting) {
+          return {
+            feed: existingFeed,
+            created: false,
+            query: discovery.query,
+            discovery,
+            rejectExisting: true
+          };
+        }
+
+        // Handles the case where update existing is available and title is available or category id is not undefined or category name is available.
+        if (
+          updateExisting &&
+          (title || categoryId !== undefined || categoryName)
+        ) {
+          // Selects the result based on whether title is available.
+          existingFeed = await updateFeedSubscription({
+            userId,
+            feedId: existingFeed.id,
+            updates: title ? { feedName: title } : {},
+            categoryId,
+            categoryName,
+            transaction
+          });
+        }
+
+        return {
+          feed: existingFeed,
+          created: false,
+          query: discovery.query,
+          discovery
+        };
       }
 
-      return {
-        feed: existingFeed,
-        created: false,
-        query: discovery.query,
-        discovery
-      };
-    }
+      // Resolves the category while performing add feed subscription.
+      const category = await resolveCategory({
+        userId,
+        categoryId,
+        categoryName,
+        useDefaultCategory,
+        transaction
+      });
+      // Derives the feed name required while performing add feed subscription.
+      const feedName = title ||
+        discovery.feedName ||
+        new URL(discovery.feedUrl).hostname ||
+        discovery.feedUrl;
 
-    // Resolves the category while performing add feed subscription.
-    const category = await resolveCategory({
-      userId,
-      categoryId,
-      categoryName,
-      useDefaultCategory,
-      transaction
-    });
-    // Derives the feed name required while performing add feed subscription.
-    const feedName = title ||
-      discovery.feedName ||
-      new URL(discovery.feedUrl).hostname ||
-      discovery.feedUrl;
-
-    try {
       // Performs the create operation while performing add feed subscription.
       const feed = await Feed.create({
         userId,
@@ -563,8 +823,16 @@ export const addFeedSubscription = async ({
         url: discovery.feedUrl,
         favicon: discovery.favicon,
         status,
-        crawlSince: toCrawlSinceDate(crawlSince)
+        crawlSince: toCrawlSinceDate(crawlSince),
+        ...publisherSelfState(discovery.publisherSelf)
       }, { transaction });
+
+      await registerFeedUrlAliases({
+        userId,
+        feedId: feed.id,
+        candidates: discovery.aliases,
+        transaction
+      });
 
       return {
         feed,
@@ -572,28 +840,39 @@ export const addFeedSubscription = async ({
         query: discovery.query,
         discovery
       };
-    } catch (error) {
-      // Rejects processing when name is not sequelize unique constraint error.
-      if (error?.name !== 'SequelizeUniqueConstraintError') throw error;
-
-      existingFeed = await Feed.findOne({
-        where: { userId, url: discovery.feedUrl },
-        transaction,
-        lock: transaction.LOCK.UPDATE
-      });
-      // Rejects processing when existing feed is unavailable or allow existing is unavailable.
-      if (!existingFeed || !allowExisting) {
-        throw new FeedManagementError('FEED_EXISTS', 'Feed already exists');
-      }
-
-      return {
-        feed: existingFeed,
-        created: false,
-        query: discovery.query,
-        discovery
-      };
+    });
+    if (result.rejectExisting) {
+      throw new FeedManagementError(
+        'FEED_EXISTS',
+        'Feed already exists',
+        { feed: result.feed }
+      );
     }
-  });
+    return result;
+  } catch (error) {
+    if (error instanceof FeedManagementError) throw error;
+    if (
+      error instanceof FeedUrlAliasConflictError ||
+      error?.name === 'SequelizeUniqueConstraintError'
+    ) {
+      const existingFeed = error instanceof FeedUrlAliasConflictError
+        ? await Feed.findOne({ where: { id: error.feedId, userId } })
+        : await findExistingFeedForUrls({
+          userId,
+          candidates: discovery.aliases
+        });
+      if (existingFeed && allowExisting) {
+        return {
+          feed: existingFeed,
+          created: false,
+          query: discovery.query,
+          discovery
+        };
+      }
+      throw new FeedManagementError('FEED_EXISTS', 'Feed already exists');
+    }
+    throw error;
+  }
 };
 
 // This function removes one owned feed and its articles atomically.

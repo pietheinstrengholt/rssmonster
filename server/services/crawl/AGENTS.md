@@ -103,6 +103,178 @@ Stored article bodies must be suitable for safe rendering.
 
 ---
 
+# Feed Processing Engine
+
+## Neutral acquisition contract
+
+Feed acquisition uses one HTTP-client-independent execution contract from discovery through
+article processing. The crawl boundary creates one absolute `deadlineAt` and `AbortSignal`; every
+redirect, discovery request, YouTube lookup, bounded body read, parse operation, and article
+operation must propagate that same execution context. Nested operations must use the remaining
+time and must never start a fresh relative timeout that could extend the original deadline.
+
+HTTP transport details remain inside the transport adapter. Discovery and crawl orchestration
+consume neutral responses and stable feed outcomes rather than Fetch API, Undici, stream, or
+worker-specific errors. The closed outcome set is:
+
+- `changed`
+- `unchanged`
+- `not_modified`
+- `rate_limited`
+- `transient_failure`
+- `permanent_failure`
+- `malformed`
+- `security_rejected`
+- `too_large`
+- `timed_out`
+
+Feed state, scheduling, leases, and crawl orchestration must consume these outcomes and must not
+branch on transport-library exception classes.
+
+Console reporting uses a separate stable operational taxonomy and emits exactly one terminal
+`[CRAWL]` result for each attempted feed plus one compact batch summary. Successful recovery,
+timeouts, HTTP failures, rate limiting, missing endpoints, redirect loops, network failures,
+invalid or malformed feeds, validation failures, empty feeds, security rejection, and size limits
+must remain distinguishable without changing scheduling outcomes. Candidate URLs, retries,
+discovery details, and raw recovery diagnostics are logged only when
+`CRAWL_VERBOSE_LOGGING=true`.
+
+Conditional requests use only validators from previously accepted representations. A `304` is a
+successful unchanged fetch and skips parsing and article processing. A `200` response is hashed
+before parsing; an unchanged accepted representation also skips parsing. New validators are not
+committed until the response is accepted as a valid feed, so malformed content cannot make an
+unusable validator authoritative.
+
+Discovery is exceptional recovery rather than routine endpoint brute force. A direct rate limit,
+timeout, transient network failure, security rejection, oversized response, or non-missing HTTP
+error stops without probing alternate paths. A missing stored endpoint may fetch the origin
+homepage once, inspect declared RSS, Atom, and JSON Feed links, then try only the small maintained
+set of conventional feed paths. Successful recovery promotes `Feed.url`, so later crawls start at
+the accepted endpoint.
+
+## Bounded bodies and byte-aware decoding
+
+Response bodies are consumed exactly once into an application-owned neutral byte buffer. They are
+read incrementally and bounded by both streamed bytes and decoded UTF-8 bytes. A valid
+`Content-Length` is checked before reading when available, but missing, malformed, compressed,
+chunked, or dishonest length headers never bypass the streaming limit. Exceeding the limit or
+deadline must abort the request and cancel the outstanding response body.
+
+Feed decoding uses deterministic charset precedence:
+
+1. Byte-order marker.
+2. A supported HTTP `Content-Type` charset.
+3. The XML declaration encoding.
+4. A detectable UTF-16 byte pattern.
+5. Strict UTF-8.
+
+Supported encodings are UTF-8, UTF-16LE, UTF-16BE, ISO-8859-1, and Windows-1252. Unsupported
+charsets and invalid Unicode byte sequences fail as `malformed`; they must not silently introduce
+replacement characters. Existing callers may consume compatible `bodyText`, but transport and
+parser boundaries should prefer the neutral body-content contract containing bytes, decoded text,
+charset metadata, and the raw-content hash.
+
+## Feed parsing and conservative XML cleanup
+
+JSON Feed is identified before XML cleanup and its decoded source text is passed through unchanged.
+XML cleanup applies only to plausible RSS, Atom, or RDF sources. It may remove a BOM, harmless
+warning text before the first plausible feed root, illegal XML characters, known HTML named
+entities outside protected regions, and a harmless DOCTYPE declaration.
+
+Cleanup must preserve CDATA, comments, processing instructions, and legitimate article content.
+It must not turn structural HTML into a feed. Internal entity declarations, external entities, and
+entity-expansion payloads are rejected without resolution; broad regex-based XML repair is not
+allowed.
+
+Synchronous feed parsing runs in a worker thread so CPU-bound parser work can be terminated. The
+worker receives the remaining absolute deadline, has its own configurable CPU timeout, and uses a
+configurable memory limit where Node.js supports worker resource limits. A parser timeout is not
+complete until the worker has been terminated cleanly.
+
+Parsed feeds are rejected before enrichment when they exceed the configured entry count or UTF-8
+byte limits for an individual GUID, URL, title, author, or combined content and description.
+
+## Feed URL identity and convergence
+
+Feed URL identity is user-scoped and comparison-only. Normalization removes fragments, normalizes
+scheme and hostname casing, IDNs, default ports, dot segments, and safe percent-encoding variants.
+It preserves path and query case, meaningful query parameters, the distinction between HTTP and
+HTTPS, and the presence of `www`. The normalized URL must never replace the observed fetch URL;
+`Feed.url` remains the active endpoint.
+
+Every subscription path, including the regular API, Google Reader compatibility endpoints, and
+OPML import, checks URL aliases before outbound discovery and before creating a feed. Observed
+input, discovered alternate, redirect, final, publisher-self, manual, and historical URLs are
+stored as persistent aliases. A normalized alias may identify only one feed per user, and the
+database constraint is the final guard against concurrent subscription races.
+
+Redirect and discovery promotion resolves endpoint ownership before changing `Feed.url`. URL
+promotion and duplicate reconciliation run transactionally, lock user/feed rows in stable order,
+and return the surviving feed identity to the crawl caller. Same-user feeds that converge are
+reconciled atomically; feeds from different users are never merged. The survivor preference is an
+already successful feed, then the feed with more articles, then the older record, then the lower
+stable ID. Aliases, articles, article tags/topics, event pointers, hotlinks, settings, user state,
+feed settings, and useful fetch metadata are transferred before the losing feed is removed.
+Overlapping articles are consolidated through strong publisher or URL identity without losing
+non-overlapping articles.
+
+Publisher-declared Atom `rel="self"` and JSON Feed `feed_url` values are identity evidence, not
+automatic authority. Relative declarations resolve against the final accepted response URL and
+must be HTTP(S), credential-free, and pass the normal SSRF safeguards. A known alias or identical
+endpoint needs no extra read. Otherwise the guarded acquisition layer validates that the endpoint
+parses as a feed and requires conservative same-feed evidence from endpoint/body identity,
+reciprocal declarations, format, and stable recent entry identities. Cross-origin declarations
+require stronger evidence, title alone is never sufficient, and rejected declarations are retained
+as non-fatal diagnostics with bounded recheck caching.
+
+## Persistent scheduling and leases
+
+`nextFetchAt`, not legacy `lastFetched`, is the scheduling authority. Successful `200`, unchanged
+content, and `304` outcomes reset consecutive failures. Every terminal outcome persists its exact
+classification, diagnostic state, failure count, and next fetch time atomically.
+
+Scheduling combines activity cadence, publisher freshness, `Retry-After`, classified failure
+backoff, and deterministic non-negative feed-identity jitter. Publisher `Retry-After` is never
+bounded by the activity ceiling, but hostile or accidental extreme publisher deadlines are capped
+by the configurable operational limits `FEED_CACHE_FRESHNESS_MAX_MS` and
+`FEED_RETRY_AFTER_MAX_MS`. SSRF rejection is a non-retryable security outcome;
+malformed feeds use slower retry/quarantine behavior, while `404` and `410` use long retry
+intervals.
+
+Due feeds are claimed in indexed `nextFetchAt`, then stable feed-ID order. Claims use expiring
+leases so scheduled and API-triggered crawls cannot fetch the same row concurrently. Terminal
+outcomes release only the caller's owned lease, expired leases are recoverable, duplicate requests
+for one canonical URL are coalesced, and per-origin concurrency and request spacing must be
+preserved. Sequential crawls claim feeds just in time instead of leasing a queued batch. Active
+feed work renews its lease through article processing, and feed, article, tag, and hotlink writes
+must verify the current lease owner before committing.
+
+## Execution configuration
+
+The execution limits are configured with:
+
+- `CRAWL_TIMEOUT_MS`
+- `FEED_TIMEOUT_MS`
+- `FEED_LEASE_MS`
+- `FEED_RESPONSE_MAX_BYTES`
+- `FEED_CACHE_FRESHNESS_MAX_MS`
+- `FEED_RETRY_AFTER_MAX_MS`
+- `FEED_PARSER_TIMEOUT_MS`
+- `FEED_PARSER_MEMORY_MB`
+- `FEED_MAX_ENTRIES`
+- `FEED_MAX_GUID_BYTES`
+- `FEED_MAX_URL_BYTES`
+- `FEED_MAX_TITLE_BYTES`
+- `FEED_MAX_AUTHOR_BYTES`
+- `FEED_MAX_CONTENT_BYTES`
+
+Deadline checks are required before and after expensive asynchronous work and immediately before
+database writes. Article create, update, tag, and hotlink writes performed after the deadline must
+be prevented or rolled back transactionally. Once execution expires, orchestration must not flush
+queued hotlinks or convert the timeout into an ordinary per-entry error.
+
+---
+
 # Feed Entry Eligibility
 
 An entry is eligible when it satisfies all required conditions.
@@ -434,7 +606,7 @@ Rules may:
 
 - set filteredInd to true, so articles are hidden from normal queries and skipped for AI enrichment. In the front-end this is called discard.
 - mark read
-- favourite
+- favorite
 - add tags
 - adjust scores
 

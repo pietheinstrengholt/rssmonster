@@ -214,7 +214,7 @@ describe('feed operational controllers', () => {
     expect(mocked.rediscoverRssUrl).toHaveBeenCalledWith({
       feedName: 'Example',
       websiteUrl: 'https://example.com',
-      oldUrl: 'https://example.com'
+      oldRssUrl: 'https://example.com'
     });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
