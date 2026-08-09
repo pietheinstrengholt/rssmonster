@@ -17,7 +17,8 @@
           <BootstrapIcon v-if="hasInterestScore && !hasSourceIcon && !isDeveloping" icon="award-fill" class="article-kind-icon recommendation-icon" />
           <BootstrapIcon v-else-if="isGroupedView && eventArticleCountTotal > 1 && !hasSourceIcon && !isDeveloping" icon="megaphone-fill" class="article-kind-icon event-icon" />
         </template>
-        <a ref="originalArticleLink" class="article-link" target="_blank" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
+        <a v-if="url" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
+        <span v-else class="article-link" v-text="title"></span>
       </div>
       <div class="article-header-actions">
         <ArticleActionsMenu :favoriteInd="favoriteInd" :favoritePending="favoritePending" :isReaderMode="isReaderMode" :status="status" @toggle-favorite="$emit('toggle-favorite')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" />

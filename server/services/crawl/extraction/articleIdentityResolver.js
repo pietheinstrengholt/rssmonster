@@ -1,5 +1,11 @@
+import { createHash } from 'node:crypto';
+
+import normalizeUrl from '../content/normalizeUrl.js';
+
 // Defines the url suffix external id type enforced by this service.
 const URL_SUFFIX_EXTERNAL_ID_TYPE = 'url-suffix-hash';
+// Defines format-provided identity types that remain authoritative when URLs change.
+const STABLE_EXTERNAL_ID_TYPES = new Set(['guid', 'atom-id', 'json-id']);
 // Defines the url suffix hash pattern enforced by this service.
 const URL_SUFFIX_HASH_PATTERN = /(?:~|-)([a-f0-9]{8,64})$/i;
 
@@ -30,18 +36,81 @@ export function resolvePublisherUrlIdentity(articleUrl) {
   }
 }
 
-// This function prefers stable publisher URL identity over adapter-provided fallbacks.
-const articleIdentityResolver = entry => {
-  // Derives the publisher identity required while performing article identity resolver.
-  const publisherIdentity = resolvePublisherUrlIdentity(entry?.url) ||
-    resolvePublisherUrlIdentity(entry?.link);
-  // Returns early when publisher identity is available.
-  if (publisherIdentity) return publisherIdentity;
+// This function reports whether an adapter identity is complete and safe to persist.
+export const isCompleteArticleIdentity = identity =>
+  typeof identity?.externalId === 'string' && identity.externalId.trim() !== '' &&
+  typeof identity?.externalIdType === 'string' && identity.externalIdType.trim() !== '';
+
+// This function reports whether an identity came from a stable feed-format field.
+export const isStableArticleIdentity = identity =>
+  isCompleteArticleIdentity(identity) && STABLE_EXTERNAL_ID_TYPES.has(identity.externalIdType);
+
+// This function resolves a complete canonical URL identity without using collision-prone suffixes.
+const resolveUrlIdentity = entry => {
+  // Selects the article url from normalized and legacy caller shapes.
+  const articleUrl = entry?.normalizedUrl || entry?.url || entry?.link;
+  // Returns no result when article url is not string or trim is unavailable.
+  if (typeof articleUrl !== 'string' || !articleUrl.trim()) return null;
+
+  try {
+    // Normalizes the complete URL while preserving identity beyond a shared path suffix.
+    const externalId = normalizeUrl(articleUrl);
+    // Derives the parsed url required while resolving url identity.
+    const parsedUrl = new URL(externalId);
+    // Returns no result when parsed url protocol is not http: and parsed url protocol is not https:.
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') return null;
+    return { externalId, externalIdType: 'normalized-url' };
+  } catch {
+    return null;
+  }
+};
+
+// This function creates a deterministic last-resort identity from non-URL entry metadata.
+const resolveMetadataIdentity = entry => {
+  // Builds stable fallback components without serializing parser-specific object key order.
+  const components = [
+    entry?.contentSourceHash,
+    entry?.contentTextHash,
+    entry?.content,
+    entry?.contentText,
+    entry?.title,
+    entry?.publishedAt,
+    entry?.date_published,
+    entry?.pubDate
+  ].map(value => typeof value === 'string' ? value.trim() : '').filter(Boolean);
+  // Returns no result when no deterministic metadata is available.
+  if (!components.length) return null;
 
   return {
-    externalId: entry?.externalId ?? null,
-    externalIdType: entry?.externalIdType ?? null
+    externalId: createHash('sha256').update(components.join('\n\u0000\n')).digest('hex'),
+    externalIdType: 'metadata-hash'
   };
+};
+
+// This function enforces stable feed ID, complete URL, then metadata-hash precedence.
+const articleIdentityResolver = entry => {
+  // Builds the adapter identity assembled while performing article identity resolver.
+  const adapterIdentity = {
+    externalId: typeof entry?.externalId === 'string' ? entry.externalId.trim() : null,
+    externalIdType: typeof entry?.externalIdType === 'string'
+      ? entry.externalIdType.trim()
+      : null
+  };
+  // Returns early when the parser supplied a stable format identity.
+  if (isStableArticleIdentity(adapterIdentity)) return adapterIdentity;
+  // Preserves a parser-normalized complete URL identity before recomputing it.
+  if (
+    isCompleteArticleIdentity(adapterIdentity) &&
+    adapterIdentity.externalIdType === 'normalized-url'
+  ) return adapterIdentity;
+  // Resolves the url identity required while performing article identity resolver.
+  const urlIdentity = resolveUrlIdentity(entry);
+  // Returns early when url identity is available.
+  if (urlIdentity) return urlIdentity;
+  // Preserves complete identities from older or custom parser adapters when no URL exists.
+  if (isCompleteArticleIdentity(adapterIdentity)) return adapterIdentity;
+
+  return resolveMetadataIdentity(entry) || { externalId: null, externalIdType: null };
 };
 
 export default articleIdentityResolver;

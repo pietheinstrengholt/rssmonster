@@ -2,6 +2,8 @@
 
 import { parseFeed as parseFeedsmithFeed } from 'feedsmith';
 import normalizeFeed from './normalizeFeed.js';
+import preserveContentKinds from './preserveContentKinds.js';
+import preserveXmlBases from './preserveXmlBases.js';
 import { assertNormalizedFeedLimits } from './feedInputLimits.js';
 import {
   containsUnsafeXmlDeclaration,
@@ -25,10 +27,13 @@ export const assertSafeFeedSource = source => {
 };
 
 // Parses and validates one feed synchronously inside the current execution context.
-export const parseFeedSourceSync = source => assertNormalizedFeedLimits(
-  normalizeFeed(parseFeedsmithFeed(
-    assertSafeFeedSource(prepareFeedSource(source))
-  ))
-);
+export const parseFeedSourceSync = (source, { feedUrl = null } = {}) => {
+  const safeSource = assertSafeFeedSource(prepareFeedSource(source));
+  const parsedFeed = preserveXmlBases(
+    preserveContentKinds(parseFeedsmithFeed(safeSource), safeSource),
+    safeSource
+  );
+  return assertNormalizedFeedLimits(normalizeFeed(parsedFeed, { feedUrl }));
+};
 
 export default { assertSafeFeedSource, parseFeedSourceSync };

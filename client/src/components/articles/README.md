@@ -175,6 +175,16 @@ Video articles use a poster-style presentation with a thumbnail when available, 
 
 Recognized embedded video references inside article content are presented as responsive players. Media navigation and image loading accept normal web destinations only.
 
+### Structured media contract
+
+The article API exposes one normalized `media` object. Video and audio use a primary `url` with
+optional `mimeType`, `sources`, `tracks`, `thumbnailUrl`, and duration metadata. A single image uses
+`type: image`; galleries use `type: gallery` with compact image `items`. The client accepts only
+HTTP(S) destinations, uses native controls for direct browser-playable media without autoplay, and
+keeps provider video cards on their established poster-link path. Gallery and image assets already
+present in sanitized article HTML or selected as the lead image are omitted. Unknown attachment
+types receive a safe open/download link when they expose a valid web URL.
+
 ## Viewport-aware reading state
 
 Article exposure is tracked so the application can assist with read status without requiring constant manual input.

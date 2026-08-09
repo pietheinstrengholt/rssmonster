@@ -1,17 +1,12 @@
-import { load } from 'cheerio';
+import htmlToVisibleText from '../content/htmlToVisibleText.js';
 
 // This function creates a concise title from the first sentence of supplied article content.
 function generateTitleFromContent(content) {
   // Returns no result when content is not string.
   if (typeof content !== 'string') return null;
 
-  // Performs the load operation while generating title from content.
-  const $ = load(content);
-  $('br').replaceWith(' ');
-  $('p, div, li, h1, h2, h3, h4, h5, h6, section, article').append(' ');
-
-  // Normalizes the text before generating title from content.
-  const text = $.text()
+  // Normalizes canonical visible text into one line before generating a title.
+  const text = htmlToVisibleText(content)
     .replace(/\s+/g, ' ')
     .trim();
 

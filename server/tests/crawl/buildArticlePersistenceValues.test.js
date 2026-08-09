@@ -24,6 +24,9 @@ describe('buildArticlePersistenceValues', () => {
           source: 'content'
         },
         title: 'Article title',
+        description: '<p>Raw description</p>',
+        descriptionHtml: '<p>Safe description</p>',
+        descriptionText: 'Safe description',
         contentOriginal: '<p>Article body</p>',
         contentHtml: '<p>Article body</p>',
         contentText: 'Article body',
@@ -46,6 +49,9 @@ describe('buildArticlePersistenceValues', () => {
       imageHeight: 675,
       imageMimeType: 'image/jpeg',
       imageSource: 'content',
+      description: '<p>Raw description</p>',
+      descriptionHtml: '<p>Safe description</p>',
+      descriptionText: 'Safe description',
       contentOriginal: '<p>Article body</p>',
       contentHtml: '<p>Article body</p>',
       contentText: 'Article body',
@@ -63,6 +69,8 @@ describe('buildArticlePersistenceValues', () => {
         externalIdType: 'guid',
         link: 'https://example.com/article',
         title: 'Updated title',
+        descriptionHtml: '<p>Updated description</p>',
+        descriptionText: 'Updated description',
         contentText: 'Updated text',
         status: 'read'
       }
@@ -74,6 +82,8 @@ describe('buildArticlePersistenceValues', () => {
       urlHash: hashValue('https://example.com/article'),
       normalizedUrlHash: hashValue('https://example.com/article'),
       title: 'Updated title',
+      descriptionHtml: '<p>Updated description</p>',
+      descriptionText: 'Updated description',
       contentText: 'Updated text',
       contentTextHash: hashValue('Updated text')
     });

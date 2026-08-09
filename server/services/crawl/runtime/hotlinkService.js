@@ -8,8 +8,11 @@ import { throwIfExecutionExpired } from '../../feeds/executionDeadline.js';
 const { Hotlink } = db;
 
 // This function returns how many other-feed articles link to one normalized article URL.
-export const countArticleHotlinks = async (feed, normalizedUrl, hotlinkCountCache) =>
-  hotlinkCountCache
+export const countArticleHotlinks = async (feed, normalizedUrl, hotlinkCountCache) => {
+  // Linkless entries cannot be targets of cross-feed hotlink observations.
+  if (!normalizedUrl) return 0;
+
+  return hotlinkCountCache
     ? hotlinkCountCache.count(normalizedUrl, feed.id)
     : Hotlink.count({
         where: {
@@ -21,6 +24,7 @@ export const countArticleHotlinks = async (feed, normalizedUrl, hotlinkCountCach
           ]
         }
       });
+};
 
 // This function persists collected hotlinks only after their source article is accepted.
 export const persistAcceptedHotlinks = async (

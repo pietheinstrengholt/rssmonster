@@ -74,9 +74,17 @@ describe('model schema declarations', () => {
     expect(Article.rawAttributes.contentStripped).toBeUndefined();
   });
 
+  it('allows stable-ID articles without an external URL', () => {
+    for (const field of ['url', 'urlHash', 'normalizedUrl', 'normalizedUrlHash']) {
+      expect(Article.rawAttributes[field].allowNull).toBe(true);
+    }
+  });
+
   it('declares publisher-controlled article fields with expanded storage', () => {
     expect(Article.rawAttributes.imageUrl.type.toString()).toBe('TEXT');
     expect(Article.rawAttributes.description.type.toString()).toBe('MEDIUMTEXT');
+    expect(Article.rawAttributes.descriptionHtml.type.toString()).toBe('MEDIUMTEXT');
+    expect(Article.rawAttributes.descriptionText.type.toString()).toBe('MEDIUMTEXT');
     expect(Article.rawAttributes.contentHtml.type.toString()).toBe('MEDIUMTEXT');
     expect(Article.rawAttributes.contentText.type.toString()).toBe('MEDIUMTEXT');
   });

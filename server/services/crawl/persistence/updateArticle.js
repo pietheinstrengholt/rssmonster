@@ -9,6 +9,10 @@ import {
   assertExecutionLeaseOwnership,
   throwIfExecutionExpired
 } from '../../feeds/executionDeadline.js';
+import {
+  isStableArticleIdentity,
+  resolvePublisherUrlIdentity
+} from '../extraction/articleIdentityResolver.js';
 
 // Provides the shared dependencies used by this service.
 const { Article, sequelize } = db;
@@ -20,10 +24,14 @@ const CONTENT_FIELDS = [
   'contentHtml',
   'contentText',
   'contentTextHash',
+  'descriptionHtml',
+  'descriptionText',
   'language'
 ];
 // Defines the url fields enforced by this service.
 const URL_FIELDS = ['url', 'urlHash', 'normalizedUrl', 'normalizedUrlHash'];
+// Defines identity fields changed only while upgrading a legacy crawl identity.
+const IDENTITY_FIELDS = ['externalId', 'externalIdType'];
 // Defines the lead image fields enforced by this service.
 const LEAD_IMAGE_FIELDS = [
   'imageUrl',
@@ -42,12 +50,25 @@ const CONTENT_REVISION_FIELDS = new Set([
   'title',
   'description'
 ]);
+// Defines extractor-owned fields that may change when visible-text normalization improves.
+const VISIBLE_TEXT_EXTRACTION_FIELDS = new Set(['contentText', 'contentTextHash']);
+// Defines fields populated when legacy raw descriptions gain sanitized derivatives.
+const DESCRIPTION_DERIVATION_FIELDS = new Set([
+  'descriptionHtml',
+  'descriptionText',
+  'contentHtml',
+  'contentText',
+  'contentTextHash',
+  'language'
+]);
 // Defines the fingerprint fields enforced by this service.
 const FINGERPRINT_FIELDS = [
   'contentOriginal',
   'contentHtml',
   'contentText',
   'description',
+  'descriptionHtml',
+  'descriptionText',
   'media'
 ];
 // Defines the comparable media fields enforced by this service.
@@ -64,7 +85,13 @@ const COMPARABLE_MEDIA_FIELDS = new Set([
   'mimeType',
   'fileSize',
   'isLive',
-  'items'
+  'items',
+  'sources',
+  'tracks',
+  'kind',
+  'language',
+  'label',
+  'default'
 ]);
 
 // This function reads a stored value from a Sequelize article or a plain test object.
@@ -258,14 +285,78 @@ const classifyChanges = changedFields => {
     urlChanged: anyChanged(URL_FIELDS),
     mediaChanged: changed('media'),
     leadImageChanged: anyChanged(LEAD_IMAGE_FIELDS),
+    identityChanged: anyChanged(IDENTITY_FIELDS),
     changedFields
   };
+};
+
+// This function checks that a legacy suffix match also names the same complete URL.
+const legacyArticleUrlMatches = (article, data) => {
+  // Selects the incoming normalized url required while checking legacy article url matches.
+  const incomingNormalizedUrl = data.normalizedUrl || data.link || data.url;
+  // Selects the stored normalized url required while checking legacy article url matches.
+  const storedNormalizedUrl = storedValue(article, 'normalizedUrl') || storedValue(article, 'url');
+  return Boolean(incomingNormalizedUrl && storedNormalizedUrl) &&
+    incomingNormalizedUrl === storedNormalizedUrl;
+};
+
+// This function finds an unambiguous pre-precedence identity that can be upgraded in place.
+const findLegacyIdentityAlias = async (feed, data) => {
+  // Returns no result unless the incoming identity is a stable format-provided ID.
+  if (!isStableArticleIdentity(data)) return null;
+  // Selects the incoming complete URL required while finding legacy identity alias.
+  const incomingUrl = data.normalizedUrl || data.link || data.url;
+  // Returns no result when incoming url is unavailable.
+  if (!incomingUrl) return null;
+
+  // First recovers rows stored under the parser's former normalized-URL fallback.
+  const normalizedUrlArticle = await Article.findOne({
+    where: {
+      userId: feed.userId,
+      feedId: feed.id,
+      externalId: data.normalizedUrl || incomingUrl,
+      externalIdType: 'normalized-url'
+    }
+  });
+  // Returns early when normalized url article is available.
+  if (normalizedUrlArticle) return normalizedUrlArticle;
+
+  // Resolves the old suffix identity required while finding legacy identity alias.
+  const suffixIdentity = resolvePublisherUrlIdentity(incomingUrl);
+  // Returns no result when suffix identity is unavailable.
+  if (!suffixIdentity) return null;
+  // Loads the suffix article needed while finding legacy identity alias.
+  const suffixArticle = await Article.findOne({
+    where: {
+      userId: feed.userId,
+      feedId: feed.id,
+      ...suffixIdentity
+    }
+  });
+
+  // A suffix alone is collision-prone; migrate only when the complete URL also agrees.
+  return suffixArticle && legacyArticleUrlMatches(suffixArticle, data) ? suffixArticle : null;
 };
 
 // This function distinguishes body, title, or description revisions from metadata corrections.
 const confirmsContentRevision = changedFields => changedFields.some(
   field => CONTENT_REVISION_FIELDS.has(field)
 );
+
+// This function identifies a text repair derived from byte-identical publisher source.
+const isVisibleTextExtractionRepair = ({ changedFields, incoming, stored }) =>
+  changedFields.length > 0 &&
+  changedFields.every(field => VISIBLE_TEXT_EXTRACTION_FIELDS.has(field)) &&
+  Boolean(incoming.contentSourceHash) &&
+  incoming.contentSourceHash === stored.contentSourceHash;
+
+// This function identifies safe derivative backfills for an unchanged raw description.
+const isDescriptionDerivationRepair = ({ changedFields, incoming, stored }) =>
+  changedFields.length > 0 &&
+  changedFields.some(field => field === 'descriptionHtml' || field === 'descriptionText') &&
+  changedFields.every(field => DESCRIPTION_DERIVATION_FIELDS.has(field)) &&
+  Boolean(incoming.description) &&
+  incoming.description === stored.description;
 
 // This function returns a valid whole-second article timestamp or null.
 const validArticleDate = value => {
@@ -376,6 +467,14 @@ const buildResolvedSourceValues = (feed, article, data) => {
     title: preferIncomingValue(data.title, storedValue(article, 'title')),
     author: preferIncomingValue(data.author, storedValue(article, 'author')),
     description: preferIncomingValue(data.description, storedValue(article, 'description')),
+    descriptionHtml: preferIncomingValue(
+      data.descriptionHtml,
+      storedValue(article, 'descriptionHtml')
+    ),
+    descriptionText: preferIncomingValue(
+      data.descriptionText,
+      storedValue(article, 'descriptionText')
+    ),
     contentOriginal,
     contentHtml,
     contentText,
@@ -411,6 +510,8 @@ const buildStoredSourceValues = (feed, article) => selectMutableArticleSourceVal
     title: storedValue(article, 'title'),
     author: storedValue(article, 'author'),
     description: storedValue(article, 'description'),
+    descriptionHtml: storedValue(article, 'descriptionHtml'),
+    descriptionText: storedValue(article, 'descriptionText'),
     contentOriginal: storedValue(article, 'contentOriginal'),
     contentHtml: storedValue(article, 'contentHtml'),
     contentText: storedValue(article, 'contentText'),
@@ -436,6 +537,7 @@ async function updateArticle(feed, data, options = {}) {
   // Derives the supplied article required while updating article.
   const suppliedArticle = options.article || null;
   let article = suppliedArticle;
+  let matchedLegacyIdentityAlias = false;
   // Handles the case where article is unavailable.
   if (!article) {
     // Returns early when external id is unavailable or external id type is unavailable.
@@ -452,6 +554,12 @@ async function updateArticle(feed, data, options = {}) {
       }
     });
     throwIfExecutionExpired(execution);
+    // Falls back to a narrowly constrained alias lookup for identities stored by old crawls.
+    if (!article) {
+      article = await findLegacyIdentityAlias(feed, data);
+      matchedLegacyIdentityAlias = Boolean(article);
+      throwIfExecutionExpired(execution);
+    }
   }
 
   // Returns early when article is unavailable.
@@ -467,14 +575,41 @@ async function updateArticle(feed, data, options = {}) {
   const storedValues = buildStoredSourceValues(feed, article);
   // Derives the source changed fields through changed fields between while updating article.
   const sourceChangedFields = changedFieldsBetween(updateValues, storedValues);
+  // Derives the identity changed required while updating article.
+  const identityChanged = matchedLegacyIdentityAlias && isStableArticleIdentity(data) && (
+    storedValue(article, 'externalId') !== data.externalId ||
+    storedValue(article, 'externalIdType') !== data.externalIdType
+  );
+  // Upgrades a matched legacy alias to the authoritative stable feed identity.
+  if (identityChanged) {
+    updateValues.externalId = data.externalId;
+    updateValues.externalIdType = data.externalIdType;
+    sourceChangedFields.push(...IDENTITY_FIELDS);
+  }
   // Keeps the meaningful changed fields entries eligible while updating article.
   const meaningfulChangedFields = sourceChangedFields
     .filter(field => !RAW_SOURCE_FIELDS.includes(field));
+  // Detects extractor-only repairs before classifying publisher revisions.
+  const visibleTextExtractionRepair = isVisibleTextExtractionRepair({
+    changedFields: meaningfulChangedFields,
+    incoming: updateValues,
+    stored: storedValues
+  });
+  // Detects description derivative backfills without treating them as publisher revisions.
+  const descriptionDerivationRepair = isDescriptionDerivationRepair({
+    changedFields: meaningfulChangedFields,
+    incoming: updateValues,
+    stored: storedValues
+  });
+  const derivedContentRepair = visibleTextExtractionRepair || descriptionDerivationRepair;
   // Derives the changes through classify changes while updating article.
   const changes = classifyChanges(meaningfulChangedFields);
+  changes.contentChanged = changes.contentChanged && !derivedContentRepair;
+  changes.visibleTextExtractionRepair = visibleTextExtractionRepair;
+  changes.descriptionDerivationRepair = descriptionDerivationRepair;
 
   // Handles the case where confirms content revision succeeds.
-  if (confirmsContentRevision(meaningfulChangedFields)) {
+  if (!derivedContentRepair && confirmsContentRevision(meaningfulChangedFields)) {
     updateValues.modifiedAt = resolveConfirmedModifiedAt(article, data.modifiedAt);
   }
 

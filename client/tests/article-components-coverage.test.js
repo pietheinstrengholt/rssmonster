@@ -20,6 +20,7 @@ import {
 import { notifyActionError } from '../src/services/actionNotifications.js';
 import {
   normalizeArticleContent,
+  safeDescriptionFallbackHtml,
   youtubeVideoIdFromUrl
 } from '../src/services/articleContentService.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
@@ -108,6 +109,17 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+});
+
+describe('Article description fallback safety', () => {
+  it('escapes executable markup while preserving readable paragraphs', () => {
+    expect(safeDescriptionFallbackHtml(
+      '<script>alert(1)</script> First paragraph.\n\n<img src=x onerror=alert(1)> Second.'
+    )).toBe(
+      '<p>&lt;script&gt;alert(1)&lt;/script&gt; First paragraph.</p>\n' +
+      '<p>&lt;img src=x onerror=alert(1)&gt; Second.</p>'
+    );
+  });
 });
 
 describe('ArticleActionsMenu', () => {

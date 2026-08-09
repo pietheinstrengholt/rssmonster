@@ -3,6 +3,100 @@ import { describe, expect, it } from 'vitest';
 import { parseFeedSource } from '../../services/feeds/feedsmith/parseFeed.js';
 
 describe('Feedsmith adapter', () => {
+  it.each([
+    ['/articles/one', 'https://feeds.example.com/articles/one'],
+    ['../articles/two', 'https://feeds.example.com/articles/two'],
+    ['//cdn.example.com/articles/three', 'https://cdn.example.com/articles/three']
+  ])('resolves entry link %s against the fetched feed URL', (link, expected) => {
+    const feed = parseFeedSource(`
+      <rss version="2.0"><channel><title>Relative links</title><link>https://site.example/</link>
+        <item><title>Relative article</title><guid>relative-guid</guid>
+          <link>${link}</link><description>Body</description></item>
+      </channel></rss>
+    `, { feedUrl: 'https://feeds.example.com/news/feed.xml' });
+
+    expect(feed.entries[0]).toMatchObject({ url: expected, urlStatus: 'resolved' });
+  });
+
+  it('honors entry xml:base before feed xml:base and the fetched feed URL', () => {
+    const feed = parseFeedSource(`
+      <feed xmlns="http://www.w3.org/2005/Atom" xml:base="../feed-base/">
+        <title>XML base</title><id>xml-base-feed</id>
+        <entry xml:base="https://entries.example.com/posts/">
+          <title>Based entry</title><id>based-entry</id><link href="story" />
+          <content>Body</content>
+        </entry>
+      </feed>
+    `, { feedUrl: 'https://feeds.example.com/news/feed.xml' });
+
+    expect(feed.entries[0]).toMatchObject({
+      url: 'https://entries.example.com/posts/story',
+      urlStatus: 'resolved',
+      externalId: 'based-entry',
+      externalIdType: 'atom-id'
+    });
+  });
+
+  it('uses an absolute publisher site URL when fetch provenance is unavailable', () => {
+    const feed = parseFeedSource(`
+      <rss version="2.0"><channel><title>Site fallback</title><link>https://site.example/news/</link>
+        <item><title>Site article</title><guid>site-guid</guid>
+          <link>story</link><description>Body</description></item>
+      </channel></rss>
+    `);
+
+    expect(feed.entries[0]).toMatchObject({
+      url: 'https://site.example/news/story',
+      urlStatus: 'resolved'
+    });
+  });
+
+  it.each(['javascript:alert(1)', 'data:text/html,unsafe', 'http://[malformed']) (
+    'rejects unsafe or malformed entry URL %s without replacing the stable ID',
+    link => {
+      const feed = parseFeedSource(`
+        <rss version="2.0"><channel><title>Unsafe links</title>
+          <item><title>Unsafe article</title><guid isPermaLink="false">opaque-guid</guid>
+            <link>${link}</link><description>Body</description></item>
+        </channel></rss>
+      `, { feedUrl: 'https://feeds.example.com/feed.xml' });
+
+      expect(feed.entries[0]).toMatchObject({
+        url: null,
+        urlStatus: 'invalid',
+        externalId: 'opaque-guid',
+        externalIdType: 'guid'
+      });
+    }
+  );
+
+  it('distinguishes a missing external URL from an invalid declared URL', () => {
+    const feed = parseFeedSource(`
+      <feed xmlns="http://www.w3.org/2005/Atom"><title>Linkless</title><id>feed-id</id>
+        <entry><title>Linkless entry</title><id>entry-id</id><content>Body</content></entry>
+      </feed>
+    `, { feedUrl: 'https://feeds.example.com/feed.xml' });
+
+    expect(feed.entries[0]).toMatchObject({ url: null, urlStatus: 'missing' });
+  });
+
+  it('leaves relative URLs inside content for the content rewriting pipeline', () => {
+    const feed = parseFeedSource(`
+      <rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+        <channel><title>Content links</title>
+          <item><title>Content article</title><guid>content-guid</guid><link>/article</link>
+            <content:encoded><![CDATA[<p><a href="/inside">Inside</a></p>]]></content:encoded>
+          </item>
+        </channel>
+      </rss>
+    `, { feedUrl: 'https://feeds.example.com/feed.xml' });
+
+    expect(feed.entries[0]).toMatchObject({
+      url: 'https://feeds.example.com/article',
+      content: '<p><a href="/inside">Inside</a></p>'
+    });
+  });
+
   it('preserves Atom self declarations for resolution after the final fetch URL is known', () => {
     const feed = parseFeedSource(`
       <feed xmlns="http://www.w3.org/2005/Atom">
@@ -53,7 +147,9 @@ describe('Feedsmith adapter', () => {
         title: 'Canonical article',
         url: 'https://example.com/articles/1',
         description: 'Article summary',
+        descriptionKind: 'html',
         content: '<p>Article body</p>',
+        contentKind: 'html',
         externalId: 'article-1',
         externalIdType: 'guid',
         publishedAt: '2026-07-15T10:00:00.000Z'
@@ -245,7 +341,9 @@ describe('Feedsmith adapter', () => {
         title: 'JSON article',
         url: 'https://example.com/articles/json-1',
         description: 'JSON summary',
+        descriptionKind: 'text',
         content: '<p>JSON article body</p>',
+        contentKind: 'html',
         author: 'Jane JSON',
         categories: ['JSON', 'Feeds'],
         publishedAt: '2026-07-16T08:30:00.000Z',
@@ -290,6 +388,7 @@ describe('Feedsmith adapter', () => {
       title: 'Untitled',
       url: 'https://external.example.com/story',
       content: 'First paragraph.\n\nSecond paragraph.',
+      contentKind: 'text',
       author: null,
       externalId: 'json-text-1',
       externalIdType: 'json-id',
@@ -302,5 +401,49 @@ describe('Feedsmith adapter', () => {
         source: 'enclosure'
       })
     ]);
+  });
+
+  it('preserves Atom text, HTML, and XHTML text-construct semantics', () => {
+    const feed = parseFeedSource(`
+      <feed xmlns="http://www.w3.org/2005/Atom">
+        <title>Atom content kinds</title>
+        <id>urn:feed:content-kinds</id>
+        <updated>2026-08-09T10:00:00Z</updated>
+        <entry>
+          <title>Plain text</title><id>text</id><updated>2026-08-09T10:00:00Z</updated>
+          <content type="text">2 &lt; 3 &amp; 4 &gt; 1</content>
+          <summary type="text">Literal &lt;b&gt;summary&lt;/b&gt;</summary>
+        </entry>
+        <entry>
+          <title>HTML</title><id>html</id><updated>2026-08-09T10:00:00Z</updated>
+          <content type="html">&lt;p&gt;HTML body&lt;/p&gt;</content>
+          <summary type="html">&lt;p&gt;HTML summary&lt;/p&gt;</summary>
+        </entry>
+        <entry>
+          <title>XHTML</title><id>xhtml</id><updated>2026-08-09T10:00:00Z</updated>
+          <content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><p>XHTML body</p></div></content>
+        </entry>
+      </feed>
+    `);
+
+    expect(feed.entries).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        externalId: 'text',
+        content: '2 < 3 & 4 > 1',
+        contentKind: 'text',
+        description: 'Literal <b>summary</b>',
+        descriptionKind: 'text'
+      }),
+      expect.objectContaining({
+        externalId: 'html',
+        content: '<p>HTML body</p>',
+        contentKind: 'html',
+        descriptionKind: 'html'
+      }),
+      expect.objectContaining({
+        externalId: 'xhtml',
+        contentKind: 'html'
+      })
+    ]));
   });
 });

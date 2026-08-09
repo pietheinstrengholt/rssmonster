@@ -173,25 +173,25 @@ export default (sequelize) => {
         allowNull: true,
         defaultValue: null
       },
-      // Stores the publisher URL used to open and identify the article.
+      // Stores the safe publisher URL used to open the article; null for linkless feed entries.
       url: {
         type: DataTypes.STRING(1024),
-        allowNull: false
+        allowNull: true
       },
-      // Stores the SHA-256 identity of the publisher URL for feed-local deduplication.
+      // Stores the SHA-256 publisher URL identity; null when no external URL exists.
       urlHash: {
         type: DataTypes.STRING(64),
-        allowNull: false
+        allowNull: true
       },
-      // Stores the canonicalized article URL used to match equivalent publisher links.
+      // Stores the canonicalized article URL; null for linkless feed entries.
       normalizedUrl: {
         type: DataTypes.STRING(1024),
-        allowNull: false
+        allowNull: true
       },
-      // Stores the SHA-256 identity of the canonicalized URL for feed-local deduplication.
+      // Stores the canonical URL identity; null when no external URL exists.
       normalizedUrlHash: {
         type: DataTypes.STRING(64),
-        allowNull: false
+        allowNull: true
       },
       // Stores the selected lead-image URL; null when no suitable image is found.
       imageUrl: {
@@ -234,6 +234,18 @@ export default (sequelize) => {
       author: DataTypes.TEXT,
       // Stores the publisher-provided article description; null when the feed omits it.
       description: DataTypes.TEXT('medium'),
+      // Stores sanitized display HTML derived from the raw publisher description.
+      descriptionHtml: {
+        type: DataTypes.TEXT('medium'),
+        allowNull: true,
+        defaultValue: null
+      },
+      // Stores visible text derived from the raw publisher description.
+      descriptionText: {
+        type: DataTypes.TEXT('medium'),
+        allowNull: true,
+        defaultValue: null
+      },
       // Preserves the raw feed content for processing; null when no source body is available.
       contentOriginal: {
         type: DataTypes.TEXT('medium'),

@@ -206,7 +206,10 @@ const parseFeedBody = async (
 ) => {
   throwIfExecutionExpired(execution);
   try {
-    const parsedFeed = await parseFeedSourceIsolated(body, execution);
+    const parsedFeed = await parseFeedSourceIsolated(body, {
+      ...execution,
+      feedUrl: provenance?.resolvedUrl || provenance?.requestedUrl || null
+    });
     throwIfExecutionExpired(execution);
     if (!parsedFeed) {
       onParseFailure?.({

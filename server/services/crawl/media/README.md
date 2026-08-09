@@ -41,3 +41,15 @@ decide whether an article is filtered;
 fetch or verify remote images synchronously unless that becomes an explicit separate enrichment service.
 
 Media extraction should produce structured candidates, not control persistence
+
+## Inline audio and video contract
+
+Inline `<audio>` and `<video>` are extracted after publisher transforms and URL rewriting, but
+before final cleanup and sanitization. The selected item is stored in the existing `media` object
+with `provider: inline`, a primary HTTP(S) URL, deduplicated `sources`, optional poster metadata,
+duration, and HTTP(S) caption/subtitle tracks. Autoplay and publisher attributes are never stored.
+
+An inline candidate matching an enclosure, Media RSS item, or JSON Feed attachment enriches that
+existing media object instead of creating a second presentation. Because an article stores one
+primary structured media object, additional or explicitly unsupported inline formats become safe
+HTTP(S) fallback links or inert fallback text in `contentHtml`; they are not silently discarded.

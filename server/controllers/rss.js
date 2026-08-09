@@ -9,7 +9,7 @@ const buildRssXml = (articles, meta) => {
 
   const items = articles.map(article => ({
     title: article.title || 'No title',
-    link: article.url,
+    ...(article.url ? { link: article.url } : {}),
     guid: article.id,
     pubDate: new Date(article.publishedAt || article.createdAt || Date.now()).toUTCString(),
     description: article.contentHtml || article.content || '',

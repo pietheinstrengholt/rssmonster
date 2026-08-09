@@ -9,7 +9,7 @@ import { parseFeedSourceSync } from './parseFeedSync.js';
 import { isFeedTimeoutError } from '../executionDeadline.js';
 
 // Preserves synchronous parsing only for compatibility and isolated worker use.
-export const parseFeedSource = source => parseFeedSourceSync(source);
+export const parseFeedSource = (source, options = {}) => parseFeedSourceSync(source, options);
 
 // Acquires and parses one feed while preserving the neutral fetch outcome.
 export const acquireFeedSource = async (feedUrl, requestState = {}) => {
@@ -48,7 +48,10 @@ export const acquireFeedSource = async (feedUrl, requestState = {}) => {
   try {
     return createFetchOutcome(outcome.type, {
       ...outcome,
-      parsedFeed: await parseFeedSourceIsolated(outcome.bodyText, requestState)
+      parsedFeed: await parseFeedSourceIsolated(outcome.bodyText, {
+        ...requestState,
+        feedUrl: outcome.response?.url || feedUrl
+      })
     });
   } catch (error) {
     const type = isFeedTimeoutError(error)

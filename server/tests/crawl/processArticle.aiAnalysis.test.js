@@ -1108,7 +1108,7 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.languageGet).toHaveBeenCalledWith('Raw feed description');
     expect(mocked.applyActions).toHaveBeenCalledWith([], {
       title: 'Description-only article',
-      contentHtml: '<p>Raw feed description</p>',
+      contentHtml: '<p>Raw <strong>feed</strong> description</p>',
       contentText: 'Raw feed description',
       description: '<p>Raw <strong>feed</strong> description</p>',
       url: 'https://example.com/description-only'
@@ -1124,12 +1124,14 @@ describe('processArticle AI analysis controls', () => {
       expect.any(Object),
       expect.objectContaining({
         contentOriginal: null,
-        contentHtml: null,
+        contentHtml: '<p>Raw <strong>feed</strong> description</p>',
         contentText: 'Raw feed description',
         contentSourceHash: null,
         contentTextHash: expect.stringMatching(/^[a-f0-9]{64}$/),
         language: 'eng',
-        description: '<p>Raw <strong>feed</strong> description</p>'
+        description: '<p>Raw <strong>feed</strong> description</p>',
+        descriptionHtml: '<p>Raw <strong>feed</strong> description</p>',
+        descriptionText: 'Raw feed description'
       }),
       expect.any(Object),
       expect.any(Object)
@@ -1282,7 +1284,9 @@ describe('processArticle AI analysis controls', () => {
       null,
       'https://example.com/article-with-description',
       expect.objectContaining({ id: 1, userId: 42 }),
-      'Article with description'
+      'Article with description',
+      undefined,
+      {}
     );
     expect(mocked.saveArticle).toHaveBeenCalledWith(
       expect.any(Object),
@@ -1344,7 +1348,9 @@ describe('processArticle AI analysis controls', () => {
       null,
       'https://example.com/encoded-markup',
       expect.any(Object),
-      'Tom & Jerry'
+      'Tom & Jerry',
+      undefined,
+      {}
     );
     expect(mocked.detectArticleImage).toHaveBeenCalledWith(
       expect.objectContaining({ content, description })

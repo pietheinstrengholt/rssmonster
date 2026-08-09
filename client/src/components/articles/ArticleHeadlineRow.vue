@@ -18,7 +18,8 @@
     </div>
     <div class="article-list-main">
       <h5 class="article-list-title">
-        <a ref="originalArticleLink" class="article-link" target="_blank" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
+        <a v-if="url" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
+        <span v-else class="article-link" v-text="title"></span>
       </h5>
       <div class="article-list-meta">
         <span class="article-list-feed">{{ sourceLabel }}</span>

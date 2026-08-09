@@ -21,6 +21,16 @@ describe('article identity resolver', () => {
     });
   });
 
+  it('preserves opaque GUID semantics when isPermaLink is false', () => {
+    expect(articleIdentityResolver({
+      guid: { value: ' tag:publisher.example,2026:item/42 ', isPermaLink: false },
+      link: 'https://example.com/item/42'
+    }, 'rss')).toEqual({
+      externalId: 'tag:publisher.example,2026:item/42',
+      externalIdType: 'guid'
+    });
+  });
+
   it('resolves an Atom entry id as the external identity', () => {
     expect(articleIdentityResolver({
       id: 'https://www.theverge.com/?p=963759'
@@ -156,6 +166,19 @@ describe('article identity resolver', () => {
     expect(articleIdentityResolver({ guid: { value: '   ' } })).toEqual({
       externalId: null,
       externalIdType: null
+    });
+  });
+
+  it('falls back conservatively when a GUID is empty or exceeds storage limits', () => {
+    const link = 'https://example.com/fallback-entry';
+
+    expect(articleIdentityResolver({ guid: { value: '   ' }, link }, 'rss')).toEqual({
+      externalId: link,
+      externalIdType: 'normalized-url'
+    });
+    expect(articleIdentityResolver({ guid: { value: 'x'.repeat(1025) }, link }, 'rss')).toEqual({
+      externalId: link,
+      externalIdType: 'normalized-url'
     });
   });
 });

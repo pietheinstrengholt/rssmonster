@@ -3,6 +3,7 @@ import {
   assertFeedEntryCount,
   getFeedInputLimits
 } from './feedInputLimits.js';
+import { resolveSafeHttpUrl } from './resolveArticleLink.js';
 
 // This function reads a URL from common Feedsmith scalar and object shapes.
 const readUrl = value => {
@@ -14,7 +15,7 @@ const readUrl = value => {
 };
 
 // This function converts a Feedsmith parse result into RSSMonster's canonical feed contract.
-export default function normalizeFeed(parsedFeed) {
+export default function normalizeFeed(parsedFeed, { feedUrl = null } = {}) {
   const sourceFeed = parsedFeed?.feed;
   // Rejects processing when source feed is unavailable or source feed is not object.
   if (!sourceFeed || typeof sourceFeed !== 'object') {
@@ -32,6 +33,18 @@ export default function normalizeFeed(parsedFeed) {
   // Selects the self link based on whether source feed links is an array.
   const selfLink = (Array.isArray(sourceFeed.links) ? sourceFeed.links : [])
     .find(link => link?.rel === 'self' && link?.href)?.href;
+  // Selects the publisher site URL without confusing Atom self links for article bases.
+  const siteLink = (Array.isArray(sourceFeed.links) ? sourceFeed.links : [])
+    .find(link => (!link?.rel || link.rel === 'alternate') && link?.href)?.href ||
+    sourceFeed.link || sourceFeed.home_page_url;
+  // Resolves the safe feed and site bases required by entry link normalization.
+  const safeFeedUrl = resolveSafeHttpUrl(feedUrl);
+  const safeSiteUrl = resolveSafeHttpUrl(siteLink, safeFeedUrl);
+  const linkContext = {
+    feedUrl: safeFeedUrl,
+    feedBaseUrl: sourceFeed.xmlBase || null,
+    siteUrl: safeSiteUrl
+  };
 
   // Selects the result based on whether source entries is an array.
   return {
@@ -47,6 +60,6 @@ export default function normalizeFeed(parsedFeed) {
       selfLink ||
       readUrl(sourceFeed.feed_url) ||
       null,
-    entries: normalizedSourceEntries.map(entry => normalizeEntry(entry, format))
+    entries: normalizedSourceEntries.map(entry => normalizeEntry(entry, format, linkContext))
   };
 }

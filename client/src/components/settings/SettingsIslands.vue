@@ -99,12 +99,14 @@
                   &middot; Showing {{ island.sourceArticles.length }} of {{ island.sourceArticleCount }}
                 </span>
               </div>
-              <a
+              <component
+                :is="article.url ? 'a' : 'div'"
                 v-for="article in island.sourceArticles"
                 :key="`source-${article.id}`"
                 class="interest-article-row"
-                :href="article.url"
-                target="_blank"
+                :href="article.url || undefined"
+                :target="article.url ? '_blank' : undefined"
+                :rel="article.url ? 'noopener noreferrer' : undefined"
               >
                 <div>
                   <strong>{{ article.title }}</strong>
@@ -124,17 +126,19 @@
                     Also connected through {{ topic.name }}
                   </small>
                 </div>
-              </a>
+              </component>
             </div>
 
             <div v-if="topicRelatedArticles(island).length" class="interest-article-list">
               <div class="interest-article-heading">Connected through topics</div>
-              <a
+              <component
+                :is="article.url ? 'a' : 'div'"
                 v-for="article in topicRelatedArticles(island)"
                 :key="article.id"
                 class="interest-article-row"
-                :href="article.url"
-                target="_blank"
+                :href="article.url || undefined"
+                :target="article.url ? '_blank' : undefined"
+                :rel="article.url ? 'noopener noreferrer' : undefined"
               >
                 <div>
                   <strong>{{ article.title }}</strong>
@@ -146,7 +150,7 @@
                     Via {{ topic.name }}
                   </small>
                 </div>
-              </a>
+              </component>
             </div>
           </article>
         </div>

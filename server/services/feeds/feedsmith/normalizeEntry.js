@@ -1,6 +1,6 @@
 import normalizeIdentity from './normalizeIdentity.js';
 import normalizeMedia from './normalizeMedia.js';
-import resolveArticleLink from './resolveArticleLink.js';
+import { resolveArticleLinkResult } from './resolveArticleLink.js';
 
 // This function converts parseable feed dates to the stored ISO format.
 const normalizeDate = value => {
@@ -116,18 +116,58 @@ const urlDatePatterns = [
   /(?:^|\/)(\d{4})-(\d{1,2})-(\d{1,2})(?:\/|$)/
 ];
 
-// This function returns the first non-empty text value from feed summary fields.
-const firstTextValue = (...values) => {
-  // Processes each values entry in turn.
-  for (const value of values) {
-    // Skips the current entry when value is not string.
-    if (typeof value !== 'string') continue;
-    // Skips the current entry when trim is value.
-    if (value.trim() === '') continue;
-    return value;
-  }
+// This function returns whether one feed value contains selectable text.
+const hasTextValue = value => typeof value === 'string' && value.trim() !== '';
 
-  return null;
+// This function accepts only content kinds understood by the crawl pipeline.
+const normalizeContentKind = value => ['html', 'text'].includes(value) ? value : null;
+
+// This function selects article body content while preserving format-specific semantics.
+const resolveContent = (entry, feedFormat) => {
+  if (hasTextValue(entry.content?.encoded)) {
+    return { value: entry.content.encoded, kind: 'html' };
+  }
+  if (feedFormat === 'json' && hasTextValue(entry.content_html)) {
+    return { value: entry.content_html, kind: 'html' };
+  }
+  if (feedFormat === 'json' && hasTextValue(entry.content_text)) {
+    return { value: entry.content_text, kind: 'text' };
+  }
+  if (hasTextValue(entry.content)) {
+    return { value: entry.content, kind: normalizeContentKind(entry.contentKind) };
+  }
+  if (hasTextValue(entry.content_html)) {
+    return { value: entry.content_html, kind: 'html' };
+  }
+  if (hasTextValue(entry.content_text)) {
+    return { value: entry.content_text, kind: 'text' };
+  }
+  return { value: null, kind: null };
+};
+
+// This function selects summary content and its safest known interpretation.
+const resolveDescription = (entry, feedFormat) => {
+  if (hasTextValue(entry.description)) {
+    return {
+      value: entry.description,
+      kind: normalizeContentKind(entry.descriptionKind) ||
+        (feedFormat === 'json' ? 'text' : 'html')
+    };
+  }
+  if (hasTextValue(entry.summary)) {
+    return {
+      value: entry.summary,
+      kind: normalizeContentKind(entry.summaryKind) ||
+        (feedFormat === 'json' ? 'text' : null)
+    };
+  }
+  if (hasTextValue(entry.atom?.summary)) {
+    return {
+      value: entry.atom.summary,
+      kind: normalizeContentKind(entry.atom.summaryKind)
+    };
+  }
+  return { value: null, kind: null };
 };
 
 // This function resolves the first useful author name from RSS, Atom, or JSON Feed shapes.
@@ -255,7 +295,7 @@ export function resolveUrlPublishedDate(url) {
 }
 
 // This function converts one Feedsmith entry into RSSMonster's canonical entry contract.
-function normalizeEntry(entry, feedFormat = null) {
+function normalizeEntry(entry, feedFormat = null, linkContext = {}) {
 
   // Selects the normalize category name based on whether value is string.
   const normalizeCategoryName = value =>
@@ -304,28 +344,29 @@ function normalizeEntry(entry, feedFormat = null) {
       .filter(name => !name.includes('|'))
   )];
 
-  // Resolves the article link while normalizing entry.
-  const link = resolveArticleLink(entry);
-  // Derives the content required while normalizing entry.
-  const content = entry.content?.encoded ||
-    entry.content ||
-    entry.content_html ||
-    entry.content_text ||
-    null;
+  // Resolves and classifies the article link while normalizing entry.
+  const linkResult = resolveArticleLinkResult(entry, linkContext);
+  const link = linkResult.url;
+  // Resolves content and description with their source-defined semantics.
+  const selectedContent = resolveContent(entry, feedFormat);
+  const selectedDescription = resolveDescription(entry, feedFormat);
   // Normalizes the identity before normalizing entry.
-  const identity = normalizeIdentity(entry, feedFormat);
+  const identity = normalizeIdentity(entry, feedFormat, link);
   // Normalizes the media before normalizing entry.
-  const normalizedMedia = normalizeMedia(entry, content, link);
+  const normalizedMedia = normalizeMedia(
+    entry,
+    selectedContent.kind === 'text' ? null : selectedContent.value,
+    link
+  );
 
   return {
     title: entry.title?.trim() || 'Untitled',
     url: link || null,
-    description: firstTextValue(
-      entry.description,
-      entry.summary,
-      entry.atom?.summary
-    ),
-    content,
+    urlStatus: linkResult.status,
+    description: selectedDescription.value,
+    descriptionKind: selectedDescription.kind,
+    content: selectedContent.value,
+    contentKind: selectedContent.kind,
     author: resolveAuthor(entry),
     categories: categoryNames,
     publishedAt: resolveEntryPublishedDate(entry, feedFormat),

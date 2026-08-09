@@ -28,14 +28,14 @@ describe('publisher URL article identity resolver', () => {
     });
   });
 
-  it('prefers stable URL suffix identity over a changing feed identity', () => {
+  it('never replaces a stable feed identity with a URL suffix', () => {
     expect(articleIdentityResolver({
       url: 'https://www.ad.nl/show/updated-headline~A53E042B/',
       externalId: 'https://www.ad.nl/show/old-headline~a53e042b/',
       externalIdType: 'guid'
     })).toEqual({
-      externalId: 'a53e042b',
-      externalIdType: 'url-suffix-hash'
+      externalId: 'https://www.ad.nl/show/old-headline~a53e042b/',
+      externalIdType: 'guid'
     });
   });
 
@@ -53,5 +53,41 @@ describe('publisher URL article identity resolver', () => {
       externalId: 'publisher-guid',
       externalIdType: 'guid'
     });
+  });
+
+  it('keeps distinct stable IDs distinct even when they share a URL', () => {
+    const url = 'https://example.com/articles/shared';
+
+    expect(articleIdentityResolver({ url, externalId: 'one', externalIdType: 'json-id' }))
+      .toMatchObject({ externalId: 'one', externalIdType: 'json-id' });
+    expect(articleIdentityResolver({ url, externalId: 'two', externalIdType: 'json-id' }))
+      .toMatchObject({ externalId: 'two', externalIdType: 'json-id' });
+  });
+
+  it('keeps a stable ID when the canonical URL changes', () => {
+    const identity = { externalId: 'tag:example.com,2026:story', externalIdType: 'atom-id' };
+
+    expect(articleIdentityResolver({ ...identity, url: 'https://example.com/old-slug' }))
+      .toEqual(identity);
+    expect(articleIdentityResolver({ ...identity, url: 'https://example.com/new-slug' }))
+      .toEqual(identity);
+  });
+
+  it('uses a complete canonical URL rather than its collision-prone suffix', () => {
+    expect(articleIdentityResolver({
+      url: 'https://news.example.com/first-story-92af41c7d8/?utm_source=feed'
+    })).toEqual({
+      externalId: 'https://news.example.com/first-story-92af41c7d8',
+      externalIdType: 'normalized-url'
+    });
+  });
+
+  it('uses a deterministic metadata hash only when ID and URL are unavailable', () => {
+    const entry = { title: 'Offline item', publishedAt: '2026-08-09T10:00:00Z' };
+    const first = articleIdentityResolver(entry);
+
+    expect(first.externalIdType).toBe('metadata-hash');
+    expect(first.externalId).toMatch(/^[a-f0-9]{64}$/);
+    expect(articleIdentityResolver(entry)).toEqual(first);
   });
 });

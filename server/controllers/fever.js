@@ -269,7 +269,7 @@ export const postFever = async (req, res, _next) => {
               title: article.title,
               author: article.author || '',
               html: article.contentHtml || article.description || '',
-              url: article.url,
+              url: article.url || '',
               is_saved: parseInt(article.favoriteInd),
               is_read: (article.status === 'read' ? 1 : 0),
               created_on_time: Math.floor(article.publishedAt / 1000)

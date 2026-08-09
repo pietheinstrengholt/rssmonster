@@ -13,7 +13,9 @@ const serializeError = error => ({
 });
 
 try {
-  parentPort.postMessage({ parsedFeed: parseFeedSourceSync(workerData.source) });
+  parentPort.postMessage({
+    parsedFeed: parseFeedSourceSync(workerData.source, { feedUrl: workerData.feedUrl })
+  });
 } catch (error) {
   parentPort.postMessage({ error: serializeError(error) });
 }

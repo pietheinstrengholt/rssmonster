@@ -1,8 +1,9 @@
 <template>
   <div class="article-preview-empty">
     <span class="article-preview-empty__message">No preview available</span>
-    <span aria-hidden="true" class="article-preview-empty__separator">-</span>
+    <span v-if="url" aria-hidden="true" class="article-preview-empty__separator">-</span>
     <a
+      v-if="url"
       :href="url"
       class="article-preview-empty__link"
       target="_blank"

@@ -10,6 +10,7 @@ const URL_ATTRIBUTES = [
   { selector: 'video[src]', attribute: 'src' },
   { selector: 'video[poster]', attribute: 'poster' },
   { selector: 'audio[src]', attribute: 'src' },
+  { selector: 'track[src]', attribute: 'src' },
   { selector: 'blockquote[cite], q[cite], del[cite], ins[cite]', attribute: 'cite' }
 ];
 

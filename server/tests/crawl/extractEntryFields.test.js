@@ -17,7 +17,9 @@ describe('extract entry fields', () => {
       title: 'Canonical title',
       url: 'https://example.com/article',
       description: '',
+      descriptionKind: 'html',
       content: '<p>Body</p>',
+      contentKind: 'html',
       author: 'Alice',
       categories: ['News'],
       publishedAt,
@@ -26,7 +28,9 @@ describe('extract entry fields', () => {
       title: 'Canonical title',
       link: 'https://example.com/article',
       description: '',
+      descriptionKind: 'html',
       content: '<p>Body</p>',
+      contentKind: 'html',
       author: 'Alice',
       categories: ['News'],
       publishedAt,
@@ -44,7 +48,9 @@ describe('extract entry fields', () => {
       title: 'Untitled',
       link: null,
       description: null,
+      descriptionKind: null,
       content: null,
+      contentKind: null,
       author: null,
       categories: [],
       publishedAt: null,
@@ -150,6 +156,34 @@ describe('extract entry fields', () => {
       link: 'https://example.com/article',
       description: ''
     }).description).toBeNull();
+  });
+
+  it('preserves content precedence together with explicit source semantics', () => {
+    expect(normalizeEntry({
+      content: { encoded: '<p>RSS body</p>' },
+      content_html: '<p>Lower priority</p>'
+    }, 'rss')).toMatchObject({
+      content: '<p>RSS body</p>',
+      contentKind: 'html'
+    });
+
+    expect(normalizeEntry({
+      content_html: '<p>JSON HTML</p>',
+      content_text: 'JSON text'
+    }, 'json')).toMatchObject({
+      content: '<p>JSON HTML</p>',
+      contentKind: 'html'
+    });
+
+    expect(normalizeEntry({ content_text: '<b>Literal text</b>' }, 'json'))
+      .toMatchObject({ content: '<b>Literal text</b>', contentKind: 'text' });
+  });
+
+  it('preserves conservative description semantics by format', () => {
+    expect(normalizeEntry({ summary: '2 < 3 & 4 > 1' }, 'json'))
+      .toMatchObject({ description: '2 < 3 & 4 > 1', descriptionKind: 'text' });
+    expect(normalizeEntry({ description: '<p>RSS summary</p>' }, 'rss'))
+      .toMatchObject({ description: '<p>RSS summary</p>', descriptionKind: 'html' });
   });
 
   it('resolves feed-level publishedAt fallback dates', () => {

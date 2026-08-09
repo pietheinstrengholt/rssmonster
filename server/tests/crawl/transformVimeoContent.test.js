@@ -252,6 +252,6 @@ describe('transformVimeoContent sanitization and pipeline integration', () => {
     expect(result.html).toContain('data-embed-id="123456789"');
     expect(result.html).not.toContain('<iframe');
     expect(result.html).not.toContain('video.example');
-    expect(result.text).toBe('Article introduction.Watch on Vimeo');
+    expect(result.text).toBe('Article introduction.\n\nWatch on Vimeo');
   });
 });

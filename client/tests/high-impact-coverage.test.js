@@ -165,8 +165,11 @@ describe('Article high-impact decision coverage', () => {
       feed: {}, overviewStore: { categories: [] }
     })).toBe('');
     expect(compute(Article, 'displayContent', {
-      contentHtml: '', content: '', description: 'Fallback'
-    })).toBe('Fallback');
+      contentHtml: '', content: '', descriptionHtml: '', description: '<img src=x onerror=alert(1)> Fallback'
+    })).toBe('<p>&lt;img src=x onerror=alert(1)&gt; Fallback</p>');
+    expect(compute(Article, 'displayContent', {
+      contentHtml: '', content: '', descriptionHtml: '<p>Sanitized fallback</p>', description: '<script>raw</script>'
+    })).toBe('<p>Sanitized fallback</p>');
     expect(compute(Article, 'roundedQuality', { quality: 0.846 })).toBe(85);
 
     expect(compute(ArticleMeta, 'sourceUrl', {
@@ -205,21 +208,30 @@ describe('Article high-impact decision coverage', () => {
   it('covers media, grouping, labels, and favicon fallbacks', () => {
     expect(compute(Article, 'hasVideoMedia', { media: { type: 'video' } })).toBe(true);
     expect(compute(Article, 'hasVideoMedia', { media: 'video' })).toBe(false);
+    expect(compute(Article, 'hasPresentableMedia', {
+      media: { type: 'audio', sources: [{ url: 'https://cdn.example/audio.mp3' }] },
+      url: ''
+    })).toBe(true);
+    expect(compute(Article, 'hasPresentableMedia', {
+      media: { type: 'gallery', items: [{ url: 'javascript:alert(1)' }] },
+      url: ''
+    })).toBe(false);
+    expect(compute(Article, 'hasPresentableMedia', { media: {}, url: '' })).toBe(false);
 
     for (const viewMode of ['full', 'reader']) {
       expect(compute(Article, 'shouldRenderMedia', {
-        hasVideoMedia: true,
+        hasPresentableMedia: true,
         shouldShowMinimalContent: false,
         selectionStore: { currentSelection: { viewMode } }
-      })).toBe(true);
+    })).toBe(true);
     }
     expect(compute(Article, 'shouldRenderMedia', {
-      hasVideoMedia: true,
+      hasPresentableMedia: true,
       shouldShowMinimalContent: true,
       selectionStore: { currentSelection: { viewMode: 'minimal' } }
     })).toBe(true);
     expect(compute(Article, 'shouldRenderMedia', {
-      hasVideoMedia: false,
+      hasPresentableMedia: false,
       selectionStore: { currentSelection: { viewMode: 'full' } }
     })).toBe(false);
 

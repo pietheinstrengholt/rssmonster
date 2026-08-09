@@ -1,5 +1,3 @@
-import { load } from 'cheerio';
-
 import extractEntryFields, { resolveUrlPublishedDate } from '../extraction/extractEntryFields.js';
 import processMedia from '../media/processMedia.js';
 import processHtmlContent from '../content/processHtmlContent.js';
@@ -8,22 +6,24 @@ import normalizeUrl from '../content/normalizeUrl.js';
 import decodeHtmlEntities from '../../../utils/decodeHtmlEntities.js';
 import detectArticleImage from '../media/detectArticleImage.js';
 import generateTitleFromContent from '../extraction/generateTitleFromContent.js';
-import articleIdentityResolver from '../extraction/articleIdentityResolver.js';
+import articleIdentityResolver, {
+  isStableArticleIdentity
+} from '../extraction/articleIdentityResolver.js';
 import { hashVisibleText } from '../../../utils/articleContentHashes.js';
 import language from '../../../utils/language.js';
+import processDescriptionContent from '../content/processDescriptionContent.js';
 
 // Defines the min analysis language text length enforced by this service.
 const MIN_ANALYSIS_LANGUAGE_TEXT_LENGTH = 20;
 
-// This function checks whether a feed entry points to an absolute HTTP(S) article URL.
-const isAbsoluteHttpUrl = value => {
-  // Rejects the value when value is not string or trim is unavailable.
+// This function verifies that canonical entry links remain safe at the crawl boundary.
+const isSafeArticleUrl = value => {
+  // Returns false when a declared link is not a non-empty string.
   if (typeof value !== 'string' || !value.trim()) return false;
 
   try {
-    // Derives the url required while checking absolute http url.
-    const url = new URL(value.trim());
-    return url.protocol === 'http:' || url.protocol === 'https:';
+    // Accepts only absolute HTTP(S) links after adapter-level relative resolution.
+    return ['http:', 'https:'].includes(new URL(value).protocol);
   } catch {
     return false;
   }
@@ -38,24 +38,9 @@ const buildActionArticle = articleData => ({
   url: articleData.link || articleData.url
 });
 
-// This function renders normalized description text as safe analysis-only HTML.
-const renderDescriptionHtml = descriptionText => {
-  // Returns early when description text is unavailable.
-  if (!descriptionText) return '';
-
-  // Performs the load operation while performing render description html.
-  const $ = load('<p></p>', null, false);
-  $('p').text(descriptionText);
-  return $.html();
-};
-
-// This function appends description fallback text and restores the sanitizer boundary.
-const appendDescriptionHtml = (contentHtml, descriptionText) => {
-  // Performs the load operation while performing append description html.
-  const $ = load(contentHtml, null, false);
-  $.root().append($('<p>').text(descriptionText));
-  return sanitizeHtmlContent($.html());
-};
+// This function combines independently sanitized body and description fragments.
+const appendDescriptionHtml = (contentHtml, descriptionHtml) =>
+  sanitizeHtmlContent(`${contentHtml || ''}${descriptionHtml || ''}`);
 
 // This function fills missing body-language metadata from the canonical analysis text.
 const resolveAnalysisLanguage = ({ currentLanguage, text, feed, title }) => {
@@ -91,13 +76,14 @@ const buildArticleCandidate = async ({
   feed,
   entry,
   feedPublishedFallback = null,
-  rssFeedTitle = null,
-  feedFormat = null
+  rssFeedTitle = null
 }) => {
   // Extracts the entry fields while building article candidate.
   const fields = extractEntryFields(entry);
-  // Derives the external identity through article identity resolver while building article candidate.
-  const externalIdentity = articleIdentityResolver(entry, feedFormat);
+  // Rejects unsafe declared links that bypassed or predated adapter normalization.
+  if (fields.link && !isSafeArticleUrl(fields.link)) return null;
+  // Rejects linkless entries only when the feed also lacks a stable format identity.
+  if (!fields.link && !isStableArticleIdentity(entry)) return null;
   // Derives the title was missing required while building article candidate.
   const titleWasMissing = !fields.title || fields.title === 'Untitled';
 
@@ -139,9 +125,6 @@ const buildArticleCandidate = async ({
     }
   }
 
-  // Returns no result when fields link is not absolute http url.
-  if (!isAbsoluteHttpUrl(fields.link)) return null;
-
   let contentOriginal = null;
   let contentHtml = null;
   let contentText = null;
@@ -152,18 +135,20 @@ const buildArticleCandidate = async ({
   let hotlinkUrls = [];
 
   // Extract known provider iframes before generic HTML cleanup removes unsafe embed tags.
-  const media = processMedia(entry, fields.content, fields.link);
+  let media = processMedia(entry, fields.content, fields.link);
 
   // Generic content overrides media content while preserving structured media metadata.
   if (fields.content) {
     // Derives the html result through process html content while building article candidate.
-    const htmlResult = processHtmlContent(
+    const contentArguments = [
       fields.content,
       null,
       fields.link,
       feed,
       fields.title
-    );
+    ];
+    contentArguments.push(fields.contentKind, media);
+    const htmlResult = processHtmlContent(...contentArguments);
     // Handles the case where html result is available.
     if (htmlResult) {
       contentOriginal = htmlResult.content;
@@ -173,29 +158,34 @@ const buildArticleCandidate = async ({
       contentSourceHash = htmlResult.contentSourceHash;
       contentTextHash = htmlResult.contentTextHash;
       hotlinkUrls = htmlResult.hotlinkUrls || [];
+      media = htmlResult.media || media;
       fields.title = htmlResult.title || fields.title;
     }
   }
 
-  // Extract visible description text for body fallback and stable identity hashing.
-  const descriptionText = fields.description
-    ? load(String(fields.description))
-      .text()
-      .replace(/\s+/g, ' ')
-      .trim()
-    : null;
+  // Derives safe description representations once at the ingestion boundary.
+  const descriptionResult = processDescriptionContent(
+    fields.description,
+    fields.descriptionKind,
+    fields.link
+  );
+  const descriptionHtml = descriptionResult.html;
+  const descriptionText = descriptionResult.text;
 
   // If the body contains no text, append the description while preserving media HTML.
-  if (contentHtml && !contentText && descriptionText) {
+  if (contentHtml && !contentText && descriptionHtml) {
     contentText = descriptionText;
-    contentHtml = appendDescriptionHtml(contentHtml, descriptionText);
+    contentHtml = appendDescriptionHtml(contentHtml, descriptionHtml);
     contentTextHash = hashVisibleText(contentText);
   }
+
+  // Description-only entries use the sanitized description as their canonical reading body.
+  if (!contentHtml && descriptionHtml) contentHtml = descriptionHtml;
 
   // Build one canonical representation for actions, analysis, language, and semantic text.
   const analysisText = contentText || descriptionText || '';
   // Derives the analysis html required while building article candidate.
-  const analysisHtml = contentHtml || renderDescriptionHtml(descriptionText);
+  const analysisHtml = contentHtml || descriptionHtml || '';
   // Handles the case where content text is unavailable and analysis text is available.
   if (!contentText && analysisText) {
     contentText = analysisText;
@@ -220,11 +210,20 @@ const buildArticleCandidate = async ({
     entry,
     articleUrl: fields.link,
     contentHtml,
-    content: fields.content,
+    content: fields.contentKind === 'text' ? null : fields.content,
     description: fields.description
   });
   // Normalizes the url before building article candidate.
-  const normalizedUrl = normalizeUrl(fields.link);
+  const normalizedUrl = fields.link ? normalizeUrl(fields.link) : null;
+  // Resolves identity after content hashes exist so the final fallback is deterministic.
+  const externalIdentity = articleIdentityResolver({
+    ...entry,
+    normalizedUrl,
+    title: fields.title,
+    publishedAt: fields.publishedAt,
+    contentSourceHash,
+    contentTextHash
+  });
   // Builds the article data assembled while building article candidate.
   const articleData = {
     ...fields,
@@ -232,6 +231,8 @@ const buildArticleCandidate = async ({
     normalizedUrl,
     analysisHtml,
     analysisText,
+    descriptionHtml,
+    descriptionText,
     contentHtml,
     contentText,
     contentOriginal,

@@ -2,6 +2,20 @@ export const NULL_ARTICLE_CONTENT = '<html><head></head><body>null</body></html>
 
 const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 
+// This function converts a legacy raw description into display-safe literal HTML.
+export function safeDescriptionFallbackHtml(value) {
+  return String(value || '')
+    .replace(/\r\n?/g, '\n')
+    .split(/\n[\t ]*\n+/)
+    .map(paragraph => paragraph.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .map(paragraph => `<p>${paragraph
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')}</p>`)
+    .join('\n');
+}
+
 // This function classifies a lead image from its known dimensions.
 export function classifyArticleLeadImage(width, height) {
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return 'pending';

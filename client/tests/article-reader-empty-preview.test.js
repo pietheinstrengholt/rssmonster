@@ -165,6 +165,14 @@ describe('ArticleReaderLayout empty previews', () => {
     expect(wrapper.emitted('update-clicked')).toEqual([[{ id: 1, clickedAmount: 1 }]]);
   });
 
+  it('renders linkless articles without an empty or unsafe original link', () => {
+    const wrapper = mountReader(createArticle({ url: null }));
+
+    expect(wrapper.get('.article-preview-empty__message').text()).toBe('No preview available');
+    expect(wrapper.find('.article-preview-empty__link').exists()).toBe(false);
+    expect(wrapper.find('.article-preview-empty__separator').exists()).toBe(false);
+  });
+
   it('uses the persisted click count and suppresses failed reader click updates', async () => {
     const article = createArticle({ clickedAmount: 3 });
     const wrapper = mountReader(article);
@@ -197,6 +205,18 @@ describe('ArticleReaderLayout empty previews', () => {
 });
 
 describe('Article empty previews', () => {
+  it('passes only escaped legacy description markup to the HTML-rendering component', () => {
+    const wrapper = mountArticle({
+      contentHtml: '',
+      descriptionHtml: '',
+      description: '<img src=x onerror=alert(1)><script>alert(2)</script>'
+    });
+
+    expect(wrapper.findComponent({ name: 'ArticleContent' }).props('content')).toBe(
+      '<p>&lt;img src=x onerror=alert(1)&gt;&lt;script&gt;alert(2)&lt;/script&gt;</p>'
+    );
+  });
+
   it.each(['full', 'minimal'])('shows the fallback in %s mode when contentHtml is empty', viewMode => {
     const wrapper = mountArticle({
       contentHtml: '',
@@ -236,5 +256,13 @@ describe('Article empty previews', () => {
 
     expect(markClicked).toHaveBeenCalledWith(1);
     expect(wrapper.emitted('minimal-article-opened')).toBeUndefined();
+  });
+
+  it('shows a linkless empty preview without manufacturing an anchor', () => {
+    const wrapper = mountArticle({ contentHtml: '', description: '', imageUrl: '', url: null });
+
+    expect(wrapper.get('.article-preview-empty__message').text()).toBe('No preview available');
+    expect(wrapper.find('.article-preview-empty__link').exists()).toBe(false);
+    expect(wrapper.find('.article-preview-empty__separator').exists()).toBe(false);
   });
 });

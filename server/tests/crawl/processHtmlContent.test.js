@@ -28,6 +28,41 @@ describe('crawl content sanitization', () => {
     expect(result.html).toContain('<p>A useful first sentence.');
   });
 
+  it('renders explicitly plain content literally without interpreting HTML-looking text', () => {
+    const source = 'Comparison: 2 < 3 & 4 > 1.\n\nLiteral <b>tag</b> &amp; entity.';
+    const result = processHtmlContent(
+      source,
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Literal text',
+      'text'
+    );
+
+    expect(result.content).toBe(source);
+    expect(result.text).toBe(source);
+    expect(result.html).toBe(
+      '<p>Comparison: 2 &lt; 3 &amp; 4 &gt; 1.</p>\n' +
+      '<p>Literal &lt;b&gt;tag&lt;/b&gt; &amp;amp; entity.</p>'
+    );
+    expect(result.hotlinkUrls).toEqual([]);
+  });
+
+  it('processes explicitly HTML content even when it contains no element tags', () => {
+    const result = processHtmlContent(
+      'Fish &amp; chips',
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Explicit HTML',
+      'html'
+    );
+
+    expect(result.content).toBe('Fish &amp; chips');
+    expect(result.html).toBe('Fish &amp; chips');
+    expect(result.text).toBe('Fish & chips');
+  });
+
   it('strips executable tags, event attributes, unsafe URLs, and hostile embeds before storage', () => {
     const result = processHtmlContent(
       `
@@ -49,7 +84,7 @@ describe('crawl content sanitization', () => {
     expect(result.content).toContain('onclick="alert(1)"');
     expect(result.content).toContain('<script>alert(1)</script>');
     expect(result.html).toContain('Clean text');
-    expect(result.text).toBe('Clean text bad link good link');
+    expect(result.text).toBe('Clean text\n\nbad link good link');
     expect(result.html).toContain('https://example.com/image.jpg');
     expect(result.html).toContain('https://news.example/story');
     expect(result.contentTextHash).toMatch(/^[a-f0-9]{64}$/);
@@ -74,6 +109,104 @@ describe('crawl content sanitization', () => {
     expect(result.hotlinkUrls).toEqual([]);
   });
 
+  it('extracts inline video with normalized sources, poster, duration, and safe captions', () => {
+    const result = processHtmlContent(
+      '<p>Introduction</p><video src="/movie.mp4" poster="../poster.jpg" duration="95.5" ' +
+      'autoplay onclick="alert(1)"><source src="/movie.webm" type="video/webm">' +
+      '<source src="javascript:alert(1)" type="video/mp4">' +
+      '<track src="/captions.vtt" kind="captions" srclang="en" label="English" default>' +
+      '<track src="javascript:alert(1)" kind="subtitles">Video fallback</video>',
+      null,
+      'https://origin.example/articles/story',
+      feed,
+      'Inline video'
+    );
+
+    expect(result.media).toEqual({
+      type: 'video',
+      provider: 'inline',
+      url: 'https://origin.example/movie.mp4',
+      thumbnailUrl: 'https://origin.example/poster.jpg',
+      durationSeconds: 95.5,
+      sources: [
+        { url: 'https://origin.example/movie.mp4' },
+        { url: 'https://origin.example/movie.webm', mimeType: 'video/webm' }
+      ],
+      tracks: [{
+        url: 'https://origin.example/captions.vtt',
+        kind: 'captions',
+        language: 'en',
+        label: 'English',
+        default: true
+      }]
+    });
+    expect(result.html).toContain('<p>Introduction</p>');
+    expect(result.html).not.toMatch(/<video|<source|<track|autoplay|onclick|javascript:/i);
+  });
+
+  it('extracts inline audio and deduplicates it against an enclosure', () => {
+    const enclosureMedia = {
+      type: 'audio',
+      url: 'https://origin.example/audio/episode.mp3',
+      mimeType: 'audio/mpeg',
+      fileSize: 12345
+    };
+    const result = processHtmlContent(
+      '<audio controls autoplay><source src="/audio/episode.mp3" type="audio/mpeg">' +
+      '<source src="/audio/episode.ogg" type="audio/ogg">Listen here</audio>',
+      null,
+      'https://origin.example/articles/story',
+      feed,
+      'Inline audio duplicate',
+      'html',
+      enclosureMedia
+    );
+
+    expect(result.media).toMatchObject({
+      type: 'audio',
+      url: 'https://origin.example/audio/episode.mp3',
+      mimeType: 'audio/mpeg',
+      fileSize: 12345,
+      sources: [
+        { url: 'https://origin.example/audio/episode.mp3', mimeType: 'audio/mpeg' },
+        { url: 'https://origin.example/audio/episode.ogg', mimeType: 'audio/ogg' }
+      ]
+    });
+    expect(result.html).not.toMatch(/<audio|autoplay/i);
+  });
+
+  it('keeps a safe fallback link for unsupported inline media formats', () => {
+    const result = processHtmlContent(
+      '<video><source src="/movie.bin" type="application/octet-stream">' +
+      'Download publisher video</video>',
+      null,
+      'https://origin.example/articles/story',
+      feed,
+      'Unsupported inline video'
+    );
+
+    expect(result.media).toBeNull();
+    expect(result.html).toContain(
+      '<a href="https://origin.example/movie.bin">Download publisher video</a>'
+    );
+    expect(result.text).toBe('Download publisher video');
+  });
+
+  it('removes malformed inline media with dangerous sources but keeps fallback text', () => {
+    const result = processHtmlContent(
+      '<div><video src="javascript:alert(1)" autoplay><source src="data:video/mp4,bad">' +
+      '<b>Media unavailable</b>',
+      null,
+      'https://origin.example/articles/story',
+      feed,
+      'Malformed inline video'
+    );
+
+    expect(result.media).toBeNull();
+    expect(result.html).toContain('<p>Media unavailable</p>');
+    expect(result.html).not.toMatch(/javascript:|data:|autoplay|<video/i);
+  });
+
   it('stores sanitized article fragments without document wrappers', () => {
     const result = processHtmlContent(
       '<!doctype html><html><head><title>Publisher title</title></head>' +
@@ -88,6 +221,19 @@ describe('crawl content sanitization', () => {
     expect(result.html).not.toMatch(/<\/?(?:html|head|body)\b/i);
     expect(result.html).not.toContain('Publisher title');
     expect(result.text).toBe('Article body');
+  });
+
+  it('derives block-aware visible text from adjacent article elements', () => {
+    const result = processHtmlContent(
+      '<h2>Heading</h2><p>Hello <em>there</em></p><p>world</p>' +
+      '<ul><li>One</li><li>Two</li></ul>',
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Block-aware text'
+    );
+
+    expect(result.text).toBe('Heading\n\nHello there\n\nworld\n\nOne\nTwo');
   });
 
   it('normalizes and preserves responsive image markup for display', () => {

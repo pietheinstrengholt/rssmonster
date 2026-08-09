@@ -1,31 +1,25 @@
 import { load } from 'cheerio';
 import language from '../../../utils/language.js';
 import normalizeUrl from './normalizeUrl.js';
-import decodeHtmlEntities from '../../../utils/decodeHtmlEntities.js';
 import {
   finalizeHtmlContent,
   prepareHtmlContent
 } from './cleanupHtmlContent.js';
 import normalizeHtmlUrls from './normalizeHtmlUrls.js';
 import sanitizeHtmlContent from './sanitizeHtmlContent.js';
+import htmlToVisibleText from './htmlToVisibleText.js';
+import normalizePlainTextContent from './normalizePlainTextContent.js';
 import {
   transformWordPressContent,
   transformWordPressSourceContent
 } from './compatibility/transformWordPressContent.js';
 import { hashOriginalContent, hashVisibleText } from '../../../utils/articleContentHashes.js';
+import extractInlineMedia from '../media/extractInlineMedia.js';
 
 // Defines the html tag pattern enforced by this service.
 const HTML_TAG_PATTERN = /<\/?[a-z][\w:-]*(?:\s[^<>]*)?>/i;
 // Defines the min language text length enforced by this service.
 const MIN_LANGUAGE_TEXT_LENGTH = 20;
-
-// Performs the strip html operation.
-function stripHtml(value = '') {
-  return load(String(value))
-    .text()
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 // This function identifies text that cannot contain an HTML element.
 function isPlainText(value) {
@@ -35,35 +29,6 @@ function isPlainText(value) {
 // This function treats the conventional www host alias as the publisher's apex host.
 function normalizeComparableHostname(value) {
   return String(value || '').toLowerCase().replace(/^www\./, '');
-}
-
-// This function encodes normalized paragraphs as display-safe HTML.
-function renderPlainTextHtml(paragraphs) {
-  // Selects the values based on whether paragraphs is non-empty.
-  const values = paragraphs.length ? paragraphs : [''];
-
-  // Maps source values into the result produced while performing render plain text html.
-  return values.map(paragraph => {
-    // Performs the load operation while performing render plain text html.
-    const $ = load('<p></p>', null, false);
-    $('p').text(paragraph);
-    return $.html();
-  }).join('\n');
-}
-
-// This function preserves plain-text paragraphs while deriving safe HTML and visible text.
-function normalizePlainText(value) {
-  // Keeps the paragraphs entries eligible while normalizing plain text.
-  const paragraphs = decodeHtmlEntities(value)
-    .replace(/\r\n?/g, '\n')
-    .split(/\n[\t ]*\n+/)
-    .map(paragraph => paragraph.replace(/\s+/g, ' ').trim())
-    .filter(Boolean);
-
-  return {
-    html: renderPlainTextHtml(paragraphs),
-    text: paragraphs.join('\n\n')
-  };
 }
 
 // This function avoids language detection for text too short to identify reliably.
@@ -97,7 +62,15 @@ function detectLanguage(text, feed, entryTitle) {
    - Detects language
    - Computes content hash for duplication checks
 ====================================================== */
-function processHtmlContent(content, _description, entryLink, feed, entryTitle) {
+function processHtmlContent(
+  content,
+  _description,
+  entryLink,
+  feed,
+  entryTitle,
+  contentKind = null,
+  feedMedia = null
+) {
   let contentOriginal;
   let contentHtml;
   let contentText;
@@ -110,15 +83,19 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle) 
     // Returns no result when content original is unavailable.
     if (!contentOriginal) return null;
 
-    // Apply publisher compatibility transforms only to derived content.
-    contentHtml = transformWordPressSourceContent(contentOriginal);
+    // Apply source transforms only when the value is not explicitly plain text.
+    contentHtml = contentKind === 'text'
+      ? contentOriginal
+      : transformWordPressSourceContent(contentOriginal);
     // Returns no result when content html is unavailable.
     if (!contentHtml) return null;
 
     // Handles the case where content html is plain text.
-    if (isPlainText(contentHtml)) {
+    if (contentKind === 'text' || (contentKind === null && isPlainText(contentHtml))) {
       // Normalizes the normalized before processing html content.
-      const normalized = normalizePlainText(contentHtml);
+      const normalized = normalizePlainTextContent(contentHtml, {
+        decodeEntities: contentKind === null
+      });
       const { text } = normalized;
       contentText = text;
       contentHtml = normalized.html;
@@ -158,6 +135,8 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle) 
     transformWordPressContent($);
     prepareHtmlContent($);
     normalizeHtmlUrls($, entryLink);
+    // Extracts normalized inline media before cleanup and sanitization can remove its elements.
+    const inlineMediaResult = extractInlineMedia($, feedMedia);
     finalizeHtmlContent($);
 
     // Collect hotlink candidates; the caller persists them only after article acceptance.
@@ -201,10 +180,7 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle) 
     contentHtml = sanitizeHtmlContent(cleanedHtml);
 
     // Strip final sanitized HTML for language detection & content analysis.
-    const text = load(contentHtml)('body')
-      .text()
-      .replace(/\s+/g, ' ')
-      .trim();
+    const text = htmlToVisibleText(contentHtml);
     contentText = text;
 
     // If title is "Untitled", try to extract first sentence from content
@@ -233,13 +209,14 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle) 
       contentSourceHash,
       contentTextHash,
       hotlinkUrls: [...new Set(hotlinkUrls)],
+      media: inlineMediaResult.media,
       title: entryTitle
     };
   } catch (err) {
     // Derives the text through strip html while processing html content.
-    const text = stripHtml(contentOriginal);
+    const text = htmlToVisibleText(contentOriginal);
     // Derives the html through render plain text html while processing html content.
-    const html = renderPlainTextHtml([text]);
+    const html = normalizePlainTextContent(text).html;
     contentText = text;
 
     console.error(

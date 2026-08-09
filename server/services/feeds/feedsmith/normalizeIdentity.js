@@ -18,22 +18,22 @@ const normalizeExternalId = value => {
 };
 
 // This function resolves a normalized complete article URL as the safest fallback identity.
-const resolveNormalizedUrlExternalId = entry => {
+const resolveNormalizedUrlExternalId = (entry, articleUrl = null) => {
   // Resolves the article link while resolving normalized url external id.
-  const articleUrl = resolveArticleLink(entry);
+  const resolvedArticleUrl = articleUrl || resolveArticleLink(entry);
   // Returns no result when article url is unavailable.
-  if (!articleUrl) return null;
+  if (!resolvedArticleUrl) return null;
 
   try {
     // Derives the parsed url required while resolving normalized url external id.
-    const parsedUrl = new URL(articleUrl);
+    const parsedUrl = new URL(resolvedArticleUrl);
     // Returns no result when parsed url protocol is not http: and parsed url protocol is not https:.
     if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') return null;
   } catch {
     return null;
   }
 
-  return normalizeExternalId(normalizeUrl(articleUrl));
+  return normalizeExternalId(normalizeUrl(resolvedArticleUrl));
 };
 
 // This function returns a resolved identity using the requested type label.
@@ -42,7 +42,7 @@ const resolvedIdentity = (externalId, externalIdType) => externalId
   : null;
 
 // This function resolves the supported external identity from a parsed feed entry.
-const normalizeIdentity = (entry, feedFormat = null) => {
+const normalizeIdentity = (entry, feedFormat = null, articleUrl = null) => {
   // Selects the guid based on whether entry is string.
   const guid = typeof entry?.guid === 'string'
     ? entry.guid
@@ -75,7 +75,7 @@ const normalizeIdentity = (entry, feedFormat = null) => {
   if (feedIdentity) return feedIdentity;
 
   // Resolves the normalized url external id while normalizing identity.
-  const urlExternalId = resolveNormalizedUrlExternalId(entry);
+  const urlExternalId = resolveNormalizedUrlExternalId(entry, articleUrl);
   // Returns early when url external id is available.
   if (urlExternalId) {
     return {

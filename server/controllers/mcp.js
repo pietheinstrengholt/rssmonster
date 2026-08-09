@@ -41,7 +41,9 @@ function generateArticlesHtml(articles, options = {}) {
       html += '<div class="article-body">';
       html += '<div class="article-layout">';
       html += '<h5 class="article-header">';
-      html += `${emoji ? emoji + ' ' : ''}<a class="article-link" target="_blank" href="${article.url || '#'}">${article.title || 'No Title'}</a>`;
+      html += article.url
+        ? `${emoji ? emoji + ' ' : ''}<a class="article-link" target="_blank" href="${article.url}">${article.title || 'No Title'}</a>`
+        : `${emoji ? emoji + ' ' : ''}<span class="article-link">${article.title || 'No Title'}</span>`;
       html += '</h5>';
       html += '<div class="feedname">';
       html += `<span class="article-published">${article.publishedAt ? new Date(article.publishedAt).toLocaleString() : new Date(article.createdAt).toLocaleString()}</span>`;

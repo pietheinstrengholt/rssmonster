@@ -126,8 +126,9 @@
           </span>
           <span v-if="!hasArticlePreview(article)" class="article-preview-empty">
             <span class="article-preview-empty__message">No preview available</span>
-            <span aria-hidden="true" class="article-preview-empty__separator">-</span>
+            <span v-if="article.url" aria-hidden="true" class="article-preview-empty__separator">-</span>
             <a
+              v-if="article.url"
               :href="article.url"
               class="article-preview-empty__link"
               target="_blank"

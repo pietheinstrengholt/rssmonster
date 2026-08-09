@@ -67,11 +67,11 @@
             </template>
           </div>
         </div>
-        <ArticleMedia v-if="shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :title="title" @media-clicked="articleClicked" />
+        <ArticleMedia v-if="shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" @media-clicked="articleClicked" />
         <ArticleContent :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="showMinimalContent" />
       </div>
     </div>
-    <ArticleMedia v-if="isMinimalView && shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :title="title" @media-clicked="articleClicked" />
+    <ArticleMedia v-if="isMinimalView && shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" @media-clicked="articleClicked" />
     <ArticleContent v-if="isMinimalView" :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="shouldShowMinimalContent" />
     <div class="article-divider"></div>
   </div>
@@ -101,6 +101,7 @@ import {
 } from './helpers/mobileSwipe.js';
 import { hasRenderableContent } from '../../utils/content';
 import { useMediaQuery } from '../../composables/useMediaQuery.js';
+import { safeDescriptionFallbackHtml } from '../../services/articleContentService.js';
 
 const NEUTRAL_SCORE = 70;
 
@@ -116,6 +117,8 @@ export default {
     feed: { type: Object, default: () => ({}) },
     content: { type: String, default: '' },
     description: { type: String, default: '' },
+    descriptionHtml: { type: String, default: '' },
+    descriptionText: { type: String, default: '' },
     author: { type: String, default: '' },
     hotInd: { type: Number, default: 0 },
     status: { type: String, default: '' },
@@ -223,14 +226,16 @@ export default {
       const category = this.overviewStore.categories.find(c => c.id === this.feed.categoryId);
       return category?.name || '';
     },
-    // Returns article body content, falling back to the feed description.
+    // Returns sanitized article HTML, escaping raw descriptions for legacy rows only.
     displayContent() {
-      return this.contentHtml || this.content || this.description || '';
+      return this.contentHtml ||
+        this.content ||
+        this.descriptionHtml ||
+        safeDescriptionFallbackHtml(this.description);
     },
     // Returns whether the article card will actually render content, a description, or video media.
     hasArticlePreview() {
-      return hasRenderableContent(this.contentHtml)
-        || hasRenderableContent(this.description)
+      return hasRenderableContent(this.displayContent)
         || this.shouldRenderMedia;
     },
     // Converts the quality score to a percentage.
@@ -266,9 +271,34 @@ export default {
     hasVideoMedia() {
       return this.media && typeof this.media === 'object' && this.media.type === 'video';
     },
-    // Returns whether the media poster belongs in the active article view.
+    // Returns whether normalized media exposes at least one safe client-renderable asset.
+    hasPresentableMedia() {
+      if (!this.media || typeof this.media !== 'object' || Array.isArray(this.media)) return false;
+
+      const isSafeUrl = value => {
+        try {
+          return ['http:', 'https:'].includes(new URL(String(value || '')).protocol);
+        } catch {
+          return false;
+        }
+      };
+      const sourceUrls = Array.isArray(this.media.sources)
+        ? this.media.sources.map(source => source?.url)
+        : [];
+
+      if (this.media.type === 'gallery') {
+        return Array.isArray(this.media.items) && this.media.items.some(item => isSafeUrl(item?.url));
+      }
+      if (this.media.type === 'image') return isSafeUrl(this.media.url);
+      if (this.media.type === 'audio') return [this.media.url, ...sourceUrls].some(isSafeUrl);
+      if (this.media.type === 'video') {
+        return [this.media.url, this.media.thumbnailUrl, this.url, ...sourceUrls].some(isSafeUrl);
+      }
+      return isSafeUrl(this.media.url);
+    },
+    // Returns whether normalized media belongs in the active article view.
     shouldRenderMedia() {
-      if (!this.hasVideoMedia) return false;
+      if (!this.hasPresentableMedia) return false;
 
       const viewMode = this.selectionStore.currentSelection.viewMode;
       return viewMode === 'full' ||

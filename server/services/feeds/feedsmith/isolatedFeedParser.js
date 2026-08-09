@@ -35,6 +35,7 @@ const workerResultError = value => {
 export const parseFeedSourceIsolated = async (source, {
   deadlineAt,
   signal,
+  feedUrl = null,
   workerUrl = DEFAULT_WORKER_URL,
   parserTimeoutMs = configuredPositiveInteger(
     'FEED_PARSER_TIMEOUT_MS',
@@ -53,7 +54,7 @@ export const parseFeedSourceIsolated = async (source, {
     Date.now() + parserTimeoutMs
   );
   const worker = new Worker(workerUrl, {
-    workerData: { source: safeSource },
+    workerData: { source: safeSource, feedUrl },
     resourceLimits: {
       maxOldGenerationSizeMb: parserMemoryMb,
       maxYoungGenerationSizeMb: Math.max(4, Math.floor(parserMemoryMb / 4)),

@@ -28,6 +28,8 @@ const storedArticle = (overrides = {}) => ({
   id: 123,
   userId: 42,
   feedId: 7,
+  externalId: 'publisher-id',
+  externalIdType: 'guid',
   url: 'https://example.com/article',
   normalizedUrl: 'https://example.com/article',
   imageUrl: 'https://example.com/image.jpg',
@@ -111,6 +113,81 @@ describe('updateArticle', () => {
       }
     });
     expect(mocked.articleUpdate).not.toHaveBeenCalled();
+  });
+
+  it('persists extractor-only text repairs without classifying a publisher revision', async () => {
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      contentText: 'Article\n\nbody',
+      contentTextHash: 'repaired-text-hash'
+    }));
+
+    expect(result).toMatchObject({
+      changed: true,
+      changes: {
+        contentChanged: false,
+        visibleTextExtractionRepair: true,
+        changedFields: ['contentText', 'contentTextHash']
+      }
+    });
+    expect(result.updateValues).not.toHaveProperty('modifiedAt');
+  });
+
+  it('still classifies changed visible text when publisher source also changed', async () => {
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      contentOriginal: '<p>Revised article body</p>',
+      contentText: 'Revised article body',
+      contentSourceHash: 'revised-source-hash',
+      contentTextHash: 'revised-text-hash'
+    }));
+
+    expect(result).toMatchObject({
+      changed: true,
+      changes: {
+        contentChanged: true,
+        visibleTextExtractionRepair: false
+      }
+    });
+    expect(result.updateValues.modifiedAt).toBeInstanceOf(Date);
+  });
+
+  it('persists description derivatives without classifying unchanged raw description as revised', async () => {
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      descriptionHtml: '<p>Article description</p>',
+      descriptionText: 'Article description'
+    }));
+
+    expect(result).toMatchObject({
+      changed: true,
+      changes: {
+        contentChanged: false,
+        descriptionChanged: false,
+        descriptionDerivationRepair: true,
+        changedFields: ['descriptionHtml', 'descriptionText']
+      }
+    });
+    expect(result.updateValues).not.toHaveProperty('modifiedAt');
+  });
+
+  it('treats changed raw descriptions and their derivatives as publisher revisions', async () => {
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      description: 'Revised description',
+      descriptionHtml: '<p>Revised description</p>',
+      descriptionText: 'Revised description'
+    }));
+
+    expect(result).toMatchObject({
+      changed: true,
+      changes: {
+        contentChanged: true,
+        descriptionChanged: true,
+        descriptionDerivationRepair: false
+      }
+    });
+    expect(result.updateValues.modifiedAt).toBeInstanceOf(Date);
   });
 
   it('does not compare or persist modification metadata without another source change', async () => {
@@ -258,6 +335,96 @@ describe('updateArticle', () => {
       matched: true,
       changed: true,
       changes: { titleChanged: true }
+    });
+  });
+
+  it('upgrades a legacy normalized-URL identity after an exact stable-ID miss', async () => {
+    const legacyArticle = storedArticle({
+      externalId: 'https://example.com/article',
+      externalIdType: 'normalized-url'
+    });
+    mocked.articleFindOne.mockResolvedValueOnce(null).mockResolvedValueOnce(legacyArticle);
+    const module = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await module.default({ id: 7, userId: 42 }, incomingArticle());
+
+    expect(mocked.articleFindOne).toHaveBeenCalledTimes(2);
+    expect(result).toMatchObject({
+      article: legacyArticle,
+      matched: true,
+      changed: true,
+      changes: {
+        identityChanged: true,
+        contentChanged: false,
+        changedFields: ['externalId', 'externalIdType']
+      },
+      updateValues: { externalId: 'publisher-id', externalIdType: 'guid' }
+    });
+
+    await module.applyArticleUpdate({ updatePlan: result, userId: 42 });
+    expect(mocked.articleUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ externalId: 'publisher-id', externalIdType: 'guid' }),
+      { transaction: mocked.transaction }
+    );
+  });
+
+  it('upgrades a legacy URL-suffix identity only when the complete URL agrees', async () => {
+    const legacyArticle = storedArticle({
+      url: 'https://news.example.com/story-92af41c7d8',
+      normalizedUrl: 'https://news.example.com/story-92af41c7d8',
+      externalId: '92af41c7d8',
+      externalIdType: 'url-suffix-hash'
+    });
+    mocked.articleFindOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(legacyArticle);
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      link: legacyArticle.url,
+      normalizedUrl: legacyArticle.normalizedUrl
+    }));
+
+    expect(result).toMatchObject({
+      matched: true,
+      changed: true,
+      changes: { identityChanged: true }
+    });
+  });
+
+  it('rejects a colliding legacy URL suffix when the complete URLs differ', async () => {
+    const collision = storedArticle({
+      url: 'https://other.example/different-92af41c7d8',
+      normalizedUrl: 'https://other.example/different-92af41c7d8',
+      externalId: '92af41c7d8',
+      externalIdType: 'url-suffix-hash'
+    });
+    mocked.articleFindOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(collision);
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      link: 'https://news.example.com/story-92af41c7d8',
+      normalizedUrl: 'https://news.example.com/story-92af41c7d8'
+    }));
+
+    expect(result).toMatchObject({ matched: false, changed: false, article: null });
+  });
+
+  it('matches a stable ID directly when its URL and slug change', async () => {
+    const article = storedArticle();
+    mocked.articleFindOne.mockResolvedValueOnce(article);
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      link: 'https://example.com/revised-slug',
+      normalizedUrl: 'https://example.com/revised-slug'
+    }));
+
+    expect(mocked.articleFindOne).toHaveBeenCalledOnce();
+    expect(result).toMatchObject({
+      matched: true,
+      changed: true,
+      changes: { identityChanged: false, urlChanged: true }
     });
   });
 
