@@ -253,7 +253,7 @@ describe('crawl run lifecycle', () => {
       markFeedLookupStarted = resolve;
     });
     vi.spyOn(db.Feed, 'findAll').mockImplementation(() => new Promise(resolve => {
-      console.log('DEBUG Feed.findAll mocked');
+      console.log('DEBUG Feed.findAll mocked', new Error().stack);
       releaseFeedLookup = () => resolve([]);
       markFeedLookupStarted();
     }));
