@@ -851,8 +851,9 @@ export const disableTag = async (req, res) => {
  */
 export const importSubscriptions = async (req, res) => {
   try {
-    const content = req.file?.buffer ||
-      (Buffer.isBuffer(req.body) ? req.body : null);
+    const uploadedBuffer = req.file?.buffer;
+    const requestBodyBuffer = Buffer.isBuffer(req.body) ? req.body : null;
+    const content = uploadedBuffer || requestBodyBuffer;
     if (!content) {
       return badRequest(res, 'No OPML file provided');
     }
