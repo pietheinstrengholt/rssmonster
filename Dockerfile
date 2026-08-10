@@ -1,7 +1,7 @@
 # =========================
 # 1. Build Vue client
 # =========================
-FROM node:20-alpine AS client-build
+FROM node:22-alpine AS client-build
 
 WORKDIR /build/client
 
@@ -16,7 +16,7 @@ RUN npm run build
 # =========================
 # 2. Install server deps
 # =========================
-FROM node:20-alpine AS server-deps
+FROM node:22-alpine AS server-deps
 
 WORKDIR /build/server
 
@@ -28,7 +28,7 @@ RUN npm ci --omit=dev
 # =========================
 # 3. Final runtime image
 # =========================
-FROM node:20-alpine
+FROM node:22-alpine
 
 ENV NODE_ENV=production
 
