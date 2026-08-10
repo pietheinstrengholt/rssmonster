@@ -592,6 +592,9 @@ const runCrawl = async (userId = null, options = {}) => {
       totalNewArticles: 0,
       totalUpdatedArticles: 0,
       totalArticleErrors: 0,
+      totalFetchedArticles: 0,
+      totalUnchangedArticles: 0,
+      totalDuplicateArticles: 0,
       failedFeeds: 0,
       timedOutFeeds: 0,
       crawlOutcomes: {}
