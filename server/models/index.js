@@ -1,6 +1,7 @@
 'use strict';
 
 import Sequelize from 'sequelize';
+import { installDatabaseConnectionPolicy } from '../config/databaseRuntime.js';
 
 // ---- Load DB config (CommonJS via .cjs) ----
 import dbConfig from '../config/config.cjs';
@@ -13,17 +14,26 @@ if (!config) {
 }
 
 // ---- Sequelize init (SINGLE instance) ----
-const sequelize = new Sequelize(
-  config.database,
-  config.username,
-  config.password,
-  {
-    host: config.host,
-    port: config.port,
+const sequelize = config.dialect === 'sqlite'
+  ? new Sequelize({
     dialect: config.dialect,
+    storage: config.storage,
+    pool: { max: 1, min: 0, idle: 10_000 },
     logging: config.logging ?? false
-  }
-);
+  })
+  : new Sequelize(
+    config.database,
+    config.username,
+    config.password,
+    {
+      host: config.host,
+      port: config.port,
+      dialect: config.dialect,
+      logging: config.logging ?? false
+    }
+  );
+
+installDatabaseConnectionPolicy(sequelize);
 
 // ---- Import model factories ----
 import UserModel from './user.js';

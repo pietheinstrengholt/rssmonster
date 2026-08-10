@@ -141,7 +141,8 @@ describe('OPML API contracts', () => {
       {
         headers: {
           'Content-Type': 'multipart/form-data'
-        }
+        },
+        timeout: 60000
       }
     );
     const formData = post.mock.calls[0][1];

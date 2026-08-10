@@ -34,6 +34,7 @@ export default (sequelize) => {
       }
     },
     {
+      tableName: 'smart_folders',
       timestamps: true
     }
   );

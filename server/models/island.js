@@ -1,4 +1,5 @@
 import { DataTypes } from 'sequelize';
+import { unsignedBigIntType } from './databaseTypes.js';
 
 export default (sequelize) => {
   const Island = sequelize.define(
@@ -6,7 +7,7 @@ export default (sequelize) => {
     {
       // Provides the stable identifier for this user interest island.
       id: {
-        type: DataTypes.BIGINT.UNSIGNED,
+        type: unsignedBigIntType(sequelize),
         autoIncrement: true,
         allowNull: false,
         primaryKey: true

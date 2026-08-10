@@ -31,6 +31,7 @@ function responseRecorder() {
 describe('settings controller branch behavior', () => {
   // Restores model methods and console output after each direct controller scenario.
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -78,6 +79,8 @@ describe('settings controller branch behavior', () => {
 
   // Applies the default crawl range and normalizes nullable aggregate values.
   it('returns default-range crawl statistics with numeric zero fallbacks', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-10T14:30:00.000Z'));
     vi.spyOn(CrawlRun, 'findAll').mockResolvedValue([{
       date: '2026-07-31',
       newArticles: null,
@@ -88,6 +91,11 @@ describe('settings controller branch behavior', () => {
     const res = responseRecorder();
 
     await getCrawlStatistics({ userData: { userId: 7 }, query: {} }, res);
+
+    const query = CrawlRun.findAll.mock.calls[0][0];
+    expect(query.where.startedAt[db.Sequelize.Op.gte]).toEqual(
+      new Date('2026-07-12T00:00:00.000Z')
+    );
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({

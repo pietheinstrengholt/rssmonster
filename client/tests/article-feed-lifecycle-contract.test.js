@@ -25,7 +25,7 @@ describe('ArticleFeed collection lifecycle contract', () => {
       'refresh-feeds'
     ]);
   });
-  
+
   // Verifies layouts receive deliberate presentation models instead of raw pagination internals.
   it('keeps Reader and stream layout props small and responsibility-based', () => {
     expect(Object.keys(ArticleReaderLayout.props)).toEqual([

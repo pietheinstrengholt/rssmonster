@@ -125,4 +125,16 @@ describe('settings crawl statistics', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toContain('days must be an integer between 1 and 365');
   });
+
+  // Returns the stable response shape when no terminal crawls fall in the requested window.
+  it('returns an empty statistics array when no crawl runs match', async () => {
+    const user = await createUser();
+
+    const res = await request(app)
+      .get('/api/setting/crawl-statistics?days=1')
+      .set('Authorization', authHeaderFor(user));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ days: 1, crawlStatistics: [] });
+  });
 });

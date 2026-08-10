@@ -86,6 +86,7 @@ function updatedRowCount(result, metadata) {
     return Number(
       rowCountSource.affectedRows ??
       rowCountSource.changedRows ??
+      rowCountSource.changes ??
       rowCountSource.rowCount ??
       0
     );
@@ -184,9 +185,42 @@ async function resetArticleInterestScores(userId, options = {}) {
 // This function scores articles through topic-to-island memberships.
 async function applyTopicPathScores(userId, options = {}) {
   const { createdAtFrom, transaction } = options;
-  // Selects the values based on whether created at from is available.
-  const [result, metadata] = await sequelize.query(
+  // Uses SQLite's supported UPDATE FROM form while retaining the existing MySQL statement.
+  const updateSql = sequelize.getDialect() === 'sqlite'
+    ? `
+    UPDATE articles AS a
+    SET interestScore = scored.interestScore
+    FROM (
+      SELECT
+        atp.articleId,
+        CASE
+          WHEN ABS(MIN(i.weight)) > ABS(MAX(i.weight)) THEN MIN(i.weight)
+          ELSE MAX(i.weight)
+        END AS interestScore
+      FROM article_topics atp
+      INNER JOIN island_topics it
+        ON it.topicId = atp.topicId
+      INNER JOIN islands i
+        ON i.id = it.islandId
+       AND i.userId = :userId
+       AND i.archivedInd = 0
+      INNER JOIN articles src
+        ON src.id = atp.articleId
+       AND src.userId = :userId
+       AND src.status = :status
+       AND src.duplicateOfArticleId IS NULL
+       AND src.filteredInd = false
+       ${createdAtFrom ? 'AND src.createdAt >= :createdAtFrom' : ''}
+      GROUP BY atp.articleId
+    ) AS scored
+    WHERE scored.articleId = a.id
+      AND a.userId = :userId
+      AND a.status = :status
+      AND a.duplicateOfArticleId IS NULL
+      AND a.filteredInd = false
+      ${createdAtFrom ? 'AND a.createdAt >= :createdAtFrom' : ''}
     `
+    : `
     UPDATE articles a
     INNER JOIN (
       SELECT
@@ -218,7 +252,10 @@ async function applyTopicPathScores(userId, options = {}) {
       AND a.duplicateOfArticleId IS NULL
       AND a.filteredInd = false
       ${createdAtFrom ? 'AND a.createdAt >= :createdAtFrom' : ''}
-    `,
+    `;
+  // Selects the values based on whether created at from is available.
+  const [result, metadata] = await sequelize.query(
+    updateSql,
     {
       replacements: { userId, status: SCORABLE_ARTICLE_STATUS, createdAtFrom },
       type: db.Sequelize.QueryTypes.UPDATE,

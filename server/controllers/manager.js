@@ -8,6 +8,9 @@ import { briefingEligibilitySql } from '../services/articleSearch/briefingEligib
 
 const DEFAULT_BRIEFING_SELECTION_PERIOD = '7d';
 
+// Formats a UTC timestamp consistently for MySQL DATETIME and SQLite text comparison.
+const formatDatabaseTimestamp = date => date.toISOString().replace('T', ' ').replace('Z', '');
+
 const buildCategoriesStructure = categoriesRaw => categoriesRaw.map(categoryRow => {
   const category = categoryRow.get({ plain: true });
 
@@ -165,6 +168,10 @@ const loadBriefingCountConfig = async userId => {
   const briefingShowOnlyDevelopingEventArticles = Boolean(
     Number(briefingPreferences?.showOnlyDevelopingEventArticles)
   );
+  const briefingPublishedTo = new Date();
+  const briefingPublishedFrom = new Date(
+    briefingPublishedTo.getTime() - briefingWindowDays * 24 * 60 * 60 * 1000
+  );
   const briefingEligibility = briefingEligibilitySql({
     minDistinctSources: briefingMinDistinctSources,
     showOnlyInterestMatchedArticles: Boolean(
@@ -180,9 +187,13 @@ const loadBriefingCountConfig = async userId => {
     briefingMinDistinctSources,
     briefingPrioritizeHighTrust,
     briefingShowOnlyDevelopingEventArticles,
+    replacements: {
+      briefingPublishedFrom: formatDatabaseTimestamp(briefingPublishedFrom),
+      briefingPublishedTo: formatDatabaseTimestamp(briefingPublishedTo)
+    },
     countSql: `COUNT(CASE WHEN
-      articles.publishedAt >= NOW() - INTERVAL ${briefingWindowDays} DAY
-      AND articles.publishedAt <= NOW()
+      articles.publishedAt >= :briefingPublishedFrom
+      AND articles.publishedAt <= :briefingPublishedTo
       AND ${briefingEligibility}
       ${briefingStatusCondition}
     THEN 1 END)`
@@ -201,6 +212,7 @@ const loadOverviewTotals = async (baseWhere, briefingConfig) => {
       [Sequelize.literal("SUM(CASE WHEN clickedAmount > 0 THEN 1 ELSE 0 END)"), 'clickedCount'],
       [Sequelize.literal("COUNT(CASE WHEN hotInd = 1 THEN 1 END)"), 'hotCount']
     ],
+    replacements: briefingConfig.replacements,
     raw: true
   });
 
@@ -237,6 +249,7 @@ const loadGroupedFeedCounts = (baseWhere, briefingConfig) => Feed.findAll({
     [Sequelize.literal("COUNT(CASE WHEN `articles`.`hotInd` = 1 THEN 1 END)"), 'hotCount'],
     [Sequelize.literal("SUM(CASE WHEN `articles`.`clickedAmount` > 0 THEN 1 ELSE 0 END)"), 'clickedCount']
   ],
+  replacements: briefingConfig.replacements,
   group: ['feeds.categoryId', 'feeds.id'],
   order: ['id'],
   raw: true
