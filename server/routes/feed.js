@@ -12,6 +12,7 @@ router.get('/refresh/:jobId/events', userMiddleware.isLoggedIn, feedController.s
 router.post('/recalculate-trust', userMiddleware.isLoggedIn, feedController.recalculateFeedTrust);
 router.get('/:feedId/observability', userMiddleware.isLoggedIn, feedObservabilityController.getFeedObservability);
 router.get('/:feedId/crawls/:crawlResultId', userMiddleware.isLoggedIn, feedObservabilityController.getFeedCrawlDetail);
+router.post('/:feedId/retry', userMiddleware.isLoggedIn, feedController.retryFeed);
 router.get('/:feedId', userMiddleware.isLoggedIn, feedController.getFeed);
 router.put('/:feedId', userMiddleware.isLoggedIn, feedController.updateFeed);
 router.delete('/:feedId', userMiddleware.isLoggedIn, feedController.deleteFeed);

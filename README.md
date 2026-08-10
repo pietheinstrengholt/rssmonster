@@ -180,7 +180,7 @@ Use the separate MySQL Compose configuration:
 docker compose -f docker-compose.mysql.yml up -d
 ```
 
-Configure the required database credentials and application secrets before starting the MySQL deployment.
+Configure the required database credentials and application secrets before starting the MySQL deployment. MySQL is expected to be running and reachable before the RSSMonster container starts.
 
 ## Key Features
 

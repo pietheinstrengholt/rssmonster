@@ -99,6 +99,33 @@ describe('crawl run article statistics', () => {
     });
   });
 
+  it('runs the unchanged production pipeline for only the explicitly selected feed', async () => {
+    const { user, category, feed } = await createUserFeed('manualsinglefeed');
+    const otherFeed = await Feed.create({
+      userId: user.id,
+      categoryId: category.id,
+      feedName: 'Other due feed',
+      url: `https://example.com/${uniqueName('other-due')}.xml`
+    });
+    mocked.processArticle.mockResolvedValue({
+      newArticles: 1,
+      updatedArticles: 0,
+      errors: 0
+    });
+
+    const result = await crawlController.performCrawl(user.id, { feedId: feed.id });
+
+    expect(result).toMatchObject({ total: 1, processed: 1, crawlOutcomes: { SUCCESS: 1 } });
+    expect(await FeedCrawlResult.count({ where: { feedId: feed.id } })).toBe(1);
+    expect(await FeedCrawlResult.count({ where: { feedId: otherFeed.id } })).toBe(0);
+    await feed.reload();
+    expect(feed).toMatchObject({
+      lastCrawlStatus: 'SUCCESS',
+      consecutiveFailures: 0,
+      totalCrawlSuccesses: 1
+    });
+  });
+
   it.each([
     ['timeout', 'timed_out', 'TIMEOUT'],
     ['permanent failure', 'permanent_failure', 'NOT_FOUND']

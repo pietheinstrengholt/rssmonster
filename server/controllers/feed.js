@@ -18,6 +18,11 @@ import {
 import { deriveFeedOverviewHealth } from '../services/feeds/feedOverviewHealth.js';
 
 const UPDATE_INTERVAL_MINUTES = [null, 0, 5, 15, 30, 60, 120, 360, 720, 1440];
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const RETRY_CRAWL_RESULT_ATTRIBUTES = [
+  'id', 'status', 'errorCategory', 'durationMs', 'itemsFetched', 'articlesNew',
+  'articlesUpdated', 'articlesUnchanged', 'articlesDuplicate'
+];
 
 // This function normalizes feed tag input from arrays or text fields.
 const normalizeFeedTags = value => {
@@ -233,6 +238,75 @@ const getFeed = async (req, res, _next) => {
     return res.status(200).json({ feed });
   } catch (err) {
     console.error('Error in getFeed:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// Runs the production crawl pipeline for one user-owned feed and returns its final result.
+const retryFeed = async (req, res, _next) => {
+  try {
+    const userId = req.userData?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const feed = await Feed.findOne({
+      attributes: ['id'],
+      where: { id: req.params.feedId, userId },
+      raw: true
+    });
+    if (!feed) return res.status(404).json({ message: 'Feed not found' });
+
+    const crawl = await crawlController.performCrawlWithSemanticGrouping(userId, {
+      feedId: feed.id,
+      triggerType: 'api'
+    });
+    if (crawl.reason === 'crawl_already_running' || crawl.total === 0) {
+      return res.status(409).json({
+        message: 'Feed is already being processed.'
+      });
+    }
+
+    const [crawlResult, updatedFeed, reliability] = await Promise.all([
+      FeedCrawlResult.findOne({
+        attributes: RETRY_CRAWL_RESULT_ATTRIBUTES,
+        where: { crawlRunId: crawl.crawlRunId, feedId: feed.id, userId },
+        raw: true
+      }),
+      Feed.findOne({ where: { id: feed.id, userId }, raw: true }),
+      FeedCrawlResult.findOne({
+        attributes: [
+          [db.Sequelize.fn('COUNT', db.Sequelize.col('id')), 'totalCount'],
+          [db.Sequelize.literal(
+            "SUM(CASE WHEN `status` IN ('SUCCESS', 'RECOVERED') THEN 1 ELSE 0 END)"
+          ), 'successfulCount']
+        ],
+        where: {
+          feedId: feed.id,
+          userId,
+          completedAt: { [db.Sequelize.Op.gte]: new Date(Date.now() - THIRTY_DAYS_MS) }
+        },
+        raw: true
+      })
+    ]);
+    if (!crawlResult || !updatedFeed) {
+      throw new Error('Manual feed retry completed without a persisted crawl result.');
+    }
+
+    const totalCount = Number(reliability?.totalCount) || 0;
+    const successfulCount = Number(reliability?.successfulCount) || 0;
+    const reliabilityPct = totalCount > 0
+      ? Math.round((successfulCount * 1000) / totalCount) / 10
+      : null;
+
+    return res.status(200).json({
+      feedId: feed.id,
+      status: crawlResult.status,
+      health: deriveFeedOverviewHealth(updatedFeed, reliabilityPct, totalCount),
+      crawlResult
+    });
+  } catch (err) {
+    console.error('Error in retryFeed:', err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -617,6 +691,7 @@ const streamRefreshEvents = async (req, res) => {
 export default {
   getFeeds,
   getFeed,
+  retryFeed,
   updateFeed,
   newFeed,
   deleteFeed,

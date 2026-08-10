@@ -59,7 +59,7 @@ services:
 
     environment:
       NODE_ENV: development
-      VITE_VUE_APP_HOSTNAME: http://app:3000/
+      VITE_APP_HOSTNAME: http://app:3000
       VITE_BASE_URL: /
       PORT: 8080
 

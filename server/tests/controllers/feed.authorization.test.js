@@ -73,6 +73,19 @@ describe('feed ownership authorization', () => {
     expect(res.body).toEqual({ message: 'Feed not found' });
   });
 
+  it('POST feed retry rejects a foreign-user feed without starting a crawl', async () => {
+    const owner = await createUser(uniqueName('feed-retry-owner'));
+    const foreignUser = await createUser(uniqueName('feed-retry-viewer'));
+    const { feed } = await createFeedFor(owner);
+
+    const res = await request(app)
+      .post(`/api/feeds/${feed.id}/retry`)
+      .set('Authorization', authHeaderFor(foreignUser));
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ message: 'Feed not found' });
+  });
+
   it('GET feeds includes event article coverage metrics', async () => {
     const owner = await createUser(uniqueName('feed-owner'));
     const { feed } = await createFeedFor(owner);

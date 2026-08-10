@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
 import {
   claimDueFeeds,
+  claimFeedById,
   completeFeedLease
 } from '../../services/feeds/feedClaims.js';
 
@@ -139,6 +140,28 @@ describe('atomic due-feed claims', () => {
     const claimed = [...scheduled, ...apiTriggered];
 
     expect(claimed.filter(candidate => candidate.id === feed.id)).toHaveLength(1);
+  });
+
+  it('claims an explicitly selected owned feed without requiring it to be due', async () => {
+    const feed = await createFeed('manual', {
+      nextFetchAt: new Date(NOW.getTime() + 60 * 60 * 1000)
+    });
+
+    const claimed = await claimFeedById({
+      feedId: feed.id,
+      userId: user.id,
+      now: NOW,
+      leaseOwner: 'manual-worker'
+    });
+    const duplicateClaim = await claimFeedById({
+      feedId: feed.id,
+      userId: user.id,
+      now: NOW,
+      leaseOwner: 'other-worker'
+    });
+
+    expect(claimed).toMatchObject({ id: feed.id, leaseOwner: 'manual-worker' });
+    expect(duplicateClaim).toBeNull();
   });
 
   it('retries the complete claim after MySQL chooses it as a deadlock victim', async () => {

@@ -8,7 +8,7 @@
     <div v-if="loading" class="feed-details__state" role="status">Loading feed details…</div>
     <div v-else-if="error" class="feed-details__state feed-details__state--error" role="alert">
       <strong>{{ error }}</strong>
-      <button type="button" class="feed-details__retry" @click="loadObservability">Try again</button>
+      <button type="button" class="feed-details__retry" @click="loadObservability()">Try again</button>
     </div>
     <template v-else-if="observability">
       <header class="feed-details__header">
@@ -20,11 +20,33 @@
             <span v-if="feed.feedType" class="feed-details__type">{{ feed.feedType }}</span>
           </p>
         </div>
-        <button type="button" class="feed-details__edit" @click="$emit('edit', feed)">
-          <BootstrapIcon icon="pencil" aria-hidden="true" />
-          Edit feed
-        </button>
+        <div class="feed-details__actions">
+          <button
+            v-if="canRetryFeed"
+            type="button"
+            class="feed-details__retry-action"
+            :disabled="retrying"
+            @click="retryCurrentFeed"
+          >{{ retrying ? 'Retrying…' : 'Retry feed' }}</button>
+          <button type="button" class="feed-details__edit" @click="$emit('edit', feed)">
+            <BootstrapIcon icon="pencil" aria-hidden="true" />
+            Edit feed
+          </button>
+        </div>
       </header>
+
+      <div
+        v-if="retryNotice"
+        class="feed-details__retry-notice app-notice"
+        :class="retryNotice.tone === 'success'
+          ? 'feed-details__retry-notice--success'
+          : `app-notice--${retryNotice.tone}`"
+        :role="retryNotice.tone === 'danger' ? 'alert' : 'status'"
+        aria-live="polite"
+      >
+        <strong>{{ retryNotice.message }}</strong>
+        <span v-if="retryNotice.detail">{{ retryNotice.detail }}</span>
+      </div>
 
       <section class="feed-details__metrics" aria-label="Feed health summary">
         <article class="feed-details__metric" :class="`feed-details__metric--${healthKey.toLowerCase()}`">
@@ -182,7 +204,11 @@
 </template>
 
 <script>
-import { fetchFeedCrawlResult, fetchFeedObservability } from '../../api/feeds.js';
+import {
+  fetchFeedCrawlResult,
+  fetchFeedObservability,
+  retryFeed
+} from '../../api/feeds.js';
 import { formatRelativeDate } from '../../utils/date.js';
 
 const HEALTH_LABELS = Object.freeze({
@@ -212,7 +238,9 @@ export default {
       selectedCrawlId: null,
       selectedCrawl: null,
       crawlDetailLoading: false,
-      crawlDetailError: null
+      crawlDetailError: null,
+      retrying: false,
+      retryNotice: null
     };
   },
   // Loads the screen snapshot without refetching the feeds collection.
@@ -234,6 +262,8 @@ export default {
     healthKey() { return HEALTH_LABELS[this.feed.health] ? this.feed.health : 'UNKNOWN'; },
     // Converts the backend health key into visible text.
     healthLabel() { return HEALTH_LABELS[this.healthKey]; },
+    // Allows manual retries for every feed not explicitly disabled by the backend.
+    canRetryFeed() { return this.feed.status !== 'disabled' && this.healthKey !== 'DISABLED'; },
     // Returns bounded diagnostics from only the selected crawl request.
     attemptSummary() { return Array.isArray(this.selectedCrawl?.attemptSummary) ? this.selectedCrawl.attemptSummary : []; },
     // Sorts failure categories by operational relevance and stable name.
@@ -258,20 +288,75 @@ export default {
   },
   methods: {
     // Loads the bounded feed observability snapshot.
-    async loadObservability() {
-      this.loading = true;
-      this.error = null;
+    async loadObservability(preserveContent = false) {
+      if (!preserveContent) {
+        this.loading = true;
+        this.error = null;
+      }
       try {
         const response = await fetchFeedObservability(this.feedId);
         this.observability = response?.data || null;
       } catch (error) {
         console.error('Error loading feed observability:', error);
-        this.error = error?.response?.status === 404
-          ? 'Feed not found.'
-          : 'Could not load feed details. Please try again.';
+        if (!preserveContent) {
+          this.error = error?.response?.status === 404
+            ? 'Feed not found.'
+            : 'Could not load feed details. Please try again.';
+        }
       } finally {
-        this.loading = false;
+        if (!preserveContent) this.loading = false;
       }
+    },
+    // Retries one active feed and refreshes all backend-owned observability state.
+    async retryCurrentFeed() {
+      if (this.retrying || !this.canRetryFeed) return;
+
+      this.retrying = true;
+      this.retryNotice = null;
+      try {
+        const response = await retryFeed(this.feedId);
+        this.retryNotice = this.buildRetryNotice(response?.data);
+        await this.loadObservability(true);
+      } catch (error) {
+        console.error('Error retrying feed:', error);
+        this.retryNotice = {
+          tone: 'danger',
+          message: 'Unable to retry feed',
+          detail: 'Please try again.'
+        };
+      } finally {
+        this.retrying = false;
+      }
+    },
+    // Converts a completed retry domain result into a concise inline notice.
+    buildRetryNotice(result = {}) {
+      const status = result.status;
+      const crawlResult = result.crawlResult || {};
+      if (status === 'FAILED') {
+        return {
+          tone: 'danger',
+          message: 'Feed is still failing',
+          detail: crawlResult.errorCategory || ''
+        };
+      }
+
+      const details = [];
+      if (Number.isFinite(Number(crawlResult.itemsFetched))) {
+        details.push(`${Number(crawlResult.itemsFetched)} items fetched`);
+      }
+      if (Number(crawlResult.articlesNew) > 0) {
+        details.push(`${Number(crawlResult.articlesNew)} new`);
+      }
+      if (Number(crawlResult.articlesUpdated) > 0) {
+        details.push(`${Number(crawlResult.articlesUpdated)} updated`);
+      }
+      return {
+        tone: status === 'RECOVERED' ? 'warning' : 'success',
+        message: status === 'RECOVERED'
+          ? 'Feed recovered successfully'
+          : 'Feed retry successful',
+        detail: details.join(' · ')
+      };
     },
     // Loads expanded diagnostics for only the selected crawl result.
     async selectCrawl(crawlResultId) {
@@ -342,9 +427,13 @@ export default {
 
 <style scoped>
 .feed-details { max-width: 1200px; color: var(--text-secondary); }
-.feed-details__back, .feed-details__edit, .feed-details__retry { display: inline-flex; min-height: var(--control-height-compact); align-items: center; gap: 7px; padding: 0 12px; border: 1px solid var(--border-control); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-secondary); font-size: 13px; font-weight: 700; cursor: pointer; }
-.feed-details__back:focus-visible, .feed-details__edit:focus-visible, .feed-details__retry:focus-visible, .feed-details__crawl-select:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: var(--focus-ring-offset); }
+.feed-details__back, .feed-details__edit, .feed-details__retry, .feed-details__retry-action { display: inline-flex; min-height: var(--control-height-compact); align-items: center; gap: 7px; padding: 0 12px; border: 1px solid var(--border-control); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-secondary); font-size: 13px; font-weight: 700; cursor: pointer; }
+.feed-details__back:focus-visible, .feed-details__edit:focus-visible, .feed-details__retry:focus-visible, .feed-details__retry-action:focus-visible, .feed-details__crawl-select:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: var(--focus-ring-offset); }
+.feed-details__retry-action:disabled { cursor: default; opacity: .6; }
 .feed-details__header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 12px 0 18px; }
+.feed-details__actions { display: flex; align-items: center; gap: 8px; }
+.feed-details__retry-notice { display: flex; flex-wrap: wrap; gap: 6px 10px; margin: -6px 0 16px; padding: 8px 12px; font-size: 12px; }
+.feed-details__retry-notice--success { border-color: var(--settings-success-border); background: var(--settings-success-bg); color: var(--settings-success-text); }
 .feed-details__header h3 { margin: 0; color: var(--text-primary); font-size: 24px; }
 .feed-details__header p { display: flex; align-items: center; gap: 7px; margin: 5px 0 0; color: var(--text-muted); font-size: 13px; }
 .feed-details__header p svg { color: var(--settings-orange-text); }
@@ -413,6 +502,7 @@ export default {
 :global(:root[data-theme='dark']) .feed-details__panel,
 :global(:root[data-theme='dark']) .feed-details__retry { background: var(--bg-modal); }
 :global(:root[data-theme='dark']) .feed-details__back,
-:global(:root[data-theme='dark']) .feed-details__edit { background: var(--bg-control); color: var(--text-primary); }
+:global(:root[data-theme='dark']) .feed-details__edit,
+:global(:root[data-theme='dark']) .feed-details__retry-action { background: var(--bg-control); color: var(--text-primary); }
 :global(:root[data-theme='dark']) .feed-details__metric span { color: var(--text-primary); }
 </style>

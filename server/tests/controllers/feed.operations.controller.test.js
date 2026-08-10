@@ -5,6 +5,7 @@ const mocked = vi.hoisted(() => ({
   calculateFeedTrust: vi.fn(),
   createJob: vi.fn(),
   feedCrawlResultFindAll: vi.fn(),
+  feedCrawlResultFindOne: vi.fn(),
   feedFindAll: vi.fn(),
   feedFindOne: vi.fn(),
   getActiveJobForUser: vi.fn(),
@@ -34,7 +35,8 @@ vi.mock('../../models/index.js', async () => {
         findOne: mocked.feedFindOne
       },
       FeedCrawlResult: {
-        findAll: mocked.feedCrawlResultFindAll
+        findAll: mocked.feedCrawlResultFindAll,
+        findOne: mocked.feedCrawlResultFindOne
       },
       Sequelize
     }
@@ -122,6 +124,7 @@ describe('feed operational controllers', () => {
     vi.resetAllMocks();
     mocked.performCrawl.mockResolvedValue(undefined);
     mocked.feedCrawlResultFindAll.mockResolvedValue([]);
+    mocked.feedCrawlResultFindOne.mockReset();
     mocked.subscribe.mockReturnValue(true);
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -265,6 +268,76 @@ describe('feed operational controllers', () => {
     expect(failureRes.json).toHaveBeenCalledWith({
       error: 'feed list failed'
     });
+  });
+
+  it.each(['SUCCESS', 'RECOVERED', 'FAILED'])(
+    'returns one completed %s manual retry result',
+    async status => {
+      mocked.feedFindOne
+        .mockResolvedValueOnce({ id: 8 })
+        .mockResolvedValueOnce({
+          id: 8,
+          status: 'active',
+          lastCrawlStatus: status,
+          consecutiveFailures: status === 'FAILED' ? 1 : 0
+        });
+      mocked.performCrawl.mockResolvedValue({
+        crawlRunId: 70,
+        total: 1,
+        crawlOutcomes: { [status === 'FAILED' ? 'TIMEOUT' : status]: 1 }
+      });
+      mocked.feedCrawlResultFindOne
+        .mockResolvedValueOnce({
+          id: 90,
+          status,
+          errorCategory: status === 'FAILED' ? 'TIMEOUT' : null,
+          durationMs: 812,
+          itemsFetched: status === 'FAILED' ? 0 : 100,
+          articlesNew: status === 'FAILED' ? 0 : 3,
+          articlesUpdated: 1,
+          articlesUnchanged: 96,
+          articlesDuplicate: 0
+        })
+        .mockResolvedValueOnce({ totalCount: '1', successfulCount: status === 'FAILED' ? '0' : '1' });
+      const res = createResponse();
+
+      await feedController.retryFeed(createRequest(), res);
+
+      expect(mocked.performCrawl).toHaveBeenCalledWith(42, {
+        feedId: 8,
+        triggerType: 'api'
+      });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        feedId: 8,
+        status,
+        health: status === 'RECOVERED'
+          ? 'RECOVERED'
+          : status === 'FAILED' ? 'DEGRADED' : 'HEALTHY',
+        crawlResult: expect.objectContaining({ id: 90, status })
+      });
+    }
+  );
+
+  it('enforces ownership and reports an already-running retry without crawling', async () => {
+    const unauthorizedRes = createResponse();
+    await feedController.retryFeed(createRequest({ userData: {} }), unauthorizedRes);
+    expect(unauthorizedRes.status).toHaveBeenCalledWith(401);
+
+    mocked.feedFindOne.mockResolvedValueOnce(null);
+    const missingRes = createResponse();
+    await feedController.retryFeed(createRequest(), missingRes);
+    expect(missingRes.status).toHaveBeenCalledWith(404);
+    expect(mocked.performCrawl).not.toHaveBeenCalled();
+
+    mocked.feedFindOne.mockResolvedValueOnce({ id: 8 });
+    mocked.performCrawl.mockResolvedValueOnce({
+      total: 0,
+      reason: 'crawl_already_running'
+    });
+    const busyRes = createResponse();
+    await feedController.retryFeed(createRequest(), busyRes);
+    expect(busyRes.status).toHaveBeenCalledWith(409);
   });
 
   it('rediscovers a replacement RSS URL for an owned feed', async () => {

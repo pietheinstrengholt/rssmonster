@@ -91,6 +91,40 @@ export const claimDueFeeds = async ({
   return [];
 };
 
+// Atomically leases one user-owned feed for an explicit manual crawl.
+export const claimFeedById = async ({
+  feedId,
+  userId,
+  now = new Date(),
+  leaseMs = DEFAULT_FEED_LEASE_MS,
+  leaseOwner = randomUUID()
+} = {}) => {
+  const boundedLeaseMs = positiveInteger(leaseMs, DEFAULT_FEED_LEASE_MS);
+  const leaseUntil = new Date(now.getTime() + boundedLeaseMs);
+
+  return sequelize.transaction({
+    isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED
+  }, async transaction => {
+    const feed = await Feed.findOne({
+      where: {
+        id: feedId,
+        userId,
+        [Op.or]: [
+          { leaseUntil: { [Op.is]: null } },
+          { leaseUntil: { [Op.lte]: now } }
+        ]
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+      skipLocked: true
+    });
+    if (!feed) return null;
+
+    await feed.update({ leaseUntil, leaseOwner }, { transaction, hooks: false });
+    return feed;
+  });
+};
+
 // Creates the stable ownership error used to stop work after a lease is lost.
 export const createFeedLeaseLostError = feedId => {
   const error = new Error(`Feed lease ownership was lost for feed ${feedId}`);
@@ -293,6 +327,7 @@ export default {
   assertFeedLeaseOwnership,
   buildDueFeedWhere,
   claimDueFeeds,
+  claimFeedById,
   completeFeedLease,
   releaseFeedLease,
   renewFeedLease,

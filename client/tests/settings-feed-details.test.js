@@ -3,13 +3,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SettingsFeedDetails from '../src/components/settings/SettingsFeedDetails.vue';
 import {
   fetchFeedCrawlResult,
-  fetchFeedObservability
+  fetchFeedObservability,
+  retryFeed
 } from '../src/api/feeds.js';
 
 vi.mock('../src/api/feeds.js', () => ({
   fetchFeedCrawlResult: vi.fn(),
-  fetchFeedObservability: vi.fn()
+  fetchFeedObservability: vi.fn(),
+  retryFeed: vi.fn()
 }));
+
+// Creates a manually controlled promise for pending-button assertions.
+const deferred = () => {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
+};
 
 // Returns a complete feed-details payload representative of all screen sections.
 const observabilityFixture = (overrides = {}) => ({
@@ -91,6 +104,84 @@ describe('SettingsFeedDetails', () => {
     expect(wrapper.get('.feed-details__chart').attributes('aria-label'))
       .toContain('3 successful, 1 recovered, 1 failed');
     expect(fetchFeedCrawlResult).not.toHaveBeenCalled();
+    expect(wrapper.get('.feed-details__retry-action').text()).toBe('Retry feed');
+  });
+
+  // Verifies pending retries disable the local action and reject duplicate clicks.
+  it('disables the retry action while one request is running', async () => {
+    const pendingRetry = deferred();
+    retryFeed.mockReturnValueOnce(pendingRetry.promise);
+    const wrapper = await mountDetails();
+    const retryButton = wrapper.get('.feed-details__retry-action');
+
+    await retryButton.trigger('click');
+    await retryButton.trigger('click');
+
+    expect(retryFeed).toHaveBeenCalledOnce();
+    expect(retryButton.attributes('disabled')).toBeDefined();
+    expect(retryButton.text()).toBe('Retrying…');
+
+    fetchFeedObservability.mockResolvedValueOnce({ data: observabilityFixture() });
+    pendingRetry.resolve({ data: {
+      status: 'SUCCESS',
+      crawlResult: { itemsFetched: 100, articlesNew: 3, articlesUpdated: 1 }
+    } });
+    await flushPromises();
+    expect(retryButton.attributes('disabled')).toBeUndefined();
+  });
+
+  // Verifies completed domain outcomes remain non-exceptional and refresh observability.
+  it.each([
+    ['SUCCESS', 'Feed retry successful', '100 items fetched · 3 new · 1 updated', 'success'],
+    ['RECOVERED', 'Feed recovered successfully', '100 items fetched · 3 new · 1 updated', 'warning'],
+    ['FAILED', 'Feed is still failing', 'TIMEOUT', 'danger']
+  ])('presents a completed %s retry and refreshes the snapshot', async (
+    status,
+    message,
+    detail,
+    tone
+  ) => {
+    retryFeed.mockResolvedValueOnce({ data: {
+      status,
+      crawlResult: {
+        errorCategory: status === 'FAILED' ? 'TIMEOUT' : null,
+        itemsFetched: status === 'FAILED' ? 0 : 100,
+        articlesNew: status === 'FAILED' ? 0 : 3,
+        articlesUpdated: status === 'FAILED' ? 0 : 1
+      }
+    } });
+    fetchFeedObservability.mockResolvedValueOnce({ data: observabilityFixture({
+      feed: { ...observabilityFixture().feed, health: status === 'FAILED' ? 'DEGRADED' : status }
+    }) });
+    const wrapper = await mountDetails();
+
+    await wrapper.get('.feed-details__retry-action').trigger('click');
+    await flushPromises();
+
+    expect(retryFeed).toHaveBeenCalledWith(8);
+    expect(fetchFeedObservability).toHaveBeenCalledTimes(2);
+    const notice = wrapper.get('.feed-details__retry-notice');
+    expect(notice.text()).toContain(message);
+    expect(notice.text()).toContain(detail);
+    expect(notice.classes()).toContain(tone === 'success'
+      ? 'feed-details__retry-notice--success'
+      : `app-notice--${tone}`);
+  });
+
+  // Verifies unexpected API failures use a concise local error without refreshing.
+  it('reports an API failure without exposing backend details', async () => {
+    retryFeed.mockRejectedValueOnce(new Error('sensitive backend stack'));
+    const wrapper = await mountDetails();
+
+    await wrapper.get('.feed-details__retry-action').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get('.feed-details__retry-notice').text())
+      .toContain('Unable to retry feed');
+    expect(wrapper.get('.feed-details__retry-notice').text())
+      .toContain('Please try again.');
+    expect(wrapper.text()).not.toContain('sensitive backend stack');
+    expect(fetchFeedObservability).toHaveBeenCalledOnce();
   });
 
   // Verifies every backend health state is rendered as visible text without recalculation.
@@ -114,6 +205,27 @@ describe('SettingsFeedDetails', () => {
       expect(wrapper.get('.feed-details__health-context').text())
         .toContain('3 consecutive failures');
     }
+    expect(wrapper.find('.feed-details__retry-action').exists())
+      .toBe(health !== 'DISABLED');
+  });
+
+  // Verifies disabled feed state suppresses retry even when its persisted status is inconsistent.
+  it('does not offer retry for a disabled feed', async () => {
+    const wrapper = await mountDetails(observabilityFixture({
+      feed: { ...observabilityFixture().feed, status: 'disabled', health: 'DISABLED' }
+    }));
+
+    expect(wrapper.find('.feed-details__retry-action').exists()).toBe(false);
+    expect(retryFeed).not.toHaveBeenCalled();
+  });
+
+  // Verifies legacy error status does not hide recovery actions for degraded feeds.
+  it('offers retry for a degraded feed with error status', async () => {
+    const wrapper = await mountDetails(observabilityFixture({
+      feed: { ...observabilityFixture().feed, status: 'error', health: 'DEGRADED' }
+    }));
+
+    expect(wrapper.get('.feed-details__retry-action').text()).toBe('Retry feed');
   });
 
   // Verifies no-history feeds use calm empty and neutral metric states.

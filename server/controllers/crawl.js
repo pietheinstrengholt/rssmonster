@@ -19,6 +19,7 @@ import {
   DEFAULT_FEED_LEASE_MS,
   assertFeedLeaseOwnership,
   claimDueFeeds,
+  claimFeedById,
   completeFeedLease,
   createFeedLeaseLostError,
   releaseFeedLease,
@@ -262,14 +263,22 @@ const getFeeds = async (
   userId = null,
   limit = feedCount,
   leaseMs = FEED_LEASE_MS,
-  excludeIds = []
-) => claimDueFeeds({
-  userId,
-  limit,
-  leaseMs,
-  excludeIds,
-  now: new Date()
-});
+  excludeIds = [],
+  feedId = null
+) => {
+  if (feedId) {
+    const feed = await claimFeedById({ userId, feedId, leaseMs, now: new Date() });
+    return feed ? [feed] : [];
+  }
+
+  return claimDueFeeds({
+    userId,
+    limit,
+    leaseMs,
+    excludeIds,
+    now: new Date()
+  });
+};
 
 // This function loads each crawl user's actions once for the selected feed batch.
 const getActionsByUserId = async (feeds) => {
@@ -402,6 +411,8 @@ const runCrawl = async (userId = null, options = {}) => {
   const crawlTimeoutMs = options.crawlTimeoutMs || CRAWL_TIMEOUT_MS;
   const feedLeaseMs = options.feedLeaseMs || FEED_LEASE_MS;
   const feedTimeoutMs = options.feedTimeoutMs || FEED_TIMEOUT_MS;
+  const targetFeedId = options.feedId || null;
+  const maximumFeedCount = targetFeedId ? 1 : feedCount;
   const crawlStats = options.crawlStats || {
     newArticles: 0,
     updatedArticles: 0,
@@ -440,7 +451,7 @@ const runCrawl = async (userId = null, options = {}) => {
       parallelConcurrency
     );
     try {
-      feeds.push(...await getFeeds(userId, 1, feedLeaseMs));
+      feeds.push(...await getFeeds(userId, 1, feedLeaseMs, [], targetFeedId));
     } catch (error) {
       initialSequentialSlotRelease();
       initialSequentialSlotRelease = null;
@@ -1211,7 +1222,7 @@ const runCrawl = async (userId = null, options = {}) => {
   };
 
   if (runParallel) {
-    const workerCount = Math.min(parallelConcurrency, feedCount);
+    const workerCount = Math.min(parallelConcurrency, maximumFeedCount);
     logFeedDebug(
       `[Parallel Mode] Processing feeds with ${workerCount} concurrent workers...`
     );
@@ -1231,12 +1242,13 @@ const runCrawl = async (userId = null, options = {}) => {
           if (crawlTimedOut || noFeedsRemaining || Date.now() >= crawlDeadline) return;
           const index = nextClaimIndex;
           nextClaimIndex += 1;
-          if (index >= feedCount) return;
+          if (index >= maximumFeedCount) return;
           const [feed] = await getFeeds(
             userId,
             1,
             feedLeaseMs,
-            feeds.map(claimedFeed => claimedFeed.id)
+            feeds.map(claimedFeed => claimedFeed.id),
+            targetFeedId
           );
           if (!feed) {
             noFeedsRemaining = true;
@@ -1251,7 +1263,7 @@ const runCrawl = async (userId = null, options = {}) => {
           releaseSlot();
         }
       }
-      if (!noFeedsRemaining && nextClaimIndex < feedCount) crawlTimedOut = true;
+      if (!noFeedsRemaining && nextClaimIndex < maximumFeedCount) crawlTimedOut = true;
     };
     const feedRuns = Promise.all(
       Array.from({ length: workerCount }, () => runWorker())
@@ -1278,7 +1290,7 @@ const runCrawl = async (userId = null, options = {}) => {
     }
   } else {
     logFeedDebug('[Sequential Mode] Processing feeds sequentially...');
-    for (let index = 0; index < feedCount; index++) {
+    for (let index = 0; index < maximumFeedCount; index++) {
       const releaseSlot = initialSequentialSlotRelease ||
         await acquireParallelFeedSlot(parallelConcurrency);
       initialSequentialSlotRelease = null;
@@ -1294,7 +1306,8 @@ const runCrawl = async (userId = null, options = {}) => {
             userId,
             1,
             feedLeaseMs,
-            feeds.map(claimedFeed => claimedFeed.id)
+            feeds.map(claimedFeed => claimedFeed.id),
+            targetFeedId
           );
           if (!nextFeed) break;
           feeds.push(nextFeed);
@@ -1320,6 +1333,7 @@ const runCrawl = async (userId = null, options = {}) => {
   }
 
   const result = {
+    crawlRunId: options.crawlRunId || null,
     total: feeds.length,
     processed: processedCount,
     errors: errorCount,
