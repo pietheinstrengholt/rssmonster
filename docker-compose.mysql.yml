@@ -19,6 +19,7 @@ services:
       PORT: 3000
 
       DB_HOSTNAME: mysql
+      DB_DIALECT: mysql
       DB_PORT: 3306
       DB_DATABASE: ${DB_DATABASE:-rssmonster}
       DB_USERNAME: ${DB_USERNAME:-rssmonster}
