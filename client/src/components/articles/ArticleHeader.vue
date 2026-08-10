@@ -44,7 +44,13 @@ export default {
   computed: {
     // Returns whether the article links to a Bluesky profile post.
     isBlueSkyArticle() {
-      return this.url.includes('https://bsky.app/profile/') || this.url.includes('http://bsky.app/profile/');
+      try {
+        const parsedUrl = new URL(this.url);
+        const isHttp = parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+        return isHttp && parsedUrl.hostname.toLowerCase() === 'bsky.app' && parsedUrl.pathname.startsWith('/profile/');
+      } catch (e) {
+        return false;
+      }
     },
     // Returns whether the article links to Reddit.
     isRedditArticle() {
