@@ -8,6 +8,9 @@ import { briefingEligibilitySql } from '../services/articleSearch/briefingEligib
 
 const DEFAULT_BRIEFING_SELECTION_PERIOD = '7d';
 
+// Formats a UTC timestamp consistently for MySQL DATETIME and SQLite text comparison.
+const formatDatabaseTimestamp = date => date.toISOString().replace('T', ' ').replace('Z', '');
+
 const buildCategoriesStructure = categoriesRaw => categoriesRaw.map(categoryRow => {
   const category = categoryRow.get({ plain: true });
 
@@ -185,8 +188,8 @@ const loadBriefingCountConfig = async userId => {
     briefingPrioritizeHighTrust,
     briefingShowOnlyDevelopingEventArticles,
     replacements: {
-      briefingPublishedFrom,
-      briefingPublishedTo
+      briefingPublishedFrom: formatDatabaseTimestamp(briefingPublishedFrom),
+      briefingPublishedTo: formatDatabaseTimestamp(briefingPublishedTo)
     },
     countSql: `COUNT(CASE WHEN
       articles.publishedAt >= :briefingPublishedFrom
