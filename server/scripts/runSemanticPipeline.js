@@ -20,14 +20,17 @@ dotenv.config();
 // ---- Runtime bootstrap ----
 import db from '../models/index.js';
 import crawlController from '../controllers/crawl.js';
+import {
+  getSequelizeRuntimeCapabilities,
+  resolveEffectiveSequelizeCrawlConfiguration
+} from '../config/databaseRuntime.js';
 import { runPostCrawlSemanticPipeline } from '../services/crawl/index.js';
 
 const { User, sequelize } = db;
-
-const parsedUserBatchSize = Number.parseInt(process.env.CRAWL_USER_BATCH_SIZE, 10);
-const DEFAULT_USER_BATCH_SIZE = Number.isInteger(parsedUserBatchSize) && parsedUserBatchSize > 0
-  ? parsedUserBatchSize
-  : 5;
+const databaseRuntimeCapabilities = getSequelizeRuntimeCapabilities(sequelize);
+const effectiveCrawlConfiguration =
+  resolveEffectiveSequelizeCrawlConfiguration(sequelize);
+const DEFAULT_USER_BATCH_SIZE = effectiveCrawlConfiguration.userBatchSize;
 
 // This function combines per-user crawl results for the existing semantic pipeline.
 function aggregateCrawlResults(results) {
@@ -90,7 +93,7 @@ export async function runSemanticPipeline({
   userBatchSize = DEFAULT_USER_BATCH_SIZE
 } = {}) {
   const resolvedBatchSize = Number.isInteger(userBatchSize) && userBatchSize > 0
-    ? userBatchSize
+    ? Math.min(userBatchSize, databaseRuntimeCapabilities.maxConcurrentUserCrawls)
     : DEFAULT_USER_BATCH_SIZE;
 
   console.log('[SEMANTIC] Incremental crawl pipeline started');

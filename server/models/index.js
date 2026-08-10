@@ -1,6 +1,7 @@
 'use strict';
 
 import Sequelize from 'sequelize';
+import { installDatabaseConnectionPolicy } from '../config/databaseRuntime.js';
 
 // ---- Load DB config (CommonJS via .cjs) ----
 import dbConfig from '../config/config.cjs';
@@ -17,6 +18,7 @@ const sequelize = config.dialect === 'sqlite'
   ? new Sequelize({
     dialect: config.dialect,
     storage: config.storage,
+    pool: { max: 1, min: 0, idle: 10_000 },
     logging: config.logging ?? false
   })
   : new Sequelize(
@@ -30,6 +32,8 @@ const sequelize = config.dialect === 'sqlite'
       logging: config.logging ?? false
     }
   );
+
+installDatabaseConnectionPolicy(sequelize);
 
 // ---- Import model factories ----
 import UserModel from './user.js';

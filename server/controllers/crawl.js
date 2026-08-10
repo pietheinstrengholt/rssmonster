@@ -1,5 +1,9 @@
 import db from '../models/index.js';
 const { Action, Article, CrawlRun, Hotlink } = db;
+import {
+  getSequelizeRuntimeCapabilities,
+  resolveEffectiveSequelizeCrawlConfiguration
+} from '../config/databaseRuntime.js';
 import { acquireFeed } from '../services/feeds/feedAcquisition.js';
 import {
   classifyCrawlOutcome,
@@ -52,6 +56,10 @@ import { sanitizeFeedPersistenceMetadata } from '../services/feeds/feedPersisten
  * Configuration
  * ------------------------------------------------------------------ */
 
+const databaseRuntimeCapabilities = getSequelizeRuntimeCapabilities(db.sequelize);
+const effectiveCrawlConfiguration =
+  resolveEffectiveSequelizeCrawlConfiguration(db.sequelize);
+
 // Resolves the renamed crawl batch limit while temporarily honoring legacy deployments.
 export const resolveFeedMaxCount = (environment = process.env) => {
   const configured = Number.parseInt(
@@ -64,7 +72,11 @@ export const resolveFeedMaxCount = (environment = process.env) => {
 // Resolves the application-wide parallel feed worker setting with a conservative default.
 export const resolveFeedParallelConcurrency = (environment = process.env) => {
   const configured = Number.parseInt(environment.FEED_PARALLEL_CONCURRENCY ?? '', 10);
-  return Number.isInteger(configured) && configured > 0 ? configured : 3;
+  const requested = Number.isInteger(configured) && configured > 0 ? configured : 3;
+  return Math.min(
+    requested,
+    databaseRuntimeCapabilities.maxConcurrentFeedWorkers
+  );
 };
 
 // Sets the maximum number of feeds processed by one crawl invocation.
@@ -116,7 +128,7 @@ const DUPLICATE_CACHE_DAYS = Number.isInteger(parsedDuplicateCacheDays) && parse
 
 // Controls whether feeds are processed in parallel (1) or sequentially (0, default)
 const CRAWL_PARALLELPROCESSFLAG = Number(
-  process.env.CRAWL_PARALLELPROCESSFLAG || 0
+  effectiveCrawlConfiguration.parallelProcessFlag
 );
 
 // Rate limit delay tracking for OpenAI API
@@ -411,7 +423,8 @@ const runCrawl = async (userId = null, options = {}) => {
     }
   };
 
-  const runParallel = options.parallel ?? CRAWL_PARALLELPROCESSFLAG === 1;
+  const runParallel = databaseRuntimeCapabilities.parallelFeedProcessing &&
+    (options.parallel ?? CRAWL_PARALLELPROCESSFLAG === 1);
   const requestedParallelConcurrency = resolveFeedParallelConcurrency({
     FEED_PARALLEL_CONCURRENCY:
       options.parallelConcurrency ?? feedParallelConcurrency
