@@ -1,6 +1,11 @@
 import axios from 'axios';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import api, { CONNECTIVITY_ERROR_EVENT, setAuthToken } from '../src/api/client.js';
+import api, {
+  API_BASE_URL,
+  CONNECTIVITY_ERROR_EVENT,
+  resolveApiBaseUrl,
+  setAuthToken
+} from '../src/api/client.js';
 
 // This function creates a successful adapter response for interceptor tests.
 const resolveResponse = ({
@@ -46,6 +51,21 @@ const rejectAxiosError = ({
 afterEach(() => {
   setAuthToken(null);
   vi.restoreAllMocks();
+});
+
+describe('shared API base URL', () => {
+  // This test verifies production builds use the current origin when no host is configured.
+  it('uses the same-origin API path by default', () => {
+    expect(API_BASE_URL).toBe('/api');
+    expect(resolveApiBaseUrl()).toBe('/api');
+    expect(resolveApiBaseUrl('')).toBe('/api');
+  });
+
+  // This test verifies development and custom deployments retain absolute API hosts.
+  it('uses an explicitly configured API host', () => {
+    expect(resolveApiBaseUrl('http://localhost:3000'))
+      .toBe('http://localhost:3000/api');
+  });
 });
 
 describe('shared API response interceptor', () => {

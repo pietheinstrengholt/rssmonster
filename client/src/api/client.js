@@ -2,8 +2,17 @@ import axios from 'axios';
 
 export const CONNECTIVITY_ERROR_EVENT = 'app:connectivity-error';
 
+// This function resolves API requests to an explicit host or the current origin.
+export const resolveApiBaseUrl = hostname => {
+  const configuredHostname = hostname?.trim();
+
+  return configuredHostname ? `${configuredHostname}/api` : '/api';
+};
+
+export const API_BASE_URL = resolveApiBaseUrl(import.meta.env.VITE_APP_HOSTNAME);
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_VUE_APP_HOSTNAME + '/api',
+  baseURL: API_BASE_URL,
   timeout: 15000
 });
 

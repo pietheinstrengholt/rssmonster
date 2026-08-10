@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import api, { setAuthToken } from '../src/api/client.js';
+import api, { API_BASE_URL, setAuthToken } from '../src/api/client.js';
 import { openFeedRefreshEvents } from '../src/services/feedRefreshStream.js';
 
 // This function creates a one-chunk response body for deterministic SSE parsing.
@@ -53,7 +53,7 @@ describe('feed refresh event stream', () => {
     expect(fetchMock).toHaveBeenCalledOnce();
     const [requestUrl, requestOptions] = fetchMock.mock.calls[0];
     expect(requestUrl).toBe(
-      `${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/feeds/refresh/job-7/events`
+      `${API_BASE_URL}/feeds/refresh/job-7/events`
     );
     expect(requestUrl).not.toContain(token);
     expect(requestUrl).not.toContain('token=');

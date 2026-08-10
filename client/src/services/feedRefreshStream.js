@@ -1,4 +1,4 @@
-import api from '../api/client.js';
+import api, { API_BASE_URL } from '../api/client.js';
 
 export const FEED_REFRESH_EVENT_TYPES = Object.freeze([
   'refresh_started',
@@ -22,7 +22,7 @@ export function parseFeedRefreshEvent(event) {
 
 // Opens an authenticated SSE-compatible stream for one feed-refresh job.
 export function openFeedRefreshEvents(jobId) {
-  const url = `${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/feeds/refresh/${encodeURIComponent(jobId)}/events`;
+  const url = `${API_BASE_URL}/feeds/refresh/${encodeURIComponent(jobId)}/events`;
   const listeners = new Map();
   const decoder = new TextDecoder();
   let abortController = null;
