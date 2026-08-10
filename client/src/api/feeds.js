@@ -7,6 +7,18 @@ export const fetchFeeds = () =>
   api.get('/feeds');
 
 /**
+ * Fetch one feed's overview observability snapshot.
+ */
+export const fetchFeedObservability = feedId =>
+  api.get(`/feeds/${feedId}/observability`);
+
+/**
+ * Fetch expanded diagnostics for one feed crawl result.
+ */
+export const fetchFeedCrawlResult = (feedId, crawlResultId) =>
+  api.get(`/feeds/${feedId}/crawls/${crawlResultId}`);
+
+/**
  * Validate a feed URL
  */
 export const validateFeed = (url, categoryId) =>

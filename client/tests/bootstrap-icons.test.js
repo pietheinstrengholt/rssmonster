@@ -21,6 +21,8 @@ describe('Bootstrap icon delivery', () => {
     'folder-plus',
     'pencil-square',
     'lightning-charge-fill',
+    'arrow-left',
+    'arrow-left-right',
     'box-arrow-up-right',
     'shield-lock',
     'exclamation-circle'

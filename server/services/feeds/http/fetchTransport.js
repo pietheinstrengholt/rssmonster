@@ -100,6 +100,13 @@ export const translateTransportError = error => {
   });
 };
 
+// Reports whether a neutral transport failure is eligible for another bounded attempt.
+const isRetryableTranslatedError = (error, request) =>
+  !request.signal?.aborted && (
+    error.type === 'transient_failure' ||
+    error.type === 'timed_out'
+  );
+
 // Converts Fetch headers into a neutral lower-case string map.
 const toNeutralHeaders = headers => Object.fromEntries(headers.entries());
 
@@ -151,14 +158,15 @@ export const executeHttpRequest = async (
 ) => {
   const deadline = resolveDeadlineAt(request.deadlineAt, request.timeoutMs);
 
-  // Performs one guarded attempt and retries only transient transport failures.
+  // Performs guarded attempts and retries eligible transient failures and timeouts.
   const attemptFetch = async attempt => {
     const remainingMs = remainingDeadlineMs(deadline);
     if (remainingMs <= 0) {
       return {
         error: createHttpError({
           type: 'timed_out',
-          message: 'The fetch operation timed out'
+          message: 'The fetch operation timed out',
+          code: 'REQUEST_TIMEOUT'
         }),
         attempts: attempt
       };
@@ -222,17 +230,22 @@ export const executeHttpRequest = async (
       finalRelease?.();
       const translated = translateTransportError(error);
       if (
-        translated.type === 'transient_failure' &&
+        isRetryableTranslatedError(translated, request) &&
         attempt < request.retries
       ) {
         const remainingAfterFailureMs = remainingDeadlineMs(deadline);
         const waitTime = Math.min(
-          500 * (attempt + 1),
-          remainingAfterFailureMs
+          100 * (attempt + 1),
+          Math.floor(remainingAfterFailureMs / 2)
         );
         if (waitTime > 0) {
           await delay(waitTime);
-          return attemptFetch(attempt + 1);
+          if (
+            !request.signal?.aborted &&
+            remainingDeadlineMs(deadline) > 0
+          ) {
+            return attemptFetch(attempt + 1);
+          }
         }
       }
 

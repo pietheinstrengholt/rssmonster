@@ -53,6 +53,13 @@ const createFeeds = () => [
     feedName: 'Active News',
     url: 'https://active.example/feed',
     status: 'active',
+    health: 'HEALTHY',
+    reliabilityPct: 98.5,
+    lastCrawlAt: '2026-08-10T08:55:00.000Z',
+    lastCrawlStatus: 'SUCCESS',
+    lastCrawlErrorCategory: null,
+    lastSuccessfulCrawlAt: '2026-08-10T08:55:00.000Z',
+    consecutiveFailures: 0,
     feedTrust: 0.9,
     articleCount: 120
   },
@@ -62,6 +69,13 @@ const createFeeds = () => [
     feedName: 'Broken Feed',
     url: 'https://broken.example/feed',
     status: 'error',
+    health: 'FAILING',
+    reliabilityPct: 62,
+    lastCrawlAt: '2026-08-10T08:50:00.000Z',
+    lastCrawlStatus: 'FAILED',
+    lastCrawlErrorCategory: 'REQUEST_TIMEOUT',
+    lastSuccessfulCrawlAt: '2026-08-09T08:50:00.000Z',
+    consecutiveFailures: 3,
     feedTrust: 0.2,
     articleCount: '30'
   },
@@ -71,6 +85,13 @@ const createFeeds = () => [
     feedName: 'Paused Feed',
     url: null,
     status: 'disabled',
+    health: 'DISABLED',
+    reliabilityPct: null,
+    lastCrawlAt: null,
+    lastCrawlStatus: null,
+    lastCrawlErrorCategory: null,
+    lastSuccessfulCrawlAt: null,
+    consecutiveFailures: 0,
     feedTrust: null,
     articleCount: null
   }
@@ -92,6 +113,15 @@ describe('SettingsFeedsOverview actions', () => {
     expect(context.feeds).toEqual(createFeeds());
     expect(context.feedsLoading).toBe(false);
     expect(context.feedsError).toBeNull();
+    expect(context.feeds[0]).toMatchObject({
+      health: 'HEALTHY',
+      reliabilityPct: 98.5,
+      lastCrawlStatus: 'SUCCESS',
+      lastCrawlErrorCategory: null,
+      lastSuccessfulCrawlAt: '2026-08-10T08:55:00.000Z',
+      consecutiveFailures: 0
+    });
+    expect(fetchFeeds).toHaveBeenCalledOnce();
 
     fetchFeeds.mockResolvedValueOnce({ data: { feeds: 'invalid' } });
     await context.fetchFeeds();
@@ -103,50 +133,73 @@ describe('SettingsFeedsOverview actions', () => {
     expect(context.feedsLoading).toBe(false);
   });
 
-  // Verifies search and status filters combine case-insensitively.
-  it('filters feeds by status, name, and URL', () => {
+  // Verifies search and backend health filters combine case-insensitively.
+  it('filters feeds by health, name, and URL', () => {
     const context = createContext();
     context.feeds = createFeeds();
-    context.statusFilter = 'error';
+    context.healthFilter = 'FAILING';
     context.searchQuery = 'BROKEN.EXAMPLE';
 
     expect(context.filteredFeeds.map(feed => feed.id)).toEqual([2]);
 
-    context.statusFilter = 'all';
+    context.healthFilter = 'all';
     context.searchQuery = 'feed';
     expect(context.filteredFeeds.map(feed => feed.id)).toEqual([1, 2, 3]);
+
+    context.feeds.push({ id: 4, feedName: 'Recovered Source', health: 'RECOVERED' });
+    context.healthFilter = 'RECOVERED';
+    context.searchQuery = '';
+    expect(context.filteredFeeds.map(feed => feed.id)).toEqual([4]);
   });
 
-  // Verifies aggregate feed statistics normalize numeric article totals.
-  it('derives feed totals and statuses', () => {
+  // Verifies summary cards use backend health while excluding disabled feeds from attention.
+  it('derives feed totals and health summaries', () => {
     const context = createContext();
-    context.feeds = createFeeds();
+    context.feeds = [
+      ...createFeeds(),
+      { id: 4, health: 'RECOVERED', articleCount: 0 },
+      { id: 5, health: 'DEGRADED', articleCount: 0 }
+    ];
 
     expect(context.feedStats.map(stat => [stat.label, stat.value])).toEqual([
-      ['Total Feeds', 3],
-      ['Active Feeds', 1],
-      ['Feeds with Errors', 1],
+      ['Total Feeds', 5],
+      ['Healthy Feeds', 1],
+      ['Need Attention', 3],
       ['Total Articles', '150']
     ]);
   });
 
-  // Verifies status, health, row, trust, score, and coverage formatting boundaries.
+  // Verifies health, crawl, reliability, row, trust, score, and coverage formatting boundaries.
   it('formats feed health and score presentation', () => {
     const context = createContext();
     const [active, error, disabled] = createFeeds();
+    vi.spyOn(Date, 'now').mockReturnValue(new Date('2026-08-10T09:00:00.000Z').getTime());
 
     expect(context.feedStatus({ status: 'ACTIVE' })).toBe('active');
     expect(context.feedStatus({})).toBe('disabled');
-    expect(context.feedHealth(active)).toBe('Excellent');
-    expect(context.feedHealth({ ...active, feedTrust: 0.4 })).toBe('Good');
-    expect(context.feedHealth(error)).toBe('Error');
-    expect(context.feedHealth(disabled)).toBe('Disabled');
-    expect(context.feedRowClass(error)).toBe('feeds-table-row--error');
+    expect(context.feedHealthLabel(active)).toBe('Healthy');
+    expect(context.feedHealthLabel({ health: 'RECOVERED' })).toBe('Recovered');
+    expect(context.feedHealthLabel({ health: 'DEGRADED' })).toBe('Degraded');
+    expect(context.feedHealthLabel(error)).toBe('Failing');
+    expect(context.feedHealthLabel(disabled)).toBe('Disabled');
+    expect(context.feedHealthLabel({})).toBe('Unknown');
+    expect(context.feedRowClass(error)).toBe('feeds-table-row--failing');
+    expect(context.feedRowClass({ health: 'RECOVERED' })).toBe('feeds-table-row--recovered');
+    expect(context.feedRowClass({ health: 'DEGRADED' })).toBe('feeds-table-row--degraded');
     expect(context.feedRowClass(disabled)).toBe('feeds-table-row--disabled');
-    expect(context.feedRowClass(active)).toBe('');
+    expect(context.feedRowClass(active)).toBe('feeds-table-row--healthy');
     expect(context.trustProgress(1.5)).toBe(100);
     expect(context.trustProgress(-0.4)).toBe(0);
     expect(context.trustProgress('invalid')).toBeNull();
+    expect(context.formatReliability(98.5)).toBe('99%');
+    expect(context.formatReliability(62)).toBe('62%');
+    expect(context.formatReliability(null)).toBe('—');
+    expect(context.reliabilityProgress(null)).toBeNull();
+    expect(context.reliabilityTone(99)).toBe('high');
+    expect(context.reliabilityTone(84)).toBe('degraded');
+    expect(context.reliabilityTone(12)).toBe('poor');
+    expect(context.formatLastCrawl(active.lastCrawlAt)).toBe('5m ago');
+    expect(context.formatLastCrawl(null)).toBe('Never');
     expect(context.formatScore(0.876)).toBe('88%');
     expect(context.formatScore(null)).toBe('-');
     expect(context.formatCoverage(87.66)).toBe('87.7%');
@@ -163,6 +216,19 @@ describe('SettingsFeedsOverview actions', () => {
     expect(context.selectionStore.selectFeed).toHaveBeenCalledWith(1, 10);
     expect(context.uiStore.setShowModal).toHaveBeenCalledWith('UpdateFeed');
     expect(context.selectionStore.selectFeed).toHaveBeenCalledOnce();
+  });
+
+  // Verifies local detail navigation retains the Feeds section and restores the overview.
+  it('opens and closes feed details through local state', () => {
+    const context = createContext();
+
+    context.openFeedDetails(createFeeds()[0]);
+    expect(context.selectedFeedId).toBe(1);
+    expect(context.$emit).toHaveBeenCalledWith('detail-view', true);
+
+    context.closeFeedDetails();
+    expect(context.selectedFeedId).toBeNull();
+    expect(context.$emit).toHaveBeenCalledWith('detail-view', false);
   });
 
   // Verifies OPML export uses the server filename and releases browser resources.

@@ -44,6 +44,7 @@ import IslandTaxonomyModel from './islandTaxonomy.js';
 import HotlinkModel from './hotlink.js';
 import OfficialSourceModel from './officialSource.js';
 import CrawlRunModel from './crawlRun.js';
+import FeedCrawlResultModel from './feedCrawlResult.js';
 import BriefingPreferenceModel from './briefingPreference.js';
 import FeedUrlAliasModel from './feedUrlAlias.js';
 
@@ -66,6 +67,7 @@ const IslandTaxonomy = IslandTaxonomyModel(sequelize);
 const Hotlink = HotlinkModel(sequelize);
 const OfficialSource = OfficialSourceModel(sequelize);
 const CrawlRun = CrawlRunModel(sequelize);
+const FeedCrawlResult = FeedCrawlResultModel(sequelize);
 const BriefingPreference = BriefingPreferenceModel(sequelize);
 const FeedUrlAlias = FeedUrlAliasModel(sequelize);
 
@@ -102,6 +104,14 @@ OfficialSource.belongsTo(User, { foreignKey: 'userId' });
 // User ↔ CrawlRun
 User.hasMany(CrawlRun, { foreignKey: 'userId', onDelete: 'CASCADE' });
 CrawlRun.belongsTo(User, { foreignKey: 'userId' });
+
+// CrawlRun/Feed/User ↔ FeedCrawlResult
+CrawlRun.hasMany(FeedCrawlResult, { foreignKey: 'crawlRunId', as: 'feedResults', onDelete: 'CASCADE' });
+FeedCrawlResult.belongsTo(CrawlRun, { foreignKey: 'crawlRunId', as: 'crawlRun' });
+User.hasMany(FeedCrawlResult, { foreignKey: 'userId', as: 'feedCrawlResults', onDelete: 'CASCADE' });
+FeedCrawlResult.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Feed.hasMany(FeedCrawlResult, { foreignKey: 'feedId', as: 'crawlResults', onDelete: 'CASCADE' });
+FeedCrawlResult.belongsTo(Feed, { foreignKey: 'feedId', as: 'feed' });
 
 // User ↔ BriefingPreference
 User.hasOne(BriefingPreference, {
@@ -274,6 +284,7 @@ export default {
   Hotlink,
   OfficialSource,
   CrawlRun,
+  FeedCrawlResult,
   BriefingPreference,
   FeedUrlAlias
 };

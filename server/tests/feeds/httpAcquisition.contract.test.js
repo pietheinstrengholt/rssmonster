@@ -8,7 +8,8 @@ import {
   createHttpBodyStream,
   createHttpError,
   createHttpRequest,
-  createHttpResponse
+  createHttpResponse,
+  resolveFeedHttpTimeoutMs
 } from '../../services/feeds/http/contracts.js';
 import {
   executeHttpRequest,
@@ -36,7 +37,59 @@ const neutralResponse = ({ status = 200, body = 'feed', headers = {} } = {}) => 
 // Creates an injected neutral transport result for acquisition classification.
 const transportWith = result => vi.fn().mockResolvedValue(result);
 
+// Creates an origin policy stub so transport retry tests isolate retry decisions.
+const immediateRequestPolicy = () => ({
+  acquire: vi.fn().mockResolvedValue(vi.fn())
+});
+
+// Runs one assertion with a temporary feed HTTP timeout environment value.
+const withFeedHttpTimeout = (value, assertion) => {
+  const previous = process.env.FEED_HTTP_TIMEOUT_MS;
+  try {
+    if (value === undefined) delete process.env.FEED_HTTP_TIMEOUT_MS;
+    else process.env.FEED_HTTP_TIMEOUT_MS = value;
+    assertion();
+  } finally {
+    if (previous === undefined) delete process.env.FEED_HTTP_TIMEOUT_MS;
+    else process.env.FEED_HTTP_TIMEOUT_MS = previous;
+  }
+};
+
 describe('feed HTTP acquisition contract', () => {
+  it('defaults feed HTTP requests to ten seconds', () => {
+    expect(resolveFeedHttpTimeoutMs({})).toBe(10000);
+    withFeedHttpTimeout(undefined, () => {
+      expect(createHttpRequest({ url: 'https://example.com/feed.xml' }).timeoutMs)
+        .toBe(10000);
+    });
+  });
+
+  it('uses a valid configured feed HTTP timeout', () => {
+    expect(resolveFeedHttpTimeoutMs({ FEED_HTTP_TIMEOUT_MS: '15000' })).toBe(15000);
+    withFeedHttpTimeout('15000', () => {
+      expect(createHttpRequest({ url: 'https://example.com/feed.xml' }).timeoutMs)
+        .toBe(15000);
+    });
+  });
+
+  it.each(['invalid', '0', '-1', '1.5', 'Infinity', ''])(
+    'falls back to ten seconds for invalid timeout value %j',
+    value => {
+      expect(resolveFeedHttpTimeoutMs({ FEED_HTTP_TIMEOUT_MS: value })).toBe(10000);
+      withFeedHttpTimeout(value, () => {
+        expect(createHttpRequest({ url: 'https://example.com/feed.xml' }).timeoutMs)
+          .toBe(10000);
+      });
+    }
+  );
+
+  it('preserves an explicit request timeout override', () => {
+    expect(createHttpRequest({
+      url: 'https://example.com/feed.xml',
+      timeoutMs: 2500
+    }).timeoutMs).toBe(2500);
+  });
+
   it('defines exactly the supported closed outcome set', () => {
     expect(Object.values(FETCH_OUTCOMES)).toEqual([
       'changed',
@@ -208,6 +261,42 @@ describe('feed HTTP acquisition contract', () => {
     ]);
   });
 
+  it.each([
+    ['longer parent deadline', 5000, 1000, 1000],
+    ['shorter parent deadline', 500, 1000, 500],
+    ['missing parent deadline', null, 1000, 1000]
+  ])('caps the shared request with the %s', async (
+    _label,
+    parentOffsetMs,
+    timeoutMs,
+    expectedOffsetMs
+  ) => {
+    vi.useFakeTimers();
+    const now = new Date('2026-08-10T12:00:00.000Z');
+    vi.setSystemTime(now);
+    const transport = vi.fn().mockResolvedValue({
+      response: neutralResponse({ body: 'deadline feed' })
+    });
+    const request = {
+      url: `https://example.com/shared-deadline-${expectedOffsetMs}.xml`,
+      timeoutMs,
+      ...(parentOffsetMs === null
+        ? {}
+        : { deadlineAt: now.getTime() + parentOffsetMs })
+    };
+
+    try {
+      await expect(acquireHttp(request, { transport })).resolves.toMatchObject({
+        type: 'changed'
+      });
+      expect(transport.mock.calls[0][0].deadlineAt).toBe(
+        now.getTime() + expectedOffsetMs
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('keeps shared transport alive when only one coalesced caller aborts', async () => {
     const firstController = new AbortController();
     let releaseTransport;
@@ -234,6 +323,57 @@ describe('feed HTTP acquisition contract', () => {
     await expect(second).resolves.toMatchObject({
       type: 'changed',
       bodyText: 'surviving caller'
+    });
+  });
+
+  it('preserves REQUEST_TIMEOUT for a timeout before a usable response', async () => {
+    const outcome = await acquireHttp(
+      { url: 'https://example.com/pre-response-timeout.xml' },
+      {
+        transport: transportWith({
+          error: createHttpError({
+            type: FETCH_OUTCOMES.TIMED_OUT,
+            message: 'The fetch operation timed out',
+            code: 'REQUEST_TIMEOUT'
+          })
+        })
+      }
+    );
+
+    expect(outcome).toMatchObject({
+      type: FETCH_OUTCOMES.TIMED_OUT,
+      response: null,
+      error: { code: 'REQUEST_TIMEOUT' }
+    });
+  });
+
+  it('reports BODY_TIMEOUT with HTTP status after response body timeout', async () => {
+    const response = createHttpResponse({
+      status: 200,
+      url: 'https://example.com/body-timeout.xml',
+      body: createHttpBodyStream({
+        read: vi.fn().mockResolvedValue({
+          error: createHttpError({
+            type: FETCH_OUTCOMES.TIMED_OUT,
+            message: 'The fetch operation timed out',
+            code: 'REQUEST_TIMEOUT'
+          })
+        }),
+        cancel: vi.fn()
+      })
+    });
+    const outcome = await acquireHttp(
+      { url: response.url },
+      { transport: transportWith({ response }) }
+    );
+
+    expect(outcome).toMatchObject({
+      type: FETCH_OUTCOMES.TIMED_OUT,
+      response: { status: 200 },
+      error: {
+        message: 'The fetch operation timed out',
+        code: 'BODY_TIMEOUT'
+      }
     });
   });
 
@@ -389,5 +529,174 @@ describe('Fetch transport exception translation', () => {
       attempts: 2,
       error: { type: 'transient_failure', code: 'NETWORK_ERROR' }
     });
+  });
+
+  it('allows the first attempt to use more than half of a ten-second deadline', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchImplementation = vi.fn(() => new Promise(resolve => {
+        setTimeout(() => resolve(new Response('feed', { status: 200 })), 6000);
+      }));
+      const pendingResult = executeHttpRequest(
+        createHttpRequest({
+          url: 'https://example.com/slow-success.xml',
+          retries: 1,
+          timeoutMs: 10000
+        }),
+        fetchImplementation,
+        { requestPolicy: immediateRequestPolicy() }
+      );
+
+      await vi.advanceTimersByTimeAsync(6000);
+      await expect(pendingResult).resolves.toMatchObject({
+        attempts: 1,
+        response: { status: 200 }
+      });
+      expect(fetchImplementation).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([
+    [
+      'request timeout',
+      Object.assign(new Error('deadline'), { name: 'TimeoutError' })
+    ],
+    [
+      'connection reset',
+      Object.assign(new Error('reset'), { code: 'ECONNRESET' })
+    ],
+    [
+      'temporary DNS failure',
+      Object.assign(new Error('try DNS again'), { code: 'EAI_AGAIN' })
+    ]
+  ])('retries one eligible %s and reports both attempts', async (
+    _label,
+    firstError
+  ) => {
+    const fetchImplementation = vi.fn()
+      .mockRejectedValueOnce(firstError)
+      .mockResolvedValueOnce(new Response('feed', { status: 200 }));
+    const result = await executeHttpRequest(
+      createHttpRequest({
+        url: 'https://example.com/retry-success.xml',
+        retries: 1,
+        timeoutMs: 2000
+      }),
+      fetchImplementation,
+      { requestPolicy: immediateRequestPolicy() }
+    );
+
+    expect(result).toMatchObject({
+      attempts: 2,
+      response: { status: 200 }
+    });
+    expect(fetchImplementation).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry a timeout after the parent deadline is exhausted', async () => {
+    const deadlineAt = Date.now() + 100;
+    const timeoutError = Object.assign(new Error('deadline'), {
+      name: 'TimeoutError'
+    });
+    const fetchImplementation = vi.fn().mockImplementation(async () => {
+      await new Promise(resolve => setTimeout(resolve, 120));
+      throw timeoutError;
+    });
+
+    const result = await executeHttpRequest(
+      createHttpRequest({
+        url: 'https://example.com/no-retry-budget.xml',
+        retries: 1,
+        timeoutMs: 10000,
+        deadlineAt
+      }),
+      fetchImplementation,
+      {
+        requestPolicy: immediateRequestPolicy()
+      }
+    );
+
+    expect(result).toMatchObject({
+      attempts: 1,
+      error: { type: FETCH_OUTCOMES.TIMED_OUT }
+    });
+    expect(fetchImplementation).toHaveBeenCalledOnce();
+  });
+
+  it('does not retry after the parent signal is aborted', async () => {
+    const parentController = new AbortController();
+    const fetchImplementation = vi.fn().mockRejectedValue(
+      Object.assign(new Error('reset'), { code: 'ECONNRESET' })
+    );
+    const pendingResult = executeHttpRequest(
+      createHttpRequest({
+        url: 'https://example.com/parent-abort.xml',
+        retries: 1,
+        timeoutMs: 2000,
+        signal: parentController.signal
+      }),
+      fetchImplementation,
+      { requestPolicy: immediateRequestPolicy() }
+    );
+    setTimeout(() => parentController.abort(), 10);
+    const result = await pendingResult;
+
+    expect(result).toMatchObject({
+      attempts: 1,
+      error: { type: 'transient_failure' }
+    });
+    expect(fetchImplementation).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['redirect loop', Object.assign(new Error('redirects'), { code: 'REDIRECT_LIMIT_EXCEEDED' })],
+    ['security rejection', Object.assign(new Error('blocked'), { code: 'SSRF_BLOCKED' })],
+    ['malformed URL', Object.assign(new Error('URL is invalid'), { code: 'SSRF_BLOCKED' })],
+    ['missing DNS name', Object.assign(new Error('missing host'), { code: 'ENOTFOUND' })],
+    ['connection refused', Object.assign(new Error('refused'), { code: 'ECONNREFUSED' })],
+    ['TLS failure', Object.assign(new Error('certificate failed'), { code: 'ERR_TLS_CERT' })]
+  ])('does not retry %s failures', async (_label, error) => {
+    const fetchImplementation = vi.fn().mockRejectedValue(error);
+    const result = await executeHttpRequest(
+      createHttpRequest({
+        url: 'https://example.com/non-retryable.xml',
+        retries: 1,
+        timeoutMs: 1000
+      }),
+      fetchImplementation,
+      { requestPolicy: immediateRequestPolicy() }
+    );
+
+    expect(result.attempts).toBe(1);
+    expect(fetchImplementation).toHaveBeenCalledOnce();
+  });
+
+  it('keeps all timeout attempts within the absolute parent deadline', async () => {
+    const startedAt = Date.now();
+    const deadlineAt = startedAt + 120;
+    const fetchImplementation = vi.fn((_url, { signal }) =>
+      new Promise((resolve, reject) => {
+        signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+      })
+    );
+    const result = await executeHttpRequest(
+      createHttpRequest({
+        url: 'https://example.com/absolute-deadline.xml',
+        retries: 1,
+        timeoutMs: 1000,
+        deadlineAt
+      }),
+      fetchImplementation,
+      { requestPolicy: immediateRequestPolicy() }
+    );
+
+    expect(result).toMatchObject({
+      attempts: 1,
+      error: { type: FETCH_OUTCOMES.TIMED_OUT }
+    });
+    expect(fetchImplementation).toHaveBeenCalledOnce();
+    expect(Date.now()).toBeLessThan(deadlineAt + 100);
   });
 });

@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-const { Feed, Article, Category } = db;
+const { Feed, FeedCrawlResult, Article, Category } = db;
 
 import { rediscoverRssUrl } from '../services/feeds/rediscoverRssUrl.js';
 import crawlController from './crawl.js';
@@ -15,6 +15,7 @@ import {
   removeFeedSubscription,
   updateFeedSubscription
 } from '../services/feeds/feedManagement.js';
+import { deriveFeedOverviewHealth } from '../services/feeds/feedOverviewHealth.js';
 
 const UPDATE_INTERVAL_MINUTES = [null, 0, 5, 15, 30, 60, 120, 360, 720, 1440];
 
@@ -125,6 +126,29 @@ const getFeeds = async (req, res, _next) => {
       raw: true
     });
 
+    // Aggregate rolling crawl reliability once across this user's feeds.
+    const crawlReliability = await FeedCrawlResult.findAll({
+      attributes: [
+        'feedId',
+        [db.Sequelize.fn('COUNT', db.Sequelize.col('id')), 'totalCount'],
+        [
+          db.Sequelize.fn(
+            'SUM',
+            db.Sequelize.literal(
+              "CASE WHEN `status` IN ('SUCCESS', 'RECOVERED') THEN 1 ELSE 0 END"
+            )
+          ),
+          'successfulCount'
+        ]
+      ],
+      where: {
+        userId: userId,
+        completedAt: { [db.Sequelize.Op.gte]: thirtyDaysAgo }
+      },
+      group: ['feedId'],
+      raw: true
+    });
+
     const countsByFeedId = articleCounts.reduce((acc, row) => {
       const articleCount = Number(row.articleCount) || 0;
       const eventArticleCount = Number(row.eventArticleCount) || 0;
@@ -145,13 +169,41 @@ const getFeeds = async (req, res, _next) => {
       return acc;
     }, {});
 
-    const feedsWithCounts = feeds.map(feed => ({
-      ...feed.toJSON(),
-      articleCount: countsByFeedId[feed.id]?.articleCount ?? 0,
-      articlesPerDay: ingestionByFeedId[feed.id] ?? 0,
-      eventArticleCount: countsByFeedId[feed.id]?.eventArticleCount ?? 0,
-      eventCoveragePct: countsByFeedId[feed.id]?.eventCoveragePct ?? 0
-    }));
+    const crawlStatsByFeedId = crawlReliability.reduce((acc, row) => {
+      const totalCount = Number(row.totalCount) || 0;
+      const successfulCount = Number(row.successfulCount) || 0;
+      acc[row.feedId] = {
+        totalCount,
+        reliabilityPct: totalCount > 0
+          ? Math.round((successfulCount * 1000) / totalCount) / 10
+          : null
+      };
+      return acc;
+    }, {});
+
+    const feedsWithCounts = feeds.map(feed => {
+      const feedData = feed.toJSON();
+      const crawlStats = crawlStatsByFeedId[feed.id] || null;
+      const reliabilityPct = crawlStats?.reliabilityPct ?? null;
+      return {
+        ...feedData,
+        articleCount: countsByFeedId[feed.id]?.articleCount ?? 0,
+        articlesPerDay: ingestionByFeedId[feed.id] ?? 0,
+        eventArticleCount: countsByFeedId[feed.id]?.eventArticleCount ?? 0,
+        eventCoveragePct: countsByFeedId[feed.id]?.eventCoveragePct ?? 0,
+        health: deriveFeedOverviewHealth(
+          feedData,
+          reliabilityPct,
+          crawlStats?.totalCount || 0
+        ),
+        reliabilityPct,
+        lastCrawlAt: feedData.lastCrawlAt ?? null,
+        lastCrawlStatus: feedData.lastCrawlStatus ?? null,
+        lastCrawlErrorCategory: feedData.lastCrawlErrorCategory ?? null,
+        lastSuccessfulCrawlAt: feedData.lastSuccessfulCrawlAt ?? null,
+        consecutiveFailures: Number(feedData.consecutiveFailures) || 0
+      };
+    });
 
     return res.status(200).json({ feeds: feedsWithCounts });
   } catch (err) {

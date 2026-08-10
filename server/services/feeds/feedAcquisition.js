@@ -101,6 +101,9 @@ const withDiscoveryMetadata = ({
       outcomeType: primaryOutcome?.type || null,
       httpStatus: primaryOutcome?.response?.status ??
         primaryOutcome?.error?.status ?? null,
+      ...(primaryOutcome?.error?.code
+        ? { errorCode: primaryOutcome.error.code }
+        : {}),
       ...(primaryParseFailure ? { parserFailure: primaryParseFailure } : {})
     },
     candidates: candidateDiagnostics

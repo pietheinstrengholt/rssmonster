@@ -14,6 +14,15 @@ export const FETCH_OUTCOMES = Object.freeze({
 });
 
 const fetchOutcomeTypes = new Set(Object.values(FETCH_OUTCOMES));
+const DEFAULT_FEED_HTTP_TIMEOUT_MS = 10000;
+
+// Resolves the optional per-request feed timeout without making invalid configuration fatal.
+export const resolveFeedHttpTimeoutMs = (environment = process.env) => {
+  const configured = Number(environment.FEED_HTTP_TIMEOUT_MS);
+  return Number.isFinite(configured) && Number.isInteger(configured) && configured > 0
+    ? configured
+    : DEFAULT_FEED_HTTP_TIMEOUT_MS;
+};
 
 // Normalizes headers into an immutable lower-case string map.
 const normalizeHeaders = (headers = {}) => Object.freeze(
@@ -30,7 +39,7 @@ export const createHttpRequest = ({
   url,
   headers = {},
   retries = 1,
-  timeoutMs = 5000,
+  timeoutMs = resolveFeedHttpTimeoutMs(),
   previousContentHash = null,
   deadlineAt = null,
   signal = null
@@ -129,5 +138,6 @@ export default {
   createHttpRedirect,
   createHttpRequest,
   createHttpResponse,
+  resolveFeedHttpTimeoutMs,
   isSuccessfulFetchOutcome
 };

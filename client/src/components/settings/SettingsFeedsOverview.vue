@@ -1,5 +1,11 @@
 <template>
-  <div class="feeds-overview">
+  <SettingsFeedDetails
+    v-if="selectedFeedId !== null"
+    :feed-id="selectedFeedId"
+    @back="closeFeedDetails"
+    @edit="openFeedEdit"
+  />
+  <div v-else class="feeds-overview">
     <section class="settings-insight-card feeds-header" aria-labelledby="feeds-overview-title">
       <span class="settings-insight-icon" aria-hidden="true">
         <BootstrapIcon icon="rss-fill" />
@@ -34,11 +40,11 @@
         <div class="feeds-toolbar-actions">
           <input type="file" ref="opmlFileInput" accept=".opml,.xml" class="feeds-file-input" @change="handleFileSelect" />
           <button type="button" class="feeds-toolbar-button" @click="$refs.opmlFileInput.click()">
-            <BootstrapIcon icon="upload" aria-hidden="true" />
+            <BootstrapIcon class="feeds-toolbar-action-icon" icon="upload" aria-hidden="true" />
             Import OPML
           </button>
           <button type="button" class="feeds-toolbar-button" :disabled="feeds.length === 0" @click="downloadOpml">
-            <BootstrapIcon icon="download" aria-hidden="true" />
+            <BootstrapIcon class="feeds-toolbar-action-icon" icon="download" aria-hidden="true" />
             Export OPML
           </button>
           <button
@@ -47,17 +53,19 @@
             :disabled="feedTrustLoading || feeds.length === 0"
             @click="handleRecalculateFeedTrust"
           >
-            <BootstrapIcon icon="arrow-repeat" aria-hidden="true" />
+            <BootstrapIcon class="feeds-toolbar-action-icon" icon="arrow-repeat" aria-hidden="true" />
             {{ feedTrustLoading ? 'Recalculating…' : 'Recalculate Scores' }}
           </button>
         </div>
 
         <div class="feeds-toolbar-filters">
-          <select v-model="statusFilter" class="feeds-status-filter" aria-label="Filter feeds by status">
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="error">Error</option>
-            <option value="disabled">Disabled</option>
+          <select v-model="healthFilter" class="feeds-status-filter" aria-label="Filter feeds by health">
+            <option value="all">All Health</option>
+            <option value="HEALTHY">Healthy</option>
+            <option value="RECOVERED">Recovered</option>
+            <option value="DEGRADED">Degraded</option>
+            <option value="FAILING">Failing</option>
+            <option value="DISABLED">Disabled</option>
           </select>
           <div class="feeds-search">
             <BootstrapIcon icon="search" aria-hidden="true" />
@@ -88,38 +96,58 @@
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Type</th>
-                  <th>Status</th>
+                  <th>Health</th>
                   <th>Articles</th>
                   <th>Per Day</th>
+                  <th>Reliability</th>
                   <th>Trust</th>
-                  <th>Duplication</th>
+                  <th>Last Crawl</th>
                   <th><span class="app-visually-hidden">Edit</span></th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="feed in filteredFeeds" :key="feed.id" :class="feedRowClass(feed)">
+                <tr
+                  v-for="feed in filteredFeeds"
+                  :key="feed.id"
+                  :class="feedRowClass(feed)"
+                  @click="openFeedDetails(feed)"
+                >
                   <td class="feeds-name-cell">
-                    <strong>{{ feed.feedName }}</strong>
-                    <span v-if="feed.url">{{ feed.url }}</span>
+                    <button
+                      type="button"
+                      class="feeds-details-button"
+                      :aria-label="`Inspect crawl health for ${feed.feedName}`"
+                      @click.stop="openFeedDetails(feed)"
+                    >
+                      <strong>{{ feed.feedName }}</strong>
+                      <span v-if="feed.url">{{ feed.url }}</span>
+                    </button>
                   </td>
-                  <td>{{ feed.feedType || '-' }}</td>
                   <td>
-                    <span class="feeds-status-pill" :class="`feeds-status-pill--${feedStatus(feed)}`">
-                      {{ feedStatus(feed) }}
+                    <span class="feeds-status-pill" :class="`feeds-status-pill--${feedHealthKey(feed).toLowerCase()}`">
+                      {{ feedHealthLabel(feed) }}
                     </span>
                   </td>
                   <td>{{ feed.articleCount || 0 }}</td>
                   <td>{{ feed.articlesPerDay || 0 }}</td>
+                  <td>
+                    <span>{{ formatReliability(feed.reliabilityPct) }}</span>
+                    <span v-if="reliabilityProgress(feed.reliabilityPct) !== null" class="feeds-reliability-bar" aria-hidden="true">
+                      <span
+                        :class="`feeds-reliability-bar--${reliabilityTone(feed.reliabilityPct)}`"
+                        :style="{ width: `${reliabilityProgress(feed.reliabilityPct)}%` }"
+                      ></span>
+                    </span>
+                  </td>
                   <td>
                     <span>{{ formatScore(feed.feedTrust) }}</span>
                     <span v-if="trustProgress(feed.feedTrust) !== null" class="feeds-trust-bar" aria-hidden="true">
                       <span :style="{ width: `${trustProgress(feed.feedTrust)}%` }"></span>
                     </span>
                   </td>
-                  <td>{{ formatScore(feed.feedDuplicationRate) }}</td>
+                  <td>{{ formatLastCrawl(feed.lastCrawlAt) }}</td>
                   <td>
-                    <button class="feeds-edit-button" type="button" @click="openFeedEdit(feed)">
+                    <button class="feeds-edit-button" type="button" @click.stop="openFeedEdit(feed)">
                       <span>Edit</span>
                     </button>
                   </td>
@@ -264,6 +292,10 @@
   gap: 8px;
 }
 
+.feeds-toolbar-action-icon {
+  color: var(--settings-orange-text);
+}
+
 .feeds-toolbar-button:hover:not(:disabled) {
   background: var(--bg-page);
   border-color: var(--border-strong);
@@ -361,6 +393,26 @@
   background: var(--bg-page);
 }
 
+.feeds-table tbody tr {
+  cursor: pointer;
+}
+
+.feeds-details-button {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: var(--color-transparent);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.feeds-details-button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
 .feeds-name-cell {
   min-width: 220px;
   max-width: 300px;
@@ -387,6 +439,7 @@
 .feeds-status-pill {
   display: inline-flex;
   padding: 4px 8px;
+  border: 1px solid transparent;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
@@ -394,10 +447,13 @@
   text-transform: capitalize;
 }
 
-.feeds-status-pill--active { background: var(--settings-success-bg); color: var(--settings-success-text); }
-.feeds-status-pill--error { background: var(--settings-danger-bg); color: var(--settings-danger-text); }
+.feeds-status-pill--healthy { background: var(--settings-success-bg); color: var(--settings-success-text); }
+.feeds-status-pill--recovered { background: var(--settings-orange-bg); border-color: var(--settings-orange-border); color: var(--text-primary); }
+.feeds-status-pill--degraded { background: var(--settings-orange-bg); color: var(--settings-orange-text); }
+.feeds-status-pill--failing { background: var(--settings-danger-bg); color: var(--settings-danger-text); }
 .feeds-status-pill--disabled { background: var(--settings-neutral-bg); color: var(--settings-neutral-text); }
 
+.feeds-reliability-bar,
 .feeds-trust-bar {
   display: block;
   width: 54px;
@@ -408,29 +464,27 @@
   border-radius: 999px;
 }
 
+.feeds-reliability-bar span,
 .feeds-trust-bar span {
   display: block;
   height: 100%;
-  background: var(--settings-orange-text);
   border-radius: inherit;
 }
 
-.feeds-health--error { color: var(--settings-danger-text); font-weight: 600; }
-.feeds-health--disabled { color: var(--text-muted); }
-.feeds-health--active { color: var(--settings-success-text); }
-
-.feeds-table-row--error {
-  background: var(--settings-danger-bg);
-}
-
-.feeds-table tbody .feeds-table-row--error:hover {
-  background: var(--settings-danger-bg);
-}
+.feeds-trust-bar span { background: var(--settings-orange-text); }
+.feeds-reliability-bar--high { background: var(--settings-success-text); }
+.feeds-reliability-bar--degraded { background: var(--color-warning); }
+.feeds-reliability-bar--poor { background: var(--settings-danger-text); }
 
 .feeds-table-row--disabled {
-  background: var(--bg-page);
   color: var(--text-muted);
 }
+
+.feeds-table-row--healthy td:first-child { box-shadow: inset 3px 0 var(--settings-success-text); }
+.feeds-table-row--recovered td:first-child { box-shadow: inset 3px 0 var(--article-warning-text); }
+.feeds-table-row--degraded td:first-child { box-shadow: inset 3px 0 var(--color-warning); }
+.feeds-table-row--failing td:first-child { box-shadow: inset 3px 0 var(--color-danger); }
+.feeds-table-row--disabled td:first-child { box-shadow: inset 3px 0 var(--border-strong); }
 
 .feeds-edit-button {
   display: inline-flex;
@@ -520,12 +574,6 @@
   background: var(--bg-control);
 }
 
-:global(:root[data-theme='dark'] .feeds-overview .feeds-table-row--error),
-:global(:root[data-theme='dark'] .feeds-overview .feeds-table-row--error:hover),
-:global(:root[data-theme='dark'] .feeds-overview .feeds-table-row--error:hover td) {
-  background: var(--settings-danger-bg);
-}
-
 :global(:root[data-theme='dark'] .feeds-overview .feeds-search input) {
   background: var(--color-transparent);
   color: var(--text-inverted);
@@ -552,9 +600,20 @@ import { useSelectionStore } from '../../store/selection.js';
 import { useUiStore } from '../../store/ui.js';
 import { fetchFeeds, recalculateFeedTrust } from '../../api/feeds';
 import { exportOpml, importOpml } from '../../api/opml';
+import { formatRelativeDate } from '../../utils/date.js';
+import SettingsFeedDetails from './SettingsFeedDetails.vue';
+
+const FEED_HEALTH_LABELS = Object.freeze({
+    HEALTHY: 'Healthy',
+    RECOVERED: 'Recovered',
+    DEGRADED: 'Degraded',
+    FAILING: 'Failing',
+    DISABLED: 'Disabled'
+});
 
 export default {
-  emits: ['close', 'saved'],
+  components: { SettingsFeedDetails },
+  emits: ['close', 'detail-view', 'saved'],
     data() {
         return {
             feeds: [],
@@ -566,7 +625,8 @@ export default {
             feedTrustMessage: null,
             feedTrustError: null,
             searchQuery: '',
-            statusFilter: 'all'
+            healthFilter: 'all',
+            selectedFeedId: null
         };
     },
     created() {
@@ -591,19 +651,56 @@ export default {
             }
         },
         feedRowClass(feed) {
-            const status = this.feedStatus(feed);
-            if (status === 'error') return 'feeds-table-row--error';
-            if (status === 'disabled') return 'feeds-table-row--disabled';
-            return '';
+            const health = this.feedHealthKey(feed);
+            return health ? `feeds-table-row--${health.toLowerCase()}` : '';
         },
         feedStatus(feed) {
             return (feed?.status || 'disabled').toLowerCase();
         },
-        feedHealth(feed) {
-            const status = this.feedStatus(feed);
-            if (status === 'error') return 'Error';
-            if (status === 'disabled') return 'Disabled';
-            return this.trustProgress(feed?.feedTrust) >= 85 ? 'Excellent' : 'Good';
+        // Returns the backend-owned health state without deriving it from local metrics.
+        feedHealthKey(feed) {
+            const health = String(feed?.health || '').toUpperCase();
+            return Object.hasOwn(FEED_HEALTH_LABELS, health) ? health : '';
+        },
+        // Converts backend health states into overview labels.
+        feedHealthLabel(feed) {
+            return FEED_HEALTH_LABELS[this.feedHealthKey(feed)] || 'Unknown';
+        },
+        // Formats the backend reliability percentage without treating missing data as zero.
+        formatReliability(value) {
+            if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—';
+            return `${Math.round(Number(value))}%`;
+        },
+        // Normalizes reliability percentages for the compact meter.
+        reliabilityProgress(value) {
+            if (value === null || value === undefined || !Number.isFinite(Number(value))) return null;
+            return Math.max(0, Math.min(100, Math.round(Number(value))));
+        },
+        // Maps reliability thresholds to semantic meter colors.
+        reliabilityTone(value) {
+            const reliability = this.reliabilityProgress(value);
+            if (reliability === null) return '';
+            if (reliability >= 90) return 'high';
+            if (reliability >= 50) return 'degraded';
+            return 'poor';
+        },
+        // Formats the latest crawl using the shared relative-date presentation.
+        formatLastCrawl(value) {
+            const relativeDate = formatRelativeDate(value);
+            if (!relativeDate) return 'Never';
+
+            const units = {
+                second: 's',
+                minute: 'm',
+                hour: 'h',
+                day: 'd',
+                month: 'mo',
+                year: 'y'
+            };
+            return relativeDate.replace(
+                /^(\d+) (second|minute|hour|day|month|year)s? ago$/i,
+                (_, amount, unit) => `${amount}${units[unit.toLowerCase()]} ago`
+            );
         },
         trustProgress(value) {
             if (value === null || value === undefined || Number.isNaN(Number(value))) return null;
@@ -613,6 +710,17 @@ export default {
             if (!feed) return;
             this.selectionStore.selectFeed(feed.id, feed.categoryId ?? '%');
             this.uiStore.setShowModal('UpdateFeed');
+        },
+        // Opens one feed's observability details without replacing the Settings section.
+        openFeedDetails(feed) {
+            if (!feed?.id) return;
+            this.selectedFeedId = feed.id;
+            this.$emit('detail-view', true);
+        },
+        // Restores the retained feed overview state.
+        closeFeedDetails() {
+            this.selectedFeedId = null;
+            this.$emit('detail-view', false);
         },
         async downloadOpml() {
             this.opmlMessage = null;
@@ -691,11 +799,11 @@ export default {
             const query = this.searchQuery.trim().toLowerCase();
 
             return this.feeds.filter((feed) => {
-                const statusMatches = this.statusFilter === 'all' || this.feedStatus(feed) === this.statusFilter;
+                const healthMatches = this.healthFilter === 'all' || this.feedHealthKey(feed) === this.healthFilter;
                 const searchMatches = !query || [feed.feedName, feed.url]
                     .some((value) => String(value || '').toLowerCase().includes(query));
 
-                return statusMatches && searchMatches;
+                return healthMatches && searchMatches;
             });
         },
         feedStats() {
@@ -703,8 +811,8 @@ export default {
 
             return [
                 { label: 'Total Feeds', value: this.feeds.length, icon: 'rss', tone: 'orange' },
-                { label: 'Active Feeds', value: this.feeds.filter((feed) => this.feedStatus(feed) === 'active').length, icon: 'check-lg', tone: 'green' },
-                { label: 'Feeds with Errors', value: this.feeds.filter((feed) => this.feedStatus(feed) === 'error').length, icon: 'exclamation-triangle', tone: 'red' },
+                { label: 'Healthy Feeds', value: this.feeds.filter((feed) => this.feedHealthKey(feed) === 'HEALTHY').length, icon: 'check-lg', tone: 'green' },
+                { label: 'Need Attention', value: this.feeds.filter((feed) => ['RECOVERED', 'DEGRADED', 'FAILING'].includes(this.feedHealthKey(feed))).length, icon: 'exclamation-triangle', tone: 'red' },
                 { label: 'Total Articles', value: totalArticles.toLocaleString(), icon: 'file-earmark-text', tone: 'blue' },
             ];
         },

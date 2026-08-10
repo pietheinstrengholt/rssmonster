@@ -143,6 +143,7 @@ describe('processArticle AI analysis controls', () => {
     mocked.extractEntryFields.mockReturnValue({
       title: 'Article title',
       link: 'https://example.com/article',
+      contentBaseUrl: 'https://example.com/article',
       content: '<p>Article body</p>',
       description: 'Article description',
       categories: ['AI'],
@@ -1259,6 +1260,7 @@ describe('processArticle AI analysis controls', () => {
     mocked.extractEntryFields.mockReturnValue({
       title: 'Article with description',
       link: 'https://example.com/article-with-description',
+      contentBaseUrl: 'https://example.com/article-with-description',
       content: '<p>Article body</p>',
       description: '<p>Raw <strong>feed</strong> description</p>',
       categories: [],
@@ -1306,6 +1308,7 @@ describe('processArticle AI analysis controls', () => {
     mocked.extractEntryFields.mockReturnValue({
       title: 'Tom &amp; Jerry',
       link: 'https://example.com/encoded-markup',
+      contentBaseUrl: 'https://example.com/encoded-markup',
       content,
       description,
       categories: [],

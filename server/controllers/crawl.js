@@ -6,6 +6,7 @@ import {
   formatCrawlResultLine,
   formatCrawlSummaryLine
 } from '../services/feeds/crawlResult.js';
+import { persistFeedCrawlResult } from '../services/feeds/feedCrawlObservability.js';
 import {
   logFeedDebug,
   sanitizeFeedLogValue
@@ -443,8 +444,12 @@ const runCrawl = async (userId = null, options = {}) => {
   let totalNewArticles = 0;
   let totalUpdatedArticles = 0;
   let totalArticleErrors = 0;
+  let totalFetchedArticles = 0;
+  let totalUnchangedArticles = 0;
+  let totalDuplicateArticles = 0;
   let failedFeedCount = 0;
   const feedErrorIds = new Set();
+  const processedFeedIds = new Set();
   const terminalFetchFeedIds = new Set();
   const terminalPersistenceAttemptedFeedIds = new Set();
   const survivingFeedsByClaimedFeedId = new Map();
@@ -453,6 +458,7 @@ const runCrawl = async (userId = null, options = {}) => {
   const resolvedFeedIdByClaimedFeedId = new Map();
   const supersededClaimedFeedIds = new Set();
   const outcomeCounts = {};
+  const feedCrawlObservations = [];
 
   // This function records one terminal error outcome per feed.
   const recordFeedError = (feed, timedOut = false) => {
@@ -472,6 +478,15 @@ const runCrawl = async (userId = null, options = {}) => {
     crawlStats.failedFeeds = failedFeedCount;
   };
 
+  // Counts each claimed feed once when it reaches any terminal result.
+  const recordFeedProcessed = feed => {
+    if (processedFeedIds.has(feed.id)) return;
+
+    processedFeedIds.add(feed.id);
+    processedCount++;
+    crawlStats.processedFeeds = processedCount;
+  };
+
   // Emits and counts exactly one terminal operational result for an attempted feed.
   const recordCrawlResult = ({
     feed,
@@ -480,7 +495,12 @@ const runCrawl = async (userId = null, options = {}) => {
     error = null,
     parsedFeed = false,
     itemCount = null,
-    durationMs
+    durationMs,
+    startedAt,
+    articlesNew = 0,
+    articlesUpdated = 0,
+    articlesUnchanged = 0,
+    articlesDuplicate = 0
   }) => {
     const category = classifyCrawlOutcome({
       outcome,
@@ -489,6 +509,9 @@ const runCrawl = async (userId = null, options = {}) => {
       itemCount
     });
     outcomeCounts[category] = Number(outcomeCounts[category] || 0) + 1;
+    totalFetchedArticles += Math.max(0, Number(itemCount) || 0);
+    totalUnchangedArticles += Math.max(0, Number(articlesUnchanged) || 0);
+    totalDuplicateArticles += Math.max(0, Number(articlesDuplicate) || 0);
     const resolvedUrl = outcome?.discovery?.resolvedUrl || outcome?.url || feed?.url;
     console.log(formatCrawlResultLine({
       category,
@@ -502,6 +525,22 @@ const runCrawl = async (userId = null, options = {}) => {
       errorCode: outcome?.error?.code || error?.code || null,
       message: error?.message || outcome?.error?.message || null
     }));
+    feedCrawlObservations.push({
+      crawlRunId: options.crawlRunId,
+      feed,
+      requestedUrl: requestedUrl || feed?.url,
+      outcome,
+      error,
+      category,
+      startedAt,
+      completedAt: new Date(),
+      durationMs,
+      itemCount,
+      articlesNew,
+      articlesUpdated,
+      articlesUnchanged,
+      articlesDuplicate
+    });
     return category;
   };
 
@@ -625,6 +664,8 @@ const runCrawl = async (userId = null, options = {}) => {
     let feedNewArticles = 0;
     let feedUpdatedArticles = 0;
     let feedArticleErrors = 0;
+    let feedUnchangedArticles = 0;
+    let feedDuplicateArticles = 0;
 
     try {
       throwIfAborted(signal);
@@ -686,8 +727,7 @@ const runCrawl = async (userId = null, options = {}) => {
         )
       ) {
         supersededClaimedFeedIds.add(feed.id);
-        processedCount++;
-        crawlStats.processedFeeds = processedCount;
+        recordFeedProcessed(feed);
         emitProgress({
           type: 'feed_completed',
           feedId: activeFeed.id,
@@ -729,8 +769,7 @@ const runCrawl = async (userId = null, options = {}) => {
         acquisitionOutcome.type === FETCH_OUTCOMES.NOT_MODIFIED
       ) {
         await persistTerminalFetchOutcome(activeFeed, acquisitionOutcome);
-        processedCount++;
-        crawlStats.processedFeeds = processedCount;
+        recordFeedProcessed(feed);
         emitProgress({
           type: 'feed_completed',
           feedId: activeFeed.id,
@@ -814,9 +853,13 @@ const runCrawl = async (userId = null, options = {}) => {
           const newArticles = Number(articleResult?.newArticles || 0);
           const updatedArticles = Number(articleResult?.updatedArticles || 0);
           const articleErrors = Number(articleResult?.errors || 0);
+          const unchangedArticles = Number(articleResult?.unchangedArticles || 0);
+          const duplicateArticles = Number(articleResult?.duplicateArticles || 0);
           feedNewArticles += newArticles;
           feedUpdatedArticles += updatedArticles;
           feedArticleErrors += articleErrors;
+          feedUnchangedArticles += unchangedArticles;
+          feedDuplicateArticles += duplicateArticles;
           totalNewArticles += newArticles;
           totalUpdatedArticles += updatedArticles;
           totalArticleErrors += articleErrors;
@@ -837,7 +880,11 @@ const runCrawl = async (userId = null, options = {}) => {
 
       if (feedArticleErrors > 0) {
         const articleLabel = feedArticleErrors === 1 ? 'article' : 'articles';
-        throw new Error(`${feedArticleErrors} ${articleLabel} failed during processing`);
+        const processingError = new Error(
+          `${feedArticleErrors} ${articleLabel} failed during processing`
+        );
+        processingError.code = 'ARTICLE_VALIDATION_ERROR';
+        throw processingError;
       }
 
       const schedulingAt = new Date();
@@ -887,8 +934,7 @@ const runCrawl = async (userId = null, options = {}) => {
         }
       );
 
-      processedCount++;
-      crawlStats.processedFeeds = processedCount;
+      recordFeedProcessed(feed);
 
       emitProgress({
         type: 'feed_completed',
@@ -913,7 +959,11 @@ const runCrawl = async (userId = null, options = {}) => {
         feedId: activeFeed.id,
         outcome: acquisitionOutcome,
         parsedFeed: true,
-        itemCount: entries.length
+        itemCount: entries.length,
+        articlesNew: feedNewArticles,
+        articlesUpdated: feedUpdatedArticles,
+        articlesUnchanged: feedUnchangedArticles,
+        articlesDuplicate: feedDuplicateArticles
       };
     } catch (err) {
       if (err?.crawlSetupError) throw err;
@@ -921,6 +971,7 @@ const runCrawl = async (userId = null, options = {}) => {
       const failureFeed = survivingFeedsByClaimedFeedId.get(feed.id) || feed;
       const errMsg = err?.message || String(err) || 'Unknown error';
       recordFeedError(failureFeed);
+      recordFeedProcessed(feed);
       if (
         !terminalFetchFeedIds.has(failureFeed.id) &&
         !terminalPersistenceAttemptedFeedIds.has(failureFeed.id)
@@ -976,7 +1027,11 @@ const runCrawl = async (userId = null, options = {}) => {
         outcome,
         error: err,
         parsedFeed: Boolean(outcome?.parsedFeed),
-        itemCount: outcome?.parsedFeed?.entries?.length ?? null
+        itemCount: outcome?.parsedFeed?.entries?.length ?? null,
+        articlesNew: feedNewArticles,
+        articlesUpdated: feedUpdatedArticles,
+        articlesUnchanged: feedUnchangedArticles,
+        articlesDuplicate: feedDuplicateArticles
       };
     }
   };
@@ -1032,6 +1087,7 @@ const runCrawl = async (userId = null, options = {}) => {
         status = 'timeout';
         message = errMsg;
         recordFeedError(failureFeed, true);
+        recordFeedProcessed(feed);
         if (
           !terminalFetchFeedIds.has(failureFeed.id) &&
           !terminalPersistenceAttemptedFeedIds.has(failureFeed.id)
@@ -1065,6 +1121,7 @@ const runCrawl = async (userId = null, options = {}) => {
         status = 'error';
         message = errMsg;
         recordFeedError(failureFeed);
+        recordFeedProcessed(feed);
         if (
           !terminalFetchFeedIds.has(failureFeed.id) &&
           !terminalPersistenceAttemptedFeedIds.has(failureFeed.id)
@@ -1088,6 +1145,7 @@ const runCrawl = async (userId = null, options = {}) => {
         itemCount: outcome?.parsedFeed?.entries?.length ?? null
       };
     } finally {
+      recordFeedProcessed(feed);
       await heartbeat.stop();
       const releasableFeed = survivingFeedsByClaimedFeedId.get(feed.id) || feed;
       if (!supersededClaimedFeedIds.has(feed.id)) {
@@ -1105,7 +1163,12 @@ const runCrawl = async (userId = null, options = {}) => {
         error: finalResult?.error || null,
         parsedFeed: Boolean(finalResult?.parsedFeed),
         itemCount: finalResult?.itemCount ?? null,
-        durationMs: Date.now() - startedAt
+        durationMs: Date.now() - startedAt,
+        startedAt: new Date(startedAt),
+        articlesNew: finalResult?.articlesNew || 0,
+        articlesUpdated: finalResult?.articlesUpdated || 0,
+        articlesUnchanged: finalResult?.articlesUnchanged || 0,
+        articlesDuplicate: finalResult?.articlesDuplicate || 0
       });
       if (feed.userId) processedUserIds.add(feed.userId);
 
@@ -1226,6 +1289,18 @@ const runCrawl = async (userId = null, options = {}) => {
     }
   }
 
+  // Persists observations only after all feed work settles to avoid competing with convergence locks.
+  for (const observation of feedCrawlObservations) {
+    try {
+      await persistFeedCrawlResult(observation);
+    } catch (observabilityError) {
+      console.error(
+        'Error recording feed crawl result:',
+        sanitizeFeedLogValue(observabilityError)
+      );
+    }
+  }
+
   const result = {
     total: feeds.length,
     processed: processedCount,
@@ -1237,6 +1312,9 @@ const runCrawl = async (userId = null, options = {}) => {
     totalNewArticles,
     totalUpdatedArticles,
     totalArticleErrors,
+    totalFetchedArticles,
+    totalUnchangedArticles,
+    totalDuplicateArticles,
     failedFeeds: failedFeedCount,
     timedOutFeeds: timeoutCount,
     crawlOutcomes: { ...outcomeCounts }
@@ -1454,7 +1532,8 @@ const performCrawl = async (userId = null, options = {}) => {
   try {
     result = await runCrawl(userId, {
       ...options,
-      crawlStats
+      crawlStats,
+      crawlRunId: crawlRun?.id || null
     });
   } catch (err) {
     if (crawlRun) {
@@ -1494,8 +1573,21 @@ const performCrawl = async (userId = null, options = {}) => {
       articleErrors: crawlStats.articleErrors,
       errors: crawlStats.errors,
       processedFeeds: crawlStats.processedFeeds,
-      failedFeeds: crawlStats.failedFeeds,
+      failedFeeds: Math.max(
+        0,
+        result.total -
+          Number(result.crawlOutcomes?.SUCCESS || 0) -
+          Number(result.crawlOutcomes?.RECOVERED || 0) -
+          Number(result.crawlOutcomes?.EMPTY_FEED || 0)
+      ),
       timedOutFeeds: crawlStats.timedOutFeeds,
+      feedsAttempted: result.total,
+      feedsSucceeded: Number(result.crawlOutcomes?.SUCCESS || 0) +
+        Number(result.crawlOutcomes?.EMPTY_FEED || 0),
+      feedsRecovered: Number(result.crawlOutcomes?.RECOVERED || 0),
+      articlesFetched: result.totalFetchedArticles,
+      articlesUnchanged: result.totalUnchangedArticles,
+      articlesDuplicate: result.totalDuplicateArticles,
       durationMs: calculateCrawlDurationMs(crawlRun.startedAt, completedAt)
     });
   }

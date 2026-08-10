@@ -217,6 +217,7 @@ describe('neutral response body reader', () => {
       const result = await readResponseText(transportResult.response);
 
       expect(result.error.type).toBe('timed_out');
+      expect(result.error.code).toBe('BODY_TIMEOUT');
     } finally {
       server.closeAllConnections();
       await new Promise(resolve => server.close(resolve));

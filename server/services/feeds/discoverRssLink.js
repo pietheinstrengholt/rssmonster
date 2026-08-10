@@ -428,7 +428,7 @@ const unique = (arr) => {
 // Defines the direct fetch retries enforced by this service.
 const DIRECT_FETCH_RETRIES = 1;
 // Defines the direct fetch timeout ms enforced by this service.
-const DIRECT_FETCH_TIMEOUT_MS = 5000;
+const DIRECT_FETCH_TIMEOUT_MS = 10000;
 // Defines the fallback fetch retries enforced by this service.
 const FALLBACK_FETCH_RETRIES = 0;
 // Defines the fallback fetch timeout ms enforced by this service.

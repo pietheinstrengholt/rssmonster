@@ -91,12 +91,14 @@ export const readResponseText = async (
     } catch {
       void Promise.resolve(response.body.cancel(createHttpError({
         type: 'timed_out',
-        message: 'The fetch operation timed out'
+        message: 'The fetch operation timed out',
+        code: 'BODY_TIMEOUT'
       }))).catch(() => {});
       return {
         error: createHttpError({
           type: 'timed_out',
-          message: 'The fetch operation timed out'
+          message: 'The fetch operation timed out',
+          code: 'BODY_TIMEOUT'
         })
       };
     }
@@ -129,10 +131,20 @@ export const readResponseText = async (
       void readPromise.catch(() => {});
       const error = createHttpError({
         type: 'timed_out',
-        message: 'The fetch operation timed out'
+        message: 'The fetch operation timed out',
+        code: 'BODY_TIMEOUT'
       });
       void Promise.resolve(response.body.cancel(error)).catch(() => {});
       return { error };
+    }
+    if (result.error?.type === 'timed_out') {
+      return {
+        error: createHttpError({
+          type: 'timed_out',
+          message: result.error.message || 'The fetch operation timed out',
+          code: 'BODY_TIMEOUT'
+        })
+      };
     }
     if (result.error) return { error: result.error };
     if (result.done) break;

@@ -88,6 +88,18 @@ export default (sequelize) => {
         allowNull: true,
         defaultValue: null
       },
+      // Counts feeds for which a final result was persisted.
+      feedsAttempted: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
+      // Counts feeds that succeeded without endpoint recovery.
+      feedsSucceeded: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
+      // Counts feeds that succeeded through endpoint recovery.
+      feedsRecovered: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
+      // Counts entries fetched across final feed results.
+      articlesFetched: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
+      // Counts entries known to require no article change.
+      articlesUnchanged: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
+      // Counts entries suppressed as duplicates.
+      articlesDuplicate: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
       // Records whether the run was scheduled or started through the API; null when unknown.
       triggerType: {
         type: DataTypes.ENUM('scheduled', 'api'),

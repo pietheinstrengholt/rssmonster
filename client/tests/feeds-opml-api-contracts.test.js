@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createFeed,
   deleteFeed,
+  fetchFeedCrawlResult,
+  fetchFeedObservability,
   fetchFeeds,
   muteFeed,
   recalculateFeedTrust,
@@ -48,6 +50,15 @@ describe('feeds API contracts', () => {
       url: 'https://example.com/feed.xml',
       categoryId: 3
     });
+  });
+
+  // Verifies observability snapshots and selected crawl details use nested feed routes.
+  it('builds feed observability requests', () => {
+    fetchFeedObservability(7);
+    fetchFeedCrawlResult(7, 91);
+
+    expect(get).toHaveBeenNthCalledWith(1, '/feeds/7/observability');
+    expect(get).toHaveBeenNthCalledWith(2, '/feeds/7/crawls/91');
   });
 
   // Verifies feed creation sends every supported property without reshaping values.

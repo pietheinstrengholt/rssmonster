@@ -173,7 +173,10 @@ export const acquireHttp = async (
       sharedSignal => {
         const sharedRequest = createHttpRequest({
           ...request,
-          deadlineAt: Date.now() + request.timeoutMs,
+          deadlineAt: Math.min(
+            callerDeadlineAt,
+            Date.now() + request.timeoutMs
+          ),
           signal: sharedSignal
         });
         return acquireRequest(sharedRequest, transport);

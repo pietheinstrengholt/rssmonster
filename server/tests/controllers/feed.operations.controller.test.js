@@ -4,6 +4,7 @@ const mocked = vi.hoisted(() => ({
   articleFindAll: vi.fn(),
   calculateFeedTrust: vi.fn(),
   createJob: vi.fn(),
+  feedCrawlResultFindAll: vi.fn(),
   feedFindAll: vi.fn(),
   feedFindOne: vi.fn(),
   getActiveJobForUser: vi.fn(),
@@ -31,6 +32,9 @@ vi.mock('../../models/index.js', async () => {
       Feed: {
         findAll: mocked.feedFindAll,
         findOne: mocked.feedFindOne
+      },
+      FeedCrawlResult: {
+        findAll: mocked.feedCrawlResultFindAll
       },
       Sequelize
     }
@@ -117,6 +121,7 @@ describe('feed operational controllers', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mocked.performCrawl.mockResolvedValue(undefined);
+    mocked.feedCrawlResultFindAll.mockResolvedValue([]);
     mocked.subscribe.mockReturnValue(true);
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -165,7 +170,14 @@ describe('feed operational controllers', () => {
           articleCount: 20,
           articlesPerDay: 1.5,
           eventArticleCount: 15,
-          eventCoveragePct: 75
+          eventCoveragePct: 75,
+          health: 'HEALTHY',
+          reliabilityPct: null,
+          lastCrawlAt: null,
+          lastCrawlStatus: null,
+          lastCrawlErrorCategory: null,
+          lastSuccessfulCrawlAt: null,
+          consecutiveFailures: 0
         },
         {
           id: 9,
@@ -173,10 +185,69 @@ describe('feed operational controllers', () => {
           articleCount: 0,
           articlesPerDay: 0,
           eventArticleCount: 0,
-          eventCoveragePct: 0
+          eventCoveragePct: 0,
+          health: 'HEALTHY',
+          reliabilityPct: null,
+          lastCrawlAt: null,
+          lastCrawlStatus: null,
+          lastCrawlErrorCategory: null,
+          lastSuccessfulCrawlAt: null,
+          consecutiveFailures: 0
         }
       ]
     });
+    expect(mocked.feedCrawlResultFindAll).toHaveBeenCalledOnce();
+    expect(mocked.feedCrawlResultFindAll).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: 42 }),
+        group: ['feedId'],
+        raw: true
+      })
+    );
+  });
+
+  it('merges one user-scoped crawl reliability aggregate into feed health', async () => {
+    const lastCrawlAt = new Date('2026-08-10T10:00:00.000Z');
+    mocked.feedFindAll.mockResolvedValue([
+      {
+        id: 8,
+        toJSON: vi.fn().mockReturnValue({
+          id: 8,
+          status: 'active',
+          lastCrawlAt,
+          lastCrawlStatus: 'RECOVERED',
+          lastCrawlErrorCategory: null,
+          lastSuccessfulCrawlAt: lastCrawlAt,
+          consecutiveFailures: 0
+        })
+      }
+    ]);
+    mocked.articleFindAll.mockResolvedValue([]);
+    mocked.feedCrawlResultFindAll.mockResolvedValue([
+      { feedId: 8, totalCount: '10', successfulCount: '9' }
+    ]);
+    const res = createResponse();
+
+    await feedController.getFeeds(createRequest(), res);
+
+    expect(res.json).toHaveBeenCalledWith({
+      feeds: [expect.objectContaining({
+        id: 8,
+        health: 'RECOVERED',
+        reliabilityPct: 90,
+        lastCrawlAt,
+        lastCrawlStatus: 'RECOVERED',
+        lastCrawlErrorCategory: null,
+        lastSuccessfulCrawlAt: lastCrawlAt,
+        consecutiveFailures: 0
+      })]
+    });
+    expect(mocked.feedCrawlResultFindAll).toHaveBeenCalledOnce();
+    const crawlQuery = mocked.feedCrawlResultFindAll.mock.calls[0][0];
+    expect(crawlQuery.where.userId).toBe(42);
+    expect(crawlQuery.attributes[2][0].args[0].val).toContain(
+      "IN ('SUCCESS', 'RECOVERED')"
+    );
   });
 
   it('validates feed list authentication and reports aggregation errors', async () => {

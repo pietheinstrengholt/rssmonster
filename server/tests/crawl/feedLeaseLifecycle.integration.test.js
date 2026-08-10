@@ -215,7 +215,7 @@ describe('crawl feed-lease lifecycle integration', () => {
     });
 
     await feeds[0].reload();
-    expect(result).toMatchObject({ processed: 0, errors: 1, failedFeeds: 1 });
+    expect(result).toMatchObject({ processed: 1, errors: 1, failedFeeds: 1 });
     expect(feeds[0]).toMatchObject({
       leaseOwner: 'replacement-worker',
       lastFetchOutcome: null

@@ -16,6 +16,7 @@ describe('extract entry fields', () => {
     expect(extractEntryFields({
       title: 'Canonical title',
       url: 'https://example.com/article',
+      contentBaseUrl: 'https://content.example.com/articles/42/',
       description: '',
       descriptionKind: 'html',
       content: '<p>Body</p>',
@@ -27,6 +28,7 @@ describe('extract entry fields', () => {
     })).toEqual({
       title: 'Canonical title',
       link: 'https://example.com/article',
+      contentBaseUrl: 'https://content.example.com/articles/42/',
       description: '',
       descriptionKind: 'html',
       content: '<p>Body</p>',
@@ -47,6 +49,7 @@ describe('extract entry fields', () => {
     expect(extractEntryFields(entry)).toEqual({
       title: 'Untitled',
       link: null,
+      contentBaseUrl: null,
       description: null,
       descriptionKind: null,
       content: null,
@@ -56,6 +59,13 @@ describe('extract entry fields', () => {
       publishedAt: null,
       modifiedAt: null
     });
+  });
+
+  // Falls back to the canonical article URL when no separate content base is available.
+  it('uses the entry URL as the default content base URL', () => {
+    expect(extractEntryFields({
+      url: 'https://example.com/article'
+    }).contentBaseUrl).toBe('https://example.com/article');
   });
 
   it('resolves entry publishedAt dates from expanded FeedSmith candidates', () => {

@@ -85,6 +85,12 @@ describe('crawl run lifecycle', () => {
       processedFeeds: 0,
       failedFeeds: 0,
       timedOutFeeds: 0,
+      feedsAttempted: 0,
+      feedsSucceeded: 0,
+      feedsRecovered: 0,
+      articlesFetched: 0,
+      articlesUnchanged: 0,
+      articlesDuplicate: 0,
       durationMs: expect.any(Number)
     });
     expect(crawlRuns).toHaveLength(1);
@@ -129,7 +135,7 @@ describe('crawl run lifecycle', () => {
       updatedArticles: 0,
       articleErrors: 0,
       errors: 0,
-      processedFeeds: 0,
+      processedFeeds: 1,
       failedFeeds: 0,
       timedOutFeeds: 0,
       durationMs: expect.any(Number)
@@ -143,7 +149,7 @@ describe('crawl run lifecycle', () => {
       updatedArticles: 0,
       articleErrors: 0,
       errors: 0,
-      processedFeeds: 0,
+      processedFeeds: 1,
       failedFeeds: 0,
       timedOutFeeds: 0,
       triggerType: 'api',

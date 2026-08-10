@@ -46,6 +46,7 @@
           <component
             :is="activeComponent"
             @close="active = 'welcome'"
+            @detail-view="feedDetailsActive = $event"
             @saved="handleSaved"
             @forceReload="$emit('forceReload')"
           />
@@ -138,6 +139,7 @@ export default {
   data() {
     return {
       active: 'welcome',
+      feedDetailsActive: false,
       previouslyFocusedElement: null
     };
   },
@@ -190,6 +192,9 @@ export default {
     },
     // This function describes the active section for the dialog header.
     activeSectionDescription() {
+      if (this.active === 'feeds' && this.feedDetailsActive) {
+        return 'Settings — Feeds — Feed details';
+      }
       if (!this.activeNavigationItem) return 'Settings — Overview';
 
       return `Settings — ${this.activeNavigationItem.label}: ${this.activeNavigationItem.description}`;
@@ -259,6 +264,7 @@ export default {
     selectSection(sectionKey, event) {
       const navigationButton = event?.currentTarget;
       this.active = sectionKey;
+      this.feedDetailsActive = false;
 
       this.$nextTick(() => {
         const dialog = this.$refs.settingsDialog;

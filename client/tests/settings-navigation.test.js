@@ -100,6 +100,15 @@ describe('Settings navigation', () => {
     expect(Settings.computed.activeComponent.call(context)).toBe('SettingsWelcome');
   });
 
+  // Verifies feed detail state updates only the persistent Settings subtitle.
+  it('describes feed details while keeping Feeds as the active section', () => {
+    expect(Settings.computed.activeSectionDescription.call({
+      active: 'feeds',
+      feedDetailsActive: true,
+      activeNavigationItem: { label: 'Feeds', description: 'Manage RSS subscriptions' }
+    })).toBe('Settings — Feeds — Feed details');
+  });
+
   it('opens the always-available Smart Folders async section', async () => {
     const wrapper = mountSettings();
 

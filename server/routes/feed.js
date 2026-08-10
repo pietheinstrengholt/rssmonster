@@ -1,5 +1,6 @@
 import express from 'express';
 import feedController from '../controllers/feed.js';
+import feedObservabilityController from '../controllers/feedObservability.js';
 import userMiddleware from "../middleware/users.js";
 
 export const router = express.Router();
@@ -9,6 +10,8 @@ router.get('/', userMiddleware.isLoggedIn, feedController.getFeeds);
 router.post('/refresh', userMiddleware.isLoggedIn, feedController.startRefresh);
 router.get('/refresh/:jobId/events', userMiddleware.isLoggedIn, feedController.streamRefreshEvents);
 router.post('/recalculate-trust', userMiddleware.isLoggedIn, feedController.recalculateFeedTrust);
+router.get('/:feedId/observability', userMiddleware.isLoggedIn, feedObservabilityController.getFeedObservability);
+router.get('/:feedId/crawls/:crawlResultId', userMiddleware.isLoggedIn, feedObservabilityController.getFeedCrawlDetail);
 router.get('/:feedId', userMiddleware.isLoggedIn, feedController.getFeed);
 router.put('/:feedId', userMiddleware.isLoggedIn, feedController.updateFeed);
 router.delete('/:feedId', userMiddleware.isLoggedIn, feedController.deleteFeed);

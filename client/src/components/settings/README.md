@@ -128,15 +128,15 @@ The available date ranges are the last 7, 30, 90, or 365 days. Changing the rang
 
 Feeds is the subscription-management overview. It combines operational totals with a searchable table of every feed.
 
-The summary reports total feeds, active feeds, feeds with errors, and total stored articles. Feed rows show:
+The summary reports total feeds, healthy feeds, feeds needing attention, and total stored articles. Feed rows show:
 
 - Name and source URL
-- Feed type and operational status
+- Crawl health
 - Stored article count and average articles per day
+- 30-day crawl reliability and latest crawl time
 - Trust score
-- Duplication rate
 
-The list can be filtered by active, error, or disabled status and searched by feed name or URL. Filtering changes only the displayed rows and footer count; it does not mutate subscriptions or metrics.
+The list can be filtered by crawl health and searched by feed name or URL. Filtering changes only the displayed rows and footer count; it does not mutate subscriptions or metrics.
 
 An individual feed can be opened in the existing feed-editing flow. The section also supports:
 
@@ -145,6 +145,8 @@ An individual feed can be opened in the existing feed-editing flow. The section 
 - Recalculating trust and duplication-related feed scores
 
 After an import or score recalculation, the feed overview is fetched again and the wider application is refreshed. Operations expose independent success and error feedback so one failure does not erase the loaded feed list.
+
+Selecting a feed opens its observability details inside the same Settings section, preserving the Feeds navigation state and the retained overview for Back navigation. The detail view loads one bounded health snapshot, then requests expanded attempt diagnostics only when a crawl-history row is selected. It presents rolling health metrics, daily crawl outcomes, failure categories, canonical article statistics, configuration context, and the existing feed-edit action without introducing a separate modal or route.
 
 ### Official Sources
 

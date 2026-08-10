@@ -16,7 +16,7 @@ vi.mock('../../services/crawl/index.js', () => ({
   runPostCrawlSemanticPipeline: mocked.runPostCrawlSemanticPipeline
 }));
 
-const { CrawlRun, User, Category, Feed } = db;
+const { CrawlRun, FeedCrawlResult, User, Category, Feed } = db;
 let crawlController;
 
 const uniqueName = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -42,7 +42,7 @@ async function createUserFeed(prefix) {
     url: `https://example.com/${username}.xml`
   });
 
-  return { user, feed };
+  return { user, category, feed };
 }
 
 describe('crawl run article statistics', () => {
@@ -74,6 +74,7 @@ describe('crawl run article statistics', () => {
     await crawlController.performCrawl(user.id);
 
     const crawlRun = await CrawlRun.findOne({ where: { userId: user.id } });
+    const feedResult = await FeedCrawlResult.findOne({ where: { crawlRunId: crawlRun.id } });
 
     expect(crawlRun).toMatchObject({
       status: 'completed',
@@ -87,6 +88,78 @@ describe('crawl run article statistics', () => {
       triggerType: 'api',
       durationMs: expect.any(Number)
     });
+    expect(feedResult).toMatchObject({
+      status: 'SUCCESS',
+      attemptCount: 1,
+      itemsFetched: 2,
+      articlesNew: 1,
+      articlesUpdated: 1,
+      recoveryAttempted: false,
+      recoverySucceeded: false
+    });
+  });
+
+  it.each([
+    ['timeout', 'timed_out', 'TIMEOUT'],
+    ['permanent failure', 'permanent_failure', 'NOT_FOUND']
+  ])('counts a success plus %s as two processed terminal results', async (
+    _label,
+    failureType,
+    expectedCategory
+  ) => {
+    const { user, category, feed } = await createUserFeed(
+      `mixed${failureType}crawlstats`
+    );
+    const failedFeed = await Feed.create({
+      userId: user.id,
+      categoryId: category.id,
+      feedName: 'Failed Statistics Feed',
+      url: `https://example.com/${uniqueName(failureType)}.xml`
+    });
+    mocked.acquireFeed.mockImplementation(async ({ feed: selectedFeed }) => {
+      if (selectedFeed.id === feed.id) {
+        return {
+          type: 'changed',
+          url: selectedFeed.url,
+          parsedFeed: {
+            format: 'rss',
+            title: selectedFeed.feedName,
+            entries: [{ externalId: 'new' }]
+          }
+        };
+      }
+      return {
+        type: failureType,
+        response: failureType === 'permanent_failure' ? { status: 404 } : null,
+        error: {
+          type: failureType,
+          status: failureType === 'permanent_failure' ? 404 : null,
+          message: `Terminal ${failureType}`
+        }
+      };
+    });
+    mocked.processArticle.mockResolvedValue({
+      newArticles: 1,
+      updatedArticles: 0,
+      errors: 0
+    });
+
+    const result = await crawlController.performCrawl(user.id);
+    const successful = Number(result.crawlOutcomes.SUCCESS || 0) +
+      Number(result.crawlOutcomes.RECOVERED || 0) +
+      Number(result.crawlOutcomes.EMPTY_FEED || 0);
+    const failed = Object.values(result.crawlOutcomes)
+      .reduce((sum, count) => sum + count, 0) - successful;
+
+    expect(result).toMatchObject({
+      total: 2,
+      processed: 2,
+      crawlOutcomes: { SUCCESS: 1, [expectedCategory]: 1 }
+    });
+    expect(result.processed).toBe(successful + failed);
+    expect(await FeedCrawlResult.count({
+      where: { feedId: [feed.id, failedFeed.id] }
+    })).toBe(2);
   });
 
   it('emits one final feed result and one compact crawl summary', async () => {
@@ -113,6 +186,8 @@ describe('crawl run article statistics', () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     const result = await crawlController.performCrawl(user.id);
+    const crawlRun = await CrawlRun.findOne({ where: { userId: user.id } });
+    const feedResult = await FeedCrawlResult.findOne({ where: { crawlRunId: crawlRun.id } });
 
     const crawlLines = log.mock.calls
       .map(([line]) => line)
@@ -123,6 +198,14 @@ describe('crawl run article statistics', () => {
     expect(crawlLines[1]).toContain('[CRAWL] SUMMARY');
     expect(crawlLines[1]).toContain('outcomes=RECOVERED:1');
     expect(result.crawlOutcomes).toEqual({ RECOVERED: 1 });
+    expect(feedResult).toMatchObject({
+      status: 'RECOVERED',
+      requestedUrl: feed.url,
+      resolvedUrl: 'https://example.com/recovered.xml',
+      recoveryAttempted: true,
+      recoverySucceeded: true,
+      attemptCount: 2
+    });
   });
 
   it('does not count filtered inserts as new visible articles', async () => {
@@ -259,6 +342,7 @@ describe('crawl run article statistics', () => {
 
     expect(result).toMatchObject({
       errors: 1,
+      processed: 1,
       totalArticleErrors: 2
     });
     expect(crawlRun).toMatchObject({
@@ -267,14 +351,14 @@ describe('crawl run article statistics', () => {
       updatedArticles: 0,
       articleErrors: 2,
       errors: 1,
-      processedFeeds: 0,
+      processedFeeds: 1,
       failedFeeds: 1,
       timedOutFeeds: 0,
       durationMs: expect.any(Number)
     });
     expect(feed).toMatchObject({
       lastFetchOutcome: 'changed',
-      consecutiveFailures: 0,
+      consecutiveFailures: 1,
       errorCount: 0,
       errorMessage: null,
       status: 'active'
@@ -311,6 +395,7 @@ describe('crawl run article statistics', () => {
       totalNewArticles: 1,
       totalUpdatedArticles: 1,
       errors: 1,
+      processed: 1,
       failedFeeds: 1
     });
     expect(crawlRun).toMatchObject({
@@ -320,7 +405,7 @@ describe('crawl run article statistics', () => {
       updatedArticles: 1,
       articleErrors: 0,
       errors: 1,
-      processedFeeds: 0,
+      processedFeeds: 1,
       failedFeeds: 1,
       timedOutFeeds: 0,
       durationMs: expect.any(Number)
@@ -405,11 +490,14 @@ describe('crawl run article statistics', () => {
       errorMessage: `Diagnostic for ${outcomeType}`,
       status: expectedStatus
     });
-    expect(result).toMatchObject({ errors: 1, failedFeeds: 1 });
+    expect(result).toMatchObject({ processed: 1, errors: 1, failedFeeds: 1 });
     expect(mocked.processArticle).not.toHaveBeenCalled();
     if (retryable) {
-      expect(feed.nextFetchAt.getTime()).toBeGreaterThanOrEqual(
+      expect(terminalCalls[0][0].nextFetchAt.getTime()).toBeGreaterThanOrEqual(
         startedAt + minimumDelayMs
+      );
+      expect(feed.nextFetchAt.getTime()).toBeGreaterThanOrEqual(
+        Math.floor((startedAt + minimumDelayMs) / 1000) * 1000
       );
       expect(feed.nextFetchAt.getTime()).toBeLessThanOrEqual(
         Date.now() + minimumDelayMs + 62000

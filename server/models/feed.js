@@ -246,6 +246,20 @@ export default (sequelize) => {
         defaultValue: 0,
         validate: { min: 0 }
       },
+      // Records when the complete feed-processing lifecycle most recently finished.
+      lastCrawlAt: { type: DataTypes.DATE, allowNull: true, defaultValue: null },
+      // Caches the latest durable feed crawl status.
+      lastCrawlStatus: { type: DataTypes.ENUM('SUCCESS', 'RECOVERED', 'FAILED'), allowNull: true, defaultValue: null },
+      // Caches the normalized category for the latest failed crawl.
+      lastCrawlErrorCategory: { type: DataTypes.STRING(32), allowNull: true, defaultValue: null },
+      // Caches the latest end-to-end feed processing duration.
+      lastCrawlDurationMs: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
+      // Records the latest fully successful feed-processing lifecycle.
+      lastSuccessfulCrawlAt: { type: DataTypes.DATE, allowNull: true, defaultValue: null },
+      // Counts all fully failed feed-processing lifecycles.
+      totalCrawlFailures: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      // Counts all fully successful feed-processing lifecycles.
+      totalCrawlSuccesses: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
       // Governs automatic scheduling; null suppresses disabled or quarantined feeds.
       nextFetchAt: {
         type: DataTypes.DATE,

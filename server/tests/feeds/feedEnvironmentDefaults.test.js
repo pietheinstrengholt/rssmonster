@@ -9,6 +9,9 @@ import {
 } from '../../services/feeds/feedsmith/isolatedFeedParser.js';
 import { DEFAULT_FEED_RESPONSE_MAX_BYTES } from '../../services/feeds/http/responseBody.js';
 import {
+  resolveFeedHttpTimeoutMs
+} from '../../services/feeds/http/contracts.js';
+import {
   DEFAULT_FEED_CACHE_FRESHNESS_MAX_MS,
   DEFAULT_FEED_RETRY_AFTER_MAX_MS
 } from '../../services/feeds/http/responsePolicy.js';
@@ -27,6 +30,8 @@ describe('feed environment example defaults', () => {
   it('matches runtime defaults for feed acquisition and parser limits', () => {
     expect(Number(exampleValue('FEED_RESPONSE_MAX_BYTES')))
       .toBe(DEFAULT_FEED_RESPONSE_MAX_BYTES);
+    expect(Number(exampleValue('FEED_HTTP_TIMEOUT_MS')))
+      .toBe(resolveFeedHttpTimeoutMs({}));
     expect(Number(exampleValue('FEED_LEASE_MS'))).toBe(DEFAULT_FEED_LEASE_MS);
     expect(Number(exampleValue('FEED_CACHE_FRESHNESS_MAX_MS')))
       .toBe(DEFAULT_FEED_CACHE_FRESHNESS_MAX_MS);

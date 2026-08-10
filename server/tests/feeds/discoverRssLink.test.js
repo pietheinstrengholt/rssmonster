@@ -317,7 +317,7 @@ describe('discoverRssLink', () => {
     });
 
     await expect(discoverRssLink(rssUrl)).resolves.toBe(rssUrl);
-    expect(fetchURL).toHaveBeenCalledWith(rssUrl, 1, 5000);
+    expect(fetchURL).toHaveBeenCalledWith(rssUrl, 1, 10000);
   });
 
   it('returns the parsed direct feed without fetching it twice', async () => {
@@ -691,11 +691,11 @@ describe('discoverRssLink', () => {
       (total, call) => total + call[2],
       0
     );
-    expect(allocatedMs).toBe(5000);
+    expect(allocatedMs).toBe(10000);
     expect(fetchURL.mock.calls[0]).toEqual([
       'https://example.com/news',
       1,
-      5000
+      10000
     ]);
     expect(fetchURL).toHaveBeenCalledTimes(1);
 
