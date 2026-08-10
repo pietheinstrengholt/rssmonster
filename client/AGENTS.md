@@ -1,113 +1,159 @@
-# AGENTS.md — RSSMonster Client
-
-## Frontend architecture summary
-
-The RSSMonster client is a Vue 3 application with an app-owned styling system. Bootstrap and Bootswatch have been removed, along with obsolete imports, unused CSS, dead overrides, and unnecessary negative spacing. New frontend work must continue this direction rather than recreating framework-like utility classes or introducing another general-purpose CSS framework.
-
-Frontend implementation should prioritize:
-
-* Semantic, accessible HTML and native interactive elements
-* Clear Vue component and stylesheet ownership
-* Scoped component styles by default
-* Global styles only for tokens, resets, article-content compatibility, and genuinely shared primitives
-* Reusable but narrowly defined controls such as buttons, icon buttons, dialogs, dropdowns, form fields, tags, and badges
-* CSS Grid, Flexbox, and normal document flow instead of positional corrections
-* Responsive behavior across mobile, hybrid tablet, and desktop layouts
-* Consistent light and dark themes driven exclusively by the resolved `data-theme`
-* Visible `:focus-visible` states that remain distinct from selected states
-* A small semantic token system for colors, controls, radii, shell dimensions, layers, and motion
-* Incremental refactoring that preserves the current visual identity and behavior
-
-The main application experiences—mobile, expanded, and Reader mode—must feel like variants of one frontend system rather than independent implementations. Shared presentation patterns should be consolidated when this reduces duplication and improves consistency, but specialized article, toolbar, gesture, and responsive behavior should remain local when abstraction would make the code harder to understand.
-
-Reserve `#app` for the Vue mount element. Use semantic component classes for application surfaces. Import feature-wide styles once at their owning feature boundary and contain global feature selectors beneath a stable root class.
-
-Do not suppress keyboard focus, implement actions using clickable `div` or `span` elements, mix operating-system media queries with resolved theme selectors, introduce undocumented z-index values, or compensate for layout problems with arbitrary offsets and negative spacing.
-
-Changes to shell dimensions, scroll ownership, responsive transitions, publisher-provided article content, or shared visual primitives require careful validation in light and dark mode at representative mobile, tablet, and desktop widths. Prefer focused, evidence-based changes over broad visual rewrites.
+# AGENTS.md
 
 ## Scope
 
-These instructions apply to the `client` folder.
+Applies to `client/`.
 
-RSSMonster uses Vue 3 with Single-File Components. Prefer clear ownership, local cohesion, and reusable abstractions without unnecessarily spreading one component across many files.
+Follow the root `AGENTS.md` first. This file adds frontend-specific rules only.
 
-## Vue components
+RSSMonster uses Vue 3 + Vite and supports desktop, tablet, mobile, light mode, and dark mode.
 
-Use `.vue` Single-File Components for UI features.
+## Commands
 
-Keep together by default:
+```bash
+cd client
+npm test
+npm run lint
+npm run build
+```
 
-* The component template
-* Component-specific state and behavior
-* Component-specific styling
+Prefer focused tests first:
 
-Prefer `<script setup>` for new components.
+```bash
+npx vitest run path/to/test.js
+```
 
-Keep templates semantic, accessible, and easy to scan. Avoid unnecessary wrapper elements and deeply nested markup.
+Use `npm run verify:build` for broader production-impacting frontend changes.
 
-Split a component when it contains multiple independent responsibilities, not merely because it has become long.
+## Before Editing
 
-## JavaScript
+Inspect the target component, its parent/callers, related composables/services, relevant tests, and affected layout modes before changing behavior.
 
-Keep small, component-specific behavior inside the `.vue` file.
+Do not assume a component is used only in the currently visible screen.
 
-Extract logic when it is:
+## Architecture
 
-* Reused by multiple components
-* Complex enough to have an independent responsibility
-* Unrelated to rendering or component orchestration
+Follow existing Vue 3 patterns.
 
-Use composables for reusable reactive logic.
+Typical responsibilities:
 
-Use services for API communication and domain-specific request handling.
+`components → rendering/interaction`
+`composables → reusable reactive behavior`
+`services → API and non-visual application logic`
 
-Do not create utility functions or composables for trivial one-line component behavior.
+Reuse existing services, composables, utilities, and shared components before creating new ones.
 
-Prefer compact single-expression assignments where they remain readable.
+Do not extract code merely to reduce `.vue` file size.
 
-## CSS
+## Vue
 
-Keep component-owned styles with the component.
+* Prefer Single File Components.
+* Preserve existing props, events, and slots unless the task requires changing them.
+* Inspect callers before changing component contracts.
+* Prefer computed state over duplicated derived state.
+* Avoid watchers when computed state or explicit event flow is clearer.
+* Keep side effects out of computed properties.
+* Clean up timers, listeners, observers, and subscriptions.
+* Keep local behavior local; do not introduce global state unnecessarily.
 
-Use scoped styles by default for feature components.
+## API Integration
 
-Use shared stylesheets only for genuinely global concerns, including:
+* Use existing service modules for API calls where available.
+* Do not duplicate request or response-normalization logic in components.
+* Handle relevant loading, empty, success, and error states.
+* Verify the backend contract before assuming new response fields exist.
 
-* Design tokens
-* Theme variables
-* Resets
-* Typography
-* Shared utilities
-* Application-level layout
+## Reader Modes
 
-Settings components share their established styles through `src/assets/css/settings.css`. Reuse and extend that stylesheet for Settings-wide patterns instead of duplicating them across individual Settings components.
+RSSMonster has distinct Reader, Expanded, tablet, and mobile experiences.
+Before changing reader behavior, determine which layouts use the component and which modes are in scope.
+Do not leak Reader-only features into Expanded or Mobile unless explicitly intended.
 
-Use `src/assets/styles/theme.css` as the shared color palette and semantic-token registry. Prefer its existing CSS variables over hard-coded colors or component-specific color definitions. The colocated
-`src/assets/styles/Agents.md` contains more detailed theming, semantic-color, dark-mode, typography, and hard-coded-color instructions; follow it for all UI and styling changes.
+## Responsive Design
 
-Do not move all CSS into global stylesheets.
+* Prefer existing breakpoints and layout logic.
+* Prefer CSS for layout behavior.
+* Use JavaScript layout detection only when interaction behavior requires it.
+* Avoid duplicate breakpoint definitions.
+* Check intermediate tablet sizes, including portrait and landscape.
+* Preserve touch behavior when changing pointer/desktop interactions.
 
-Avoid broad selectors that unintentionally affect unrelated components. Prefer clear component class names over styling raw HTML elements globally.
+## CSS and Design
 
-Reuse existing tokens and shared patterns before introducing new values.
+Use existing tokens, variables, utilities, and component patterns.
 
-Support both light and dark mode for all visual changes.
+Prefer flexbox, grid, `gap`, and natural wrapping.
 
-## Reuse
+Avoid:
 
-Prefer reusable Vue components for repeated visual and interactive patterns.
+* unnecessary `!important`;
+* negative-margin hacks;
+* arbitrary positional offsets;
+* duplicated hard-coded colors;
+* global CSS for local problems;
+* fixed dimensions that break responsive layouts.
 
-Do not solve repeated UI patterns only through duplicated markup or large shared CSS selectors.
+Fix the underlying layout constraint rather than masking it.
 
-Before introducing a new component, composable, utility, or style abstraction, verify that it represents a real reusable responsibility.
+RSSMonster should remain clean, calm, professional, reading-focused, and low-noise.
 
-## Changes
+## Theme and colors
 
-Preserve existing comments unless they are no longer accurate.
+Theme is a first-class concern in RSSMonster. All UI changes must consider both light and dark mode. There is an an `AGENTS.md` file in styles/ that describes theme tokens and variables. Reuse existing semantic tokens before introducing new colors.
+Consider both light and dark mode for themed UI changes.
+Don't use hardcoded colors in components. Reuse existing semantic tokens before introducing new colors.
+Do not duplicate theme values inside components when shared variables already exist.
 
-Follow the existing project structure and naming conventions.
+## Accessibility
 
-Avoid unrelated refactoring while implementing a focused change.
+Use semantic elements.
 
-Keep changes maintainable, accessible, responsive, and consistent with the existing RSSMonster design.
+Interactive controls must preserve keyboard access, focus states, accessible names, and disabled/loading behavior.
+
+Use `<button>` for button behavior.
+
+Icon-only controls need an accessible name.
+
+## Article Content
+
+Do not recreate article-content transformations in UI components.
+
+Reuse canonical article fields and existing content services.
+
+Preserve existing sanitization and rendering boundaries for article HTML.
+
+## Performance
+
+Avoid:
+
+* expensive work in render paths;
+* repeated article parsing;
+* unnecessary deep watchers;
+* duplicated reactive state;
+* API calls triggered repeatedly by renders;
+* large client-side filtering when server-side support already exists.
+
+Do not remove existing lazy or incremental rendering behavior without understanding why it exists.
+
+## Testing
+
+Add focused regression tests when behavior changes and an established test pattern exists.
+
+Prioritize:
+
+* component contracts;
+* conditional rendering;
+* interactions;
+* API states;
+* layout-mode conditions;
+* composable/service logic.
+
+For visual-only changes that cannot be reliably automated, state what requires manual validation.
+
+## Final Standard
+
+Prefer:
+
+`reuse existing patterns · preserve layout boundaries · CSS before JS for layout · local state before global state · accessibility by default`
+
+Frontend changes should feel native to RSSMonster, not like generic Vue code added in isolation.

@@ -1,253 +1,128 @@
-# Agents.md — RSSMonster
+# AGENTS.md
 
-This is the **operator manual** for AI agents working in this repository.
-It prioritizes correctness, low-risk changes, and consistency with existing code.
+## Purpose
 
----
+RSSMonster is a self-hosted RSS reader built with Vue 3, Express 5, Sequelize, and Node.js.
 
-## 1) Agent Contract (How to Work Here)
+Make small, correct changes that fit the existing architecture.
 
-When you make changes in RSSMonster, optimize for:
+Default workflow: `inspect → understand → implement → test → lint → review diff`
 
-1. **Correctness first** — behavior must remain valid in production and tests.
-2. **Small diffs** — prefer minimal, focused edits over broad rewrites. Unless instructed otherwise, do not refactor unrelated code.
-3. **Local consistency** — follow surrounding patterns before introducing new ones.
-4. **Verifiability** — run targeted checks for touched areas.
-5. **Clear handoff** — leave concise notes in commit/PR messages.
+## Working Rules
 
-If a request conflicts with these principles, call out the risk and choose the safest compliant path.
+* Inspect relevant code before editing.
+* Check callers, tests, nearby patterns, models, and services when relevant.
+* Prefer repository evidence over assumptions.
+* Make the smallest change that fully solves the task.
+* Preserve behavior outside the requested scope.
+* Reuse existing helpers, services, composables, and patterns before creating new ones.
+* Preserve existing comments unless incorrect or obsolete.
+* Do not combine requested work with unrelated refactoring, formatting, renaming, cleanup, or file moves.
+* If required behavior cannot be established from the repository, explain the uncertainty instead of inventing it.
+* Never invent model fields, associations, API properties, constraints, routes, service contracts, or breakpoints.
 
----
+## Stack
 
-## 2) Repo Reality (What You’re Working In)
+* Node.js `>=22.19.0`; npm; JavaScript ESM only.
+* Client: Vue 3 + Vite. Server: Express 5 + Sequelize.
+* Tests: Vitest. Linting: ESLint.
+* Never introduce CommonJS `require()` or `module.exports`.
+* Models are initialized through `server/models/index.js`; reuse the existing factory pattern.
 
-- Monorepo with:
-  - `server/`: Express 5 + Sequelize + MySQL
-  - `client/`: Vue 3 + Vite + Pinia + RSSMonster-owned native CSS
-- Node.js 22+
-- ESM in app packages (`"type": "module"`)
+## Commands
 
-Key entry points:
-- Server: `server/bootstrap.js` → `server/app.js`
-- Client: `client/src/main.js`
+Use repository scripts; do not assume globally installed tools.
 
----
-
-## 3) Change Strategy (Best-Practice Workflow)
-
-Use this sequence for most tasks:
-
-1. **Orient quickly**
-   - Read any `README.md` files present in the folders relevant to the task and take their context into account.
-   - Read relevant module(s) and adjacent tests.
-   - Confirm the existing pattern you should imitate.
-2. **Plan a minimal patch**
-   - Change only what is required for the request.
-   - Avoid opportunistic refactors unless asked.
-3. **Implement with guardrails**
-   - Preserve public contracts unless the task is explicitly breaking-change work.
-4. **Validate proportionally**
-   - Run lint/tests closest to changed code first.
-5. **Summarize clearly**
-   - State what changed, why, and what was verified.
-
----
-
-## 4) Non-Negotiable Technical Rules
-
-### 4.1 Modules and Imports
-- Use `import`/`export` (ESM) in application code.
-- In **server** local imports, include `.js` extension.
-- Do not introduce `require()` in app runtime files.
-- Migration files are the exception (CommonJS `module.exports`).
-
-### 4.2 Sequelize Model Access
-- Import models through `server/models/index.js` only:
-  ```js
-  import db from '../models/index.js';
-  const { Article, Feed, Category } = db;
-  ```
-- Do not import model definition files directly.
-
-### 4.3 Controllers and Auth
-- Wrap handlers in `try/catch`.
-- Log with actionable context, e.g. `console.error('Error in fnName:', err)`.
-- Verify `req.userData.userId`; return 401 when absent.
-- Prefer early-return validation.
-
-### 4.4 Routing
-- Keep route modules thin (middleware + controller wiring).
-- API routes are mounted under `/api/*` in `server/app.js`.
-
-### 4.5 Database Migrations
-- Add new migration files; do not edit old applied migrations.
-- Filename format: `YYYYMMDDHHMMSS-description.js`.
-- Use FK cascades where appropriate:
-  `onUpdate: 'CASCADE'`, `onDelete: 'CASCADE'`.
-
-### 4.6 Frontend Architecture
-- Use Vue 3 **Options API** in this repo.
-- Do not introduce `<script setup>` patterns.
-- Use RSSMonster-owned native styles and Bootstrap Icons; do not add Bootstrap framework dependencies, classes, or runtime APIs.
-- Always follow the styling agent instructions in `client/src/assets/styles/Agents.md` for any UI or styling work.
-- Add dark-mode styling support for new UI styles:
-  `@media (prefers-color-scheme: dark)`.
-
-### 4.7 API and Store Layers
-- `client/src/api/`: named exports, concise functions, shared Axios client.
-- Let API errors bubble; avoid redundant per-method error wrappers.
-- `client/src/store/`: options-style Pinia stores; alias API imports with `API` suffix.
-
-### 4.8 HTML URL Processing
-- `normalizeHtmlUrls()` owns canonicalization and converts relative URLs into absolute HTTP(S) URLs.
-- `sanitizeHtmlContent()` owns safety by validating and filtering URLs and attributes, but does not guarantee canonical absolute URLs on its own.
-
-### 4.9 Daily Briefing Preferences
-- `BriefingPreference` is a one-to-one, user-owned record; do not create more than one row per user.
-- `selectionPeriod` persists only `24h` or `7d`, with `7d` as the default.
-
----
-
-## 5) Quality Gates (What to Run)
-
-Choose the smallest checks that prove your change is safe.
-
-### Server changes
 ```bash
-cd server
-npm run lint
-npm test
+cd client && npm test && npm run lint && npm run build
+cd server && npm test && npm run lint
 ```
 
-### Client changes
-```bash
-cd client
-npm run lint
-npm test
-npm run build
-```
+Prefer focused tests first when possible. Do not run migrations, seeds, repair/backfill scripts, semantic rebuilds, deployment commands, or other production-oriented operations unless explicitly requested or required by the task. Never claim a check passed unless it actually ran successfully.
 
-### Full stack (when integration behavior is affected)
-```bash
-docker-compose up
-```
+## Backend
 
-Testing notes:
-- Vitest is used in both packages.
-- Server tests use real DB behavior (not Sequelize model mocks).
-- `supertest` is the expected HTTP test approach.
-- `DISABLE_LISTENER` can suppress server listen side effects in tests.
+* Routes are mounted under `/api/*`.
+* Keep controllers focused on validation, ownership/visibility, orchestration, and responses.
+* Reuse existing domain/service logic instead of duplicating it.
+* Treat API response shapes as contracts; inspect callers before changing them.
+* Inspect models, indexes, constraints, and transaction usage before changing persistence logic.
+* Avoid N+1 queries and unnecessarily unbounded queries.
+* RSSMonster is multi-user: direct and indirect results must respect existing ownership and visibility rules.
 
----
+## Domain Invariants
 
-## 6) High-Signal Pitfalls (Frequently Causes Regressions)
+Inspect existing behavior before changing:
 
-- Reading a `fetch` response body twice without `response.clone()`.
-- Importing Sequelize models directly instead of via `models/index.js`.
-- Using Express 4 idioms incompatible with Express 5 behavior.
-- Forgetting `.js` extension in server local imports.
-- Modifying existing migrations instead of adding new ones.
-- Introducing frontend patterns inconsistent with existing Options API code.
+* article identity, revisions, duplicates, and canonical records;
+* filtering and visibility;
+* content normalization;
+* feed crawling and health;
+* semantic recommendations and clustering.
 
-All post-crawl semantic processing operates only on **new, unfiltered articles**.
-Every downstream candidate query must independently enforce the matching `userId`,
-`Article.createdAt >= createdAtFrom`, and `filteredInd = false`. Embedding must also
-require a missing article vector. This scope must never use `updatedAt`; publisher
-revisions update `updatedAt` and do not re-enter the semantic pipeline.
-Historical semantic processing requires an explicit rebuild workflow.
+Article processing conceptually follows:
+`extraction → identity → normalization → revision handling → duplicate detection → filtering → AI enrichment → persistence`
 
----
+Do not reorder these stages casually.
 
-## 7) Preferred Style Defaults
+`contentOriginal`, `contentStripped`, `contentText`, and `description` are distinct contracts. Do not treat them as interchangeable.
 
-- Naming:
-  - `camelCase`: vars/functions
-  - `PascalCase`: Vue components
-  - `UPPER_SNAKE_CASE`: constants
-- Keep functions cohesive and readable; prefer early returns.
-- Follow lint rules rather than personal formatting preferences.
+Deterministic identity takes precedence over semantic similarity. Similar content is not automatically duplicate content.
 
-### 7.1 Commenting and Documentation
+A repeated feed item may be a revision rather than a new article. Preserve identity and user state according to existing revision semantics.
 
-- Add a concise `//` comment immediately above every function declaration, function expression, arrow-function declaration, exported function, and class method.
-- For inline callbacks that cannot receive a preceding comment without restructuring code, comment the containing declaration or operation instead.
-- Explain the purpose, business meaning, decision, or effect of the code rather than translating its syntax.
-- Mention important semantics such as user scoping, ownership, filtering, fallbacks, thresholds, processing state, and error handling where applicable.
-- Keep comments concise, preferably one sentence in sentence case that starts with a capital letter and ends with a period.
-- Do not add comments above imports, simple object properties, obvious assignments, closing braces, or return statements unless they clarify non-obvious behavior.
-- Avoid duplicate, stale, speculative, or syntax-only comments; describe only behavior that can be verified from the code and its callers.
-- Do not restructure or reformat executable code solely to make room for a comment.
-- Add a concise business-meaning comment immediately above every explicit Sequelize model attribute.
+Semantic features are probabilistic. Use deterministic eligibility rules, bounded candidate sets, ownership/visibility filtering, and meaningful thresholds. Zero recommendations is valid.
 
----
+For crawl changes, preserve useful failure, timing, retry, and recovery information. Avoid retry storms and parallel crawler implementations when existing fetch/crawl logic can be reused.
 
-## 8) File Map (Fast Navigation)
+## Frontend
 
-- Server
-  - App bootstrap: `server/bootstrap.js`, `server/app.js`
-  - Controllers: `server/controllers/`
-  - Routes: `server/routes/`
-  - Models: `server/models/`
-  - Migrations: `server/migrations/`
-  - Scripts: `server/scripts/`
-  - Util: `server/utils/` # helpers, middleware, etc.
-  - Services: `server/services/` # business logic for processing articles, events, topics, islands, etc.
-- Client
-  - Root app: `client/src/App.vue`, `client/src/AppShell.vue`
-  - Components: `client/src/components/`
-  - API services: `client/src/api/`
-  - Stores: `client/src/store/`
-  - Global styles: `client/src/assets/scss/global.scss`
+* Follow existing Vue Single File Component patterns.
+* Keep rendering/interaction in components, reusable reactive behavior in composables, and API/non-visual logic in services where the existing architecture supports it.
+* Do not extract CSS or JavaScript merely to reduce component size.
+* Reuse existing API services and normalization logic.
+* Preserve distinctions between Reader, Expanded, mobile, and tablet layouts; do not assume a feature belongs everywhere.
+* Prefer CSS for layout behavior; reuse existing responsive logic when JavaScript behavior depends on layout.
+* Consider both light and dark mode for themed UI changes.
+* Preserve semantic controls, keyboard access, focus states, and accessible names.
 
----
+## Code Style
 
-## 9) Definition of Done for Agent Changes
+* Follow surrounding code.
+* Prefer concise, readable JavaScript and compact single-expression assignments when clear.
+* Prefer early returns over unnecessary nesting.
+* Avoid clever abstractions and speculative generalization.
+* Add dependencies only when the existing stack cannot reasonably solve the problem.
+* Comment non-obvious domain rules or intentional behavior, not obvious code.
 
-A change is done when all are true:
+## Validation
 
-1. Requested behavior is implemented.
-2. Diff is minimal and consistent with local code patterns.
-3. Relevant lint/tests/build checks pass (or limitations are documented).
-4. No unrelated refactors are bundled.
-5. Commit and PR notes clearly explain scope and validation.
+For behavior changes, add focused regression tests when the area has an established testing pattern.
 
-## 10) UI Design Philosophy
+Before finishing:
 
-Build a calm, content-first reading experience inspired by Feedbin, Reeder, Readwise Reader, Apple Mail, and Linear.
+1. run relevant tests;
+2. run relevant linting;
+3. run a build when appropriate;
+4. inspect `git diff` and `git status`;
+5. verify only expected files changed.
 
-### Core Principles
+If validation cannot be run, state that clearly.
 
-- Content is more important than chrome.
-- Prefer whitespace over visual decoration.
-- Use a single accent color for selection states.
-- Avoid gradients, glass effects, excessive shadows, and unnecessary animations.
-- Typography is the primary visual hierarchy.
-- Optimize for long reading sessions.
+## Permissions
 
-### Visual Style
+Allowed without asking: inspect/search files, edit task-related files, run focused tests/lint/builds, and inspect git diff/status.
 
-- Minimalist
-- Professional
-- Calm
-- Dense but not cluttered
-- Similar to Feedbin, Reeder, Readwise Reader, and Linear
+Do not do unless explicitly requested: install/upgrade dependencies; run migrations, seeds, resets, repairs, or backfills; deploy; push/merge remote branches; modify production data.
 
-### Default Buttons
+Never commit secrets, credentials, tokens, or environment-specific private values.
 
-- Use app-owned semantic button classes for new or updated controls.
-- Default buttons are compact: 40px minimum height, 8px radius, 14px text, and 700 font weight.
-- Primary actions use a solid `--color-primary` background with inverted text and `--color-primary-hover` on hover.
-- Secondary actions use `--bg-control`, `--border-input`, and `--text-primary`, with `--bg-hover` on hover.
-- Destructive actions use a solid `--color-danger` background with inverted text and `--color-danger-hover` on hover.
-- All buttons need a visible `:focus-visible` state, and disabled buttons must clearly communicate that they are unavailable.
+## Audits
 
-### Avoid
+When asked to audit, investigate, review, or analyze, do not modify code unless implementation is also requested. Separate confirmed issues from suggestions and support conclusions with repository evidence.
 
-- Material Design dashboards
-- Card-heavy layouts
-- Large hero headers
-- Bright colors
-- Excessive icons
-- Marketing-style UI patterns
+## Final Standard
 
-The application should feel like a professional knowledge management tool rather than a consumer news website.
+Prefer: `inspect before assuming · reuse before creating · extend before replacing · fix before refactoring · bounded before unbounded`
+
+Code should feel deliberately written for RSSMonster, not generically generated for a Vue/Express application.

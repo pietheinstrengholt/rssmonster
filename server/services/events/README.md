@@ -1,4 +1,4 @@
-# AGENTS.md
+# README.md
 
 # Event System
 
