@@ -1,4 +1,5 @@
 import { DataTypes } from 'sequelize';
+import { unsignedBigIntType } from './databaseTypes.js';
 
 export default (sequelize) => {
   const IslandTopic = sequelize.define(
@@ -6,7 +7,7 @@ export default (sequelize) => {
     {
       // Identifies the interest island participating in this topic membership.
       islandId: {
-        type: DataTypes.BIGINT.UNSIGNED,
+        type: unsignedBigIntType(sequelize),
         allowNull: false,
         primaryKey: true
       },

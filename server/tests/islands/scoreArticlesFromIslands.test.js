@@ -200,6 +200,83 @@ describe('scoreArticlesFromIslandsForUser', () => {
     expect(filteredArticle.interestScore).toBe(0.95);
   });
 
+  it('uses the strongest absolute active island weight and excludes duplicates', async () => {
+    const { user, feed } = await createUserGraph();
+    const suffix = randomUUID();
+    const topic = await Topic.create({
+      userId: user.id,
+      name: 'Strongest topic',
+      topicKey: `strongest-topic-${suffix}`,
+      topicVector: null
+    });
+    const islands = await Promise.all([
+      Island.create({
+        userId: user.id,
+        label: 'Positive island',
+        weight: 0.6,
+        islandVector: null,
+        archivedInd: false
+      }),
+      Island.create({
+        userId: user.id,
+        label: 'Negative island',
+        weight: -0.8,
+        islandVector: null,
+        archivedInd: false
+      }),
+      Island.create({
+        userId: user.id,
+        label: 'Archived island',
+        weight: 0.95,
+        islandVector: null,
+        archivedInd: true
+      })
+    ]);
+    const canonicalArticle = await Article.create(articlePayload(
+      user.id,
+      feed.id,
+      1,
+      suffix,
+      { articleVector: null }
+    ));
+    const duplicateArticle = await Article.create(articlePayload(
+      user.id,
+      feed.id,
+      2,
+      suffix,
+      {
+        articleVector: null,
+        duplicateOfArticleId: canonicalArticle.id,
+        interestScore: 0.9
+      }
+    ));
+
+    await Promise.all([
+      ArticleTopic.create({
+        articleId: canonicalArticle.id,
+        topicId: topic.id,
+        confidence: 1
+      }),
+      ArticleTopic.create({
+        articleId: duplicateArticle.id,
+        topicId: topic.id,
+        confidence: 1
+      }),
+      ...islands.map(island => IslandTopic.create({
+        islandId: island.id,
+        topicId: topic.id,
+        confidence: 1
+      }))
+    ]);
+
+    const result = await scoreArticlesFromIslandsForUser(user.id);
+    await Promise.all([canonicalArticle.reload(), duplicateArticle.reload()]);
+
+    expect(result.topicScoredCount).toBe(1);
+    expect(canonicalArticle.interestScore).toBe(-0.8);
+    expect(duplicateArticle.interestScore).toBe(0.9);
+  });
+
   it('uses vector similarity when an unread article has no topic island', async () => {
     const { user, feed } = await createUserGraph();
     const suffix = randomUUID();

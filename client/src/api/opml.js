@@ -16,6 +16,7 @@ export const importOpml = (opmlFile) => {
   return api.post('/opml/import', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
-    }
+    },
+    timeout: 60000
   });
 };

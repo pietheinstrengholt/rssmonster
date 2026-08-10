@@ -2,6 +2,7 @@ import { DataTypes } from 'sequelize';
 import { createHash } from 'node:crypto';
 import normalizeUrl from '../services/crawl/content/normalizeUrl.js';
 import { hashOriginalContent, hashVisibleText } from '../utils/articleContentHashes.js';
+import { unsignedIntegerType } from './databaseTypes.js';
 
 const TAU_HOURS = 48; // tune this globally
 const NEUTRAL_FEED_TRUST = 0.75;
@@ -200,12 +201,12 @@ export default (sequelize) => {
       },
       // Stores the selected lead image's pixel width; null when unknown.
       imageWidth: {
-        type: DataTypes.INTEGER.UNSIGNED,
+        type: unsignedIntegerType(sequelize),
         allowNull: true
       },
       // Stores the selected lead image's pixel height; null when unknown.
       imageHeight: {
-        type: DataTypes.INTEGER.UNSIGNED,
+        type: unsignedIntegerType(sequelize),
         allowNull: true
       },
       // Stores the selected lead image's media type; null when unknown.

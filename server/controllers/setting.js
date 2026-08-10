@@ -83,6 +83,9 @@ export const getCrawlStatistics = async (req, res, _next) => {
     }
 
     const calendarDate = db.Sequelize.fn('DATE', db.Sequelize.col('startedAt'));
+    const startedAtFrom = new Date();
+    startedAtFrom.setUTCHours(0, 0, 0, 0);
+    startedAtFrom.setUTCDate(startedAtFrom.getUTCDate() - (days - 1));
     const crawlStatistics = await CrawlRun.findAll({
       attributes: [
         [calendarDate, 'date'],
@@ -121,9 +124,7 @@ export const getCrawlStatistics = async (req, res, _next) => {
         userId,
         status: { [db.Sequelize.Op.in]: ['completed', 'failed'] },
         startedAt: {
-          [db.Sequelize.Op.gte]: db.Sequelize.literal(
-            `DATE_SUB(CURDATE(), INTERVAL ${days - 1} DAY)`
-          )
+          [db.Sequelize.Op.gte]: startedAtFrom
         }
       },
       group: [calendarDate],
