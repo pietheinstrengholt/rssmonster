@@ -219,6 +219,7 @@ export default (sequelize) => {
           'media-content',
           'media-thumbnail',
           'enclosure',
+          'cleaned-content',
           'content',
           'description',
           'publisher'

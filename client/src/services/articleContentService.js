@@ -204,7 +204,10 @@ export function normalizeArticleContent(value, fallbackImageUrl = '') {
   }
 }
 
-// This function strips and limits HTML for summarized article previews.
+// This function normalizes and limits canonical visible text for article previews.
 export function summarizeArticleContent(value) {
-  return value.replace(/<(.|\n)*?>/g, '').split(/\s+/).slice(0, 100).join(' ');
+  return String(value ?? '').replace(/\s+/g, ' ').trim().split(' ')
+    .filter(Boolean)
+    .slice(0, 100)
+    .join(' ');
 }

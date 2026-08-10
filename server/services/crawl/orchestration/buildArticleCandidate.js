@@ -135,7 +135,7 @@ const buildArticleCandidate = async ({
   let hotlinkUrls = [];
 
   // Extract known provider iframes before generic HTML cleanup removes unsafe embed tags.
-  let media = processMedia(entry, fields.content, fields.link);
+  let media = processMedia(entry, fields.content, fields.contentBaseUrl);
 
   // Generic content overrides media content while preserving structured media metadata.
   if (fields.content) {
@@ -143,7 +143,7 @@ const buildArticleCandidate = async ({
     const contentArguments = [
       fields.content,
       null,
-      fields.link,
+      fields.contentBaseUrl,
       feed,
       fields.title
     ];
@@ -167,7 +167,7 @@ const buildArticleCandidate = async ({
   const descriptionResult = processDescriptionContent(
     fields.description,
     fields.descriptionKind,
-    fields.link
+    fields.contentBaseUrl
   );
   const descriptionHtml = descriptionResult.html;
   const descriptionText = descriptionResult.text;
@@ -208,7 +208,7 @@ const buildArticleCandidate = async ({
   // Detects the article image while building article candidate.
   const leadImage = await detectArticleImage({
     entry,
-    articleUrl: fields.link,
+    articleUrl: fields.contentBaseUrl,
     contentHtml,
     content: fields.contentKind === 'text' ? null : fields.content,
     description: fields.description

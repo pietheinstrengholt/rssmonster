@@ -93,6 +93,35 @@ describe('crawl content sanitization', () => {
     expect(result.html).not.toMatch(/onerror|onclick|javascript:|<iframe|<script|<svg|style=/i);
   });
 
+  it('removes explicitly hidden text before sanitization and hashing', () => {
+    const source = '<p>Visible article text.</p>' +
+      '<div style="display: none">SEO tracking text</div>' +
+      '<p aria-hidden="TRUE">Inaccessible text</p>' +
+      '<section hidden>Hidden attribute text</section>' +
+      '<aside style="visibility: hidden !important">Invisible text</aside>';
+    const result = processHtmlContent(
+      source,
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Hidden text test',
+      'html'
+    );
+    const visibleOnly = processHtmlContent(
+      '<p>Visible article text.</p>',
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Hidden text test',
+      'html'
+    );
+
+    expect(result.content).toBe(source);
+    expect(result.html).toBe('<p>Visible article text.</p>');
+    expect(result.text).toBe('Visible article text.');
+    expect(result.contentTextHash).toBe(visibleOnly.contentTextHash);
+  });
+
   it('sanitizes HTML when the article URL is missing', () => {
     const result = processHtmlContent(
       '<p onclick="alert(1)">Safe body</p><script>alert(1)</script>',

@@ -77,7 +77,43 @@ describe('Feedsmith adapter', () => {
       </feed>
     `, { feedUrl: 'https://feeds.example.com/feed.xml' });
 
-    expect(feed.entries[0]).toMatchObject({ url: null, urlStatus: 'missing' });
+    expect(feed.entries[0]).toMatchObject({
+      url: null,
+      urlStatus: 'missing',
+      contentBaseUrl: 'https://feeds.example.com/feed.xml'
+    });
+  });
+
+  it('uses entry xml:base as the content base for a linkless stable-ID entry', () => {
+    const feed = parseFeedSource(`
+      <feed xmlns="http://www.w3.org/2005/Atom" xml:base="../feed-base/">
+        <title>Linkless content base</title><id>feed-id</id>
+        <entry xml:base="entries/42/">
+          <title>Linkless entry</title><id>entry-id</id>
+          <content type="html">&lt;p&gt;&lt;a href="inside"&gt;Inside&lt;/a&gt;&lt;/p&gt;</content>
+        </entry>
+      </feed>
+    `, { feedUrl: 'https://feeds.example.com/news/feed.xml' });
+
+    expect(feed.entries[0]).toMatchObject({
+      url: null,
+      contentBaseUrl: 'https://feeds.example.com/feed-base/entries/42/'
+    });
+  });
+
+  it('prefers the resolved article URL as the content base', () => {
+    const feed = parseFeedSource(`
+      <feed xmlns="http://www.w3.org/2005/Atom" xml:base="https://feeds.example.com/base/">
+        <title>Article content base</title><id>feed-id</id>
+        <entry xml:base="entries/">
+          <title>Linked entry</title><id>entry-id</id>
+          <link href="https://articles.example.com/posts/42" />
+          <content>Body</content>
+        </entry>
+      </feed>
+    `, { feedUrl: 'https://feeds.example.com/feed.xml' });
+
+    expect(feed.entries[0].contentBaseUrl).toBe('https://articles.example.com/posts/42');
   });
 
   it('leaves relative URLs inside content for the content rewriting pipeline', () => {

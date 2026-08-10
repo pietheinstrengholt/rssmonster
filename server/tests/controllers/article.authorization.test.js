@@ -93,6 +93,7 @@ describe('article ownership authorization', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.article.contentHtml).toBe('Article body');
+    expect(res.body.article.contentText).toBe('Article body');
     expect(article.contentOriginal).toBe('<p>Article body</p>');
     expect(res.body.article).not.toHaveProperty('contentOriginal');
     expect(JSON.stringify(res.body)).not.toContain('<p>Article body</p>');
@@ -172,7 +173,7 @@ describe('article ownership authorization', () => {
     expect(response.body[0]).not.toHaveProperty('articleVector');
     expect(response.body[0]).not.toHaveProperty('embedding_model');
     expect(response.body[0]).not.toHaveProperty('contentOriginal');
-    expect(response.body[0]).not.toHaveProperty('contentText');
+    expect(response.body[0].contentText).toBe('Article body');
     expect(response.body[0]).not.toHaveProperty('contentTextHash');
     expect(response.body[0]).not.toHaveProperty('contentSourceHash');
   });
@@ -926,7 +927,8 @@ describe('article ownership authorization', () => {
     expect(response.body.firstPage).toHaveLength(1);
     expect(response.body.firstPage[0]).toMatchObject({
       id: article.id,
-      title: article.title
+      title: article.title,
+      contentText: 'Article body'
     });
   });
 

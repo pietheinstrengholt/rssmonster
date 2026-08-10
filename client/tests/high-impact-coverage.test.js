@@ -399,18 +399,21 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
 
   it('covers row text, preview, thumbnail, and similar-count fallbacks', () => {
     const context = createReaderContext();
-    const longContent = `<p>${'word '.repeat(40)}</p>`;
+    const longContent = 'word '.repeat(40);
 
     expect(context.feedName({ author: 'Author' })).toBe('Author');
     expect(context.feedName({ feed: { feedName: 'Feed' } })).toBe('Feed');
     expect(context.feedName({})).toBe('Unknown feed');
-    expect(context.articlePreview({ contentSummary: longContent })).toMatch(/\.\.\.$/);
-    expect(context.articlePreview({ contentSummaryBullets: ['One', 'Two'] })).toBe('One Two');
-    expect(context.articlePreview({ contentHtml: '<p></p>' })).toBe('');
+    expect(context.articlePreview({ contentText: longContent })).toMatch(/\.\.\.$/);
+    expect(context.articlePreview({
+      contentText: 'Canonical <text> &amp; remains literal.',
+      contentHtml: '<p>Different rendered HTML.</p>'
+    })).toBe('Canonical <text> &amp; remains literal.');
+    expect(context.articlePreview({ contentHtml: '<p>HTML-only preview</p>' })).toBe('');
     expect(context.thumbnailUrl({ imageUrl: 'javascript:alert(1)', image: 'https://example.com/image.jpg' }))
       .toBe('https://example.com/image.jpg');
     expect(context.hasArticlePreview({ imageUrl: 'https://example.com/image.jpg' })).toBe(true);
-    expect(context.hasArticlePreview({ description: 'Readable' })).toBe(true);
+    expect(context.hasArticlePreview({ contentText: 'Readable' })).toBe(true);
     expect(context.similarCount({ eventArticleCountTotal: 4 })).toBe(3);
     expect(context.similarCount({ eventArticleCountTotal: 1 })).toBe(0);
     expect(context.similarCount({ eventArticleCountTotal: 4, isEventArticle: true })).toBe(0);

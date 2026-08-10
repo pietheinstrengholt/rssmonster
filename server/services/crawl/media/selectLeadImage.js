@@ -12,10 +12,13 @@ const THUMBNAIL_URL_PATTERN = /(?:^|[^a-z0-9])(thumbnail|thumb)(?:[^a-z0-9]|$)/i
 // Defines the tiny path pattern enforced by this service.
 const TINY_PATH_PATTERN = /(?:^|[/_.-])(?:w|width|h|height|resize)[=_-]?(?:[1-9]\d?|[12]\d{2}|3[01]\d)(?:[/_.-]|$)|(?:^|[/_.-])(?:[1-9]\d?|[12]\d{2}|3[01]\d)x(?:[1-9]\d?|[12]\d{2}|3[01]\d)(?:[/_.-]|$)/i;
 
+// Defines raw markup sources that cannot supply a lead image after cleanup rejected them.
+const INELIGIBLE_SOURCES = new Set(['raw-content', 'raw-description']);
+
 // Defines the source scores enforced by this service.
 const SOURCE_SCORES = {
   'media-content': 28,
-  content: 24,
+  'cleaned-content': 24,
   'media-thumbnail': 16,
   enclosure: 12,
   publisher: 10,
@@ -25,7 +28,7 @@ const SOURCE_SCORES = {
 // Defines the source strength enforced by this service.
 const SOURCE_STRENGTH = {
   'media-content': 6,
-  content: 5,
+  'cleaned-content': 5,
   enclosure: 4,
   publisher: 3,
   description: 2,
@@ -234,7 +237,7 @@ export default function selectLeadImage(candidates = []) {
     // Normalizes the normalized before selecting lead image.
     const normalized = normalizeCandidate(candidate);
     // Returns early when normalized is unavailable.
-    if (!normalized) return;
+    if (!normalized || INELIGIBLE_SOURCES.has(normalized.source)) return;
 
     // Derives the existing through get while selecting lead image.
     const existing = candidatesByUrl.get(normalized.url);

@@ -12,13 +12,43 @@ Copyright (c) 2026 Piethein Strengholt, piethein@strengholt-online.nl
 
 ## Overview
 
-RSSMonster is not just another RSS reader — it is an **intelligent reading engine** designed to help you cut through information overload and focus on what actually matters.
+RSSMonster is a **self-hosted, intelligent RSS reader** designed to help you cut through information overload and focus on what actually matters.
 
-Where traditional RSS aggregators like Feedbin, CommaFeed, Feedly and Inoreader primarily deliver **chronological lists of articles**, RSSMonster takes a fundamentally different approach: it **understands, evaluates, and prioritizes content** on your behalf — transparently and under your control.
+Traditional RSS readers are primarily organized around feeds, folders, and chronological article streams. RSSMonster adds a semantic and ranking layer on top: it groups articles covering the same event, evaluates signals such as quality, freshness, originality, and source trust, explains why stories rank highly, and lets you create declarative **Smart Folders** for the views that matter to you.
 
 ![Screenshot](docs/assets/screenshot04.png)
 
 At its core, RSSMonster treats your feeds as a stream of signals rather than a pile of unread items. New articles are enriched with quality, freshness, originality, trust, attention, and semantic relationship metadata. That extra context lets the application answer better questions: *is this worth reading now?*, *is this just syndicated copy?*, *which sources are covering the same event?*, and *which broader storyline does this belong to?*
+
+A conventional reader effectively sees:
+
+```
+Article
+Article
+Article
+Article
+Article
+Article
+```
+
+RSSMonster can increasingly interpret that as:
+
+```
+               Topic
+                 │
+          Nintendo / Zelda
+                 │
+        ┌────────┴─────────┐
+        │                  │
+      Event             Related
+        │               content
+    ┌───┼───┐
+    A   B   C
+        │
+   duplicates
+```
+
+![Screenshot](docs/assets/screenshot05.png)
 
 RSSMonster combines advanced search expressions, semantic clustering, quality analysis, and importance-based ranking into a system where **views are declarative, not hard-coded**. Instead of fixed tabs and opaque algorithms, you define *what matters* using composable queries that power dynamic **Smart Folders** such as:
 
@@ -27,31 +57,47 @@ RSSMonster combines advanced search expressions, semantic clustering, quality an
 - *Quick Scan* — summary-first daily overview  
 - *Low Noise Mode* — maximum signal, minimal volume  
 
-Every ranking decision is explainable. Every view is customizable. Every signal — freshness, quality, originality, trust — is visible and adjustable. The result is a reader that can behave like a quick daily briefing, a research inbox, a low-noise monitoring tool, or a classic feed reader depending on the view you choose.
+Ranking decisions are explainable and views are customizable. The result is a reader that can behave like a quick daily briefing, a research inbox, a low-noise monitoring tool, or a classic feed reader depending on the view you choose.
+
+## Why RSSMonster?
+
+- **Semantic event discovery**: RSSMonster groups reporting about the same real-world story into one expandable event, so several headlines from different sources become one event with multiple articles.
+- **Importance- and quality-aware ranking**: Freshness, personal interest, article quality, breadth of coverage, source diversity, corroboration, and source trust help surface worthwhile stories without hiding the underlying signals.
+- **Declarative Smart Folders**: Composable search expressions turn your own definition of “important” into reusable, dynamic reading views.
+- **Self-hosted and transparent**: Your feeds and reading data stay under your control, and ranking dimensions remain inspectable instead of disappearing inside an opaque recommendation system.
+
+## Docker Quick Start
+
+RSSMonster runs as a single application container and requires a MySQL database. If you already have MySQL available, this Linux/WSL example starts RSSMonster on port 3000:
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  --add-host=host.docker.internal:host-gateway \
+  -e NODE_ENV=production \
+  -e DB_HOSTNAME=host.docker.internal \
+  -e DB_PORT=3306 \
+  -e DB_DATABASE=rssmonster \
+  -e DB_USERNAME=rssmonster \
+  -e DB_PASSWORD=rssmonster \
+  rssmonster/rssmonster
+```
+
+Open `http://localhost:3000`. For a source installation or production setup, continue with [Manual Installation](#manual-installation) and [Production Deployment](#production-deployment).
 
 ## Key Features
 
-- **Lightweight & Responsive**: Built with Vue.js 3 and Express, with an RSSMonster-owned responsive design system for a fluid experience across all devices
-- **Different Reading Modes**: Choose the reading experience that fits your workflow. Use **Reader Mode** to browse article summaries alongside a details panel, **List Mode** to scan headlines quickly, or **Expanded Mode** to read full articles without distractions.
-- **Keyboard Shortcuts**: Navigate articles with the arrow keys or `j`/`k`, open an article with `Enter` or `o`, toggle its read status with `m` or `r`, save it with `s`, focus search with `/`, or refresh feeds with `Shift+R`.
-- **Advanced Search Expressions**: Composable filters using field operators (`favorite:true`, `star:true`, `unread:false`, `read:true`, `clicked:true`, `seen:false`, `hot:true`, `tag:tech`, `title:javascript`), article age filters (`firstSeen:24h`, `firstSeen:7d`), score thresholds (`quality:>0.6`, `freshness:>=0.5`), semantic filters (`event:true`, `event:false`, `developing:true`, `eventCount:>=3`, `island:true`, `island:false`), sorting (`sort:asc`, `sort:desc`, `sort:trust`, `sort:recommended`, `sort:quality`, `sort:attention`), and flexible date filters (`@2025-12-14`, `@today`, `@yesterday`, `@lastweek`, `@"3 days ago"`, `@"last Monday"`). `island:true` keeps articles whose event is linked through a topic to one of the user's active interest islands. `developing:true` returns only unread articles selected as their event's non-representative developing article and forces event grouping. Example: `title:javascript ai @today island:true quality:>0.6 sort:recommended`
-- **Smart Folders**: Smart Folders allow you to create declarative, dynamic views of your content using composable search expressions. Examples: `@today unread:true sort:recommended` (Top Stories Today), `unread:true quality:>0.7 sort:quality` (Worth Your Time), `event:true island:true eventCount:>=3 sort:recommended` (interest-aligned events), `hot:true unread:true sort:attention` (Low Noise Mode).
-- **Article Quality Scoring**: Each article is automatically evaluated for promotional content, sentiment neutrality, and writing quality, producing a normalized quality score used for ranking
-- **Event Discovery**: Multiple articles covering the same story are automatically grouped into events. Expand an event to compare reporting from different sources instead of reading duplicate coverage.
-- **Uniqueness Scoring**: Articles are ranked higher when they provide original coverage rather than repeated or copied content
-- **Feed Trust Scoring**: Sources earn a long-term trust score (0.0 to 1.0) based on content generation (articles per day), uniqueness, reading time, clicks, and starred items, improving ranking reliability over time. Run `npm run feedtrust` to calculate scores using originality (35%), quality (25%), engagement (20%), and consistency (20%)
-- **Importance-Based Ranking**: Articles are ranked using a transparent, runtime importance score combining freshness, quality, uniqueness, and feed trust — prioritizing what actually matters
-- **RSS Feed Generation**: Create custom RSS feeds from your stored articles with flexible filtering by user, feed, category, starred status, and read/unread state. Perfect for sharing curated content or syncing with other applications (accessible via `/rss` endpoint with query parameters)
-- **Progressive Web App (PWA)**: Install on any device for native app-like experience with offline support
-- **Drag & Drop Management**: Intuitive feed organization and categorization
-- **Dark Mode**: Automatic theme switching
-- **Mobile Swipe Gestures**: Quickly bookmark or process articles using intuitive swipe gestures on touch devices.
-- **OPML Support**: Import and export feeds in OPML format for seamless migration
-- **Fever API Compatible**: Works with popular RSS clients like Reeder (iOS)
-- **Google Reader API Compatible**: Works with apps like News+, FeedMe, Reeder, and Vienna RSS
-- **Automated Actions**: Define custom rules using regular expressions to automatically delete, star, mark as read, flag as advertisement, or mark articles as low quality
-- **Multi-user Support**: Separate accounts with personalized feeds and preferences
-- **AI-Powered Assistant**: Natural language search and feed management via Model Context Protocol (MCP)
+- **Flexible reading modes**: Use Reader Mode for summaries beside a details panel, List Mode for fast headline scanning, or Expanded Mode for distraction-free full articles. Keyboard shortcuts, drag-and-drop organization, dark mode, and mobile swipe gestures support efficient reading.
+- **Semantic event discovery**: Group related reporting, compare sources, identify duplicate coverage, and connect events to broader topics and personal interest islands.
+- **Smart Folders**: Build reusable views with queries such as `@today unread:true sort:recommended`, `unread:true quality:>0.7 sort:quality`, or `event:true island:true eventCount:>=3 sort:recommended`.
+- **Advanced search**: Combine article state, dates, tags, text, semantic filters, score thresholds, and sorting. See the [search guide](docs/search.md) for the supported operators.
+- **Transparent ranking signals**: Recommended ordering considers freshness, interest, quality, event coverage, publisher diversity, corroboration, rule tags, and optional feed-trust preference. Quality, uniqueness, attention, and feed trust remain visible signals with dedicated sorting or filtering where supported.
+- **PWA and mobile support**: Install RSSMonster on supported devices for an app-like experience with offline support and responsive controls.
+- **OPML and generated RSS**: Import or export subscriptions through OPML, and create filtered RSS feeds from stored articles through the `/rss` endpoint.
+- **Third-party client compatibility**: Connect Fever clients such as Reeder or Google Reader clients including News+, FeedMe, Reeder, Vienna RSS, and ReadKit.
+- **Automated actions**: Use regular-expression rules to delete, star, mark as read, flag as advertising, or mark matching articles as low quality.
+- **Multi-user support**: Keep accounts, subscriptions, reading state, preferences, and assistant interactions user-scoped.
+- **Optional AI assistant**: Enable natural-language search, summarization, classification, tagging, and feed interactions through the Model Context Protocol (MCP).
 
 ## Semantic Architecture
 
@@ -67,13 +113,14 @@ The semantic pipeline works in stages:
 
 This design keeps the intelligence of the reader inspectable. RSSMonster does not only decide what to show; it exposes the dimensions behind that decision so you can build views for different reading modes. A morning scan might prefer fresh event clusters with multiple sources, while deeper research might expand the full cluster, inspect related topic groups, and compare how different feeds covered the same story.
 
-Batch reclustering is available through `npm run recluster`. It rebuilds semantic assignments over the configured content window, refreshes event and topic statistics, and helps repair cluster quality after large imports, threshold changes, or embedding updates.
+Historical semantic rebuilding is available through `npm run semantic:all`. It rebuilds event, topic, and interest-island assignments for existing articles and is intended for explicit repair or migration workflows after large imports, algorithm changes, or embedding updates.
 
 ## How Ranking Scores Work (End User)
 
-- **Importance**: Blends freshness (recent items count more), quality, and coverage. Coverage rises when more sources report the same story. Freshness is the largest factor, so the newest high-quality, widely-covered items surface first.
+- **Recommended / importance ranking**: Combines freshness, personal interest, article quality, event coverage, publisher diversity, and cross-source corroboration. Meaningful multi-article events and user-defined rule tags can add small boosts; prioritizing high-trust feeds is an explicit preference. The result favors timely, relevant, well-supported stories while keeping its inputs inspectable.
 - **Attention**: Reflects how people interact with an article. A quick skim gives a small boost; reads, deep reads, and highly engaged sessions boost more. Re-opens and outbound clicks add a modest extra lift. No interaction means no attention boost.
-- **Quality**: Evaluates the article’s tone, writing, and promotional-ness. Scores for sentiment, writing quality, and advertisement detection combine into a single 0–1 quality score. Trusted feeds amplify good quality; lower-trust feeds dampen it.
+- **Quality**: Evaluates tone, writing, and promotional content. Sentiment, writing quality, and advertisement detection combine into a single 0–1 score, which feed-quality evidence can gently adjust.
+- **Uniqueness**: Describes how standalone an article is. Articles in larger event clusters receive a lower uniqueness signal, helping the interface identify redundant coverage without removing access to the underlying articles.
 
 ## Prerequisites
 
@@ -82,7 +129,7 @@ Batch reclustering is available through `npm run recluster`. It rebuilds semanti
 - **Git**: For cloning the repository
 - **MySQL**: Or any compatible database (with configuration adjustments)
 
-## Installation
+## Manual Installation
 
 ### 1. Clone the Repository
 
@@ -211,19 +258,18 @@ For an existing deployment, remove the obsolete PM2 process once with
 `pm2 delete rssmonster-dev && pm2 save`. Enable restoration after reboot with
 `pm2 startup`, run the command PM2 prints, then run `pm2 save` again.
 
-### 7. Recommended: Rebuild Article Clusters
+## Optional / Recommended Post-Installation Tasks
+
+### Rebuild Historical Semantic Data
 
 If you have semantic search enabled and need to rebuild article clusters from scratch:
 
 ```bash
 cd server
-npm run recluster
+npm run semantic:all
 ```
 
-This command will:
-- Clear all existing article clusters
-- Rebuild clusters deterministically based on article embeddings
-- Process articles in chronological order (oldest first)
+This command rebuilds historical event assignments, topics, interest islands, and interest scores for every user. Use `npm run semantic:all -- --userId=3` to limit the rebuild to one user.
 
 **When to use this:**
 - After bulk importing articles
@@ -231,9 +277,9 @@ This command will:
 - After changing clustering algorithms or parameters
 - To fix cluster assignment inconsistencies
 
-**Note:** This is a destructive operation that rebuilds all clusters. It requires articles to have embedding vectors already generated.
+**Note:** This is an explicit historical rebuild workflow. Normal post-crawl semantic processing only considers newly created, unfiltered articles.
 
-### 8. Recommended: Calculate Feed Trust Scores
+### Calculate Feed Trust Scores
 
 Feed trust scores help identify high-quality sources based on originality, article quality, and user engagement:
 
@@ -255,9 +301,9 @@ This command calculates trust scores (0.0 to 1.0) for all active feeds using:
 
 The trust score uses exponential moving average (EMA) to smoothly adapt over time while being resistant to short-term fluctuations.
 
-## AI Assistant (Model Context Protocol)
+## Optional AI Assistant (Model Context Protocol)
 
-RSSMonster includes an AI-powered assistant that enables natural language interactions with your RSS feeds. Ask questions like:
+RSSMonster can expose an AI-powered assistant for natural-language interactions with your RSS feeds. It is optional and complements the core semantic pipeline rather than replacing event discovery, ranking, topics, or Smart Folders. Ask questions like:
 - "Show me technology articles from the last week"
 - "What are my favorite articles?"
 - "Find unread posts about JavaScript"
@@ -353,27 +399,6 @@ The client will typically run on `http://localhost:8080` and the server on `http
    npm run start
    ```
 
-## Docker
-
-RSSMonster consists of a Vue.js client and an Express.js server and requires an external **MySQL** database.
-
-### Quick start
-
-If you already have a MySQL database, you can run rssmonster as a single container. Below an example for Linux / WSL:
-
-```bash
-docker run -d \
-  -p 3000:3000 \
-  --add-host=host.docker.internal:host-gateway \
-  -e NODE_ENV=production \
-  -e DB_HOSTNAME=host.docker.internal \
-  -e DB_PORT=3306 \
-  -e DB_DATABASE=rssmonster \
-  -e DB_USERNAME=rssmonster \
-  -e DB_PASSWORD=rssmonster \
-  rssmonster/rssmonster
-```
-
 ## HTTPS Configuration
 
 For production environments, use Let's Encrypt with Certbot for SSL/TLS certificates:
@@ -431,9 +456,7 @@ RSSMonster is compatible with the Fever API, enabling integration with third-par
 
 RSSMonster supports the Google Reader API, providing compatibility with a wide range of RSS clients.
 
-See the [Google Reader API compatibility matrix](docs/google-reader-api.md)
-for the exact endpoint contract, authentication examples, client checklist,
-identifier formats, and unsupported behavior.
+See the [Google Reader API compatibility matrix](docs/google-reader-api.md) for the exact endpoint contract, authentication examples, client checklist, identifier formats, and unsupported behavior.
 
 ### Configuration
 
@@ -449,25 +472,6 @@ identifier formats, and unsupported behavior.
 | [Reeder](https://www.reederapp.com/) | iOS/macOS | Classic version |
 | [Vienna RSS](http://www.vienna-rss.com/) | macOS | Open source |
 | [ReadKit](https://readkit.app/) | macOS | Multi-service reader |
-
-### API Endpoints
-
-```bash
-# Login (returns SID and Auth tokens)
-curl 'http://localhost:3000/api/greader/accounts/ClientLogin?Email=username&Passwd=password'
-
-# Get subscriptions
-curl -H "Authorization:GoogleLogin auth=username/token" \
-  'http://localhost:3000/api/greader/reader/api/0/subscription/list?output=json'
-
-# Get unread counts
-curl -H "Authorization:GoogleLogin auth=username/token" \
-  'http://localhost:3000/api/greader/reader/api/0/unread-count?output=json'
-
-# Get articles
-curl -H "Authorization:GoogleLogin auth=username/token" \
-  'http://localhost:3000/api/greader/reader/api/0/stream/contents/reading-list'
-```
 
 ### Supported Operations
 

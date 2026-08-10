@@ -68,11 +68,11 @@
           </div>
         </div>
         <ArticleMedia v-if="shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" @media-clicked="articleClicked" />
-        <ArticleContent :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="showMinimalContent" />
+        <ArticleContent :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :contentText="contentText" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="showMinimalContent" />
       </div>
     </div>
     <ArticleMedia v-if="isMinimalView && shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" @media-clicked="articleClicked" />
-    <ArticleContent v-if="isMinimalView" :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="shouldShowMinimalContent" />
+    <ArticleContent v-if="isMinimalView" :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :contentText="contentText" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="shouldShowMinimalContent" />
     <div class="article-divider"></div>
   </div>
 </template>
@@ -127,6 +127,7 @@ export default {
     imageUrl: { type: String, default: '' },
     media: { type: [Boolean, Object, Array, String], default: null },
     contentHtml: { type: String, default: '' },
+    contentText: { type: String, default: '' },
     language: { type: String, default: '' },
     createdAt: { type: [String, Date], default: '' },
     updatedAt: { type: [String, Date], default: '' },

@@ -114,8 +114,8 @@ describe('ArticleReaderLayout empty previews', () => {
   });
 
   it.each([
-    ['meaningful content', { contentHtml: '<p>Meaningful article body</p>' }],
-    ['a description', { description: 'A useful description' }],
+    ['meaningful content', { contentText: 'Meaningful article body' }],
+    ['a description-only article', { contentText: 'A useful description' }],
     ['an image', { imageUrl: 'https://example.com/lead.jpg' }]
   ])('hides the fallback for %s', (_label, previewFields) => {
     const wrapper = mountReader(createArticle(previewFields));
@@ -132,7 +132,7 @@ describe('ArticleReaderLayout empty previews', () => {
     }
   );
 
-  it('uses sanitized contentHtml as the rendered-content boundary', () => {
+  it('does not use sanitized contentHtml as reader preview text', () => {
     const wrapper = mountReader(createArticle({ contentHtml: '' }));
 
     expect(wrapper.find('.article-preview-empty').exists()).toBe(true);

@@ -246,12 +246,13 @@ import DailyBriefingIntro from "../briefing/DailyBriefingIntro.vue";
 import UnreadSelectionContext from "./UnreadSelectionContext.vue";
 import { formatRelativeDate } from '../../utils/date';
 import { formatTagName } from '../../utils/tags';
-import { hasRenderableContent, usableHttpUrl } from '../../utils/content';
+import { usableHttpUrl } from '../../utils/content';
 import {
   fetchArticleRecommendations,
   markClicked as markArticleClickedAPI
 } from '../../api/articles';
 import { notifyActionError } from '../../services/actionNotifications.js';
+import { summarizeArticleContent } from '../../services/articleContentService.js';
 import { getArticleStatusOption } from '../../config/articleSelectionOptions.js';
 
 const PREVIEW_LENGTH = 150;
@@ -774,22 +775,13 @@ export default {
     },
     // Returns a short plain-text preview for a row in the reader article list.
     articlePreview(article) {
-      const source = article.contentSummary || article.summary || article.contentSummaryBullets?.join(' ') || article.description || article.contentHtml || '';
-      if (!hasRenderableContent(source)) return '';
-      const text = String(source).replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ').trim();
+      const text = summarizeArticleContent(article.contentText);
       return text.length > PREVIEW_LENGTH ? `${text.slice(0, PREVIEW_LENGTH).trim()}...` : text;
     },
     // Returns whether the list item has meaningful body text, a summary, or an image.
     hasArticlePreview(article) {
-      const contentCandidates = [
-        article.contentHtml,
-        article.description,
-        article.contentSummary,
-        article.summary,
-        article.contentSummaryBullets?.join(' ')
-      ];
-
-      return contentCandidates.some(hasRenderableContent) || Boolean(this.thumbnailUrl(article));
+      return Boolean(summarizeArticleContent(article.contentText)) ||
+        Boolean(this.thumbnailUrl(article));
     },
     // Returns an image thumbnail URL for a row in the reader article list.
     thumbnailUrl(article) {

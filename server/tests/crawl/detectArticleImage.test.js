@@ -88,7 +88,7 @@ describe('detectArticleImage', () => {
       width: 1200,
       height: 675,
       mimeType: null,
-      source: 'content'
+      source: 'cleaned-content'
     });
   });
 
@@ -150,7 +150,7 @@ describe('detectArticleImage', () => {
       width: 1200,
       height: 675,
       mimeType: null,
-      source: 'content'
+      source: 'cleaned-content'
     });
   });
 
@@ -170,7 +170,7 @@ describe('detectArticleImage', () => {
       width: 1200,
       height: 675,
       mimeType: null,
-      source: 'content'
+      source: 'cleaned-content'
     });
   });
 
@@ -193,7 +193,7 @@ describe('detectArticleImage', () => {
       width: 1200,
       height: 675,
       mimeType: null,
-      source: 'content'
+      source: 'cleaned-content'
     });
   });
 
@@ -247,7 +247,7 @@ describe('detectArticleImage', () => {
       width: 1600,
       height: null,
       mimeType: null,
-      source: 'content'
+      source: 'cleaned-content'
     });
   });
 
@@ -270,7 +270,7 @@ describe('detectArticleImage', () => {
       width: 1600,
       height: 900,
       mimeType: null,
-      source: 'content'
+      source: 'cleaned-content'
     });
   });
 
@@ -292,7 +292,7 @@ describe('detectArticleImage', () => {
       width: 1600,
       height: null,
       mimeType: null,
-      source: 'content'
+      source: 'cleaned-content'
     });
   });
 
@@ -308,11 +308,11 @@ describe('detectArticleImage', () => {
       width: null,
       height: null,
       mimeType: null,
-      source: 'content'
+      source: 'cleaned-content'
     });
   });
 
-  it('returns metadata for the strongest body fallback candidate', async () => {
+  it('does not select an image found only in raw article content', async () => {
     const result = await detectImageFromFeedFixture({
       entry: {},
       articleUrl: 'https://news.example/posts/1',
@@ -330,13 +330,39 @@ describe('detectArticleImage', () => {
       title: 'Climate policy leaders meet in Brussels'
     });
 
-    expect(result).toEqual({
-      url: 'https://news.example/climate-policy.jpg',
-      width: 1200,
-      height: 675,
-      mimeType: null,
-      source: 'content'
+    expect(result).toBeNull();
+  });
+
+  it('does not let a large raw-content image beat an eligible feed candidate', async () => {
+    const result = await detectArticleImage({
+      entry: {
+        imageCandidates: [{
+          url: 'https://cdn.example/feed-thumbnail.jpg',
+          source: 'media-thumbnail'
+        }]
+      },
+      articleUrl: 'https://news.example/posts/1',
+      contentHtml: '<p>No surviving image.</p>',
+      content: '<img src="https://cdn.example/removed-hero.jpg" width="2400" height="1350">'
     });
+
+    expect(result).toEqual({
+      url: 'https://cdn.example/feed-thumbnail.jpg',
+      width: null,
+      height: null,
+      mimeType: null,
+      source: 'media-thumbnail'
+    });
+  });
+
+  it('does not select an image found only in a raw description', async () => {
+    const result = await detectArticleImage({
+      entry: {},
+      articleUrl: 'https://news.example/posts/1',
+      description: '<img src="/description-hero.jpg" width="2400" height="1350">'
+    });
+
+    expect(result).toBeNull();
   });
 
   it('returns null when no safe meaningful image is available', async () => {

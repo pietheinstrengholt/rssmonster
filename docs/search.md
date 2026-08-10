@@ -8,7 +8,9 @@ Find the right articles fast with a few expressive tokens. You can mix free text
 - `javascript @today sort:recommended` - fresh JavaScript stories ranked by recommended score
 - `title:"rust async" unread:true` - title contains the exact phrase, only unread
 - `tag:ai quality:>0.7 sort:quality` - tagged items with high quality first
-- `hot:true limit:50` - hottest 50 items (ignores feed filter)
+- `author:"Ada Lovelace" language:en` - English-language articles by a matching author
+- `developing:true eventCount:>=3` - unread developing coverage from events with at least three articles
+- `hot:true limit:50` - up to 50 articles marked hot
 
 ---
 
@@ -20,28 +22,57 @@ Find the right articles fast with a few expressive tokens. You can mix free text
 ---
 
 ## Filters & Tokens
-- Status: `unread:true|false`, `read:true|false`, `favorite:true|false`, `clicked:true|false`, `seen:true|false`, `hot:true|false` (hot ignores feed filter when true).
-- Age: `firstSeen:24h` or `firstSeen:7d` (filters articles by how long ago they were first seen).
-- Tags: `tag:my-tag` matches articles tagged for the current user.
-- Quality: `quality:>0.7` (operators: `>`, `<`, `>=`, `<=`, `=`; default is `>=`).
-- Freshness: `freshness:>=0.5` (operators: `>`, `<`, `>=`, `<=`, `=`; default is `>=`).
-- Events: `event:true` shows articles that belong to an event; `event:false` shows articles that are not assigned to any event.
-- Event size: `eventCount:>=3` keeps articles whose event has at least 3 articles. `eventCount:3` is accepted as the same minimum-count shorthand.
-- Interest islands: `island:true` keeps articles whose event has at least one primary or secondary topic linked to one of the user's active interest islands. `island:false` keeps articles without such a link, including articles without an event. Archived islands are not applicable.
-- Briefing: `briefing:true` keeps articles with a nonzero interest score or membership in an event containing more than one article. `briefing:false` keeps articles with neither signal.
-- Sort: `sort:desc|asc|trust|recommended|quality|attention`. Trust orders by feed trust and then newest publication; recommended, quality, and attention sorts are computed in memory after fetching.
-- Limit: `limit:50` caps results (overrides defaults).
+
+### Article state
+
+- `unread:true|false` includes unread or read articles. `read:true|false` provides the inverse form.
+- `favorite:true|false` includes starred or unstarred articles. `star:true|false` is an alias with the same behavior.
+- `clicked:true|false` includes articles with at least one outbound click or with no clicks.
+- `seen:true|false` includes articles that have or have not appeared on screen.
+- `hot:true|false` includes articles marked hot or not hot within the active feed/category scope.
+
+### Article fields and age
+
+- `tag:my-tag` matches articles carrying that tag for the current user.
+- `title:keyword` or `title:"exact phrase"` searches only article titles.
+- `author:name` or `author:"Ada Lovelace"` performs a case-insensitive author substring match.
+- `language:en` matches an exact two- or three-letter stored language code, such as `en` or `eng`.
+- `firstSeen:12h` or `firstSeen:7d` includes articles first seen within that many hours or days, plus articles that have never been seen.
+
+### Scores
+
+- `quality:>0.7` filters the computed 0–1 article-quality score.
+- `freshness:>=0.5` filters the computed 0–1 publication-time freshness score.
+
+Both score filters accept `>`, `<`, `>=`, `<=`, or `=`. Omitting the operator uses `>=`, so `quality:0.7` means `quality:>=0.7`.
+
+### Semantic and briefing filters
+
+- `event:true` includes articles assigned to an event; `event:false` includes articles without an event.
+- `eventCount:>=3` includes articles whose event has at least three articles. `eventCount:3` is the equivalent shorthand; other comparison operators are not supported.
+- `island:true` includes articles whose event has a primary or secondary topic linked to one of the user's active interest islands. `island:false` includes articles without such a link, including articles without an event. Archived islands do not qualify.
+- `developing:true` includes only unread articles selected as the developing, non-representative article for an event and forces event grouping with developing-event selection. `developing:false` excludes articles meeting that exact condition.
+- `briefing:true` includes articles with a nonzero interest score or membership in an event containing more than one article. `briefing:false` includes articles with neither signal. Briefing preferences can further narrow results when the Briefing view invokes this filter.
+
+### Sorting and limits
+
+- `sort:desc` orders newest first; `sort:asc` orders oldest first.
+- `sort:trust` orders by feed trust, then newest publication date and article ID.
+- `sort:recommended` uses freshness, interest, quality, event coverage, source diversity, corroboration, and applicable boosts.
+- `sort:quality` orders by computed article quality.
+- `sort:attention` orders by recorded reading attention and outbound-click activity.
+- `limit:50` caps the result set and overrides the normal search or Smart Folder limit.
 
 ---
 
 ## Date Filters
-- Specific day (UTC): `@2025-12-14`. The value must be a real calendar day;
+- Specific day (UTC): `@YYYY-MM-DD`, for example `@2025-12-14`. The value must be a real calendar day;
   normalized or impossible dates such as `@2026-02-31` are rejected.
 - Rolling window: `@today` (last 24h)
 - Previous UTC day: `@yesterday`
 - Previous 7 days: `@lastweek`
-- Exact N days ago (UTC day): `@"3 days ago"`
-- Most recent weekday: `@"last Monday"`
+- Exact N days ago (UTC day): `@"3 days ago"` or `@3 days ago`
+- Previous named weekday: `@"last Monday"` or `@last Monday`
 
 Date filters replace the normal published-date window; they are inclusive of the whole day when applicable.
 

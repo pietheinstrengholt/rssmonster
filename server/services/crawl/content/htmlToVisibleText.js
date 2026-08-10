@@ -50,14 +50,14 @@ const PARAGRAPH_ELEMENTS = new Set([
 const TRAILING_LINE_ELEMENTS = new Set(['caption', 'li', 'tr']);
 
 // This function reports whether publisher markup explicitly hides one element.
-const isHiddenElement = node => {
+export const isExplicitlyHiddenElement = node => {
   const attributes = node.attribs || {};
   const style = String(attributes.style || '').replace(/\s+/g, '').toLowerCase();
 
   return attributes.hidden !== undefined ||
-    String(attributes['aria-hidden'] || '').toLowerCase() === 'true' ||
-    /(?:^|;)display:none(?:;|$)/.test(style) ||
-    /(?:^|;)visibility:hidden(?:;|$)/.test(style);
+    String(attributes['aria-hidden'] || '').trim().toLowerCase() === 'true' ||
+    /(?:^|;)display:none(?:!important)?(?:;|$)/.test(style) ||
+    /(?:^|;)visibility:hidden(?:!important)?(?:;|$)/.test(style);
 };
 
 // This function appends DOM text and semantic boundaries in document order.
@@ -69,7 +69,7 @@ const appendVisibleText = (node, chunks, preserveLines = false) => {
   }
 
   const name = String(node.name || '').toLowerCase();
-  if (HIDDEN_ELEMENTS.has(name) || isHiddenElement(node)) return;
+  if (HIDDEN_ELEMENTS.has(name) || isExplicitlyHiddenElement(node)) return;
 
   if (name === 'br') {
     chunks.push('\n');

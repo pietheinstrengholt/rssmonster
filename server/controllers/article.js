@@ -57,6 +57,7 @@ const loadArticleDetails = async (userId, articlesArray) => {
       'descriptionHtml',
       'descriptionText',
       'contentHtml',
+      'contentText',
       'contentSummaryBullets',
       'isOfficialSource',
       'officialOrganization',

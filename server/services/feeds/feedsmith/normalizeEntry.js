@@ -1,6 +1,9 @@
 import normalizeIdentity from './normalizeIdentity.js';
 import normalizeMedia from './normalizeMedia.js';
-import { resolveArticleLinkResult } from './resolveArticleLink.js';
+import {
+  resolveArticleLinkResult,
+  resolveContentBaseUrl
+} from './resolveArticleLink.js';
 
 // This function converts parseable feed dates to the stored ISO format.
 const normalizeDate = value => {
@@ -347,6 +350,11 @@ function normalizeEntry(entry, feedFormat = null, linkContext = {}) {
   // Resolves and classifies the article link while normalizing entry.
   const linkResult = resolveArticleLinkResult(entry, linkContext);
   const link = linkResult.url;
+  // Keeps resource resolution separate from the optional navigable article URL.
+  const contentBaseUrl = resolveContentBaseUrl(link, {
+    ...linkContext,
+    entryBaseUrl: entry?.xmlBase || null
+  });
   // Resolves content and description with their source-defined semantics.
   const selectedContent = resolveContent(entry, feedFormat);
   const selectedDescription = resolveDescription(entry, feedFormat);
@@ -356,13 +364,14 @@ function normalizeEntry(entry, feedFormat = null, linkContext = {}) {
   const normalizedMedia = normalizeMedia(
     entry,
     selectedContent.kind === 'text' ? null : selectedContent.value,
-    link
+    contentBaseUrl
   );
 
   return {
     title: entry.title?.trim() || 'Untitled',
     url: link || null,
     urlStatus: linkResult.status,
+    contentBaseUrl,
     description: selectedDescription.value,
     descriptionKind: selectedDescription.kind,
     content: selectedContent.value,

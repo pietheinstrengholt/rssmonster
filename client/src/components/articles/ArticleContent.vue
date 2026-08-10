@@ -13,7 +13,7 @@ import {
 } from '../../services/articleContentService.js';
 
 export default {
-  props: { viewMode: { type: String, default: '' }, content: { type: String, default: '' }, imageUrl: { type: String, default: '' }, imageWidth: { type: [Number, String], default: null }, imageHeight: { type: [Number, String], default: null }, imageMimeType: { type: String, default: '' }, imageSource: { type: String, default: '' }, contentSummaryBullets: { type: Array, default: () => [] }, visibleBulletCount: { type: Number, default: Infinity }, shouldShowImage: { type: Boolean, default: true }, showMinimalContent: { type: Boolean, default: false } },
+  props: { viewMode: { type: String, default: '' }, content: { type: String, default: '' }, contentText: { type: String, default: '' }, imageUrl: { type: String, default: '' }, imageWidth: { type: [Number, String], default: null }, imageHeight: { type: [Number, String], default: null }, imageMimeType: { type: String, default: '' }, imageSource: { type: String, default: '' }, contentSummaryBullets: { type: Array, default: () => [] }, visibleBulletCount: { type: Number, default: Infinity }, shouldShowImage: { type: Boolean, default: true }, showMinimalContent: { type: Boolean, default: false } },
   data() {
     return {
       loadedImageUrl: '',
@@ -31,8 +31,8 @@ export default {
     renderedContent() { return this.normalizedContent.html; },
     // Returns whether the article body contains readable text.
     hasArticleContent() { return this.normalizedContent.hasReadableContent; },
-    // Returns stripped and bounded text for summarized article previews.
-    summarizedContent() { return summarizeArticleContent(this.content); },
+    // Returns normalized and bounded canonical text for summarized article previews.
+    summarizedContent() { return summarizeArticleContent(this.contentText); },
     // Returns the persisted dimensions, or natural dimensions discovered after loading.
     leadImageDimensions() {
       const persistedWidth = Number(this.imageWidth);

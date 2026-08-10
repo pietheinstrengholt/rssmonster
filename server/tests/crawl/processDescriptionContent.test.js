@@ -42,6 +42,18 @@ describe('processDescriptionContent', () => {
     expect(result.text).toBe('First & second\n\nMalformed ending');
   });
 
+  it('removes explicitly hidden description content before sanitization', () => {
+    const result = processDescriptionContent(
+      '<p>Visible summary.</p><div style="display:none">SEO text</div>' +
+      '<p aria-hidden="true">Inaccessible text</p>',
+      'html',
+      'https://example.com/article'
+    );
+
+    expect(result.html).toBe('<p>Visible summary.</p>');
+    expect(result.text).toBe('Visible summary.');
+  });
+
   it('falls back to escaped visible text when sanitization fails', async () => {
     vi.resetModules();
     vi.doMock('../../services/crawl/content/sanitizeHtmlContent.js', () => ({

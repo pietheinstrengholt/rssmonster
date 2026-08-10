@@ -24,6 +24,24 @@ export const resolveSafeHttpUrl = (value, baseUrl = null) => {
   }
 };
 
+// This function selects the safe base used to resolve resources inside entry content.
+export const resolveContentBaseUrl = (articleUrl, {
+  entryBaseUrl = null,
+  feedUrl = null,
+  feedBaseUrl = null,
+  siteUrl = null
+} = {}) => {
+  // A navigable article URL is the most specific content-resolution context.
+  const resolvedArticleUrl = resolveSafeHttpUrl(articleUrl);
+  if (resolvedArticleUrl) return resolvedArticleUrl;
+
+  // Resolves feed and entry XML bases against the fetched feed URL in scope order.
+  const resolvedFeedBase = resolveSafeHttpUrl(feedBaseUrl, feedUrl) || feedUrl || siteUrl;
+  const resolvedEntryBase = resolveSafeHttpUrl(entryBaseUrl, resolvedFeedBase);
+
+  return resolvedEntryBase || resolvedFeedBase || siteUrl || null;
+};
+
 // This function selects and classifies the canonical article link across feed entry shapes.
 export const resolveArticleLinkResult = (entry, {
   entryBaseUrl = entry?.xmlBase || null,

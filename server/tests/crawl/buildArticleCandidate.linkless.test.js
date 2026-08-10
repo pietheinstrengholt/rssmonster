@@ -38,6 +38,36 @@ describe('buildArticleCandidate linkless entries', () => {
     expect(candidate.identityInput).toMatchObject({ link: null, normalizedUrl: null });
   });
 
+  it('resolves content and description URLs for a linkless stable-ID entry', async () => {
+    const candidate = await buildArticleCandidate({
+      feed: feed(),
+      entry: {
+        title: 'Linkless article with resources',
+        url: null,
+        urlStatus: 'missing',
+        contentBaseUrl: 'https://feeds.example.com/articles/42/',
+        externalId: 'opaque-guid-2',
+        externalIdType: 'guid',
+        content: '<p><a href="details">Details</a></p>',
+        contentKind: 'html',
+        description: '<p><img src="summary.jpg" alt="Summary"></p>',
+        descriptionKind: 'html',
+        categories: []
+      }
+    });
+
+    expect(candidate.articleData).toMatchObject({
+      link: null,
+      contentBaseUrl: 'https://feeds.example.com/articles/42/'
+    });
+    expect(candidate.articleData.contentHtml).toContain(
+      'href="https://feeds.example.com/articles/42/details"'
+    );
+    expect(candidate.articleData.descriptionHtml).toContain(
+      'src="https://feeds.example.com/articles/42/summary.jpg"'
+    );
+  });
+
   it('rejects an entry with neither a safe URL nor a stable format identity', async () => {
     await expect(buildArticleCandidate({
       feed: feed(),

@@ -145,11 +145,11 @@ export default async function detectArticleImage({
   // Selects the candidates based on whether image candidates is an array.
   const candidates = [
     ...(Array.isArray(entry?.imageCandidates) ? entry.imageCandidates : []),
-    ...extractHtmlCandidates(contentHtml, articleUrl, 'content')
+    ...extractHtmlCandidates(contentHtml, articleUrl, 'cleaned-content')
       .slice(0, MAX_CANDIDATES_PER_HTML_FRAGMENT),
-    ...extractHtmlCandidates(content, articleUrl, 'content')
+    ...extractHtmlCandidates(content, articleUrl, 'raw-content')
       .slice(0, MAX_CANDIDATES_PER_HTML_FRAGMENT),
-    ...extractHtmlCandidates(description, articleUrl, 'description')
+    ...extractHtmlCandidates(description, articleUrl, 'raw-description')
       .slice(0, MAX_CANDIDATES_PER_HTML_FRAGMENT)
   ];
 

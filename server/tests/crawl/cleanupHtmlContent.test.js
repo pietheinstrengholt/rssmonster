@@ -141,7 +141,7 @@ describe('cleanupHtmlContent', () => {
 
   it('preserves existing image, boilerplate, Mastodon-link, and empty-wrapper cleanup', () => {
     const $ = loadFragment(
-      '<div class="newsletter">Remove me</div>' +
+      '<div class="social-sharing">Remove me</div>' +
       '<img data-src="https://example.com/image.jpg">' +
       '<a href="https://example.com/article">' +
       '<span class="invisible">https://</span>' +
@@ -153,13 +153,67 @@ describe('cleanupHtmlContent', () => {
 
     cleanupHtmlContent($);
 
-    expect($('.newsletter')).toHaveLength(0);
+    expect($('.social-sharing')).toHaveLength(0);
     expect($('img').attr('src')).toBe('https://example.com/image.jpg');
     expect($('img').attr('loading')).toBe('lazy');
     expect($('a').text()).toBe('https://example.com/article/full');
     expect($('a span.invisible')).toHaveLength(0);
     expect($('a span')).toHaveLength(3);
     expect($('div')).toHaveLength(0);
+  });
+
+  it('preserves legitimate article sections with ambiguous semantic classes', () => {
+    const $ = loadFragment(
+      '<div class="related"><p>This section explains how these concepts are related.</p></div>' +
+      '<section class="newsletter"><h2>The rise of newsletters</h2>' +
+      '<p>Newsletter publishing has changed significantly.</p></section>' +
+      '<div class="comments"><p>The CEO\'s comments were published Tuesday.</p></div>' +
+      '<div class="author-bio"><p>The author describes their previous research.</p></div>'
+    );
+
+    cleanupHtmlContent($);
+
+    expect($('.related').text()).toContain('these concepts are related');
+    expect($('.newsletter').text()).toContain('The rise of newsletters');
+    expect($('.comments').text()).toContain("The CEO's comments");
+    expect($('.author-bio').text()).toContain('previous research');
+  });
+
+  it.each([
+    '.subscribe',
+    '.recommended',
+    '.read-more',
+    '.sponsor',
+    '.social',
+    '.ad',
+    '#related',
+    '#comments',
+    '#consent'
+  ])('does not remove article content solely because it matches %s', selector => {
+    const attribute = selector.startsWith('.')
+      ? `class="${selector.slice(1)}"`
+      : `id="${selector.slice(1)}"`;
+    const $ = loadFragment(`<div ${attribute}><p>Legitimate article text.</p></div>`);
+
+    cleanupHtmlContent($);
+
+    expect($(selector).text()).toContain('Legitimate article text.');
+  });
+
+  it('removes only high-confidence generic boilerplate and preserves surrounding content', () => {
+    const $ = loadFragment(
+      '<p id="before">Article introduction.</p>' +
+      '<div class="social-sharing"><a href="https://example.com/share">Share</a></div>' +
+      '<div class="advertisement">Advertisement</div>' +
+      '<div class="cookie-consent">Accept cookies</div>' +
+      '<p id="after">Article conclusion.</p>'
+    );
+
+    cleanupHtmlContent($);
+
+    expect($('.social-sharing, .advertisement, .cookie-consent')).toHaveLength(0);
+    expect($('#before').text()).toBe('Article introduction.');
+    expect($('#after').text()).toBe('Article conclusion.');
   });
 
   it('removes empty and whitespace-only wrappers', () => {
@@ -265,7 +319,7 @@ describe('cleanupHtmlContent', () => {
 
   it('preserves content regressions while removing publisher whitespace clutter', () => {
     const $ = loadFragment(
-      '<div class="newsletter"><blockquote>Remove boilerplate</blockquote></div>' +
+      '<div class="advertisement"><blockquote>Remove boilerplate</blockquote></div>' +
       '<div id="image"><img src="https://example.com/image.jpg"></div>' +
       '<div id="code"><code>const x = 1;</code></div>' +
       '<div id="quote"><blockquote>Quoted text</blockquote></div>' +
@@ -274,7 +328,7 @@ describe('cleanupHtmlContent', () => {
 
     cleanupHtmlContent($);
 
-    expect($('.newsletter, #clutter')).toHaveLength(0);
+    expect($('.advertisement, #clutter')).toHaveLength(0);
     expect($('#image > img')).toHaveLength(1);
     expect($('#code > code').text()).toBe('const x = 1;');
     expect($('#quote > blockquote').text()).toBe('Quoted text');

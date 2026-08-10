@@ -1,4 +1,4 @@
-import { load } from 'cheerio';
+import correlateRawEntries from './correlateRawEntries.js';
 
 // This function returns an XML element's namespace-independent local name.
 const localName = node => String(node?.name || '').toLowerCase().split(':').pop();
@@ -21,13 +21,10 @@ export default function preserveContentKinds(parsedFeed, source) {
     return parsedFeed;
   }
 
-  const $ = load(String(source), { xmlMode: true });
-  const feedElement = $.root().contents().toArray()
-    .find(node => node.type === 'tag' && localName(node) === 'feed');
-  const entryElements = childElements(feedElement, 'entry');
+  const { rawEntriesByParsedIndex } = correlateRawEntries(parsedFeed, source);
 
   parsedFeed.feed.entries.forEach((entry, index) => {
-    const entryElement = entryElements[index];
+    const entryElement = rawEntriesByParsedIndex[index];
     const contentElement = childElements(entryElement, 'content')[0];
     const summaryElement = childElements(entryElement, 'summary')[0];
     if (contentElement && typeof entry.content === 'string') {

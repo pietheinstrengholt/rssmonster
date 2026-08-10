@@ -1,4 +1,5 @@
 import normalizePublisherCards from './normalizePublisherCards.js';
+import { isExplicitlyHiddenElement } from './htmlToVisibleText.js';
 import { transformMastodonContent } from './compatibility/transformMastodonContent.js';
 import { transformRedditContent } from './compatibility/transformRedditContent.js';
 import { transformSubstackContent } from './compatibility/transformSubstackContent.js';
@@ -29,49 +30,14 @@ const DROP_TAGS = new Set([
 
 // Defines the boilerplate selectors enforced by this service.
 const BOILERPLATE_SELECTORS = [
-  // TODO: Make boilerplate removal score-based or context-aware to avoid
-  // removing real article content on sites that reuse these generic classes.
-  '.share',
-  '.sharing',
-  '.social',
+  // Generic boilerplate cleanup must remain limited to high-confidence structural selectors.
+  // Ambiguous publisher/content semantics should be handled by precise compatibility rules or future multi-signal logic.
   '.social-share',
   '.social-sharing',
-  '.newsletter',
-  '.subscribe',
-  '.subscription',
-  '.signup',
-  '.related',
-  '.related-posts',
-  '.related-articles',
-  '.recommended',
-  '.recommendations',
-  '.more-stories',
-  '.read-more',
   '.advertisement',
   '.advertisements',
-  '.ad',
-  '.ads',
-  '.sponsored',
-  '.sponsor',
-  '.cookie',
-  '.cookies',
-  '.consent',
   '.cookie-consent',
-  '.author-bio',
-  '.comments',
-  '.comment-section',
-  '#share',
-  '#sharing',
-  '#social',
-  '#newsletter',
-  '#subscribe',
-  '#related',
-  '#recommended',
-  '#advertisement',
-  '#ads',
-  '#comments',
-  '#cookie',
-  '#consent'
+  '#advertisement'
 ];
 
 // Defines the empty wrapper tags enforced by this service.
@@ -129,6 +95,13 @@ const PLACEHOLDER_IMAGE_FILENAMES = new Set([
   'clear.gif',
   'empty.gif'
 ]);
+
+// This function removes explicitly hidden subtrees before sanitization strips visibility metadata.
+function removeExplicitlyHiddenContent($) {
+  $('*').each((_, el) => {
+    if (isExplicitlyHiddenElement(el)) $(el).remove();
+  });
+}
 
 // This function returns the first available lazy image URL.
 function firstLazyImageSource(node) {
@@ -435,6 +408,7 @@ function removeEmptyWrappers($) {
 // This function prepares publisher HTML while it still has its original structure.
 function prepareHtmlContent($) {
   transformSubstackContent($);
+  removeExplicitlyHiddenContent($);
   recoverImageSources($);
   transformVimeoContent($);
 

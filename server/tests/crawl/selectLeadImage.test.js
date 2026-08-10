@@ -5,14 +5,14 @@ import selectLeadImage, { scoreCandidate } from '../../services/crawl/media/sele
 describe('selectLeadImage', () => {
   it('ignores malformed candidate URLs while retaining valid candidates', () => {
     expect(selectLeadImage([
-      { url: 'not a valid URL', source: 'content' },
-      { url: 'https://cdn.example/lead.jpg', source: 'content' }
+      { url: 'not a valid URL', source: 'cleaned-content' },
+      { url: 'https://cdn.example/lead.jpg', source: 'cleaned-content' }
     ])).toEqual({
       url: 'https://cdn.example/lead.jpg',
       width: null,
       height: null,
       mimeType: null,
-      source: 'content'
+      source: 'cleaned-content'
     });
   });
 
@@ -20,25 +20,46 @@ describe('selectLeadImage', () => {
     expect(selectLeadImage([
       {
         url: 'https://cdn.example/shared.jpg',
-        source: 'content',
+        source: 'cleaned-content',
         position: 1,
         alt: 'Brief'
       },
       {
         url: 'https://cdn.example/shared.jpg',
-        source: 'description',
+        source: 'media-thumbnail',
         position: 1,
         alt: 'A detailed editorial photograph'
       },
       {
         url: 'https://cdn.example/first.jpg',
-        source: 'content',
+        source: 'cleaned-content',
         position: 0
       }
     ])).toEqual(expect.objectContaining({
       url: 'https://cdn.example/shared.jpg',
-      source: 'content'
+      source: 'cleaned-content'
     }));
+  });
+
+  it.each([
+    'media-content',
+    'media-thumbnail',
+    'enclosure',
+    'publisher'
+  ])('keeps existing %s candidates eligible', source => {
+    expect(selectLeadImage([{
+      url: `https://cdn.example/${source}.jpg`,
+      width: 1200,
+      height: 675,
+      source
+    }])).toEqual(expect.objectContaining({ source }));
+  });
+
+  it('keeps deterministic input-order tie-breaking for eligible candidates', () => {
+    expect(selectLeadImage([
+      { url: 'https://cdn.example/first.jpg', source: 'publisher' },
+      { url: 'https://cdn.example/second.jpg', source: 'publisher' }
+    ])?.url).toBe('https://cdn.example/first.jpg');
   });
 
   it('scores moderate, extreme, and intermediate aspect ratios differently', () => {
@@ -88,7 +109,7 @@ describe('selectLeadImage', () => {
     const candidate = {
       width: 640,
       height: 360,
-      source: 'content',
+      source: 'cleaned-content',
       position: null,
       alt: null
     };
@@ -118,15 +139,15 @@ describe('selectLeadImage', () => {
   it('rejects empty, tiny, tracking, and decorative image candidates', () => {
     expect(selectLeadImage([
       null,
-      { url: '', source: 'content' },
-      { url: 'https://cdn.example/pixel.jpg', width: 1, height: 1, source: 'content' },
-      { url: 'https://cdn.example/small.jpg', width: 50, height: 50, source: 'content' },
+      { url: '', source: 'cleaned-content' },
+      { url: 'https://cdn.example/pixel.jpg', width: 1, height: 1, source: 'cleaned-content' },
+      { url: 'https://cdn.example/small.jpg', width: 50, height: 50, source: 'cleaned-content' },
       {
         url: 'https://cdn.example/photo.jpg',
         width: 300,
         height: 170,
         className: 'author portrait',
-        source: 'content'
+        source: 'cleaned-content'
       }
     ])).toBeNull();
   });
@@ -136,7 +157,7 @@ describe('selectLeadImage', () => {
       url: 'https://cdn.example/width.jpg',
       width: 1200,
       height: null,
-      source: 'content',
+      source: 'cleaned-content',
       position: null,
       alt: null
     });
@@ -144,7 +165,7 @@ describe('selectLeadImage', () => {
       url: 'https://cdn.example/height.jpg',
       width: null,
       height: 675,
-      source: 'content',
+      source: 'cleaned-content',
       position: null,
       alt: null
     });

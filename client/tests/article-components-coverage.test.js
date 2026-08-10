@@ -21,6 +21,7 @@ import { notifyActionError } from '../src/services/actionNotifications.js';
 import {
   normalizeArticleContent,
   safeDescriptionFallbackHtml,
+  summarizeArticleContent,
   youtubeVideoIdFromUrl
 } from '../src/services/articleContentService.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
@@ -235,9 +236,11 @@ describe('ArticleContent presentation', () => {
   it('renders summarized text and bounded summary bullets', async () => {
     const summarized = mountArticleContent({
       viewMode: 'summarized',
-      content: `<p>${Array.from({ length: 105 }, (_, index) => `word${index}`).join(' ')}</p>`
+      content: '<p>Rendered HTML must not supply the summary.</p>',
+      contentText: Array.from({ length: 105 }, (_, index) => `word${index}`).join(' ')
     });
     expect(summarized.get('p').text().split(' ')).toHaveLength(100);
+    expect(summarized.get('p').text()).not.toContain('Rendered HTML');
 
     await summarized.setProps({
       viewMode: 'summaryBullets',
@@ -248,6 +251,20 @@ describe('ArticleContent presentation', () => {
 
     await summarized.setProps({ contentSummaryBullets: [] });
     expect(summarized.get('p').text()).toBe('No summary available.');
+  });
+
+  it('summarizes canonical plain text without interpreting its contents', () => {
+    expect(summarizeArticleContent(null)).toBe('');
+    expect(summarizeArticleContent('  \n\t  ')).toBe('');
+    expect(summarizeArticleContent('First paragraph.\n\nSecond\tparagraph.'))
+      .toBe('First paragraph. Second paragraph.');
+    expect(summarizeArticleContent('Comparison: 2 < 3 & 4 > 1.')).toBe(
+      'Comparison: 2 < 3 & 4 > 1.'
+    );
+    expect(summarizeArticleContent('Fish &amp; chips')).toBe('Fish &amp; chips');
+
+    const words = Array.from({ length: 101 }, (_, index) => `word${index}`);
+    expect(summarizeArticleContent(words.join(' '))).toBe(words.slice(0, 100).join(' '));
   });
 
   // Verifies minimal content remains opt-in and null sentinel content stays hidden.
