@@ -12,6 +12,8 @@ const executeConnectionQuery = (connection, sql, values = []) =>
 
 export async function resetDatabase() {
   const { sequelize } = db;
+  if (sequelize.getDialect() !== 'mysql') return;
+
   const databaseName = sequelize.getDatabaseName();
 
   if (databaseName !== TEST_DATABASE_NAME) {

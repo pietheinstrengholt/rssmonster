@@ -34,6 +34,7 @@ const mocked = vi.hoisted(() => {
         getConnection: vi.fn(),
         releaseConnection: vi.fn()
       },
+      getDialect: vi.fn(),
       getDatabaseName: vi.fn(),
       getQueryInterface: vi.fn(),
       sync: vi.fn()
@@ -127,6 +128,7 @@ function resetMocks() {
   mocked.cosineSimilarity.mockReturnValue(0.9);
   mocked.sequelize.connectionManager.getConnection.mockReset();
   mocked.sequelize.connectionManager.releaseConnection.mockReset();
+  mocked.sequelize.getDialect.mockReset().mockReturnValue('mysql');
   mocked.sequelize.getDatabaseName.mockReset();
   mocked.sequelize.getQueryInterface.mockReset();
   mocked.sequelize.sync.mockReset();
@@ -507,6 +509,16 @@ describe('semantic regression trace helpers', () => {
 });
 
 describe('database reset helper', () => {
+  it('does not inspect or reset the database outside MySQL', async () => {
+    mocked.sequelize.getDialect.mockReturnValue('sqlite');
+
+    await expect(resetDatabase()).resolves.toBeUndefined();
+
+    expect(mocked.sequelize.getDatabaseName).not.toHaveBeenCalled();
+    expect(mocked.sequelize.connectionManager.getConnection).not.toHaveBeenCalled();
+    expect(mocked.sequelize.sync).not.toHaveBeenCalled();
+  });
+
   it('refuses to reset any database except the dedicated test database', async () => {
     mocked.sequelize.getDatabaseName.mockReturnValue('rssmonster');
 

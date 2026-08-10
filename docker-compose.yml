@@ -6,11 +6,6 @@ services:
     container_name: rssmonster
     restart: unless-stopped
 
-    depends_on:
-      mysql:
-        condition: service_healthy
-        restart: true
-
     ports:
       - "${RSSMONSTER_PORT:-3000}:3000"
 
@@ -18,15 +13,20 @@ services:
       NODE_ENV: production
       PORT: 3000
 
-      DB_HOSTNAME: mysql
-      DB_PORT: 3306
-      DB_DATABASE: ${DB_DATABASE:-rssmonster}
-      DB_USERNAME: ${DB_USERNAME:-rssmonster}
-      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+      # SQLite is the default database for simple self-hosted installations.
+      DB_DIALECT: sqlite
+      DB_STORAGE: /app/data/rssmonster.sqlite
+
+      # Required application secrets.
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       FEVER_CREDENTIAL_SECRET: ${FEVER_CREDENTIAL_SECRET:?FEVER_CREDENTIAL_SECRET must be set}
-      RSSMONSTER_INTERNAL_HOST_ALLOWLIST: ${RSSMONSTER_INTERNAL_HOST_ALLOWLIST:-}
+
+      # Optional deployment settings.
       TRUST_PROXY: ${TRUST_PROXY:-loopback}
+      RSSMONSTER_INTERNAL_HOST_ALLOWLIST: ${RSSMONSTER_INTERNAL_HOST_ALLOWLIST:-}
+
+    volumes:
+      - rssmonster-data:/app/data
 
     init: true
 
@@ -47,50 +47,5 @@ services:
       retries: 5
       start_period: 60s
 
-    networks:
-      - rssmonster-network
-
-  mysql:
-    image: mysql:8.4
-    container_name: rssmonster-mysql
-    restart: unless-stopped
-
-    environment:
-      MYSQL_DATABASE: ${DB_DATABASE:-rssmonster}
-      MYSQL_USER: ${DB_USERNAME:-rssmonster}
-      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
-
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_0900_ai_ci
-
-    volumes:
-      - mysql-data:/var/lib/mysql
-
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - >
-          mysqladmin ping
-          --host=127.0.0.1
-          --user=root
-          --password="$${MYSQL_ROOT_PASSWORD}"
-          --silent
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 45s
-
-    security_opt:
-      - no-new-privileges:true
-
-    networks:
-      - rssmonster-network
-
 volumes:
-  mysql-data:
-
-networks:
-  rssmonster-network:
-    driver: bridge
+  rssmonster-data:
