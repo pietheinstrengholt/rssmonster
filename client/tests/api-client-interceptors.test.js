@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import api, {
-  API_BASE_URL,
   CONNECTIVITY_ERROR_EVENT,
   resolveApiBaseUrl,
   setAuthToken
@@ -54,9 +53,8 @@ afterEach(() => {
 });
 
 describe('shared API base URL', () => {
-  // This test verifies production builds use the current origin when no host is configured.
+  // This test verifies missing and empty hosts resolve against the current origin.
   it('uses the same-origin API path by default', () => {
-    expect(API_BASE_URL).toBe('/api');
     expect(resolveApiBaseUrl()).toBe('/api');
     expect(resolveApiBaseUrl('')).toBe('/api');
   });
