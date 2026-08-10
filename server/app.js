@@ -2,10 +2,6 @@
 // Load environment variables
 // --------------------
 const requiredEnvVars = [
-  'DB_DATABASE',
-  'DB_USERNAME',
-  'DB_PASSWORD',
-  'DB_HOSTNAME',
   'JWT_SECRET',
   'FEVER_CREDENTIAL_SECRET'
 ];
