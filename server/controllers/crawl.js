@@ -115,7 +115,9 @@ const DUPLICATE_CACHE_DAYS = Number.isInteger(parsedDuplicateCacheDays) && parse
   : 30;
 
 // Controls whether feeds are processed in parallel (1) or sequentially (0, default)
-const PARALLELPROCESSFLAG = Number(process.env.PARALLELPROCESSFLAG || 0);
+const CRAWL_PARALLELPROCESSFLAG = Number(
+  process.env.CRAWL_PARALLELPROCESSFLAG || 0
+);
 
 // Rate limit delay tracking for OpenAI API
 let rateLimitDelay = 0;
@@ -409,7 +411,7 @@ const runCrawl = async (userId = null, options = {}) => {
     }
   };
 
-  const runParallel = options.parallel ?? PARALLELPROCESSFLAG === 1;
+  const runParallel = options.parallel ?? CRAWL_PARALLELPROCESSFLAG === 1;
   const requestedParallelConcurrency = resolveFeedParallelConcurrency({
     FEED_PARALLEL_CONCURRENCY:
       options.parallelConcurrency ?? feedParallelConcurrency
