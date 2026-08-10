@@ -53,6 +53,12 @@ export default {
     SmartFoldersGridOverview
   },
 
+  emits: [
+    'forceReload',
+    'mobile-toolbar-visibility',
+    'refresh-feeds'
+  ],
+
   props: {
     scrollRoot: {
       type: Object,

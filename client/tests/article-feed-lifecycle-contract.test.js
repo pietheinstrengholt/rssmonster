@@ -17,6 +17,15 @@ import {
 } from '../src/components/articles/feed/visibilityTracking.js';
 
 describe('ArticleFeed collection lifecycle contract', () => {
+  // Verifies shell listeners remain component events instead of falling through the fragment root.
+  it('declares its shell event contract', () => {
+    expect(ArticleFeed.emits).toEqual([
+      'forceReload',
+      'mobile-toolbar-visibility',
+      'refresh-feeds'
+    ]);
+  });
+
   // Verifies layouts receive deliberate presentation models instead of raw pagination internals.
   it('keeps Reader and stream layout props small and responsibility-based', () => {
     expect(Object.keys(ArticleReaderLayout.props)).toEqual([
