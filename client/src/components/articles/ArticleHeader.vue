@@ -48,7 +48,7 @@ export default {
         const parsedUrl = new URL(this.url);
         const isHttp = parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
         return isHttp && parsedUrl.hostname.toLowerCase() === 'bsky.app' && parsedUrl.pathname.startsWith('/profile/');
-      } catch (e) {
+      } catch {
         return false;
       }
     },
