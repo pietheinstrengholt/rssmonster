@@ -6,6 +6,7 @@ module.exports = {
     feedName: 'reddit.com',
     feedDesc: 'reddit: the front page of the internet',
     url: "https://www.reddit.com/.rss",
+    feedTags: JSON.stringify([]),
     createdAt: Sequelize.literal('NOW()'),
     updatedAt: Sequelize.literal('NOW()')
   }], {}),

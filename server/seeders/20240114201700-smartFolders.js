@@ -2,7 +2,7 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => queryInterface.bulkInsert(
-    'smartFolders',
+    'smart_folders',
     [
       {
         userId: 1,
@@ -40,7 +40,7 @@ module.exports = {
     {}
   ),
   down: async (queryInterface) => queryInterface.bulkDelete(
-    'smartFolders',
+    'smart_folders',
     {
       name: [
         'Top Stories Today',
