@@ -89,6 +89,7 @@ export default {
       scrollDirection: "down",
       scrollContainer: null,
       scrollResetFrameId: null,
+      scrollResetTimeoutId: null,
       showSmartFoldersOverview: false,
       pendingFavoriteArticleIds: new Set()
     };
@@ -282,6 +283,10 @@ export default {
       window.cancelAnimationFrame?.(this.scrollResetFrameId);
       this.scrollResetFrameId = null;
     }
+    if (this.scrollResetTimeoutId !== null) {
+      window.clearTimeout(this.scrollResetTimeoutId);
+      this.scrollResetTimeoutId = null;
+    }
     this.connectScrollContainer(null);
     this.teardownObservers();
   },
@@ -321,6 +326,16 @@ export default {
       if (this.scrollResetFrameId !== null) {
         window.cancelAnimationFrame?.(this.scrollResetFrameId);
       }
+      if (this.scrollResetTimeoutId !== null) {
+        window.clearTimeout(this.scrollResetTimeoutId);
+      }
+
+      // iOS Safari may restore its scroll anchor after the toolbar and visual viewport finish
+      // settling, which happens later than Vue's DOM update and the next paint frames.
+      this.scrollResetTimeoutId = window.setTimeout(() => {
+        this.scrollResetTimeoutId = null;
+        resetScrollSurfaces();
+      }, 250);
       if (typeof window.requestAnimationFrame !== 'function') {
         this.scrollResetFrameId = null;
         return;

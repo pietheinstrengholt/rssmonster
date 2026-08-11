@@ -424,7 +424,8 @@ describe('ArticleFeed loading races', () => {
     const context = {
       $refs: { articleLayout: { scrollToTop } },
       scrollContainer: articlePane,
-      scrollResetFrameId: null
+      scrollResetFrameId: null,
+      scrollResetTimeoutId: null
     };
     ArticleFeed.methods.scrollArticleListToTop.call(context);
 
@@ -435,6 +436,7 @@ describe('ArticleFeed loading races', () => {
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
 
     window.cancelAnimationFrame(context.scrollResetFrameId);
+    window.clearTimeout(context.scrollResetTimeoutId);
     scrollTo.mockRestore();
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
   });
@@ -448,7 +450,8 @@ describe('ArticleFeed loading races', () => {
     const context = {
       $refs: {},
       scrollContainer: null,
-      scrollResetFrameId: null
+      scrollResetFrameId: null,
+      scrollResetTimeoutId: null
     };
     ArticleFeed.methods.scrollArticleListToTop.call(context);
 
@@ -457,6 +460,7 @@ describe('ArticleFeed loading races', () => {
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
 
     window.cancelAnimationFrame(context.scrollResetFrameId);
+    window.clearTimeout(context.scrollResetTimeoutId);
     scrollTo.mockRestore();
   });
 
@@ -471,7 +475,8 @@ describe('ArticleFeed loading races', () => {
     const context = {
       $refs: {},
       scrollContainer: null,
-      scrollResetFrameId: null
+      scrollResetFrameId: null,
+      scrollResetTimeoutId: null
     };
 
     ArticleFeed.methods.scrollArticleListToTop.call(context);
@@ -489,7 +494,31 @@ describe('ArticleFeed loading races', () => {
     expect(context.scrollResetFrameId).toBeNull();
 
     requestAnimationFrame.mockRestore();
+    window.clearTimeout(context.scrollResetTimeoutId);
     scrollTo.mockRestore();
+  });
+
+  it('reapplies the scroll reset after the iOS viewport settles', () => {
+    vi.useFakeTimers();
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const context = {
+      $refs: {},
+      scrollContainer: null,
+      scrollResetFrameId: null,
+      scrollResetTimeoutId: null
+    };
+
+    ArticleFeed.methods.scrollArticleListToTop.call(context);
+    document.documentElement.scrollTop = 11;
+    vi.advanceTimersByTime(250);
+
+    expect(document.documentElement.scrollTop).toBe(0);
+    expect(scrollTo).toHaveBeenCalledTimes(4);
+    expect(context.scrollResetTimeoutId).toBeNull();
+
+    window.cancelAnimationFrame(context.scrollResetFrameId);
+    scrollTo.mockRestore();
+    vi.useRealTimers();
   });
 
   it('does not append stale detail responses after the selection changes', async () => {
