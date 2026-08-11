@@ -173,8 +173,9 @@ export const executeHttpRequest = async (
     }
 
     const responseController = new AbortController();
+    const deadlineSignal = AbortSignal.timeout(Math.max(1, Math.ceil(remainingMs)));
     const signals = [
-      AbortSignal.timeout(Math.max(1, Math.ceil(remainingMs))),
+      deadlineSignal,
       responseController.signal,
       request.signal
     ].filter(Boolean);
@@ -231,6 +232,7 @@ export const executeHttpRequest = async (
       const translated = translateTransportError(error);
       if (
         isRetryableTranslatedError(translated, request) &&
+        !deadlineSignal.aborted &&
         attempt < request.retries
       ) {
         const remainingAfterFailureMs = remainingDeadlineMs(deadline);
