@@ -4,7 +4,8 @@ const mocked = vi.hoisted(() => ({
   categoryFindAll: vi.fn(),
   categoryFindOne: vi.fn(),
   categoryUpdate: vi.fn(),
-  feedFindOne: vi.fn()
+  feedFindOne: vi.fn(),
+  transaction: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -19,7 +20,10 @@ vi.mock('../../models/index.js', () => ({
     Feed: {
       findOne: mocked.feedFindOne
     },
-    Setting: {}
+    Setting: {},
+    sequelize: {
+      transaction: mocked.transaction
+    }
   }
 }));
 
@@ -50,6 +54,7 @@ const createResponse = () => {
 describe('manager controller', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mocked.transaction.mockImplementation(callback => callback('transaction'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -144,13 +149,14 @@ describe('manager controller', () => {
     expect(mocked.categoryUpdate).toHaveBeenNthCalledWith(
       1,
       { categoryOrder: 0 },
-      { where: { userId: 42, id: 9 } }
+      { where: { userId: 42, id: 9 }, transaction: 'transaction' }
     );
     expect(mocked.categoryUpdate).toHaveBeenNthCalledWith(
       2,
       { categoryOrder: 1 },
-      { where: { userId: 42, id: 4 } }
+      { where: { userId: 42, id: 4 }, transaction: 'transaction' }
     );
+    expect(mocked.transaction).toHaveBeenCalledOnce();
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith('order updated');
   });
@@ -164,6 +170,7 @@ describe('manager controller', () => {
     );
 
     expect(mocked.categoryUpdate).not.toHaveBeenCalled();
+    expect(mocked.transaction).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
@@ -182,9 +189,7 @@ describe('manager controller', () => {
       message: 'order is not set'
     });
 
-    mocked.categoryUpdate.mockImplementation(() => {
-      throw new Error('update failed');
-    });
+    mocked.categoryUpdate.mockRejectedValue(new Error('update failed'));
     const failureRes = createResponse();
     await categoryUpdateOrder(
       createRequest({ body: { order: [9] } }),

@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-const { Feed, Category, Article, BriefingPreference, Setting } = db;
+const { Feed, Category, Article, BriefingPreference, Setting, sequelize } = db;
 
 import Sequelize from "sequelize";
 import { Op } from 'sequelize';
@@ -406,19 +406,18 @@ export const categoryUpdateOrder = async (req, res, _next) => {
 
   try {
     if (order.length > 0) {
-      //start counting
-      let count = 0;
-      order.forEach(item => {
-        Category.update({
-          categoryOrder: count
-        }, {
-          where: {
-            userId: userId,
-            id: item
-          }
-        });
-        //increase count
-        count++;
+      await sequelize.transaction(async transaction => {
+        await Promise.all(order.map((item, categoryOrder) =>
+          Category.update({
+            categoryOrder
+          }, {
+            where: {
+              userId: userId,
+              id: item
+            },
+            transaction
+          })
+        ));
       });
     }
 
