@@ -23,6 +23,27 @@ describe('model schema declarations', () => {
     );
   });
 
+  it('declares the MySQL article full-text index used by search queries', () => {
+    if (db.sequelize.getDialect() !== 'mysql') {
+      expect(Article.options.indexes).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: 'articles_title_contentText_fulltext_idx' })
+        ])
+      );
+      return;
+    }
+
+    expect(Article.options.indexes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'articles_title_contentText_fulltext_idx',
+          fields: ['title', 'contentText'],
+          type: 'FULLTEXT'
+        })
+      ])
+    );
+  });
+
   it('declares developing-event presentation disabled by default', () => {
     expect(Setting.rawAttributes.includeDevelopingEvents).toMatchObject({
       allowNull: false,

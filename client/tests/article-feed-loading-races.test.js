@@ -436,6 +436,24 @@ describe('ArticleFeed loading races', () => {
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
   });
 
+  it('resets the browser scroll surface when window scrollY is already zero', () => {
+    document.documentElement.scrollTop = 12;
+    document.body.scrollTop = 12;
+    Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    ArticleFeed.methods.scrollArticleListToTop.call({
+      $refs: {},
+      scrollContainer: null
+    });
+
+    expect(document.documentElement.scrollTop).toBe(0);
+    expect(document.body.scrollTop).toBe(0);
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
+
+    scrollTo.mockRestore();
+  });
+
   it('does not append stale detail responses after the selection changes', async () => {
     const staleDetails = deferred();
     fetchArticleIds

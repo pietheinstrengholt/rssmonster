@@ -564,6 +564,11 @@ export default (sequelize) => {
     },
     {
       indexes: [
+        ...(sequelize.getDialect() === 'mysql' ? [{
+          name: 'articles_title_contentText_fulltext_idx',
+          fields: ['title', 'contentText'],
+          type: 'FULLTEXT'
+        }] : []),
         {
           unique: true,
           name: 'articles_feedId_urlHash_unique',

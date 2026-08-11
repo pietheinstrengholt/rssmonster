@@ -382,7 +382,13 @@ export const searchArticles = async ({
     // Text search logic:
     Object.assign(
       baseWhere,
-      buildTextSearchWhereClause({ titleFilter, quotedPhrase, remainingTokens })
+      buildTextSearchWhereClause({
+        titleFilter,
+        quotedPhrase,
+        remainingTokens,
+        dialect: Article.sequelize.getDialect(),
+        escapeValue: value => Article.sequelize.escape(value)
+      })
     );
 
     // Apply date range filter if present (supports all date patterns)

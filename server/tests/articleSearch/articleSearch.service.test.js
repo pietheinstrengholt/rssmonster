@@ -311,6 +311,59 @@ describe('articleSearch.service', () => {
       expect(result.itemIds).not.toContain(articles.recent.id);
     });
 
+    it('distinguishes an adjacent quoted phrase from required unquoted terms', async () => {
+      const fixtures = await Article.bulkCreate([
+        {
+          userId: user.id,
+          feedId: feed.id,
+          url: 'https://example.com/windows-11-adjacent',
+          title: 'Windows 11 launch details',
+          contentText: 'Microsoft describes the new operating system release.',
+          status: 'unread',
+          publishedAt: new Date(),
+          advertisementScore: 90,
+          sentimentScore: 90,
+          qualityScore: 90
+        },
+        {
+          userId: user.id,
+          feedId: feed.id,
+          url: 'https://example.com/windows-terms-separated',
+          title: 'Windows loads 11 times faster',
+          contentText: 'A benchmark of startup performance.',
+          status: 'unread',
+          publishedAt: new Date(),
+          advertisementScore: 90,
+          sentimentScore: 90,
+          qualityScore: 90
+        },
+        {
+          userId: user.id,
+          feedId: feed.id,
+          url: 'https://example.com/windows-terms-split',
+          title: 'Windows receives another update',
+          contentText: 'Version 11 remains supported.',
+          status: 'unread',
+          publishedAt: new Date(),
+          advertisementScore: 90,
+          sentimentScore: 90,
+          qualityScore: 90
+        }
+      ]);
+
+      try {
+        const phrase = await searchArticles({ userId: user.id, search: '"windows 11"', status: '%' });
+        const terms = await searchArticles({ userId: user.id, search: 'windows 11', status: '%' });
+
+        expect(phrase.itemIds).toContain(fixtures[0].id);
+        expect(phrase.itemIds).not.toContain(fixtures[1].id);
+        expect(phrase.itemIds).not.toContain(fixtures[2].id);
+        expect(terms.itemIds).toEqual(expect.arrayContaining(fixtures.map(article => article.id)));
+      } finally {
+        await Article.destroy({ where: { id: fixtures.map(article => article.id) } });
+      }
+    });
+
     it('combines title: filter with text search', async () => {
       const result = await searchArticles({ userId: user.id, search: 'title:Docker', status: '%' });
       expect(result.itemIds).toContain(articles.clicked.id);
