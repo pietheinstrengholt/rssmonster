@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
@@ -352,6 +352,34 @@ describe('settings islands overview', () => {
       id: article.id,
       evidence: [{ type: 'deepRead', label: 'Deep read' }]
     });
+  });
+
+  it('batches statistics and related-article queries across islands', async () => {
+    const user = await User.create({
+      username: uniqueName('batched-islands-user'),
+      password: 'hashed-password',
+      feverCredentialHash: uniqueName('batched-islands-hash'),
+      role: 'user'
+    });
+    await Island.bulkCreate([
+      { userId: user.id, label: 'First island', weight: 0.8, islandVector: [1, 0, 0] },
+      { userId: user.id, label: 'Second island', weight: 0.7, islandVector: [0, 1, 0] }
+    ]);
+    const querySpy = vi.spyOn(sequelize, 'query');
+
+    try {
+      const res = await request(app)
+        .get('/api/setting/islands')
+        .set('Authorization', authHeaderFor(user));
+
+      expect(res.status).toBe(200);
+      expect(res.body.islands).toHaveLength(2);
+      const executedSql = querySpy.mock.calls.map(([sql]) => String(sql));
+      expect(executedSql.filter(sql => sql.includes('COUNT(DISTINCT it.topicId)'))).toHaveLength(1);
+      expect(executedSql.filter(sql => sql.includes('ROW_NUMBER() OVER'))).toHaveLength(1);
+    } finally {
+      querySpy.mockRestore();
+    }
   });
 });
 

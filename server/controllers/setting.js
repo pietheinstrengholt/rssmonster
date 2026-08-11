@@ -545,97 +545,8 @@ export const getIslandsOverview = async (req, res, _next) => {
       raw: true
     });
 
-    const islands = [];
-
-    for (const island of islandsRaw) {
-      const [islandStats] = await db.sequelize.query(
-        `
-        SELECT
-          COALESCE((SELECT COUNT(*) FROM island_topics it WHERE it.islandId = :islandId), 0) AS topicCount,
-          COALESCE((
-            SELECT COUNT(*)
-            FROM articles a
-            WHERE a.userId = :userId
-              AND a.duplicateOfArticleId IS NULL
-              AND a.favoriteInd = 1
-              AND EXISTS (
-                SELECT 1
-                FROM article_topics atp
-                INNER JOIN island_topics it
-                  ON it.topicId = atp.topicId
-                 AND it.islandId = :islandId
-                WHERE atp.articleId = a.id
-              )
-          ), 0) AS starredArticles,
-          COALESCE((
-            SELECT COUNT(*)
-            FROM articles a
-            WHERE a.userId = :userId
-              AND a.duplicateOfArticleId IS NULL
-              AND a.clickedAmount > 0
-              AND EXISTS (
-                SELECT 1
-                FROM article_topics atp
-                INNER JOIN island_topics it
-                  ON it.topicId = atp.topicId
-                 AND it.islandId = :islandId
-                WHERE atp.articleId = a.id
-              )
-          ), 0) AS clickedArticles,
-          COALESCE((
-            SELECT COUNT(*)
-            FROM articles a
-            WHERE a.userId = :userId
-              AND a.duplicateOfArticleId IS NULL
-              AND EXISTS (
-                SELECT 1
-                FROM article_topics atp
-                INNER JOIN island_topics it
-                  ON it.topicId = atp.topicId
-                 AND it.islandId = :islandId
-                WHERE atp.articleId = a.id
-              )
-          ), 0) AS relatedArticleCount
-        `,
-        {
-          replacements: { userId, islandId: island.id },
-          type: db.Sequelize.QueryTypes.SELECT
-        }
-      );
-
-      const relatedArticles = await db.sequelize.query(
-        `
-        SELECT
-          a.id,
-          a.title,
-          a.url,
-          a.publishedAt,
-          a.favoriteInd,
-          a.clickedAmount,
-          f.feedName
-        FROM articles a
-        LEFT JOIN feeds f
-          ON f.id = a.feedId
-         AND f.userId = :userId
-        WHERE a.userId = :userId
-          AND a.duplicateOfArticleId IS NULL
-          AND EXISTS (
-            SELECT 1
-            FROM article_topics atp
-            INNER JOIN island_topics it
-              ON it.topicId = atp.topicId
-             AND it.islandId = :islandId
-            WHERE atp.articleId = a.id
-          )
-        ORDER BY a.publishedAt DESC
-        LIMIT 3
-        `,
-        {
-          replacements: { userId, islandId: island.id },
-          type: db.Sequelize.QueryTypes.SELECT
-        }
-      );
-
+    const islandIds = islandsRaw.map(island => island.id);
+    const auditByIslandId = new Map(islandsRaw.map(island => {
       const populationAudit = Array.isArray(island.populationAudit)
         ? island.populationAudit
         : (typeof island.populationAudit === 'string'
@@ -648,7 +559,6 @@ export const getIslandsOverview = async (req, res, _next) => {
               }
             })()
           : []);
-
       const populationSourceArticleIds = [...new Set(
         populationAudit.flatMap(entry => {
           const source = entry?.sourceArticles || {};
@@ -662,6 +572,193 @@ export const getIslandsOverview = async (req, res, _next) => {
             .filter(Number.isFinite);
         })
       )];
+
+      return [String(island.id), { populationAudit, populationSourceArticleIds }];
+    }));
+    const allSourceArticleIds = [...new Set(
+      [...auditByIslandId.values()].flatMap(audit => audit.populationSourceArticleIds)
+    )];
+    const islandIdsBySourceArticleId = new Map();
+    for (const [islandId, audit] of auditByIslandId) {
+      for (const articleId of audit.populationSourceArticleIds) {
+        const sourceIslandIds = islandIdsBySourceArticleId.get(articleId) || [];
+        sourceIslandIds.push(islandId);
+        islandIdsBySourceArticleId.set(articleId, sourceIslandIds);
+      }
+    }
+
+    const [islandStatsRows, relatedArticleRows] = islandIds.length
+      ? await Promise.all([
+        db.sequelize.query(
+          `
+          SELECT
+            i.id AS islandId,
+            COUNT(DISTINCT it.topicId) AS topicCount,
+            COUNT(DISTINCT CASE WHEN a.favoriteInd = 1 THEN a.id END) AS starredArticles,
+            COUNT(DISTINCT CASE WHEN a.clickedAmount > 0 THEN a.id END) AS clickedArticles,
+            COUNT(DISTINCT a.id) AS relatedArticleCount
+          FROM islands i
+          LEFT JOIN island_topics it
+            ON it.islandId = i.id
+          LEFT JOIN article_topics atp
+            ON atp.topicId = it.topicId
+          LEFT JOIN articles a
+            ON a.id = atp.articleId
+           AND a.userId = :userId
+           AND a.duplicateOfArticleId IS NULL
+          WHERE i.userId = :userId
+            AND i.id IN (:islandIds)
+          GROUP BY i.id
+          `,
+          {
+            replacements: { userId, islandIds },
+            type: db.Sequelize.QueryTypes.SELECT
+          }
+        ),
+        db.sequelize.query(
+          `
+          WITH related_articles AS (
+            SELECT DISTINCT
+              it.islandId,
+              a.id,
+              a.title,
+              a.url,
+              a.publishedAt,
+              a.favoriteInd,
+              a.clickedAmount,
+              f.feedName
+            FROM island_topics it
+            INNER JOIN article_topics atp
+              ON atp.topicId = it.topicId
+            INNER JOIN articles a
+              ON a.id = atp.articleId
+             AND a.userId = :userId
+             AND a.duplicateOfArticleId IS NULL
+            LEFT JOIN feeds f
+              ON f.id = a.feedId
+             AND f.userId = :userId
+            WHERE it.islandId IN (:islandIds)
+          ), ranked_articles AS (
+            SELECT
+              related_articles.*,
+              ROW_NUMBER() OVER (
+                PARTITION BY islandId
+                ORDER BY publishedAt DESC
+              ) AS articleRank
+            FROM related_articles
+          )
+          SELECT *
+          FROM ranked_articles
+          WHERE articleRank <= 3
+          ORDER BY islandId, publishedAt DESC
+          `,
+          {
+            replacements: { userId, islandIds },
+            type: db.Sequelize.QueryTypes.SELECT
+          }
+        )
+      ])
+      : [[], []];
+    const statsByIslandId = new Map(
+      islandStatsRows.map(row => [String(row.islandId), row])
+    );
+    const relatedArticlesByIslandId = new Map();
+    for (const article of relatedArticleRows) {
+      const islandId = String(article.islandId);
+      const articles = relatedArticlesByIslandId.get(islandId) || [];
+      const articleData = { ...article };
+      delete articleData.islandId;
+      delete articleData.articleRank;
+      articles.push(articleData);
+      relatedArticlesByIslandId.set(islandId, articles);
+    }
+
+    const sourceArticlesRaw = allSourceArticleIds.length
+      ? await db.sequelize.query(
+        `
+        SELECT
+          a.id,
+          a.title,
+          a.url,
+          a.publishedAt,
+          a.favoriteInd,
+          a.clickedAmount,
+          a.positiveInd,
+          a.attentionBucket,
+          a.negativeInd,
+          f.feedName
+        FROM articles a
+        LEFT JOIN feeds f
+          ON f.id = a.feedId
+         AND f.userId = :userId
+        WHERE a.userId = :userId
+          AND a.duplicateOfArticleId IS NULL
+          AND a.id IN (:sourceArticleIds)
+        ORDER BY a.publishedAt DESC
+        `,
+        {
+          replacements: { userId, sourceArticleIds: allSourceArticleIds },
+          type: db.Sequelize.QueryTypes.SELECT
+        }
+      )
+      : [];
+    const sourceArticlesByIslandId = new Map();
+    for (const article of sourceArticlesRaw) {
+      for (const islandId of islandIdsBySourceArticleId.get(Number(article.id)) || []) {
+        const sourceArticles = sourceArticlesByIslandId.get(islandId) || [];
+        sourceArticles.push(article);
+        sourceArticlesByIslandId.set(islandId, sourceArticles);
+      }
+    }
+    const connectedArticleIds = [...new Set([
+      ...relatedArticleRows.map(article => Number(article.id)),
+      ...sourceArticlesRaw.map(article => Number(article.id))
+    ])];
+    const relatedTopicRows = islandIds.length && connectedArticleIds.length
+      ? await db.sequelize.query(
+        `
+        SELECT DISTINCT
+          it.islandId,
+          atp.articleId,
+          t.id AS topicId,
+          t.name AS topicName,
+          it.similarity,
+          it.confidence
+        FROM island_topics it
+        INNER JOIN article_topics atp
+          ON atp.topicId = it.topicId
+        INNER JOIN topics t
+          ON t.id = atp.topicId
+         AND t.userId = :userId
+        WHERE it.islandId IN (:islandIds)
+          AND atp.articleId IN (:connectedArticleIds)
+        ORDER BY it.islandId, atp.articleId, it.confidence DESC, t.id
+        `,
+        {
+          replacements: { userId, islandIds, connectedArticleIds },
+          type: db.Sequelize.QueryTypes.SELECT
+        }
+      )
+      : [];
+    const topicsByIslandAndArticleId = new Map();
+    for (const row of relatedTopicRows) {
+      const key = `${row.islandId}:${row.articleId}`;
+      const topics = topicsByIslandAndArticleId.get(key) || [];
+      topics.push({
+        id: Number(row.topicId),
+        name: row.topicName,
+        similarity: Number(row.similarity || 0),
+        confidence: Number(row.confidence || 0)
+      });
+      topicsByIslandAndArticleId.set(key, topics);
+    }
+
+    const islands = [];
+    for (const island of islandsRaw) {
+      const islandId = String(island.id);
+      const islandStats = statsByIslandId.get(islandId);
+      const relatedArticles = relatedArticlesByIslandId.get(islandId) || [];
+      const { populationAudit, populationSourceArticleIds } = auditByIslandId.get(islandId);
 
       const sourceArticleSnapshots = new Map();
       const historicalStarredIds = new Set();
@@ -695,84 +792,11 @@ export const getIslandsOverview = async (req, res, _next) => {
         }
       }
 
-      const sourceArticlesRaw = populationSourceArticleIds.length
-        ? await db.sequelize.query(
-          `
-          SELECT
-            a.id,
-            a.title,
-            a.url,
-            a.publishedAt,
-            a.favoriteInd,
-            a.clickedAmount,
-            a.positiveInd,
-            a.attentionBucket,
-            a.negativeInd,
-            f.feedName
-          FROM articles a
-          LEFT JOIN feeds f
-            ON f.id = a.feedId
-           AND f.userId = :userId
-          WHERE a.userId = :userId
-            AND a.duplicateOfArticleId IS NULL
-            AND a.id IN (:sourceArticleIds)
-          ORDER BY a.publishedAt DESC
-          `,
-          {
-            replacements: { userId, sourceArticleIds: populationSourceArticleIds },
-            type: db.Sequelize.QueryTypes.SELECT
-          }
-        )
-        : [];
-
-      const relatedArticleIds = relatedArticles.map(article => Number(article.id));
-      const connectedArticleIds = [...new Set([
-        ...relatedArticleIds,
-        ...sourceArticlesRaw.map(article => Number(article.id))
-      ])];
-      const relatedTopicRows = connectedArticleIds.length
-        ? await db.sequelize.query(
-          `
-          SELECT DISTINCT
-            atp.articleId,
-            t.id AS topicId,
-            t.name AS topicName,
-            it.similarity,
-            it.confidence
-          FROM article_topics atp
-          INNER JOIN island_topics it
-            ON it.topicId = atp.topicId
-           AND it.islandId = :islandId
-          INNER JOIN topics t
-            ON t.id = atp.topicId
-           AND t.userId = :userId
-          WHERE atp.articleId IN (:connectedArticleIds)
-          ORDER BY atp.articleId, it.confidence DESC, t.id
-          `,
-          {
-            replacements: { userId, islandId: island.id, connectedArticleIds },
-            type: db.Sequelize.QueryTypes.SELECT
-          }
-        )
-        : [];
-
-      const topicsByArticleId = new Map();
-      for (const row of relatedTopicRows) {
-        const articleId = Number(row.articleId);
-        const topics = topicsByArticleId.get(articleId) || [];
-        topics.push({
-          id: Number(row.topicId),
-          name: row.topicName,
-          similarity: Number(row.similarity || 0),
-          confidence: Number(row.confidence || 0)
-        });
-        topicsByArticleId.set(articleId, topics);
-      }
-
       const populationSourceSet = new Set(populationSourceArticleIds);
+      const islandSourceArticlesRaw = sourceArticlesByIslandId.get(islandId) || [];
       const favoriteCount = Number(islandStats?.starredArticles || 0);
       const clickCount = Number(islandStats?.clickedArticles || 0);
-      const allSourceArticles = sourceArticlesRaw.map(article => {
+      const allSourceArticles = islandSourceArticlesRaw.map(article => {
         const articleId = Number(article.id);
         const snapshot = sourceArticleSnapshots.get(articleId) || {};
         const evidence = [];
@@ -796,7 +820,7 @@ export const getIslandsOverview = async (req, res, _next) => {
         return {
           ...article,
           evidence,
-          connectionTopics: topicsByArticleId.get(articleId) || []
+          connectionTopics: topicsByIslandAndArticleId.get(`${island.id}:${articleId}`) || []
         };
       });
       const sourceArticles = allSourceArticles.slice(0, 5);
@@ -824,7 +848,7 @@ export const getIslandsOverview = async (req, res, _next) => {
             ...article,
             isPopulationSource,
             isNewArticle: !isPopulationSource,
-            connectionTopics: topicsByArticleId.get(articleId) || []
+            connectionTopics: topicsByIslandAndArticleId.get(`${island.id}:${articleId}`) || []
           };
         })
       });
