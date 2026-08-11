@@ -156,7 +156,7 @@ const developmentLogin = async (_req, res, _next) => {
 
     if (!user) {
       console.error(
-        `Development login error: User ${configuredUserId} was not found.`
+        'Development login error: Configured development user was not found.'
       );
       return res.status(503).json({
         message: 'Development login is unavailable.'
