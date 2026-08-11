@@ -96,6 +96,32 @@ export default {
   computed: {
 
     ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
+    // Returns the stable key for selection fields that change collection membership or ordering.
+    articleCollectionSelectionKey() {
+      const selection = this.selectionStore.currentSelection;
+      return JSON.stringify([
+        selection.status,
+        selection.categoryId,
+        selection.feedId,
+        selection.search,
+        selection.tag,
+        selection.smartFolderId,
+        selection.minAdvertisementScore,
+        selection.minSentimentScore,
+        selection.minQualityScore,
+        selection.sort,
+        selection.includeDevelopingEvents,
+        selection.briefingRevision
+      ]);
+    },
+    // Returns the stable key for settings that only change the current collection's presentation.
+    articlePresentationSelectionKey() {
+      const selection = this.selectionStore.currentSelection;
+      return JSON.stringify([
+        selection.viewMode,
+        selection.grouping
+      ]);
+    },
     // calculate the remaining items in the container
     remainingItems() {
       return this.container.length - this.pool.size;
@@ -198,14 +224,18 @@ export default {
     scrollRoot(value) {
       this.connectScrollContainer(value);
     },
-    "selectionStore.currentSelection": {
-      // Reloads articles when the active selection changes.
-      handler(data) {
+    articleCollectionSelectionKey: {
+      // Reloads articles only when the active collection changes.
+      handler() {
         this.showSmartFoldersOverview = false;
-        this.fetchArticleIds(data);
+        this.fetchArticleIds(this.selectionStore.currentSelection);
       },
-      deep: true,
       immediate: true
+    },
+    // Returns representation changes to the beginning without reloading the same article IDs.
+    articlePresentationSelectionKey() {
+      this.showSmartFoldersOverview = false;
+      this.$nextTick(() => this.scrollArticleListToTop());
     },
     isReaderLayoutActive() {
       this.$nextTick(() => {

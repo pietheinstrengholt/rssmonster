@@ -119,4 +119,56 @@ describe('ArticleFeed view loading', () => {
 
     wrapper.unmount();
   });
+
+  it.each([
+    ['view mode', { viewMode: 'summarized' }],
+    ['event grouping', { grouping: 'event' }]
+  ])('scrolls to the top without reloading IDs for a %s change', async (_label, selection) => {
+    const wrapper = mountArticleFeed();
+    await flushPromises();
+    const initialFetchCount = fetchArticleIds.mock.calls.length;
+    const scrollArticleListToTop = vi.spyOn(wrapper.vm, 'scrollArticleListToTop');
+
+    wrapper.vm.selectionStore.setCurrentSelection(selection);
+    await flushPromises();
+
+    expect(fetchArticleIds).toHaveBeenCalledTimes(initialFetchCount);
+    expect(scrollArticleListToTop).toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
+
+  it.each([
+    ['AI capability', { AIEnabled: true }],
+    ['mark-as-read behavior', { markAsReadOnScroll: false }]
+  ])('does not reload IDs or scroll for an %s change', async (_label, selection) => {
+    const wrapper = mountArticleFeed();
+    await flushPromises();
+    const initialFetchCount = fetchArticleIds.mock.calls.length;
+    const scrollArticleListToTop = vi.spyOn(wrapper.vm, 'scrollArticleListToTop');
+
+    wrapper.vm.selectionStore.setCurrentSelection(selection);
+    await flushPromises();
+
+    expect(fetchArticleIds).toHaveBeenCalledTimes(initialFetchCount);
+    expect(scrollArticleListToTop).not.toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
+
+  it('reloads IDs and scrolls when article status changes', async () => {
+    const wrapper = mountArticleFeed();
+    await flushPromises();
+    const initialFetchCount = fetchArticleIds.mock.calls.length;
+    const scrollArticleListToTop = vi.spyOn(wrapper.vm, 'scrollArticleListToTop');
+
+    wrapper.vm.selectionStore.setCurrentSelection({ status: 'favorite' });
+    await flushPromises();
+
+    expect(fetchArticleIds).toHaveBeenCalledTimes(initialFetchCount + 1);
+    expect(fetchArticleIds).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'favorite' }));
+    expect(scrollArticleListToTop).toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
 });

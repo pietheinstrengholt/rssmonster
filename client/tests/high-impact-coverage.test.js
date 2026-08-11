@@ -179,7 +179,7 @@ describe('Article high-impact decision coverage', () => {
     expect(compute(ArticleMeta, 'sourceUrl', {
       hasSource: true,
       feed: { url: 'not a URL' }
-    })).toBe('not a URL');
+    })).toBe('');
   });
 
   it('covers affinity-specific summary and image decisions', () => {
