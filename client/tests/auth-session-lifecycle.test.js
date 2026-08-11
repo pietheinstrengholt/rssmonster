@@ -132,7 +132,11 @@ describe('authentication lifecycle', () => {
     expect(Cookies.set).toHaveBeenCalledWith(
       'token',
       'development-token',
-      { expires: 1 }
+      {
+        expires: 1,
+        sameSite: 'strict',
+        secure: false
+      }
     );
   });
 

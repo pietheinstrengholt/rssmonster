@@ -257,7 +257,11 @@ export default {
     establishSession(response) {
       const expiresInDays = (response.expiresInSeconds || 86400) / 86400;
 
-      Cookies.set('token', response.token, { expires: expiresInDays });
+      Cookies.set('token', response.token, {
+        expires: expiresInDays,
+        sameSite: 'strict',
+        secure: window.location.protocol === 'https:'
+      });
       this.authStore.setSession({
         token: response.token,
         role: response.user.role,
