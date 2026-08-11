@@ -6,7 +6,7 @@
     <span v-if="hasProvenance" class="article-provenance">
       <span v-if="hasPublishedAt" class="article-published">{{ formatRelativeDate(publishedAt) }}</span>
       <span v-if="hasPublishedAt && hasSource" class="article-provenance-separator" aria-hidden="true">·</span>
-      <span v-if="hasSource" class="article-source"><a target="_blank" :href="sourceUrl">{{ sourceLabel }}</a></span>
+      <span v-if="hasSource" class="article-source"><a v-if="sourceUrl" target="_blank" rel="noopener noreferrer" :href="sourceUrl">{{ sourceLabel }}</a><span v-else>{{ sourceLabel }}</span></span>
     </span>
     <span v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none' && event.sourceCount >= 2" class="source-badge" :title="`${event.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ event.sourceCount }} sources</span>
     <button v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none'" type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
@@ -46,16 +46,17 @@ export default {
     hasProvenance() {
       return this.hasPublishedAt || this.hasSource;
     },
-    // Returns the source origin while preserving the existing link behavior.
+    // Returns an HTTP(S) source origin eligible for external navigation.
     sourceUrl() {
       if (!this.hasSource) return '';
 
       const value = this.feed?.url;
       try {
         const url = new URL(value);
+        if (!['http:', 'https:'].includes(url.protocol) || !url.host) return '';
         return `${url.protocol}//${url.host}/`;
       } catch {
-        return value;
+        return '';
       }
     }
   },

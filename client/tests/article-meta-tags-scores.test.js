@@ -51,6 +51,22 @@ describe('ArticleMeta', () => {
     expect(wrapper.get('.article-provenance-separator').attributes('aria-hidden')).toBe('true');
     expect(wrapper.get('.article-source a').text()).toBe('Jane Reporter');
     expect(wrapper.get('.article-source a').attributes('href')).toBe('https://example.com/');
+    expect(wrapper.get('.article-source a').attributes()).toMatchObject({
+      target: '_blank',
+      rel: 'noopener noreferrer'
+    });
+  });
+
+  it.each([
+    'javascript:alert(1)',
+    'data:text/html,<script>alert(1)</script>',
+    '/relative/feed.xml',
+    'not a URL'
+  ])('renders source text without a link for unsafe or non-absolute URL %s', (url) => {
+    const wrapper = mountArticleMeta({ feed: { url, feedName: 'Unsafe Feed' } });
+
+    expect(wrapper.get('.article-source').text()).toBe('Unsafe Feed');
+    expect(wrapper.find('.article-source a').exists()).toBe(false);
   });
 
   // Verifies a publication date renders without a dangling separator when the source is absent.

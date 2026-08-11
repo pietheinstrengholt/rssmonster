@@ -92,6 +92,22 @@ describe('ChatAssistant', () => {
     expect(wrapper.get('.assistant-message-content strong').text()).toBe('concise');
   });
 
+  it.each([
+    ['Shift', { shiftKey: true }],
+    ['Control', { ctrlKey: true }],
+    ['Alt', { altKey: true }],
+    ['Meta', { metaKey: true }]
+  ])('preserves %s+Enter for multiline input', async (_modifier, eventOptions) => {
+    const wrapper = mountChatAssistant();
+    const textarea = wrapper.get('#chatTextarea');
+
+    await textarea.setValue('First line');
+    await textarea.trigger('keydown.enter', eventOptions);
+
+    expect(sendChatMessages).not.toHaveBeenCalled();
+    expect(wrapper.vm.chatInput).toBe('First line');
+  });
+
   it('does not submit another message while a request is in flight', async () => {
     const deferred = createDeferred();
     sendChatMessages.mockReturnValueOnce(deferred.promise);

@@ -13,7 +13,7 @@
                 data-lpignore="true"
                 data-1p-ignore="true"
                 data-form-type="other"
-                @keydown.enter.prevent="chatInput.trim() && submitChat()"
+                @keydown.enter="handleChatEnter"
             ></textarea>
         </div>
         <div class="agent-chat-actions">
@@ -237,6 +237,12 @@ export default {
       this.invalidatePendingConversation();
     },
     methods: {
+        // This function submits on plain Enter while preserving modified Enter for multiline input.
+        handleChatEnter: function(event) {
+            if (event.shiftKey || event.ctrlKey || event.altKey || event.metaKey || event.isComposing) return;
+            event.preventDefault();
+            this.submitChat();
+        },
         // This function submits non-empty user input and appends the assistant response.
         submitChat: function() {
             if (this.isLoading || !this.chatInput || !this.chatInput.trim()) return;
