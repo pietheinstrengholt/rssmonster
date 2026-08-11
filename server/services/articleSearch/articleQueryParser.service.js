@@ -84,6 +84,13 @@ const parseTextFilter = (token, prefix) => {
   return value || null;
 };
 
+// Removes trailing query punctuation in linear time.
+const trimTrailingPunctuation = token => {
+  let end = token.length;
+  while (end > 0 && ['.', ',', ';'].includes(token[end - 1])) end -= 1;
+  return token.slice(0, end);
+};
+
 // Parses simple date tokens such as @today, @yesterday, @lastweek, or @YYYY-MM-DD.
 const parseDateToken = token => {
   // Normalizes the token before parsing date token.
@@ -211,8 +218,8 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
 
   // Processes each tokens entry in turn.
   for (const token of tokens) {
-    // Derives the cleaned through replace while parsing article query.
-    const cleaned = token.replace(/[.,;]+$/, '');
+    // Removes punctuation following the current token.
+    const cleaned = trimTrailingPunctuation(token);
 
     // Simplified boolean filter parsing
     let matchedBooleanFilter = false;

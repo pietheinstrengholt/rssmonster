@@ -98,12 +98,14 @@ describe('articleQueryParser.service', () => {
 
   it('handles long hostile filter input without ambiguous regex backtracking', () => {
     const invalidNumber = parseArticleQuery({ search: `quality:${'1'.repeat(50_000)}x` });
+    const trailingPunctuation = parseArticleQuery({ search: `term${'.'.repeat(50_000)}` });
     const whitespace = ' '.repeat(50_000);
     const textFilters = parseArticleQuery({
       search: `tag:${whitespace} title:${whitespace} author:${whitespace}`
     });
 
     expect(invalidNumber.filters.quality).toBeNull();
+    expect(trailingPunctuation.text).toBe('term');
     expect(textFilters.filters).toEqual({});
   });
 
