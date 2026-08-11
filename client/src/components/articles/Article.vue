@@ -418,6 +418,14 @@ export default {
     position: relative;
     margin-top: 2px;
   }
+
+  .article-card:first-child {
+    padding-top: 0;
+  }
+
+  .article-card:first-child .article-body {
+    margin-top: 0;
+  }
 }
 
 /* Landscape phones and portrait tablets */
