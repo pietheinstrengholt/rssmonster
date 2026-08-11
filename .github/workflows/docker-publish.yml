@@ -1,6 +1,8 @@
 name: Docker Publish
 
 on:
+  # Docs-only pushes are excluded by the upstream CI workflow, so they do not
+  # produce the workflow_run completion that triggers this publish workflow.
   workflow_run:
     workflows:
       - CI
