@@ -96,6 +96,17 @@ describe('articleQueryParser.service', () => {
     expect(freshness.hasSearchIntent).toBe(false);
   });
 
+  it('handles long hostile filter input without ambiguous regex backtracking', () => {
+    const invalidNumber = parseArticleQuery({ search: `quality:${'1'.repeat(50_000)}x` });
+    const whitespace = ' '.repeat(50_000);
+    const textFilters = parseArticleQuery({
+      search: `tag:${whitespace} title:${whitespace} author:${whitespace}`
+    });
+
+    expect(invalidNumber.filters.quality).toBeNull();
+    expect(textFilters.filters).toEqual({});
+  });
+
   it('parses event and freshness filters', () => {
     const result = parseArticleQuery({
       search: 'event:true eventCount:>=3 freshness:>=0.5 sort:attention'

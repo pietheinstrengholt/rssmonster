@@ -4,6 +4,7 @@ import request from 'supertest';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
 import { createArticleSearchCursor } from '../../services/articleSearch/articleSearchCursor.service.js';
+import { MAX_ARTICLE_SEARCH_LENGTH } from '../../services/articleSearch/articleQueryParser.service.js';
 
 const { Article, Category, Feed, User, sequelize } = db;
 let app;
@@ -67,6 +68,17 @@ describe('article cursor pagination', () => {
     app = mod.default;
     await sequelize.authenticate();
   }, 50_000);
+
+  it('rejects oversized search expressions before executing a search', async () => {
+    const { user } = await createUserFeed('oversized-search');
+    const response = await getPage(user, { search: 'x'.repeat(MAX_ARTICLE_SEARCH_LENGTH + 1) });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toEqual({
+      code: 'SEARCH_TOO_LONG',
+      message: `search must not exceed ${MAX_ARTICLE_SEARCH_LENGTH} characters.`
+    });
+  });
 
   it('returns every article once across deterministic pages with identical timestamps', async () => {
     const { user, feed } = await createUserFeed('cursor-pages');

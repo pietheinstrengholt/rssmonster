@@ -8,6 +8,7 @@ const DATE_DAY_PATTERN = /@"?last\s+(monday|tuesday|wednesday|thursday|friday|sa
 const DATE_DAYS_AGO_PATTERN = /@"?(\d+)\s+days\s+ago"?/i;
 // Defines the iso date token pattern enforced by this service.
 const ISO_DATE_TOKEN_PATTERN = /^@(\d{4}-\d{2}-\d{2})$/;
+export const MAX_ARTICLE_SEARCH_LENGTH = 4096;
 
 // Parses a boolean field token such as unread:true or hot:false.
 const parseBooleanFilter = (token, key) => {
@@ -19,17 +20,68 @@ const parseBooleanFilter = (token, key) => {
 
 // Parses numeric filters that may include comparison operators.
 const parseNumberOperatorFilter = token => {
-  // Derives the match through match while parsing number operator filter.
-  const match = token.match(/^(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i);
-  // Returns no result when match is unavailable.
-  if (!match) {
+  const normalizedToken = token.trimStart();
+  const operator = ['<=', '>='].includes(normalizedToken.slice(0, 2))
+    ? normalizedToken.slice(0, 2)
+    : ['<', '>', '='].includes(normalizedToken[0]) ? normalizedToken[0] : '';
+  const numberToken = normalizedToken.slice(operator.length).trimStart();
+  let decimalPointSeen = false;
+  let digitSeen = false;
+
+  for (const character of numberToken) {
+    if (character >= '0' && character <= '9') {
+      digitSeen = true;
+      continue;
+    }
+    if (character === '.' && !decimalPointSeen) {
+      decimalPointSeen = true;
+      continue;
+    }
+    return null;
+  }
+
+  if (!digitSeen) {
     return null;
   }
 
   return {
-    operator: match[1] || '>=',
-    value: parseFloat(match[2])
+    operator: operator || '>=',
+    value: parseFloat(numberToken)
   };
+};
+
+// Splits the compact query language without backtracking over quoted user input.
+const tokenizeSearch = search => {
+  const tokens = [];
+  let index = 0;
+
+  while (index < search.length) {
+    while (index < search.length && (search[index] === ',' || /\s/.test(search[index]))) index += 1;
+    if (index >= search.length) break;
+
+    const start = index;
+    let quoteIndex = index;
+    while (quoteIndex < search.length && /[A-Za-z]/.test(search[quoteIndex])) quoteIndex += 1;
+    if (search[quoteIndex] === ':' && search[quoteIndex + 1] === '"') quoteIndex += 1;
+    else quoteIndex = index;
+
+    if (search[quoteIndex] === '"') {
+      index = search.indexOf('"', quoteIndex + 1);
+      index = index === -1 ? search.length : index + 1;
+    } else {
+      while (index < search.length && search[index] !== ',' && !/\s/.test(search[index])) index += 1;
+    }
+    tokens.push(search.slice(start, index));
+  }
+
+  return tokens;
+};
+
+// Returns a non-empty value following a case-insensitive field prefix.
+const parseTextFilter = (token, prefix) => {
+  if (!token.toLowerCase().startsWith(prefix)) return null;
+  const value = token.slice(prefix.length).trimStart();
+  return value || null;
 };
 
 // Parses simple date tokens such as @today, @yesterday, @lastweek, or @YYYY-MM-DD.
@@ -153,7 +205,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
   }
 
   // Derives the tokens required while parsing article query.
-  const tokens = workingSearch.match(/(?:[A-Za-z]+:)?"[^"]*"|[^\s,]+/g) || [];
+  const tokens = tokenizeSearch(workingSearch);
   // Collects the remaining tokens while parsing article query.
   const remainingTokens = [];
 
@@ -192,30 +244,30 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
       continue;
     }
 
-    // Derives the tag match through match while parsing article query.
-    const tagMatch = cleaned.match(/^tag:\s*(.+)$/i);
-    // Handles the case where tag match is available.
-    if (tagMatch) {
-      filters.tag = tagMatch[1].trim();
+    // Derives the tag value while parsing article query.
+    const tag = parseTextFilter(cleaned, 'tag:');
+    // Handles the case where tag is available.
+    if (tag) {
+      filters.tag = tag.trim();
       continue;
     }
 
     // Handles the case where filters title is unavailable.
     if (!filters.title) {
-      // Derives the title match through match while parsing article query.
-      const titleMatch = cleaned.match(/^title:\s*(.+)$/i);
-      // Handles the case where title match is available.
-      if (titleMatch) {
-        filters.title = titleMatch[1].trim().replace(/^"|"$/g, '');
+      // Derives the title value while parsing article query.
+      const title = parseTextFilter(cleaned, 'title:');
+      // Handles the case where title is available.
+      if (title) {
+        filters.title = title.trim().replace(/^"|"$/g, '');
         continue;
       }
     }
 
-    // Derives the author match through match while parsing article query.
-    const authorMatch = cleaned.match(/^author:\s*(.+)$/i);
-    // Handles the case where author match is available.
-    if (authorMatch) {
-      filters.author = authorMatch[1].trim().replace(/^"|"$/g, '');
+    // Derives the author value while parsing article query.
+    const author = parseTextFilter(cleaned, 'author:');
+    // Handles the case where author is available.
+    if (author) {
+      filters.author = author.trim().replace(/^"|"$/g, '');
       continue;
     }
 

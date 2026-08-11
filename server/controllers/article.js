@@ -2,6 +2,7 @@ import db from '../models/index.js';
 const { Article, BriefingPreference, Feed, Tag, Event } = db;
 import { Op, fn, col } from 'sequelize';
 import { searchArticles } from "../services/articleSearch/articleSearch.service.js";
+import { MAX_ARTICLE_SEARCH_LENGTH } from '../services/articleSearch/articleQueryParser.service.js';
 import { ArticleSearchCursorError } from '../services/articleSearch/articleSearchCursor.service.js';
 import {
   DailyBriefingRequestError,
@@ -260,6 +261,15 @@ export const getDailyBriefing = async (req, res, _next) => {
 export const getArticles = async (req, res) => {
   try {
     const userId = req.userData.userId;
+    const search = String(req.query.search || '');
+    if (search.length > MAX_ARTICLE_SEARCH_LENGTH) {
+      return res.status(400).json({
+        error: {
+          code: 'SEARCH_TOO_LONG',
+          message: `search must not exceed ${MAX_ARTICLE_SEARCH_LENGTH} characters.`
+        }
+      });
+    }
     const newerThanArticleIdValue = req.query.newerThanArticleId;
     let newerThanArticleId = null;
     if (newerThanArticleIdValue !== undefined) {
@@ -295,7 +305,7 @@ export const getArticles = async (req, res) => {
     }
     const result = await searchArticles({
       userId,
-      search: req.query.search || "",
+      search,
       categoryId: req.query.categoryId,
       feedId: req.query.feedId,
       status: req.query.status,
