@@ -237,6 +237,7 @@ reverse proxy so client addresses are interpreted correctly.
 | `OPENAI_API_KEY` | none | Enables agentic features and AI-backed enrichment that require OpenAI. |
 | `OPENAI_MODEL_AGENT` | `gpt-5.1` | Model used by the natural-language assistant. |
 | `OPENAI_MODEL_CRAWL` | falls back to `OPENAI_MODEL_NAME` | Model used for crawl-time content analysis. The example sets it to `gpt-4o-mini`. |
+| `INTERNAL_MCP_URL` | `http://127.0.0.1:$PORT/mcp` | Server-controlled MCP endpoint used by the natural-language assistant. Configure this when MCP is reached through another container or an HTTPS listener. |
 
 Without `OPENAI_API_KEY`, core RSS reading remains available, while features
 that require model calls are disabled. Model access creates external API usage

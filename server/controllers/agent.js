@@ -1,5 +1,6 @@
 // server/controllers/agent.js
 import { Agent, run, MCPServerStreamableHttp } from "@openai/agents";
+import { getInternalMcpUrl } from '../config/mcp.js';
 import sanitizeAgentOutput from '../utils/sanitizeAgentOutput.js';
 
 export const postAgent = async (req, res) => {
@@ -7,12 +8,9 @@ export const postAgent = async (req, res) => {
     return res.status(401).json({ error: 'Missing authorization header' });
   }
   try {
-    // Construct MCP URL
-    const mcpUrl = `${req.protocol}://${req.get('host')}/mcp`;
-
     // 1. Define the MCP server
     const mcpServer = new MCPServerStreamableHttp({
-        url: mcpUrl, // MCP server URL
+        url: getInternalMcpUrl(),
         name: 'mcp-rssmonster-server',
         requestInit: {
           headers: {

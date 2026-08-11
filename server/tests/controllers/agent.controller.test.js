@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   agentConstructor: vi.fn(),
@@ -28,12 +28,11 @@ vi.mock('@openai/agents', () => ({
 }));
 
 const { postAgent } = await import('../../controllers/agent.js');
+const originalPort = process.env.PORT;
 
 // Builds the request contract consumed by the agent endpoint.
 const createRequest = (overrides = {}) => ({
   headers: { authorization: 'Bearer signed-token' },
-  protocol: 'https',
-  get: vi.fn().mockReturnValue('reader.example.com'),
   body: { input: 'Summarize my feeds' },
   ...overrides
 });
@@ -51,9 +50,20 @@ const createResponse = () => {
 
 describe('agent controller', () => {
   beforeEach(() => {
+    delete process.env.INTERNAL_MCP_URL;
+    process.env.PORT = '3000';
     Object.values(mocked).forEach(mock => mock.mockReset());
     mocked.connect.mockResolvedValue(undefined);
     mocked.close.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    delete process.env.INTERNAL_MCP_URL;
+    if (originalPort === undefined) {
+      delete process.env.PORT;
+    } else {
+      process.env.PORT = originalPort;
+    }
   });
 
   it('rejects requests that cannot authenticate the downstream MCP call', async () => {
@@ -76,6 +86,8 @@ describe('agent controller', () => {
       { role: 'user', content: 'Latest question' }
     ];
     const req = createRequest({
+      protocol: 'https',
+      get: vi.fn().mockReturnValue('attacker.example.com'),
       body: {
         input: 'Fallback input',
         messages
@@ -86,7 +98,7 @@ describe('agent controller', () => {
     await postAgent(req, res);
 
     expect(mocked.mcpConstructor).toHaveBeenCalledWith({
-      url: 'https://reader.example.com/mcp',
+      url: 'http://127.0.0.1:3000/mcp',
       name: 'mcp-rssmonster-server',
       requestInit: {
         headers: {
@@ -110,6 +122,20 @@ describe('agent controller', () => {
     expect(res.json).toHaveBeenCalledWith({
       output: '<p>Latest articles</p>'
     });
+  });
+
+  it('uses a configured internal MCP URL instead of request origin data', async () => {
+    process.env.INTERNAL_MCP_URL = 'https://mcp.internal.example/mcp';
+    mocked.run.mockResolvedValue({ finalOutput: 'Configured endpoint' });
+
+    await postAgent(createRequest({
+      protocol: 'https',
+      get: vi.fn().mockReturnValue('attacker.example.com')
+    }), createResponse());
+
+    expect(mocked.mcpConstructor).toHaveBeenCalledWith(expect.objectContaining({
+      url: 'https://mcp.internal.example/mcp'
+    }));
   });
 
   it('uses direct input when no message history is provided', async () => {

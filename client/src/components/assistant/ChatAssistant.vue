@@ -224,14 +224,24 @@ export default {
         return {
             chatInput: '',
             messages: [],
-            isLoading: false
+            isLoading: false,
+            conversationRequestId: 0
         };
+    },
+    watch: {
+      'selectionStore.currentSelection.AIEnabled'(enabled) {
+        if (!enabled) this.clearConversation();
+      }
+    },
+    beforeUnmount() {
+      this.invalidatePendingConversation();
     },
     methods: {
         // This function submits non-empty user input and appends the assistant response.
         submitChat: function() {
-            if (!this.chatInput || !this.chatInput.trim()) return;
+            if (this.isLoading || !this.chatInput || !this.chatInput.trim()) return;
 
+            const requestId = ++this.conversationRequestId;
             const inputMessage = { role: 'user', content: this.chatInput };
             this.messages.push(inputMessage);
             this.chatInput = '';
@@ -240,12 +250,14 @@ export default {
             // This operation records either the assistant output or a safe fallback message.
             sendChatMessages(this.messages)
             .then(response => {
+              if (requestId !== this.conversationRequestId) return;
               this.messages.push({
                 role: 'assistant',
                 content: response.data.output
               });
             })
             .catch(error => {
+                if (requestId !== this.conversationRequestId) return;
                 console.error('Error:', error);
                 this.messages.push({
                     role: 'assistant',
@@ -253,11 +265,17 @@ export default {
                 });
             })
             .finally(() => {
-                this.isLoading = false;
+                if (requestId === this.conversationRequestId) this.isLoading = false;
             });
+        },
+        // This function makes every outstanding response obsolete and releases local loading state.
+        invalidatePendingConversation: function() {
+            this.conversationRequestId++;
+            this.isLoading = false;
         },
         // This function clears all messages from the current conversation.
         clearConversation: function() {
+            this.invalidatePendingConversation();
             this.messages = [];
         }
     }

@@ -92,6 +92,27 @@ describe('ChatAssistant', () => {
     expect(wrapper.get('.assistant-message-content strong').text()).toBe('concise');
   });
 
+  it('does not submit another message while a request is in flight', async () => {
+    const deferred = createDeferred();
+    sendChatMessages.mockReturnValueOnce(deferred.promise);
+    const wrapper = mountChatAssistant();
+    const textarea = wrapper.get('#chatTextarea');
+
+    await textarea.setValue('First question');
+    await textarea.trigger('keydown.enter');
+    await textarea.setValue('Second question');
+    await textarea.trigger('keydown.enter');
+
+    expect(sendChatMessages).toHaveBeenCalledOnce();
+    expect(wrapper.vm.messages).toEqual([
+      { role: 'user', content: 'First question' }
+    ]);
+    expect(wrapper.vm.chatInput).toBe('Second question');
+
+    deferred.resolve({ data: { output: '<p>First answer</p>' } });
+    await flushPromises();
+  });
+
   it('renders a safe fallback and releases loading state when submission fails', async () => {
     const error = new Error('Agent unavailable');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -124,6 +145,61 @@ describe('ChatAssistant', () => {
     expect(wrapper.vm.messages).toEqual([]);
     expect(wrapper.find('.assistant-message').exists()).toBe(false);
     expect(clearButton.attributes('disabled')).toBeDefined();
+  });
+
+  it('does not restore a conversation when a cleared request resolves', async () => {
+    const deferred = createDeferred();
+    sendChatMessages.mockReturnValueOnce(deferred.promise);
+    const wrapper = mountChatAssistant();
+
+    await wrapper.get('#chatTextarea').setValue('Pending question');
+    await wrapper.get('.agent-chat-button--primary').trigger('click');
+    await wrapper.get('.agent-chat-button--secondary').trigger('click');
+
+    expect(wrapper.vm.messages).toEqual([]);
+    expect(wrapper.vm.isLoading).toBe(false);
+
+    deferred.resolve({ data: { output: '<p>Late answer</p>' } });
+    await flushPromises();
+
+    expect(wrapper.vm.messages).toEqual([]);
+    expect(wrapper.find('.assistant-message').exists()).toBe(false);
+  });
+
+  it('ignores a pending response after unmounting', async () => {
+    const deferred = createDeferred();
+    sendChatMessages.mockReturnValueOnce(deferred.promise);
+    const wrapper = mountChatAssistant();
+
+    await wrapper.get('#chatTextarea').setValue('Pending question');
+    await wrapper.get('.agent-chat-button--primary').trigger('click');
+    wrapper.unmount();
+
+    deferred.resolve({ data: { output: '<p>Late answer</p>' } });
+    await flushPromises();
+
+    expect(wrapper.vm.messages).toEqual([
+      { role: 'user', content: 'Pending question' }
+    ]);
+    expect(wrapper.vm.isLoading).toBe(false);
+  });
+
+  it('clears and invalidates a pending conversation when AI access is disabled', async () => {
+    const deferred = createDeferred();
+    sendChatMessages.mockReturnValueOnce(deferred.promise);
+    const wrapper = mountChatAssistant();
+
+    await wrapper.get('#chatTextarea').setValue('Pending question');
+    await wrapper.get('.agent-chat-button--primary').trigger('click');
+    wrapper.vm.selectionStore.setCurrentSelection({ AIEnabled: false });
+    await wrapper.vm.$nextTick();
+
+    deferred.resolve({ data: { output: '<p>Late answer</p>' } });
+    await flushPromises();
+
+    expect(wrapper.vm.messages).toEqual([]);
+    expect(wrapper.vm.isLoading).toBe(false);
+    expect(wrapper.find('#chatTextarea').exists()).toBe(false);
   });
 
   it('renders sanitized assistant HTML as structured content', async () => {
