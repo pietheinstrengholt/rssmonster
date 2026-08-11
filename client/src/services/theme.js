@@ -1,14 +1,32 @@
 const THEME_OVERRIDE_STORAGE_KEY = 'rssmonster-theme-override';
 
+// This function reads the saved mode without allowing blocked storage to interrupt startup.
+function readThemeMode() {
+  try {
+    return window.localStorage.getItem(THEME_OVERRIDE_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+// This function persists a mode when browser storage is available.
+function persistThemeMode(theme) {
+  try {
+    window.localStorage.setItem(THEME_OVERRIDE_STORAGE_KEY, theme);
+  } catch {
+    // Theme application remains available when persistence is blocked.
+  }
+}
+
 // This function returns the user's saved theme mode, defaulting new users to system.
 export function getThemeMode() {
-  const savedTheme = window.localStorage.getItem(THEME_OVERRIDE_STORAGE_KEY);
+  const savedTheme = readThemeMode();
 
   if (savedTheme === 'system' || savedTheme === 'light' || savedTheme === 'dark') {
     return savedTheme;
   }
 
-  window.localStorage.setItem(THEME_OVERRIDE_STORAGE_KEY, 'system');
+  persistThemeMode('system');
   return 'system';
 }
 
@@ -44,7 +62,7 @@ export function applyTheme(theme) {
 
 // This function saves a user-selected theme mode and applies it.
 export function setThemeMode(theme) {
-  window.localStorage.setItem(THEME_OVERRIDE_STORAGE_KEY, theme);
+  persistThemeMode(theme);
   applyTheme(theme === 'system' ? getSystemTheme() : theme);
 }
 

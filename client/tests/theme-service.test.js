@@ -83,6 +83,20 @@ describe('theme preferences', () => {
     expect(getPreferredTheme()).toBe('dark');
   });
 
+  it('falls back to the system preference when storage reads are blocked', () => {
+    mockSystemTheme(true);
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('Storage blocked', 'SecurityError');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage blocked', 'SecurityError');
+    });
+
+    expect(() => getThemeMode()).not.toThrow();
+    expect(getThemeMode()).toBe('system');
+    expect(getPreferredTheme()).toBe('dark');
+  });
+
   it.each([
     [false, 'system', 'light'],
     [true, 'system', 'dark'],
@@ -149,6 +163,17 @@ describe('theme application', () => {
     document.documentElement.style.setProperty('--bg-bounce', '#ffffff');
     setThemeMode('light');
     expect(document.documentElement.dataset.theme).toBe('light');
+  });
+
+  it('applies a selected theme when storage writes are blocked', () => {
+    mockSystemTheme(false);
+    document.documentElement.style.setProperty('--bg-bounce', '#ffffff');
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage unavailable', 'QuotaExceededError');
+    });
+
+    expect(() => setThemeMode('dark')).not.toThrow();
+    expect(document.documentElement.dataset.theme).toBe('dark');
   });
 });
 

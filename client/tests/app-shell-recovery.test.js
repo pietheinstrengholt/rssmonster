@@ -276,13 +276,20 @@ describe('AppShell connectivity recovery', () => {
     expect(context.databaseRefreshActive).toBe(false);
   });
 
-  it('rebuilds the current article selection after screen rotation', () => {
+  it('scrolls article feeds to the top without reloading data after screen rotation', async () => {
     const context = createRecoveryContext();
-    context.reloadArticleListFromDatabase = vi.fn().mockResolvedValue();
+    const firstArticleFeed = { scrollArticleListToTop: vi.fn() };
+    const secondArticleFeed = { scrollArticleListToTop: vi.fn() };
+    context.$refs.articleFeed = [firstArticleFeed, secondArticleFeed];
+    context.$nextTick = vi.fn().mockResolvedValue();
+    context.reloadArticleListFromDatabase = vi.fn();
 
-    AppShell.methods.handleOrientationChange.call(context);
+    await AppShell.methods.handleOrientationChange.call(context);
 
-    expect(context.reloadArticleListFromDatabase).toHaveBeenCalledOnce();
+    expect(firstArticleFeed.scrollArticleListToTop).toHaveBeenCalledOnce();
+    expect(secondArticleFeed.scrollArticleListToTop).toHaveBeenCalledOnce();
+    expect(context.reloadArticleListFromDatabase).not.toHaveBeenCalled();
+    expect(context.overviewStore.fetchOverview).not.toHaveBeenCalled();
   });
 
   it('preserves the shell and shows a recoverable notice when database refresh fails', async () => {

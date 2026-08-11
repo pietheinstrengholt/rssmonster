@@ -763,10 +763,22 @@ describe('Vue template handler coverage', () => {
       setAppBadge: { configurable: true, value: setAppBadge },
       clearAppBadge: { configurable: true, value: clearAppBadge }
     });
-    context.setBadge(4.9);
-    context.setBadge(0);
+    await context.setBadge(4.9);
+    await context.setBadge(0);
     expect(setAppBadge).toHaveBeenCalledWith(4);
     expect(clearAppBadge).toHaveBeenCalledOnce();
+
+    const badgeError = new Error('badge unavailable');
+    const clearError = new Error('badge clear unavailable');
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    setAppBadge.mockRejectedValueOnce(badgeError);
+    clearAppBadge.mockRejectedValueOnce(clearError);
+
+    await context.setBadge(2);
+    await context.setBadge(0);
+
+    expect(consoleWarn).toHaveBeenCalledWith('setBadge error:', badgeError.message);
+    expect(consoleWarn).toHaveBeenCalledWith('setBadge error:', clearError.message);
 
     const showNotification = vi.fn().mockResolvedValue();
     Object.defineProperty(navigator, 'serviceWorker', {

@@ -120,19 +120,32 @@ describe('ArticleFeed view loading', () => {
     wrapper.unmount();
   });
 
-  it.each([
-    ['view mode', { viewMode: 'summarized' }],
-    ['event grouping', { grouping: 'event' }]
-  ])('scrolls to the top without reloading IDs for a %s change', async (_label, selection) => {
+  it('scrolls to the top without reloading IDs for a view-mode change', async () => {
     const wrapper = mountArticleFeed();
     await flushPromises();
     const initialFetchCount = fetchArticleIds.mock.calls.length;
     const scrollArticleListToTop = vi.spyOn(wrapper.vm, 'scrollArticleListToTop');
 
-    wrapper.vm.selectionStore.setCurrentSelection(selection);
+    wrapper.vm.selectionStore.setCurrentSelection({ viewMode: 'summarized' });
     await flushPromises();
 
     expect(fetchArticleIds).toHaveBeenCalledTimes(initialFetchCount);
+    expect(scrollArticleListToTop).toHaveBeenCalled();
+
+    wrapper.unmount();
+  });
+
+  it('reloads IDs once with the new grouping and scrolls to the top', async () => {
+    const wrapper = mountArticleFeed();
+    await flushPromises();
+    const initialFetchCount = fetchArticleIds.mock.calls.length;
+    const scrollArticleListToTop = vi.spyOn(wrapper.vm, 'scrollArticleListToTop');
+
+    wrapper.vm.selectionStore.setCurrentSelection({ grouping: 'event' });
+    await flushPromises();
+
+    expect(fetchArticleIds).toHaveBeenCalledTimes(initialFetchCount + 1);
+    expect(fetchArticleIds).toHaveBeenLastCalledWith(expect.objectContaining({ grouping: 'event' }));
     expect(scrollArticleListToTop).toHaveBeenCalled();
 
     wrapper.unmount();

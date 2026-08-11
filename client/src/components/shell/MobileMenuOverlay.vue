@@ -520,7 +520,8 @@ export default {
     return {
       notificationMessage: '',
       notificationPermission: 'unsupported',
-      notificationRequestPending: false
+      notificationRequestPending: false,
+      mobileCloseTimer: null
     };
   },
   computed: {
@@ -558,6 +559,10 @@ export default {
     }
   },
   unmounted() {
+    if (this.mobileCloseTimer) {
+      clearTimeout(this.mobileCloseTimer);
+      this.mobileCloseTimer = null;
+    }
     document.body.classList.remove('mobile-options-open');
   },
   methods: {
@@ -607,17 +612,21 @@ export default {
       this.uiStore.setChatAssistantOpen(!this.uiStore.chatAssistantOpen);
       this.emitClickEvent('mobile', null);
     },
-    selectCategory(categoryId) {
-      this.selectionStore.selectCategory(categoryId);
-      setTimeout(() => {
+    // This function replaces any pending delayed menu close with the latest selection action.
+    scheduleMobileClose() {
+      if (this.mobileCloseTimer) clearTimeout(this.mobileCloseTimer);
+      this.mobileCloseTimer = setTimeout(() => {
+        this.mobileCloseTimer = null;
         this.emitClickEvent('mobile', null);
       }, 150);
     },
+    selectCategory(categoryId) {
+      this.selectionStore.selectCategory(categoryId);
+      this.scheduleMobileClose();
+    },
     selectViewMode(mode) {
       this.selectionStore.setViewMode(mode);
-      setTimeout(() => {
-        this.emitClickEvent('mobile', null);
-      }, 150);
+      this.scheduleMobileClose();
     }
   }
 };

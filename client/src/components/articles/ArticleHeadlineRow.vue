@@ -18,7 +18,7 @@
     </div>
     <div class="article-list-main">
       <h5 class="article-list-title">
-        <a v-if="url" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
+        <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" v-text="title" @click="$emit('article-clicked')"></a>
         <span v-else class="article-link" v-text="title"></span>
       </h5>
       <div class="article-list-meta">
@@ -47,6 +47,7 @@ import ArticleActionsMenu from './ArticleActionsMenu.vue';
 import ArticlePreviewFallback from './ArticlePreviewFallback.vue';
 import { formatRelativeDate } from '../../utils/date';
 import { formatTagName } from '../../utils/tags';
+import { usableHttpUrl } from '../../utils/content.js';
 
 export default {
   components: { ArticleActionsMenu, ArticlePreviewFallback },
@@ -75,6 +76,10 @@ export default {
     hasArticlePreview: { type: Boolean, default: false }
   },
   computed: {
+    // Returns an absolute HTTP(S) destination eligible for external navigation.
+    safeArticleUrl() {
+      return usableHttpUrl(this.url);
+    },
     // Returns tags assigned by rules for the compact metadata row.
     ruleTags() {
       return (this.tags || []).filter(tag => tag.tagType === 'rule');

@@ -110,6 +110,7 @@ export default {
         selection.minSentimentScore,
         selection.minQualityScore,
         selection.sort,
+        selection.grouping,
         selection.includeDevelopingEvents,
         selection.briefingRevision
       ]);
@@ -118,8 +119,7 @@ export default {
     articlePresentationSelectionKey() {
       const selection = this.selectionStore.currentSelection;
       return JSON.stringify([
-        selection.viewMode,
-        selection.grouping
+        selection.viewMode
       ]);
     },
     // calculate the remaining items in the container

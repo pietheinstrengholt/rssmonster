@@ -17,7 +17,7 @@
           <BootstrapIcon v-if="hasInterestScore && !hasSourceIcon && !isDeveloping" icon="award-fill" class="article-kind-icon recommendation-icon" />
           <BootstrapIcon v-else-if="isGroupedView && eventArticleCountTotal > 1 && !hasSourceIcon && !isDeveloping" icon="megaphone-fill" class="article-kind-icon event-icon" />
         </template>
-        <a v-if="url" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
+        <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" v-text="title" @click="$emit('article-clicked')"></a>
         <span v-else class="article-link" v-text="title"></span>
       </div>
       <div class="article-header-actions">
@@ -29,6 +29,7 @@
 
 <script>
 import ArticleActionsMenu from './ArticleActionsMenu.vue';
+import { usableHttpUrl } from '../../utils/content.js';
 
 export default {
   components: { ArticleActionsMenu },
@@ -42,6 +43,10 @@ export default {
     isGroupedView: { type: Boolean, default: false }, eventArticleCountTotal: { type: Number, default: 0 }
   },
   computed: {
+    // Returns an absolute HTTP(S) destination eligible for external navigation.
+    safeArticleUrl() {
+      return usableHttpUrl(this.url);
+    },
     // Returns whether the article links to a Bluesky profile post.
     isBlueSkyArticle() {
       try {

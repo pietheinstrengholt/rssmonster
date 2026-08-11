@@ -126,10 +126,10 @@
           </span>
           <span v-if="!hasArticlePreview(article)" class="article-preview-empty">
             <span class="article-preview-empty__message">No preview available</span>
-            <span v-if="article.url" aria-hidden="true" class="article-preview-empty__separator">-</span>
+            <span v-if="articleUrl(article)" aria-hidden="true" class="article-preview-empty__separator">-</span>
             <a
-              v-if="article.url"
-              :href="article.url"
+              v-if="articleUrl(article)"
+              :href="articleUrl(article)"
               class="article-preview-empty__link"
               target="_blank"
               rel="noopener noreferrer"
@@ -782,6 +782,10 @@ export default {
     hasArticlePreview(article) {
       return Boolean(summarizeArticleContent(article.contentText)) ||
         Boolean(this.thumbnailUrl(article));
+    },
+    // Returns an absolute HTTP(S) article destination eligible for external navigation.
+    articleUrl(article) {
+      return usableHttpUrl(article?.url);
     },
     // Returns an image thumbnail URL for a row in the reader article list.
     thumbnailUrl(article) {

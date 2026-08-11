@@ -409,9 +409,15 @@ export default {
       this.connectivityStatus = 'backend-unreachable';
       void this.recoverConnectivity();
     },
-    // This function rebuilds the current article selection after the viewport rotates.
-    handleOrientationChange() {
-      void this.reloadArticleListFromDatabase();
+    // This function restores the article surface after responsive layout settles on rotation.
+    async handleOrientationChange() {
+      await this.$nextTick();
+      const articleFeedRefs = Array.isArray(this.$refs.articleFeed)
+        ? this.$refs.articleFeed
+        : [this.$refs.articleFeed];
+      articleFeedRefs
+        .filter(ref => ref && typeof ref.scrollArticleListToTop === 'function')
+        .forEach(ref => ref.scrollArticleListToTop());
     },
     // This function registers the window listeners owned by the app shell.
     registerGlobalListeners() {
@@ -731,7 +737,7 @@ export default {
       this.mobileToolbarHidden = isVisible === false;
     },
     // Safely set/clear the app badge to avoid range/type errors
-    setBadge(count) {
+    async setBadge(count) {
       try {
         // Require SW and API support
         if (!('serviceWorker' in navigator) || typeof navigator.setAppBadge !== 'function') {
@@ -743,13 +749,13 @@ export default {
         const safe = Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), Number.MAX_SAFE_INTEGER) : 0;
 
         if (safe > 0) {
-          navigator.setAppBadge(safe);
+          await navigator.setAppBadge(safe);
         } else {
           if (typeof navigator.clearAppBadge === 'function') {
-            navigator.clearAppBadge();
+            await navigator.clearAppBadge();
           } else {
             // Fallback: set to 0 if clear is not available
-            navigator.setAppBadge(0);
+            await navigator.setAppBadge(0);
           }
         }
       } catch (e) {
@@ -785,7 +791,7 @@ export default {
     },
     "overviewStore.unreadCount": {
       handler: function(count) {
-        this.setBadge(count);
+        void this.setBadge(count);
       },
       deep: true
     }

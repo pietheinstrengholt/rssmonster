@@ -173,6 +173,14 @@ describe('ArticleReaderLayout empty previews', () => {
     expect(wrapper.find('.article-preview-empty__separator').exists()).toBe(false);
   });
 
+  it('renders unsafe original URLs without Reader navigation', () => {
+    const wrapper = mountReader(createArticle({ url: 'javascript:alert(1)' }));
+
+    expect(wrapper.get('.article-preview-empty__message').text()).toBe('No preview available');
+    expect(wrapper.find('.article-preview-empty__link').exists()).toBe(false);
+    expect(wrapper.find('.article-preview-empty__separator').exists()).toBe(false);
+  });
+
   it('uses the persisted click count and suppresses failed reader click updates', async () => {
     const article = createArticle({ clickedAmount: 3 });
     const wrapper = mountReader(article);
@@ -256,6 +264,19 @@ describe('Article empty previews', () => {
 
     expect(markClicked).toHaveBeenCalledWith(1);
     expect(wrapper.emitted('minimal-article-opened')).toBeUndefined();
+  });
+
+  it('renders unsafe compact article URLs without title or fallback navigation', () => {
+    const wrapper = mountArticle({
+      contentHtml: '',
+      description: '',
+      imageUrl: '',
+      url: 'data:text/html,<script>alert(1)</script>'
+    }, 'minimal');
+
+    expect(wrapper.get('.article-link').element.tagName).toBe('SPAN');
+    expect(wrapper.find('a.article-link').exists()).toBe(false);
+    expect(wrapper.find('.article-preview-empty__link').exists()).toBe(false);
   });
 
   it('shows a linkless empty preview without manufacturing an anchor', () => {

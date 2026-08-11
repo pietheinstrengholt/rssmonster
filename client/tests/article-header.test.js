@@ -28,6 +28,18 @@ function mountArticleHeader(props = {}) {
 }
 
 describe('ArticleHeader media icon', () => {
+  it.each([
+    'javascript:alert(1)',
+    'data:text/html,<script>alert(1)</script>',
+    '/relative/article',
+    'not a URL'
+  ])('renders an unsafe or non-absolute article URL as non-clickable text: %s', url => {
+    const wrapper = mountArticleHeader({ url });
+
+    expect(wrapper.get('.article-link').element.tagName).toBe('SPAN');
+    expect(wrapper.find('a.article-link').exists()).toBe(false);
+  });
+
   it('uses the developing icon instead of recommendation or grouped-event icons', () => {
     const wrapper = mountArticleHeader({
       isDeveloping: true,

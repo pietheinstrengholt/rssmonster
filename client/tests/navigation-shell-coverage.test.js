@@ -297,7 +297,7 @@ describe('mobile options menu actions', () => {
     expect(store.uiStore.setShowModal).toHaveBeenCalledWith('NewFeed');
     expect(store.uiStore.setChatAssistantOpen).toHaveBeenCalledWith(true);
     expect(wrapper.emitted('refresh')).toHaveLength(1);
-    expect(wrapper.emitted('mobile')).toHaveLength(5);
+    expect(wrapper.emitted('mobile')).toHaveLength(4);
 
     await wrapper.setProps({ mobile: false });
     expect(document.body.classList.contains('mobile-options-open')).toBe(false);

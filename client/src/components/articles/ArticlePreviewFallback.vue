@@ -1,10 +1,10 @@
 <template>
   <div class="article-preview-empty">
     <span class="article-preview-empty__message">No preview available</span>
-    <span v-if="url" aria-hidden="true" class="article-preview-empty__separator">-</span>
+    <span v-if="safeArticleUrl" aria-hidden="true" class="article-preview-empty__separator">-</span>
     <a
-      v-if="url"
-      :href="url"
+      v-if="safeArticleUrl"
+      :href="safeArticleUrl"
       class="article-preview-empty__link"
       target="_blank"
       rel="noopener noreferrer"
@@ -18,10 +18,18 @@
 </template>
 
 <script>
+import { usableHttpUrl } from '../../utils/content.js';
+
 export default {
   emits: ['open-original'],
   props: {
     url: { type: String, default: '' }
+  },
+  computed: {
+    // Returns an absolute HTTP(S) destination eligible for external navigation.
+    safeArticleUrl() {
+      return usableHttpUrl(this.url);
+    }
   }
 };
 </script>

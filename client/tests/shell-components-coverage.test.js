@@ -400,9 +400,28 @@ describe('MobileMenuOverlay behavior coverage', () => {
     expect(wrapper.emitted('refresh')).toHaveLength(1);
 
     await vi.advanceTimersByTimeAsync(150);
-    expect(wrapper.emitted('mobile')).toHaveLength(4);
+    expect(wrapper.emitted('mobile')).toHaveLength(3);
     wrapper.unmount();
     expect(document.body.classList.contains('mobile-options-open')).toBe(false);
+  });
+
+  it('replaces delayed closes and cancels the pending close on unmount', async () => {
+    vi.useFakeTimers();
+    createStores();
+    const wrapper = mountMobileMenu();
+
+    wrapper.vm.selectCategory(10);
+    const firstTimer = wrapper.vm.mobileCloseTimer;
+    wrapper.vm.selectViewMode('minimal');
+
+    expect(wrapper.vm.mobileCloseTimer).not.toBe(firstTimer);
+    expect(vi.getTimerCount()).toBe(1);
+
+    wrapper.unmount();
+    await vi.advanceTimersByTimeAsync(150);
+
+    expect(wrapper.emitted('mobile')).toBeUndefined();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('reports denied and failed notification requests without leaving a pending state', async () => {
