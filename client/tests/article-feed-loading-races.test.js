@@ -421,10 +421,12 @@ describe('ArticleFeed loading races', () => {
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 240 });
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
-    ArticleFeed.methods.scrollArticleListToTop.call({
+    const context = {
       $refs: { articleLayout: { scrollToTop } },
-      scrollContainer: articlePane
-    });
+      scrollContainer: articlePane,
+      scrollResetFrameId: null
+    };
+    ArticleFeed.methods.scrollArticleListToTop.call(context);
 
     expect(scrollToTop).toHaveBeenCalledOnce();
     expect(articlePane.scrollTop).toBe(0);
@@ -432,6 +434,7 @@ describe('ArticleFeed loading races', () => {
     expect(document.body.scrollTop).toBe(0);
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
 
+    window.cancelAnimationFrame(context.scrollResetFrameId);
     scrollTo.mockRestore();
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
   });
@@ -442,15 +445,50 @@ describe('ArticleFeed loading races', () => {
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
-    ArticleFeed.methods.scrollArticleListToTop.call({
+    const context = {
       $refs: {},
-      scrollContainer: null
-    });
+      scrollContainer: null,
+      scrollResetFrameId: null
+    };
+    ArticleFeed.methods.scrollArticleListToTop.call(context);
 
     expect(document.documentElement.scrollTop).toBe(0);
     expect(document.body.scrollTop).toBe(0);
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
 
+    window.cancelAnimationFrame(context.scrollResetFrameId);
+    scrollTo.mockRestore();
+  });
+
+  it('reapplies the scroll reset after browser layout frames settle', () => {
+    const frames = [];
+    const requestAnimationFrame = vi.spyOn(window, 'requestAnimationFrame')
+      .mockImplementation(callback => {
+        frames.push(callback);
+        return frames.length;
+      });
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const context = {
+      $refs: {},
+      scrollContainer: null,
+      scrollResetFrameId: null
+    };
+
+    ArticleFeed.methods.scrollArticleListToTop.call(context);
+    expect(scrollTo).toHaveBeenCalledTimes(1);
+
+    document.documentElement.scrollTop = 9;
+    frames.shift()();
+    expect(document.documentElement.scrollTop).toBe(0);
+    expect(scrollTo).toHaveBeenCalledTimes(2);
+
+    document.documentElement.scrollTop = 5;
+    frames.shift()();
+    expect(document.documentElement.scrollTop).toBe(0);
+    expect(scrollTo).toHaveBeenCalledTimes(3);
+    expect(context.scrollResetFrameId).toBeNull();
+
+    requestAnimationFrame.mockRestore();
     scrollTo.mockRestore();
   });
 

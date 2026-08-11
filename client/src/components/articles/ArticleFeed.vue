@@ -88,6 +88,7 @@ export default {
       prevScroll: 0,
       scrollDirection: "down",
       scrollContainer: null,
+      scrollResetFrameId: null,
       showSmartFoldersOverview: false,
       pendingFavoriteArticleIds: new Set()
     };
@@ -277,6 +278,10 @@ export default {
   unmounted() {
     window.removeEventListener("scroll", this.handleScroll);
     window.removeEventListener("keydown", this.handleGlobalShortcut);
+    if (this.scrollResetFrameId !== null) {
+      window.cancelAnimationFrame?.(this.scrollResetFrameId);
+      this.scrollResetFrameId = null;
+    }
     this.connectScrollContainer(null);
     this.teardownObservers();
   },
@@ -304,11 +309,31 @@ export default {
 
     // Restores every owned article layout and shared page scroll surface to the beginning.
     scrollArticleListToTop() {
-      this.$refs.articleLayout?.scrollToTop?.();
-      if (this.scrollContainer) this.scrollContainer.scrollTop = 0;
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      const resetScrollSurfaces = () => {
+        this.$refs.articleLayout?.scrollToTop?.();
+        if (this.scrollContainer) this.scrollContainer.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      };
+
+      resetScrollSurfaces();
+      if (this.scrollResetFrameId !== null) {
+        window.cancelAnimationFrame?.(this.scrollResetFrameId);
+      }
+      if (typeof window.requestAnimationFrame !== 'function') {
+        this.scrollResetFrameId = null;
+        return;
+      }
+
+      // Safari can restore its scroll anchor after Vue's DOM update but before the next paint.
+      this.scrollResetFrameId = window.requestAnimationFrame(() => {
+        resetScrollSurfaces();
+        this.scrollResetFrameId = window.requestAnimationFrame(() => {
+          this.scrollResetFrameId = null;
+          resetScrollSurfaces();
+        });
+      });
     },
 
     // Returns an article element through the active layout's explicit DOM contract.
