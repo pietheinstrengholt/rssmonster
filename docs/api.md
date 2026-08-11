@@ -1,3 +1,8 @@
+---
+title: API
+nav_order: 7
+---
+
 # API and Integrations
 
 RSSMonster exposes REST-style endpoints plus compatibility layers for common RSS clients.

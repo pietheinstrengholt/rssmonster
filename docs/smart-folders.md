@@ -1,6 +1,7 @@
 ---
 layout: page
 title: Smart Folders
+nav_order: 4
 ---
 
 ## What Are Smart Folders?

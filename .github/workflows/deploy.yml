@@ -1,6 +1,7 @@
 name: Deploy RSSMonster
 
 on:
+  # Docs-only changes do not start CI, so they cannot trigger this deployment.
   workflow_run:
     workflows:
       - CI

@@ -1,3 +1,8 @@
+---
+title: Semantic Services Implementation
+nav_exclude: true
+---
+
 # Semantic Services Implementation (Server-Side)
 
 This document describes the **current implementation** of the semantic system by looking only at `server/services/**`.

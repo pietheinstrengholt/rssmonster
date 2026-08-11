@@ -1,3 +1,8 @@
+---
+title: Scoring
+nav_order: 6
+---
+
 # Scoring and Ranking
 
 RSSMonster ranks every article using a few interpretable signals. Scores stay between 0 and 1 unless noted, so you always know why something is surfaced.

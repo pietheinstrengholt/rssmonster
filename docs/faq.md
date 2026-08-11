@@ -1,6 +1,7 @@
 ---
 layout: page
 title: FAQ
+nav_order: 9
 ---
 
 ## What makes RSSMonster different from other RSS readers?

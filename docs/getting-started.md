@@ -1,5 +1,8 @@
+---
 layout: page
 title: Getting Started
+nav_order: 2
+---
 
 Welcome! This guide will walk you through installing and setting up RSSMonster. Choose your preferred method and you'll be up and running in minutes.
 

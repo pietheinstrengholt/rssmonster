@@ -1,3 +1,8 @@
+---
+title: Google Reader API
+nav_order: 8
+---
+
 # Google Reader API compatibility
 
 RSSMonster exposes its Google Reader-compatible API at `/api/greader`. The

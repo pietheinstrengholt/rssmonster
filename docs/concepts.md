@@ -1,6 +1,7 @@
 ---
 layout: page
-title: Core Concepts
+title: Concepts
+nav_order: 3
 ---
 
 ## RSSMonster’s Philosophy

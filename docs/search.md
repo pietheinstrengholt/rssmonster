@@ -1,3 +1,8 @@
+---
+title: Search
+nav_order: 5
+---
+
 # Search Guide
 
 Find the right articles fast with a few expressive tokens. You can mix free text with filters; tokens override the UI status/sort settings.

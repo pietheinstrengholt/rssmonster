@@ -1,6 +1,7 @@
 ---
 layout: page
-title: RSSMonster
+title: Home
+nav_order: 1
 ---
 
 ## Your Reading, Intelligently Curated
