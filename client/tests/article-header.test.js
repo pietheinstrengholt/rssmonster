@@ -27,6 +27,24 @@ function mountArticleHeader(props = {}) {
   });
 }
 
+describe('ArticleHeader search highlighting', () => {
+  it('keeps highlighted title segments inside one title link', () => {
+    const wrapper = mountArticleHeader({
+      title: '5 years later, Windows 10 refuses to die and Microsoft pushes Windows 11',
+      highlightTerms: ['Windows', '11'],
+      url: 'https://example.com/article'
+    });
+
+    const link = wrapper.get('.article-link');
+    expect(link.text()).toBe('5 years later, Windows 10 refuses to die and Microsoft pushes Windows 11');
+    expect(link.findAll('mark.search-highlight').map(mark => mark.text())).toEqual([
+      'Windows',
+      'Windows',
+      '11'
+    ]);
+  });
+});
+
 describe('ArticleHeader media icon', () => {
   it.each([
     'javascript:alert(1)',

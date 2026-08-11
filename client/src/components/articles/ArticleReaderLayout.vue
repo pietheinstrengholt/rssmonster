@@ -118,8 +118,8 @@
         @keydown.space.stop.prevent="selectArticle(article.id)"
       >
         <span class="readerArticleListItemContent">
-          <span class="readerArticleListItemTitle">{{ article.title }}</span>
-          <span v-if="articlePreview(article)" class="readerArticleListItemPreview">{{ articlePreview(article) }}</span>
+          <span class="readerArticleListItemTitle"><HighlightedText :text="article.title" :terms="highlightTerms" /></span>
+          <span v-if="articlePreview(article)" class="readerArticleListItemPreview"><HighlightedText :text="articlePreview(article)" :terms="highlightTerms" /></span>
           <span class="readerArticleListItemKicker">
             <span>{{ feedName(article) }}</span>
             <span v-if="publishedLabel(article)">{{ publishedLabel(article) }}</span>
@@ -258,6 +258,8 @@ import {
 import { notifyActionError } from '../../services/actionNotifications.js';
 import { summarizeArticleContent } from '../../services/articleContentService.js';
 import { getArticleStatusOption } from '../../config/articleSelectionOptions.js';
+import HighlightedText from '../shared/HighlightedText.vue';
+import { parseSearchHighlightTerms } from '../../services/searchHighlight.js';
 
 const PREVIEW_LENGTH = 150;
 
@@ -269,6 +271,7 @@ export default {
     ArticleEndState,
     ArticleRefreshState,
     DailyBriefingIntro,
+    HighlightedText,
     UnreadSelectionContext
   },
   emits: [
@@ -352,6 +355,10 @@ export default {
   },
   computed: {
     ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useFeedRefreshStore),
+    // Returns the visible text intent represented by the active article search.
+    highlightTerms() {
+      return parseSearchHighlightTerms(this.selectionStore.currentSelection.search);
+    },
     // Exposes the active status from the explicit collection presentation contract.
     currentSelection() {
       return this.collectionSummary.status;

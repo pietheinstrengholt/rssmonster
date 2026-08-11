@@ -18,8 +18,8 @@
     </div>
     <div class="article-list-main">
       <h5 class="article-list-title">
-        <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" v-text="title" @click="$emit('article-clicked')"></a>
-        <span v-else class="article-link" v-text="title"></span>
+        <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" @click="$emit('article-clicked')"><HighlightedText :text="title" :terms="highlightTerms" /></a>
+        <span v-else class="article-link"><HighlightedText :text="title" :terms="highlightTerms" /></span>
       </h5>
       <div class="article-list-meta">
         <span class="article-list-feed">{{ sourceLabel }}</span>
@@ -45,12 +45,13 @@
 <script>
 import ArticleActionsMenu from './ArticleActionsMenu.vue';
 import ArticlePreviewFallback from './ArticlePreviewFallback.vue';
+import HighlightedText from '../shared/HighlightedText.vue';
 import { formatRelativeDate } from '../../utils/date';
 import { formatTagName } from '../../utils/tags';
 import { usableHttpUrl } from '../../utils/content.js';
 
 export default {
-  components: { ArticleActionsMenu, ArticlePreviewFallback },
+  components: { ArticleActionsMenu, ArticlePreviewFallback, HighlightedText },
   emits: ['article-clicked', 'article-touched', 'more-like-this', 'mute-feed', 'not-interested', 'select-tag', 'swipe-cancel', 'swipe-touch-end', 'swipe-touch-move', 'swipe-touch-start', 'toggle-favorite', 'toggle-read-status', 'view-duplicate-articles', 'view-event-articles'],
   props: {
     url: { type: String, default: '' },
@@ -73,7 +74,8 @@ export default {
     duplicatesExpanded: { type: Boolean, default: false },
     tags: { type: Array, default: () => [] },
     publishedAt: { type: [String, Date], default: '' },
-    hasArticlePreview: { type: Boolean, default: false }
+    hasArticlePreview: { type: Boolean, default: false },
+    highlightTerms: { type: Array, default: () => [] }
   },
   computed: {
     // Returns an absolute HTTP(S) destination eligible for external navigation.

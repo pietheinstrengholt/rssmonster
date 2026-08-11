@@ -17,8 +17,8 @@
           <BootstrapIcon v-if="hasInterestScore && !hasSourceIcon && !isDeveloping" icon="award-fill" class="article-kind-icon recommendation-icon" />
           <BootstrapIcon v-else-if="isGroupedView && eventArticleCountTotal > 1 && !hasSourceIcon && !isDeveloping" icon="megaphone-fill" class="article-kind-icon event-icon" />
         </template>
-        <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" v-text="title" @click="$emit('article-clicked')"></a>
-        <span v-else class="article-link" v-text="title"></span>
+        <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" @click="$emit('article-clicked')"><HighlightedText :text="title" :terms="highlightTerms" /></a>
+        <span v-else class="article-link"><HighlightedText :text="title" :terms="highlightTerms" /></span>
       </div>
       <div class="article-header-actions">
         <ArticleActionsMenu :favoriteInd="favoriteInd" :favoritePending="favoritePending" :isReaderMode="isReaderMode" :status="status" @toggle-favorite="$emit('toggle-favorite')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" />
@@ -29,10 +29,11 @@
 
 <script>
 import ArticleActionsMenu from './ArticleActionsMenu.vue';
+import HighlightedText from '../shared/HighlightedText.vue';
 import { usableHttpUrl } from '../../utils/content.js';
 
 export default {
-  components: { ArticleActionsMenu },
+  components: { ArticleActionsMenu, HighlightedText },
   emits: ['article-clicked', 'toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed'],
   props: {
     url: { type: String, default: '' }, title: { type: String, default: '' }, clickedAmount: { type: Number, default: 0 },
@@ -40,7 +41,8 @@ export default {
     viewMode: { type: String, default: '' }, hasVideoMedia: { type: Boolean, default: false },
     isDeveloping: { type: Boolean, default: false },
     hasInterestScore: { type: Boolean, default: false },
-    isGroupedView: { type: Boolean, default: false }, eventArticleCountTotal: { type: Number, default: 0 }
+    isGroupedView: { type: Boolean, default: false }, eventArticleCountTotal: { type: Number, default: 0 },
+    highlightTerms: { type: Array, default: () => [] }
   },
   computed: {
     // Returns an absolute HTTP(S) destination eligible for external navigation.
@@ -135,8 +137,9 @@ export default {
   letter-spacing: -0.01em;
   text-decoration: none;
   border-bottom: none;
-  display: flex;
-  align-items: center;
+  /* Keeps highlighted and plain title segments in one normal wrapping text flow. */
+  display: block;
+  min-width: 0;
 }
 
 .article-header-actions {

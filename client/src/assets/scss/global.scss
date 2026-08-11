@@ -558,3 +558,9 @@ textarea.app-form-control {
 .app-form-control:-webkit-autofill:focus-visible {
   box-shadow: 0 0 0 1000px var(--bg-input) inset, var(--shadow-focus-primary);
 }
+mark.search-highlight {
+  padding: 0 0.08em;
+  border-radius: 0.18em;
+  background: var(--search-highlight-background);
+  color: var(--search-highlight-text);
+}
