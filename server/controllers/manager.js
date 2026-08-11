@@ -7,6 +7,30 @@ import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.
 import { briefingEligibilitySql } from '../services/articleSearch/briefingEligibility.service.js';
 
 const DEFAULT_BRIEFING_SELECTION_PERIOD = '7d';
+const OVERVIEW_FEED_ATTRIBUTES = [
+  'id',
+  'categoryId',
+  'feedName',
+  'feedDesc',
+  'url',
+  'favicon',
+  'errorCount',
+  'errorMessage',
+  'errorSince',
+  'status',
+  'updateIntervalMinutes',
+  'feedTags',
+  'generateEmbeddings',
+  'applyAiAnalysis'
+];
+const OVERVIEW_COUNT_FIELDS = [
+  'briefingCount',
+  'unreadCount',
+  'readCount',
+  'favoriteCount',
+  'hotCount',
+  'clickedCount'
+];
 
 // Formats a UTC timestamp consistently for MySQL DATETIME and SQLite text comparison.
 const formatDatabaseTimestamp = date => date.toISOString().replace('T', ' ').replace('Z', '');
@@ -50,8 +74,10 @@ const buildCategoryFeedMaps = categories => {
 
 const loadCategoriesStructure = userId => Category.findAll({
   where: { userId },
+  attributes: ['id', 'name', 'categoryOrder', 'iconName'],
   include: [{
     model: Feed,
+    attributes: OVERVIEW_FEED_ATTRIBUTES,
     required: false
   }],
   order: ['categoryOrder', 'name']
@@ -200,21 +226,12 @@ const loadBriefingCountConfig = async userId => {
   };
 };
 
-// Loads global overview totals using the same Briefing predicate as grouped counts.
-const loadOverviewTotals = async (baseWhere, briefingConfig) => {
-  const totals = await Article.findOne({
-    where: baseWhere,
-    attributes: [
-      [Sequelize.literal(briefingConfig.countSql), 'briefingCount'],
-      [Sequelize.literal("COUNT(CASE WHEN status = 'unread' THEN 1 END)"), 'unreadCount'],
-      [Sequelize.literal("COUNT(CASE WHEN status = 'read' THEN 1 END)"), 'readCount'],
-      [Sequelize.literal("COUNT(CASE WHEN favoriteInd = 1 THEN 1 END)"), 'favoriteCount'],
-      [Sequelize.literal("SUM(CASE WHEN clickedAmount > 0 THEN 1 ELSE 0 END)"), 'clickedCount'],
-      [Sequelize.literal("COUNT(CASE WHEN hotInd = 1 THEN 1 END)"), 'hotCount']
-    ],
-    replacements: briefingConfig.replacements,
-    raw: true
-  });
+// Sums the per-feed aggregation into the global overview counts.
+const buildOverviewTotals = (groupedRows, briefingConfig) => {
+  const totals = groupedRows.reduce((result, row) => {
+    for (const field of OVERVIEW_COUNT_FIELDS) result[field] += Number(row[field]) || 0;
+    return result;
+  }, Object.fromEntries(OVERVIEW_COUNT_FIELDS.map(field => [field, 0])));
 
   return {
     briefingSelectionPeriod: briefingConfig.briefingSelectionPeriod,
@@ -224,12 +241,7 @@ const loadOverviewTotals = async (baseWhere, briefingConfig) => {
     briefingPrioritizeHighTrust: briefingConfig.briefingPrioritizeHighTrust,
     briefingShowOnlyDevelopingEventArticles:
       briefingConfig.briefingShowOnlyDevelopingEventArticles,
-    briefingCount: Number(totals?.briefingCount) || 0,
-    unreadCount: Number(totals?.unreadCount) || 0,
-    readCount: Number(totals?.readCount) || 0,
-    favoriteCount: Number(totals?.favoriteCount) || 0,
-    clickedCount: Number(totals?.clickedCount) || 0,
-    hotCount: Number(totals?.hotCount) || 0
+    ...totals
   };
 };
 
@@ -287,6 +299,36 @@ const mergeCountsIntoStructure = (categories, groupedRows) => {
   return categories;
 };
 
+// Builds the sparse count-only hierarchy consumed by clients with cached overview structure.
+const buildCountSnapshot = groupedRows => {
+  const categories = new Map();
+
+  groupedRows.forEach(row => {
+    const counts = Object.fromEntries(
+      OVERVIEW_COUNT_FIELDS.map(field => [field, Number(row[field]) || 0])
+    );
+    let category = categories.get(row.categoryId);
+    if (!category) {
+      category = {
+        id: row.categoryId,
+        briefingCount: 0,
+        unreadCount: 0,
+        readCount: 0,
+        favoriteCount: 0,
+        hotCount: 0,
+        clickedCount: 0,
+        feeds: []
+      };
+      categories.set(row.categoryId, category);
+    }
+
+    for (const field of Object.keys(counts)) category[field] += counts[field];
+    category.feeds.push({ id: row.feedId, categoryId: row.categoryId, ...counts });
+  });
+
+  return [...categories.values()];
+};
+
 // Loads the user's category and feed structure without article counts.
 export const getOverviewLite = async (req, res, _next) => {
   const userId = req.userData.userId;
@@ -325,24 +367,17 @@ export const getOverviewCounts = async (req, res, _next) => {
   try {
     const grouping = String(req.body?.grouping || 'none');
     const includeDevelopingEvents = req.body?.includeDevelopingEvents === true;
-    const [baseWhere, categoriesRaw, briefingConfig] = await Promise.all([
+    const [baseWhere, briefingConfig] = await Promise.all([
       buildOverviewWhere({ userId, grouping, includeDevelopingEvents }),
-      loadCategoriesStructure(userId),
       loadBriefingCountConfig(userId)
     ]);
-
-    const categories = buildCategoriesStructure(categoriesRaw);
-    const [totals, grouped] = await Promise.all([
-      loadOverviewTotals(baseWhere, briefingConfig),
-      loadGroupedFeedCounts(baseWhere, briefingConfig)
-    ]);
-
-    mergeCountsIntoStructure(categories, grouped);
+    const grouped = await loadGroupedFeedCounts(baseWhere, briefingConfig);
+    const totals = buildOverviewTotals(grouped, briefingConfig);
 
     return res.status(200).json({
       total: totals.unreadCount + totals.readCount,
       ...totals,
-      categories
+      categories: buildCountSnapshot(grouped)
     });
   } catch (err) {
     console.error('Error in getOverviewCounts:', err);
@@ -367,10 +402,8 @@ export const getOverview = async (req, res, _next) => {
       loadBriefingCountConfig(userId)
     ]);
     const categories = buildCategoriesStructure(categoriesRaw);
-    const [totals, grouped] = await Promise.all([
-      loadOverviewTotals(baseWhere, briefingConfig),
-      loadGroupedFeedCounts(baseWhere, briefingConfig)
-    ]);
+    const grouped = await loadGroupedFeedCounts(baseWhere, briefingConfig);
+    const totals = buildOverviewTotals(grouped, briefingConfig);
 
     mergeCountsIntoStructure(categories, grouped);
 

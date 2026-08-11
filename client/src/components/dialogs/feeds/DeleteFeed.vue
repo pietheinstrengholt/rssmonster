@@ -40,7 +40,6 @@ export default {
         async deleteFeed() {
             if (this.isPending) return;
 
-            console.log("Deleting feed with id: " + this.selectionStore.currentSelection.feedId);
             this.isPending = true;
             try {
                 await deleteFeed(this.selectionStore.currentSelection.feedId);

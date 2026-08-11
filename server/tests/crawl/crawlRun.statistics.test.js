@@ -101,6 +101,7 @@ describe('crawl run article statistics', () => {
 
   it('runs the unchanged production pipeline for only the explicitly selected feed', async () => {
     const { user, category, feed } = await createUserFeed('manualsinglefeed');
+    await feed.update({ status: 'error' });
     const otherFeed = await Feed.create({
       userId: user.id,
       categoryId: category.id,
@@ -120,6 +121,7 @@ describe('crawl run article statistics', () => {
     expect(await FeedCrawlResult.count({ where: { feedId: otherFeed.id } })).toBe(0);
     await feed.reload();
     expect(feed).toMatchObject({
+      status: 'active',
       lastCrawlStatus: 'SUCCESS',
       consecutiveFailures: 0,
       totalCrawlSuccesses: 1
@@ -191,6 +193,7 @@ describe('crawl run article statistics', () => {
 
   it('emits one final feed result and one compact crawl summary', async () => {
     const { user, feed } = await createUserFeed('structuredcrawlresult');
+    await feed.update({ status: 'error' });
     mocked.acquireFeed.mockResolvedValue({
       type: 'changed',
       url: 'https://example.com/recovered.xml',
@@ -212,7 +215,7 @@ describe('crawl run article statistics', () => {
     });
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const result = await crawlController.performCrawl(user.id);
+    const result = await crawlController.performCrawl(user.id, { feedId: feed.id });
     const crawlRun = await CrawlRun.findOne({ where: { userId: user.id } });
     const feedResult = await FeedCrawlResult.findOne({ where: { crawlRunId: crawlRun.id } });
 
@@ -233,6 +236,8 @@ describe('crawl run article statistics', () => {
       recoverySucceeded: true,
       attemptCount: 2
     });
+    await feed.reload();
+    expect(feed.status).toBe('active');
   });
 
   it('does not count filtered inserts as new visible articles', async () => {

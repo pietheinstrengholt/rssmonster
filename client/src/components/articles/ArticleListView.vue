@@ -8,7 +8,7 @@
     <div id="articles" :class="{ 'mobile-search-open': mobileSearchOpen }">
       <DailyBriefingIntro v-if="showDailyBriefingIntro" />
       <UnreadSelectionContext
-        v-if="currentSelection === 'unread' && hasLoadedContent && container.length > 0 && currentViewSourceCount !== null"
+        v-if="currentSelection === 'unread' && hasLoadedContent && loadedCount > 0 && currentViewSourceCount !== null"
         :article-count="currentViewUnreadCount"
         :source-count="currentViewSourceCount"
       />
@@ -35,13 +35,17 @@
       />
     </div>
     <div id="article-load-sentinel" ref="loadMoreSentinel" class="article-load-sentinel" aria-hidden="true"></div>
+    <div v-if="collectionProgress.paginationError" class="app-notice app-notice--danger" role="alert">
+      <span>{{ collectionProgress.paginationError }}</span>
+      <button type="button" class="app-button app-button--outline-secondary app-button--compact" @click="$emit('retry-pagination')">Retry</button>
+    </div>
     <div
       id="no-more"
       v-if="hasLoadedContent"
-      :class="{ 'article-empty-state-container': container.length === 0 }"
+      :class="{ 'article-empty-state-container': isCollectionEmpty }"
     >
       <ArticleEmptyState
-        v-if="container.length === 0"
+        v-if="isCollectionEmpty"
         :current-status="currentSelection"
         :selected-tag="selectedTag"
         :refresh-progress="feedRefreshStore.progress"
@@ -123,6 +127,7 @@ export default {
     'clear-tag',
     'refresh-feeds',
     'open-smart-folders',
+    'retry-pagination',
     'view-tag-status',
     'forceReload'
   ],
@@ -195,6 +200,15 @@ export default {
     currentViewSourceCount() {
       return this.collectionSummary.sourceCount;
     },
+    totalCount() {
+      return this.collectionSummary.totalCount ?? this.container.length;
+    },
+    loadedCount() {
+      return this.collectionProgress.loadedCount ?? this.container.length;
+    },
+    isCollectionEmpty() {
+      return this.collectionProgress.isCollectionEmpty ?? this.loadedCount === 0;
+    },
     // Exposes whether the initial collection request has completed.
     hasLoadedContent() {
       return this.collectionProgress.hasLoadedContent;
@@ -223,7 +237,7 @@ export default {
     },
     // Returns the number of unread articles received since the last update.
     unreadsSinceLastUpdate() {
-      return this.overviewStore.unreadsSinceLastUpdate;
+      return this.collectionProgress.newerArticleCount ?? 0;
     },
     // Returns whether loading or unread-review progress has reached the collection boundary.
     hasReachedArticleListEnd() {
@@ -245,7 +259,8 @@ export default {
         articles: this.articles,
         markAsReadOnScroll: this.selectionStore.effectiveMarkAsReadOnScroll,
         unreadsSinceLastUpdate: this.unreadsSinceLastUpdate,
-        articleCount: this.container.length
+        articleCount: this.totalCount,
+        newerArticlesAvailable: this.collectionProgress.newerArticlesAvailable === true
       });
     }
   },

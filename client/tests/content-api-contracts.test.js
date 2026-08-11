@@ -102,7 +102,7 @@ describe('article content API contracts', () => {
     expect(post).toHaveBeenNthCalledWith(
       3,
       '/articles/markasread',
-      selection
+      { ...selection, scope: 'matching' }
     );
     expect(post).toHaveBeenNthCalledWith(4, '/articles/markasread', {
       articleIds: [9, 10],

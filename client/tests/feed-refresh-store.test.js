@@ -107,7 +107,7 @@ describe('feed refresh store', () => {
     const { eventSource, handlers } = createEventSource();
     startFeedRefresh.mockResolvedValue({ data: { jobId: 'job-events' } });
     openFeedRefreshEvents.mockReturnValue(eventSource);
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     await store.startRefresh();
     for (const [type, payload] of [
@@ -125,7 +125,7 @@ describe('feed refresh store', () => {
 
     expect(store.progress.progressPercent).toBe(50);
     expect(store.progress.logs.join(' ')).toContain('Received invalid progress payload');
-    expect(console.log).toHaveBeenCalledWith('Invalid SSE payload', expect.any(SyntaxError));
+    expect(console.warn).toHaveBeenCalledWith('Invalid SSE payload', expect.any(SyntaxError));
 
     eventSource.onerror();
     await vi.advanceTimersByTimeAsync(500);

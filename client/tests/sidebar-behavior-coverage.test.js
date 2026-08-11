@@ -1,4 +1,4 @@
-import { config, flushPromises, mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Sidebar from '../src/components/sidebar/Sidebar.vue';
@@ -22,7 +22,6 @@ vi.mock('../src/api/manager', () => ({
 const createStores = () => {
   const pinia = createPinia();
   setActivePinia(pinia);
-  config.global.plugins = [pinia];
   const authStore = useAuthStore(pinia);
   const overviewStore = useOverviewStore(pinia);
   const selectionStore = useSelectionStore(pinia);
@@ -70,8 +69,9 @@ const createStores = () => {
 };
 
 // This function mounts the sidebar while keeping drag-and-drop at a stable boundary.
-const mountSidebar = () => mount(Sidebar, {
+const mountSidebar = pinia => mount(Sidebar, {
   global: {
+    plugins: [pinia],
     stubs: {
       draggable: {
         props: ['modelValue'],
@@ -99,7 +99,7 @@ describe('Sidebar navigation and action coverage', () => {
     const selectCategory = vi.spyOn(stores.selectionStore, 'selectCategory').mockImplementation(() => {});
     const selectFeed = vi.spyOn(stores.selectionStore, 'selectFeed').mockImplementation(() => {});
     const setTag = vi.spyOn(stores.selectionStore, 'setTag').mockImplementation(() => {});
-    const wrapper = mountSidebar();
+    const wrapper = mountSidebar(stores.pinia);
 
     expect(wrapper.vm.topTagsDisplay).toHaveLength(5);
     expect(wrapper.vm.getStatusCount('unread')).toBe(5);
@@ -143,7 +143,7 @@ describe('Sidebar navigation and action coverage', () => {
 
   it('reloads after marking as read and reports a recoverable failure', async () => {
     const stores = createStores();
-    const wrapper = mountSidebar();
+    const wrapper = mountSidebar(stores.pinia);
     const notifications = [];
     // This handler retains action-error details for assertions.
     const handleNotification = event => notifications.push(event.detail);
@@ -172,7 +172,7 @@ describe('Sidebar navigation and action coverage', () => {
   it('persists category ordering and reports persistence failures', async () => {
     const stores = createStores();
     const applyOrder = vi.spyOn(stores.overviewStore, 'applyCategoryOrder');
-    const wrapper = mountSidebar();
+    const wrapper = mountSidebar(stores.pinia);
 
     updateCategoryOrder.mockResolvedValueOnce({ status: 204 });
     vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -180,7 +180,6 @@ describe('Sidebar navigation and action coverage', () => {
     await flushPromises();
     expect(applyOrder).toHaveBeenCalledOnce();
     expect(updateCategoryOrder).toHaveBeenCalledWith([10]);
-    expect(console.log).toHaveBeenCalledWith(204);
 
     const error = new Error('save failed');
     updateCategoryOrder.mockRejectedValueOnce(error);

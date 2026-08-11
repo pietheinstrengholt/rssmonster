@@ -353,7 +353,7 @@ export default {
           return;
         }
       }
-      console.log('Feed not found for feedId:', feedId);
+      console.warn('Feed not found for feedId:', feedId);
     },
 
     // This function rediscover RSS feed URL when the selected feed has errors.

@@ -15,8 +15,8 @@ const app = createApp(App)
 // Global component registration.
 app.component('BootstrapIcon', BootstrapIcon);
 
-//enable development environment when NODE_ENV is set to development
-if (import.meta.env.VITE_NODE_ENV == 'development') {
+// Enable development-only Vue diagnostics in Vite's development mode.
+if (import.meta.env.DEV) {
 	app.config.devtools = true;
 	app.config.debug = true;
 	app.config.silent = true;

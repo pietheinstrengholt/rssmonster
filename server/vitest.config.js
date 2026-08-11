@@ -49,6 +49,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    silent: process.env.RSSMONSTER_TEST_DEBUG === 'true' ? false : 'passed-only',
+    disableConsoleIntercept: process.env.RSSMONSTER_TEST_DEBUG === 'true',
     testTimeout: 10000,
     fileParallelism: false,
     sequence: {

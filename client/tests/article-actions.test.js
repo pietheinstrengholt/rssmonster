@@ -177,7 +177,6 @@ describe('articleActionMethods', () => {
     await flushPromises();
 
     expect(markMoreLikeThis).toHaveBeenCalledWith(42);
-    expect(console.log).toHaveBeenCalledWith('Marked as more like this:', 42);
   });
 
   // Verifies positive-interest failures use the recoverable notification flow.
@@ -218,10 +217,6 @@ describe('articleActionMethods', () => {
     await flushPromises();
 
     expect(muteFeed).toHaveBeenCalledWith(8, '2026-08-07T10:00:00.000Z');
-    expect(console.log).toHaveBeenCalledWith(
-      'Feed muted until:',
-      new Date('2026-08-07T10:00:00.000Z')
-    );
   });
 
   // Verifies mute failures use the recoverable notification flow.

@@ -2,6 +2,7 @@ import db from '../models/index.js';
 const { Article, BriefingPreference, Feed, Tag, Event } = db;
 import { Op, fn, col } from 'sequelize';
 import { searchArticles } from "../services/articleSearch/articleSearch.service.js";
+import { ArticleSearchCursorError } from '../services/articleSearch/articleSearchCursor.service.js';
 import {
   DailyBriefingRequestError,
   getDailyBriefing as getDailyBriefingService
@@ -12,6 +13,60 @@ import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.
 
 // This function normalizes article grouping values used by API consumers.
 const normalizeGrouping = value => (value === 'event' || value === 'topic' ? value : 'none');
+
+const cursorCompatibleScope = ({ sort, search }) => (
+  ['asc', 'desc', 'trust'].includes(String(sort || 'desc').toLowerCase())
+  && !/(?:^|\s)sort:(?:recommended|quality|attention)(?:\s|$)/i.test(String(search || ''))
+  && !/(?:^|\s)(?:quality|freshness):/i.test(String(search || ''))
+);
+
+const markScopedArticlePageAsRead = async ({ userId, itemIds, grouping, readAt }) => {
+  if (!itemIds.length) return { updatedCount: 0, expandedEventCount: 0 };
+
+  let eventIds = [];
+  if (grouping === 'event' || grouping === 'topic') {
+    const selectedArticles = await Article.findAll({
+      where: { id: { [Op.in]: itemIds }, userId, ...canonicalArticleWhere() },
+      attributes: ['id', 'eventId'],
+      include: [{
+        model: Event,
+        as: 'event',
+        required: false,
+        attributes: ['topicId']
+      }]
+    });
+
+    if (grouping === 'topic') {
+      const topicIds = [...new Set(selectedArticles
+        .map(article => article.event?.topicId)
+        .filter(topicId => topicId !== null && topicId !== undefined))];
+      if (topicIds.length) {
+        const events = await Event.findAll({
+          where: { userId, topicId: { [Op.in]: topicIds } },
+          attributes: ['id']
+        });
+        eventIds = events.map(event => event.id);
+      }
+    } else {
+      eventIds = [...new Set(selectedArticles.map(article => article.eventId).filter(Boolean))];
+    }
+  }
+
+  const [updatedCount] = await Article.update(
+    { status: 'read', readAt },
+    {
+      where: {
+        userId,
+        ...canonicalArticleWhere(),
+        status: 'unread',
+        ...(eventIds.length
+          ? { [Op.or]: [{ id: { [Op.in]: itemIds } }, { eventId: { [Op.in]: eventIds } }] }
+          : { id: { [Op.in]: itemIds } })
+      }
+    }
+  );
+  return { updatedCount, expandedEventCount: eventIds.length };
+};
 
 // This function attaches feed-level predicted affinity hints to unread articles.
 const attachPredictedAffinity = articles => {
@@ -205,6 +260,39 @@ export const getDailyBriefing = async (req, res, _next) => {
 export const getArticles = async (req, res) => {
   try {
     const userId = req.userData.userId;
+    const newerThanArticleIdValue = req.query.newerThanArticleId;
+    let newerThanArticleId = null;
+    if (newerThanArticleIdValue !== undefined) {
+      if (!/^\d+$/.test(String(newerThanArticleIdValue))) {
+        return res.status(400).json({ error: 'newerThanArticleId must be a non-negative integer' });
+      }
+      newerThanArticleId = Number(newerThanArticleIdValue);
+      if (!Number.isSafeInteger(newerThanArticleId)) {
+        return res.status(400).json({ error: 'newerThanArticleId must be a non-negative integer' });
+      }
+    }
+    const cursorPagination = req.query.pagination === 'cursor';
+    let pagination = null;
+    if (cursorPagination) {
+      const pageSizeValue = req.query.pageSize ?? '20';
+      if (!/^\d+$/.test(String(pageSizeValue))) {
+        return res.status(400).json({
+          error: { code: 'PAGE_SIZE_INVALID', message: 'pageSize must be an integer between 1 and 100.' }
+        });
+      }
+
+      const pageSize = Number(pageSizeValue);
+      if (pageSize < 1 || pageSize > 100) {
+        return res.status(400).json({
+          error: { code: 'PAGE_SIZE_INVALID', message: 'pageSize must be an integer between 1 and 100.' }
+        });
+      }
+
+      pagination = {
+        pageSize,
+        cursor: req.query.cursor || null
+      };
+    }
     const result = await searchArticles({
       userId,
       search: req.query.search || "",
@@ -219,8 +307,22 @@ export const getArticles = async (req, res) => {
       viewMode: req.query.viewMode,
       grouping: req.query.grouping || 'none',
       includeDevelopingEvents: req.query.includeDevelopingEvents === 'true',
-      persistSettings: true
+      persistSettings: newerThanArticleId === null,
+      countOnly: newerThanArticleId !== null,
+      minArticleIdExclusive: newerThanArticleId,
+      pagination
     });
+
+    if (newerThanArticleId !== null) {
+      return res.status(200).json({ newerArticleCount: result.articleCount });
+    }
+
+    if (cursorPagination) {
+      result.page.articles = result.page.itemIds.length
+        ? await loadArticleDetails(userId, result.page.itemIds)
+        : [];
+      return res.status(200).json(result);
+    }
 
     if (req.query.includeFirstPage === 'true' && result.itemIds.length > 0) {
       const pageSize = req.query.viewMode === 'minimal' ? 50 : 20;
@@ -230,6 +332,15 @@ export const getArticles = async (req, res) => {
 
     res.status(200).json(result);
   } catch (err) {
+    if (err instanceof ArticleSearchCursorError) {
+      return res.status(err.status).json({
+        error: {
+          code: err.code,
+          message: err.message,
+          restartRequired: ['CURSOR_EXPIRED', 'CURSOR_QUERY_MISMATCH'].includes(err.code)
+        }
+      });
+    }
     console.error("getArticles error:", err);
     res.status(500).json({ error: 'Unable to load articles' });
   }
@@ -461,6 +572,60 @@ const markAsRead = async (req, res, _next) => {
       const numericValue = Number(value);
       return Number.isFinite(numericValue) ? numericValue : 0;
     };
+
+    if (
+      body.scope === 'matching'
+      && !hasSnapshotArticleIds
+      && cursorCompatibleScope({ sort, search })
+    ) {
+      let cursor = null;
+      let matchedCount = 0;
+      let updatedCount = 0;
+      let expandedEventCount = 0;
+
+      try {
+        do {
+          const result = await searchArticles({
+            userId,
+            search: search ? String(search) : '',
+            categoryId: categoryId ?? '%',
+            feedId: feedId ?? '%',
+            status: 'unread',
+            minAdvertisementScore: toScoreThreshold(minAdvertisementScore),
+            minSentimentScore: toScoreThreshold(minSentimentScore),
+            minQualityScore: toScoreThreshold(minQualityScore),
+            sort: sort || 'desc',
+            tag,
+            viewMode,
+            grouping: normalizedGrouping,
+            persistSettings: false,
+            pagination: { pageSize: 100, cursor }
+          });
+          const itemIds = result.page.itemIds;
+          matchedCount += itemIds.length;
+          const pageUpdate = await markScopedArticlePageAsRead({
+            userId,
+            itemIds,
+            grouping: normalizedGrouping,
+            readAt
+          });
+          updatedCount += pageUpdate.updatedCount;
+          expandedEventCount += pageUpdate.expandedEventCount;
+          cursor = result.page.hasMore ? result.page.nextCursor : null;
+        } while (cursor);
+
+        return res.status(200).json({
+          message: matchedCount ? 'Articles marked as read' : 'No unread articles to mark as read',
+          updatedCount,
+          matchedCount,
+          expandedEventCount
+        });
+      } catch (error) {
+        if (!(error instanceof ArticleSearchCursorError) || error.code !== 'CURSOR_SORT_UNSUPPORTED') {
+          throw error;
+        }
+      }
+    }
 
     let liveItemIds = [];
     if (!hasSnapshotArticleIds) {

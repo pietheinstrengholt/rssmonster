@@ -6,6 +6,23 @@ import api from './client';
 export const fetchArticleIds = params =>
   api.get('/articles', { params: { ...params, includeFirstPage: true } });
 
+// Fetches one bounded page from a stable database-native article snapshot.
+export const fetchArticlePage = (params, { pageSize, cursor = null } = {}) =>
+  api.get('/articles', {
+    params: {
+      ...params,
+      pagination: 'cursor',
+      pageSize,
+      ...(cursor ? { cursor } : {})
+    }
+  });
+
+// Counts articles matching the active selection that arrived after one snapshot boundary.
+export const fetchNewerArticleCount = (params, snapshotMaxArticleId) =>
+  api.get('/articles', {
+    params: { ...params, newerThanArticleId: snapshotMaxArticleId }
+  });
+
 // This function fetches the structured Daily Briefing for the selected period and status.
 export const fetchDailyBriefing = params =>
   api.get('/articles/briefing', { params });
@@ -83,10 +100,8 @@ export const markMoreLikeThis = (articleId) =>
 /**
  * Mark all matching articles as read
  */
-export const markAllAsRead = (currentSelection, snapshotArticleIds) =>
-  api.post('/articles/markasread', snapshotArticleIds
-    ? { ...currentSelection, snapshotArticleIds }
-    : currentSelection);
+export const markAllAsRead = currentSelection =>
+  api.post('/articles/markasread', { ...currentSelection, scope: 'matching' });
 
 /**
  * Mark selected articles as read

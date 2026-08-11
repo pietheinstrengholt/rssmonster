@@ -542,6 +542,7 @@ describe('ArticleListView high-impact decision coverage', () => {
   it('derives layout-specific progress before crossing the layout boundary', () => {
     const context = {
       container: Array.from({ length: 21 }, (_, index) => ({ id: index + 1 })),
+      totalCount: 21,
       distance: 20,
       fetchCount: 20,
       remainingItems: 1,
@@ -556,7 +557,7 @@ describe('ArticleListView high-impact decision coverage', () => {
     };
 
     expect(compute(ArticleFeed, 'collectionSummary', context)).toEqual({
-      status: 'unread', selectedTag: '', unreadCount: 4, sourceCount: 2
+      status: 'unread', selectedTag: '', unreadCount: 4, sourceCount: 2, totalCount: 21
     });
     expect(compute(ArticleFeed, 'streamCollectionProgress', context).hasReachedEnd).toBe(true);
     expect(compute(ArticleFeed, 'readerCollectionProgress', context).hasReachedEnd).toBe(false);
@@ -842,6 +843,8 @@ describe('Vue template handler coverage', () => {
           hasLoadedContent: true,
           isFlushed: true,
           hasReachedEnd: true,
+          newerArticlesAvailable: true,
+          newerArticleCount: 1,
           showFeedRefreshProgress: true
         },
         viewMode: 'minimal',
@@ -1049,6 +1052,8 @@ describe('Vue template handler coverage', () => {
           hasLoadedContent: true,
           isFlushed: true,
           hasReachedEnd: true,
+          newerArticlesAvailable: true,
+          newerArticleCount: 2,
           showFeedRefreshProgress: true
         }
       },

@@ -75,7 +75,6 @@ export const articleActionMethods = {
     // Mark article with negativeInd flag
     markNotInterested(this.id)
     .then(() => {
-      console.log('Marked as not interested:', this.id);
       this.$emit('article-not-interested', { id: this.id });
     })
     .catch(error => {
@@ -87,9 +86,6 @@ export const articleActionMethods = {
   // Marks the article as similar to the user's interests.
   moreLikeThis() {
     markMoreLikeThis(this.id)
-    .then(() => {
-      console.log('Marked as more like this:', this.id);
-    })
     .catch(error => {
       console.error(`Error marking article ${this.id} as more like this:`, error);
       notifyActionError('Could not update this article. Please try again.', error);
@@ -103,9 +99,6 @@ export const articleActionMethods = {
       mutedUntil.setDate(mutedUntil.getDate() + 7);
 
       muteFeed(this.feedId, mutedUntil.toISOString())
-      .then(() => {
-        console.log('Feed muted until:', mutedUntil);
-      })
       .catch(error => {
         console.error(`Error muting feed ${this.feedId}:`, error);
         notifyActionError('Could not mute this feed. Please try again.', error);

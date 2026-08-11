@@ -95,6 +95,24 @@ describe('data store remaining actions and getters', () => {
     });
   });
 
+  // Verifies changing the event representative mode invalidates its scoped Top Tags.
+  it('refreshes Top Tags when event grouping switches developing articles', async () => {
+    const { selectionStore } = createStores();
+    selectionStore.setCurrentSelection({ grouping: 'event' });
+    await flushPromises();
+    fetchTopTags.mockClear();
+
+    selectionStore.setCurrentSelection({ includeDevelopingEvents: true });
+    await flushPromises();
+
+    expect(fetchTopTags).toHaveBeenCalledOnce();
+    expect(fetchTopTags).toHaveBeenCalledWith({
+      grouping: 'event',
+      includeDevelopingEvents: true,
+      status: 'unread'
+    });
+  });
+
   // Verifies sort changes remove supported query tokens while preserving other search terms.
   it('normalizes sort selections and removes embedded sort tokens', () => {
     const { selectionStore: store } = createStores();
@@ -219,7 +237,11 @@ describe('data store remaining actions and getters', () => {
     const { overviewStore: store, selectionStore } = createStores();
     selectionStore.setCurrentSelection({ grouping: 'topic' });
     await flushPromises();
-    expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'topic', status: 'unread' });
+    expect(fetchTopTags).toHaveBeenCalledWith({
+      grouping: 'topic',
+      includeDevelopingEvents: false,
+      status: 'unread'
+    });
     expect(store.topTags).toEqual(['vue']);
 
     await store.fetchSmartFolders();

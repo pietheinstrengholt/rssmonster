@@ -163,6 +163,7 @@ describe('data store domain reconciliation', () => {
 
     expect(store.removeFeed('10')).toBe(true);
     expect(store.removeFeed('10')).toBe(false);
+    expect(store.deletedFeedIds).toEqual(['10']);
     expect(store.categories[0]).toMatchObject({
       unreadCount: 0,
       readCount: 0,

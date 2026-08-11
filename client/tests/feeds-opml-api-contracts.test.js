@@ -61,7 +61,7 @@ describe('feeds API contracts', () => {
 
     expect(get).toHaveBeenNthCalledWith(1, '/feeds/7/observability');
     expect(get).toHaveBeenNthCalledWith(2, '/feeds/7/crawls/91');
-    expect(post).toHaveBeenCalledWith('/feeds/7/retry');
+    expect(post).toHaveBeenCalledWith('/feeds/7/retry', null, { timeout: 120000 });
   });
 
   // Verifies feed creation sends every supported property without reshaping values.

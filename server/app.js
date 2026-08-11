@@ -80,7 +80,9 @@ app.set('json replacer', omitServerOnlyJsonFields);
 
 // Logging
 morgan.token('redacted-url', requestUrlForLogging);
-app.use(morgan(REQUEST_LOG_FORMAT));
+app.use(morgan(REQUEST_LOG_FORMAT, {
+  skip: () => process.env.VITEST === 'true'
+}));
 
 // Static assets
 app.use(express.static("dist", {

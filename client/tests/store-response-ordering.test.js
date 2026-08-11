@@ -132,8 +132,16 @@ describe('store response ordering', () => {
     eventTags.resolve({ data: { tags: [{ name: 'event-tag', count: 9 }] } });
     await flushPromises();
 
-    expect(fetchTopTags).toHaveBeenNthCalledWith(1, { grouping: 'event', status: 'unread' });
-    expect(fetchTopTags).toHaveBeenNthCalledWith(2, { grouping: 'topic', status: 'unread' });
+    expect(fetchTopTags).toHaveBeenNthCalledWith(1, {
+      grouping: 'event',
+      includeDevelopingEvents: false,
+      status: 'unread'
+    });
+    expect(fetchTopTags).toHaveBeenNthCalledWith(2, {
+      grouping: 'topic',
+      includeDevelopingEvents: false,
+      status: 'unread'
+    });
     expect(store.topTags).toEqual([{ name: 'topic-tag', count: 4 }]);
     expect(store.topTagsStatus).toBe('success');
   });

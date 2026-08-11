@@ -115,4 +115,22 @@ describe('article collection state', () => {
       showRefreshState: true
     });
   });
+
+  it('uses hasMore for cursor completion and offers refresh for newer snapshot articles', () => {
+    expect(hasReachedArticleCollectionEnd({ articleCount: 40, hasMore: true })).toBe(false);
+    expect(hasReachedArticleCollectionEnd({ articleCount: 40, hasMore: false })).toBe(true);
+    expect(getArticleCollectionTailState({
+      supportsEndState: true,
+      hasReachedEnd: true,
+      isDismissed: false,
+      status: 'unread',
+      isFlushed: false,
+      unreadCount: 4,
+      articles: [{ status: 'unread' }],
+      markAsReadOnScroll: false,
+      unreadsSinceLastUpdate: 2,
+      articleCount: 40,
+      newerArticlesAvailable: true
+    }).showRefreshState).toBe(true);
+  });
 });

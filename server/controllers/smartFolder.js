@@ -3,6 +3,7 @@
 import db from '../models/index.js';
 import { Op, fn, col, literal } from 'sequelize';
 import { searchArticles } from "../services/articleSearch/articleSearch.service.js";
+import { fetchFeedIds } from '../services/articleSearch/articleSearchDataAccess.service.js';
 import { getSmartFolderRecommendations } from '../services/smartFolders/smartFolderLLM.js';
 const { Article, Feed, Tag, SmartFolder, Setting } = db;
 
@@ -29,16 +30,18 @@ const mapWithConcurrency = async (items, limit, mapper) => {
 };
 
 const getSmartFolderCountsForUser = async userId => {
-  const smartFolders = await SmartFolder.findAll({
-    where: { userId },
-    attributes: ['id', 'name', 'query', 'limitCount'],
-    order: [['name', 'ASC']]
-  });
-
-  const userSettings = await Setting.findOne({
-    where: { userId },
-    attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
-  });
+  const [smartFolders, userSettings, resolvedFeedIds] = await Promise.all([
+    SmartFolder.findAll({
+      where: { userId },
+      attributes: ['id', 'name', 'query', 'limitCount'],
+      order: [['name', 'ASC']]
+    }),
+    Setting.findOne({
+      where: { userId },
+      attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
+    }),
+    fetchFeedIds({ userId, categoryId: '%', feedId: '%' })
+  ]);
 
   const minAdvertisementScore = userSettings?.minAdvertisementScore ?? 0;
   const minSentimentScore = userSettings?.minSentimentScore ?? 0;
@@ -52,6 +55,7 @@ const getSmartFolderCountsForUser = async userId => {
         minAdvertisementScore,
         minSentimentScore,
         minQualityScore,
+        resolvedFeedIds,
         smartFolderSearch: true,
         limitCount: folder.limitCount || 50,
         countOnly: true

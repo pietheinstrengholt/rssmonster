@@ -35,6 +35,8 @@ describe('CrawlRun model', () => {
     expect(crawlRun.startedAt).toBeInstanceOf(Date);
     expect(crawlRun.completedAt).toBeNull();
     expect(crawlRun.errorMessage).toBeNull();
+    expect(crawlRun.heartbeatAt).toBeNull();
+    expect(crawlRun.ownerToken).toBeNull();
     expect(crawlRun.newArticles).toBeNull();
     expect(crawlRun.updatedArticles).toBeNull();
     expect(crawlRun.articleErrors).toBeNull();

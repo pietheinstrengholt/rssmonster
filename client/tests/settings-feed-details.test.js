@@ -168,9 +168,10 @@ describe('SettingsFeedDetails', () => {
       : `app-notice--${tone}`);
   });
 
-  // Verifies unexpected API failures use a concise local error without refreshing.
+  // Verifies unexpected API failures use a concise local error and refresh stale health.
   it('reports an API failure without exposing backend details', async () => {
     retryFeed.mockRejectedValueOnce(new Error('sensitive backend stack'));
+    fetchFeedObservability.mockResolvedValueOnce({ data: observabilityFixture() });
     const wrapper = await mountDetails();
 
     await wrapper.get('.feed-details__retry-action').trigger('click');
@@ -181,7 +182,25 @@ describe('SettingsFeedDetails', () => {
     expect(wrapper.get('.feed-details__retry-notice').text())
       .toContain('Please try again.');
     expect(wrapper.text()).not.toContain('sensitive backend stack');
-    expect(fetchFeedObservability).toHaveBeenCalledOnce();
+    expect(fetchFeedObservability).toHaveBeenCalledTimes(2);
+  });
+
+  it('presents a concurrent crawl conflict and refreshes feed health', async () => {
+    retryFeed.mockRejectedValueOnce({
+      response: {
+        status: 409,
+        data: { message: 'Feed is already being processed.' }
+      }
+    });
+    fetchFeedObservability.mockResolvedValueOnce({ data: observabilityFixture() });
+    const wrapper = await mountDetails();
+
+    await wrapper.get('.feed-details__retry-action').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.get('.feed-details__retry-notice').text())
+      .toContain('Feed is already being processed.');
+    expect(fetchFeedObservability).toHaveBeenCalledTimes(2);
   });
 
   // Verifies every backend health state is rendered as visible text without recalculation.

@@ -3,6 +3,7 @@
     class="mobile-pull-to-refresh"
     :class="{
       'mobile-pull-to-refresh--visible': indicatorHeight > 0,
+      'mobile-pull-to-refresh--tracking': tracking,
       'mobile-pull-to-refresh--refreshing': isRefreshActive
     }"
     :style="indicatorStyle"
@@ -249,6 +250,10 @@ export default {
   justify-content: center;
   overflow: hidden;
   transition: height 160ms ease;
+}
+
+.mobile-pull-to-refresh--tracking {
+  transition: none;
 }
 
 .mobile-pull-to-refresh__content {

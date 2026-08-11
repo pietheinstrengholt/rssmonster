@@ -72,13 +72,10 @@ describe('smartFolder controller', () => {
         minSentimentScore: 0,
         minQualityScore: 0
       });
-      mocked.searchArticles.mockImplementation(async ({ search }) => {
-        if (search === 'sort:recommended') {
-          return { articleCount: 4 };
-        }
-
-        throw new Error('search failed');
-      });
+      mocked.feedFindAll.mockResolvedValue([{ id: 8 }, { id: 13 }]);
+      mocked.searchArticles.mockImplementation(async ({ search }) => ({
+        articleCount: search === 'sort:recommended' ? 4 : 0
+      }));
 
       const req = { userData: { userId: 42 } };
       const res = createRes();
@@ -98,6 +95,7 @@ describe('smartFolder controller', () => {
         minAdvertisementScore: 0,
         minSentimentScore: 0,
         minQualityScore: 0,
+        resolvedFeedIds: [8, 13],
         smartFolderSearch: true,
         limitCount: 25,
         countOnly: true
@@ -109,6 +107,7 @@ describe('smartFolder controller', () => {
         minAdvertisementScore: 0,
         minSentimentScore: 0,
         minQualityScore: 0,
+        resolvedFeedIds: [8, 13],
         smartFolderSearch: true,
         limitCount: 50,
         countOnly: true
@@ -116,6 +115,8 @@ describe('smartFolder controller', () => {
 
       expect(folderA.dataValues.ArticleCount).toBe(4);
       expect(folderB.dataValues.ArticleCount).toBe(0);
+      expect(mocked.settingFindOne).toHaveBeenCalledOnce();
+      expect(mocked.feedFindAll).toHaveBeenCalledOnce();
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
@@ -172,6 +173,39 @@ describe('smartFolder controller', () => {
 
       expect(next).toHaveBeenCalledWith(error);
     });
+
+    it('isolates one count failure and publishes zero for only that folder', async () => {
+      const folders = [
+        { id: 1, name: 'Broken', query: 'title:broken', limitCount: 50, dataValues: {} },
+        { id: 2, name: 'Working', query: 'unread:true', limitCount: 50, dataValues: {} }
+      ];
+      const error = new Error('search failed');
+      mocked.smartFolderFindAll.mockResolvedValue(folders);
+      mocked.settingFindOne.mockResolvedValue(null);
+      mocked.feedFindAll.mockResolvedValue([{ id: 8 }]);
+      mocked.searchArticles.mockImplementation(({ search }) => (
+        search === 'title:broken'
+          ? Promise.reject(error)
+          : Promise.resolve({ articleCount: 6 })
+      ));
+      const res = createRes();
+      const next = vi.fn();
+
+      await smartFolderController.getSmartFolders(
+        { userData: { userId: 42 }, query: {} },
+        res,
+        next
+      );
+
+      expect(next).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        total: 2,
+        smartFolders: folders
+      });
+      expect(folders[0].dataValues.ArticleCount).toBe(0);
+      expect(folders[1].dataValues.ArticleCount).toBe(6);
+    });
   });
 
   describe('getSmartFolderCounts', () => {
@@ -180,6 +214,7 @@ describe('smartFolder controller', () => {
         { id: 1, query: 'unread:true', limitCount: null }
       ]);
       mocked.settingFindOne.mockResolvedValue(null);
+      mocked.feedFindAll.mockResolvedValue([{ id: 8 }]);
       mocked.searchArticles.mockResolvedValue({ articleCount: 7 });
       const res = createRes();
 
@@ -190,6 +225,9 @@ describe('smartFolder controller', () => {
       );
 
       expect(res.status).toHaveBeenCalledWith(200);
+      expect(mocked.searchArticles).toHaveBeenCalledWith(expect.objectContaining({
+        resolvedFeedIds: [8]
+      }));
       expect(res.json).toHaveBeenCalledWith({
         total: 1,
         smartFolders: [{ id: 1, ArticleCount: 7 }]
@@ -214,6 +252,31 @@ describe('smartFolder controller', () => {
         next
       );
       expect(next).toHaveBeenCalledWith(error);
+    });
+
+    it('returns zero when one count-only folder search fails', async () => {
+      const error = new Error('search failed');
+      mocked.smartFolderFindAll.mockResolvedValue([
+        { id: 1, query: 'title:broken', limitCount: 50 }
+      ]);
+      mocked.settingFindOne.mockResolvedValue(null);
+      mocked.feedFindAll.mockResolvedValue([{ id: 8 }]);
+      mocked.searchArticles.mockRejectedValue(error);
+      const res = createRes();
+      const next = vi.fn();
+
+      await smartFolderController.getSmartFolderCounts(
+        { userData: { userId: 42 } },
+        res,
+        next
+      );
+
+      expect(next).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        total: 1,
+        smartFolders: [{ id: 1, ArticleCount: 0 }]
+      });
     });
   });
 

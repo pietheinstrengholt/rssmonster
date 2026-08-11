@@ -193,6 +193,7 @@ export const useSelectionStore = defineStore('selection', {
       const previous = this.currentSelection;
       const previousGrouping = previous.grouping;
       const previousStatus = previous.status;
+      const previousIncludeDevelopingEvents = Boolean(previous.includeDevelopingEvents);
       const supported = supportedSelection(selection);
       const includeDevelopingEvents = supported.includeDevelopingEvents != null
         ? Boolean(supported.includeDevelopingEvents)
@@ -214,7 +215,11 @@ export const useSelectionStore = defineStore('selection', {
       };
       if (
         this.currentSelection.grouping !== previousGrouping ||
-        this.currentSelection.status !== previousStatus
+        this.currentSelection.status !== previousStatus ||
+        (
+          this.currentSelection.grouping === 'event' &&
+          this.currentSelection.includeDevelopingEvents !== previousIncludeDevelopingEvents
+        )
       ) {
         void useOverviewStore().fetchTopTags();
       }

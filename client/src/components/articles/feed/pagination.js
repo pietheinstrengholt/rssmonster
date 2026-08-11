@@ -1,110 +1,207 @@
 import {
   fetchArticleDetails,
-  fetchArticleIds
+  fetchArticleIds,
+  fetchNewerArticleCount,
+  fetchArticlePage
 } from '../../../api/articles.js';
+
+const COMPUTED_SORT_PATTERN = /(?:^|\s)sort:(?:recommended|quality|attention)(?:\s|$)/i;
+const RUNTIME_FILTER_PATTERN = /(?:^|\s)(?:quality|freshness):/i;
+
+// Returns whether the active selection can use database keyset pagination.
+export const supportsArticleCursorPagination = selection => {
+  const sort = String(selection?.sort || 'desc').toLowerCase();
+  const search = String(selection?.search || '');
+  return ['asc', 'desc', 'trust'].includes(sort)
+    && !COMPUTED_SORT_PATTERN.test(search)
+    && !RUNTIME_FILTER_PATTERN.test(search);
+};
+
+const finiteCount = (value, fallback = 0) => {
+  const count = Number(value);
+  return Number.isFinite(count) && count >= 0 ? count : fallback;
+};
+
+const uniquePage = (itemIds = [], articles = [], existingIds = []) => {
+  const existing = new Set(existingIds.map(id => String(id)));
+  const articleMap = new Map(articles.map(article => [String(article.id), article]));
+  const ids = [];
+  const pageArticles = [];
+  for (const id of itemIds) {
+    const key = String(id);
+    if (existing.has(key)) continue;
+    const article = articleMap.get(key);
+    if (!article) continue;
+    existing.add(key);
+    ids.push(id);
+    pageArticles.push(article);
+  }
+  return { ids, articles: pageArticles };
+};
 
 // Creates article request and pagination state for the active feed selection.
 export function createArticleFeedPaginationState() {
   return {
-    // distance is used to keep track of the current position in the container
     distance: 0,
-
-    // articles containing the article details
     articles: [],
-
-    // container contains a list with all article ids
+    // container is retained as the ordered set of loaded collection IDs only.
     container: [],
-
+    totalCount: 0,
+    hasMore: false,
+    nextCursor: null,
+    paginationError: null,
+    newerArticlesAvailable: false,
+    newerArticleCount: 0,
+    snapshotMaxArticleId: null,
+    usesCursorPagination: false,
+    legacyItemIds: [],
     hasLoadedContent: false,
     isLoading: false,
     currentViewSourceCount: null,
     activeRequestId: 0,
+    activeNewerArticlesRequestId: 0,
     activeReaderRecommendationRequestId: 0
   };
 }
 
-// Groups selection requests, page loading, and stale-response protection.
+const installCursorPage = (context, response, { replace = false } = {}) => {
+  const page = response.data.page || {};
+  const existingIds = replace ? [] : context.container;
+  const unique = uniquePage(page.itemIds, page.articles, existingIds);
+  context.container = replace ? unique.ids : [...context.container, ...unique.ids];
+
+  const collectionArticleKeys = new Set(unique.ids.map(id => String(id)));
+  const pageArticles = unique.articles.filter(article => collectionArticleKeys.has(String(article.id)));
+  if (replace) {
+    context.articles = pageArticles;
+  } else {
+    const incoming = new Set(pageArticles.map(article => String(article.id)));
+    const retained = context.articles.filter(article => (
+      !incoming.has(String(article.id))
+      || article.readerRecommendationInd
+    ));
+    context.articles = [...retained, ...pageArticles];
+  }
+
+  context.distance = context.container.length;
+  context.totalCount = finiteCount(response.data.totalCount, context.container.length);
+  context.currentViewSourceCount = Number.isFinite(Number(response.data.sourceCount))
+    ? Number(response.data.sourceCount)
+    : null;
+  context.hasMore = Boolean(page.hasMore && page.nextCursor);
+  context.nextCursor = context.hasMore ? page.nextCursor : null;
+  context.paginationError = null;
+  context.snapshotMaxArticleId = finiteCount(
+    response.data.snapshot?.snapshotMaxArticleId
+  );
+  context.usesCursorPagination = true;
+  if (replace) context.legacyItemIds = [];
+};
+
+const installLegacyCollection = async (context, response, data, requestId) => {
+  const ids = [...new Map((response.data.itemIds || []).map(id => [String(id), id])).values()];
+  let articles = Array.isArray(response.data.firstPage) ? response.data.firstPage : null;
+  if (ids.length > 0 && (!articles || articles.length === 0)) {
+    const detailResponse = await fetchArticleDetails(
+      ids.slice(0, context.fetchCount),
+      data.sort ?? context.selectionStore.currentSelection.sort
+    );
+    if (requestId !== context.activeRequestId) return false;
+    articles = detailResponse.data || [];
+  }
+  const loaded = uniquePage(ids, articles || []);
+  context.container = loaded.ids;
+  context.articles = loaded.articles;
+  context.distance = Math.min(ids.length, context.fetchCount);
+  context.totalCount = ids.length;
+  context.currentViewSourceCount = Number.isFinite(Number(response.data.sourceCount))
+    ? Number(response.data.sourceCount)
+    : null;
+  context.hasMore = context.distance < ids.length;
+  context.legacyItemIds = ids;
+  context.nextCursor = null;
+  context.snapshotMaxArticleId = null;
+  context.usesCursorPagination = false;
+  return true;
+};
+
+const requestInitialCollection = async (context, data) => {
+  if (!supportsArticleCursorPagination(data)) return fetchArticleIds(data);
+  try {
+    return await fetchArticlePage(data, { pageSize: context.fetchCount });
+  } catch (error) {
+    if (error?.response?.status !== 422) throw error;
+    return fetchArticleIds(data);
+  }
+};
+
 export const articleFeedPaginationMethods = {
-  // Fetches article IDs and initializes the current selection's content.
   async fetchArticleIds(data) {
     const requestId = ++this.activeRequestId;
-
     try {
       await this.resetCollectionState();
       this.scrollArticleListToTop();
-      this.hasLoadedContent = false; // Show spinner immediately
+      this.hasLoadedContent = false;
       this.isLoading = true;
 
-      const response = await fetchArticleIds(data);
+      const response = await requestInitialCollection(this, data);
       if (requestId !== this.activeRequestId) return null;
-
-      this.container = response.data.itemIds;
-      this.currentViewSourceCount = Number.isFinite(Number(response.data.sourceCount))
-        ? Number(response.data.sourceCount)
-        : null;
-
-      if (response.data.firstPage) {
-        this.distance += response.data.firstPage.length;
-        this.articles = response.data.firstPage;
-        this.hasLoadedContent = true;
-        this.$nextTick(() => {
-          this.observeArticles();
-          this.observeLoadMoreSentinel();
-        });
-      } else if (this.container.length > 0) {
-        this.isLoading = false;
-        await this.getContent(requestId);
-      } else {
-        this.hasLoadedContent = true;
-        this.$nextTick(() => this.observeLoadMoreSentinel());
+      if (response.data.paginationVersion === 1) {
+        installCursorPage(this, response, { replace: true });
+      } else if (!await installLegacyCollection(this, response, data, requestId)) {
+        return null;
       }
+
+      this.hasLoadedContent = true;
+      this.$nextTick(() => {
+        this.observeArticles();
+        this.observeLoadMoreSentinel();
+      });
       await this.$nextTick();
       if (requestId !== this.activeRequestId) return null;
       this.scrollArticleListToTop();
       return true;
     } catch (error) {
       if (requestId !== this.activeRequestId) return null;
-
       console.warn('Article fetch failed', error?.message);
       this.hasLoadedContent = true;
       return false;
     } finally {
-      if (requestId === this.activeRequestId) {
-        this.isLoading = false;
-      }
+      if (requestId === this.activeRequestId) this.isLoading = false;
     }
   },
 
-  // Refreshes the active selection while preserving rendered articles until replacement data is ready.
+  // Preserves the visible collection until a complete replacement first page is ready.
   async refreshArticleIds(data) {
     const requestId = ++this.activeRequestId;
     this.isLoading = true;
-
     try {
-      const response = await fetchArticleIds(data);
+      const response = await requestInitialCollection(this, data);
       if (requestId !== this.activeRequestId) return false;
 
-      const nextContainer = response.data.itemIds || [];
-      let nextArticles = Array.isArray(response.data.firstPage)
-        ? response.data.firstPage
-        : null;
-
-      if (nextContainer.length > 0 && (!nextArticles || nextArticles.length === 0)) {
-        const ids = nextContainer.slice(0, this.fetchCount);
-        const detailResponse = await fetchArticleDetails(ids, data.sort);
-        if (requestId !== this.activeRequestId) return false;
-        nextArticles = detailResponse.data || [];
+      let legacyPrepared = null;
+      if (response.data.paginationVersion !== 1) {
+        const staged = {
+          ...this,
+          container: [],
+          articles: [],
+          activeRequestId: requestId
+        };
+        if (!await installLegacyCollection(staged, response, data, requestId)) return false;
+        legacyPrepared = staged;
       }
 
       await this.resetCollectionState();
       if (requestId !== this.activeRequestId) return false;
+      if (response.data.paginationVersion === 1) {
+        installCursorPage(this, response, { replace: true });
+      } else {
+        for (const key of [
+          'container', 'articles', 'distance', 'totalCount', 'currentViewSourceCount',
+          'hasMore', 'nextCursor', 'snapshotMaxArticleId', 'usesCursorPagination', 'legacyItemIds'
+        ]) this[key] = legacyPrepared[key];
+      }
 
-      this.container = nextContainer;
-      this.articles = nextArticles || [];
-      this.distance = this.articles.length;
-      this.currentViewSourceCount = Number.isFinite(Number(response.data.sourceCount))
-        ? Number(response.data.sourceCount)
-        : null;
       this.hasLoadedContent = true;
       this.$nextTick(() => {
         this.observeArticles();
@@ -116,102 +213,131 @@ export const articleFeedPaginationMethods = {
       return true;
     } catch (error) {
       if (requestId !== this.activeRequestId) return false;
-
       console.error('Error refreshing articles:', error);
       throw error;
     } finally {
-      if (requestId === this.activeRequestId) {
-        this.isLoading = false;
-      }
+      if (requestId === this.activeRequestId) this.isLoading = false;
     }
   },
 
-  // Loads the next article page when the list boundary is reached.
   handleLoadMoreIntersections(entries) {
     if (!entries.some(entry => entry.isIntersecting)) return;
-    if (this.isLoading || !this.hasLoadedContent) return;
-
-    if (this.distance < this.container.length) {
-      this.getContent();
-    }
+    if (this.isLoading || !this.hasLoadedContent || !this.hasMore) return;
+    this.getContent();
   },
 
-  // Fetches and appends details for the next page of article IDs.
   async getContent(requestId = this.activeRequestId) {
-    if (!this.container.length || this.isLoading) return;
-
+    if (this.isLoading || !this.hasMore) return;
     this.isLoading = true;
-
     try {
-      const ids = this.container.slice(this.distance, this.distance + this.fetchCount);
-
-      const response = await fetchArticleDetails(
-        ids,
-        this.selectionStore.currentSelection.sort
-      );
-      if (requestId !== this.activeRequestId) return;
-
-      this.hasLoadedContent = true;
-
-      if (!response.data.length) {
-        this.distance = this.container.length;
-        return;
+      if (this.usesCursorPagination) {
+        const response = await fetchArticlePage(this.selectionStore.currentSelection, {
+          pageSize: this.fetchCount,
+          cursor: this.nextCursor
+        });
+        if (requestId !== this.activeRequestId) return;
+        installCursorPage(this, response);
+      } else {
+        const ids = this.legacyItemIds.slice(this.distance, this.distance + this.fetchCount);
+        const response = await fetchArticleDetails(ids, this.selectionStore.currentSelection.sort);
+        if (requestId !== this.activeRequestId) return;
+        const unique = uniquePage(ids, response.data, this.articles.map(article => article.id));
+        this.distance += ids.length;
+        this.container = [...this.container, ...unique.ids];
+        this.articles = [...this.articles, ...unique.articles];
+        this.hasMore = this.distance < this.legacyItemIds.length;
       }
 
-      this.distance += response.data.length;
-      const loadedArticleIds = new Set(response.data.map(article => String(article.id)));
-      const retainedArticles = this.articles.filter(article => (
-        !article.readerRecommendationInd || !loadedArticleIds.has(String(article.id))
-      ));
-      this.articles = [...retainedArticles, ...response.data];
-
+      this.hasLoadedContent = true;
       this.$nextTick(() => {
         this.observeArticles();
         this.observeLoadMoreSentinel();
       });
     } catch (error) {
       if (requestId !== this.activeRequestId) return;
-      console.error("Error fetching article details:", error);
-    } finally {
-      if (requestId === this.activeRequestId) {
-        this.isLoading = false;
+      if (this.usesCursorPagination) {
+        this.hasMore = false;
+        this.nextCursor = null;
+        if (error?.response?.data?.error?.restartRequired === true) {
+          return this.retryPagination();
+        }
+        this.paginationError = 'Could not load more articles.';
       }
+      console.error('Error fetching article details:', error);
+    } finally {
+      if (requestId === this.activeRequestId) this.isLoading = false;
     }
   },
 
-  // Loads one recommendation through the existing detail API without changing the middle-pane collection.
+  async retryPagination() {
+    this.paginationError = null;
+    try {
+      return await this.refreshArticleIds(this.selectionStore.currentSelection);
+    } catch {
+      this.paginationError = 'Could not reload the article list.';
+      return false;
+    }
+  },
+
+  async checkForNewerArticles() {
+    const requestId = ++this.activeNewerArticlesRequestId;
+    const snapshotMaxArticleId = this.snapshotMaxArticleId;
+    if (snapshotMaxArticleId === null) {
+      this.newerArticlesAvailable = false;
+      this.newerArticleCount = 0;
+      return false;
+    }
+
+    try {
+      const response = await fetchNewerArticleCount(
+        this.selectionStore.currentSelection,
+        snapshotMaxArticleId
+      );
+      if (
+        requestId !== this.activeNewerArticlesRequestId
+        || snapshotMaxArticleId !== this.snapshotMaxArticleId
+      ) return false;
+      this.newerArticleCount = finiteCount(response.data.newerArticleCount);
+      this.newerArticlesAvailable = this.newerArticleCount > 0;
+      return this.newerArticlesAvailable;
+    } catch {
+      if (requestId === this.activeNewerArticlesRequestId) {
+        this.newerArticlesAvailable = false;
+        this.newerArticleCount = 0;
+      }
+      return false;
+    }
+  },
+
   async loadReaderRecommendationArticle(articleId) {
     const requestId = ++this.activeReaderRecommendationRequestId;
     const existingArticle = this.articles.find(article => String(article.id) === String(articleId));
     if (existingArticle) return existingArticle;
-
     const collectionRequestId = this.activeRequestId;
-    const response = await fetchArticleDetails(
-      [articleId],
-      this.selectionStore.currentSelection.sort
-    );
-    if (
-      requestId !== this.activeReaderRecommendationRequestId
-      || collectionRequestId !== this.activeRequestId
-    ) return null;
-
+    const response = await fetchArticleDetails([articleId], this.selectionStore.currentSelection.sort);
+    if (requestId !== this.activeReaderRecommendationRequestId || collectionRequestId !== this.activeRequestId) return null;
     const article = response.data?.[0];
     if (!article) return null;
-
-    const readerArticle = {
-      ...article,
-      readerRecommendationInd: true
-    };
+    const readerArticle = { ...article, readerRecommendationInd: true };
     this.articles = [...this.articles, readerArticle];
     return readerArticle;
   },
 
-  // Resets only pagination-owned collection state for a new selection.
   resetPaginationState() {
     this.activeReaderRecommendationRequestId += 1;
+    this.activeNewerArticlesRequestId += 1;
     this.articles = [];
     this.container = [];
     this.distance = 0;
+    this.totalCount = 0;
+    this.hasMore = false;
+    this.nextCursor = null;
+    this.paginationError = null;
+    this.newerArticlesAvailable = false;
+    this.newerArticleCount = 0;
+    this.snapshotMaxArticleId = null;
+    this.usesCursorPagination = false;
+    this.legacyItemIds = [];
     this.currentViewSourceCount = null;
   }
 };

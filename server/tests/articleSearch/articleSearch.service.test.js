@@ -1201,6 +1201,30 @@ describe('articleSearch.service', () => {
       expect(result).not.toHaveProperty('itemIds');
     });
 
+    it('reuses explicit Smart Folder thresholds and feed scope without lookup queries', async () => {
+      const settingLookup = vi.spyOn(Setting, 'findOne');
+      const feedLookup = vi.spyOn(Feed, 'findAll');
+
+      try {
+        const result = await searchArticles({
+          userId: user.id,
+          minAdvertisementScore: 0,
+          minSentimentScore: 0,
+          minQualityScore: 0,
+          resolvedFeedIds: [feed.id],
+          smartFolderSearch: true,
+          countOnly: true
+        });
+
+        expect(result.articleCount).toBe(3);
+        expect(settingLookup).not.toHaveBeenCalled();
+        expect(feedLookup).not.toHaveBeenCalled();
+      } finally {
+        settingLookup.mockRestore();
+        feedLookup.mockRestore();
+      }
+    });
+
     it('returns zero for countOnly tag queries without matches', async () => {
       const result = await searchArticles({
         userId: user.id,

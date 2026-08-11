@@ -344,14 +344,34 @@ export const buildArticleSearchQuery = ({
 };
 
 // Executes the prepared article query against the Article model.
-export const executeSearch = async ({ where, include, attributes, order }) => Article.findAll({
+export const executeSearch = async ({ where, include, attributes, order, limit }) => Article.findAll({
   where,
   include,
   attributes,
-  order
+  order,
+  ...(limit ? { limit } : {})
 });
 
 // Counts articles for a prepared query without materializing matching ids.
 export const executeSearchCount = async ({ where }) => Article.count({
   where
+});
+
+// Counts only the bounded answer requested by a limited database-backed search.
+export const executeSearchBoundedCount = async ({ where, limit }) => {
+  const rows = await Article.findAll({
+    where,
+    attributes: ['id'],
+    limit,
+    raw: true
+  });
+
+  return rows.length;
+};
+
+// Counts distinct matching feeds without materializing article IDs.
+export const executeSearchSourceCount = async ({ where }) => Article.count({
+  where,
+  distinct: true,
+  col: 'feedId'
 });

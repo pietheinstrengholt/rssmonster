@@ -2,15 +2,28 @@
 // The service returns article ids while keeping database filtering and in-memory ranking behind helper modules.
 import db from '../../models/index.js';
 // Provides the shared dependencies used by this service.
-const { BriefingPreference, Setting } = db;
+const { Article, BriefingPreference, Setting } = db;
 import { Op } from 'sequelize';
 import { sortArticles } from './articleSort.service.js';
 import { resolveDateFilterToRange } from './articleDateParser.service.js';
 import { parseArticleQuery } from './articleQueryParser.service.js';
-import { buildArticleSearchQuery, executeSearch, executeSearchCount } from './articleSearchExecutor.service.js';
+import {
+  buildArticleSearchQuery,
+  executeSearch,
+  executeSearchBoundedCount,
+  executeSearchCount,
+  executeSearchSourceCount
+} from './articleSearchExecutor.service.js';
 import { fetchFeedIds, fetchTaggedArticleIds } from './articleSearchDataAccess.service.js';
 import { buildTextSearchWhereClause } from './articleTextSearch.service.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import {
+  ArticleSearchCursorError,
+  articleSearchCursorExpiresAt,
+  createArticleSearchCursor,
+  fingerprintArticleSearch,
+  parseArticleSearchCursor
+} from './articleSearchCursor.service.js';
 
 // Defines the default briefing search enforced by this service.
 const DEFAULT_BRIEFING_SEARCH = 'briefing:true @lastweek sort:recommended';
@@ -37,6 +50,82 @@ const normalizeSort = sortValue => {
     : 'desc';
 };
 
+// Adds one cursor predicate without overwriting an existing ID or grouping condition.
+const appendCursorCondition = (where, condition) => {
+  where[Op.and] ??= [];
+  where[Op.and].push(condition);
+};
+
+const cursorTrustOrder = () => db.Sequelize.fn(
+  'ROUND',
+  db.Sequelize.col('feed.feedTrust'),
+  6
+);
+
+// Returns the persisted sort values needed to continue after one article.
+const cursorPositionForArticle = (article, sort) => {
+  const publishedAt = articleValue(article, 'publishedAt');
+  const articleId = Number(articleValue(article, 'id'));
+  const position = {
+    publishedAt: new Date(publishedAt).toISOString(),
+    articleId
+  };
+
+  if (sort === 'trust') {
+    const feed = article.get?.('Feed') ?? article.Feed ?? article.feed;
+    const feedTrust = Number(feed?.feedTrust);
+    if (!Number.isFinite(feedTrust)) {
+      throw new ArticleSearchCursorError('CURSOR_POSITION_INVALID', 'Unable to create the article cursor.');
+    }
+    position.feedTrust = Number(feedTrust.toFixed(6));
+  }
+
+  return position;
+};
+
+// Applies the strict keyset boundary represented by a validated cursor position.
+const applyCursorPosition = (articleQuery, sort, position) => {
+  const publishedAt = new Date(position?.publishedAt);
+  const articleId = Number(position?.articleId);
+  if (!Number.isSafeInteger(articleId) || Number.isNaN(publishedAt.getTime())) {
+    throw new ArticleSearchCursorError('CURSOR_MALFORMED', 'The article cursor is malformed.');
+  }
+
+  if (sort === 'trust') {
+    if (typeof position?.feedTrust !== 'number' || !Number.isFinite(position.feedTrust)) {
+      throw new ArticleSearchCursorError('CURSOR_MALFORMED', 'The article cursor is malformed.');
+    }
+    const feedTrust = position.feedTrust;
+
+    const feedTrustOrder = cursorTrustOrder();
+    appendCursorCondition(articleQuery.where, {
+      [Op.or]: [
+        db.Sequelize.where(feedTrustOrder, { [Op.lt]: feedTrust }),
+        {
+          [Op.and]: [
+            db.Sequelize.where(feedTrustOrder, { [Op.eq]: feedTrust }),
+            {
+              [Op.or]: [
+                { publishedAt: { [Op.lt]: publishedAt } },
+                { publishedAt, id: { [Op.lt]: articleId } }
+              ]
+            }
+          ]
+        }
+      ]
+    });
+    return;
+  }
+
+  const comparison = sort === 'asc' ? Op.gt : Op.lt;
+  appendCursorCondition(articleQuery.where, {
+    [Op.or]: [
+      { publishedAt: { [comparison]: publishedAt } },
+      { publishedAt, id: { [comparison]: articleId } }
+    ]
+  });
+};
+
 /**
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: favorite:true/false, unread:true/false, clicked:true/false,
@@ -60,8 +149,11 @@ export const searchArticles = async ({
     includeDevelopingEvents = false,
     persistSettings = false, // IMPORTANT: skip when called internally
     smartFolderSearch = false, // When true, apply smart folder optimizations
+    resolvedFeedIds = null, // Reuse a caller-resolved source scope for repeated internal searches
     limitCount = null, // Maximum number of results (used by smart folders)
-    countOnly = false // Return only the matching count without materializing ids when possible
+    countOnly = false, // Return only the matching count without materializing ids when possible
+    minArticleIdExclusive = null, // Restrict an internal count to articles admitted after a snapshot
+    pagination = null // Opt-in keyset pagination descriptor for database-native sorts
 }) => {
     // Rejects processing when user id is unavailable.
     if (!userId) {
@@ -78,7 +170,7 @@ export const searchArticles = async ({
     // Handles the case where persist settings is available or min advertisement score is value or min sentiment score is value or min quality score is value.
     if (
       persistSettings ||
-      status === 'unread' ||
+      (status === 'unread' && !smartFolderSearch) ||
       minAdvertisementScore === null ||
       minSentimentScore === null ||
       minQualityScore === null
@@ -269,7 +361,8 @@ export const searchArticles = async ({
      * If categoryId is "%" (all), get all feeds for the user.
      * Otherwise, get only feeds in the specified category.
      */
-    const feedIds = await fetchFeedIds({ userId, categoryId, feedId });
+    const feedIds = resolvedFeedIds
+      ?? await fetchFeedIds({ userId, categoryId, feedId });
 
     /**
      * Build base WHERE clause for article query.
@@ -336,6 +429,11 @@ export const searchArticles = async ({
       authorFilter,
       languageFilter
     });
+    if (minArticleIdExclusive !== null) {
+      appendCursorCondition(articleQuery.where, {
+        id: { [Op.gt]: minArticleIdExclusive }
+      });
+    }
 
     debugLog(`\x1b[36mQuery attributes: ${articleQuery.attributes.join(", ")} (smartFolder: ${smartFolderSearch})\x1b[0m`);
     // Handles the case where first seen age filter is available.
@@ -356,18 +454,15 @@ export const searchArticles = async ({
     };
     // Coerces the runtime filters required into the representation required while performing search articles.
     const runtimeFiltersRequired = Boolean(qualityFilter || freshnessFilter);
+    const needsHighTrustRuntimeSort = prioritizeHighTrust && !sortTrust;
     // Selects the result limit based on whether smart folder search is available.
     const resultLimit = limitFilter || (smartFolderSearch ? limitCount : null);
 
     // Handles the case where count only is available and runtime filters required is unavailable.
     if (countOnly && !runtimeFiltersRequired) {
-      // Derives the article count through execute search count while performing search articles.
-      let articleCount = await executeSearchCount(articleQuery);
-      // Handles the case where result limit is available and article count exceeds result limit.
-      if (resultLimit && articleCount > resultLimit) {
-        articleCount = resultLimit;
-        debugLog(`\x1b[31mCapped count result to ${resultLimit} articles\x1b[0m`);
-      }
+      const articleCount = resultLimit
+        ? await executeSearchBoundedCount({ ...articleQuery, limit: resultLimit })
+        : await executeSearchCount(articleQuery);
 
       debugLog(`\x1b[31mCounted ${articleCount} articles matching query for user ${userId}\x1b[0m`);
 
@@ -377,13 +472,144 @@ export const searchArticles = async ({
       };
     }
 
+    if (pagination) {
+      if (
+        !['asc', 'desc', 'trust'].includes(logicalSort)
+        || runtimeFiltersRequired
+        || needsHighTrustRuntimeSort
+      ) {
+        throw new ArticleSearchCursorError(
+          'CURSOR_SORT_UNSUPPORTED',
+          'Cursor pagination is unavailable for this article ordering.',
+          422
+        );
+      }
+
+      const pageSize = pagination.pageSize;
+      if (logicalSort === 'trust') {
+        articleQuery.order = [
+          [cursorTrustOrder(), 'DESC'],
+          ['publishedAt', 'DESC'],
+          ['id', 'DESC']
+        ];
+      }
+      const cursorQuery = {
+        search: rawSearch,
+        categoryId: String(categoryId ?? '%'),
+        feedId: String(feedId ?? '%'),
+        status: String(status ?? 'unread'),
+        tag: workingTag || null,
+        sort: logicalSort,
+        grouping: effectiveGrouping,
+        includeDevelopingEvents: effectiveIncludeDevelopingEvents,
+        minAdvertisementScore: Number(finalMinAdvertisementScore),
+        minSentimentScore: Number(finalMinSentimentScore),
+        minQualityScore: Number(finalMinQualityScore),
+        prioritizeHighTrust,
+        dateFrom: dateRange?.start?.toISOString?.() || null,
+        dateTo: dateRange?.end?.toISOString?.() || null,
+        pageSize,
+        resultLimit: resultLimit || null
+      };
+      const queryHash = fingerprintArticleSearch(cursorQuery);
+      const parsedCursor = pagination.cursor
+        ? parseArticleSearchCursor(pagination.cursor, {
+          userId,
+          queryHash,
+          sort: logicalSort
+        })
+        : null;
+      const snapshotMaxArticleId = parsedCursor?.snapshotMaxArticleId
+        ?? Number(await Article.max('id', { where: { userId } }) || 0);
+      appendCursorCondition(articleQuery.where, {
+        id: { [Op.lte]: snapshotMaxArticleId }
+      });
+      const effectiveResultLimit = resultLimit
+        || (!smartFolderSearch && hasSearchIntent && rawSearch !== '%' ? 500 : null);
+      const countedTotal = parsedCursor?.totalCount ?? await executeSearchCount(articleQuery);
+      const totalCount = effectiveResultLimit === null
+        ? countedTotal
+        : Math.min(countedTotal, effectiveResultLimit);
+      const sourceCount = parsedCursor?.sourceCount ?? await executeSearchSourceCount(articleQuery);
+      if (parsedCursor) {
+        applyCursorPosition(articleQuery, logicalSort, parsedCursor.position);
+      }
+
+      const consumedCount = parsedCursor?.consumedCount || 0;
+      const remainingCount = effectiveResultLimit === null
+        ? null
+        : Math.max(0, effectiveResultLimit - consumedCount);
+      const pageCapacity = remainingCount === null
+        ? pageSize
+        : Math.min(pageSize, remainingCount);
+      const requestedRowCount = pageCapacity > 0 ? pageCapacity + 1 : 0;
+      const pageRows = requestedRowCount > 0
+        ? await executeSearch({ ...articleQuery, limit: requestedRowCount })
+        : [];
+      const hasMore = pageRows.length > pageCapacity
+        && (remainingCount === null || remainingCount > pageCapacity);
+      const articles = pageRows.slice(0, pageCapacity);
+      const itemIds = articles.map(article => articleValue(article, 'id'));
+      const nextConsumedCount = consumedCount + articles.length;
+      const cursorIssuedAt = Date.now();
+      const nextCursor = hasMore && articles.length
+        ? createArticleSearchCursor({
+          userId,
+          queryHash,
+          sort: logicalSort,
+          snapshotMaxArticleId,
+          position: cursorPositionForArticle(articles.at(-1), logicalSort),
+          consumedCount: nextConsumedCount,
+          totalCount,
+          sourceCount,
+          now: cursorIssuedAt
+        })
+        : null;
+
+      if (persistSettings) {
+        await Setting.upsert({
+          userId,
+          categoryId,
+          feedId,
+          status,
+          sort: logicalSort,
+          minAdvertisementScore: finalMinAdvertisementScore,
+          minSentimentScore: finalMinSentimentScore,
+          minQualityScore: finalMinQualityScore,
+          viewMode,
+          grouping: effectiveGrouping,
+          includeDevelopingEvents: effectiveIncludeDevelopingEvents,
+          prioritizeHighTrust: Boolean(userSettings?.prioritizeHighTrust),
+          themeMode: userSettings?.themeMode ?? 'system',
+          startupViewMode: userSettings?.startupViewMode ?? 'last-used'
+        });
+      }
+
+      return {
+        paginationVersion: 1,
+        query: queryMetadata,
+        totalCount,
+        sourceCount,
+        snapshot: {
+          snapshotMaxArticleId,
+          expiresAt: parsedCursor
+            ? new Date(parsedCursor.expiresAt).toISOString()
+            : articleSearchCursorExpiresAt(cursorIssuedAt)
+        },
+        page: {
+          itemIds,
+          hasMore,
+          nextCursor
+        }
+      };
+    }
+
     // Fetch articles based on constructed query
     let articles = await executeSearch(articleQuery);
     
     debugLog(`\x1b[33mFetched ${articles.length} articles from database (before in-memory filters)\x1b[0m`);
 
     // Delegate all in-memory sorting and filtering to sortArticles
-    const needsHighTrustRuntimeSort = prioritizeHighTrust && !sortTrust;
     if (
       !smartFolderSearch
       || sortRecommended

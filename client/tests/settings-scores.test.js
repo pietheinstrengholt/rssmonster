@@ -123,10 +123,6 @@ describe('score settings', () => {
     });
     expect(wrapper.emitted('forceReload')).toHaveLength(1);
     expect(wrapper.emitted('close')).toHaveLength(1);
-    expect(console.log).toHaveBeenCalledWith(
-      'Settings saved successfully:',
-      { saved: true }
-    );
   });
 
   it('reports a safe action error and leaves selection state unchanged when saving fails', async () => {

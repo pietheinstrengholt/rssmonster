@@ -85,11 +85,41 @@ const mergeOverviewStructure = (categories, existingCategories) => {
   });
 };
 
+// This function overlays a sparse count response onto the cached category and feed structure.
+const mergeOverviewCounts = (categories, countCategories) => {
+  const categoryCounts = new Map(
+    (countCategories || []).map(category => [String(category.id), category])
+  );
+  const feedCounts = new Map(
+    (countCategories || []).flatMap(category =>
+      (category.feeds || []).map(feed => [String(feed.id), feed])
+    )
+  );
+
+  return categories.map(category => {
+    const counts = categoryCounts.get(String(category.id));
+    const mergedCategory = { ...category };
+    for (const field of OVERVIEW_COUNT_FIELDS) {
+      mergedCategory[field] = normalizeCount(counts?.[field]);
+    }
+    mergedCategory.feeds = (category.feeds || []).map(feed => {
+      const countsForFeed = feedCounts.get(String(feed.id));
+      const mergedFeed = { ...feed };
+      for (const field of OVERVIEW_COUNT_FIELDS) {
+        mergedFeed[field] = normalizeCount(countsForFeed?.[field]);
+      }
+      return mergedFeed;
+    });
+    return normalizeCategory(mergedCategory);
+  });
+};
+
 // This function creates navigation, counter, and resource state for one user session.
 const initialOverviewState = () => ({
   categories: [],
   smartFolders: [],
   topTags: [],
+  deletedFeedIds: [],
   briefingCount: 0,
   unreadCount: 0,
   readCount: 0,
@@ -97,6 +127,7 @@ const initialOverviewState = () => ({
   hotCount: 0,
   clickedCount: 0,
   unreadsSinceLastUpdate: 0,
+  articleAvailabilityRevision: 0,
   overviewStructureStatus: 'idle',
   overviewStructureError: null,
   overviewStructureRequestId: 0,
@@ -296,6 +327,7 @@ export const useOverviewStore = defineStore('overview', {
       this.hotCount = hotCount;
       this.clickedCount = clickedCount;
       this.categories = normalizeCategories(categories);
+      this.articleAvailabilityRevision += 1;
       useUiStore().setChatAssistantOpen(false);
 
       if (initial || forceUpdate) {
@@ -319,7 +351,7 @@ export const useOverviewStore = defineStore('overview', {
       }
     },
 
-    // This action replaces protected overview counters and their normalized category snapshot.
+    // This action overlays protected overview counters onto the cached structure.
     updateOverviewCounts(
       {
         briefingCount,
@@ -357,7 +389,8 @@ export const useOverviewStore = defineStore('overview', {
       this.favoriteCount = favoriteCount;
       this.hotCount = hotCount;
       this.clickedCount = clickedCount;
-      this.categories = normalizeCategories(categories);
+      this.categories = mergeOverviewCounts(this.categories, categories);
+      this.articleAvailabilityRevision += 1;
       useUiStore().setChatAssistantOpen(false);
 
       if (initial || forceUpdate) {
@@ -446,6 +479,7 @@ export const useOverviewStore = defineStore('overview', {
       try {
         const { data } = await fetchTopTagsAPI({
           grouping: selection.grouping,
+          includeDevelopingEvents: selection.includeDevelopingEvents,
           status: selection.status
         });
         if (requestId !== this.topTagsRequestId) return false;
@@ -571,6 +605,7 @@ export const useOverviewStore = defineStore('overview', {
       if (!category) return false;
 
       const normalized = normalizeFeed({ ...feed, categoryId: feed?.categoryId ?? category.id });
+      this.deletedFeedIds = this.deletedFeedIds.filter(id => !idsMatch(id, normalized.id));
       const existingIndex = category.feeds.findIndex(item => idsMatch(item.id, normalized.id));
       if (existingIndex === -1) {
         category.feeds.push(normalized);
@@ -633,6 +668,9 @@ export const useOverviewStore = defineStore('overview', {
 
     // This action removes a feed and reconciles category and global counts.
     removeFeed(feedId) {
+      if (!this.deletedFeedIds.some(id => idsMatch(id, feedId))) {
+        this.deletedFeedIds.push(feedId);
+      }
       const category = this.categories.find(item =>
         item.feeds.some(feed => idsMatch(feed.id, feedId))
       );

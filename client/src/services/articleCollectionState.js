@@ -13,9 +13,12 @@ export function hasReachedArticleCollectionEnd({
   status,
   remainingItems,
   fetchCount,
-  allowUnreadFinalPage = false
+  allowUnreadFinalPage = false,
+  hasMore = null
 }) {
   if (!articleCount) return false;
+
+  if (typeof hasMore === 'boolean') return !hasMore;
 
   const loadedEveryArticle = distance >= articleCount;
   const reviewedToFinalPage = allowUnreadFinalPage
@@ -35,7 +38,8 @@ export function getArticleCollectionTailState({
   articles,
   markAsReadOnScroll,
   unreadsSinceLastUpdate,
-  articleCount
+  articleCount,
+  newerArticlesAvailable = false
 }) {
   const hasUnreadArticles = articles.some(article => article.status !== 'read');
   const supportsMarkAllRead = status === 'unread'
@@ -50,8 +54,8 @@ export function getArticleCollectionTailState({
       && hasUnreadArticles,
     showEndStateDismiss: markAsReadOnScroll !== true,
     showRefreshState: status === 'unread'
-      && isFlushed === true
       && articleCount > 0
+      && (isFlushed === true || newerArticlesAvailable)
       && unreadsSinceLastUpdate > 0
   };
 }

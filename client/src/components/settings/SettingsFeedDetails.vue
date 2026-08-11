@@ -319,11 +319,15 @@ export default {
         await this.loadObservability(true);
       } catch (error) {
         console.error('Error retrying feed:', error);
+        const conflictMessage = error?.response?.status === 409
+          ? error.response.data?.message
+          : null;
         this.retryNotice = {
           tone: 'danger',
           message: 'Unable to retry feed',
-          detail: 'Please try again.'
+          detail: conflictMessage || 'Please try again.'
         };
+        await this.loadObservability(true);
       } finally {
         this.retrying = false;
       }

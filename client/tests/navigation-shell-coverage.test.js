@@ -1,4 +1,5 @@
 import { flushPromises, mount, shallowMount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AppError from '../src/components/shared/AppError.vue';
 import DesktopToolbar from '../src/components/shell/DesktopToolbar.vue';
@@ -29,10 +30,12 @@ vi.mock('../src/api/settings', () => ({
 
 // This function creates the shared selection and action contract used by navigation components.
 function createStore() {
-  const authStore = useAuthStore();
-  const overviewStore = useOverviewStore();
-  const selectionStore = useSelectionStore();
-  const uiStore = useUiStore();
+  const pinia = createPinia();
+  setActivePinia(pinia);
+  const authStore = useAuthStore(pinia);
+  const overviewStore = useOverviewStore(pinia);
+  const selectionStore = useSelectionStore(pinia);
+  const uiStore = useUiStore(pinia);
 
   overviewStore.$patch({
     briefingCount: 5,
@@ -103,15 +106,17 @@ function createStore() {
   return {
     authStore,
     overviewStore,
+    pinia,
     selectionStore,
     uiStore
   };
 }
 
 // This function mounts a toolbar with the production store-facing behavior intact.
-function mountToolbar(component) {
+function mountToolbar(component, store) {
   const options = {
     global: {
+      plugins: [store.pinia],
       stubs: { Settings: true }
     }
   };
@@ -122,9 +127,10 @@ function mountToolbar(component) {
 }
 
 // This function mounts the sidebar while keeping drag rendering deterministic.
-function mountSidebar() {
+function mountSidebar(store) {
   return mount(Sidebar, {
     global: {
+      plugins: [store.pinia],
       stubs: {
         draggable: {
           props: ['modelValue'],
@@ -280,7 +286,9 @@ describe('mobile options menu actions', () => {
     vi.stubGlobal('Notification', { permission: 'default', requestPermission: vi.fn() });
     const wrapper = mount(MobileMenuOverlay, {
       props: { mobile: true },
-      global: {}
+      global: {
+        plugins: [store.pinia]
+      }
     });
 
     expect(document.body.classList.contains('mobile-options-open')).toBe(true);
@@ -304,10 +312,12 @@ describe('mobile options menu actions', () => {
   });
 
   it('reports unsupported and failed notification permission requests', async () => {
-    createStore();
+    const store = createStore();
     const wrapper = mount(MobileMenuOverlay, {
       props: { mobile: true },
-      global: {}
+      global: {
+        plugins: [store.pinia]
+      }
     });
 
     expect(wrapper.text()).toContain('Notifications unavailable');
@@ -334,7 +344,7 @@ describe('mobile options menu actions', () => {
 describe('sidebar navigation helpers', () => {
   it('covers selection, count, and filtering behavior', () => {
     const store = createStore();
-    const wrapper = mountSidebar();
+    const wrapper = mountSidebar(store);
 
     expect(wrapper.vm.topTagsDisplay).toHaveLength(5);
     expect(wrapper.vm.visibleStatusFilters).toHaveLength(6);
@@ -368,8 +378,8 @@ describe('sidebar navigation helpers', () => {
   });
 
   it('marks selections read through the sidebar action', async () => {
-    createStore();
-    const wrapper = mountSidebar();
+    const store = createStore();
+    const wrapper = mountSidebar(store);
     markAllAsRead.mockResolvedValue({});
 
     await wrapper.vm.markAsRead({ status: 'unread' });
@@ -380,8 +390,8 @@ describe('sidebar navigation helpers', () => {
   });
 
   it('reports read and category-order failures without corrupting local state', async () => {
-    createStore();
-    const wrapper = mountSidebar();
+    const store = createStore();
+    const wrapper = mountSidebar(store);
     const readError = new Error('read failed');
     const orderError = new Error('order failed');
     markAllAsRead.mockRejectedValue(readError);

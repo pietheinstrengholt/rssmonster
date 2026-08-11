@@ -2,12 +2,13 @@ import { flushPromises, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
-import { fetchArticleIds, fetchArticleRecommendations } from '../src/api/articles.js';
+import { fetchArticlePage, fetchArticleRecommendations } from '../src/api/articles.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
   fetchArticleDetails: vi.fn(),
   fetchArticleIds: vi.fn(),
+  fetchArticlePage: vi.fn(),
   fetchArticleRecommendations: vi.fn(),
   markAllAsRead: vi.fn(),
   markArticleSeen: vi.fn(),
@@ -67,11 +68,13 @@ const mountArticleFeed = () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  fetchArticleIds.mockResolvedValue({
+  fetchArticlePage.mockResolvedValue({
     data: {
-      firstPage: [],
-      itemIds: [],
-      sourceCount: 0
+      paginationVersion: 1,
+      totalCount: 0,
+      sourceCount: 0,
+      snapshot: { snapshotMaxArticleId: 0 },
+      page: { itemIds: [], articles: [], hasMore: false, nextCursor: null }
     }
   });
   vi.stubGlobal('matchMedia', vi.fn(() => ({
@@ -123,13 +126,13 @@ describe('ArticleFeed view loading', () => {
   it('scrolls to the top without reloading IDs for a view-mode change', async () => {
     const wrapper = mountArticleFeed();
     await flushPromises();
-    const initialFetchCount = fetchArticleIds.mock.calls.length;
+    const initialFetchCount = fetchArticlePage.mock.calls.length;
     const scrollArticleListToTop = vi.spyOn(wrapper.vm, 'scrollArticleListToTop');
 
     wrapper.vm.selectionStore.setCurrentSelection({ viewMode: 'summarized' });
     await flushPromises();
 
-    expect(fetchArticleIds).toHaveBeenCalledTimes(initialFetchCount);
+    expect(fetchArticlePage).toHaveBeenCalledTimes(initialFetchCount);
     expect(scrollArticleListToTop).toHaveBeenCalled();
 
     wrapper.unmount();
@@ -138,14 +141,17 @@ describe('ArticleFeed view loading', () => {
   it('reloads IDs once with the new grouping and scrolls to the top', async () => {
     const wrapper = mountArticleFeed();
     await flushPromises();
-    const initialFetchCount = fetchArticleIds.mock.calls.length;
+    const initialFetchCount = fetchArticlePage.mock.calls.length;
     const scrollArticleListToTop = vi.spyOn(wrapper.vm, 'scrollArticleListToTop');
 
     wrapper.vm.selectionStore.setCurrentSelection({ grouping: 'event' });
     await flushPromises();
 
-    expect(fetchArticleIds).toHaveBeenCalledTimes(initialFetchCount + 1);
-    expect(fetchArticleIds).toHaveBeenLastCalledWith(expect.objectContaining({ grouping: 'event' }));
+    expect(fetchArticlePage).toHaveBeenCalledTimes(initialFetchCount + 1);
+    expect(fetchArticlePage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ grouping: 'event' }),
+      expect.objectContaining({ pageSize: 20 })
+    );
     expect(scrollArticleListToTop).toHaveBeenCalled();
 
     wrapper.unmount();
@@ -157,13 +163,13 @@ describe('ArticleFeed view loading', () => {
   ])('does not reload IDs or scroll for an %s change', async (_label, selection) => {
     const wrapper = mountArticleFeed();
     await flushPromises();
-    const initialFetchCount = fetchArticleIds.mock.calls.length;
+    const initialFetchCount = fetchArticlePage.mock.calls.length;
     const scrollArticleListToTop = vi.spyOn(wrapper.vm, 'scrollArticleListToTop');
 
     wrapper.vm.selectionStore.setCurrentSelection(selection);
     await flushPromises();
 
-    expect(fetchArticleIds).toHaveBeenCalledTimes(initialFetchCount);
+    expect(fetchArticlePage).toHaveBeenCalledTimes(initialFetchCount);
     expect(scrollArticleListToTop).not.toHaveBeenCalled();
 
     wrapper.unmount();
@@ -172,14 +178,17 @@ describe('ArticleFeed view loading', () => {
   it('reloads IDs and scrolls when article status changes', async () => {
     const wrapper = mountArticleFeed();
     await flushPromises();
-    const initialFetchCount = fetchArticleIds.mock.calls.length;
+    const initialFetchCount = fetchArticlePage.mock.calls.length;
     const scrollArticleListToTop = vi.spyOn(wrapper.vm, 'scrollArticleListToTop');
 
     wrapper.vm.selectionStore.setCurrentSelection({ status: 'favorite' });
     await flushPromises();
 
-    expect(fetchArticleIds).toHaveBeenCalledTimes(initialFetchCount + 1);
-    expect(fetchArticleIds).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'favorite' }));
+    expect(fetchArticlePage).toHaveBeenCalledTimes(initialFetchCount + 1);
+    expect(fetchArticlePage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: 'favorite' }),
+      expect.objectContaining({ pageSize: 20 })
+    );
     expect(scrollArticleListToTop).toHaveBeenCalled();
 
     wrapper.unmount();

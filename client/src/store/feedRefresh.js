@@ -172,7 +172,7 @@ export const useFeedRefreshStore = defineStore('feedRefresh', {
         }
       } catch (error) {
         this.appendLog('Received invalid progress payload.');
-        console.log('Invalid SSE payload', error);
+        console.warn('Invalid SSE payload', error);
       }
     },
 

@@ -1,4 +1,4 @@
-import { config, mount } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Sidebar from '../src/components/sidebar/Sidebar.vue';
@@ -37,7 +37,6 @@ const createStore = () => ({
 const initializeStores = () => {
   const { pinia } = createStore();
   setActivePinia(pinia);
-  config.global.plugins = [pinia];
   const authStore = useAuthStore(pinia);
   const overviewStore = useOverviewStore(pinia);
   const selectionStore = useSelectionStore(pinia);
@@ -106,12 +105,13 @@ const initializeStores = () => {
   vi.spyOn(selectionStore, 'setTag').mockImplementation(() => {});
   vi.spyOn(uiStore, 'setShowModal');
 
-  return { authStore, overviewStore, selectionStore, uiStore };
+  return { authStore, overviewStore, pinia, selectionStore, uiStore };
 };
 
 // This function mounts the sidebar with a slot-compatible draggable boundary.
-const mountSidebar = () => mount(Sidebar, {
+const mountSidebar = pinia => mount(Sidebar, {
   global: {
+    plugins: [pinia],
     stubs: {
       BootstrapIcon: true,
       draggable: {
@@ -134,7 +134,7 @@ describe('Options API sidebar contracts', () => {
   // This verifies category and feed badges remain available while switching article statuses.
   it('renders the selected status count for categories and feeds', async () => {
     const stores = initializeStores();
-    const wrapper = mountSidebar();
+    const wrapper = mountSidebar(stores.pinia);
 
     stores.selectionStore.$patch({
       currentSelection: {
@@ -174,7 +174,7 @@ describe('Options API sidebar contracts', () => {
 
   it('renders navigation counts and forwards category and feed selections', async () => {
     const stores = initializeStores();
-    const wrapper = mountSidebar();
+    const wrapper = mountSidebar(stores.pinia);
 
     expect(wrapper.find('.sidebar-smart-folders').text()).toContain('Research');
     expect(wrapper.find('.sidebar-smart-folders').text()).toContain('11');
@@ -193,7 +193,7 @@ describe('Options API sidebar contracts', () => {
 
   it('retains management actions and persists the reordered category IDs', async () => {
     const stores = initializeStores();
-    const wrapper = mountSidebar();
+    const wrapper = mountSidebar(stores.pinia);
     const reordered = [...stores.overviewStore.categories].reverse();
 
     await wrapper.find('.sidebar-add-button').trigger('click');
@@ -215,8 +215,8 @@ describe('Options API sidebar contracts', () => {
   });
 
   it('loads drag-and-drop support only after entering category reorder mode', async () => {
-    initializeStores();
-    const wrapper = mountSidebar();
+    const stores = initializeStores();
+    const wrapper = mountSidebar(stores.pinia);
 
     expect(wrapper.find('.draggable-stub').exists()).toBe(false);
     expect(wrapper.findAll('.sidebar-category-list > [id]')).toHaveLength(2);
@@ -245,7 +245,7 @@ describe('Options API sidebar contracts', () => {
     });
     vi.spyOn(stores.overviewStore, 'refreshOverviewCounts').mockResolvedValue(false);
     vi.spyOn(stores.overviewStore, 'fetchSmartFolderCounts').mockResolvedValue(false);
-    const wrapper = mountSidebar();
+    const wrapper = mountSidebar(stores.pinia);
 
     expect(wrapper.text()).toContain('Counts could not refresh.');
     expect(wrapper.text()).toContain('Smart Folder counts may be outdated.');

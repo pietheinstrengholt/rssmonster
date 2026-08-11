@@ -22,7 +22,7 @@ export const fetchFeedCrawlResult = (feedId, crawlResultId) =>
  * Retry one feed through the production crawl pipeline.
  */
 export const retryFeed = feedId =>
-  api.post(`/feeds/${feedId}/retry`);
+  api.post(`/feeds/${feedId}/retry`, null, { timeout: 120000 });
 
 /**
  * Validate a feed URL

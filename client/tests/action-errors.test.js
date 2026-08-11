@@ -19,6 +19,7 @@ import { createFocusedStores } from './helpers/focusedStores.js';
 vi.mock('../src/api/articles', () => ({
   fetchArticleDetails: vi.fn(),
   fetchArticleIds: vi.fn(),
+  fetchArticlePage: vi.fn(),
   markAllAsRead: vi.fn(),
   markArticleSeen: vi.fn(),
   markArticleUnread: vi.fn(),
@@ -185,6 +186,7 @@ describe('recoverable action errors', () => {
 
   it('keeps action saving blocked after the authoritative load fails', async () => {
     const error = new Error('load failed');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     fetchActions.mockRejectedValueOnce(error);
     saveActions.mockClear();
     const context = {
@@ -199,6 +201,7 @@ describe('recoverable action errors', () => {
     expect(context.loaded).toBe(false);
     expect(context.loadError).toContain('Could not load article actions');
     expect(saveActions).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith('Error loading article actions:', error);
   });
 
   it('notifies and rolls back when saving a theme preference fails', async () => {

@@ -6,6 +6,7 @@ import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
   fetchArticleIds: vi.fn(),
+  fetchArticlePage: vi.fn(),
   fetchArticleDetails: vi.fn(),
   markAllAsRead: vi.fn(),
   markArticlesAsRead: vi.fn(),
@@ -73,10 +74,7 @@ describe('ArticleFeed final read reconciliation', () => {
 
     await ArticleFeed.methods.flushPool.call(context);
 
-    expect(markAllAsRead).toHaveBeenCalledWith(
-      activeSelection,
-      [101, 102, 103]
-    );
+    expect(markAllAsRead).toHaveBeenCalledWith(activeSelection);
     expect(context.articles.map(article => article.status)).toEqual([
       'read',
       'read',
@@ -114,10 +112,7 @@ describe('ArticleFeed final read reconciliation', () => {
 
     await ArticleFeed.methods.flushPool.call(context);
 
-    expect(markAllAsRead).toHaveBeenCalledWith(
-      context.selectionStore.currentSelection,
-      [201, 202]
-    );
+    expect(markAllAsRead).toHaveBeenCalledWith(context.selectionStore.currentSelection);
     expect(context.articles.map(article => article.status)).toEqual(['read', 'unread']);
     expect(context.isFlushed).toBe(false);
     expect(fetchOverviewSplit).not.toHaveBeenCalled();

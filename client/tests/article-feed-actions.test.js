@@ -11,6 +11,7 @@ import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles', () => ({
   fetchArticleIds: vi.fn(),
+  fetchArticlePage: vi.fn(),
   fetchArticleDetails: vi.fn(),
   markAllAsRead: vi.fn(),
   markArticlesAsRead: vi.fn(),

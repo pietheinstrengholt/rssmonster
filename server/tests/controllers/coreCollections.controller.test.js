@@ -274,6 +274,43 @@ describe('tag and cleanup controllers', () => {
     expect(query.where[field]).toEqual(value);
   });
 
+  it('scopes event-grouped tags to standalone and selected event articles', async () => {
+    mocked.articleFindAll.mockResolvedValue([]);
+    const res = createResponse();
+
+    await tagController.getTags(createRequest({
+      query: {
+        status: 'unread',
+        grouping: 'event',
+        includeDevelopingEvents: 'true'
+      }
+    }), res);
+
+    const articleWhere = mocked.articleFindAll.mock.calls[0][0].where;
+    expect(articleWhere[Op.or]).toEqual([
+      { eventId: { [Op.is]: null } },
+      expect.anything()
+    ]);
+    expect(articleWhere[Op.or][1].val).toContain(
+      'COALESCE(grouped_event.developingArticleId, grouped_event.representativeArticleId)'
+    );
+    expect(articleWhere[Op.or][1].val).toContain('grouped_event.userId = articles.userId');
+  });
+
+  it('scopes topic-grouped tags to one strongest event representative per topic', async () => {
+    mocked.articleFindAll.mockResolvedValue([]);
+    const res = createResponse();
+
+    await tagController.getTags(createRequest({
+      query: { status: 'unread', grouping: 'topic' }
+    }), res);
+
+    const articleWhere = mocked.articleFindAll.mock.calls[0][0].where;
+    expect(articleWhere.id[Op.in].val).toContain('MAX(eventStrength)');
+    expect(articleWhere.id[Op.in].val).toContain('SELECT MAX(e2.id)');
+    expect(articleWhere.id[Op.in].val).toContain('e2.userId = e.userId');
+  });
+
   it('scopes tags to the configured Daily Briefing population', async () => {
     mocked.briefingPreferenceFindOne.mockResolvedValue({
       selectionPeriod: '24h',

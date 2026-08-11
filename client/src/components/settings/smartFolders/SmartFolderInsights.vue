@@ -89,7 +89,6 @@ export default {
                 this.error = null;
                 const response = await fetchSmartFolderInsights();
 
-                console.log('Smart Folder Insights response:', response.data);
                 this.recommendations = response.data?.recommendations?.smartFolders || [];
             } catch (err) {
                 console.error('Failed to fetch smart folder insights:', err);

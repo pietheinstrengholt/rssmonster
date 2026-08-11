@@ -1,6 +1,6 @@
 {
   "name": "rssmonster-client",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "type": "module",
   "private": true,
   "author": "Piethein Strengholt",
@@ -35,7 +35,7 @@
     "@vitest/coverage-v8": "^4.1.10",
     "@vue/compiler-sfc": "^3.5.41",
     "@vue/test-utils": "^2.4.11",
-    "baseline-browser-mapping": "^2.11.12",
+    "baseline-browser-mapping": "^2.11.13",
     "bootstrap-icons": "^1.13.1",
     "eslint": "^10.8.1",
     "eslint-plugin-vue": "^10.10.0",

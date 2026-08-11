@@ -48,6 +48,7 @@ describe('MobilePullToRefresh', () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.text()).toContain('Release to refresh');
+    expect(wrapper.classes()).toContain('mobile-pull-to-refresh--tracking');
     expect(wrapper.emitted('show-mobile-toolbar')).toHaveLength(1);
     expect(move.preventDefault).toHaveBeenCalledOnce();
 
@@ -55,6 +56,7 @@ describe('MobilePullToRefresh', () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.emitted('refresh')).toHaveLength(1);
+    expect(wrapper.classes()).not.toContain('mobile-pull-to-refresh--tracking');
     expect(wrapper.text()).toContain('Refreshing articles');
 
     await wrapper.setProps({ refreshing: true });

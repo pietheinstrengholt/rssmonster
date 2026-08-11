@@ -45,16 +45,13 @@ export const articleFeedReadStateMethods = {
 
   // Marks the live selection as read, then rebuilds that collection from the database.
   async flushPool() {
-    if (!this.container.length || this.isFlushed) return;
+    if ((!this.totalCount && !this.container.length) || this.isFlushed) return;
 
     const selection = { ...this.selectionStore.currentSelection };
     const activeRequestId = this.activeRequestId;
 
     try {
-      await markAllAsRead(
-        selection,
-        [...new Set(this.container)]
-      );
+      await markAllAsRead(selection);
     } catch (error) {
       console.error('Error marking all articles as read:', error);
       notifyActionError('Could not mark these articles as read. Please try again.', error);

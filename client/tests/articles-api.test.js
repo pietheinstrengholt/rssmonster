@@ -1,15 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { markAllAsRead, markArticlesAsRead } from '../src/api/articles.js';
+import {
+  fetchNewerArticleCount,
+  markAllAsRead,
+  markArticlesAsRead
+} from '../src/api/articles.js';
 
-const { post } = vi.hoisted(() => ({ post: vi.fn() }));
+const { get, post } = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 
 vi.mock('../src/api/client', () => ({
-  default: { post }
+  default: { get, post }
 }));
 
 describe('articles API', () => {
   beforeEach(() => {
+    get.mockReset();
     post.mockReset();
+  });
+
+  it('requests a newer-article count with the active selection and snapshot boundary', () => {
+    fetchNewerArticleCount({ categoryId: 3, status: 'unread' }, 100);
+
+    expect(get).toHaveBeenCalledWith('/articles', {
+      params: {
+        categoryId: 3,
+        status: 'unread',
+        newerThanArticleId: 100
+      }
+    });
   });
 
   it('passes event grouping for selected article mark-read requests', () => {
@@ -35,17 +52,20 @@ describe('articles API', () => {
 
     markAllAsRead(currentSelection);
 
-    expect(post).toHaveBeenCalledWith('/articles/markasread', currentSelection);
+    expect(post).toHaveBeenCalledWith('/articles/markasread', {
+      ...currentSelection,
+      scope: 'matching'
+    });
   });
 
-  it('includes the original list snapshot in matching mark-read requests', () => {
+  it('does not send the loaded ID snapshot in matching mark-read requests', () => {
     const currentSelection = { status: 'unread', grouping: 'event' };
 
     markAllAsRead(currentSelection, [10, 11]);
 
     expect(post).toHaveBeenCalledWith('/articles/markasread', {
       ...currentSelection,
-      snapshotArticleIds: [10, 11]
+      scope: 'matching'
     });
   });
 });

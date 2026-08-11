@@ -142,7 +142,8 @@ describe('data store overview and count behavior', () => {
       data: {
         categories: [{
           id: 2,
-          feeds: [{ id: 20, unreadCount: -4 }]
+          name: 'Technology',
+          feeds: [{ id: 20, feedName: 'Example Feed', unreadCount: -4 }]
         }]
       }
     });
@@ -170,11 +171,13 @@ describe('data store overview and count behavior', () => {
       expect(store.unreadCount).toBe(11);
     });
     expect(store.categories[0].feeds[0]).toMatchObject({
+      feedName: 'Example Feed',
       unreadCount: 11,
       readCount: 0,
       favoriteCount: 0,
       errorCount: 0
     });
+    expect(store.categories[0].name).toBe('Technology');
   });
 
   // Verifies initial split counts establish a baseline before later background changes are announced.
@@ -319,7 +322,11 @@ describe('data store overview and count behavior', () => {
     await overviewRequest;
 
     expect(fetchTopTags).toHaveBeenCalledOnce();
-    expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'topic', status: 'unread' });
+    expect(fetchTopTags).toHaveBeenCalledWith({
+      grouping: 'topic',
+      includeDevelopingEvents: false,
+      status: 'unread'
+    });
   });
 
   // Verifies count-free structure starts without waiting for persisted selection settings.
@@ -350,14 +357,22 @@ describe('data store overview and count behavior', () => {
 
     selectionStore.setSelectedStatus('favorite');
     await vi.waitFor(() => {
-      expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'none', status: 'favorite' });
+      expect(fetchTopTags).toHaveBeenCalledWith({
+        grouping: 'none',
+        includeDevelopingEvents: false,
+        status: 'favorite'
+      });
     });
     expect(store.topTags).toEqual([{ name: 'security', count: 3 }]);
 
     fetchTopTags.mockClear();
     selectionStore.setSelectedStatus('briefing');
     await vi.waitFor(() => {
-      expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'event', status: 'briefing' });
+      expect(fetchTopTags).toHaveBeenCalledWith({
+        grouping: 'event',
+        includeDevelopingEvents: false,
+        status: 'briefing'
+      });
     });
     expect(store.topTags).toEqual([]);
   });
@@ -377,7 +392,11 @@ describe('data store overview and count behavior', () => {
       prioritizeHighTrust: false
     });
     await vi.waitFor(() => {
-      expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'event', status: 'briefing' });
+      expect(fetchTopTags).toHaveBeenCalledWith({
+        grouping: 'event',
+        includeDevelopingEvents: false,
+        status: 'briefing'
+      });
     });
 
     fetchTopTags.mockClear();

@@ -542,8 +542,7 @@ export default {
       this.saving = true;
 
       try {
-        const response = await saveActions(filteredActions);
-        console.log('Actions saved:', response.data);
+        await saveActions(filteredActions);
         this.$emit('saved');
         this.$emit('close');
       } catch (err) {

@@ -501,8 +501,6 @@ export default {
                     crawlSince: this.crawlSince
                 });
 
-                console.log(result.status);
-
                 //overwrite results with results from the database
                 this.feed = result.data.feed;
 

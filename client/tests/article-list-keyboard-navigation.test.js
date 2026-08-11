@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { shallowMount } from '@vue/test-utils';
 
 import ArticleListView from '../src/components/articles/ArticleListView.vue';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 // Creates a keyboard-navigation context with rendered article references.
 const createContext = (overrides = {}) => {
@@ -179,6 +180,7 @@ describe('ArticleListView keyboard navigation', () => {
   it('registers and removes the window keydown listener', () => {
     const addEventListener = vi.spyOn(window, 'addEventListener');
     const removeEventListener = vi.spyOn(window, 'removeEventListener');
+    const stores = createFocusedStores();
     const wrapper = shallowMount(ArticleListView, {
       props: {
         articles: [],
@@ -193,6 +195,9 @@ describe('ArticleListView keyboard navigation', () => {
           showFeedRefreshProgress: true
         },
         viewMode: 'minimal'
+      },
+      global: {
+        plugins: [stores.pinia]
       }
     });
     const handler = wrapper.vm.handleMinimalKeydown;

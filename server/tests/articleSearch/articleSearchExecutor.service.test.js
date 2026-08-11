@@ -27,7 +27,9 @@ vi.mock('../../models/index.js', () => ({
 import {
   buildArticleSearchQuery,
   executeSearch,
-  executeSearchCount
+  executeSearchBoundedCount,
+  executeSearchCount,
+  executeSearchSourceCount
 } from '../../services/articleSearch/articleSearchExecutor.service.js';
 
 // Builds a neutral search descriptor so each test highlights one retrieval concern.
@@ -77,6 +79,20 @@ describe('articleSearchExecutor.service', () => {
 
     expect(query.attributes).toEqual(expect.arrayContaining(['attentionBucket', 'clickedAmount']));
     expect(query).not.toHaveProperty('order');
+  });
+
+  it('counts a limited search from only the bounded matching IDs', async () => {
+    mocked.articleFindAll.mockResolvedValue([{ id: 2 }, { id: 4 }]);
+
+    await expect(executeSearchBoundedCount({ where: { userId: 7 }, limit: 2 }))
+      .resolves.toBe(2);
+    expect(mocked.articleFindAll).toHaveBeenCalledWith({
+      where: { userId: 7 },
+      attributes: ['id'],
+      limit: 2,
+      raw: true
+    });
+    expect(mocked.articleCount).not.toHaveBeenCalled();
   });
 
   // Loads freshness and feed trust when Unread chronological ordering needs the runtime boost.
@@ -190,11 +206,39 @@ describe('articleSearchExecutor.service', () => {
     expect(mocked.articleFindAll).toHaveBeenCalledWith(query);
   });
 
+  it('passes a bounded page limit to the Article model', async () => {
+    mocked.articleFindAll.mockResolvedValue([{ id: 2 }]);
+    const query = {
+      where: { userId: 7 },
+      include: [],
+      attributes: ['id'],
+      order: [['id', 'DESC']],
+      limit: 21
+    };
+
+    await executeSearch(query);
+
+    expect(mocked.articleFindAll).toHaveBeenCalledWith(query);
+  });
+
   // Delegates count-only searches without materializing result rows.
   it('executes a prepared count query', async () => {
     mocked.articleCount.mockResolvedValue(12);
 
     await expect(executeSearchCount({ where: { userId: 7 } })).resolves.toBe(12);
     expect(mocked.articleCount).toHaveBeenCalledWith({ where: { userId: 7 } });
+  });
+
+  it('counts distinct matching feed IDs without loading articles', async () => {
+    mocked.articleCount.mockResolvedValue(4);
+    const query = { where: { userId: 7 } };
+
+    await expect(executeSearchSourceCount(query)).resolves.toBe(4);
+
+    expect(mocked.articleCount).toHaveBeenCalledWith({
+      where: query.where,
+      distinct: true,
+      col: 'feedId'
+    });
   });
 });

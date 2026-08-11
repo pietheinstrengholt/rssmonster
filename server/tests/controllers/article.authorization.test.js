@@ -358,6 +358,26 @@ describe('article ownership authorization', () => {
       contentHtml: 'Filtered article body',
       publishedAt: new Date('2026-05-01T12:00:00Z')
     });
+    const structureResponse = await request(app)
+      .get('/api/manager/overview-lite')
+      .set('Authorization', authHeaderFor(owner));
+    expect(structureResponse.status).toBe(200);
+    expect(structureResponse.body.categories[0]).toMatchObject({
+      id: expect.any(Number),
+      name: expect.any(String),
+      feeds: [expect.objectContaining({
+        id: feed.id,
+        categoryId: feed.categoryId,
+        feedName: feed.feedName,
+        url: feed.url
+      })]
+    });
+    expect(structureResponse.body.categories[0]).not.toHaveProperty('createdAt');
+    expect(structureResponse.body.categories[0].feeds[0]).not.toHaveProperty('lastFetched');
+    expect(structureResponse.body.categories[0].feeds[0]).not.toHaveProperty('createdAt');
+    const categoryStructureLookup = vi.spyOn(Category, 'findAll');
+    const groupedCountLookup = vi.spyOn(Feed, 'findAll');
+    const globalCountLookup = vi.spyOn(Article, 'findOne');
 
     const res = await request(app)
       .post('/api/manager/overview-counts')
@@ -376,6 +396,11 @@ describe('article ownership authorization', () => {
     expect(res.body.categories[0].briefingCount).toBe(2);
     expect(res.body.categories[0].feeds[0].briefingCount).toBe(2);
     expect(res.body.categories[0].feeds[0].unreadCount).toBe(1);
+    expect(res.body.categories[0]).not.toHaveProperty('name');
+    expect(res.body.categories[0].feeds[0]).not.toHaveProperty('feedName');
+    expect(categoryStructureLookup).not.toHaveBeenCalled();
+    expect(groupedCountLookup).toHaveBeenCalledOnce();
+    expect(globalCountLookup).not.toHaveBeenCalled();
     expect(article.filteredInd).toBe(false);
 
     await BriefingPreference.create({
@@ -1004,10 +1029,11 @@ describe('article ownership authorization', () => {
       publishedAt: new Date('2026-05-01T12:00:00Z')
     });
 
+    const findAllSpy = vi.spyOn(Article, 'findAll');
     const response = await request(app)
       .post('/api/articles/markasread')
       .set('Authorization', authHeaderFor(owner))
-      .send({ grouping: 'none' });
+      .send({ grouping: 'none', scope: 'matching', sort: 'desc' });
 
     await Promise.all([article.reload(), secondArticle.reload(), filteredArticle.reload()]);
 
@@ -1020,6 +1046,8 @@ describe('article ownership authorization', () => {
     });
     expect([article.status, secondArticle.status]).toEqual(['read', 'read']);
     expect(filteredArticle.status).toBe('unread');
+    expect(findAllSpy.mock.calls.some(([options]) => options?.limit === 101)).toBe(true);
+    findAllSpy.mockRestore();
   });
 
   // Verifies an empty query-based bulk read returns stable zero counts.

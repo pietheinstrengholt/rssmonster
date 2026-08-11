@@ -127,6 +127,7 @@ export const persistFeedCrawlResult = async ({
         ? {
           lastSuccessfulCrawlAt: completedAt,
           consecutiveFailures: 0,
+          ...(feed.status === 'error' ? { status: 'active' } : {}),
           totalCrawlSuccesses: Sequelize.literal('totalCrawlSuccesses + 1')
         }
         : {

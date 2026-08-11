@@ -53,7 +53,6 @@ describe('crawl run lifecycle', () => {
 
   it('creates and completes exactly one row for a successful user crawl', async () => {
     const createSpy = vi.spyOn(CrawlRun, 'create');
-    const updateSpy = vi.spyOn(CrawlRun.prototype, 'update');
 
     await crawlController.performCrawl(user.id);
 
@@ -62,9 +61,11 @@ describe('crawl run lifecycle', () => {
     });
 
     expect(createSpy).toHaveBeenCalledOnce();
-    expect(createSpy).toHaveBeenCalledWith({
+    expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
       userId: user.id,
       status: 'running',
+      heartbeatAt: expect.any(Date),
+      ownerToken: expect.any(String),
       newArticles: 0,
       updatedArticles: 0,
       articleErrors: 0,
@@ -73,26 +74,7 @@ describe('crawl run lifecycle', () => {
       failedFeeds: 0,
       timedOutFeeds: 0,
       triggerType: 'api'
-    });
-    expect(updateSpy).toHaveBeenCalledOnce();
-    expect(updateSpy).toHaveBeenCalledWith({
-      status: 'completed',
-      completedAt: expect.any(Date),
-      newArticles: 0,
-      updatedArticles: 0,
-      articleErrors: 0,
-      errors: 0,
-      processedFeeds: 0,
-      failedFeeds: 0,
-      timedOutFeeds: 0,
-      feedsAttempted: 0,
-      feedsSucceeded: 0,
-      feedsRecovered: 0,
-      articlesFetched: 0,
-      articlesUnchanged: 0,
-      articlesDuplicate: 0,
-      durationMs: expect.any(Number)
-    });
+    }));
     expect(crawlRuns).toHaveLength(1);
     expect(crawlRuns[0]).toMatchObject({
       userId: user.id,
@@ -117,7 +99,6 @@ describe('crawl run lifecycle', () => {
 
   it('records a failed terminal state and rethrows the original crawl error', async () => {
     const crawlError = new Error('Unable to load crawl actions');
-    const updateSpy = vi.spyOn(CrawlRun.prototype, 'update');
     vi.spyOn(db.Action, 'findAll').mockRejectedValueOnce(crawlError);
 
     await expect(crawlController.performCrawl(failingUser.id)).rejects.toBe(crawlError);
@@ -126,20 +107,6 @@ describe('crawl run lifecycle', () => {
       where: { userId: failingUser.id }
     });
 
-    expect(updateSpy).toHaveBeenCalledOnce();
-    expect(updateSpy).toHaveBeenCalledWith({
-      status: 'failed',
-      completedAt: expect.any(Date),
-      errorMessage: crawlError.message,
-      newArticles: 0,
-      updatedArticles: 0,
-      articleErrors: 0,
-      errors: 0,
-      processedFeeds: 1,
-      failedFeeds: 0,
-      timedOutFeeds: 0,
-      durationMs: expect.any(Number)
-    });
     expect(crawlRuns).toHaveLength(1);
     expect(crawlRuns[0]).toMatchObject({
       userId: failingUser.id,

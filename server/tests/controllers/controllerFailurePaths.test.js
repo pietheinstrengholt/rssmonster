@@ -394,11 +394,11 @@ describe('manager controller failure paths', () => {
 
   // Verifies overview query failures return stable manager responses.
   it.each([
-    ['getOverviewLite', managerController.getOverviewLite],
-    ['getOverviewCounts', managerController.getOverviewCounts],
-    ['getOverview', managerController.getOverview]
-  ])('%s handles category query failures', async (_name, handler) => {
-    vi.spyOn(db.Category, 'findAll').mockRejectedValue(new Error('database unavailable'));
+    ['getOverviewLite', managerController.getOverviewLite, db.Category, 'findAll'],
+    ['getOverviewCounts', managerController.getOverviewCounts, db.Feed, 'findAll'],
+    ['getOverview', managerController.getOverview, db.Category, 'findAll']
+  ])('%s handles database query failures', async (_name, handler, model, method) => {
+    vi.spyOn(model, method).mockRejectedValue(new Error('database unavailable'));
     const res = createResponse();
 
     await handler({ userData: { userId: 1 }, body: {} }, res, vi.fn());

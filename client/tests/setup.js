@@ -9,9 +9,9 @@ config.global.components = {
   BootstrapIcon
 };
 
-// This setup gives every component test an isolated real Pinia instance.
+// Give direct store consumers an isolated active Pinia instance. Component
+// tests that use stores install their Pinia instance explicitly when mounting.
 beforeEach(() => {
   const pinia = createPinia();
   setActivePinia(pinia);
-  config.global.plugins = [pinia];
 });

@@ -186,7 +186,6 @@ DB_PORT=3306
 
 ```env
 VITE_APP_HOSTNAME=http://localhost:3000
-VITE_NODE_ENV=development
 VITE_ENABLE_AGENT=false  # Set to 'true' to enable AI assistant
 ```
 
@@ -356,7 +355,6 @@ above. Update it with `docker compose pull` followed by
 **Client (`client/.env`):**
 ```env
 VITE_APP_HOSTNAME=https://your-production-domain.com
-VITE_NODE_ENV=production
 ```
 
 **Server (`server/.env`):**

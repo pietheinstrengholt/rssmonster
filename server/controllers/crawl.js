@@ -1,4 +1,5 @@
 import db from '../models/index.js';
+import { randomUUID } from 'node:crypto';
 const { Action, Article, CrawlRun, Hotlink } = db;
 import {
   getSequelizeRuntimeCapabilities,
@@ -11,6 +12,12 @@ import {
   formatCrawlSummaryLine
 } from '../services/feeds/crawlResult.js';
 import { persistFeedCrawlResult } from '../services/feeds/feedCrawlObservability.js';
+import {
+  failStaleCrawlRuns,
+  isStaleCrawlRun,
+  startCrawlRunHeartbeat,
+  updateOwnedCrawlRun
+} from '../services/crawl/crawlRunHeartbeat.js';
 import {
   logFeedDebug,
   sanitizeFeedLogValue
@@ -135,20 +142,8 @@ const CRAWL_PARALLELPROCESSFLAG = Number(
 // Rate limit delay tracking for OpenAI API
 let rateLimitDelay = 0;
 
-const MINUTE_MS = 60 * 1000;
 const ACTIVE_CRAWL_INDEX = 'crawl_runs_active_user_unique';
 const CRAWL_TRIGGER_TYPES = new Set(['scheduled', 'api']);
-const parsedMaxRunningMinutes = Number.parseInt(
-  process.env.CRAWL_RUN_MAX_RUNNING_MINUTES,
-  10
-);
-const CRAWL_RUN_MAX_RUNNING_MINUTES = Number.isInteger(parsedMaxRunningMinutes) &&
-  parsedMaxRunningMinutes > 0
-  ? parsedMaxRunningMinutes
-  : 60;
-const STALE_CRAWL_ERROR_MESSAGE =
-  `Crawl run exceeded the maximum running duration of ` +
-  `${CRAWL_RUN_MAX_RUNNING_MINUTES} minutes and was marked stale.`;
 
 /* ------------------------------------------------------------------
  * Helpers
@@ -1082,7 +1077,14 @@ const runCrawl = async (userId = null, options = {}) => {
             signal,
             deadlineAt,
             lease: { feedId: feed.id, leaseOwner: feed.leaseOwner },
-            leaseState: heartbeat.state
+            leaseState: {
+              get lost() {
+                return heartbeat.state.lost || options.crawlRunHeartbeatState?.lost;
+              },
+              get error() {
+                return heartbeat.state.error || options.crawlRunHeartbeatState?.error;
+              }
+            }
           };
           execution.assertLeaseOwnership = ownershipOptions =>
             assertFeedLeaseOwnership(execution.lease, ownershipOptions);
@@ -1389,6 +1391,8 @@ const findActiveCrawlRun = userId => CrawlRun.findOne({
   attributes: [
     'id',
     'startedAt',
+    'heartbeatAt',
+    'ownerToken',
     'newArticles',
     'updatedArticles',
     'articleErrors',
@@ -1399,16 +1403,6 @@ const findActiveCrawlRun = userId => CrawlRun.findOne({
   ]
 });
 
-// This function checks whether a running crawl exceeds the configured duration.
-const isStaleCrawlRun = (crawlRun, now = new Date()) => {
-  const startedAt = new Date(crawlRun?.startedAt).getTime();
-  if (!Number.isFinite(startedAt)) {
-    return false;
-  }
-
-  return startedAt <= now.getTime() - CRAWL_RUN_MAX_RUNNING_MINUTES * MINUTE_MS;
-};
-
 // This function calculates a non-negative terminal crawl duration in milliseconds.
 const calculateCrawlDurationMs = (startedAt, completedAt) => Math.max(
   0,
@@ -1417,33 +1411,7 @@ const calculateCrawlDurationMs = (startedAt, completedAt) => Math.max(
 
 // This function conditionally fails the stale row without touching a newer run.
 const recoverStaleCrawlRun = async (userId, crawlRun, now = new Date()) => {
-  const staleBefore = new Date(
-    now.getTime() - CRAWL_RUN_MAX_RUNNING_MINUTES * MINUTE_MS
-  );
-  const durationMs = calculateCrawlDurationMs(crawlRun.startedAt, now);
-  const [updatedCount] = await CrawlRun.update(
-    {
-      status: 'failed',
-      completedAt: now,
-      errorMessage: STALE_CRAWL_ERROR_MESSAGE,
-      newArticles: crawlRun.newArticles ?? 0,
-      updatedArticles: crawlRun.updatedArticles ?? 0,
-      articleErrors: crawlRun.articleErrors ?? 0,
-      errors: crawlRun.errors ?? 0,
-      processedFeeds: crawlRun.processedFeeds ?? 0,
-      failedFeeds: crawlRun.failedFeeds ?? 0,
-      timedOutFeeds: crawlRun.timedOutFeeds ?? 0,
-      durationMs
-    },
-    {
-      where: {
-        id: crawlRun.id,
-        userId,
-        status: 'running',
-        startedAt: { [db.Sequelize.Op.lte]: staleBefore }
-      }
-    }
-  );
+  const [updatedCount] = await failStaleCrawlRuns({ userId, now });
 
   if (updatedCount > 0) {
     console.warn(
@@ -1536,6 +1504,8 @@ const performCrawl = async (userId = null, options = {}) => {
       crawlRun = await CrawlRun.create({
         userId,
         status: 'running',
+        heartbeatAt: new Date(),
+        ownerToken: randomUUID(),
         newArticles: 0,
         updatedArticles: 0,
         articleErrors: 0,
@@ -1560,18 +1530,20 @@ const performCrawl = async (userId = null, options = {}) => {
   }
 
   let result;
+  const crawlRunHeartbeat = crawlRun ? startCrawlRunHeartbeat(crawlRun) : null;
 
   try {
     result = await runCrawl(userId, {
       ...options,
       crawlStats,
+      crawlRunHeartbeatState: crawlRunHeartbeat?.state,
       crawlRunId: crawlRun?.id || null
     });
   } catch (err) {
     if (crawlRun) {
       try {
         const completedAt = new Date();
-        await crawlRun.update({
+        await updateOwnedCrawlRun(crawlRun, {
           status: 'failed',
           completedAt,
           errorMessage: err?.message || String(err) || 'Unknown crawl error',
@@ -1593,35 +1565,41 @@ const performCrawl = async (userId = null, options = {}) => {
     }
 
     throw err;
+  } finally {
+    if (!result) await crawlRunHeartbeat?.stop();
   }
 
-  if (crawlRun) {
-    const completedAt = new Date();
-    await crawlRun.update({
-      status: 'completed',
-      completedAt,
-      newArticles: crawlStats.newArticles,
-      updatedArticles: crawlStats.updatedArticles,
-      articleErrors: crawlStats.articleErrors,
-      errors: crawlStats.errors,
-      processedFeeds: crawlStats.processedFeeds,
-      failedFeeds: Math.max(
-        0,
-        result.total -
-          Number(result.crawlOutcomes?.SUCCESS || 0) -
-          Number(result.crawlOutcomes?.RECOVERED || 0) -
-          Number(result.crawlOutcomes?.EMPTY_FEED || 0)
-      ),
-      timedOutFeeds: crawlStats.timedOutFeeds,
-      feedsAttempted: result.total,
-      feedsSucceeded: Number(result.crawlOutcomes?.SUCCESS || 0) +
-        Number(result.crawlOutcomes?.EMPTY_FEED || 0),
-      feedsRecovered: Number(result.crawlOutcomes?.RECOVERED || 0),
-      articlesFetched: result.totalFetchedArticles,
-      articlesUnchanged: result.totalUnchangedArticles,
-      articlesDuplicate: result.totalDuplicateArticles,
-      durationMs: calculateCrawlDurationMs(crawlRun.startedAt, completedAt)
-    });
+  try {
+    if (crawlRun) {
+      const completedAt = new Date();
+      await updateOwnedCrawlRun(crawlRun, {
+        status: 'completed',
+        completedAt,
+        newArticles: crawlStats.newArticles,
+        updatedArticles: crawlStats.updatedArticles,
+        articleErrors: crawlStats.articleErrors,
+        errors: crawlStats.errors,
+        processedFeeds: crawlStats.processedFeeds,
+        failedFeeds: Math.max(
+          0,
+          result.total -
+            Number(result.crawlOutcomes?.SUCCESS || 0) -
+            Number(result.crawlOutcomes?.RECOVERED || 0) -
+            Number(result.crawlOutcomes?.EMPTY_FEED || 0)
+        ),
+        timedOutFeeds: crawlStats.timedOutFeeds,
+        feedsAttempted: result.total,
+        feedsSucceeded: Number(result.crawlOutcomes?.SUCCESS || 0) +
+          Number(result.crawlOutcomes?.EMPTY_FEED || 0),
+        feedsRecovered: Number(result.crawlOutcomes?.RECOVERED || 0),
+        articlesFetched: result.totalFetchedArticles,
+        articlesUnchanged: result.totalUnchangedArticles,
+        articlesDuplicate: result.totalDuplicateArticles,
+        durationMs: calculateCrawlDurationMs(crawlRun.startedAt, completedAt)
+      });
+    }
+  } finally {
+    await crawlRunHeartbeat?.stop();
   }
 
   return result;

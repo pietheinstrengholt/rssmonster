@@ -4,9 +4,9 @@
     :smart-folders="overviewStore.smartFolders"
     @selectSmartFolder="selectSmartFolderFromOverview"
   />
-  <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @select-recommendation="openReaderRecommendation" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
+  <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @select-recommendation="openReaderRecommendation" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
   </ArticleReaderLayout>
-  <ArticleListView v-else ref="articleLayout" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
+  <ArticleListView v-else ref="articleLayout" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
   </ArticleListView>
 </template>
 
@@ -181,7 +181,8 @@ export default {
         status: this.selectionStore.currentSelection.status,
         selectedTag: this.selectionStore.currentSelection.tag,
         unreadCount: this.currentViewUnreadCount,
-        sourceCount: this.currentViewSourceCount
+        sourceCount: this.currentViewSourceCount,
+        totalCount: this.totalCount ?? this.container.length
       };
     },
 
@@ -191,13 +192,19 @@ export default {
         hasLoadedContent: this.hasLoadedContent,
         isFlushed: this.isFlushed,
         hasReachedEnd: hasReachedArticleCollectionEnd({
-          articleCount: this.container.length,
+          articleCount: this.totalCount,
           distance: this.distance,
           status: this.selectionStore.currentSelection.status,
           remainingItems: this.remainingItems,
           fetchCount: this.fetchCount,
-          allowUnreadFinalPage: true
+          allowUnreadFinalPage: true,
+          hasMore: this.hasMore
         }),
+        loadedCount: this.container.length,
+        isCollectionEmpty: this.container.length === 0 && !this.hasMore,
+        newerArticlesAvailable: this.newerArticlesAvailable,
+        newerArticleCount: this.newerArticleCount,
+        paginationError: this.paginationError,
         showFeedRefreshProgress: this.showFeedRefreshProgress
       };
     },
@@ -208,18 +215,27 @@ export default {
         hasLoadedContent: this.hasLoadedContent,
         isFlushed: this.isFlushed,
         hasReachedEnd: hasReachedArticleCollectionEnd({
-          articleCount: this.container.length,
+          articleCount: this.totalCount,
           distance: this.distance,
           status: this.selectionStore.currentSelection.status,
           remainingItems: this.remainingItems,
-          fetchCount: this.fetchCount
+          fetchCount: this.fetchCount,
+          hasMore: this.hasMore
         }),
+        loadedCount: this.container.length,
+        isCollectionEmpty: this.container.length === 0 && !this.hasMore,
+        newerArticlesAvailable: this.newerArticlesAvailable,
+        newerArticleCount: this.newerArticleCount,
+        paginationError: this.paginationError,
         showFeedRefreshProgress: this.showFeedRefreshProgress
       };
     }
   },
 
   watch: {
+    'overviewStore.articleAvailabilityRevision'() {
+      this.checkForNewerArticles();
+    },
     // Reconnects scrolling behavior when the app shell supplies a replacement scroll surface.
     scrollRoot(value) {
       this.connectScrollContainer(value);
@@ -572,13 +588,17 @@ export default {
 
     // Removes an article from the currently rendered feed.
     removeArticle({ id }) {
-      console.log(`Removing article ${id} from view`);
-
       const nextArticles = this.articles.filter(a => a.id !== id);
+      const currentContainer = this.container || [];
+      const nextContainer = currentContainer.filter(articleId => String(articleId) !== String(id));
 
       if (nextArticles.length !== this.articles.length) {
         this.articles = nextArticles;
-        console.log(`Successfully removed article ${id}`);
+        if (nextContainer.length !== currentContainer.length) {
+          this.container = nextContainer;
+          this.totalCount = Math.max(0, Number(this.totalCount || currentContainer.length) - 1);
+          this.pool?.delete(Number(id));
+        }
       } else {
         console.error('Could not find article to remove:', id);
       }

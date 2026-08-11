@@ -596,6 +596,7 @@
 
 <script>
 import { mapStores } from 'pinia';
+import { useOverviewStore } from '../../store/overview.js';
 import { useSelectionStore } from '../../store/selection.js';
 import { useUiStore } from '../../store/ui.js';
 import { fetchFeeds, recalculateFeedTrust } from '../../api/feeds';
@@ -632,6 +633,16 @@ export default {
     created() {
         this.fetchFeeds();
     },
+    watch: {
+        'overviewStore.deletedFeedIds': {
+            // Reconciles confirmed deletions performed by the shared edit/delete dialogs.
+            handler(feedIds) {
+                this.reconcileDeletedFeeds(feedIds);
+            },
+            deep: true,
+            immediate: true
+        }
+    },
     methods: {
         async fetchFeeds() {
             try {
@@ -639,7 +650,10 @@ export default {
                 this.feedsError = null;
                 const resp = await fetchFeeds();
                 if (resp && resp.data && Array.isArray(resp.data.feeds)) {
-                    this.feeds = resp.data.feeds;
+                    const deletedIds = new Set(
+                        this.overviewStore.deletedFeedIds.map(id => String(id))
+                    );
+                    this.feeds = resp.data.feeds.filter(feed => !deletedIds.has(String(feed.id)));
                 } else {
                     this.feeds = [];
                 }
@@ -722,6 +736,17 @@ export default {
             this.selectedFeedId = null;
             this.$emit('detail-view', false);
         },
+        // Removes explicitly deleted feeds and closes details that no longer have a backend resource.
+        reconcileDeletedFeeds(feedIds) {
+            if (!Array.isArray(feedIds) || feedIds.length === 0) return;
+
+            const deletedIds = new Set(feedIds.map(id => String(id)));
+            this.feeds = this.feeds.filter(feed => !deletedIds.has(String(feed.id)));
+
+            if (this.selectedFeedId !== null && deletedIds.has(String(this.selectedFeedId))) {
+                this.closeFeedDetails();
+            }
+        },
         async downloadOpml() {
             this.opmlMessage = null;
             this.opmlError = null;
@@ -794,7 +819,7 @@ export default {
         }
     },
     computed: {
-      ...mapStores(useSelectionStore, useUiStore),
+      ...mapStores(useOverviewStore, useSelectionStore, useUiStore),
         filteredFeeds() {
             const query = this.searchQuery.trim().toLowerCase();
 

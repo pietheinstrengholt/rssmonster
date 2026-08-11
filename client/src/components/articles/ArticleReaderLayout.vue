@@ -1,10 +1,10 @@
 <template>
   <DailyBriefingIntro
-    v-if="showDailyBriefingIntro && hasLoadedContent && container.length === 0"
+    v-if="showDailyBriefingIntro && hasLoadedContent && isCollectionEmpty"
     reader-mode
   />
   <ArticleEmptyState
-    v-if="hasLoadedContent && container.length === 0"
+    v-if="hasLoadedContent && isCollectionEmpty"
     class="readerEmptyState"
     :current-status="currentSelection"
     :selected-tag="selectedTag"
@@ -26,7 +26,7 @@
     >
       <DailyBriefingIntro v-if="showDailyBriefingIntro" reader-mode />
       <UnreadSelectionContext
-        v-if="currentSelection === 'unread' && container.length > 0 && currentViewSourceCount !== null"
+        v-if="currentSelection === 'unread' && loadedCount > 0 && currentViewSourceCount !== null"
         :article-count="currentViewUnreadCount"
         :source-count="currentViewSourceCount"
         reader-mode
@@ -151,6 +151,10 @@
       </div>
 
       <div id="article-load-sentinel" ref="loadMoreSentinel" class="article-load-sentinel" aria-hidden="true"></div>
+      <div v-if="collectionProgress.paginationError" class="app-notice app-notice--danger" role="alert">
+        <span>{{ collectionProgress.paginationError }}</span>
+        <button type="button" class="app-button app-button--outline-secondary app-button--compact" @click="$emit('retry-pagination')">Retry</button>
+      </div>
 
       <div id="no-more" v-if="hasLoadedContent">
         <ArticleEndState
@@ -284,6 +288,7 @@ export default {
     'clear-tag',
     'refresh-feeds',
     'open-smart-folders',
+    'retry-pagination',
     'view-tag-status',
     'forceReload',
     'bulk-action',
@@ -362,6 +367,15 @@ export default {
     // Exposes the current source count from the collection presentation contract.
     currentViewSourceCount() {
       return this.collectionSummary.sourceCount;
+    },
+    totalCount() {
+      return this.collectionSummary.totalCount ?? this.container.length;
+    },
+    loadedCount() {
+      return this.collectionProgress.loadedCount ?? this.container.length;
+    },
+    isCollectionEmpty() {
+      return this.collectionProgress.isCollectionEmpty ?? this.loadedCount === 0;
     },
     // Exposes whether the initial collection request has completed.
     hasLoadedContent() {
@@ -484,7 +498,7 @@ export default {
     },
     // Returns the number of unread articles received since the last update.
     unreadsSinceLastUpdate() {
-      return this.overviewStore.unreadsSinceLastUpdate;
+      return this.collectionProgress.newerArticleCount ?? 0;
     },
     // Returns whether the reader list has loaded every article in the current scope.
     hasReachedArticleListEnd() {
@@ -501,7 +515,8 @@ export default {
         articles: this.articles.filter(article => !article.readerRecommendationInd),
         markAsReadOnScroll: this.selectionStore.effectiveMarkAsReadOnScroll,
         unreadsSinceLastUpdate: this.unreadsSinceLastUpdate,
-        articleCount: this.container.length
+        articleCount: this.totalCount,
+        newerArticlesAvailable: this.collectionProgress.newerArticlesAvailable === true
       });
     }
   },

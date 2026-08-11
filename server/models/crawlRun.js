@@ -34,6 +34,18 @@ export default (sequelize) => {
         allowNull: true,
         defaultValue: null
       },
+      // Records the most recent durable liveness signal from the owning worker.
+      heartbeatAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
+      },
+      // Fences heartbeat and terminal writes to the worker that created the run.
+      ownerToken: {
+        type: DataTypes.STRING(36),
+        allowNull: true,
+        defaultValue: null
+      },
       // Stores the run-level failure message; null when no fatal error occurred.
       errorMessage: {
         type: DataTypes.TEXT,
@@ -113,6 +125,10 @@ export default (sequelize) => {
         {
           name: 'crawl_runs_userId_startedAt_idx',
           fields: ['userId', 'startedAt']
+        },
+        {
+          name: 'crawl_runs_status_heartbeatAt_idx',
+          fields: ['status', 'heartbeatAt']
         },
         {
           name: 'crawl_runs_active_user_unique',

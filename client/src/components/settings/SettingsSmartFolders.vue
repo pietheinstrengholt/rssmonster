@@ -661,8 +661,7 @@ export default {
                 const filteredSmartFolders = this.smartFolders.filter(
                     smartFolder => smartFolder && smartFolder.name && smartFolder.name.trim() !== ''
                 );
-                const response = await saveSmartFolders(filteredSmartFolders);
-                console.log('Smart folders saved:', response.data);
+                await saveSmartFolders(filteredSmartFolders);
 
                 await this.overviewStore.fetchSmartFolders();
 

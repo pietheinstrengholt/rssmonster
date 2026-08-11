@@ -311,7 +311,6 @@ Configure `client/.env`:
 
 ```env
 VITE_APP_HOSTNAME=http://localhost:3000
-VITE_NODE_ENV=development
 VITE_ENABLE_AGENT=false
 ```
 

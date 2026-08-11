@@ -133,6 +133,15 @@ describe('SettingsFeedsOverview actions', () => {
     expect(context.feedsLoading).toBe(false);
   });
 
+  it('does not restore a deleted feed from an older in-flight response', async () => {
+    const context = createContext();
+    context.overviewStore.deletedFeedIds = [2];
+
+    await context.fetchFeeds();
+
+    expect(context.feeds.map(feed => feed.id)).toEqual([1, 3]);
+  });
+
   // Verifies search and backend health filters combine case-insensitively.
   it('filters feeds by health, name, and URL', () => {
     const context = createContext();
@@ -229,6 +238,29 @@ describe('SettingsFeedsOverview actions', () => {
     context.closeFeedDetails();
     expect(context.selectedFeedId).toBeNull();
     expect(context.$emit).toHaveBeenCalledWith('detail-view', false);
+  });
+
+  it('removes an explicitly deleted feed and returns from its details', () => {
+    const context = createContext({
+      feeds: createFeeds(),
+      selectedFeedId: 2
+    });
+    context.reconcileDeletedFeeds([2]);
+
+    expect(context.feeds.map(feed => feed.id)).toEqual([1, 3]);
+    expect(context.selectedFeedId).toBeNull();
+    expect(context.$emit).toHaveBeenCalledWith('detail-view', false);
+  });
+
+  it('does not reconcile without a confirmed deletion', () => {
+    const feeds = createFeeds();
+    const context = createContext({ feeds, selectedFeedId: 2 });
+
+    context.reconcileDeletedFeeds([]);
+
+    expect(context.feeds).toEqual(feeds);
+    expect(context.selectedFeedId).toBe(2);
+    expect(context.$emit).not.toHaveBeenCalled();
   });
 
   // Verifies OPML export uses the server filename and releases browser resources.

@@ -5,6 +5,8 @@ import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
 import {
   fetchArticleDetails,
   fetchArticleIds,
+  fetchNewerArticleCount,
+  fetchArticlePage,
   markArticlesAsRead
 } from '../src/api/articles';
 import { useSelectionStore } from '../src/store/selection.js';
@@ -13,6 +15,8 @@ import { createFocusedStores } from './helpers/focusedStores.js';
 vi.mock('../src/api/articles', () => ({
   fetchArticleDetails: vi.fn(),
   fetchArticleIds: vi.fn(),
+  fetchNewerArticleCount: vi.fn(),
+  fetchArticlePage: vi.fn(),
   markAllAsRead: vi.fn(),
   markArticleSeen: vi.fn(),
   markArticleUnread: vi.fn(),
@@ -64,6 +68,8 @@ const createLoadingContext = (dataStore = {
   context.resetPaginationState = () => ArticleFeed.methods.resetPaginationState.call(context);
   context.resetCollectionState = () => ArticleFeed.methods.resetCollectionState.call(context);
   context.getContent = requestId => ArticleFeed.methods.getContent.call(context, requestId);
+  context.refreshArticleIds = data => ArticleFeed.methods.refreshArticleIds.call(context, data);
+  context.retryPagination = () => ArticleFeed.methods.retryPagination.call(context);
   context.scrollArticleListToTop = vi.fn();
   context.updateArticleStatusLocal = article =>
     ArticleFeed.methods.updateArticleStatusLocal.call(context, article);
@@ -73,9 +79,200 @@ const createLoadingContext = (dataStore = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  fetchArticlePage.mockImplementation((...args) => fetchArticleIds(...args));
 });
 
 describe('ArticleFeed loading races', () => {
+  it('installs an initial cursor page without materializing the complete result manifest', async () => {
+    fetchArticlePage.mockResolvedValueOnce({
+      data: {
+        paginationVersion: 1,
+        totalCount: 42,
+        sourceCount: 3,
+        snapshot: { snapshotMaxArticleId: 900 },
+        page: {
+          itemIds: [9, 8],
+          articles: [{ id: 9 }, { id: 8 }],
+          hasMore: true,
+          nextCursor: 'next-page'
+        }
+      }
+    });
+    const context = createLoadingContext();
+
+    await ArticleFeed.methods.fetchArticleIds.call(context, context.selectionStore.currentSelection);
+
+    expect(context.container).toEqual([9, 8]);
+    expect(context.articles).toEqual([{ id: 9 }, { id: 8 }]);
+    expect(context.totalCount).toBe(42);
+    expect(context.hasMore).toBe(true);
+    expect(context.nextCursor).toBe('next-page');
+    expect(context.snapshotMaxArticleId).toBe(900);
+    expect(fetchArticleDetails).not.toHaveBeenCalled();
+  });
+
+  it('appends and deduplicates a subsequent cursor page', async () => {
+    fetchArticlePage.mockResolvedValueOnce({
+      data: {
+        paginationVersion: 1,
+        totalCount: 3,
+        sourceCount: 1,
+        snapshot: { snapshotMaxArticleId: 20 },
+        page: {
+          itemIds: [2, 3],
+          articles: [{ id: 2 }, { id: 3 }],
+          hasMore: false,
+          nextCursor: null
+        }
+      }
+    });
+    const context = createLoadingContext();
+    context.container = [1, 2];
+    context.articles = [{ id: 1 }, { id: 2 }];
+    context.usesCursorPagination = true;
+    context.hasMore = true;
+    context.nextCursor = 'cursor-one';
+
+    await context.getContent();
+
+    expect(fetchArticlePage).toHaveBeenCalledWith(context.selectionStore.currentSelection, {
+      pageSize: 20,
+      cursor: 'cursor-one'
+    });
+    expect(context.container).toEqual([1, 2, 3]);
+    expect(context.articles).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
+    expect(context.hasMore).toBe(false);
+  });
+
+  it('finishes cleanly when a cursor page becomes empty after deletions', async () => {
+    fetchArticlePage.mockResolvedValueOnce({
+      data: {
+        paginationVersion: 1,
+        totalCount: 2,
+        snapshot: { snapshotMaxArticleId: 20 },
+        page: { itemIds: [], articles: [], hasMore: false, nextCursor: null }
+      }
+    });
+    const context = createLoadingContext();
+    context.usesCursorPagination = true;
+    context.hasMore = true;
+    context.nextCursor = 'cursor-after-delete';
+
+    await context.getContent();
+
+    expect(context.container).toEqual([]);
+    expect(context.hasMore).toBe(false);
+    expect(context.isLoading).toBe(false);
+  });
+
+  it('restarts the snapshot after a restartable continuation cursor failure', async () => {
+    const expired = Object.assign(new Error('expired cursor'), {
+      response: {
+        status: 410,
+        data: { error: { code: 'CURSOR_EXPIRED', restartRequired: true } }
+      }
+    });
+    fetchArticlePage
+      .mockRejectedValueOnce(expired)
+      .mockResolvedValueOnce({
+        data: {
+          paginationVersion: 1,
+          totalCount: 1,
+          sourceCount: 1,
+          snapshot: { snapshotMaxArticleId: 30 },
+          page: {
+            itemIds: [3],
+            articles: [{ id: 3, title: 'Fresh snapshot' }],
+            hasMore: false,
+            nextCursor: null
+          }
+        }
+      });
+    const context = createLoadingContext();
+    context.container = [1, 2];
+    context.articles = [{ id: 1 }, { id: 2 }];
+    context.usesCursorPagination = true;
+    context.hasMore = true;
+    context.nextCursor = 'expired-cursor';
+
+    await context.getContent();
+
+    expect(fetchArticlePage).toHaveBeenNthCalledWith(1, context.selectionStore.currentSelection, {
+      pageSize: 20,
+      cursor: 'expired-cursor'
+    });
+    expect(fetchArticlePage).toHaveBeenNthCalledWith(2, context.selectionStore.currentSelection, {
+      pageSize: 20
+    });
+    expect(context.container).toEqual([3]);
+    expect(context.articles).toEqual([{ id: 3, title: 'Fresh snapshot' }]);
+    expect(context.nextCursor).toBeNull();
+    expect(context.hasMore).toBe(false);
+    expect(context.paginationError).toBeNull();
+  });
+
+  it('stops sentinel retries and exposes a manual retry after a continuation failure', async () => {
+    const failure = new Error('temporary cursor failure');
+    fetchArticlePage
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValueOnce({
+        data: {
+          paginationVersion: 1,
+          totalCount: 1,
+          snapshot: { snapshotMaxArticleId: 40 },
+          page: {
+            itemIds: [4],
+            articles: [{ id: 4 }],
+            hasMore: false,
+            nextCursor: null
+          }
+        }
+      });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const context = createLoadingContext();
+    context.usesCursorPagination = true;
+    context.hasMore = true;
+    context.nextCursor = 'failed-cursor';
+    context.hasLoadedContent = true;
+
+    await context.getContent();
+    ArticleFeed.methods.handleLoadMoreIntersections.call(context, [{ isIntersecting: true }]);
+
+    expect(fetchArticlePage).toHaveBeenCalledOnce();
+    expect(context.hasMore).toBe(false);
+    expect(context.nextCursor).toBeNull();
+    expect(context.paginationError).toBe('Could not load more articles.');
+
+    await context.retryPagination();
+
+    expect(fetchArticlePage).toHaveBeenCalledTimes(2);
+    expect(context.container).toEqual([4]);
+    expect(context.paginationError).toBeNull();
+  });
+
+  it('shows newer articles only when the active selection has matches after the snapshot', async () => {
+    fetchNewerArticleCount
+      .mockResolvedValueOnce({ data: { newerArticleCount: 0 } })
+      .mockResolvedValueOnce({ data: { newerArticleCount: 2 } });
+    const context = createLoadingContext();
+    context.snapshotMaxArticleId = 100;
+    context.overviewStore.unreadsSinceLastUpdate = 3;
+
+    await ArticleFeed.methods.checkForNewerArticles.call(context);
+
+    expect(fetchNewerArticleCount).toHaveBeenCalledWith(
+      context.selectionStore.currentSelection,
+      100
+    );
+    expect(context.newerArticlesAvailable).toBe(false);
+    expect(context.newerArticleCount).toBe(0);
+
+    await ArticleFeed.methods.checkForNewerArticles.call(context);
+
+    expect(context.newerArticlesAvailable).toBe(true);
+    expect(context.newerArticleCount).toBe(2);
+  });
+
   it('preserves rendered articles until a database refresh can replace them atomically', async () => {
     const refreshRequest = deferred();
     fetchArticleIds.mockReturnValueOnce(refreshRequest.promise);
@@ -208,7 +405,8 @@ describe('ArticleFeed loading races', () => {
       context.selectionStore.currentSelection
     );
 
-    expect(context.container).toEqual([2, 3]);
+    expect(context.container).toEqual([2]);
+    expect(context.legacyItemIds).toEqual([2, 3]);
     expect(context.pool).toEqual(new Set());
     expect(context.scrollArticleListToTop).toHaveBeenCalledTimes(2);
     expect(markArticlesAsRead).not.toHaveBeenCalled();
@@ -283,7 +481,8 @@ describe('ArticleFeed loading races', () => {
     selectionStore.setCurrentSelection({ sort: 'TrUsT' });
     fetchArticleDetails.mockResolvedValueOnce({ data: [] });
     const context = createLoadingContext(selectionStore);
-    context.container = [7];
+    context.legacyItemIds = [7];
+    context.hasMore = true;
 
     await context.getContent();
 
@@ -295,6 +494,7 @@ describe('ArticleFeed loading races', () => {
     const context = createLoadingContext();
     context.container = [1, 2];
     context.distance = 1;
+    context.hasMore = true;
     context.hasLoadedContent = true;
     context.getContent = vi.fn();
 
@@ -317,7 +517,8 @@ describe('ArticleFeed loading races', () => {
       .mockResolvedValueOnce({ data: [{ id: 1, title: 'Recovered article' }] });
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const context = createLoadingContext();
-    context.container = [1];
+    context.legacyItemIds = [1];
+    context.hasMore = true;
 
     await context.getContent();
 

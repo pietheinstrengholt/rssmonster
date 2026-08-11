@@ -256,7 +256,7 @@
           href="https://github.com/pietheinstrengholt/rssmonster/"
           target="_blank"
           rel="noopener noreferrer"
-        >RSSMonster v2.1.0</a>
+        >RSSMonster v2.2.0</a>
       </div>
     </div>
   </div>
@@ -526,8 +526,6 @@ export default {
 
     // This function changes the selected article status.
     loadType(status) {
-      console.log('%cLoading type:', 'color: red;', status);
-
       if (status === 'refresh') {
         this.selectionStore.setSmartFolder(null);
         this.$emit('forceReload');
@@ -588,7 +586,6 @@ export default {
     // This function saves the current category order.
     updateSortOrder() {
       updateCategoryOrder(this.orderList)
-        .then(response => console.log(response.status))
         .catch(error => {
           console.error('Error saving category order:', error);
           notifyActionError('Could not save the category order. Please try again.', error);

@@ -258,11 +258,11 @@ evaluate results across several users and feed mixes.
 | Variable | Example | Description |
 | --- | --- | --- |
 | `VITE_APP_HOSTNAME` | `http://localhost:3000` | Base URL used by the browser for API requests. Use the public server origin. |
-| `VITE_NODE_ENV` | `production` | Enables client development behavior only when explicitly set to `development`. |
 | `VITE_BASE_URL` | `/` | Reserved in the example configuration; the current client does not read this custom variable. |
 
 Vite embeds these values during `npm run build`. Restarting an already-built
 client without rebuilding does not apply changes.
+Development-only client behavior is derived automatically from Vite's active mode.
 
 ## Example Manual Configurations
 

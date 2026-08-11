@@ -1,6 +1,6 @@
 {
   "name": "rssmonster-server",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "type": "module",
   "description": "RSS Monster server side",
   "author": "Piethein Strengholt",
@@ -11,6 +11,7 @@
   "main": "bootstrap.js",
   "scripts": {
     "test": "vitest run",
+    "test:debug": "RSSMONSTER_TEST_DEBUG=true vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:semantic-ad-event": "vitest run tests/semantic/semanticRegression.incremental.adEvent.test.js",
@@ -27,6 +28,7 @@
     "debug": "node --inspect --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./services --watch-path=./utils --watch-path=./config bootstrap.js",
     "db": "./node_modules/.bin/sequelize db:migrate",
     "crawl": "NODE_ENV=production node scripts/runSemanticPipeline.js",
+    "crawl:recover": "NODE_ENV=production node scripts/recoverCrawlRuns.js",
     "semantic:repair": "NODE_ENV=production node scripts/repairSemanticPipeline.js",
     "semantic:all": "NODE_ENV=production node scripts/rebuildSemanticPipeline.js",
     "events": "node scripts/runEventsCommand.js",
@@ -57,7 +59,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "@openai/agents": "^0.14.3",
+    "@openai/agents": "^0.15.0",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
@@ -70,7 +72,7 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
-    "mysql2": "^3.23.2",
+    "mysql2": "^3.23.3",
     "node-cache": "^5.1.2",
     "openai": "^7.4.0",
     "sanitize-html": "^2.17.6",

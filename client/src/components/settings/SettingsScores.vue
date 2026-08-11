@@ -409,12 +409,11 @@ export default {
     },
     async save() {
       try {
-        const response = await saveSettings({
+        await saveSettings({
             minAdvertisementScore: this.advertisementScore,
             minSentimentScore: this.sentimentScore,
             minQualityScore: this.qualityScore
         });
-        console.log('Settings saved successfully:', response.data);
         // Update store currentSelection before closing
         this.selectionStore.setMinAdvertisementScore(this.advertisementScore);
         this.selectionStore.setMinSentimentScore(this.sentimentScore);

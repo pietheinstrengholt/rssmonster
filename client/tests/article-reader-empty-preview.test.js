@@ -184,6 +184,7 @@ describe('ArticleReaderLayout empty previews', () => {
   it('uses the persisted click count and suppresses failed reader click updates', async () => {
     const article = createArticle({ clickedAmount: 3 });
     const wrapper = mountReader(article);
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     markClicked.mockResolvedValueOnce({ data: { clickedAmount: 4 } });
 
     await wrapper.vm.trackOriginalArticleClick(article);
@@ -197,6 +198,10 @@ describe('ArticleReaderLayout empty previews', () => {
     expect(wrapper.emitted('update-clicked')).toHaveLength(1);
     expect(notifyActionError).toHaveBeenCalledWith(
       'Could not record this article click. Please try again.',
+      error
+    );
+    expect(consoleError).toHaveBeenCalledWith(
+      `Error recording reader click for article ${article.id}:`,
       error
     );
   });

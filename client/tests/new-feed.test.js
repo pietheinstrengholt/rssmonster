@@ -337,7 +337,6 @@ describe('NewFeed', () => {
     expect(wrapper.vm.feed).toEqual(persistedFeed);
     expect(store.overviewStore.addFeed).toHaveBeenCalledWith(3, persistedFeed);
     expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
-    expect(console.log).toHaveBeenCalledWith(201);
   });
 
   // Verifies repeated save actions cannot persist validated metadata twice.
