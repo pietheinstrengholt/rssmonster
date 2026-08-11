@@ -8,6 +8,14 @@ import {
   createFeverCredentialHash
 } from '../utils/apiCredentials.js';
 
+// Reports whether another registration won the unique first-admin claim.
+const isBootstrapAdminClaimConflict = error =>
+  error?.name === 'SequelizeUniqueConstraintError' &&
+  (
+    error?.fields?.bootstrapAdminClaim !== undefined ||
+    error?.errors?.some(item => item.path === 'bootstrapAdminClaim')
+  );
+
 // This function reports whether explicit development login is safely enabled.
 const isDevelopmentLoginEnabled = () =>
   process.env.NODE_ENV === 'development' &&
@@ -60,15 +68,29 @@ const register = async (req, res, _next) => {
     
     // Check if this is the first user (will be admin)
     const userCount = await User.count();
-    const role = userCount === 0 ? 'admin' : 'user';
-    
-    // Create the new user
-    await User.create({
+    const isAdminCandidate = userCount === 0;
+    const values = {
       username,
       password: hashedPassword,
       feverCredentialHash,
-      role
-    });
+      role: isAdminCandidate ? 'admin' : 'user',
+      bootstrapAdminClaim: isAdminCandidate ? true : null
+    };
+
+    // The unique bootstrap claim makes concurrent first-user decisions deterministic.
+    try {
+      await User.create(values);
+    } catch (error) {
+      if (!isAdminCandidate || !isBootstrapAdminClaimConflict(error)) {
+        throw error;
+      }
+
+      await User.create({
+        ...values,
+        role: 'user',
+        bootstrapAdminClaim: null
+      });
+    }
 
     return res.status(201).json({
       message: 'Registered!',

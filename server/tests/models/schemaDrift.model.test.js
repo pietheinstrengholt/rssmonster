@@ -7,6 +7,11 @@ describe('model schema declarations', () => {
   it('keeps model uniqueness in sync with migrations', () => {
     expect(User.rawAttributes.username.unique).toBe(true);
     expect(User.rawAttributes.feverCredentialHash.unique).toBe(true);
+    expect(User.rawAttributes.bootstrapAdminClaim).toMatchObject({
+      allowNull: true,
+      defaultValue: null,
+      unique: true
+    });
     expect(Setting.rawAttributes.userId.unique).toBe(true);
     expect(Feed.options.indexes).toEqual(
       expect.arrayContaining([

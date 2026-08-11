@@ -37,6 +37,13 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 'user'
       },
+      // Serializes the one-time first-user administrator assignment in the database.
+      bootstrapAdminClaim: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: null,
+        unique: true
+      },
       // Records the most recent successful login time, initially set when the account is created.
       lastLogin: {
         type: DataTypes.DATE,
@@ -55,6 +62,7 @@ export default (sequelize) => {
     const values = { ...this.get({ plain: true }) };
     delete values.password;
     delete values.feverCredentialHash;
+    delete values.bootstrapAdminClaim;
     return values;
   };
 

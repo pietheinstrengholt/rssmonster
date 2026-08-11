@@ -42,5 +42,34 @@ describe('User model', () => {
     expect(user.feverCredentialHash).toBe(hash);
     expect(user.toJSON()).not.toHaveProperty('password');
     expect(user.toJSON()).not.toHaveProperty('feverCredentialHash');
+    expect(user.toJSON()).not.toHaveProperty('bootstrapAdminClaim');
+  });
+
+  it('allows only one database-backed bootstrap administrator claim', async () => {
+    const firstUsername = uniqueName('bootstrap-admin');
+    const secondUsername = uniqueName('bootstrap-racer');
+    const existingClaimOwner = await User.findOne({
+      where: { bootstrapAdminClaim: true }
+    });
+
+    if (!existingClaimOwner) {
+      await User.create({
+        username: firstUsername,
+        password: 'stored-password',
+        feverCredentialHash: `${firstUsername}-api-hash`,
+        role: 'admin',
+        bootstrapAdminClaim: true
+      });
+    }
+
+    await expect(User.create({
+      username: secondUsername,
+      password: 'stored-password',
+      feverCredentialHash: `${secondUsername}-api-hash`,
+      role: 'admin',
+      bootstrapAdminClaim: true
+    })).rejects.toMatchObject({
+      name: 'SequelizeUniqueConstraintError'
+    });
   });
 });

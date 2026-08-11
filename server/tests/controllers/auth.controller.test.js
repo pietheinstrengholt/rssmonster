@@ -61,6 +61,36 @@ describe('auth controller', () => {
     expect(user.feverCredentialHash).not.toBe(feverApiKey);
   });
 
+  it('registers a concurrent bootstrap loser as a normal user', async () => {
+    const username = uniqueName('bootstrap-loser');
+    const password = 'correct-password';
+    const originalCreate = User.create.bind(User);
+    const claimConflict = Object.assign(new Error('Bootstrap claim already exists'), {
+      name: 'SequelizeUniqueConstraintError',
+      fields: { bootstrapAdminClaim: true }
+    });
+
+    vi.spyOn(User, 'count').mockResolvedValue(0);
+    vi.spyOn(User, 'create')
+      .mockRejectedValueOnce(claimConflict)
+      .mockImplementation(values => originalCreate(values));
+
+    const registerRes = await request(app)
+      .post('/api/auth/register')
+      .send({
+        username,
+        password,
+        password_repeat: password
+      });
+
+    expect(registerRes.status).toBe(201);
+    const user = await User.findOne({ where: { username } });
+    expect(user).toMatchObject({
+      role: 'user',
+      bootstrapAdminClaim: null
+    });
+  });
+
   it('validates a login token signed with JWT_SECRET', async () => {
     const username = uniqueName('jwt-secret-user');
     const password = 'correct-password';
