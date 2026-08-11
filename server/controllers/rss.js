@@ -46,9 +46,12 @@ const generateRss = async (req, res, next) => {
       return res.status(401).json({ message: 'Authentication is required' });
     }
 
+    const minLimit = 1;
     const maxLimit = 200;
     const parsedLimit = Number.parseInt(limit, 10);
-    const queryLimit = Number.isFinite(parsedLimit) ? Math.min(parsedLimit, maxLimit) : 50;
+    const queryLimit = Number.isFinite(parsedLimit)
+      ? Math.max(minLimit, Math.min(parsedLimit, maxLimit))
+      : 50;
 
     const where = { userId, ...canonicalArticleWhere() };
     if (feedId) {

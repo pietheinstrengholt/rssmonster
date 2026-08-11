@@ -318,4 +318,21 @@ describe('RSS controller edge cases', () => {
     await rssController.generateRss(createRequest(), createResponse(), next);
     expect(next).toHaveBeenCalledWith(error);
   });
+
+  it.each(['0', '-1', '-500'])(
+    'clamps non-positive RSS limit %s to one',
+    async limit => {
+      mocked.articleFindAll.mockResolvedValueOnce([]);
+
+      await rssController.generateRss(
+        createRequest({ query: { limit } }),
+        createResponse(),
+        vi.fn()
+      );
+
+      expect(mocked.articleFindAll).toHaveBeenCalledWith(
+        expect.objectContaining({ limit: 1 })
+      );
+    }
+  );
 });

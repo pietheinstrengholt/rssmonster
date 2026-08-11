@@ -582,6 +582,11 @@ const markAsRead = async (req, res, _next) => {
 };
 
 // Mark article as clicked
+const incrementArticleClickCount = async article => {
+  await article.increment('clickedAmount', { by: 1 });
+  return article.reload();
+};
+
 const markClicked = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
@@ -608,10 +613,9 @@ const markClicked = async (req, res, _next) => {
         return res.status(404).json({ error: "Articles not found" });
       }
 
-      const updatedArticles = await Promise.all(articles.map(article => {
-        const currentClicked = article.clickedAmount || 0;
-        return article.update({ clickedAmount: currentClicked + 1 });
-      }));
+      const updatedArticles = await Promise.all(
+        articles.map(incrementArticleClickCount)
+      );
 
       return res.status(200).json({
         message: "Articles marked as clicked",
@@ -638,8 +642,7 @@ const markClicked = async (req, res, _next) => {
       return res.status(404).json({ error: "Article not found" });
     }
 
-    const currentClicked = article.clickedAmount || 0;
-    await article.update({ clickedAmount: currentClicked + 1 });
+    await incrementArticleClickCount(article);
 
     res.status(200).json({ 
       message: "Article marked as clicked",
@@ -1140,7 +1143,8 @@ const articleMarkAllAsRead = async (req, res, _next) => {
 
     return res.status(200).json("marked all as read");
   } catch (err) {
-    console.log(err);
+    console.error('Error in articleMarkAllAsRead:', err);
+    return res.status(500).json({ error: 'Unable to mark all articles as read' });
   }
 };
 

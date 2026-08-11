@@ -134,6 +134,26 @@ describe('article ownership authorization', () => {
     expect(article.clickedAmount).toBe(3);
   });
 
+  it('preserves concurrent click increments for one article', async () => {
+    const owner = await createUser(uniqueName('concurrent-click-owner'));
+    const { article } = await createArticleFor(owner);
+    const authorization = authHeaderFor(owner);
+
+    const responses = await Promise.all([
+      request(app)
+        .post(`/api/articles/markclicked/${article.id}`)
+        .set('Authorization', authorization),
+      request(app)
+        .post(`/api/articles/markclicked/${article.id}`)
+        .set('Authorization', authorization)
+    ]);
+
+    await article.reload();
+
+    expect(responses.map(response => response.status)).toEqual([200, 200]);
+    expect(article.clickedAmount).toBe(2);
+  });
+
   it('GET article by ID hides filtered articles from their owner', async () => {
     const owner = await createUser(uniqueName('filtered-article-owner'));
     const { article } = await createArticleFor(owner);
@@ -1049,6 +1069,37 @@ describe('article ownership authorization', () => {
     expect([article.clickedAmount, secondArticle.clickedAmount]).toEqual([1, 5]);
   });
 
+  it('preserves concurrent batch click increments', async () => {
+    const owner = await createUser(uniqueName('concurrent-batch-click-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    const secondArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/concurrent-second-click`,
+      title: `${owner.username} concurrent second click`,
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+    const authorization = authHeaderFor(owner);
+    const articleIds = [article.id, secondArticle.id];
+
+    const responses = await Promise.all([
+      request(app)
+        .post('/api/articles/markclicked')
+        .set('Authorization', authorization)
+        .send({ articleIds }),
+      request(app)
+        .post('/api/articles/markclicked')
+        .set('Authorization', authorization)
+        .send({ articleIds })
+    ]);
+
+    await Promise.all([article.reload(), secondArticle.reload()]);
+
+    expect(responses.map(response => response.status)).toEqual([200, 200]);
+    expect([article.clickedAmount, secondArticle.clickedAmount]).toEqual([2, 2]);
+  });
+
   // Verifies click tracking validates an otherwise empty batch request.
   it('requires an article identifier for click tracking', async () => {
     const owner = await createUser(uniqueName('click-validation-owner'));
@@ -1185,7 +1236,7 @@ describe('article ownership authorization', () => {
     expect(favoriteResponse.body).toEqual({ error: 'Unable to update article favorite status' });
   });
 
-  // Verifies synchronous request failures reach the remaining controller catch handlers.
+  // Verifies synchronous request failures reach the remaining controller catch handler.
   it('handles malformed mutation request state', async () => {
     const requestWithBrokenUserData = {};
     Object.defineProperty(requestWithBrokenUserData, 'userData', {
@@ -1197,14 +1248,30 @@ describe('article ownership authorization', () => {
       status: vi.fn().mockReturnThis(),
       json: vi.fn().mockReturnThis()
     };
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     await articleController.articleMarkToUnread(requestWithBrokenUserData, response);
-    await articleController.articleMarkAllAsRead(requestWithBrokenUserData, response);
 
     expect(response.status).toHaveBeenCalledWith(500);
     expect(response.json).toHaveBeenCalledWith({ error: 'Unable to mark article as unread' });
-    expect(logSpy).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  it('completes mark-all-read requests when persistence fails', async () => {
+    const owner = await createUser(uniqueName('mark-all-failure-owner'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(Article, 'update').mockRejectedValueOnce(new Error('update failed'));
+
+    const response = await request(app)
+      .post('/api/articles/markallasread')
+      .set('Authorization', authHeaderFor(owner));
+
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({
+      error: 'Unable to mark all articles as read'
+    });
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Error in articleMarkAllAsRead:',
+      expect.any(Error)
+    );
   });
 
   // Verifies mark-all-read remains user scoped and ignores filtered articles.
