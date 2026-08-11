@@ -1,6 +1,7 @@
 ---
 title: Semantic Services Implementation
-nav_exclude: true
+parent: How RSSMonster Works
+nav_order: 8
 ---
 
 # Semantic Services Implementation (Server-Side)

@@ -85,7 +85,7 @@ You'll love RSSMonster if you:
 RSSMonster works out of the box with sensible defaults, but every ranking decision is transparent and adjustable. No black-box algorithms. No vendor lock-in. Just intelligent content curation under your control.
 
 **[Get Started →](getting-started.md)** — Up and running in minutes  
-**[See It In Action →](screenshots.md)** — Screenshots and examples  
+**[See It In Action →](usability.md)** — Reading modes and mobile layouts
 **[Deep Dive →](concepts.md)** — How it all works
 
 ---
@@ -93,13 +93,15 @@ RSSMonster works out of the box with sensible defaults, but every ranking decisi
 ## Explore the Documentation
 
 - **[Getting Started](getting-started.md)** — Installation, setup, first steps
+- **[Configuration](configuration.md)** — Environment variables and tuning
+- **[First Login](first-login.md)** — Registration, sign-in, and development login
 - **[Core Concepts](concepts.md)** — How RSSMonster thinks about content
 - **[Smart Folders](smart-folders.md)** — Create powerful dynamic views
 - **[Scoring & Ranking](scoring.md)** — Importance, quality, and attention explained
 - **[Search Guide](search.md)** — Master search expressions
-- **[AI Assistant](ai-assistant.md)** — Natural language search and recommendations
+- **[Article Embedding](article-embedding.md)** — How semantic article representations work
 - **[API & Integrations](api.md)** — Fever API, Google Reader API, and more
-- **[Automation](automation.md)** — Rules, actions, and advanced workflows
+- **[Rule-Based Tags](tag.md#rule-based-tags)** — Apply tags automatically using filters
 
 ---
 

@@ -1,6 +1,7 @@
 ---
-title: API
-nav_order: 7
+title: APIs & Integrations
+nav_order: 5
+has_children: true
 ---
 
 # API and Integrations

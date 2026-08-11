@@ -1,7 +1,8 @@
 ---
 layout: page
 title: Concepts
-nav_order: 3
+parent: How RSSMonster Works
+nav_order: 7
 ---
 
 ## RSSMonster’s Philosophy

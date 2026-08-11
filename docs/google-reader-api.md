@@ -1,6 +1,7 @@
 ---
 title: Google Reader API
-nav_order: 8
+parent: APIs & Integrations
+nav_order: 1
 ---
 
 # Google Reader API compatibility

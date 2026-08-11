@@ -6,39 +6,119 @@ nav_order: 2
 
 Welcome! This guide will walk you through installing and setting up RSSMonster. Choose your preferred method and you'll be up and running in minutes.
 
+For a complete reference to database, crawler, security, AI, and client
+settings, see the [configuration guide](configuration.md).
+
 ---
 
 ## Prerequisites
 
 Before you begin, make sure you have:
 
-- **Node.js** 20.x or higher
+- **Node.js** 22.x or higher
 - **npm** (comes bundled with Node.js)
-- **MySQL** or MariaDB database
 - **Git** for cloning the repository
+
+For the recommended Docker installation, you only need Docker Engine or Docker
+Desktop with Docker Compose. The default deployment uses SQLite, so it does not
+require a separate database server. MySQL remains available for larger or
+higher-concurrency installations.
 
 ---
 
 ## Quick Start with Docker
 
-The fastest way to get started if you already have a MySQL database:
+SQLite is the recommended database for simple, personal installations. The
+default Compose configuration runs RSSMonster in a single container and stores
+the database in a persistent Docker volume.
+
+### 1. Clone RSSMonster
 
 ```bash
-docker run -d \
-	-p 3000:3000 \
-	--add-host=host.docker.internal:host-gateway \
-	-e NODE_ENV=production \
-	-e DB_HOSTNAME=host.docker.internal \
-	-e DB_PORT=3306 \
-	-e DB_DATABASE=rssmonster \
-	-e DB_USERNAME=rssmonster \
-	-e DB_PASSWORD=rssmonster \
-	rssmonster/rssmonster
+git clone https://github.com/pietheinstrengholt/rssmonster.git
+cd rssmonster
 ```
 
-Access RSSMonster at `http://localhost:3000`
+### 2. Configure Application Secrets
 
-**Default credentials:** `rssmonster` / `rssmonster` (change these immediately!)
+Create a `.env` file in the repository root:
+
+```env
+JWT_SECRET=replace-with-a-long-random-secret
+FEVER_CREDENTIAL_SECRET=replace-with-a-different-long-random-secret
+```
+
+Generate secure values by running this command twice and using a different
+value for each secret:
+
+```bash
+openssl rand -hex 32
+```
+
+### 3. Start RSSMonster
+
+```bash
+docker compose up -d
+```
+
+On first startup, RSSMonster creates the SQLite database and applies pending
+Sequelize migrations automatically. Open `http://localhost:3000` and create
+your first account.
+
+Check the deployment or follow its logs with:
+
+```bash
+docker compose ps
+docker compose logs -f rssmonster
+```
+
+### Updating RSSMonster
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Pending migrations are applied automatically when the new container starts.
+
+### SQLite Data Persistence
+
+The default Compose configuration mounts a persistent Docker volume at
+`/app/data`. It can contain `rssmonster.sqlite` and its `-wal` and `-shm`
+companion files.
+
+Stop RSSMonster without deleting its data with:
+
+```bash
+docker compose down
+```
+
+Do not run `docker compose down -v` unless you intentionally want to delete the
+database volume.
+
+### Using MySQL
+
+MySQL is recommended for deployments with multiple active users, higher write
+concurrency, or more demanding workloads. Add the required credentials to the
+root `.env` file alongside the application secrets:
+
+```env
+DB_DATABASE=rssmonster
+DB_USERNAME=rssmonster
+DB_PASSWORD=replace-with-a-strong-database-password
+MYSQL_ROOT_PASSWORD=replace-with-a-strong-root-password
+JWT_SECRET=replace-with-a-long-random-secret
+FEVER_CREDENTIAL_SECRET=replace-with-a-different-long-random-secret
+```
+
+Then use the separate MySQL Compose configuration:
+
+```bash
+docker compose -f docker-compose.mysql.yml up -d
+```
+
+This configuration starts MySQL, waits for it to become healthy, and then
+starts RSSMonster. Its database is stored in the `mysql-data` volume.
 
 ---
 
@@ -78,14 +158,28 @@ cp server/.env.example server/.env
 cp client/.env.example client/.env
 ```
 
-**Edit `server/.env`** with your database credentials:
+For a simple local installation, configure SQLite in `server/.env`:
 
 ```env
-DB_DATABASE=your_database_name
-DB_USERNAME=your_database_user
+NODE_ENV=development
+DB_DIALECT=sqlite
+DB_STORAGE=./data/rssmonster.sqlite
+```
+
+RSSMonster creates the parent data directory when required and automatically
+uses conservative crawl concurrency settings with SQLite to reduce write
+contention.
+
+To use MySQL instead, configure:
+
+```env
+NODE_ENV=development
+DB_DIALECT=mysql
+DB_DATABASE=rssmonster
+DB_USERNAME=rssmonster
 DB_PASSWORD=your_database_password
 DB_HOSTNAME=localhost
-NODE_ENV=development
+DB_PORT=3306
 ```
 
 **Edit `client/.env`** to point to your server:
@@ -98,15 +192,19 @@ VITE_ENABLE_AGENT=false  # Set to 'true' to enable AI assistant
 
 ### Step 4: Initialize Database
 
-Run migrations and seed initial data:
+Run the canonical database migrations. The same migration baseline supports
+SQLite and MySQL:
 
 ```bash
 cd server
-./node_modules/.bin/sequelize db:migrate
-./node_modules/.bin/sequelize db:seed:all
+npm run db
 ```
 
-This creates the database schema and adds a default admin user.
+Project seeders are optional. If you explicitly need them, run:
+
+```bash
+./node_modules/.bin/sequelize db:seed:all
+```
 
 ### Step 5: Start the Application
 
@@ -146,12 +244,9 @@ npm run start
 ### 1. Log In
 
 Navigate to `http://localhost:8080` (development) or `http://localhost:3000` (production).
-
-**Default credentials:**
-- Username: `rssmonster`
-- Password: `rssmonster`
-
-**⚠️ Change these immediately in production!**
+Create your first account if you have not already done so, then log in with
+those credentials. See [First Login](first-login.md) for the registration flow
+and the optional development-login configuration.
 
 ### 2. Add Your First Feed
 
@@ -218,7 +313,7 @@ The AI assistant enables:
 - Article summarization and tagging
 - Smart recommendations based on reading habits
 
-[Learn more about the AI Assistant →](ai-assistant.md)
+[Learn more about AI configuration →](configuration.md#openai-and-agentic-features)
 
 ### Calculate Feed Trust Scores
 
@@ -250,6 +345,11 @@ This groups similar articles together to reduce duplicate coverage.
 ---
 
 ## Production Deployment
+
+For most self-hosted installations, use the SQLite Docker deployment described
+above. Update it with `docker compose pull` followed by
+`docker compose up -d`. For MySQL, use
+`docker compose -f docker-compose.mysql.yml up -d`.
 
 ### Update Environment Variables
 
@@ -292,9 +392,10 @@ Set up a weekly cron to renew:
 
 ### Database Connection Errors
 
-- Verify MySQL is running: `mysql -u root -p`
-- Check credentials in `server/.env`
-- Ensure database exists: `CREATE DATABASE rssmonster;`
+- For SQLite, verify that the configured data directory is writable and that
+  the persistent Docker volume has not been removed.
+- For MySQL, check `docker compose -f docker-compose.mysql.yml ps`, verify the
+  credentials in `.env`, and inspect the MySQL and RSSMonster container logs.
 
 ### Port Already in Use
 
@@ -329,7 +430,7 @@ Now that RSSMonster is running, explore these guides:
 - **[Create Smart Folders](smart-folders.md)** — Build dynamic views of your content
 - **[Master Search](search.md)** — Learn powerful search expressions
 - **[Understand Scoring](scoring.md)** — How articles are ranked
-- **[Set Up Automation](automation.md)** — Create rules for automatic actions
+- **[Set Up Rule-Based Tags](tag.md#rule-based-tags)** — Create tags automatically with rules
 - **[Connect RSS Clients](api.md)** — Use Fever or Google Reader APIs
 
 ---

@@ -1,7 +1,8 @@
 ---
 layout: page
 title: Smart Folders
-nav_order: 4
+parent: How RSSMonster Works
+nav_order: 1
 ---
 
 ## What Are Smart Folders?

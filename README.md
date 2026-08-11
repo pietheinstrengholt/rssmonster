@@ -12,6 +12,8 @@ Copyright (c) 2026 Piethein Strengholt, [piethein@strengholt-online.nl](mailto:p
 
 RSSMonster is a **self-hosted, intelligent RSS reader** designed to help you cut through information overload and focus on what actually matters.
 
+[Learn more about RSSMonster in the complete documentation.](https://pietheinstrengholt.github.io/rssmonster/)
+
 Traditional RSS readers are primarily organized around feeds, folders, and chronological article streams. RSSMonster adds a semantic and ranking layer on top: it groups articles covering the same event, evaluates signals such as quality, freshness, originality, and source trust, explains why stories rank highly, and lets you create declarative **Smart Folders** for the views that matter to you.
 
 ![Screenshot](docs/assets/screenshot04.png)
