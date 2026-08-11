@@ -3,12 +3,5 @@ description: Signal-driven RSS reader that prioritizes what matters
 theme: just-the-docs
 url: https://pietheinstrengholt.github.io/rssmonster
 
-defaults:
-  - scope:
-      path: ""
-      type: pages
-    values:
-      layout: page
-
 aux_links:
   RSSMonster on GitHub: https://github.com/pietheinstrengholt/rssmonster

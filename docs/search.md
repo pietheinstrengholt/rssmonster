@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Search
 parent: Using RSSMonster
 nav_order: 4

@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Article Embedding
 parent: How RSSMonster Works
 nav_order: 3

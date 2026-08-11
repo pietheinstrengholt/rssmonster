@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Administration
 nav_order: 6
 ---

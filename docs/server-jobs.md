@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Server Jobs
 parent: Administration
 nav_order: 1

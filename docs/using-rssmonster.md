@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Using RSSMonster
 nav_order: 3
 ---

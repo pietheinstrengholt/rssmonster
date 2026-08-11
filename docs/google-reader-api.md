@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Google Reader API
 parent: APIs & Integrations
 nav_order: 1

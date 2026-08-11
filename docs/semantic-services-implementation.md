@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Semantic Services Implementation
 parent: How RSSMonster Works
 nav_order: 8

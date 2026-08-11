@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Topics
 parent: How RSSMonster Works
 nav_order: 5

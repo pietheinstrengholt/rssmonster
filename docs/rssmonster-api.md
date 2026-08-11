@@ -1,4 +1,5 @@
 ---
+layout: page
 title: APIs
 parent: APIs & Integrations
 nav_order: 3

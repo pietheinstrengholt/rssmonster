@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Keyboard Shortcuts
 parent: Using RSSMonster
 nav_order: 8

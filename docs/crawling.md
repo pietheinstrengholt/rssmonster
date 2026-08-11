@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Crawling
 parent: Administration
 nav_order: 2

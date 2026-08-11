@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Bookmarks
 parent: Using RSSMonster
 nav_order: 6

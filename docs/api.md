@@ -1,4 +1,5 @@
 ---
+layout: page
 title: APIs & Integrations
 nav_order: 5
 has_children: true

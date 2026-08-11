@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Events
 parent: How RSSMonster Works
 nav_order: 4

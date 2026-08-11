@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Tags
 parent: Using RSSMonster
 nav_order: 5

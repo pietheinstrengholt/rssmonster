@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Usability
 parent: Using RSSMonster
 nav_order: 1

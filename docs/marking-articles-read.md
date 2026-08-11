@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Marking Articles Read
 parent: Using RSSMonster
 nav_order: 7

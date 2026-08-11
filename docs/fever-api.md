@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Fever API
 parent: APIs & Integrations
 nav_order: 2

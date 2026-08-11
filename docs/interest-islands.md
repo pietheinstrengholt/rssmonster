@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Interest Islands
 parent: How RSSMonster Works
 nav_order: 6

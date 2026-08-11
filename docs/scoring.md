@@ -1,4 +1,5 @@
 ---
+layout: page
 title: Feed Scoring
 parent: How RSSMonster Works
 nav_order: 2
