@@ -1,12 +1,12 @@
 # RSSMonster
 
-[![Release](https://img.shields.io/github/v/release/pietheinstrengholt/rssmonster)](https://github.com/pietheinstrengholt/rssmonster/releases)
+[![Release](https://img.shields.io/github/v/release/pietheinstrengholt/rssmonster?style=flat)](https://github.com/pietheinstrengholt/rssmonster/releases)
 [![CI](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/ci.yml/badge.svg)](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/ci.yml)
 [![Client coverage](https://codecov.io/gh/pietheinstrengholt/rssmonster/branch/master/graph/badge.svg?flag=client)](https://codecov.io/github/pietheinstrengholt/rssmonster/tree/master/client)
 [![Server coverage](https://codecov.io/gh/pietheinstrengholt/rssmonster/branch/master/graph/badge.svg?flag=server)](https://codecov.io/github/pietheinstrengholt/rssmonster/tree/master/server)
-[![Docker pulls](https://img.shields.io/docker/pulls/rssmonster/rssmonster.svg)](https://hub.docker.com/r/rssmonster/rssmonster)
-[![GitHub stars](https://img.shields.io/github/stars/pietheinstrengholt/rssmonster)](https://github.com/pietheinstrengholt/rssmonster/stargazers)
-[![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
+[![Docker pulls](https://img.shields.io/docker/pulls/rssmonster/rssmonster.svg?style=flat)](https://hub.docker.com/r/rssmonster/rssmonster)
+[![GitHub stars](https://img.shields.io/github/stars/pietheinstrengholt/rssmonster?style=flat)](https://github.com/pietheinstrengholt/rssmonster/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg?style=flat)](https://opensource.org/licenses/MIT)
 
 Copyright (c) 2026 Piethein Strengholt, [piethein@strengholt-online.nl](mailto:piethein@strengholt-online.nl)
 
