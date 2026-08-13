@@ -32,7 +32,7 @@ html {
 body {
   height: 100%;
   margin: 0;
-  background-color: var(--bg-page);
+  background-color: var(--surface-page);
   color: var(--text-primary);
   font-family: var(--font-family);
   font-size: 1rem;
@@ -302,13 +302,13 @@ textarea {
 
 .app-button--secondary {
   border-color: var(--border-control);
-  background: var(--bg-control);
+  background: var(--surface-control);
   color: var(--text-primary);
 }
 
 .app-button--secondary:hover:not(:disabled),
 .app-button--secondary:active:not(:disabled) {
-  background: var(--bg-hover);
+  background: var(--surface-hover);
 }
 
 .app-button--danger {
@@ -324,15 +324,15 @@ textarea {
 }
 
 .app-button--warning {
-  border-color: var(--color-warning);
-  background: var(--color-warning);
+  border-color: var(--color-warning-action);
+  background: var(--color-warning-action);
   color: var(--text-inverted);
 }
 
 .app-button--warning:hover:not(:disabled),
 .app-button--warning:active:not(:disabled) {
-  border-color: var(--settings-orange-hover-text);
-  background: var(--settings-orange-hover-text);
+  border-color: var(--color-warning-action-hover);
+  background: var(--color-warning-action-hover);
 }
 
 .app-button--outline-secondary,
@@ -347,7 +347,7 @@ textarea {
 
 .app-button--outline-secondary:hover:not(:disabled),
 .app-button--outline-secondary:active:not(:disabled) {
-  background: var(--bg-hover);
+  background: var(--surface-hover);
   color: var(--text-primary);
 }
 
@@ -406,12 +406,12 @@ textarea {
 }
 
 .app-icon-button:hover:not(:disabled) {
-  background: var(--bg-hover);
+  background: var(--surface-hover);
   color: var(--text-primary);
 }
 
 .app-icon-button:active:not(:disabled) {
-  background: var(--bg-selected);
+  background: var(--surface-selected);
   color: var(--color-primary);
 }
 
@@ -468,7 +468,7 @@ textarea.app-form-control {
 }
 
 .app-form-select option {
-  background: var(--bg-control);
+  background: var(--surface-control);
   color: var(--text-primary);
 }
 
@@ -496,14 +496,14 @@ textarea.app-form-control {
 
 .app-form-control:disabled,
 .app-form-select:disabled {
-  background-color: var(--bg-muted);
+  background-color: var(--surface-chrome);
   color: var(--text-muted);
   cursor: not-allowed;
   opacity: 1;
 }
 
 .app-form-control:read-only {
-  background-color: var(--bg-muted);
+  background-color: var(--surface-chrome);
   color: var(--text-secondary);
 }
 

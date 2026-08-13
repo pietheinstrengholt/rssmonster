@@ -100,7 +100,7 @@
 .crawl-statistics-toolbar .app-form-select {
   width: 160px;
   color: var(--text-primary);
-  background-color: var(--bg-primary);
+  background-color: var(--surface-card);
   border-color: var(--border-subtle);
 }
 

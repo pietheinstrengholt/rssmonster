@@ -134,7 +134,7 @@
 
 .manage-users__table-wrap {
   overflow-x: auto;
-  background: var(--bg-card);
+  background: var(--surface-card);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-panel);
 }
@@ -149,7 +149,7 @@
 .manage-users__table th {
   height: 46px;
   padding: 0 14px;
-  background: var(--bg-page);
+  background: var(--surface-page);
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
@@ -173,7 +173,7 @@
 }
 
 .manage-users__table tbody tr:hover {
-  background: var(--bg-page);
+  background: var(--surface-page);
 }
 
 .manage-users__actions-heading {
@@ -188,7 +188,7 @@
 
 .manage-users__avatar {
   align-items: center;
-  background: var(--bg-secondary);
+  background: var(--surface-chrome);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-pill);
   color: var(--color-primary);
@@ -218,7 +218,7 @@
 }
 
 .manage-users__role {
-  background: var(--bg-secondary);
+  background: var(--surface-chrome);
   border-radius: var(--radius-pill);
   color: var(--text-secondary);
   display: inline-block;
@@ -357,7 +357,7 @@
 }
 
 .manage-users__field .app-form-control:disabled {
-  background: var(--bg-secondary);
+  background: var(--surface-chrome);
   color: var(--text-secondary);
   opacity: 1;
 }
@@ -385,13 +385,13 @@
 }
 
 .manage-users__button--secondary {
-  background: var(--bg-control);
+  background: var(--surface-control);
   border-color: var(--border-control);
   color: var(--text-primary);
 }
 
 .manage-users__button--secondary:hover {
-  background: var(--bg-hover);
+  background: var(--surface-hover);
 }
 
 .manage-users__button--danger {
@@ -454,7 +454,7 @@
 }
 
 :global(:root[data-theme='dark'] .manage-users .manage-users__table th) {
-  background: var(--bg-control);
+  background: var(--surface-control);
   color: var(--text-secondary);
 }
 
@@ -466,7 +466,7 @@
 
 :global(:root[data-theme='dark'] .manage-users .manage-users__table tbody tr:hover),
 :global(:root[data-theme='dark'] .manage-users .manage-users__table tbody tr:hover td) {
-  background: var(--bg-control);
+  background: var(--surface-control);
 }
 
 @media (max-width: 600px) {

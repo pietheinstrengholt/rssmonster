@@ -18,7 +18,7 @@ body.settings-overlay-open {
     width: min(1300px, calc(100vw - 48px));
     height: min(800px, calc(100vh - 48px));
     overflow: hidden;
-    background: var(--bg-card);
+    background: var(--surface-card);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-dialog);
     box-shadow: 0 24px 80px var(--shadow-settings-dialog-color);
@@ -30,7 +30,7 @@ body.settings-overlay-open {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: var(--bg-card);
+    background: var(--surface-card);
     border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -57,7 +57,7 @@ body.settings-overlay-open {
 .settings-surface .settings-sidebar {
     padding: 18px 12px;
     overflow-y: auto;
-    background: var(--bg-page);
+    background: var(--surface-page);
     border-right: 1px solid var(--border-subtle);
 }
 
@@ -79,7 +79,7 @@ body.settings-overlay-open {
 }
 
 .settings-surface .settings-sidebar-item:hover {
-    background: var(--bg-muted);
+    background: var(--surface-chrome);
 }
 
 .settings-surface .settings-sidebar-item.active {
@@ -98,7 +98,7 @@ body.settings-overlay-open {
     min-width: 0;
     padding: 28px 30px;
     overflow-y: auto;
-    background: var(--bg-card);
+    background: var(--surface-card);
 }
 
 .settings-surface .settings-close-button {
@@ -119,7 +119,7 @@ body.settings-overlay-open {
 }
 
 .settings-surface .settings-close-button:hover {
-    background: var(--bg-muted);
+    background: var(--surface-chrome);
     color: var(--text-primary);
 }
 
@@ -137,7 +137,7 @@ body.settings-overlay-open {
 .settings-surface .settings-panel,
 .settings-surface .settings-data-panel,
 .settings-surface .settings-metric-card {
-    background: var(--bg-primary);
+    background: var(--surface-card);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-panel);
 }
@@ -176,7 +176,7 @@ body.settings-overlay-open {
     justify-content: flex-end;
     margin-top: 20px;
     padding: 16px 0 28px;
-    background: var(--bg-card);
+    background: var(--surface-card);
     border-top: 1px solid var(--border-subtle);
 }
 
@@ -249,7 +249,7 @@ body.settings-overlay-open {
     flex: 0 0 42px;
     align-items: center;
     justify-content: center;
-    background: var(--bg-primary);
+    background: var(--surface-card);
     border-radius: var(--radius-control);
     color: var(--settings-info-text);
     font-size: 20px;
@@ -299,7 +299,7 @@ body.settings-overlay-open {
 }
 
 :root[data-theme='dark'] .settings-surface .settings-sidebar {
-    background-color: var(--bg-control);
+    background-color: var(--surface-control);
     border-color: var(--border-subtle);
 }
 
@@ -310,7 +310,7 @@ body.settings-overlay-open {
 
 :root[data-theme='dark'] .settings-surface .settings-sidebar-item:hover,
 :root[data-theme='dark'] .settings-surface .settings-close-button:hover {
-    background: var(--bg-surface-muted);
+    background: var(--surface-chrome);
     color: var(--text-inverted);
 }
 
@@ -336,7 +336,7 @@ body.settings-overlay-open {
 }
 
 :root[data-theme='dark'] .settings-surface .settings-insight-icon {
-    background: var(--bg-control);
+    background: var(--surface-control);
 }
 
 :root[data-theme='dark'] .settings-surface .settings-action-footer {
@@ -462,7 +462,7 @@ body.settings-overlay-open {
 }
 
 :root[data-theme='dark'] .settings-surface .action-row {
-    background-color: var(--bg-control);
+    background-color: var(--surface-control);
     border-color: var(--border-subtle);
 }
 

@@ -107,7 +107,7 @@ export default {
 .article-content-wrapper--minimal {
   margin: 0;
   padding: 10px 16px 12px 70px;
-  background: var(--bg-page);
+  background: var(--surface-page);
   border-bottom: 1px solid var(--article-border, var(--border-subtle));
 }
 
@@ -127,8 +127,8 @@ export default {
 
 :global(:root[data-theme='dark'] .article-card .article-content-wrapper) {
   color: var(--text-primary);
-  background: var(--dark-page-surface);
-  border-color: var(--dark-page-surface);
+  background: var(--surface-page);
+  border-color: var(--surface-page);
   border-bottom-color: var(--border-subtle);
 }
 
@@ -246,7 +246,7 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .article-card .article-content-wrapper--minimal) {
-  background: var(--dark-bg-page, var(--dark-page-surface));
+  background: var(--surface-page);
   border-bottom-color: var(--border-subtle);
 }
 </style>

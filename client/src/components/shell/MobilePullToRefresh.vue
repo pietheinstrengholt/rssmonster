@@ -255,7 +255,7 @@ export default {
 
 .mobile-pull-to-refresh__content {
   align-items: center;
-  background: var(--bg-primary);
+  background: var(--surface-card);
   display: flex;
   font-size: 13px;
   font-weight: 500;

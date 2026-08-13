@@ -2,10 +2,14 @@
   <div
     :id="category.id"
     class="sidebar-category"
-    :class="{ selected: isSelectedCategory }"
-    @click="$emit('select-category', category)"
+    :class="{ expanded: isExpanded, selected: isSelectedCategory }"
   >
-    <div class="sidebar-category-header">
+    <button
+      type="button"
+      class="sidebar-category-header"
+      :aria-current="isSelectedCategory ? 'page' : undefined"
+      @click="$emit('select-category', category)"
+    >
       <span class="sidebar-icon">
         <BootstrapIcon :icon="categoryIconName" color="currentColor" />
       </span>
@@ -13,7 +17,7 @@
       <span class="sidebar-count-wrapper">
         <span v-if="count !== null" class="sidebar-count sidebar-count-white">{{ formattedCount }}</span>
       </span>
-    </div>
+    </button>
     <div v-if="category.feeds && isExpanded">
       <div class="sidebar-feed-list">
         <SidebarFeedItem
@@ -120,54 +124,71 @@ export default {
 
 <style scoped>
 .sidebar-category {
-  margin-left: 12px;
-  margin-right: 12px;
-  margin-top: 4px;
-  border-radius: 6px;
+  margin-left: var(--space-3);
+  margin-right: var(--space-3);
+  margin-top: var(--space-1);
+  border-radius: var(--radius-compact);
   cursor: pointer;
-  color: var(--text-primary);
-  background-color: var(--bg-secondary);
-  transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  color: var(--sidebar-row-text);
+  background-color: var(--sidebar-row-background);
 }
 
-.sidebar-category.selected {
-  color: var(--color-primary);
-  background-color: var(--color-primary-soft);
-  box-shadow: none;
+.sidebar-category.expanded {
+  background-color: var(--sidebar-group-background);
+  overflow: hidden;
 }
 
-.sidebar-category.selected:hover {
-  background-color: var(--sidebar-selected-hover-background);
+.sidebar-category.selected > .sidebar-category-header {
+  border-radius: var(--radius-compact);
+  color: var(--sidebar-row-selected-text);
+  background-color: var(--sidebar-row-selected-background);
 }
 
-.sidebar-category:not(.selected):hover {
-  background-color: var(--bg-hover);
+.sidebar-category.selected > .sidebar-category-header:hover {
+  background-color: var(--sidebar-row-selected-hover-background);
+}
+
+.sidebar-category:not(.selected) > .sidebar-category-header:hover {
+  background-color: var(--sidebar-row-hover-background);
+}
+
+.sidebar-category-header:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .sidebar-category-header {
-  padding: 4px 4px 4px 12px;
+  appearance: none;
+  background: var(--sidebar-row-background);
+  border: 0;
+  border-radius: var(--radius-compact);
+  box-sizing: border-box;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  min-height: var(--control-height-compact);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
   display: flex;
   align-items: center;
+  text-align: left;
+  width: 100%;
+  transition: background-color var(--motion-duration-normal) var(--motion-easing-standard), color var(--motion-duration-normal) var(--motion-easing-standard);
 }
 
-.sidebar-category-header {
-  min-height: 24px;
+.sidebar-category.expanded > .sidebar-category-header {
+  border-radius: var(--radius-compact) var(--radius-compact) 0 0;
 }
 
 .sidebar-count-wrapper {
   margin-left: auto;
-  padding-left: 8px;
-  padding-right: 4px;
+  padding-left: var(--space-2);
+  padding-right: var(--space-1);
   flex: 0 0 auto;
 }
 
 .sidebar-count {
-  color: var(--text-primary);
+  color: inherit;
   font-weight: 500;
-}
-
-.sidebar-category.selected .sidebar-count {
-  color: var(--color-primary);
 }
 
 .sidebar-count.sidebar-count-white {
@@ -176,7 +197,7 @@ export default {
 }
 
 .sidebar-icon {
-  margin-right: 5px;
+  margin-right: var(--space-1);
   min-width: 13px;
   flex: 0 0 auto;
 }
@@ -190,62 +211,8 @@ export default {
 }
 
 .sidebar-feed-list {
+  --sidebar-row-background: var(--sidebar-group-background);
   margin-bottom: 0;
 }
 
-.sidebar-category.selected :deep(.sidebar-feed.last) {
-  border-radius: 0 0 6px 6px;
-}
-
-.sidebar-category.selected .sidebar-feed-list,
-.sidebar-category.selected :deep(.sidebar-feed) {
-  background-color: var(--color-primary-soft);
-}
-
-.sidebar-category.selected .sidebar-feed-list {
-  border-radius: 0 0 6px 6px;
-  overflow: hidden;
-}
-
-:global(:root[data-theme='dark']) {
-  .sidebar-category {
-    background-color: var(--bg-option);
-  }
-
-  .sidebar-category.selected {
-    color: var(--sidebar-selected-text-dark);
-    background-color: var(--sidebar-selected-background-dark);
-  }
-
-  .sidebar-category.selected .sidebar-count {
-    color: var(--sidebar-selected-text-dark);
-  }
-
-  .sidebar-category.selected .sidebar-feed-list,
-  .sidebar-category.selected :deep(.sidebar-feed) {
-    background-color: var(--sidebar-selected-background-dark);
-  }
-}
-
-:global(:root[data-theme='dark'] .sidebar-category.selected) {
-  color: var(--sidebar-selected-text-dark) !important;
-  background-color: var(--sidebar-selected-background-dark) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-category.selected:hover) {
-  background-color: var(--sidebar-selected-hover-background) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-category:not(.selected):hover) {
-  background-color: var(--toolbar-search-hover-background-dark);
-}
-
-:global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-count) {
-  color: var(--sidebar-selected-text-dark) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-feed-list),
-:global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-feed) {
-  background-color: var(--sidebar-selected-background-dark) !important;
-}
 </style>

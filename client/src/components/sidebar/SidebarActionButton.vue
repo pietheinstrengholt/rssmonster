@@ -52,14 +52,14 @@ export default {
 .sidebar-button,
 .sidebar-management-button {
   appearance: none;
-  margin-left: 12px;
-  padding: 6px;
+  margin-left: var(--space-3);
+  padding: var(--space-1-5);
   color: var(--text-primary);
-  background-color: var(--bg-secondary);
+  background-color: var(--surface-chrome);
   border: 0;
-  border-radius: 8px;
-  text-indent: 4px;
-  margin-bottom: 20px;
+  border-radius: var(--radius-control);
+  text-indent: var(--space-1);
+  margin-bottom: var(--space-5);
   cursor: pointer;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -70,10 +70,10 @@ export default {
 
 .sidebar-button {
   box-sizing: border-box;
-  width: calc(100% - 24px);
-  height: 36px;
-  margin-bottom: 8px;
-  padding: 0 12px;
+  width: calc(100% - (2 * var(--space-3)));
+  height: calc(var(--control-height-default) - var(--space-1));
+  margin-bottom: var(--space-2);
+  padding: 0 var(--space-3);
   border: 1px solid var(--color-transparent);
   display: flex;
   align-items: center;
@@ -82,14 +82,13 @@ export default {
 }
 
 .sidebar-button > div {
-  display: flex;
   align-items: center;
+  display: flex;
+  line-height: 1.25;
 }
 
 .sidebar-button .sidebar-item-title {
-  margin-left: 5px;
-  margin-top: 2px;
-  margin-bottom: 4px;
+  margin-left: var(--space-1);
 }
 
 .spinner {
@@ -97,48 +96,48 @@ export default {
   display: inline-flex;
   justify-content: center;
   line-height: 1;
-  margin-left: 6px;
+  margin-left: var(--space-1-5);
 }
 
 .sidebar-button-refresh,
 .sidebar-button-add-feed,
 .sidebar-button-mark-read {
-  width: calc(100% - 24px);
+  width: calc(100% - (2 * var(--space-3)));
   color: var(--action-color);
   background-color: var(--action-background);
   border-color: var(--action-border);
   font-weight: 600;
-  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-standard), border-color var(--motion-duration-fast) var(--motion-easing-standard), color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 
 .sidebar-button-refresh {
-  --action-background: var(--sidebar-primary-action-refresh-background);
-  --action-color: var(--sidebar-primary-action-refresh-text);
-  --action-border: var(--sidebar-primary-action-refresh-border);
-  --action-hover-background: var(--sidebar-primary-action-refresh-hover-background);
-  --action-hover-border: var(--sidebar-primary-action-refresh-hover-border);
-  --action-active-background: var(--sidebar-primary-action-refresh-active-background);
-  --action-focus: var(--sidebar-primary-action-refresh-focus);
+  --action-background: var(--sidebar-action-refresh-background);
+  --action-color: var(--sidebar-action-refresh-text);
+  --action-border: var(--sidebar-action-refresh-border);
+  --action-hover-background: var(--sidebar-action-refresh-hover-background);
+  --action-hover-border: var(--sidebar-action-refresh-hover-border);
+  --action-active-background: var(--sidebar-action-refresh-active-background);
+  --action-focus: var(--sidebar-action-refresh-focus);
 }
 
 .sidebar-button-add-feed {
-  --action-background: var(--sidebar-primary-action-add-background);
-  --action-color: var(--sidebar-primary-action-add-text);
-  --action-border: var(--sidebar-primary-action-add-border);
-  --action-hover-background: var(--sidebar-primary-action-add-hover-background);
-  --action-hover-border: var(--sidebar-primary-action-add-hover-border);
-  --action-active-background: var(--sidebar-primary-action-add-active-background);
-  --action-focus: var(--sidebar-primary-action-add-focus);
+  --action-background: var(--sidebar-action-add-background);
+  --action-color: var(--sidebar-action-add-text);
+  --action-border: var(--sidebar-action-add-border);
+  --action-hover-background: var(--sidebar-action-add-hover-background);
+  --action-hover-border: var(--sidebar-action-add-hover-border);
+  --action-active-background: var(--sidebar-action-add-active-background);
+  --action-focus: var(--sidebar-action-add-focus);
 }
 
 .sidebar-button-mark-read {
-  --action-background: var(--sidebar-primary-action-read-background);
-  --action-color: var(--sidebar-primary-action-read-text);
-  --action-border: var(--sidebar-primary-action-read-border);
-  --action-hover-background: var(--sidebar-primary-action-read-hover-background);
-  --action-hover-border: var(--sidebar-primary-action-read-hover-border);
-  --action-active-background: var(--sidebar-primary-action-read-active-background);
-  --action-focus: var(--sidebar-primary-action-read-focus);
+  --action-background: var(--sidebar-action-read-background);
+  --action-color: var(--sidebar-action-read-text);
+  --action-border: var(--sidebar-action-read-border);
+  --action-hover-background: var(--sidebar-action-read-hover-background);
+  --action-hover-border: var(--sidebar-action-read-hover-border);
+  --action-active-background: var(--sidebar-action-read-active-background);
+  --action-focus: var(--sidebar-action-read-focus);
 }
 
 .sidebar-button-refresh:hover:not(:disabled),
@@ -159,8 +158,8 @@ export default {
 .sidebar-button-refresh:focus-visible,
 .sidebar-button-add-feed:focus-visible,
 .sidebar-button-mark-read:focus-visible {
-  outline: 2px solid var(--action-focus);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--action-focus);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .sidebar-button-refresh:disabled,
@@ -171,22 +170,35 @@ export default {
 }
 
 .sidebar-bottom-action-button {
-  color: var(--text-primary);
-  background-color: var(--bg-muted);
-  border-color: var(--border-subtle);
+  color: var(--sidebar-secondary-action-text);
+  background-color: var(--sidebar-secondary-action-background);
+  border-color: var(--sidebar-secondary-action-border);
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-standard), border-color var(--motion-duration-fast) var(--motion-easing-standard), color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 
-.sidebar-bottom-action-button:hover {
-  color: var(--text-primary);
-  background-color: var(--bg-hover);
+.sidebar-bottom-action-button:hover:not(:disabled) {
+  color: var(--sidebar-secondary-action-text);
+  background-color: var(--sidebar-secondary-action-hover-background);
+  border-color: var(--sidebar-secondary-action-hover-border);
+}
+
+.sidebar-bottom-action-button:active:not(:disabled) {
+  background-color: var(--sidebar-secondary-action-active-background);
+  border-color: var(--sidebar-secondary-action-hover-border);
+}
+
+.sidebar-bottom-action-button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--sidebar-secondary-action-focus);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .sidebar-management-button {
   width: 100%;
-  height: 40px;
+  height: var(--control-height-default);
   margin: 0;
-  padding: 4px;
-  color: var(--text-primary);
+  padding: var(--space-1);
+  color: var(--sidebar-management-action-text);
+  background-color: var(--sidebar-management-action-background);
   font-weight: 500;
   box-sizing: border-box;
   text-align: center;
@@ -196,11 +208,11 @@ export default {
 }
 
 .sidebar-management-button > div {
+  align-items: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  line-height: 1;
-  transform: translateY(2px);
+  justify-content: center;
+  line-height: 1.2;
 }
 
 .sidebar-button .sidebar-icon,
@@ -218,28 +230,6 @@ export default {
 
 .sidebar-management-button.delete,
 .sidebar-management-button.rename {
-  color: var(--text-primary);
-}
-
-:global(:root[data-theme='dark']) {
-  .sidebar-management-button {
-    color: var(--text-inverted);
-    background-color: var(--bg-secondary);
-  }
-
-  .sidebar-management-button :deep(svg) {
-    fill: var(--text-inverted);
-  }
-}
-
-:global(:root[data-theme='dark'] .sidebar-button.sidebar-bottom-action-button) {
-  color: var(--toolbar-search-text-dark) !important;
-  background-color: var(--toolbar-search-background-dark) !important;
-  border-color: var(--border-control) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-button.sidebar-bottom-action-button:hover) {
-  color: var(--toolbar-search-text-dark) !important;
-  background-color: var(--toolbar-search-hover-background-dark) !important;
+  color: var(--sidebar-management-action-text);
 }
 </style>

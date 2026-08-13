@@ -134,7 +134,7 @@
 }
 
 .options-sheet {
-  background: var(--options-sheet-background, var(--bg-card));
+  background: var(--options-sheet-background, var(--surface-card));
   border: 1px solid var(--border-default);
   border-radius: 8px;
   box-shadow: var(--shadow-modal);
@@ -193,7 +193,7 @@
 
 .mobile-close-button {
   align-items: center;
-  background: var(--options-control-background, var(--bg-card));
+  background: var(--options-control-background, var(--surface-card));
   border: 0;
   border-radius: 6px;
   color: var(--options-text, var(--text-primary));
@@ -225,7 +225,7 @@
 
 .mobile-close-button:hover,
 .mobile-close-button:focus-visible {
-  background: var(--bg-muted);
+  background: var(--surface-chrome);
 }
 
 .overlay-content {
@@ -336,7 +336,7 @@
 }
 
 .options-row.selected .options-row-icon {
-  background: var(--options-control-background, var(--bg-card));
+  background: var(--options-control-background, var(--surface-card));
   border: 1px solid var(--border-selected);
   color: var(--options-selected-indicator, var(--color-primary));
 }
@@ -348,7 +348,7 @@
 }
 
 .options-view-card {
-  background: var(--options-control-background, var(--bg-card));
+  background: var(--options-control-background, var(--surface-card));
   border: 1px solid var(--border-control);
   border-radius: 6px;
   color: var(--options-text, var(--text-primary));
@@ -379,7 +379,7 @@
 }
 
 .options-action-button {
-  background: var(--options-control-background, var(--bg-card));
+  background: var(--options-control-background, var(--surface-card));
   border: 1px solid;
   border-radius: 6px;
   box-sizing: border-box;
@@ -396,27 +396,27 @@
 }
 
 .options-action-button--refresh {
-  background: var(--options-refresh-background, var(--sidebar-action-refresh-background));
-  border-color: var(--options-refresh-border, var(--sidebar-action-refresh-border));
-  color: var(--options-refresh-text, var(--sidebar-action-refresh-text));
+  background: var(--options-refresh-background, var(--mobile-options-refresh-background));
+  border-color: var(--options-refresh-border, var(--mobile-options-refresh-border));
+  color: var(--options-refresh-text, var(--mobile-options-refresh-text));
 }
 
 .options-action-button--refresh:hover,
 .options-action-button--refresh:focus-visible {
-  background: var(--options-refresh-hover-background, var(--sidebar-action-refresh-hover-background));
-  color: var(--options-refresh-text, var(--sidebar-action-refresh-text));
+  background: var(--options-refresh-hover-background, var(--mobile-options-refresh-hover-background));
+  color: var(--options-refresh-text, var(--mobile-options-refresh-text));
 }
 
 .options-action-button--add {
-  background: var(--options-add-background, var(--sidebar-action-mark-as-read-background));
-  border-color: var(--options-add-border, var(--sidebar-action-mark-as-read-border));
-  color: var(--options-add-text, var(--sidebar-action-mark-as-read-text));
+  background: var(--options-add-background, var(--mobile-options-add-background));
+  border-color: var(--options-add-border, var(--mobile-options-add-border));
+  color: var(--options-add-text, var(--mobile-options-add-text));
 }
 
 .options-action-button--add:hover,
 .options-action-button--add:focus-visible {
-  background: var(--options-add-hover-background, var(--sidebar-action-mark-as-read-hover-background));
-  color: var(--options-add-hover-text, var(--sidebar-action-mark-as-read-hover-text));
+  background: var(--options-add-hover-background, var(--mobile-options-add-hover-background));
+  color: var(--options-add-hover-text, var(--mobile-options-add-hover-text));
 }
 
 .options-action-button--neutral {
@@ -461,43 +461,25 @@
 :global(:root[data-theme='dark']) {
   .overlay {
     --options-sheet-background: var(--bg-modal);
-    --options-control-background: var(--bg-control);
+    --options-control-background: var(--surface-control);
     --options-text: var(--text-primary);
     --options-muted-text: var(--text-muted);
     --options-icon-background: var(--color-primary-surface-dark);
     --options-icon-color: var(--color-primary-icon-dark);
     --options-selected-background: var(--color-primary-surface-dark);
     --options-selected-text: var(--color-primary-soft);
-    --options-refresh-background: var(--sidebar-action-refresh-background);
-    --options-refresh-hover-background: var(--sidebar-action-refresh-hover-background);
-    --options-refresh-border: var(--sidebar-action-refresh-border);
-    --options-refresh-text: var(--sidebar-action-refresh-text);
-    --options-add-background: var(--sidebar-action-mark-as-read-background);
-    --options-add-hover-background: var(--sidebar-action-mark-as-read-hover-background);
-    --options-add-border: var(--sidebar-action-mark-as-read-border);
-    --options-add-text: var(--sidebar-action-mark-as-read-text);
-    --options-add-hover-text: var(--sidebar-action-mark-as-read-hover-text);
   }
 }
 
 :global(:root[data-theme='dark'] #mobile-container) {
   --options-sheet-background: var(--bg-modal);
-  --options-control-background: var(--bg-control);
+  --options-control-background: var(--surface-control);
   --options-text: var(--text-primary);
   --options-muted-text: var(--text-muted);
   --options-icon-background: var(--color-primary-surface-dark);
   --options-icon-color: var(--color-primary-icon-dark);
   --options-selected-background: var(--color-primary-surface-dark);
   --options-selected-text: var(--color-primary-soft);
-  --options-refresh-background: var(--sidebar-action-refresh-background);
-  --options-refresh-hover-background: var(--sidebar-action-refresh-hover-background);
-  --options-refresh-border: var(--sidebar-action-refresh-border);
-  --options-refresh-text: var(--sidebar-action-refresh-text);
-  --options-add-background: var(--sidebar-action-mark-as-read-background);
-  --options-add-hover-background: var(--sidebar-action-mark-as-read-hover-background);
-  --options-add-border: var(--sidebar-action-mark-as-read-border);
-  --options-add-text: var(--sidebar-action-mark-as-read-text);
-  --options-add-hover-text: var(--sidebar-action-mark-as-read-hover-text);
 }
 
 :global(body.mobile-options-open) {

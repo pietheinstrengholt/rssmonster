@@ -211,7 +211,7 @@
 }
 
 .toolbar-filter-button:hover {
-  background-color: var(--bg-hover);
+  background-color: var(--surface-hover);
   border-color: var(--border-strong);
 }
 
@@ -235,7 +235,7 @@
 }
 
 .toolbar-filter-button[aria-expanded='true'] {
-  background-color: var(--bg-hover);
+  background-color: var(--surface-hover);
   border-color: var(--border-strong);
   color: var(--toolbar-text);
 }
@@ -295,7 +295,7 @@
   flex-shrink: 0;
   cursor: pointer;
   color: var(--toolbar-text);
-  background-color: var(--bg-card);
+  background-color: var(--surface-card);
   font-size: 20px;
   padding: 0;
 }
@@ -341,7 +341,7 @@
 
 :global(:root[data-theme='dark'] .toolbar-theme-button) {
   color: var(--text-inverted);
-  background-color: var(--bg-control);
+  background-color: var(--surface-control);
   border-color: var(--border-control);
 }
 
@@ -363,7 +363,7 @@
 :global(:root[data-theme='dark'] .toolbar-chat-button),
 :global(:root[data-theme='dark'] .toolbar-search-button) {
   color: var(--text-inverted);
-  background-color: var(--bg-control);
+  background-color: var(--surface-control);
   border-color: var(--border-control);
 }
 
@@ -379,7 +379,7 @@
 }
 
 :global(:root[data-theme='dark'] .toolbar-search) {
-  background-color: var(--bg-control);
+  background-color: var(--surface-control);
   border-color: var(--border-control);
 }
 
@@ -403,7 +403,7 @@
 
 :global(:root[data-theme='dark'] .toolbar-filter-button) {
   color: var(--text-inverted);
-  background-color: var(--bg-control);
+  background-color: var(--surface-control);
   border-color: var(--border-subtle);
 }
 
@@ -446,7 +446,7 @@
 .toolbar-settings-button:hover,
 .toolbar-theme-button:hover,
 .toolbar-search-button:hover {
-  background-color: var(--bg-hover);
+  background-color: var(--surface-hover);
   border-color: var(--border-strong);
 }
 
@@ -482,7 +482,7 @@
 }
 
 .toolbar-chat-button:hover {
-  background-color: var(--bg-hover);
+  background-color: var(--surface-hover);
 }
 
 .toolbar-search {
@@ -510,12 +510,12 @@
 }
 
 .toolbar-search:hover {
-  background-color: var(--bg-hover);
+  background-color: var(--surface-hover);
   border-color: var(--border-strong);
 }
 
 .toolbar-search:focus-within {
-  background-color: var(--bg-hover);
+  background-color: var(--surface-hover);
   border-color: var(--border-focus);
 }
 
@@ -639,7 +639,7 @@
 
   .toolbar-chat-button {
     color: var(--text-inverted);
-    background: var(--bg-control);
+    background: var(--surface-control);
     border-color: var(--border-control);
   }
 
@@ -658,7 +658,7 @@
 
   .app-dropdown__item:hover,
   .app-dropdown__item:focus-visible {
-    background-color: var(--bg-control);
+    background-color: var(--surface-control);
     color: var(--text-inverted);
   }
 
@@ -669,7 +669,7 @@
 
   .toolbar-filter-button {
     color: var(--text-inverted);
-    background-color: var(--bg-control);
+    background-color: var(--surface-control);
     border-color: var(--border-control);
   }
 
@@ -693,7 +693,7 @@
   .toolbar-theme-button,
   .toolbar-search-button {
     color: var(--text-inverted);
-    background-color: var(--bg-control);
+    background-color: var(--surface-control);
     border-color: var(--border-control);
   }
 
@@ -714,7 +714,7 @@
   }
 
   .toolbar-search {
-    background-color: var(--bg-control);
+    background-color: var(--surface-control);
     border-color: var(--border-control);
   }
 
@@ -756,14 +756,14 @@
 :global(:root[data-theme='light'] .toolbar-theme-button),
 :global(:root[data-theme='light'] .toolbar-search-button) {
   color: var(--toolbar-text);
-  background-color: var(--bg-card);
+  background-color: var(--surface-card);
   border-color: var(--border-control);
 }
 
 :global(:root[data-theme='light'] .toolbar-settings-button:hover),
 :global(:root[data-theme='light'] .toolbar-theme-button:hover),
 :global(:root[data-theme='light'] .toolbar-search-button:hover) {
-  background-color: var(--bg-hover);
+  background-color: var(--surface-hover);
   border-color: var(--border-strong);
 }
 </style>

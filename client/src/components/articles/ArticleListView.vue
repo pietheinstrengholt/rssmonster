@@ -499,8 +499,8 @@ export default {
 
 :global(:root[data-theme='dark'] .article-list-view__items) {
   color: var(--text-inverted);
-  background: var(--dark-page-surface);
-  border-color: var(--dark-page-surface);
+  background: var(--surface-page);
+  border-color: var(--surface-page);
   border-bottom-color: var(--text-inverted);
 }
 </style>

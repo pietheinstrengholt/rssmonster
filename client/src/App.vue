@@ -335,7 +335,7 @@ export default {
 <style scoped>
 .auth-page {
   align-items: center;
-  background: var(--bg-page);
+  background: var(--surface-page);
   color: var(--text-primary);
   display: flex;
   flex-direction: column;
@@ -345,7 +345,7 @@ export default {
 }
 
 .auth-card {
-  background: var(--bg-card);
+  background: var(--surface-card);
   border: 1px solid var(--border-default);
   border-radius: 16px;
   box-shadow: 0 24px 80px var(--shadow-card-subtle-color);
@@ -469,7 +469,7 @@ export default {
 }
 
 .auth-message {
-  background: var(--bg-muted);
+  background: var(--surface-chrome);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   color: var(--text-secondary);
@@ -482,7 +482,7 @@ export default {
 
 .auth-divider {
   align-items: center;
-  color: var(--text-muted);
+  color: var(--text-tertiary);
   display: flex;
   font-size: 12px;
   gap: 12px;
@@ -553,12 +553,12 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .auth-page) {
-  background: var(--bg-page);
+  background: var(--surface-page);
   color: var(--text-primary);
 }
 
 :global(:root[data-theme='dark'] .auth-card) {
-  background: var(--bg-card);
+  background: var(--surface-card);
   border-color: var(--border-default);
   box-shadow: 0 24px 80px var(--shadow-settings-dialog-dark-color);
 }
@@ -610,13 +610,13 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .auth-message) {
-  background: var(--bg-control);
+  background: var(--surface-control);
   border-color: var(--border-default);
   color: var(--text-secondary);
 }
 
 :global(:root[data-theme='dark'] .auth-divider) {
-  color: var(--text-muted);
+  color: var(--text-tertiary);
 }
 
 :global(:root[data-theme='dark'] .auth-divider::before),

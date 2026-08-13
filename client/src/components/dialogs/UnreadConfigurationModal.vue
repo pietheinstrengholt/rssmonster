@@ -386,7 +386,7 @@ export default {
 
 :global(:root[data-theme='dark'] .unread-preferences-option-icon) {
   color: var(--color-link, #60a5fa);
-  background-color: var(--bg-control, #222836);
+  background-color: var(--surface-control, #222836);
 }
 
 :global(:root[data-theme='dark'] .unread-preferences-option-description) {

@@ -125,18 +125,18 @@ export default {
   column-gap: 12px;
   align-items: center;
   border-bottom: 1px solid var(--article-border, var(--border-subtle));
-  background: var(--bg-page);
+  background: var(--surface-page);
   font-family: var(--font-family);
 }
 
 .article-list-row:hover {
-  background: var(--bg-sidebar, var(--bg-menu-item, var(--bg-subtle)));
+  background: var(--surface-chrome);
 }
 
 :global(.article-card.active .article-list-row),
 .article-list-row.active,
 .article-list-row.selected {
-  background: var(--bg-selected-soft, var(--article-active-background));
+  background: var(--article-active-background);
 }
 
 .article-list-row.hot {
@@ -346,7 +346,7 @@ export default {
 
 .article-list-action-button:hover,
 .article-list-actions :deep(.article-actions__trigger:hover) {
-  background: var(--bg-menu-item, var(--bg-subtle));
+  background: var(--surface-chrome);
   color: var(--article-heading-text);
 }
 
@@ -372,18 +372,18 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .article-card .article-list-row) {
-  background: var(--dark-bg-page, var(--dark-page-surface));
+  background: var(--surface-page);
   border-bottom-color: var(--border-subtle);
 }
 
 :global(:root[data-theme='dark'] .article-card .article-list-row:hover) {
-  background: var(--dark-bg-hover, var(--bg-control));
+  background: var(--surface-control);
 }
 
 :global(:root[data-theme='dark'] .article-card .article-list-row.active),
 :global(:root[data-theme='dark'] .article-card .article-list-row.selected),
 :global(:root[data-theme='dark'] .article-card.active .article-list-row) {
-  background: var(--bg-selected);
+  background: var(--surface-selected);
 }
 
 :global(:root[data-theme='dark'] .article-list-card.event-article .article-list-row) {
@@ -392,7 +392,7 @@ export default {
 
 :global(:root[data-theme='dark'] .article-card .article-list-row.hot),
 :global(:root[data-theme='dark'] .article-card .article-list-row.favorited) {
-  background-color: var(--dark-bg-page, var(--dark-page-surface));
+  background-color: var(--surface-page);
   border-color: var(--border-default);
 }
 
@@ -420,7 +420,7 @@ export default {
 
 :global(:root[data-theme='dark'] .article-card .article-list-action-button:hover),
 :global(:root[data-theme='dark'] .article-card .article-list-actions .article-actions__trigger:hover) {
-  background: var(--dark-bg-hover, var(--bg-control));
+  background: var(--surface-control);
   color: var(--dark-text-primary, var(--text-primary));
 }
 

@@ -87,7 +87,7 @@ export default {
 }
 
 .article-recommendation-card {
-  background: var(--bg-card);
+  background: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   color: var(--text-primary);
@@ -103,7 +103,7 @@ export default {
 }
 
 .article-recommendation-card:hover {
-  background: var(--bg-hover);
+  background: var(--surface-hover);
   border-color: var(--color-primary);
   transform: translateY(-1px);
 }

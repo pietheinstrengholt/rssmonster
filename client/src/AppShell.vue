@@ -161,7 +161,7 @@
     height: 100vh;
     height: 100dvh;
     font-weight: 500;
-    background-color: var(--bg-surface-muted);
+    background-color: var(--sidebar-background);
     border-right: 1px solid var(--border-subtle);
     overflow-y: auto;
     overflow-x: hidden;
@@ -226,7 +226,7 @@
   }
 
   :global(:root[data-theme='dark'] .app-shell__sidebar) {
-    background-color: var(--bg-secondary);
+    background-color: var(--sidebar-background);
     --sidebar-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
   }
 }
@@ -258,12 +258,12 @@
 }
 
 .app-shell {
-  background-color: var(--bg-primary);
+  background-color: var(--surface-card);
   height: 100%;
 }
 
 :global(:root[data-theme='dark'] .app-shell) {
-  background-color: var(--bg-primary);
+  background-color: var(--surface-card);
 }
 
 :global(:root[data-theme='dark'] .app-shell .app-shell__main) {

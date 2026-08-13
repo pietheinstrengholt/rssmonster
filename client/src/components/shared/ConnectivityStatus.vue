@@ -46,7 +46,7 @@ export default {
 <style scoped>
 .connectivity-status {
   align-items: center;
-  background: var(--bg-primary);
+  background: var(--surface-card);
   border: 1px solid var(--border-warning);
   border-left: 3px solid var(--border-warning-strong);
   border-radius: var(--radius-control);
@@ -75,7 +75,7 @@ export default {
 }
 
 .connectivity-status__retry {
-  background: var(--bg-control);
+  background: var(--surface-control);
   border: 1px solid var(--border-control);
   border-radius: var(--radius-control);
   color: var(--text-primary);
@@ -87,7 +87,7 @@ export default {
 }
 
 .connectivity-status__retry:hover:not(:disabled) {
-  background: var(--bg-hover);
+  background: var(--surface-hover);
 }
 
 .connectivity-status__retry:focus-visible {
@@ -104,7 +104,7 @@ export default {
 }
 
 :global(:root[data-theme='dark']) .connectivity-status {
-  background: var(--bg-secondary);
+  background: var(--surface-chrome);
   border-color: var(--border-warning);
   border-left-color: var(--border-warning-strong);
 }

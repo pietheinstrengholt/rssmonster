@@ -146,7 +146,7 @@
   display: flex;
   gap: 12px;
   padding: 16px;
-  background: var(--bg-primary);
+  background: var(--surface-card);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-panel);
 }

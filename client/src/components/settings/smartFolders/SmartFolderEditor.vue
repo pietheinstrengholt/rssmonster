@@ -484,7 +484,7 @@ export default {
 .smart-folder-config {
   padding: 16px;
   border-top: 1px solid var(--border-subtle);
-  background: var(--bg-subtle);
+  background: var(--surface-chrome);
 }
 
 .smart-folder-config__top {
@@ -508,7 +508,7 @@ export default {
   padding: 16px;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-panel);
-  background: var(--bg-primary);
+  background: var(--surface-card);
 }
 
 .smart-folder-panel legend {
@@ -580,7 +580,7 @@ export default {
   padding: 14px 16px;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-panel);
-  background: var(--bg-primary);
+  background: var(--surface-card);
 }
 
 .smart-folder-generated-query span {
@@ -623,7 +623,7 @@ export default {
 }
 
 :global(:root[data-theme='dark']) .smart-folder-config {
-  background: var(--bg-control);
+  background: var(--surface-control);
   border-color: var(--border-default);
 }
 

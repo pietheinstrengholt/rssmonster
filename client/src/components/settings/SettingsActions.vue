@@ -126,7 +126,7 @@
   display: flex;
   gap: 10px;
   padding: 12px;
-  background: var(--bg-primary);
+  background: var(--surface-card);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-panel);
 }
@@ -350,7 +350,7 @@
 }
 
 :global(:root[data-theme='dark'] .actions-settings .actions-type-icon--default) {
-  background: var(--bg-control);
+  background: var(--surface-control);
   color: var(--text-muted);
 }
 
@@ -369,7 +369,7 @@
 }
 
 :global(:root[data-theme='dark'] .actions-settings .actions-order-note) {
-  background: var(--bg-control);
+  background: var(--surface-control);
 }
 
 @media (max-width: 900px) {

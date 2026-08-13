@@ -233,13 +233,13 @@ export default {
 }
 
 .article-empty-state-secondary {
-  background: var(--bg-card);
+  background: var(--surface-card);
   border: 1px solid var(--border-control);
   color: var(--text-primary);
 }
 
 .article-empty-state-secondary:hover {
-  background: var(--bg-selected-soft, var(--bg-selected));
+  background: var(--surface-selected);
   border-color: var(--border-selected);
   color: var(--color-primary-text, var(--color-primary-hover));
 }
@@ -407,7 +407,7 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .article-empty-state) {
-  background: var(--dark-bg-page, var(--bg-page));
+  background: var(--surface-page);
   color: var(--dark-text-primary, var(--text-primary));
 }
 
@@ -430,13 +430,13 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .article-empty-state-secondary) {
-  background: var(--dark-bg-card, var(--bg-card));
+  background: var(--surface-card);
   border-color: var(--border-default);
   color: var(--dark-text-body, var(--text-secondary));
 }
 
 :global(:root[data-theme='dark'] .article-empty-state-secondary:hover) {
-  background: var(--dark-bg-hover, var(--bg-hover));
+  background: var(--surface-hover);
   color: var(--color-link-hover);
 }
 

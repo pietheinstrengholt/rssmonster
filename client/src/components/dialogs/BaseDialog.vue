@@ -338,12 +338,12 @@ export default {
 
 :deep(.base-dialog__button--secondary) {
   color: var(--text-primary);
-  background: var(--bg-card);
+  background: var(--surface-card);
   border-color: var(--border-control);
 }
 
 :deep(.base-dialog__button--secondary:hover:not(:disabled)) {
-  background: var(--bg-hover);
+  background: var(--surface-hover);
 }
 
 :deep(.base-dialog__button--primary) {
@@ -365,8 +365,8 @@ export default {
 
 :deep(.base-dialog__button--warning) {
   color: var(--text-inverted);
-  background: var(--color-warning);
-  border-color: var(--color-warning);
+  background: var(--color-warning-action);
+  border-color: var(--color-warning-action);
 }
 
 :global(:root[data-theme='dark']) .base-dialog__panel {
@@ -381,7 +381,7 @@ export default {
 
 :global(:root[data-theme='dark']) :deep(.base-dialog__button--secondary) {
   color: var(--text-primary);
-  background: var(--bg-control);
+  background: var(--surface-control);
   border-color: var(--border-control);
 }
 

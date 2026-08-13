@@ -102,7 +102,7 @@
   overflow: auto;
   border: 1px solid var(--border-default);
   border-radius: 0.5rem;
-  background: var(--bg-muted);
+  background: var(--surface-chrome);
   color: var(--article-content-text);
   white-space: pre;
 }
@@ -110,7 +110,7 @@
 .article-card .article-full-content code {
   padding: 0.1em 0.3em;
   border-radius: 0.25rem;
-  background: var(--bg-muted);
+  background: var(--surface-chrome);
   color: var(--article-content-text);
   font-size: 0.875em;
 }
@@ -141,7 +141,7 @@
 }
 
 .article-card .article-full-content th {
-  background: var(--bg-muted);
+  background: var(--surface-chrome);
   font-weight: 700;
 }
 

@@ -650,7 +650,7 @@ export default {
 
   padding: 0.75rem;
 
-  background-color: var(--bg-control);
+  background-color: var(--surface-control);
   border: 1px solid var(--briefing-preferences-period-border);
   border-radius: 0.375rem;
 
@@ -713,7 +713,7 @@ export default {
   padding: 0 2rem 0 0.625rem;
 
   color: var(--text-primary);
-  background-color: var(--bg-control);
+  background-color: var(--surface-control);
   border: 1px solid var(--briefing-preferences-input-border);
   border-radius: 0.375rem;
 
@@ -839,7 +839,7 @@ export default {
 :global(:root[data-theme='dark'] .briefing-preferences-select),
 :global(:root[data-theme='dark'] .briefing-preferences-select option) {
   color: var(--text-primary);
-  background-color: var(--bg-control);
+  background-color: var(--surface-control);
   border-color: var(--border-control);
 }
 

@@ -71,7 +71,7 @@ export default { emits: ['select-category', 'select-tag'], props: { categoryName
 
 .score {
   border: 1px solid var(--color-transparent);
-  background-color: var(--bg-subtle);
+  background-color: var(--surface-chrome);
   color: var(--article-score-text);
 }
 

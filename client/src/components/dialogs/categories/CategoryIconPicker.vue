@@ -106,14 +106,14 @@ export default {
   justify-content: center;
   padding: 8px;
   color: var(--text-secondary);
-  background: var(--bg-secondary);
+  background: var(--surface-chrome);
   border: 1px solid var(--border-control);
   border-radius: 4px;
 }
 
 .category-icon-picker__option:hover:not(:disabled) {
   color: var(--text-primary);
-  background: var(--bg-hover);
+  background: var(--surface-hover);
 }
 
 .category-icon-picker__option--selected {
@@ -139,18 +139,18 @@ export default {
 
 :global(:root[data-theme='dark']) .category-icon-picker__option {
   color: var(--text-muted);
-  background: var(--bg-control);
+  background: var(--surface-control);
   border-color: var(--border-control);
 }
 
 :global(:root[data-theme='dark']) .category-icon-picker__option:hover:not(:disabled) {
   color: var(--text-inverted);
-  background: var(--bg-hover);
+  background: var(--surface-hover);
 }
 
 :global(:root[data-theme='dark']) .category-icon-picker__option--selected {
   color: var(--text-inverted);
-  background: var(--bg-selected);
+  background: var(--surface-selected);
   border-color: var(--border-selected);
 }
 </style>

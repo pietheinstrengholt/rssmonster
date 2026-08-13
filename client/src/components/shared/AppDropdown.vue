@@ -280,7 +280,7 @@ export default {
   --app-dropdown-hover-background: var(--toolbar-active-background);
   --app-dropdown-hover-color: var(--text-inverted);
   --app-dropdown-item-color: var(--text-secondary);
-  --app-dropdown-menu-background: var(--bg-card);
+  --app-dropdown-menu-background: var(--surface-card);
   --app-dropdown-menu-color: var(--text-primary);
 
   position: relative;
@@ -374,7 +374,7 @@ export default {
 :global(:root[data-theme='dark'] .app-dropdown) {
   --app-dropdown-active-background: var(--toolbar-active-background);
   --app-dropdown-active-color: var(--text-inverted);
-  --app-dropdown-hover-background: var(--bg-control);
+  --app-dropdown-hover-background: var(--surface-control);
   --app-dropdown-hover-color: var(--text-inverted);
   --app-dropdown-item-color: var(--text-secondary);
   --app-dropdown-menu-background: var(--bg-modal);

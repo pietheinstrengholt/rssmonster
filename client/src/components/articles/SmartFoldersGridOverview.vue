@@ -95,7 +95,7 @@ export default {
 
 .smart-folder-grid-count {
   align-items: center;
-  background: var(--bg-muted);
+  background: var(--surface-chrome);
   border-radius: 8px;
   color: var(--text-secondary);
   display: inline-flex;
@@ -114,7 +114,7 @@ export default {
 
 .smart-folder-card {
   align-items: flex-start;
-  background: var(--bg-card);
+  background: var(--surface-card);
   border: 1px solid var(--border-default);
   border-radius: 8px;
   color: var(--text-primary);
@@ -145,7 +145,7 @@ export default {
 
 .smart-folder-card-icon {
   align-items: center;
-  background: var(--color-primary-soft, var(--bg-selected));
+  background: var(--color-primary-soft, var(--surface-selected));
   border-radius: 8px;
   color: var(--color-primary);
   display: inline-flex;
@@ -179,7 +179,7 @@ export default {
 }
 
 .smart-folder-grid-empty {
-  background: var(--bg-card);
+  background: var(--surface-card);
   border: 1px dashed var(--border-default);
   border-radius: 8px;
   color: var(--text-primary);
@@ -252,13 +252,13 @@ export default {
 }
 
 :global(:root[data-theme='dark']) .smart-folder-grid-overview {
-  background: var(--bg-page);
+  background: var(--surface-page);
   color: var(--text-primary);
 }
 
 :global(:root[data-theme='dark']) .smart-folder-card,
 :global(:root[data-theme='dark']) .smart-folder-grid-empty {
-  background: var(--bg-card);
+  background: var(--surface-card);
   border-color: var(--border-subtle);
 }
 

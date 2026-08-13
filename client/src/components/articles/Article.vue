@@ -442,7 +442,7 @@ export default {
 }
 
 .article-card {
-  background-color: var(--bg-card);
+  background-color: var(--surface-card);
   content-visibility: auto;
   contain-intrinsic-size: auto 720px;
   margin-bottom: 0px;
@@ -485,7 +485,7 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .article-card .article-body) {
-  background-color: var(--dark-page-surface);
+  background-color: var(--surface-page);
   border-bottom-color: var(--border-subtle);
 }
 
@@ -636,7 +636,7 @@ export default {
   max-width: none;
   margin: 0;
   padding: 10px 16px 0 70px;
-  background: var(--bg-page);
+  background: var(--surface-page);
 }
 
 @media (max-width: 879px) and (orientation: portrait) {
@@ -670,7 +670,7 @@ export default {
   .mobile-swipe-content {
     position: relative;
     z-index: 1;
-    background: var(--bg-card);
+    background: var(--surface-card);
     will-change: transform;
     touch-action: pan-y pinch-zoom;
   }
@@ -686,36 +686,36 @@ export default {
   }
 
   :global(:root[data-theme='dark'] .article-card .mobile-swipe-content) {
-    background: var(--bg-card);
+    background: var(--surface-card);
   }
 }
 
 :global(:root[data-theme='dark'] .article-card),
 :global(:root[data-theme='dark'] .article-card .article-body) {
   color: var(--article-content-text);
-  background: var(--dark-page-surface);
-  border-color: var(--dark-page-surface);
+  background: var(--surface-page);
+  border-color: var(--surface-page);
   border-bottom-color: var(--border-subtle);
-  background-color: var(--dark-page-surface);
+  background-color: var(--surface-page);
 }
 
 :global(:root[data-theme='dark'] .article-card) {
-  border-bottom-color: var(--dark-page-surface);
+  border-bottom-color: var(--surface-page);
 }
 
 :global(:root[data-theme='dark'] .article-card .article-body) {
-  border-bottom-color: var(--dark-contrast);
+  border-bottom-color: var(--surface-page);
   border-width: 0px;
   border-radius: 0px;
 }
 
 :global(:root[data-theme='dark'] .article-card .article-body.hot) {
-  background-color: var(--dark-page-surface);
-  border-color: var(--dark-page-surface);
+  background-color: var(--surface-page);
+  border-color: var(--surface-page);
 }
 
 :global(:root[data-theme='dark'] .article-card .article-body.favorited) {
-  background-color: var(--dark-page-surface);
+  background-color: var(--surface-page);
 }
 
 :global(:root[data-theme='dark'] .article-card.event-article),
@@ -724,7 +724,7 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .article-card.article-list-card) {
-  background: var(--dark-bg-page, var(--dark-page-surface));
+  background: var(--surface-page);
   border-bottom-color: var(--border-subtle);
 }
 
@@ -737,6 +737,6 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .article-card.article-list-card > .article-media) {
-  background: var(--dark-bg-page, var(--dark-page-surface));
+  background: var(--surface-page);
 }
 </style>

@@ -29,7 +29,7 @@ export default {
 <style scoped>
 .action-error-notice {
   align-items: flex-start;
-  background: var(--bg-primary);
+  background: var(--surface-card);
   border: 1px solid var(--border-danger);
   border-left: 3px solid var(--border-danger-strong);
   border-radius: var(--radius-control);
@@ -85,7 +85,7 @@ export default {
 }
 
 :global(:root[data-theme='dark']) .action-error-notice {
-  background: var(--bg-secondary);
+  background: var(--surface-chrome);
   border-color: var(--border-danger);
   border-left-color: var(--border-danger-strong);
 }

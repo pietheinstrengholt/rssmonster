@@ -17,15 +17,12 @@ export default {
 
 <style scoped>
 p.sidebar-section-title {
-  color: var(--text-primary);
-  margin-left: 14px;
-  margin-top: 18px;
-  margin-bottom: 5px;
+  color: var(--sidebar-section-title-text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  margin-left: var(--space-3);
+  margin-top: var(--space-5);
+  margin-bottom: var(--space-1);
 }
 
-:global(:root[data-theme='dark']) {
-  p.sidebar-section-title {
-    color: var(--text-inverted);
-  }
-}
 </style>

@@ -147,14 +147,14 @@
   padding: 11px 14px;
   border: 1px solid var(--border-default);
   border-radius: 10px;
-  background: var(--bg-card);
+  background: var(--surface-card);
   cursor: pointer;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .onboarding__feed-option:hover {
   border-color: var(--border-strong);
-  background: var(--bg-hover);
+  background: var(--surface-hover);
 }
 
 .onboarding__feed-option:has(input:checked) {
@@ -209,8 +209,8 @@
 
 .onboarding__message--warning {
   border-color: var(--border-warning);
-  background: var(--settings-orange-bg);
-  color: var(--settings-orange-text);
+  background: var(--surface-warning);
+  color: var(--color-warning);
 }
 
 .actions {

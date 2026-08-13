@@ -842,7 +842,7 @@ export default {
 }
 
 .article-list-bulk-header {
-  background: var(--bg-primary);
+  background: var(--surface-card);
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-primary);
   display: grid;
@@ -962,7 +962,7 @@ export default {
 }
 
 .bulk-action-menu {
-  background: var(--bg-primary);
+  background: var(--surface-card);
   border: 1px solid var(--border-default);
   border-radius: 8px;
   box-shadow: 0 16px 36px var(--shadow-reader-bulk-menu-color);
@@ -1188,7 +1188,7 @@ export default {
 
 .article-reader__thumbnail {
   align-self: start;
-  background: var(--bg-muted);
+  background: var(--surface-chrome);
   border-radius: 6px;
   display: block;
   height: 72px;
@@ -1244,7 +1244,7 @@ export default {
 
 .reader-loading-skeleton span {
   animation: reader-loading-pulse 1.4s ease-in-out infinite;
-  background: var(--bg-muted);
+  background: var(--surface-chrome);
   border-radius: 4px;
   display: block;
 }
@@ -1388,7 +1388,7 @@ export default {
 }
 
 :global(:root[data-theme='dark']) .article-reader__thumbnail {
-  background: var(--bg-control);
+  background: var(--surface-control);
 }
 
 </style>

@@ -161,7 +161,7 @@ export default {
   width: 100%;
   flex: 0 0 auto;
   padding: 0.875rem;
-  background-color: var(--bg-primary);
+  background-color: var(--surface-card);
 }
 
 .daily-briefing-intro::after {
@@ -295,7 +295,7 @@ export default {
 
 :global(:root[data-theme='dark'] .daily-briefing-intro) {
   color: var(--text-primary);
-  background-color: var(--dark-page-surface, #0b0f14);
+  background-color: var(--surface-page);
 }
 
 :global(:root[data-theme='dark'] .daily-briefing-intro::after) {

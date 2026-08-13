@@ -220,7 +220,7 @@
   gap: 14px;
   min-height: 86px;
   padding: 18px;
-  background: var(--bg-card);
+  background: var(--surface-card);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-panel);
 }
@@ -283,7 +283,7 @@
   padding: 0 16px;
   border: 1px solid var(--border-control);
   border-radius: var(--radius-control);
-  background: var(--bg-card);
+  background: var(--surface-card);
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
@@ -301,7 +301,7 @@
 }
 
 .feeds-toolbar-button:hover:not(:disabled) {
-  background: var(--bg-page);
+  background: var(--surface-page);
   border-color: var(--border-strong);
 }
 
@@ -318,7 +318,7 @@
   padding: 0 14px;
   border: 1px solid var(--border-control);
   border-radius: var(--radius-control);
-  background: var(--bg-card);
+  background: var(--surface-card);
   color: var(--text-muted);
 }
 
@@ -338,7 +338,7 @@
 
 .feeds-table-card {
   overflow: hidden;
-  background: var(--bg-card);
+  background: var(--surface-card);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-panel);
 }
@@ -374,7 +374,7 @@
 .feeds-table th {
   height: 46px;
   padding: 0 14px;
-  background: var(--bg-page);
+  background: var(--surface-page);
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
@@ -393,7 +393,7 @@
 }
 
 .feeds-table tbody tr:hover {
-  background: var(--bg-page);
+  background: var(--surface-page);
 }
 
 .feeds-table tbody tr {
@@ -442,7 +442,7 @@
 .feeds-status-pill {
   display: inline-flex;
   padding: 4px 8px;
-  border: 1px solid transparent;
+  border: 1px solid var(--color-transparent);
   border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 700;
@@ -549,7 +549,7 @@
 }
 
 :global(:root[data-theme='dark'] .feeds-overview .feeds-table th) {
-  background: var(--bg-control);
+  background: var(--surface-control);
   color: var(--text-secondary);
 }
 
@@ -561,7 +561,7 @@
 
 :global(:root[data-theme='dark'] .feeds-overview .feeds-table tbody tr:hover),
 :global(:root[data-theme='dark'] .feeds-overview .feeds-table tbody tr:hover td) {
-  background: var(--bg-control);
+  background: var(--surface-control);
 }
 
 :global(:root[data-theme='dark'] .feeds-overview .feeds-search input) {

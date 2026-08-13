@@ -11,7 +11,7 @@
 <style scoped>
 .settings-section-state {
   align-items: flex-start;
-  background: var(--bg-muted);
+  background: var(--surface-chrome);
   border: 1px solid var(--border-danger);
   border-radius: var(--radius-panel);
   color: var(--text-secondary);
@@ -39,7 +39,7 @@
 }
 
 :global(:root[data-theme='dark']) .settings-section-state {
-  background: var(--bg-muted);
+  background: var(--surface-chrome);
   border-color: var(--border-danger);
   color: var(--text-secondary);
 }

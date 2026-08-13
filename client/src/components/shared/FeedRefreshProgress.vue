@@ -34,7 +34,7 @@ export default {
 
 <style scoped>
 .feed-refresh-progress-panel {
-  background: var(--bg-secondary);
+  background: var(--surface-chrome);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-control);
   color: var(--text-primary);
@@ -87,7 +87,7 @@ export default {
 }
 
 :global(:root[data-theme='dark']) .feed-refresh-progress-panel {
-  background: var(--bg-secondary);
+  background: var(--surface-chrome);
   border-color: var(--border-default);
   color: var(--text-primary);
 }

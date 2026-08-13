@@ -153,7 +153,7 @@
 
 .smart-folders-surface {
   overflow: hidden;
-  background: var(--bg-card);
+  background: var(--surface-card);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-panel);
   box-shadow: 0 1px 3px var(--shadow-card-subtle-color);
@@ -245,7 +245,7 @@
   width: 32px;
   height: 32px;
   flex: 0 0 32px;
-  background: var(--bg-surface-muted);
+  background: var(--surface-chrome);
   font-size: 15px;
 }
 
@@ -258,7 +258,7 @@
   overflow: hidden;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-panel);
-  background: var(--bg-card);
+  background: var(--surface-card);
 }
 
 .smart-folder-card + .smart-folder-card {
@@ -286,12 +286,12 @@
 
 .smart-folder-row:hover,
 .smart-folder-row__more:hover {
-  background: var(--bg-hover);
+  background: var(--surface-hover);
 }
 
 .smart-folder-card--open .smart-folder-row,
 .smart-folder-card--open .smart-folder-row__more {
-  background: var(--bg-selected);
+  background: var(--surface-selected);
 }
 
 .smart-folder-row__drag,
@@ -302,7 +302,7 @@
 .smart-folder-row__icon {
   width: 40px;
   height: 40px;
-  background: var(--bg-surface-muted);
+  background: var(--surface-chrome);
 }
 
 .smart-folder-row__main {
@@ -332,7 +332,7 @@
   padding: 5px 10px;
   border: 1px solid var(--border-control);
   border-radius: var(--radius-pill);
-  background: var(--bg-surface-muted);
+  background: var(--surface-chrome);
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
@@ -380,7 +380,7 @@
 :global(:root[data-theme='dark'] .smart-folders-list-header__icon),
 :global(:root[data-theme='dark'] .smart-folder-row__icon),
 :global(:root[data-theme='dark'] .smart-folder-row__limit) {
-  background: var(--bg-control);
+  background: var(--surface-control);
 }
 
 :global(:root[data-theme='dark'] .smart-folders-list-header__icon) {

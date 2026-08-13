@@ -259,7 +259,7 @@
 }
 
 :global(:root[data-theme='dark']) .settings-object-row {
-  background: var(--bg-control);
+  background: var(--surface-control);
   border-color: var(--border-default);
 }
 

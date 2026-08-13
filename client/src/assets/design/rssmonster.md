@@ -36,11 +36,12 @@ The dark theme is deliberately authored rather than inverted. Its page starts at
 
 | role | light | dark | use |
 |---|---|---|---|
-| brand | `#EA650D` | `#2563EB` in the current theme token | RSSMonster identity and feed-related emphasis |
+| brand | `#EA650D` | `#EA650D` | RSSMonster identity and feed-related emphasis |
 | primary | `#2563EB` | `#2563EB` | Main actions, links, navigation, focus, and selection |
 | primary hover | `#1D4ED8` | `#1D4ED8` | Hovered primary actions and links |
 | success | `#166534` | `#4ADE80` | Completed, confirmed, and mark-as-read states |
-| danger | `#B91C1C` | `#AC5561` | Errors, destructive actions, and warnings |
+| warning | `#B45309` | `#F59E0B` | Warnings, degraded states, and cautionary actions |
+| danger | `#B91C1C` | `#AC5561` | Errors and destructive actions |
 | page | `#F8FAFC` | `#0B0F14` | Application field and scroll bounce surface |
 | card | `#FFFFFF` | `#1A202C` | Articles, dialogs, inputs, and raised content surfaces |
 | muted surface | `#F3F4F6` | `#222836` | Secondary controls, badges, and hover regions |
@@ -181,7 +182,7 @@ At roughly `640px`, article media and floated content adapt to the available wid
 - Keep the native system sans-serif stack for application-owned UI.
 - Keep the 266px desktop sidebar, 58px toolbar rhythm, and three-pane Reader relationship.
 - Keep blue for navigation, selection, links, primary actions, and focus.
-- Keep orange for RSSMonster/feed meaning, green for success, and red or pink for favorites, warnings, errors, and destructive actions.
+- Keep orange for RSSMonster/feed meaning, amber for warnings, green for success, and red or pink for favorites, errors, and destructive actions.
 - Keep article surfaces flat and reading-focused, with thin rules instead of routine elevation.
 - Keep metadata compact and quieter than headlines and article content.
 - Keep light and dark themes driven by the resolved `data-theme` tokens.

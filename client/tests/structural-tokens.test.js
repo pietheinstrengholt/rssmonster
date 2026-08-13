@@ -10,12 +10,25 @@ const globalStylesSource = readClientSource('src/assets/scss/global.scss');
 const preferencesDialogSource = readClientSource('src/components/dialogs/PreferencesDialogShell.vue');
 
 describe('structural design tokens', () => {
+  // Keeps brand identity separate from navigation and primary-action semantics in every theme.
+  it('retains orange branding and independent blue primary actions in dark mode', () => {
+    expect(themeSource).toMatch(
+      /:root\[data-theme="dark"\]\s*\{[\s\S]*?--color-brand: #EA650D;[\s\S]*?--color-primary: #2563EB;/
+    );
+  });
+
   // Verifies the compact foundation retains the established computed values.
   it('defines semantic control, radius, focus, layer, motion, shell, and UI type tokens', () => {
     const expectedTokens = {
       '--control-height-compact': '2rem',
       '--control-height-default': '2.5rem',
       '--control-height-touch': '2.75rem',
+      '--space-0-5': '0.125rem',
+      '--space-1': '0.25rem',
+      '--space-1-5': '0.375rem',
+      '--space-2': '0.5rem',
+      '--space-3': '0.75rem',
+      '--space-5': '1.25rem',
       '--radius-compact': '0.375rem',
       '--radius-control': '0.5rem',
       '--radius-panel': '0.875rem',

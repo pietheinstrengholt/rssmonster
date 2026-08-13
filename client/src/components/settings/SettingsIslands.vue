@@ -174,7 +174,7 @@
 }
 
 .interest-island-row {
-  background: var(--bg-primary);
+  background: var(--surface-card);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-panel);
 }
@@ -375,7 +375,7 @@
 
 :global(:root[data-theme='dark']) .settings-coverage-track,
 :global(:root[data-theme='dark']) .interest-article-row {
-  background: var(--bg-control);
+  background: var(--surface-control);
   border-color: var(--border-default);
 }
 

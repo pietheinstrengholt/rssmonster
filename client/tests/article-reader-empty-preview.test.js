@@ -210,9 +210,8 @@ describe('ArticleReaderLayout empty previews', () => {
     expect(previewFallbackSource).toContain('color: var(--reader-empty-preview-text)');
     expect(previewFallbackSource).toContain('color: var(--color-link)');
     expect(previewFallbackSource).toContain("root[data-theme='dark']");
-    expect(themeSource).toContain('--reader-empty-preview-text: #6B7280;');
-    expect(themeSource).toContain('--reader-empty-preview-text: #9CA3AF;');
-    expect(themeSource).toContain('--color-link: #2563EB;');
+    expect(themeSource.match(/--reader-empty-preview-text: var\(--text-secondary\);/g)).toHaveLength(2);
+    expect(themeSource).toContain('--color-link: var(--color-primary);');
     expect(themeSource).toContain('--color-link: #60A5FA;');
   });
 });

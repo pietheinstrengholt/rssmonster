@@ -431,7 +431,7 @@ export default {
 
 <style scoped>
 .feed-details { max-width: 1200px; color: var(--text-secondary); }
-.feed-details__back, .feed-details__edit, .feed-details__retry, .feed-details__retry-action { padding-inline: 12px; background: var(--bg-card); }
+.feed-details__back, .feed-details__edit, .feed-details__retry, .feed-details__retry-action { padding-inline: 12px; background: var(--surface-card); }
 .feed-details__back:focus-visible, .feed-details__edit:focus-visible, .feed-details__retry:focus-visible, .feed-details__retry-action:focus-visible, .feed-details__crawl-select:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: var(--focus-ring-offset); }
 .feed-details__retry-action:disabled { cursor: default; opacity: .6; }
 .feed-details__header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 12px 0 18px; }
@@ -443,7 +443,7 @@ export default {
 .feed-details__header p svg { color: var(--settings-orange-text); }
 .feed-details__type { padding: 2px 7px; border-radius: var(--radius-pill); background: var(--settings-success-bg); color: var(--settings-success-text); font-size: 11px; font-weight: 700; text-transform: lowercase; }
 .feed-details__metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
-.feed-details__metric, .feed-details__panel { background: var(--bg-card); border: 1px solid var(--border-default); border-radius: var(--radius-panel); }
+.feed-details__metric, .feed-details__panel { background: var(--surface-card); border: 1px solid var(--border-default); border-radius: var(--radius-panel); }
 .feed-details__metric { min-height: 78px; padding: 15px 17px; border-top: 3px solid var(--border-default); }
 .feed-details__metric span { display: block; color: var(--text-muted); font-size: 12px; font-weight: 600; }
 .feed-details__metric strong { display: block; margin-top: 5px; color: var(--text-primary); font-size: 20px; }
@@ -469,9 +469,9 @@ export default {
 .feed-details__table-wrap { overflow-x: auto; }
 .feed-details__table, .feed-details__attempts { width: 100%; border-collapse: collapse; font-size: 12px; }
 .feed-details__table th, .feed-details__table td, .feed-details__attempts th, .feed-details__attempts td { padding: 9px 10px; border-top: 1px solid var(--border-subtle); text-align: left; white-space: nowrap; }
-.feed-details__table th, .feed-details__attempts th { background: var(--bg-page); color: var(--text-muted); font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
+.feed-details__table th, .feed-details__attempts th { background: var(--surface-page); color: var(--text-muted); font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
 .feed-details__table tr.is-selected td { background: var(--settings-orange-bg); }
-.feed-details__crawl-select { padding: 0; border: 0; background: transparent; color: var(--text-secondary); font: inherit; cursor: pointer; text-align: left; }
+.feed-details__crawl-select { padding: 0; border: 0; background: var(--color-transparent); color: var(--text-secondary); font: inherit; cursor: pointer; text-align: left; }
 .feed-details__status { display: inline-flex; padding: 3px 6px; border-radius: var(--radius-pill); font-size: 10px; font-weight: 700; }
 .feed-details__status--success { background: var(--settings-success-bg); color: var(--settings-success-text); }
 .feed-details__status--recovered { background: var(--settings-orange-bg); color: var(--text-primary); }
@@ -507,6 +507,6 @@ export default {
 :global(:root[data-theme='dark']) .feed-details__retry { background: var(--bg-modal); }
 :global(:root[data-theme='dark']) .feed-details__back,
 :global(:root[data-theme='dark']) .feed-details__edit,
-:global(:root[data-theme='dark']) .feed-details__retry-action { background: var(--bg-control); color: var(--text-primary); }
+:global(:root[data-theme='dark']) .feed-details__retry-action { background: var(--surface-control); color: var(--text-primary); }
 :global(:root[data-theme='dark']) .feed-details__metric span { color: var(--text-primary); }
 </style>

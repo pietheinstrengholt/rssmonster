@@ -59,7 +59,7 @@ export default {
 }
 
 .article-refresh-state:hover {
-  background: var(--bg-selected);
+  background: var(--surface-selected);
   border-color: var(--border-info-strong);
 }
 
@@ -130,7 +130,7 @@ export default {
 }
 
 :global(:root[data-theme='dark']) .article-refresh-state:hover {
-  background: var(--bg-hover);
+  background: var(--surface-hover);
   border-color: var(--border-info-strong);
 }
 

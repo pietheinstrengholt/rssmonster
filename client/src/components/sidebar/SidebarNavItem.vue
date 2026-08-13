@@ -1,6 +1,8 @@
 <template>
-  <div
+  <button
+    type="button"
     :class="rowClasses"
+    :aria-current="selected ? 'page' : undefined"
     @click="$emit('select')"
   >
     <span class="sidebar-icon">
@@ -10,7 +12,7 @@
     <span v-if="count !== null && count !== undefined" class="sidebar-count-wrapper">
       <span class="sidebar-count" :class="badgeClass">{{ formattedCount }}</span>
     </span>
-  </div>
+  </button>
 </template>
 
 <script>
@@ -67,40 +69,51 @@ export default {
 
 <style scoped>
 .sidebar-item {
-  margin-left: 12px;
-  margin-right: 12px;
-  margin-top: 4px;
-  border-radius: 6px;
+  appearance: none;
+  width: calc(100% - (2 * var(--space-3)));
+  margin-left: var(--space-3);
+  margin-right: var(--space-3);
+  margin-top: var(--space-1);
+  border-radius: var(--radius-compact);
   cursor: pointer;
-  padding: 4px 4px 4px 12px;
+  box-sizing: border-box;
+  min-height: var(--control-height-compact);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
   display: flex;
   align-items: center;
-  color: var(--text-primary);
-  background-color: var(--bg-secondary);
-  transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  color: var(--sidebar-row-text);
+  background-color: var(--sidebar-row-background);
+  border: 0;
+  font: inherit;
+  text-align: left;
+  transition: background-color var(--motion-duration-normal) var(--motion-easing-standard), color var(--motion-duration-normal) var(--motion-easing-standard);
 }
 
 .sidebar-item.selected {
-  color: var(--color-primary);
-  background-color: var(--color-primary-soft);
-  box-shadow: none;
+  color: var(--sidebar-row-selected-text);
+  background-color: var(--sidebar-row-selected-background);
 }
 
 .sidebar-item.selected:hover {
-  background-color: var(--sidebar-selected-hover-background);
+  background-color: var(--sidebar-row-selected-hover-background);
 }
 
 .sidebar-item:not(.selected):hover {
-  background-color: var(--bg-hover);
+  background-color: var(--sidebar-row-hover-background);
+}
+
+.sidebar-item:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .sidebar-item.sidebar-refresh-alert {
-  color: var(--color-danger-strong);
-  background-color: var(--color-danger-soft);
+  color: var(--sidebar-row-alert-text);
+  background-color: var(--sidebar-row-alert-background);
 }
 
 .sidebar-item.sidebar-refresh-alert:hover {
-  background-color: var(--color-danger-soft);
+  background-color: var(--sidebar-row-alert-hover-background);
 }
 
 .sidebar-refresh-alert .sidebar-count {
@@ -112,33 +125,21 @@ export default {
   display: inline-flex;
   justify-content: center;
   line-height: 1;
-  margin-right: 5px;
+  margin-right: var(--space-1);
   min-width: 13px;
   flex: 0 0 auto;
 }
 
-.sidebar-status-item .sidebar-item-title {
-  color: var(--text-primary);
-}
-
-.sidebar-status-item.selected .sidebar-item-title {
-  color: var(--color-primary);
-}
-
 .sidebar-count-wrapper {
   margin-left: auto;
-  padding-left: 8px;
-  padding-right: 4px;
+  padding-left: var(--space-2);
+  padding-right: var(--space-1);
   flex: 0 0 auto;
 }
 
 .sidebar-count {
-  color: var(--text-primary);
+  color: inherit;
   font-weight: 500;
-}
-
-.sidebar-item.selected .sidebar-count {
-  color: var(--color-primary);
 }
 
 .sidebar-count.sidebar-count-white {
@@ -159,120 +160,6 @@ export default {
 .icon-clicked { color: currentColor; }
 .selected .icon-star,
 .selected .icon-hot {
-  color: var(--color-primary);
-}
-
-:global(:root[data-theme='dark']) {
-  .sidebar-item {
-    background-color: var(--bg-option);
-  }
-
-  .sidebar-item.selected {
-    color: var(--sidebar-selected-text-dark);
-    background-color: var(--sidebar-selected-background-dark);
-  }
-
-  .sidebar-item.selected .sidebar-count,
-  .selected .icon-star,
-  .selected .icon-hot {
-    color: var(--sidebar-selected-text-dark);
-  }
-
-  .sidebar-item.sidebar-refresh-alert {
-    color: var(--color-danger-border);
-    background-color: var(--sidebar-danger-surface-dark);
-  }
-
-  .sidebar-item.sidebar-refresh-alert:hover {
-    background-color: var(--sidebar-warning-surface-dark);
-  }
-}
-
-:global(:root[data-theme='dark']) .sidebar-item {
-  background-color: var(--bg-option);
-}
-
-:global(:root[data-theme='dark'] .sidebar-item:not(.selected):hover) {
-  background-color: var(--toolbar-search-hover-background-dark);
-}
-
-:global(:root[data-theme='dark'] .sidebar-item.sidebar-refresh-alert) {
-  color: var(--color-danger-border);
-  background-color: var(--sidebar-danger-surface-dark);
-}
-
-:global(:root[data-theme='dark'] .sidebar-item.sidebar-refresh-alert:hover) {
-  background-color: var(--sidebar-warning-surface-dark);
-}
-
-:global(:root[data-theme='dark'] .sidebar-item.sidebar-tag-item.selected) {
-  color: var(--sidebar-selected-text-dark) !important;
-  background-color: var(--sidebar-selected-background-dark) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-item.sidebar-tag-item.selected .sidebar-count) {
-  color: var(--sidebar-selected-text-dark) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-item.sidebar-all-categories-item.selected) {
-  color: var(--sidebar-selected-text-dark) !important;
-  background-color: var(--sidebar-selected-background-dark) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-item.sidebar-all-categories-item.selected .sidebar-count) {
-  color: var(--sidebar-selected-text-dark) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected) {
-  color: var(--sidebar-selected-text-dark) !important;
-  background-color: var(--sidebar-selected-background-dark) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected .sidebar-count) {
-  color: var(--sidebar-selected-text-dark) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected .sidebar-item-title),
-:global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected .sidebar-icon) {
-  color: var(--sidebar-selected-text-dark) !important;
-}
-
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected {
-  color: var(--sidebar-selected-text-dark) !important;
-  background-color: var(--sidebar-selected-background-dark) !important;
-  background-image: none !important;
-}
-
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected {
-  color: var(--sidebar-selected-text-dark) !important;
-  background-color: var(--sidebar-selected-background-dark) !important;
-  background-image: none !important;
-}
-
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.selected:hover {
-  background-color: var(--sidebar-selected-hover-background) !important;
-}
-
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-count,
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-count.sidebar-count-white,
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-count-wrapper,
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-item-title,
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-icon,
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-count,
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-count.sidebar-count-white,
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-count-wrapper,
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-item-title,
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-icon,
-:global(:root[data-theme='dark']) .selected .icon-star,
-:global(:root[data-theme='dark']) .selected .icon-hot {
-  color: var(--sidebar-selected-text-dark) !important;
-}
-
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-count.sidebar-count-white {
-  background-color: var(--color-transparent) !important;
-}
-
-:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-count.sidebar-count-white {
-  background-color: var(--color-transparent) !important;
+  color: var(--sidebar-row-selected-text);
 }
 </style>

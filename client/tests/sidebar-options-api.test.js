@@ -323,6 +323,33 @@ describe('Options API sidebar contracts', () => {
     expect(group.emitted('select-feed')).toEqual([[feed]]);
   });
 
+  it('renders sidebar navigation rows as native keyboard controls', () => {
+    const feed = { id: 101, categoryId: 10, feedName: 'Example feed', status: 'active' };
+    const category = { id: 10, name: 'Technology', feeds: [feed] };
+    const nav = mount(SidebarNavItem, {
+      props: { icon: 'rss', title: 'Unread', selected: true },
+      global: { stubs: { BootstrapIcon: true } }
+    });
+    const group = mount(SidebarCategoryGroup, {
+      props: {
+        category,
+        countResolver: () => 3,
+        selectedCategoryId: 10,
+        selectedFeedId: '%'
+      },
+      global: { stubs: { BootstrapIcon: true } }
+    });
+    const categoryHeader = group.get('.sidebar-category-header');
+    const feedRow = group.get('.sidebar-feed');
+
+    expect(nav.element.tagName).toBe('BUTTON');
+    expect(categoryHeader.element.tagName).toBe('BUTTON');
+    expect(feedRow.element.tagName).toBe('BUTTON');
+    expect(nav.attributes()).toMatchObject({ type: 'button', 'aria-current': 'page' });
+    expect(categoryHeader.attributes()).toMatchObject({ type: 'button', 'aria-current': 'page' });
+    expect(feedRow.attributes('type')).toBe('button');
+  });
+
   // This verifies loading sidebar actions expose their busy state and suppress duplicate selection.
   it('keeps loading sidebar actions accessible and non-interactive', async () => {
     const action = mount(SidebarActionButton, {

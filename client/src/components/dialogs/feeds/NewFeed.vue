@@ -281,10 +281,10 @@
     gap: 0.5rem;
     margin: 0 0 1rem;
     padding: 0.75rem;
-    border: 1px solid var(--settings-orange-border);
+    border: 1px solid var(--border-warning);
     border-radius: 0.375rem;
-    background: var(--settings-orange-bg);
-    color: var(--settings-orange-text);
+    background: var(--surface-warning);
+    color: var(--color-warning);
 }
 
 .feed-cloudflare-warning p {
@@ -325,9 +325,9 @@
 }
 
 :global(:root[data-theme='dark']) .feed-cloudflare-warning {
-    background: var(--settings-orange-bg);
-    border-color: var(--settings-orange-border);
-    color: var(--settings-orange-text);
+    background: var(--surface-warning);
+    border-color: var(--border-warning);
+    color: var(--color-warning);
 }
 
 @media (max-width: 879px) {

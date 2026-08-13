@@ -507,7 +507,7 @@ export default {
   padding: 1rem;
   border: 1px solid var(--border-default);
   border-radius: 0.5rem;
-  background: var(--bg-muted);
+  background: var(--surface-chrome);
 }
 
 .update-feed__footer {
@@ -530,7 +530,7 @@ export default {
 }
 
 :global(:root[data-theme='dark']) .feed-controls-panel {
-  background: var(--bg-card);
+  background: var(--surface-card);
   border-color: var(--border-subtle);
 }
 

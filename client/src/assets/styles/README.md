@@ -44,9 +44,10 @@ Use the following semantic rules:
 | Color Family | Meaning                                                    |
 | ------------ | ---------------------------------------------------------- |
 | Orange       | brand identity and feed-related creation                    |
+| Amber        | warnings, degraded states and cautionary actions             |
 | Blue         | navigation, selected states, links and primary actions      |
 | Green        | successful completion and confirmed success states          |
-| Red / Pink   | favorites, warnings, errors and destructive states          |
+| Red / Pink   | favorites, errors and destructive states                    |
 | Gray / Navy  | content, metadata, surfaces and structural interface chrome |
 
 This relationship is the default color language for both light and dark themes. A color should keep
@@ -178,23 +179,29 @@ the reduced count becomes the new ceiling. Never raise a baseline merely to make
 
 # Light Theme Palette
 
-## Base Surfaces
+## Surface Hierarchy
 
 ```css
---bg-sidebar: #F8F9FA;
---bg-toolbar: #FEFEFE;
---bg-menu-item: #F3F4F6;
---bg-selected-soft: #E8F2FE;
---bg-page: #FFFFFF;
---bg-card: #FFFFFF;
+--surface-page: #F8FAFC;
+--surface-chrome: #F3F4F6;
+--surface-card: #FFFFFF;
+--surface-control: #FFFFFF;
+--surface-hover: #ECEFF3;
+--surface-selected: #E8F2FE;
+--surface-disabled: #E0E0E0;
 ```
+
+These seven roles are the canonical application surface hierarchy. Feature tokens should reference
+the role that describes their visual elevation or state instead of introducing generic secondary,
+muted, option or subtle backgrounds.
 
 ## Text
 
 ```css
 --text-primary: #111827;
---text-meta: #6B7280;
---text-secondary: #4B5563;
+--text-secondary: #6B7280;
+--text-muted: var(--text-secondary);
+--text-tertiary: #9CA3AF;
 ```
 
 ## Blue / Primary
@@ -202,30 +209,31 @@ the reduced count becomes the new ceiling. Never raise a baseline merely to make
 ```css
 --color-primary: #2563EB;
 --color-primary-hover: #1D4ED8;
---color-primary-active: #1E3A8A;
---color-primary-visited: #1E40AF;
 --color-primary-soft: #E8F2FE;
---color-primary-text: #1D4ED8;
+--color-link: var(--color-primary);
+--color-link-hover: var(--color-primary-hover);
+--color-link-visited: #1E40AF;
+--color-link-active: #1E3A8A;
 ```
 
 ## Orange / Brand and Feed Creation
 
 ```css
---color-orange: #EA650D;
---color-orange-hover-text: #C2410C;
---color-orange-soft: #FFF1E8;
---color-orange-soft-hover: #FFE6D5;
---color-orange-border: #FFC4A3;
+--color-brand: #EA650D;
+--color-brand-hover: #C2410C;
+--surface-brand-soft: #FFF5ED;
+--surface-brand-hover: #FFEDD5;
+--surface-brand-active: #FED7AA;
+--border-brand: #FED7AA;
+--border-brand-strong: #FDBA74;
 ```
 
 ## Green / Successful Completion
 
 ```css
---color-green: #166534;
---color-green-hover-text: #14532D;
---color-green-soft: #EAF7EF;
---color-green-soft-hover: #DDF2E5;
---color-green-border: #B9DFC6;
+--color-success: #166534;
+--border-success: #BBF7D0;
+--border-success-strong: #86EFAC;
 ```
 
 ---
@@ -235,30 +243,25 @@ the reduced count becomes the new ceiling. Never raise a baseline merely to make
 ## Fresh Feeds
 
 ```css
-background: #2563EB;
-hover-background: #1D4ED8;
-border: none;
-color: #FFFFFF;
+background: var(--sidebar-action-refresh-background);
+color: var(--sidebar-action-refresh-text);
+border-color: var(--sidebar-action-refresh-border);
 ```
 
 ## Add New Feed
 
 ```css
-background: #FFF1E8;
-hover-background: #FFE6D5;
-border: #FFC4A3;
-color: #EA650D;
-hover-color: #C2410C;
+background: var(--sidebar-action-add-background);
+color: var(--sidebar-action-add-text);
+border-color: var(--sidebar-action-add-border);
 ```
 
 ## Mark as Read
 
 ```css
-background: #EAF7EF;
-hover-background: #DDF2E5;
-border: #B9DFC6;
-color: #166534;
-hover-color: #14532D;
+background: var(--sidebar-action-read-background);
+color: var(--sidebar-action-read-text);
+border-color: var(--sidebar-action-read-border);
 ```
 
 ---
@@ -357,31 +360,31 @@ when their components are revisited; do not reuse those colors for unrelated UI.
 Dark mode should use layered surfaces.
 
 ```css
---dark-bg-page: #0B0F14;
---dark-bg-sidebar: #11161D;
---dark-bg-toolbar: #161C24;
---dark-bg-card: #1A202C;
---dark-bg-hover: #222836;
---dark-border: #2A3342;
+--surface-page: #0B0F14;
+--surface-chrome: #222836;
+--surface-card: #1A202C;
+--surface-control: var(--surface-chrome);
+--surface-hover: var(--surface-chrome);
+--surface-selected: #1E3A8A;
+--surface-disabled: var(--surface-chrome);
 
---dark-text-primary: #E5E7EB;
---dark-text-body: #D1D5DB;
---dark-text-meta: #9CA3AF;
---dark-text-muted: #6B7280;
+--text-primary: #E5E7EB;
+--text-secondary: #9CA3AF;
+--text-muted: #8B95A5;
+--text-tertiary: #6B7280;
 ```
 
 ## Dark Sidebar Selected State
 
 ```css
-background: #1E3A8A;
-color: #FFFFFF;
-icon-color: #FFFFFF;
+background: var(--sidebar-row-selected-background);
+color: var(--sidebar-row-selected-text);
 ```
 
 Non-selected Categories, All Feeds, and Top Tags rows use the same dark hover surface:
 
 ```css
-background: var(--toolbar-search-hover-background-dark);
+background: var(--sidebar-row-hover-background);
 ```
 
 ## Dark Hyperlinks

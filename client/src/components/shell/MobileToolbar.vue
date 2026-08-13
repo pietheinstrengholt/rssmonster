@@ -248,7 +248,7 @@
 
 .mobile-toolbar-button:hover,
 .mobile-toolbar-button:focus-visible {
-  background: var(--bg-muted);
+  background: var(--surface-chrome);
 }
 
 .mobile-toolbar-button:disabled {
@@ -276,7 +276,7 @@
   position: relative;
   width: 100%;
   padding: 10px 16px;
-  background: var(--bg-card);
+  background: var(--surface-card);
   border-bottom: 1px solid var(--border-subtle);
   pointer-events: auto;
 }
@@ -286,7 +286,7 @@
   height: 42px;
   padding: 0 14px;
   color: var(--text-primary);
-  background: var(--bg-card);
+  background: var(--surface-card);
   border: 1px solid var(--border-control);
   border-radius: 14px;
   outline: none;
@@ -298,7 +298,7 @@
   height: 40px;
   padding: 0 6px;
   color: var(--text-primary);
-  background: var(--bg-card);
+  background: var(--surface-card);
   border: 1px solid var(--border-control);
   border-radius: 14px;
   box-shadow: 0 1px 2px var(--shadow-card-subtle-color);
@@ -314,14 +314,14 @@
 .mobile-filter-button:hover,
 .mobile-filter-button[aria-expanded='true'] {
   color: var(--text-primary);
-  background: var(--bg-page);
+  background: var(--surface-page);
   border-color: var(--border-strong);
   box-shadow: none;
 }
 
 .mobile-filter-button:focus {
   color: var(--text-primary);
-  background: var(--bg-page);
+  background: var(--surface-page);
   border-color: var(--border-focus);
   box-shadow: none;
 }
@@ -361,7 +361,7 @@
     z-index: 0;
     inset: 2px;
     content: '';
-    background-color: var(--bg-card);
+    background-color: var(--surface-card);
     border: 1px solid var(--border-control);
     border-radius: 999px;
     pointer-events: none;
@@ -509,7 +509,7 @@
   .mobile-toolbar {
     color: var(--text-inverted);
     background-color: var(--desktop-toolbar-background);
-    border-bottom-color: var(--dark-contrast);
+    border-bottom-color: var(--surface-page);
   }
 
   .mobile-toolbar-brand,
@@ -523,22 +523,22 @@
 
   .mobile-toolbar-button:hover,
   .mobile-toolbar-button:focus-visible {
-    background: var(--bg-subtle);
+    background: var(--surface-chrome);
   }
 
   .mobile-filter-button {
-    background: var(--bg-control);
+    background: var(--surface-control);
     border-color: var(--border-control);
   }
 
   .mobile-filter-button:hover,
   .mobile-filter-button[aria-expanded='true'] {
-    background: var(--bg-control);
+    background: var(--surface-control);
     border-color: var(--border-strong);
   }
 
   .mobile-filter-button:focus {
-    background: var(--bg-control);
+    background: var(--surface-control);
     border-color: var(--border-focus);
   }
 
@@ -549,7 +549,7 @@
 
   .mobile-search-input {
     color: var(--text-inverted);
-    background: var(--bg-control);
+    background: var(--surface-control);
     border-color: var(--border-control);
   }
 
@@ -576,22 +576,22 @@
 
 :global(:root[data-theme='dark'] .mobile-toolbar-button:hover),
 :global(:root[data-theme='dark'] .mobile-toolbar-button:focus-visible) {
-  background: var(--bg-subtle);
+  background: var(--surface-chrome);
 }
 
 :global(:root[data-theme='dark'] .mobile-filter-button) {
-  background: var(--bg-control);
+  background: var(--surface-control);
   border-color: var(--border-control);
 }
 
 :global(:root[data-theme='dark'] .mobile-filter-button:hover),
 :global(:root[data-theme='dark'] .mobile-filter-button[aria-expanded='true']) {
-  background: var(--bg-control);
+  background: var(--surface-control);
   border-color: var(--border-strong);
 }
 
 :global(:root[data-theme='dark'] .mobile-filter-button:focus) {
-  background: var(--bg-control);
+  background: var(--surface-control);
   border-color: var(--border-focus);
 }
 
@@ -602,7 +602,7 @@
 
 :global(:root[data-theme='dark'] .mobile-search-input) {
   color: var(--text-inverted);
-  background: var(--bg-control);
+  background: var(--surface-control);
   border-color: var(--border-control);
 }
 
@@ -618,7 +618,7 @@
   }
 
   :global(:root[data-theme='dark'] .mobile-toolbar-button::before) {
-    background-color: var(--bg-control);
+    background-color: var(--surface-control);
     border-color: var(--border-subtle);
   }
 
