@@ -155,11 +155,13 @@ export default {
   min-width: 0;
 }
 
-.icon-star { color: var(--icon-star); }
-.icon-hot { color: var(--icon-hot); }
-.icon-clicked { color: currentColor; }
-.selected .icon-star,
-.selected .icon-hot {
+.icon-briefing { color: var(--sidebar-icon-briefing); }
+.icon-unread { color: var(--sidebar-icon-unread); }
+.icon-read { color: var(--sidebar-icon-read); }
+.icon-star { color: var(--sidebar-icon-favorite); }
+.icon-hot { color: var(--sidebar-icon-hot); }
+.icon-clicked { color: var(--sidebar-icon-clicked); }
+.sidebar-status-item.selected .sidebar-icon {
   color: var(--sidebar-row-selected-text);
 }
 </style>

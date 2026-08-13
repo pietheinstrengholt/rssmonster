@@ -63,6 +63,22 @@ describe('sidebar style cascade', () => {
     expect(sidebarSectionTitleSource).toContain('font-weight: 500;');
   });
 
+  it('uses a restrained semantic icon palette for All feeds statuses', () => {
+    for (const status of ['briefing', 'unread', 'read', 'favorite', 'hot', 'clicked']) {
+      expect(themeSource.match(new RegExp(`--sidebar-icon-${status}:`, 'g'))).toHaveLength(2);
+    }
+
+    expect(sidebarRowSources[0]).toContain('.icon-briefing { color: var(--sidebar-icon-briefing); }');
+    expect(sidebarRowSources[0]).toContain('.icon-unread { color: var(--sidebar-icon-unread); }');
+    expect(sidebarRowSources[0]).toContain('.icon-read { color: var(--sidebar-icon-read); }');
+    expect(sidebarRowSources[0]).toContain('.icon-star { color: var(--sidebar-icon-favorite); }');
+    expect(sidebarRowSources[0]).toContain('.icon-hot { color: var(--sidebar-icon-hot); }');
+    expect(sidebarRowSources[0]).toContain('.icon-clicked { color: var(--sidebar-icon-clicked); }');
+    expect(sidebarRowSources[0]).toMatch(
+      /\.sidebar-status-item\.selected \.sidebar-icon \{[\s\S]*?color: var\(--sidebar-row-selected-text\);/
+    );
+  });
+
   it('applies category selection to its header without selecting expanded feeds', () => {
     expect(sidebarCategorySource).toContain('.sidebar-category.selected > .sidebar-category-header');
     expect(sidebarCategorySource).not.toMatch(

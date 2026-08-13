@@ -277,6 +277,12 @@
   --sidebar-row-disabled-text: var(--text-primary);
   --sidebar-brand-text: var(--text-primary);
   --sidebar-section-title-text: var(--text-secondary);
+  --sidebar-icon-briefing: var(--color-warning);
+  --sidebar-icon-unread: var(--color-primary);
+  --sidebar-icon-read: var(--text-secondary);
+  --sidebar-icon-favorite: #C73E4D;
+  --sidebar-icon-hot: #D97706;
+  --sidebar-icon-clicked: var(--text-secondary);
   --sidebar-secondary-action-background: rgba(255, 255, 255, 0.64);
   --sidebar-secondary-action-hover-background: rgba(255, 255, 255, 0.92);
   --sidebar-secondary-action-active-background: var(--surface-hover);
@@ -343,8 +349,6 @@
   --search-highlight-text: var(--text-primary);
 
   /* Mobile menu */
-  --icon-star: #C73E4D;
-  --icon-hot: #D97706;
 
   /* Other tokens */
   --bg-danger-subtle: #FDECEA;
@@ -508,6 +512,12 @@
   --sidebar-row-disabled-text: var(--text-primary);
   --sidebar-brand-text: var(--text-inverted);
   --sidebar-section-title-text: var(--text-secondary);
+  --sidebar-icon-briefing: var(--color-warning-hover);
+  --sidebar-icon-unread: var(--color-link);
+  --sidebar-icon-read: var(--text-secondary);
+  --sidebar-icon-favorite: #FB7185;
+  --sidebar-icon-hot: #FB923C;
+  --sidebar-icon-clicked: var(--text-secondary);
   --sidebar-secondary-action-background: rgba(42, 51, 66, 0.62);
   --sidebar-secondary-action-hover-background: rgba(49, 59, 77, 0.82);
   --sidebar-secondary-action-active-background: rgba(42, 51, 66, 0.9);
