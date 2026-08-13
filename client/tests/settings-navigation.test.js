@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Settings from '../src/components/settings/Settings.vue';
+import SettingsWelcomeSource from '../src/components/settings/SettingsWelcome.vue?raw';
 import SettingsSectionError from '../src/components/settings/SettingsSectionError.vue';
 import SettingsSectionLoading from '../src/components/settings/SettingsSectionLoading.vue';
 import { createFocusedStores } from './helpers/focusedStores.js';
@@ -60,9 +61,48 @@ describe('Settings navigation', () => {
   it('renders the Settings ownership boundary', () => {
     const wrapper = mountSettings();
 
-    expect(wrapper.get('.settings-surface').classes()).toContain('settings-overlay');
+    expect(wrapper.get('.settings-surface').classes()).toEqual(['settings-surface']);
     expect(wrapper.get('.settings-surface .settings-dialog').exists()).toBe(true);
     wrapper.unmount();
+  });
+
+  it('presents Welcome as a concise, semantically ordered section directory', () => {
+    const wrapper = mountSettings({ AIEnabled: false, role: 'admin' });
+    const directory = wrapper.get('.settings-welcome__directory');
+    const headings = directory.findAll('h4').map(heading => heading.text());
+
+    expect(directory.find('h6').exists()).toBe(false);
+    expect(headings).toEqual([
+      'Smart Folders',
+      'Actions',
+      'Crawl Statistics',
+      'Feeds',
+      'Official Sources',
+      'Manage Users'
+    ]);
+    expect(directory.text()).toContain('Review existing accounts and update roles or access.');
+    expect(directory.text()).not.toContain('create');
+    expect(directory.get('.settings-welcome__capability').text()).toBe('Admin only');
+    wrapper.unmount();
+  });
+
+  it('includes AI directory entries only when AI features are available', () => {
+    const disabledWrapper = mountSettings({ AIEnabled: false });
+    expect(disabledWrapper.findAll('.settings-welcome__capability')).toHaveLength(0);
+    expect(disabledWrapper.text()).not.toContain('AI feature');
+    disabledWrapper.unmount();
+
+    const enabledWrapper = mountSettings({ AIEnabled: true });
+    expect(enabledWrapper.findAll('.settings-welcome__capability').map(label => label.text())).toEqual([
+      'AI feature',
+      'AI feature',
+      'AI feature'
+    ]);
+    enabledWrapper.unmount();
+  });
+
+  it('lets directory content fill each card so capability labels align', () => {
+    expect(SettingsWelcomeSource).toMatch(/\.settings-welcome__content\s*\{[^}]*flex: 1 1 auto;/s);
   });
 
   it('shows Smart Folders when AI features are disabled', () => {
@@ -71,7 +111,6 @@ describe('Settings navigation', () => {
 
     expect(smartFolders).toMatchObject({
       label: 'Smart Folders',
-      description: 'Create dynamic saved searches',
       visible: true
     });
   });
@@ -89,24 +128,18 @@ describe('Settings navigation', () => {
     expect(getSettingsNavigation(true, 'user').find(item => item.key === 'users')?.visible).toBe(false);
   });
 
-  // Verifies unknown section state falls back to the welcome component and overview copy.
+  // Verifies unknown section state falls back to the welcome component.
   it('falls back safely when an unknown section is selected', () => {
-    const context = {
-      active: 'missing',
-      activeNavigationItem: undefined
-    };
-
-    expect(Settings.computed.activeSectionDescription.call(context)).toBe('Settings — Overview');
-    expect(Settings.computed.activeComponent.call(context)).toBe('SettingsWelcome');
+    expect(Settings.computed.activeComponent.call({ active: 'missing' })).toBe('SettingsWelcome');
   });
 
-  // Verifies feed detail state updates only the persistent Settings subtitle.
-  it('describes feed details while keeping Feeds as the active section', () => {
-    expect(Settings.computed.activeSectionDescription.call({
-      active: 'feeds',
-      feedDetailsActive: true,
-      activeNavigationItem: { label: 'Feeds', description: 'Manage RSS subscriptions' }
-    })).toBe('Settings — Feeds — Feed details');
+  it('keeps a stable product-level subtitle across sections', async () => {
+    const wrapper = mountSettings({ AIEnabled: true });
+
+    expect(wrapper.get('.settings-subtitle').text()).toBe('Manage your RSSMonster preferences and tools.');
+    await selectSettingsSection(wrapper, 'Scores');
+    expect(wrapper.get('.settings-subtitle').text()).toBe('Manage your RSSMonster preferences and tools.');
+    wrapper.unmount();
   });
 
   it('opens the always-available Smart Folders async section', async () => {
@@ -133,7 +166,7 @@ describe('Settings navigation', () => {
     });
 
     expect(wrapper.get('#scores-intro-title').text()).toBe('About AI Content Scoring');
-    expect(wrapper.get('.settings-subtitle').text()).toContain('Scores');
+    expect(wrapper.get('.settings-subtitle').text()).toBe('Manage your RSSMonster preferences and tools.');
     wrapper.unmount();
   });
 

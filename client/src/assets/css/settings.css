@@ -20,7 +20,7 @@ body.settings-overlay-open {
     overflow: hidden;
     background: var(--bg-card);
     border: 1px solid var(--border-default);
-    border-radius: 16px;
+    border-radius: var(--radius-dialog);
     box-shadow: 0 24px 80px var(--shadow-settings-dialog-color);
 }
 
@@ -50,7 +50,7 @@ body.settings-overlay-open {
 
 .settings-surface .settings-layout {
     display: grid;
-    grid-template-columns: 160px minmax(0, 1fr);
+    grid-template-columns: 200px minmax(0, 1fr);
     height: calc(100% - 72px);
 }
 
@@ -69,7 +69,7 @@ body.settings-overlay-open {
     align-items: center;
     gap: 12px;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     background: var(--color-transparent);
     color: var(--text-secondary);
     font-size: 14px;
@@ -123,18 +123,87 @@ body.settings-overlay-open {
     color: var(--text-primary);
 }
 
-.settings-surface .settings-section__actions,
+.settings-surface .settings-close-button:focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+}
+
+.settings-surface .settings-page {
+    width: 100%;
+    max-width: 1100px;
+    color: var(--text-primary);
+}
+
+.settings-surface .settings-panel,
+.settings-surface .settings-data-panel,
+.settings-surface .settings-metric-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-panel);
+}
+
+.settings-surface .settings-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.settings-surface .settings-control {
+    min-height: var(--control-height-default);
+    border-radius: var(--radius-control);
+}
+
+.settings-surface .settings-control--compact {
+    min-height: var(--control-height-compact);
+}
+
+.settings-surface .settings-control--icon-only {
+    width: var(--control-height-default);
+    height: var(--control-height-default);
+    padding: 0;
+}
+
+.settings-surface .settings-control--compact.settings-control--icon-only {
+    width: var(--control-height-compact);
+    height: var(--control-height-compact);
+}
+
+.settings-surface .settings-action-footer {
+    position: sticky;
+    z-index: 2;
+    bottom: -28px;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding: 16px 0 28px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-subtle);
+}
+
 .settings-surface .settings-refresh-actions {
     display: flex;
     justify-content: flex-end;
     margin-top: 20px;
 }
 
-.settings-surface .settings-data-panel,
-.settings-surface .settings-metric-card {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-panel);
+.settings-surface .settings-state {
+    display: flex;
+    min-height: 120px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.settings-surface .settings-state--empty {
+    padding: 36px 24px;
+}
+
+.settings-surface .settings-state--error {
+    color: var(--settings-danger-text);
 }
 
 .settings-surface .settings-metric-label {
@@ -151,30 +220,6 @@ body.settings-overlay-open {
     color: var(--text-primary);
     font-size: 24px;
     font-weight: 700;
-}
-
-.settings-surface .settings-refresh-button {
-    display: inline-flex;
-    height: 40px;
-    align-items: center;
-    gap: 8px;
-    padding: 0 14px;
-    background: var(--color-primary);
-    border: 0;
-    border-radius: 8px;
-    color: var(--text-inverted);
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.settings-surface .settings-refresh-button:hover {
-    background: var(--color-primary-hover);
-}
-
-.settings-surface .settings-refresh-button:disabled {
-    cursor: not-allowed;
-    opacity: 0.90;
 }
 
 .settings-surface .settings-insight-card {
@@ -205,7 +250,7 @@ body.settings-overlay-open {
     align-items: center;
     justify-content: center;
     background: var(--bg-primary);
-    border-radius: 12px;
+    border-radius: var(--radius-control);
     color: var(--settings-info-text);
     font-size: 20px;
     line-height: 1;
@@ -246,7 +291,6 @@ body.settings-overlay-open {
 :root[data-theme='dark'] .settings-surface .settings-header,
 :root[data-theme='dark'] .settings-surface .settings-content {
     background-color: var(--bg-modal);
-    color: var(--text-inverted);
 }
 
 :root[data-theme='dark'] .settings-surface .settings-dialog {
@@ -275,18 +319,8 @@ body.settings-overlay-open {
     color: var(--settings-nav-active-text-dark);
 }
 
-:root[data-theme='dark'] .settings-surface .settings-header,
-:root[data-theme='dark'] .settings-surface .settings-title,
-:root[data-theme='dark'] .settings-surface .settings-subtitle {
-    color: var(--text-inverted);
-}
-
 :root[data-theme='dark'] .settings-surface .settings-header {
     border-color: var(--border-subtle);
-}
-
-:root[data-theme='dark'] .settings-surface .settings-dialog p {
-    color: var(--text-inverted);
 }
 
 :root[data-theme='dark'] .settings-surface .settings-insight-card {
@@ -295,6 +329,7 @@ body.settings-overlay-open {
 }
 
 :root[data-theme='dark'] .settings-surface .settings-data-panel,
+:root[data-theme='dark'] .settings-surface .settings-panel,
 :root[data-theme='dark'] .settings-surface .settings-metric-card {
     background: var(--bg-modal);
     border-color: var(--border-default);
@@ -302,6 +337,10 @@ body.settings-overlay-open {
 
 :root[data-theme='dark'] .settings-surface .settings-insight-icon {
     background: var(--bg-control);
+}
+
+:root[data-theme='dark'] .settings-surface .settings-action-footer {
+    background: var(--bg-modal);
 }
 
 .settings-surface .settings-group {
@@ -331,7 +370,7 @@ body.settings-overlay-open {
     margin-bottom: 15px;
     padding: 12px;
     border: 1px solid var(--border-default);
-    border-radius: 4px;
+    border-radius: var(--radius-panel);
     background-color: var(--settings-neutral-bg);
 }
 
@@ -347,12 +386,14 @@ body.settings-overlay-open {
 
 .settings-surface .settings-add-button {
     background-color: var(--settings-orange-text);
+    border-color: var(--settings-orange-text);
     color: var(--text-inverted);
 }
 
 .settings-surface .settings-add-button:hover:not(:disabled),
 .settings-surface .settings-add-button:active:not(:disabled) {
     background-color: var(--settings-orange-hover-text);
+    border-color: var(--settings-orange-hover-text);
 }
 
 :root[data-theme='dark'] .settings-surface .settings-add-button {
@@ -410,13 +451,14 @@ body.settings-overlay-open {
         padding: 18px 16px;
     }
 
+    .settings-surface .settings-action-footer {
+        bottom: -18px;
+        padding-bottom: 18px;
+    }
+
     .settings-surface .settings-insight-card {
         padding: 20px;
     }
-}
-
-:root[data-theme='dark'] .settings-surface .settings-group label {
-    color: var(--text-inverted);
 }
 
 :root[data-theme='dark'] .settings-surface .action-row {

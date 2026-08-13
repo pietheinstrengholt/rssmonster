@@ -507,7 +507,7 @@ export default {
   min-width: 0;
   padding: 16px;
   border: 1px solid var(--border-default);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: var(--bg-primary);
 }
 
@@ -579,7 +579,7 @@ export default {
   margin-top: 16px;
   padding: 14px 16px;
   border: 1px solid var(--border-default);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: var(--bg-primary);
 }
 
@@ -592,7 +592,7 @@ export default {
 .smart-folder-generated-query code {
   overflow: hidden;
   padding: 6px 9px;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: var(--settings-query-code-bg);
   color: var(--settings-query-code-text);
   text-overflow: ellipsis;

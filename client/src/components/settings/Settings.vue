@@ -1,5 +1,5 @@
 <template>
-  <div class="settings-surface settings-overlay">
+  <div class="settings-surface">
     <section
       ref="settingsDialog"
       class="settings-dialog"
@@ -12,7 +12,7 @@
       <header class="settings-header">
         <div>
           <h2 id="settings-title" class="settings-title">Settings</h2>
-          <p class="settings-subtitle">{{ activeSectionDescription }}</p>
+          <p class="settings-subtitle">Manage your RSSMonster preferences and tools.</p>
         </div>
 
         <button
@@ -46,7 +46,6 @@
           <component
             :is="activeComponent"
             @close="active = 'welcome'"
-            @detail-view="feedDetailsActive = $event"
             @saved="handleSaved"
             @forceReload="$emit('forceReload')"
           />
@@ -139,7 +138,6 @@ export default {
   data() {
     return {
       active: 'welcome',
-      feedDetailsActive: false,
       previouslyFocusedElement: null
     };
   },
@@ -170,34 +168,21 @@ export default {
       const aiEnabled = this.selectionStore.currentSelection.AIEnabled;
 
       return [
-        { key: 'welcome', label: 'Welcome', description: 'Settings overview', icon: 'info-circle-fill', visible: true },
-        { key: 'smartfolders', label: 'Smart Folders', description: 'Create dynamic saved searches', icon: 'folder-fill', visible: true },
-        { key: 'actions', label: 'Actions', description: 'Configure article actions', icon: 'lightning-charge-fill', visible: true },
-        { key: 'scores', label: 'Scores', description: 'Set AI score thresholds', icon: 'bar-chart-fill', visible: aiEnabled },
-        { key: 'topics', label: 'Topics', description: 'Manage events and topics', icon: 'diagram-3-fill', visible: aiEnabled },
-        { key: 'islands', label: 'Islands', description: 'Manage interest islands', icon: 'compass-fill', visible: aiEnabled },
-        { key: 'crawlStatistics', label: 'Crawl Statistics', description: 'Review daily crawl activity', icon: 'clipboard-data-fill', visible: true },
-        { key: 'feeds', label: 'Feeds', description: 'Manage RSS subscriptions', icon: 'rss-fill', visible: true },
-        { key: 'officialSources', label: 'Official Sources', description: 'Mark trusted organization domains', icon: 'patch-check-fill', visible: true },
-        { key: 'users', label: 'Manage Users', description: 'Manage user access', icon: 'people-fill', visible: this.authStore.role === 'admin' }
+        { key: 'welcome', label: 'Welcome', icon: 'info-circle-fill', visible: true },
+        { key: 'smartfolders', label: 'Smart Folders', icon: 'folder-fill', visible: true },
+        { key: 'actions', label: 'Actions', icon: 'lightning-charge-fill', visible: true },
+        { key: 'scores', label: 'Scores', icon: 'bar-chart-fill', visible: aiEnabled },
+        { key: 'topics', label: 'Topics', icon: 'diagram-3-fill', visible: aiEnabled },
+        { key: 'islands', label: 'Islands', icon: 'compass-fill', visible: aiEnabled },
+        { key: 'crawlStatistics', label: 'Crawl Statistics', icon: 'clipboard-data-fill', visible: true },
+        { key: 'feeds', label: 'Feeds', icon: 'rss-fill', visible: true },
+        { key: 'officialSources', label: 'Official Sources', icon: 'patch-check-fill', visible: true },
+        { key: 'users', label: 'Manage Users', icon: 'people-fill', visible: this.authStore.role === 'admin' }
       ];
     },
     // This function removes settings sections hidden from the current user.
     visibleSettingsNavigation() {
       return this.settingsNavigation.filter((item) => item.visible);
-    },
-    // This function returns metadata for the active settings section.
-    activeNavigationItem() {
-      return this.settingsNavigation.find((item) => item.key === this.active);
-    },
-    // This function describes the active section for the dialog header.
-    activeSectionDescription() {
-      if (this.active === 'feeds' && this.feedDetailsActive) {
-        return 'Settings — Feeds — Feed details';
-      }
-      if (!this.activeNavigationItem) return 'Settings — Overview';
-
-      return `Settings — ${this.activeNavigationItem.label}: ${this.activeNavigationItem.description}`;
     },
     // This function resolves the component displayed for the active section.
     activeComponent() {
@@ -264,7 +249,6 @@ export default {
     selectSection(sectionKey, event) {
       const navigationButton = event?.currentTarget;
       this.active = sectionKey;
-      this.feedDetailsActive = false;
 
       this.$nextTick(() => {
         const dialog = this.$refs.settingsDialog;

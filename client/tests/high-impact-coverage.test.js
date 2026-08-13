@@ -794,6 +794,12 @@ describe('Vue template handler coverage', () => {
     });
     await flushPromises();
 
+    const introDetails = wrapper.get('.actions-intro-details');
+    expect(introDetails.attributes('open')).toBeUndefined();
+    expect(introDetails.get('summary').text()).toBe('View action types');
+    await introDetails.get('summary').trigger('click');
+    expect(introDetails.attributes('open')).toBeDefined();
+
     for (const input of wrapper.findAll('input')) await input.setValue('coverage');
     for (const select of wrapper.findAll('select')) await select.setValue('favorite');
     for (const button of wrapper.findAll('.actions-edit-button')) await button.trigger('click');

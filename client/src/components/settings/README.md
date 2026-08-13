@@ -22,6 +22,19 @@ The header subtitle changes with the selected section. Selecting another navigat
 
 `SettingsMetric` owns the compact label-and-value card used by Topics and Islands. Metric grids remain with their sections because responsive grid composition belongs to each page. Icon-led feed statistics, stacked instructional cards, and Smart Folder hero content remain separate because their structure and presentation are intentionally different.
 
+The feature stylesheet provides a small CSS-only vocabulary for ordinary section composition:
+
+- `settings-page` owns the standard readable page width and text color.
+- `settings-panel` owns the standard surface, border, radius, and dark-mode treatment.
+- `settings-toolbar` owns shared horizontal control alignment.
+- `settings-control`, with `--compact` and `--icon-only` modifiers, maps bespoke controls onto the application height and radius tokens.
+- `settings-action-footer` owns the sticky trailing action zone below editable content, keeping save controls predictably available while the Settings content scrolls.
+- `settings-state`, with `--empty` and `--error` modifiers, owns loading and empty-state alignment.
+
+Primary and secondary actions reuse the application-wide `app-button` variants. Feature-specific cards, data layouts, and editor internals remain locally styled rather than being forced into generic components.
+
+Settings radius values follow four semantic roles: `--radius-dialog` for the modal shell, `--radius-panel` for cards and panels, `--radius-control` for controls and compact notices, and `--radius-pill` for badges, avatars, and round indicators. Do not introduce intermediate numeric radii inside the feature.
+
 ## Visibility and access
 
 Navigation is tailored to the current installation and user:

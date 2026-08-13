@@ -52,7 +52,7 @@
                     class="app-button settings-add-button"
                     @click="$emit('add', recommendation)"
                 >
-                    <BootstrapIcon icon="plus-circle-fill" />
+                    <BootstrapIcon icon="plus-circle-fill" aria-hidden="true" />
                     Add
                 </button>
             </div>

@@ -1,5 +1,5 @@
 <template>
-  <div class="official-sources-settings">
+  <div class="official-sources-settings settings-page">
     <section class="settings-insight-card official-sources-header" aria-labelledby="official-sources-title">
       <span class="settings-insight-icon" aria-hidden="true">
         <BootstrapIcon icon="patch-check-fill" />
@@ -13,19 +13,19 @@
       </div>
     </section>
 
-    <section class="official-sources-list" aria-labelledby="official-sources-list-title">
+    <section class="official-sources-list settings-panel" aria-labelledby="official-sources-list-title">
       <header class="official-sources-list-heading">
         <div>
           <h3 id="official-sources-list-title">Sources</h3>
           <p>{{ sources.length }} configured domains</p>
         </div>
-        <button type="button" class="official-sources-add-button" @click="addSource">
+        <button type="button" class="app-button settings-add-button" @click="addSource">
           <BootstrapIcon icon="plus-circle-fill" aria-hidden="true" />
           Add Source
         </button>
       </header>
 
-      <div v-if="loading" class="official-sources-state">Loading official sources…</div>
+      <div v-if="loading" class="official-sources-state settings-state">Loading official sources…</div>
       <div v-else-if="error" class="official-sources-message official-sources-message--error">{{ error }}</div>
       <div v-else-if="sources.length" class="official-sources-table-wrap">
         <table class="official-sources-table">
@@ -44,7 +44,7 @@
                   :id="`official-source-entity-${index}`"
                   v-model="source.entity"
                   type="text"
-                  class="app-form-control"
+                  class="app-form-control settings-control settings-control--compact"
                   placeholder="Nintendo"
                   :aria-label="`Organization ${index + 1}`"
                 />
@@ -53,7 +53,7 @@
                 <input
                   v-model="source.domain"
                   type="text"
-                  class="app-form-control"
+                  class="app-form-control settings-control settings-control--compact"
                   placeholder="nintendo.com"
                   :aria-label="`Domain ${index + 1}`"
                 />
@@ -67,7 +67,7 @@
               <td class="official-sources-action-column">
                 <button
                   type="button"
-                  class="official-sources-delete-button"
+                  class="official-sources-delete-button settings-control settings-control--compact settings-control--icon-only"
                   :aria-label="`Remove ${source.entity || source.domain || 'source'}`"
                   @click="removeSource(index)"
                 >
@@ -78,15 +78,15 @@
           </tbody>
         </table>
       </div>
-      <p v-else class="official-sources-state">
+      <p v-else class="official-sources-state settings-state settings-state--empty">
         No official sources yet. Add an organization and domain to start marking crawled articles.
       </p>
     </section>
 
     <div v-if="message" class="official-sources-message official-sources-message--success">{{ message }}</div>
 
-    <div class="official-sources-save-area">
-      <button type="button" class="official-sources-save-button" :disabled="saving" @click="save">
+    <div class="settings-action-footer">
+      <button type="button" class="official-sources-save-button app-button app-button--primary" :disabled="saving" @click="save">
         {{ saving ? 'Saving…' : 'Save Changes' }}
       </button>
     </div>
@@ -94,18 +94,6 @@
 </template>
 
 <style scoped>
-.official-sources-settings {
-  max-width: 1100px;
-  color: var(--text-primary);
-}
-
-.official-sources-header,
-.official-sources-list {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-default);
-  border-radius: 10px;
-}
-
 .official-sources-header {
   display: flex;
   align-items: flex-start;
@@ -155,26 +143,14 @@
   font-size: 13px;
 }
 
-.official-sources-add-button,
-.official-sources-save-button,
 .official-sources-delete-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   cursor: pointer;
   font-weight: 700;
-}
-
-.official-sources-add-button {
-  height: 38px;
-  gap: 8px;
-  padding: 0 13px;
-  background: var(--official-sources-add-bg, var(--settings-orange-text));
-  border: 1px solid var(--official-sources-add-bg, var(--border-warning));
-  color: var(--text-inverted);
-  font-size: 14px;
 }
 
 .official-sources-table-wrap {
@@ -202,7 +178,6 @@
 
 .official-sources-table .app-form-control {
   min-width: 180px;
-  height: 36px;
 }
 
 .official-sources-toggle {
@@ -216,8 +191,6 @@
 }
 
 .official-sources-delete-button {
-  width: 34px;
-  height: 34px;
   background: var(--settings-danger-bg);
   color: var(--settings-danger-text);
 }
@@ -229,16 +202,12 @@
 
 .official-sources-state {
   margin: 0;
-  padding: 32px 22px;
-  text-align: center;
-  font-size: 14px;
-  line-height: 1.5;
 }
 
 .official-sources-message {
   margin-top: 14px;
   padding: 12px 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   font-size: 13px;
   font-weight: 700;
 }
@@ -253,25 +222,6 @@
   color: var(--settings-danger-text);
 }
 
-.official-sources-save-area {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
-.official-sources-save-button {
-  height: 42px;
-  padding: 0 16px;
-  background: var(--color-primary);
-  color: var(--text-inverted);
-  font-size: 14px;
-}
-
-.official-sources-save-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.90;
-}
-
 :global(:root[data-theme='dark'] .official-sources-header),
 :global(:root[data-theme='dark'] .official-sources-list) {
   background: var(--bg-modal);
@@ -284,15 +234,6 @@
   border-color: var(--border-default);
 }
 
-:global(:root[data-theme='dark']) .official-sources-add-button {
-  --official-sources-add-bg: var(--color-primary);
-  color: var(--text-inverted);
-}
-
-:global(:root[data-theme='dark']) .official-sources-add-button:hover {
-  --official-sources-add-bg: var(--color-primary-hover);
-}
-
 @media (max-width: 879px) {
   .official-sources-header,
   .official-sources-list-heading {
@@ -300,7 +241,7 @@
     align-items: stretch;
   }
 
-  .official-sources-add-button {
+  .official-sources-list-heading .settings-add-button {
     width: 100%;
   }
 }

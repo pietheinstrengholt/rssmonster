@@ -5,7 +5,7 @@
     @back="closeFeedDetails"
     @edit="openFeedEdit"
   />
-  <div v-else class="feeds-overview">
+  <div v-else class="feeds-overview settings-page">
     <section class="settings-insight-card feeds-header" aria-labelledby="feeds-overview-title">
       <span class="settings-insight-icon" aria-hidden="true">
         <BootstrapIcon icon="rss-fill" />
@@ -36,20 +36,20 @@
         </article>
       </section>
 
-      <div class="feeds-toolbar">
+      <div class="feeds-toolbar settings-toolbar">
         <div class="feeds-toolbar-actions">
           <input type="file" ref="opmlFileInput" accept=".opml,.xml" class="feeds-file-input" @change="handleFileSelect" />
-          <button type="button" class="feeds-toolbar-button" @click="$refs.opmlFileInput.click()">
+          <button type="button" class="feeds-toolbar-button settings-control" @click="$refs.opmlFileInput.click()">
             <BootstrapIcon class="feeds-toolbar-action-icon" icon="upload" aria-hidden="true" />
             Import OPML
           </button>
-          <button type="button" class="feeds-toolbar-button" :disabled="feeds.length === 0" @click="downloadOpml">
+          <button type="button" class="feeds-toolbar-button settings-control" :disabled="feeds.length === 0" @click="downloadOpml">
             <BootstrapIcon class="feeds-toolbar-action-icon" icon="download" aria-hidden="true" />
             Export OPML
           </button>
           <button
             type="button"
-            class="feeds-toolbar-button"
+            class="feeds-toolbar-button settings-control"
             :disabled="feedTrustLoading || feeds.length === 0"
             @click="handleRecalculateFeedTrust"
           >
@@ -59,7 +59,7 @@
         </div>
 
         <div class="feeds-toolbar-filters">
-          <select v-model="healthFilter" class="feeds-status-filter" aria-label="Filter feeds by health">
+          <select v-model="healthFilter" class="feeds-status-filter settings-control" aria-label="Filter feeds by health">
             <option value="all">All Health</option>
             <option value="HEALTHY">Healthy</option>
             <option value="RECOVERED">Recovered</option>
@@ -67,7 +67,7 @@
             <option value="FAILING">Failing</option>
             <option value="DISABLED">Disabled</option>
           </select>
-          <div class="feeds-search">
+          <div class="feeds-search settings-control">
             <BootstrapIcon icon="search" aria-hidden="true" />
             <input v-model="searchQuery" type="search" placeholder="Search feeds" aria-label="Search feeds by name or URL" />
           </div>
@@ -87,9 +87,9 @@
         {{ feedTrustError }}
       </div>
 
-      <div v-if="feeds.length === 0" class="feeds-empty-state">No feeds found.</div>
+      <div v-if="feeds.length === 0" class="feeds-empty-state settings-state settings-state--empty">No feeds found.</div>
       <template v-else>
-        <div v-if="filteredFeeds.length === 0" class="feeds-empty-state">No feeds match your filters.</div>
+        <div v-if="filteredFeeds.length === 0" class="feeds-empty-state settings-state settings-state--empty">No feeds match your filters.</div>
         <div v-else class="feeds-table-card">
           <div class="feeds-table-wrapper">
             <table class="feeds-table">
@@ -147,7 +147,7 @@
                   </td>
                   <td>{{ formatLastCrawl(feed.lastCrawlAt) }}</td>
                   <td>
-                    <button class="feeds-edit-button" type="button" @click.stop="openFeedEdit(feed)">
+                    <button class="feeds-edit-button settings-control settings-control--compact" type="button" @click.stop="openFeedEdit(feed)">
                       <span>Edit</span>
                     </button>
                   </td>
@@ -164,7 +164,6 @@
 
 <style scoped>
 .feeds-overview {
-  max-width: 1100px;
   color: var(--text-secondary);
 }
 
@@ -193,9 +192,15 @@
 
 .feeds-state,
 .feeds-empty-state {
-  padding: 36px 0;
   color: var(--text-muted);
   text-align: center;
+}
+
+.feeds-state { padding: 36px 0; }
+
+.feeds-empty-state {
+  min-height: 0;
+  padding-inline: 0;
 }
 
 .feeds-state--error {
@@ -217,7 +222,7 @@
   padding: 18px;
   background: var(--bg-card);
   border: 1px solid var(--border-default);
-  border-radius: 14px;
+  border-radius: var(--radius-panel);
 }
 
 .feeds-stat-icon {
@@ -226,7 +231,7 @@
   height: 34px;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   font-size: 16px;
 }
 
@@ -275,10 +280,9 @@
 
 .feeds-toolbar-button,
 .feeds-status-filter {
-  height: 42px;
   padding: 0 16px;
   border: 1px solid var(--border-control);
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: var(--bg-card);
   color: var(--text-secondary);
   font-size: 14px;
@@ -309,12 +313,11 @@
 .feeds-search {
   display: flex;
   width: 280px;
-  height: 42px;
   align-items: center;
   gap: 8px;
   padding: 0 14px;
   border: 1px solid var(--border-control);
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: var(--bg-card);
   color: var(--text-muted);
 }
@@ -337,7 +340,7 @@
   overflow: hidden;
   background: var(--bg-card);
   border: 1px solid var(--border-default);
-  border-radius: 12px;
+  border-radius: var(--radius-panel);
 }
 
 .feeds-table-wrapper {
@@ -358,7 +361,7 @@
 
 .feeds-table-wrapper::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .feeds-table {
@@ -440,7 +443,7 @@
   display: inline-flex;
   padding: 4px 8px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
@@ -461,7 +464,7 @@
   margin-top: 4px;
   overflow: hidden;
   background: var(--bg-meter-track);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .feeds-reliability-bar span,
@@ -490,9 +493,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 8px;
+  padding: 0 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: var(--color-transparent);
   color: var(--settings-orange-text);
   font-size: 13px;
@@ -512,7 +515,7 @@
 .feeds-message {
   margin-bottom: 16px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   font-size: 14px;
 }
 
@@ -525,25 +528,12 @@
   font-size: 13px;
 }
 
-:global(:root[data-theme='dark'] .feeds-overview) {
-  color: var(--text-inverted);
-}
-
 :global(:root[data-theme='dark'] .feeds-overview .feeds-header h3),
 :global(:root[data-theme='dark'] .feeds-overview .feeds-stat-value),
 :global(:root[data-theme='dark'] .feeds-overview .feeds-name-cell strong),
 :global(:root[data-theme='dark'] .feeds-overview .feeds-toolbar-button),
 :global(:root[data-theme='dark'] .feeds-overview .feeds-status-filter) {
   color: var(--text-inverted);
-}
-
-:global(:root[data-theme='dark'] .feeds-overview .feeds-header p:not(.settings-page-eyebrow)),
-:global(:root[data-theme='dark'] .feeds-overview .feeds-helper-text),
-:global(:root[data-theme='dark'] .feeds-overview .feeds-name-cell span),
-:global(:root[data-theme='dark'] .feeds-overview .feeds-stat-label),
-:global(:root[data-theme='dark'] .feeds-overview .feeds-footer),
-:global(:root[data-theme='dark'] .feeds-overview .feeds-empty-state) {
-  color: var(--text-muted);
 }
 
 :global(:root[data-theme='dark'] .feeds-overview .feeds-stat-card),
@@ -614,7 +604,7 @@ const FEED_HEALTH_LABELS = Object.freeze({
 
 export default {
   components: { SettingsFeedDetails },
-  emits: ['close', 'detail-view', 'saved'],
+  emits: ['close', 'saved'],
     data() {
         return {
             feeds: [],
@@ -729,12 +719,10 @@ export default {
         openFeedDetails(feed) {
             if (!feed?.id) return;
             this.selectedFeedId = feed.id;
-            this.$emit('detail-view', true);
         },
         // Restores the retained feed overview state.
         closeFeedDetails() {
             this.selectedFeedId = null;
-            this.$emit('detail-view', false);
         },
         // Removes explicitly deleted feeds and closes details that no longer have a backend resource.
         reconcileDeletedFeeds(feedIds) {

@@ -42,6 +42,18 @@ afterEach(() => {
 });
 
 describe('score settings', () => {
+  it('keeps score explanations optional so thresholds remain prominent', async () => {
+    const { wrapper } = mountScores();
+    const details = wrapper.get('.scores-intro-details');
+
+    expect(details.attributes('open')).toBeUndefined();
+    expect(details.get('summary').text()).toBe('Learn how scores work');
+    expect(wrapper.findAll('.scores-explanation')).toHaveLength(3);
+
+    await details.get('summary').trigger('click');
+    expect(details.attributes('open')).toBeDefined();
+  });
+
   it('initializes every available threshold from the current selection', () => {
     const { wrapper } = mountScores({
       minAdvertisementScore: 15,

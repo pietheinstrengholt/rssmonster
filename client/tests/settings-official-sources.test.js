@@ -95,7 +95,7 @@ describe('official-source administration', () => {
     const wrapper = mountOfficialSources();
     await flushPromises();
 
-    await wrapper.get('.official-sources-add-button').trigger('click');
+    await wrapper.get('.official-sources-list-heading .settings-add-button').trigger('click');
     await flushPromises();
 
     const entityInput = wrapper.get('#official-source-entity-0');

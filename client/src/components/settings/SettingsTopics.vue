@@ -1,5 +1,5 @@
 <template>
-  <div class="settings-topics">
+  <div class="settings-topics settings-page">
     <SettingsPageIntro
       eyebrow="Settings — Topic Insights"
       icon="diagram-3-fill"
@@ -9,7 +9,7 @@
       Events group related articles into current stories. Topics connect those events and articles into longer-running themes.
     </SettingsPageIntro>
 
-    <div v-if="loading" class="settings-topics-loading">
+    <div v-if="loading" class="settings-topics-loading settings-state">
       <span class="app-loading-indicator app-loading-indicator--small" role="status" aria-hidden="true"></span>
       <span>Loading events and topics...</span>
     </div>
@@ -129,7 +129,7 @@
     </div>
 
     <div class="settings-refresh-actions">
-      <button type="button" class="settings-refresh-button" @click="reload" :disabled="loading">
+      <button type="button" class="settings-refresh-button app-button app-button--primary" @click="reload" :disabled="loading">
         <BootstrapIcon icon="arrow-clockwise" aria-hidden="true" />
         Refresh
       </button>
@@ -138,19 +138,9 @@
 </template>
 
 <style scoped>
-.settings-topics {
-  max-width: 1100px;
-  color: var(--text-primary);
-}
-
 .settings-topics-loading {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   margin-bottom: 1rem;
-  color: var(--text-muted);
   font-family: var(--font-family);
-  font-size: 14px;
   font-weight: 500;
 }
 
@@ -251,7 +241,7 @@
   padding: 12px;
   background: var(--settings-neutral-bg);
   border: 1px solid var(--border-default);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
 }
 
 .settings-object-row strong {

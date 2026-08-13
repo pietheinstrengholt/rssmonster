@@ -233,11 +233,9 @@ describe('SettingsFeedsOverview actions', () => {
 
     context.openFeedDetails(createFeeds()[0]);
     expect(context.selectedFeedId).toBe(1);
-    expect(context.$emit).toHaveBeenCalledWith('detail-view', true);
 
     context.closeFeedDetails();
     expect(context.selectedFeedId).toBeNull();
-    expect(context.$emit).toHaveBeenCalledWith('detail-view', false);
   });
 
   it('removes an explicitly deleted feed and returns from its details', () => {
@@ -249,7 +247,6 @@ describe('SettingsFeedsOverview actions', () => {
 
     expect(context.feeds.map(feed => feed.id)).toEqual([1, 3]);
     expect(context.selectedFeedId).toBeNull();
-    expect(context.$emit).toHaveBeenCalledWith('detail-view', false);
   });
 
   it('does not reconcile without a confirmed deletion', () => {

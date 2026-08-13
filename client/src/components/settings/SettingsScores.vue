@@ -1,5 +1,5 @@
 <template>
-  <div class="scores-settings">
+  <div class="scores-settings settings-page">
     <!-- Info text -->
     <section class="settings-insight-card settings-insight-card--stacked scores-intro-card" aria-labelledby="scores-intro-title">
       <div class="settings-insight-header scores-intro-heading">
@@ -13,35 +13,38 @@
         </div>
       </div>
 
-      <div class="scores-explanation-grid">
-        <article v-for="score in scoreTypes" :key="score.key" class="scores-explanation">
-          <span class="scores-icon-tile" :class="score.iconClass" aria-hidden="true">
-            <BootstrapIcon :icon="score.icon" />
-          </span>
-          <div>
-            <h4>{{ score.title }}</h4>
-            <p>{{ score.explanation }}</p>
-          </div>
-        </article>
-      </div>
+      <details class="scores-intro-details">
+        <summary>Learn how scores work</summary>
+        <div class="scores-explanation-grid">
+          <article v-for="score in scoreTypes" :key="score.key" class="scores-explanation">
+            <span class="scores-icon-tile" :class="score.iconClass" aria-hidden="true">
+              <BootstrapIcon :icon="score.icon" />
+            </span>
+            <div>
+              <h4>{{ score.title }}</h4>
+              <p>{{ score.explanation }}</p>
+            </div>
+          </article>
+        </div>
 
-      <div class="scores-info-row scores-info-row--filtering">
-        <BootstrapIcon icon="funnel" aria-hidden="true" />
-        <p><strong>Filtering:</strong> Articles scoring above your threshold are automatically hidden. Set a threshold to 100 to see everything.</p>
-      </div>
-      <div class="scores-info-row">
-        <BootstrapIcon icon="key" aria-hidden="true" />
-        <p><strong>Requirements:</strong> Scoring requires an OpenAI API key configured in your backend environment. Without it, articles receive default scores of 70.</p>
-      </div>
+        <div class="scores-info-row scores-info-row--filtering">
+          <BootstrapIcon icon="funnel" aria-hidden="true" />
+          <p><strong>Filtering:</strong> Articles scoring above your threshold are automatically hidden. Set a threshold to 100 to see everything.</p>
+        </div>
+        <div class="scores-info-row">
+          <BootstrapIcon icon="key" aria-hidden="true" />
+          <p><strong>Requirements:</strong> Scoring requires an OpenAI API key configured in your backend environment. Without it, articles receive default scores of 70.</p>
+        </div>
+      </details>
     </section>
 
-    <section class="scores-threshold-section" aria-labelledby="scores-threshold-title">
+    <section class="scores-threshold-section settings-panel" aria-labelledby="scores-threshold-title">
       <div class="scores-threshold-heading">
         <div>
           <h3 id="scores-threshold-title">Score Thresholds</h3>
           <p>Choose the maximum score an article can have before it is hidden from your feed.</p>
         </div>
-        <button type="button" class="scores-reset-button" @click="resetToDefaults">
+        <button type="button" class="scores-reset-button app-button app-button--outline-secondary app-button--compact settings-control settings-control--compact" @click="resetToDefaults">
           <BootstrapIcon icon="arrow-counterclockwise" aria-hidden="true" />
           Reset to Defaults
         </button>
@@ -70,7 +73,7 @@
             @input="setScoreValue(score.key, $event.target.value)"
           />
           <input
-            class="scores-value-input"
+            class="scores-value-input settings-control"
             type="number"
             min="0"
             max="100"
@@ -83,7 +86,7 @@
       </div>
     </section>
 
-    <div class="scores-actions">
+    <div class="settings-action-footer">
       <button class="app-button app-button--primary scores-save-button" type="button" @click="save">
         Save Changes
       </button>
@@ -92,17 +95,6 @@
 </template>
 
 <style scoped>
-.scores-settings {
-  max-width: 1100px;
-  color: var(--text-primary);
-}
-
-.scores-threshold-section {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-default);
-  border-radius: 14px;
-}
-
 .scores-intro-heading h3,
 .scores-threshold-heading h3 {
   margin: 0;
@@ -124,11 +116,30 @@
   font-size: 14px;
 }
 
+.scores-intro-details {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--settings-info-border);
+}
+
+.scores-intro-details summary {
+  width: fit-content;
+  color: var(--settings-info-text);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.scores-intro-details summary:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
 .scores-explanation-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
-  margin-top: 24px;
+  margin-top: 16px;
 }
 
 .scores-explanation {
@@ -137,7 +148,7 @@
   padding: 16px;
   background: var(--bg-primary);
   border: 1px solid var(--border-default);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
 }
 
 .scores-explanation h4 {
@@ -160,7 +171,7 @@
   flex: 0 0 36px;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   font-size: 17px;
 }
 
@@ -208,19 +219,8 @@
 }
 
 .scores-reset-button {
-  display: inline-flex;
-  height: 38px;
   flex: 0 0 auto;
-  align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  background: var(--color-transparent);
-  border: 1px solid var(--border-control);
-  border-radius: 8px;
-  color: var(--text-secondary);
-  font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
 }
 
 .scores-reset-button:hover {
@@ -261,11 +261,10 @@
 
 .scores-value-input {
   width: 74px;
-  height: 38px;
   padding: 0 9px;
   background: var(--bg-input);
   border: 1px solid var(--border-control);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   color: var(--text-primary);
   font-size: 14px;
   font-weight: 700;
@@ -279,14 +278,8 @@
   box-shadow: var(--shadow-focus-primary);
 }
 
-.scores-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
 .scores-save-button {
-  height: 42px;
+  min-height: var(--control-height-default);
 }
 
 :global(:root[data-theme='dark'] .scores-explanation),

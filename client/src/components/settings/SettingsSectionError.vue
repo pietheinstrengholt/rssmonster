@@ -13,7 +13,7 @@
   align-items: flex-start;
   background: var(--bg-muted);
   border: 1px solid var(--border-danger);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   color: var(--text-secondary);
   display: flex;
   gap: 12px;

@@ -1,5 +1,5 @@
 <template>
-    <div class="settings-section settings-smart-folders">
+    <div class="settings-section settings-smart-folders settings-page">
         <!-- Info text -->
         <div class="settings-insight-card smart-folders-hero">
             <span class="settings-insight-icon" aria-hidden="true">
@@ -54,7 +54,7 @@
                     </div>
 
                     <button type="button" class="app-button settings-add-button" @click="addSmartFolder">
-                        <BootstrapIcon icon="plus-circle-fill" />
+                        <BootstrapIcon icon="plus-circle-fill" aria-hidden="true" />
                         Add Smart Folder
                     </button>
                 </div>
@@ -102,7 +102,7 @@
 
                             <button
                                 type="button"
-                                class="app-button app-button--icon-only smart-folder-row__more"
+                                class="app-button app-button--icon-only settings-control settings-control--icon-only smart-folder-row__more"
                                 title="Remove smart folder"
                                 aria-label="Remove smart folder"
                                 @click.stop="removeSmartFolder(index)"
@@ -126,16 +126,17 @@
                 </div>
             </section>
 
-            <div class="settings-section__actions smart-folders-surface__footer">
-                <button class="app-button app-button--primary smart-folders-save" type="button" @click="save" :disabled="hasInvalidSmartFolders || saving" :aria-busy="saving ? 'true' : 'false'">{{ saving ? 'Saving…' : 'Save Changes' }}</button>
-            </div>
         </fieldset>
+
+        <div v-if="loaded" class="settings-action-footer">
+            <button class="app-button app-button--primary smart-folders-save" type="button" @click="save" :disabled="hasInvalidSmartFolders || saving" :aria-busy="saving ? 'true' : 'false'">{{ saving ? 'Saving…' : 'Save Changes' }}</button>
+        </div>
     </div>
 </template>
 
 <style scoped>
 .settings-section {
-  max-width: 1100px;
+  width: 100%;
 }
 
 .settings-smart-folders {
@@ -154,7 +155,7 @@
   overflow: hidden;
   background: var(--bg-card);
   border: 1px solid var(--border-default);
-  border-radius: 14px;
+  border-radius: var(--radius-panel);
   box-shadow: 0 1px 3px var(--shadow-card-subtle-color);
 }
 
@@ -203,7 +204,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   color: var(--color-primary);
 }
 
@@ -256,7 +257,7 @@
   margin-top: 20px;
   overflow: hidden;
   border: 1px solid var(--border-default);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   background: var(--bg-card);
 }
 
@@ -266,7 +267,7 @@
 
 .smart-folder-row-wrap {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 42px;
+  grid-template-columns: minmax(0, 1fr) var(--control-height-default);
   align-items: stretch;
 }
 
@@ -330,7 +331,7 @@
 .smart-folder-row__limit {
   padding: 5px 10px;
   border: 1px solid var(--border-control);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--bg-surface-muted);
   color: var(--text-secondary);
   font-size: 12px;
@@ -348,12 +349,11 @@
 .smart-folder-row__status-dot {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-success);
 }
 
 .smart-folder-row__more {
-  width: 42px;
   min-height: 100%;
   padding: 0;
   border-radius: 0;
@@ -361,18 +361,7 @@
 }
 
 .smart-folders-save {
-  height: 42px;
-}
-
-.smart-folders-save:disabled {
-  opacity: 0.90;
-}
-
-.smart-folders-surface__footer {
-  margin: 0;
-  padding: 16px 24px;
-  background: var(--bg-surface-muted);
-  border-top: 1px solid var(--border-subtle);
+  min-height: var(--control-height-default);
 }
 
 :global(:root[data-theme='dark'] .smart-folders-hero),
@@ -384,12 +373,10 @@
 
 :global(:root[data-theme='dark'] .smart-folders-surface__notice),
 :global(:root[data-theme='dark'] .smart-folders-surface__insights + .smart-folders-surface__folders),
-:global(:root[data-theme='dark'] .smart-folders-surface__footer),
 :global(:root[data-theme='dark'] .smart-folder-card + .smart-folder-card) {
   border-color: var(--border-default);
 }
 
-:global(:root[data-theme='dark'] .smart-folders-surface__footer),
 :global(:root[data-theme='dark'] .smart-folders-list-header__icon),
 :global(:root[data-theme='dark'] .smart-folder-row__icon),
 :global(:root[data-theme='dark'] .smart-folder-row__limit) {
@@ -424,8 +411,7 @@
     width: 100%;
   }
 
-  .smart-folders-surface__notice,
-  .smart-folders-surface__footer {
+  .smart-folders-surface__notice {
     padding: 16px 18px;
   }
 
@@ -444,7 +430,7 @@
   }
 
   .smart-folder-row-wrap {
-    grid-template-columns: minmax(0, 1fr) 40px;
+    grid-template-columns: minmax(0, 1fr) var(--control-height-default);
   }
 
   .smart-folder-row {
@@ -462,9 +448,6 @@
     height: 36px;
   }
 
-  .smart-folder-row__more {
-    width: 40px;
-  }
 }
 </style>
 

@@ -1,21 +1,24 @@
 <template>
-  <div class="actions-settings">
+  <div class="actions-settings settings-page">
     <!-- Info text -->
     <section class="settings-insight-card settings-insight-card--stacked actions-intro-card" aria-labelledby="actions-intro-title">
       <header class="actions-intro-heading"><span class="settings-insight-icon" aria-hidden="true"><BootstrapIcon icon="lightning-charge-fill" /></span><div><p class="settings-page-eyebrow">Settings — Automation</p><h3 id="actions-intro-title">How Actions work</h3><p>Actions automatically process incoming articles during the crawl. When an article’s content or title matches a regular expression, the selected action is applied.</p></div></header>
-      <div class="actions-type-grid" aria-label="Available action types">
-        <article v-for="actionType in actionTypes" :key="actionType.value" class="actions-type-card"><span class="actions-type-icon" :class="actionType.iconClass" aria-hidden="true"><BootstrapIcon :icon="actionType.icon" /></span><div><h4>{{ actionType.label }}</h4><p>{{ actionType.description }}</p></div></article>
-      </div>
-      <div class="actions-note"><BootstrapIcon icon="lightning-charge" aria-hidden="true" /><p><strong>Performance tip:</strong> Discard actions are processed before AI analysis, saving API costs by skipping unwanted content early.</p></div>
+      <details class="actions-intro-details">
+        <summary>View action types</summary>
+        <div class="actions-type-grid" aria-label="Available action types">
+          <article v-for="actionType in actionTypes" :key="actionType.value" class="actions-type-card"><span class="actions-type-icon" :class="actionType.iconClass" aria-hidden="true"><BootstrapIcon :icon="actionType.icon" /></span><div><h4>{{ actionType.label }}</h4><p>{{ actionType.description }}</p></div></article>
+        </div>
+        <div class="actions-note"><BootstrapIcon icon="lightning-charge" aria-hidden="true" /><p><strong>Performance tip:</strong> Discard actions are processed before AI analysis, saving API costs by skipping unwanted content early.</p></div>
+      </details>
     </section>
 
-    <section class="actions-list-section" aria-labelledby="actions-list-title" :aria-busy="loading ? 'true' : 'false'">
-      <header class="actions-list-heading"><div><h3 id="actions-list-title">Your Actions</h3><p>Actions are evaluated in the order shown below.</p></div><button type="button" class="actions-add-button" :disabled="!loaded || saving" @click="addAction"><BootstrapIcon icon="plus-circle-fill" aria-hidden="true" />Add Action</button></header>
-      <div v-if="loading" class="actions-load-state" role="status" aria-live="polite">
+    <section class="actions-list-section settings-panel" aria-labelledby="actions-list-title" :aria-busy="loading ? 'true' : 'false'">
+      <header class="actions-list-heading"><div><h3 id="actions-list-title">Your Actions</h3><p>Actions are evaluated in the order shown below.</p></div><button type="button" class="app-button settings-add-button" :disabled="!loaded || saving" @click="addAction"><BootstrapIcon icon="plus-circle-fill" aria-hidden="true" />Add Action</button></header>
+      <div v-if="loading" class="actions-load-state settings-state" role="status" aria-live="polite">
         <span class="app-loading-indicator app-loading-indicator--small" aria-hidden="true"></span>
         <span>Loading actions…</span>
       </div>
-      <div v-else-if="loadError" class="actions-load-state actions-load-state--error" role="alert">
+      <div v-else-if="loadError" class="actions-load-state actions-load-state--error settings-state settings-state--error" role="alert">
         <span>{{ loadError }}</span>
         <button type="button" class="app-button app-button--outline-secondary app-button--compact" @click="fetchActions">Retry</button>
       </div>
@@ -23,45 +26,28 @@
         <article v-for="(action, index) in actions" :key="index" class="actions-list-row">
           <BootstrapIcon class="actions-grip" icon="grip-vertical" aria-hidden="true" /><span class="actions-row-icon" :class="actionTypeMeta(action.actionType).iconClass" aria-hidden="true"><BootstrapIcon :icon="actionTypeMeta(action.actionType).icon" /></span>
           <div class="actions-row-fields">
-            <div class="actions-field"><label :for="`action-name-${index}`">Name</label><input :id="`action-name-${index}`" v-model="action.name" type="text" class="app-form-control" placeholder="Action name" :disabled="saving" /></div>
-            <div class="actions-field"><label :for="`action-type-${index}`">Type</label><div class="actions-type-control"><select :id="`action-type-${index}`" v-model="action.actionType" class="app-form-select" :disabled="saving"><option value="">Select action type</option><option v-for="actionType in actionTypes" :key="actionType.value" :value="actionType.value">{{ actionType.selectLabel }}</option></select><span v-if="action.actionType" class="actions-type-pill">{{ actionTypeMeta(action.actionType).label }}</span></div></div>
-            <div v-if="action.actionType === 'tag'" class="actions-field"><label :for="`action-tag-${index}`">Tag value</label><input :id="`action-tag-${index}`" v-model="action.tagValue" type="text" class="app-form-control" placeholder="e.g., important" :disabled="saving" /></div>
-            <div class="actions-field actions-field--regex"><label :for="`action-regex-${index}`">Regular Expression</label><input :id="`action-regex-${index}`" v-model="action.regularExpression" type="text" class="app-form-control" placeholder="e.g., /keyword|phrase/i" :disabled="saving" /></div>
+            <div class="actions-field"><label :for="`action-name-${index}`">Name</label><input :id="`action-name-${index}`" v-model="action.name" type="text" class="app-form-control settings-control" placeholder="Action name" :disabled="saving" /></div>
+            <div class="actions-field"><label :for="`action-type-${index}`">Type</label><div class="actions-type-control"><select :id="`action-type-${index}`" v-model="action.actionType" class="app-form-select settings-control" :disabled="saving"><option value="">Select action type</option><option v-for="actionType in actionTypes" :key="actionType.value" :value="actionType.value">{{ actionType.selectLabel }}</option></select><span v-if="action.actionType" class="actions-type-pill">{{ actionTypeMeta(action.actionType).label }}</span></div></div>
+            <div v-if="action.actionType === 'tag'" class="actions-field"><label :for="`action-tag-${index}`">Tag value</label><input :id="`action-tag-${index}`" v-model="action.tagValue" type="text" class="app-form-control settings-control" placeholder="e.g., important" :disabled="saving" /></div>
+            <div class="actions-field actions-field--regex"><label :for="`action-regex-${index}`">Regular Expression</label><input :id="`action-regex-${index}`" v-model="action.regularExpression" type="text" class="app-form-control settings-control" placeholder="e.g., /keyword|phrase/i" :disabled="saving" /></div>
           </div>
-          <div class="actions-row-buttons"><button type="button" class="actions-edit-button" :disabled="saving" :aria-label="`Edit ${action.name || 'action'}`" @click="focusActionName(index)"><BootstrapIcon icon="pencil" aria-hidden="true" /><span>Edit</span></button><button type="button" class="actions-delete-button" :disabled="saving" :aria-label="`Delete ${action.name || 'action'}`" @click="removeAction(index)"><BootstrapIcon icon="trash-fill" aria-hidden="true" /></button></div>
+          <div class="actions-row-buttons"><button type="button" class="actions-edit-button settings-control settings-control--compact" :disabled="saving" :aria-label="`Edit ${action.name || 'action'}`" @click="focusActionName(index)"><BootstrapIcon icon="pencil" aria-hidden="true" /><span>Edit</span></button><button type="button" class="actions-delete-button settings-control settings-control--compact settings-control--icon-only" :disabled="saving" :aria-label="`Delete ${action.name || 'action'}`" @click="removeAction(index)"><BootstrapIcon icon="trash-fill" aria-hidden="true" /></button></div>
         </article>
       </div>
-      <p v-else-if="loaded" class="actions-empty-state">No actions yet. Add one to automate how incoming articles are handled.</p>
+      <p v-else-if="loaded" class="actions-empty-state settings-state settings-state--empty">No actions yet. Add one to automate how incoming articles are handled.</p>
       <div v-if="loaded" class="actions-order-note"><BootstrapIcon icon="info-circle" aria-hidden="true" /><p>Actions are applied from top to bottom. Once a Discard action matches, the article will be set with a filtered indicator ensuring it will not show up in queries.</p></div>
     </section>
-    <div class="actions-save-area"><button class="actions-save-button" type="button" :disabled="!loaded || loading || Boolean(loadError) || saving" @click="save">{{ saving ? 'Saving…' : 'Save Changes' }}</button></div>
+    <div class="settings-action-footer"><button class="actions-save-button app-button app-button--primary" type="button" :disabled="!loaded || loading || Boolean(loadError) || saving" @click="save">{{ saving ? 'Saving…' : 'Save Changes' }}</button></div>
   </div>
 </template>
 
 <style scoped>
-.actions-settings {
-  max-width: 1100px;
-  color: var(--text-primary);
-}
-
-.actions-intro-card,
-.actions-list-section {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-default);
-  border-radius: 14px;
-}
-
 .actions-intro-card {
   background: var(--settings-info-bg);
   border-color: var(--settings-info-border);
 }
 
 .actions-load-state {
-  align-items: center;
-  color: var(--text-secondary);
-  display: flex;
-  gap: 10px;
-  justify-content: center;
   min-height: 140px;
 }
 
@@ -84,7 +70,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
 }
 
 .actions-intro-heading h3,
@@ -110,11 +96,30 @@
   line-height: 1.5;
 }
 
+.actions-intro-details {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--settings-info-border);
+}
+
+.actions-intro-details summary {
+  width: fit-content;
+  color: var(--settings-info-text);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.actions-intro-details summary:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
 .actions-type-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 24px;
+  margin-top: 16px;
 }
 
 .actions-type-card {
@@ -123,7 +128,7 @@
   padding: 12px;
   background: var(--bg-primary);
   border: 1px solid var(--border-default);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
 }
 
 .actions-type-icon,
@@ -215,7 +220,6 @@
   font-size: 13px;
 }
 
-.actions-add-button,
 .actions-save-button,
 .actions-edit-button,
 .actions-delete-button {
@@ -225,20 +229,6 @@
   border: 0;
   cursor: pointer;
   font-weight: 700;
-}
-
-.actions-add-button {
-  height: 40px;
-  gap: 8px;
-  padding: 0 14px;
-  background: var(--settings-orange-text);
-  border-radius: 8px;
-  color: var(--text-inverted);
-  font-size: 14px;
-}
-
-.actions-add-button:hover {
-  background: var(--settings-orange-hover-text);
 }
 
 .actions-list-row {
@@ -274,7 +264,6 @@
 
 .actions-field .app-form-control,
 .actions-field .app-form-select {
-  height: 38px;
   min-width: 0;
   padding: 6px 10px;
 }
@@ -294,7 +283,7 @@
   overflow: hidden;
   padding: 4px 7px;
   background: var(--settings-neutral-bg);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--settings-neutral-text);
   font-size: 11px;
   font-weight: 700;
@@ -308,11 +297,10 @@
 }
 
 .actions-edit-button {
-  height: 34px;
   gap: 6px;
   padding: 0 8px;
   background: var(--color-transparent);
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   color: var(--settings-orange-text);
   font-size: 13px;
 }
@@ -328,10 +316,8 @@
 }
 
 .actions-delete-button {
-  width: 34px;
-  height: 34px;
   background: var(--settings-danger-bg);
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   color: var(--settings-danger-text);
   font-size: 14px;
 }
@@ -349,13 +335,7 @@
   }
 }
 
-.actions-empty-state {
-  margin: 0;
-  padding: 36px 24px;
-  text-align: center;
-  font-size: 14px;
-  line-height: 1.5;
-}
+.actions-empty-state { margin: 0; }
 
 .actions-order-note {
   margin: 0;
@@ -365,40 +345,13 @@
   color: var(--text-secondary);
 }
 
-.actions-save-area {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
 .actions-save-button {
-  height: 42px;
-  gap: 8px;
-  padding: 0 16px;
-  background: var(--color-primary);
-  border-radius: 8px;
-  color: var(--text-inverted);
-  font-size: 14px;
-}
-
-.actions-save-button:hover {
-  background: var(--color-primary-hover);
+  min-height: var(--control-height-default);
 }
 
 :global(:root[data-theme='dark'] .actions-settings .actions-type-icon--default) {
   background: var(--bg-control);
   color: var(--text-muted);
-}
-
-:global(:root[data-theme='dark'] .actions-settings .actions-add-button) {
-  background: var(--settings-orange-bg);
-  color: var(--settings-orange-text);
-  border: 1px solid var(--settings-orange-border);
-}
-
-:global(:root[data-theme='dark'] .actions-settings .actions-add-button:hover) {
-  background: var(--settings-orange-bg);
-  color: var(--settings-orange-text);
 }
 
 :global(:root[data-theme='dark'] .actions-settings .actions-intro-card),

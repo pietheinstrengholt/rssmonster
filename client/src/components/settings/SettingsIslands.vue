@@ -1,5 +1,5 @@
 <template>
-  <div class="settings-islands">
+  <div class="settings-islands settings-page">
     <SettingsPageIntro
       eyebrow="Settings — Island Insights"
       icon="compass-fill"
@@ -10,7 +10,7 @@
       what it is connected to, and how much of your library is covered.
     </SettingsPageIntro>
 
-    <div v-if="loading" class="settings-islands-loading">
+    <div v-if="loading" class="settings-islands-loading settings-state">
       <span class="app-loading-indicator app-loading-indicator--small" role="status" aria-hidden="true"></span>
       <span>Loading interest islands...</span>
     </div>
@@ -158,7 +158,7 @@
     </div>
 
     <div class="settings-refresh-actions">
-      <button type="button" class="settings-refresh-button" @click="reload" :disabled="loading">
+      <button type="button" class="settings-refresh-button app-button app-button--primary" @click="reload" :disabled="loading">
         <BootstrapIcon icon="arrow-clockwise" aria-hidden="true" />
         Refresh
       </button>
@@ -167,33 +167,23 @@
 </template>
 
 <style scoped>
-.settings-islands {
-  max-width: 1100px;
-  color: var(--text-primary);
-}
-
 .settings-islands-loading {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   margin-bottom: 1rem;
-  color: var(--text-muted);
   font-family: var(--font-family);
-  font-size: 14px;
   font-weight: 500;
 }
 
 .interest-island-row {
   background: var(--bg-primary);
   border: 1px solid var(--border-default);
-  border-radius: 14px;
+  border-radius: var(--radius-panel);
 }
 
 .interest-island-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
 }
 
 .settings-data-panel h4,
@@ -262,7 +252,7 @@
   margin-top: 16px;
   overflow: hidden;
   background: var(--settings-neutral-bg);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .settings-coverage-fill {
@@ -351,7 +341,7 @@
   padding: 12px;
   background: var(--settings-neutral-bg);
   border: 1px solid var(--border-default);
-  border-radius: 10px;
+  border-radius: var(--radius-panel);
   color: inherit;
   text-decoration: none;
 }

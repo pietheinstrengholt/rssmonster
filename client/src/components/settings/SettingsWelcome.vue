@@ -1,106 +1,104 @@
 <template>
-  <div class="settings-group">
+  <div class="settings-group settings-page">
     <SettingsPageIntro
       eyebrow="Settings — Overview"
       icon="info-circle-fill"
       title="Welcome to Settings"
       title-id="settings-welcome-title"
     >
-      RSSMonster provides powerful automation and filtering tools to help you take control of your reading experience.
-      Configure how articles are processed, filtered, and organized to surface the content that matters most to you.
+      Choose a section to configure your reading experience or review RSSMonster activity.
     </SettingsPageIntro>
 
-    <div v-if="selectionStore.currentSelection.AIEnabled" class="settings-welcome__section">
-      <h6><strong>Smart Folders</strong></h6>
-      <p class="settings-welcome__metadata">
-        Create dynamic, saved searches using powerful query expressions. Filter by status (<code>unread:true</code>),
-        tags (<code>tag:ai</code>), quality scores (<code>quality:>0.6</code>), dates (<code>@today</code>), and more.
-        Folders update automatically as new articles arrive.
-      </p>
-    </div>
-
-    <div class="settings-welcome__section">
-      <h6><strong>Actions</strong></h6>
-      <p class="settings-welcome__metadata">
-        Define automated rules using regular expressions to process articles during crawl.
-        Automatically discard unwanted content, mark articles as read, flag promotions, or favorite important topics —
-        all before AI analysis runs, saving API costs.
-      </p>
-    </div>
-
-    <div v-if="selectionStore.currentSelection.AIEnabled" class="settings-welcome__section">
-      <h6><strong>Score Thresholds</strong></h6>
-      <p class="settings-welcome__metadata">
-        Control content quality by setting thresholds for advertisement, sentiment, and quality scores.
-        Articles scoring above your limits are automatically filtered out. Requires OpenAI API configuration
-        for AI-powered scoring during crawl.
-      </p>
-    </div>
-
-    <div v-if="selectionStore.currentSelection.AIEnabled" class="settings-welcome__section">
-      <h6><strong>Topics</strong></h6>
-      <p class="settings-welcome__metadata">
-        Review topic and event insights to see how related articles are grouped into current stories and longer-running themes.
-      </p>
-    </div>
-
-    <div v-if="selectionStore.currentSelection.AIEnabled" class="settings-welcome__section">
-      <h6><strong>Islands</strong></h6>
-      <p class="settings-welcome__metadata">
-        Explore your interest islands to understand which topics, favorites, and clicks are shaping your reading priorities.
-      </p>
-    </div>
-
-    <div class="settings-welcome__section">
-      <h6><strong>Crawl Statistics</strong></h6>
-      <p class="settings-welcome__metadata">
-        Review daily crawl activity, including new and updated articles and the number of completed or failed crawls.
-      </p>
-    </div>
-
-    <div class="settings-welcome__section">
-      <h6><strong>Feeds Overview</strong></h6>
-      <p class="settings-welcome__metadata">
-        Manage your RSS subscriptions, view feed metrics (trust score, duplication rate, article counts),
-        and import/export OPML files for easy migration between RSS readers.
-      </p>
-    </div>
-
-    <div v-if="this.authStore.role === 'admin'" class="settings-welcome__section">
-      <h6><strong>Manage Users</strong></h6>
-      <p class="settings-welcome__metadata">
-        Manage user accounts, roles, and permissions for multi-user installations. Admins can create, edit, and delete users,
-        as well as assign roles to control access to features and settings.
-      </p>
-    </div>
-
-    <p class="settings-welcome__metadata settings-welcome__tip">
-      <strong>Tip:</strong> Use the settings navigation to configure each feature. Changes are saved independently per section.
-    </p>
+    <section class="settings-welcome__directory" aria-label="Settings sections">
+      <article
+        v-for="section in sectionDirectory"
+        :key="section.key"
+        class="settings-welcome__section settings-panel"
+        :aria-labelledby="`settings-welcome-${section.key}`"
+      >
+        <span class="settings-welcome__icon" aria-hidden="true">
+          <BootstrapIcon :icon="section.icon" />
+        </span>
+        <div class="settings-welcome__content">
+          <div class="settings-welcome__heading">
+            <h4 :id="`settings-welcome-${section.key}`">{{ section.title }}</h4>
+            <span v-if="section.capability" class="settings-welcome__capability">{{ section.capability }}</span>
+          </div>
+          <p>{{ section.purpose }}</p>
+        </div>
+      </article>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.settings-group {
-  max-width: 1100px;
-}
-
-.settings-welcome__metadata {
-  margin-bottom: 0;
-  color: var(--text-muted);
-  font-size: 0.875em;
+.settings-welcome__directory {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .settings-welcome__section {
-  margin-bottom: 1rem;
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
 }
 
-.settings-welcome__section h6 {
-  margin-bottom: 0.5rem;
+.settings-welcome__icon {
+  display: inline-flex;
+  width: var(--control-height-compact);
+  height: var(--control-height-compact);
+  flex: 0 0 var(--control-height-compact);
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-control);
+  background: var(--settings-info-bg);
+  color: var(--settings-info-text);
 }
 
-.settings-welcome__tip {
-  margin-top: 1.5rem;
+.settings-welcome__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.settings-welcome__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.settings-welcome__heading h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.settings-welcome__capability {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--settings-neutral-bg);
+  color: var(--settings-neutral-text);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.settings-welcome__section p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+@media (max-width: 700px) {
+  .settings-welcome__directory {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
 
@@ -114,7 +112,22 @@ export default {
     SettingsPageIntro
   },
   computed: {
-    ...mapStores(useSelectionStore, useAuthStore)
+    ...mapStores(useSelectionStore, useAuthStore),
+    sectionDirectory() {
+      const aiEnabled = this.selectionStore.currentSelection.AIEnabled;
+
+      return [
+        { key: 'smart-folders', title: 'Smart Folders', icon: 'folder-fill', purpose: 'Build saved searches that update as new articles arrive.', visible: true },
+        { key: 'actions', title: 'Actions', icon: 'lightning-charge-fill', purpose: 'Automate how matching articles are handled during crawl.', visible: true },
+        { key: 'scores', title: 'Scores', icon: 'bar-chart-fill', purpose: 'Set AI score thresholds that control article visibility.', capability: 'AI feature', visible: aiEnabled },
+        { key: 'topics', title: 'Topics', icon: 'diagram-3-fill', purpose: 'Review current events and longer-running topic groups.', capability: 'AI feature', visible: aiEnabled },
+        { key: 'islands', title: 'Islands', icon: 'compass-fill', purpose: 'Explore the interests learned from your reading behavior.', capability: 'AI feature', visible: aiEnabled },
+        { key: 'crawl-statistics', title: 'Crawl Statistics', icon: 'clipboard-data-fill', purpose: 'Review daily crawl outcomes and article activity.', visible: true },
+        { key: 'feeds', title: 'Feeds', icon: 'rss-fill', purpose: 'Manage subscriptions, feed health, and OPML transfers.', visible: true },
+        { key: 'official-sources', title: 'Official Sources', icon: 'patch-check-fill', purpose: 'Mark trusted organization domains during crawl.', visible: true },
+        { key: 'users', title: 'Manage Users', icon: 'people-fill', purpose: 'Review existing accounts and update roles or access.', capability: 'Admin only', visible: this.authStore.role === 'admin' }
+      ].filter(section => section.visible);
+    }
   },
   name: 'SettingsWelcome'
 };

@@ -1,6 +1,6 @@
 <template>
   <section class="feed-details" aria-labelledby="feed-details-title">
-    <button type="button" class="feed-details__back" @click="$emit('back')">
+    <button type="button" class="feed-details__back app-button app-button--outline-secondary app-button--compact settings-control settings-control--compact" @click="$emit('back')">
       <BootstrapIcon icon="arrow-left" context="control" aria-hidden="true" />
       Back to feeds
     </button>
@@ -8,7 +8,7 @@
     <div v-if="loading" class="feed-details__state" role="status">Loading feed details…</div>
     <div v-else-if="error" class="feed-details__state feed-details__state--error" role="alert">
       <strong>{{ error }}</strong>
-      <button type="button" class="feed-details__retry" @click="loadObservability()">Try again</button>
+      <button type="button" class="feed-details__retry app-button app-button--outline-secondary app-button--compact settings-control settings-control--compact" @click="loadObservability()">Try again</button>
     </div>
     <template v-else-if="observability">
       <header class="feed-details__header">
@@ -24,11 +24,11 @@
           <button
             v-if="canRetryFeed"
             type="button"
-            class="feed-details__retry-action"
+            class="feed-details__retry-action app-button app-button--outline-secondary app-button--compact settings-control settings-control--compact"
             :disabled="retrying"
             @click="retryCurrentFeed"
           >{{ retrying ? 'Retrying…' : 'Retry feed' }}</button>
-          <button type="button" class="feed-details__edit" @click="$emit('edit', feed)">
+          <button type="button" class="feed-details__edit app-button app-button--outline-secondary app-button--compact settings-control settings-control--compact" @click="$emit('edit', feed)">
             <BootstrapIcon icon="pencil" aria-hidden="true" />
             Edit feed
           </button>
@@ -431,7 +431,7 @@ export default {
 
 <style scoped>
 .feed-details { max-width: 1200px; color: var(--text-secondary); }
-.feed-details__back, .feed-details__edit, .feed-details__retry, .feed-details__retry-action { display: inline-flex; min-height: var(--control-height-compact); align-items: center; gap: 7px; padding: 0 12px; border: 1px solid var(--border-control); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-secondary); font-size: 13px; font-weight: 700; cursor: pointer; }
+.feed-details__back, .feed-details__edit, .feed-details__retry, .feed-details__retry-action { padding-inline: 12px; background: var(--bg-card); }
 .feed-details__back:focus-visible, .feed-details__edit:focus-visible, .feed-details__retry:focus-visible, .feed-details__retry-action:focus-visible, .feed-details__crawl-select:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring-color); outline-offset: var(--focus-ring-offset); }
 .feed-details__retry-action:disabled { cursor: default; opacity: .6; }
 .feed-details__header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 12px 0 18px; }
@@ -472,7 +472,7 @@ export default {
 .feed-details__table th, .feed-details__attempts th { background: var(--bg-page); color: var(--text-muted); font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
 .feed-details__table tr.is-selected td { background: var(--settings-orange-bg); }
 .feed-details__crawl-select { padding: 0; border: 0; background: transparent; color: var(--text-secondary); font: inherit; cursor: pointer; text-align: left; }
-.feed-details__status { display: inline-flex; padding: 3px 6px; border-radius: var(--radius-compact); font-size: 10px; font-weight: 700; }
+.feed-details__status { display: inline-flex; padding: 3px 6px; border-radius: var(--radius-pill); font-size: 10px; font-weight: 700; }
 .feed-details__status--success { background: var(--settings-success-bg); color: var(--settings-success-text); }
 .feed-details__status--recovered { background: var(--settings-orange-bg); color: var(--text-primary); }
 .feed-details__status--failed { background: var(--settings-danger-bg); color: var(--settings-danger-text); }
@@ -490,7 +490,7 @@ export default {
 .feed-details__chart .is-failed, .feed-details__legend .is-failed::before { background: var(--settings-danger-text); }
 .feed-details__legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 9px; color: var(--text-muted); font-size: 10px; }
 .feed-details__legend span { display: inline-flex; align-items: center; gap: 5px; }
-.feed-details__legend span::before { width: 7px; height: 7px; content: ''; border-radius: 2px; }
+.feed-details__legend span::before { width: 7px; height: 7px; content: ''; border-radius: var(--radius-pill); }
 .feed-details__failures { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .feed-details__failures li { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(70px, 1.4fr) 24px; align-items: center; gap: 8px; font-size: 10px; }
 .feed-details__failure-track { height: 4px; overflow: hidden; background: var(--bg-meter-track); border-radius: var(--radius-pill); }

@@ -1,5 +1,5 @@
 <template>
-  <div class="manage-users">
+  <div class="manage-users settings-page">
     <div v-if="!isAdmin" class="manage-users__access-denied" role="alert">
       <BootstrapIcon icon="shield-lock" aria-hidden="true" />
       <div>
@@ -15,8 +15,8 @@
                 <h6 id="delete-user-title">Delete {{ user.username }}?</h6>
                 <p>This permanently removes the account and its access to RSSMonster.</p>
                 <div class="manage-users__form-actions">
-                  <button type="button" class="manage-users__button manage-users__button--danger" @click="deleteUser(userIdToDelete)">Delete user</button>
-                  <button type="button" class="manage-users__button manage-users__button--secondary" @click="returnToUserList">Cancel</button>
+                  <button type="button" class="manage-users__button manage-users__button--danger app-button app-button--danger settings-control" @click="deleteUser(userIdToDelete)">Delete user</button>
+                  <button type="button" class="manage-users__button manage-users__button--secondary app-button app-button--secondary settings-control" @click="returnToUserList">Cancel</button>
                 </div>
               </section>
               <p v-if="message" class="manage-users__message manage-users__message--error" role="alert">{{ message }}</p>
@@ -49,8 +49,8 @@
                 <input id="password-repeat" class="app-form-control" type="password" placeholder="Repeat the new password" />
               </div>
               <div class="manage-users__form-actions">
-                <button type="button" class="manage-users__button manage-users__button--primary" @click="updateUser">Save changes</button>
-                <button type="button" class="manage-users__button manage-users__button--secondary" @click="returnToUserList">Cancel</button>
+                <button type="button" class="manage-users__button manage-users__button--primary app-button app-button--primary settings-control" @click="updateUser">Save changes</button>
+                <button type="button" class="manage-users__button manage-users__button--secondary app-button app-button--secondary settings-control" @click="returnToUserList">Cancel</button>
               </div>
               <p v-if="message" class="manage-users__message manage-users__message--error" role="alert">{{ message }}</p>
             </div>
@@ -117,10 +117,6 @@
 </template>
 
 <style scoped>
-.manage-users {
-  max-width: 1100px;
-}
-
 .manage-users__eyebrow {
   margin: 0 0 4px;
   color: var(--text-muted);
@@ -140,7 +136,7 @@
   overflow-x: auto;
   background: var(--bg-card);
   border: 1px solid var(--border-default);
-  border-radius: 12px;
+  border-radius: var(--radius-panel);
 }
 
 .manage-users__table {
@@ -194,7 +190,7 @@
   align-items: center;
   background: var(--bg-secondary);
   border: 1px solid var(--border-default);
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   color: var(--color-primary);
   display: inline-flex;
   font-size: 13px;
@@ -223,7 +219,7 @@
 
 .manage-users__role {
   background: var(--bg-secondary);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--text-secondary);
   display: inline-block;
   font-size: 12px;
@@ -247,7 +243,7 @@
 .manage-users__action {
   background: var(--color-transparent);
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   color: var(--settings-orange-text);
   font-size: 13px;
   font-weight: 600;
@@ -298,7 +294,7 @@
   padding: 28px;
   background: var(--settings-danger-bg);
   border: 1px solid var(--settings-danger-border);
-  border-radius: 14px;
+  border-radius: var(--radius-panel);
   color: var(--text-secondary);
 }
 
@@ -373,16 +369,8 @@
 }
 
 .manage-users__button {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  justify-content: center;
   padding: 0 14px;
-  border: 1px solid var(--color-transparent);
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
+  border-radius: var(--radius-control);
 }
 
 .manage-users__button--primary {
@@ -423,7 +411,7 @@
 }
 
 .manage-users__message {
-  border-radius: 4px;
+  border-radius: var(--radius-control);
   font-size: 13px;
   margin: 20px 28px 0;
   padding: 10px 12px;

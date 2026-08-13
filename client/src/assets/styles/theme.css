@@ -6,6 +6,7 @@
   --radius-compact: 0.375rem;
   --radius-control: 0.5rem;
   --radius-panel: 0.875rem;
+  --radius-dialog: 1rem;
   --radius-pill: 999px;
   --focus-ring-color: var(--border-focus);
   --focus-ring-width: 2px;

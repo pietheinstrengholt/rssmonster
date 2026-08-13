@@ -1,5 +1,5 @@
 <template>
-  <div class="crawl-statistics-settings">
+  <div class="crawl-statistics-settings settings-page">
     <SettingsPageIntro
       eyebrow="Settings — Crawl Statistics"
       icon="clipboard-data-fill"
@@ -10,7 +10,7 @@
       finished.
     </SettingsPageIntro>
 
-    <div class="crawl-statistics-toolbar">
+    <div class="crawl-statistics-toolbar settings-toolbar">
       <label for="crawl-statistics-days">Date range</label>
       <select
         id="crawl-statistics-days"
@@ -26,7 +26,7 @@
       </select>
     </div>
 
-    <div v-if="loading" class="crawl-statistics-loading">
+    <div v-if="loading" class="crawl-statistics-loading settings-state">
       <span class="app-loading-indicator app-loading-indicator--small" role="status" aria-hidden="true"></span>
       <span>Loading crawl statistics...</span>
     </div>
@@ -72,7 +72,7 @@
     </section>
 
     <div class="settings-refresh-actions">
-      <button type="button" class="settings-refresh-button" :disabled="loading" @click="reload">
+      <button type="button" class="settings-refresh-button app-button app-button--primary" :disabled="loading" @click="reload">
         <BootstrapIcon icon="arrow-clockwise" aria-hidden="true" />
         Refresh
       </button>
@@ -81,21 +81,11 @@
 </template>
 
 <style scoped>
-.crawl-statistics-settings {
-  max-width: 1100px;
-  color: var(--text-primary);
-}
-
 .crawl-statistics-loading {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
 .crawl-statistics-toolbar {
-  display: flex;
-  align-items: center;
   justify-content: flex-end;
   gap: 10px;
   margin-bottom: 18px;
