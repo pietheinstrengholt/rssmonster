@@ -46,8 +46,8 @@
 
 <style scoped>
 div#inputArea {
-  margin-top: 70px;
-  margin-inline: 15px;
+  margin: 0;
+  padding: 24px 15px;
   font-family: var(--font-family);
   color: var(--text-primary);
   font-size: 14px;
@@ -130,7 +130,7 @@ div#inputArea {
 }
 
 .agent-chat-disabled-notice {
-  margin-top: 1.5rem;
+  margin: 24px 15px 0;
 }
 
 .agent-chat-actions {

@@ -60,7 +60,7 @@ export default {
 
 .app-dropdown__menu {
   min-width: 120px !important;
-  z-index: 1041;
+  z-index: calc(var(--layer-dropdown) + 1);
 }
 
 .app-dropdown__item {

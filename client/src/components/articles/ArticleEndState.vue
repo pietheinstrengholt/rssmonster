@@ -175,7 +175,6 @@ export default {
 
   .article-end-state-icon {
     flex: 0 0 40px;
-    font-size: 20px;
     height: 40px;
     margin-bottom: 0;
     width: 40px;
@@ -186,12 +185,32 @@ export default {
   }
 
   .article-end-state-title {
-    font-size: 17px;
     margin-bottom: 4px;
   }
 
   .article-end-state-actions {
     margin-top: 16px;
+  }
+}
+
+/* Keeps phone typography stable when viewport orientation changes. */
+@media (max-width: 767px) {
+  .article-end-state-icon {
+    font-size: 20px;
+  }
+
+  .article-end-state-title {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 879px) and (orientation: portrait) {
+  .article-end-state-icon {
+    font-size: 20px;
+  }
+
+  .article-end-state-title {
+    font-size: 17px;
   }
 }
 

@@ -452,7 +452,7 @@ export default {
 :global(.article-card:has(.article-actions .app-dropdown__menu--open)) {
   content-visibility: visible;
   position: relative;
-  z-index: 1040;
+  z-index: var(--layer-dropdown);
 }
 
 .article-card.event-article {
@@ -568,6 +568,16 @@ export default {
     gap: 8px;
   }
 
+}
+
+/* Keeps phone typography stable when viewport orientation changes. */
+@media (max-width: 767px) {
+  .article-card .article-body {
+    --article-title-size: 18px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 879px) and (orientation: portrait) {
   .article-card .article-body {
     --article-title-size: 18px;
   }

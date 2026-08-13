@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils';
 
 import Article from '../src/components/articles/Article.vue';
 import articleActionsSource from '../src/components/articles/ArticleActionsMenu.vue?raw';
+import articleListSource from '../src/components/articles/ArticleListView.vue?raw';
 import articleSource from '../src/components/articles/Article.vue?raw';
 import readerLayoutSource from '../src/components/articles/ArticleReaderLayout.vue?raw';
 import { createFocusedStores } from './helpers/focusedStores.js';
@@ -77,17 +78,34 @@ describe('Article rendering containment', () => {
     expect(articleSource).toMatch(/@media print\s*\{\s*\.article-card\s*\{[^}]*content-visibility:\s*visible;[^}]*contain-intrinsic-size:\s*none;/s);
   });
 
+  // Verifies swipe clipping stays local to each article while the collection can expand vertically.
+  it('keeps overflow clipping on the mobile swipe shell instead of the article collection', () => {
+    expect(articleSource).toMatch(/\.mobile-swipe-shell\s*\{[^}]*overflow:\s*hidden;/s);
+    expect(articleListSource).toMatch(/\.article-list-view__items\s*\{[^}]*padding-top:\s*0;/s);
+    expect(articleListSource).not.toMatch(/\.article-list-view__items\s*\{[^}]*(?:overflow|overflow-[xy]):/s);
+    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded\s*\{[^}]*overflow-y:\s*auto;/s);
+  });
+
+  // Verifies Expanded mode uses its native scroll surface without viewport-coupled overlay geometry.
+  it('styles the native Expanded scrollbar', () => {
+    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded\s*\{[^}]*scrollbar-color:\s*var\(--expanded-scrollbar-thumb\) var\(--color-transparent\);[^}]*scrollbar-width:\s*thin;/s);
+    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded::\-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--expanded-scrollbar-thumb\);[^}]*border-radius:\s*999px;/s);
+    expect(articleListSource).not.toContain('updateExpandedScrollbarMetrics');
+    expect(articleListSource).not.toContain('--expanded-scrollbar-offset');
+    expect(articleListSource).not.toMatch(/\.article-list-view\.article-list-view--expanded::after/);
+  });
+
   // Verifies an open actions menu escapes article containment and stacks above surrounding content.
   it('raises an article while its actions menu is open', () => {
-    expect(articleSource).toMatch(/\.article-card:has\(\.article-actions \.app-dropdown__menu--open\)\)\s*\{[^}]*content-visibility:\s*visible;[^}]*position:\s*relative;[^}]*z-index:\s*1040;/s);
-    expect(articleActionsSource).toMatch(/\.app-dropdown__menu\s*\{[^}]*z-index:\s*1041;/s);
+    expect(articleSource).toMatch(/\.article-card:has\(\.article-actions \.app-dropdown__menu--open\)\)\s*\{[^}]*content-visibility:\s*visible;[^}]*position:\s*relative;[^}]*z-index:\s*var\(--layer-dropdown\);/s);
+    expect(articleActionsSource).toMatch(/\.app-dropdown__menu\s*\{[^}]*z-index:\s*calc\(var\(--layer-dropdown\) \+ 1\);/s);
   });
 
   // Verifies keyboard focus is visible on both compact and Reader article rows.
   it('defines focus-visible rings independently from article selection', () => {
     expect(articleSource).toMatch(/\.article-list-card:focus-visible\s*\{[^}]*outline:\s*3px solid var\(--border-focus\);/s);
-    expect(readerLayoutSource).toMatch(/\.readerArticleListItem:focus-visible\s*\{[^}]*outline:\s*3px solid var\(--border-focus\);/s);
+    expect(readerLayoutSource).toMatch(/\.article-reader__item:focus-visible\s*\{[^}]*outline:\s*3px solid var\(--border-focus\);/s);
     expect(articleSource).not.toMatch(/\.article-list-card\.article-list-card-selected:focus\s*\{[^}]*outline:\s*0;/s);
-    expect(readerLayoutSource).not.toMatch(/\.readerArticleListItem:focus-visible\s*\{[^}]*outline:\s*none;/s);
+    expect(readerLayoutSource).not.toMatch(/\.article-reader__item:focus-visible\s*\{[^}]*outline:\s*none;/s);
   });
 });

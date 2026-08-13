@@ -169,7 +169,7 @@ describe('Reader article recommendations', () => {
     await wrapper.get('.article-recommendation-card').trigger('click');
     expect(wrapper.emitted('select-recommendation')).toEqual([[2]]);
 
-    const readerPanel = wrapper.get('.readerArticlePanel').element;
+    const readerPanel = wrapper.get('.article-reader__content').element;
     readerPanel.scrollTop = 320;
     wrapper.vm.selectArticle(2);
     await wrapper.vm.$nextTick();

@@ -108,6 +108,18 @@ export default {
 
   .article-refresh-state-icon {
     flex-basis: 36px;
+  }
+}
+
+/* Keeps phone typography stable when viewport orientation changes. */
+@media (max-width: 767px) {
+  .article-refresh-state-icon {
+    font-size: 28px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 879px) and (orientation: portrait) {
+  .article-refresh-state-icon {
     font-size: 28px;
   }
 }

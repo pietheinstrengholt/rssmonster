@@ -3,17 +3,16 @@
     <div class="app-shell-row">
       <div
         v-if="showPersistentSidebar"
-        id="sidebar"
-        ref="sidebarScrollRef"
-        @scroll="handleSidebarScroll"
+        class="app-shell__sidebar"
       >
         <!-- Sidebar events -->
         <app-sidebar @forceReload="forceReload" @logout="$emit('logout')"></app-sidebar>
       </div>
-      <div
-        id="home"
-        ref="articleScrollRootRef"
-      >
+      <div class="app-shell__main-frame">
+        <div
+          class="app-shell__main"
+          ref="articleScrollRootRef"
+        >
         <!-- MobileToolbar events -->
         <app-mobile-toolbar
           v-if="isDesktopShell === false"
@@ -28,13 +27,6 @@
 
         <!-- Error handling -->
         <app-error v-if="uiStore.fatalError" :type="uiStore.fatalError.type" @retry="forceReload"/>
-
-        <connectivity-status
-          v-if="connectivityStatus"
-          :recovering="connectivityRecovering"
-          :status="connectivityStatus"
-          @retry="recoverConnectivity"
-        />
 
         <!-- Add reference to home for calling child loadContent component function -->
         <app-initial-feeds v-if="showOnboarding" @completed="completeOnboarding"></app-initial-feeds>
@@ -57,6 +49,14 @@
         ></app-article-feed>
         <!-- Show chat assistant -->
         <app-chat-assistant v-if="uiStore.chatAssistantOpen"></app-chat-assistant>
+        </div>
+        <div v-if="connectivityStatus" class="app-shell__overlay-host">
+          <connectivity-status
+            :recovering="connectivityRecovering"
+            :status="connectivityStatus"
+            @retry="recoverConnectivity"
+          />
+        </div>
       </div>
     </div>
     <!-- Mobile events -->
@@ -74,10 +74,39 @@
 </template>
 
 <style scoped>
+/*
+ * Shell responsive contract (kept in sync with config/responsiveLayout.js):
+ * 0–767px mobile, 768–879px hybrid, and 880px+ desktop.
+ */
 .app-shell,
-#home,
-#sidebar {
+.app-shell__main,
+.app-shell__sidebar {
   overscroll-behavior-y: contain;
+}
+
+.app-shell__main {
+  --shell-filter-control-height: 34px;
+  --shell-toolbar-height: 56px;
+  --main-scrollbar-thumb: var(--scrollbar-thumb-strong);
+}
+
+.app-shell__main-frame {
+  min-width: 0;
+}
+
+.app-shell__overlay-host {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-overlay);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  pointer-events: none;
+}
+
+.app-shell__overlay-host :deep(.connectivity-status) {
+  pointer-events: auto;
 }
 
 /* Landscape phones and portrait tablets */
@@ -86,21 +115,21 @@
     display: none;
   }
 
-  #home {
+  .app-shell__main {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
     min-height: 100dvh;
   }
 
-  :deep(.mobile-toolbar) {
-    position: sticky;
-    z-index: 9999;
+  .app-shell__overlay-host {
+    padding: 12px;
   }
+
 }
 
 @media (max-width: 767px) {
-  #sidebar {
+  .app-shell__sidebar {
     display: none;
   }
 }
@@ -109,12 +138,28 @@
   :deep(.mobile-toolbar) {
     display: none;
   }
+
+  .app-shell__main {
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 /* Persistent sidebar and independently scrolling article pane. */
 @media (min-width: 768px) {
-  #sidebar {
-    height: 100%;
+  .app-shell-row {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .app-shell__sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    height: 100dvh;
     font-weight: 500;
     background-color: var(--bg-surface-muted);
     border-right: 1px solid var(--border-subtle);
@@ -125,79 +170,95 @@
     transition: scrollbar-color var(--motion-duration-normal) var(--motion-easing-standard);
   }
 
-  #sidebar::-webkit-scrollbar {
+  .app-shell__main-frame {
+    display: grid;
+    grid-template-areas: 'main-pane';
+    height: 100%;
+    min-height: 0;
+  }
+
+  .app-shell__main,
+  .app-shell__overlay-host {
+    grid-area: main-pane;
+  }
+
+  .app-shell__overlay-host {
+    position: relative;
+    inset: auto;
+    min-height: 0;
+  }
+
+  .app-shell__sidebar::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
 
-  #sidebar::-webkit-scrollbar-track {
+  .app-shell__sidebar::-webkit-scrollbar-track {
     background: var(--color-transparent);
   }
 
-  #sidebar::-webkit-scrollbar-thumb {
+  .app-shell__sidebar::-webkit-scrollbar-thumb {
     background-color: var(--color-transparent);
+    border-radius: 999px;
     transition: background-color var(--motion-duration-normal) var(--motion-easing-standard);
   }
 
-  #sidebar.is-scrolling {
+  .app-shell__sidebar:hover,
+  .app-shell__sidebar:focus-within {
     scrollbar-color: var(--sidebar-scrollbar-thumb) var(--color-transparent);
   }
 
-  #sidebar.is-scrolling::-webkit-scrollbar-thumb {
+  .app-shell__sidebar:hover::-webkit-scrollbar-thumb,
+  .app-shell__sidebar:focus-within::-webkit-scrollbar-thumb {
     background-color: var(--sidebar-scrollbar-thumb);
   }
 
-  #home {
-    height: 100vh;
+  .app-shell__main {
+    min-width: 0;
+    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: none;
   }
 
-  #home::-webkit-scrollbar {
+  .app-shell__main::-webkit-scrollbar {
     display: none;
   }
 
-  :global(:root[data-theme='dark'] #sidebar) {
+  :global(:root[data-theme='dark'] .app-shell__sidebar) {
     background-color: var(--bg-secondary);
     --sidebar-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
   }
 }
 
-/* Uses document scrolling for the hybrid mobile toolbar and persistent sidebar layout. */
-@media (min-width: 768px) and (max-width: 879px) {
-  #home {
-    display: flex;
-    height: auto;
-    padding-left: 0;
-    overflow: visible;
+/* Exposes the desktop shell scrollbar when the shell itself owns scrolling. */
+@media (min-width: 880px) {
+  .app-shell__main {
+    scrollbar-color: var(--main-scrollbar-thumb) var(--color-transparent);
+    scrollbar-width: thin;
+  }
+
+  .app-shell__main::-webkit-scrollbar {
+    display: block;
+    width: 6px;
+  }
+
+  .app-shell__main::-webkit-scrollbar-track {
+    background: var(--color-transparent);
+  }
+
+  .app-shell__main::-webkit-scrollbar-thumb {
+    background-color: var(--main-scrollbar-thumb);
+    border-radius: 999px;
   }
 }
 
-@media (min-width: 768px) {
-  #sidebar {
-    width: var(--sidebar-width);
-    min-width: var(--sidebar-width);
-    max-width: var(--sidebar-width);
-  }
-
-  #home {
-    width: calc(100% - var(--sidebar-width));
-    margin-left: var(--sidebar-width);
-  }
-}
-
-#sidebar {
-  position: fixed;
-  left: 0;
+.app-shell__sidebar {
   --sidebar-scrollbar-thumb: var(--scrollbar-thumb-strong);
 }
 
 .app-shell {
   background-color: var(--bg-primary);
-}
-
-.app-shell {
   height: 100%;
 }
 
@@ -205,7 +266,8 @@
   background-color: var(--bg-primary);
 }
 
-:global(:root[data-theme='dark'] .app-shell #home) {
+:global(:root[data-theme='dark'] .app-shell .app-shell__main) {
+  --main-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
   background: var(--bg-bounce);
 }
 
@@ -236,6 +298,8 @@ import { applyTheme, getPreferredTheme, setThemeMode, subscribeToSystemTheme } f
 import { ACTION_ERROR_EVENT } from './services/actionNotifications.js';
 import { CONNECTIVITY_ERROR_EVENT } from './api/client.js';
 import { useMediaQuery } from './composables/useMediaQuery.js';
+import { useShellMode } from './composables/useShellMode.js';
+import { SHELL_MODE } from './config/responsiveLayout.js';
 
 import ArticleFeed from "./components/articles/ArticleFeed.vue";
 import ActionErrorNotice from './components/shared/ActionErrorNotice.vue';
@@ -289,20 +353,13 @@ export default {
     appError: Error,
     appInitialFeeds: InitialFeeds
   },
-  // Exposes shared media-query state without changing the component's Options API ownership.
+  // Exposes canonical shell state separately from interaction-capability queries.
   setup() {
     return {
-      isDesktopShell: useMediaQuery(
-        '(min-width: 880px)',
-        () => typeof window === 'undefined' || window.innerWidth >= 880
-      ),
-      isTabletPullRefreshLayout: useMediaQuery(
+      shellMode: useShellMode(),
+      isPullToRefreshViewport: useMediaQuery(
         '(max-width: 1199px)',
         () => typeof window !== 'undefined' && window.innerWidth < 1200
-      ),
-      showPersistentSidebar: useMediaQuery(
-        '(min-width: 768px)',
-        () => typeof window === 'undefined' || window.innerWidth >= 768
       )
     };
   },
@@ -324,7 +381,6 @@ export default {
       overviewLoaded: false,
       overviewReloading: false,
       supportsTouch: false,
-      sidebarScrollTimeout: null,
       unsubscribeFromSystemTheme: null
     };
   },
@@ -368,15 +424,10 @@ export default {
 
     this.stopOverviewPolling();
 
-    if (this.sidebarScrollTimeout !== null) {
-      clearTimeout(this.sidebarScrollTimeout);
-      this.sidebarScrollTimeout = null;
-    }
   },
   methods: {
     // This function swaps the mounted shell components when the application breakpoint changes.
-    handleResponsiveShellChange(event) {
-      this.isDesktopShell = event.matches;
+    handleResponsiveShellChange() {
       this.mobile = null;
     },
     // This function handles recoverable action error events.
@@ -478,22 +529,6 @@ export default {
         clearTimeout(this.actionErrorTimer);
         this.actionErrorTimer = null;
       }
-    },
-    handleSidebarScroll() {
-      const sidebar = this.$refs.sidebarScrollRef;
-
-      if (!sidebar) return;
-
-      sidebar.classList.add('is-scrolling');
-
-      if (this.sidebarScrollTimeout) {
-        clearTimeout(this.sidebarScrollTimeout);
-      }
-
-      this.sidebarScrollTimeout = setTimeout(() => {
-        sidebar.classList.remove('is-scrolling');
-        this.sidebarScrollTimeout = null;
-      }, 1000);
     },
     mobileClick(value) {
       this.mobile = value;
@@ -765,9 +800,9 @@ export default {
     }
   },
   watch: {
-    // This function applies shell-specific cleanup when the shared desktop query changes.
-    isDesktopShell(matches) {
-      this.handleResponsiveShellChange({ matches });
+    // This function applies shell-specific cleanup when the canonical layout state changes.
+    shellMode() {
+      this.handleResponsiveShellChange();
     },
     // This function refreshes database-backed data once after a successful feed-refresh job.
     'feedRefreshStore.successfulCompletionId'(completionId, previousCompletionId) {
@@ -798,6 +833,18 @@ export default {
   },
   computed: {
     ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useFeedRefreshStore),
+    isMobileShell() {
+      return this.shellMode === SHELL_MODE.MOBILE;
+    },
+    isHybridShell() {
+      return this.shellMode === SHELL_MODE.HYBRID;
+    },
+    isDesktopShell() {
+      return this.shellMode === SHELL_MODE.DESKTOP;
+    },
+    showPersistentSidebar() {
+      return this.shellMode !== SHELL_MODE.MOBILE;
+    },
     // Resolves only explicitly supported modal identifiers to their lazy components.
     activeDialogComponent() {
       return DIALOG_COMPONENTS[this.uiStore.showModal] || null;
@@ -811,7 +858,7 @@ export default {
     },
     // Shows pull-to-refresh for active mobile collections and compact touch-tablet layouts.
     showMobileArticleRefresh() {
-      const isTouchTabletLayout = this.supportsTouch && this.isTabletPullRefreshLayout;
+      const isTouchTabletLayout = this.supportsTouch && this.isPullToRefreshViewport;
       return this.showArticleFeed && (this.isDesktopShell === false || isTouchTabletLayout);
     },
     // Shows onboarding only after a successful empty overview load.

@@ -266,6 +266,8 @@ The article experience adapts rather than merely shrinking:
 - Lead images stop wrapping beside text when the screen is too narrow.
 - The mobile toolbar hides while scrolling down and returns when scrolling up, keeping attention on content without removing navigation permanently.
 
+Shell geometry remains outside the article collection. `.article-list-view__items` does not add toolbar padding, react to mobile search height, or clip vertical overflow. The active shell or view owns vertical scrolling, while horizontal swipe clipping remains local to `.mobile-swipe-shell`. Expanded and Reader presentations use their own styled native scroll surfaces where their layouts require them.
+
 Light and dark themes must preserve the same hierarchy, selection clarity, readable contrast, and distinction between parent and related articles.
 
 All controls need a meaningful accessible label. Selection and read state must not rely on color alone. Empty content, missing images, unavailable summaries, and failed requests should result in understandable fallbacks rather than broken or silent surfaces.

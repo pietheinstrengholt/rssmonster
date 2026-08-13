@@ -142,7 +142,7 @@ describe('ArticleReaderLayout empty previews', () => {
     const wrapper = mountReader(createArticle({ imageUrl: 'javascript:alert(1)', contentHtml: '<img>' }));
 
     expect(wrapper.find('.article-preview-empty').exists()).toBe(true);
-    expect(wrapper.find('.readerArticleListThumbnail').exists()).toBe(false);
+    expect(wrapper.find('.article-reader__thumbnail').exists()).toBe(false);
   });
 
   it('uses the original URL, tracks the click, and does not select the row again', async () => {

@@ -190,7 +190,7 @@ describe('keyboard access and focus', () => {
     ['Space', ' ']
   ])('selects reader articles with %s', async (_label, key) => {
     const wrapper = mountReaderLayout();
-    const items = wrapper.findAll('.readerArticleListItem');
+    const items = wrapper.findAll('.article-reader__item');
     await wrapper.setData({ selectedArticleId: 1 });
 
     await items[1].trigger('keydown', { key });
@@ -203,7 +203,7 @@ describe('keyboard access and focus', () => {
   it('moves focus with reader keyboard navigation', async () => {
     const wrapper = mountReaderLayout();
     await wrapper.setData({ selectedArticleId: 1 });
-    const readerArticlePanel = wrapper.get('.readerArticlePanel').element;
+    const readerArticlePanel = wrapper.get('.article-reader__content').element;
     readerArticlePanel.scrollTop = 240;
 
     window.dispatchEvent(new KeyboardEvent('keydown', {
@@ -213,7 +213,7 @@ describe('keyboard access and focus', () => {
     }));
     await flushPromises();
 
-    const items = wrapper.findAll('.readerArticleListItem');
+    const items = wrapper.findAll('.article-reader__item');
     expect(document.activeElement).toBe(items[1].element);
     expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
     expect(readerArticlePanel.scrollTop).toBe(0);
@@ -233,7 +233,7 @@ describe('keyboard access and focus', () => {
       }
     ]);
 
-    expect(wrapper.findAll('.readerArticleListItem')).toHaveLength(1);
+    expect(wrapper.findAll('.article-reader__item')).toHaveLength(1);
     expect(wrapper.findAll('article-item-stub')).toHaveLength(2);
     wrapper.unmount();
   });

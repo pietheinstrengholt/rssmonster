@@ -5,7 +5,7 @@
   />
   <ArticleEmptyState
     v-if="hasLoadedContent && isCollectionEmpty"
-    class="readerEmptyState"
+    class="article-reader__empty"
     :current-status="currentSelection"
     :selected-tag="selectedTag"
     :refresh-progress="feedRefreshStore.progress"
@@ -17,12 +17,11 @@
     @view-tag-status="$emit('view-tag-status', $event)"
   />
 
-  <div v-else class="readerLayout">
+  <div v-else class="article-reader">
     <aside
       ref="articleListScrollRef"
-      class="readerArticleList"
+      class="article-reader__list"
       aria-label="Article list"
-      @scroll="handleArticleListScroll"
     >
       <DailyBriefingIntro v-if="showDailyBriefingIntro" reader-mode />
       <UnreadSelectionContext
@@ -107,8 +106,8 @@
       <div
         v-for="article in readerListArticles"
         :key="article.id"
-        class="readerArticleListItem"
-        :class="{ readerArticleListItemSelected: article.id === selectedArticleId }"
+        class="article-reader__item"
+        :class="{ 'article-reader__item--selected': article.id === selectedArticleId }"
         role="button"
         tabindex="0"
         :aria-current="article.id === selectedArticleId ? 'true' : null"
@@ -117,10 +116,10 @@
         @keydown.enter.stop.prevent="selectArticle(article.id)"
         @keydown.space.stop.prevent="selectArticle(article.id)"
       >
-        <span class="readerArticleListItemContent">
-          <span class="readerArticleListItemTitle"><HighlightedText :text="article.title" :terms="highlightTerms" /></span>
-          <span v-if="articlePreview(article)" class="readerArticleListItemPreview"><HighlightedText :text="articlePreview(article)" :terms="highlightTerms" /></span>
-          <span class="readerArticleListItemKicker">
+        <span class="article-reader__item-content">
+          <span class="article-reader__item-title"><HighlightedText :text="article.title" :terms="highlightTerms" /></span>
+          <span v-if="articlePreview(article)" class="article-reader__item-preview"><HighlightedText :text="articlePreview(article)" :terms="highlightTerms" /></span>
+          <span class="article-reader__item-kicker">
             <span>{{ feedName(article) }}</span>
             <span v-if="publishedLabel(article)">{{ publishedLabel(article) }}</span>
           </span>
@@ -140,14 +139,14 @@
               <BootstrapIcon icon="box-arrow-up-right" aria-hidden="true" />
             </a>
           </span>
-          <span class="readerArticleListItemBadges">
-            <BootstrapIcon v-if="article.isDevelopingStory" icon="lightning-charge-fill" class="readerArticleListDevelopingIcon" title="Developing story" aria-label="Developing story" />
-            <span v-if="article.favoriteInd === 1" class="readerArticleListBadge readerArticleListBadgeFavorite">Favorite</span>
-            <span v-if="article.hotInd === 1" class="readerArticleListBadge readerArticleListBadgeHot">Hot</span>
-            <span v-if="similarCount(article)" class="readerArticleListBadge">{{ similarCount(article) }} similar</span>
+          <span class="article-reader__item-badges">
+            <BootstrapIcon v-if="article.isDevelopingStory" icon="lightning-charge-fill" class="article-reader__developing-icon" title="Developing story" aria-label="Developing story" />
+            <span v-if="article.favoriteInd === 1" class="article-reader__badge article-reader__badge--favorite">Favorite</span>
+            <span v-if="article.hotInd === 1" class="article-reader__badge article-reader__badge--hot">Hot</span>
+            <span v-if="similarCount(article)" class="article-reader__badge">{{ similarCount(article) }} similar</span>
           </span>
         </span>
-        <img v-if="thumbnailUrl(article)" class="readerArticleListThumbnail" :src="thumbnailUrl(article)" alt="" loading="lazy" />
+        <img v-if="thumbnailUrl(article)" class="article-reader__thumbnail" :src="thumbnailUrl(article)" alt="" loading="lazy" />
       </div>
 
       <div id="article-load-sentinel" ref="loadMoreSentinel" class="article-load-sentinel" aria-hidden="true"></div>
@@ -186,9 +185,8 @@
 
     <section
       ref="readerArticlePanelRef"
-      class="readerArticlePanel"
+      class="article-reader__content"
       aria-label="Reader"
-      @scroll="handleReaderArticlePanelScroll"
     >
       <ArticleItem
         v-if="selectedArticle"
@@ -323,8 +321,6 @@ export default {
       isReaderEndStateDismissed: false,
       isBulkMenuOpen: false,
       bulkMenuStyle: {},
-      articleListScrollTimeout: null,
-      readerArticlePanelScrollTimeout: null,
       pendingClickedArticleIds: new Set(),
       recommendations: [],
       recommendationsLoading: false,
@@ -345,13 +341,6 @@ export default {
     window.removeEventListener('scroll', this.updateBulkMenuPosition, true);
     document.removeEventListener('click', this.closeBulkMenu);
 
-    if (this.articleListScrollTimeout) {
-      clearTimeout(this.articleListScrollTimeout);
-    }
-
-    if (this.readerArticlePanelScrollTimeout) {
-      clearTimeout(this.readerArticlePanelScrollTimeout);
-    }
   },
   computed: {
     ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useFeedRefreshStore),
@@ -616,40 +605,6 @@ export default {
       if (!article?.id) return;
       this.$emit('select-recommendation', article.id);
     },
-    // Shows the article-list scrollbar while the user is actively scrolling.
-    handleArticleListScroll() {
-      const articleList = this.$refs.articleListScrollRef;
-
-      if (!articleList) return;
-
-      articleList.classList.add('is-scrolling');
-
-      if (this.articleListScrollTimeout) {
-        clearTimeout(this.articleListScrollTimeout);
-      }
-
-      this.articleListScrollTimeout = setTimeout(() => {
-        articleList.classList.remove('is-scrolling');
-        this.articleListScrollTimeout = null;
-      }, 1000);
-    },
-    // Shows the reader-panel scrollbar while the user is actively scrolling.
-    handleReaderArticlePanelScroll() {
-      const articlePanel = this.$refs.readerArticlePanelRef;
-
-      if (!articlePanel) return;
-
-      articlePanel.classList.add('is-scrolling');
-
-      if (this.readerArticlePanelScrollTimeout) {
-        clearTimeout(this.readerArticlePanelScrollTimeout);
-      }
-
-      this.readerArticlePanelScrollTimeout = setTimeout(() => {
-        articlePanel.classList.remove('is-scrolling');
-        this.readerArticlePanelScrollTimeout = null;
-      }, 1000);
-    },
     // Formats stored tag names for display.
     formatTagName,
     // Opens or closes the reader bulk action menu.
@@ -744,7 +699,7 @@ export default {
       }
 
       const command = getArticleKeyboardCommand(event, {
-        allowInteractiveTarget: event.target?.classList?.contains('readerArticleListItem'),
+        allowInteractiveTarget: event.target?.classList?.contains('article-reader__item'),
         checkEditableAncestors: false
       });
       if (!command) return;
@@ -848,50 +803,42 @@ export default {
 </script>
 
 <style scoped>
-.readerEmptyState {
-  margin-top: 58px;
+.article-reader__empty {
+  flex: 1;
+  min-height: 0;
 }
 
-.readerLayout {
+.article-reader {
   box-sizing: border-box;
   display: grid;
   grid-template-columns: minmax(340px, 38%) minmax(0, 1fr);
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
-  padding-top: 58px;
 }
 
-.readerArticleList {
+.article-reader__list {
   --article-list-scrollbar-thumb: var(--scrollbar-thumb-strong);
   border-right: 1px solid var(--border-subtle);
-  max-height: calc(100vh - 58px);
+  min-height: 0;
   overflow-y: auto;
   padding: 0 10px 24px;
-  scrollbar-color: var(--color-transparent) var(--color-transparent);
+  scrollbar-color: var(--article-list-scrollbar-thumb) var(--color-transparent);
   scrollbar-width: thin;
-  transition: scrollbar-color 0.2s ease;
 }
 
-.readerArticleList::-webkit-scrollbar {
+.article-reader__list::-webkit-scrollbar {
   height: 6px;
   width: 6px;
 }
 
-.readerArticleList::-webkit-scrollbar-track {
+.article-reader__list::-webkit-scrollbar-track {
   background: var(--color-transparent);
 }
 
-.readerArticleList::-webkit-scrollbar-thumb {
-  background-color: var(--color-transparent);
-  transition: background-color 0.2s ease;
-}
-
-.readerArticleList.is-scrolling {
-  scrollbar-color: var(--article-list-scrollbar-thumb) var(--color-transparent);
-}
-
-.readerArticleList.is-scrolling::-webkit-scrollbar-thumb {
+.article-reader__list::-webkit-scrollbar-thumb {
   background-color: var(--article-list-scrollbar-thumb);
+  border-radius: 999px;
 }
 
 .article-list-bulk-header {
@@ -1023,7 +970,7 @@ export default {
   min-width: 280px;
   padding: 8px;
   position: fixed;
-  z-index: 1000;
+  z-index: var(--layer-dropdown);
 }
 
 .bulk-action-menu-section {
@@ -1074,7 +1021,7 @@ export default {
   width: 18px;
 }
 
-.readerArticleListItem {
+.article-reader__item {
   background: var(--reader-list-item-background);
   border: 1px solid var(--reader-list-item-border);
   border-radius: 8px;
@@ -1091,39 +1038,39 @@ export default {
   width: 100%;
 }
 
-.readerArticleListItem:hover {
+.article-reader__item:hover {
   background: var(--reader-list-item-hover-background);
   border-color: var(--reader-list-item-hover-border);
 }
 
-.readerArticleListItem:focus:not(:focus-visible) {
+.article-reader__item:focus:not(:focus-visible) {
   outline: none;
 }
 
-.readerArticleListItem:focus-visible {
+.article-reader__item:focus-visible {
   outline: 3px solid var(--border-focus);
   outline-offset: -3px;
 }
 
-.readerArticleListItemSelected {
+.article-reader__item--selected {
   background: var(--reader-list-item-selected-background);
   border-color: var(--reader-list-item-selected-border);
   border-left: 3px solid var(--reader-list-item-selected-accent);
   color: var(--reader-list-item-selected-title);
 }
 
-.readerArticleListItemSelected:hover {
+.article-reader__item--selected:hover {
   background: var(--reader-list-selected-hover-background);
   border-color: var(--reader-list-item-selected-hover-border);
   border-left: 3px solid var(--reader-list-item-selected-accent);
   color: var(--reader-list-item-selected-title);
 }
 
-.readerArticleListItemContent {
+.article-reader__item-content {
   min-width: 0;
 }
 
-.readerArticleListItemKicker {
+.article-reader__item-kicker {
   color: var(--reader-list-item-meta);
   display: flex;
   flex-wrap: wrap;
@@ -1135,7 +1082,7 @@ export default {
   margin-top: 5px;
 }
 
-.readerArticleListItemTitle {
+.article-reader__item-title {
   color: var(--reader-list-item-title);
   display: block;
   font-size: 14px;
@@ -1143,11 +1090,11 @@ export default {
   line-height: 1.35;
 }
 
-.readerArticleListItemSelected .readerArticleListItemTitle {
+.article-reader__item--selected .article-reader__item-title {
   color: var(--reader-list-item-selected-title);
 }
 
-.readerArticleListItemPreview {
+.article-reader__item-preview {
   color: var(--reader-list-item-preview);
   display: -webkit-box;
   font-size: 12px;
@@ -1201,14 +1148,14 @@ export default {
   font-size: 0.75rem;
 }
 
-.readerArticleListItemBadges {
+.article-reader__item-badges {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
   margin-top: 8px;
 }
 
-.readerArticleListBadge {
+.article-reader__badge {
   background: var(--badge-tag-bg);
   border-radius: 999px;
   color: var(--badge-tag-text);
@@ -1219,27 +1166,27 @@ export default {
   padding: 4px 7px;
 }
 
-.readerArticleListBadgeFavorite {
+.article-reader__badge--favorite {
   background: var(--badge-quality-bg);
   color: var(--badge-quality-text);
 }
 
-.readerArticleListDevelopingIcon {
+.article-reader__developing-icon {
   color: var(--color-info-strong);
   font-size: 0.875rem;
   line-height: 1;
 }
 
-:global(:root[data-theme='dark'] .readerArticleListDevelopingIcon) {
+:global(:root[data-theme='dark'] .article-reader__developing-icon) {
   color: var(--color-info-strong);
 }
 
-.readerArticleListBadgeHot {
+.article-reader__badge--hot {
   background: var(--badge-ad-bg);
   color: var(--badge-ad-text);
 }
 
-.readerArticleListThumbnail {
+.article-reader__thumbnail {
   align-self: start;
   background: var(--bg-muted);
   border-radius: 6px;
@@ -1249,37 +1196,28 @@ export default {
   width: 96px;
 }
 
-.readerArticlePanel {
+.article-reader__content {
   --reader-article-panel-scrollbar-thumb: var(--scrollbar-thumb-strong);
   min-height: 0;
   min-width: 0;
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  scrollbar-color: var(--color-transparent) var(--color-transparent);
+  scrollbar-color: var(--reader-article-panel-scrollbar-thumb) var(--color-transparent);
   scrollbar-width: thin;
-  transition: scrollbar-color 0.2s ease;
 }
 
-.readerArticlePanel::-webkit-scrollbar {
+.article-reader__content::-webkit-scrollbar {
   height: 6px;
   width: 6px;
 }
 
-.readerArticlePanel::-webkit-scrollbar-track {
+.article-reader__content::-webkit-scrollbar-track {
   background: var(--color-transparent);
 }
 
-.readerArticlePanel::-webkit-scrollbar-thumb {
-  background-color: var(--color-transparent);
-  transition: background-color 0.2s ease;
-}
-
-.readerArticlePanel.is-scrolling {
-  scrollbar-color: var(--reader-article-panel-scrollbar-thumb) var(--color-transparent);
-}
-
-.readerArticlePanel.is-scrolling::-webkit-scrollbar-thumb {
+.article-reader__content::-webkit-scrollbar-thumb {
   background-color: var(--reader-article-panel-scrollbar-thumb);
+  border-radius: 999px;
 }
 
 .article-load-sentinel {
@@ -1350,12 +1288,12 @@ export default {
   }
 }
 
-:global(:root[data-theme='dark']) .readerArticleList {
+:global(:root[data-theme='dark']) .article-reader__list {
   --article-list-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
   border-color: var(--border-subtle);
 }
 
-:global(:root[data-theme='dark']) .readerArticlePanel {
+:global(:root[data-theme='dark']) .article-reader__content {
   --reader-article-panel-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
 }
 
@@ -1379,27 +1317,27 @@ export default {
   color: var(--article-tag-text-dark);
 }
 
-:global(:root[data-theme='dark']) .readerArticleListItem {
+:global(:root[data-theme='dark']) .article-reader__item {
   background: var(--reader-list-item-background);
   border-color: var(--reader-list-item-border);
   color: var(--reader-list-item-title);
 }
 
-:global(:root[data-theme='dark']) .readerArticleListItem:hover {
+:global(:root[data-theme='dark']) .article-reader__item:hover {
   background: var(--reader-list-item-hover-background);
   border-color: var(--reader-list-item-hover-border);
   color: var(--reader-list-item-title);
 }
 
-:global(:root[data-theme='dark']) .readerArticleListItem .readerArticleListItemTitle {
+:global(:root[data-theme='dark']) .article-reader__item .article-reader__item-title {
   color: var(--reader-list-item-title);
 }
 
-:global(:root[data-theme='dark']) .readerArticleListItem .readerArticleListItemKicker {
+:global(:root[data-theme='dark']) .article-reader__item .article-reader__item-kicker {
   color: var(--reader-list-item-meta);
 }
 
-:global(:root[data-theme='dark']) .readerArticleListItem .readerArticleListItemPreview {
+:global(:root[data-theme='dark']) .article-reader__item .article-reader__item-preview {
   color: var(--reader-list-item-preview);
 }
 
@@ -1414,42 +1352,42 @@ export default {
   outline-color: var(--color-link);
 }
 
-:global(:root[data-theme='dark']) .readerArticleListItemSelected {
+:global(:root[data-theme='dark']) .article-reader__item--selected {
   background: var(--reader-list-item-selected-background);
   border-color: var(--reader-list-item-selected-border);
   border-left: 3px solid var(--reader-list-item-selected-accent);
   color: var(--reader-list-item-selected-title);
 }
 
-:global(:root[data-theme='dark']) .readerArticleListItemSelected:hover {
+:global(:root[data-theme='dark']) .article-reader__item--selected:hover {
   background: var(--reader-list-selected-hover-background);
   border-color: var(--reader-list-item-selected-hover-border);
   border-left: 3px solid var(--reader-list-item-selected-accent);
   color: var(--reader-list-item-selected-title);
 }
 
-:global(:root[data-theme='dark']) .readerArticleListItemSelected .readerArticleListItemTitle,
-:global(:root[data-theme='dark']) .readerArticleListItemSelected:hover .readerArticleListItemTitle {
+:global(:root[data-theme='dark']) .article-reader__item--selected .article-reader__item-title,
+:global(:root[data-theme='dark']) .article-reader__item--selected:hover .article-reader__item-title {
   color: var(--reader-list-item-selected-title);
 }
 
-:global(:root[data-theme='dark']) .readerArticleListItemSelected .readerArticleListItemKicker {
+:global(:root[data-theme='dark']) .article-reader__item--selected .article-reader__item-kicker {
   color: var(--reader-list-item-selected-meta);
 }
 
-:global(:root[data-theme='dark']) .readerArticleListItemSelected .readerArticleListItemPreview {
+:global(:root[data-theme='dark']) .article-reader__item--selected .article-reader__item-preview {
   color: var(--reader-list-item-selected-preview);
 }
 
-:global(:root[data-theme='dark']) .readerArticleListItemSelected:hover .readerArticleListItemKicker {
+:global(:root[data-theme='dark']) .article-reader__item--selected:hover .article-reader__item-kicker {
   color: var(--reader-list-item-selected-hover-meta);
 }
 
-:global(:root[data-theme='dark']) .readerArticleListItemSelected:hover .readerArticleListItemPreview {
+:global(:root[data-theme='dark']) .article-reader__item--selected:hover .article-reader__item-preview {
   color: var(--reader-list-item-selected-hover-preview);
 }
 
-:global(:root[data-theme='dark']) .readerArticleListThumbnail {
+:global(:root[data-theme='dark']) .article-reader__thumbnail {
   background: var(--bg-control);
 }
 

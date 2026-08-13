@@ -37,7 +37,7 @@ const PULL_THRESHOLD = 72;
 const PULL_MAX_DISTANCE = 112;
 const REFRESH_INDICATOR_HEIGHT = 46;
 const REFRESH_COLLAPSE_DURATION = 160;
-const NESTED_SCROLL_ROOT_SELECTOR = '.readerArticleList, .readerArticlePanel, .expandedArticleLayout';
+const NESTED_SCROLL_ROOT_SELECTOR = '.article-reader__list, .article-reader__content, .article-list-view--expanded';
 
 // This function returns the greatest active vertical scroll offset across mobile scroll roots.
 const getScrollTop = element => Math.max(
@@ -85,10 +85,13 @@ export default {
     indicatorHeight() {
       return this.isRefreshActive ? REFRESH_INDICATOR_HEIGHT : this.pullDistance;
     },
-    // This computed style animates only the indicator height needed by the current gesture state.
+    // This computed style reveals the fixed overlay without changing article-flow geometry.
     indicatorStyle() {
+      const revealDistance = Math.min(this.indicatorHeight, REFRESH_INDICATOR_HEIGHT);
       return {
-        height: `${this.indicatorHeight}px`
+        '--pull-indicator-height': `${REFRESH_INDICATOR_HEIGHT}px`,
+        '--pull-indicator-reveal': `${revealDistance}px`,
+        '--pull-indicator-opacity': revealDistance > 0 ? 1 : 0
       };
     },
     // This computed label communicates the current gesture or refresh state.
@@ -241,28 +244,35 @@ export default {
 
 <style scoped>
 .mobile-pull-to-refresh {
-  align-items: center;
-  background: var(--bg-primary);
   color: var(--text-secondary);
-  display: flex;
   flex: 0 0 auto;
   height: 0;
-  justify-content: center;
-  overflow: hidden;
-  transition: height 160ms ease;
-}
-
-.mobile-pull-to-refresh--tracking {
-  transition: none;
+  overflow: visible;
+  pointer-events: none;
+  position: relative;
+  z-index: var(--layer-refresh-indicator);
 }
 
 .mobile-pull-to-refresh__content {
   align-items: center;
+  background: var(--bg-primary);
   display: flex;
   font-size: 13px;
   font-weight: 500;
   gap: 8px;
-  min-height: 38px;
+  height: var(--pull-indicator-height);
+  justify-content: center;
+  left: 0;
+  opacity: var(--pull-indicator-opacity);
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform: translateY(calc(-100% + var(--pull-indicator-reveal)));
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+
+.mobile-pull-to-refresh--tracking .mobile-pull-to-refresh__content {
+  transition: none;
 }
 
 .mobile-pull-to-refresh__icon {
@@ -285,8 +295,7 @@ export default {
 
 .mobile-pull-to-refresh--tablet {
   position: sticky;
-  top: 56px;
-  z-index: var(--layer-sticky);
+  top: var(--shell-toolbar-height, 56px);
 }
 
 @keyframes mobile-pull-to-refresh-spin {
@@ -296,7 +305,7 @@ export default {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mobile-pull-to-refresh,
+  .mobile-pull-to-refresh__content,
   .mobile-pull-to-refresh__icon {
     transition: none;
   }

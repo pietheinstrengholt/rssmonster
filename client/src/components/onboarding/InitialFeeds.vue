@@ -259,9 +259,9 @@
 
 @media (min-width: 880px) {
   .onboarding {
+    flex: 1;
+    min-height: 0;
     width: 100%;
-    height: calc(100vh - 56px);
-    margin: 56px 0 0;
     padding: 48px max(40px, calc(50% - 500px)) 64px;
     overflow-x: hidden;
     overflow-y: auto;

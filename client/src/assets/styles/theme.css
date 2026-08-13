@@ -12,10 +12,12 @@
   --focus-ring-offset: 2px;
   --focus-ring-shadow: var(--shadow-focus-primary);
   --sidebar-width: 266px;
+  --layer-content: 0;
+  --layer-refresh-indicator: 90;
   --layer-sticky: 100;
   --layer-dropdown: 1000;
-  --layer-overlay: 9999;
-  --layer-dialog: 10000;
+  --layer-overlay: 2000;
+  --layer-modal: 10000;
   --layer-notification: 11000;
   --motion-duration-fast: 0.15s;
   --motion-duration-normal: 0.2s;

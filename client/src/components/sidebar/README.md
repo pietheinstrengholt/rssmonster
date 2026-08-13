@@ -8,6 +8,10 @@ The sidebar reflects one shared selection at a time. That selection can identify
 
 ## Layout and behavior
 
+At `768px+`, the sidebar occupies the first column of the application shell grid. It remains in flow and uses sticky positioning rather than a fixed position with a matching content offset. The sidebar and main pane scroll independently within the shell viewport.
+
+The sidebar uses a native 6-pixel scrollbar with a transparent track and theme-aware thumb. Its thumb is transparent at rest—including initial load—and appears on hover or keyboard focus. Visibility is CSS-owned; do not add scroll timers, `.is-scrolling` classes, or DOM mutation merely to reveal the native scrollbar.
+
 ### Brand and primary actions
 
 The top of the sidebar displays the RSSMonster logo and name, followed by three primary actions:

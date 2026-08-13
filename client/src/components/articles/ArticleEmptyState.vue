@@ -139,7 +139,8 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: calc(100vh - 58px);
+  flex: 1;
+  min-height: 0;
   padding: 0 24px;
   text-align: center;
 }
@@ -337,9 +338,7 @@ export default {
 /* Keeps every recovery action reachable in short landscape viewports. */
 @media (max-height: 560px) and (min-width: 480px) {
   .article-empty-state {
-    height: calc(100vh - 58px);
     justify-content: flex-start;
-    min-height: 0;
     overflow-y: auto;
     scrollbar-width: thin;
   }

@@ -1,11 +1,13 @@
 <template>
   <div
-    id="main-container"
+    class="article-list-view"
     ref="expandedArticleScrollRef"
-    :class="{ expandedArticleLayout: viewMode === 'full' }"
-    @scroll="handleExpandedArticleScroll"
+    :class="{
+      'article-list-view--expanded': viewMode === 'full',
+      'article-list-view--empty': isCollectionEmpty
+    }"
   >
-    <div id="articles" :class="{ 'mobile-search-open': mobileSearchOpen }">
+    <div class="article-list-view__items">
       <DailyBriefingIntro v-if="showDailyBriefingIntro" />
       <UnreadSelectionContext
         v-if="currentSelection === 'unread' && hasLoadedContent && loadedCount > 0 && currentViewSourceCount !== null"
@@ -80,7 +82,6 @@
 import { mapStores } from 'pinia';
 import { useOverviewStore } from '../../store/overview.js';
 import { useSelectionStore } from '../../store/selection.js';
-import { useUiStore } from '../../store/ui.js';
 import { useFeedRefreshStore } from '../../store/feedRefresh.js';
 import {
   getArticleCollectionTailState,
@@ -165,25 +166,17 @@ export default {
     return {
       minimalArticleRefs: {},
       selectedArticleId: null,
-      isArticleEndStateDismissed: false,
-      expandedArticleScrollTimeout: null
+      isArticleEndStateDismissed: false
     };
   },
   mounted() {
     window.addEventListener('keydown', this.handleMinimalKeydown);
-    window.addEventListener('resize', this.updateExpandedScrollbarMetrics);
-    this.$nextTick(this.updateExpandedScrollbarMetrics);
   },
   beforeUnmount() {
     window.removeEventListener('keydown', this.handleMinimalKeydown);
-    window.removeEventListener('resize', this.updateExpandedScrollbarMetrics);
-
-    if (this.expandedArticleScrollTimeout) {
-      clearTimeout(this.expandedArticleScrollTimeout);
-    }
   },
   computed: {
-    ...mapStores(useOverviewStore, useSelectionStore, useUiStore, useFeedRefreshStore),
+    ...mapStores(useOverviewStore, useSelectionStore, useFeedRefreshStore),
     // Exposes the active status from the explicit collection presentation contract.
     currentSelection() {
       return this.collectionSummary.status;
@@ -231,10 +224,6 @@ export default {
         tag: selection.tag
       });
     },
-    // Returns whether the mobile search dialog is currently open.
-    mobileSearchOpen() {
-      return this.uiStore.mobileSearchOpen;
-    },
     // Returns the number of unread articles received since the last update.
     unreadsSinceLastUpdate() {
       return this.collectionProgress.newerArticleCount ?? 0;
@@ -268,19 +257,12 @@ export default {
     container() {
       this.isArticleEndStateDismissed = false;
     },
-    // Refreshes article focus and overlay-scrollbar geometry after content changes.
+    // Restores compact-article focus after content changes.
     articles() {
-      this.$nextTick(() => {
-        this.focusSelectedMinimalArticle({ preventScroll: true });
-        this.updateExpandedScrollbarMetrics();
-      });
+      this.$nextTick(() => this.focusSelectedMinimalArticle({ preventScroll: true }));
     },
     activeMinimalArticleId() {
       this.$nextTick(() => this.focusSelectedMinimalArticle({ preventScroll: true }));
-    },
-    // Refreshes overlay-scrollbar geometry when the active article presentation changes.
-    viewMode() {
-      this.$nextTick(this.updateExpandedScrollbarMetrics);
     }
   },
   methods: {
@@ -309,49 +291,6 @@ export default {
     scrollToTop() {
       const articleStream = this.$refs.expandedArticleScrollRef;
       if (articleStream) articleStream.scrollTop = 0;
-    },
-    // Shows the Expanded-mode scrollbar while the article stream is actively scrolling.
-    handleExpandedArticleScroll() {
-      if (this.viewMode !== 'full') return;
-
-      const articleStream = this.$refs.expandedArticleScrollRef;
-      if (!articleStream) return;
-
-      this.updateExpandedScrollbarMetrics();
-      articleStream.classList.add('is-scrolling');
-
-      if (this.expandedArticleScrollTimeout) {
-        clearTimeout(this.expandedArticleScrollTimeout);
-      }
-
-      this.expandedArticleScrollTimeout = setTimeout(() => {
-        articleStream.classList.remove('is-scrolling');
-        this.expandedArticleScrollTimeout = null;
-      }, 1000);
-    },
-    // Positions the overlay scrollbar thumb without reducing the Expanded article width.
-    updateExpandedScrollbarMetrics() {
-      const articleStream = this.$refs?.expandedArticleScrollRef;
-      if (!articleStream || this.viewMode !== 'full') return;
-
-      const viewportHeight = articleStream.clientHeight;
-      const scrollRange = articleStream.scrollHeight - viewportHeight;
-      if (viewportHeight <= 0 || scrollRange <= 0) {
-        articleStream.style.setProperty('--expanded-scrollbar-height', '0px');
-        articleStream.style.setProperty('--expanded-scrollbar-offset', '0px');
-        return;
-      }
-
-      const thumbHeight = Math.min(
-        viewportHeight,
-        Math.max(32, Math.round((viewportHeight * viewportHeight) / articleStream.scrollHeight))
-      );
-      const thumbOffset = Math.round(
-        (articleStream.scrollTop / scrollRange) * (viewportHeight - thumbHeight)
-      );
-
-      articleStream.style.setProperty('--expanded-scrollbar-height', `${thumbHeight}px`);
-      articleStream.style.setProperty('--expanded-scrollbar-offset', `${thumbOffset}px`);
     },
     // Stores compact article component refs by article id.
     setMinimalArticleRef(element, articleId) {
@@ -512,109 +451,53 @@ export default {
 <style scoped>
 /* Landscape phones and portrait tablets */
 @media (min-width: 880px) {
-  #main-container.expandedArticleLayout {
+  .article-list-view.article-list-view--expanded {
     --expanded-scrollbar-thumb: var(--scrollbar-thumb-strong);
-    --expanded-scrollbar-height: 0px;
-    --expanded-scrollbar-offset: 0px;
-    height: calc(100vh - 58px);
-    margin-top: 58px;
+    flex: 1;
+    min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
-    scrollbar-color: var(--color-transparent) var(--color-transparent);
-    scrollbar-width: none;
+    scrollbar-color: var(--expanded-scrollbar-thumb) var(--color-transparent);
+    scrollbar-width: thin;
   }
 
-  #main-container.expandedArticleLayout::-webkit-scrollbar {
-    height: 0;
-    width: 0;
-  }
-
-  #main-container.expandedArticleLayout::after {
-    background-color: var(--color-transparent);
-    border-radius: 999px;
-    content: '';
-    height: var(--expanded-scrollbar-height);
-    pointer-events: none;
-    position: fixed;
-    right: 0;
-    top: calc(58px + var(--expanded-scrollbar-offset));
-    transition: background-color 0.2s ease;
+  .article-list-view.article-list-view--expanded::-webkit-scrollbar {
     width: 6px;
-    z-index: 999;
   }
 
-  #main-container.expandedArticleLayout.is-scrolling::after {
+  .article-list-view.article-list-view--expanded::-webkit-scrollbar-track {
+    background: var(--color-transparent);
+  }
+
+  .article-list-view.article-list-view--expanded::-webkit-scrollbar-thumb {
     background-color: var(--expanded-scrollbar-thumb);
+    border-radius: 999px;
   }
 
-  :global(:root[data-theme='dark']) #main-container.expandedArticleLayout {
+  :global(:root[data-theme='dark']) .article-list-view.article-list-view--expanded {
     --expanded-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
   }
 
-  #main-container.expandedArticleLayout #articles {
+  .article-list-view.article-list-view--expanded .article-list-view__items {
     padding-top: 0;
     width: 100%;
   }
 }
 
-#articles {
-  padding-top: 58px;
-  overflow-x: hidden;
-  overflow-y: hidden;
+.article-list-view__items {
+  padding-top: 0;
   right: 0;
   left: 0;
 }
 
-/* Removes the desktop toolbar offset from the wider mobile layout. */
-@media (min-width: 690px) and (max-width: 767px) {
-  #articles {
-    padding-top: 0;
-  }
+.article-list-view.article-list-view--empty {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
 }
 
-/* Lets the hybrid document scroll surface receive trackpad scrolling without an inner overflow trap. */
-@media (min-width: 768px) and (max-width: 879px) {
-  #articles {
-    padding-top: 0;
-    overflow: visible;
-  }
-}
-
-/* Removes the article offset when the mobile toolbar overlays portrait layouts. */
-@media (max-width: 879px) and (orientation: portrait) {
-  #main-container #articles {
-    padding-top: 0;
-  }
-}
-
-/* Lets an empty article list fill the space below the mobile toolbar. */
-@media (max-width: 879px) {
-  #main-container {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-  }
-}
-
-#articles.mobile-search-open {
-  padding-top: 98px;
-}
-
-/* Lets the measured hybrid toolbar spacer account for the open search panel once. */
-@media (min-width: 768px) and (max-width: 879px) {
-  #articles.mobile-search-open {
-    padding-top: 0;
-  }
-}
-
-@media (min-width: 880px) {
-  #articles.mobile-search-open {
-    padding-top: 38px;
-  }
-}
-
-:global(:root[data-theme='dark'] #articles) {
+:global(:root[data-theme='dark'] .article-list-view__items) {
   color: var(--text-inverted);
   background: var(--dark-page-surface);
   border-color: var(--dark-page-surface);
@@ -639,12 +522,10 @@ export default {
   }
 }
 
-@media (max-width: 879px) {
-  #no-more {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-  }
+#no-more.article-empty-state-container {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
 }
 
 :global(:root[data-theme='dark'] #no-more) {

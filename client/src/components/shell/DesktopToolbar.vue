@@ -31,30 +31,32 @@
           {{ uiStore.chatAssistantOpen ? 'Close Chat' : 'Chat' }}
         </span>
       </button>
-      <div class="toolbar-search" :class="{ 'toolbar-search-invalid': isSearchQueryInvalid, 'toolbar-search-open': isCompactSearchOpen }">
-        <span class="toolbar-search-icon" aria-hidden="true">
+      <div ref="searchContainer" class="toolbar-search-control">
+        <div class="toolbar-search" :class="{ 'toolbar-search-invalid': isSearchQueryInvalid, 'toolbar-search-open': isCompactSearchOpen }">
+          <span class="toolbar-search-icon" aria-hidden="true">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M6.5 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11m0-1a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m7.854 4.146-3.85-3.85a1 1 0 0 0-1.414 1.415l3.85 3.85a1 1 0 0 0 1.414-1.415" />
+            </svg>
+          </span>
+          <input
+            ref="searchInput"
+            type="text"
+            v-model="searchQuery"
+            @input="debounceSearchEvent"
+            @keydown.esc="closeCompactSearch"
+            :placeholder="searchPlaceholder"
+            autocomplete="off"
+            class="toolbar-search-input"
+            :class="{ 'toolbar-search-input-invalid': isSearchQueryInvalid }"
+            :title="searchQueryError"
+          />
+        </div>
+        <button ref="searchButton" type="button" class="toolbar-search-button" title="Search" @click="toggleCompactSearch">
           <svg viewBox="0 0 16 16" aria-hidden="true">
             <path d="M6.5 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11m0-1a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m7.854 4.146-3.85-3.85a1 1 0 0 0-1.414 1.415l3.85 3.85a1 1 0 0 0 1.414-1.415" />
           </svg>
-        </span>
-        <input
-          ref="searchInput"
-          type="text"
-          v-model="searchQuery"
-          @input="debounceSearchEvent"
-          @keydown.esc="closeCompactSearch"
-          :placeholder="searchPlaceholder"
-          autocomplete="off"
-          class="toolbar-search-input"
-          :class="{ 'toolbar-search-input-invalid': isSearchQueryInvalid }"
-          :title="searchQueryError"
-        />
+        </button>
       </div>
-      <button type="button" class="toolbar-search-button" title="Search" @click="toggleCompactSearch">
-        <svg viewBox="0 0 16 16" aria-hidden="true">
-          <path d="M6.5 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11m0-1a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m7.854 4.146-3.85-3.85a1 1 0 0 0-1.414 1.415l3.85 3.85a1 1 0 0 0 1.414-1.415" />
-        </svg>
-      </button>
       <AppDropdown id="themeModeDropdown" :close-key="selectedThemeMode" align="end" class="toolbar-theme-dropdown">
         <template #trigger="{ triggerProps }">
           <button v-bind="triggerProps" type="button" class="toolbar-theme-button" title="Choose theme">
@@ -103,21 +105,22 @@
 
 <style scoped>
 .desktop-toolbar {
-  height: 56px;
+  flex: 0 0 var(--shell-toolbar-height, 56px);
+  height: var(--shell-toolbar-height, 56px);
   box-sizing: border-box;
   border-bottom: 1px solid var(--color-transparent);
   border-color: var(--border-subtle);
   top: 0;
-  right: 0;
+  width: 100%;
   overflow: visible;
   background-color: var(--desktop-toolbar-background);
-  position: fixed;
-  margin-left: 0;
+  position: sticky;
   display: flex;
   align-items: center;
   min-width: 0;
-  z-index: 1000;
+  z-index: var(--layer-sticky);
   padding-left: clamp(16px, 2vw, 28px);
+  padding-right: 12px;
   --toolbar-control-gap: clamp(4px, 1vw, 20px);
 }
 
@@ -131,6 +134,7 @@
 .toolbar-actions {
   flex: 1;
   gap: var(--toolbar-control-gap);
+  justify-content: flex-end;
 }
 
 .toolbar-filters {
@@ -142,7 +146,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 34px;
+  height: var(--shell-filter-control-height, 34px);
   padding: 0 11px;
   color: var(--toolbar-text);
   background: var(--bg-input);
@@ -160,6 +164,7 @@
 }
 
 .toolbar-filters > .toolbar-filter {
+  min-width: 0;
   margin-right: 0;
 }
 
@@ -282,9 +287,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  position: fixed;
-  top: 10px;
-  right: 12px;
+  position: static;
   width: 36px;
   height: 36px;
   border: 1px solid var(--border-control);
@@ -302,10 +305,7 @@
 }
 
 .toolbar-theme-dropdown {
-  position: fixed;
-  top: 10px;
-  right: 68px;
-  z-index: 1;
+  flex: 0 0 auto;
   border: none;
 }
 
@@ -486,18 +486,27 @@
 }
 
 .toolbar-search {
-  flex: 0 1 clamp(320px, 40vw, 620px);
+  flex: 1;
   min-width: 0;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 8px;
   height: 36px;
-  margin: 0 130px 0 0;
+  margin: 0;
   padding: 0 12px;
   background-color: var(--bg-input);
   border: 1px solid var(--border-control);
   border-radius: 8px;
+}
+
+.toolbar-search-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  flex: 0 1 clamp(320px, 40vw, 620px);
+  min-width: 0;
 }
 
 .toolbar-search:hover {
@@ -567,52 +576,30 @@
   display: none;
 }
 
-@media (min-width: 880px) {
-  .desktop-toolbar {
-    left: var(--sidebar-width);
-  }
-}
-
-@media (min-width: 1600px) {
-  .toolbar-search {
-    margin-left: 0;
-  }
-}
-
-@media (max-width: 1120px) {
-  .toolbar-search {
-    margin-right: 128px;
+/* Keeps compact desktop actions in flow while anchoring search to its trigger. */
+@media (min-width: 880px) and (max-width: 1199px) {
+  .toolbar-search-control {
+    flex: 0 0 auto;
   }
 
-  .toolbar-settings-button,
-  .toolbar-theme-button {
-    z-index: 1;
-  }
-}
-
-@media (max-width: 1199px) {
   .toolbar-search {
     display: none;
   }
 
   .toolbar-search.toolbar-search-open {
     display: flex;
-    position: fixed;
-    top: 64px;
-    right: 124px;
-    width: min(420px, calc(100vw - 320px));
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: min(420px, calc(100vw - 32px));
     margin: 0;
     box-shadow: var(--shadow-modal);
-    z-index: 1001;
+    z-index: var(--layer-dropdown);
   }
 
   .toolbar-search-button {
     display: inline-flex;
-    position: fixed;
-    top: 10px;
-    right: 124px;
     padding: 0;
-    z-index: 1;
   }
 
   .toolbar-search-button svg {
@@ -620,13 +607,7 @@
     height: 16px;
     fill: var(--color-current);
   }
-}
-
-@media (max-width: 1149px) {
   .toolbar-chat-button {
-    position: fixed;
-    top: 10px;
-    right: 180px;
     width: 36px;
     height: 36px;
     padding: 0;
@@ -634,7 +615,6 @@
     justify-content: center;
     border-radius: 999px;
     font-size: 20px;
-    z-index: 1;
   }
 
   .toolbar-chat-button span {
@@ -642,32 +622,8 @@
   }
 }
 
-@media (max-width: 1149px) {
-  .toolbar-theme-dropdown {
-    right: 60px;
-  }
-
-  .toolbar-search.toolbar-search-open,
-  .toolbar-search-button {
-    right: 108px;
-  }
-
-  .toolbar-chat-button {
-    right: 156px;
-  }
-}
-
-@media (max-width: 990px) {
-  .toolbar-search-button {
-    display: none;
-  }
-
-  .toolbar-chat-button {
-    right: 108px;
-  }
-}
-
-@media (max-width: 940px) {
+@media (max-width: 879px) {
+  .toolbar-search-button,
   .toolbar-chat-button {
     display: none;
   }
@@ -857,6 +813,7 @@ export default {
   mounted() {
     window.addEventListener('rssmonster:focus-search', this.focusSearchInput);
     window.addEventListener('resize', this.updateWindowWidth);
+    document.addEventListener('pointerdown', this.handleSearchOutsideClick);
   },
   methods: {
     // This function stores the current viewport width for responsive toolbar copy.
@@ -875,6 +832,13 @@ export default {
     // This function closes the compact search field.
     closeCompactSearch: function() {
       this.isCompactSearchOpen = false;
+    },
+    // This function closes compact search when a pointer press occurs outside its controls.
+    handleSearchOutsideClick: function(event) {
+      if (!this.isCompactSearchOpen) return;
+      if (this.$refs.searchContainer?.contains(event.target)) return;
+      if (this.$refs.searchButton?.contains(event.target)) return;
+      this.closeCompactSearch();
     },
     // This function opens the compact search field and puts focus in it.
     focusSearchInput: function() {
@@ -975,6 +939,7 @@ export default {
     clearTimeout(this.searchDebounceTimer);
     window.removeEventListener('rssmonster:focus-search', this.focusSearchInput);
     window.removeEventListener('resize', this.updateWindowWidth);
+    document.removeEventListener('pointerdown', this.handleSearchOutsideClick);
   },
   watch: {
     // This function keeps the selected toolbar option in sync with saved settings.

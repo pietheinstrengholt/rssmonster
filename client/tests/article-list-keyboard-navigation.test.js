@@ -128,7 +128,7 @@ describe('ArticleListView keyboard navigation', () => {
   // Verifies Expanded mode measures keyboard navigation from its own scroll region.
   it('uses the Expanded-mode scroll region as the reading viewport', () => {
     const expandedArticlePane = document.createElement('div');
-    expandedArticlePane.className = 'expandedArticleLayout';
+    expandedArticlePane.className = 'article-list-view--expanded';
     expandedArticlePane.getBoundingClientRect = vi.fn().mockReturnValue({ top: 60 });
     const context = createContext({
       $refs: { expandedArticleScrollRef: expandedArticlePane }

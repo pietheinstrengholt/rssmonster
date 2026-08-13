@@ -8,6 +8,7 @@ import ArticleListView from '../src/components/articles/ArticleListView.vue';
 import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
 import AppShell from '../src/AppShell.vue';
+import { SHELL_MODE } from '../src/config/responsiveLayout.js';
 import UpdateFeed from '../src/components/dialogs/feeds/UpdateFeed.vue';
 import SettingsActions from '../src/components/settings/SettingsActions.vue';
 import SmartFolderEditor from '../src/components/settings/smartFolders/SmartFolderEditor.vue';
@@ -124,7 +125,6 @@ function createListContext(overrides = {}) {
       effectiveMarkAsReadOnScroll: false
     },
     overviewStore: { unreadsSinceLastUpdate: 0 },
-    uiStore: { mobileSearchOpen: false },
     $emit: vi.fn(),
     $nextTick: vi.fn(callback => callback()),
     ...ArticleListView.methods,
@@ -419,14 +419,11 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
     expect(context.similarCount({ eventArticleCountTotal: 4, isEventArticle: true })).toBe(0);
   });
 
-  it('covers refs, selection, scrolling, menu positioning, and bulk actions', () => {
-    vi.useFakeTimers();
-    const listElement = { classList: { add: vi.fn(), remove: vi.fn() } };
+  it('covers refs, selection, menu positioning, and bulk actions', () => {
     const itemElement = { focus: vi.fn(), scrollIntoView: vi.fn() };
     const context = createReaderContext({
       articles: [{ id: 1, status: 'unread' }, { id: 2, status: 'read' }],
       $refs: {
-        articleListScrollRef: listElement,
         bulkMoreButton: { getBoundingClientRect: () => ({ left: -20, bottom: 50 }) }
       }
     });
@@ -438,10 +435,6 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
     context.selectArticleByIndex(1);
     expect(itemElement.focus).toHaveBeenCalledWith({ preventScroll: true });
     expect(context.$emit).toHaveBeenCalledWith('mark-previous-article-read', 1);
-    context.handleArticleListScroll();
-    vi.advanceTimersByTime(1000);
-    expect(listElement.classList.remove).toHaveBeenCalledWith('is-scrolling');
-
     context.isBulkMenuOpen = true;
     context.updateBulkMenuPosition();
     expect(context.bulkMenuStyle).toEqual({ left: '12px', top: '58px' });
@@ -517,7 +510,6 @@ describe('ArticleListView high-impact decision coverage', () => {
     expect(compute(ArticleListView, 'showDailyBriefingIntro', context)).toBe(false);
     context.currentSelection = 'briefing';
     expect(compute(ArticleListView, 'showDailyBriefingIntro', context)).toBe(true);
-    expect(compute(ArticleListView, 'mobileSearchOpen', context)).toBe(false);
     expect(compute(ArticleListView, 'unreadsSinceLastUpdate', context)).toBe(0);
     expect(compute(ArticleListView, 'hasReachedArticleListEnd', context)).toBe(true);
     expect(compute(ArticleListView, 'supportsArticleEndState', context)).toBe(true);
@@ -734,9 +726,7 @@ describe('SmartFolderEditor high-impact decision coverage', () => {
 });
 
 describe('Vue template handler coverage', () => {
-  it('covers AppShell notification, badge, mobile, and scroll branches', async () => {
-    vi.useFakeTimers();
-    const sidebarElement = { classList: { add: vi.fn(), remove: vi.fn() } };
+  it('covers AppShell notification, badge, and mobile branches', async () => {
     const context = {
       ...AppShell.data(),
       overviewStore: {
@@ -744,7 +734,6 @@ describe('Vue template handler coverage', () => {
       },
       selectionStore: { currentSelection: {} },
       uiStore: { setFatalError: vi.fn() },
-      $refs: { sidebarScrollRef: sidebarElement },
       ...AppShell.methods,
       getOverview: vi.fn()
     };
@@ -753,10 +742,6 @@ describe('Vue template handler coverage', () => {
     expect(context.mobile).toBe('menu');
     context.completeOnboarding();
     expect(context.getOverview).toHaveBeenCalledWith(true);
-    context.handleSidebarScroll();
-    vi.advanceTimersByTime(1000);
-    expect(sidebarElement.classList.remove).toHaveBeenCalledWith('is-scrolling');
-
     const setAppBadge = vi.fn();
     const clearAppBadge = vi.fn();
     Object.defineProperties(navigator, {
@@ -1077,7 +1062,7 @@ describe('Vue template handler coverage', () => {
     await wrapper.get('.bulk-more-button').trigger('click');
     for (const button of wrapper.findAll('.bulk-action-menu-item')) await button.trigger('click');
     await wrapper.get('.article-list-bulk-tag').trigger('click');
-    await wrapper.get('.readerArticleListItem').trigger('keydown', { key: 'Enter' });
+    await wrapper.get('.article-reader__item').trigger('keydown', { key: 'Enter' });
     await wrapper.get('.article-refresh-state').trigger('click');
     expect(stores.selectionStore.setCurrentSelection).toHaveBeenCalledWith({ tag: 'AI' });
     expect(wrapper.emitted('bulk-action')).toBeTruthy();
@@ -1164,7 +1149,7 @@ describe('Vue template handler coverage', () => {
     expect(wrapper.find('.chat').exists()).toBe(true);
 
     stores.uiStore.chatAssistantOpen = false;
-    wrapper.vm.handleResponsiveShellChange({ matches: false });
+    wrapper.vm.shellMode = SHELL_MODE.MOBILE;
     await wrapper.vm.$nextTick();
     await wrapper.get('.mobile-toolbar').trigger('click');
     await wrapper.get('.mobile-menu').trigger('click');

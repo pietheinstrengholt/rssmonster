@@ -50,18 +50,13 @@ export default {
   border: 1px solid var(--border-warning);
   border-left: 3px solid var(--border-warning-strong);
   border-radius: var(--radius-control);
-  bottom: 16px;
   box-shadow: var(--shadow-modal);
   color: var(--text-primary);
   display: flex;
   gap: 10px;
-  left: calc(var(--sidebar-width) + 16px);
-  margin: 0 auto;
-  max-width: min(680px, calc(100vw - var(--sidebar-width) - 32px));
+  width: 100%;
+  max-width: 680px;
   padding: 9px 10px 9px 12px;
-  position: fixed;
-  right: 16px;
-  z-index: 1050;
 }
 
 .connectivity-status__indicator {
@@ -106,14 +101,6 @@ export default {
   color: var(--text-disabled-strong);
   cursor: not-allowed;
   opacity: 0.65;
-}
-
-@media (max-width: 879px) {
-  .connectivity-status {
-    left: 12px;
-    max-width: none;
-    right: 12px;
-  }
 }
 
 :global(:root[data-theme='dark']) .connectivity-status {

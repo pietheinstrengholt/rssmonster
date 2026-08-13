@@ -94,7 +94,7 @@ describe('developing story icon', () => {
       event: developingEvent
     });
 
-    expect(wrapper.getComponent('.readerArticleListDevelopingIcon').props('icon')).toBe('lightning-charge-fill');
+    expect(wrapper.getComponent('.article-reader__developing-icon').props('icon')).toBe('lightning-charge-fill');
   });
 
   it('does not render when the API developing-story field is false', () => {
@@ -108,6 +108,6 @@ describe('developing story icon', () => {
     });
 
     expect(compactWrapper.find('.developing-story-icon').exists()).toBe(false);
-    expect(readerWrapper.find('.readerArticleListDevelopingIcon').exists()).toBe(false);
+    expect(readerWrapper.find('.article-reader__developing-icon').exists()).toBe(false);
   });
 });

@@ -1,14 +1,15 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MobilePullToRefresh from '../src/components/shell/MobilePullToRefresh.vue';
+import mobilePullToRefreshSource from '../src/components/shell/MobilePullToRefresh.vue?raw';
 
 // This function creates the shared mobile scroll root used by the gesture component.
 const mountPullToRefresh = () => {
-  document.body.innerHTML = '<div id="home"><div id="pull-mount"></div><article id="article-target"></article></div>';
+  document.body.innerHTML = '<div class="app-shell__main"><div id="pull-mount"></div><article id="article-target"></article></div>';
   return mount(MobilePullToRefresh, {
     attachTo: '#pull-mount',
     props: {
-      scrollRoot: document.getElementById('home')
+      scrollRoot: document.querySelector('.app-shell__main')
     },
     global: {
       stubs: {
@@ -38,6 +39,11 @@ afterEach(() => {
 });
 
 describe('MobilePullToRefresh', () => {
+  it('uses the semantic refresh-indicator layer without z-index arithmetic', () => {
+    expect(mobilePullToRefreshSource).toContain('z-index: var(--layer-refresh-indicator);');
+    expect(mobilePullToRefreshSource).not.toContain('calc(var(--layer-sticky) - 1)');
+  });
+
   it('arms a vertical pull at the top and emits one refresh after release', async () => {
     const wrapper = mountPullToRefresh();
     const start = touchEvent({ y: 20 });
@@ -49,6 +55,8 @@ describe('MobilePullToRefresh', () => {
 
     expect(wrapper.text()).toContain('Release to refresh');
     expect(wrapper.classes()).toContain('mobile-pull-to-refresh--tracking');
+    expect(wrapper.vm.indicatorStyle).not.toHaveProperty('height');
+    expect(wrapper.vm.indicatorStyle['--pull-indicator-reveal']).toBe('46px');
     expect(wrapper.emitted('show-mobile-toolbar')).toHaveLength(1);
     expect(move.preventDefault).toHaveBeenCalledOnce();
 
@@ -67,7 +75,7 @@ describe('MobilePullToRefresh', () => {
 
   it('ignores short, horizontal, toolbar, and already-scrolled gestures', () => {
     const wrapper = mountPullToRefresh();
-    const home = document.getElementById('home');
+    const home = document.querySelector('.app-shell__main');
 
     wrapper.vm.handleTouchStart(touchEvent());
     wrapper.vm.handleTouchMove(touchEvent({ x: 180, y: 28 }));
@@ -92,11 +100,11 @@ describe('MobilePullToRefresh', () => {
     wrapper.unmount();
   });
 
-  it.each(['expandedArticleLayout', 'readerArticleList'])(
+  it.each(['article-list-view--expanded', 'article-reader__list'])(
     'uses the %s scroll surface when the tablet layout owns scrolling',
     scrollRootClass => {
       const wrapper = mountPullToRefresh();
-      const home = document.getElementById('home');
+      const home = document.querySelector('.app-shell__main');
       const nestedScrollRoot = document.createElement('div');
       const nestedArticle = document.createElement('article');
       nestedScrollRoot.className = scrollRootClass;

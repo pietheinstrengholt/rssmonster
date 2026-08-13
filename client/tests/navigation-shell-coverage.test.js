@@ -234,7 +234,7 @@ describe('desktop toolbar interactions', () => {
 });
 
 describe('mobile toolbar interactions', () => {
-  it('opens, applies, clears, and responsively closes search', async () => {
+  it('opens, applies, clears, and leaves shell transitions to its owner', async () => {
     const store = createStore();
     const wrapper = mountToolbar(MobileToolbar, store);
 
@@ -255,7 +255,9 @@ describe('mobile toolbar interactions', () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 900 });
     window.dispatchEvent(new Event('resize'));
     await wrapper.vm.$nextTick();
-    expect(wrapper.find('.mobile-search-panel').exists()).toBe(false);
+    expect(wrapper.find('.mobile-search-panel').exists()).toBe(true);
+    wrapper.unmount();
+    expect(store.uiStore.setMobileSearchOpen).toHaveBeenLastCalledWith(false);
   });
 
   it('forwards mobile navigation and computes safe counts and labels', async () => {

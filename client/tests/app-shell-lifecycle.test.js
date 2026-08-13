@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AppShell from '../src/AppShell.vue';
 import { CONNECTIVITY_ERROR_EVENT } from '../src/api/client.js';
 import { ACTION_ERROR_EVENT } from '../src/services/actionNotifications.js';
+import { SHELL_MODE } from '../src/config/responsiveLayout.js';
 
 // This function creates the minimal context needed by AppShell lifecycle methods.
 const createLifecycleContext = () => {
@@ -15,7 +16,6 @@ const createLifecycleContext = () => {
     isUnmounting: false,
     connectivityStatus: null,
     overviewIntervalId: null,
-    sidebarScrollTimeout: null,
     unsubscribeFromSystemTheme: vi.fn()
   };
 
@@ -36,18 +36,32 @@ afterEach(() => {
 });
 
 describe('AppShell lifecycle', () => {
+  it.each([
+    [SHELL_MODE.MOBILE, true, false, false],
+    [SHELL_MODE.HYBRID, false, true, false],
+    [SHELL_MODE.DESKTOP, false, true, true]
+  ])('derives %s shell presentation from one canonical state', (
+    shellMode,
+    isMobileShell,
+    showPersistentSidebar,
+    isDesktopShell
+  ) => {
+    const context = { shellMode };
+
+    expect(AppShell.computed.isMobileShell.call(context)).toBe(isMobileShell);
+    expect(AppShell.computed.isHybridShell.call(context)).toBe(shellMode === SHELL_MODE.HYBRID);
+    expect(AppShell.computed.isDesktopShell.call(context)).toBe(isDesktopShell);
+    expect(AppShell.computed.showPersistentSidebar.call(context)).toBe(showPersistentSidebar);
+  });
+
   it('switches shell state when the responsive breakpoint changes', () => {
     const context = {
-      isDesktopShell: true,
       mobile: true
     };
 
-    AppShell.methods.handleResponsiveShellChange.call(context, { matches: false });
+    AppShell.methods.handleResponsiveShellChange.call(context);
 
-    expect(context).toMatchObject({
-      isDesktopShell: false,
-      mobile: null
-    });
+    expect(context.mobile).toBeNull();
   });
 
   it.each([
@@ -60,13 +74,13 @@ describe('AppShell lifecycle', () => {
   ])('resolves pull-to-refresh eligibility for %s', (
     _viewport,
     isDesktopShell,
-    isTabletPullRefreshLayout,
+    isPullToRefreshViewport,
     supportsTouch,
     expected
   ) => {
     const eligible = AppShell.computed.showMobileArticleRefresh.call({
       isDesktopShell,
-      isTabletPullRefreshLayout,
+      isPullToRefreshViewport,
       showArticleFeed: true,
       supportsTouch
     });
@@ -76,17 +90,18 @@ describe('AppShell lifecycle', () => {
 
   it('keeps pull-to-refresh eligible while a touch tablet rotates across the shell breakpoint', () => {
     const context = {
-      isDesktopShell: false,
-      isTabletPullRefreshLayout: true,
+      isPullToRefreshViewport: true,
       mobile: null,
       showArticleFeed: true,
       supportsTouch: true
     };
 
-    AppShell.methods.handleResponsiveShellChange.call(context, { matches: true });
+    context.isDesktopShell = true;
+    AppShell.methods.handleResponsiveShellChange.call(context);
     expect(AppShell.computed.showMobileArticleRefresh.call(context)).toBe(true);
 
-    AppShell.methods.handleResponsiveShellChange.call(context, { matches: false });
+    context.isDesktopShell = false;
+    AppShell.methods.handleResponsiveShellChange.call(context);
     expect(AppShell.computed.showMobileArticleRefresh.call(context)).toBe(true);
   });
 
@@ -176,7 +191,6 @@ describe('AppShell lifecycle', () => {
     const context = createLifecycleContext();
     const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
     context.overviewIntervalId = setInterval(() => {}, 300 * 1000);
-    context.sidebarScrollTimeout = setTimeout(() => {}, 1000);
     context.actionErrorTimer = setTimeout(() => {}, 6000);
 
     AppShell.beforeUnmount.call(context);
@@ -195,7 +209,6 @@ describe('AppShell lifecycle', () => {
     expect(removeEventListenerSpy.mock.calls.some(([type]) => type === 'auth:expired')).toBe(false);
     expect(context.unsubscribeFromSystemTheme).toHaveBeenCalledOnce();
     expect(context.overviewIntervalId).toBeNull();
-    expect(context.sidebarScrollTimeout).toBeNull();
     expect(context.actionErrorTimer).toBeNull();
     expect(context.isUnmounting).toBe(true);
     expect(vi.getTimerCount()).toBe(0);

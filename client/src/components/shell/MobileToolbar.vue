@@ -1,11 +1,11 @@
 <template>
-  <div ref="toolbarContainer" class="mobile-toolbar-container">
-    <nav
-      id="mobile-toolbar"
-      class="mobile-toolbar"
-      :class="{ hide: hidden }"
-      aria-label="Mobile article toolbar"
-    >
+  <div class="mobile-toolbar-container">
+    <div class="mobile-toolbar-surface" :class="{ hide: hidden }">
+      <nav
+        id="mobile-toolbar"
+        class="mobile-toolbar"
+        aria-label="Mobile article toolbar"
+      >
       <div class="mobile-toolbar-brand-row">
         <div class="mobile-toolbar-brand">
           <img
@@ -45,6 +45,7 @@
             />
           </button>
           <button
+            ref="searchButton"
             type="button"
             class="mobile-toolbar-button mobile-search-toggle"
             title="Search"
@@ -141,35 +142,32 @@
           </template>
         </AppDropdown>
       </div>
-    </nav>
-    <div v-if="showSearch" class="mobile-search-panel">
-      <input
-        ref="searchInput"
-        v-model="searchQuery"
-        @input="updateSearch"
-        type="text"
-        class="mobile-search-input"
-        placeholder="Search articles..."
-        @keyup.enter="performSearch"
-        @keyup.esc="toggleSearch"
-        autofocus
-      />
+      </nav>
+      <div v-if="showSearch" ref="searchPanel" class="mobile-search-panel">
+        <input
+          ref="searchInput"
+          v-model="searchQuery"
+          @input="updateSearch"
+          type="text"
+          class="mobile-search-input"
+          placeholder="Search articles..."
+          @keyup.enter="performSearch"
+          @keyup.esc="toggleSearch"
+          autofocus
+        />
+      </div>
     </div>
   </div>
-  <div
-    class="mobile-toolbar-spacer"
-    :style="toolbarHeight > 0 ? { height: `${toolbarHeight}px` } : null"
-    aria-hidden="true"
-  ></div>
 </template>
 
 <style scoped>
 .mobile-toolbar-container {
-  display: contents;
-}
-
-.mobile-toolbar-spacer {
-  display: none;
+  position: sticky;
+  top: 0;
+  z-index: var(--layer-sticky);
+  display: block;
+  width: 100%;
+  pointer-events: none;
 }
 
 .mobile-toolbar {
@@ -179,9 +177,6 @@
   --mobile-toolbar-row-gap: 8px;
   --mobile-toolbar-filter-gap: 16px;
 
-  position: sticky;
-  top: 0;
-  z-index: var(--layer-sticky);
   display: grid;
   row-gap: var(--mobile-toolbar-row-gap);
   width: 100%;
@@ -190,46 +185,17 @@
   color: var(--text-primary);
   background-color: var(--desktop-toolbar-background);
   border-bottom: 1px solid var(--border-subtle);
+  pointer-events: auto;
 }
 
 @media (max-width: 879px) {
-  .mobile-toolbar {
+  .mobile-toolbar-surface {
     transition: transform 150ms ease;
     will-change: transform;
   }
 
-  .mobile-toolbar.hide {
+  .mobile-toolbar-surface.hide {
     transform: translateY(-100%);
-  }
-}
-
-/* Keeps the hybrid toolbar fixed while a measured spacer preserves its place in the article flow. */
-@media (min-width: 768px) and (max-width: 879px) {
-  .mobile-toolbar-container {
-    position: fixed;
-    top: 0;
-    right: 0;
-    left: var(--sidebar-width);
-    z-index: 9999;
-    display: block;
-    pointer-events: none;
-  }
-
-  .mobile-toolbar,
-  .mobile-search-panel {
-    pointer-events: auto;
-  }
-
-  .mobile-toolbar {
-    position: relative;
-    top: auto;
-  }
-
-  .mobile-toolbar-spacer {
-    display: block;
-    flex: 0 0 auto;
-    width: 100%;
-    height: 59px;
   }
 }
 
@@ -250,7 +216,7 @@
 .mobile-toolbar-brand {
   gap: 10px;
   color: var(--text-primary);
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
@@ -276,7 +242,7 @@
   border-radius: 999px;
   background: var(--color-transparent);
   color: var(--text-primary);
-  font-size: 18px;
+  font-size: 20px;
   cursor: pointer;
 }
 
@@ -312,6 +278,7 @@
   padding: 10px 16px;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-subtle);
+  pointer-events: auto;
 }
 
 .mobile-search-input {
@@ -443,7 +410,6 @@
     flex: 1 1 auto;
     min-width: 0;
     gap: 10px;
-    font-size: 20px;
   }
 
   .mobile-toolbar-brand span {
@@ -467,7 +433,6 @@
   .mobile-toolbar-button {
     width: 40px;
     height: 40px;
-    font-size: 20px;
   }
 
   .mobile-selection-settings-button {
@@ -475,9 +440,8 @@
   }
 
   .mobile-filter-button {
-    height: 34px;
+    height: var(--shell-filter-control-height, 34px);
     border-radius: 8px;
-    font-size: 14px;
   }
 
   .mobile-toolbar-filters {
@@ -488,8 +452,8 @@
 /* Uses the persistent sidebar as the sole brand surface in the hybrid layout. */
 @media (min-width: 768px) and (max-width: 879px) {
   .mobile-toolbar {
-    --mobile-toolbar-block-start: 8px;
-    --mobile-toolbar-block-end: 8px;
+    --mobile-toolbar-block-start: 6px;
+    --mobile-toolbar-block-end: 6px;
     --mobile-toolbar-inline-padding: 12px;
     --mobile-toolbar-row-gap: 8px;
     --mobile-toolbar-filter-gap: 8px;
@@ -497,6 +461,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+    min-height: var(--shell-toolbar-height, 56px);
   }
 
   .mobile-toolbar-brand-row {
@@ -511,19 +479,26 @@
   }
 
   .mobile-toolbar-filters {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     order: 1;
+    width: 0;
+    max-width: 100%;
     min-width: 0;
     padding-inline: 0;
   }
 
   .mobile-toolbar-filter {
     flex: 1 1 0;
+    width: 0;
+    max-width: 100%;
     min-width: 0;
     margin-right: 0;
   }
 
   .mobile-filter-button {
+    height: var(--shell-filter-control-height, 34px);
+    border-radius: 8px;
+    box-shadow: none;
     width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -667,7 +642,6 @@ import {
   getAvailableArticleOptions
 } from '../../config/articleSelectionOptions.js';
 import AppDropdown from '../shared/AppDropdown.vue';
-const MOBILE_LANDSCAPE_WIDTH = 880;
 
 export default {
   components: { AppDropdown },
@@ -684,66 +658,19 @@ export default {
   emits: ['mobile', 'forceReload', 'refresh'],
   data() {
     return {
-      showSearch: false,
-      toolbarHeight: 0,
-      toolbarMeasurementFrameId: null,
-      toolbarResizeObserver: null
+      showSearch: false
     };
   },
   mounted() {
-    window.addEventListener('resize', this.handleResize);
-    window.addEventListener('orientationchange', this.handleResize);
     window.addEventListener('rssmonster:focus-search', this.focusSearchInput);
-    this.$nextTick(this.setupToolbarMeasurement);
+    document.addEventListener('pointerdown', this.handleSearchOutsideClick);
   },
   unmounted() {
-    window.removeEventListener('resize', this.handleResize);
-    window.removeEventListener('orientationchange', this.handleResize);
     window.removeEventListener('rssmonster:focus-search', this.focusSearchInput);
-    if (this.toolbarMeasurementFrameId !== null) {
-      window.cancelAnimationFrame?.(this.toolbarMeasurementFrameId);
-      this.toolbarMeasurementFrameId = null;
-    }
-    this.toolbarResizeObserver?.disconnect();
-    this.toolbarResizeObserver = null;
+    document.removeEventListener('pointerdown', this.handleSearchOutsideClick);
     this.uiStore.setMobileSearchOpen(false);
   },
   methods: {
-    // This function keeps the hybrid toolbar spacer equal to the rendered toolbar stack.
-    updateToolbarHeight() {
-      this.toolbarHeight = Math.ceil(
-        this.$refs.toolbarContainer?.getBoundingClientRect().height || 0
-      );
-    },
-    // This function measures after rotation styles and the visual viewport have settled.
-    scheduleToolbarMeasurement() {
-      if (this.toolbarMeasurementFrameId !== null) {
-        window.cancelAnimationFrame?.(this.toolbarMeasurementFrameId);
-      }
-
-      if (typeof window.requestAnimationFrame !== 'function') {
-        this.toolbarMeasurementFrameId = null;
-        this.updateToolbarHeight();
-        return;
-      }
-
-      // Two frames avoid retaining dimensions from Safari's pre-rotation layout pass.
-      this.toolbarMeasurementFrameId = window.requestAnimationFrame(() => {
-        this.toolbarMeasurementFrameId = window.requestAnimationFrame(() => {
-          this.toolbarMeasurementFrameId = null;
-          this.updateToolbarHeight();
-        });
-      });
-    },
-    // This function observes toolbar and search-panel height changes in the hybrid layout.
-    setupToolbarMeasurement() {
-      this.scheduleToolbarMeasurement();
-      if (typeof ResizeObserver !== 'function' || !this.$refs.toolbarContainer) return;
-
-      // This observer updates the spacer whenever responsive rows or search change height.
-      this.toolbarResizeObserver = new ResizeObserver(() => this.scheduleToolbarMeasurement());
-      this.toolbarResizeObserver.observe(this.$refs.toolbarContainer);
-    },
     // This function emits a toolbar selection event.
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);
@@ -753,14 +680,6 @@ export default {
       if (!this.selectionSettingsAction) return;
       this.uiStore.setShowModal(this.selectionSettingsAction.modalName);
     },
-    // This function closes mobile search when the layout becomes wide enough.
-    handleResize() {
-      this.scheduleToolbarMeasurement();
-      // Close search when switching from portrait to landscape
-      if (this.showSearch && window.innerWidth >= MOBILE_LANDSCAPE_WIDTH) {
-        this.toggleSearch();
-      }
-    },
     // This function applies the current mobile search query.
     updateSearch() {
       this.selectionStore.setSelectedSearch(this.uiStore.searchQuery);
@@ -769,7 +688,13 @@ export default {
     toggleSearch() {
       this.showSearch = !this.showSearch;
       this.uiStore.setMobileSearchOpen(this.showSearch);
-      this.$nextTick(this.scheduleToolbarMeasurement);
+    },
+    // This function closes mobile search when a pointer press occurs outside its controls.
+    handleSearchOutsideClick(event) {
+      if (!this.showSearch) return;
+      if (this.$refs.searchPanel?.contains(event.target)) return;
+      if (this.$refs.searchButton?.contains(event.target)) return;
+      this.toggleSearch();
     },
     // This function opens and focuses the mobile search input.
     focusSearchInput() {
@@ -777,7 +702,6 @@ export default {
       this.uiStore.setMobileSearchOpen(true);
       this.$nextTick(() => {
         this.$refs.searchInput?.focus();
-        this.scheduleToolbarMeasurement();
       });
     },
     // This function changes the grouping only when the value differs.

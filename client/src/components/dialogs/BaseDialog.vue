@@ -213,7 +213,7 @@ export default {
 .base-dialog__overlay {
   position: fixed;
   inset: 0;
-  z-index: var(--layer-dialog);
+  z-index: var(--layer-modal);
   display: flex;
   align-items: center;
   justify-content: center;

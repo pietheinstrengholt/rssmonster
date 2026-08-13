@@ -4,9 +4,9 @@
 
 The shell controls provide the persistent navigation and reading controls around RSSMonster's article content. They translate the same shared article selection into interfaces suited to desktop and mobile use.
 
-Desktop favors speed and visibility: the sidebar remains available and the fixed toolbar exposes reading controls, search, theme, chat, and Settings without covering content. Mobile favors reachability and space: the sidebar and desktop toolbar disappear, a sticky toolbar retains the most common filters, and secondary actions move into a full-width options sheet.
+Desktop favors speed and visibility: the sidebar remains available and the sticky toolbar exposes reading controls, search, theme, chat, and Settings without covering content. Mobile favors reachability and space: the sidebar and desktop toolbar disappear, a sticky toolbar retains the most common filters, and secondary actions move into a full-width options sheet. Between those states, the hybrid shell keeps the sidebar and uses the compact mobile toolbar.
 
-These are two presentations of one application state, not separate navigation systems. Status, category, smart folder, sort, grouping, view mode, search, and chat choices must remain synchronized through the shared store.
+These are three presentations of one application state, not separate navigation systems. Status, category, smart folder, sort, grouping, view mode, search, and chat choices must remain synchronized through the shared store.
 
 ## Design intent
 
@@ -24,15 +24,62 @@ The shell should feel like the controls of a professional reader. New features s
 
 ## Responsive ownership
 
-Below 880 pixels, the desktop toolbar is replaced by the mobile toolbar. The fixed sidebar remains visible from 768 through 879 pixels, while narrower phone layouts hide it and let the article area fill the viewport width.
+The application shell has three intentional width-driven states:
 
-At desktop widths, the mobile toolbar is hidden. The sidebar is fixed at the left, the content area is offset beside it, and the desktop toolbar is fixed across the top of that content area.
+| Width | Shell mode | Sidebar | Toolbar | Structure |
+| --- | --- | --- | --- | --- |
+| `0–767px` | Mobile | Hidden | Mobile | Single-column reading surface |
+| `768–879px` | Hybrid | Visible | Mobile, compact single-row presentation | Two-column compact shell |
+| `880px+` | Desktop | Visible | Desktop | Two-column desktop shell |
 
-The desktop sidebar and article pane scroll independently. The sidebar reveals a subtle scrollbar only while it is being scrolled. The mobile toolbar is sticky so collection controls remain reachable while the article content scrolls. In the 768–879 pixel hybrid range, it uses a fixed layer above the document-scrolling article pane and preserves its initial layout space with a measured spacer. That spacer is remeasured after orientation changes and owns the open search panel's offset in this range.
+`768px` is the sidebar-introduction boundary. `880px` is the point at which the full desktop toolbar has enough room. Do not collapse these into one breakpoint: the hybrid state is a deliberate layout, not a temporary transition.
 
-At the top of an active mobile or compact touch-tablet article collection, a resisted downward pull refreshes the current database-backed article query and overview counts. The gesture preserves rendered articles while the request is active, keeps the toolbar visible, and never starts the longer feed-crawl workflow.
+JavaScript uses the canonical values and mode names from `../../config/responsiveLayout.js` through `../../composables/useShellMode.js`. CSS media queries mirror those values because CSS does not consume JavaScript constants. `responsive-layout.test.js` and the shell ownership tests enforce agreement. Any breakpoint change must update the contract, matching CSS, documentation, and tests together.
 
-The breakpoint behavior belongs to the application shell rather than to individual article views. Changes must be checked on both sides of the breakpoint, including portrait and landscape orientations.
+At `768px+`, `.app-shell-row` is a two-column grid. `.app-shell__sidebar` participates in that grid and remains sticky and independently scrollable; `.app-shell__main-frame` owns the main pane and its overlay host. The main pane does not use sidebar-width margins, calculated widths, or other compensation for a fixed sidebar.
+
+Both toolbars remain in normal shell flow and use sticky positioning. The mobile toolbar's stable outer container owns `position: sticky`; its inner `.mobile-toolbar-surface` owns the hide/show transform. This separation preserves a predictable layout box on Safari and avoids combining sticky positioning and transforms on one element. The hybrid state uses the same structure without a fixed wrapper, measured spacer, `ResizeObserver`, or toolbar/search height synchronization.
+
+The breakpoint behavior belongs to the application shell rather than to individual article views. Changes must be checked at representative widths on both sides of `768px` and `880px`, including portrait and landscape orientations. Typography is consistent throughout `0–767px`; orientation may alter available space, but it must not create a second phone type scale.
+
+## Layout and scroll ownership
+
+Each vertical scroll surface has one explicit owner:
+
+- On mobile, the single-column shell and browser viewport provide the reading flow.
+- At `768px+`, `.app-shell__sidebar` and `.app-shell__main` are independent shell scroll surfaces.
+- At `880px+`, Expanded view may own its native scrollbar on `.article-list-view--expanded`.
+- Reader view owns separate native scrollbars on `.article-reader__list` and `.article-reader__content`.
+
+The article collection `.article-list-view__items` does not add toolbar padding, search-open compensation, or vertical clipping. Horizontal swipe clipping belongs to the dedicated `.mobile-swipe-shell`. A view should not hide overflow to conceal an incorrect parent height; the intended shell or view scroll owner must expose the layout error and own scrolling directly.
+
+Native scrollbar styling uses 6-pixel tracks, transparent backgrounds, rounded theme-aware thumbs, and no JavaScript visibility timers. The sidebar thumb is transparent at rest—including initial load—and appears on hover or keyboard focus. The desktop main pane exposes its scrollbar from `880px`; platform overlay and idle-fade behavior still belongs to the browser or operating system.
+
+The connectivity notice is positioned by `.app-shell__overlay-host` inside `.app-shell__main-frame`. The notice component owns only its local inset and maximum width and must not calculate offsets from `--sidebar-width`.
+
+At the top of an active mobile or compact touch-tablet article collection, a resisted downward pull refreshes the current database-backed article query and overview counts. The gesture preserves rendered articles while the request is active, keeps the toolbar visible, and never starts the longer feed-crawl workflow. Its indicator keeps zero flow height and reveals an absolutely positioned inner surface, preventing scroll-anchoring shifts during expansion and collapse.
+
+## Structural naming and layers
+
+Shell and article layout selectors describe ownership rather than historical page positions:
+
+| Selector | Responsibility |
+| --- | --- |
+| `.app-shell__main` | Primary shell content and desktop main scroll surface |
+| `.app-shell__sidebar` | Persistent navigation column and sidebar scroll surface |
+| `.article-list-view` | Article-list layout owner |
+| `.article-list-view__items` | Article collection without toolbar geometry |
+| `.article-list-view--expanded` | Expanded presentation and its desktop scroll surface |
+| `.article-list-view--empty` | Empty collection presentation |
+| `.article-reader` | Reader layout owner |
+| `.article-reader__list` | Reader article list and scroll surface |
+| `.article-reader__content` | Reader content and scroll surface |
+| `.article-reader__empty` | Reader empty state |
+| `.article-reader__item`, `__badge`, `__thumbnail` | Reader-owned item presentation |
+
+Do not reintroduce generic structural IDs such as `#home`, `#sidebar`, `#main-container`, or `#articles`, and do not add layout modifiers outside the component that owns them.
+
+Global stacking uses semantic tokens from `assets/styles/theme.css`: `--layer-content`, `--layer-refresh-indicator`, `--layer-sticky`, `--layer-dropdown`, `--layer-overlay`, `--layer-modal`, and `--layer-notification`. Components should choose the semantic layer matching their role instead of using arbitrary integers or arithmetic such as `calc(var(--layer-sticky) - 1)`.
 
 ## Shared selection behavior
 
@@ -53,16 +100,16 @@ Sorting is selection state, not merely local toolbar state. Changing sort also r
 
 ### Layout
 
-The desktop toolbar is a compact fixed row above the article pane. Reading filters occupy the left and center. Chat, search, theme, and Settings occupy the action area, with theme and Settings anchored at the right edge.
+The desktop toolbar is a compact sticky row in the main pane's flex flow. Reading filters occupy `.toolbar-filters`; chat, search, theme, and Settings remain together in `.toolbar-actions`. No toolbar sibling leaves flow or uses viewport-fixed offsets.
 
-The toolbar adapts before switching to the mobile layout:
+The toolbar adapts before switching to the hybrid layout:
 
 - Filter labels disappear while the selected values remain visible.
-- The search field becomes a search button that opens a compact floating field.
-- Chat text collapses to an icon, then the chat control disappears at narrower desktop widths.
-- The compact search trigger also disappears immediately before the mobile breakpoint.
+- The search field becomes a search button that opens a compact field anchored to its relatively positioned search control.
+- Chat text collapses to an icon at compact desktop widths.
+- Search and chat remain available throughout the desktop state and hand off with the rest of the desktop toolbar at `880px`.
 
-This compression order protects the core View, Show, and Sort controls for as long as possible.
+The filter and action groups may shrink, and dropdown labels may compress, but controls must not overflow the viewport or be positioned with coordinated `top`, `right`, or compensating margin values. Compact desktop behavior should remain one coherent toolbar state rather than a chain of overlapping breakpoint-specific offsets.
 
 ### Reading controls
 
@@ -79,7 +126,7 @@ Desktop is the only shell surface that directly offers Reader view. Reader is de
 
 ### Search
 
-At wide desktop sizes, search is an inline field with explanatory query syntax in its placeholder. On narrower desktop widths, it becomes a button that opens the field below the toolbar. Escape closes that compact field without clearing the stored query.
+At wide desktop sizes, search is an inline field with explanatory query syntax in its placeholder. On compact desktop widths, it becomes a button that opens the field below its own search control. Escape closes that compact field without clearing the stored query. The panel is locally anchored and never positioned relative to the viewport.
 
 Typing updates the shared draft query and applies it after a short pause. The query is validated before it becomes the active article search. Invalid syntax receives a danger treatment and explanatory tooltip, and the last valid article selection remains active.
 
@@ -110,7 +157,9 @@ On phone layouts, the mobile toolbar uses two rows:
 1. A brand row with the RSSMonster logo and name, article refresh, search control, and options gear.
 2. A compact filter row for status, smart folders, and categories.
 
-Portrait presentation slightly reduces the logo, title, controls, and filter heights to preserve reading space. The toolbar remains touch-friendly and uses ellipsis rather than allowing the brand to push actions off screen.
+Phone typography and control sizing remain consistent across `0–767px`, avoiding abrupt orientation-driven changes around common device widths. The toolbar remains touch-friendly and uses ellipsis rather than allowing the brand to push actions off screen. In the `768–879px` hybrid state, the persistent sidebar supplies the brand, so the mobile toolbar becomes one compact row with equal-height filter controls and actions.
+
+Scrolling down hides `.mobile-toolbar-surface`; scrolling up reveals it. Because the search panel is inside that animated surface, an open mobile search field hides and returns with the toolbar instead of remaining pinned over article content. The sticky container remains in place and retains stable geometry throughout the animation.
 
 The gear is visually labeled as Settings for accessibility in the current implementation, but its behavior is different from the desktop gear: it opens the mobile **Options** sheet, not the full Settings workspace.
 
@@ -141,11 +190,11 @@ Daily Briefing has a global overview count but the current category records do n
 
 ### Search
 
-The search icon toggles a full-width field directly below the mobile toolbar. Escape closes it. Enter applies a non-empty query and closes the field. Search also closes automatically when the viewport expands into the wider layout.
+The search icon toggles a full-width field directly below the mobile toolbar. Escape or an outside pointer press closes it. Enter applies a non-empty query and closes the field. Search also closes automatically when the viewport expands into the desktop layout.
 
 The current mobile behavior applies the shared search selection on every input change. Unlike desktop search, it does not currently debounce or validate query syntax before applying it. Enter therefore acts primarily as confirmation and dismissal rather than the first point at which the query runs.
 
-The mobile search-open state is also shared with article layout so content can adjust while the field is visible. External focus-search requests open and focus this same field.
+Search geometry belongs exclusively to `MobileToolbar`. The article list does not bind a search-open class or compensate for the panel's height. External focus-search requests open and focus the toolbar-owned field.
 
 ### Article refresh
 
@@ -200,24 +249,24 @@ This control requests browser notification permission; it does not independently
 
 When AI is enabled, the sheet can open or close the assistant. The sheet closes after the choice. Unlike the desktop chat control, the current mobile action does not clear the shared search draft.
 
-## Desktop and mobile capability map
+## Shell capability map
 
-| Capability | Desktop | Mobile |
-| --- | --- | --- |
-| Status and global counts | Show dropdown; counts remain in sidebar | Combined status menu with counts |
-| Sort | Dedicated dropdown | Combined into status menu |
-| Grouping | Dedicated AI-only dropdown | Combined into status menu |
-| View mode | Dedicated dropdown including Reader | Options sheet without Reader |
-| Smart folders | Persistent sidebar | Toolbar dropdown |
-| Categories | Persistent sidebar with feeds | Toolbar dropdown and options sheet |
-| Individual feeds | Sidebar hierarchy | Not exposed by shell controls |
-| Search | Validated, debounced inline or compact field | Immediate full-width field |
-| Chat | Toolbar action; clears search draft | Options-sheet action; retains search draft |
-| Theme | Toolbar dropdown | Not exposed by mobile shell |
-| Full Settings | Toolbar gear | Not exposed by mobile shell |
-| Refresh feeds | Sidebar | Options sheet |
-| Add feed | Sidebar | Options sheet |
-| Notification permission | Browser behavior outside toolbar | Options sheet |
+| Capability | Desktop (`880px+`) | Hybrid (`768–879px`) | Mobile (`0–767px`) |
+| --- | --- | --- | --- |
+| Status and global counts | Show dropdown; counts remain in sidebar | Combined status menu; sidebar remains visible | Combined status menu with counts |
+| Sort | Dedicated dropdown | Combined into status menu | Combined into status menu |
+| Grouping | Dedicated AI-only dropdown | Combined into status menu | Combined into status menu |
+| View mode | Dedicated dropdown including Reader | Options sheet without Reader | Options sheet without Reader |
+| Smart folders | Persistent sidebar | Sidebar plus toolbar dropdown | Toolbar dropdown |
+| Categories | Persistent sidebar with feeds | Sidebar plus toolbar/options navigation | Toolbar dropdown and options sheet |
+| Individual feeds | Sidebar hierarchy | Sidebar hierarchy | Not exposed by shell controls |
+| Search | Validated, debounced inline or locally anchored compact field | Immediate toolbar-owned field | Immediate toolbar-owned field |
+| Chat | Toolbar action; clears search draft | Options-sheet action; retains search draft | Options-sheet action; retains search draft |
+| Theme | Toolbar dropdown | Not exposed by compact shell | Not exposed by mobile shell |
+| Full Settings | Toolbar gear | Not exposed by compact shell | Not exposed by mobile shell |
+| Refresh feeds | Sidebar | Sidebar and options sheet | Options sheet |
+| Add feed | Sidebar | Sidebar and options sheet | Options sheet |
+| Notification permission | Browser behavior outside toolbar | Options sheet | Options sheet |
 
 ## Count behavior
 
@@ -240,8 +289,14 @@ The current mobile sheet does not close on Escape, close when the backdrop is se
 Future shell changes should preserve:
 
 - One shared selection across desktop and mobile
-- The responsive handoff between persistent desktop controls and compact mobile controls
-- Desktop progressive compression before the mobile breakpoint
+- The named mobile, hybrid, and desktop shell contract at `768px` and `880px`
+- Grid-owned sidebar and main-pane geometry without fixed-width compensation
+- Flow-based sticky toolbars with transforms confined to mobile toolbar content
+- Desktop progressive compression before the hybrid breakpoint
+- One explicit vertical scroll owner per surface and native scrollbar styling
+- Toolbar and search geometry owned by toolbar components, not article collections
+- Semantic stacking tokens instead of arbitrary z-index values
+- Component-owned BEM structural naming instead of generic layout IDs
 - Mobile safe-area support and background-scroll locking
 - AI feature gating for briefing, Summary Bullets, AI sorting, grouping, and chat
 - The distinction between live overview counts and smart-folder snapshots
@@ -251,4 +306,4 @@ Future shell changes should preserve:
 - Options API patterns and existing store selection contracts
 - Light and dark theme parity
 
-When adding a new control, first decide whether it is a high-frequency reading action, a navigation dimension, or a secondary management action. That determines whether it belongs in the desktop toolbar, mobile toolbar, mobile Options sheet, sidebar, or full Settings workspace.
+When adding a new control, first decide whether it is a high-frequency reading action, a navigation dimension, or a secondary management action. That determines whether it belongs in the desktop toolbar, compact/mobile toolbar, mobile Options sheet, sidebar, or full Settings workspace. Then verify its ownership in all three shell states without introducing spacers, viewport-fixed sibling positioning, or article-content compensation.

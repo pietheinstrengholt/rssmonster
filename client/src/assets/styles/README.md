@@ -88,8 +88,9 @@ Use `--control-height-compact` for dense secondary controls, `--control-height-d
 buttons and fields, and `--control-height-touch` when a primary touch target needs the 44px minimum.
 New shared controls should use these heights before introducing another fixed value.
 
-Map stacking requirements to the semantic `--layer-*` scale. Do not add an arbitrary z-index when an
-existing sticky, dropdown, overlay, dialog or notification layer describes the element's ownership.
+Map stacking requirements to the semantic `--layer-*` scale. The current scale distinguishes content,
+the pull-to-refresh indicator, sticky chrome, dropdowns, overlays, modals and notifications. Do not add
+an arbitrary z-index—or arithmetic between layers—when one of those roles describes the element's ownership.
 Component-specific dimensions, media geometry, article-content typography and one-off animation
 timing should remain local until they represent a repeated application concept.
 
