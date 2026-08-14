@@ -9,6 +9,18 @@ import { useOverviewStore } from '../src/store/overview.js';
 import { useSelectionStore } from '../src/store/selection.js';
 import { useUiStore } from '../src/store/ui.js';
 
+const pushMocks = vi.hoisted(() => ({
+  getState: vi.fn(),
+  subscribe: vi.fn(),
+  unsubscribe: vi.fn()
+}));
+
+vi.mock('../src/services/pushNotifications.js', () => ({
+  getPushNotificationState: pushMocks.getState,
+  subscribeToPushNotifications: pushMocks.subscribe,
+  unsubscribeFromPushNotifications: pushMocks.unsubscribe
+}));
+
 // This mock prevents the toolbar's lazy Settings import from outliving the test environment.
 vi.mock('../src/components/settings/Settings.vue', () => ({
   __esModule: true,
@@ -448,7 +460,20 @@ describe('MobileMenuOverlay behavior coverage', () => {
       requestPermission
     });
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    pushMocks.getState.mockImplementation(async () => ({
+      available: true,
+      subscribed: false,
+      permission,
+      publicKey: 'key'
+    }));
+    pushMocks.subscribe
+      .mockImplementationOnce(async () => {
+        permission = 'denied';
+        return null;
+      })
+      .mockRejectedValueOnce(new Error('browser failure'));
     const wrapper = mountMobileMenu();
+    await flushPromises();
 
     await wrapper.vm.subscribeNotifications();
     expect(wrapper.vm.notificationMessage).toContain('browser settings');
@@ -461,8 +486,14 @@ describe('MobileMenuOverlay behavior coverage', () => {
     expect(console.error).toHaveBeenCalledOnce();
 
     permission = 'granted';
+    pushMocks.getState.mockResolvedValueOnce({
+      available: true,
+      subscribed: true,
+      permission: 'granted',
+      publicKey: 'key'
+    });
+    pushMocks.subscribe.mockResolvedValueOnce({});
     await wrapper.vm.subscribeNotifications();
-    expect(requestPermission).toHaveBeenCalledTimes(2);
-    expect(wrapper.vm.notificationButtonLabel).toBe('Notifications enabled');
+    expect(wrapper.vm.notificationButtonLabel).toBe('Disable notifications');
   });
 });

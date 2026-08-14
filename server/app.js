@@ -61,6 +61,7 @@ import greaderRoutes from "./routes/greader.js";
 import eventRoutes from "./routes/events.js";
 import topicRoutes from "./routes/topics.js";
 import briefingRoutes from "./routes/briefing.js";
+import pushRoutes from "./routes/push.js";
 
 // Controller
 import errorController from "./controllers/error.js";
@@ -125,6 +126,7 @@ app.use("/api/health", healthRoutes);
 app.use("/api/cleanup", cleanupRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/push", pushRoutes);
 app.use("/mcp", mcpRoutes);
 app.use("/api/agent", agentRoutes);
 app.use("/api/opml", opmlRoutes);

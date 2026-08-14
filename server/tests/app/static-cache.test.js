@@ -23,6 +23,7 @@ describe('production static cache headers', () => {
       writeFile(join(fixtureDirectory, 'sw.js'), 'self.skipWaiting();'),
       writeFile(join(fixtureDirectory, 'registerSW.js'), 'export default true;'),
       writeFile(join(fixtureDirectory, 'manifest.webmanifest'), '{}'),
+      writeFile(join(fixtureDirectory, 'push-sw.js'), ''),
       writeFile(join(fixtureDirectory, 'robots.txt'), 'User-agent: *')
     ]);
 
@@ -51,7 +52,8 @@ describe('production static cache headers', () => {
     '/index.html',
     '/sw.js',
     '/registerSW.js',
-    '/manifest.webmanifest'
+    '/manifest.webmanifest',
+    '/push-sw.js'
   ])('serves the PWA control file %s with revalidation', async filePath => {
     const response = await request(app).get(filePath);
 

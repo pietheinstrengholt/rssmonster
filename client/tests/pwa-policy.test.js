@@ -35,7 +35,9 @@ describe('PWA cache policy', () => {
       'assets/MobileMenuOverlay-*.js',
       'assets/ArticleReaderLayout-*.js',
       'assets/AppError-*.css',
-      'assets/articleSelectionOptions-*.js'
+      'assets/articleSelectionOptions-*.js',
+      'assets/date-*.js',
+      'assets/useMediaQuery-*.js'
     ]));
     expect(PRECACHE_GLOB_PATTERNS).not.toContain('**/*.js');
     expect(PRECACHE_GLOB_PATTERNS).not.toContain('**/*.css');
@@ -47,7 +49,9 @@ describe('PWA cache policy', () => {
   it('selects only the standard 192px and 512px install icons', () => {
     expect(PRECACHED_PNG_ICONS).toEqual([
       'img/icons/android-chrome-192x192.png',
-      'img/icons/android-chrome-512x512.png'
+      'img/icons/android-chrome-512x512.png',
+      'img/icons/android-chrome-maskable-192x192.png',
+      'img/icons/android-chrome-maskable-512x512.png'
     ]);
   });
 

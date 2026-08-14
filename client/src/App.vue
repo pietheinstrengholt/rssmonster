@@ -1,5 +1,6 @@
 <template>
   <div class="app-root">
+    <app-install-prompt />
     <!-- Loading state during session validation -->
     <div v-if="isLoading" class="loading-container">
       <p>Loading...</p>
@@ -75,6 +76,7 @@ import { mapStores } from 'pinia';
 import { defineAsyncComponent } from 'vue';
 import * as authApi from './api/auth';
 import AppShellLoadError from './components/shared/AppShellLoadError.vue';
+import InstallPrompt from './components/shared/InstallPrompt.vue';
 import { loadAppShell } from './services/appShellLoader.js';
 import { useAuthStore } from './store/auth.js';
 
@@ -99,7 +101,8 @@ const AppShell = defineAsyncComponent({
 
 export default {
   components: {
-    appShell: AppShell
+    appShell: AppShell,
+    appInstallPrompt: InstallPrompt
   },
   data() {
     return {

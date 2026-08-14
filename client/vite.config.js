@@ -73,6 +73,7 @@ export default defineConfig({
           injectRegister: 'auto',
           workbox: {
             sourcemap: false,
+            importScripts: ['/push-sw.js'],
             globPatterns: PRECACHE_GLOB_PATTERNS,
             cleanupOutdatedCaches: true,
             runtimeCaching: [OPTIONAL_ASSET_RUNTIME_CACHE],

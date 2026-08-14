@@ -57,7 +57,7 @@ Native scrollbar styling uses 6-pixel tracks, transparent backgrounds, rounded t
 
 The connectivity notice is positioned by `.app-shell__overlay-host` inside `.app-shell__main-frame`. The notice component owns only its local inset and maximum width and must not calculate offsets from `--sidebar-width`.
 
-At the top of an active mobile or compact touch-tablet article collection, a resisted downward pull refreshes the current database-backed article query and overview counts. The gesture preserves rendered articles while the request is active, keeps the toolbar visible, and never starts the longer feed-crawl workflow. Its indicator grows in flow with the revealed distance so the article collection follows the pull, remains displaced during refresh, and slides back when the indicator collapses.
+At the top of an active mobile or compact touch-tablet article collection, a resisted downward pull refreshes the current database-backed article query and overview counts. The gesture preserves rendered articles while the request is active, keeps the toolbar visible, and never starts the longer feed-crawl workflow. Its indicator keeps zero flow height while visually translating the article collection by the revealed distance, preventing scroll-geometry changes while letting the articles follow the gesture.
 
 ## Structural naming and layers
 
@@ -233,17 +233,17 @@ Add new feed closes the sheet first and then opens the standard feed-creation di
 
 ### Notifications
 
-The notification control reflects the browser's permission state:
+The notification control reflects the browser's permission and Push subscription state:
 
 - Enable notifications when permission has not yet been requested
 - Requesting permission while the browser prompt is active
-- Notifications enabled after permission is granted
+- Disable notifications after a Push subscription is active
 - Notifications blocked when the browser has denied permission
 - Notifications unavailable when the API is unsupported
+- Home Screen app required when RSSMonster is open in an ordinary iOS/iPadOS browser tab
+- Retry notification check after a transient configuration request failure
 
-Opening the sheet never triggers a browser permission prompt. Permission is requested only after an explicit user action. Granted, denied, and unsupported states disable the control. A denial directs the user to browser settings because the application cannot reverse it.
-
-This control requests browser notification permission; it does not independently implement a new notification-delivery subscription.
+Opening the sheet never triggers a browser permission prompt. It refreshes an existing subscription on the server when present. Permission and a new Push subscription are requested only after an explicit user action. On iOS/iPadOS, the sheet explains that RSSMonster must be added to the Home Screen and opened there. Denied and unsupported states disable the control; transient checks can be retried, a missing subscription can be restored, and an active subscription can be disabled from the same control.
 
 ### Chat
 

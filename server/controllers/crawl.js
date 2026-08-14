@@ -59,6 +59,7 @@ import createArticleDuplicateCache, {
 import createHotlinkCountCache from '../services/crawl/runtime/hotlinkCountCache.js';
 import createHotlinkBatcher from '../services/crawl/runtime/hotlinkBatcher.js';
 import { sanitizeFeedPersistenceMetadata } from '../services/feeds/feedPersistenceMetadata.js';
+import { sendNewArticlePush } from '../services/push/pushNotifications.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -1600,6 +1601,12 @@ const performCrawl = async (userId = null, options = {}) => {
     }
   } finally {
     await crawlRunHeartbeat?.stop();
+  }
+
+  if (userId && result.totalNewArticles > 0) {
+    await sendNewArticlePush(userId, result.totalNewArticles).catch(error => {
+      console.error('[Push] Post-crawl delivery failed:', error?.message || error);
+    });
   }
 
   return result;

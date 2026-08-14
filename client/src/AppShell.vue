@@ -122,10 +122,21 @@
     min-height: 100dvh;
   }
 
+  :deep(.article-list-view) {
+    translate: 0 var(--mobile-pull-article-offset, 0px);
+    transition: translate var(--mobile-pull-article-duration, 160ms) ease;
+  }
+
   .app-shell__overlay-host {
     padding: 12px;
   }
 
+}
+
+@media (max-width: 879px) and (prefers-reduced-motion: reduce) {
+  :deep(.article-list-view) {
+    transition: none;
+  }
 }
 
 @media (max-width: 767px) {
@@ -585,24 +596,6 @@ export default {
         message: 'Could not load the application overview'
       });
     },
-    async showNotification(input) {
-      if (
-        !('Notification' in window) ||
-        Notification.permission !== 'granted' ||
-        !('serviceWorker' in navigator)
-      ) return;
-
-      try {
-        const serviceWorkerRegistration = await navigator.serviceWorker.ready;
-        await serviceWorkerRegistration.showNotification('New articles', {
-          body: input + ' new articles arrived',
-          icon: '/img/icons/android-chrome-192x192.png',
-          vibrate: [300, 200, 300]
-        });
-      } catch (error) {
-        console.error('Error showing the new article notification:', error);
-      }
-    },
     // This function refreshes application data for ordinary retry and toolbar reload actions.
     async forceReload() {
       if (this.connectivityStatus) {
@@ -815,14 +808,6 @@ export default {
       if (themeMode) {
         setThemeMode(themeMode);
       }
-    },
-    "overviewStore.unreadsSinceLastUpdate": {
-      handler: function(count) {
-        if (count > 0) {
-          this.showNotification(count);
-        }
-      },
-      deep: true
     },
     "overviewStore.unreadCount": {
       handler: function(count) {

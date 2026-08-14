@@ -31,13 +31,17 @@ export const PRECACHE_GLOB_PATTERNS = Object.freeze([
   'assets/InitialFeeds-*.js',
   'assets/InitialFeeds-*.css',
   'assets/categories-*.js',
+  'assets/date-*.js',
   'assets/AppError-*.js',
   'assets/AppError-*.css',
   'assets/articleSelectionOptions-*.js',
   'assets/FeedRefreshProgress-*.js',
   'assets/FeedRefreshProgress-*.css',
+  'assets/useMediaQuery-*.js',
   'img/icons/android-chrome-192x192.png',
-  'img/icons/android-chrome-512x512.png'
+  'img/icons/android-chrome-512x512.png',
+  'img/icons/android-chrome-maskable-192x192.png',
+  'img/icons/android-chrome-maskable-512x512.png'
 ]);
 
 // These dynamic modules cover the authenticated reader, responsive shells, saved reader modes, and startup fallbacks.
@@ -57,7 +61,9 @@ export const CORE_DYNAMIC_MODULES = Object.freeze([
 // Only the standard PWA install icons are installed with the offline shell.
 export const PRECACHED_PNG_ICONS = Object.freeze([
   'img/icons/android-chrome-192x192.png',
-  'img/icons/android-chrome-512x512.png'
+  'img/icons/android-chrome-512x512.png',
+  'img/icons/android-chrome-maskable-192x192.png',
+  'img/icons/android-chrome-maskable-512x512.png'
 ]);
 
 // These optional feature families must remain outside the install-time precache.
@@ -144,6 +150,6 @@ export const OPTIONAL_ASSET_RUNTIME_CACHE = Object.freeze({
 
 // These budgets leave modest headroom above the focused application-shell baseline.
 export const PRECACHE_BUDGETS = Object.freeze({
-  maxEntries: 40,
+  maxEntries: 44,
   maxRawBytes: 1_150_000
 });

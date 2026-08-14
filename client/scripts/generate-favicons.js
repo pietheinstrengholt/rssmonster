@@ -25,7 +25,7 @@ const configuration = {
   display: 'standalone',
   orientation: 'any',
   scope: '/',
-  start_url: '/',
+  start_url: '/?source=pwa',
   version: '1.0',
   logging: false,
   pixel_art: false,
@@ -40,13 +40,36 @@ const configuration = {
   },
 };
 
-const response = await favicons(source, configuration);
+const maskableSourceResponse = await favicons(source, {
+  ...configuration,
+  icons: {
+    favicons: false,
+    android: { offset: 20, background: LIGHT_PAGE_COLOR },
+    appleIcon: false,
+    appleStartup: false,
+    windows: false,
+    yandex: false
+  }
+});
+const maskableSource = maskableSourceResponse.images.find(
+  image => image.name === 'android-chrome-512x512.png'
+).contents;
+const response = await favicons(source, {
+  ...configuration,
+  manifestMaskable: maskableSource
+});
+const generatedImages = response.images.filter(image =>
+  !image.name.includes('-maskable-') ||
+  image.name.endsWith('-maskable-192x192.png') ||
+  image.name.endsWith('-maskable-512x512.png')
+);
 
 // This function limits install metadata to the two standard PWA icon sizes while retaining generated files on disk.
 const selectManifestIcons = contents => {
   const manifest = JSON.parse(contents.toString());
   manifest.background_color = LIGHT_PAGE_COLOR;
   manifest.theme_color = LIGHT_PAGE_COLOR;
+  manifest.id = '/';
   manifest.icons = manifest.icons.filter(icon => icon.sizes === '192x192' || icon.sizes === '512x512');
   return `${JSON.stringify(manifest, null, 2)}\n`;
 };
@@ -55,7 +78,7 @@ await fs.rm(outputDir, { recursive: true, force: true });
 await fs.mkdir(outputDir, { recursive: true });
 
 await Promise.all([
-  ...response.images.map((image) =>
+  ...generatedImages.map((image) =>
     fs.writeFile(path.join(outputDir, image.name), image.contents)
   ),
   ...response.files.flatMap((file) => {

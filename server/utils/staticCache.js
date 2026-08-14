@@ -6,6 +6,7 @@ export const REVALIDATED_ENTRY_CACHE_CONTROL = 'no-cache';
 const REVALIDATED_ENTRY_FILES = new Set([
   'index.html',
   'manifest.webmanifest',
+  'push-sw.js',
   'registerSW.js',
   'sw.js'
 ]);

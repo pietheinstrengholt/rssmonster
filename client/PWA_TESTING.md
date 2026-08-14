@@ -80,13 +80,24 @@ worker uses `skipWaiting`, claims clients, and does not display a refresh prompt
 
 ## Notification permission
 
+The server must provide `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and
+`VAPID_SUBJECT`. The subject must be a `mailto:` address or an HTTPS URL. Apply
+the `push_subscriptions` migration before testing subscriptions. The production
+service worker imports `push-sw.js`, which displays background pushes and opens
+RSSMonster when a notification is selected.
+
+On iOS/iPadOS, first open RSSMonster in an ordinary browser tab and confirm the
+Options sheet says **Home Screen app required** and explains how to add it to
+the Home Screen. Then add and launch the app from the Home Screen before
+continuing with the permission checks below.
+
 Use a mobile viewport so the Options sheet is available.
 
 1. Reset notification permission for the preview origin to the browser default.
 2. Load RSSMonster and confirm no permission prompt appears during startup.
 3. Open Options. The button must read **Enable notifications**.
 4. Press the button, grant permission, and confirm it changes to
-   **Notifications enabled**.
+   **Disable notifications**.
 5. Deny permission in browser settings, reopen Options, and confirm it reads
    **Notifications blocked in browser**.
 6. Reset permission to the default state, reopen Options, and confirm it again
@@ -94,9 +105,12 @@ Use a mobile viewport so the Options sheet is available.
 7. The unsupported state cannot be produced in ordinary Chrome. Cover it with a
    browser capability simulation or the focused component test and confirm the
    button reads **Notifications unavailable**.
-8. With permission granted and the app running in the background, trigger new
-   article delivery from a working backend and confirm the operating-system
-   notification is displayed.
+8. With permission granted, close the app, trigger a crawl that persists new
+   articles, and confirm the operating-system notification is displayed.
+9. Select the notification and confirm the installed app opens or its existing
+   window receives focus.
+10. Reopen Options, press **Disable notifications**, and confirm a later crawl
+    does not deliver another notification to that browser.
 
 ## Automated real-browser validation record
 

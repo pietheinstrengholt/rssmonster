@@ -88,6 +88,8 @@ export default {
       prevScroll: 0,
       scrollDirection: "down",
       scrollContainer: null,
+      scrollResetFrameId: null,
+      scrollResetTimeoutId: null,
       showSmartFoldersOverview: false,
       pendingFavoriteArticleIds: new Set()
     };
@@ -271,6 +273,14 @@ export default {
   unmounted() {
     window.removeEventListener("scroll", this.handleScroll);
     window.removeEventListener("keydown", this.handleGlobalShortcut);
+    if (this.scrollResetFrameId !== null) {
+      window.cancelAnimationFrame?.(this.scrollResetFrameId);
+      this.scrollResetFrameId = null;
+    }
+    if (this.scrollResetTimeoutId !== null) {
+      window.clearTimeout(this.scrollResetTimeoutId);
+      this.scrollResetTimeoutId = null;
+    }
     this.connectScrollContainer(null);
     this.teardownObservers();
   },
@@ -298,11 +308,41 @@ export default {
 
     // Restores every owned article layout and shared page scroll surface to the beginning.
     scrollArticleListToTop() {
-      this.$refs.articleLayout?.scrollToTop?.();
-      if (this.scrollContainer) this.scrollContainer.scrollTop = 0;
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      const resetScrollSurfaces = () => {
+        this.$refs.articleLayout?.scrollToTop?.();
+        if (this.scrollContainer) this.scrollContainer.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      };
+
+      resetScrollSurfaces();
+      if (this.scrollResetFrameId !== null) {
+        window.cancelAnimationFrame?.(this.scrollResetFrameId);
+      }
+      if (this.scrollResetTimeoutId !== null) {
+        window.clearTimeout(this.scrollResetTimeoutId);
+      }
+
+      // iOS Safari may restore its scroll anchor after the toolbar and visual viewport finish
+      // settling, which happens later than Vue's DOM update and the next paint frames.
+      this.scrollResetTimeoutId = window.setTimeout(() => {
+        this.scrollResetTimeoutId = null;
+        resetScrollSurfaces();
+      }, 250);
+      if (typeof window.requestAnimationFrame !== 'function') {
+        this.scrollResetFrameId = null;
+        return;
+      }
+
+      // Safari can restore its scroll anchor after Vue's DOM update but before the next paint.
+      this.scrollResetFrameId = window.requestAnimationFrame(() => {
+        resetScrollSurfaces();
+        this.scrollResetFrameId = window.requestAnimationFrame(() => {
+          this.scrollResetFrameId = null;
+          resetScrollSurfaces();
+        });
+      });
     },
 
     // Returns an article element through the active layout's explicit DOM contract.

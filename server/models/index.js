@@ -57,6 +57,7 @@ import CrawlRunModel from './crawlRun.js';
 import FeedCrawlResultModel from './feedCrawlResult.js';
 import BriefingPreferenceModel from './briefingPreference.js';
 import FeedUrlAliasModel from './feedUrlAlias.js';
+import PushSubscriptionModel from './pushSubscription.js';
 
 // ---- Initialize models ----
 const User = UserModel(sequelize);
@@ -80,6 +81,7 @@ const CrawlRun = CrawlRunModel(sequelize);
 const FeedCrawlResult = FeedCrawlResultModel(sequelize);
 const BriefingPreference = BriefingPreferenceModel(sequelize);
 const FeedUrlAlias = FeedUrlAliasModel(sequelize);
+const PushSubscription = PushSubscriptionModel(sequelize);
 
 // ---- Associations ----
 
@@ -102,6 +104,13 @@ User.hasMany(FeedUrlAlias, {
   onDelete: 'CASCADE'
 });
 FeedUrlAlias.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+User.hasMany(PushSubscription, {
+  foreignKey: 'userId',
+  as: 'pushSubscriptions',
+  onDelete: 'CASCADE'
+});
+PushSubscription.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 // User ↔ Article
 User.hasMany(Article, { foreignKey: 'userId', onDelete: 'CASCADE' });
@@ -296,5 +305,6 @@ export default {
   CrawlRun,
   FeedCrawlResult,
   BriefingPreference,
-  FeedUrlAlias
+  FeedUrlAlias,
+  PushSubscription
 };

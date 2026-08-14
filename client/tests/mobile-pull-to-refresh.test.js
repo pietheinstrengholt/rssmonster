@@ -55,9 +55,10 @@ describe('MobilePullToRefresh', () => {
 
     expect(wrapper.text()).toContain('Release to refresh');
     expect(wrapper.classes()).toContain('mobile-pull-to-refresh--tracking');
-    expect(wrapper.vm.indicatorStyle.height).toBe('46px');
+    expect(wrapper.vm.indicatorStyle).not.toHaveProperty('height');
     expect(wrapper.vm.indicatorStyle['--pull-indicator-reveal']).toBe('46px');
-    expect(wrapper.element.style.height).toBe('46px');
+    expect(document.querySelector('.app-shell__main').style.getPropertyValue('--mobile-pull-article-offset')).toBe('46px');
+    expect(document.querySelector('.app-shell__main').style.getPropertyValue('--mobile-pull-article-duration')).toBe('0ms');
     expect(wrapper.emitted('show-mobile-toolbar')).toHaveLength(1);
     expect(move.preventDefault).toHaveBeenCalledOnce();
 
@@ -67,10 +68,12 @@ describe('MobilePullToRefresh', () => {
     expect(wrapper.emitted('refresh')).toHaveLength(1);
     expect(wrapper.classes()).not.toContain('mobile-pull-to-refresh--tracking');
     expect(wrapper.text()).toContain('Refreshing articles');
+    expect(document.querySelector('.app-shell__main').style.getPropertyValue('--mobile-pull-article-duration')).toBe('160ms');
 
     await wrapper.setProps({ refreshing: true });
     await wrapper.setProps({ refreshing: false });
     expect(wrapper.vm.indicatorHeight).toBe(0);
+    expect(document.querySelector('.app-shell__main').style.getPropertyValue('--mobile-pull-article-offset')).toBe('0px');
     wrapper.unmount();
   });
 

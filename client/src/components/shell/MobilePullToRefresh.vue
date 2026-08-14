@@ -89,7 +89,6 @@ export default {
     indicatorStyle() {
       const revealDistance = Math.min(this.indicatorHeight, REFRESH_INDICATOR_HEIGHT);
       return {
-        height: `${revealDistance}px`,
         '--pull-indicator-height': `${REFRESH_INDICATOR_HEIGHT}px`,
         '--pull-indicator-reveal': `${revealDistance}px`,
         '--pull-indicator-opacity': revealDistance > 0 ? 1 : 0
@@ -105,8 +104,18 @@ export default {
   watch: {
     // This watcher reconnects gesture listeners when the shell replaces its scroll surface.
     scrollRoot(value, previousValue) {
+      this.clearArticleDisplacement(previousValue);
       this.detachScrollRoot(previousValue);
       this.attachScrollRoot(value);
+      this.updateArticleDisplacement();
+    },
+    // This watcher moves article content visually without changing the scroll surface geometry.
+    indicatorHeight() {
+      this.updateArticleDisplacement();
+    },
+    // This watcher removes easing while the article content follows an active finger gesture.
+    tracking() {
+      this.updateArticleDisplacement();
     },
     // This watcher transfers pending ownership to the parent once refreshing starts.
     refreshing(value, previousValue) {
@@ -127,13 +136,30 @@ export default {
   // This hook attaches gesture handling to the shared mobile scroll surface.
   mounted() {
     this.attachScrollRoot(this.scrollRoot);
+    this.updateArticleDisplacement();
   },
   // This hook removes every gesture listener owned by the indicator.
   beforeUnmount() {
     clearTimeout(this.refreshFeedbackTimer);
+    this.clearArticleDisplacement(this.scrollRoot);
     this.detachScrollRoot(this.scrollRoot);
   },
   methods: {
+    // This method publishes visual-only pull state to article layouts inside the shared root.
+    updateArticleDisplacement() {
+      if (!this.scrollRoot) return;
+      const offset = Math.min(this.indicatorHeight, REFRESH_INDICATOR_HEIGHT);
+      this.scrollRoot.style.setProperty('--mobile-pull-article-offset', `${offset}px`);
+      this.scrollRoot.style.setProperty(
+        '--mobile-pull-article-duration',
+        this.tracking ? '0ms' : `${REFRESH_COLLAPSE_DURATION}ms`
+      );
+    },
+    // This method removes visual pull state from a replaced or released shell scroll root.
+    clearArticleDisplacement(scrollRoot) {
+      scrollRoot?.style.removeProperty('--mobile-pull-article-offset');
+      scrollRoot?.style.removeProperty('--mobile-pull-article-duration');
+    },
     // This method attaches touch handling to the shell-owned article scroll surface.
     attachScrollRoot(scrollRoot) {
       scrollRoot?.addEventListener('touchstart', this.handleTouchStart, { passive: true });
@@ -251,12 +277,7 @@ export default {
   overflow: visible;
   pointer-events: none;
   position: relative;
-  transition: height 160ms ease;
   z-index: var(--layer-refresh-indicator);
-}
-
-.mobile-pull-to-refresh--tracking {
-  transition: none;
 }
 
 .mobile-pull-to-refresh__content {
@@ -311,7 +332,6 @@ export default {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mobile-pull-to-refresh,
   .mobile-pull-to-refresh__content,
   .mobile-pull-to-refresh__icon {
     transition: none;

@@ -200,6 +200,78 @@ Configure the required database credentials and application secrets before start
 * **Multi-user support**: Keep accounts, subscriptions, reading state, preferences, and assistant interactions user-scoped.
 * **Optional AI assistant**: Enable natural-language search, summarization, classification, tagging, and feed interactions through the Model Context Protocol (MCP).
 
+## Web Push Notifications (Optional)
+
+RSSMonster can notify a user when a completed crawl has persisted new articles, even when the installed web app is closed. Web Push is optional: RSSMonster continues to work normally when the VAPID variables are unset.
+
+### How VAPID works
+
+VAPID identifies your RSSMonster server to browser push services. It uses one public/private key pair for the whole RSSMonster installation:
+
+* `VAPID_PUBLIC_KEY` is sent to browsers when they create a push subscription. It is not secret.
+* `VAPID_PRIVATE_KEY` signs outgoing push requests. Keep it secret and only provide it to the RSSMonster server.
+* `VAPID_SUBJECT` supplies operator contact information. Use a `mailto:` address or an HTTPS URL that belongs to the server operator.
+
+Each browser creates its own endpoint and encryption keys after the user selects **Enable notifications**. RSSMonster stores that subscription against the authenticated user. After a crawl, the server signs and encrypts a notification for each of that user's active browser subscriptions. The browser push service can route the encrypted message but does not receive the RSSMonster login token or VAPID private key.
+
+Keep the same VAPID key pair for the lifetime of an installation. Replacing it can invalidate existing browser subscriptions and require users to enable notifications again. Never commit the private key or paste it into client-side configuration.
+
+### Generate a VAPID key pair
+
+Install the server dependencies, then use the bundled `web-push` command:
+
+```bash
+cd server
+npm install
+npx web-push generate-vapid-keys
+```
+
+The command prints a public and private key. Copy them without adding quotes or whitespace.
+
+For a source installation, add them to `server/.env`:
+
+```env
+# Optional Web Push notification configuration (VAPID).
+VAPID_PUBLIC_KEY=replace-with-the-generated-public-key
+VAPID_PRIVATE_KEY=replace-with-the-generated-private-key
+VAPID_SUBJECT=mailto:admin@example.com
+```
+
+For Docker Compose, add the same values to the repository-root `.env` used by Compose:
+
+```env
+VAPID_PUBLIC_KEY=replace-with-the-generated-public-key
+VAPID_PRIVATE_KEY=replace-with-the-generated-private-key
+VAPID_SUBJECT=https://rss.example.com
+```
+
+Both included Compose configurations pass these optional values into the application container. Restart RSSMonster after changing them:
+
+```bash
+docker compose up -d
+```
+
+Source installations must also apply the current migrations and restart the server:
+
+```bash
+cd server
+npm run db
+npm start
+```
+
+Docker installations apply pending migrations automatically at container startup.
+
+### Browser setup and requirements
+
+1. Serve RSSMonster through HTTPS in production. Browser service workers and Push subscriptions require a secure context; localhost is the development exception.
+2. Install or open RSSMonster in a supported browser. On iOS and iPadOS, add RSSMonster to the Home Screen and launch that installed web app before enabling notifications.
+3. Sign in, open the mobile Options sheet, and select **Enable notifications**.
+4. Allow notifications in the browser or operating-system prompt.
+
+The control changes to **Disable notifications** after a subscription is active. It can also restore a missing subscription, remove the current browser subscription, explain unsupported or unconfigured states, and remove endpoints that a push service reports as expired.
+
+If RSSMonster says that Web Push is not configured, confirm that all three VAPID variables are present in the server process and restart it. If permission was denied, re-enable notifications through the browser or operating-system settings; a web application cannot reverse a denial itself.
+
 ## Semantic Architecture
 
 RSSMonster's newer architecture adds a semantic layer between feed crawling and the article list. Rather than storing articles as isolated feed entries, the system enriches them with vectors, scores, cluster membership, topic membership, and engagement signals. Those derived signals are then used by search expressions, Smart Folders, ranking, and the UI.

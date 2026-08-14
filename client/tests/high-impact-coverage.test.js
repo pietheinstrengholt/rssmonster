@@ -766,16 +766,6 @@ describe('Vue template handler coverage', () => {
     expect(consoleWarn).toHaveBeenCalledWith('setBadge error:', badgeError.message);
     expect(consoleWarn).toHaveBeenCalledWith('setBadge error:', clearError.message);
 
-    const showNotification = vi.fn().mockResolvedValue();
-    Object.defineProperty(navigator, 'serviceWorker', {
-      configurable: true,
-      value: { ready: Promise.resolve({ showNotification }) }
-    });
-    vi.stubGlobal('Notification', { permission: 'granted' });
-    await context.showNotification(3);
-    expect(showNotification).toHaveBeenCalledWith('New articles', expect.objectContaining({
-      body: '3 new articles arrived'
-    }));
     vi.useRealTimers();
   });
 

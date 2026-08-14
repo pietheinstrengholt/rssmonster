@@ -95,7 +95,7 @@
             type="button"
             class="options-action-button options-action-button--neutral"
             :disabled="notificationButtonDisabled"
-            @click="subscribeNotifications"
+            @click="handleNotificationAction"
           >
             {{ notificationButtonLabel }}
           </button>
@@ -496,12 +496,21 @@ import {
   ARTICLE_VIEW_MODE_OPTIONS,
   getAvailableArticleOptions
 } from '../../config/articleSelectionOptions.js';
+import {
+  getPushNotificationState,
+  subscribeToPushNotifications,
+  unsubscribeFromPushNotifications
+} from '../../services/pushNotifications.js';
 export default {
   props: ["mobile"],
   data() {
     return {
       notificationMessage: '',
       notificationPermission: 'unsupported',
+      notificationAvailable: false,
+      notificationReason: 'unsupported',
+      notificationSubscribed: false,
+      notificationPublicKey: null,
       notificationRequestPending: false,
       mobileCloseTimer: null
     };
@@ -517,15 +526,17 @@ export default {
     },
     notificationButtonDisabled() {
       return this.notificationRequestPending ||
-        this.notificationPermission === 'granted' ||
         this.notificationPermission === 'denied' ||
-        this.notificationPermission === 'unsupported';
+        (!this.notificationAvailable && this.notificationReason !== 'check-failed');
     },
     notificationButtonLabel() {
       if (this.notificationRequestPending) return 'Requesting permission…';
-      if (this.notificationPermission === 'granted') return 'Notifications enabled';
+      if (this.notificationSubscribed) return 'Disable notifications';
       if (this.notificationPermission === 'denied') return 'Notifications blocked in browser';
-      if (this.notificationPermission === 'unsupported') return 'Notifications unavailable';
+      if (this.notificationReason === 'check-failed') return 'Retry notification check';
+      if (this.notificationReason === 'ios-install-required') return 'Home Screen app required';
+      if (!this.notificationAvailable) return 'Notifications unavailable';
+      if (this.notificationPermission === 'granted') return 'Restore notifications';
       return 'Enable notifications';
     }
   },
@@ -535,7 +546,7 @@ export default {
       handler(isOpen) {
         document.body.classList.toggle('mobile-options-open', isOpen);
         if (isOpen) {
-          this.syncNotificationPermission();
+          void this.syncNotificationPermission();
         }
       }
     }
@@ -559,32 +570,56 @@ export default {
       this.$emit('refresh');
     },
     // This function syncs local UI state with the browser's notification permission.
-    syncNotificationPermission() {
-      this.notificationPermission = 'Notification' in window
-        ? Notification.permission
-        : 'unsupported';
+    async syncNotificationPermission() {
       this.notificationMessage = '';
+      try {
+        const state = await getPushNotificationState();
+        this.notificationPermission = state.permission;
+        this.notificationAvailable = state.available;
+        this.notificationReason = state.reason || null;
+        this.notificationSubscribed = state.subscribed;
+        this.notificationPublicKey = state.publicKey || null;
+        if (state.reason === 'ios-install-required') {
+          this.notificationMessage = 'Add RSSMonster to your Home Screen, then open it there to enable notifications.';
+        } else if (state.reason === 'server-not-configured') {
+          this.notificationMessage = 'Web Push is not configured on this RSSMonster server.';
+        } else if (state.reason === 'unsupported') {
+          this.notificationMessage = 'This browser or operating system does not support Web Push.';
+        }
+      } catch (error) {
+        console.error('Error checking push notification state:', error);
+        this.notificationAvailable = false;
+        this.notificationReason = 'check-failed';
+        this.notificationSubscribed = false;
+        this.notificationMessage = 'Could not check notification availability. Retry when the server is reachable.';
+      }
+    },
+    async handleNotificationAction() {
+      if (this.notificationReason === 'check-failed') {
+        await this.syncNotificationPermission();
+        return;
+      }
+      await this.subscribeNotifications();
     },
     // This function requests notification permission after the user presses the button.
     async subscribeNotifications() {
-      if (!('Notification' in window) || Notification.permission !== 'default') {
-        this.syncNotificationPermission();
-        return;
-      }
-
       this.notificationRequestPending = true;
       this.notificationMessage = '';
 
       try {
-        await Notification.requestPermission();
-        this.syncNotificationPermission();
+        if (this.notificationSubscribed) {
+          await unsubscribeFromPushNotifications();
+        } else {
+          await subscribeToPushNotifications(this.notificationPublicKey);
+        }
+        await this.syncNotificationPermission();
 
         if (this.notificationPermission === 'denied') {
           this.notificationMessage = 'Enable notifications in your browser settings to receive alerts.';
         }
       } catch (error) {
         console.error('Error requesting browser notification permission:', error);
-        this.syncNotificationPermission();
+        await this.syncNotificationPermission();
         this.notificationMessage = 'Could not request notification permission. Please try again.';
       } finally {
         this.notificationRequestPending = false;
