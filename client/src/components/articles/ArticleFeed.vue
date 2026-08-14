@@ -46,6 +46,14 @@ const ArticleReaderLayout = defineAsyncComponent(() => import("./ArticleReaderLa
 // This async boundary defers the Smart Folders overview until the user opens it.
 const SmartFoldersGridOverview = defineAsyncComponent(() => import("./SmartFoldersGridOverview.vue"));
 
+// Limits the Safari scroll-position probe to iOS WebKit, including iPads requesting desktop sites.
+const isIOSWebKit = () => {
+  const userAgent = navigator.userAgent || '';
+  const isIOSDevice = /iP(?:ad|hone|od)/.test(userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  return isIOSDevice && /AppleWebKit/.test(userAgent);
+};
+
 export default {
   components: {
     ArticleListView,
@@ -90,6 +98,7 @@ export default {
       scrollContainer: null,
       scrollResetFrameId: null,
       scrollResetTimeoutId: null,
+      scrollPositionProbe: null,
       showSmartFoldersOverview: false,
       pendingFavoriteArticleIds: new Set()
     };
@@ -264,6 +273,7 @@ export default {
   // Starts scroll handling and article observers after mounting.
   mounted() {
     this.connectScrollContainer(this.scrollRoot);
+    this.setupIOSScrollPositionProbe();
     window.addEventListener("scroll", this.handleScroll, { passive: true });
     window.addEventListener("keydown", this.handleGlobalShortcut);
     this.setupObservers();
@@ -281,6 +291,7 @@ export default {
       window.clearTimeout(this.scrollResetTimeoutId);
       this.scrollResetTimeoutId = null;
     }
+    this.teardownIOSScrollPositionProbe();
     this.connectScrollContainer(null);
     this.teardownObservers();
   },
@@ -306,6 +317,46 @@ export default {
       this.scrollContainer?.addEventListener("scroll", this.handleScroll, { passive: true });
     },
 
+    // Keeps iOS WebKit's reported position current during touch and momentum scrolling.
+    setupIOSScrollPositionProbe() {
+      if (!isIOSWebKit() || this.scrollPositionProbe) return;
+      const probe = document.createElement('div');
+      probe.setAttribute('aria-hidden', 'true');
+      probe.style.height = '0';
+      probe.style.overflow = 'hidden';
+      document.body.appendChild(probe);
+      this.scrollPositionProbe = probe;
+      for (const eventName of ['scroll', 'touchstart', 'touchmove', 'touchend']) {
+        window.addEventListener(eventName, this.updateIOSScrollPositionProbe, {
+          passive: true,
+          capture: true
+        });
+      }
+      this.updateIOSScrollPositionProbe();
+    },
+
+    // Removes the iOS-only listeners and their zero-height DOM probe.
+    teardownIOSScrollPositionProbe() {
+      if (!this.scrollPositionProbe) return;
+      for (const eventName of ['scroll', 'touchstart', 'touchmove', 'touchend']) {
+        window.removeEventListener(eventName, this.updateIOSScrollPositionProbe, true);
+      }
+      this.scrollPositionProbe.remove();
+      this.scrollPositionProbe = null;
+    },
+
+    // Mutating a rendered node forces iOS WebKit to publish its latest scroll position.
+    updateIOSScrollPositionProbe() {
+      if (!this.scrollPositionProbe) return;
+      const position = Math.max(
+        Number(this.scrollContainer?.scrollTop) || 0,
+        Number(window.scrollY) || 0,
+        Number(document.documentElement.scrollTop) || 0,
+        Number(document.body.scrollTop) || 0
+      );
+      this.scrollPositionProbe.textContent = String(Math.round(position));
+    },
+
     // Restores every owned article layout and shared page scroll surface to the beginning.
     scrollArticleListToTop() {
       const resetScrollSurfaces = () => {
@@ -314,6 +365,7 @@ export default {
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
         window.scrollTo({ top: 0, behavior: 'auto' });
+        this.updateIOSScrollPositionProbe?.();
       };
 
       resetScrollSurfaces();
@@ -370,6 +422,7 @@ export default {
 
     // Shows or hides the mobile toolbar based on scroll direction.
     handleScroll() {
+      this.updateIOSScrollPositionProbe?.();
       const curScroll =
         Math.ceil(this.scrollContainer?.scrollTop) ||
         Math.ceil(window.scrollY) ||
