@@ -64,6 +64,15 @@ describe('shared API base URL', () => {
     expect(resolveApiBaseUrl('http://localhost:3000'))
       .toBe('http://localhost:3000/api');
   });
+
+  // This test verifies deployment configuration cannot introduce a double slash before the API path.
+  it.each([
+    ['https://example.com/', 'https://example.com/api'],
+    [' https://example.com/// ', 'https://example.com/api'],
+    ['/', '/api']
+  ])('normalizes trailing slashes in %j', (hostname, expected) => {
+    expect(resolveApiBaseUrl(hostname)).toBe(expected);
+  });
 });
 
 describe('shared API response interceptor', () => {

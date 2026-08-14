@@ -255,15 +255,9 @@ export default {
       this.showSmartFoldersOverview = false;
       this.$nextTick(() => this.scrollArticleListToTop());
     },
+    // Reconnects observers after the rendered article layout changes.
     isReaderLayoutActive() {
-      this.$nextTick(() => {
-        this.observeArticles();
-        this.observeLoadMoreSentinel();
-      });
-    },
-    // Reconnects article observers when the Reader breakpoint crosses either direction.
-    isDesktopReaderWidth() {
-      this.handleReaderWidthChange();
+      this.reconnectLayoutObservers();
     }
   },
 
@@ -366,8 +360,8 @@ export default {
       return this.$refs.articleLayout?.getReadingViewportTop?.() || 0;
     },
 
-    // Updates reader layout activation when the desktop breakpoint changes.
-    handleReaderWidthChange() {
+    // Reconnects article observers after Vue installs the active list or Reader layout.
+    reconnectLayoutObservers() {
       this.$nextTick(() => {
         this.observeArticles();
         this.observeLoadMoreSentinel();

@@ -1,7 +1,7 @@
 import { config } from '@vue/test-utils';
 import BootstrapIcon from '../src/components/shared/BootstrapIcon.vue';
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 
 // This setup registers the production icon component for every component test.
 config.global.components = {
@@ -14,4 +14,7 @@ config.global.components = {
 beforeEach(() => {
   const pinia = createPinia();
   setActivePinia(pinia);
+
+  // jsdom does not implement scrolling; tests may replace this default with focused spies.
+  window.scrollTo = vi.fn();
 });

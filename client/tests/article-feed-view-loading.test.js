@@ -123,6 +123,75 @@ describe('ArticleFeed view loading', () => {
     wrapper.unmount();
   });
 
+  it('reconnects observers once when a Reader breakpoint transition changes the layout', async () => {
+    const mediaQuery = {
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    };
+    vi.stubGlobal('matchMedia', vi.fn(() => mediaQuery));
+    const wrapper = mountArticleFeed();
+    await flushPromises();
+    const observeArticles = vi.spyOn(wrapper.vm, 'observeArticles');
+    const observeLoadMoreSentinel = vi.spyOn(wrapper.vm, 'observeLoadMoreSentinel');
+
+    wrapper.vm.selectionStore.setCurrentSelection({ viewMode: 'reader' });
+    await flushPromises();
+    observeArticles.mockClear();
+    observeLoadMoreSentinel.mockClear();
+
+    const mediaQueryChange = mediaQuery.addEventListener.mock.calls[0][1];
+    mediaQueryChange({ matches: true });
+    await flushPromises();
+
+    expect(observeArticles).toHaveBeenCalledOnce();
+    expect(observeLoadMoreSentinel).toHaveBeenCalledOnce();
+    expect(wrapper.find('.article-reader-layout-stub').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it('does not reconnect observers when the Reader breakpoint changes outside Reader mode', async () => {
+    const mediaQuery = {
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    };
+    vi.stubGlobal('matchMedia', vi.fn(() => mediaQuery));
+    const wrapper = mountArticleFeed();
+    await flushPromises();
+    const observeArticles = vi.spyOn(wrapper.vm, 'observeArticles');
+    const observeLoadMoreSentinel = vi.spyOn(wrapper.vm, 'observeLoadMoreSentinel');
+
+    const mediaQueryChange = mediaQuery.addEventListener.mock.calls[0][1];
+    mediaQueryChange({ matches: true });
+    await flushPromises();
+
+    expect(observeArticles).not.toHaveBeenCalled();
+    expect(observeLoadMoreSentinel).not.toHaveBeenCalled();
+    expect(wrapper.find('.article-list-view-stub').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it('reconnects observers once when the view mode changes at Reader width', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    })));
+    const wrapper = mountArticleFeed();
+    await flushPromises();
+    const observeArticles = vi.spyOn(wrapper.vm, 'observeArticles');
+    const observeLoadMoreSentinel = vi.spyOn(wrapper.vm, 'observeLoadMoreSentinel');
+
+    wrapper.vm.selectionStore.setCurrentSelection({ viewMode: 'reader' });
+    await flushPromises();
+
+    expect(observeArticles).toHaveBeenCalledOnce();
+    expect(observeLoadMoreSentinel).toHaveBeenCalledOnce();
+    expect(wrapper.find('.article-reader-layout-stub').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
   it('scrolls to the top without reloading IDs for a view-mode change', async () => {
     const wrapper = mountArticleFeed();
     await flushPromises();

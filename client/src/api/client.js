@@ -4,7 +4,7 @@ export const CONNECTIVITY_ERROR_EVENT = 'app:connectivity-error';
 
 // This function resolves API requests to an explicit host or the current origin.
 export const resolveApiBaseUrl = hostname => {
-  const configuredHostname = hostname?.trim();
+  const configuredHostname = hostname?.trim().replace(/\/+$/, '');
 
   return configuredHostname ? `${configuredHostname}/api` : '/api';
 };

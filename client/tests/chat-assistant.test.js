@@ -247,4 +247,20 @@ describe('ChatAssistant', () => {
     expect(message.text()).toContain('<strong>Keep this literal</strong>');
     expect(message.find('strong strong').exists()).toBe(false);
   });
+
+  it('renders repeated messages without duplicate Vue keys', async () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const wrapper = mountChatAssistant();
+    await wrapper.setData({
+      messages: [
+        { role: 'user', content: 'Repeat this question' },
+        { role: 'user', content: 'Repeat this question' }
+      ]
+    });
+
+    expect(wrapper.findAll('.user-message')).toHaveLength(2);
+    expect(consoleWarn.mock.calls.flat().join(' ')).not.toContain('Duplicate keys');
+
+    consoleWarn.mockRestore();
+  });
 });

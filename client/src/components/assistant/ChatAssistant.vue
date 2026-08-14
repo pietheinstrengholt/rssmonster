@@ -28,7 +28,7 @@
         </div>
         <div v-if="messages.length > 0">
             <h5 class="agent-chat-response-heading">Response:</h5>
-              <div v-for="message in messages" :key="message.content">
+              <div v-for="(message, index) in messages" :key="`${message.role}-${index}`">
                 <div class="user-message" v-if="message.role === 'user'">
                     <strong>You:</strong> {{ message.content }}
                 </div>

@@ -119,14 +119,19 @@ describe('DesktopToolbar behavior coverage', () => {
     const selectSearch = vi.spyOn(stores.selectionStore, 'setSelectedSearch')
       .mockImplementation(() => {});
     const setSearchQuery = vi.spyOn(stores.uiStore, 'setSearchQuery');
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1600, writable: true });
+    const mediaQuery = {
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    };
+    vi.stubGlobal('matchMedia', vi.fn(() => mediaQuery));
     const wrapper = mountDesktopToolbar();
     const input = wrapper.get('.toolbar-search-input');
 
     expect(input.attributes('placeholder')).toContain('Search for words');
 
-    window.innerWidth = 1200;
-    window.dispatchEvent(new Event('resize'));
+    const mediaQueryChange = mediaQuery.addEventListener.mock.calls[0][1];
+    mediaQueryChange({ matches: true });
     await wrapper.vm.$nextTick();
     expect(input.attributes('placeholder')).toBe('Search');
 
@@ -160,6 +165,7 @@ describe('DesktopToolbar behavior coverage', () => {
     await wrapper.get('.toolbar-search-button').trigger('click');
     expect(wrapper.vm.isCompactSearchOpen).toBe(false);
     wrapper.unmount();
+    expect(mediaQuery.removeEventListener).toHaveBeenCalledWith('change', mediaQueryChange);
   });
 
   it('routes every dropdown type and leaves an unchanged grouping alone', () => {

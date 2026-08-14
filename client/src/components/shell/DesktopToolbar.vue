@@ -781,6 +781,7 @@ import {
   ARTICLE_VIEW_MODE_OPTIONS,
   getAvailableArticleOptions
 } from '../../config/articleSelectionOptions.js';
+import { useMediaQuery } from '../../composables/useMediaQuery.js';
 import { notifyActionError } from '../../services/actionNotifications.js';
 import { validateSearchQuery } from '../../services/queryValidation.js';
 import { getThemeMode, setThemeMode } from '../../services/theme.js';
@@ -796,6 +797,15 @@ export default {
     AppDropdown,
     Settings
   },
+  // Exposes the toolbar-specific copy boundary without tracking every viewport resize.
+  setup() {
+    return {
+      usesCompactSearchPlaceholder: useMediaQuery(
+        '(max-width: 1439px)',
+        () => typeof window !== 'undefined' && window.innerWidth < 1440
+      )
+    };
+  },
   // This function initializes the toolbar's local state and dropdown options.
   data() {
     return {
@@ -803,7 +813,6 @@ export default {
       isCompactSearchOpen: false,
       searchDebounceTimer: null,
       selectedThemeMode: getThemeMode(),
-      windowWidth: window.innerWidth,
       statusOptions: ARTICLE_STATUS_OPTIONS,
       viewModeOptions: ARTICLE_VIEW_MODE_OPTIONS,
       sortOptions: ARTICLE_SORT_OPTIONS,
@@ -812,14 +821,9 @@ export default {
   },
   mounted() {
     window.addEventListener('rssmonster:focus-search', this.focusSearchInput);
-    window.addEventListener('resize', this.updateWindowWidth);
     document.addEventListener('pointerdown', this.handleSearchOutsideClick);
   },
   methods: {
-    // This function stores the current viewport width for responsive toolbar copy.
-    updateWindowWidth: function() {
-      this.windowWidth = window.innerWidth;
-    },
     // This function toggles the compact search field and focuses it when opening.
     toggleCompactSearch: function() {
       if (this.isCompactSearchOpen) {
@@ -938,7 +942,6 @@ export default {
   beforeUnmount() {
     clearTimeout(this.searchDebounceTimer);
     window.removeEventListener('rssmonster:focus-search', this.focusSearchInput);
-    window.removeEventListener('resize', this.updateWindowWidth);
     document.removeEventListener('pointerdown', this.handleSearchOutsideClick);
   },
   watch: {
@@ -975,7 +978,7 @@ export default {
     },
     // This function returns shorter search placeholder text on narrower screens.
     searchPlaceholder() {
-      if (this.windowWidth < 1440) {
+      if (this.usesCompactSearchPlaceholder) {
         return 'Search';
       }
 
