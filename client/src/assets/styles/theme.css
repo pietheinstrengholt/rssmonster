@@ -260,8 +260,8 @@
   --desktop-toolbar-background: var(--surface-chrome);
 
   /* Sidebar navigation rows */
-  --sidebar-background: var(--surface-chrome);
-  --sidebar-row-background: var(--sidebar-background);
+  --sidebar-background: var(--surface-page);
+  --sidebar-row-background: var(--surface-chrome);
   --sidebar-row-text: var(--text-primary);
   --sidebar-row-hover-background: var(--surface-hover);
   --sidebar-group-background: rgba(37, 99, 235, 0.04);
@@ -271,9 +271,9 @@
   --sidebar-row-alert-background: var(--color-danger-soft);
   --sidebar-row-alert-hover-background: var(--color-danger-soft);
   --sidebar-row-alert-text: var(--color-danger-strong);
-  --sidebar-row-error-background: var(--sidebar-background);
+  --sidebar-row-error-background: var(--surface-chrome);
   --sidebar-row-error-text: var(--text-primary);
-  --sidebar-row-disabled-background: var(--sidebar-background);
+  --sidebar-row-disabled-background: var(--surface-chrome);
   --sidebar-row-disabled-text: var(--text-primary);
   --sidebar-brand-text: var(--text-primary);
   --sidebar-section-title-text: var(--text-secondary);
@@ -496,7 +496,7 @@
   --settings-nav-active-bg-dark: var(--surface-selected);
   --settings-nav-active-text-dark: var(--text-inverted);
   --sidebar-background: #11161D;
-  --sidebar-row-background: var(--sidebar-background);
+  --sidebar-row-background: rgba(255, 255, 255, 0.035);
   --sidebar-row-text: var(--text-primary);
   --sidebar-row-hover-background: var(--surface-hover-strong);
   --sidebar-group-background: rgba(96, 165, 250, 0.06);
@@ -506,9 +506,9 @@
   --sidebar-row-alert-background: #2B1B1E;
   --sidebar-row-alert-hover-background: #3A2328;
   --sidebar-row-alert-text: var(--text-primary);
-  --sidebar-row-error-background: var(--sidebar-background);
+  --sidebar-row-error-background: var(--sidebar-row-background);
   --sidebar-row-error-text: var(--text-primary);
-  --sidebar-row-disabled-background: var(--sidebar-background);
+  --sidebar-row-disabled-background: var(--sidebar-row-background);
   --sidebar-row-disabled-text: var(--text-primary);
   --sidebar-brand-text: var(--text-inverted);
   --sidebar-section-title-text: var(--text-secondary);

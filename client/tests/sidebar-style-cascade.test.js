@@ -46,8 +46,17 @@ describe('sidebar style cascade', () => {
     expect(themeSource).toMatch(
       /:root\[data-theme="dark"\][\s\S]*?--sidebar-background: #11161D;/
     );
-    expect(themeSource).toContain('--sidebar-row-background: var(--sidebar-background);');
+    expect(themeSource).toContain('--sidebar-row-background: rgba(255, 255, 255, 0.035);');
     expect(readClientSource('src/AppShell.vue')).toContain('background-color: var(--sidebar-background);');
+  });
+
+  it('restores light sidebar row tiles against a quieter backdrop', () => {
+    expect(themeSource).toMatch(
+      /:root \{[\s\S]*?--sidebar-background: var\(--surface-page\);[\s\S]*?--sidebar-row-background: var\(--surface-chrome\);/
+    );
+    expect(themeSource).toMatch(
+      /:root\[data-theme="dark"\][\s\S]*?--sidebar-background: #11161D;[\s\S]*?--sidebar-row-background: rgba\(255, 255, 255, 0\.035\);/
+    );
   });
 
   it('uses the standard readable foreground for dark refresh alerts', () => {
