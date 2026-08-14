@@ -192,6 +192,9 @@ describe('sidebar style cascade', () => {
     expect(mobileOptionsSource).not.toContain('--sidebar-action-');
     expect(mobileOptionsSource).toContain('var(--mobile-options-refresh-background)');
     expect(mobileOptionsSource).toContain('var(--mobile-options-add-background)');
+    expect(themeSource).toMatch(
+      /:root\[data-theme="dark"\][\s\S]*?--mobile-options-add-hover-text: var\(--badge-quality-text\);[\s\S]*?--mobile-options-add-text: var\(--badge-quality-text\);/
+    );
   });
 
   it('gives neutral management actions a complete translucent state palette', () => {

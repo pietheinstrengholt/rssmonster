@@ -607,9 +607,9 @@
   --mobile-options-refresh-text: var(--reader-list-item-selected-meta);
   --mobile-options-add-background: #1F4D3A;
   --mobile-options-add-hover-background: #256D4F;
-  --mobile-options-add-hover-text: var(--border-success);
+  --mobile-options-add-hover-text: var(--badge-quality-text);
   --mobile-options-add-border: var(--border-success);
-  --mobile-options-add-text: var(--border-success);
+  --mobile-options-add-text: var(--badge-quality-text);
 }
 
 /* Shared presentation primitives cover only the application patterns that use them. */
