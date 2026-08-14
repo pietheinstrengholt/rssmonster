@@ -453,9 +453,7 @@ describe('ArticleFeed loading races', () => {
 
     const context = {
       $refs: { articleLayout: { scrollToTop } },
-      scrollContainer: articlePane,
-      scrollResetFrameId: null,
-      scrollResetTimeoutId: null
+      scrollContainer: articlePane
     };
     ArticleFeed.methods.scrollArticleListToTop.call(context);
 
@@ -463,10 +461,9 @@ describe('ArticleFeed loading races', () => {
     expect(articlePane.scrollTop).toBe(0);
     expect(document.documentElement.scrollTop).toBe(0);
     expect(document.body.scrollTop).toBe(0);
-    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
+    expect(scrollTo).toHaveBeenCalledOnce();
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'instant' });
 
-    window.cancelAnimationFrame(context.scrollResetFrameId);
-    window.clearTimeout(context.scrollResetTimeoutId);
     scrollTo.mockRestore();
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
   });
@@ -479,76 +476,16 @@ describe('ArticleFeed loading races', () => {
 
     const context = {
       $refs: {},
-      scrollContainer: null,
-      scrollResetFrameId: null,
-      scrollResetTimeoutId: null
+      scrollContainer: null
     };
     ArticleFeed.methods.scrollArticleListToTop.call(context);
 
     expect(document.documentElement.scrollTop).toBe(0);
     expect(document.body.scrollTop).toBe(0);
-    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
+    expect(scrollTo).toHaveBeenCalledOnce();
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'instant' });
 
-    window.cancelAnimationFrame(context.scrollResetFrameId);
-    window.clearTimeout(context.scrollResetTimeoutId);
     scrollTo.mockRestore();
-  });
-
-  it('reapplies the scroll reset after browser layout frames settle', () => {
-    const frames = [];
-    const requestAnimationFrame = vi.spyOn(window, 'requestAnimationFrame')
-      .mockImplementation(callback => {
-        frames.push(callback);
-        return frames.length;
-      });
-    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-    const context = {
-      $refs: {},
-      scrollContainer: null,
-      scrollResetFrameId: null,
-      scrollResetTimeoutId: null
-    };
-
-    ArticleFeed.methods.scrollArticleListToTop.call(context);
-    expect(scrollTo).toHaveBeenCalledTimes(1);
-
-    document.documentElement.scrollTop = 9;
-    frames.shift()();
-    expect(document.documentElement.scrollTop).toBe(0);
-    expect(scrollTo).toHaveBeenCalledTimes(2);
-
-    document.documentElement.scrollTop = 5;
-    frames.shift()();
-    expect(document.documentElement.scrollTop).toBe(0);
-    expect(scrollTo).toHaveBeenCalledTimes(3);
-    expect(context.scrollResetFrameId).toBeNull();
-
-    requestAnimationFrame.mockRestore();
-    window.clearTimeout(context.scrollResetTimeoutId);
-    scrollTo.mockRestore();
-  });
-
-  it('reapplies the scroll reset after the iOS viewport settles', () => {
-    vi.useFakeTimers();
-    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-    const context = {
-      $refs: {},
-      scrollContainer: null,
-      scrollResetFrameId: null,
-      scrollResetTimeoutId: null
-    };
-
-    ArticleFeed.methods.scrollArticleListToTop.call(context);
-    document.documentElement.scrollTop = 11;
-    vi.advanceTimersByTime(250);
-
-    expect(document.documentElement.scrollTop).toBe(0);
-    expect(scrollTo).toHaveBeenCalledTimes(4);
-    expect(context.scrollResetTimeoutId).toBeNull();
-
-    window.cancelAnimationFrame(context.scrollResetFrameId);
-    scrollTo.mockRestore();
-    vi.useRealTimers();
   });
 
   it('does not append stale detail responses after the selection changes', async () => {
