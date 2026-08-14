@@ -309,18 +309,11 @@ export default {
     // Restores every owned article layout and shared page scroll surface to the beginning.
     scrollArticleListToTop() {
       const resetScrollSurfaces = () => {
-        const scrollingElement = document.documentElement;
-        const previousScrollBehavior = scrollingElement.style.scrollBehavior;
-        scrollingElement.style.scrollBehavior = 'auto';
-        try {
-          this.$refs.articleLayout?.scrollToTop?.();
-          if (this.scrollContainer) this.scrollContainer.scrollTop = 0;
-          scrollingElement.scrollTop = 0;
-          document.body.scrollTop = 0;
-          window.scrollTo(0, 0);
-        } finally {
-          scrollingElement.style.scrollBehavior = previousScrollBehavior;
-        }
+        this.$refs.articleLayout?.scrollToTop?.();
+        if (this.scrollContainer) this.scrollContainer.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        window.scrollTo({ top: 0, behavior: 'auto' });
       };
 
       resetScrollSurfaces();
