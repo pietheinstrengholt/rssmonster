@@ -760,6 +760,14 @@ export default {
     showMobileToolbar() {
       this.mobileToolbarHidden = false;
     },
+    // Resets both possible shell scroll owners after the article list is replaced by chat.
+    async revealChatAssistant() {
+      this.showMobileToolbar();
+      await this.$nextTick();
+
+      if (this.articleScrollRoot) this.articleScrollRoot.scrollTop = 0;
+      if (this.isMobileShell) window.scrollTo(0, 0);
+    },
     // This function applies article-scroll visibility requests to shell-owned toolbar state.
     setMobileToolbarVisibility(isVisible) {
       this.mobileToolbarHidden = isVisible === false;
@@ -793,6 +801,10 @@ export default {
     }
   },
   watch: {
+    // Reveals the newly mounted assistant instead of retaining the article list's scroll position.
+    "uiStore.chatAssistantOpen": function(isOpen) {
+      if (isOpen) void this.revealChatAssistant();
+    },
     // This function applies shell-specific cleanup when the canonical layout state changes.
     shellMode() {
       this.handleResponsiveShellChange();

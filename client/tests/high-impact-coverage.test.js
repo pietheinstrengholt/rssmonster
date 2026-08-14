@@ -1077,6 +1077,7 @@ describe('Vue template handler coverage', () => {
 
   it('renders and routes AppShell desktop, mobile, error, dialog, and content states', async () => {
     vi.useFakeTimers();
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     document.head.innerHTML = '<meta name="viewport"><meta http-equiv="X-UA-Compatible">';
     const stores = createFocusedStores({
       overview: {
@@ -1140,9 +1141,15 @@ describe('Vue template handler coverage', () => {
     await wrapper.vm.$nextTick();
     await wrapper.get('.error').trigger('click');
     stores.uiStore.fatalError = null;
+    wrapper.vm.shellMode = SHELL_MODE.MOBILE;
+    wrapper.vm.mobileToolbarHidden = true;
+    wrapper.vm.articleScrollRoot.scrollTop = 240;
     stores.uiStore.chatAssistantOpen = true;
-    await wrapper.vm.$nextTick();
+    await flushPromises();
     expect(wrapper.find('.chat').exists()).toBe(true);
+    expect(wrapper.vm.mobileToolbarHidden).toBe(false);
+    expect(wrapper.vm.articleScrollRoot.scrollTop).toBe(0);
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
 
     stores.uiStore.chatAssistantOpen = false;
     wrapper.vm.shellMode = SHELL_MODE.MOBILE;
