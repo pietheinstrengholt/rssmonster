@@ -306,6 +306,36 @@ describe('ArticleFeed loading races', () => {
     expect(context.scrollArticleListToTop).toHaveBeenCalledOnce();
   });
 
+  it('refreshes a legacy collection without enumerating the component instance', async () => {
+    fetchArticleIds.mockResolvedValueOnce({
+      data: {
+        itemIds: [2, 3],
+        sourceCount: 1
+      }
+    });
+    fetchArticleDetails.mockResolvedValueOnce({
+      data: [{ id: 2, title: 'Fetched legacy article' }]
+    });
+    const context = createLoadingContext();
+    const componentInstance = new Proxy(context, {
+      ownKeys: () => {
+        throw new Error('component instance keys must not be enumerated');
+      }
+    });
+
+    await ArticleFeed.methods.refreshArticleIds.call(
+      componentInstance,
+      context.selectionStore.currentSelection
+    );
+
+    expect(fetchArticleDetails).toHaveBeenCalledWith([2, 3], 'desc');
+    expect(context.container).toEqual([2]);
+    expect(context.articles).toEqual([{ id: 2, title: 'Fetched legacy article' }]);
+    expect(context.legacyItemIds).toEqual([2, 3]);
+    expect(context.distance).toBe(2);
+    expect(context.hasMore).toBe(false);
+  });
+
   it('keeps existing articles and reports a current database refresh failure', async () => {
     const failure = new Error('refresh unavailable');
     fetchArticleIds.mockRejectedValueOnce(failure);

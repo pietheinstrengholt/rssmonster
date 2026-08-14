@@ -182,9 +182,9 @@ export const articleFeedPaginationMethods = {
       let legacyPrepared = null;
       if (response.data.paginationVersion !== 1) {
         const staged = {
-          ...this,
-          container: [],
-          articles: [],
+          ...createArticleFeedPaginationState(),
+          fetchCount: this.fetchCount,
+          selectionStore: this.selectionStore,
           activeRequestId: requestId
         };
         if (!await installLegacyCollection(staged, response, data, requestId)) return false;
