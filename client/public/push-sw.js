@@ -7,9 +7,13 @@ self.addEventListener('push', event => {
     payload = { body: event.data?.text() || '' };
   }
 
-  const badgePromise = typeof self.navigator?.setAppBadge === 'function'
-    ? self.navigator.setAppBadge(Math.max(0, Number(payload.badgeCount) || 0)).catch(() => {})
-    : Promise.resolve();
+  const unreadCount = Math.max(0, Number(payload.unreadCount ?? payload.badgeCount) || 0);
+  let badgePromise = Promise.resolve();
+  if (unreadCount > 0 && typeof self.navigator?.setAppBadge === 'function') {
+    badgePromise = self.navigator.setAppBadge(unreadCount).catch(() => {});
+  } else if (unreadCount === 0 && typeof self.navigator?.clearAppBadge === 'function') {
+    badgePromise = self.navigator.clearAppBadge().catch(() => {});
+  }
 
   event.waitUntil(Promise.all([
     self.registration.showNotification(payload.title || 'RSSMonster', {
@@ -29,9 +33,6 @@ self.addEventListener('notificationclick', event => {
   const safeUrl = destination.origin === self.location.origin ? destination.href : self.location.origin;
 
   event.waitUntil((async () => {
-    if (typeof self.navigator?.clearAppBadge === 'function') {
-      await self.navigator.clearAppBadge().catch(() => {});
-    }
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const existingWindow = windows.find(client => new URL(client.url).origin === self.location.origin);
     if (existingWindow) {

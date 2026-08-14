@@ -51,14 +51,14 @@ describe('push service worker', () => {
         json: () => ({
           title: 'New articles',
           body: '2 new articles have arrived',
-          badgeCount: 2,
+          unreadCount: 12,
           tag: 'new-articles',
           url: '/?feed=7'
         })
       }
     });
 
-    expect(worker.setAppBadge).toHaveBeenCalledWith(2);
+    expect(worker.setAppBadge).toHaveBeenCalledWith(12);
     expect(worker.showNotification).toHaveBeenCalledWith('New articles', expect.objectContaining({
       body: '2 new articles have arrived',
       tag: 'new-articles',
@@ -66,7 +66,7 @@ describe('push service worker', () => {
     }));
   });
 
-  it('clears the badge and focuses an existing same-origin window', async () => {
+  it('preserves the badge and focuses an existing same-origin window', async () => {
     const existingWindow = {
       url: 'https://rssmonster.example/',
       focus: vi.fn().mockResolvedValue(),
@@ -80,10 +80,21 @@ describe('push service worker', () => {
     });
 
     expect(close).toHaveBeenCalledOnce();
-    expect(worker.clearAppBadge).toHaveBeenCalledOnce();
+    expect(worker.clearAppBadge).not.toHaveBeenCalled();
     expect(existingWindow.navigate).not.toHaveBeenCalled();
     expect(existingWindow.focus).toHaveBeenCalledOnce();
     expect(worker.openWindow).not.toHaveBeenCalled();
+  });
+
+  it('clears the badge when the push reports no unread articles', async () => {
+    const worker = await loadPushWorker();
+
+    await dispatchExtendableEvent(worker.handlers.push, {
+      data: { json: () => ({ unreadCount: 0 }) }
+    });
+
+    expect(worker.clearAppBadge).toHaveBeenCalledOnce();
+    expect(worker.setAppBadge).not.toHaveBeenCalled();
   });
 
   it('opens a safe same-origin destination when no app window exists', async () => {

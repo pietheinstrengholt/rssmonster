@@ -114,6 +114,15 @@ const mountMobileMenu = (mobile = true) => mount(MobileMenuOverlay, {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  pushMocks.getState.mockReset().mockResolvedValue({
+    available: false,
+    permission: 'unsupported',
+    publicKey: null,
+    reason: 'unsupported',
+    subscribed: false
+  });
+  pushMocks.subscribe.mockReset().mockResolvedValue(null);
+  pushMocks.unsubscribe.mockReset().mockResolvedValue(false);
   window.localStorage.clear();
 });
 

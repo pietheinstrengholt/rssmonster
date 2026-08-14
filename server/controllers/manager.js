@@ -1,10 +1,10 @@
 import db from '../models/index.js';
-const { Feed, Category, Article, BriefingPreference, Setting, sequelize } = db;
+const { Feed, Category, Article, BriefingPreference, sequelize } = db;
 
 import Sequelize from "sequelize";
 import { Op } from 'sequelize';
-import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { briefingEligibilitySql } from '../services/articleSearch/briefingEligibility.service.js';
+import { buildVisibleArticleWhere } from '../services/articles/visibleArticleScope.js';
 
 const DEFAULT_BRIEFING_SELECTION_PERIOD = '7d';
 const OVERVIEW_FEED_ATTRIBUTES = [
@@ -135,24 +135,7 @@ const applyGroupingFilter = (baseWhere, grouping, includeDevelopingEvents) => {
 
 // Builds the user-owned article scope used by all overview counts.
 const buildOverviewWhere = async ({ userId, grouping, includeDevelopingEvents }) => {
-  const settings = await Setting.findOne({
-    where: { userId },
-    attributes: [
-      'minAdvertisementScore',
-      'minSentimentScore',
-      'minQualityScore'
-    ],
-    raw: true
-  });
-
-  const baseWhere = {
-    userId,
-    ...canonicalArticleWhere(),
-    filteredInd: false,
-    advertisementScore: { [Op.gte]: settings?.minAdvertisementScore ?? 0 },
-    sentimentScore: { [Op.gte]: settings?.minSentimentScore ?? 0 },
-    qualityScore: { [Op.gte]: settings?.minQualityScore ?? 0 }
-  };
+  const baseWhere = await buildVisibleArticleWhere(userId);
 
   applyGroupingFilter(baseWhere, grouping, includeDevelopingEvents);
 

@@ -13,6 +13,18 @@ import { useOverviewStore } from '../src/store/overview.js';
 import { useSelectionStore } from '../src/store/selection.js';
 import { useUiStore } from '../src/store/ui.js';
 
+const pushMocks = vi.hoisted(() => ({
+  getState: vi.fn(),
+  subscribe: vi.fn(),
+  unsubscribe: vi.fn()
+}));
+
+vi.mock('../src/services/pushNotifications.js', () => ({
+  getPushNotificationState: pushMocks.getState,
+  subscribeToPushNotifications: pushMocks.subscribe,
+  unsubscribeFromPushNotifications: pushMocks.unsubscribe
+}));
+
 vi.mock('../src/api/articles', () => ({
   markAllAsRead: vi.fn()
 }));
@@ -143,6 +155,15 @@ function mountSidebar(store) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  pushMocks.getState.mockReset().mockResolvedValue({
+    available: false,
+    permission: 'unsupported',
+    publicKey: null,
+    reason: 'unsupported',
+    subscribed: false
+  });
+  pushMocks.subscribe.mockReset().mockResolvedValue(null);
+  pushMocks.unsubscribe.mockReset().mockResolvedValue(false);
   vi.useFakeTimers();
 });
 
@@ -321,20 +342,25 @@ describe('mobile options menu actions', () => {
         plugins: [store.pinia]
       }
     });
+    await flushPromises();
 
     expect(wrapper.text()).toContain('Notifications unavailable');
-    await wrapper.vm.subscribeNotifications();
     expect(wrapper.vm.notificationPermission).toBe('unsupported');
 
     const error = new Error('browser failure');
-    vi.stubGlobal('Notification', {
+    pushMocks.getState.mockResolvedValue({
+      available: true,
       permission: 'default',
-      requestPermission: vi.fn().mockRejectedValue(error)
+      publicKey: 'test-public-key',
+      reason: null,
+      subscribed: false
     });
+    pushMocks.subscribe.mockRejectedValueOnce(error);
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    wrapper.vm.syncNotificationPermission();
+    await wrapper.vm.syncNotificationPermission();
     await wrapper.vm.subscribeNotifications();
 
+    expect(pushMocks.subscribe).toHaveBeenCalledWith('test-public-key');
     expect(wrapper.text()).toContain('Could not request notification permission');
     expect(console.error).toHaveBeenCalledWith(
       'Error requesting browser notification permission:',

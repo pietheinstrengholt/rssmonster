@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+  articleCount: vi.fn(),
   findAll: vi.fn(),
+  findSetting: vi.fn(),
   upsert: vi.fn(),
   sendNotification: vi.fn(),
   setVapidDetails: vi.fn()
@@ -9,6 +11,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../../models/index.js', () => ({
   default: {
+    Article: { count: mocks.articleCount },
+    Setting: { findOne: mocks.findSetting },
     PushSubscription: { findAll: mocks.findAll, upsert: mocks.upsert }
   }
 }));
@@ -31,6 +35,8 @@ describe('push notification delivery', () => {
     process.env.VAPID_PUBLIC_KEY = 'public';
     process.env.VAPID_PRIVATE_KEY = 'private';
     process.env.VAPID_SUBJECT = 'mailto:admin@example.com';
+    mocks.articleCount.mockResolvedValue(0);
+    mocks.findSetting.mockResolvedValue(null);
   });
 
   it('atomically assigns a browser endpoint to the authenticated user', async () => {
@@ -58,12 +64,22 @@ describe('push notification delivery', () => {
       destroy: vi.fn()
     }]);
     mocks.sendNotification.mockResolvedValue({ statusCode: 201 });
+    mocks.articleCount.mockResolvedValue(41);
 
     await expect(sendNewArticlePush(7, 3)).resolves.toEqual({ sent: 1, removed: 0 });
     expect(mocks.findAll).toHaveBeenCalledWith({ where: { userId: 7 } });
+    expect(mocks.articleCount).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        filteredInd: false,
+        status: 'unread',
+        userId: 7
+      })
+    });
     expect(JSON.parse(mocks.sendNotification.mock.calls[0][1])).toMatchObject({
       title: 'New articles',
-      badgeCount: 3
+      body: '3 new articles have arrived',
+      badgeCount: 41,
+      unreadCount: 41
     });
   });
 
