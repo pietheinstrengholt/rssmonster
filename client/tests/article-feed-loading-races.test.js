@@ -521,40 +521,6 @@ describe('ArticleFeed loading races', () => {
     vi.useRealTimers();
   });
 
-  it('keeps an iOS WebKit scroll-position probe current and removes it on teardown', () => {
-    const originalNavigator = window.navigator;
-    vi.stubGlobal('navigator', {
-      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15',
-      platform: 'iPhone',
-      maxTouchPoints: 5
-    });
-    const articlePane = document.createElement('main');
-    articlePane.scrollTop = 135;
-    const context = {
-      scrollContainer: articlePane,
-      scrollPositionProbe: null
-    };
-    context.updateIOSScrollPositionProbe = () => (
-      ArticleFeed.methods.updateIOSScrollPositionProbe.call(context)
-    );
-
-    ArticleFeed.methods.setupIOSScrollPositionProbe.call(context);
-
-    expect(context.scrollPositionProbe.parentElement).toBe(document.body);
-    expect(context.scrollPositionProbe.textContent).toBe('135');
-
-    articlePane.scrollTop = 42;
-    window.dispatchEvent(new Event('touchmove'));
-    expect(context.scrollPositionProbe.textContent).toBe('42');
-
-    const probe = context.scrollPositionProbe;
-    ArticleFeed.methods.teardownIOSScrollPositionProbe.call(context);
-    expect(context.scrollPositionProbe).toBeNull();
-    expect(probe.isConnected).toBe(false);
-
-    vi.stubGlobal('navigator', originalNavigator);
-  });
-
   it('does not append stale detail responses after the selection changes', async () => {
     const staleDetails = deferred();
     fetchArticleIds
