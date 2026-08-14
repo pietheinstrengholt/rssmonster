@@ -89,6 +89,7 @@ export default {
     indicatorStyle() {
       const revealDistance = Math.min(this.indicatorHeight, REFRESH_INDICATOR_HEIGHT);
       return {
+        height: `${revealDistance}px`,
         '--pull-indicator-height': `${REFRESH_INDICATOR_HEIGHT}px`,
         '--pull-indicator-reveal': `${revealDistance}px`,
         '--pull-indicator-opacity': revealDistance > 0 ? 1 : 0
@@ -250,7 +251,12 @@ export default {
   overflow: visible;
   pointer-events: none;
   position: relative;
+  transition: height 160ms ease;
   z-index: var(--layer-refresh-indicator);
+}
+
+.mobile-pull-to-refresh--tracking {
+  transition: none;
 }
 
 .mobile-pull-to-refresh__content {
@@ -305,6 +311,7 @@ export default {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .mobile-pull-to-refresh,
   .mobile-pull-to-refresh__content,
   .mobile-pull-to-refresh__icon {
     transition: none;

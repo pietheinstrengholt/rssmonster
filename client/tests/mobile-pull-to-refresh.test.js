@@ -55,8 +55,9 @@ describe('MobilePullToRefresh', () => {
 
     expect(wrapper.text()).toContain('Release to refresh');
     expect(wrapper.classes()).toContain('mobile-pull-to-refresh--tracking');
-    expect(wrapper.vm.indicatorStyle).not.toHaveProperty('height');
+    expect(wrapper.vm.indicatorStyle.height).toBe('46px');
     expect(wrapper.vm.indicatorStyle['--pull-indicator-reveal']).toBe('46px');
+    expect(wrapper.element.style.height).toBe('46px');
     expect(wrapper.emitted('show-mobile-toolbar')).toHaveLength(1);
     expect(move.preventDefault).toHaveBeenCalledOnce();
 

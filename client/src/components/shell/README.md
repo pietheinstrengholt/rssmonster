@@ -57,7 +57,7 @@ Native scrollbar styling uses 6-pixel tracks, transparent backgrounds, rounded t
 
 The connectivity notice is positioned by `.app-shell__overlay-host` inside `.app-shell__main-frame`. The notice component owns only its local inset and maximum width and must not calculate offsets from `--sidebar-width`.
 
-At the top of an active mobile or compact touch-tablet article collection, a resisted downward pull refreshes the current database-backed article query and overview counts. The gesture preserves rendered articles while the request is active, keeps the toolbar visible, and never starts the longer feed-crawl workflow. Its indicator keeps zero flow height and reveals an absolutely positioned inner surface, preventing scroll-anchoring shifts during expansion and collapse.
+At the top of an active mobile or compact touch-tablet article collection, a resisted downward pull refreshes the current database-backed article query and overview counts. The gesture preserves rendered articles while the request is active, keeps the toolbar visible, and never starts the longer feed-crawl workflow. Its indicator grows in flow with the revealed distance so the article collection follows the pull, remains displaced during refresh, and slides back when the indicator collapses.
 
 ## Structural naming and layers
 
