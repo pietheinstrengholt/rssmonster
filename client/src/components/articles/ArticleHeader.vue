@@ -1,30 +1,28 @@
 <template>
-  <h5 class="article-header">
-    <div class="article-header-row">
-      <div class="article-header-left">
-        <BootstrapIcon v-if="isBlueSkyArticle" icon="bluesky" class="article-kind-icon bluesky-icon" />
-        <BootstrapIcon v-if="isRedditArticle" icon="reddit" class="article-kind-icon reddit-icon" />
-        <BootstrapIcon v-if="isGitHubArticle" icon="github" class="article-kind-icon github-icon" />
-        <BootstrapIcon v-if="isMastodonArticle" icon="mastodon" class="article-kind-icon mastodon-icon" />
-        <BootstrapIcon v-if="isMediumArticle" icon="medium" class="article-kind-icon medium-icon" />
-        <BootstrapIcon v-if="isPodcastArticle" icon="mic-fill" class="article-kind-icon podcast-icon" />
-        <BootstrapIcon v-if="isDeveloping" icon="lightning-charge-fill" class="article-kind-icon developing-story-icon" title="Developing story" />
-        <BootstrapIcon v-if="hasVideoMedia" icon="play-btn-fill" class="article-kind-icon media-video-icon" />
-        <template v-else>
-          <BootstrapIcon v-if="clickedAmount > 0" icon="arrow-up-right-square-fill" class="article-kind-icon clicked-icon" />
-          <BootstrapIcon v-if="favoriteInd === 1" icon="bookmark-fill" class="article-kind-icon star-icon" />
-          <BootstrapIcon v-if="hotInd === 1" icon="fire" class="article-kind-icon hot-icon" />
-          <BootstrapIcon v-if="hasInterestScore && !hasSourceIcon && !isDeveloping" icon="award-fill" class="article-kind-icon recommendation-icon" />
-          <BootstrapIcon v-else-if="isGroupedView && eventArticleCountTotal > 1 && !hasSourceIcon && !isDeveloping" icon="megaphone-fill" class="article-kind-icon event-icon" />
-        </template>
-        <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" @click="$emit('article-clicked')"><HighlightedText :text="title" :terms="highlightTerms" /></a>
-        <span v-else class="article-link"><HighlightedText :text="title" :terms="highlightTerms" /></span>
-      </div>
-      <div class="article-header-actions">
-        <ArticleActionsMenu :favoriteInd="favoriteInd" :favoritePending="favoritePending" :isReaderMode="isReaderMode" :status="status" @toggle-favorite="$emit('toggle-favorite')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" />
-      </div>
+  <header class="article-header">
+    <h5 class="article-header-left">
+      <BootstrapIcon v-if="isBlueSkyArticle" icon="bluesky" class="article-kind-icon bluesky-icon" />
+      <BootstrapIcon v-if="isRedditArticle" icon="reddit" class="article-kind-icon reddit-icon" />
+      <BootstrapIcon v-if="isGitHubArticle" icon="github" class="article-kind-icon github-icon" />
+      <BootstrapIcon v-if="isMastodonArticle" icon="mastodon" class="article-kind-icon mastodon-icon" />
+      <BootstrapIcon v-if="isMediumArticle" icon="medium" class="article-kind-icon medium-icon" />
+      <BootstrapIcon v-if="isPodcastArticle" icon="mic-fill" class="article-kind-icon podcast-icon" />
+      <BootstrapIcon v-if="isDeveloping" icon="lightning-charge-fill" class="article-kind-icon developing-story-icon" title="Developing story" />
+      <BootstrapIcon v-if="hasVideoMedia" icon="play-btn-fill" class="article-kind-icon media-video-icon" />
+      <template v-else>
+        <BootstrapIcon v-if="clickedAmount > 0" icon="arrow-up-right-square-fill" class="article-kind-icon clicked-icon" />
+        <BootstrapIcon v-if="favoriteInd === 1" icon="bookmark-fill" class="article-kind-icon star-icon" />
+        <BootstrapIcon v-if="hotInd === 1" icon="fire" class="article-kind-icon hot-icon" />
+        <BootstrapIcon v-if="hasInterestScore && !hasSourceIcon && !isDeveloping" icon="award-fill" class="article-kind-icon recommendation-icon" />
+        <BootstrapIcon v-else-if="isGroupedView && eventArticleCountTotal > 1 && !hasSourceIcon && !isDeveloping" icon="megaphone-fill" class="article-kind-icon event-icon" />
+      </template>
+      <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" @click="$emit('article-clicked')"><HighlightedText :text="title" :terms="highlightTerms" /></a>
+      <span v-else class="article-link"><HighlightedText :text="title" :terms="highlightTerms" /></span>
+    </h5>
+    <div class="article-header-actions">
+      <ArticleActionsMenu :favoriteInd="favoriteInd" :favoritePending="favoritePending" :isReaderMode="isReaderMode" :status="status" @toggle-favorite="$emit('toggle-favorite')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" />
     </div>
-  </h5>
+  </header>
 </template>
 
 <script>
@@ -105,22 +103,21 @@ export default {
 
 <style scoped>
 .article-header {
-  margin: 0 0 8px;
-  line-height: 1;
-}
-
-.article-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-family: var(--font-family);
   gap: 8px;
+  line-height: 1;
+  margin: 0;
 }
 
 .article-header-left {
   display: flex;
   align-items: center;
   flex: 1;
+  line-height: 1;
+  margin: 0;
   min-width: 0;
 }
 
@@ -130,10 +127,10 @@ export default {
 
 .article-link {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--article-affinity-title-color, var(--text-primary));
   font-size: var(--article-title-size, 22px);
   line-height: 1.25;
-  font-weight: 600;
+  font-weight: var(--article-affinity-title-weight, 600);
   letter-spacing: -0.01em;
   text-decoration: none;
   border-bottom: none;
@@ -195,11 +192,7 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .article-card .article-header .article-link) {
-  color: var(--text-primary);
-}
-
-:global(:root[data-theme='dark'] .article-card.event-article .article-header) {
-  background-color: var(--article-event-background-dark);
+  color: var(--article-affinity-title-color, var(--text-primary));
 }
 
 :global(:root[data-theme='dark'] .article-card .developing-story-icon) {

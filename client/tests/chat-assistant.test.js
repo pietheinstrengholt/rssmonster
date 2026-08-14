@@ -74,12 +74,17 @@ describe('ChatAssistant', () => {
     await textarea.trigger('keydown.enter');
 
     expect(sendChatMessages).toHaveBeenCalledOnce();
-    expect(sendChatMessages).toHaveBeenCalledWith([
-      { role: 'user', content: 'Summarize this feed' }
-    ]);
+    expect(sendChatMessages).toHaveBeenCalledWith(
+      [{ role: 'user', content: 'Summarize this feed' }],
+      expect.objectContaining({
+        onEvent: expect.any(Function),
+        signal: expect.any(AbortSignal)
+      })
+    );
     expect(wrapper.vm.chatInput).toBe('');
     expect(wrapper.vm.isLoading).toBe(true);
-    expect(wrapper.get('.loading-spinner').text()).toContain('Agent is thinking...');
+    expect(wrapper.get('.loading-spinner').text()).toContain('Agent is thinking…');
+    expect(wrapper.get('.loading-spinner').attributes('role')).toBe('status');
     expect(wrapper.get('.agent-chat-button--primary').attributes('disabled')).toBeDefined();
 
     deferred.resolve({ data: { output: '<p>A <strong>concise</strong> summary.</p>' } });
@@ -88,6 +93,9 @@ describe('ChatAssistant', () => {
     expect(wrapper.vm.isLoading).toBe(false);
     expect(wrapper.find('.loading-spinner').exists()).toBe(false);
     expect(wrapper.get('.user-message').text()).toContain('Summarize this feed');
+    expect(wrapper.findAll('.agent-chat-message-author').map(label => label.text()))
+      .toEqual(['You', 'Assistant']);
+    expect(wrapper.get('.agent-chat-conversation').attributes('aria-live')).toBe('polite');
     expect(wrapper.get('.assistant-message-content p').text()).toBe('A concise summary.');
     expect(wrapper.get('.assistant-message-content strong').text()).toBe('concise');
   });
@@ -121,7 +129,8 @@ describe('ChatAssistant', () => {
 
     expect(sendChatMessages).toHaveBeenCalledOnce();
     expect(wrapper.vm.messages).toEqual([
-      { role: 'user', content: 'First question' }
+      { role: 'user', content: 'First question' },
+      { role: 'assistant', content: '' }
     ]);
     expect(wrapper.vm.chatInput).toBe('Second question');
 
@@ -195,7 +204,8 @@ describe('ChatAssistant', () => {
     await flushPromises();
 
     expect(wrapper.vm.messages).toEqual([
-      { role: 'user', content: 'Pending question' }
+      { role: 'user', content: 'Pending question' },
+      { role: 'assistant', content: '' }
     ]);
     expect(wrapper.vm.isLoading).toBe(false);
   });
@@ -231,6 +241,33 @@ describe('ChatAssistant', () => {
 
     expect(response.get('h3').text()).toBe('Summary');
     expect(response.findAll('li').map(item => item.text())).toEqual(['First item', 'Second item']);
+  });
+
+  it('renders streamed snapshots and tool progress before completion', async () => {
+    const deferred = createDeferred();
+    sendChatMessages.mockReturnValueOnce(deferred.promise);
+    const wrapper = mountChatAssistant();
+
+    await wrapper.get('#chatTextarea').setValue('Find recent articles');
+    await wrapper.get('.agent-chat-button--primary').trigger('click');
+    const options = sendChatMessages.mock.calls[0][1];
+
+    options.onEvent({
+      event: 'tool_status',
+      data: { name: 'search_articles_by_keyword', status: 'started' }
+    });
+    options.onEvent({
+      event: 'text',
+      data: { output: '<p>First streamed result</p>' }
+    });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get('.loading-spinner').text()).toContain('Using search articles by keyword…');
+    expect(wrapper.get('.assistant-message-content').text()).toBe('First streamed result');
+
+    deferred.resolve({ data: { output: '<p>Complete result</p>' } });
+    await flushPromises();
+    expect(wrapper.get('.assistant-message-content').text()).toBe('Complete result');
   });
 
   it('preserves escaped plain-text rendering for user messages', async () => {

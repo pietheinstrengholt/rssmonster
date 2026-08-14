@@ -103,19 +103,22 @@
         </div>
       </div>
 
-      <div
+      <article
         v-for="article in readerListArticles"
         :key="article.id"
         class="article-reader__item"
         :class="{ 'article-reader__item--selected': article.id === selectedArticleId }"
-        role="button"
-        tabindex="0"
-        :aria-current="article.id === selectedArticleId ? 'true' : null"
-        :ref="element => setArticleItemRef(element, article.id)"
-        @click="selectArticle(article.id)"
-        @keydown.enter.stop.prevent="selectArticle(article.id)"
-        @keydown.space.stop.prevent="selectArticle(article.id)"
       >
+        <button
+          :ref="element => setArticleItemRef(element, article.id)"
+          type="button"
+          class="article-reader__selection"
+          :aria-label="`Select article: ${article.title || 'Untitled article'}`"
+          :aria-current="article.id === selectedArticleId ? 'true' : null"
+          @click="selectArticle(article.id)"
+          @keydown.enter.stop.prevent="selectArticle(article.id)"
+          @keydown.space.stop.prevent="selectArticle(article.id)"
+        ></button>
         <span class="article-reader__item-content">
           <span class="article-reader__item-title"><HighlightedText :text="article.title" :terms="highlightTerms" /></span>
           <span v-if="articlePreview(article)" class="article-reader__item-preview"><HighlightedText :text="articlePreview(article)" :terms="highlightTerms" /></span>
@@ -147,7 +150,7 @@
           </span>
         </span>
         <img v-if="thumbnailUrl(article)" class="article-reader__thumbnail" :src="thumbnailUrl(article)" alt="" loading="lazy" />
-      </div>
+      </article>
 
       <div id="article-load-sentinel" ref="loadMoreSentinel" class="article-load-sentinel" aria-hidden="true"></div>
       <div v-if="collectionProgress.paginationError" class="app-notice app-notice--danger" role="alert">
@@ -699,7 +702,7 @@ export default {
       }
 
       const command = getArticleKeyboardCommand(event, {
-        allowInteractiveTarget: event.target?.classList?.contains('article-reader__item'),
+        allowInteractiveTarget: event.target?.classList?.contains('article-reader__selection'),
         checkEditableAncestors: false
       });
       if (!command) return;
@@ -1033,6 +1036,7 @@ export default {
   grid-template-columns: minmax(0, 1fr) auto;
   margin-bottom: 8px;
   padding: 10px 12px;
+  position: relative;
   text-align: left;
   transition: background-color 0.15s ease, border-color 0.15s ease;
   width: 100%;
@@ -1043,11 +1047,22 @@ export default {
   border-color: var(--reader-list-item-hover-border);
 }
 
-.article-reader__item:focus:not(:focus-visible) {
+.article-reader__selection {
+  background: var(--color-transparent);
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+  inset: 0;
+  padding: 0;
+  position: absolute;
+  z-index: 1;
+}
+
+.article-reader__selection:focus:not(:focus-visible) {
   outline: none;
 }
 
-.article-reader__item:focus-visible {
+.article-reader__selection:focus-visible {
   outline: 3px solid var(--border-focus);
   outline-offset: -3px;
 }
@@ -1068,6 +1083,9 @@ export default {
 
 .article-reader__item-content {
   min-width: 0;
+  pointer-events: none;
+  position: relative;
+  z-index: 2;
 }
 
 .article-reader__item-kicker {
@@ -1128,6 +1146,9 @@ export default {
   font-weight: 500;
   gap: 0.25rem;
   text-decoration: none;
+  pointer-events: auto;
+  position: relative;
+  z-index: 3;
 }
 
 .article-preview-empty__link:hover {
@@ -1193,7 +1214,10 @@ export default {
   display: block;
   height: 72px;
   object-fit: cover;
+  pointer-events: none;
+  position: relative;
   width: 96px;
+  z-index: 2;
 }
 
 .article-reader__content {

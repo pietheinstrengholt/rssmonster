@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { sendChatMessages } from '../src/api/agent.js';
+import { compactAgentMessages, sendChatMessages } from '../src/api/agent.js';
 import {
   login,
   register,
@@ -129,15 +129,45 @@ describe('user and preference API contracts', () => {
   });
 
   // Verifies assistant messages use the longer agent timeout.
-  it('builds the agent chat request', () => {
+  it('builds and consumes the agent chat stream request', async () => {
     const messages = [{ role: 'user', content: 'Summarize this' }];
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(
+          'event: complete\ndata: {"output":"Summary"}\n\n'
+        ));
+        controller.close();
+      }
+    });
+    post.mockResolvedValue({ data: stream });
 
-    sendChatMessages(messages);
+    await expect(sendChatMessages(messages)).resolves.toEqual({
+      data: { output: 'Summary' }
+    });
 
-    expect(post).toHaveBeenCalledWith(
-      '/agent',
-      { messages },
-      { timeout: 60000 }
-    );
+    expect(post).toHaveBeenCalledWith('/agent', { messages }, expect.objectContaining({
+      adapter: 'fetch',
+      headers: { Accept: 'text/event-stream' },
+      responseType: 'stream',
+      timeout: 60000
+    }));
+  });
+
+  it('compacts rendered assistant messages before sending conversation history', () => {
+    const messages = [
+      { role: 'user', content: 'Earlier question' },
+      {
+        role: 'assistant',
+        content: '<h2>Rendered answer</h2><p>Full <strong>HTML</strong> response</p>',
+        historyContent: 'Short semantic answer using article IDs 7 and 9.'
+      },
+      { role: 'user', content: 'Current question' }
+    ];
+
+    expect(compactAgentMessages(messages)).toEqual([
+      { role: 'user', content: 'Earlier question' },
+      { role: 'assistant', content: 'Short semantic answer using article IDs 7 and 9.' },
+      { role: 'user', content: 'Current question' }
+    ]);
   });
 });

@@ -88,9 +88,9 @@ describe('crawl interval controls', () => {
     }, new Date('2026-07-01T00:00:00Z'))).toBe(false);
   });
 
-  it('acknowledges HTTP crawl triggers and contains asynchronous failures', async () => {
+  it('rejects HTTP crawl triggers that cannot create a user crawl run', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const next = vi.fn();
     const res = {
       json: vi.fn(),
       status: vi.fn()
@@ -98,22 +98,17 @@ describe('crawl interval controls', () => {
     res.json.mockReturnValue(res);
     res.status.mockReturnValue(res);
 
-    crawlController.crawlRssLinks(
+    await crawlController.crawlRssLinks(
       { userData: { userId: 2147483647 } },
       res,
-      vi.fn()
+      next
     );
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Crawling started.' });
-    await vi.waitFor(() => {
-      expect(errorSpy).toHaveBeenCalledWith(
-        'Error during async crawl:',
-        expect.stringContaining('SequelizeForeignKeyConstraintError:')
-      );
-    });
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'SequelizeForeignKeyConstraintError'
+    }));
+    expect(res.status).not.toHaveBeenCalled();
     logSpy.mockRestore();
-    errorSpy.mockRestore();
   });
 
   it('completes an HTTP crawl trigger for a user without feeds', async () => {
@@ -131,13 +126,19 @@ describe('crawl interval controls', () => {
     res.json.mockReturnValue(res);
     res.status.mockReturnValue(res);
 
-    crawlController.crawlRssLinks(
+    await crawlController.crawlRssLinks(
       { userData: { userId: user.id } },
       res,
       vi.fn()
     );
 
     expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Crawling started.',
+      crawlRunId: expect.any(Number),
+      status: 'running',
+      reused: false
+    });
     await vi.waitFor(() => {
       expect(logSpy).toHaveBeenCalledWith(
         expect.stringContaining('[CRAWL] SUMMARY')

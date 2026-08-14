@@ -60,6 +60,7 @@ import createHotlinkCountCache from '../services/crawl/runtime/hotlinkCountCache
 import createHotlinkBatcher from '../services/crawl/runtime/hotlinkBatcher.js';
 import { sanitizeFeedPersistenceMetadata } from '../services/feeds/feedPersistenceMetadata.js';
 import { sendNewArticlePush } from '../services/push/pushNotifications.js';
+import { createStartUserCrawl } from '../services/crawl/startUserCrawl.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -151,9 +152,7 @@ const CRAWL_TRIGGER_TYPES = new Set(['scheduled', 'api']);
  * ------------------------------------------------------------------ */
 
 // Helper function to wrap async functions and catch errors
-const catchAsync = fn => (req, res, next) => {
-  fn(req, res, next).catch(next);
-};
+const catchAsync = fn => (req, res, next) => fn(req, res, next).catch(next);
 
 // This function throws the abort reason at safe feed-processing boundaries.
 const throwIfAborted = signal => {
@@ -1482,7 +1481,15 @@ const performCrawl = async (userId = null, options = {}) => {
   const activeCrawlRun = userId ? await findActiveCrawlRun(userId) : null;
 
   if (activeCrawlRun && !isStaleCrawlRun(activeCrawlRun)) {
-    return crawlAlreadyRunningResult(userId, activeCrawlRun);
+    const result = crawlAlreadyRunningResult(userId, activeCrawlRun);
+    options.onCrawlStarted?.({
+      userId,
+      crawlRunId: activeCrawlRun.id,
+      status: 'running',
+      reused: true,
+      reason: result.reason
+    });
+    return result;
   }
 
   if (activeCrawlRun) {
@@ -1526,8 +1533,24 @@ const performCrawl = async (userId = null, options = {}) => {
         throw err;
       }
 
-      return crawlAlreadyRunningResult(userId, concurrentCrawlRun);
+      const result = crawlAlreadyRunningResult(userId, concurrentCrawlRun);
+      options.onCrawlStarted?.({
+        userId,
+        crawlRunId: concurrentCrawlRun.id,
+        status: 'running',
+        reused: true,
+        reason: result.reason
+      });
+      return result;
     }
+
+    options.onCrawlStarted?.({
+      userId,
+      crawlRunId: crawlRun.id,
+      status: 'running',
+      reused: false,
+      reason: null
+    });
   }
 
   let result;
@@ -1669,6 +1692,10 @@ const performCrawlWithSemanticGrouping = async (userId = null, options = {}) => 
   return result;
 };
 
+export const startUserCrawl = createStartUserCrawl(
+  performCrawlWithSemanticGrouping
+);
+
 /* ------------------------------------------------------------------
  * HTTP handler
  * ------------------------------------------------------------------ */
@@ -1677,20 +1704,26 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
   const userId = req.userData?.userId || null;
   logFeedDebug(`[Crawl] HTTP trigger by userId: ${userId ?? 'unknown'}`);
   try {
-    // For HTTP requests, start crawling asynchronously and return immediately
-    performCrawlWithSemanticGrouping(userId, { triggerType: 'api' })
-      .then(async result => {
+    const started = await startUserCrawl(userId, {
+      triggerType: 'api',
+      onComplete: result => {
         resetRateLimitDelay();
         logFeedDebug(
           `Crawl completed: ${result.processed} feeds processed, ${result.errors} errors, ${result.timeouts} timeouts`
         );
-      })
-      .catch(err => {
+      },
+      onError: err => {
         resetRateLimitDelay();
         console.error('Error during async crawl:', sanitizeFeedLogValue(err));
-      });
+      }
+    });
 
-    return res.status(200).json({ message: 'Crawling started.' });
+    return res.status(200).json({
+      message: started.reused ? 'Crawl already running.' : 'Crawling started.',
+      crawlRunId: started.crawlRunId,
+      status: started.status,
+      reused: started.reused
+    });
   } catch (err) {
     console.error('Error in crawlRssLinks:', sanitizeFeedLogValue(err));
     return next(err);
@@ -1699,6 +1732,7 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
 
 export default {
   crawlRssLinks,
+  startUserCrawl,
   performCrawlWithSemanticGrouping,
   performCrawl,
   shouldCrawlFeed

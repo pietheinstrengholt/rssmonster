@@ -104,8 +104,16 @@ describe('Article rendering containment', () => {
   // Verifies keyboard focus is visible on both compact and Reader article rows.
   it('defines focus-visible rings independently from article selection', () => {
     expect(articleSource).toMatch(/\.article-list-card:focus-visible\s*\{[^}]*outline:\s*3px solid var\(--border-focus\);/s);
-    expect(readerLayoutSource).toMatch(/\.article-reader__item:focus-visible\s*\{[^}]*outline:\s*3px solid var\(--border-focus\);/s);
+    expect(readerLayoutSource).toMatch(/\.article-reader__selection:focus-visible\s*\{[^}]*outline:\s*3px solid var\(--border-focus\);/s);
     expect(articleSource).not.toMatch(/\.article-list-card\.article-list-card-selected:focus\s*\{[^}]*outline:\s*0;/s);
-    expect(readerLayoutSource).not.toMatch(/\.article-reader__item:focus-visible\s*\{[^}]*outline:\s*none;/s);
+    expect(readerLayoutSource).not.toMatch(/\.article-reader__selection:focus-visible\s*\{[^}]*outline:\s*none;/s);
+  });
+
+  // Verifies Reader selection and original navigation are sibling controls rather than nested interactions.
+  it('uses a native Reader selection control beside the original link', () => {
+    expect(readerLayoutSource).toContain('<article\n        v-for="article in readerListArticles"');
+    expect(readerLayoutSource).toContain('class="article-reader__selection"');
+    expect(readerLayoutSource).not.toContain('role="button"');
+    expect(readerLayoutSource).not.toMatch(/<button[^>]*article-reader__selection(?:(?!<\/button>)[\s\S])*<a[^>]*article-preview-empty__link/s);
   });
 });

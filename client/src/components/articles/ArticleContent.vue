@@ -89,11 +89,11 @@ export default {
 <style scoped>
 .article-content-wrapper {
   color: var(--text-primary);
-  padding-top: 6px;
+  padding-top: var(--article-space-normal, 8px);
   font-size: 14px;
   line-height: 1.65;
   font-weight: 400;
-  margin: 1px 0 5px;
+  margin: 0 0 var(--article-space-tight, 4px);
 }
 
 .article-full-content {
@@ -106,13 +106,13 @@ export default {
 
 .article-content-wrapper--minimal {
   margin: 0;
-  padding: 10px 16px 12px 70px;
+  padding: var(--article-space-section, 12px) 16px var(--article-space-section, 12px) 70px;
   background: var(--surface-page);
   border-bottom: 1px solid var(--article-border, var(--border-subtle));
 }
 
 .article-summary {
-  margin: 5px 0;
+  margin: var(--article-space-tight, 4px) 0;
   padding-left: 20px;
   list-style-type: disc;
 }
@@ -121,7 +121,7 @@ export default {
   color: var(--article-content-text);
   font-family: var(--font-family);
   font-size: 14px;
-  margin-bottom: 6px;
+  margin-bottom: var(--article-space-normal, 8px);
   line-height: 1.5;
 }
 
@@ -130,10 +130,6 @@ export default {
   background: var(--surface-page);
   border-color: var(--surface-page);
   border-bottom-color: var(--border-subtle);
-}
-
-:global(:root[data-theme='dark'] .article-card.event-article .article-content-wrapper) {
-  background-color: var(--article-event-background-dark);
 }
 
 :global(:root[data-theme='dark'] .article-card .article-summary li) {

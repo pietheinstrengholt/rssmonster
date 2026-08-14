@@ -81,7 +81,7 @@ export default {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  color: var(--text-muted);
+  color: var(--article-affinity-meta-color, var(--text-muted));
   font-size: 13px;
   line-height: 1.3;
   max-width: 100%;
@@ -107,7 +107,7 @@ export default {
 
 .article-published,
 .article-source a {
-  color: var(--text-muted);
+  color: var(--article-affinity-meta-color, var(--text-muted));
 }
 
 .article-provenance-separator {
@@ -244,11 +244,7 @@ export default {
 :global(:root[data-theme='dark'] .article-card .article-meta),
 :global(:root[data-theme='dark'] .article-card .article-meta .article-published),
 :global(:root[data-theme='dark'] .article-card .article-meta .article-source a) {
-  color: var(--text-secondary);
-}
-
-:global(:root[data-theme='dark'] .article-card.event-article .article-meta) {
-  background-color: var(--article-event-background-dark);
+  color: var(--article-affinity-meta-color, var(--text-secondary));
 }
 
 :global(:root[data-theme='dark'] .article-card .similar-badge) {

@@ -1058,7 +1058,7 @@ describe('Vue template handler coverage', () => {
     await wrapper.get('.bulk-more-button').trigger('click');
     for (const button of wrapper.findAll('.bulk-action-menu-item')) await button.trigger('click');
     await wrapper.get('.article-list-bulk-tag').trigger('click');
-    await wrapper.get('.article-reader__item').trigger('keydown', { key: 'Enter' });
+    await wrapper.get('.article-reader__selection').trigger('click');
     await wrapper.get('.article-refresh-state').trigger('click');
     expect(stores.selectionStore.setCurrentSelection).toHaveBeenCalledWith({ tag: 'AI' });
     expect(wrapper.emitted('bulk-action')).toBeTruthy();

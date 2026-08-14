@@ -190,12 +190,12 @@ describe('keyboard access and focus', () => {
     ['Space', ' ']
   ])('selects reader articles with %s', async (_label, key) => {
     const wrapper = mountReaderLayout();
-    const items = wrapper.findAll('.article-reader__item');
+    const controls = wrapper.findAll('.article-reader__selection');
     await wrapper.setData({ selectedArticleId: 1 });
 
-    await items[1].trigger('keydown', { key });
+    await controls[1].trigger('keydown', { key });
 
-    expect(items[1].attributes('aria-current')).toBe('true');
+    expect(controls[1].attributes('aria-current')).toBe('true');
     expect(wrapper.emitted('mark-previous-article-read')?.[0]).toEqual([1]);
     wrapper.unmount();
   });
@@ -213,8 +213,8 @@ describe('keyboard access and focus', () => {
     }));
     await flushPromises();
 
-    const items = wrapper.findAll('.article-reader__item');
-    expect(document.activeElement).toBe(items[1].element);
+    const controls = wrapper.findAll('.article-reader__selection');
+    expect(document.activeElement).toBe(controls[1].element);
     expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
     expect(readerArticlePanel.scrollTop).toBe(0);
     wrapper.unmount();

@@ -28,6 +28,16 @@ function mountArticleHeader(props = {}) {
 }
 
 describe('ArticleHeader search highlighting', () => {
+  it('keeps the title heading separate from the actions region', () => {
+    const wrapper = mountArticleHeader({ url: 'https://example.com/article' });
+    const header = wrapper.get('header.article-header');
+    const heading = header.get('h5.article-header-left');
+
+    expect(heading.get('.article-link').text()).toBe('Article title');
+    expect(heading.find('.article-header-actions').exists()).toBe(false);
+    expect(header.get('.article-header-actions').element.parentElement).toBe(header.element);
+  });
+
   it('keeps highlighted title segments inside one title link', () => {
     const wrapper = mountArticleHeader({
       title: '5 years later, Windows 10 refuses to die and Microsoft pushes Windows 11',

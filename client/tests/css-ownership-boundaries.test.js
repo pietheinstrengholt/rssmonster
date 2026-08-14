@@ -68,6 +68,13 @@ describe('CSS ownership boundaries', () => {
     expect(desktopToolbarSource).not.toContain('margin-right: 128px');
   });
 
+  // Verifies mobile filter appearance stays consistent while only toolbar layout changes at hybrid widths.
+  it('uses one mobile filter treatment through the mobile toolbar range', () => {
+    expect(mobileToolbarSource).toMatch(/@media \(max-width: 879px\)\s*\{[\s\S]*?\.mobile-filter-button\s*\{[^}]*height:\s*var\(--shell-filter-control-height, 34px\);[^}]*border-radius:\s*8px;/s);
+    expect(mobileToolbarSource).toMatch(/@media \(max-width: 879px\)\s*\{[\s\S]*?\.mobile-selection-settings-button\s*\{[^}]*display:\s*inline-flex;/s);
+    expect(mobileToolbarSource).not.toMatch(/@media \(min-width: 768px\) and \(max-width: 879px\)[\s\S]*?\.mobile-filter-button\s*\{[^}]*box-shadow:\s*none;/s);
+  });
+
   // Verifies shell and Reader scroll surfaces use native styling without JavaScript visibility state.
   it('keeps native scrollbar presentation with each scroll owner', () => {
     expect(appShellSource).toMatch(/\.app-shell__sidebar\s*\{[^}]*scrollbar-color:\s*var\(--color-transparent\) var\(--color-transparent\);/s);
@@ -153,7 +160,7 @@ describe('CSS ownership boundaries', () => {
       expect(source).toContain('<style scoped');
     }
 
-    expect(articleHeaderSource).toContain('.article-header-row');
+    expect(articleHeaderSource).toContain('.article-header-left');
     expect(articleMetaSource).toContain('.article-provenance');
     expect(articleTagsSource).toContain('.score.score-good');
     expect(articleContentSource).toContain('.article-content-wrapper');
@@ -161,12 +168,36 @@ describe('CSS ownership boundaries', () => {
     expect(articleHeadlineSource).toContain('.article-list-row');
     expect(articlePreviewFallbackSource).toContain('.article-preview-empty');
 
-    expect(articleSource).not.toContain('.article-header-row');
+    expect(articleSource).not.toContain('.article-header-left');
     expect(articleSource).not.toContain('.article-provenance');
     expect(articleSource).not.toContain('.mobile-score-icon');
     expect(articleSource).not.toContain('.article-tags .score');
     expect(articleSource).not.toContain('.article-list-row');
     expect(articleSource).not.toContain('.article-preview-empty');
+  });
+
+  // Verifies compact article states follow selection, grouping, read, and icon precedence.
+  it('keeps compact article state treatments deterministic', () => {
+    expect(articleHeadlineSource).toMatch(/\.article-list-row\s*\{[^}]*border-left:\s*3px solid var\(--color-transparent\);/s);
+    expect(articleHeadlineSource).toMatch(/article-list-card\.article-list-card-selected \.article-list-row\)\s*\{[^}]*background:\s*var\(--reader-list-item-selected-background\);[^}]*border-left-color:\s*var\(--reader-list-item-selected-accent\);/s);
+    expect(articleHeadlineSource).toMatch(/\.article-list-row\.is-read \.article-list-title \.article-link\s*\{[^}]*color:\s*var\(--text-secondary\);[^}]*font-weight:\s*600;/s);
+    expect(articleHeadlineSource).toContain('class="hot-icon"');
+    expect(articleHeadlineSource).not.toMatch(/\.article-list-row\.(?:favorited|hot)\s*\{/);
+    expect(articleHeadlineSource).not.toMatch(/article-list-row\.(?:active|selected)/);
+    expect(articleHeadlineSource).not.toMatch(/article-list-card\.event-article \.article-list-row/);
+  });
+
+  // Verifies similar articles use ordinary article surfaces in every theme.
+  it('does not add event backgrounds to article presentation', () => {
+    for (const source of [articleSource, articleContentSource, articleHeaderSource, articleMetaSource, articleHeadlineSource]) {
+      expect(source).not.toMatch(/event-article[^\{]*\{[^}]*background/s);
+    }
+  });
+
+  // Verifies favorite and hot states stay on indicators instead of styling the expanded article body.
+  it('does not apply favorite or hot state classes to the article body', () => {
+    expect(articleSource).not.toContain("{ favorited: favoriteInd === 1, hot: hotInd === 1 }");
+    expect(articleSource).not.toMatch(/\.article-body\.(?:favorited|hot)/);
   });
 
   // Verifies metadata children contribute their badges to one shared wrapping row at every width.
@@ -177,5 +208,29 @@ describe('CSS ownership boundaries', () => {
     expect(articleSource).toMatch(/\.meta-row :deep\(\.article-meta\),\s*\.article-card \.meta-row :deep\(\.article-tags\)\s*\{\s*display: contents;/s);
     expect(sharedMetadataRuleIndex).toBeGreaterThanOrEqual(0);
     expect(sharedMetadataRuleIndex).toBeLessThan(mobileMetadataQueryIndex);
+  });
+
+  // Verifies low-affinity presentation quiets hierarchy without dimming content or controls.
+  it('keeps low-affinity de-emphasis targeted', () => {
+    expect(articleSource).toMatch(/\.article-body\.affinity-cold,[\s\S]*?\.article-body\.affinity-ignore\s*\{[^}]*--article-affinity-title-color:[^}]*--article-affinity-title-weight:[^}]*--article-affinity-meta-color:/s);
+    expect(articleSource).not.toMatch(/\.article-body\.affinity-[^{]+\{[^}]*opacity:/s);
+    expect(articleHeaderSource).toContain('var(--article-affinity-title-color, var(--text-primary))');
+    expect(articleHeaderSource).toContain('var(--article-affinity-title-weight, 600)');
+    expect(articleMetaSource).toContain('var(--article-affinity-meta-color, var(--text-muted))');
+  });
+
+  // Verifies article content uses balanced inline padding and a small divider-to-title inset.
+  it('keeps article body inline padding balanced with normal top spacing', () => {
+    expect(articleSource).toContain('--article-inline-padding: 16px');
+    expect(articleSource).toMatch(/\.article-card \.article-body\s*\{[^}]*padding:\s*var\(--article-space-normal\) var\(--article-inline-padding\) var\(--article-space-tight\);/s);
+    expect(articleSource).not.toContain('padding: var(--article-space-tight) 48px');
+  });
+
+  // Verifies stream separation belongs to the divider instead of article position exceptions.
+  it('uses divider rhythm instead of first-article spacing corrections', () => {
+    expect(articleSource).not.toContain('.article-card:first-child');
+    expect(articleSource).not.toMatch(/\.article-card \.article-body\s*\{[^}]*margin-top:/s);
+    expect(articleSource).not.toMatch(/\.article-list-card\s*\{[^}]*padding-top:/s);
+    expect(articleSource).toMatch(/\.article-divider\s*\{[^}]*margin:\s*var\(--article-space-section\) 18px var\(--article-space-section\) 16px;/s);
   });
 });

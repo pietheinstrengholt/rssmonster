@@ -1,7 +1,7 @@
 <template>
   <div
     class="article-list-row mobile-swipe-content"
-    :class="{ 'is-read': status === 'read', favorited: favoriteInd === 1, hot: hotInd === 1 }"
+    :class="{ 'is-read': status === 'read' }"
     :style="mobileSwipeStyle"
     @click="$emit('article-touched', $event)"
     @touchstart.passive="$emit('swipe-touch-start', $event)"
@@ -26,6 +26,7 @@
         <span class="article-list-dot">·</span>
         <span v-if="showSourceBadge" class="source-badge" :title="`${sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ sourceCount }} sources</span>
         <BootstrapIcon v-if="isDevelopingStory" icon="lightning-charge-fill" class="developing-story-icon" title="Developing story" aria-label="Developing story" />
+        <BootstrapIcon v-if="hotInd === 1" icon="fire" class="hot-icon" title="Hot article" aria-label="Hot article" />
         <button v-if="showSimilarBadge" type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', eventId)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
         <button v-if="duplicateCount > 0" type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="$emit('view-duplicate-articles')">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>
         <button v-for="tag in ruleTags" :key="'list-rule-' + tag.id" type="button" class="tag tag-rule" :aria-label="`Filter articles by tag ${formatTagName(tag.name)}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name) }}</button>
@@ -125,6 +126,7 @@ export default {
   column-gap: 12px;
   align-items: center;
   border-bottom: 1px solid var(--article-border, var(--border-subtle));
+  border-left: 3px solid var(--color-transparent);
   background: var(--surface-page);
   font-family: var(--font-family);
 }
@@ -133,26 +135,9 @@ export default {
   background: var(--surface-chrome);
 }
 
-:global(.article-card.active .article-list-row),
-.article-list-row.active,
-.article-list-row.selected {
-  background: var(--article-active-background);
-}
-
-.article-list-row.hot {
-  border-color: var(--article-highlight-border);
-}
-
-.article-list-row.favorited {
-  background-color: var(--desktop-toolbar-background);
-}
-
-:global(.article-list-card.event-article .article-list-row) {
-  background-color: var(--article-event-background);
-}
-
 :global(.article-list-card.article-list-card-selected .article-list-row) {
   background: var(--reader-list-item-selected-background);
+  border-left-color: var(--reader-list-item-selected-accent);
 }
 
 :global(.article-list-card.article-list-card-selected .article-list-row:hover) {
@@ -214,6 +199,11 @@ export default {
 .article-list-title a:hover {
   color: var(--article-heading-text);
   text-decoration: none;
+}
+
+.article-list-row.is-read .article-list-title .article-link {
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .article-list-meta {
@@ -296,13 +286,21 @@ export default {
   font-size: 10px;
 }
 
-.developing-story-icon {
+.developing-story-icon,
+.hot-icon {
   display: inline-flex;
   align-items: center;
-  color: var(--article-developing-icon);
   font-size: 0.875rem;
   line-height: 1;
   vertical-align: middle;
+}
+
+.developing-story-icon {
+  color: var(--article-developing-icon);
+}
+
+.hot-icon {
+  color: var(--article-hot-icon);
 }
 
 .tag:focus-visible,
@@ -380,24 +378,9 @@ export default {
   background: var(--surface-control);
 }
 
-:global(:root[data-theme='dark'] .article-card .article-list-row.active),
-:global(:root[data-theme='dark'] .article-card .article-list-row.selected),
-:global(:root[data-theme='dark'] .article-card.active .article-list-row) {
-  background: var(--surface-selected);
-}
-
-:global(:root[data-theme='dark'] .article-list-card.event-article .article-list-row) {
-  background-color: var(--article-event-background-dark);
-}
-
-:global(:root[data-theme='dark'] .article-card .article-list-row.hot),
-:global(:root[data-theme='dark'] .article-card .article-list-row.favorited) {
-  background-color: var(--surface-page);
-  border-color: var(--border-default);
-}
-
 :global(:root[data-theme='dark'] .article-list-card.article-list-card-selected .article-list-row) {
   background: var(--reader-list-item-selected-background);
+  border-left-color: var(--reader-list-item-selected-accent);
 }
 
 :global(:root[data-theme='dark'] .article-list-card.article-list-card-selected .article-list-row:hover) {
@@ -416,6 +399,10 @@ export default {
 :global(:root[data-theme='dark'] .article-card .article-list-title a),
 :global(:root[data-theme='dark'] .article-card .article-list-title a:hover) {
   color: var(--article-heading-text);
+}
+
+:global(:root[data-theme='dark'] .article-card .article-list-row.is-read .article-list-title .article-link) {
+  color: var(--text-secondary);
 }
 
 :global(:root[data-theme='dark'] .article-card .article-list-action-button:hover),

@@ -7,6 +7,7 @@ import { fetchTopicArticles } from '../src/api/topics.js';
 import ArticleActionsMenu from '../src/components/articles/ArticleActionsMenu.vue';
 import ArticleContent from '../src/components/articles/ArticleContent.vue';
 import ArticleHeader from '../src/components/articles/ArticleHeader.vue';
+import ArticleHeadlineRow from '../src/components/articles/ArticleHeadlineRow.vue';
 import {
   articleExpansionMethods,
   createArticleExpansionState
@@ -210,6 +211,35 @@ describe('ArticleActionsMenu', () => {
     expect(wrapper.get('.app-dropdown__menu').classes()).toContain('app-dropdown__menu--align-end');
   });
 
+});
+
+describe('ArticleHeadlineRow state presentation', () => {
+  it('keeps read state on typography and favorite, hot, and developing states on icons', () => {
+    const wrapper = mount(ArticleHeadlineRow, {
+      props: {
+        title: 'Combined article states',
+        status: 'read',
+        favoriteInd: 1,
+        hotInd: 1,
+        isDevelopingStory: true,
+        hasArticlePreview: true
+      },
+      global: {
+        stubs: {
+          ArticleActionsMenu: true,
+          BootstrapIcon: BootstrapIconStub
+        }
+      }
+    });
+
+    expect(wrapper.get('.article-list-row').classes()).toEqual([
+      'article-list-row',
+      'mobile-swipe-content',
+      'is-read'
+    ]);
+    expect(wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon')))
+      .toEqual(expect.arrayContaining(['circle-fill', 'lightning-charge-fill', 'fire', 'bookmark-fill']));
+  });
 });
 
 describe('ArticleContent presentation', () => {

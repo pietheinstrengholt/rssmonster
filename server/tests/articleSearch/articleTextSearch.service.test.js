@@ -1,11 +1,45 @@
 import { Op } from 'sequelize';
 import { describe, expect, it } from 'vitest';
-import { buildTextSearchWhereClause } from '../../services/articleSearch/articleTextSearch.service.js';
+import {
+  buildArticleKeywordWhereClause,
+  buildTextSearchWhereClause
+} from '../../services/articleSearch/articleTextSearch.service.js';
 
 // Reads symbol-keyed Sequelize conditions without depending on dialect rendering.
 const andConditions = whereClause => whereClause[Op.and] || [];
 
 describe('articleTextSearch.service', () => {
+  it('adapts plain keyword input to normalized title and contentText search', () => {
+    const clause = buildArticleKeywordWhereClause({ search: 'open source' });
+
+    expect(andConditions(clause)).toHaveLength(2);
+    expect(andConditions(clause).every(condition => (
+      condition[Op.or].map(predicate => predicate.attribute.args[0].col).join(',')
+        === 'title,contentText'
+    ))).toBe(true);
+  });
+
+  it('uses the MySQL full-text index for MCP-style keyword input', () => {
+    const clause = buildArticleKeywordWhereClause({
+      search: 'open source reader',
+      dialect: 'mysql',
+      escapeValue: value => `'${value}'`
+    });
+
+    expect(andConditions(clause)[0].val).toBe(
+      "MATCH(`title`, `contentText`) AGAINST ('+open* +source* +reader*' IN BOOLEAN MODE)"
+    );
+  });
+
+  it('preserves quoted phrase semantics for MCP-style keyword input', () => {
+    const clause = buildArticleKeywordWhereClause({ search: '"climate report"' });
+
+    expect(andConditions(clause)).toHaveLength(1);
+    expect(andConditions(clause)[0][Op.or].map(
+      condition => condition.attribute.args[0].col
+    )).toEqual(['title', 'contentText']);
+  });
+
   // Leaves the predicate empty when no textual intent is present.
   it('returns an empty clause without text filters', () => {
     expect(buildTextSearchWhereClause({

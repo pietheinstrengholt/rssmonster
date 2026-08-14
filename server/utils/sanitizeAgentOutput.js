@@ -85,4 +85,14 @@ function sanitizeAgentOutput(html) {
   });
 }
 
+// Converts rendered assistant HTML into compact plain text for conversational history.
+export function agentOutputToText(html) {
+  return sanitizeHtml(String(html || ''), {
+    allowedTags: [],
+    allowedAttributes: {}
+  })
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export default sanitizeAgentOutput;

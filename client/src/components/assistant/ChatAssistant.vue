@@ -20,20 +20,21 @@
             <button type="button" class="agent-chat-button agent-chat-button--primary" :disabled="!chatInput.trim() || isLoading" @click="submitChat">Submit</button>
             <button type="button" class="agent-chat-button agent-chat-button--secondary" :disabled="messages.length === 0" @click="clearConversation">Clear</button>
         </div>
-        <div v-if="isLoading" class="loading-spinner">
-            <div class="app-loading-indicator app-loading-indicator--accent" role="status">
+        <div v-if="isLoading" class="loading-spinner" role="status">
+            <div class="app-loading-indicator app-loading-indicator--accent" aria-hidden="true">
                 <span class="app-visually-hidden">Loading...</span>
             </div>
-            <span>Agent is thinking...</span>
+            <span>{{ streamingStatus }}</span>
         </div>
-        <div v-if="messages.length > 0">
-            <h5 class="agent-chat-response-heading">Response:</h5>
+        <div v-if="messages.length > 0" class="agent-chat-conversation" aria-live="polite">
               <div v-for="(message, index) in messages" :key="`${message.role}-${index}`">
                 <div class="user-message" v-if="message.role === 'user'">
-                    <strong>You:</strong> {{ message.content }}
+                    <span class="agent-chat-message-author">You</span>
+                    <div class="user-message-content">{{ message.content }}</div>
                 </div>
                 <div class="assistant-message" v-else-if="message.role === 'assistant'">
-                    <strong>Assistant:</strong> <div class="assistant-message-content" v-html="message.content"></div>
+                    <span class="agent-chat-message-author">Assistant</span>
+                    <div class="assistant-message-content" v-html="message.content"></div>
                 </div>
               </div>
         </div>
@@ -55,8 +56,7 @@ div#inputArea {
   line-height: 1.65;
 }
 
-#inputArea .app-form-label,
-.agent-chat-response-heading {
+#inputArea .app-form-label {
   color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
@@ -76,9 +76,9 @@ div#inputArea {
   font-size: 14px;
   font-weight: 400;
   line-height: 1.65;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 5px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 8px;
 }
 
 .assistant-message {
@@ -87,18 +87,30 @@ div#inputArea {
   font-size: 14px;
   font-weight: 400;
   line-height: 1.65;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 5px;
+  min-width: 0;
+  padding: 14px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
 }
 
-.user-message strong,
-.assistant-message strong {
+.agent-chat-message-author {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
   font-weight: 600;
+  line-height: 1.4;
+}
+
+.user-message-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .assistant-message-content {
-  white-space: pre-wrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .assistant-message-content :deep(> :first-child) {
@@ -111,10 +123,98 @@ div#inputArea {
 
 .assistant-message-content :deep(a) {
   color: var(--color-link);
+  overflow-wrap: anywhere;
 }
 
-.assistant-message-content :deep(a:hover) {
+.assistant-message-content :deep(a:hover),
+.assistant-message-content :deep(a:focus-visible) {
   color: var(--color-link-hover);
+}
+
+.assistant-message-content :deep(h1),
+.assistant-message-content :deep(h2),
+.assistant-message-content :deep(h3),
+.assistant-message-content :deep(h4),
+.assistant-message-content :deep(h5),
+.assistant-message-content :deep(h6) {
+  margin: 1.25em 0 0.5em;
+  color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.assistant-message-content :deep(h1) { font-size: 24px; }
+.assistant-message-content :deep(h2) { font-size: 21px; }
+.assistant-message-content :deep(h3) { font-size: 18px; }
+.assistant-message-content :deep(h4) { font-size: 16px; }
+.assistant-message-content :deep(h5) { font-size: 15px; }
+.assistant-message-content :deep(h6) { font-size: 14px; }
+
+.assistant-message-content :deep(p),
+.assistant-message-content :deep(ul),
+.assistant-message-content :deep(ol),
+.assistant-message-content :deep(dl),
+.assistant-message-content :deep(blockquote) {
+  margin: 0 0 0.85em;
+}
+
+.assistant-message-content :deep(ul),
+.assistant-message-content :deep(ol) {
+  padding-inline-start: 1.4rem;
+}
+
+.assistant-message-content :deep(li + li) {
+  margin-top: 0.75rem;
+}
+
+.assistant-message-content :deep(li > :last-child) {
+  margin-bottom: 0;
+}
+
+.assistant-message-content :deep(blockquote) {
+  padding-inline-start: 1rem;
+  border-inline-start: 3px solid var(--border-default);
+  color: var(--text-secondary);
+}
+
+.assistant-message-content :deep(pre) {
+  max-width: 100%;
+  margin: 1rem 0;
+  padding: 0.75rem;
+  overflow: auto;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--surface-card);
+  white-space: pre;
+}
+
+.assistant-message-content :deep(code) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
+}
+
+.assistant-message-content :deep(:not(pre) > code) {
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  background: var(--surface-card);
+}
+
+.assistant-message-content :deep(table) {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin: 1rem 0;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.assistant-message-content :deep(th),
+.assistant-message-content :deep(td) {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border-default);
+  text-align: start;
+  vertical-align: top;
 }
 
 .loading-spinner {
@@ -225,7 +325,9 @@ export default {
             chatInput: '',
             messages: [],
             isLoading: false,
-            conversationRequestId: 0
+            conversationRequestId: 0,
+            conversationAbortController: null,
+            streamingStatus: 'Agent is thinking…'
         };
     },
     watch: {
@@ -250,32 +352,53 @@ export default {
             const requestId = ++this.conversationRequestId;
             const inputMessage = { role: 'user', content: this.chatInput };
             this.messages.push(inputMessage);
+            const requestMessages = [...this.messages];
+            const assistantMessage = { role: 'assistant', content: '' };
+            this.messages.push(assistantMessage);
             this.chatInput = '';
             this.isLoading = true;
+            this.streamingStatus = 'Agent is thinking…';
+            this.conversationAbortController = new AbortController();
 
-            // This operation records either the assistant output or a safe fallback message.
-            sendChatMessages(this.messages)
+            // Stream sanitized snapshots into the placeholder assistant message.
+            sendChatMessages(requestMessages, {
+              signal: this.conversationAbortController.signal,
+              onEvent: ({ event, data }) => {
+                if (requestId !== this.conversationRequestId) return;
+                if (event === 'text' || event === 'complete') {
+                  assistantMessage.content = data.output;
+                } else if (event === 'history') {
+                  assistantMessage.historyContent = data.content;
+                } else if (event === 'tool_status') {
+                  const toolName = data.name.replaceAll('_', ' ');
+                  this.streamingStatus = data.status === 'started'
+                    ? `Using ${toolName}…`
+                    : `Finished ${toolName}; continuing…`;
+                } else if (event === 'status') {
+                  this.streamingStatus = data.message;
+                }
+              }
+            })
             .then(response => {
               if (requestId !== this.conversationRequestId) return;
-              this.messages.push({
-                role: 'assistant',
-                content: response.data.output
-              });
+              assistantMessage.content = response.data.output;
             })
             .catch(error => {
                 if (requestId !== this.conversationRequestId) return;
                 console.error('Error:', error);
-                this.messages.push({
-                    role: 'assistant',
-                    content: 'Sorry, there was an error processing your request.'
-                });
+                assistantMessage.content = 'Sorry, there was an error processing your request.';
             })
             .finally(() => {
-                if (requestId === this.conversationRequestId) this.isLoading = false;
+                if (requestId === this.conversationRequestId) {
+                  this.isLoading = false;
+                  this.conversationAbortController = null;
+                }
             });
         },
         // This function makes every outstanding response obsolete and releases local loading state.
         invalidatePendingConversation: function() {
+            this.conversationAbortController?.abort();
+            this.conversationAbortController = null;
             this.conversationRequestId++;
             this.isLoading = false;
         },

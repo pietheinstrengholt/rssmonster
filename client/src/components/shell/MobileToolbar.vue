@@ -349,6 +349,15 @@
 
 /* Preserves the circular action surfaces across portrait and landscape mobile toolbar layouts. */
 @media (max-width: 879px) {
+  .mobile-selection-settings-button {
+    display: inline-flex;
+  }
+
+  .mobile-filter-button {
+    height: var(--shell-filter-control-height, 34px);
+    border-radius: 8px;
+  }
+
   .mobile-toolbar-button {
     position: relative;
     isolation: isolate;
@@ -435,15 +444,6 @@
     height: 40px;
   }
 
-  .mobile-selection-settings-button {
-    display: inline-flex;
-  }
-
-  .mobile-filter-button {
-    height: var(--shell-filter-control-height, 34px);
-    border-radius: 8px;
-  }
-
   .mobile-toolbar-filters {
     padding-inline: 4px;
   }
@@ -496,9 +496,6 @@
   }
 
   .mobile-filter-button {
-    height: var(--shell-filter-control-height, 34px);
-    border-radius: 8px;
-    box-shadow: none;
     width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;

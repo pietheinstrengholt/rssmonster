@@ -143,10 +143,11 @@ describe('crawl run lifecycle', () => {
     });
     const createSpy = vi.spyOn(CrawlRun, 'create');
     const onProgress = vi.fn();
+    const onCrawlStarted = vi.fn();
 
     const result = await crawlController.performCrawlWithSemanticGrouping(
       overlapUser.id,
-      { onProgress }
+      { onProgress, onCrawlStarted }
     );
 
     expect(createSpy).not.toHaveBeenCalled();
@@ -164,6 +165,13 @@ describe('crawl run lifecycle', () => {
       message: 'Crawl already running for this user.',
       crawlRunId: activeCrawlRun.id
     }));
+    expect(onCrawlStarted).toHaveBeenCalledWith({
+      userId: overlapUser.id,
+      crawlRunId: activeCrawlRun.id,
+      status: 'running',
+      reused: true,
+      reason: 'crawl_already_running'
+    });
     expect(await CrawlRun.count({ where: { userId: overlapUser.id } })).toBe(1);
     await activeCrawlRun.reload();
     expect(activeCrawlRun.status).toBe('running');

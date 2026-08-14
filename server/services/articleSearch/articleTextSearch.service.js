@@ -40,6 +40,28 @@ const mysqlFullText = ({ value, escapeValue }) => {
   );
 };
 
+// Adapts a plain keyword/phrase input to the shared normalized-text search contract.
+export const buildArticleKeywordWhereClause = ({
+  search,
+  dialect = 'sqlite',
+  escapeValue
+}) => {
+  const normalized = String(search || '').trim();
+  const quotedMatch = normalized.match(/^"([\s\S]+)"$/);
+  const quotedPhrase = quotedMatch?.[1]?.trim() || null;
+  const remainingTokens = quotedPhrase
+    ? []
+    : normalized.split(/\s+/).filter(Boolean);
+
+  return buildTextSearchWhereClause({
+    titleFilter: null,
+    quotedPhrase,
+    remainingTokens,
+    dialect,
+    ...(escapeValue ? { escapeValue } : {})
+  });
+};
+
 // Builds the text portion of an article search WHERE clause.
 export const buildTextSearchWhereClause = ({
   titleFilter,

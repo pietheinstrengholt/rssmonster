@@ -50,7 +50,7 @@
         <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-x-fill' : 'bookmark-fill'" aria-hidden="true" />
         <span>{{ favoriteInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
       </div>
-      <div class="article-body mobile-swipe-content" :class="[{ favorited: favoriteInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
+      <div class="article-body mobile-swipe-content" :class="isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : ''" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
         <div class="article-layout">
           <ArticleHeader ref="articleHeading" :url="url" :title="title" :highlightTerms="highlightTerms" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" />
           <div class="meta-row">
@@ -401,8 +401,11 @@ export default {
 <style src="./articleContentOverrides.css"></style>
 
 <style scoped>
-.article-body.affinity-muted {
-  opacity: 0.55;
+.article-body.affinity-cold,
+.article-body.affinity-ignore {
+  --article-affinity-title-color: var(--text-secondary);
+  --article-affinity-title-weight: 500;
+  --article-affinity-meta-color: var(--text-muted);
 }
 
 .article-body.affinity-compact {
@@ -415,33 +418,17 @@ export default {
 
 /* Landscape phones and portrait tablets */
 @media (max-width: 879px) {
-  .article-card {
-    padding-top: 2px;
-  }
-
   .article-body {
     display: inline-block;
     position: relative;
-    margin-top: 2px;
-  }
-
-  .article-card:first-child {
-    padding-top: 0;
-  }
-
-  .article-card:first-child .article-body {
-    margin-top: 0;
-  }
-}
-
-/* Landscape phones and portrait tablets */
-@media (min-width: 880px) {
-  .article-card {
-    padding-top: 4px;
   }
 }
 
 .article-card {
+  --article-space-tight: 4px;
+  --article-space-normal: 8px;
+  --article-space-section: 12px;
+  --article-inline-padding: 16px;
   background-color: var(--surface-card);
   content-visibility: auto;
   contain-intrinsic-size: auto 720px;
@@ -455,28 +442,15 @@ export default {
   z-index: var(--layer-dropdown);
 }
 
-.article-card.event-article {
-  background-color: var(--article-event-background);
-}
-
-.article-card.event-article .article-body {
-  background-color: var(--article-event-background);
-}
-
-.article-card .article-body.hot {
-  border-color: var(--article-highlight-border);
-}
-
 .article-card .article-body {
-  padding: 4px 48px 4px 16px;
+  padding: var(--article-space-normal) var(--article-inline-padding) var(--article-space-tight);
   font-family: var(--font-family);
-  margin-top: 6px;
   width: 100%;
 }
 
 .article-divider {
   height: 1px;
-  margin: 10px 18px 0 16px;
+  margin: var(--article-space-section) 18px var(--article-space-section) 16px;
   background-color: var(--border-subtle);
 }
 
@@ -489,18 +463,13 @@ export default {
   border-bottom-color: var(--border-subtle);
 }
 
-:global(:root[data-theme='dark'] .article-card.event-article),
-:global(:root[data-theme='dark'] .article-card.event-article .article-body) {
-  background-color: var(--article-event-background-dark);
-}
-
 .article-card .meta-row {
   display: flex;
   align-items: center;
   justify-content: flex-start;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 6px;
+  gap: var(--article-space-section);
+  margin-top: var(--article-space-normal);
 }
 
 /* Lets every metadata badge share one wrapping row across child components. */
@@ -519,9 +488,9 @@ export default {
   flex-wrap: wrap;
   font-size: 14px;
   font-weight: 600;
-  gap: 10px;
-  margin: 12px 0 8px;
-  padding: 10px 14px;
+  gap: var(--article-space-normal);
+  margin: var(--article-space-section) 0 0;
+  padding: var(--article-space-normal) var(--article-space-section);
 }
 
 .signal-badge {
@@ -554,8 +523,8 @@ export default {
 }
 
 @media (max-width: 879px) and (orientation: portrait) {
-  .article-card .article-body {
-    padding: 4px 8px 4px 8px;
+  .article-card {
+    --article-inline-padding: 8px;
   }
 
   .article-divider {
@@ -589,13 +558,12 @@ export default {
 
 @media (min-width: 880px) {
   .article-card .meta-row {
-    gap: 14px;
+    gap: var(--article-space-section);
   }
 }
 
 .article-list-card {
   contain-intrinsic-size: auto 72px;
-  padding-top: 0 !important;
   margin-bottom: 0;
 }
 
@@ -604,10 +572,6 @@ export default {
     content-visibility: visible;
     contain-intrinsic-size: none;
   }
-}
-
-.article-list-card.event-article {
-  background-color: var(--article-event-background);
 }
 
 .article-list-card.article-list-card-selected {
@@ -635,7 +599,7 @@ export default {
   width: auto;
   max-width: none;
   margin: 0;
-  padding: 10px 16px 0 70px;
+  padding: var(--article-space-section) 16px 0 70px;
   background: var(--surface-page);
 }
 
@@ -709,27 +673,9 @@ export default {
   border-radius: 0px;
 }
 
-:global(:root[data-theme='dark'] .article-card .article-body.hot) {
-  background-color: var(--surface-page);
-  border-color: var(--surface-page);
-}
-
-:global(:root[data-theme='dark'] .article-card .article-body.favorited) {
-  background-color: var(--surface-page);
-}
-
-:global(:root[data-theme='dark'] .article-card.event-article),
-:global(:root[data-theme='dark'] .article-card.event-article .article-body) {
-  background-color: var(--article-event-background-dark);
-}
-
 :global(:root[data-theme='dark'] .article-card.article-list-card) {
   background: var(--surface-page);
   border-bottom-color: var(--border-subtle);
-}
-
-:global(:root[data-theme='dark'] .article-card.article-list-card.event-article) {
-  background-color: var(--article-event-background-dark);
 }
 
 :global(:root[data-theme='dark'] .article-card.article-list-card.article-list-card-selected) {
