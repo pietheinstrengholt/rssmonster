@@ -419,7 +419,11 @@ describe('ArticleFeed loading races', () => {
     document.documentElement.scrollTop = 240;
     document.body.scrollTop = 240;
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 240 });
-    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    document.documentElement.style.scrollBehavior = 'smooth';
+    const scrollBehaviors = [];
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {
+      scrollBehaviors.push(document.documentElement.style.scrollBehavior);
+    });
 
     const context = {
       $refs: { articleLayout: { scrollToTop } },
@@ -433,11 +437,14 @@ describe('ArticleFeed loading races', () => {
     expect(articlePane.scrollTop).toBe(0);
     expect(document.documentElement.scrollTop).toBe(0);
     expect(document.body.scrollTop).toBe(0);
-    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
+    expect(scrollBehaviors).toEqual(['auto']);
+    expect(document.documentElement.style.scrollBehavior).toBe('smooth');
 
     window.cancelAnimationFrame(context.scrollResetFrameId);
     window.clearTimeout(context.scrollResetTimeoutId);
     scrollTo.mockRestore();
+    document.documentElement.style.scrollBehavior = '';
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
   });
 
@@ -457,7 +464,7 @@ describe('ArticleFeed loading races', () => {
 
     expect(document.documentElement.scrollTop).toBe(0);
     expect(document.body.scrollTop).toBe(0);
-    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
 
     window.cancelAnimationFrame(context.scrollResetFrameId);
     window.clearTimeout(context.scrollResetTimeoutId);
