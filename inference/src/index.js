@@ -35,9 +35,16 @@ export const startServer = async () => {
   return server;
 };
 
-const isEntryPoint = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+export const isInferenceEntryPoint = ({
+  argv = process.argv,
+  environment = process.env,
+  moduleUrl = import.meta.url
+} = {}) => Boolean(
+  environment.pm_id !== undefined ||
+  (argv[1] && moduleUrl === pathToFileURL(argv[1]).href)
+);
 
-if (isEntryPoint) {
+if (isInferenceEntryPoint()) {
   try {
     await startServer();
   } catch (error) {
