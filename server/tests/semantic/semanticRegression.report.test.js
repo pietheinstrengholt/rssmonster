@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { access } from 'node:fs/promises';
 
 import db from '../../models/index.js';
-import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
+import {
+  resolveSemanticVectorFixturePath,
+  semanticVectorFixtureExists
+} from '../../utils/semanticVectorFixtures.js';
 import { writeSemanticRegressionMarkdownReport } from '../helpers/semanticRegressionMarkdownReport.js';
 
 const { User } = db;
@@ -11,17 +14,9 @@ const DUPLICATE_FIXTURE_USERNAME = 'semantic-regression-ad-event-user';
 const VECTOR_FIXTURE_PATH = await resolveSemanticVectorFixturePath('semantic-regression');
 
 // The database-backed semantic scenarios are skipped when their generated vector fixture is absent.
-async function hasVectorFixture() {
-  try {
-    await access(VECTOR_FIXTURE_PATH);
-    return true;
-  } catch (error) {
-    if (error.code === 'ENOENT') return false;
-    throw error;
-  }
-}
-
-const semanticRegressionDescribe = (await hasVectorFixture()) ? describe : describe.skip;
+const semanticRegressionDescribe = (await semanticVectorFixtureExists(VECTOR_FIXTURE_PATH))
+  ? describe
+  : describe.skip;
 
 semanticRegressionDescribe('semantic regression Markdown report', () => {
   it('writes the final model report after all semantic scenarios finish', async () => {

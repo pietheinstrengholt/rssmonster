@@ -26,6 +26,17 @@ export function semanticVectorFixturePath(fixtureName, model) {
   return join(FIXTURE_DIR, `${fixtureName}.${semanticVectorModelSlug(model)}.vectors.json`);
 }
 
+// This function reports whether a generated vector fixture exists without hiding other I/O errors.
+export async function semanticVectorFixtureExists(path, accessImplementation = access) {
+  try {
+    await accessImplementation(path);
+    return true;
+  } catch (error) {
+    if (error.code === 'ENOENT') return false;
+    throw error;
+  }
+}
+
 // This function records which model-qualified fixture set the regression suite should load.
 export async function selectSemanticVectorModel(metadata) {
   const selection = {
