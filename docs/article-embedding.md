@@ -94,10 +94,10 @@ maintained from Event vectors; see [Topics](topics.md).
 
 ## Generation and Storage
 
-Article embeddings currently use OpenAI's `text-embedding-3-small` model. Set
-`OPENAI_API_KEY` in the server environment to enable generation. The selected
-article text is sent to the embedding provider, which creates external API
-usage and may incur cost. See [Configuration](configuration.md#openai-and-agentic-features).
+Article embeddings use the model selected by the standalone inference service:
+OpenAI `text-embedding-3-small` or local Qwen. The server contains no provider
+credential. See [Model Usage](model-usage.md) for configuration and the warning
+about incompatible embedding spaces.
 
 For batch processing, RSSMonster only selects articles that are:
 

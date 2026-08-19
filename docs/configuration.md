@@ -230,18 +230,20 @@ All values must be positive integers. Health checks and `OPTIONS` requests are
 excluded. Configure `TRUST_PROXY` correctly before tuning limits behind a
 reverse proxy so client addresses are interpreted correctly.
 
-## OpenAI and Agentic Features
+## Inference and OpenAI Features
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | none | Enables agentic features and AI-backed enrichment that require OpenAI. |
-| `OPENAI_MODEL_AGENT` | `gpt-5.1` | Model used by the natural-language assistant. |
-| `OPENAI_MODEL_CRAWL` | falls back to `OPENAI_MODEL_NAME` | Model used for crawl-time content analysis. The example sets it to `gpt-4o-mini`. |
+| `INFERENCE_URL` | `http://127.0.0.1:3001` | Standalone inference service used for all model requests. |
+| `INFERENCE_TIMEOUT_MS` | `30000` | Timeout for embeddings, classification, recommendations, and feed rediscovery. |
+| `INFERENCE_AGENT_TIMEOUT_MS` | `300000` | Timeout for streamed assistant model requests. |
+| `INFERENCE_AI_ENABLED` | `false` | Exposes AI-backed interface defaults when the inference service has OpenAI configured. |
+| `SKIP_ARTICLE_CLASSIFICATION_ANALYSIS` | `false` | When `true`, uses default article scores and feed-category tags without calling inference classification. |
 | `INTERNAL_MCP_URL` | `http://127.0.0.1:$PORT/mcp` | Server-controlled MCP endpoint used by the natural-language assistant. Configure this when MCP is reached through another container or an HTTPS listener. |
 
-Without `OPENAI_API_KEY`, core RSS reading remains available, while features
-that require model calls are disabled. Model access creates external API usage
-and cost, so select models appropriate to your workload.
+OpenAI credentials and model names belong only in `inference/.env`; see
+[Model Usage](model-usage.md). The server executes authenticated assistant
+tools locally, while inference performs every provider model call.
 
 ## Recommendations
 

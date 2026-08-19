@@ -153,5 +153,5 @@ module can own the behavior.
 ## Boundaries
 
 Content processing returns data and has no database side effects. It must not query or persist
-articles, apply user actions, call OpenAI, mutate duplicate caches, classify official sources,
+articles, apply user actions, call inference, mutate duplicate caches, classify official sources,
 write tags, or decide whether an article is new or revised.

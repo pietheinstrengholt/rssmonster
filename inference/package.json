@@ -1,0 +1,32 @@
+{
+  "name": "rssmonster-inference",
+  "version": "2.2.0",
+  "private": true,
+  "type": "module",
+  "description": "RSSMonster inference service",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "INFERENCE_DEBUG=true node --watch src/index.js",
+    "start": "node src/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint ."
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@huggingface/transformers": "^4.0.0-next.11",
+    "@openai/agents": "^0.15.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "openai": "^7.4.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.8.1",
+    "globals": "^17.11.0",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.10"
+  }
+}

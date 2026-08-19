@@ -1,33 +1,27 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const embeddingsCreate = vi.fn();
-const OpenAIMock = vi.fn(function MockOpenAI() {
-  this.embeddings = {
-    create: embeddingsCreate
-  };
-});
+const embedTextsMock = vi.fn();
 
-vi.mock('openai', () => ({
-  default: OpenAIMock
+vi.mock('../../services/embeddings/embeddingService.js', () => ({
+  DEFAULT_EMBEDDING_MODEL: 'text-embedding-3-small',
+  embedTexts: embedTextsMock
 }));
 
 describe('embedArticle token limit guard', () => {
   beforeEach(() => {
     vi.resetModules();
-    embeddingsCreate.mockReset();
-    OpenAIMock.mockClear();
-    process.env.OPENAI_API_KEY = 'test-key';
+    embedTextsMock.mockReset();
   });
 
   afterEach(() => {
-    delete process.env.OPENAI_API_KEY;
   });
 
   it('clips oversized event embedding text before provider call', async () => {
     const { embedArticle } = await import('../../services/articles/embedArticle.js');
 
-    embeddingsCreate.mockResolvedValue({
-      data: [{ embedding: [0.7, 0.8, 0.9] }]
+    embedTextsMock.mockResolvedValue({
+      model: 'text-embedding-3-small',
+      embeddings: [[0.7, 0.8, 0.9]]
     });
 
     const oversizedContent = Array.from(
@@ -40,9 +34,9 @@ describe('embedArticle token limit guard', () => {
     });
 
     expect(result.eventVector).toEqual([0.7, 0.8, 0.9]);
-    expect(embeddingsCreate).toHaveBeenCalledTimes(2);
+    expect(embedTextsMock).toHaveBeenCalledTimes(1);
 
-    const input = embeddingsCreate.mock.calls[0][0].input;
+    const input = embedTextsMock.mock.calls[0][0][0];
     expect(input.split(/\s+/)).toHaveLength(512);
     expect(input).toMatch(/^Title: Oversized event input\s+Body: token0/);
   });
@@ -90,8 +84,9 @@ describe('embedArticle token limit guard', () => {
   it('still calls provider for normal-sized event input', async () => {
     const { embedArticle } = await import('../../services/articles/embedArticle.js');
 
-    embeddingsCreate.mockResolvedValue({
-      data: [{ embedding: [0.1, 0.2, 0.3] }]
+    embedTextsMock.mockResolvedValue({
+      model: 'text-embedding-3-small',
+      embeddings: [[0.1, 0.2, 0.3]]
     });
 
     const result = await embedArticle({
@@ -101,14 +96,15 @@ describe('embedArticle token limit guard', () => {
 
     expect(result).not.toBeNull();
     expect(result.eventVector).toEqual([0.1, 0.2, 0.3]);
-    expect(embeddingsCreate).toHaveBeenCalledTimes(1);
+    expect(embedTextsMock).toHaveBeenCalledTimes(1);
   });
 
   it('can embed short event input when explicitly allowed', async () => {
     const { embedArticle } = await import('../../services/articles/embedArticle.js');
 
-    embeddingsCreate.mockResolvedValue({
-      data: [{ embedding: [0.4, 0.5, 0.6] }]
+    embedTextsMock.mockResolvedValue({
+      model: 'text-embedding-3-small',
+      embeddings: [[0.4, 0.5, 0.6]]
     });
 
     const result = await embedArticle(
@@ -120,7 +116,7 @@ describe('embedArticle token limit guard', () => {
     );
 
     expect(result.eventVector).toEqual([0.4, 0.5, 0.6]);
-    expect(embeddingsCreate).toHaveBeenCalledTimes(1);
+    expect(embedTextsMock).toHaveBeenCalledTimes(1);
   });
 
   // Reuses an existing persisted vector without requiring provider access.
@@ -138,7 +134,7 @@ describe('embedArticle token limit guard', () => {
       embedding_model: EMBEDDING_MODEL,
       reused: true
     });
-    expect(embeddingsCreate).not.toHaveBeenCalled();
+    expect(embedTextsMock).not.toHaveBeenCalled();
     expect(article.update).not.toHaveBeenCalled();
   });
 
@@ -147,13 +143,16 @@ describe('embedArticle token limit guard', () => {
     const { embedArticle } = await import('../../services/articles/embedArticle.js');
 
     await expect(embedArticle({ title: 'Too short' })).resolves.toBeNull();
-    expect(embeddingsCreate).not.toHaveBeenCalled();
+    expect(embedTextsMock).not.toHaveBeenCalled();
   });
 
   // Persists newly generated vectors on Sequelize article instances.
   it('persists a generated event vector on an article instance', async () => {
     const { embedArticle, EMBEDDING_MODEL } = await import('../../services/articles/embedArticle.js');
-    embeddingsCreate.mockResolvedValue({ data: [{ embedding: [0.3, 0.4] }] });
+    embedTextsMock.mockResolvedValue({
+      model: 'text-embedding-3-small',
+      embeddings: [[0.3, 0.4]]
+    });
     const article = {
       title: 'A sufficiently descriptive article title for embedding',
       description: 'This summary provides enough distinct detail for the event embedding provider request.',
@@ -176,7 +175,7 @@ describe('embedArticle token limit guard', () => {
   it('returns null and warns when the provider fails', async () => {
     const { embedArticle } = await import('../../services/articles/embedArticle.js');
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    embeddingsCreate.mockRejectedValue(new Error('provider unavailable'));
+    embedTextsMock.mockRejectedValue(new Error('provider unavailable'));
 
     await expect(embedArticle({
       title: 'A sufficiently descriptive title for provider error handling',

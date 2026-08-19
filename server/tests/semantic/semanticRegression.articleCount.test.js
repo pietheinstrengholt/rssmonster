@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 import db from '../../models/index.js';
+import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
 
 const { User, Article } = db;
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -13,11 +14,11 @@ const FIXTURE_NAMES = [
   'semantic-regression-incremental.json',
   'semantic-regression-incremental.unread.json'
 ];
-const VECTOR_FIXTURE_NAMES = [
-  'semantic-regression.vectors.json',
-  'semantic-regression-incremental.vectors.json',
-  'semantic-regression-incremental.unread.vectors.json'
-];
+const VECTOR_FIXTURE_PATHS = await Promise.all([
+  resolveSemanticVectorFixturePath('semantic-regression'),
+  resolveSemanticVectorFixturePath('semantic-regression-incremental'),
+  resolveSemanticVectorFixturePath('semantic-regression-incremental.unread')
+]);
 
 // This function resolves a semantic regression fixture path.
 function fixturePath(fixtureName) {
@@ -32,9 +33,9 @@ async function loadFixture(fixtureName) {
 
 // This function checks whether all vector fixtures needed by the semantic pipeline are available.
 async function hasVectorFixtures() {
-  for (const fixtureName of VECTOR_FIXTURE_NAMES) {
+  for (const path of VECTOR_FIXTURE_PATHS) {
     try {
-      await readFile(fixturePath(fixtureName), 'utf8');
+      await readFile(path, 'utf8');
     } catch (err) {
       if (err.code === 'ENOENT') return false;
       throw err;

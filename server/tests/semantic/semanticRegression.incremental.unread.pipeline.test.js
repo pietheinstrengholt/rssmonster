@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 
 import db from '../../models/index.js';
+import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
 import { runIncrementalEventsForUser } from '../../services/reconcile/semanticPipelineScopes.js';
 import scoreArticlesFromIslandsForUser from '../../services/score/scoreArticlesFromIslands.js';
 import { cosineSimilarity } from '../../services/vectors/index.js';
@@ -31,7 +32,9 @@ const {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const INCREMENTAL_FIXTURE_PATH = join(__dirname, '..', 'fixtures', 'semantic-regression-incremental.unread.json');
-const INCREMENTAL_VECTOR_FIXTURE_PATH = join(__dirname, '..', 'fixtures', 'semantic-regression-incremental.unread.vectors.json');
+const INCREMENTAL_VECTOR_FIXTURE_PATH = await resolveSemanticVectorFixturePath(
+  'semantic-regression-incremental.unread'
+);
 const FIXTURE_USERNAME = 'semantic-regression-user';
 const TEST_DATABASE_NAME = 'rssmonstertest';
 const TAKE_TWO_ARTICLE_IDS_TO_MARK_READ = [652, 576];
@@ -468,5 +471,4 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
     });
   }, 60000);
 });
-
 

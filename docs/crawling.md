@@ -139,11 +139,14 @@ application independently.
 
 ## PM2 Production Setup
 
-The root `ecosystem.config.cjs` defines exactly one web process and one worker:
+The root `ecosystem.config.cjs` defines one web process, one worker, and one
+inference process:
 
 - `rssmonster-web` runs `server/bootstrap.js`;
 - `rssmonster-worker` runs `server/src/workers/crawlWorker.js` as one fork-mode
   instance.
+- `rssmonster-inference` runs `inference/src/index.js` as one fork-mode
+  instance; see [Inference](inference.md).
 
 From the repository root, start or reload both processes with the production
 environment:
@@ -151,7 +154,7 @@ environment:
 ```bash
 pm2 startOrReload ecosystem.config.cjs --env production --update-env
 pm2 save
-pm2 status rssmonster-web rssmonster-worker
+pm2 status rssmonster-web rssmonster-worker rssmonster-inference
 ```
 
 Useful operational commands include:

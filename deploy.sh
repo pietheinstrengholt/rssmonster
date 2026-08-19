@@ -5,10 +5,12 @@ set -Eeuo pipefail
 APP_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 SERVER_DIR="$APP_DIR/server"
 CLIENT_DIR="$APP_DIR/client"
+INFERENCE_DIR="$APP_DIR/inference"
 ENV_FILE="$SERVER_DIR/.env"
 
 PM2_WEB_APP_NAME="rssmonster-web"
 PM2_WORKER_APP_NAME="rssmonster-worker"
+PM2_INFERENCE_APP_NAME="rssmonster-inference"
 OBSOLETE_PM2_APP_NAME="rssmonster-dev"
 ECOSYSTEM_FILE="$APP_DIR/ecosystem.config.cjs"
 
@@ -36,11 +38,13 @@ on_error() {
     echo "Current PM2 status:"
     pm2 describe "$PM2_WEB_APP_NAME" || true
     pm2 describe "$PM2_WORKER_APP_NAME" || true
+    pm2 describe "$PM2_INFERENCE_APP_NAME" || true
 
     echo
     echo "Recent PM2 logs:"
     pm2 logs "$PM2_WEB_APP_NAME" --lines 50 --nostream || true
     pm2 logs "$PM2_WORKER_APP_NAME" --lines 50 --nostream || true
+    pm2 logs "$PM2_INFERENCE_APP_NAME" --lines 50 --nostream || true
   fi
 
   exit "$exit_code"
@@ -122,7 +126,7 @@ require_command pm2
 require_command curl
 require_command sed
 
-for directory in "$APP_DIR" "$SERVER_DIR" "$CLIENT_DIR"; do
+for directory in "$APP_DIR" "$SERVER_DIR" "$CLIENT_DIR" "$INFERENCE_DIR"; do
   if [[ ! -d "$directory" ]]; then
     echo "Required directory does not exist: $directory"
     exit 1
@@ -141,6 +145,11 @@ fi
 
 if [[ ! -f "$CLIENT_DIR/package.json" ]]; then
   echo "Client package.json does not exist: $CLIENT_DIR/package.json"
+  exit 1
+fi
+
+if [[ ! -f "$INFERENCE_DIR/package.json" ]]; then
+  echo "Inference package.json does not exist: $INFERENCE_DIR/package.json"
   exit 1
 fi
 
@@ -223,6 +232,7 @@ run_with_timeout 1m git clean -fd \
   -e .env \
   -e server/.env \
   -e client/.env \
+  -e inference/.env \
   -e deploy.log
 
 log "Fetching latest changes"
@@ -247,7 +257,12 @@ log "Installing client dependencies"
 cd "$CLIENT_DIR"
 run_with_timeout 10m npm ci --no-audit --no-fund
 
+log "Installing inference dependencies"
+cd "$INFERENCE_DIR"
+run_with_timeout 10m npm ci --no-audit --no-fund
+
 log "Building client"
+cd "$CLIENT_DIR"
 run_with_timeout 15m npm run build
 
 if [[ ! -d "$CLIENT_DIR/dist" ]]; then
@@ -268,7 +283,7 @@ run_with_timeout 20m \
   --env production \
   --update-env
 
-for app_name in "$PM2_WEB_APP_NAME" "$PM2_WORKER_APP_NAME"; do
+for app_name in "$PM2_WEB_APP_NAME" "$PM2_WORKER_APP_NAME" "$PM2_INFERENCE_APP_NAME"; do
   PM2_PID="$(pm2 pid "$app_name" 2>/dev/null || true)"
 
   if [[ ! "$PM2_PID" =~ ^[1-9][0-9]*$ ]]; then
@@ -315,7 +330,7 @@ if [[ "$HEALTHCHECK_PASSED" != true ]]; then
   exit 1
 fi
 
-for app_name in "$PM2_WEB_APP_NAME" "$PM2_WORKER_APP_NAME"; do
+for app_name in "$PM2_WEB_APP_NAME" "$PM2_WORKER_APP_NAME" "$PM2_INFERENCE_APP_NAME"; do
   PM2_PID="$(pm2 pid "$app_name" 2>/dev/null || true)"
 
   if [[ ! "$PM2_PID" =~ ^[1-9][0-9]*$ ]]; then
@@ -329,6 +344,6 @@ log "Saving PM2 process list"
 run_with_timeout 1m pm2 save
 
 log "PM2 status"
-pm2 status "$PM2_WEB_APP_NAME" "$PM2_WORKER_APP_NAME"
+pm2 status "$PM2_WEB_APP_NAME" "$PM2_WORKER_APP_NAME" "$PM2_INFERENCE_APP_NAME"
 
 log "Deployment completed successfully"

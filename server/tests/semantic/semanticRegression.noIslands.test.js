@@ -1,15 +1,13 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 
 import db from '../../models/index.js';
+import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
 import { printSemanticArticleRankingTableForUser } from '../helpers/semanticRegressionReport.js';
 
 const { User, Island } = db;
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const VECTOR_FIXTURE_PATH = join(__dirname, '..', 'fixtures', 'semantic-regression.vectors.json');
+const VECTOR_FIXTURE_PATH = await resolveSemanticVectorFixturePath('semantic-regression');
 const FIXTURE_USERNAME = 'semantic-regression-user';
 
 // This function checks whether the semantic regression vector fixture is available.
@@ -46,4 +44,3 @@ semanticRegressionDescribe('semantic regression island architecture guard', () =
     expect(islandCount).toBe(0);
   });
 });
-

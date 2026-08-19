@@ -33,7 +33,7 @@ return one normalized lead-image object or null.
 persist article rows;
 perform user-wide duplicate matching;
 apply action rules;
-call OpenAI;
+call inference;
 modify article read state;
 perform semantic clustering;
 write hotlinks;

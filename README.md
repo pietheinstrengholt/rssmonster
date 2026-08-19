@@ -335,6 +335,10 @@ npm install
 # Install client dependencies
 cd ../client
 npm install
+
+# Install inference dependencies
+cd ../inference
+npm install
 cd ..
 ```
 
@@ -345,7 +349,69 @@ Copy the `.env.example` files to `.env`:
 ```bash
 cp server/.env.example server/.env
 cp client/.env.example client/.env
+cp inference/.env.example inference/.env
 ```
+
+### Inference Models
+
+RSSMonster sends all model requests to the standalone inference service.
+Configure the server connection in `server/.env`:
+
+```env
+INFERENCE_URL=http://127.0.0.1:3001
+INFERENCE_TIMEOUT_MS=30000
+SKIP_ARTICLE_CLASSIFICATION_ANALYSIS=false
+```
+
+Use a longer timeout such as `600000` when running Qwen on low-power hardware.
+
+The inference service selects providers independently for semantic embeddings,
+text generation, article scoring, and assistant responses. A complete OpenAI
+configuration in `inference/.env` is:
+
+```env
+# OpenAI
+EMBEDDING_PROVIDER=openai
+GENERATION_PROVIDER=openai
+ARTICLE_SCORING_PROVIDER=openai
+ASSISTANT_PROVIDER=openai
+ASSISTANT_MODEL=gpt-4o-mini
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_EMBEDDING_DIMENSIONS=1536
+```
+
+Alternatively, embeddings, article generation, and scoring can run locally
+while the assistant remains on OpenAI:
+
+```env
+# Qwen and ModernBERT
+EMBEDDING_PROVIDER=qwen
+GENERATION_PROVIDER=qwen
+ARTICLE_SCORING_PROVIDER=modernbert
+EMBEDDING_MODEL=onnx-community/Qwen3-Embedding-0.6B-ONNX
+EMBEDDING_DIMENSIONS=1024
+GENERATION_MODEL=onnx-community/Qwen3.5-0.8B-ONNX
+GENERATION_DTYPE=q4
+ASSISTANT_PROVIDER=openai
+ASSISTANT_MODEL=gpt-4o-mini
+OPENAI_API_KEY=your-openai-api-key
+INFERENCE_MODEL_CACHE_DIR=.cache/models
+```
+
+Run inference with `cd inference && npm run dev` during development. Selected
+Qwen3 Embedding, Qwen3.5 generation, and ModernBERT models are downloaded and
+loaded during service startup, then reused from the model cache. The service
+logs when all configured models are ready and crawling can start. Development
+mode also logs content-safe activity for embeddings, summaries, tags, article
+scoring, assistant calls, Smart Folder recommendations, and feed rediscovery.
+Assistant responses currently continue to use OpenAI.
+Do not mix vectors from different models in one database: one database must
+contain vectors from exactly one embedding model. Changing providers requires
+a clean, isolated vector data set; `npm run reset:semantic` alone is not enough
+because it preserves article vectors. See
+[Model Usage](docs/model-usage.md) and [Inference administration](docs/inference.md)
+for production setup and model-specific guidance.
 
 ### SQLite Configuration
 
@@ -473,11 +539,8 @@ npm run taxonomy:vectors
 npm run seed:island-taxonomy
 ```
 
-`npm run taxonomy:vectors` requires an OpenAI API key:
-
-```env
-OPENAI_API_KEY=your-openai-api-key-here
-```
+`npm run taxonomy:vectors` uses the embedding model selected by the running
+inference service, so it works with either OpenAI or Qwen.
 
 ### Calculate Feed Trust Scores
 
@@ -517,17 +580,25 @@ Example requests include:
 
 ### Configuration
 
-To enable the AI assistant and other agentic features, configure the following environment variables:
+To enable the AI assistant and other OpenAI-backed capabilities, configure:
 
 **Server (`server/.env`):**
 
 ```env
-OPENAI_API_KEY=your-openai-api-key-here
-OPENAI_MODEL_AGENT=gpt-5.1
-OPENAI_MODEL_CRAWL=gpt-4o-mini
+INFERENCE_AI_ENABLED=true
+INFERENCE_AGENT_TIMEOUT_MS=300000
 ```
 
-After configuration, restart the client and server.
+**Inference (`inference/.env`):**
+
+```env
+OPENAI_API_KEY=your-openai-api-key-here
+ASSISTANT_PROVIDER=openai
+ASSISTANT_MODEL=gpt-4o-mini
+```
+
+The server keeps no OpenAI credential; all provider calls go through inference.
+After configuration, restart the client, server, and inference processes.
 
 The assistant provides:
 

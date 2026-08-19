@@ -4,19 +4,21 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import dotenv from 'dotenv';
-import OpenAI from 'openai';
+import { embedTexts, getEmbeddingInfo } from '../services/embeddings/embeddingService.js';
 
 import {
-  EMBEDDING_MODEL,
   buildArticleEventEmbeddingText
 } from '../services/articles/embedArticle.js';
+import {
+  loadSemanticVectorFixtureForModel,
+  selectSemanticVectorModel
+} from '../utils/semanticVectorFixtures.js';
 
 dotenv.config({ quiet: true });
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURE_PATH = join(__dirname, '..', 'tests', 'fixtures', 'semantic-regression-incremental.json');
-const VECTOR_FIXTURE_PATH = join(__dirname, '..', 'tests', 'fixtures', 'semantic-regression-incremental.vectors.json');
-const BATCH_SIZE = Number.parseInt(process.env.SEMANTIC_REGRESSION_EMBED_BATCH_SIZE || '50', 10);
+const BATCH_SIZE = Number.parseInt(process.env.SEMANTIC_REGRESSION_EMBED_BATCH_SIZE || '8', 10);
 const PRODUCTION_MIN_EVENT_LENGTH = 60;
 
 function hashContent(content) {
@@ -49,11 +51,12 @@ function buildEmbeddingInput(article, articleIndex) {
   });
 }
 
-function isExistingVectorReusable(existingVector, embeddingInputHash) {
+function isExistingVectorReusable(existingVector, embeddingInputHash, embeddingModel, embeddingTask) {
   return (
     Array.isArray(existingVector?.articleVector) &&
     existingVector.articleVector.length > 0 &&
-    existingVector.embeddingModel === EMBEDDING_MODEL &&
+    existingVector.embeddingModel === embeddingModel &&
+    existingVector.embeddingTask === embeddingTask &&
     existingVector.embeddingInputHash === embeddingInputHash
   );
 }
@@ -63,27 +66,34 @@ async function loadFixture() {
   return JSON.parse(fixtureText.replace(/^\uFEFF/, ''));
 }
 
-async function loadExistingVectors() {
-  try {
-    const vectorFixtureText = await readFile(VECTOR_FIXTURE_PATH, 'utf8');
-    const vectorFixture = JSON.parse(vectorFixtureText.replace(/^\uFEFF/, ''));
-    return new Map(
-      vectorFixture.articles.map(article => [article.contentSourceHash, article])
-    );
-  } catch (err) {
-    if (err.code === 'ENOENT') return new Map();
-    throw err;
-  }
+async function loadExistingVectors(embeddingModel) {
+  const { fixture, path } = await loadSemanticVectorFixtureForModel(
+    'semantic-regression-incremental',
+    embeddingModel
+  );
+  return {
+    path,
+    vectors: new Map(
+      (fixture?.articles || []).map(article => [article.contentSourceHash, article])
+    )
+  };
 }
 
 async function main() {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is required to generate semantic regression incremental vectors.');
-  }
-
+  const {
+    provider: embeddingProvider,
+    model: embeddingModel,
+    dimensions: embeddingDimensions,
+    task: embeddingTask = null
+  } = await getEmbeddingInfo();
+  await selectSemanticVectorModel({
+    provider: embeddingProvider,
+    model: embeddingModel,
+    dimensions: embeddingDimensions,
+    task: embeddingTask
+  });
   const fixture = await loadFixture();
-  const existingVectors = await loadExistingVectors();
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const { path: vectorFixturePath, vectors: existingVectors } = await loadExistingVectors(embeddingModel);
   const vectorRows = [];
 
   for (let index = 0; index < fixture.articles.length; index += BATCH_SIZE) {
@@ -106,7 +116,12 @@ async function main() {
       });
 
     const missing = batch.filter(item => (
-      !isExistingVectorReusable(item.existingVector, item.embeddingInputHash)
+      !isExistingVectorReusable(
+        item.existingVector,
+        item.embeddingInputHash,
+        embeddingModel,
+        embeddingTask
+      )
     ));
     const shortInput = missing.filter(
       item => item.embeddingInput.length < PRODUCTION_MIN_EVENT_LENGTH
@@ -114,18 +129,16 @@ async function main() {
 
     const generatedByHash = new Map();
     if (missing.length) {
-      const response = await openai.embeddings.create({
-        model: EMBEDDING_MODEL,
-        input: missing.map(item => item.embeddingInput)
-      });
+      const response = await embedTexts(missing.map(item => item.embeddingInput));
 
-      response.data.forEach((result, resultIndex) => {
+      response.embeddings.forEach((vector, resultIndex) => {
         const item = missing[resultIndex];
         generatedByHash.set(item.contentSourceHash, {
           contentSourceHash: item.contentSourceHash,
-          embeddingModel: EMBEDDING_MODEL,
+          embeddingModel: response.model,
+          embeddingTask,
           embeddingInputHash: item.embeddingInputHash,
-          articleVector: result.embedding
+          articleVector: vector
         });
       });
     }
@@ -135,6 +148,7 @@ async function main() {
         generatedByHash.get(item.contentSourceHash) || {
           contentSourceHash: item.contentSourceHash,
           embeddingModel: item.existingVector.embeddingModel,
+          embeddingTask: item.existingVector.embeddingTask,
           embeddingInputHash: item.embeddingInputHash,
           articleVector: item.existingVector.articleVector
         }
@@ -155,16 +169,19 @@ async function main() {
   }
 
   await writeFile(
-    VECTOR_FIXTURE_PATH,
+    vectorFixturePath,
     JSON.stringify({
-      embeddingModel: EMBEDDING_MODEL,
+      embeddingProvider,
+      embeddingModel,
+      embeddingDimensions,
+      embeddingTask,
       sourceFixture: 'semantic-regression-incremental.json',
       articles: vectorRows
     }, null, 2) + '\n',
     'utf8'
   );
 
-  console.log(`[SEMANTIC INCREMENTAL FIXTURE] wrote ${VECTOR_FIXTURE_PATH}`);
+  console.log(`[SEMANTIC INCREMENTAL FIXTURE] wrote ${vectorFixturePath}`);
 }
 
 main().catch(err => {

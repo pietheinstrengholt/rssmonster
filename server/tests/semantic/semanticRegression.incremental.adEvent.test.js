@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 
 import db from '../../models/index.js';
+import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
 import { markDuplicateArticlesForUser } from '../../services/duplicates/articleDuplicates.js';
 import { runIncrementalEventsForUser } from '../../services/reconcile/semanticPipelineScopes.js';
 import { printSemanticArticleRankingTable } from '../helpers/semanticRegressionReport.js';
@@ -21,8 +22,12 @@ const {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const INCREMENTAL_FIXTURE_PATH = join(__dirname, '..', 'fixtures', 'semantic-regression-incremental.json');
-const INCREMENTAL_VECTOR_FIXTURE_PATH = join(__dirname, '..', 'fixtures', 'semantic-regression-incremental.vectors.json');
-const UNREAD_VECTOR_FIXTURE_PATH = join(__dirname, '..', 'fixtures', 'semantic-regression-incremental.unread.vectors.json');
+const INCREMENTAL_VECTOR_FIXTURE_PATH = await resolveSemanticVectorFixturePath(
+  'semantic-regression-incremental'
+);
+const UNREAD_VECTOR_FIXTURE_PATH = await resolveSemanticVectorFixturePath(
+  'semantic-regression-incremental.unread'
+);
 const FIXTURE_USERNAME = 'semantic-regression-ad-event-user';
 const FIXTURE_PASSWORD = 'rssmonster';
 const TARGET_FEED_SOURCE_ID = 96;
@@ -226,5 +231,4 @@ semanticRegressionDescribe('semantic regression AD heatwave semantic processing'
     expect(eventCount).toBe(0);
   }, 60000);
 });
-
 

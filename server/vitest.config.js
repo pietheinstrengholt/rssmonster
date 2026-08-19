@@ -12,7 +12,8 @@ const SEMANTIC_INCREMENTAL_UNREAD_TEST = '/tests/semantic/semanticRegression.inc
 const REPAIR_RECENT_EVENTS_TEST = '/tests/events/repairRecentEventsForUser.service.test.js'; // This test checks that the repairRecentEventsForUser service produces the same semantic state as the baseline test; it must run sixth and only loads articles and creates events.
 const CHECK_RECREATE_ISLANDS = '/tests/semantic/semanticRegression.rebuildIslands.test.js'; // This test checks that islands can be recreated after the repair test; it must run seventh and only checks for islands.
 const CHECK_ARTICLE_COUNT = '/tests/semantic/semanticRegression.articleCount.test.js'; // This test checks that all semantic regression fixture articles exist after processing.
-//TODO: add here the semanticRegression.incremental.adEvent.test.js. It loads three almost identical articles. It should validate that two of these articles are marked as duplicates
+const CHECK_AD_DUPLICATES = '/tests/semantic/semanticRegression.incremental.adEvent.test.js'; // This test validates duplicate detection with three almost identical articles.
+const WRITE_SEMANTIC_REPORT = '/tests/semantic/semanticRegression.report.test.js'; // This test writes the final report after every semantic scenario has completed.
 
 // This class keeps Vitest's default sequencing while pinning dependent semantic tests.
 class RssMonsterSequencer extends BaseSequencer {
@@ -35,7 +36,9 @@ class RssMonsterSequencer extends BaseSequencer {
       if (this.isTestFile(file, REPAIR_RECENT_EVENTS_TEST)) return 8;
       if (this.isTestFile(file, CHECK_RECREATE_ISLANDS)) return 9;
       if (this.isTestFile(file, CHECK_ARTICLE_COUNT)) return 10;
-      return 11;
+      if (this.isTestFile(file, CHECK_AD_DUPLICATES)) return 11;
+      if (this.isTestFile(file, WRITE_SEMANTIC_REPORT)) return 12;
+      return 13;
     };
 
     return files

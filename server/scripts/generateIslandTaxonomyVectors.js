@@ -7,26 +7,20 @@
  *   npm run taxonomy:vectors -- --force
  *
  * Env:
- *   OPENAI_API_KEY=...
- *   OPENAI_EMBEDDING_MODEL=text-embedding-3-small (optional)
+ *   INFERENCE_URL=http://127.0.0.1:3001 (optional)
  */
 
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import OpenAI from 'openai';
 import db from '../models/index.js';
+import { embedTexts, getEmbeddingInfo } from '../services/embeddings/embeddingService.js';
 
 const { IslandTaxonomy, sequelize } = db;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TAXONOMY_SEEDER_PATH = join(__dirname, '..', 'seeders', '20260520104500-island-taxonomy.js');
 
-const EMBEDDING_MODEL = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
-const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
-const openai = hasApiKey
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
 
 const buildEmbeddingInput = (row) =>
   `${row.categoryName} ${row.displayName}`.replace(/\s+/g, ' ').trim();
@@ -73,19 +67,12 @@ async function reloadIslandTaxonomyFromSeeder() {
 }
 
 async function embedText(text) {
-  const response = await openai.embeddings.create({
-    model: EMBEDDING_MODEL,
-    input: text
-  });
-
-  return response.data[0].embedding;
+  const response = await embedTexts([text]);
+  return { vector: response.embeddings[0], model: response.model };
 }
 
 export async function generateIslandTaxonomyVectors({ force = false } = {}) {
-  if (!hasApiKey) {
-    throw new Error('OPENAI_API_KEY is required before reloading taxonomy and generating vectors');
-  }
-
+  const { model: embeddingModel } = await getEmbeddingInfo();
   await sequelize.authenticate();
   const reloaded = await reloadIslandTaxonomyFromSeeder();
 
@@ -111,11 +98,11 @@ export async function generateIslandTaxonomyVectors({ force = false } = {}) {
     }
 
     try {
-      const vector = await embedText(input);
+      const { vector, model } = await embedText(input);
 
       await row.update({
         vector,
-        embedding_model: EMBEDDING_MODEL
+        embedding_model: model
       });
 
       updated += 1;
@@ -138,7 +125,7 @@ export async function generateIslandTaxonomyVectors({ force = false } = {}) {
     updated,
     skipped,
     failed,
-    model: EMBEDDING_MODEL,
+    model: embeddingModel,
     force
   };
 

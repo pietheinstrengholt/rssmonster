@@ -404,7 +404,12 @@ describe('semantic regression report helpers', () => {
 
     await expect(printSemanticArticleRankingTable(null)).resolves.toEqual([]);
     await expect(printSemanticArticleRankingTable(7)).resolves.toEqual([]);
+    expect(consoleSpy).not.toHaveBeenCalled();
+
+    process.env.SEMANTIC_REPORT_LEVEL = 'trace';
+    await expect(printSemanticArticleRankingTable(7)).resolves.toEqual([]);
     expect(consoleSpy).toHaveBeenCalledOnce();
+    delete process.env.SEMANTIC_REPORT_LEVEL;
 
     mocked.User.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: 7 });
     await expect(printSemanticArticleRankingTableForUser('missing')).resolves.toEqual([]);

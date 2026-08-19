@@ -133,7 +133,7 @@ cd rssmonster
 
 ### Step 2: Install Dependencies
 
-RSSMonster has separate client and server components:
+RSSMonster has separate client, server, and inference components:
 
 ```bash
 # Install server dependencies
@@ -142,6 +142,10 @@ npm install
 
 # Install client dependencies
 cd ../client
+npm install
+
+# Install inference dependencies
+cd ../inference
 npm install
 cd ..
 ```
@@ -156,6 +160,9 @@ cp server/.env.example server/.env
 
 # Client configuration
 cp client/.env.example client/.env
+
+# Inference configuration
+cp inference/.env.example inference/.env
 ```
 
 For a simple local installation, configure SQLite in `server/.env`:
@@ -210,16 +217,21 @@ Project seeders are optional. If you explicitly need them, run:
 **Development mode** (with hot reload):
 
 ```bash
-# Terminal 1: Start the server
+# Terminal 1: Start inference
+cd inference
+npm run dev
+
+# Terminal 2: Start the server
 cd server
 npm run dev
 
-# Terminal 2: Start the client
+# Terminal 3: Start the client
 cd client
 npm run dev
 ```
 
-The client runs on `http://localhost:8080` and the server on `http://localhost:3000`.
+Inference listens on `http://127.0.0.1:3001`, the server on
+`http://localhost:3000`, and the client on `http://localhost:8080`.
 
 **Production mode:**
 
@@ -297,22 +309,25 @@ will trigger duplicate scheduled crawls alongside the worker.
 
 ### Enable AI Assistant
 
-Add these to your `server/.env`:
+Enable the capability in `server/.env`:
 
 ```env
-OPENAI_API_KEY=your-openai-api-key-here
-OPENAI_MODEL_AGENT=gpt-5.1
-OPENAI_MODEL_CRAWL=gpt-4o-mini
+INFERENCE_AI_ENABLED=true
+INFERENCE_AGENT_TIMEOUT_MS=300000
 ```
 
-Then set `VITE_ENABLE_AGENT=true` in `client/.env` and restart both services.
+Put `OPENAI_API_KEY`, `ASSISTANT_PROVIDER`, and `ASSISTANT_MODEL` in
+`inference/.env`; see [Model Usage](model-usage.md).
+
+Then set `VITE_ENABLE_AGENT=true` in `client/.env` and restart inference, the
+server, and the client.
 
 The AI assistant enables:
 - Natural language search: *"Show me tech articles from last week"*
 - Article summarization and tagging
 - Smart recommendations based on reading habits
 
-[Learn more about AI configuration →](configuration.md#openai-and-agentic-features)
+[Learn more about AI configuration →](configuration.md#inference-and-openai-features)
 
 ### Calculate Feed Trust Scores
 
@@ -415,9 +430,10 @@ kill -9 <PID>
 
 ### AI Assistant Not Working
 
-- Verify `OPENAI_API_KEY` is set correctly
+- Verify `OPENAI_API_KEY` is set in `inference/.env`
+- Check `pm2 status rssmonster-inference` and its logs
 - Check API quota/billing in your OpenAI account
-- Ensure both server and client are restarted after config changes
+- Ensure inference, the server, and the client are restarted after config changes
 
 ---
 

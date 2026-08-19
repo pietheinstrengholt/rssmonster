@@ -54,7 +54,7 @@ Note: Endpoints may require specific payload shapes; see controller code for det
 ---
 
 ## MCP / AI Assistant
-- Agent endpoints live under `/api/agent` and `/api/mcp` when `OPENAI_API_KEY` is configured.
+- Agent endpoints live under `/api/agent` and `/api/mcp` when AI inference is enabled.
 - Use these from the built-in UI; not intended for third-party clients.
 
 ---

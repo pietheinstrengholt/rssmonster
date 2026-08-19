@@ -92,16 +92,16 @@ RSSMonster works out of the box with sensible defaults, but every ranking decisi
 
 ## Explore the Documentation
 
-- **[Getting Started](getting-started.md)** — Installation, setup, first steps
-- **[Configuration](configuration.md)** — Environment variables and tuning
-- **[First Login](first-login.md)** — Registration, sign-in, and development login
-- **[Core Concepts](concepts.md)** — How RSSMonster thinks about content
-- **[Smart Folders](smart-folders.md)** — Create powerful dynamic views
-- **[Scoring & Ranking](scoring.md)** — Importance, quality, and attention explained
-- **[Search Guide](search.md)** — Master search expressions
-- **[Article Embedding](article-embedding.md)** — How semantic article representations work
-- **[API & Integrations](api.md)** — Fever API, Google Reader API, and more
-- **[Rule-Based Tags](tag.md#rule-based-tags)** — Apply tags automatically using filters
+- **[Getting Started](getting-started.html)** — Installation, setup, first steps
+- **[Configuration](configuration.html)** — Environment variables and tuning
+- **[First Login](first-login.html)** — Registration, sign-in, and development login
+- **[Core Concepts](concepts.html)** — How RSSMonster thinks about content
+- **[Smart Folders](smart-folders.html)** — Create powerful dynamic views
+- **[Scoring & Ranking](scoring.html)** — Importance, quality, and attention explained
+- **[Search Guide](search.html)** — Master search expressions
+- **[Article Embedding](article-embedding.html)** — How semantic article representations work
+- **[API & Integrations](api.html)** — Fever API, Google Reader API, and more
+- **[Rule-Based Tags](tag.html#rule-based-tags)** — Apply tags automatically using filters
 
 ---
 

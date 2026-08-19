@@ -118,6 +118,6 @@ content hashes exist so it is deterministic even without a URL.
 ## Boundaries
 
 Extraction must not query Article records, perform duplicate matching, sanitize HTML, persist rows,
-apply user actions, write tags, call OpenAI, classify semantic clusters, or update caches. Those
+apply user actions, write tags, call inference, classify semantic clusters, or update caches. Those
 responsibilities belong to orchestration, content/media processing, persistence, and downstream
 enrichment respectively.

@@ -1,10 +1,9 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 import { Op } from 'sequelize';
 
 import db from '../../models/index.js';
+import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
 import { rebuildAllTopicsForUser } from '../../services/reconcile/semanticPipelineScopes.js';
 import { printSemanticArticleRankingTableForUser } from '../helpers/semanticRegressionReport.js';
 import {
@@ -21,8 +20,7 @@ const {
   EventTopic
 } = db;
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const VECTOR_FIXTURE_PATH = join(__dirname, '..', 'fixtures', 'semantic-regression.vectors.json');
+const VECTOR_FIXTURE_PATH = await resolveSemanticVectorFixturePath('semantic-regression');
 const FIXTURE_USERNAME = 'semantic-regression-user';
 const EXPECTED_MIN_TOPICS = 2;
 const EXPECTED_MIN_TOPIC_LINKED_ARTICLES = 3;

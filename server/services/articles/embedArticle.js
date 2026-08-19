@@ -1,5 +1,8 @@
 // services/articles/embedArticle.js
-import OpenAI from 'openai';
+import {
+  DEFAULT_EMBEDDING_MODEL,
+  embedTexts
+} from '../embeddings/embeddingService.js';
 
 /**
  * Core article embedding utility.
@@ -13,7 +16,7 @@ import OpenAI from 'openai';
  */
 
 // Defines the embedding model enforced by this service.
-export const EMBEDDING_MODEL = 'text-embedding-3-small';
+export const EMBEDDING_MODEL = DEFAULT_EMBEDDING_MODEL;
 
 // Defines the min event length enforced by this service.
 const MIN_EVENT_LENGTH = 60;
@@ -23,13 +26,6 @@ const MIN_TOPIC_LENGTH = 120;
 const MAX_TOPIC_LENGTH = 2200;
 // Defines the max embedding input tokens enforced by this service.
 const MAX_EMBEDDING_INPUT_TOKENS = 512;
-
-// Coerces the has api key into the representation required for this service.
-const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
-// Selects the openai based on whether has api key is available.
-const openai = hasApiKey
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
 
 // This function strips common news prefixes and source suffixes from titles.
 function normalizeTitle(title = '') {
@@ -246,22 +242,6 @@ export function isArticleEventEmbeddingTextUsable(text = '') {
   return String(text || '').length >= MIN_EVENT_LENGTH;
 }
 
-// This function sends text to the embedding provider and returns the vector.
-async function embed(text) {
-  // Returns no result when text is not within embedding token limit.
-  if (!isWithinEmbeddingTokenLimit(text)) {
-    return null;
-  }
-
-  // Performs the create operation while performing embed.
-  const response = await openai.embeddings.create({
-    model: EMBEDDING_MODEL,
-    input: text
-  });
-
-  return response.data[0].embedding;
-}
-
 // This function checks whether an article already has a stored vector.
 function hasArticleVector(article) {
   return Array.isArray(article?.articleVector) && article.articleVector.length > 0;
@@ -300,11 +280,6 @@ export async function embedArticle(articleOrInput, options = {}) {
     };
   }
 
-  // Returns no result when has api key is unavailable.
-  if (!hasApiKey) {
-    return null;
-  }
-
   // Builds the article event embedding text while performing embed article.
   const eventText = buildArticleEventEmbeddingText({ title, description, contentText });
   // Extracts the topic text while performing embed article.
@@ -317,30 +292,29 @@ export async function embedArticle(articleOrInput, options = {}) {
 
   try {
     // Selects the values based on whether topic text count reaches min topic length and topic text is within embedding token limit.
-    const [eventVector, topicVector] = await Promise.all([
-      embed(eventText),
-      topicText.length >= MIN_TOPIC_LENGTH
-      && isWithinEmbeddingTokenLimit(topicText)
-        ? embed(topicText)
-        : Promise.resolve(null)
-    ]);
+    const includeTopicVector = topicText.length >= MIN_TOPIC_LENGTH
+      && isWithinEmbeddingTokenLimit(topicText);
+    const response = await embedTexts(includeTopicVector ? [eventText, topicText] : [eventText]);
+    const eventVector = response.embeddings[0] || null;
+    const topicVector = includeTopicVector ? response.embeddings[1] || null : null;
+    const embeddingModel = response.model || EMBEDDING_MODEL;
 
     // Handles the case where article is available and persist is available and event vector is available.
     if (article && persist && eventVector) {
       // Keep persistence logic centralized in this module.
       await article.update({
         articleVector: eventVector,
-        embedding_model: EMBEDDING_MODEL
+        embedding_model: embeddingModel
       });
 
       article.articleVector = eventVector;
-      article.embedding_model = EMBEDDING_MODEL;
+      article.embedding_model = embeddingModel;
     }
 
     return {
       eventVector,
       topicVector,
-      embedding_model: EMBEDDING_MODEL,
+      embedding_model: embeddingModel,
       reused: false
     };
   } catch (err) {

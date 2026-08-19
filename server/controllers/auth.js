@@ -44,7 +44,7 @@ const createAuthenticatedSession = async (user) => {
     token,
     user,
     expiresInSeconds,
-    agenticFeaturesEnabled: Boolean(process.env.OPENAI_API_KEY)
+    agenticFeaturesEnabled: process.env.INFERENCE_AI_ENABLED === 'true'
   };
 };
 
@@ -192,7 +192,7 @@ const validate = async (req, res, _next) => {
       message: 'This is the secret content. Only logged in users can see that!', 
       data: req.userData, 
       user,
-      agenticFeaturesEnabled: Boolean(process.env.OPENAI_API_KEY)
+      agenticFeaturesEnabled: process.env.INFERENCE_AI_ENABLED === 'true'
     });
   } catch (err) {
     console.error('Validation error:', err);

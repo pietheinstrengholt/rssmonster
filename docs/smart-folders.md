@@ -56,5 +56,5 @@ Use the same tokens as the search bar: status (`unread:true`, `favorite:true`), 
 ---
 
 ## AI Suggestions (Optional)
-- When `OPENAI_API_KEY` is set on the server, RSSMonster can propose Smart Folders from your reading patterns (feeds, tags, starred items).
+- When an OpenAI or Qwen generation provider is configured in the inference service, RSSMonster can propose Smart Folders from your reading patterns (feeds, tags, starred items).
 - Suggestions follow the same search syntax and avoid duplicating your existing folders.

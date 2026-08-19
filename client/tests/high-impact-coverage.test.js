@@ -170,8 +170,6 @@ describe('Article high-impact decision coverage', () => {
     expect(compute(Article, 'displayContent', {
       contentHtml: '', content: '', descriptionHtml: '<p>Sanitized fallback</p>', description: '<script>raw</script>'
     })).toBe('<p>Sanitized fallback</p>');
-    expect(compute(Article, 'roundedQuality', { quality: 0.846 })).toBe(85);
-
     expect(compute(ArticleMeta, 'sourceUrl', {
       hasSource: true,
       feed: { url: 'https://example.com/path' }

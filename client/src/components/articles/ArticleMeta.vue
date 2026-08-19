@@ -1,6 +1,5 @@
 <template>
   <div class="article-meta">
-    <BootstrapIcon v-if="isMobilePortrait && quality !== undefined && roundedQuality !== neutralScore" :icon="getQualityIcon(roundedQuality)" :class="['mobile-score-icon', 'quality-icon', getQualityClass(roundedQuality)]" :title="`Overall quality: ${roundedQuality} (${scoreLabel(roundedQuality)})`" />
     <BootstrapIcon v-if="isMobilePortrait && advertisementScore !== undefined && advertisementScore < neutralScore" icon="megaphone-fill" class="mobile-score-icon ad-icon" :title="`Promotional content detected (score: ${advertisementScore})`" />
     <BootstrapIcon v-if="isMobilePortrait && sentimentScore !== undefined && sentimentScore < neutralScore" icon="arrow-down-circle-fill" :class="['mobile-score-icon', 'sentiment-icon', getSentimentClass(sentimentScore)]" :title="`Tone quality: ${sentimentScore}`" />
     <span v-if="hasProvenance" class="article-provenance">
@@ -16,17 +15,14 @@
 
 <script>
 import {
-  getQualityClass,
-  getQualityIcon,
-  getSentimentClass,
-  scoreLabel
+  getSentimentClass
 } from '../../services/articlePresentation.js';
 import { formatRelativeDate } from '../../utils/date.js';
 
 export default {
   emits: ['view-event-articles', 'view-duplicate-articles'],
   props: {
-    publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, isMobilePortrait: { type: Boolean, default: false }, quality: { type: Number, default: undefined }, roundedQuality: { type: Number, default: 0 }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, neutralScore: { type: Number, required: true }
+    publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, neutralScore: { type: Number, required: true }
   },
   computed: {
     // Returns the author or feed name displayed as the article source.
@@ -63,14 +59,8 @@ export default {
   methods: {
     // Formats publication dates as elapsed time.
     formatRelativeDate,
-    // Returns the icon name for a quality score.
-    getQualityIcon,
-    // Returns the CSS class for a quality score.
-    getQualityClass,
     // Returns the CSS class for a sentiment score.
-    getSentimentClass,
-    // Returns the display label for a score.
-    scoreLabel
+    getSentimentClass
   }
 };
 </script>
@@ -181,31 +171,6 @@ export default {
   font-size: 11px;
   margin-right: 3px;
   vertical-align: middle;
-}
-
-.mobile-score-icon.quality-excellent {
-  color: var(--article-quality-positive);
-  margin-bottom: 2px;
-}
-
-.mobile-score-icon.quality-good {
-  color: var(--article-quality-good);
-  margin-bottom: 2px;
-}
-
-.mobile-score-icon.quality-okay {
-  color: var(--article-quality-okay);
-  margin-bottom: 2px;
-}
-
-.mobile-score-icon.quality-weak {
-  color: var(--article-quality-weak);
-  margin-bottom: 2px;
-}
-
-.mobile-score-icon.quality-poor {
-  color: var(--article-overall-score-text);
-  margin-bottom: 2px;
 }
 
 .mobile-score-icon.ad-icon {

@@ -96,25 +96,20 @@ describe('ArticleMeta', () => {
     expect(wrapper.find('.article-provenance-separator').exists()).toBe(false);
   });
 
-  // Verifies mobile metadata exposes each non-neutral score with accessible detail.
-  it('renders mobile quality, advertisement, and sentiment indicators', () => {
+  // Verifies mobile metadata exposes the remaining non-neutral score indicators.
+  it('renders mobile advertisement and sentiment indicators', () => {
     const wrapper = mountArticleMeta({
       isMobilePortrait: true,
-      quality: 4.4,
-      roundedQuality: 4,
       advertisementScore: 1,
       sentimentScore: 2
     });
     const icons = wrapper.findAll('.bootstrap-icon-stub');
 
     expect(icons.map(icon => icon.attributes('data-icon'))).toEqual([
-      'x-octagon-fill',
       'megaphone-fill',
       'arrow-down-circle-fill'
     ]);
-    expect(wrapper.get('.quality-icon').classes()).toContain('quality-poor');
     expect(wrapper.get('.sentiment-icon').classes()).toContain('sentiment-very-poor');
-    expect(wrapper.get('.quality-icon').attributes('title')).toBe('Overall quality: 4 (Poor)');
     expect(wrapper.get('.ad-icon').attributes('title')).toBe('Promotional content detected (score: 1)');
   });
 
@@ -167,14 +162,12 @@ describe('ArticleMeta', () => {
     });
   });
 
-  // Verifies long mobile provenance remains grouped alongside quality and relationship metadata.
-  it('keeps long mobile provenance grouped with quality and relationship badges', () => {
+  // Verifies long mobile provenance remains grouped alongside relationship metadata.
+  it('keeps long mobile provenance grouped with relationship badges', () => {
     const sourceName = 'A very long publication name that can wrap without detaching from its date';
     const wrapper = mountArticleMeta({
       author: sourceName,
       isMobilePortrait: true,
-      quality: 4.4,
-      roundedQuality: 4,
       event: { id: 12, sourceCount: 3 },
       eventArticleCountTotal: 3,
       duplicateCount: 1,
@@ -183,7 +176,6 @@ describe('ArticleMeta', () => {
 
     expect(wrapper.get('.article-provenance .article-source').text()).toBe(sourceName);
     expect(wrapper.get('.article-provenance-separator').exists()).toBe(true);
-    expect(wrapper.get('.quality-icon').exists()).toBe(true);
     expect(wrapper.get('.source-badge').exists()).toBe(true);
     expect(wrapper.get('.similar-badge').exists()).toBe(true);
     expect(wrapper.get('.duplicate-badge').exists()).toBe(true);
@@ -206,8 +198,6 @@ describe('ArticleMeta', () => {
   it('hides neutral mobile scores and ungrouped relationship badges', () => {
     const wrapper = mountArticleMeta({
       isMobilePortrait: true,
-      quality: 3,
-      roundedQuality: 3,
       advertisementScore: 3,
       sentimentScore: 3,
       event: { id: 12, sourceCount: 3 },
@@ -289,41 +279,42 @@ describe('ArticleTagsScores', () => {
     expect(parentClick).not.toHaveBeenCalled();
   });
 
-  // Verifies every enabled score renders its value and explanatory title.
-  it('renders all enabled article scores', () => {
+  // Verifies every enabled analysis dimension renders its score and explanatory title.
+  it('renders writing, tone, and ad scores', () => {
     const wrapper = mountArticleTagsScores({
-      roundedQuality: 4,
-      advertisementScore: 1,
-      sentimentScore: 2,
-      qualityScore: 5,
-      showQuality: true,
+      advertisementScore: 100,
+      sentimentScore: 90,
+      qualityScore: 80,
       showAdvertisement: true,
       showSentiment: true,
       showWritingQuality: true
     });
 
-    expect(wrapper.get('.overall-score').text()).toContain('Quality: 4');
-    expect(wrapper.get('.overall-score').attributes('title')).toBe('Overall quality: 4 (Poor)');
-    expect(wrapper.get('.ad-score').text()).toBe('Ads: 1');
-    expect(wrapper.get('.sentiment-score').text()).toBe('Sentiment: 2');
-    expect(wrapper.get('.quality-score').text()).toBe('Writing: 5');
+    expect(wrapper.get('.quality-score').text()).toBe('Writing: 80');
+    expect(wrapper.get('.sentiment-score').text()).toBe('Tone: 90');
+    expect(wrapper.get('.ad-score').text()).toBe('Ads: 100');
+    expect(wrapper.get('.ad-score').attributes('title')).toBe('Ad-free quality: 100');
+    expect(wrapper.findAll('.score').every(score => score.classes().includes('score-good'))).toBe(true);
+    expect(wrapper.find('.overall-score').exists()).toBe(false);
+    expect(wrapper.findAll('.score').map(score => score.classes()[1])).toEqual([
+      'quality-score',
+      'sentiment-score',
+      'ad-score'
+    ]);
     expect(wrapper.findAll('.score').every(score => score.element.tagName === 'SPAN')).toBe(true);
   });
 
   // Verifies every analysis dimension uses the same score-severity thresholds.
   it('assigns shared severity classes at the score boundaries', () => {
     const wrapper = mountArticleTagsScores({
-      roundedQuality: 59,
       advertisementScore: 60,
       sentimentScore: 79,
       qualityScore: 80,
-      showQuality: true,
       showAdvertisement: true,
       showSentiment: true,
       showWritingQuality: true
     });
 
-    expect(wrapper.get('.overall-score').classes()).toContain('score-poor');
     expect(wrapper.get('.ad-score').classes()).toContain('score-medium');
     expect(wrapper.get('.sentiment-score').classes()).toContain('score-medium');
     expect(wrapper.get('.quality-score').classes()).toContain('score-good');

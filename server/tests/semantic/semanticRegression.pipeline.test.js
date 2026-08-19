@@ -7,6 +7,7 @@ import { Op } from 'sequelize';
 import bcrypt from 'bcryptjs';
 
 import db from '../../models/index.js';
+import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
 import { repairRecentEventsForUser } from '../../services/reconcile/semanticPipelineScopes.js';
 import { printSemanticArticleRankingTable } from '../helpers/semanticRegressionReport.js';
 import {
@@ -31,7 +32,7 @@ const {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURE_PATH = join(__dirname, '..', 'fixtures', 'semantic-regression.json');
-const VECTOR_FIXTURE_PATH = join(__dirname, '..', 'fixtures', 'semantic-regression.vectors.json');
+const VECTOR_FIXTURE_PATH = await resolveSemanticVectorFixturePath('semantic-regression');
 const FIXTURE_USERNAME = 'semantic-regression-user';
 const FIXTURE_PASSWORD = 'rssmonster';
 const EXPECTED_MIN_EVENTS = 3;
@@ -242,7 +243,7 @@ semanticRegressionDescribe('semantic regression fixture pipeline', () => {
 
     expect(
       missingVectorArticles,
-      'semantic-regression.vectors.json is stale for semantic-regression.json. ' +
+      'The selected semantic regression vectors are stale for semantic-regression.json. ' +
       'Run `npm run fixture:semantic-vectors` in server/ after exporting the fixture.\n' +
       JSON.stringify(missingVectorArticles, null, 2)
     ).toHaveLength(0);

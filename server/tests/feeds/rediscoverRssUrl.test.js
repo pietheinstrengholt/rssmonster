@@ -1,116 +1,24 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocked = vi.hoisted(() => ({
-  createCompletion: vi.fn()
+const mocked = vi.hoisted(() => ({ request: vi.fn() }));
+vi.mock('../../services/inference/inferenceClient.js', () => ({
+  requestInferenceJson: mocked.request
 }));
 
-vi.mock('openai', () => ({
-  default: class OpenAI {
-    // This constructor exposes the mocked chat completion API to the service.
-    constructor() {
-      this.chat = {
-        completions: {
-          create: mocked.createCompletion
-        }
-      };
-    }
-  }
-}));
-
-const originalApiKey = process.env.OPENAI_API_KEY;
+const { rediscoverRssUrl } = await import('../../services/feeds/rediscoverRssUrl.js');
 
 describe('rediscoverRssUrl', () => {
-  beforeEach(() => {
-    vi.resetModules();
-    mocked.createCompletion.mockReset();
-    delete process.env.OPENAI_API_KEY;
-  });
+  beforeEach(() => mocked.request.mockReset());
 
-  afterEach(() => {
-    if (originalApiKey === undefined) {
-      delete process.env.OPENAI_API_KEY;
-    } else {
-      process.env.OPENAI_API_KEY = originalApiKey;
-    }
-  });
-
-  it('rejects requests when OpenAI is not configured', async () => {
-    const { rediscoverRssUrl } = await import(
-      '../../services/feeds/rediscoverRssUrl.js'
-    );
-
-    await expect(rediscoverRssUrl({
-      feedName: 'Publisher',
-      websiteUrl: 'https://example.com',
-      oldRssUrl: 'https://example.com/old.xml'
-    })).rejects.toThrow('OpenAI API key not configured');
-    expect(mocked.createCompletion).not.toHaveBeenCalled();
-  });
-
-  it('returns the strict JSON replacement suggested by OpenAI', async () => {
-    process.env.OPENAI_API_KEY = 'test-key';
-    mocked.createCompletion.mockResolvedValue({
-      choices: [{
-        message: {
-          content: JSON.stringify({
-            url: 'https://example.com/feed.xml',
-            confidence: 0.9,
-            reason: 'This is the publisher’s current official feed.'
-          })
-        }
-      }]
-    });
-    const { rediscoverRssUrl } = await import(
-      '../../services/feeds/rediscoverRssUrl.js'
-    );
-
-    await expect(rediscoverRssUrl({
-      feedName: 'Publisher',
-      websiteUrl: 'https://example.com',
-      oldRssUrl: 'https://example.com/old.xml'
-    })).resolves.toEqual({
-      url: 'https://example.com/feed.xml',
-      confidence: 0.9,
-      reason: 'This is the publisher’s current official feed.'
-    });
-    expect(mocked.createCompletion).toHaveBeenCalledWith(
-      expect.objectContaining({
-        model: 'gpt-4.1-mini',
-        temperature: 0.2,
-        max_tokens: 300,
-        messages: expect.arrayContaining([
-          expect.objectContaining({
-            role: 'user',
-            content: expect.stringContaining(
-              '"oldRssUrl": "https://example.com/old.xml"'
-            )
-          })
-        ])
-      })
-    );
-  });
-
-  it('rejects missing or malformed JSON completion content', async () => {
-    process.env.OPENAI_API_KEY = 'test-key';
-    mocked.createCompletion
-      .mockResolvedValueOnce({ choices: [] })
-      .mockResolvedValueOnce({
-        choices: [{ message: { content: 'not JSON' } }]
-      });
-    const { rediscoverRssUrl } = await import(
-      '../../services/feeds/rediscoverRssUrl.js'
-    );
+  it('delegates feed metadata to inference', async () => {
     const input = {
       feedName: 'Publisher',
       websiteUrl: 'https://example.com',
       oldRssUrl: 'https://example.com/old.xml'
     };
-
-    await expect(rediscoverRssUrl(input)).rejects.toThrow(
-      'Invalid JSON returned from OpenAI'
-    );
-    await expect(rediscoverRssUrl(input)).rejects.toThrow(
-      'Invalid JSON returned from OpenAI'
-    );
+    const result = { url: 'https://example.com/feed.xml', confidence: 0.9, reason: 'Official' };
+    mocked.request.mockResolvedValue(result);
+    await expect(rediscoverRssUrl(input)).resolves.toBe(result);
+    expect(mocked.request).toHaveBeenCalledWith('/api/feed-rediscovery', input);
   });
 });

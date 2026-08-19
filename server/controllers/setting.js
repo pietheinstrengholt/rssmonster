@@ -221,7 +221,7 @@ export const getSettings = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const aiEnabled = Boolean(process.env.OPENAI_API_KEY);
+    const aiEnabled = process.env.INFERENCE_AI_ENABLED === 'true';
 
     // Set first-load defaults based on whether AI features are available.
     let categoryId = "%";

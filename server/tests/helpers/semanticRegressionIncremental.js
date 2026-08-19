@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 
 import db from '../../models/index.js';
+import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
 
 const {
   Category,
@@ -14,11 +15,8 @@ const {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const INCREMENTAL_FIXTURE_PATH = join(__dirname, '..', 'fixtures', 'semantic-regression-incremental.json');
-export const INCREMENTAL_VECTOR_FIXTURE_PATH = join(
-  __dirname,
-  '..',
-  'fixtures',
-  'semantic-regression-incremental.vectors.json'
+export const INCREMENTAL_VECTOR_FIXTURE_PATH = await resolveSemanticVectorFixturePath(
+  'semantic-regression-incremental'
 );
 export const FIXTURE_USERNAME = 'semantic-regression-user';
 export const EXPECTED_INCREMENTAL_ARTICLE_COUNT = 91;

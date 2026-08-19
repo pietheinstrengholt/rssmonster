@@ -616,6 +616,9 @@ export async function printSemanticRegressionTrace({ userId, phase, limit = DEFA
   console.log(`[SEMANTIC TRACE] ${phase || trace.phase || 'semantic-regression'}`);
   printArchitectureHealth(await buildArchitectureHealth(trace, userId));
 
+  const rows = sortedTraceRows(trace, limit);
+  if (process.env.SEMANTIC_REPORT_LEVEL !== 'trace') return rows;
+
   const columns = [
     ['ID', 5],
     ['New', 4],
@@ -637,7 +640,6 @@ export async function printSemanticRegressionTrace({ userId, phase, limit = DEFA
 
   console.log(columns.map(([label, width]) => formatCell(label, width)).join('  '));
 
-  const rows = sortedTraceRows(trace, limit);
   for (const row of rows) {
     console.log([
       formatCell(row.articleId, 5),

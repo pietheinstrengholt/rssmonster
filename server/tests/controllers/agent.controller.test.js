@@ -96,7 +96,12 @@ describe('agent controller', () => {
     expect(mocked.run).toHaveBeenCalledWith(
       expect.any(Object),
       'Latest question',
-      expect.objectContaining({ chatHistory: messages.slice(0, 2), stream: true })
+      expect.objectContaining({
+        chatHistory: messages.slice(0, 2),
+        stream: true,
+        modelProvider: expect.any(Object),
+        tracingDisabled: true
+      })
     );
     expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/event-stream; charset=utf-8');
     expect(res.status).toHaveBeenCalledWith(200);

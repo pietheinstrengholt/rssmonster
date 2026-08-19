@@ -141,9 +141,6 @@ const CRAWL_PARALLELPROCESSFLAG = Number(
   effectiveCrawlConfiguration.parallelProcessFlag
 );
 
-// Rate limit delay tracking for OpenAI API
-let rateLimitDelay = 0;
-
 const ACTIVE_CRAWL_INDEX = 'crawl_runs_active_user_unique';
 const CRAWL_TRIGGER_TYPES = new Set(['scheduled', 'api']);
 
@@ -165,14 +162,6 @@ const throwIfAborted = signal => {
 
 // This function preserves the crawl controller's timeout helper contract.
 export const withTimeout = withExecutionTimeout;
-
-// Reset rate limit delay after crawl completes
-const resetRateLimitDelay = () => {
-  if (rateLimitDelay > 0) {
-    console.log('[OpenAI LLM] Resetting rate limit delay');
-    rateLimitDelay = 0;
-  }
-};
 
 // This function uses nextFetchAt as the scheduling authority for eligible feeds.
 const shouldCrawlFeed = (feed, now = new Date()) => {
@@ -1707,13 +1696,11 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
     const started = await startUserCrawl(userId, {
       triggerType: 'api',
       onComplete: result => {
-        resetRateLimitDelay();
         logFeedDebug(
           `Crawl completed: ${result.processed} feeds processed, ${result.errors} errors, ${result.timeouts} timeouts`
         );
       },
       onError: err => {
-        resetRateLimitDelay();
         console.error('Error during async crawl:', sanitizeFeedLogValue(err));
       }
     });

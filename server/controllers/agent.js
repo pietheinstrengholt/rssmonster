@@ -2,6 +2,7 @@
 import { Agent, run } from "@openai/agents";
 import sanitizeAgentOutput, { agentOutputToText } from '../utils/sanitizeAgentOutput.js';
 import { createRssMonsterAgentTools } from '../services/agent/rssMonsterAgentTools.js';
+import { createInferenceModelProvider } from '../services/agent/inferenceModelProvider.js';
 
 const elapsedMs = startedAt => Math.round((performance.now() - startedAt) * 10) / 10;
 
@@ -38,6 +39,9 @@ const HISTORY_FILTER_FIELDS = [
   'tags',
   'to'
 ];
+const inferenceModelProvider = createInferenceModelProvider({
+  timeoutMs: Number(process.env.INFERENCE_AGENT_TIMEOUT_MS || 300_000)
+});
 
 const compactChatHistory = (messages, currentUserIndex) => {
   const candidates = messages
@@ -151,7 +155,6 @@ export const postAgent = async (req, res) => {
     const agent = new Agent({
       name: "RSS feeds management and retrieval assistant",
       instructions: RSSMONSTER_AGENT_INSTRUCTIONS,
-      model: process.env.OPENAI_MODEL_AGENT || process.env.OPENAI_MODEL_NAME || "gpt-5.1",
       tools
     });
     const agentSetupMs = elapsedMs(agentSetupStartedAt);
@@ -182,7 +185,10 @@ export const postAgent = async (req, res) => {
     const result = await run(agent, input, {
       chatHistory,
       signal: abortController.signal,
-      stream: true
+      stream: true,
+      modelProvider: inferenceModelProvider,
+      // Provider tracing would otherwise create a second direct OpenAI path from the server.
+      tracingDisabled: true
     });
     let streamedOutput = '';
     for await (const event of result) {

@@ -127,6 +127,6 @@ updates and downstream enrichment only after the database result is known.
 ## Boundaries
 
 Persistence must not parse RSS/Atom/JSON fields, clean or sanitize HTML, resolve relative URLs,
-extract media, select lead images, apply user actions, call OpenAI, choose semantic memberships, or
+extract media, select lead images, apply user actions, call inference, choose semantic memberships, or
 decide whether two different entries are content duplicates. It applies decisions already made by
 the feed adapter, candidate builder, action engine, duplicate detector, and orchestration layer.

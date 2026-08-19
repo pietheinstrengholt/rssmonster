@@ -97,7 +97,8 @@ intentional.
 ## Regression Fixture Commands
 
 These commands maintain test fixtures for contributors. They are not server
-runtime jobs and some require `OPENAI_API_KEY` because they generate embeddings.
+runtime jobs. Vector-generating commands require the configured inference
+service to be running.
 
 | Command | Purpose |
 | --- | --- |
@@ -106,7 +107,13 @@ runtime jobs and some require `OPENAI_API_KEY` because they generate embeddings.
 | `npm run fixture:semantic-incremental-vectors` | Generate vectors for the incremental semantic fixture. |
 | `npm run fixture:semantic-incremental-unread-vectors` | Generate vectors for the incremental unread semantic fixture. |
 | `npm run fixture:taxonomy-vectors` | Generate the checked test-vector fixture for the Interest Island taxonomy. |
+| `npm run fixture:semantic-select -- --model=<model-id>` | Select an already complete model-specific vector set for semantic regression tests without regenerating other models. |
+| `npm run test:semantic-report` | Run the semantic regression suite and write a concise, timestamped Markdown report under `server/tests/.semantic-regression/`. |
+| `npm run test:semantic-trace` | Run the semantic suite with the detailed article-level console trace enabled. |
 
 Before running any fixture generator, review its command-line options and the
 resulting changes under `server/tests/fixtures`. These commands are intended to
-update repository test data, not production records.
+update repository test data, not production records. Vector files are stored
+per embedding model. The selector requires the baseline, incremental, unread,
+and taxonomy vector files for the requested model to exist; it never combines
+vectors from different models.

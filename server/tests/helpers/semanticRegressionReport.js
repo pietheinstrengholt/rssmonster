@@ -213,6 +213,8 @@ export async function printSemanticArticleRankingTable(userId, options = {}) {
   if (!userId) return [];
 
   const rows = await semanticArticleRankingRows(userId, options);
+  if (process.env.SEMANTIC_REPORT_LEVEL !== 'trace') return rows;
+
   const columns = [
     ['ID', 5],
     ['New', 4],

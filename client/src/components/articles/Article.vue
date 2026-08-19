@@ -54,8 +54,8 @@
         <div class="article-layout">
           <ArticleHeader ref="articleHeading" :url="url" :title="title" :highlightTerms="highlightTerms" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" />
           <div class="meta-row">
-            <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" />
-            <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
+            <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" />
+            <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :showAdvertisement="advertisementScore !== undefined && advertisementScore !== NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
           </div>
           <ArticlePreviewFallback v-if="!hasArticlePreview" :url="url" @open-original="articleClicked" />
           <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
@@ -139,7 +139,6 @@ export default {
     sentimentScore: { type: Number, default: undefined },
     qualityScore: { type: Number, default: undefined },
     recommendationScore: { type: Number, default: undefined },
-    quality: { type: Number, default: undefined },
     isOfficialSource: { type: Boolean, default: false },
     officialOrganization: { type: String, default: '' },
     interestScore: { type: [Number, String], default: 0 },
@@ -244,10 +243,6 @@ export default {
     hasArticlePreview() {
       return hasRenderableContent(this.displayContent)
         || this.shouldRenderMedia;
-    },
-    // Converts the quality score to a percentage.
-    roundedQuality() {
-      return Math.round((this.quality || 0) * 100);
     },
     // Returns the predicted reading affinity.
     predictedAffinity() {

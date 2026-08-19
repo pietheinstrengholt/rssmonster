@@ -43,8 +43,8 @@ describe('settings controller', () => {
   }, 50_000);
 
   it('returns the standard defaults when AI is disabled', async () => {
-    const originalOpenAIKey = process.env.OPENAI_API_KEY;
-    delete process.env.OPENAI_API_KEY;
+    const originalAIEnabled = process.env.INFERENCE_AI_ENABLED;
+    delete process.env.INFERENCE_AI_ENABLED;
     const user = await createUser();
 
     try {
@@ -71,14 +71,14 @@ describe('settings controller', () => {
         AIEnabled: false
       });
     } finally {
-      if (originalOpenAIKey === undefined) delete process.env.OPENAI_API_KEY;
-      else process.env.OPENAI_API_KEY = originalOpenAIKey;
+      if (originalAIEnabled === undefined) delete process.env.INFERENCE_AI_ENABLED;
+      else process.env.INFERENCE_AI_ENABLED = originalAIEnabled;
     }
   });
 
   it('returns AI-first defaults when AI is enabled', async () => {
-    const originalOpenAIKey = process.env.OPENAI_API_KEY;
-    process.env.OPENAI_API_KEY = 'test-api-key';
+    const originalAIEnabled = process.env.INFERENCE_AI_ENABLED;
+    process.env.INFERENCE_AI_ENABLED = 'true';
     const user = await createUser();
 
     try {
@@ -105,14 +105,14 @@ describe('settings controller', () => {
         AIEnabled: true
       });
     } finally {
-      if (originalOpenAIKey === undefined) delete process.env.OPENAI_API_KEY;
-      else process.env.OPENAI_API_KEY = originalOpenAIKey;
+      if (originalAIEnabled === undefined) delete process.env.INFERENCE_AI_ENABLED;
+      else process.env.INFERENCE_AI_ENABLED = originalAIEnabled;
     }
   });
 
   it('uses built-in selection defaults while retaining durable preferences in default mode', async () => {
-    const originalOpenAIKey = process.env.OPENAI_API_KEY;
-    delete process.env.OPENAI_API_KEY;
+    const originalAIEnabled = process.env.INFERENCE_AI_ENABLED;
+    delete process.env.INFERENCE_AI_ENABLED;
     const user = await createUser();
 
     await Setting.create({
@@ -157,14 +157,14 @@ describe('settings controller', () => {
         AIEnabled: false
       });
     } finally {
-      if (originalOpenAIKey === undefined) delete process.env.OPENAI_API_KEY;
-      else process.env.OPENAI_API_KEY = originalOpenAIKey;
+      if (originalAIEnabled === undefined) delete process.env.INFERENCE_AI_ENABLED;
+      else process.env.INFERENCE_AI_ENABLED = originalAIEnabled;
     }
   });
 
   it('restores persisted selection and filter settings in last-used mode', async () => {
-    const originalOpenAIKey = process.env.OPENAI_API_KEY;
-    delete process.env.OPENAI_API_KEY;
+    const originalAIEnabled = process.env.INFERENCE_AI_ENABLED;
+    delete process.env.INFERENCE_AI_ENABLED;
     const user = await createUser();
 
     await Setting.create({
@@ -201,8 +201,8 @@ describe('settings controller', () => {
         AIEnabled: false
       });
     } finally {
-      if (originalOpenAIKey === undefined) delete process.env.OPENAI_API_KEY;
-      else process.env.OPENAI_API_KEY = originalOpenAIKey;
+      if (originalAIEnabled === undefined) delete process.env.INFERENCE_AI_ENABLED;
+      else process.env.INFERENCE_AI_ENABLED = originalAIEnabled;
     }
   });
 

@@ -1,10 +1,9 @@
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 import { Op } from 'sequelize';
 
 import db from '../../models/index.js';
 import { runIslandCalibrationForUser } from '../../services/islands/runIslandCalibration.js';
+import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
 
 const {
   User,
@@ -14,8 +13,7 @@ const {
   IslandTaxonomy
 } = db;
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-export const TAXONOMY_VECTOR_FIXTURE_PATH = join(__dirname, '..', 'fixtures', 'island-taxonomy.vectors.json');
+export const TAXONOMY_VECTOR_FIXTURE_PATH = await resolveSemanticVectorFixturePath('island-taxonomy');
 export const FIXTURE_USERNAME = 'semantic-regression-user';
 export const SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD = 0.02;
 
@@ -127,5 +125,3 @@ export async function expectSemanticRegressionIslandsBuilt(expect) {
   expect(islandTopicLinkCount).toBeGreaterThan(0);
   expect(scoredArticleCount).toBeGreaterThan(0);
 }
-
-

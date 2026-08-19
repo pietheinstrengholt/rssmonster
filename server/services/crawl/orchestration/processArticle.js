@@ -76,7 +76,11 @@ const processArticle = async (
     });
   } catch (err) {
     if (isFeedTimeoutError(err) || err?.code === 'FEED_LEASE_LOST') throw err;
-    console.error('Error processing article:', err);
+    if (err?.code === 'INFERENCE_UNAVAILABLE') {
+      console.error(`[CRAWL] ${err.message}`);
+    } else {
+      console.error('Error processing article:', err);
+    }
     return {
       newArticles: 0,
       updatedArticles: 0,
