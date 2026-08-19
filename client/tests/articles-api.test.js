@@ -58,14 +58,15 @@ describe('articles API', () => {
     });
   });
 
-  it('does not send the loaded ID snapshot in matching mark-read requests', () => {
+  it('sends the loaded ID snapshot in matching mark-read requests', () => {
     const currentSelection = { status: 'unread', grouping: 'event' };
 
     markAllAsRead(currentSelection, [10, 11]);
 
     expect(post).toHaveBeenCalledWith('/articles/markasread', {
       ...currentSelection,
-      scope: 'matching'
+      scope: 'matching',
+      snapshotArticleIds: [10, 11]
     });
   });
 });

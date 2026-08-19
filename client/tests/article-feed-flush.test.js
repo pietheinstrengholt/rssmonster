@@ -43,7 +43,7 @@ describe('ArticleFeed final read reconciliation', () => {
     expect(ArticleFeed.computed.currentViewUnreadCount.call(context)).toBe(2);
   });
 
-  it('marks the live selection instead of the stale container snapshot', async () => {
+  it('marks only the completed collection snapshot before refreshing newer articles', async () => {
     const fetchOverviewSplit = vi.fn().mockResolvedValue();
     const currentSelection = {
       status: 'unread',
@@ -74,7 +74,7 @@ describe('ArticleFeed final read reconciliation', () => {
 
     await ArticleFeed.methods.flushPool.call(context);
 
-    expect(markAllAsRead).toHaveBeenCalledWith(activeSelection);
+    expect(markAllAsRead).toHaveBeenCalledWith(activeSelection, [101, 102, 103, 103]);
     expect(context.articles.map(article => article.status)).toEqual([
       'read',
       'read',
@@ -112,7 +112,10 @@ describe('ArticleFeed final read reconciliation', () => {
 
     await ArticleFeed.methods.flushPool.call(context);
 
-    expect(markAllAsRead).toHaveBeenCalledWith(context.selectionStore.currentSelection);
+    expect(markAllAsRead).toHaveBeenCalledWith(
+      context.selectionStore.currentSelection,
+      [201, 202]
+    );
     expect(context.articles.map(article => article.status)).toEqual(['read', 'unread']);
     expect(context.isFlushed).toBe(false);
     expect(fetchOverviewSplit).not.toHaveBeenCalled();

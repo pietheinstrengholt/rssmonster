@@ -48,10 +48,11 @@ export const articleFeedReadStateMethods = {
     if ((!this.totalCount && !this.container.length) || this.isFlushed) return;
 
     const selection = { ...this.selectionStore.currentSelection };
+    const snapshotArticleIds = [...this.container];
     const activeRequestId = this.activeRequestId;
 
     try {
-      await markAllAsRead(selection);
+      await markAllAsRead(selection, snapshotArticleIds);
     } catch (error) {
       console.error('Error marking all articles as read:', error);
       notifyActionError('Could not mark these articles as read. Please try again.', error);
