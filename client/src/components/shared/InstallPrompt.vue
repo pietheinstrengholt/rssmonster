@@ -52,7 +52,7 @@ export default {
   methods: {
     wasDismissed() {
       try {
-        return sessionStorage.getItem(DISMISSED_KEY) === 'true';
+        return localStorage.getItem(DISMISSED_KEY) === 'true';
       } catch {
         return false;
       }
@@ -78,7 +78,7 @@ export default {
     },
     dismiss() {
       try {
-        sessionStorage.setItem(DISMISSED_KEY, 'true');
+        localStorage.setItem(DISMISSED_KEY, 'true');
       } catch {
         // A denied storage write must not prevent dismissing the guidance.
       }

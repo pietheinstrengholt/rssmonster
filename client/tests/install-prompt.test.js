@@ -14,7 +14,7 @@ vi.mock('../src/services/appInstallation.js', () => ({
 
 describe('install guidance', () => {
   beforeEach(() => {
-    sessionStorage.clear();
+    localStorage.clear();
     installationMocks.isIOS.mockReturnValue(false);
     installationMocks.isStandalone.mockReturnValue(false);
   });
@@ -75,13 +75,16 @@ describe('install guidance', () => {
     expect(wrapper.find('.install-prompt').exists()).toBe(false);
   });
 
-  it('dismisses guidance for the current browser session', async () => {
+  it('keeps guidance dismissed across app sessions in the same browser', async () => {
     installationMocks.isIOS.mockReturnValue(true);
     const wrapper = mount(InstallPrompt);
     await wrapper.vm.$nextTick();
 
     await wrapper.get('.install-prompt__dismiss').trigger('click');
-    expect(sessionStorage.getItem('rssmonster-install-prompt-dismissed')).toBe('true');
+    expect(localStorage.getItem('rssmonster-install-prompt-dismissed')).toBe('true');
     expect(wrapper.find('.install-prompt').exists()).toBe(false);
+
+    wrapper.unmount();
+    expect(mount(InstallPrompt).find('.install-prompt').exists()).toBe(false);
   });
 });
