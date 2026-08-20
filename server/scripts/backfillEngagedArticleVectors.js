@@ -7,6 +7,7 @@
  *   node scripts/backfillEngagedArticleVectors.js --userId=3
  *   node scripts/backfillEngagedArticleVectors.js --batchSize=100
  *   node scripts/backfillEngagedArticleVectors.js --limit=500
+ *   node scripts/backfillEngagedArticleVectors.js --stars-and-clicks-only
  */
 
 import dotenv from 'dotenv';
@@ -28,6 +29,7 @@ function parseArgs(argv) {
   const options = {
     batchSize: DEFAULT_BATCH_SIZE,
     dryRun: false,
+    includeFeedbackSignals: true,
     limit: null,
     userId: null
   };
@@ -35,6 +37,8 @@ function parseArgs(argv) {
   for (const arg of argv.slice(2)) {
     if (arg === '--dry-run') {
       options.dryRun = true;
+    } else if (arg === '--stars-and-clicks-only') {
+      options.includeFeedbackSignals = false;
     } else if (arg.startsWith('--batchSize=')) {
       options.batchSize = Number(arg.split('=')[1]);
     } else if (arg.startsWith('--limit=')) {
@@ -66,15 +70,23 @@ function parseArgs(argv) {
 }
 
 // This function builds the narrow backfill filter for missing engaged vectors.
-function buildTargetWhere({ userId = null, afterId = null } = {}) {
+export function buildEngagedVectorTargetWhere({
+  userId = null,
+  afterId = null,
+  includeFeedbackSignals = true
+} = {}) {
+  const engagementConditions = [
+    { favoriteInd: 1 },
+    { clickedAmount: { [Op.gt]: 0 } }
+  ];
+
+  if (includeFeedbackSignals) {
+    engagementConditions.splice(1, 0, { positiveInd: 1 }, { negativeInd: 1 });
+  }
+
   const where = {
     articleVector: null,
-    [Op.or]: [
-      { favoriteInd: 1 },
-      { positiveInd: 1 },
-      { negativeInd: 1 },
-      { clickedAmount: { [Op.gt]: 0 } }
-    ]
+    [Op.or]: engagementConditions
   };
 
   if (userId) {
@@ -89,9 +101,9 @@ function buildTargetWhere({ userId = null, afterId = null } = {}) {
 }
 
 // This function fetches the next stable id-ordered page of target articles.
-async function fetchBatch({ userId, afterId, batchSize }) {
+async function fetchBatch({ userId, afterId, batchSize, includeFeedbackSignals }) {
   return Article.findAll({
-    where: buildTargetWhere({ userId, afterId }),
+    where: buildEngagedVectorTargetWhere({ userId, afterId, includeFeedbackSignals }),
     order: [['id', 'ASC']],
     limit: batchSize,
     attributes: [
@@ -115,6 +127,7 @@ export async function backfillEngagedArticleVectors(options = {}) {
   const {
     batchSize = DEFAULT_BATCH_SIZE,
     dryRun = false,
+    includeFeedbackSignals = true,
     limit = null,
     userId = null
   } = options;
@@ -122,7 +135,7 @@ export async function backfillEngagedArticleVectors(options = {}) {
   await sequelize.authenticate();
 
   const targetCount = await Article.count({
-    where: buildTargetWhere({ userId })
+    where: buildEngagedVectorTargetWhere({ userId, includeFeedbackSignals })
   });
 
   console.log(
@@ -154,7 +167,8 @@ export async function backfillEngagedArticleVectors(options = {}) {
     const articles = await fetchBatch({
       userId,
       afterId: lastId,
-      batchSize: remaining
+      batchSize: remaining,
+      includeFeedbackSignals
     });
 
     if (!articles.length) break;

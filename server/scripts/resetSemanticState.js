@@ -58,7 +58,13 @@ function parseArgs(argv) {
  * Core reset logic
  * ------------------------------------------------------------------ */
 
-async function resetForUser(userId, dryRun) {
+export async function resetSemanticStateForUser(userId, options = {}) {
+  const {
+    clearArticleVectors = false,
+    clearDuplicateState = false,
+    dryRun = false,
+    resetInterestScores = false
+  } = options;
   const label = `user ${userId}`;
 
   // Gather IDs scoped to this user
@@ -72,7 +78,11 @@ async function resetForUser(userId, dryRun) {
   const eventIds = eventRows.map(r => r.id);
   const topicIds = topicRows.map(r => r.id);
 
-  const articleCount = await Article.count({ where: { userId } });
+  const [articleCount, vectorCount, duplicateCount] = await Promise.all([
+    Article.count({ where: { userId } }),
+    Article.count({ where: { userId, articleVector: { [Op.ne]: null } } }),
+    Article.count({ where: { userId, duplicateOfArticleId: { [Op.ne]: null } } })
+  ]);
 
   console.log(`\n[RESET] ${label} — found:`);
   console.log(`  islands       : ${islandIds.length}`);
@@ -82,6 +92,9 @@ async function resetForUser(userId, dryRun) {
   console.log(`  topics        : ${topicIds.length}`);
   console.log(`  article_topics: (scoped via topicIds)`);
   console.log(`  articles      : ${articleCount} (preserved, FK columns cleared)`);
+  if (clearArticleVectors) console.log(`  vectors       : ${vectorCount} (cleared)`);
+  if (clearDuplicateState) console.log(`  duplicates    : ${duplicateCount} (cleared)`);
+  if (resetInterestScores) console.log('  interestScore : reset to 0');
 
   if (dryRun) {
     console.log(`[RESET] ${label} — DRY RUN, no changes made`);
@@ -117,8 +130,25 @@ async function resetForUser(userId, dryRun) {
     }
 
     // 5. Events (FK eventId on articles — clear first)
+    const articleResetValues = {
+      eventId: null,
+      topicId: null,
+      ...(clearArticleVectors
+        ? { articleVector: null, embedding_model: null }
+        : {}),
+      ...(clearDuplicateState
+        ? {
+            duplicateOfArticleId: null,
+            duplicateCount: 0,
+            status: sequelize.literal(
+              "CASE WHEN status = 'duplicate' THEN 'unread' ELSE status END"
+            )
+          }
+        : {}),
+      ...(resetInterestScores ? { interestScore: 0 } : {})
+    };
     await Article.update(
-      { eventId: null, topicId: null },
+      articleResetValues,
       { where: { userId }, transaction: t }
     );
     await Event.destroy({ where: { userId }, transaction: t });
@@ -129,6 +159,8 @@ async function resetForUser(userId, dryRun) {
 
   console.log(`[RESET] ${label} — done`);
 }
+
+const resetForUser = (userId, dryRun) => resetSemanticStateForUser(userId, { dryRun });
 
 /* ------------------------------------------------------------------
  * Entrypoint

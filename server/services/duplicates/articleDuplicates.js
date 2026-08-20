@@ -165,6 +165,10 @@ export async function markDuplicateArticlesForUser(userId, options = {}) {
     articleVector: { [Op.ne]: null }
   };
 
+  if (options.afterId) {
+    where.id = { [Op.gt]: options.afterId };
+  }
+
   // Handles the case where options created at from is available.
   if (options.createdAtFrom) {
     where.createdAt = { [Op.gte]: options.createdAtFrom };
@@ -209,7 +213,8 @@ export async function markDuplicateArticlesForUser(userId, options = {}) {
     userId,
     scannedCount: articles.length,
     duplicateCount,
-    duplicates
+    duplicates,
+    lastArticleId: articles.at(-1)?.id ?? null
   };
 }
 

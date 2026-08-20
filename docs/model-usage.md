@@ -109,11 +109,55 @@ embedding model**. Changing `EMBEDDING_PROVIDER` alone is unsafe because new
 vectors would be compared with existing vectors from another embedding space.
 `npm run reset:semantic` is not a model-switching tool: it removes derived
 Events, Topics, and Interest Islands but deliberately preserves article vectors.
-RSSMonster currently has no supported in-place command that clears and
-re-embeds every retained article. For a model change, use a clean database or a
-separately isolated vector data set, then regenerate taxonomy vectors and all
-derived semantic state with the selected model before crawling resumes.
+Use the guarded model-rebuild command below when changing models in an existing
+environment.
 
 Similarity thresholds are model-dependent. Evaluate events, topics, interest
 islands, and duplicate detection with RSSMonster's semantic regression report
 before adopting a model or changing thresholds.
+
+### Reset and rebuild an existing environment
+
+After selecting the new embedding provider in `inference/.env`, restart the
+inference service and inspect the rebuild scope from the server directory:
+
+```bash
+npm run semantic:model-rebuild -- --dry-run
+```
+
+Review the reported article, vector, event, topic, island, and taxonomy counts.
+Then run the destructive rebuild explicitly:
+
+```bash
+npm run semantic:model-rebuild -- --confirm
+```
+
+The command:
+
+1. Confirms that inference is reachable and reports its embedding model.
+2. Clears every article vector and model identifier.
+3. Removes events, event and behavioral topics, semantic links, islands,
+   duplicate relationships, and derived interest scores.
+4. Generates new article vectors only for starred articles
+   (`favoriteInd=1`) and articles with at least one click (`clickedAmount>0`).
+5. Reloads the shared island taxonomy seed and regenerates all taxonomy vectors.
+6. Rebuilds duplicate detection, historical events, event and behavioral
+   topics, islands, memberships, and article interest scores.
+
+Feeds, articles, tags, classification results, stars, clicks, and other
+engagement signals are preserved. Articles previously marked as semantic
+duplicates are restored to `unread` before duplicate detection runs again,
+because their earlier read state is not retained separately. Taxonomy rows are
+reloaded from the repository seed, so local taxonomy-row edits are replaced.
+
+The command fails unless `--confirm` or `--dry-run` is present. It can be scoped
+to one user and use a different batch size:
+
+```bash
+npm run semantic:model-rebuild -- --confirm --userId=3 --batchSize=100
+```
+
+Taxonomy vectors are shared, so they are regenerated globally even for a
+user-scoped rebuild. Stop crawling and semantic jobs for the duration. If a
+stage fails, leave crawling stopped, correct the failure, and rerun the same
+command; the workflow is repeatable.

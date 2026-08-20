@@ -407,9 +407,16 @@ mode also logs content-safe activity for embeddings, summaries, tags, article
 scoring, assistant calls, Smart Folder recommendations, and feed rediscovery.
 Assistant responses currently continue to use OpenAI.
 Do not mix vectors from different models in one database: one database must
-contain vectors from exactly one embedding model. Changing providers requires
-a clean, isolated vector data set; `npm run reset:semantic` alone is not enough
-because it preserves article vectors. See
+contain vectors from exactly one embedding model. To switch an existing
+database, inspect and run the guarded rebuild from `server/`:
+
+```bash
+npm run semantic:model-rebuild -- --dry-run
+npm run semantic:model-rebuild -- --confirm
+```
+
+It preserves articles and engagement while rebuilding semantic state with new
+vectors for starred or clicked articles only. See
 [Model Usage](docs/model-usage.md) and [Inference administration](docs/inference.md)
 for production setup and model-specific guidance.
 
