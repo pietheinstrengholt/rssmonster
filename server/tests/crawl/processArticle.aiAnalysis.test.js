@@ -184,7 +184,7 @@ describe('processArticle AI analysis controls', () => {
     });
     mocked.analyzeArticleContent.mockResolvedValue({
       contentSummaryBullets: ['Updated bullet'],
-      tags: ['updated-generated'],
+      tags: ['updated-inferred'],
       advertisementScore: 80,
       sentimentScore: 90,
       qualityScore: 80
@@ -610,7 +610,8 @@ describe('processArticle AI analysis controls', () => {
         qualityScore: 0
       }),
       tagUpdates: {
-        generatedTags: ['updated-generated'],
+        inferredTags: ['updated-inferred'],
+        providerTags: ['AI'],
         feedTags: undefined,
         ruleTags: ['updated-rule']
       },
@@ -849,7 +850,7 @@ describe('processArticle AI analysis controls', () => {
         sentimentScore: 70,
         qualityScore: 70
       }),
-      tagUpdates: expect.objectContaining({ generatedTags: [] })
+      tagUpdates: expect.objectContaining({ inferredTags: [] })
     }));
   });
 

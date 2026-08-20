@@ -6,9 +6,10 @@ const { Tag } = db;
 
 // Defines the tag type priority enforced by this service.
 const TAG_TYPE_PRIORITY = {
-  generated: 1,
-  feed: 2,
-  rule: 3
+  inferred: 1,
+  provider: 2,
+  feed: 3,
+  rule: 4
 };
 // Defines the crawl tag types enforced by this service.
 const CRAWL_TAG_TYPES = Object.keys(TAG_TYPE_PRIORITY);
@@ -41,13 +42,19 @@ export const normalizeTagList = tags => {
 };
 
 // This function converts article tag sources into one de-duplicated row list.
-export const buildArticleTags = ({ generatedTags = [], feedTags = [], ruleTags = [] } = {}) => {
+export const buildArticleTags = ({
+  inferredTags = [],
+  providerTags = [],
+  feedTags = [],
+  ruleTags = []
+} = {}) => {
   // Derives the by name required while building article tags.
   const byName = new Map();
 
   // Runs the callback required while building article tags.
   [
-    { tagType: 'generated', tags: generatedTags },
+    { tagType: 'inferred', tags: inferredTags },
+    { tagType: 'provider', tags: providerTags },
     { tagType: 'feed', tags: feedTags },
     { tagType: 'rule', tags: ruleTags }
   ].forEach(({ tagType, tags }) => {
@@ -69,13 +76,14 @@ export const buildArticleTags = ({ generatedTags = [], feedTags = [], ruleTags =
 export const saveArticleTags = async ({
   articleId,
   userId,
-  generatedTags,
+  inferredTags,
+  providerTags,
   feedTags,
   ruleTags,
   transaction = null
 }) => {
   // Builds the article tags while performing save article tags.
-  const tags = buildArticleTags({ generatedTags, feedTags, ruleTags });
+  const tags = buildArticleTags({ inferredTags, providerTags, feedTags, ruleTags });
 
   // Returns early when tags count is value.
   if (tags.length === 0) {
@@ -104,7 +112,8 @@ const tagValue = (tag, field) => typeof tag?.getDataValue === 'function'
 export const replaceArticleDerivedTags = async ({
   articleId,
   userId,
-  generatedTags,
+  inferredTags,
+  providerTags,
   feedTags,
   ruleTags,
   transaction
@@ -130,11 +139,14 @@ export const replaceArticleDerivedTags = async ({
       .map(tag => normalizeTagName(tagValue(tag, 'name')))
       .filter(Boolean)
   );
-  // Selects the desired tags based on whether generated tags is undefined.
+  // Selects desired tags while preserving provenance sources omitted by a partial update.
   const desiredTags = buildArticleTags({
-    generatedTags: generatedTags === undefined
-      ? existingByType.generated
-      : generatedTags,
+    inferredTags: inferredTags === undefined
+      ? existingByType.inferred
+      : inferredTags,
+    providerTags: providerTags === undefined
+      ? existingByType.provider
+      : providerTags,
     feedTags: feedTags === undefined
       ? existingByType.feed
       : feedTags,

@@ -26,7 +26,7 @@ export default (sequelize) => {
         type: DataTypes.STRING,
         allowNull: false
       },
-      // Records the tag's origin, such as a rule assignment; null when no origin is recorded.
+      // Records whether the tag came from inference, the provider, feed configuration, or a rule.
       tagType: {
         type: DataTypes.STRING,
         allowNull: true

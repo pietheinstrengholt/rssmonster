@@ -737,7 +737,8 @@ describe('updateArticle', () => {
         qualityScore: 90
       },
       tagUpdates: {
-        generatedTags: ['generated-new'],
+        inferredTags: ['inferred-new'],
+        providerTags: ['provider-tag'],
         feedTags: ['feed-tag'],
         ruleTags: ['rule-new']
       },
@@ -763,7 +764,8 @@ describe('updateArticle', () => {
     expect(mocked.replaceArticleDerivedTags).toHaveBeenCalledWith({
       articleId: article.id,
       userId: 42,
-      generatedTags: ['generated-new'],
+      inferredTags: ['inferred-new'],
+      providerTags: ['provider-tag'],
       feedTags: ['feed-tag'],
       ruleTags: ['rule-new'],
       transaction: mocked.transaction
@@ -781,7 +783,7 @@ describe('updateArticle', () => {
     await expect(module.applyArticleUpdate({
       updatePlan,
       derivedValues: { qualityScore: 90 },
-      tagUpdates: { generatedTags: [], feedTags: [], ruleTags: [] },
+      tagUpdates: { inferredTags: [], providerTags: [], feedTags: [], ruleTags: [] },
       userId: 42
     })).rejects.toBe(tagError);
     expect(mocked.articleUpdate).toHaveBeenCalledWith(

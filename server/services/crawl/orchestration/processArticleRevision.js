@@ -167,7 +167,8 @@ const processArticleRevision = async ({
   // Selects the tag updates based on whether requires actions is available or requires analysis is available.
   const tagUpdates = requiresActions || requiresAnalysis
     ? {
-        generatedTags: analysis ? analysis.tags : undefined,
+        inferredTags: analysis ? analysis.tags : undefined,
+        providerTags: articleData.categories,
         feedTags: feed.feedTags,
         ruleTags: actionResult ? actionResult.tags : undefined
       }

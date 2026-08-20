@@ -49,7 +49,7 @@ const saveArguments = () => [
   },
   {
     contentSummaryBullets: [],
-    tags: ['Generated'],
+    tags: ['Inferred'],
     advertisementScore: 70,
     sentimentScore: 70,
     qualityScore: 70
@@ -108,6 +108,7 @@ describe('saveArticle feed tags', () => {
         externalIdType: 'guid',
         title: 'Article title',
         description: 'Description',
+        categories: ['Provider Topic', 'hardware'],
         contentOriginal: '<p>Body</p>',
         contentHtml: 'Body',
         contentText: 'Body',
@@ -120,7 +121,7 @@ describe('saveArticle feed tags', () => {
       {
         summary: 'Summary',
         contentSummaryBullets: [],
-        tags: ['Generated', 'Hardware'],
+        tags: ['Inferred', 'Hardware'],
         advertisementScore: 70,
         sentimentScore: 70,
         qualityScore: 70
@@ -137,8 +138,14 @@ describe('saveArticle feed tags', () => {
     expect(mocked.tagCreate).toHaveBeenCalledWith({
       articleId: 123,
       userId: 42,
-      name: 'generated',
-      tagType: 'generated'
+      name: 'inferred',
+      tagType: 'inferred'
+    }, { transaction: mocked.transaction });
+    expect(mocked.tagCreate).toHaveBeenCalledWith({
+      articleId: 123,
+      userId: 42,
+      name: 'provider topic',
+      tagType: 'provider'
     }, { transaction: mocked.transaction });
     expect(mocked.tagCreate).toHaveBeenCalledWith({
       articleId: 123,
@@ -170,7 +177,7 @@ describe('saveArticle feed tags', () => {
       name: 'rule-tag',
       tagType: 'rule'
     }, { transaction: mocked.transaction });
-    expect(mocked.tagCreate).toHaveBeenCalledTimes(6);
+    expect(mocked.tagCreate).toHaveBeenCalledTimes(7);
     expect(mocked.articleCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         externalId: 'article-6402680',
@@ -302,7 +309,7 @@ describe('saveArticle feed tags', () => {
       { transaction: mocked.transaction }
     );
     expect(mocked.tagCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ articleId: 123, name: 'generated' }),
+      expect.objectContaining({ articleId: 123, name: 'inferred' }),
       { transaction: mocked.transaction }
     );
     expect(mocked.articleFindOne).not.toHaveBeenCalled();

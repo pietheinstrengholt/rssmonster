@@ -153,7 +153,8 @@ async function saveArticle(feed, data, analysis, actionResult, execution = {}) {
         await saveArticleTags({
           articleId: createdArticle.id,
           userId: feed.userId,
-          generatedTags: analysis.tags,
+          inferredTags: analysis.tags,
+          providerTags: data.categories,
           feedTags: feed.feedTags,
           ruleTags: actionResult.tags,
           transaction

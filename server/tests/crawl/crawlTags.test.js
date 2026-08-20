@@ -30,12 +30,14 @@ describe('crawl tag helpers', () => {
     const { buildArticleTags } = await import('../../services/crawl/persistence/tags.js');
 
     expect(buildArticleTags({
-      generatedTags: ['Hardware', 'geekcomputerspcs', ''],
+      inferredTags: ['Hardware', 'geekcomputerspcs', ''],
+      providerTags: ['hardware', 'Provider topic'],
       feedTags: ['hardware', 'Security'],
       ruleTags: ['HARDWARE', 'Must Read']
     })).toEqual([
       { name: 'hardware', tagType: 'rule' },
-      { name: 'geekcomputerspcs', tagType: 'generated' },
+      { name: 'geekcomputerspcs', tagType: 'inferred' },
+      { name: 'provider topic', tagType: 'provider' },
       { name: 'security', tagType: 'feed' },
       { name: 'must read', tagType: 'rule' }
     ]);
@@ -44,7 +46,8 @@ describe('crawl tag helpers', () => {
   it('replaces crawl-derived tags while preserving manual tags and untouched provenance', async () => {
     const transaction = { id: 'tag-update-transaction' };
     mocked.tagFindAll.mockResolvedValue([
-      { name: 'old-generated', tagType: 'generated' },
+      { name: 'old-inferred', tagType: 'inferred' },
+      { name: 'provider-existing', tagType: 'provider' },
       { name: 'old-rule', tagType: 'rule' },
       { name: 'feed-existing', tagType: 'feed' },
       { name: 'manual-tag', tagType: null }
@@ -54,7 +57,8 @@ describe('crawl tag helpers', () => {
     await replaceArticleDerivedTags({
       articleId: 123,
       userId: 42,
-      generatedTags: ['new-generated', 'manual-tag'],
+      inferredTags: ['new-inferred', 'manual-tag'],
+      providerTags: ['new-provider'],
       ruleTags: ['new-rule'],
       transaction
     });
@@ -74,8 +78,14 @@ describe('crawl tag helpers', () => {
     expect(mocked.tagCreate).toHaveBeenCalledWith({
       articleId: 123,
       userId: 42,
-      name: 'new-generated',
-      tagType: 'generated'
+      name: 'new-inferred',
+      tagType: 'inferred'
+    }, { transaction });
+    expect(mocked.tagCreate).toHaveBeenCalledWith({
+      articleId: 123,
+      userId: 42,
+      name: 'new-provider',
+      tagType: 'provider'
     }, { transaction });
     expect(mocked.tagCreate).toHaveBeenCalledWith({
       articleId: 123,
@@ -94,7 +104,7 @@ describe('crawl tag helpers', () => {
       expect.any(Object)
     );
     expect(mocked.tagCreate).not.toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'old-generated' }),
+      expect.objectContaining({ name: 'old-inferred' }),
       expect.any(Object)
     );
   });
