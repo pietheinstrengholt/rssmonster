@@ -17,16 +17,16 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@huggingface/transformers": "^4.0.0-next.11",
-    "@openai/agents": "^0.15.0",
+    "@huggingface/transformers": "^4.2.0",
+    "@openai/agents": "^0.17.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "openai": "^7.4.0"
+    "openai": "^7.5.0"
   },
   "devDependencies": {
     "eslint": "^10.8.1",
     "globals": "^17.11.0",
     "supertest": "^7.2.2",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }
