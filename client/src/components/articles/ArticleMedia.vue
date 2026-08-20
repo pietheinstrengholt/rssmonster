@@ -34,7 +34,7 @@
     </audio>
     <span v-if="metadata" class="article-media-inline-metadata">{{ metadata }}</span>
   </div>
-  <div v-else-if="isVideo" class="article-media">
+  <div v-else-if="isVideo" class="article-media article-media-video">
     <a
       v-if="destinationUrl"
       class="article-media-link"
@@ -282,6 +282,10 @@ export default {
   width: 100%;
   max-width: 760px;
   margin: 14px 0;
+}
+
+.article-media-video {
+  max-width: 560px;
 }
 
 .article-media-inline {
