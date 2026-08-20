@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   InferenceServiceUnavailableError,
+  InferenceTimeoutError,
   requestInferenceJson
 } from '../../services/inference/inferenceClient.js';
 
@@ -48,5 +49,23 @@ describe('inference client', () => {
     await expect(requestInferenceJson('/api/test', {}, {
       fetchImplementation: vi.fn().mockResolvedValue(new Response('not-json', { status: 200 }))
     })).rejects.toThrow('Inference response is not valid JSON');
+  });
+
+  it('identifies request timeouts for concise crawl logging', async () => {
+    const timeoutCause = Object.assign(new Error('timed out'), { name: 'TimeoutError' });
+    const request = requestInferenceJson('/api/test', {}, {
+      timeoutMs: 25,
+      fetchImplementation: vi.fn().mockRejectedValue(timeoutCause)
+    });
+
+    await expect(request).rejects.toMatchObject({
+      name: 'InferenceTimeoutError',
+      code: 'INFERENCE_TIMEOUT',
+      message: 'Inference request timed out after 25ms'
+    });
+    await request.catch(error => {
+      expect(error).toBeInstanceOf(InferenceTimeoutError);
+      expect(error.cause).toBe(timeoutCause);
+    });
   });
 });

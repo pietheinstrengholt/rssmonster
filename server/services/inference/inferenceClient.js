@@ -1,6 +1,14 @@
 const DEFAULT_INFERENCE_URL = 'http://127.0.0.1:3001';
 const DEFAULT_TIMEOUT_MS = 30_000;
 
+export class InferenceTimeoutError extends Error {
+  constructor(timeoutMs, cause) {
+    super(`Inference request timed out after ${timeoutMs}ms`, { cause });
+    this.name = 'InferenceTimeoutError';
+    this.code = 'INFERENCE_TIMEOUT';
+  }
+}
+
 export class InferenceServiceUnavailableError extends Error {
   constructor(baseUrl, cause) {
     const reason = cause?.cause?.code || cause?.code;
@@ -34,7 +42,7 @@ export const requestInferenceJson = async (path, payload, options = {}) => {
     });
   } catch (error) {
     if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-      throw new Error(`Inference request timed out after ${timeoutMs}ms`);
+      throw new InferenceTimeoutError(timeoutMs, error);
     }
     throw new InferenceServiceUnavailableError(normalizedBaseUrl, error);
   }

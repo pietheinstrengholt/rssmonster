@@ -1081,6 +1081,32 @@ describe('processArticle AI analysis controls', () => {
     consoleError.mockRestore();
   });
 
+  it('logs inference timeouts without an article-processing stack trace', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const timeoutError = Object.assign(
+      new Error('Inference request timed out after 30000ms'),
+      { code: 'INFERENCE_TIMEOUT' }
+    );
+    mocked.analyzeArticleContent.mockRejectedValue(timeoutError);
+
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
+    const result = await processArticle(
+      { id: 1, userId: 42, feedName: 'Slow inference feed', applyAiAnalysis: true },
+      {},
+      [],
+      null,
+      { count: () => 0 },
+      null
+    );
+
+    expect(consoleError).toHaveBeenCalledOnce();
+    expect(consoleError).toHaveBeenCalledWith(
+      '[CRAWL] Inference request timed out after 30000ms'
+    );
+    expect(result).toEqual({ newArticles: 0, updatedArticles: 0, errors: 1 });
+    consoleError.mockRestore();
+  });
+
   it('keeps description HTML separate while using its text for enrichment', async () => {
     const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
 
