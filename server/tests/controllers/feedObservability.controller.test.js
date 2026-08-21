@@ -4,7 +4,8 @@ const mocked = vi.hoisted(() => ({
   articleFindOne: vi.fn(),
   crawlFindAll: vi.fn(),
   crawlFindOne: vi.fn(),
-  feedFindOne: vi.fn()
+  feedFindOne: vi.fn(),
+  getDialect: vi.fn()
 }));
 
 const ERROR_CATEGORIES = [
@@ -17,7 +18,10 @@ vi.mock('../../models/index.js', async () => {
   const { Sequelize } = await vi.importActual('sequelize');
   return {
     default: {
-      Article: { findOne: mocked.articleFindOne },
+      Article: {
+        findOne: mocked.articleFindOne,
+        sequelize: { getDialect: mocked.getDialect }
+      },
       Feed: { findOne: mocked.feedFindOne },
       FeedCrawlResult: {
         findAll: mocked.crawlFindAll,
@@ -110,6 +114,7 @@ const mockObservabilityQueries = ({
 describe('feed observability controller', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mocked.getDialect.mockReturnValue('mysql');
     vi.spyOn(console, 'error').mockImplementation(() => {});
     mocked.feedFindOne.mockResolvedValue(ownedFeed());
     mockObservabilityQueries();
@@ -224,6 +229,30 @@ describe('feed observability controller', () => {
       raw: true
     });
     expect(recentQuery.attributes).not.toContain('attemptSummary');
+  });
+
+  // Keeps the rolling article aggregate valid without changing the MySQL expression.
+  it.each([
+    [
+      'mysql',
+      "SUM(CASE WHEN `publishedAt` >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END)"
+    ],
+    [
+      'sqlite',
+      "SUM(CASE WHEN `publishedAt` >= datetime('now', '-30 days') THEN 1 ELSE 0 END)"
+    ]
+  ])('uses the %s rolling article-count expression', async (dialect, expectedSql) => {
+    mocked.getDialect.mockReturnValue(dialect);
+    const res = createResponse();
+
+    await controller.getFeedObservability(createRequest(), res);
+
+    const articleQuery = mocked.articleFindOne.mock.calls[0][0];
+    expect(articleQuery.attributes[1]).toEqual([
+      expect.objectContaining({ val: expectedSql }),
+      'articleCount30Days'
+    ]);
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 
   // Verifies no-history feeds remain healthy with neutral rates and statistics.

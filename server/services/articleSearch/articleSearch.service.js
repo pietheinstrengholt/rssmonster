@@ -445,9 +445,7 @@ export const searchArticles = async ({
     // Handles the case where first seen age filter is available.
     if (firstSeenAgeFilter) {
       const { value, unit } = firstSeenAgeFilter;
-      // Selects the interval unit based on whether unit is h.
-      const intervalUnit = unit === 'h' ? 'HOUR' : 'DAY';
-      debugLog(`\x1b[31mFirst seen age filter applied: firstSeen IS NULL OR firstSeen >= NOW() - INTERVAL ${value} ${intervalUnit}\x1b[0m`);
+      debugLog(`\x1b[31mFirst-seen age filter applied: firstSeen is null or within the last ${value}${unit}.\x1b[0m`);
     }
 
     // Builds the query metadata assembled while performing search articles.

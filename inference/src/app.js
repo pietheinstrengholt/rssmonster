@@ -7,6 +7,7 @@ import { createAssistantRouter } from './routes/assistant.js';
 import { createClassificationsRouter } from './routes/classifications.js';
 import { createFeedRediscoveryRouter } from './routes/feedRediscovery.js';
 import { createSmartFolderRecommendationsRouter } from './routes/smartFolderRecommendations.js';
+import { createAssistantRateLimiter } from './middleware/rateLimit.js';
 
 export const createApp = ({
   provider,
@@ -25,9 +26,11 @@ export const createApp = ({
   });
   app.locals.embeddingService = embeddingService;
 
+  const assistantRateLimiter = createAssistantRateLimiter({ environment });
   app.use('/api/assistant', express.json({ limit: '1mb' }), createAssistantRouter({
     service: assistantService,
-    logger
+    logger,
+    rateLimiter: assistantRateLimiter
   }));
   app.use(express.json({ limit: '100kb' }));
   app.use('/health', createHealthRouter({ service: embeddingService }));

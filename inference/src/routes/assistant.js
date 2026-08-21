@@ -1,11 +1,16 @@
 import express from 'express';
 import assistantModelService from '../assistant/assistantModelService.js';
 import { logInferenceDebug } from '../debug.js';
+import { createAssistantRateLimiter } from '../middleware/rateLimit.js';
 
-export const createAssistantRouter = ({ service = assistantModelService, logger = console } = {}) => {
+export const createAssistantRouter = ({
+  service = assistantModelService,
+  logger = console,
+  rateLimiter = createAssistantRateLimiter()
+} = {}) => {
   const router = express.Router();
 
-  router.post('/model', async (req, res) => {
+  router.post('/model', rateLimiter, async (req, res) => {
     try {
       res.status(200).json(await service.respond(req.body || {}));
     } catch (error) {
@@ -14,7 +19,7 @@ export const createAssistantRouter = ({ service = assistantModelService, logger 
     }
   });
 
-  router.post('/model/stream', async (req, res) => {
+  router.post('/model/stream', rateLimiter, async (req, res) => {
     const startedAt = Date.now();
     try {
       const stream = await service.stream(req.body || {});

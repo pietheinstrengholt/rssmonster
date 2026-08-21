@@ -44,6 +44,8 @@ INFERENCE_HOST=127.0.0.1
 INFERENCE_PORT=3001
 INFERENCE_DEBUG=false
 INFERENCE_MODEL_CACHE_DIR=.cache/models
+ASSISTANT_RATE_LIMIT_WINDOW_MS=900000
+ASSISTANT_RATE_LIMIT_MAX=100
 EMBEDDING_PROVIDER=qwen
 GENERATION_PROVIDER=qwen
 ARTICLE_SCORING_PROVIDER=modernbert
@@ -66,6 +68,10 @@ summaries, tags, Smart Folder recommendations, and feed rediscovery and accepts
 and writing/information-quality scores and accepts `openai` or `modernbert`.
 `ASSISTANT_PROVIDER` independently controls assistant responses and currently
 accepts only `openai`.
+
+Assistant model endpoints are limited per client address. The default allows
+100 requests per 15-minute window; use `ASSISTANT_RATE_LIMIT_WINDOW_MS` and
+`ASSISTANT_RATE_LIMIT_MAX` to adjust that policy.
 
 Article processing makes three separate calls: one for bullet summaries, one
 for tags, and one for advertisement, tone, and writing/information-quality

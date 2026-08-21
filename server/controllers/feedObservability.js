@@ -7,6 +7,19 @@ const { Op } = Sequelize;
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const RECENT_CRAWL_LIMIT = 20;
 
+// Builds the database-native rolling article-count aggregate.
+const recentArticleCountLiteral = () => {
+  if (Article.sequelize.getDialect() === 'sqlite') {
+    return Sequelize.literal(
+      "SUM(CASE WHEN `publishedAt` >= datetime('now', '-30 days') THEN 1 ELSE 0 END)"
+    );
+  }
+
+  return Sequelize.literal(
+    "SUM(CASE WHEN `publishedAt` >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END)"
+  );
+};
+
 // Rounds one percentage to a stable single decimal place.
 const percentage = (count, total) => total > 0
   ? Math.round((Number(count) * 1000) / total) / 10
@@ -131,7 +144,7 @@ export const getFeedObservability = async (req, res, _next) => {
         Article.findOne({
           attributes: [
             [Sequelize.fn('COUNT', Sequelize.col('id')), 'articleCount'],
-            [Sequelize.literal("SUM(CASE WHEN `publishedAt` >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END)"), 'articleCount30Days'],
+            [recentArticleCountLiteral(), 'articleCount30Days'],
             [Sequelize.fn('MAX', Sequelize.col('publishedAt')), 'lastArticleAt']
           ],
           where: { userId, feedId: feed.id, ...canonicalArticleWhere() },

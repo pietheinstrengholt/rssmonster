@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocked = vi.hoisted(() => ({
   articleCount: vi.fn(),
   articleFindAll: vi.fn(),
+  getDialect: vi.fn(),
   literal: vi.fn(sql => ({ sql })),
   sequelizeWhere: vi.fn((left, right) => ({ left, right }))
 }));
@@ -14,6 +15,7 @@ vi.mock('../../models/index.js', () => ({
       count: mocked.articleCount,
       findAll: mocked.articleFindAll,
       sequelize: {
+        getDialect: mocked.getDialect,
         literal: mocked.literal,
         where: mocked.sequelizeWhere
       }
@@ -69,6 +71,7 @@ describe('articleSearchExecutor.service', () => {
   beforeEach(() => {
     mocked.articleCount.mockReset();
     mocked.articleFindAll.mockReset();
+    mocked.getDialect.mockReset().mockReturnValue('mysql');
     mocked.literal.mockClear();
     mocked.sequelizeWhere.mockClear();
   });
@@ -107,9 +110,12 @@ describe('articleSearchExecutor.service', () => {
 
   // Applies age, author, and language predicates without dropping the base feed scope.
   it.each([
-    ['h', 'HOUR'],
-    ['d', 'DAY']
-  ])('applies first-seen age in %s units', (unit, intervalUnit) => {
+    ['mysql', 'h', 'NOW() - INTERVAL 6 HOUR'],
+    ['mysql', 'd', 'NOW() - INTERVAL 6 DAY'],
+    ['sqlite', 'h', "datetime('now', '-6 hours')"],
+    ['sqlite', 'd', "datetime('now', '-6 days')"]
+  ])('applies %s first-seen age in %s units', (dialect, unit, expectedLiteral) => {
+    mocked.getDialect.mockReturnValue(dialect);
     const query = buildQuery({
       firstSeenAgeFilter: { value: 6, unit },
       authorFilter: 'Ada',
@@ -119,7 +125,7 @@ describe('articleSearchExecutor.service', () => {
     expect(query.where.feedId).toEqual([4]);
     expect(query.where.author).toEqual({ [Op.like]: '%Ada%' });
     expect(query.where.language).toBe('eng');
-    expect(mocked.literal).toHaveBeenCalledWith(`NOW() - INTERVAL 6 ${intervalUnit}`);
+    expect(mocked.literal).toHaveBeenCalledWith(expectedLiteral);
     expect(query.where[Op.and][0][Op.or]).toHaveLength(2);
   });
 

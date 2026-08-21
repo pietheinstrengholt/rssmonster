@@ -172,4 +172,37 @@ describe('inference app', () => {
     expect(response.body).toEqual({ output: [], responseId: 'response-1' });
     expect(assistantService.respond).toHaveBeenCalledWith({ request: { input: 'Hello' } });
   });
+
+  it('rate limits assistant model requests', async () => {
+    const assistantService = {
+      respond: vi.fn().mockResolvedValue({ output: [], responseId: 'response-1' }),
+      stream: vi.fn()
+    };
+    const app = createApp({
+      provider: createProvider(),
+      assistantService,
+      environment: {
+        ASSISTANT_RATE_LIMIT_WINDOW_MS: '60000',
+        ASSISTANT_RATE_LIMIT_MAX: '1'
+      }
+    });
+
+    const allowedResponse = await request(app)
+      .post('/api/assistant/model')
+      .send({ request: { input: 'Hello' } });
+    const limitedResponse = await request(app)
+      .post('/api/assistant/model/stream')
+      .send({ request: { input: 'Again' } });
+
+    expect(allowedResponse.status).toBe(200);
+    expect(allowedResponse.headers).toHaveProperty('ratelimit');
+    expect(allowedResponse.headers).toHaveProperty('ratelimit-policy');
+    expect(limitedResponse.status).toBe(429);
+    expect(limitedResponse.headers).toHaveProperty('retry-after');
+    expect(limitedResponse.body).toEqual({
+      message: 'Too many requests. Please try again later.'
+    });
+    expect(assistantService.respond).toHaveBeenCalledOnce();
+    expect(assistantService.stream).not.toHaveBeenCalled();
+  });
 });

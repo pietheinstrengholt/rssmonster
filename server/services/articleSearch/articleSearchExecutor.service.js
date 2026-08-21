@@ -19,6 +19,17 @@ const appendAndCondition = (whereClause, condition) => {
   whereClause[Op.and].push(condition);
 };
 
+// Builds the database-native cutoff used by first-seen age filtering.
+const firstSeenCutoffLiteral = ({ value, unit }) => {
+  if (Article.sequelize.getDialect() === 'sqlite') {
+    const intervalUnit = unit === 'h' ? 'hours' : 'days';
+    return Article.sequelize.literal(`datetime('now', '-${value} ${intervalUnit}')`);
+  }
+
+  const intervalUnit = unit === 'h' ? 'HOUR' : 'DAY';
+  return Article.sequelize.literal(`NOW() - INTERVAL ${value} ${intervalUnit}`);
+};
+
 // Converts normalized search options into a Sequelize findAll query descriptor.
 export const buildArticleSearchQuery = ({
   baseWhere,
@@ -149,13 +160,10 @@ export const buildArticleSearchQuery = ({
 
   // Handles the case where first seen age filter is available.
   if (firstSeenAgeFilter) {
-    const { value, unit } = firstSeenAgeFilter;
-    // Selects the interval unit based on whether unit is h.
-    const intervalUnit = unit === 'h' ? 'HOUR' : 'DAY';
     appendAndCondition(articleQuery.where, {
       [Op.or]: [
         { firstSeen: { [Op.is]: null } },
-        { firstSeen: { [Op.gte]: Article.sequelize.literal(`NOW() - INTERVAL ${value} ${intervalUnit}`) } }
+        { firstSeen: { [Op.gte]: firstSeenCutoffLiteral(firstSeenAgeFilter) } }
       ]
     });
   }
