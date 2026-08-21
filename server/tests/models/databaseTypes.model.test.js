@@ -14,12 +14,16 @@ describe('dialect-aware unsigned model types', () => {
     expect(unsignedBigIntType(sqlite).toString()).toBe('BIGINT');
   });
 
-  // Preserves the existing unsigned definitions on initialized MySQL models.
-  it('keeps unsigned MySQL model fields', () => {
-    expect(db.Article.rawAttributes.imageWidth.type.toString()).toBe('INTEGER UNSIGNED');
-    expect(db.Article.rawAttributes.imageHeight.type.toString()).toBe('INTEGER UNSIGNED');
-    expect(db.Island.rawAttributes.id.type.toString()).toBe('BIGINT UNSIGNED');
-    expect(db.IslandTopic.rawAttributes.islandId.type.toString()).toBe('BIGINT UNSIGNED');
-    expect(db.IslandTaxonomy.rawAttributes.id.type.toString()).toBe('BIGINT UNSIGNED');
+  // Keeps initialized model types aligned with the active database dialect.
+  it('uses dialect-aware integer types on initialized models', () => {
+    const sqliteDialect = db.sequelize.getDialect() === 'sqlite';
+    const integerType = sqliteDialect ? 'INTEGER' : 'INTEGER UNSIGNED';
+    const bigIntType = sqliteDialect ? 'BIGINT' : 'BIGINT UNSIGNED';
+
+    expect(db.Article.rawAttributes.imageWidth.type.toString()).toBe(integerType);
+    expect(db.Article.rawAttributes.imageHeight.type.toString()).toBe(integerType);
+    expect(db.Island.rawAttributes.id.type.toString()).toBe(bigIntType);
+    expect(db.IslandTopic.rawAttributes.islandId.type.toString()).toBe(bigIntType);
+    expect(db.IslandTaxonomy.rawAttributes.id.type.toString()).toBe(bigIntType);
   });
 });

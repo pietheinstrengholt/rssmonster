@@ -12,6 +12,7 @@
   "scripts": {
     "test": "vitest run",
     "test:debug": "RSSMONSTER_TEST_DEBUG=true vitest run",
+    "test:sqlite": "vitest run tests/config tests/models tests/migrations tests/articleSearch tests/controllers/feedObservability.controller.test.js",
     "test:semantic-report": "vitest run tests/semantic",
     "test:semantic-trace": "RSSMONSTER_TEST_DEBUG=true SEMANTIC_REPORT_LEVEL=trace vitest run tests/semantic",
     "test:coverage": "vitest run --coverage",

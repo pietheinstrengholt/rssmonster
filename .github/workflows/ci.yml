@@ -11,7 +11,8 @@ on:
       - "docs/**"
 
 jobs:
-  ci:
+  server-mysql:
+    name: Server — MySQL
     runs-on: ubuntu-latest
 
     services:
@@ -30,6 +31,16 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
+    env:
+      NODE_ENV: test
+      DB_DIALECT: mysql
+      DB_DATABASE: rssmonstertest
+      DB_USERNAME: rssmonster
+      DB_PASSWORD: rssmonster
+      DB_HOSTNAME: 127.0.0.1
+      JWT_SECRET: test-secret-used-for-sign-and-verify
+      FEVER_CREDENTIAL_SECRET: test-fever-credential-secret
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -39,13 +50,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            server/package-lock.json
-            client/package-lock.json
+          cache-dependency-path: server/package-lock.json
 
-      # -----------------------
-      # Server
-      # -----------------------
       - name: Install server dependencies
         working-directory: server
         run: npm ci
@@ -61,40 +67,14 @@ jobs:
 
       - name: Run migrations
         working-directory: server
-        env:
-          NODE_ENV: test
-          DB_DATABASE: rssmonstertest
-          DB_USERNAME: rssmonster
-          DB_PASSWORD: rssmonster
-          DB_HOSTNAME: 127.0.0.1
-          JWT_SECRET: test-secret-used-for-sign-and-verify
-          FEVER_CREDENTIAL_SECRET: test-fever-credential-secret
-        run: |
-          npx sequelize db:migrate:undo:all
-          npx sequelize db:migrate
+        run: npx sequelize db:migrate
 
       - name: Seed database
         working-directory: server
-        env:
-          NODE_ENV: test
-          DB_DATABASE: rssmonstertest
-          DB_USERNAME: rssmonster
-          DB_PASSWORD: rssmonster
-          DB_HOSTNAME: 127.0.0.1
-          JWT_SECRET: test-secret-used-for-sign-and-verify
-          FEVER_CREDENTIAL_SECRET: test-fever-credential-secret
         run: npx sequelize db:seed:all
 
       - name: Test server
         working-directory: server
-        env:
-          NODE_ENV: test
-          DB_DATABASE: rssmonstertest
-          DB_USERNAME: rssmonster
-          DB_PASSWORD: rssmonster
-          DB_HOSTNAME: 127.0.0.1
-          JWT_SECRET: test-secret-used-for-sign-and-verify
-          FEVER_CREDENTIAL_SECRET: test-fever-credential-secret
         run: npm run test:coverage
 
       - name: Upload server coverage reports to Codecov
@@ -104,12 +84,67 @@ jobs:
           files: ./server/coverage/clover.xml
           disable_search: true
           flags: server
-          name: server
+          name: server-mysql
           fail_ci_if_error: true
 
-      # -----------------------
-      # Client
-      # -----------------------
+  server-sqlite:
+    name: Server — SQLite
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: test
+      DB_DIALECT: sqlite
+      DB_STORAGE: ${{ runner.temp }}/rssmonster-tests.sqlite
+      JWT_SECRET: test-secret-used-for-sign-and-verify
+      FEVER_CREDENTIAL_SECRET: test-fever-credential-secret
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install server dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Verify migrations and seeders
+        working-directory: server
+        env:
+          DB_STORAGE: ${{ runner.temp }}/rssmonster-seed-smoke.sqlite
+        run: |
+          npx sequelize db:migrate
+          npx sequelize db:seed:all
+
+      - name: Prepare SQLite test database
+        working-directory: server
+        run: npx sequelize db:migrate
+
+      # The full suite retains MySQL-specific locking and concurrency contracts.
+      - name: Test SQLite compatibility
+        working-directory: server
+        run: npm run test:sqlite
+
+  client:
+    name: Client
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
       - name: Install client dependencies
         working-directory: client
         run: npm ci

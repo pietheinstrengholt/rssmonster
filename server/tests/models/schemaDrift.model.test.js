@@ -107,12 +107,16 @@ describe('model schema declarations', () => {
   });
 
   it('declares publisher-controlled article fields with expanded storage', () => {
+    const expandedTextType = db.sequelize.getDialect() === 'sqlite'
+      ? 'TEXT'
+      : 'MEDIUMTEXT';
+
     expect(Article.rawAttributes.imageUrl.type.toString()).toBe('TEXT');
-    expect(Article.rawAttributes.description.type.toString()).toBe('MEDIUMTEXT');
-    expect(Article.rawAttributes.descriptionHtml.type.toString()).toBe('MEDIUMTEXT');
-    expect(Article.rawAttributes.descriptionText.type.toString()).toBe('MEDIUMTEXT');
-    expect(Article.rawAttributes.contentHtml.type.toString()).toBe('MEDIUMTEXT');
-    expect(Article.rawAttributes.contentText.type.toString()).toBe('MEDIUMTEXT');
+    expect(Article.rawAttributes.description.type.toString()).toBe(expandedTextType);
+    expect(Article.rawAttributes.descriptionHtml.type.toString()).toBe(expandedTextType);
+    expect(Article.rawAttributes.descriptionText.type.toString()).toBe(expandedTextType);
+    expect(Article.rawAttributes.contentHtml.type.toString()).toBe(expandedTextType);
+    expect(Article.rawAttributes.contentText.type.toString()).toBe(expandedTextType);
   });
 
   it('declares separate article publication and modification timestamps', () => {

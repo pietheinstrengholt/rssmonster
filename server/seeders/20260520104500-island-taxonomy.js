@@ -691,8 +691,8 @@ const toIdentity = (categoryName, displayName) =>
   `${toSlug(categoryName)}-${toSlug(displayName)}`.slice(0, 100);
 
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
-    const now = Sequelize.literal('NOW()');
+  up: async (queryInterface) => {
+    const now = new Date();
 
     const rows = taxonomyPairs.map(([categoryName, displayName]) => ({
       identity: toIdentity(categoryName, displayName),
