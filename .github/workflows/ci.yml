@@ -94,7 +94,7 @@ jobs:
     env:
       NODE_ENV: test
       DB_DIALECT: sqlite
-      DB_STORAGE: ${{ runner.temp }}/rssmonster-tests.sqlite
+      DB_STORAGE: ./data/rssmonster-tests.sqlite
       JWT_SECRET: test-secret-used-for-sign-and-verify
       FEVER_CREDENTIAL_SECRET: test-fever-credential-secret
 
