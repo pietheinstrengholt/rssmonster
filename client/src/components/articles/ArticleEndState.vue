@@ -147,6 +147,12 @@ export default {
   color: var(--text-primary);
 }
 
+.article-end-state-primary:focus-visible,
+.article-end-state-secondary:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 3px;
+}
+
 @keyframes articleEndStateIn {
   from {
     opacity: 0;
@@ -156,6 +162,17 @@ export default {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .article-end-state {
+    animation: none;
+  }
+
+  .article-end-state-primary,
+  .article-end-state-secondary {
+    transition: none;
   }
 }
 

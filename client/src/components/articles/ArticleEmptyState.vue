@@ -16,19 +16,18 @@
         The selected tag remains active so you can choose another article state or clear it.
       </template>
       <template v-else>
-        There are no articles that match your current filters.<br>
-        Try adjusting your filters or check back later.
+        {{ emptyDescription }}
       </template>
     </p>
 
     <div class="article-empty-state-actions">
       <button type="button" class="article-empty-state-primary" @click="handlePrimaryAction">
-        <BootstrapIcon :icon="hasTagSelection ? 'x-circle' : 'search'" aria-hidden="true" />
-        {{ hasTagSelection ? 'Clear tag' : 'Clear filters' }}
+        <BootstrapIcon :icon="primaryActionIcon" aria-hidden="true" />
+        {{ primaryActionLabel }}
       </button>
 
       <button type="button" class="article-empty-state-secondary" @click="handleSecondaryAction">
-        <BootstrapIcon :icon="hasTagSelection ? 'arrow-left-right' : 'arrow-clockwise'" aria-hidden="true" />
+        <BootstrapIcon :icon="secondaryActionIcon" aria-hidden="true" />
         {{ secondaryActionLabel }}
       </button>
     </div>
@@ -90,7 +89,17 @@ export default {
     },
     // This describes the empty tag-state intersection without clearing either selection.
     emptyTitle() {
-      if (!this.hasTagSelection) return 'No posts found';
+      if (!this.hasTagSelection) {
+        const statusTitles = {
+          briefing: 'Your briefing is clear',
+          unread: 'You’re all caught up',
+          read: 'No read articles yet',
+          favorite: 'No favorites yet',
+          hot: 'Nothing is trending here yet',
+          clicked: 'No reading history yet'
+        };
+        return statusTitles[this.currentStatus] || 'No articles found';
+      }
 
       const statusLabels = {
         briefing: 'Daily Briefing',
@@ -103,25 +112,77 @@ export default {
       const statusLabel = statusLabels[this.currentStatus] || 'matching';
       return `No ${statusLabel} articles tagged ${formatTagName(this.selectedTag)}`;
     },
+    // This gives each empty reading state concise, actionable guidance.
+    emptyDescription() {
+      const statusDescriptions = {
+        briefing: 'There are no briefing articles in this view. Refresh your feeds or adjust the current filters.',
+        unread: 'There are no unread articles in this view. Refresh your feeds or enjoy the clear queue.',
+        read: 'Articles you finish will appear here. Clear the current filters to widen this view.',
+        favorite: 'Bookmark an article to keep it close, or clear the current filters to look elsewhere.',
+        hot: 'No articles meet the current hot threshold. Refresh your feeds or adjust the filters.',
+        clicked: 'Articles you open will appear here. Clear the current filters to widen this view.'
+      };
+      return statusDescriptions[this.currentStatus]
+        || 'There are no articles that match the current filters. Try adjusting them or check back later.';
+    },
+    // This makes refreshing the natural primary recovery for time-sensitive empty queues.
+    refreshIsPrimaryAction() {
+      return !this.hasTagSelection && ['briefing', 'unread'].includes(this.currentStatus);
+    },
+    // This gives collection-specific empty states a useful route back into reading.
+    viewUnreadIsPrimaryAction() {
+      return !this.hasTagSelection && ['read', 'favorite', 'hot', 'clicked'].includes(this.currentStatus);
+    },
+    primaryActionLabel() {
+      if (this.hasTagSelection) return 'Clear tag';
+      if (this.viewUnreadIsPrimaryAction) return 'View unread articles';
+      return this.refreshIsPrimaryAction ? 'Refresh feeds' : 'Clear filters';
+    },
+    primaryActionIcon() {
+      if (this.hasTagSelection) return 'x-circle';
+      if (this.viewUnreadIsPrimaryAction) return 'arrow-left-right';
+      return this.refreshIsPrimaryAction ? 'arrow-clockwise' : 'search';
+    },
     // This chooses the complementary reading state offered for an empty tag selection.
     alternateTagStatus() {
       return this.currentStatus === 'unread' ? 'read' : 'unread';
     },
     // This labels the secondary action for tag-specific and generic empty states.
     secondaryActionLabel() {
-      if (!this.hasTagSelection) return 'Refresh feeds';
+      if (!this.hasTagSelection) {
+        return this.refreshIsPrimaryAction ? 'View unread articles' : 'Refresh feeds';
+      }
       return `View ${this.alternateTagStatus} articles`;
+    },
+    secondaryActionIcon() {
+      if (this.hasTagSelection) return 'arrow-left-right';
+      return this.refreshIsPrimaryAction ? 'arrow-left-right' : 'arrow-clockwise';
     }
   },
   methods: {
     // This clears only the tag when tag scope caused the empty collection.
     handlePrimaryAction() {
-      this.$emit(this.hasTagSelection ? 'clear-tag' : 'clear-filters');
+      if (this.hasTagSelection) {
+        this.$emit('clear-tag');
+        return;
+      }
+
+      if (this.viewUnreadIsPrimaryAction) {
+        this.$emit('view-tag-status', 'unread');
+        return;
+      }
+
+      this.$emit(this.refreshIsPrimaryAction ? 'refresh-feeds' : 'clear-filters');
     },
     // This changes article state while preserving a tag, or refreshes a generic empty collection.
     handleSecondaryAction() {
       if (this.hasTagSelection) {
         this.$emit('view-tag-status', this.alternateTagStatus);
+        return;
+      }
+
+      if (this.refreshIsPrimaryAction) {
+        this.$emit('view-tag-status', 'unread');
         return;
       }
 
@@ -230,6 +291,13 @@ export default {
 
 .article-empty-state-primary:hover {
   background: var(--color-primary-hover);
+}
+
+.article-empty-state-primary:focus-visible,
+.article-empty-state-secondary:focus-visible,
+.article-empty-state-link:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 3px;
 }
 
 .article-empty-state-secondary {

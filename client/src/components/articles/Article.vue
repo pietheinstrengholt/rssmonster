@@ -1,7 +1,7 @@
 <template>
   <div class="article-card" :id="`article-${id}`" :class="[{ 'event-article': isEventArticle }, { 'article-list-card': isMinimalView }]" v-bind="filteredAttrs">
     <div v-if="isMinimalView" class="mobile-swipe-shell">
-      <div class="mobile-swipe-action" aria-hidden="true">
+      <div class="mobile-swipe-action" :class="{ 'mobile-swipe-action--ready': isSwipeReady }" aria-hidden="true">
         <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-x-fill' : 'bookmark-fill'" aria-hidden="true" />
         <span>{{ favoriteInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
       </div>
@@ -46,7 +46,7 @@
       />
     </div>
     <div v-else class="mobile-swipe-shell">
-      <div class="mobile-swipe-action" aria-hidden="true">
+      <div class="mobile-swipe-action" :class="{ 'mobile-swipe-action--ready': isSwipeReady }" aria-hidden="true">
         <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-x-fill' : 'bookmark-fill'" aria-hidden="true" />
         <span>{{ favoriteInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
       </div>
@@ -619,11 +619,22 @@ export default {
     line-height: 1.2;
     text-align: center;
     pointer-events: none;
+    transition: background-color var(--motion-duration-fast) var(--motion-easing-standard), color var(--motion-duration-fast) var(--motion-easing-standard);
+  }
+
+  .mobile-swipe-action--ready {
+    background: var(--surface-brand-soft);
+    color: var(--color-brand-hover);
   }
 
   .mobile-swipe-action .bi {
     font-size: 30px;
     line-height: 1;
+    transition: transform var(--motion-duration-fast) var(--motion-easing-standard);
+  }
+
+  .mobile-swipe-action--ready .bi {
+    transform: scale(1.12);
   }
 
   .mobile-swipe-content {
@@ -646,6 +657,14 @@ export default {
 
   :global(:root[data-theme='dark'] .article-card .mobile-swipe-content) {
     background: var(--surface-card);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-swipe-action,
+  .mobile-swipe-action .bi,
+  .mobile-swipe-content {
+    transition: none !important;
   }
 }
 

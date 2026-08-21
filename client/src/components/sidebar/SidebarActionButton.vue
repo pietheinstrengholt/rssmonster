@@ -87,6 +87,11 @@ export default {
   line-height: 1.25;
 }
 
+.sidebar-button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
 .sidebar-button .sidebar-item-title {
   margin-left: var(--space-1);
 }
@@ -160,6 +165,15 @@ export default {
 .sidebar-button-mark-read:focus-visible {
   outline: var(--focus-ring-width) solid var(--action-focus);
   outline-offset: var(--focus-ring-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-button-refresh,
+  .sidebar-button-add-feed,
+  .sidebar-button-mark-read,
+  .sidebar-bottom-action-button {
+    transition: none;
+  }
 }
 
 .sidebar-button-refresh:disabled,

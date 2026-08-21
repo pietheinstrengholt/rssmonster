@@ -161,6 +161,22 @@ describe('ArticleListView keyboard navigation', () => {
     expect(context.minimalArticleTabindex(2)).toBeNull();
   });
 
+  it('keeps the first compact article tabbable before a selection is established', () => {
+    const context = createContext({
+      viewMode: 'minimal',
+      activeMinimalArticleId: null
+    });
+
+    expect(context.minimalArticleTabindex(1)).toBe(0);
+    expect(context.minimalArticleTabindex(2)).toBe(-1);
+    expect(context.isArticleSelected(1)).toBe(false);
+
+    context.viewMode = 'full';
+    context.selectedArticleId = 2;
+    expect(context.isStreamArticleSelected(2)).toBe(true);
+    expect(context.isArticleSelected(2)).toBe(true);
+  });
+
   // Verifies empty lists and unrelated keys remain inert.
   it('does nothing for empty lists, unrelated keys, or missing selections', () => {
     const context = createContext({ articles: [] });

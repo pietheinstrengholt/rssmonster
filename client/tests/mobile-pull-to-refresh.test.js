@@ -136,7 +136,7 @@ describe('MobilePullToRefresh', () => {
     expect(wrapper.text()).not.toContain('Pull to refresh');
 
     await wrapper.setProps({ refreshing: false });
-    expect(wrapper.text()).toContain('Refreshing articles…');
+    expect(wrapper.text()).toContain('Articles refreshed');
 
     await vi.advanceTimersByTimeAsync(160);
     expect(wrapper.text()).toContain('Pull to refresh');

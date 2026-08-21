@@ -20,7 +20,7 @@
       ></span>
       <BootstrapIcon
         v-else
-        icon="arrow-down"
+        :icon="refreshFeedbackVisible ? 'check2' : 'arrow-down'"
         class="mobile-pull-to-refresh__icon"
         :class="{ 'mobile-pull-to-refresh__icon--ready': isReady }"
         aria-hidden="true"
@@ -96,7 +96,8 @@ export default {
     },
     // This computed label communicates the current gesture or refresh state.
     statusLabel() {
-      if (this.isRefreshActive || this.refreshFeedbackVisible) return 'Refreshing articles…';
+      if (this.isRefreshActive) return 'Refreshing articles…';
+      if (this.refreshFeedbackVisible) return 'Articles refreshed';
       if (this.isReady) return 'Release to refresh';
       return 'Pull to refresh';
     }

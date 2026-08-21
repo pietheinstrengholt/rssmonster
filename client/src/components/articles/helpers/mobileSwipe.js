@@ -15,13 +15,17 @@ export function createArticleMobileSwipeState() {
 
 // Exposes the article transform while a mobile swipe is active.
 export const articleMobileSwipeComputed = {
+  // Returns whether releasing the current gesture will toggle the bookmark.
+  isSwipeReady() {
+    return this.swipeTranslateX >= SWIPE_THRESHOLD;
+  },
   // Returns the inline transform used while a mobile swipe is active.
   mobileSwipeStyle() {
     if (!this.isMobilePortrait && !this.swipeTranslateX) return {};
 
     return {
       transform: `translateX(${this.swipeTranslateX}px)`,
-      transition: this.swipeTracking ? 'none' : 'transform 180ms ease'
+      transition: this.swipeTracking ? 'none' : 'transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)'
     };
   }
 };

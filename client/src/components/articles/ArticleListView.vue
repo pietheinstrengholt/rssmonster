@@ -19,8 +19,11 @@
         v-bind="article"
         :key="article.id"
         :ref="element => setMinimalArticleRef(element, article.id)"
-        :class="{ 'article-list-card-selected': isMinimalArticleSelected(article.id) }"
-        :aria-current="isMinimalArticleSelected(article.id) ? 'true' : null"
+        :class="{
+          'article-list-card-selected': isMinimalArticleSelected(article.id),
+          'article-stream-card-selected': isStreamArticleSelected(article.id)
+        }"
+        :aria-current="isArticleSelected(article.id) ? 'true' : null"
         :tabindex="minimalArticleTabindex(article.id)"
         :isMinimalContentOpen="String(article.id) === String(activeMinimalArticleId)"
         @update-favorite="$emit('update-favorite', $event)"
@@ -304,10 +307,20 @@ export default {
     isMinimalArticleSelected(articleId) {
       return this.viewMode === 'minimal' && String(articleId) === String(this.activeMinimalArticleId);
     },
+    // Returns whether keyboard navigation selected an article in a reading stream.
+    isStreamArticleSelected(articleId) {
+      return this.viewMode !== 'minimal' && String(articleId) === String(this.selectedArticleId);
+    },
+    // Returns whether either article presentation currently owns the selection.
+    isArticleSelected(articleId) {
+      return this.isMinimalArticleSelected(articleId) || this.isStreamArticleSelected(articleId);
+    },
     // Returns the compact article focus order without touching other modes.
     minimalArticleTabindex(articleId) {
       if (this.viewMode !== 'minimal') return null;
-      return this.isMinimalArticleSelected(articleId) ? 0 : -1;
+      const hasActiveArticle = this.activeMinimalArticleId !== null;
+      const isInitialArticle = !hasActiveArticle && String(articleId) === String(this.articles[0]?.id);
+      return this.isMinimalArticleSelected(articleId) || isInitialArticle ? 0 : -1;
     },
     // Hides the article end state until the current article session changes.
     dismissArticleEndState() {
@@ -489,6 +502,15 @@ export default {
   padding-top: 0;
   right: 0;
   left: 0;
+}
+
+.article-list-view__items :deep(.article-stream-card-selected .article-body) {
+  background: var(--reader-list-item-selected-background);
+  box-shadow: inset 3px 0 0 var(--reader-list-item-selected-accent);
+}
+
+:global(:root[data-theme='dark']) .article-list-view__items :deep(.article-stream-card-selected .article-body) {
+  background: var(--reader-list-item-selected-background);
 }
 
 .article-list-view.article-list-view--empty {

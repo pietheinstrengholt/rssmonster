@@ -663,6 +663,8 @@ describe('Article mobile swipe coverage', () => {
 
   // Verifies swipe styles cover inactive, active, and settling states.
   it('computes swipe transform styles', () => {
+    expect(articleMobileSwipeComputed.isSwipeReady.call({ swipeTranslateX: 85 })).toBe(false);
+    expect(articleMobileSwipeComputed.isSwipeReady.call({ swipeTranslateX: 86 })).toBe(true);
     expect(articleMobileSwipeComputed.mobileSwipeStyle.call({
       isMobilePortrait: false,
       swipeTranslateX: 0
@@ -679,6 +681,6 @@ describe('Article mobile swipe coverage', () => {
       isMobilePortrait: true,
       swipeTranslateX: 0,
       swipeTracking: false
-    }).transition).toBe('transform 180ms ease');
+    }).transition).toBe('transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)');
   });
 });

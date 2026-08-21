@@ -4,6 +4,7 @@
     role="status"
     aria-live="polite"
     aria-label="Loading articles"
+    aria-busy="true"
   >
     <div class="article-loading-state__header">
       <div class="article-loading-state__mascot" aria-hidden="true">

@@ -220,6 +220,21 @@ describe('keyboard access and focus', () => {
     wrapper.unmount();
   });
 
+  it('exposes reader shortcuts and visually distinguishes read rows', () => {
+    const wrapper = mountReaderLayout([
+      { id: 1, title: 'Unread article', status: 'unread', tags: [] },
+      { id: 2, title: 'Read article', status: 'read', tags: [] }
+    ]);
+
+    const rows = wrapper.findAll('.article-reader__item');
+    const controls = wrapper.findAll('.article-reader__selection');
+    expect(rows[0].classes()).not.toContain('article-reader__item--read');
+    expect(rows[1].classes()).toContain('article-reader__item--read');
+    expect(controls[0].attributes('aria-keyshortcuts'))
+      .toBe('ArrowDown ArrowUp J K Enter O M R S');
+    wrapper.unmount();
+  });
+
   it('renders expanded similar articles in the reader panel instead of the article list', () => {
     const wrapper = mountReaderLayout([
       { id: 1, title: 'Selected article', status: 'unread', tags: [] },

@@ -119,8 +119,8 @@ export default {
 
 <style scoped>
 .article-list-row {
-  min-height: 68px;
-  padding: 12px 16px;
+  min-height: 64px;
+  padding: 10px 16px;
   display: grid;
   grid-template-columns: 18px 24px minmax(0, 1fr) auto;
   column-gap: 12px;
@@ -129,6 +129,7 @@ export default {
   border-left: 3px solid var(--color-transparent);
   background: var(--surface-page);
   font-family: var(--font-family);
+  transition: background-color var(--motion-duration-fast) var(--motion-easing-standard), border-color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 
 .article-list-row:hover {
@@ -157,6 +158,18 @@ export default {
   cursor: pointer;
   font-size: 13px;
   line-height: 1;
+  transition: color var(--motion-duration-fast) var(--motion-easing-standard), transform var(--motion-duration-fast) var(--motion-easing-standard);
+}
+
+.article-list-status:hover {
+  transform: scale(1.08);
+}
+
+.article-list-status:focus-visible,
+.article-list-action-button:focus-visible,
+.article-list-actions :deep(.article-actions__trigger:focus-visible) {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }
 
 .article-list-source {
@@ -194,6 +207,7 @@ export default {
   text-decoration: none;
   display: block;
   overflow-wrap: anywhere;
+  transition: color var(--motion-duration-fast) var(--motion-easing-standard);
 }
 
 .article-list-title a:hover {
@@ -356,7 +370,7 @@ export default {
   .article-list-row {
     grid-template-columns: 18px minmax(0, 1fr) auto;
     column-gap: 10px;
-    padding: 12px 10px;
+    padding: 10px;
   }
 
   .article-list-source,
@@ -366,6 +380,14 @@ export default {
 
   .article-list-actions {
     gap: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .article-list-row,
+  .article-list-status,
+  .article-list-title a {
+    transition: none;
   }
 }
 

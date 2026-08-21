@@ -12,16 +12,31 @@ describe('ArticleEmptyState', () => {
     const wrapper = mount(ArticleEmptyState);
 
     expect(wrapper.get('section').attributes('aria-labelledby')).toBe('article-empty-state-title');
-    expect(wrapper.get('h2').text()).toBe('No posts found');
-    expect(wrapper.text()).toContain('There are no articles that match your current filters.');
+    expect(wrapper.get('h2').text()).toBe('You’re all caught up');
+    expect(wrapper.text()).toContain('There are no unread articles in this view.');
+    expect(wrapper.get('.article-empty-state-primary').text()).toContain('Refresh feeds');
+    expect(wrapper.get('.article-empty-state-secondary').text()).toContain('View unread articles');
 
     await wrapper.get('.article-empty-state-primary').trigger('click');
     await wrapper.get('.article-empty-state-secondary').trigger('click');
     await wrapper.get('.article-empty-state-link').trigger('click');
 
-    expect(wrapper.emitted('clear-filters')).toHaveLength(1);
     expect(wrapper.emitted('refresh-feeds')).toHaveLength(1);
+    expect(wrapper.emitted('view-tag-status')).toEqual([['unread']]);
     expect(wrapper.emitted('open-smart-folders')).toHaveLength(1);
+  });
+
+  it('routes an empty favorites collection back to unread articles', async () => {
+    const wrapper = mount(ArticleEmptyState, {
+      props: { currentStatus: 'favorite' }
+    });
+
+    expect(wrapper.get('h2').text()).toBe('No favorites yet');
+    expect(wrapper.get('.article-empty-state-primary').text()).toContain('View unread articles');
+    expect(wrapper.get('.article-empty-state-secondary').text()).toContain('Refresh feeds');
+
+    await wrapper.get('.article-empty-state-primary').trigger('click');
+    expect(wrapper.emitted('view-tag-status')).toEqual([['unread']]);
   });
 
   it('preserves an empty tag selection and offers the complementary article state', async () => {
@@ -178,7 +193,8 @@ describe('ArticleLoadingState', () => {
     expect(status.attributes()).toMatchObject({
       role: 'status',
       'aria-live': 'polite',
-      'aria-label': 'Loading articles'
+      'aria-label': 'Loading articles',
+      'aria-busy': 'true'
     });
     expect(wrapper.get('.article-loading-state__mascot img').attributes()).toMatchObject({
       alt: '',

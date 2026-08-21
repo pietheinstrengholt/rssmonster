@@ -107,7 +107,10 @@
         v-for="article in readerListArticles"
         :key="article.id"
         class="article-reader__item"
-        :class="{ 'article-reader__item--selected': article.id === selectedArticleId }"
+        :class="{
+          'article-reader__item--selected': article.id === selectedArticleId,
+          'article-reader__item--read': article.status === 'read'
+        }"
       >
         <button
           :ref="element => setArticleItemRef(element, article.id)"
@@ -115,6 +118,7 @@
           class="article-reader__selection"
           :aria-label="`Select article: ${article.title || 'Untitled article'}`"
           :aria-current="article.id === selectedArticleId ? 'true' : null"
+          aria-keyshortcuts="ArrowDown ArrowUp J K Enter O M R S"
           @click="selectArticle(article.id)"
           @keydown.enter.stop.prevent="selectArticle(article.id)"
           @keydown.space.stop.prevent="selectArticle(article.id)"
@@ -1038,7 +1042,7 @@ export default {
   padding: 10px 12px;
   position: relative;
   text-align: left;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   width: 100%;
 }
 
@@ -1106,6 +1110,12 @@ export default {
   font-size: 14px;
   font-weight: 700;
   line-height: 1.35;
+  transition: color 0.15s ease, font-weight 0.15s ease;
+}
+
+.article-reader__item--read:not(.article-reader__item--selected) .article-reader__item-title {
+  color: var(--reader-list-item-preview);
+  font-weight: 600;
 }
 
 .article-reader__item--selected .article-reader__item-title {
@@ -1307,6 +1317,11 @@ export default {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .article-reader__item,
+  .article-reader__item-title {
+    transition: none;
+  }
+
   .reader-loading-skeleton span {
     animation: none;
   }
