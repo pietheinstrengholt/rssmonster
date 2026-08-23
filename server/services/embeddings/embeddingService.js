@@ -1,3 +1,5 @@
+import { assertInferenceEnabled } from '../../config/intelligentFeatures.js';
+
 const DEFAULT_INFERENCE_URL = 'http://127.0.0.1:3001';
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -37,6 +39,7 @@ const requestOptions = (options = {}) => ({
 });
 
 export async function getEmbeddingInfo(options = {}) {
+  assertInferenceEnabled();
   const { baseUrl, timeoutMs, fetchImplementation } = requestOptions(options);
   let response;
 
@@ -61,6 +64,7 @@ export async function getEmbeddingInfo(options = {}) {
 }
 
 export async function embedTexts(texts, options = {}) {
+  assertInferenceEnabled();
   const { baseUrl, timeoutMs, fetchImplementation } = requestOptions(options);
   let response;
 

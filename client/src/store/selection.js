@@ -21,6 +21,7 @@ const DEFAULT_ARTICLE_FILTERS = Object.freeze({
 });
 const SUPPORTED_SELECTION_FIELDS = [
   'AIEnabled',
+  'AssistantEnabled',
   'status',
   'categoryId',
   'feedId',
@@ -57,6 +58,7 @@ const briefingSearchQuery = ({
 // This function creates the default article selection contract.
 const defaultSelection = () => ({
   AIEnabled: false,
+  AssistantEnabled: false,
   ...DEFAULT_ARTICLE_FILTERS,
   viewMode: 'full',
   includeDevelopingEvents: false,

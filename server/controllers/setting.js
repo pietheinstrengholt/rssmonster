@@ -1,4 +1,5 @@
 import db from '../models/index.js';
+import { isAssistantEnabled } from '../config/intelligentFeatures.js';
 const { CrawlRun, Island, OfficialSource, Setting } = db;
 
 const DEFAULT_CRAWL_STATISTICS_DAYS = 30;
@@ -283,7 +284,8 @@ export const getSettings = async (req, res, _next) => {
       themeMode: themeMode,
       startupViewMode,
       markAsReadOnScroll,
-      AIEnabled: aiEnabled
+      AIEnabled: aiEnabled,
+      AssistantEnabled: isAssistantEnabled()
     });
   } catch (err) {
     console.error('Error in getSettings:', err);

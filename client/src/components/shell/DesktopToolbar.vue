@@ -25,7 +25,7 @@
     </div>
 
     <div class="toolbar-actions">
-      <button v-if="isAIEnabled" type="button" class="toolbar-chat-button" @click="chatAssistant">
+      <button v-if="isAssistantEnabled" type="button" class="toolbar-chat-button" @click="chatAssistant">
         <BootstrapIcon icon="chat-dots" />
         <span>
           {{ uiStore.chatAssistantOpen ? 'Close Chat' : 'Chat' }}
@@ -975,6 +975,10 @@ export default {
     // This function reports whether AI-powered toolbar options are available.
     isAIEnabled() {
       return this.currentSelection.AIEnabled;
+    },
+    // This function reports whether an assistant provider is configured.
+    isAssistantEnabled() {
+      return this.currentSelection.AssistantEnabled;
     },
     // This function returns shorter search placeholder text on narrower screens.
     searchPlaceholder() {

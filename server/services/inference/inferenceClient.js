@@ -1,3 +1,5 @@
+import { assertInferenceEnabled } from '../../config/intelligentFeatures.js';
+
 const DEFAULT_INFERENCE_URL = 'http://127.0.0.1:3001';
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -30,6 +32,7 @@ export const getInferenceRequestConfig = (options = {}) => ({
 });
 
 export const requestInferenceJson = async (path, payload, options = {}) => {
+  assertInferenceEnabled();
   const { baseUrl, timeoutMs, fetchImplementation } = getInferenceRequestConfig(options);
   const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
   let response;

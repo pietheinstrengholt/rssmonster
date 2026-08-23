@@ -4,8 +4,20 @@ import {
   InferenceTimeoutError,
   requestInferenceJson
 } from '../../services/inference/inferenceClient.js';
+import { InferenceDisabledError } from '../../config/intelligentFeatures.js';
 
 describe('inference client', () => {
+  it('fails closed without performing a request when inference is disabled', async () => {
+    const fetchImplementation = vi.fn();
+    vi.stubEnv('INFERENCE_AI_ENABLED', 'false');
+
+    await expect(requestInferenceJson('/api/test', {}, { fetchImplementation }))
+      .rejects.toBeInstanceOf(InferenceDisabledError);
+    expect(fetchImplementation).not.toHaveBeenCalled();
+
+    vi.unstubAllEnvs();
+  });
+
   it('posts JSON to the selected inference capability', async () => {
     const fetchImplementation = vi.fn().mockResolvedValue(new Response(
       JSON.stringify({ qualityScore: 80 }),

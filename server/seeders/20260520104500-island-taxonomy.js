@@ -39,7 +39,6 @@ const taxonomyPairs = [
   ['Technology & Computing', 'Embeddings'],
   ['Technology & Computing', 'Semantic Search'],
   ['Technology & Computing', 'Retrieval Augmented Generation'],
-  ['Technology & Computing', 'RAG'],
   ['Technology & Computing', 'Fine Tuning'],
   ['Technology & Computing', 'Model Distillation'],
   ['Technology & Computing', 'Inference'],
@@ -680,6 +679,272 @@ const taxonomyPairs = [
   ['Family & Life Stages', 'Work Life Balance']
 ];
 
+// Aliases are embedding-time metadata. Descriptions are persisted, while aliases remain here
+// because they have no runtime use after a taxonomy vector has been generated.
+const taxonomySemantics = {
+  'Technology & Computing::Artificial Intelligence': {
+    description: 'Computer systems and techniques designed to perform tasks associated with human intelligence.',
+    aliases: ['AI']
+  },
+  'Technology & Computing::Machine Learning': {
+    description: 'Methods that enable computer systems to learn patterns from data and improve performance without explicit task-specific programming.',
+    aliases: ['ML']
+  },
+  'Technology & Computing::Deep Learning': {
+    description: 'Machine-learning methods based on multilayer neural networks that learn representations from data.',
+    aliases: ['deep neural learning']
+  },
+  'Technology & Computing::Neural Networks': {
+    description: 'Computational models composed of connected processing units whose parameters are learned from data.',
+    aliases: ['artificial neural networks', 'ANN']
+  },
+  'Technology & Computing::Foundation Models': {
+    description: 'Large general-purpose machine-learning models trained broadly and adapted to many downstream tasks.',
+    aliases: ['foundation model']
+  },
+  'Technology & Computing::Generative AI': {
+    description: 'Artificial-intelligence systems that create new text, images, audio, video, code, or other content.',
+    aliases: ['GenAI', 'generative artificial intelligence']
+  },
+  'Technology & Computing::Large Language Models': {
+    description: 'Neural language models trained on large text corpora to understand and generate natural language.',
+    aliases: ['LLM', 'LLMs', 'large language model']
+  },
+  'Technology & Computing::Small Language Models': {
+    description: 'Compact language models designed to reduce inference cost and run with fewer computing resources.',
+    aliases: ['SLM', 'SLMs', 'small language model']
+  },
+  'Technology & Computing::Multimodal AI': {
+    description: 'Artificial-intelligence systems that process or generate multiple data types such as text, images, audio, and video.',
+    aliases: ['multimodal models', 'multimodal artificial intelligence']
+  },
+  'Technology & Computing::AI Agents': {
+    description: 'Software entities that use artificial intelligence to observe context, choose actions, and pursue assigned goals.',
+    aliases: ['AI agent', 'intelligent agent']
+  },
+  'Technology & Computing::Agentic AI': {
+    description: 'An approach to artificial intelligence in which systems plan and coordinate multi-step actions toward goals.',
+    aliases: ['agentic systems', 'agentic workflows']
+  },
+  'Technology & Computing::Autonomous AI': {
+    description: 'Artificial-intelligence systems designed to operate and make decisions with limited ongoing human intervention.',
+    aliases: ['autonomous artificial intelligence']
+  },
+  'Technology & Computing::Natural Language Processing': {
+    description: 'Computational techniques for analyzing, understanding, and generating human language.',
+    aliases: ['NLP', 'language processing']
+  },
+  'Technology & Computing::Computer Vision': {
+    description: 'Computational methods that extract information and meaning from images and video.',
+    aliases: ['machine vision', 'visual recognition']
+  },
+  'Technology & Computing::Vector Databases': {
+    description: 'Databases optimized for storing, indexing, and retrieving vector embeddings using similarity search.',
+    aliases: ['vector database', 'vector store', 'vector search', 'similarity search']
+  },
+  'Technology & Computing::Embeddings': {
+    description: 'Numeric vector representations that encode semantic or structural properties of data for machine learning and similarity comparison.',
+    aliases: ['vector embeddings', 'embedding vectors', 'semantic vectors']
+  },
+  'Technology & Computing::Semantic Search': {
+    description: 'Information retrieval based on the meaning and context of a query rather than exact keyword matches.',
+    aliases: ['meaning-based search', 'neural search']
+  },
+  'Technology & Computing::Retrieval Augmented Generation': {
+    description: 'A method that supplies a generative model with retrieved external information before it produces an answer.',
+    aliases: ['RAG', 'retrieval-augmented generation', 'retrieval augmented generation']
+  },
+  'Technology & Computing::Fine Tuning': {
+    description: 'Additional training that adapts a pretrained machine-learning model to a task, domain, or behavior.',
+    aliases: ['fine-tuning', 'model fine tuning']
+  },
+  'Technology & Computing::Inference': {
+    description: 'Execution of a trained machine-learning model to produce predictions, embeddings, classifications, or generated output.',
+    aliases: ['model inference', 'model serving', 'inference serving']
+  },
+  'Technology & Computing::Model Context Protocol': {
+    description: 'An open protocol for connecting artificial-intelligence applications to external tools and contextual data sources.',
+    aliases: ['MCP']
+  },
+  'Technology & Computing::Tool Calling': {
+    description: 'The ability of an artificial-intelligence model to select and invoke external tools as part of completing a task.',
+    aliases: ['AI tool use', 'model tool use']
+  },
+  'Technology & Computing::Function Calling': {
+    description: 'A structured model interface that emits a named function and validated arguments for application code to execute.',
+    aliases: ['function calls', 'structured function calling']
+  },
+  'Technology & Computing::Identity Management': {
+    description: 'Processes and systems for creating, maintaining, and retiring digital identities throughout their lifecycle.',
+    aliases: ['identity lifecycle management', 'IdM']
+  },
+  'Technology & Computing::Identity and Access Management': {
+    description: 'Policies and systems that manage digital identities and control their access to resources.',
+    aliases: ['IAM', 'identity & access management']
+  },
+  'Technology & Computing::ETL': {
+    description: 'Data integration that extracts data, transforms it before loading, and writes it into a target system.',
+    aliases: ['extract transform load', 'extract-transform-load']
+  },
+  'Technology & Computing::ELT': {
+    description: 'Data integration that extracts and loads source data before transforming it inside the target system.',
+    aliases: ['extract load transform', 'extract-load-transform']
+  },
+  'Technology & Computing::Site Reliability Engineering': {
+    description: 'An engineering discipline that applies software practices to the reliability and operation of production systems.',
+    aliases: ['SRE']
+  },
+  'Technology & Computing::Infrastructure as Code': {
+    description: 'The definition and provisioning of computing infrastructure through versioned, machine-readable configuration.',
+    aliases: ['IaC']
+  },
+  'Technology & Computing::High Performance Computing': {
+    description: 'The use of powerful parallel computing systems to solve computationally intensive problems.',
+    aliases: ['HPC', 'supercomputing']
+  },
+  'Technology & Computing::Internet of Things': {
+    description: 'Networks of physical devices equipped with sensors, software, and connectivity for exchanging data.',
+    aliases: ['IoT', 'connected devices']
+  },
+  'Technology & Computing::Human Computer Interaction': {
+    description: 'The study and design of how people interact with computers and digital interfaces.',
+    aliases: ['HCI', 'human-computer interaction']
+  },
+  'Technology & Computing::AI Ethics': {
+    description: 'Ethical principles and questions concerning the design, deployment, and societal effects of artificial intelligence.',
+    aliases: ['artificial intelligence ethics', 'machine ethics']
+  },
+  'Emerging & Internet Culture::AI Ethics': {
+    description: 'Public debate about the ethical effects of artificial intelligence on online communities, creators, identity, and digital culture.',
+    aliases: ['AI ethics discourse', 'online AI ethics']
+  },
+  'Technology & Computing::Game Development': {
+    description: 'Software engineering techniques and tools used to build interactive games across computing platforms.',
+    aliases: ['game programming', 'video game development']
+  },
+  'Gaming & Interactive Media::Game Development': {
+    description: 'The creative and production process of designing, building, testing, and releasing video games.',
+    aliases: ['video game development', 'game production']
+  },
+  'Technology & Computing::Industrial Automation': {
+    description: 'Control systems, software, sensors, and robotics used to automate industrial machinery and processes.',
+    aliases: ['factory automation', 'industrial control automation']
+  },
+  'Industry & Infrastructure::Industrial Automation': {
+    description: 'Industry adoption and operation of automated manufacturing, process-control, and robotic production systems.',
+    aliases: ['factory automation', 'manufacturing automation']
+  },
+  'Media & Entertainment::Live Streaming': {
+    description: 'Real-time online broadcasting of entertainment, events, performances, and creator-produced media.',
+    aliases: ['livestreaming', 'live video streaming']
+  },
+  'Gaming & Interactive Media::Live Streaming': {
+    description: 'Real-time online broadcasts of gameplay, gaming commentary, and interaction with gaming audiences.',
+    aliases: ['game streaming', 'livestream gaming']
+  },
+  'Sports::Football': {
+    description: 'News and competition involving gridiron football, including professional, college, and amateur leagues.',
+    aliases: ['American football', 'gridiron football']
+  },
+  'Sports::Soccer': {
+    description: 'News and competition involving association football played between two teams with a spherical ball.',
+    aliases: ['association football', 'world football']
+  }
+};
+
+const commonAliases = {
+  'Explainable AI': ['XAI', 'explainable artificial intelligence'],
+  'Reinforcement Learning': ['RL'],
+  'Self-Supervised Learning': ['SSL', 'self supervised learning'],
+  'Speech Recognition': ['automatic speech recognition', 'ASR', 'speech to text'],
+  'Speech Synthesis': ['text to speech', 'TTS'],
+  'Recommendation Systems': ['recommender systems', 'recommenders'],
+  'Knowledge Graphs': ['knowledge graph', 'semantic graph'],
+  'Graph Databases': ['graph database', 'graph DB'],
+  'Business Intelligence': ['BI'],
+  'Data Warehousing': ['data warehouse', 'enterprise data warehouse'],
+  'Data Lakes': ['data lake'],
+  Lakehouse: ['data lakehouse', 'lakehouse architecture'],
+  'Master Data Management': ['MDM'],
+  'Data Catalogs': ['data catalog'],
+  'Real-Time Analytics': ['realtime analytics', 'streaming analytics'],
+  'Feature Stores': ['feature store'],
+  'Domain Driven Design': ['domain-driven design', 'DDD'],
+  'API Design': ['application programming interface design'],
+  'REST APIs': ['RESTful APIs', 'REST API'],
+  GraphQL: ['Graph Query Language'],
+  gRPC: ['Google Remote Procedure Call', 'remote procedure calls'],
+  WebSockets: ['WebSocket'],
+  OpenAPI: ['OpenAPI Specification', 'OAS'],
+  'Full Stack Development': ['full-stack development'],
+  'Continuous Integration': ['CI'],
+  'Continuous Delivery': ['CD', 'continuous deployment'],
+  DevOps: ['development and operations'],
+  MLOps: ['machine learning operations', 'ML operations'],
+  AIOps: ['artificial intelligence for IT operations'],
+  FinOps: ['cloud financial operations'],
+  'Content Delivery Networks': ['CDN', 'CDNs'],
+  'Relational Databases': ['RDBMS', 'relational database'],
+  NoSQL: ['non-relational databases'],
+  SQL: ['Structured Query Language'],
+  'Time Series Databases': ['time-series database', 'TSDB'],
+  'Public Key Infrastructure': ['PKI'],
+  DNS: ['Domain Name System'],
+  VPN: ['virtual private network'],
+  'Cross Platform Development': ['cross-platform development'],
+  'Industrial IoT': ['IIoT', 'industrial internet of things'],
+  'Digital Twins': ['digital twin'],
+  'Virtual Reality': ['VR'],
+  'Augmented Reality': ['AR'],
+  'Mixed Reality': ['MR'],
+  GPUs: ['graphics processing units', 'GPU'],
+  CPUs: ['central processing units', 'CPU'],
+  'AI Accelerators': ['artificial intelligence accelerators', 'AI chips'],
+  SaaS: ['software as a service'],
+  CRM: ['customer relationship management'],
+  ERP: ['enterprise resource planning'],
+  'UX Design': ['user experience design', 'UX'],
+  'UI Design': ['user interface design', 'UI'],
+  Accessibility: ['digital accessibility', 'a11y'],
+  'No-Code Development': ['no code development'],
+  'Low-Code Platforms': ['low code platforms'],
+  Cryptocurrency: ['crypto', 'digital currency'],
+  Fintech: ['financial technology'],
+  'E-commerce': ['ecommerce', 'electronic commerce'],
+  IPOs: ['initial public offerings', 'IPO'],
+  'Mergers & Acquisitions': ['mergers and acquisitions', 'M&A'],
+  'Role Playing Games': ['role-playing games', 'RPGs'],
+  'Massively Multiplayer Online Games': ['MMOs', 'MMORPGs'],
+  'First Person Shooters': ['first-person shooters', 'FPS games'],
+  'Third Person Shooters': ['third-person shooters', 'TPS games'],
+  'Real Time Strategy': ['real-time strategy', 'RTS'],
+  Esports: ['electronic sports', 'e-sports'],
+  Crossplay: ['cross-platform play'],
+  'Formula 1': ['F1'],
+  MMA: ['mixed martial arts'],
+  ESG: ['environmental social and governance'],
+  'Electric Vehicles': ['EVs', 'electric cars'],
+  'Carbon Capture': ['carbon capture and storage', 'CCS']
+};
+
+const categoryDescriptions = {
+  'Technology & Computing': topic => `${topic} as a computing technology, engineering practice, software field, or digital product category.`,
+  Science: topic => `Scientific research, evidence, and discoveries concerning ${topic}.`,
+  'Health & Medicine': topic => `Medical knowledge, care, research, and health outcomes specifically concerning ${topic}.`,
+  'Politics & Society': topic => `Public institutions, policy, law, and social developments specifically concerning ${topic}.`,
+  'Business & Finance': topic => `Business activity, markets, organizations, and financial decisions specifically concerning ${topic}.`,
+  'Media & Entertainment': topic => `Creative works, audiences, production, and media culture specifically concerning ${topic}.`,
+  'Gaming & Interactive Media': topic => `Games, interactive entertainment, players, creators, and industry developments specifically concerning ${topic}.`,
+  Sports: topic => `Competition, athletes, teams, training, and events specifically concerning ${topic}.`,
+  Lifestyle: topic => `Everyday practices, choices, and personal experiences specifically concerning ${topic}.`,
+  'Environment & Energy': topic => `Environmental systems, energy, sustainability, and policy specifically concerning ${topic}.`,
+  'Industry & Infrastructure': topic => `Organizations, technology, operations, and infrastructure specifically concerning ${topic}.`,
+  'Culture & Regional': topic => `History, customs, arts, identity, and social life specifically concerning ${topic}.`,
+  'Emerging & Internet Culture': topic => `Online behavior, communities, identity, and emerging digital culture specifically concerning ${topic}.`,
+  'Careers & Professional Life': topic => `Employment, skills, workplaces, and professional development specifically concerning ${topic}.`,
+  'Family & Life Stages': topic => `Relationships, responsibilities, and personal transitions specifically concerning ${topic}.`
+};
+
 const toSlug = (value) =>
   value
     .toLowerCase()
@@ -687,18 +952,42 @@ const toSlug = (value) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+const identityOverrides = {
+  'Technology & Computing::C++': 'technology-and-computing-c-plus-plus'
+};
+
 const toIdentity = (categoryName, displayName) =>
-  `${toSlug(categoryName)}-${toSlug(displayName)}`.slice(0, 100);
+  identityOverrides[`${categoryName}::${displayName}`]
+  || `${toSlug(categoryName)}-${toSlug(displayName)}`.slice(0, 100);
+
+const taxonomyItems = taxonomyPairs.map(([categoryName, displayName]) => {
+  const semantics = taxonomySemantics[`${categoryName}::${displayName}`] || {};
+
+  return {
+    categoryName,
+    displayName,
+    description: semantics.description || categoryDescriptions[categoryName](displayName),
+    aliases: semantics.aliases || commonAliases[displayName] || []
+  };
+});
+
+const deprecatedTaxonomyIdentities = [
+  toIdentity('Technology & Computing', 'RAG')
+];
 
 module.exports = {
+  taxonomyItems,
+  deprecatedTaxonomyIdentities,
+  toIdentity,
+
   up: async (queryInterface) => {
     const now = new Date();
 
-    const rows = taxonomyPairs.map(([categoryName, displayName]) => ({
+    const rows = taxonomyItems.map(({ categoryName, displayName, description }) => ({
       identity: toIdentity(categoryName, displayName),
       displayName,
       categoryName,
-      description: null,
+      description,
       vector: null,
       embedding_model: null,
       status: 'active',
@@ -712,7 +1001,7 @@ module.exports = {
   },
 
   down: async (queryInterface) => {
-    const identities = taxonomyPairs.map(([categoryName, displayName]) =>
+    const identities = taxonomyItems.map(({ categoryName, displayName }) =>
       toIdentity(categoryName, displayName)
     );
 

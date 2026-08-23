@@ -1,7 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createInferenceModelProvider } from '../../services/agent/inferenceModelProvider.js';
+import { InferenceDisabledError } from '../../config/intelligentFeatures.js';
 
 describe('inference agent model provider', () => {
+  it('fails closed before starting a streamed request when inference is disabled', async () => {
+    const fetchImplementation = vi.fn();
+    const model = createInferenceModelProvider({ fetchImplementation }).getModel();
+    vi.stubEnv('INFERENCE_AI_ENABLED', 'false');
+
+    await expect(Array.fromAsync(model.getStreamedResponse({ input: 'Hello' })))
+      .rejects.toBeInstanceOf(InferenceDisabledError);
+    expect(fetchImplementation).not.toHaveBeenCalled();
+
+    vi.unstubAllEnvs();
+  });
+
   it('maps non-streaming model requests to inference without serializing AbortSignal', async () => {
     const fetchImplementation = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       output: [],

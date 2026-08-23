@@ -1,4 +1,5 @@
 import { getInferenceRequestConfig, requestInferenceJson } from '../inference/inferenceClient.js';
+import { assertInferenceEnabled } from '../../config/intelligentFeatures.js';
 
 const serializableRequest = request => {
   const payload = { ...request };
@@ -18,6 +19,7 @@ class InferenceAgentModel {
   }
 
   async *getStreamedResponse(request) {
+    assertInferenceEnabled();
     const { baseUrl, timeoutMs, fetchImplementation } = getInferenceRequestConfig(this.options);
     const response = await fetchImplementation(
       `${baseUrl.replace(/\/$/, '')}/api/assistant/model/stream`,

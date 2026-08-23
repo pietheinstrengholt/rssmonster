@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createCrawlWorkerHealthReporter } from './crawlWorkerHealth.js';
 
 const workerFile = fileURLToPath(import.meta.url);
 const serverDirectory = path.resolve(path.dirname(workerFile), '../..');
@@ -57,13 +58,28 @@ export const createCrawlWorker = ({
   intervalMs = parseWorkerInterval(process.env.CRAWL_WORKER_INTERVAL_MS),
   loadDependencies = loadCrawlDependencies,
   logger = console,
-  registerProcessHandlers = true
+  registerProcessHandlers = true,
+  healthReporter
 } = {}) => {
   let dependencies;
   let runPromise;
   let stopping = false;
   let wakeSleep;
   let requestedExitCode = 0;
+  let consecutiveFailures = 0;
+  let lastAttemptAt = null;
+  let lastSuccessAt = null;
+
+  // This function persists the worker state consumed by the container health check.
+  const reportHealth = async status => {
+    if (!healthReporter) return;
+    await healthReporter({
+      status,
+      consecutiveFailures,
+      lastAttemptAt,
+      lastSuccessAt
+    });
+  };
 
   // This function wakes the polling delay so shutdown does not wait for the interval.
   const interruptSleep = () => {
@@ -155,18 +171,26 @@ export const createCrawlWorker = ({
     installProcessHandlers();
 
     try {
+      await reportHealth('starting');
       dependencies = await loadDependencies();
 
       while (!stopping) {
         const startedAt = Date.now();
+        lastAttemptAt = new Date(startedAt).toISOString();
+        await reportHealth('running');
         logger.log('[CrawlWorker] Crawl iteration started.');
 
         try {
           await dependencies.runCrawl();
+          consecutiveFailures = 0;
+          lastSuccessAt = new Date().toISOString();
+          await reportHealth('healthy');
           logger.log(
             `[CrawlWorker] Crawl iteration completed in ${Date.now() - startedAt}ms.`
           );
         } catch (error) {
+          consecutiveFailures++;
+          await reportHealth('degraded');
           logger.error(
             `[CrawlWorker] Crawl iteration failed after ${Date.now() - startedAt}ms:`,
             error
@@ -179,6 +203,10 @@ export const createCrawlWorker = ({
       }
     } finally {
       interruptSleep();
+      await reportHealth('stopping').catch(error => {
+        requestedExitCode = 1;
+        logger.error('[CrawlWorker] Health-state cleanup failed:', error);
+      });
 
       if (dependencies) {
         try {
@@ -211,7 +239,9 @@ export const createCrawlWorker = ({
 // This function starts the production worker when this module is the Node entry point.
 const runMain = async () => {
   try {
-    const worker = createCrawlWorker();
+    const worker = createCrawlWorker({
+      healthReporter: createCrawlWorkerHealthReporter()
+    });
     await worker.start();
   } catch (error) {
     console.error('[CrawlWorker] Initialization failed:', error);

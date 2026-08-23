@@ -12,7 +12,7 @@
   "scripts": {
     "test": "vitest run",
     "test:debug": "RSSMONSTER_TEST_DEBUG=true vitest run",
-    "test:sqlite": "vitest run tests/config tests/models tests/migrations tests/articleSearch tests/controllers/feedObservability.controller.test.js",
+    "test:sqlite": "vitest run tests/config tests/models tests/migrations tests/articleSearch tests/workers tests/app/health.test.js tests/app/express.smoke.test.js tests/controllers/feedObservability.controller.test.js",
     "test:semantic-report": "vitest run tests/semantic",
     "test:semantic-trace": "RSSMONSTER_TEST_DEBUG=true SEMANTIC_REPORT_LEVEL=trace vitest run tests/semantic",
     "test:coverage": "vitest run --coverage",
@@ -43,6 +43,7 @@
     "islands": "NODE_ENV=production node scripts/runIslandsCommand.js",
     "backfill:engaged-vectors": "NODE_ENV=production node scripts/backfillEngagedArticleVectors.js",
     "taxonomy:vectors": "node scripts/generateIslandTaxonomyVectors.js",
+    "taxonomy:evaluate": "node scripts/evaluateTaxonomyEmbeddingStrategies.js",
     "seed:island-taxonomy": "./node_modules/.bin/sequelize db:seed --seed 20260520104500-island-taxonomy.js",
     "seed:undo:island-taxonomy": "./node_modules/.bin/sequelize db:seed:undo --seed 20260520104500-island-taxonomy.js",
     "seed:official-sources": "NODE_ENV=production node scripts/seedOfficialSources.js",

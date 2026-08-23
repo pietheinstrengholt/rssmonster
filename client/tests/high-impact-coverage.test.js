@@ -1078,6 +1078,9 @@ describe('Vue template handler coverage', () => {
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     document.head.innerHTML = '<meta name="viewport"><meta http-equiv="X-UA-Compatible">';
     const stores = createFocusedStores({
+      selection: {
+        currentSelection: { AssistantEnabled: true }
+      },
       overview: {
         categories: [{ id: 1, name: 'News', feeds: [] }],
         fetchOverviewSplit: vi.fn().mockResolvedValue(),

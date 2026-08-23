@@ -10,6 +10,9 @@ services:
       mysql:
         condition: service_healthy
         restart: true
+      inference:
+        condition: service_healthy
+        restart: true
 
     ports:
       - "${RSSMONSTER_PORT:-3000}:3000"
@@ -31,6 +34,12 @@ services:
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
       RSSMONSTER_INTERNAL_HOST_ALLOWLIST: ${RSSMONSTER_INTERNAL_HOST_ALLOWLIST:-}
       TRUST_PROXY: ${TRUST_PROXY:-loopback}
+      INFERENCE_URL: http://inference:3001
+      INFERENCE_TIMEOUT_MS: ${INFERENCE_TIMEOUT_MS:-600000}
+      INFERENCE_AI_ENABLED: "true"
+      INFERENCE_ASSISTANT_ENABLED: ${INFERENCE_ASSISTANT_ENABLED:-false}
+      SKIP_ARTICLE_CLASSIFICATION_ANALYSIS: "false"
+      SKIP_ARTICLE_EMBEDDINGS: "false"
 
     init: true
 
@@ -50,6 +59,118 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
+
+    networks:
+      - rssmonster-network
+
+  rssmonster-worker:
+    image: rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}
+    container_name: rssmonster-worker
+    restart: unless-stopped
+
+    depends_on:
+      rssmonster:
+        condition: service_healthy
+        restart: true
+      inference:
+        condition: service_healthy
+        restart: true
+
+    command:
+      - npm
+      - run
+      - start:worker
+
+    environment:
+      NODE_ENV: production
+      DB_HOSTNAME: mysql
+      DB_DIALECT: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-rssmonster}
+      DB_USERNAME: ${DB_USERNAME:-rssmonster}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      FEVER_CREDENTIAL_SECRET: ${FEVER_CREDENTIAL_SECRET:?FEVER_CREDENTIAL_SECRET must be set}
+      RSSMONSTER_INTERNAL_HOST_ALLOWLIST: ${RSSMONSTER_INTERNAL_HOST_ALLOWLIST:-}
+      INFERENCE_URL: http://inference:3001
+      INFERENCE_TIMEOUT_MS: ${INFERENCE_TIMEOUT_MS:-600000}
+      INFERENCE_AI_ENABLED: "true"
+      SKIP_ARTICLE_CLASSIFICATION_ANALYSIS: "false"
+      SKIP_ARTICLE_EMBEDDINGS: "false"
+      CRAWL_WORKER_HEALTH_FILE: /tmp/rssmonster-crawl-worker-health.json
+      CRAWL_WORKER_HEALTH_MAX_FAILURES: ${CRAWL_WORKER_HEALTH_MAX_FAILURES:-3}
+      CRAWL_WORKER_HEALTH_MAX_STALE_MS: ${CRAWL_WORKER_HEALTH_MAX_STALE_MS:-900000}
+
+    init: true
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - src/workers/checkCrawlWorkerHealth.js
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 2m
+
+    networks:
+      - rssmonster-network
+
+  inference:
+    build:
+      context: ./inference
+      dockerfile: Dockerfile
+    container_name: rssmonster-inference
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: production
+      INFERENCE_HOST: 0.0.0.0
+      INFERENCE_PORT: 3001
+      INFERENCE_MODEL_CACHE_DIR: /app/models
+      INFERENCE_DEBUG: "false"
+
+      EMBEDDING_PROVIDER: qwen
+      EMBEDDING_MODEL: onnx-community/Qwen3-Embedding-0.6B-ONNX
+      EMBEDDING_DIMENSIONS: 1024
+      EMBEDDING_MAX_BATCH_SIZE: 8
+
+      GENERATION_PROVIDER: qwen
+      GENERATION_MODEL: onnx-community/Qwen3.5-0.8B-ONNX
+      GENERATION_DTYPE: q4
+
+      ASSISTANT_PROVIDER: ${ASSISTANT_PROVIDER:-}
+      ASSISTANT_MODEL: ${ASSISTANT_MODEL:-gpt-4o-mini}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+
+      ARTICLE_SCORING_PROVIDER: modernbert
+      MODERNBERT_MODEL: onnx-community/ModernBERT-base-nli-ONNX
+      MODERNBERT_DTYPE: q8
+
+    volumes:
+      - inference-model-cache:/app/models
+
+    init: true
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >
+          fetch('http://127.0.0.1:3001/health')
+          .then(response => process.exit(response.ok ? 0 : 1))
+          .catch(() => process.exit(1))
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10m
 
     networks:
       - rssmonster-network
@@ -94,6 +215,7 @@ services:
 
 volumes:
   mysql-data:
+  inference-model-cache:
 
 networks:
   rssmonster-network:

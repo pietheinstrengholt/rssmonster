@@ -3,6 +3,7 @@ import {
   embedTexts,
   getEmbeddingInfo
 } from '../../services/embeddings/embeddingService.js';
+import { InferenceDisabledError } from '../../config/intelligentFeatures.js';
 
 const jsonResponse = (payload, { ok = true, status = 200 } = {}) => ({
   ok,
@@ -12,6 +13,19 @@ const jsonResponse = (payload, { ok = true, status = 200 } = {}) => ({
 });
 
 describe('inference embedding client', () => {
+  it('fails closed without performing requests when inference is disabled', async () => {
+    const fetchImplementation = vi.fn();
+    vi.stubEnv('INFERENCE_AI_ENABLED', 'false');
+
+    await expect(getEmbeddingInfo({ fetchImplementation }))
+      .rejects.toBeInstanceOf(InferenceDisabledError);
+    await expect(embedTexts(['one'], { fetchImplementation }))
+      .rejects.toBeInstanceOf(InferenceDisabledError);
+    expect(fetchImplementation).not.toHaveBeenCalled();
+
+    vi.unstubAllEnvs();
+  });
+
   it('loads the active provider metadata without embedding', async () => {
     const fetchImplementation = vi.fn(async () => jsonResponse({
       provider: 'qwen3-embedding',

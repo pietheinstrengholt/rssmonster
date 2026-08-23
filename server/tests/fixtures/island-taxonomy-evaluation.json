@@ -1,0 +1,190 @@
+{
+  "candidateConcepts": [
+    ["Technology & Computing", "Artificial Intelligence"],
+    ["Technology & Computing", "Machine Learning"],
+    ["Technology & Computing", "Generative AI"],
+    ["Technology & Computing", "Large Language Models"],
+    ["Technology & Computing", "AI Agents"],
+    ["Technology & Computing", "Data Warehousing"],
+    ["Technology & Computing", "Data Lakes"],
+    ["Technology & Computing", "Lakehouse"],
+    ["Technology & Computing", "Data Engineering"],
+    ["Technology & Computing", "Cybersecurity"],
+    ["Technology & Computing", "Cloud Security"],
+    ["Technology & Computing", "Application Security"],
+    ["Business & Finance", "Finance"],
+    ["Business & Finance", "Banking"],
+    ["Business & Finance", "Fintech"],
+    ["Business & Finance", "Insurance"],
+    ["Sports", "Football"],
+    ["Sports", "Soccer"],
+    ["Gaming & Interactive Media", "Game Development"],
+    ["Technology & Computing", "Software Development"],
+    ["Science", "Climate Science"],
+    ["Environment & Energy", "Climate Change"],
+    ["Environment & Energy", "Sustainability"]
+  ],
+  "articles": [
+    {
+      "id": "llm-context-window",
+      "expected": ["Technology & Computing", "Large Language Models"],
+      "title": "New language model expands its context window",
+      "description": "Researchers released a transformer language model trained on a massive text corpus to understand and generate natural language.",
+      "contentText": "The large language model can summarize documents, answer questions, and generate prose. The team evaluated token efficiency, hallucinations, and long-context reasoning."
+    },
+    {
+      "id": "machine-learning-forecast",
+      "expected": ["Technology & Computing", "Machine Learning"],
+      "title": "Predictive model improves factory demand forecasts",
+      "description": "Engineers trained a machine-learning model on historical production data to predict future demand without generating content.",
+      "contentText": "The supervised learning system uses labeled examples, feature engineering, validation data, and error metrics to improve its forecasts."
+    },
+    {
+      "id": "generative-ai-images",
+      "expected": ["Technology & Computing", "Generative AI"],
+      "title": "Creative suite adds generative image and audio tools",
+      "description": "The software uses generative artificial intelligence to create images, sound effects, and video from user prompts.",
+      "contentText": "The release covers synthetic media generation across several modalities rather than a text-only language model."
+    },
+    {
+      "id": "ai-agent-tools",
+      "expected": ["Technology & Computing", "AI Agents"],
+      "title": "AI agent plans tasks and operates business tools",
+      "description": "A software agent observes its context, selects tools, and performs a sequence of actions to complete an assigned goal.",
+      "contentText": "The intelligent agent can call APIs, inspect results, revise its plan, and request human approval before sensitive actions."
+    },
+    {
+      "id": "broad-ai-policy",
+      "expected": ["Technology & Computing", "Artificial Intelligence"],
+      "title": "Organizations expand artificial intelligence adoption",
+      "description": "A broad survey examines computer systems performing tasks associated with human intelligence across many industries.",
+      "contentText": "The report spans vision, language, prediction, robotics, governance, and workforce effects without focusing on one AI technique."
+    },
+    {
+      "id": "warehouse-bi-platform",
+      "expected": ["Technology & Computing", "Data Warehousing"],
+      "title": "Enterprise consolidates reporting data in a central warehouse",
+      "description": "The analytics team built a structured data warehouse for governed historical reporting and business intelligence workloads.",
+      "contentText": "Dimensional tables, scheduled transformations, and curated metrics support repeatable SQL dashboards across the company."
+    },
+    {
+      "id": "raw-object-data-lake",
+      "expected": ["Technology & Computing", "Data Lakes"],
+      "title": "Research group stores raw logs and media in a data lake",
+      "description": "The platform keeps large volumes of structured and unstructured source data in low-cost object storage for later processing.",
+      "contentText": "Teams retain raw files in their native formats and apply schemas when analysts or machine-learning jobs read them."
+    },
+    {
+      "id": "lakehouse-tables",
+      "expected": ["Technology & Computing", "Lakehouse"],
+      "title": "Lakehouse adds reliable tables to object storage",
+      "description": "The architecture combines data-lake storage with warehouse-style transactions, governance, and analytical query performance.",
+      "contentText": "Open table formats provide schema enforcement, versioning, and SQL access over files stored in the cloud data lake."
+    },
+    {
+      "id": "data-engineering-pipelines",
+      "expected": ["Technology & Computing", "Data Engineering"],
+      "title": "Data engineers rebuild ingestion and transformation pipelines",
+      "description": "The team designs reliable systems that collect, validate, transform, and deliver data to downstream analytical products.",
+      "contentText": "The project covers orchestration, pipeline testing, metadata, streaming ingestion, and operational ownership of data flows."
+    },
+    {
+      "id": "cybersecurity-landscape",
+      "expected": ["Technology & Computing", "Cybersecurity"],
+      "title": "Annual report tracks the global cyber threat landscape",
+      "description": "The report surveys digital attacks, defensive practices, malware, identity threats, software flaws, and incident response.",
+      "contentText": "Its scope spans networks, endpoints, cloud systems, applications, and security operations rather than one security domain."
+    },
+    {
+      "id": "cloud-security-posture",
+      "expected": ["Technology & Computing", "Cloud Security"],
+      "title": "Cloud security review finds exposed storage and excessive permissions",
+      "description": "Auditors examined identity policies, public buckets, workload isolation, and configuration risks in hosted cloud infrastructure.",
+      "contentText": "The remediation plan focuses on cloud accounts, managed services, infrastructure configuration, and shared-responsibility controls."
+    },
+    {
+      "id": "application-security-code",
+      "expected": ["Technology & Computing", "Application Security"],
+      "title": "Developers fix injection flaw in web application",
+      "description": "The software security team found unsafe input handling in application code and added validation, testing, and dependency checks.",
+      "contentText": "The work centers on secure coding, vulnerability scanning, authentication flows, and protecting the application layer."
+    },
+    {
+      "id": "finance-markets-overview",
+      "expected": ["Business & Finance", "Finance"],
+      "title": "Finance outlook covers capital markets and corporate funding",
+      "description": "Analysts review how money, credit, investments, assets, and financial risk move across households, firms, and markets.",
+      "contentText": "The broad report includes bonds, equity financing, interest rates, portfolio allocation, and financial institutions."
+    },
+    {
+      "id": "bank-deposits-loans",
+      "expected": ["Business & Finance", "Banking"],
+      "title": "Bank adjusts savings rates and small-business lending",
+      "description": "The deposit-taking institution changed account interest rates while expanding loans and payment services for customers.",
+      "contentText": "Executives discussed branches, deposits, credit underwriting, net interest income, and banking regulation."
+    },
+    {
+      "id": "fintech-payments-app",
+      "expected": ["Business & Finance", "Fintech"],
+      "title": "Fintech startup launches instant cross-border payment app",
+      "description": "The financial-technology company combines mobile software and payment infrastructure to transfer money more efficiently.",
+      "contentText": "Its digital wallet uses APIs, automated compliance checks, and real-time settlement rather than traditional branch banking."
+    },
+    {
+      "id": "insurance-claims",
+      "expected": ["Business & Finance", "Insurance"],
+      "title": "Insurer updates property coverage and claims process",
+      "description": "The company pools risk through policies and premiums, then compensates covered losses through insurance claims.",
+      "contentText": "The changes affect underwriting, deductibles, actuarial pricing, policyholders, and catastrophe coverage."
+    },
+    {
+      "id": "nfl-football",
+      "expected": ["Sports", "Football"],
+      "title": "Quarterback leads football team to overtime victory",
+      "description": "The NFL game ended after a touchdown drive by the quarterback in an American gridiron football matchup.",
+      "contentText": "Coaches discussed passing yards, defensive tackles, field goals, and the remaining professional football schedule."
+    },
+    {
+      "id": "soccer-champions-league",
+      "expected": ["Sports", "Soccer"],
+      "title": "Striker scores twice in Champions League football match",
+      "description": "The association football club won after controlling possession and scoring two goals on the soccer pitch.",
+      "contentText": "Supporters celebrated the European fixture while the manager discussed midfield tactics, the goalkeeper, and league standings."
+    },
+    {
+      "id": "game-development-engine",
+      "expected": ["Gaming & Interactive Media", "Game Development"],
+      "title": "Studio explains development of its new role-playing game",
+      "description": "Game developers built levels, combat systems, character animation, and interactive quests using a real-time game engine.",
+      "contentText": "The production involved game design, playtesting, graphics, audio, and performance work before the video game release."
+    },
+    {
+      "id": "software-development-library",
+      "expected": ["Technology & Computing", "Software Development"],
+      "title": "Engineering team releases a new application library",
+      "description": "Software developers designed, implemented, tested, documented, and maintained reusable code for business applications.",
+      "contentText": "The release discusses programming practices, source control, code review, automated tests, APIs, and software maintenance without game production."
+    },
+    {
+      "id": "climate-science-model",
+      "expected": ["Science", "Climate Science"],
+      "title": "Climate scientists refine model of atmospheric warming",
+      "description": "Researchers analyze observations and physical models to understand long-term changes in Earth's climate system.",
+      "contentText": "The peer-reviewed study compares temperature records, ocean heat, greenhouse forcing, uncertainty ranges, and model projections."
+    },
+    {
+      "id": "climate-change-impacts",
+      "expected": ["Environment & Energy", "Climate Change"],
+      "title": "Communities prepare for worsening climate change impacts",
+      "description": "Rising global temperatures are increasing coastal flooding, heat waves, drought, and pressure to reduce greenhouse-gas emissions.",
+      "contentText": "Officials debated mitigation and adaptation policies in response to human-caused global warming and its environmental consequences."
+    },
+    {
+      "id": "sustainability-business",
+      "expected": ["Environment & Energy", "Sustainability"],
+      "title": "Manufacturer adopts a long-term sustainability plan",
+      "description": "The company aims to meet present economic needs while reducing resource use and preserving environmental and social wellbeing.",
+      "contentText": "Targets cover durable materials, waste reduction, responsible sourcing, energy efficiency, labor standards, and lifecycle impacts."
+    }
+  ]
+}

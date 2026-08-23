@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   articleFindAll: vi.fn(),
@@ -25,6 +25,23 @@ describe('embedArticles', () => {
   beforeEach(() => {
     mocked.articleFindAll.mockReset();
     mocked.embedArticle.mockReset();
+    vi.stubEnv('SKIP_ARTICLE_EMBEDDINGS', 'false');
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('returns without scanning or calling inference when embeddings are skipped', async () => {
+    vi.stubEnv('SKIP_ARTICLE_EMBEDDINGS', 'true');
+
+    const { embedArticles } = await import('../../services/articles/embedArticles.js');
+    await expect(embedArticles(42)).resolves.toEqual({
+      userId: 42,
+      scannedCount: 0,
+      reusedCount: 0,
+      embeddedCount: 0,
+      skippedCount: 0
+    });
+    expect(mocked.articleFindAll).not.toHaveBeenCalled();
+    expect(mocked.embedArticle).not.toHaveBeenCalled();
   });
 
   it('selects a newly created active article from a feed that allows embeddings', async () => {

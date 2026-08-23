@@ -103,7 +103,7 @@ These native routes do not require a JWT:
 | `POST` | `/api/auth/register` | Create a user account |
 | `POST` | `/api/auth/login` | Exchange username and password for a JWT |
 | `POST` | `/api/auth/development-login` | Log in as the configured development user when enabled |
-| `GET` | `/api/health` | Return process health, uptime, and a timestamp |
+| `GET` | `/api/health` | Return process uptime and verify database access plus required feed/article tables |
 
 The Google Reader compatibility check and login routes are also public, but
 they belong to that protocol's authentication flow.

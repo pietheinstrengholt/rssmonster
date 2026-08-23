@@ -1,5 +1,6 @@
 // server/services/crawl/enrichment/analyzeArticleContent.js
 import { requestInferenceJson } from '../../inference/inferenceClient.js';
+import { shouldSkipArticleClassification } from '../../../config/intelligentFeatures.js';
 
 /* ======================================================
    Article analysis through the inference service
@@ -14,7 +15,7 @@ import { requestInferenceJson } from '../../inference/inferenceClient.js';
 
 // This function analyzes canonical visible article text through inference.
 async function analyzeArticleContent(input) {
-  if (String(process.env.SKIP_ARTICLE_CLASSIFICATION_ANALYSIS).toLowerCase() === 'true') {
+  if (shouldSkipArticleClassification()) {
     const categories = Array.isArray(input?.categories) ? input.categories : [];
     const tags = [...new Set(categories
       .map(category => String(category || '').trim().toLowerCase()

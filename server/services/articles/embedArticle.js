@@ -3,6 +3,7 @@ import {
   DEFAULT_EMBEDDING_MODEL,
   embedTexts
 } from '../embeddings/embeddingService.js';
+import { shouldSkipArticleEmbeddings } from '../../config/intelligentFeatures.js';
 
 /**
  * Core article embedding utility.
@@ -255,6 +256,8 @@ function isArticleInstance(record) {
 // This function embeds one article or input object and optionally persists the event vector.
 // It returns both event and topic vectors when enough text is available.
 export async function embedArticle(articleOrInput, options = {}) {
+  if (shouldSkipArticleEmbeddings()) return null;
+
   // `persist=true` means this function owns writing vectors to the Article row.
   const { allowShortEventText = false, persist = true } = options;
   // Selects the article based on whether article or input is article instance.

@@ -21,16 +21,16 @@ Before you begin, make sure you have:
 
 For the recommended Docker installation, you only need Docker Engine or Docker
 Desktop with Docker Compose. The default deployment uses SQLite, so it does not
-require a separate database server. MySQL remains available for larger or
-higher-concurrency installations.
+require a separate database or model service. The comprehensive profile adds
+MySQL and local inference for larger or higher-concurrency installations.
 
 ---
 
 ## Quick Start with Docker
 
-SQLite is the recommended database for simple, personal installations. The
-default Compose configuration runs RSSMonster in a single container and stores
-the database in a persistent Docker volume.
+The default Compose configuration is designed for quickly seeing RSSMonster in
+live action. It runs the web application and a dedicated crawl worker, uses
+SQLite, and stores the database in a persistent Docker volume.
 
 ### 1. Clone RSSMonster
 
@@ -61,15 +61,18 @@ openssl rand -hex 32
 docker compose up -d
 ```
 
-On first startup, RSSMonster creates the SQLite database and applies pending
-Sequelize migrations automatically. Open `http://localhost:3000` and create
-your first account.
+On first startup, RSSMonster creates and initializes the SQLite database and
+starts one dedicated crawl worker automatically.
+Inference-backed classifications, embeddings, the assistant, AI feed repair,
+and Smart Folder recommendations are disabled in this quick-start deployment,
+so no inference service is required.
+Open `http://localhost:3000` and create your first account.
 
 Check the deployment or follow its logs with:
 
 ```bash
 docker compose ps
-docker compose logs -f rssmonster
+docker compose logs -f rssmonster rssmonster-worker
 ```
 
 ### Updating RSSMonster
@@ -96,11 +99,25 @@ docker compose down
 Do not run `docker compose down -v` unless you intentionally want to delete the
 database volume.
 
-### Using MySQL
+### Comprehensive MySQL Deployment
 
-MySQL is recommended for deployments with multiple active users, higher write
-concurrency, or more demanding workloads. Add the required credentials to the
-root `.env` file alongside the application secrets:
+The comprehensive profile is intended for deployments with multiple active
+users, higher write concurrency, or local intelligent-content processing. It
+starts RSSMonster, a dedicated crawl worker, MySQL 8.4, and an inference service
+configured with:
+
+- Qwen3 Embedding for semantic vectors;
+- Qwen3.5 for classification text generation, Smart Folder recommendations,
+  and feed rediscovery; and
+- ModernBERT for local article scoring.
+
+These local features require no OpenAI API key. The optional natural-language
+assistant remains hidden unless `INFERENCE_ASSISTANT_ENABLED=true` is set after
+configuring `ASSISTANT_PROVIDER=openai` and `OPENAI_API_KEY`, because its
+current inference adapter is OpenAI-only.
+
+Add the required credentials to the root `.env` file alongside the application
+secrets:
 
 ```env
 DB_DATABASE=rssmonster
@@ -114,11 +131,25 @@ FEVER_CREDENTIAL_SECRET=replace-with-a-different-long-random-secret
 Then use the separate MySQL Compose configuration:
 
 ```bash
-docker compose -f docker-compose.mysql.yml up -d
+docker compose -f docker-compose.mysql.yml up -d --build
 ```
 
-This configuration starts MySQL, waits for it to become healthy, and then
-starts RSSMonster. Its database is stored in the `mysql-data` volume.
+On first startup, the inference service downloads its models into the persistent
+`inference-model-cache` volume. RSSMonster and its crawl worker wait for MySQL
+and inference to become healthy before starting. MySQL data is stored in the
+`mysql-data` volume.
+
+Check the complete deployment or follow its startup logs with:
+
+```bash
+docker compose -f docker-compose.mysql.yml ps
+docker compose -f docker-compose.mysql.yml logs -f inference rssmonster rssmonster-worker
+```
+
+Both Docker profiles monitor the crawl worker independently. By default, three
+consecutive crawl failures or 15 minutes without a worker-state update mark the
+worker unhealthy. See the [configuration guide](configuration.md) to tune these
+thresholds.
 
 ---
 
@@ -193,7 +224,6 @@ DB_PORT=3306
 
 ```env
 VITE_APP_HOSTNAME=http://localhost:3000
-VITE_ENABLE_AGENT=false  # Set to 'true' to enable AI assistant
 ```
 
 ### Step 4: Initialize Database
@@ -313,14 +343,14 @@ Enable the capability in `server/.env`:
 
 ```env
 INFERENCE_AI_ENABLED=true
+INFERENCE_ASSISTANT_ENABLED=true
 INFERENCE_AGENT_TIMEOUT_MS=300000
 ```
 
 Put `OPENAI_API_KEY`, `ASSISTANT_PROVIDER`, and `ASSISTANT_MODEL` in
-`inference/.env`; see [Model Usage](model-usage.md).
-
-Then set `VITE_ENABLE_AGENT=true` in `client/.env` and restart inference, the
-server, and the client.
+`inference/.env`; see [Model Usage](model-usage.md). Keep
+`INFERENCE_ASSISTANT_ENABLED` only in `server/.env`. Restart inference and the
+server. The client shows chat when the server reports the enabled capability.
 
 The AI assistant enables:
 - Natural language search: *"Show me tech articles from last week"*
@@ -360,10 +390,9 @@ This groups similar articles together to reduce duplicate coverage.
 
 ## Production Deployment
 
-For most self-hosted installations, use the SQLite Docker deployment described
-above. Update it with `docker compose pull` followed by
-`docker compose up -d`. For MySQL, use
-`docker compose -f docker-compose.mysql.yml up -d`.
+Use `docker compose up -d` for the quick SQLite profile. For the comprehensive
+MySQL and local-inference profile, use
+`docker compose -f docker-compose.mysql.yml up -d --build`.
 
 ### Update Environment Variables
 
@@ -424,7 +453,12 @@ kill -9 <PID>
 
 ### Feeds Not Updating
 
-- Check whether `rssmonster-worker` is running in PM2
+- For Docker, check `docker compose ps rssmonster-worker` and
+  `docker compose logs rssmonster-worker`. An `unhealthy` worker has either
+  exceeded the configured consecutive-failure limit or stopped updating its
+  health state.
+- For a manual installation, check whether `rssmonster-worker` is running in
+  PM2.
 - Manually run `npm run crawl` to test
 - Check server logs for errors
 

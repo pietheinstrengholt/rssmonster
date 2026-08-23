@@ -10,10 +10,10 @@ vi.mock('../src/api/agent', () => ({
 }));
 
 // This function mounts the assistant with the requested agentic feature state.
-const mountChatAssistant = (AIEnabled = true) => {
+const mountChatAssistant = (AssistantEnabled = true) => {
   const stores = createFocusedStores({
     selection: {
-      currentSelection: { AIEnabled }
+      currentSelection: { AIEnabled: true, AssistantEnabled }
     }
   });
   return mount(ChatAssistant, {
@@ -210,14 +210,14 @@ describe('ChatAssistant', () => {
     expect(wrapper.vm.isLoading).toBe(false);
   });
 
-  it('clears and invalidates a pending conversation when AI access is disabled', async () => {
+  it('clears and invalidates a pending conversation when assistant access is disabled', async () => {
     const deferred = createDeferred();
     sendChatMessages.mockReturnValueOnce(deferred.promise);
     const wrapper = mountChatAssistant();
 
     await wrapper.get('#chatTextarea').setValue('Pending question');
     await wrapper.get('.agent-chat-button--primary').trigger('click');
-    wrapper.vm.selectionStore.setCurrentSelection({ AIEnabled: false });
+    wrapper.vm.selectionStore.setCurrentSelection({ AssistantEnabled: false });
     await wrapper.vm.$nextTick();
 
     deferred.resolve({ data: { output: '<p>Late answer</p>' } });

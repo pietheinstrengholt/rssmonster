@@ -130,6 +130,51 @@ jobs:
         working-directory: server
         run: npm run test:sqlite
 
+  inference:
+    name: Inference
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: inference/package-lock.json
+
+      - name: Install inference dependencies
+        working-directory: inference
+        run: npm ci
+
+      - name: Lint inference
+        working-directory: inference
+        run: npm run lint
+
+      - name: Test inference
+        working-directory: inference
+        run: npm test
+
+      - name: Validate Docker Compose configurations
+        env:
+          JWT_SECRET: ci-jwt-secret
+          FEVER_CREDENTIAL_SECRET: ci-fever-credential-secret
+          DB_PASSWORD: ci-database-password
+          MYSQL_ROOT_PASSWORD: ci-root-database-password
+        run: |
+          docker compose -f docker-compose.yml config > /dev/null
+          docker compose -f docker-compose.mysql.yml config > /dev/null
+
+      - name: Build inference Docker image
+        env:
+          JWT_SECRET: ci-jwt-secret
+          FEVER_CREDENTIAL_SECRET: ci-fever-credential-secret
+          DB_PASSWORD: ci-database-password
+          MYSQL_ROOT_PASSWORD: ci-root-database-password
+        run: docker compose -f docker-compose.mysql.yml build inference
+
   client:
     name: Client
     runs-on: ubuntu-latest

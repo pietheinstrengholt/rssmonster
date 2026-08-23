@@ -24,6 +24,7 @@ import {
   apiRateLimiter,
   mcpRateLimiter
 } from './middleware/rateLimit.js';
+import { handleInferenceDisabledError } from './middleware/inferenceAvailability.js';
 import {
   REQUEST_LOG_FORMAT,
   requestUrlForLogging
@@ -138,6 +139,9 @@ app.use("/api/topics", topicRoutes);
 app.use("/api/briefing", briefingRoutes);
 app.use("/api/greader", greaderRoutes);
 app.use("/rss", rssRoutes);
+
+// Expected inference-disable failures are capability responses, not server errors.
+app.use(handleInferenceDisabledError);
 
 // 404 handler
 app.use(errorController.get404);

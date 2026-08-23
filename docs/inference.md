@@ -30,6 +30,10 @@ INFERENCE_AI_ENABLED=true
 SKIP_ARTICLE_CLASSIFICATION_ANALYSIS=false
 ```
 
+`INFERENCE_AI_ENABLED` is the server-wide kill switch. When it is not explicitly
+`true`, no server or worker path may contact the inference service, regardless of
+the feature-specific skip settings.
+
 When running Qwen on slower hardware, use a longer timeout such as `600000`.
 If the server and inference processes run in separate containers, use the
 private inference service hostname instead of `127.0.0.1`.

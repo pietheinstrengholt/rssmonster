@@ -1,6 +1,6 @@
 // scripts/generateIslandTaxonomyVectors.js
 /**
- * Reload island taxonomy entries from the seed file and generate vectors.
+ * Synchronize island taxonomy entries from the seed file and generate vectors.
  *
  * Usage:
  *   npm run taxonomy:vectors
@@ -10,60 +10,81 @@
  *   INFERENCE_URL=http://127.0.0.1:3001 (optional)
  */
 
-import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import vm from 'node:vm';
 import db from '../models/index.js';
 import { embedTexts, getEmbeddingInfo } from '../services/embeddings/embeddingService.js';
+import { buildTaxonomyEmbeddingText } from '../services/islands/taxonomyEmbeddingText.js';
 
-const { IslandTaxonomy, sequelize } = db;
+const { IslandTaxonomy, Sequelize, sequelize } = db;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TAXONOMY_SEEDER_PATH = join(__dirname, '..', 'seeders', '20260520104500-island-taxonomy.js');
+const require = createRequire(import.meta.url);
+const {
+  deprecatedTaxonomyIdentities,
+  taxonomyItems,
+  toIdentity
+} = require(TAXONOMY_SEEDER_PATH);
+const taxonomyItemsByIdentity = new Map(
+  taxonomyItems.map(item => [toIdentity(item.categoryName, item.displayName), item])
+);
 
+// Synchronizes seed metadata, replacing all rows first only for a forced rebuild.
+async function syncIslandTaxonomyFromSeeder({ force = false } = {}) {
+  return sequelize.transaction(async transaction => {
+    if (force) {
+      const deleted = await IslandTaxonomy.destroy({ where: {}, transaction });
+      console.log(`[TAXONOMY-VECTORS] Cleared taxonomy rows=${deleted}`);
+    }
 
-const buildEmbeddingInput = (row) =>
-  `${row.categoryName} ${row.displayName}`.replace(/\s+/g, ' ').trim();
+    const existingRows = force
+      ? []
+      : await IslandTaxonomy.findAll({ transaction });
+    const rowsByIdentity = new Map(existingRows.map(row => [row.identity, row]));
 
-// This function loads the CommonJS taxonomy seeder from the ESM script runtime.
-async function loadTaxonomySeeder() {
-  const source = await readFile(TAXONOMY_SEEDER_PATH, 'utf8');
-  const module = { exports: {} };
-  const context = vm.createContext({
-    module,
-    exports: module.exports,
-    console
+    for (const item of taxonomyItems) {
+      const identity = toIdentity(item.categoryName, item.displayName);
+      const existing = rowsByIdentity.get(identity);
+
+      if (!existing) {
+        await IslandTaxonomy.create({
+          identity,
+          displayName: item.displayName,
+          categoryName: item.categoryName,
+          description: item.description,
+          vector: null,
+          embedding_model: null,
+          status: 'active'
+        }, { transaction });
+        continue;
+      }
+
+      const metadataChanged = existing.displayName !== item.displayName
+        || existing.categoryName !== item.categoryName
+        || existing.description !== item.description;
+      if (!metadataChanged) continue;
+
+      await existing.update({
+        displayName: item.displayName,
+        categoryName: item.categoryName,
+        description: item.description,
+        vector: null,
+        embedding_model: null
+      }, { transaction });
+    }
+
+    if (deprecatedTaxonomyIdentities.length) {
+      await IslandTaxonomy.destroy({
+        where: { identity: { [Sequelize.Op.in]: deprecatedTaxonomyIdentities } },
+        transaction
+      });
+    }
+
+    const count = await IslandTaxonomy.count({ transaction });
+    console.log(`[TAXONOMY-VECTORS] Synchronized taxonomy seed rows=${count}`);
+    return count;
   });
-
-  vm.runInContext(source, context, {
-    filename: TAXONOMY_SEEDER_PATH
-  });
-
-  if (typeof module.exports?.up !== 'function') {
-    throw new Error(`Taxonomy seeder ${TAXONOMY_SEEDER_PATH} does not export an up() function`);
-  }
-
-  return module.exports;
-}
-
-// This function clears and reloads island taxonomy rows from the seed file.
-async function reloadIslandTaxonomyFromSeeder() {
-  const seeder = await loadTaxonomySeeder();
-  const queryInterface = sequelize.getQueryInterface();
-
-  await IslandTaxonomy.destroy({
-    where: {},
-    truncate: true,
-    cascade: true,
-    force: true
-  });
-
-  await seeder.up(queryInterface, db.Sequelize);
-
-  const count = await IslandTaxonomy.count();
-  console.log(`[TAXONOMY-VECTORS] Reloaded taxonomy seed rows=${count}`);
-
-  return count;
 }
 
 async function embedText(text) {
@@ -74,7 +95,7 @@ async function embedText(text) {
 export async function generateIslandTaxonomyVectors({ force = false } = {}) {
   const { model: embeddingModel } = await getEmbeddingInfo();
   await sequelize.authenticate();
-  const reloaded = await reloadIslandTaxonomyFromSeeder();
+  const synchronized = await syncIslandTaxonomyFromSeeder({ force });
 
   const rows = await IslandTaxonomy.findAll({
     order: [['id', 'ASC']]
@@ -85,12 +106,23 @@ export async function generateIslandTaxonomyVectors({ force = false } = {}) {
   let failed = 0;
 
   for (const row of rows) {
-    if (!force && Array.isArray(row.vector) && row.vector.length) {
+    if (
+      !force &&
+      Array.isArray(row.vector) &&
+      row.vector.length &&
+      row.embedding_model === embeddingModel
+    ) {
       skipped += 1;
       continue;
     }
 
-    const input = buildEmbeddingInput(row);
+    const definition = taxonomyItemsByIdentity.get(row.identity);
+    const input = buildTaxonomyEmbeddingText({
+      categoryName: row.categoryName,
+      displayName: row.displayName,
+      description: row.description,
+      aliases: definition?.aliases
+    });
 
     if (!input) {
       skipped += 1;
@@ -121,7 +153,7 @@ export async function generateIslandTaxonomyVectors({ force = false } = {}) {
 
   const result = {
     total: rows.length,
-    reloaded,
+    synchronized,
     updated,
     skipped,
     failed,

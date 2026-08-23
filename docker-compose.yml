@@ -28,6 +28,11 @@ services:
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
 
+      # The quick-start deployment runs without an inference service.
+      INFERENCE_AI_ENABLED: "false"
+      SKIP_ARTICLE_CLASSIFICATION_ANALYSIS: "true"
+      SKIP_ARTICLE_EMBEDDINGS: "true"
+
     volumes:
       - rssmonster-data:/app/data
 
@@ -49,6 +54,53 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
+
+  rssmonster-worker:
+    image: rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}
+    container_name: rssmonster-worker
+    restart: unless-stopped
+
+    depends_on:
+      rssmonster:
+        condition: service_healthy
+        restart: true
+
+    command:
+      - npm
+      - run
+      - start:worker
+
+    environment:
+      NODE_ENV: production
+      DB_DIALECT: sqlite
+      DB_STORAGE: /app/data/rssmonster.sqlite
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      FEVER_CREDENTIAL_SECRET: ${FEVER_CREDENTIAL_SECRET:?FEVER_CREDENTIAL_SECRET must be set}
+      RSSMONSTER_INTERNAL_HOST_ALLOWLIST: ${RSSMONSTER_INTERNAL_HOST_ALLOWLIST:-}
+      INFERENCE_AI_ENABLED: "false"
+      SKIP_ARTICLE_CLASSIFICATION_ANALYSIS: "true"
+      SKIP_ARTICLE_EMBEDDINGS: "true"
+      CRAWL_WORKER_HEALTH_FILE: /tmp/rssmonster-crawl-worker-health.json
+      CRAWL_WORKER_HEALTH_MAX_FAILURES: ${CRAWL_WORKER_HEALTH_MAX_FAILURES:-3}
+      CRAWL_WORKER_HEALTH_MAX_STALE_MS: ${CRAWL_WORKER_HEALTH_MAX_STALE_MS:-900000}
+
+    volumes:
+      - rssmonster-data:/app/data
+
+    init: true
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - src/workers/checkCrawlWorkerHealth.js
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 2m
 
 volumes:
   rssmonster-data:
