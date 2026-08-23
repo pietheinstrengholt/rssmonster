@@ -153,6 +153,7 @@ describe('data store remaining actions and getters', () => {
       grouping: 'event',
       viewMode: 'reader',
       AIEnabled: true,
+      AssistantEnabled: true,
       includeDevelopingEvents: false,
       markAsReadOnScroll: true
     });
@@ -173,6 +174,7 @@ describe('data store remaining actions and getters', () => {
       grouping: 'none',
       viewMode: 'reader',
       AIEnabled: true,
+      AssistantEnabled: true,
       includeDevelopingEvents: false,
       markAsReadOnScroll: true,
       briefingRevision: 0
