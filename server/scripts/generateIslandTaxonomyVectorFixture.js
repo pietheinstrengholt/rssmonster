@@ -1,9 +1,12 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import crypto from 'node:crypto';
+import { writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import dotenv from 'dotenv';
 import { embedTexts, getEmbeddingInfo } from '../services/embeddings/embeddingService.js';
+import { buildTaxonomyEmbeddingText } from '../services/islands/taxonomyEmbeddingText.js';
 import {
   loadSemanticVectorFixtureForModel,
   selectSemanticVectorModel
@@ -14,36 +17,18 @@ dotenv.config({ quiet: true });
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SEEDER_PATH = join(__dirname, '..', 'seeders', '20260520104500-island-taxonomy.js');
 const BATCH_SIZE = Number.parseInt(process.env.TAXONOMY_FIXTURE_EMBED_BATCH_SIZE || '8', 10);
+const require = createRequire(import.meta.url);
+const { taxonomyItems, toIdentity } = require(SEEDER_PATH);
 
-const toSlug = (value) =>
-  value
-    .toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-const toIdentity = (categoryName, displayName) =>
-  `${toSlug(categoryName)}-${toSlug(displayName)}`.slice(0, 100);
-
-const buildEmbeddingInput = (row) =>
-  `${row.categoryName} ${row.displayName}`.replace(/\s+/g, ' ').trim();
+const hashEmbeddingInput = input =>
+  crypto.createHash('sha256').update(input).digest('hex');
 
 async function loadTaxonomyRows() {
-  const source = await readFile(SEEDER_PATH, 'utf8');
-  const pairPattern = /\[\s*'([^']+)'\s*,\s*'([^']+)'\s*\]/g;
-  const rows = [];
-  let match;
-
-  while ((match = pairPattern.exec(source)) !== null) {
-    const [, categoryName, displayName] = match;
-    rows.push({
-      identity: toIdentity(categoryName, displayName),
-      categoryName,
-      displayName,
-      description: null,
-      status: 'active'
-    });
-  }
+  const rows = taxonomyItems.map(item => ({
+    ...item,
+    identity: toIdentity(item.categoryName, item.displayName),
+    status: 'active'
+  }));
 
   if (!rows.length) {
     throw new Error(`No taxonomy rows found in ${SEEDER_PATH}`);
@@ -83,22 +68,32 @@ async function main() {
   const fixtureRows = [];
 
   for (let index = 0; index < taxonomyRows.length; index += BATCH_SIZE) {
-    const batch = taxonomyRows.slice(index, index + BATCH_SIZE);
-    const missing = batch.filter(row =>
-      !Array.isArray(existingVectors.get(row.identity)?.vector) ||
-      existingVectors.get(row.identity).vector.length === 0 ||
-      existingVectors.get(row.identity).embeddingModel !== embeddingModel ||
-      existingVectors.get(row.identity).embeddingTask !== embeddingTask
-    );
+    const batch = taxonomyRows.slice(index, index + BATCH_SIZE).map(row => {
+      const embeddingInput = buildTaxonomyEmbeddingText(row);
+      return {
+        ...row,
+        embeddingInput,
+        embeddingInputHash: hashEmbeddingInput(embeddingInput)
+      };
+    });
+    const missing = batch.filter(row => {
+      const existing = existingVectors.get(row.identity);
+      return !Array.isArray(existing?.vector) ||
+        existing.vector.length === 0 ||
+        existing.embeddingModel !== embeddingModel ||
+        existing.embeddingTask !== embeddingTask ||
+        existing.embeddingInputHash !== row.embeddingInputHash;
+    });
 
     const generatedByIdentity = new Map();
     if (missing.length) {
-      const response = await embedTexts(missing.map(buildEmbeddingInput));
+      const response = await embedTexts(missing.map(row => row.embeddingInput));
 
       response.embeddings.forEach((vector, resultIndex) => {
         const row = missing[resultIndex];
         generatedByIdentity.set(row.identity, {
           ...row,
+          embeddingInput: undefined,
           embeddingModel: response.model,
           embeddingTask,
           vector
@@ -111,6 +106,7 @@ async function main() {
       fixtureRows.push(
         generatedByIdentity.get(row.identity) || {
           ...row,
+          embeddingInput: undefined,
           embeddingModel: existing.embeddingModel,
           embeddingTask: existing.embeddingTask,
           vector: existing.vector

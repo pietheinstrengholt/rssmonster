@@ -78,6 +78,7 @@ function createStore() {
     currentSelection: {
       ...selectionStore.currentSelection,
       AIEnabled: true,
+      AssistantEnabled: true,
       categoryId: '%',
       feedId: '%',
       grouping: 'none',

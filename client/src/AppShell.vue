@@ -48,7 +48,9 @@
           @refresh-feeds="refreshFeeds"
         ></app-article-feed>
         <!-- Show chat assistant -->
-        <app-chat-assistant v-if="uiStore.chatAssistantOpen"></app-chat-assistant>
+        <app-chat-assistant
+          v-if="assistantOpen"
+        ></app-chat-assistant>
         </div>
         <div v-if="connectivityStatus" class="app-shell__overlay-host">
           <connectivity-status
@@ -803,7 +805,9 @@ export default {
   watch: {
     // Reveals the newly mounted assistant instead of retaining the article list's scroll position.
     "uiStore.chatAssistantOpen": function(isOpen) {
-      if (isOpen) void this.revealChatAssistant();
+      if (isOpen && this.selectionStore.currentSelection.AssistantEnabled) {
+        void this.revealChatAssistant();
+      }
     },
     // This function applies shell-specific cleanup when the canonical layout state changes.
     shellMode() {
@@ -846,10 +850,17 @@ export default {
     activeDialogComponent() {
       return DIALOG_COMPONENTS[this.uiStore.showModal] || null;
     },
+    // This function prevents stale UI state from replacing articles without an assistant provider.
+    assistantOpen() {
+      return Boolean(
+        this.uiStore.chatAssistantOpen &&
+        this.selectionStore.currentSelection.AssistantEnabled
+      );
+    },
     // Shows the article feed only when application data is available for reading.
     showArticleFeed() {
       return this.overviewLoaded
-        && !this.uiStore.chatAssistantOpen
+        && !this.assistantOpen
         && !this.uiStore.fatalError
         && !this.showOnboarding;
     },

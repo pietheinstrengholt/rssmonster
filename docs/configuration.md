@@ -26,13 +26,14 @@ The configuration file depends on how RSSMonster is run:
   changing them.
 
 Restart the affected process or recreate its container after changing server
-settings. For Docker, only variables listed under the service's `environment`
-section are passed into the container. To use an additional server option,
-add it to that section, for example:
+settings. For Docker, only variables listed under a service's `environment`
+section are passed into the container. Add crawling options to the
+`rssmonster-worker` service and options used by both processes to both service
+sections. For example:
 
 ```yaml
 services:
-  rssmonster:
+  rssmonster-worker:
     environment:
       CRAWL_VERBOSE_LOGGING: ${CRAWL_VERBOSE_LOGGING:-false}
 ```
@@ -142,6 +143,8 @@ responses, and timeouts.
 | `CRAWL_RUN_MAX_RUNNING_MINUTES` | `60` | minutes | Age after which an unfinished crawl run is marked stale. |
 | `CRAWL_PARALLELPROCESSFLAG` | `0` | boolean integer | Set to `1` to allow parallel feed processing on MySQL. SQLite always forces `0`. |
 | `CRAWL_WORKER_INTERVAL_MS` | `60000` | ms | Delay between dedicated worker polls. Must be a positive integer. |
+| `CRAWL_WORKER_HEALTH_MAX_FAILURES` | `3` | failures | Consecutive failed crawl iterations allowed before the worker is unhealthy. |
+| `CRAWL_WORKER_HEALTH_MAX_STALE_MS` | `900000` | ms | Maximum age of the worker health state before the worker is unhealthy. |
 | `CRAWL_VERBOSE_LOGGING` | `false` | boolean | Emits candidate, retry, and feed-discovery diagnostics in addition to final results. |
 
 `FEED_PARALLEL_CONCURRENCY` is the main MySQL throughput control. Raising it
@@ -237,13 +240,21 @@ reverse proxy so client addresses are interpreted correctly.
 | `INFERENCE_URL` | `http://127.0.0.1:3001` | Standalone inference service used for all model requests. |
 | `INFERENCE_TIMEOUT_MS` | `30000` | Timeout for embeddings, classification, recommendations, and feed rediscovery. |
 | `INFERENCE_AGENT_TIMEOUT_MS` | `300000` | Timeout for streamed assistant model requests. |
-| `INFERENCE_AI_ENABLED` | `false` | Exposes AI-backed interface defaults when the inference service has OpenAI configured. |
+| `INFERENCE_AI_ENABLED` | `false` | Master switch for server and client inference capabilities. Only explicit `true` allows inference requests. |
+| `INFERENCE_ASSISTANT_ENABLED` | `false` | Enables assistant routes and UI only when explicitly `true`. Enable it after configuring the provider and credentials in inference. |
 | `SKIP_ARTICLE_CLASSIFICATION_ANALYSIS` | `false` | When `true`, uses default article scores and feed-category tags without calling inference classification. |
+| `SKIP_ARTICLE_EMBEDDINGS` | `false` | When `true`, disables article vector generation and defaults new feeds to embeddings disabled. |
 | `INTERNAL_MCP_URL` | `http://127.0.0.1:$PORT/mcp` | Server-controlled MCP endpoint used by the natural-language assistant. Configure this when MCP is reached through another container or an HTTPS listener. |
+
+When `INFERENCE_AI_ENABLED` is not explicitly `true`, it overrides the
+feature-specific settings: classification and embeddings remain local or disabled,
+and assistant, Smart Folder recommendation, and feed-rediscovery requests return
+`INFERENCE_DISABLED` without contacting an inference endpoint.
 
 OpenAI credentials and model names belong only in `inference/.env`; see
 [Model Usage](model-usage.md). The server executes authenticated assistant
-tools locally, while inference performs every provider model call.
+tools locally, while inference performs every provider model call. The server
+uses only `INFERENCE_ASSISTANT_ENABLED` and never receives the OpenAI key.
 
 ## Recommendations
 

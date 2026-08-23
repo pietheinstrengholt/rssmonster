@@ -8,3 +8,4 @@ process.env.JWT_SECRET =
   process.env.JWT_SECRET || 'test-secret-used-for-sign-and-verify';
 process.env.FEVER_CREDENTIAL_SECRET =
   process.env.FEVER_CREDENTIAL_SECRET || 'test-fever-credential-secret';
+process.env.INFERENCE_AI_ENABLED = 'true';

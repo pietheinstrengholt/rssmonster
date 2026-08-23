@@ -16,7 +16,7 @@ RSSMonster is a **self-hosted, intelligent RSS reader** designed to help you cut
 
 [Learn more about RSSMonster in the complete documentation.](https://pietheinstrengholt.github.io/rssmonster/)
 
-Traditional RSS readers are primarily organized around feeds, folders, and chronological article streams. RSSMonster adds a semantic and ranking layer on top: it groups articles covering the same event, evaluates signals such as quality, freshness, originality, and source trust, explains why stories rank highly, and lets you create declarative **Smart Folders** for the views that matter to you.
+Traditional RSS readers are primarily organized around feeds, folders, and chronological article streams. RSSMonster adds an intelligent semantic and ranking layer on top: it groups articles covering the same event and your personal interests, evaluates signals such as quality, freshness, originality, and source trust, explains why stories rank highly, and lets you create declarative **Smart Folders** for the views that matter to you.
 
 ![Screenshot](docs/assets/screenshot04.png)
 
@@ -52,7 +52,7 @@ RSSMonster can increasingly interpret that as:
 
 ![Screenshot](docs/assets/screenshot05.png)
 
-RSSMonster combines advanced search expressions, semantic clustering, quality analysis, and importance-based ranking into a system where **views are declarative, not hard-coded**. Instead of fixed tabs and opaque algorithms, you define *what matters* using composable queries that power dynamic **Smart Folders** such as:
+RSSMonster combines advanced search expressions, semantic clustering, quality analysis, and personal-interest-based rankings into a system where **views are declarative, not hard-coded**. Instead of fixed tabs and opaque algorithms, you define *what matters* using composable queries that power dynamic **Smart Folders** such as:
 
 * *Top Stories Today* — importance-ranked, deduplicated coverage
 * *Worth Your Time* — high-quality, original long-form content
@@ -66,12 +66,59 @@ Ranking decisions are explainable and views are customizable. The result is a re
 * **Semantic event discovery**: RSSMonster groups reporting about the same real-world story into one expandable event, so several headlines from different sources become one event with multiple articles.
 * **Importance- and quality-aware ranking**: Freshness, personal interest, article quality, breadth of coverage, source diversity, corroboration, and source trust help surface worthwhile stories without hiding the underlying signals.
 * **Declarative Smart Folders**: Composable search expressions turn your own definition of “important” into reusable, dynamic reading views.
-* **Simple self-hosting**: Run RSSMonster with SQLite as a single-container personal installation, or use MySQL for larger and higher-concurrency deployments.
-* **Self-hosted and transparent**: Your feeds and reading data stay under your control, and ranking dimensions remain inspectable instead of disappearing inside an opaque recommendation system.
+* **Simple self-hosting**: Run RSSMonster with SQLite and no separate database service, or use MySQL for larger and higher-concurrency deployments.
+* **Self-hosted, local, and transparent**: Your feeds and reading data stay under your control, ranking dimensions remain inspectable instead of disappearing inside an opaque recommendation system, and pluggable small language models let the feed-processing pipeline run locally.
+
+## See RSSMonster in Action
+
+Choose the reading experience that fits the moment, follow stories instead of duplicate headlines, and keep the same focused workflow across devices. Click any screenshot to view it at full resolution.
+
+### Read Your Way
+
+<table>
+  <tr>
+    <td width="33%"><strong>Reader Mode</strong><br><sub>Scan headlines while keeping the full article in view.</sub></td>
+    <td width="33%"><strong>Expanded Mode</strong><br><sub>Read complete articles in a spacious, distraction-free stream.</sub></td>
+    <td width="33%"><strong>Summarized Mode</strong><br><sub>Move quickly through compact, summary-first coverage.</sub></td>
+  </tr>
+  <tr>
+    <td><a href="docs/assets/mode-reader.png"><img src="docs/assets/mode-reader.png" alt="RSSMonster Reader Mode with navigation, article list, and full article view"></a></td>
+    <td><a href="docs/assets/mode-expanded.png"><img src="docs/assets/mode-expanded.png" alt="RSSMonster Expanded Mode showing full articles in a reading stream"></a></td>
+    <td><a href="docs/assets/mode-summarized.png"><img src="docs/assets/mode-summarized.png" alt="RSSMonster Summarized Mode showing compact article summaries"></a></td>
+  </tr>
+</table>
+
+### Discover the Stories Behind the Headlines
+
+<table>
+  <tr>
+    <td width="50%"><strong>Events and Topics</strong><br><sub>Group related reporting into current stories and connect them to longer-running themes.</sub></td>
+    <td width="50%"><strong>Interest Islands</strong><br><sub>See the subjects your reading, favorites, and clicks keep reinforcing.</sub></td>
+  </tr>
+  <tr>
+    <td><a href="docs/assets/events.png"><img src="docs/assets/events.png" alt="RSSMonster event and topic insights dashboard"></a></td>
+    <td><a href="docs/assets/interestislands.png"><img src="docs/assets/interestislands.png" alt="RSSMonster interest islands insights dashboard"></a></td>
+  </tr>
+</table>
+
+### At Home on Every Screen
+
+<table>
+  <tr>
+    <td width="67%"><strong>Landscape</strong><br><sub>A full dark-mode reading workspace on wider mobile and tablet screens.</sub></td>
+    <td width="33%"><strong>Portrait</strong><br><sub>A focused, touch-friendly article stream that travels with you.</sub></td>
+  </tr>
+  <tr>
+    <td><a href="docs/assets/mode-mobile-landscape.png"><img src="docs/assets/mode-mobile-landscape.png" alt="RSSMonster responsive landscape layout in dark mode"></a></td>
+    <td><a href="docs/assets/mode-mobile-portrait.png"><img src="docs/assets/mode-mobile-portrait.png" alt="RSSMonster responsive portrait layout in dark mode"></a></td>
+  </tr>
+</table>
 
 ## Docker Quick Start
 
-SQLite is the recommended database for simple, personal RSSMonster installations. It requires no separate database server and keeps the deployment to a single application container.
+The default Docker Compose deployment is designed for quickly seeing RSSMonster in live action. It uses SQLite, requires no separate database or model service, and starts the web application plus its dedicated crawl worker.
+
+For the comprehensive deployment—with MySQL and local inference using Qwen and ModernBERT—use [MySQL Deployment](#mysql-deployment).
 
 ### 1. Clone RSSMonster
 
@@ -103,13 +150,14 @@ Run the command twice and use a different value for each secret.
 docker compose up -d
 ```
 
-The default `docker-compose.yml` uses SQLite and stores the database in a persistent Docker volume.
+The default `docker-compose.yml` is the quick live-action profile. It uses SQLite and stores the database in a persistent Docker volume. It disables inference-backed classifications, embeddings, the assistant, AI feed repair, and Smart Folder recommendations so it can start without downloading or running local models.
 
 On first startup RSSMonster automatically:
 
 * creates the SQLite database file;
-* applies pending Sequelize database migrations;
-* starts the application.
+* initializes the database schema;
+* starts the application; and
+* starts a dedicated crawl worker that keeps due feeds updated.
 
 Open:
 
@@ -125,22 +173,15 @@ Check the deployment:
 docker compose ps
 ```
 
-Follow the application logs:
+The application validates database readiness, while the dedicated worker has
+its own crawl-health check. By default, three consecutive crawl failures or 15
+minutes without a worker-state update mark the worker unhealthy.
+
+Follow the application and crawl-worker logs:
 
 ```bash
-docker compose logs -f rssmonster
+docker compose logs -f rssmonster rssmonster-worker
 ```
-
-### Updating RSSMonster
-
-Pull the latest image and recreate the container:
-
-```bash
-docker compose pull
-docker compose up -d
-```
-
-Pending database migrations are applied automatically when the container starts.
 
 ### Data Persistence
 
@@ -176,15 +217,40 @@ unless you deliberately want to remove the persistent database volume.
 
 ### MySQL Deployment
 
-MySQL remains supported and is recommended for installations that need higher write concurrency, multiple active users, or more demanding workloads.
+The MySQL Compose deployment is the comprehensive RSSMonster profile. It is intended for installations that want higher write concurrency, multiple active users, and the local intelligent-content pipeline.
+
+It starts:
+
+* the RSSMonster web application and dedicated crawl worker;
+* MySQL 8.4;
+* Qwen3 Embedding for 1024-dimensional semantic vectors;
+* Qwen3.5 for local classification text generation, Smart Folder recommendations, and feed rediscovery; and
+* ModernBERT for local article scoring.
+
+The comprehensive profile enables RSSMonster's AI-backed interface and processing features. No OpenAI API key is required for classification, embeddings, scoring, Smart Folder recommendations, or feed rediscovery. The optional natural-language assistant remains hidden unless `INFERENCE_ASSISTANT_ENABLED=true` is set after configuring `ASSISTANT_PROVIDER=openai` and `OPENAI_API_KEY`, because its current inference adapter is OpenAI-only.
+
+Add the comprehensive deployment secrets and database passwords to the repository-root `.env`:
+
+```env
+JWT_SECRET=replace-with-a-long-random-secret
+FEVER_CREDENTIAL_SECRET=replace-with-a-long-random-secret
+DB_PASSWORD=replace-with-a-strong-database-password
+MYSQL_ROOT_PASSWORD=replace-with-a-different-strong-database-password
+```
 
 Use the separate MySQL Compose configuration:
 
 ```bash
-docker compose -f docker-compose.mysql.yml up -d
+docker compose -f docker-compose.mysql.yml up -d --build
 ```
 
-Configure the required database credentials and application secrets before starting the MySQL deployment. MySQL is expected to be running and reachable before the RSSMonster container starts.
+On the first startup, the inference container downloads Qwen and ModernBERT into the persistent `inference-model-cache` volume. This can take several minutes depending on the host and network connection. RSSMonster and its crawl worker wait until MySQL is healthy and the inference models are loaded. The worker reports unhealthy after repeated crawl failures or a stale health state. Later starts reuse the downloaded models.
+
+Follow the complete deployment while it starts:
+
+```bash
+docker compose -f docker-compose.mysql.yml logs -f inference rssmonster rssmonster-worker
+```
 
 ## Key Features
 
@@ -251,15 +317,12 @@ Both included Compose configurations pass these optional values into the applica
 docker compose up -d
 ```
 
-Source installations must also apply the current migrations and restart the server:
+Restart a source installation after changing these values:
 
 ```bash
 cd server
-npm run db
 npm start
 ```
-
-Docker installations apply pending migrations automatically at container startup.
 
 ### Browser setup and requirements
 
@@ -286,7 +349,7 @@ The semantic pipeline works in stages:
 
 This design keeps the intelligence of the reader inspectable. RSSMonster does not only decide what to show; it exposes the dimensions behind that decision so you can build views for different reading modes. A morning scan might prefer fresh event clusters with multiple sources, while deeper research might expand the full cluster, inspect related topic groups, and compare how different feeds covered the same story.
 
-Historical semantic rebuilding is available through `npm run semantic:all`. It rebuilds event, topic, and interest-island assignments for existing articles and is intended for explicit repair or migration workflows after large imports, algorithm changes, or embedding updates.
+Historical semantic rebuilding is available through `npm run semantic:all`. It rebuilds event, topic, and interest-island assignments for existing articles and is intended for explicit repair after large imports or algorithm changes.
 
 ## How Ranking Scores Work (End User)
 
@@ -360,8 +423,17 @@ Configure the server connection in `server/.env`:
 ```env
 INFERENCE_URL=http://127.0.0.1:3001
 INFERENCE_TIMEOUT_MS=30000
+INFERENCE_AI_ENABLED=true
+INFERENCE_ASSISTANT_ENABLED=false
 SKIP_ARTICLE_CLASSIFICATION_ANALYSIS=false
+SKIP_ARTICLE_EMBEDDINGS=false
 ```
+
+Set `INFERENCE_AI_ENABLED=false` to prevent every server and worker inference
+request. This master switch overrides the feature-specific skip settings.
+Leave `INFERENCE_ASSISTANT_ENABLED=false` to hide chat while keeping the other
+intelligent features enabled. Set it to `true` on the server only after the
+assistant provider and credentials are configured in inference.
 
 Use a longer timeout such as `600000` when running Qwen on low-power hardware.
 
@@ -406,19 +478,9 @@ logs when all configured models are ready and crawling can start. Development
 mode also logs content-safe activity for embeddings, summaries, tags, article
 scoring, assistant calls, Smart Folder recommendations, and feed rediscovery.
 Assistant responses currently continue to use OpenAI.
-Do not mix vectors from different models in one database: one database must
-contain vectors from exactly one embedding model. To switch an existing
-database, inspect and run the guarded rebuild from `server/`:
-
-```bash
-npm run semantic:model-rebuild -- --dry-run
-npm run semantic:model-rebuild -- --confirm
-```
-
-It preserves articles and engagement while rebuilding semantic state with new
-vectors for starred or clicked articles only. See
-[Model Usage](docs/model-usage.md) and [Inference administration](docs/inference.md)
-for production setup and model-specific guidance.
+See [Model Usage](docs/model-usage.md) and
+[Inference administration](docs/inference.md) for production setup and
+model-specific guidance.
 
 ### SQLite Configuration
 
@@ -456,21 +518,16 @@ Configure `client/.env`:
 
 ```env
 VITE_APP_HOSTNAME=http://localhost:3000
-VITE_ENABLE_AGENT=false
 ```
-
-Set `VITE_ENABLE_AGENT=true` if you want to enable the optional AI assistant.
 
 ### 4. Initialize the Database
 
-Run the canonical database migrations:
+Create the database schema:
 
 ```bash
 cd server
 npm run db
 ```
-
-The same migration baseline supports both SQLite and MySQL.
 
 If you explicitly need the project seeders:
 
@@ -593,6 +650,7 @@ To enable the AI assistant and other OpenAI-backed capabilities, configure:
 
 ```env
 INFERENCE_AI_ENABLED=true
+INFERENCE_ASSISTANT_ENABLED=true
 INFERENCE_AGENT_TIMEOUT_MS=300000
 ```
 
@@ -629,6 +687,12 @@ These scores provide additional inspectable signals for filtering and ranking.
 **Note for Developers:** The MCP server is available at `/mcp` for programmatic integration. Authentication requires a valid JWT token passed through the `Authorization: Bearer <token>` header. Obtain a token by authenticating through `/api/auth/login`.
 
 ## Development
+
+### Continuous Integration
+
+The GitHub Actions workflow runs independent jobs for the server on MySQL, the
+server on SQLite, inference, and the client. The inference job also validates
+both Compose configurations and builds the inference Docker image.
 
 ### Running in Development Mode
 
@@ -670,25 +734,18 @@ http://localhost:3000
 
 ### Docker Deployment
 
-For most self-hosted installations, use the SQLite Docker deployment described in [Docker Quick Start](#docker-quick-start):
+To quickly see RSSMonster in live action, use the SQLite deployment described in [Docker Quick Start](#docker-quick-start):
 
 ```bash
 docker compose up -d
 ```
 
-SQLite is the recommended default for personal installations because it requires no separate database server and keeps persistent application data in a Docker volume.
+This quick profile requires no separate database server or inference models and keeps persistent application data in a Docker volume.
 
-Update an existing Docker deployment with:
-
-```bash
-docker compose pull
-docker compose up -d
-```
-
-For installations requiring MySQL:
+For the comprehensive MySQL and local-inference deployment:
 
 ```bash
-docker compose -f docker-compose.mysql.yml up -d
+docker compose -f docker-compose.mysql.yml up -d --build
 ```
 
 ### Manual Deployment
@@ -717,7 +774,7 @@ DB_USERNAME=rssmonster
 DB_PASSWORD=your_database_password
 ```
 
-#### 2. Install server dependencies and apply migrations
+#### 2. Install server dependencies and initialize the database
 
 ```bash
 cd server

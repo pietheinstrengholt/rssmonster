@@ -111,6 +111,7 @@ describe('crawl worker', () => {
   // This test verifies a failed iteration is logged and the next iteration still runs.
   it('continues after an iteration failure', async () => {
     const logger = { error: vi.fn(), log: vi.fn() };
+    const healthReporter = vi.fn().mockResolvedValue(undefined);
     const closeDatabase = vi.fn().mockResolvedValue(undefined);
     let iterationCount = 0;
     const runCrawl = vi.fn(async () => {
@@ -127,7 +128,8 @@ describe('crawl worker', () => {
       intervalMs: 1,
       loadDependencies: async () => ({ closeDatabase, runCrawl }),
       logger,
-      registerProcessHandlers: false
+      registerProcessHandlers: false,
+      healthReporter
     });
 
     await worker.start();
@@ -138,6 +140,17 @@ describe('crawl worker', () => {
       expect.any(Error)
     );
     expect(closeDatabase).toHaveBeenCalledOnce();
+    expect(healthReporter.mock.calls.map(([state]) => [
+      state.status,
+      state.consecutiveFailures
+    ])).toEqual([
+      ['starting', 0],
+      ['running', 0],
+      ['degraded', 1],
+      ['running', 1],
+      ['healthy', 0],
+      ['stopping', 0]
+    ]);
   });
 
   // This test verifies shutdown interrupts a long polling sleep and closes Sequelize promptly.

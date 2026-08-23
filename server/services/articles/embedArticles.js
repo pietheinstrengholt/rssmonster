@@ -3,6 +3,7 @@ import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import embedArticle from './embedArticle.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { shouldSkipArticleEmbeddings } from '../../config/intelligentFeatures.js';
 
 /**
  * Backfill runner for article vectors.
@@ -45,6 +46,16 @@ function resolveCreatedAtFrom(options = {}) {
 // This function backfills embeddings for one user's articles in stable id-ordered batches.
 // It delegates vector creation and persistence to embedArticle so storage behavior stays centralized.
 export async function embedArticles(userId, options = {}) {
+  if (shouldSkipArticleEmbeddings()) {
+    return {
+      userId,
+      scannedCount: 0,
+      reusedCount: 0,
+      embeddedCount: 0,
+      skippedCount: 0
+    };
+  }
+
   // Batch size is tunable for memory/latency trade-offs during backfills.
   const batchSize = Number.parseInt(options.batchSize || DEFAULT_BATCH_SIZE, 10);
   // Resolves the created at from while performing embed articles.

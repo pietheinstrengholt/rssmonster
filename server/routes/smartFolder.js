@@ -1,6 +1,7 @@
 import express from "express";
 import smartFolderController from "../controllers/smartFolder.js";
 import userMiddleware from "../middleware/users.js";
+import { requireInferenceEnabled } from '../middleware/inferenceAvailability.js';
 
 export const router = express.Router();
 
@@ -14,6 +15,11 @@ router.get('/counts', userMiddleware.isLoggedIn, smartFolderController.getSmartF
 router.post('/', userMiddleware.isLoggedIn, smartFolderController.postSmartFolder);
 
 // GET /api/smartfolders/insights
-router.get("/insights", userMiddleware.isLoggedIn, smartFolderController.getSmartFolderInsights);
+router.get(
+  "/insights",
+  userMiddleware.isLoggedIn,
+  requireInferenceEnabled,
+  smartFolderController.getSmartFolderInsights
+);
 
 export default router;

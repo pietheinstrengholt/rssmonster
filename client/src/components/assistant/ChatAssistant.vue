@@ -1,5 +1,5 @@
 <template>
-    <div v-if="selectionStore.currentSelection.AIEnabled" id="inputArea">
+    <div v-if="selectionStore.currentSelection.AssistantEnabled" id="inputArea">
         <div class="agent-chat-field">
             <label for="chatTextarea" class="app-form-label">What would you like to know?</label>
             <textarea
@@ -331,7 +331,7 @@ export default {
         };
     },
     watch: {
-      'selectionStore.currentSelection.AIEnabled'(enabled) {
+      'selectionStore.currentSelection.AssistantEnabled'(enabled) {
         if (!enabled) this.clearConversation();
       }
     },

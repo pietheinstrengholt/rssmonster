@@ -41,10 +41,12 @@ requests with:
 
 ```env
 INFERENCE_AI_ENABLED=true
+INFERENCE_ASSISTANT_ENABLED=true
 INFERENCE_AGENT_TIMEOUT_MS=300000
 ```
 
-The server contains no OpenAI key or model configuration. Embeddings, article
+The server contains no OpenAI key, provider, or model name. It uses
+`INFERENCE_ASSISTANT_ENABLED` only as a capability flag; embeddings, article
 classification, the assistant, Smart Folder recommendations, and feed
 rediscovery all call the inference service.
 

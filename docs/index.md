@@ -96,6 +96,7 @@ RSSMonster works out of the box with sensible defaults, but every ranking decisi
 - **[Configuration](configuration.html)** — Environment variables and tuning
 - **[First Login](first-login.html)** — Registration, sign-in, and development login
 - **[Core Concepts](concepts.html)** — How RSSMonster thinks about content
+- **[Compare RSSMonster](comparison.html)** — Feature comparison with Feedbin, CommaFeed, selfoss, FreshRSS, and Tiny Tiny RSS
 - **[Smart Folders](smart-folders.html)** — Create powerful dynamic views
 - **[Scoring & Ranking](scoring.html)** — Importance, quality, and attention explained
 - **[Search Guide](search.html)** — Master search expressions

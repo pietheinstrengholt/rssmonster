@@ -2,6 +2,7 @@ import express from 'express';
 import feedController from '../controllers/feed.js';
 import feedObservabilityController from '../controllers/feedObservability.js';
 import userMiddleware from "../middleware/users.js";
+import { requireInferenceEnabled } from '../middleware/inferenceAvailability.js';
 
 export const router = express.Router();
 
@@ -18,7 +19,12 @@ router.put('/:feedId', userMiddleware.isLoggedIn, feedController.updateFeed);
 router.delete('/:feedId', userMiddleware.isLoggedIn, feedController.deleteFeed);
 router.post('/validate', userMiddleware.isLoggedIn, feedController.validateFeed);
 router.post('/', userMiddleware.isLoggedIn, feedController.newFeed);
-router.post('/:feedId/rediscover-rss',  userMiddleware.isLoggedIn, feedController.rediscoverFeedRss);
+router.post(
+  '/:feedId/rediscover-rss',
+  userMiddleware.isLoggedIn,
+  requireInferenceEnabled,
+  feedController.rediscoverFeedRss
+);
 router.post('/mute/:feedId', userMiddleware.isLoggedIn, feedController.muteFeed);
 
 export default router;

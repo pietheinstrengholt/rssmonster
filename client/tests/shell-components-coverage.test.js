@@ -40,7 +40,7 @@ vi.mock('../src/api/settings.js', async importOriginal => {
 });
 
 // This function creates isolated domain stores for toolbar and mobile-menu behavior.
-const createStores = ({ AIEnabled = true } = {}) => {
+const createStores = ({ AIEnabled = true, AssistantEnabled = true } = {}) => {
   const pinia = createPinia();
   setActivePinia(pinia);
   config.global.plugins = [pinia];
@@ -52,6 +52,7 @@ const createStores = ({ AIEnabled = true } = {}) => {
     currentSelection: {
       ...selectionStore.currentSelection,
       AIEnabled,
+      AssistantEnabled,
       categoryId: '%',
       grouping: 'none',
       smartFolderId: null,
@@ -134,6 +135,17 @@ afterEach(() => {
 });
 
 describe('DesktopToolbar behavior coverage', () => {
+  it('hides desktop and mobile chat controls when only non-assistant AI is enabled', () => {
+    createStores({ AIEnabled: true, AssistantEnabled: false });
+
+    const desktop = mountDesktopToolbar();
+    const mobile = mountMobileMenu(true);
+
+    expect(desktop.find('.toolbar-chat-button').exists()).toBe(false);
+    expect(desktop.vm.toolbarDropdowns.some(item => item.type === 'grouping')).toBe(true);
+    expect(mobile.text()).not.toContain('Chat assistant');
+  });
+
   it('validates debounced searches and responds to compact-search lifecycle events', async () => {
     vi.useFakeTimers();
     const stores = createStores();

@@ -104,7 +104,7 @@
           </p>
         </section>
 
-        <section v-if="selectionStore.currentSelection.AIEnabled" class="options-section options-section--secondary" aria-labelledby="chat-options-heading">
+        <section v-if="selectionStore.currentSelection.AssistantEnabled" class="options-section options-section--secondary" aria-labelledby="chat-options-heading">
           <div class="options-section-header">
             <h3 id="chat-options-heading">Chat assistant</h3>
           </div>

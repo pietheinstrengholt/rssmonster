@@ -7,6 +7,7 @@ import {
   createFeverApiKey,
   createFeverCredentialHash
 } from '../utils/apiCredentials.js';
+import { isAssistantEnabled } from '../config/intelligentFeatures.js';
 
 // Reports whether another registration won the unique first-admin claim.
 const isBootstrapAdminClaimConflict = error =>
@@ -44,7 +45,7 @@ const createAuthenticatedSession = async (user) => {
     token,
     user,
     expiresInSeconds,
-    agenticFeaturesEnabled: process.env.INFERENCE_AI_ENABLED === 'true'
+    agenticFeaturesEnabled: isAssistantEnabled()
   };
 };
 
@@ -192,7 +193,7 @@ const validate = async (req, res, _next) => {
       message: 'This is the secret content. Only logged in users can see that!', 
       data: req.userData, 
       user,
-      agenticFeaturesEnabled: process.env.INFERENCE_AI_ENABLED === 'true'
+      agenticFeaturesEnabled: isAssistantEnabled()
     });
   } catch (err) {
     console.error('Validation error:', err);

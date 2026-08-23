@@ -134,7 +134,7 @@ Other areas of the application can request search focus through the shared focus
 
 ### Chat
 
-Chat is shown only when AI features are enabled. Opening or closing it swaps the article area with the assistant through shared application state. Desktop clears the search draft when chat is toggled so a hidden article query does not compete with the assistant context.
+Chat is shown only when the server reports a configured assistant provider. Opening or closing it swaps the article area with the assistant through shared application state. Desktop clears the search draft when chat is toggled so a hidden article query does not compete with the assistant context.
 
 ### Theme
 
@@ -247,7 +247,7 @@ Opening the sheet never triggers a browser permission prompt. It refreshes an ex
 
 ### Chat
 
-When AI is enabled, the sheet can open or close the assistant. The sheet closes after the choice. Unlike the desktop chat control, the current mobile action does not clear the shared search draft.
+When an assistant provider is configured, the sheet can open or close the assistant. The sheet closes after the choice. Unlike the desktop chat control, the current mobile action does not clear the shared search draft.
 
 ## Shell capability map
 

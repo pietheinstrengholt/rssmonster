@@ -1,6 +1,8 @@
 import { DataTypes } from 'sequelize';
+import { getDefaultFeedIntelligentFeatures } from '../config/intelligentFeatures.js';
 
 export default (sequelize) => {
+  const intelligentFeatureDefaults = getDefaultFeedIntelligentFeatures();
   const Feed = sequelize.define(
     'feeds',
     {
@@ -161,13 +163,13 @@ export default (sequelize) => {
       generateEmbeddings: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
-        defaultValue: true
+        defaultValue: intelligentFeatureDefaults.generateEmbeddings
       },
       // Controls whether newly crawled articles receive AI content scoring and summaries.
       applyAiAnalysis: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
-        defaultValue: true
+        defaultValue: intelligentFeatureDefaults.applyAiAnalysis
       },
       // Ignores feed entries older than this cutoff; null applies no feed-specific cutoff.
       crawlSince: {

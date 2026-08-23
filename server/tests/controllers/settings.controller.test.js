@@ -68,7 +68,8 @@ describe('settings controller', () => {
         themeMode: 'system',
         startupViewMode: 'last-used',
         markAsReadOnScroll: true,
-        AIEnabled: false
+        AIEnabled: false,
+        AssistantEnabled: false
       });
     } finally {
       if (originalAIEnabled === undefined) delete process.env.INFERENCE_AI_ENABLED;
@@ -78,7 +79,9 @@ describe('settings controller', () => {
 
   it('returns AI-first defaults when AI is enabled', async () => {
     const originalAIEnabled = process.env.INFERENCE_AI_ENABLED;
+    const originalAssistantEnabled = process.env.INFERENCE_ASSISTANT_ENABLED;
     process.env.INFERENCE_AI_ENABLED = 'true';
+    process.env.INFERENCE_ASSISTANT_ENABLED = 'true';
     const user = await createUser();
 
     try {
@@ -102,11 +105,14 @@ describe('settings controller', () => {
         themeMode: 'system',
         startupViewMode: 'last-used',
         markAsReadOnScroll: true,
-        AIEnabled: true
+        AIEnabled: true,
+        AssistantEnabled: true
       });
     } finally {
       if (originalAIEnabled === undefined) delete process.env.INFERENCE_AI_ENABLED;
       else process.env.INFERENCE_AI_ENABLED = originalAIEnabled;
+      if (originalAssistantEnabled === undefined) delete process.env.INFERENCE_ASSISTANT_ENABLED;
+      else process.env.INFERENCE_ASSISTANT_ENABLED = originalAssistantEnabled;
     }
   });
 

@@ -11,9 +11,22 @@ describe('embedArticle token limit guard', () => {
   beforeEach(() => {
     vi.resetModules();
     embedTextsMock.mockReset();
+    vi.stubEnv('SKIP_ARTICLE_EMBEDDINGS', 'false');
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('does not call the embedding provider when embeddings are skipped', async () => {
+    vi.stubEnv('SKIP_ARTICLE_EMBEDDINGS', 'true');
+    const { embedArticle } = await import('../../services/articles/embedArticle.js');
+
+    await expect(embedArticle({
+      title: 'Inference-free article',
+      contentText: 'Enough article text to normally request an embedding vector.'
+    })).resolves.toBeNull();
+    expect(embedTextsMock).not.toHaveBeenCalled();
   });
 
   it('clips oversized event embedding text before provider call', async () => {
