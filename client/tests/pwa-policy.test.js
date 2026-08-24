@@ -23,10 +23,6 @@ describe('PWA cache policy', () => {
       'index.html',
       'assets/index-*.js',
       'assets/AppShell-*.js',
-      'assets/AppDropdown-*.js',
-      'assets/AppDropdown-*.css',
-      'assets/FeedRefreshProgress-*.js',
-      'assets/FeedRefreshProgress-*.css',
       'assets/settings-api-*.js',
       'assets/authenticatedShell-*.js',
       'assets/Sidebar-*.js',
@@ -36,7 +32,6 @@ describe('PWA cache policy', () => {
       'assets/ArticleReaderLayout-*.js',
       'assets/AppError-*.css',
       'assets/articleSelectionOptions-*.js',
-      'assets/date-*.js',
       'assets/useMediaQuery-*.js'
     ]));
     expect(PRECACHE_GLOB_PATTERNS).not.toContain('**/*.js');
