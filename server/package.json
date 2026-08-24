@@ -78,7 +78,7 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
-    "mysql2": "^3.24.1",
+    "mysql2": "3.23.3",
     "node-cache": "^5.1.2",
     "sanitize-html": "^2.17.7",
     "sequelize": "^6.37.8",
