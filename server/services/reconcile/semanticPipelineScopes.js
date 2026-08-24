@@ -3,6 +3,7 @@
 // It treats Article.topicId as event-owned denormalization, so behavioral topic evidence stays in ArticleTopic.
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
+import { randomUUID } from 'node:crypto';
 
 import ArticleEventCandidateCache from '../events/ArticleEventCandidateCache.js';
 import { assignArticleToEvent, EventCache } from '../events/assignArticleToEvent.js';
@@ -23,6 +24,7 @@ import {
 } from '../topics/event/eventTopicAssignment.js';
 import { recomputeTopicStatsForUser } from '../topics/shared/topicStats.service.js';
 import { HOUR_MS } from '../events/articleEventTime.js';
+import { recordProcessingFailure } from '../observability/processingFailures.js';
 
 // Provides the shared dependencies used by this service.
 const { Article, Event, Feed, Topic, ArticleTopic, EventTopic } = db;
@@ -194,7 +196,7 @@ function topicAssignmentContextForScope(scope) {
 }
 
 // This function embeds missing article vectors for one event assignment pass.
-async function embedArticlesForEventAssignment(articles, scope) {
+async function embedArticlesForEventAssignment(articles, scope, processingContext = null) {
   let reusedEmbeddingCount = 0;
   let generatedEmbeddingCount = 0;
 
@@ -217,7 +219,10 @@ async function embedArticlesForEventAssignment(articles, scope) {
       }
 
       // Derives the vectors through embed article while performing embed articles for event assignment.
-      const vectors = await embedArticle(article, { persist: true });
+      const vectors = await embedArticle(article, {
+        persist: true,
+        ...(processingContext ? { processingContext } : {})
+      });
 
       // Returns early when event vector is unavailable.
       if (!vectors?.eventVector) {
@@ -431,7 +436,8 @@ async function runEventAssignmentPass(userId, articles, scope, options = {}) {
     skipTopicAssignment = false,
     useTemporalEventCandidates = false,
     eventCacheWindowHours = null,
-    articleCandidateCache = null
+    articleCandidateCache = null,
+    processingContext = null
   } = options;
   // Creates the event assignment context while performing run event assignment pass.
   const runContext = createEventAssignmentContext();
@@ -451,7 +457,11 @@ async function runEventAssignmentPass(userId, articles, scope, options = {}) {
   });
 
   // Derives the vectors by index through embed articles for event assignment while performing run event assignment pass.
-  const vectorsByIndex = await embedArticlesForEventAssignment(articles, scope);
+  const vectorsByIndex = await embedArticlesForEventAssignment(
+    articles,
+    scope,
+    processingContext
+  );
   // Derives the touched event id through assign articles to events while performing run event assignment pass.
   const touchedEventIds = await assignArticlesToEvents({
     articles,
@@ -507,13 +517,28 @@ async function runEventAssignmentPass(userId, articles, scope, options = {}) {
   }
 
   // Derives the topic assignment through assign topics for touched events while performing run event assignment pass.
-  const topicAssignment = await assignTopicsForTouchedEvents({
-    userId,
-    articles,
-    touchedIds,
-    articlesByEventId,
-    scope
-  });
+  let topicAssignment;
+  try {
+    topicAssignment = await assignTopicsForTouchedEvents({
+      userId,
+      articles,
+      touchedIds,
+      articlesByEventId,
+      scope
+    });
+  } catch (error) {
+    await recordProcessingFailure({
+      ...processingContext,
+      userId,
+      stage: 'topic_assignment',
+      error,
+      severity: 'FATAL',
+      subjectType: 'user',
+      subjectId: userId,
+      context: { scope }
+    });
+    throw error;
+  }
 
   return buildAssignmentResult({
     userId,
@@ -530,8 +555,12 @@ async function runEventAssignmentPass(userId, articles, scope, options = {}) {
 }
 
 // This function runs the incremental event scope for recent articles that do not yet belong to an event.
-export async function runIncrementalEventsForUser(userId, options = {}) {
-  const { createdAtFrom = null, skipTopicAssignment = false } = options;
+async function runIncrementalEventsForUserInternal(userId, options = {}) {
+  const {
+    createdAtFrom = null,
+    skipTopicAssignment = false,
+    processingContext = null
+  } = options;
   console.log(`[EVENT] Incremental event assignment for user ${userId}`);
 
   // Derives the cache window hours through rolling event window hours while performing run incremental events for user.
@@ -608,7 +637,8 @@ export async function runIncrementalEventsForUser(userId, options = {}) {
   const result = await runEventAssignmentPass(userId, articles, 'incremental', {
     skipTopicAssignment,
     eventCacheWindowHours: cacheWindowHours,
-    articleCandidateCache
+    articleCandidateCache,
+    processingContext
   });
 
   articleCandidateCache.removeExpired(cacheReferenceDate);
@@ -616,6 +646,26 @@ export async function runIncrementalEventsForUser(userId, options = {}) {
   console.log(`[EVENT] Finished incremental pass for user ${userId}`);
 
   return result;
+}
+
+// Runs incremental event processing while retaining standalone invocation failures.
+export async function runIncrementalEventsForUser(userId, options = {}) {
+  try {
+    return await runIncrementalEventsForUserInternal(userId, options);
+  } catch (error) {
+    await recordProcessingFailure({
+      crawlRunId: options.processingContext?.crawlRunId || null,
+      executionId: options.processingContext?.executionId || randomUUID(),
+      userId,
+      stage: 'event_assignment',
+      severity: 'FATAL',
+      error,
+      subjectType: 'user',
+      subjectId: userId,
+      context: { scope: 'incremental' }
+    });
+    throw error;
+  }
 }
 
 // This function runs the recent-repair event scope over the configured recency window.

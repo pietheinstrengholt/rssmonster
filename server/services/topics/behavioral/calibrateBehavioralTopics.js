@@ -1,5 +1,7 @@
 import { Op } from 'sequelize';
+import { randomUUID } from 'node:crypto';
 import db from '../../../models/index.js';
+import { recordProcessingFailure } from '../../observability/processingFailures.js';
 import { canonicalArticleWhere } from '../../duplicates/articleDuplicates.js';
 import {
   blendTopicVectorWithAlpha,
@@ -300,7 +302,7 @@ async function cleanupStaleBehavioralArticleTopicRows(userId, activeRows, transa
 }
 
 // This function calibrates behavioral topics for one user's engaged articles.
-export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
+async function calibrateBehavioralTopicsForUserInternal(userId, options = {}) {
   // Resolves the community similarity threshold that governs performing calibrate behavioral topics for user.
   const communitySimilarityThreshold =
     options.communitySimilarityThreshold ?? DEFAULT_COMMUNITY_SIMILARITY_THRESHOLD;
@@ -438,6 +440,25 @@ export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
   };
 }
 
+// Runs behavioral topic calibration while retaining its terminal failure for diagnosis.
+export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
+  try {
+    return await calibrateBehavioralTopicsForUserInternal(userId, options);
+  } catch (error) {
+    await recordProcessingFailure({
+      crawlRunId: options.processingContext?.crawlRunId || null,
+      executionId: options.processingContext?.executionId || randomUUID(),
+      userId,
+      stage: 'behavioral_topics',
+      severity: 'FATAL',
+      error,
+      subjectType: 'user',
+      subjectId: userId
+    });
+    throw error;
+  }
+}
+
 // This function runs behavioral topic generation from a simple options object.
 export async function calibrateBehavioralTopics(options = {}) {
   const { userId } = options;
@@ -448,4 +469,3 @@ export async function calibrateBehavioralTopics(options = {}) {
 }
 
 export default calibrateBehavioralTopics;
-

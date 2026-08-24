@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import hotlink from '../../../controllers/hotlink.js';
 import db from '../../../models/index.js';
 import { throwIfExecutionExpired } from '../../feeds/executionDeadline.js';
+import { recordProcessingFailure } from '../../observability/processingFailures.js';
 
 // Provides the shared dependencies used by this service.
 const { Hotlink } = db;
@@ -58,6 +59,20 @@ export const persistAcceptedHotlinks = async (
     throwIfExecutionExpired(execution);
   } catch (err) {
     throwIfExecutionExpired(execution);
+    await recordProcessingFailure({
+      crawlRunId: execution.crawlRunId,
+      executionId: execution.executionId,
+      userId: feed?.userId,
+      stage: 'article_persistence',
+      failureType: 'PERSISTENCE_FAILURE',
+      severity: 'WARNING',
+      error: err,
+      subjectType: 'article',
+      subjectId: sourceArticleId,
+      feedId: feed?.id,
+      articleId: sourceArticleId,
+      context: { target: 'hotlinks' }
+    });
     console.error(`Error saving hotlinks for accepted article in feed ${feed.id}:`, err);
   }
 };

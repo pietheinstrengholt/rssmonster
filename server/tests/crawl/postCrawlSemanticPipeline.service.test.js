@@ -5,7 +5,8 @@ const mocked = vi.hoisted(() => ({
   markDuplicateArticlesForUser: vi.fn(),
   runIncrementalEventsForUser: vi.fn(),
   scoreArticlesFromIslandsForUser: vi.fn(),
-  runIslandCalibrationForUser: vi.fn()
+  runIslandCalibrationForUser: vi.fn(),
+  recordProcessingFailure: vi.fn()
 }));
 
 vi.mock('../../services/articles/embedArticles.js', () => ({
@@ -28,6 +29,10 @@ vi.mock('../../services/islands/runIslandCalibration.js', () => ({
   runIslandCalibrationForUser: mocked.runIslandCalibrationForUser
 }));
 
+vi.mock('../../services/observability/processingFailures.js', () => ({
+  recordProcessingFailure: mocked.recordProcessingFailure
+}));
+
 describe('runPostCrawlSemanticPipeline', () => {
   beforeEach(() => {
     mocked.embedArticles.mockReset();
@@ -35,6 +40,7 @@ describe('runPostCrawlSemanticPipeline', () => {
     mocked.runIncrementalEventsForUser.mockReset();
     mocked.scoreArticlesFromIslandsForUser.mockReset();
     mocked.runIslandCalibrationForUser.mockReset();
+    mocked.recordProcessingFailure.mockReset().mockResolvedValue(undefined);
   });
 
   it('passes the crawl start time as the incremental clustering boundary', async () => {
@@ -81,15 +87,17 @@ describe('runPostCrawlSemanticPipeline', () => {
       crawlStartedAt
     });
 
-    expect(mocked.embedArticles).toHaveBeenCalledWith(42, {
-      createdAtFrom: crawlStartedAt
-    });
+    expect(mocked.embedArticles).toHaveBeenCalledWith(42, expect.objectContaining({
+      createdAtFrom: crawlStartedAt,
+      processingContext: expect.objectContaining({ userId: 42 })
+    }));
     expect(mocked.markDuplicateArticlesForUser).toHaveBeenCalledWith(42, {
       createdAtFrom: crawlStartedAt
     });
     expect(mocked.runIncrementalEventsForUser).toHaveBeenCalledWith(42, {
       createdAtFrom: crawlStartedAt,
-      skipTopicAssignment: false
+      skipTopicAssignment: false,
+      processingContext: expect.objectContaining({ userId: 42 })
     });
     expect(mocked.runIslandCalibrationForUser).not.toHaveBeenCalled();
     expect(mocked.scoreArticlesFromIslandsForUser).toHaveBeenCalledWith(42, {
@@ -138,11 +146,15 @@ describe('runPostCrawlSemanticPipeline', () => {
     });
 
     expect(mocked.embedArticles).toHaveBeenCalledOnce();
-    expect(mocked.embedArticles).toHaveBeenCalledWith(23, { createdAtFrom: null });
+    expect(mocked.embedArticles).toHaveBeenCalledWith(23, expect.objectContaining({
+      createdAtFrom: null,
+      processingContext: expect.objectContaining({ userId: 23 })
+    }));
     expect(mocked.markDuplicateArticlesForUser).toHaveBeenCalledWith(23, { createdAtFrom: null });
     expect(mocked.runIncrementalEventsForUser).toHaveBeenCalledWith(23, {
       createdAtFrom: null,
-      skipTopicAssignment: false
+      skipTopicAssignment: false,
+      processingContext: expect.objectContaining({ userId: 23 })
     });
     expect(mocked.scoreArticlesFromIslandsForUser).toHaveBeenCalledWith(23, { createdAtFrom: null });
     expect(onProgress).toHaveBeenNthCalledWith(1, {
@@ -158,5 +170,32 @@ describe('runPostCrawlSemanticPipeline', () => {
       skipped: 0
     });
     expect(result).toMatchObject({ users: 1, embedded: 0, skipped: 0 });
+  });
+
+  it('records the owning semantic stage before propagating its failure', async () => {
+    const failure = Object.assign(new Error('duplicate scan failed'), {
+      code: 'DATABASE_UNAVAILABLE'
+    });
+    mocked.embedArticles.mockResolvedValue({});
+    mocked.markDuplicateArticlesForUser.mockRejectedValue(failure);
+
+    const { runPostCrawlSemanticPipeline } = await import('../../services/crawl/orchestration/postCrawlSemanticPipeline.js');
+
+    await expect(runPostCrawlSemanticPipeline({
+      processedUserIds: [42],
+      crawlRunId: 91
+    }, {
+      executionId: 'a0d0cabe-6e98-46e4-9665-d14ca7e44496'
+    })).rejects.toBe(failure);
+
+    expect(mocked.recordProcessingFailure).toHaveBeenCalledWith(expect.objectContaining({
+      crawlRunId: 91,
+      executionId: 'a0d0cabe-6e98-46e4-9665-d14ca7e44496',
+      userId: 42,
+      stage: 'semantic_duplicates',
+      severity: 'FATAL',
+      error: failure
+    }));
+    expect(mocked.runIncrementalEventsForUser).not.toHaveBeenCalled();
   });
 });

@@ -55,6 +55,7 @@ import HotlinkModel from './hotlink.js';
 import OfficialSourceModel from './officialSource.js';
 import CrawlRunModel from './crawlRun.js';
 import FeedCrawlResultModel from './feedCrawlResult.js';
+import ProcessingFailureModel from './processingFailure.js';
 import BriefingPreferenceModel from './briefingPreference.js';
 import FeedUrlAliasModel from './feedUrlAlias.js';
 import PushSubscriptionModel from './pushSubscription.js';
@@ -79,6 +80,7 @@ const Hotlink = HotlinkModel(sequelize);
 const OfficialSource = OfficialSourceModel(sequelize);
 const CrawlRun = CrawlRunModel(sequelize);
 const FeedCrawlResult = FeedCrawlResultModel(sequelize);
+const ProcessingFailure = ProcessingFailureModel(sequelize);
 const BriefingPreference = BriefingPreferenceModel(sequelize);
 const FeedUrlAlias = FeedUrlAliasModel(sequelize);
 const PushSubscription = PushSubscriptionModel(sequelize);
@@ -131,6 +133,20 @@ User.hasMany(FeedCrawlResult, { foreignKey: 'userId', as: 'feedCrawlResults', on
 FeedCrawlResult.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 Feed.hasMany(FeedCrawlResult, { foreignKey: 'feedId', as: 'crawlResults', onDelete: 'CASCADE' });
 FeedCrawlResult.belongsTo(Feed, { foreignKey: 'feedId', as: 'feed' });
+
+// CrawlRun/User ↔ ProcessingFailure
+CrawlRun.hasMany(ProcessingFailure, {
+  foreignKey: 'crawlRunId',
+  as: 'processingFailures',
+  onDelete: 'CASCADE'
+});
+ProcessingFailure.belongsTo(CrawlRun, { foreignKey: 'crawlRunId', as: 'crawlRun' });
+User.hasMany(ProcessingFailure, {
+  foreignKey: 'userId',
+  as: 'processingFailures',
+  onDelete: 'CASCADE'
+});
+ProcessingFailure.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 // User ↔ BriefingPreference
 User.hasOne(BriefingPreference, {
@@ -304,6 +320,7 @@ export default {
   OfficialSource,
   CrawlRun,
   FeedCrawlResult,
+  ProcessingFailure,
   BriefingPreference,
   FeedUrlAlias,
   PushSubscription

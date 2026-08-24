@@ -235,6 +235,40 @@ describe('article feed read-state reconciliation', () => {
     expect(context.overviewStore.increaseReadCount).not.toHaveBeenCalled();
   });
 
+  // Verifies one observer batch cannot issue overlapping grouped article writes.
+  it('serializes automatic seen persistence across passed articles', async () => {
+    let resolveFirstRequest;
+    const firstRequest = new Promise(resolve => {
+      resolveFirstRequest = resolve;
+    });
+    const context = createContext({
+      visibleSince: new Map(),
+      visibleDuration: new Map()
+    });
+    context.articles[1].status = 'unread';
+    markArticleSeen
+      .mockReturnValueOnce(firstRequest)
+      .mockResolvedValueOnce({
+        data: { ...context.articles[1], status: 'read' }
+      });
+
+    const firstPersistence = articleFeedVisibilityMethods.addToPool.call(context, 1);
+    const secondPersistence = articleFeedVisibilityMethods.addToPool.call(context, 2);
+    await Promise.resolve();
+
+    expect(markArticleSeen).toHaveBeenCalledOnce();
+    expect(markArticleSeen).toHaveBeenCalledWith(1, expect.any(Object));
+
+    resolveFirstRequest({
+      data: { ...context.articles[0], status: 'read' }
+    });
+    await Promise.all([firstPersistence, secondPersistence]);
+
+    expect(markArticleSeen).toHaveBeenCalledTimes(2);
+    expect(markArticleSeen.mock.calls[1][0]).toBe(2);
+    expect(context.pool).toEqual(new Set([1, 2]));
+  });
+
   // Verifies minimal navigation reads the previous item and clears the active item on close.
   it('handles minimal article open, close, and duplicate in-flight requests', async () => {
     const context = createContext();

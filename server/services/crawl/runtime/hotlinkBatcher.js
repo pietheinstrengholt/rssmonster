@@ -1,5 +1,6 @@
 import hotlink from '../../../controllers/hotlink.js';
 import { throwIfExecutionExpired } from '../../feeds/executionDeadline.js';
+import { recordProcessingFailure } from '../../observability/processingFailures.js';
 
 // Defines the default flush threshold enforced by this service.
 const DEFAULT_FLUSH_THRESHOLD = 250;
@@ -46,7 +47,20 @@ const createHotlinkBatcher = (feed, options = {}) => {
       ];
       if (hasExecution) replacementArguments.push(execution);
       flushPromise = hotlink.replaceMany(...replacementArguments)
-        .catch(err => {
+        .catch(async err => {
+          await recordProcessingFailure({
+            crawlRunId: execution.crawlRunId,
+            executionId: execution.executionId,
+            userId: feed?.userId,
+            stage: 'article_persistence',
+            failureType: 'PERSISTENCE_FAILURE',
+            severity: 'WARNING',
+            error: err,
+            subjectType: 'feed',
+            subjectId: feed?.id,
+            feedId: feed?.id,
+            context: { target: 'hotlink_batch' }
+          });
           console.error(`Error saving hotlink batch for feed ${feed.id}:`, err);
         })
         .finally(() => {

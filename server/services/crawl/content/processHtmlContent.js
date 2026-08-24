@@ -37,13 +37,22 @@ function shouldDetectLanguage(text) {
 }
 
 // This function detects language consistently for plain-text and HTML content.
-function detectLanguage(text, feed, entryTitle) {
+function detectLanguage(text, feed, entryTitle, processingContext = {}) {
   // Returns early when should detect language is unavailable.
   if (!shouldDetectLanguage(text)) return 'unknown';
 
   try {
     return language.get(text);
   } catch (err) {
+    processingContext.recordFailure?.({
+      stage: 'article_extraction',
+      error: err,
+      severity: 'WARNING',
+      subjectType: 'feed',
+      subjectId: feed?.id,
+      feedId: feed?.id,
+      context: { operation: 'language_detection' }
+    });
     console.error(
       `[${feed.feedName}] Error detecting language for article "${entryTitle}":`,
       err.message
@@ -69,7 +78,8 @@ function processHtmlContent(
   feed,
   entryTitle,
   contentKind = null,
-  feedMedia = null
+  feedMedia = null,
+  processingContext = {}
 ) {
   let contentOriginal;
   let contentHtml;
@@ -115,7 +125,7 @@ function processHtmlContent(
       }
 
       // Detects the language while processing html content.
-      const detectedLanguage = detectLanguage(text, feed, entryTitle);
+      const detectedLanguage = detectLanguage(text, feed, entryTitle, processingContext);
 
       return {
         content: contentOriginal,
@@ -199,7 +209,7 @@ function processHtmlContent(
     const contentTextHash = hashVisibleText(text);
 
     // Detects the language while processing html content.
-    const detectedLanguage = detectLanguage(text, feed, entryTitle);
+    const detectedLanguage = detectLanguage(text, feed, entryTitle, processingContext);
 
     return {
       content: contentOriginal,
@@ -213,6 +223,16 @@ function processHtmlContent(
       title: entryTitle
     };
   } catch (err) {
+    processingContext.recordFailure?.({
+      stage: 'article_extraction',
+      failureType: 'INVALID_DATA',
+      severity: 'WARNING',
+      error: err,
+      subjectType: 'feed',
+      subjectId: feed?.id,
+      feedId: feed?.id,
+      context: { operation: 'content_parsing' }
+    });
     // Derives the text through strip html while processing html content.
     const text = htmlToVisibleText(contentOriginal);
     // Derives the html through render plain text html while processing html content.

@@ -173,7 +173,9 @@ export const articleFeedVisibilityMethods = {
 
     this.pendingSeenArticleIds.add(articleId);
 
-    try {
+    // Automatic viewport callbacks can arrive in one observer batch. Persist them in order so
+    // grouped event/topic updates cannot contend with each other for the same article rows.
+    const persist = async () => {
       while (attempt < MAX_SEEN_PERSISTENCE_ATTEMPTS) {
         attempt += 1;
         this.seenPersistenceAttempts.set(articleId, attempt);
@@ -189,6 +191,14 @@ export const articleFeedVisibilityMethods = {
           await waitBeforeSeenRetry(attempt);
         }
       }
+    };
+    const queuedPersistence = this.seenPersistenceQueue
+      ? this.seenPersistenceQueue.catch(() => {}).then(persist)
+      : persist();
+    this.seenPersistenceQueue = queuedPersistence;
+
+    try {
+      await queuedPersistence;
     } finally {
       this.pendingSeenArticleIds.delete(articleId);
     }

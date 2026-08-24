@@ -2,6 +2,8 @@ import { embedArticles } from '../../articles/embedArticles.js';
 import { markDuplicateArticlesForUser } from '../../duplicates/articleDuplicates.js';
 import { runIncrementalEventsForUser } from '../../reconcile/semanticPipelineScopes.js';
 import scoreArticlesFromIslandsForUser from '../../score/scoreArticlesFromIslands.js';
+import { randomUUID } from 'node:crypto';
+import { recordProcessingFailure } from '../../observability/processingFailures.js';
 
 // This function returns the users whose articles should be processed after a crawl.
 function getPostCrawlUserIds(result, userId = null) {
@@ -11,6 +13,23 @@ function getPostCrawlUserIds(result, userId = null) {
   }
 
   return [...new Set((result?.processedUserIds || []).filter(Boolean))];
+}
+
+// Runs one semantic stage and persists only abnormal terminal outcomes.
+async function runSemanticStage(stage, processingContext, operation) {
+  try {
+    return await operation();
+  } catch (error) {
+    await recordProcessingFailure({
+      ...processingContext,
+      stage,
+      error,
+      severity: 'FATAL',
+      subjectType: 'user',
+      subjectId: processingContext.userId
+    });
+    throw error;
+  }
 }
 
 // This function runs the incremental semantic hierarchy for users touched by a crawl.
@@ -45,10 +64,20 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
 
   // Processes each user id entry in turn.
   for (const userId of userIds) {
+    const crawlRunId = options.crawlRunId ?? result?.crawlRunId ??
+      result?.crawlRunIdsByUserId?.[userId] ?? null;
+    const executionId = options.executionId ?? result?.executionId ??
+      result?.executionIdsByUserId?.[userId] ?? randomUUID();
+    const processingContext = { crawlRunId, executionId, userId };
     // Derives the embed summary through embed articles while performing run post crawl semantic pipeline.
-    const embedSummary = await embedArticles(userId, {
-      createdAtFrom: result?.crawlStartedAt || null
-    });
+    const embedSummary = await runSemanticStage(
+      'embedding',
+      processingContext,
+      () => embedArticles(userId, {
+        createdAtFrom: result?.crawlStartedAt || null,
+        processingContext
+      })
+    );
     embedded += embedSummary.embeddedCount || 0;
     skipped += embedSummary.skippedCount || 0;
 
@@ -58,9 +87,13 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
     );
 
     // Derives the duplicate result through mark duplicate articles for user while performing run post crawl semantic pipeline.
-    const duplicateResult = await markDuplicateArticlesForUser(userId, {
-      createdAtFrom: result?.crawlStartedAt || null
-    });
+    const duplicateResult = await runSemanticStage(
+      'semantic_duplicates',
+      processingContext,
+      () => markDuplicateArticlesForUser(userId, {
+        createdAtFrom: result?.crawlStartedAt || null
+      })
+    );
 
     console.log(
       `[SEMANTIC] user=${userId} stage=duplicates ` +
@@ -69,10 +102,15 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
     );
 
     // Derives the event result through run incremental events for user while performing run post crawl semantic pipeline.
-    const eventResult = await runIncrementalEventsForUser(userId, {
-      createdAtFrom: result?.crawlStartedAt || null,
-      skipTopicAssignment: false
-    });
+    const eventResult = await runSemanticStage(
+      'event_assignment',
+      processingContext,
+      () => runIncrementalEventsForUser(userId, {
+        createdAtFrom: result?.crawlStartedAt || null,
+        skipTopicAssignment: false,
+        processingContext
+      })
+    );
 
     console.log(
       `[SEMANTIC] user=${userId} stage=events ` +
@@ -94,9 +132,13 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
     );
 
     // Derives the scoring result through score articles from islands for user while performing run post crawl semantic pipeline.
-    const scoringResult = await scoreArticlesFromIslandsForUser(userId, {
-      createdAtFrom: result?.crawlStartedAt || null
-    });
+    const scoringResult = await runSemanticStage(
+      'interest_scoring',
+      processingContext,
+      () => scoreArticlesFromIslandsForUser(userId, {
+        createdAtFrom: result?.crawlStartedAt || null
+      })
+    );
 
     console.log(
       `[SEMANTIC] user=${userId} stage=interest-scores ` +

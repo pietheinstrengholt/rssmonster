@@ -56,6 +56,16 @@ function aggregateCrawlResults(results) {
     processedUserIds: [
       ...new Set(results.flatMap(result => result.processedUserIds || []))
     ],
+    crawlRunIdsByUserId: Object.fromEntries(
+      results
+        .filter(result => result.userId && result.crawlRunId)
+        .map(result => [result.userId, result.crawlRunId])
+    ),
+    executionIdsByUserId: Object.fromEntries(
+      results
+        .filter(result => result.userId && result.executionId)
+        .map(result => [result.userId, result.executionId])
+    ),
     crawlStartedAt,
     totalNewArticles: results.reduce(
       (sum, result) => sum + (result.totalNewArticles || 0),

@@ -84,6 +84,47 @@ describe('article controller failure paths', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Unable to load Daily Briefing' });
   });
 
+  // Verifies a transient article write deadlock remains inside the request retry boundary.
+  it('retries a mark-as-seen write after a MySQL deadlock', async () => {
+    const deadlock = Object.assign(new Error(
+      'Deadlock found when trying to get lock; try restarting transaction'
+    ), {
+      parent: { code: 'ER_LOCK_DEADLOCK' }
+    });
+    const updatedArticle = {
+      id: 1,
+      eventId: null,
+      toJSON: () => ({ id: 1, status: 'read' })
+    };
+    const article = {
+      id: 1,
+      feedId: 2,
+      feed: { id: 2 },
+      eventId: null,
+      firstSeen: null,
+      status: 'unread',
+      contentHtml: 'Article body',
+      update: vi.fn()
+        .mockRejectedValueOnce(deadlock)
+        .mockResolvedValueOnce(updatedArticle)
+    };
+    vi.spyOn(db.Article, 'findOne').mockResolvedValue(article);
+    const res = createResponse();
+
+    await articleController.articleMarkAsSeen({
+      userData: { userId: 7 },
+      params: { articleId: '1' },
+      body: { selectedStatus: 'unread', grouping: 'none', visibleSeconds: 3 }
+    }, res, vi.fn());
+
+    expect(article.update).toHaveBeenCalledTimes(2);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      id: 1,
+      status: 'read'
+    }));
+  });
+
   it('validates feedback identifiers and reports missing clicked articles', async () => {
     const request = { userData: { userId: 1 }, body: {}, params: {} };
 

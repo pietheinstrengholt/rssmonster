@@ -37,7 +37,8 @@ const mocked = vi.hoisted(() => ({
   eventCacheForUser: vi.fn(),
   logEventProcessingSummary: vi.fn(),
   recomputeTopicStatsForUser: vi.fn(),
-  reconcileTouchedEvents: vi.fn()
+  reconcileTouchedEvents: vi.fn(),
+  recordProcessingFailure: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -98,6 +99,10 @@ vi.mock('../../services/topics/shared/topicStats.service.js', () => ({
   recomputeTopicStatsForUser: mocked.recomputeTopicStatsForUser
 }));
 
+vi.mock('../../services/observability/processingFailures.js', () => ({
+  recordProcessingFailure: mocked.recordProcessingFailure
+}));
+
 import {
   backfillHistoricalEventsForUser,
   repairRecentEventsForUser,
@@ -126,6 +131,7 @@ describe('semantic pipeline scopes orchestration', () => {
     mocked.eventCacheForUser.mockReset();
     mocked.recomputeTopicStatsForUser.mockReset();
     mocked.reconcileTouchedEvents.mockReset();
+    mocked.recordProcessingFailure.mockReset().mockResolvedValue(undefined);
 
     mocked.Article.update.mockResolvedValue([0]);
     mocked.canonicalArticleWhere.mockReturnValue({ duplicateOfArticleId: null });

@@ -49,6 +49,12 @@ describe('score settings', () => {
     expect(details.attributes('open')).toBeUndefined();
     expect(details.get('summary').text()).toBe('Learn how scores work');
     expect(wrapper.findAll('.scores-explanation')).toHaveLength(3);
+    expect(wrapper.get('.scores-info-row--filtering').text()).toContain(
+      'Articles scoring below your threshold are automatically hidden. Set a threshold to 0 to see everything.'
+    );
+    expect(wrapper.get('.scores-threshold-heading p').text()).toBe(
+      'Choose the minimum score an article must have to remain in your feed.'
+    );
 
     await details.get('summary').trigger('click');
     expect(details.attributes('open')).toBeDefined();
@@ -102,9 +108,9 @@ describe('score settings', () => {
 
     await wrapper.get('.scores-reset-button').trigger('click');
 
-    expect(wrapper.vm.advertisementScore).toBe(100);
-    expect(wrapper.vm.sentimentScore).toBe(100);
-    expect(wrapper.vm.qualityScore).toBe(100);
+    expect(wrapper.vm.advertisementScore).toBe(0);
+    expect(wrapper.vm.sentimentScore).toBe(0);
+    expect(wrapper.vm.qualityScore).toBe(0);
     expect(saveSettings).not.toHaveBeenCalled();
   });
 

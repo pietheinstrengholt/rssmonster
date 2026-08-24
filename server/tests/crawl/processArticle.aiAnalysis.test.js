@@ -19,7 +19,8 @@ const mocked = vi.hoisted(() => ({
   updateArticle: vi.fn(),
   applyArticleUpdate: vi.fn(),
   resolveOfficialSourceForArticle: vi.fn(),
-  languageGet: vi.fn()
+  languageGet: vi.fn(),
+  recordProcessingFailure: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -99,6 +100,10 @@ vi.mock('../../utils/language.js', () => ({
   get: mocked.languageGet
 }));
 
+vi.mock('../../services/observability/processingFailures.js', () => ({
+  recordProcessingFailure: mocked.recordProcessingFailure
+}));
+
 // This function creates an explicit changed update plan for orchestration tests.
 const changedUpdatePlan = (changes, updateValues = {}) => ({
   article: { id: 123 },
@@ -136,6 +141,7 @@ describe('processArticle AI analysis controls', () => {
     mocked.decodeHtmlEntities.mockImplementation(value => value);
     mocked.languageGet.mockReturnValue('eng');
     mocked.hotlinkSetMany.mockResolvedValue();
+    mocked.recordProcessingFailure.mockResolvedValue(undefined);
     mocked.resolveOfficialSourceForArticle.mockResolvedValue({
       isOfficialSource: false,
       officialOrganization: null

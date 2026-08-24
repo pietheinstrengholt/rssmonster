@@ -4,6 +4,7 @@ import {
   embedTexts
 } from '../embeddings/embeddingService.js';
 import { shouldSkipArticleEmbeddings } from '../../config/intelligentFeatures.js';
+import { recordProcessingFailure } from '../observability/processingFailures.js';
 
 /**
  * Core article embedding utility.
@@ -321,6 +322,24 @@ export async function embedArticle(articleOrInput, options = {}) {
       reused: false
     };
   } catch (err) {
+    const processingContext = options.processingContext || {};
+    const userId = article?.userId ?? articleOrInput?.userId;
+    if (userId) {
+      await recordProcessingFailure({
+        ...processingContext,
+        userId,
+        stage: 'embedding',
+        error: err,
+        subjectType: article?.id ? 'article' : null,
+        subjectId: article?.id ?? null,
+        feedId: article?.feedId ?? articleOrInput?.feedId ?? null,
+        articleId: article?.id ?? null,
+        context: {
+          embeddingModel: EMBEDDING_MODEL,
+          persist
+        }
+      });
+    }
     console.warn('[EMBED] failed:', err.message);
     return null;
   }

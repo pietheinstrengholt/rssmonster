@@ -12,7 +12,8 @@ const mocks = vi.hoisted(() => ({
   buildAudit: vi.fn(),
   evolveMemberships: vi.fn(),
   persist: vi.fn(),
-  score: vi.fn()
+  score: vi.fn(),
+  recordProcessingFailure: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -45,6 +46,9 @@ vi.mock('../../services/islands/islandMemberships.js', () => ({
 vi.mock('../../services/islands/islandPersistence.js', () => ({
   persistInterestIslandProfiles: mocks.persist
 }));
+vi.mock('../../services/observability/processingFailures.js', () => ({
+  recordProcessingFailure: mocks.recordProcessingFailure
+}));
 
 import {
   calibrateIslandsFromBehavior,
@@ -70,6 +74,7 @@ describe('island calibration orchestration', () => {
     mocks.evolveMemberships.mockResolvedValue({ newMembershipCount: 0, removedMembershipCount: 0 });
     mocks.persist.mockResolvedValue([]);
     mocks.score.mockResolvedValue({ topicScoredCount: 0, fallbackScoredCount: 0, updatedCount: 0 });
+    mocks.recordProcessingFailure.mockResolvedValue(undefined);
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -136,6 +141,11 @@ describe('island calibration orchestration', () => {
 
     expect(result.userCount).toBe(2);
     expect(result.results).toHaveLength(1);
+    expect(mocks.recordProcessingFailure).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 2,
+      stage: 'island_calibration',
+      severity: 'FATAL'
+    }));
     expect(console.error).toHaveBeenCalledWith(expect.stringContaining('user 2'), expect.any(Error));
   });
 
@@ -149,6 +159,11 @@ describe('island calibration orchestration', () => {
 
     expect(result.userCount).toBe(2);
     expect(result.results).toHaveLength(1);
+    expect(mocks.recordProcessingFailure).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 2,
+      stage: 'island_enrichment',
+      severity: 'FATAL'
+    }));
     expect(console.error).toHaveBeenCalledWith(expect.stringContaining('user 2'), expect.any(Error));
   });
 

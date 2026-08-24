@@ -1,16 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const embedTextsMock = vi.fn();
+const recordProcessingFailureMock = vi.fn();
 
 vi.mock('../../services/embeddings/embeddingService.js', () => ({
   DEFAULT_EMBEDDING_MODEL: 'text-embedding-3-small',
   embedTexts: embedTextsMock
 }));
 
+vi.mock('../../services/observability/processingFailures.js', () => ({
+  recordProcessingFailure: recordProcessingFailureMock
+}));
+
 describe('embedArticle token limit guard', () => {
   beforeEach(() => {
     vi.resetModules();
     embedTextsMock.mockReset();
+    recordProcessingFailureMock.mockReset().mockResolvedValue(undefined);
     vi.stubEnv('SKIP_ARTICLE_EMBEDDINGS', 'false');
   });
 
@@ -191,9 +197,24 @@ describe('embedArticle token limit guard', () => {
     embedTextsMock.mockRejectedValue(new Error('provider unavailable'));
 
     await expect(embedArticle({
+      id: 18,
+      userId: 7,
+      feedId: 9,
       title: 'A sufficiently descriptive title for provider error handling',
       description: 'A sufficiently descriptive summary that passes the minimum embedding input threshold.'
+    }, {
+      processingContext: {
+        crawlRunId: 41,
+        executionId: '3dc8f1c7-13bc-4f22-9b47-b478158fea11'
+      }
     })).resolves.toBeNull();
+    expect(recordProcessingFailureMock).toHaveBeenCalledWith(expect.objectContaining({
+      crawlRunId: 41,
+      userId: 7,
+      stage: 'embedding',
+      feedId: 9,
+      error: expect.objectContaining({ message: 'provider unavailable' })
+    }));
     expect(warning).toHaveBeenCalledWith('[EMBED] failed:', 'provider unavailable');
   });
 });

@@ -9,7 +9,8 @@ import { acquireFeed } from '../services/feeds/feedAcquisition.js';
 import {
   classifyCrawlOutcome,
   formatCrawlResultLine,
-  formatCrawlSummaryLine
+  formatCrawlSummaryLine,
+  CRAWL_OUTCOMES
 } from '../services/feeds/crawlResult.js';
 import { persistFeedCrawlResult } from '../services/feeds/feedCrawlObservability.js';
 import {
@@ -61,6 +62,7 @@ import createHotlinkBatcher from '../services/crawl/runtime/hotlinkBatcher.js';
 import { sanitizeFeedPersistenceMetadata } from '../services/feeds/feedPersistenceMetadata.js';
 import { sendNewArticlePush } from '../services/push/pushNotifications.js';
 import { createStartUserCrawl } from '../services/crawl/startUserCrawl.js';
+import { recordProcessingFailure } from '../services/observability/processingFailures.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -469,6 +471,7 @@ const runCrawl = async (userId = null, options = {}) => {
   const supersededClaimedFeedIds = new Set();
   const outcomeCounts = {};
   const feedCrawlObservations = [];
+  const processingFailureObservations = [];
 
   // This function records one terminal error outcome per feed.
   const recordFeedError = (feed, timedOut = false) => {
@@ -551,6 +554,45 @@ const runCrawl = async (userId = null, options = {}) => {
       articlesUnchanged,
       articlesDuplicate
     });
+    if (![CRAWL_OUTCOMES.SUCCESS, CRAWL_OUTCOMES.EMPTY_FEED].includes(category)) {
+      const failureError = error || outcome?.error || null;
+      processingFailureObservations.push({
+        crawlRunId: options.crawlRunId,
+        executionId: options.executionId,
+        userId: feed?.userId,
+        stage: 'feed_acquisition',
+        failureType: category === CRAWL_OUTCOMES.TIMEOUT
+          ? 'TIMEOUT'
+          : category === CRAWL_OUTCOMES.RATE_LIMITED
+            ? 'RATE_LIMITED'
+            : [
+                CRAWL_OUTCOMES.INVALID_FEED,
+                CRAWL_OUTCOMES.MALFORMED_BODY,
+                CRAWL_OUTCOMES.VALIDATION_ERROR,
+                CRAWL_OUTCOMES.TOO_LARGE
+              ].includes(category)
+              ? 'INVALID_DATA'
+              : null,
+        severity: category === CRAWL_OUTCOMES.RECOVERED ? 'WARNING' : 'ERROR',
+        code: failureError?.code || category,
+        error: failureError instanceof Error ? failureError : null,
+        message: failureError?.message || (
+          category === CRAWL_OUTCOMES.RECOVERED
+            ? 'Feed endpoint recovery was required'
+            : `Feed crawl failed with ${category}`
+        ),
+        subjectType: 'feed',
+        subjectId: feed?.id,
+        feedId: feed?.id,
+        attemptNumber: outcome?.discovery?.attempts ?? outcome?.attempts ?? 1,
+        context: {
+          category,
+          httpStatus: outcome?.response?.status ?? outcome?.error?.status ?? null,
+          requestedUrl: requestedUrl || feed?.url,
+          resolvedUrl
+        }
+      });
+    }
     return category;
   };
 
@@ -1058,6 +1100,7 @@ const runCrawl = async (userId = null, options = {}) => {
     const requestedUrl = feed.url;
     const startedAt = Date.now();
     const heartbeat = startFeedLeaseHeartbeat(feed, { leaseMs: feedLeaseMs });
+    const pendingFailureWrites = [];
 
     try {
       const feedResult = await withTimeout(
@@ -1065,6 +1108,8 @@ const runCrawl = async (userId = null, options = {}) => {
           const execution = {
             signal,
             deadlineAt,
+            crawlRunId: options.crawlRunId || null,
+            executionId: options.executionId || null,
             lease: { feedId: feed.id, leaseOwner: feed.leaseOwner },
             leaseState: {
               get lost() {
@@ -1077,6 +1122,14 @@ const runCrawl = async (userId = null, options = {}) => {
           };
           execution.assertLeaseOwnership = ownershipOptions =>
             assertFeedLeaseOwnership(execution.lease, ownershipOptions);
+          execution.recordFailure = failure => {
+            pendingFailureWrites.push(recordProcessingFailure({
+              crawlRunId: execution.crawlRunId,
+              executionId: execution.executionId,
+              userId: feed.userId,
+              ...failure
+            }));
+          };
           execution.retargetLease = nextFeed => {
             execution.lease = {
               feedId: nextFeed.id,
@@ -1165,6 +1218,7 @@ const runCrawl = async (userId = null, options = {}) => {
         itemCount: outcome?.parsedFeed?.entries?.length ?? null
       };
     } finally {
+      await Promise.allSettled(pendingFailureWrites);
       recordFeedProcessed(feed);
       await heartbeat.stop();
       const releasableFeed = survivingFeedsByClaimedFeedId.get(feed.id) || feed;
@@ -1316,15 +1370,33 @@ const runCrawl = async (userId = null, options = {}) => {
     try {
       await persistFeedCrawlResult(observation);
     } catch (observabilityError) {
+      await recordProcessingFailure({
+        crawlRunId: options.crawlRunId,
+        executionId: options.executionId,
+        userId: observation.feed?.userId,
+        stage: 'observability',
+        failureType: 'PERSISTENCE_FAILURE',
+        severity: 'ERROR',
+        error: observabilityError,
+        subjectType: 'feed',
+        subjectId: observation.feed?.id,
+        feedId: observation.feed?.id,
+        context: { target: 'feed_crawl_results' }
+      });
       console.error(
         'Error recording feed crawl result:',
         sanitizeFeedLogValue(observabilityError)
       );
     }
   }
+  for (const observation of processingFailureObservations) {
+    await recordProcessingFailure(observation);
+  }
 
   const result = {
     crawlRunId: options.crawlRunId || null,
+    executionId: options.executionId || null,
+    userId,
     total: feeds.length,
     processed: processedCount,
     errors: errorCount,
@@ -1403,6 +1475,20 @@ const recoverStaleCrawlRun = async (userId, crawlRun, now = new Date()) => {
   const [updatedCount] = await failStaleCrawlRuns({ userId, now });
 
   if (updatedCount > 0) {
+    await recordProcessingFailure({
+      crawlRunId: crawlRun.id,
+      executionId: crawlRun.ownerToken,
+      userId,
+      stage: 'worker',
+      failureType: 'ABANDONED',
+      severity: 'FATAL',
+      code: 'STALE_CRAWL_RUN',
+      message: 'Crawl run heartbeat became stale before completion',
+      subjectType: 'user',
+      subjectId: userId,
+      retryable: true,
+      occurredAt: now
+    });
     console.warn(
       `[Crawl] Marked stale crawl run ${crawlRun.id} as failed for user ${userId}.`
     );
@@ -1486,6 +1572,7 @@ const performCrawl = async (userId = null, options = {}) => {
   }
 
   let crawlRun = null;
+  const executionId = randomUUID();
   const crawlStats = {
     newArticles: 0,
     updatedArticles: 0,
@@ -1502,7 +1589,7 @@ const performCrawl = async (userId = null, options = {}) => {
         userId,
         status: 'running',
         heartbeatAt: new Date(),
-        ownerToken: randomUUID(),
+        ownerToken: executionId,
         newArticles: 0,
         updatedArticles: 0,
         articleErrors: 0,
@@ -1514,6 +1601,17 @@ const performCrawl = async (userId = null, options = {}) => {
       });
     } catch (err) {
       if (!isActiveCrawlConstraintError(err)) {
+        await recordProcessingFailure({
+          executionId,
+          userId,
+          stage: 'crawl_setup',
+          failureType: 'PERSISTENCE_FAILURE',
+          severity: 'FATAL',
+          error: err,
+          subjectType: 'user',
+          subjectId: userId,
+          retryable: true
+        });
         throw err;
       }
 
@@ -1550,9 +1648,20 @@ const performCrawl = async (userId = null, options = {}) => {
       ...options,
       crawlStats,
       crawlRunHeartbeatState: crawlRunHeartbeat?.state,
-      crawlRunId: crawlRun?.id || null
+      crawlRunId: crawlRun?.id || null,
+      executionId
     });
   } catch (err) {
+    await recordProcessingFailure({
+      crawlRunId: crawlRun?.id,
+      executionId,
+      userId,
+      stage: 'crawl',
+      severity: 'FATAL',
+      error: err,
+      subjectType: 'user',
+      subjectId: userId
+    });
     if (crawlRun) {
       try {
         const completedAt = new Date();
@@ -1570,6 +1679,18 @@ const performCrawl = async (userId = null, options = {}) => {
           durationMs: calculateCrawlDurationMs(crawlRun.startedAt, completedAt)
         });
       } catch (crawlRunErr) {
+        await recordProcessingFailure({
+          crawlRunId: crawlRun.id,
+          executionId,
+          userId,
+          stage: 'observability',
+          failureType: 'PERSISTENCE_FAILURE',
+          severity: 'ERROR',
+          error: crawlRunErr,
+          subjectType: 'user',
+          subjectId: userId,
+          context: { target: 'failed_crawl_run' }
+        });
         console.error(
           'Error recording failed crawl run:',
           sanitizeFeedLogValue(crawlRunErr)
@@ -1611,15 +1732,43 @@ const performCrawl = async (userId = null, options = {}) => {
         durationMs: calculateCrawlDurationMs(crawlRun.startedAt, completedAt)
       });
     }
+  } catch (crawlRunErr) {
+    await recordProcessingFailure({
+      crawlRunId: crawlRun?.id,
+      executionId,
+      userId,
+      stage: 'observability',
+      failureType: 'PERSISTENCE_FAILURE',
+      severity: 'ERROR',
+      error: crawlRunErr,
+      subjectType: 'user',
+      subjectId: userId,
+      context: { target: 'completed_crawl_run' }
+    });
+    throw crawlRunErr;
   } finally {
     await crawlRunHeartbeat?.stop();
   }
 
   if (userId && result.totalNewArticles > 0) {
-    await sendNewArticlePush(userId, result.totalNewArticles).catch(error => {
+    await sendNewArticlePush(userId, result.totalNewArticles).catch(async error => {
+      await recordProcessingFailure({
+        crawlRunId: crawlRun?.id,
+        executionId,
+        userId,
+        stage: 'push_delivery',
+        error,
+        subjectType: 'user',
+        subjectId: userId,
+        retryable: true
+      });
       console.error('[Push] Post-crawl delivery failed:', error?.message || error);
     });
   }
+
+  result.crawlRunId ??= crawlRun?.id || null;
+  result.executionId ??= executionId;
+  result.userId ??= userId;
 
   return result;
 };

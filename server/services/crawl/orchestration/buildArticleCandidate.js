@@ -43,7 +43,7 @@ const appendDescriptionHtml = (contentHtml, descriptionHtml) =>
   sanitizeHtmlContent(`${contentHtml || ''}${descriptionHtml || ''}`);
 
 // This function fills missing body-language metadata from the canonical analysis text.
-const resolveAnalysisLanguage = ({ currentLanguage, text, feed, title }) => {
+const resolveAnalysisLanguage = ({ currentLanguage, text, feed, title, execution = {} }) => {
   // Derives the fallback required while resolving analysis language.
   const fallback = currentLanguage || 'unknown';
   // Returns early when fallback is not unknown or text count is below min analysis language text length or text does not match the expected format.
@@ -63,6 +63,15 @@ const resolveAnalysisLanguage = ({ currentLanguage, text, feed, title }) => {
       ? detectedLanguage
       : fallback;
   } catch (err) {
+    execution.recordFailure?.({
+      stage: 'article_extraction',
+      error: err,
+      severity: 'WARNING',
+      subjectType: 'feed',
+      subjectId: feed?.id,
+      feedId: feed?.id,
+      context: { operation: 'analysis_language_detection' }
+    });
     console.error(
       `[${feed.feedName}] Error detecting language for article "${title}":`,
       err.message
@@ -76,7 +85,8 @@ const buildArticleCandidate = async ({
   feed,
   entry,
   feedPublishedFallback = null,
-  rssFeedTitle = null
+  rssFeedTitle = null,
+  execution = {}
 }) => {
   // Extracts the entry fields while building article candidate.
   const fields = extractEntryFields(entry);
@@ -148,6 +158,7 @@ const buildArticleCandidate = async ({
       fields.title
     ];
     contentArguments.push(fields.contentKind, media);
+    if (execution.recordFailure) contentArguments.push(execution);
     const htmlResult = processHtmlContent(...contentArguments);
     // Handles the case where html result is available.
     if (htmlResult) {
@@ -195,7 +206,8 @@ const buildArticleCandidate = async ({
     currentLanguage: contentLanguage,
     text: analysisText,
     feed,
-    title: fields.title
+    title: fields.title,
+    execution
   });
 
   // Generate a useful title for feeds whose entries do not provide one.

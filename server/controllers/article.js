@@ -11,6 +11,7 @@ import {
 import { resolvePredictedAffinity } from '../services/recommendations/predictedAffinityResolver.js';
 import { getArticleRecommendations as getArticleRecommendationsService } from '../services/recommendations/articleRecommendations.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { retryDatabaseWrite } from '../utils/databaseRetry.js';
 
 // This function normalizes article grouping values used by API consumers.
 const normalizeGrouping = value => (value === 'event' || value === 'topic' ? value : 'none');
@@ -53,7 +54,7 @@ const markScopedArticlePageAsRead = async ({ userId, itemIds, grouping, readAt }
     }
   }
 
-  const [updatedCount] = await Article.update(
+  const [updatedCount] = await retryDatabaseWrite(() => Article.update(
     { status: 'read', readAt },
     {
       where: {
@@ -65,7 +66,7 @@ const markScopedArticlePageAsRead = async ({ userId, itemIds, grouping, readAt }
           : { id: { [Op.in]: itemIds } })
       }
     }
-  );
+  ));
   return { updatedCount, expandedEventCount: eventIds.length };
 };
 
@@ -555,7 +556,9 @@ const markAsRead = async (req, res, _next) => {
       }
 
       const updatedArticles = await Promise.all(
-        articles.map(article => article.update({ status: "read", readAt }))
+        articles.map(article => retryDatabaseWrite(
+          () => article.update({ status: "read", readAt })
+        ))
       );
 
       return res.status(200).json({
@@ -739,10 +742,10 @@ const markAsRead = async (req, res, _next) => {
           })
     };
 
-    const [updatedCount] = await Article.update(
+    const [updatedCount] = await retryDatabaseWrite(() => Article.update(
       { status: 'read', readAt },
       { where: updateWhere }
-    );
+    ));
 
     return res.status(200).json({
       message: 'Articles marked as read',
@@ -1087,7 +1090,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
     // Only update if payload has any changes; return updated instance
     let updatedArticle = article;
     if (Object.keys(payload).length > 0) {
-      updatedArticle = await article.update(payload);
+      updatedArticle = await retryDatabaseWrite(() => article.update(payload));
     }
 
     // Prepare response object
@@ -1172,9 +1175,9 @@ const articleMarkAsSeen = async (req, res, _next) => {
         );
       }
 
-      await Article.update(eventPayload, {
+      await retryDatabaseWrite(() => Article.update(eventPayload, {
         where: eventWhere
-      });
+      }));
     }
 
     if (shouldMarkRead) {
@@ -1305,7 +1308,7 @@ const articleMarkAllAsRead = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    await Article.update({
+    await retryDatabaseWrite(() => Article.update({
       status: "read",
       readAt: new Date()
     }, {
@@ -1314,7 +1317,7 @@ const articleMarkAllAsRead = async (req, res, _next) => {
         userId: userId,
         ...canonicalArticleWhere()
       }
-    });
+    }));
 
     return res.status(200).json("marked all as read");
   } catch (err) {

@@ -15,7 +15,8 @@ export function createArticleFeedReadState() {
     activeMinimalArticleId: null,
     pendingReadStatusArticleIds: new Set(),
     pendingSeenArticleIds: new Set(),
-    seenPersistenceAttempts: new Map()
+    seenPersistenceAttempts: new Map(),
+    seenPersistenceQueue: null
   };
 }
 
@@ -28,6 +29,7 @@ export const articleFeedReadStateMethods = {
     this.pendingReadStatusArticleIds.clear();
     this.pendingSeenArticleIds.clear();
     this.seenPersistenceAttempts.clear();
+    this.seenPersistenceQueue = null;
     this.isFlushed = false;
   },
 

@@ -113,7 +113,12 @@ export async function embedArticles(userId, options = {}) {
       lastId = article.id;
 
       // `embedArticle` handles both reuse checks and persistence.
-      const vectors = await embedArticle(article, { persist: true });
+      const vectors = await embedArticle(article, {
+        persist: true,
+        ...(options.processingContext
+          ? { processingContext: options.processingContext }
+          : {})
+      });
 
       // Handles the case where event vector is unavailable.
       if (!vectors?.eventVector) {

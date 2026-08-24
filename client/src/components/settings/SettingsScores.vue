@@ -29,7 +29,7 @@
 
         <div class="scores-info-row scores-info-row--filtering">
           <BootstrapIcon icon="funnel" aria-hidden="true" />
-          <p><strong>Filtering:</strong> Articles scoring above your threshold are automatically hidden. Set a threshold to 100 to see everything.</p>
+          <p><strong>Filtering:</strong> Articles scoring below your threshold are automatically hidden. Set a threshold to 0 to see everything.</p>
         </div>
         <div class="scores-info-row">
           <BootstrapIcon icon="key" aria-hidden="true" />
@@ -42,7 +42,7 @@
       <div class="scores-threshold-heading">
         <div>
           <h3 id="scores-threshold-title">Score Thresholds</h3>
-          <p>Choose the maximum score an article can have before it is hidden from your feed.</p>
+          <p>Choose the minimum score an article must have to remain in your feed.</p>
         </div>
         <button type="button" class="scores-reset-button app-button app-button--outline-secondary app-button--compact settings-control settings-control--compact" @click="resetToDefaults">
           <BootstrapIcon icon="arrow-counterclockwise" aria-hidden="true" />
@@ -334,14 +334,14 @@ export default {
   emits: ['close', 'saved', 'forceReload'],
   data() {
     return {
-        advertisementScore: 100,
-        sentimentScore: 100,
-        qualityScore: 100,
+        advertisementScore: 0,
+        sentimentScore: 0,
+        qualityScore: 0,
         scoreOptions: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
         defaultScores: {
-          advertisementScore: 100,
-          sentimentScore: 100,
-          qualityScore: 100
+          advertisementScore: 0,
+          sentimentScore: 0,
+          qualityScore: 0
         },
         scoreTypes: [
           {
@@ -350,8 +350,8 @@ export default {
             title: 'Advertisement Score',
             icon: 'megaphone',
             iconClass: 'scores-icon-tile--advertisement',
-            explanation: 'Measures how promotional content is, from editorial at 0 to heavy marketing or spam at 100.',
-            thresholdDescription: 'Lower values hide more promotional articles.'
+            explanation: 'Measures how free content is from promotion, from heavy marketing or spam at 0 to editorial and ad-free at 100.',
+            thresholdDescription: 'Higher values require articles to be more ad-free.'
           },
           {
             key: 'sentimentScore',
@@ -359,8 +359,8 @@ export default {
             title: 'Sentiment Score',
             icon: 'emoji-smile',
             iconClass: 'scores-icon-tile--sentiment',
-            explanation: 'Measures tone, from positive at 0 through neutral at 50 to negative or alarmist at 100.',
-            thresholdDescription: 'Lower values keep the feed closer to neutral or positive.'
+            explanation: 'Measures emotional neutrality and tone quality, from poor at 0 to excellent at 100.',
+            thresholdDescription: 'Higher values require articles to have a better tone.'
           },
           {
             key: 'qualityScore',
@@ -368,8 +368,8 @@ export default {
             title: 'Quality Score',
             icon: 'gem',
             iconClass: 'scores-icon-tile--quality',
-            explanation: 'Measures depth and relevance, from engaging at 0 to shallow or clickbait content at 100.',
-            thresholdDescription: 'Lower values favor more in-depth, relevant articles.'
+            explanation: 'Measures writing and informational quality, from shallow or clickbait content at 0 to in-depth and relevant at 100.',
+            thresholdDescription: 'Higher values require articles to be more in-depth and relevant.'
           }
         ]
     };

@@ -1,4 +1,5 @@
 import { Op } from 'sequelize';
+import { randomUUID } from 'node:crypto';
 import db from '../../models/index.js';
 import scoreArticlesFromIslandsForUser from '../score/scoreArticlesFromIslands.js';
 import { buildInterestIslandProfilesForUser as buildIslandProfilesForUser } from './islandArticleProfiles.js';
@@ -16,6 +17,7 @@ import {
   resolveTopicFallbackLabel,
   sortIslandsByWeight
 } from './islandVectorUtils.js';
+import { recordProcessingFailure } from '../observability/processingFailures.js';
 
 // This service recalibrates "interest islands" from user behavior and topic history.
 // Islands represent durable preference areas that can later score articles and group topics.
@@ -141,7 +143,21 @@ export async function calibrateIslandsFromBehavior(options = {}) {
 
   // Returns early when user id is available.
   if (userId) {
-    return calibrateIslandsFromBehaviorForUser(userId, { ...options, maxIslands });
+    try {
+      return await calibrateIslandsFromBehaviorForUser(userId, { ...options, maxIslands });
+    } catch (error) {
+      await recordProcessingFailure({
+        crawlRunId: options.processingContext?.crawlRunId || null,
+        executionId: options.processingContext?.executionId || randomUUID(),
+        userId,
+        stage: 'island_calibration',
+        severity: 'FATAL',
+        error,
+        subjectType: 'user',
+        subjectId: userId
+      });
+      throw error;
+    }
   }
 
   // Loads the users needed while performing calibrate islands from behavior.
@@ -160,6 +176,16 @@ export async function calibrateIslandsFromBehavior(options = {}) {
       const result = await calibrateIslandsFromBehaviorForUser(user.id, { ...options, maxIslands });
       results.push(result);
     } catch (err) {
+      await recordProcessingFailure({
+        crawlRunId: options.processingContext?.crawlRunId || null,
+        executionId: options.processingContext?.executionId || randomUUID(),
+        userId: user.id,
+        stage: 'island_calibration',
+        severity: 'FATAL',
+        error: err,
+        subjectType: 'user',
+        subjectId: user.id
+      });
       console.error(`[ISLANDS] Failed calibrating interest islands for user ${user.id}:`, err);
     }
   }
@@ -307,7 +333,21 @@ export async function enrichIslandsFromTopics(options = {}) {
 
   // Returns early when user id is available.
   if (userId) {
-    return enrichIslandsFromTopicsForUser(userId, { ...options, maxIslands });
+    try {
+      return await enrichIslandsFromTopicsForUser(userId, { ...options, maxIslands });
+    } catch (error) {
+      await recordProcessingFailure({
+        crawlRunId: options.processingContext?.crawlRunId || null,
+        executionId: options.processingContext?.executionId || randomUUID(),
+        userId,
+        stage: 'island_enrichment',
+        severity: 'FATAL',
+        error,
+        subjectType: 'user',
+        subjectId: userId
+      });
+      throw error;
+    }
   }
 
   // Loads the users needed while performing enrich islands from topics.
@@ -326,6 +366,16 @@ export async function enrichIslandsFromTopics(options = {}) {
       const result = await enrichIslandsFromTopicsForUser(user.id, { ...options, maxIslands });
       results.push(result);
     } catch (err) {
+      await recordProcessingFailure({
+        crawlRunId: options.processingContext?.crawlRunId || null,
+        executionId: options.processingContext?.executionId || randomUUID(),
+        userId: user.id,
+        stage: 'island_enrichment',
+        severity: 'FATAL',
+        error: err,
+        subjectType: 'user',
+        subjectId: user.id
+      });
       console.error(`[ISLANDS] Failed enriching interest islands for user ${user.id}:`, err);
     }
   }
@@ -340,13 +390,57 @@ export async function enrichIslandsFromTopics(options = {}) {
 export async function runIslandCalibrationForUser(userId, options = {}) {
   // Derives the started at through now while performing run island calibration for user.
   const startedAt = Date.now();
+  const processingContext = {
+    crawlRunId: options.processingContext?.crawlRunId || null,
+    executionId: options.processingContext?.executionId || randomUUID(),
+    userId
+  };
   logIslandRunStart(userId);
   // Derives the behavior result through calibrate islands from behavior for user while performing run island calibration for user.
-  const behaviorResult = await calibrateIslandsFromBehaviorForUser(userId, options);
+  let behaviorResult;
+  try {
+    behaviorResult = await calibrateIslandsFromBehaviorForUser(userId, options);
+  } catch (error) {
+    await recordProcessingFailure({
+      ...processingContext,
+      stage: 'island_calibration',
+      severity: 'FATAL',
+      error,
+      subjectType: 'user',
+      subjectId: userId
+    });
+    throw error;
+  }
   // Derives the enrichment result through enrich islands from topics for user while performing run island calibration for user.
-  const enrichmentResult = await enrichIslandsFromTopicsForUser(userId, options);
+  let enrichmentResult;
+  try {
+    enrichmentResult = await enrichIslandsFromTopicsForUser(userId, options);
+  } catch (error) {
+    await recordProcessingFailure({
+      ...processingContext,
+      stage: 'island_enrichment',
+      severity: 'FATAL',
+      error,
+      subjectType: 'user',
+      subjectId: userId
+    });
+    throw error;
+  }
   // Derives the scoring result through score articles from islands for user while performing run island calibration for user.
-  const scoringResult = await scoreArticlesFromIslandsForUser(userId);
+  let scoringResult;
+  try {
+    scoringResult = await scoreArticlesFromIslandsForUser(userId);
+  } catch (error) {
+    await recordProcessingFailure({
+      ...processingContext,
+      stage: 'interest_scoring',
+      severity: 'FATAL',
+      error,
+      subjectType: 'user',
+      subjectId: userId
+    });
+    throw error;
+  }
 
   // Builds the result assembled while performing run island calibration for user.
   const result = {
@@ -394,6 +488,16 @@ export async function runIslandCalibration(options = {}) {
       const result = await runIslandCalibrationForUser(user.id, { ...options, maxIslands });
       results.push(result);
     } catch (err) {
+      await recordProcessingFailure({
+        crawlRunId: options.processingContext?.crawlRunId || null,
+        executionId: options.processingContext?.executionId || randomUUID(),
+        userId: user.id,
+        stage: 'island_calibration',
+        severity: 'FATAL',
+        error: err,
+        subjectType: 'user',
+        subjectId: user.id
+      });
       console.error(`[ISLANDS] Failed calibrating interest islands for user ${user.id}:`, err);
     }
   }
@@ -405,7 +509,4 @@ export async function runIslandCalibration(options = {}) {
 }
 
 export default runIslandCalibration;
-
-
-
 

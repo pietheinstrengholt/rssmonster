@@ -6,6 +6,7 @@ import {
   isFeedTimeoutError,
   throwIfExecutionExpired
 } from '../../feeds/executionDeadline.js';
+import { recordProcessingFailure } from '../../observability/processingFailures.js';
 
 // Builds the empty article result assembled for this service.
 const emptyArticleResult = {
@@ -36,7 +37,8 @@ const processArticle = async (
       entry,
       feedPublishedFallback,
       rssFeedTitle,
-      feedFormat
+      feedFormat,
+      execution
     });
     throwIfExecutionExpired(execution);
     // Returns early when candidate is unavailable.
@@ -76,6 +78,17 @@ const processArticle = async (
     });
   } catch (err) {
     if (isFeedTimeoutError(err) || err?.code === 'FEED_LEASE_LOST') throw err;
+    await recordProcessingFailure({
+      crawlRunId: execution.crawlRunId,
+      executionId: execution.executionId,
+      userId: feed?.userId,
+      stage: 'article_processing',
+      error: err,
+      subjectType: 'feed_entry',
+      subjectId: entry?.id ?? entry?.guid ?? entry?.link ?? null,
+      feedId: feed?.id,
+      context: { feedName: feed?.feedName }
+    });
     if (['INFERENCE_TIMEOUT', 'INFERENCE_UNAVAILABLE'].includes(err?.code)) {
       console.error(`[CRAWL] ${err.message}`);
     } else {
