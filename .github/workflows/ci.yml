@@ -83,6 +83,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./server/coverage/clover.xml
           disable_search: true
+          plugins: noop
           flags: server
           name: server-mysql
           fail_ci_if_error: true
@@ -163,6 +164,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./inference/coverage/clover.xml
           disable_search: true
+          plugins: noop
           flags: inference
           name: inference
           fail_ci_if_error: true
@@ -228,6 +230,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./client/coverage/lcov.info
           disable_search: true
+          plugins: noop
           flags: client
           name: client
           fail_ci_if_error: true
