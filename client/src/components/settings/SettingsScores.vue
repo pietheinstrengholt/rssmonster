@@ -334,14 +334,14 @@ export default {
   emits: ['close', 'saved', 'forceReload'],
   data() {
     return {
-        advertisementScore: 0,
-        sentimentScore: 0,
-        qualityScore: 0,
+        advertisementScore: 100,
+        sentimentScore: 100,
+        qualityScore: 100,
         scoreOptions: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
         defaultScores: {
-          advertisementScore: 0,
-          sentimentScore: 0,
-          qualityScore: 0
+          advertisementScore: 100,
+          sentimentScore: 100,
+          qualityScore: 100
         },
         scoreTypes: [
           {

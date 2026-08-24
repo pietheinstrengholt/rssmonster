@@ -102,9 +102,9 @@ describe('score settings', () => {
 
     await wrapper.get('.scores-reset-button').trigger('click');
 
-    expect(wrapper.vm.advertisementScore).toBe(0);
-    expect(wrapper.vm.sentimentScore).toBe(0);
-    expect(wrapper.vm.qualityScore).toBe(0);
+    expect(wrapper.vm.advertisementScore).toBe(100);
+    expect(wrapper.vm.sentimentScore).toBe(100);
+    expect(wrapper.vm.qualityScore).toBe(100);
     expect(saveSettings).not.toHaveBeenCalled();
   });
 
