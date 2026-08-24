@@ -64,6 +64,93 @@ beforeEach(() => {
 });
 
 describe('ArticleFeed actions', () => {
+  it('covers collection counts for smart folders, feeds, categories, and global unread scope', () => {
+    const currentViewUnreadCount = ArticleFeed.computed.currentViewUnreadCount;
+    const context = createContext({
+      container: [1, 2],
+      overviewStore: {
+        unreadCount: 19,
+        smartFolders: [{ id: 7, ArticleCount: 8 }],
+        categories: [{
+          id: 10,
+          unreadCount: 6,
+          feeds: [{ id: 11, unreadCount: 4 }]
+        }]
+      },
+      selectionStore: {
+        currentSelection: {
+          status: 'unread', smartFolderId: 7, categoryId: '%', feedId: '%'
+        }
+      }
+    });
+
+    expect(currentViewUnreadCount.call(context)).toBe(8);
+    context.selectionStore.currentSelection = {
+      status: 'unread', smartFolderId: 99, categoryId: '%', feedId: '%'
+    };
+    expect(currentViewUnreadCount.call(context)).toBe(0);
+    context.selectionStore.currentSelection = {
+      status: 'unread', smartFolderId: null, categoryId: 10, feedId: 11
+    };
+    expect(currentViewUnreadCount.call(context)).toBe(4);
+    context.selectionStore.currentSelection.feedId = 99;
+    expect(currentViewUnreadCount.call(context)).toBe(0);
+    context.selectionStore.currentSelection.feedId = '%';
+    expect(currentViewUnreadCount.call(context)).toBe(6);
+    context.selectionStore.currentSelection.categoryId = '%';
+    expect(currentViewUnreadCount.call(context)).toBe(19);
+  });
+
+  it('routes watcher callbacks and reconnects replacement scroll surfaces', () => {
+    const previousRoot = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    };
+    const nextRoot = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    };
+    const context = createContext({
+      scrollContainer: previousRoot,
+      handleScroll: vi.fn(),
+      checkForNewerArticles: vi.fn(),
+      connectScrollContainer: ArticleFeed.methods.connectScrollContainer
+    });
+
+    ArticleFeed.watch['overviewStore.articleAvailabilityRevision'].call(context);
+    ArticleFeed.watch.scrollRoot.call(context, nextRoot);
+
+    expect(context.checkForNewerArticles).toHaveBeenCalledOnce();
+    expect(previousRoot.removeEventListener).toHaveBeenCalledWith('scroll', context.handleScroll);
+    expect(nextRoot.addEventListener).toHaveBeenCalledWith('scroll', context.handleScroll, { passive: true });
+    context.connectScrollContainer(nextRoot);
+    expect(nextRoot.addEventListener).toHaveBeenCalledOnce();
+  });
+
+  it('tracks scroll direction and exposes tag-specific empty-state actions', () => {
+    const context = createContext({
+      scrollContainer: { scrollTop: 0 },
+      prevScroll: 0,
+      scrollDirection: 'up'
+    });
+    const setTag = vi.spyOn(context.selectionStore, 'setTag').mockImplementation(() => {});
+    const setSelectedStatus = vi.spyOn(context.selectionStore, 'setSelectedStatus').mockImplementation(() => {});
+
+    context.handleScroll();
+    context.scrollContainer.scrollTop = 250;
+    context.handleScroll();
+    context.scrollContainer.scrollTop = 200;
+    context.handleScroll();
+    context.clearTag();
+    context.viewTagStatus('read');
+
+    expect(context.$emit).toHaveBeenCalledWith('mobile-toolbar-visibility', true);
+    expect(context.$emit).toHaveBeenCalledWith('mobile-toolbar-visibility', false);
+    expect(context.scrollDirection).toBe('up');
+    expect(setTag).toHaveBeenCalledWith('');
+    expect(setSelectedStatus).toHaveBeenCalledWith('read');
+  });
+
   // Verifies global shortcuts emit reload and search-focus actions.
   it('handles global shortcuts while ignoring editable or modified events', () => {
     const context = createContext();
@@ -264,7 +351,8 @@ describe('ArticleFeed actions', () => {
 
   // Verifies local response helpers update only matching articles and emit refresh actions.
   it('updates matching article state and emits refresh events', () => {
-    const context = createContext();
+    const pool = new Set([1, 2]);
+    const context = createContext({ container: [1, 2], totalCount: 2, pool });
 
     context.updateFavoriteInd({ id: 99, favoriteInd: 1 });
     context.updateClickedInd({ id: 99, clickedAmount: 4 });
@@ -273,7 +361,13 @@ describe('ArticleFeed actions', () => {
     context.refreshFeeds();
 
     expect(context.articles.map(article => article.id)).toEqual([2]);
+    expect(context.container).toEqual([2]);
+    expect(context.totalCount).toBe(1);
+    expect(pool.has(1)).toBe(false);
     expect(context.$emit).toHaveBeenCalledWith('forceReload');
     expect(context.$emit).toHaveBeenCalledWith('refresh-feeds');
+
+    context.removeArticle({ id: 99 });
+    expect(console.error).toHaveBeenCalledWith('Could not find article to remove:', 99);
   });
 });

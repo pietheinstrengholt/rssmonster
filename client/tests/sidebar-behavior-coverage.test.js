@@ -92,6 +92,70 @@ afterEach(() => {
 });
 
 describe('Sidebar navigation and action coverage', () => {
+  it('routes rendered navigation, retry, and management controls through store contracts', async () => {
+    const stores = createStores();
+    stores.overviewStore.$patch({
+      overviewCountsStatus: 'error',
+      smartFoldersStatus: 'error',
+      topTagsStatus: 'error',
+      unreadsSinceLastUpdate: 3
+    });
+    const refreshOverviewCounts = vi.spyOn(stores.overviewStore, 'refreshOverviewCounts').mockResolvedValue({});
+    const fetchSmartFolderCounts = vi.spyOn(stores.overviewStore, 'fetchSmartFolderCounts').mockResolvedValue({});
+    const setShowModal = vi.spyOn(stores.uiStore, 'setShowModal').mockImplementation(() => {});
+    const refreshFeeds = vi.spyOn(Sidebar.methods, 'refreshFeeds').mockImplementation(() => {});
+    const markAsRead = vi.spyOn(Sidebar.methods, 'markAsRead').mockResolvedValue();
+    const selectSmartFolder = vi.spyOn(Sidebar.methods, 'selectSmartFolder').mockImplementation(() => {});
+    const loadType = vi.spyOn(Sidebar.methods, 'loadType').mockImplementation(() => {});
+    const selectTag = vi.spyOn(Sidebar.methods, 'selectTag').mockImplementation(() => {});
+    const wrapper = mountSidebar(stores.pinia);
+
+    const actionButtons = wrapper.findAllComponents({ name: 'SidebarActionButton' });
+    const selectAction = label => actionButtons.find(button => button.props('label') === label).vm.$emit('select');
+    selectAction('Refresh feeds');
+    selectAction('Add new feed');
+    selectAction('Mark as read');
+
+    const navItems = wrapper.findAllComponents({ name: 'SidebarNavItem' });
+    navItems.find(item => item.props('title') === 'Research').vm.$emit('select');
+    navItems.find(item => item.props('title') === 'Click to refresh!').vm.$emit('select');
+    navItems.find(item => item.props('title') === 'Tag-0').vm.$emit('select');
+
+    for (const retry of wrapper.findAll('.sidebar-resource-error button')) await retry.trigger('click');
+    expect(refreshFeeds).toHaveBeenCalledOnce();
+    expect(markAsRead).toHaveBeenCalledWith(stores.selectionStore.currentSelection);
+    expect(setShowModal).toHaveBeenCalledWith('NewFeed');
+    expect(selectSmartFolder).toHaveBeenCalledWith(expect.objectContaining({ id: 20 }));
+    expect(loadType).toHaveBeenCalledWith('refresh');
+    expect(selectTag).toHaveBeenCalledWith('tag-0');
+    expect(refreshOverviewCounts).toHaveBeenCalledOnce();
+    expect(stores.overviewStore.fetchSmartFolders).toHaveBeenCalled();
+    expect(stores.overviewStore.fetchTopTags).toHaveBeenCalled();
+
+    stores.overviewStore.smartFoldersStatus = 'ready';
+    stores.overviewStore.smartFolderCountsStatus = 'error';
+    stores.selectionStore.currentSelection.categoryId = 10;
+    stores.selectionStore.currentSelection.feedId = '%';
+    await wrapper.vm.$nextTick();
+    for (const button of wrapper.findAllComponents({ name: 'SidebarActionButton' })) {
+      if (['Delete category', 'Edit category'].includes(button.props('label'))) button.vm.$emit('select');
+    }
+    const smartFolderCountError = wrapper.findAll('.sidebar-resource-error')
+      .find(error => error.text().includes('Smart Folder counts'));
+    await smartFolderCountError.get('button').trigger('click');
+    expect(setShowModal).toHaveBeenCalledWith('DeleteCategory');
+    expect(setShowModal).toHaveBeenCalledWith('RenameCategory');
+    expect(fetchSmartFolderCounts).toHaveBeenCalledOnce();
+
+    stores.selectionStore.currentSelection.feedId = 11;
+    await wrapper.vm.$nextTick();
+    for (const button of wrapper.findAllComponents({ name: 'SidebarActionButton' })) {
+      if (['Delete feed', 'Edit feed'].includes(button.props('label'))) button.vm.$emit('select');
+    }
+    expect(setShowModal).toHaveBeenCalledWith('DeleteFeed');
+    expect(setShowModal).toHaveBeenCalledWith('UpdateFeed');
+  });
+
   it('covers status, navigation, tag, and smart-folder selection branches', () => {
     const stores = createStores();
     const setStatus = vi.spyOn(stores.selectionStore, 'setSelectedStatus').mockImplementation(() => {});

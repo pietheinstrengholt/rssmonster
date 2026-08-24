@@ -141,6 +141,39 @@ describe('AppShell connectivity recovery', () => {
     expect(context.overviewLoaded).toBe(true);
   });
 
+  it('contains Smart Folder preload failures and clears a recovered overview error', async () => {
+    const context = connectRecoveryMethods(createRecoveryContext());
+    const preloadError = new Error('folders unavailable');
+    context.uiStore.fatalError = { type: 'overview' };
+    context.overviewStore.fetchSmartFolders.mockRejectedValue(preloadError);
+    context.overviewStore.fetchOverviewSplit.mockResolvedValue();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await AppShell.methods.getOverview.call(context, true);
+    await Promise.resolve();
+
+    expect(console.error).toHaveBeenCalledWith('Error loading Smart Folders:', preloadError);
+    expect(context.uiStore.clearFatalError).toHaveBeenCalledOnce();
+    expect(context.overviewLoaded).toBe(true);
+  });
+
+  it('reports ordinary reload failures through the established overview classifier', async () => {
+    const context = connectRecoveryMethods(createRecoveryContext());
+    const error = { response: { status: 503 } };
+    const refreshArticleIds = vi.fn().mockResolvedValue(true);
+    context.connectivityStatus = null;
+    context.$refs.articleFeed = [{ refreshArticleIds }, null];
+    context.overviewStore.fetchOverviewSplit.mockRejectedValue(error);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await AppShell.methods.forceReload.call(context);
+
+    expect(refreshArticleIds).toHaveBeenCalledWith(context.selectionStore.currentSelection);
+    expect(console.error).toHaveBeenCalledWith('Error reloading application data:', error);
+    expect(context.uiStore.setFatalError).toHaveBeenCalledWith(expect.objectContaining({ type: 'overview' }));
+    expect(context.overviewReloading).toBe(false);
+  });
+
   it('refreshes overview and current articles before clearing status and restarting polling', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
     const articleFeed = { refreshArticleIds: vi.fn().mockResolvedValue(true) };
@@ -243,6 +276,26 @@ describe('AppShell connectivity recovery', () => {
     expect(context.startOverviewPolling).not.toHaveBeenCalled();
   });
 
+  it('short-circuits recovery while offline and classifies HTTP recovery failures', async () => {
+    const offlineContext = connectRecoveryMethods(createRecoveryContext());
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+
+    await expect(AppShell.methods.recoverConnectivity.call(offlineContext)).resolves.toBe(false);
+    expect(offlineContext.connectivityStatus).toBe('browser-offline');
+    expect(offlineContext.overviewStore.fetchOverviewSplit).not.toHaveBeenCalled();
+
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+    const httpContext = connectRecoveryMethods(createRecoveryContext());
+    httpContext.overviewStore.fetchOverviewSplit.mockRejectedValue({ response: { status: 503 } });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(AppShell.methods.recoverConnectivity.call(httpContext)).resolves.toBe(false);
+    expect(httpContext.connectivityStatus).toBeNull();
+    expect(httpContext.uiStore.setFatalError).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'overview'
+    }));
+  });
+
   it('refreshes database articles and overview counts without clearing usable content first', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
     const articleFeed = { refreshArticleIds: vi.fn().mockResolvedValue(true) };
@@ -274,6 +327,26 @@ describe('AppShell connectivity recovery', () => {
     expect(articleFeed.refreshArticleIds).not.toHaveBeenCalled();
     expect(context.articleListReloadActive).toBe(false);
     expect(context.databaseRefreshActive).toBe(false);
+  });
+
+  it('shows a recoverable notice when a full article-list reload reports failure', async () => {
+    const context = connectRecoveryMethods(createRecoveryContext());
+    context.$refs.articleFeed = {
+      fetchArticleIds: vi.fn().mockResolvedValue(false)
+    };
+    context.overviewStore.fetchOverview.mockResolvedValue(true);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await AppShell.methods.reloadArticleListFromDatabase.call(context);
+
+    expect(console.error).toHaveBeenCalledWith(
+      'Error reloading the article list from the database:',
+      expect.any(Error)
+    );
+    expect(context.showActionError).toHaveBeenCalledWith(
+      'Could not reload articles. Please try again.'
+    );
+    expect(context.articleListReloadActive).toBe(false);
   });
 
   it('scrolls article feeds to the top without reloading data after screen rotation', async () => {

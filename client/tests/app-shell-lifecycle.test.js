@@ -256,6 +256,59 @@ describe('AppShell lifecycle', () => {
     expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
   });
 
+  it('routes recoverable and fatal application errors to their owned surfaces', () => {
+    const context = {
+      showActionError: vi.fn(),
+      handleConnectivityError: vi.fn(),
+      uiStore: { setFatalError: vi.fn() }
+    };
+
+    AppShell.methods.handleActionError.call(context, {
+      detail: { message: 'Try the action again' }
+    });
+    AppShell.methods.handleAppError.call(context, {
+      detail: { type: 'overview', message: 'Overview unavailable' }
+    });
+
+    expect(context.showActionError).toHaveBeenCalledWith('Try the action again');
+    expect(context.uiStore.setFatalError).toHaveBeenCalledWith({
+      type: 'overview', message: 'Overview unavailable'
+    });
+  });
+
+  it('handles unsupported and clear-less application badge platforms', async () => {
+    const originalServiceWorker = navigator.serviceWorker;
+    const originalSetAppBadge = navigator.setAppBadge;
+    const originalClearAppBadge = navigator.clearAppBadge;
+
+    Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: undefined });
+    Object.defineProperty(navigator, 'setAppBadge', { configurable: true, value: undefined });
+    await AppShell.methods.setBadge(4);
+
+    const setAppBadge = vi.fn().mockResolvedValue();
+    Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: {} });
+    Object.defineProperty(navigator, 'setAppBadge', { configurable: true, value: setAppBadge });
+    Object.defineProperty(navigator, 'clearAppBadge', { configurable: true, value: undefined });
+    await AppShell.methods.setBadge(0);
+    expect(setAppBadge).toHaveBeenCalledWith(0);
+
+    Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: originalServiceWorker });
+    Object.defineProperty(navigator, 'setAppBadge', { configurable: true, value: originalSetAppBadge });
+    Object.defineProperty(navigator, 'clearAppBadge', { configurable: true, value: originalClearAppBadge });
+  });
+
+  it('applies theme and badge watcher updates only through shell services', () => {
+    const context = {
+      setBadge: vi.fn()
+    };
+
+    AppShell.watch['uiStore.themeMode'].call(context, 'dark');
+    AppShell.watch['uiStore.themeMode'].call(context, '');
+    AppShell.watch['overviewStore.unreadCount'].handler.call(context, 12);
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(context.setBadge).toHaveBeenCalledWith(12);
+  });
+
   it('shows browser-offline status immediately and stops polling', () => {
     const context = {
       connectivityStatus: null,
