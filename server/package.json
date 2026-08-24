@@ -56,16 +56,16 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@vitest/coverage-v8": "^4.1.10",
-    "eslint": "^10.8.1",
+    "@vitest/coverage-v8": "^4.1.11",
+    "eslint": "^10.9.0",
     "globals": "^17.11.0",
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "@openai/agents": "^0.15.0",
+    "@openai/agents": "^0.17.0",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
@@ -78,9 +78,9 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
-    "mysql2": "^3.23.3",
+    "mysql2": "^3.24.1",
     "node-cache": "^5.1.2",
-    "sanitize-html": "^2.17.6",
+    "sanitize-html": "^2.17.7",
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.6.5",
     "sqlite3": "^6.0.1",

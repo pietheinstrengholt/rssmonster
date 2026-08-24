@@ -15,6 +15,8 @@ server.
   and running the dedicated crawl worker with PM2.
 - [Inference](inference.md) explains how to configure, run, inspect, and debug
   the standalone embedding service.
+- [npm Commands](npm-commands.md) is the complete client, server, and inference
+  command reference, including supported arguments and usage guidance.
 
 Run administrative commands from the `server` directory unless a command says
 otherwise. Before running a command that changes stored data, back up the
