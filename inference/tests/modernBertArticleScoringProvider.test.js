@@ -3,6 +3,10 @@ import {
   createModernBertArticleScoringProvider
 } from '../src/classifications/providers/modernBertArticleScoringProvider.js';
 
+const { pipelineMock } = vi.hoisted(() => ({ pipelineMock: vi.fn() }));
+
+vi.mock('@huggingface/transformers', () => ({ env: {}, pipeline: pipelineMock }));
+
 const createDependencies = () => {
   const classifier = vi.fn()
     .mockResolvedValueOnce({
@@ -41,6 +45,28 @@ describe('ModernBERT article scoring provider', () => {
       'q8'
     );
     expect(provider.isLoaded()).toBe(true);
+    await provider.initialize();
+    expect(dependencies.loadClassifier).toHaveBeenCalledOnce();
+  });
+
+  it('treats absent label scores as zero and recovers its scoring queue after failure', async () => {
+    const classifier = vi.fn()
+      .mockRejectedValueOnce(new Error('temporary failure'))
+      .mockResolvedValue({ labels: [], scores: [] });
+    const dependencies = {
+      configureCache: vi.fn(),
+      loadClassifier: vi.fn().mockResolvedValue(classifier),
+      logger: { log: vi.fn() }
+    };
+    const provider = createModernBertArticleScoringProvider({ dependencies });
+    const input = { text: 'Text' };
+
+    await expect(provider.score(input)).rejects.toThrow('temporary failure');
+    await expect(provider.score(input)).resolves.toEqual({
+      advertisementScore: 0,
+      sentimentScore: 0,
+      qualityScore: 0
+    });
   });
 
   it('maps NLI label probabilities to the existing score buckets', async () => {
@@ -78,5 +104,18 @@ describe('ModernBERT article scoring provider', () => {
     });
     expect(provider.isLoaded()).toBe(false);
     expect(dependencies.loadClassifier).not.toHaveBeenCalled();
+  });
+
+  it('loads the default zero-shot classification pipeline', async () => {
+    pipelineMock.mockResolvedValue(vi.fn());
+    const provider = createModernBertArticleScoringProvider({ environment: {} });
+
+    await provider.initialize();
+
+    expect(pipelineMock).toHaveBeenCalledWith(
+      'zero-shot-classification',
+      'onnx-community/ModernBERT-base-nli-ONNX',
+      { dtype: 'q8', device: 'cpu' }
+    );
   });
 });

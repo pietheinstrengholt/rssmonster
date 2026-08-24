@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
-  createCompletion: vi.fn()
+  createCompletion: vi.fn(),
+  qwenGenerate: vi.fn()
 }));
 
 vi.mock('openai', () => ({
@@ -17,12 +18,18 @@ vi.mock('openai', () => ({
   }
 }));
 
+vi.mock('../src/generation/providers/qwenGenerationProvider.js', () => ({
+  default: { generate: mocked.qwenGenerate }
+}));
+
 const originalApiKey = process.env.OPENAI_API_KEY;
+const originalGenerationProvider = process.env.GENERATION_PROVIDER;
 
 describe('rediscoverRssUrl', () => {
   beforeEach(() => {
     vi.resetModules();
     mocked.createCompletion.mockReset();
+    mocked.qwenGenerate.mockReset();
     delete process.env.OPENAI_API_KEY;
   });
 
@@ -31,6 +38,11 @@ describe('rediscoverRssUrl', () => {
       delete process.env.OPENAI_API_KEY;
     } else {
       process.env.OPENAI_API_KEY = originalApiKey;
+    }
+    if (originalGenerationProvider === undefined) {
+      delete process.env.GENERATION_PROVIDER;
+    } else {
+      process.env.GENERATION_PROVIDER = originalGenerationProvider;
     }
   });
 
@@ -113,5 +125,25 @@ describe('rediscoverRssUrl', () => {
       'Invalid JSON returned from OpenAI'
     );
   });
-});
 
+  it('uses Qwen and reports its name for invalid JSON', async () => {
+    process.env.GENERATION_PROVIDER = 'qwen';
+    mocked.qwenGenerate
+      .mockResolvedValueOnce('{"url":null,"confidence":0,"reason":"No replacement."}')
+      .mockResolvedValueOnce('invalid');
+    const { rediscoverRssUrl } = await import(
+      '../src/feedRediscovery/feedRediscoveryService.js'
+    );
+    const input = { feedName: 'Publisher' };
+
+    await expect(rediscoverRssUrl(input)).resolves.toEqual({
+      url: null,
+      confidence: 0,
+      reason: 'No replacement.'
+    });
+    await expect(rediscoverRssUrl(input)).rejects.toThrow('Invalid JSON returned from Qwen');
+    expect(mocked.qwenGenerate).toHaveBeenCalledWith(expect.objectContaining({
+      maxNewTokens: 300
+    }));
+  });
+});

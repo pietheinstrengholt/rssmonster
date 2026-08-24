@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
-import { createApp } from '../src/app.js';
+import { createApp, handleAppError } from '../src/app.js';
 
 const createProvider = () => {
   let loaded = false;
@@ -133,6 +133,44 @@ describe('inference app', () => {
     expect(provider.embed).not.toHaveBeenCalled();
   });
 
+  it('rejects a missing article classification body', async () => {
+    const classificationService = vi.fn();
+    const response = await request(createApp({
+      provider: createProvider(),
+      classificationService
+    })).post('/api/classifications/article');
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: 'request body is required' });
+    expect(classificationService).not.toHaveBeenCalled();
+  });
+
+  it('handles errors from classification and auxiliary services', async () => {
+    const logger = { error: vi.fn() };
+    const app = createApp({
+      provider: createProvider(),
+      logger,
+      classificationService: vi.fn().mockRejectedValue(new Error('classification failed')),
+      smartFolderRecommendationService: vi.fn().mockRejectedValue(new Error('recommendation failed')),
+      feedRediscoveryService: vi.fn().mockRejectedValue(new Error('rediscovery failed'))
+    });
+
+    const classification = await request(app)
+      .post('/api/classifications/article')
+      .send({ text: 'Article' });
+    const recommendations = await request(app)
+      .post('/api/smart-folder-recommendations')
+      .send({});
+    const rediscovery = await request(app)
+      .post('/api/feed-rediscovery');
+
+    expect(classification.status).toBe(500);
+    expect(classification.body).toEqual({ error: 'Internal server error' });
+    expect(recommendations.body).toEqual({ error: 'Smart Folder recommendation failed' });
+    expect(rediscovery.body).toEqual({ error: 'Feed rediscovery failed' });
+    expect(logger.error).toHaveBeenCalledTimes(3);
+  });
+
   it('routes Smart Folder recommendations and feed rediscovery independently', async () => {
     const smartFolderRecommendationService = vi.fn().mockResolvedValue({ smartFolders: [] });
     const feedRediscoveryService = vi.fn().mockResolvedValue({
@@ -173,6 +211,64 @@ describe('inference app', () => {
     expect(assistantService.respond).toHaveBeenCalledWith({ request: { input: 'Hello' } });
   });
 
+  it('streams assistant events as NDJSON', async () => {
+    const assistantService = {
+      respond: vi.fn(),
+      stream: vi.fn().mockResolvedValue((async function* () {
+        yield { type: 'delta', value: 'hello' };
+        yield { type: 'done' };
+      })())
+    };
+    const response = await request(createApp({ provider: createProvider(), assistantService }))
+      .post('/api/assistant/model/stream')
+      .send({ request: { input: 'Hello' } });
+
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toContain('application/x-ndjson');
+    expect(response.text).toBe('{"type":"delta","value":"hello"}\n{"type":"done"}\n');
+  });
+
+  it('hides assistant response and pre-stream failures', async () => {
+    const logger = { error: vi.fn() };
+    const assistantService = {
+      respond: vi.fn().mockRejectedValue(new Error('response failed')),
+      stream: vi.fn().mockRejectedValue(new Error('stream failed'))
+    };
+    const app = createApp({ provider: createProvider(), assistantService, logger });
+
+    const response = await request(app).post('/api/assistant/model');
+    const stream = await request(app).post('/api/assistant/model/stream');
+
+    expect(response.body).toEqual({ error: 'Assistant inference failed' });
+    expect(stream.body).toEqual({ error: 'Assistant inference failed' });
+    expect(logger.error).toHaveBeenCalledTimes(2);
+  });
+
+  it('destroys a streaming response when the stream fails after sending headers', async () => {
+    const logger = { error: vi.fn() };
+    const assistantService = {
+      respond: vi.fn(),
+      stream: vi.fn().mockResolvedValue((async function* () {
+        yield { type: 'delta' };
+        throw new Error('late stream failure');
+      })())
+    };
+
+    await expect(request(createApp({ provider: createProvider(), assistantService, logger }))
+      .post('/api/assistant/model/stream')).rejects.toThrow();
+    expect(logger.error).toHaveBeenCalledOnce();
+  });
+
+  it('delegates errors after response headers have been sent', () => {
+    const error = new Error('late failure');
+    const next = vi.fn();
+    const response = { headersSent: true };
+
+    handleAppError(error, {}, response, next, { error: vi.fn() });
+
+    expect(next).toHaveBeenCalledWith(error);
+  });
+
   it('rate limits assistant model requests', async () => {
     const assistantService = {
       respond: vi.fn().mockResolvedValue({ output: [], responseId: 'response-1' }),
@@ -204,5 +300,12 @@ describe('inference app', () => {
     });
     expect(assistantService.respond).toHaveBeenCalledOnce();
     expect(assistantService.stream).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid assistant rate-limit settings', () => {
+    expect(() => createApp({
+      provider: createProvider(),
+      environment: { ASSISTANT_RATE_LIMIT_MAX: '0' }
+    })).toThrow('ASSISTANT_RATE_LIMIT_MAX must be a positive integer');
   });
 });

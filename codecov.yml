@@ -24,7 +24,7 @@ coverage:
           - server
 
       inference:
-        target: 70%
+        target: 100%
         threshold: 0%
         flags:
           - inference

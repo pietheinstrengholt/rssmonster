@@ -56,4 +56,18 @@ describe('embedding service', () => {
     expect(maximumActiveCalls).toBe(1);
     expect(provider.embed).toHaveBeenCalledTimes(2);
   });
+
+  it('reports optional task metadata and delegates initialization', async () => {
+    const provider = {
+      initialize: vi.fn().mockResolvedValue(undefined),
+      embed: vi.fn(),
+      getMetadata: () => ({ ...metadata, task: 'feature-extraction' }),
+      isLoaded: () => false
+    };
+    const service = createEmbeddingService({ provider });
+
+    expect(service.getInfo()).toMatchObject({ task: 'feature-extraction' });
+    await expect(service.initialize()).resolves.toBeUndefined();
+    expect(provider.initialize).toHaveBeenCalledOnce();
+  });
 });

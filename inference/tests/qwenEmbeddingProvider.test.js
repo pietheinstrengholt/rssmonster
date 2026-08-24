@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createQwenEmbeddingProvider } from '../src/embeddings/providers/qwenEmbeddingProvider.js';
 
+const { pipelineMock } = vi.hoisted(() => ({ pipelineMock: vi.fn() }));
+
+vi.mock('@huggingface/transformers', () => ({ env: {}, pipeline: pipelineMock }));
+
 const createDependencies = () => {
   const extractor = vi.fn(async () => ({
     tolist: () => [
@@ -47,6 +51,8 @@ describe('Qwen3 embedding provider', () => {
     expect(dependencies.loadExtractor).toHaveBeenCalledTimes(1);
     expect(dependencies.logger.log).toHaveBeenCalledTimes(2);
     expect(provider.isLoaded()).toBe(true);
+    await provider.initialize();
+    expect(dependencies.loadExtractor).toHaveBeenCalledTimes(1);
   });
 
   it('uses documented pooling and normalization and returns plain arrays', async () => {
@@ -64,5 +70,19 @@ describe('Qwen3 embedding provider', () => {
       [expect.closeTo(0.3), expect.closeTo(0.4)]
     ]);
     expect(Array.isArray(result[0])).toBe(true);
+  });
+
+  it('loads the default feature-extraction pipeline', async () => {
+    const extractor = vi.fn().mockResolvedValue({ tolist: () => [] });
+    pipelineMock.mockResolvedValue(extractor);
+    const provider = createQwenEmbeddingProvider({ environment: {} });
+
+    await provider.initialize();
+
+    expect(pipelineMock).toHaveBeenCalledWith(
+      'feature-extraction',
+      'onnx-community/Qwen3-Embedding-0.6B-ONNX',
+      { dtype: 'fp32', device: 'cpu' }
+    );
   });
 });

@@ -351,15 +351,16 @@ describe('analyzeArticleContent response validation', () => {
 
   // Treats a non-JSON model response as an empty response object.
   it('falls back safely when the model response contains no JSON object', async () => {
-    completionsCreate.mockResolvedValue({ choices: [] });
+    completionsCreate.mockResolvedValue({
+      choices: [{ message: { content: 'not JSON' } }]
+    });
     const { default: analyzeArticleContent } = await import(
       '../src/classifications/articleClassificationService.js'
     );
 
     const result = await analyzeArticleContent({
       text: 'Long article content '.repeat(40),
-      title: 'Empty response',
-      categories: []
+      categories: [null]
     });
 
     expect(result).toMatchObject({
@@ -369,6 +370,99 @@ describe('analyzeArticleContent response validation', () => {
       sentimentScore: 70,
       qualityScore: 70
     });
+  });
+
+  it('falls back safely when wrapped JSON is malformed', async () => {
+    completionsCreate.mockResolvedValue({
+      choices: [{ message: { content: 'Result: {invalid JSON} done' } }]
+    });
+    const { default: analyzeArticleContent } = await import(
+      '../src/classifications/articleClassificationService.js'
+    );
+
+    await expect(analyzeArticleContent({
+      text: 'Long article content '.repeat(40),
+      categories: []
+    })).resolves.toMatchObject({
+      contentSummaryBullets: [],
+      tags: [],
+      qualityScore: 70
+    });
+  });
+
+  it('truncates oversized content and handles empty completion content', async () => {
+    completionsCreate.mockResolvedValue({ choices: [] });
+    const { default: analyzeArticleContent } = await import(
+      '../src/classifications/articleClassificationService.js'
+    );
+    const text = `${'a'.repeat(4000)}TAIL`;
+
+    await analyzeArticleContent({ text, title: 'Oversized', categories: [] });
+
+    const prompts = completionsCreate.mock.calls.map(call => call[0].messages[1].content);
+    expect(prompts.every(prompt => prompt.includes('\n...\n'))).toBe(true);
+    expect(prompts.every(prompt => prompt.includes('TAIL'))).toBe(true);
+  });
+
+  it('recovers the OpenAI queue when error handling itself receives a non-error', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    completionsCreate
+      .mockRejectedValueOnce(null)
+      .mockResolvedValue({ choices: [{ message: { content: '{}' } }] });
+    const { default: analyzeArticleContent } = await import(
+      '../src/classifications/articleClassificationService.js'
+    );
+    const input = { text: 'Long article content '.repeat(40), categories: [] };
+
+    await expect(analyzeArticleContent(input)).rejects.toThrow(TypeError);
+    await expect(analyzeArticleContent(input)).resolves.toMatchObject({ qualityScore: 70 });
+    errorSpy.mockRestore();
+  });
+
+  it('handles Qwen generation failures without losing local scoring', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubEnv('GENERATION_PROVIDER', 'qwen');
+    vi.stubEnv('ARTICLE_SCORING_PROVIDER', 'modernbert');
+    qwenGenerate.mockRejectedValue(new Error('generation failed'));
+    modernBertScore.mockResolvedValue({
+      advertisementScore: 80,
+      sentimentScore: 80,
+      qualityScore: 80
+    });
+    const { default: analyzeArticleContent } = await import(
+      '../src/classifications/articleClassificationService.js'
+    );
+
+    await expect(analyzeArticleContent({
+      text: 'Long article content '.repeat(40),
+      categories: []
+    })).resolves.toMatchObject({
+      contentSummaryBullets: [],
+      tags: [],
+      qualityScore: 80
+    });
+    expect(errorSpy).toHaveBeenCalledTimes(2);
+    errorSpy.mockRestore();
+  });
+
+  it.each([
+    new Error('rate limit'),
+    {}
+  ])('handles provider errors without assuming an error message: %j', async error => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    completionsCreate.mockRejectedValue(error);
+    const { default: analyzeArticleContent } = await import(
+      '../src/classifications/articleClassificationService.js'
+    );
+
+    await expect(analyzeArticleContent({
+      text: 'Long article content '.repeat(40),
+      categories: []
+    })).resolves.toMatchObject({ qualityScore: 70 });
+
+    errorSpy.mockRestore();
+    warnSpy.mockRestore();
   });
 
   // Enables a subsequent delay after a rate-limit error while preserving default analysis.

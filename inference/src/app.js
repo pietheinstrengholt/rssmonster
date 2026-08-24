@@ -9,6 +9,26 @@ import { createFeedRediscoveryRouter } from './routes/feedRediscovery.js';
 import { createSmartFolderRecommendationsRouter } from './routes/smartFolderRecommendations.js';
 import { createAssistantRateLimiter } from './middleware/rateLimit.js';
 
+export const handleAppError = (error, _req, res, next, logger = console) => {
+  if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+    res.status(400).json({ error: 'request body must contain valid JSON' });
+    return;
+  }
+
+  if (error.type === 'entity.too.large') {
+    res.status(413).json({ error: 'request body is too large' });
+    return;
+  }
+
+  if (res.headersSent) {
+    next(error);
+    return;
+  }
+
+  logger.error('[INFERENCE] Request failed:', error);
+  res.status(500).json({ error: 'Internal server error' });
+};
+
 export const createApp = ({
   provider,
   environment = process.env,
@@ -45,25 +65,7 @@ export const createApp = ({
     logger
   }));
 
-  app.use((error, _req, res, next) => {
-    if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
-      res.status(400).json({ error: 'request body must contain valid JSON' });
-      return;
-    }
-
-    if (error.type === 'entity.too.large') {
-      res.status(413).json({ error: 'request body is too large' });
-      return;
-    }
-
-    if (res.headersSent) {
-      next(error);
-      return;
-    }
-
-    logger.error('[INFERENCE] Request failed:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  });
+  app.use((error, req, res, next) => handleAppError(error, req, res, next, logger));
 
   return app;
 };

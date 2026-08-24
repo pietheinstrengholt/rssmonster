@@ -1,6 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createAssistantModelService } from '../src/assistant/assistantModelService.js';
 
+const { OpenAIProviderMock, defaultModel } = vi.hoisted(() => ({
+  OpenAIProviderMock: vi.fn(),
+  defaultModel: { getResponse: vi.fn().mockResolvedValue({ output: ['default'] }) }
+}));
+
+vi.mock('@openai/agents', () => ({
+  OpenAIProvider: OpenAIProviderMock.mockImplementation(function Provider() {
+    this.getModel = vi.fn().mockReturnValue(defaultModel);
+  })
+}));
+
 describe('assistant model service', () => {
   it('reuses one provider for normal and streaming model calls', async () => {
     const model = {
@@ -19,5 +30,18 @@ describe('assistant model service', () => {
     expect(createProvider).toHaveBeenCalledOnce();
     expect(provider.getModel).toHaveBeenCalledTimes(2);
     expect(provider.getModel).toHaveBeenCalledWith('agent-model');
+  });
+
+  it('requires an API key when the provider is first used', async () => {
+    const service = createAssistantModelService({ environment: {} });
+
+    await expect(service.respond({ request: {} })).rejects.toThrow('OPENAI_API_KEY is required');
+  });
+
+  it('creates the default OpenAI provider', async () => {
+    const service = createAssistantModelService({ environment: { OPENAI_API_KEY: 'default-key' } });
+
+    await expect(service.respond({ request: {} })).resolves.toEqual({ output: ['default'] });
+    expect(OpenAIProviderMock).toHaveBeenCalledWith({ apiKey: 'default-key' });
   });
 });

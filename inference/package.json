@@ -9,7 +9,7 @@
     "dev": "INFERENCE_DEBUG=true node --watch src/index.js",
     "start": "node src/index.js",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage --coverage.include='src/**/*.js' --coverage.thresholds.100 --coverage.thresholds.perFile",
     "test:watch": "vitest",
     "lint": "eslint ."
   },

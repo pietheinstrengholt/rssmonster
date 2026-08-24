@@ -1,6 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createOpenAIEmbeddingProvider } from '../src/embeddings/providers/openaiEmbeddingProvider.js';
 
+const { OpenAIMock, defaultCreate } = vi.hoisted(() => ({
+  OpenAIMock: vi.fn(),
+  defaultCreate: vi.fn().mockResolvedValue({ data: [{ embedding: [1] }] })
+}));
+
+vi.mock('openai', () => ({
+  default: OpenAIMock.mockImplementation(function OpenAI() {
+    this.embeddings = { create: defaultCreate };
+  })
+}));
+
 describe('OpenAI embedding provider', () => {
   it('preserves the existing model request and response behavior', async () => {
     const create = vi.fn(async () => ({
@@ -19,6 +30,8 @@ describe('OpenAI embedding provider', () => {
       input: ['one', 'two']
     });
     expect(createClient).toHaveBeenCalledOnce();
+    await provider.initialize();
+    expect(createClient).toHaveBeenCalledOnce();
     expect(provider.getMetadata()).toEqual({
       provider: 'openai',
       modelId: 'text-embedding-3-small',
@@ -31,5 +44,14 @@ describe('OpenAI embedding provider', () => {
 
     expect(provider.isLoaded()).toBe(false);
     await expect(provider.initialize()).rejects.toThrow('OPENAI_API_KEY is required');
+  });
+
+  it('creates the default OpenAI client', async () => {
+    const provider = createOpenAIEmbeddingProvider({
+      environment: { OPENAI_API_KEY: 'default-key' }
+    });
+
+    await expect(provider.embed(['text'])).resolves.toEqual([[1]]);
+    expect(OpenAIMock).toHaveBeenCalledWith({ apiKey: 'default-key' });
   });
 });
