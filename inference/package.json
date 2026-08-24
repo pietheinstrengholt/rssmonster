@@ -9,6 +9,7 @@
     "dev": "INFERENCE_DEBUG=true node --watch src/index.js",
     "start": "node src/index.js",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "lint": "eslint ."
   },
@@ -25,6 +26,7 @@
     "openai": "^7.5.0"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^10.9.0",
     "globals": "^17.11.0",
     "supertest": "^7.2.2",

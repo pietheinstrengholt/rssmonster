@@ -23,6 +23,12 @@ coverage:
         flags:
           - server
 
+      inference:
+        target: 70%
+        threshold: 0%
+        flags:
+          - inference
+
     patch:
       default:
         enabled: false
@@ -35,6 +41,10 @@ flags:
   server:
     paths:
       - server/
+    carryforward: false
+  inference:
+    paths:
+      - inference/
     carryforward: false
 
 comment:

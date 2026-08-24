@@ -155,7 +155,17 @@ jobs:
 
       - name: Test inference
         working-directory: inference
-        run: npm test
+        run: npm run test:coverage
+
+      - name: Upload inference coverage reports to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./inference/coverage/clover.xml
+          disable_search: true
+          flags: inference
+          name: inference
+          fail_ci_if_error: true
 
       - name: Validate Docker Compose configurations
         env:
