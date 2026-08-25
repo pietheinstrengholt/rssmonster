@@ -152,8 +152,8 @@ is_pm2_app_online() {
   PM2_SNAPSHOT="$snapshot" node - "$expected_app" <<'NODE'
 const expectedName = process.argv[2];
 const processes = JSON.parse(process.env.PM2_SNAPSHOT || '[]');
-const process = processes.find(candidate => candidate.name === expectedName);
-process.exit(process?.pm2_env?.status === 'online' ? 0 : 1);
+const matchedProcess = processes.find(candidate => candidate.name === expectedName);
+process.exit(matchedProcess?.pm2_env?.status === 'online' ? 0 : 1);
 NODE
 }
 
