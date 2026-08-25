@@ -15,7 +15,8 @@ import {
   markManyAsFavorite,
   markManyClicked,
   markMoreLikeThis,
-  markNotInterested
+  markNotInterested,
+  updateClickedStatus
 } from '../src/api/articles.js';
 import { fetchEventArticles } from '../src/api/events.js';
 import { fetchTopTags } from '../src/api/tags.js';
@@ -119,6 +120,7 @@ describe('article content API contracts', () => {
     markAsFavorite(3, 'mark');
     markManyAsFavorite([3, 4], 'unmark');
     markClicked(3);
+    updateClickedStatus(3, 'unmark');
     markManyClicked([3, 4]);
     markNotInterested(3);
     markMoreLikeThis(4);
@@ -136,15 +138,20 @@ describe('article content API contracts', () => {
     expect(post).toHaveBeenNthCalledWith(3, '/articles/markclicked/3');
     expect(post).toHaveBeenNthCalledWith(
       4,
+      '/articles/markclicked/3',
+      { update: 'unmark' }
+    );
+    expect(post).toHaveBeenNthCalledWith(
+      5,
       '/articles/markclicked',
       { articleIds: [3, 4] }
     );
     expect(post).toHaveBeenNthCalledWith(
-      5,
+      6,
       '/articles/marknotinterested/3'
     );
     expect(post).toHaveBeenNthCalledWith(
-      6,
+      7,
       '/articles/markmorelikethis/4'
     );
   });

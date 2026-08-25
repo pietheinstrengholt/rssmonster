@@ -769,6 +769,7 @@ const markClicked = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
+    const update = req.body?.update;
     const requestedArticleIds = req.body?.articleIds;
     const articleIds = Array.isArray(requestedArticleIds)
       ? requestedArticleIds
@@ -808,6 +809,10 @@ const markClicked = async (req, res, _next) => {
       return res.status(400).json({ error: "articleId is required" });
     }
 
+    if (update !== undefined && !['mark', 'unmark'].includes(update)) {
+      return res.status(400).json({ error: "update must be mark or unmark" });
+    }
+
     const article = await Article.findOne({
       where: {
         id: articleId,
@@ -820,10 +825,17 @@ const markClicked = async (req, res, _next) => {
       return res.status(404).json({ error: "Article not found" });
     }
 
-    await incrementArticleClickCount(article);
+    if (update) {
+      const clickedAmount = update === 'mark'
+        ? Math.max(Number(article.clickedAmount) || 0, 1)
+        : 0;
+      await article.update({ clickedAmount });
+    } else {
+      await incrementArticleClickCount(article);
+    }
 
     res.status(200).json({ 
-      message: "Article marked as clicked",
+      message: update === 'unmark' ? "Article unmarked as clicked" : "Article marked as clicked",
       articleId: articleId,
       clickedAmount: article.clickedAmount
     });

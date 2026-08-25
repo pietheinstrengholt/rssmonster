@@ -17,7 +17,8 @@ vi.mock('../src/api/articles', () => ({
   markAsFavorite: vi.fn(),
   markClicked: vi.fn(() => Promise.resolve()),
   markMoreLikeThis: vi.fn(),
-  markNotInterested: vi.fn()
+  markNotInterested: vi.fn(),
+  updateClickedStatus: vi.fn()
 }));
 
 vi.mock('../src/services/actionNotifications.js', () => ({

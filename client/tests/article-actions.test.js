@@ -5,7 +5,8 @@ import {
   markAsFavorite,
   markClicked,
   markMoreLikeThis,
-  markNotInterested
+  markNotInterested,
+  updateClickedStatus
 } from '../src/api/articles.js';
 import { muteFeed } from '../src/api/feeds.js';
 import { articleActionMethods } from '../src/components/articles/helpers/articleActions.js';
@@ -16,7 +17,8 @@ vi.mock('../src/api/articles.js', () => ({
   markAsFavorite: vi.fn(),
   markClicked: vi.fn(),
   markMoreLikeThis: vi.fn(),
-  markNotInterested: vi.fn()
+  markNotInterested: vi.fn(),
+  updateClickedStatus: vi.fn()
 }));
 
 vi.mock('../src/api/feeds.js', () => ({
@@ -39,6 +41,8 @@ const createContext = (overrides = {}) => {
     id: 42,
     feedId: 8,
     feed: { feedName: 'Example Feed' },
+    clickedAmount: 0,
+    clickMutationPending: false,
     favoriteInd: 0,
     $emit: vi.fn(),
     ...articleActionMethods,
@@ -71,6 +75,33 @@ describe('articleActionMethods', () => {
     expect(context.$emit).toHaveBeenCalledWith('update-clicked', {
       id: 42,
       clickedAmount: 1
+    });
+  });
+
+  it('marks an article as clicked from the actions menu', async () => {
+    const context = createContext();
+    updateClickedStatus.mockResolvedValue({ data: { clickedAmount: 1 } });
+
+    await context.toggleClicked();
+
+    expect(updateClickedStatus).toHaveBeenCalledWith(42, 'mark');
+    expect(context.$emit).toHaveBeenCalledWith('update-clicked', {
+      id: 42,
+      clickedAmount: 1
+    });
+    expect(context.clickMutationPending).toBe(false);
+  });
+
+  it('unmarks a clicked article from the actions menu', async () => {
+    const context = createContext({ clickedAmount: 3 });
+    updateClickedStatus.mockResolvedValue({ data: { clickedAmount: 0 } });
+
+    await context.toggleClicked();
+
+    expect(updateClickedStatus).toHaveBeenCalledWith(42, 'unmark');
+    expect(context.$emit).toHaveBeenCalledWith('update-clicked', {
+      id: 42,
+      clickedAmount: 0
     });
   });
 

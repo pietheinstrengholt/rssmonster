@@ -2,7 +2,8 @@ import {
   markAsFavorite as markArticleAsFavoriteAPI,
   markClicked,
   markMoreLikeThis,
-  markNotInterested
+  markNotInterested,
+  updateClickedStatus
 } from '../../../api/articles.js';
 import { muteFeed } from '../../../api/feeds.js';
 import { notifyActionError } from '../../../services/actionNotifications.js';
@@ -27,6 +28,31 @@ export const articleActionMethods = {
     } catch (error) {
       console.error(`Error recording click for article ${this.id}:`, error);
       notifyActionError('Could not record this article click. Please try again.', error);
+    } finally {
+      this.clickMutationPending = false;
+    }
+  },
+
+  // Toggles whether the article is marked as clicked without recording another outbound click.
+  async toggleClicked() {
+    if (this.clickMutationPending) return;
+
+    this.clickMutationPending = true;
+    const update = Number(this.clickedAmount) > 0 ? 'unmark' : 'mark';
+    const requestedClickedAmount = update === 'mark' ? 1 : 0;
+
+    try {
+      const response = await updateClickedStatus(this.id, update);
+      const responseClickedAmount = Number(response?.data?.clickedAmount);
+      this.$emit('update-clicked', {
+        id: this.id,
+        clickedAmount: Number.isFinite(responseClickedAmount)
+          ? responseClickedAmount
+          : requestedClickedAmount
+      });
+    } catch (error) {
+      console.error(`Error updating clicked state for article ${this.id}:`, error);
+      notifyActionError('Could not update the clicked status. Please try again.', error);
     } finally {
       this.clickMutationPending = false;
     }

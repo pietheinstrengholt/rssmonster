@@ -95,6 +95,14 @@ describe('ArticleHeader media icon', () => {
     expect(wrapper.find('.media-video-icon').exists()).toBe(true);
   });
 
+  it('hides the clicked icon next to the article title', () => {
+    const wrapper = mountArticleHeader({ clickedAmount: 2, hasInterestScore: false });
+    const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
+
+    expect(icons).not.toContain('arrow-up-right-square-fill');
+    expect(wrapper.find('.clicked-icon').exists()).toBe(false);
+  });
+
   it('hides the recommendation icon next to the article title', () => {
     const wrapper = mountArticleHeader({ hasVideoMedia: false });
     const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));

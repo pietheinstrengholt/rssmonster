@@ -134,6 +134,32 @@ describe('article ownership authorization', () => {
     expect(article.clickedAmount).toBe(3);
   });
 
+  it('marks and unmarks an owned article as clicked without incrementing explicit marks', async () => {
+    const owner = await createUser(uniqueName('article-click-toggle-owner'));
+    const { article } = await createArticleFor(owner);
+    const authorization = authHeaderFor(owner);
+
+    const markResponse = await request(app)
+      .post(`/api/articles/markclicked/${article.id}`)
+      .set('Authorization', authorization)
+      .send({ update: 'mark' });
+    const secondMarkResponse = await request(app)
+      .post(`/api/articles/markclicked/${article.id}`)
+      .set('Authorization', authorization)
+      .send({ update: 'mark' });
+    const unmarkResponse = await request(app)
+      .post(`/api/articles/markclicked/${article.id}`)
+      .set('Authorization', authorization)
+      .send({ update: 'unmark' });
+
+    await article.reload();
+
+    expect(markResponse.body.clickedAmount).toBe(1);
+    expect(secondMarkResponse.body.clickedAmount).toBe(1);
+    expect(unmarkResponse.body.clickedAmount).toBe(0);
+    expect(article.clickedAmount).toBe(0);
+  });
+
   it('preserves concurrent click increments for one article', async () => {
     const owner = await createUser(uniqueName('concurrent-click-owner'));
     const { article } = await createArticleFor(owner);

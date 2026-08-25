@@ -33,7 +33,8 @@ vi.mock('../src/api/articles.js', () => ({
   markAsFavorite: vi.fn(),
   markClicked: vi.fn(),
   markMoreLikeThis: vi.fn(),
-  markNotInterested: vi.fn()
+  markNotInterested: vi.fn(),
+  updateClickedStatus: vi.fn()
 }));
 
 vi.mock('../src/api/events.js', () => ({

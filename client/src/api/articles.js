@@ -80,6 +80,12 @@ export const markClicked = (articleId) =>
   api.post(`/articles/markclicked/${articleId}`);
 
 /**
+ * Mark / unmark an article as clicked
+ */
+export const updateClickedStatus = (articleId, update) =>
+  api.post(`/articles/markclicked/${articleId}`, { update });
+
+/**
  * Mark multiple articles as clicked
  */
 export const markManyClicked = (articleIds) =>

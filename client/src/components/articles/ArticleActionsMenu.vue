@@ -8,6 +8,7 @@
     <template #menu="{ menuProps }">
       <ul v-bind="menuProps">
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="favoritePending" @click="$emit('toggle-favorite')"><BootstrapIcon :icon="favoriteInd ? 'bookmark-fill' : 'bookmark'" context="control" class="recommendation-action-icon recommendation-favorite-icon" />{{ favoriteInd ? 'Unmark favorite' : 'Mark as favorite' }}</button></li>
+      <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="clickPending" @click="$emit('toggle-clicked')"><BootstrapIcon icon="arrow-up-right-square-fill" class="recommendation-action-icon recommendation-clicked-icon" />{{ clickedAmount > 0 ? 'Unmark clicked' : 'Mark as clicked' }}</button></li>
       <li v-if="isReaderMode" role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" @click="$emit('toggle-read-status')"><BootstrapIcon :icon="status === 'read' ? 'circle-fill' : 'record-circle-fill'" context="control" class="recommendation-action-icon recommendation-status-icon" />{{ status === 'read' ? 'Mark as unread' : 'Mark as read' }}</button></li>
       <li role="none"><hr class="app-dropdown__divider" /></li>
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" @click="$emit('more-like-this')"><BootstrapIcon icon="hand-thumbs-up-fill" class="recommendation-action-icon recommendation-positive-icon" />More like this</button></li>
@@ -23,8 +24,10 @@ import AppDropdown from '../shared/AppDropdown.vue';
 
 export default {
   components: { AppDropdown },
-  emits: ['toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed'],
+  emits: ['toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed'],
   props: {
+    clickedAmount: { type: Number, default: 0 },
+    clickPending: { type: Boolean, default: false },
     favoriteInd: { type: Number, default: 0 },
     favoritePending: { type: Boolean, default: false },
     isReaderMode: { type: Boolean, default: false },
@@ -92,6 +95,10 @@ export default {
 
 .recommendation-favorite-icon {
   color: var(--article-star-icon);
+}
+
+.recommendation-clicked-icon {
+  color: var(--article-clicked-icon);
 }
 
 .recommendation-status-icon {

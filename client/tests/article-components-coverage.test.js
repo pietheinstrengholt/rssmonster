@@ -135,15 +135,17 @@ describe('ArticleActionsMenu', () => {
 
     expect(items.map(item => item.text())).toEqual([
       'Unmark favorite',
+      'Mark as clicked',
       'More like this',
       'Not Interested',
       'Mute Feed for 7 Days'
     ]);
     expect(items[0].get('.recommendation-favorite-icon').attributes('data-icon')).toBe('bookmark-fill');
     expect(items[0].get('.recommendation-favorite-icon').attributes('data-context')).toBe('control');
-    expect(items[2].get('.recommendation-negative-icon').attributes('data-icon')).toBe('hand-thumbs-down-fill');
-    expect(items[3].get('.recommendation-mute-icon').attributes('data-icon')).toBe('slash-circle');
-    expect(items[3].get('.recommendation-mute-icon').attributes('data-context')).toBe('control');
+    expect(items[1].get('.recommendation-clicked-icon').attributes('data-icon')).toBe('arrow-up-right-square-fill');
+    expect(items[3].get('.recommendation-negative-icon').attributes('data-icon')).toBe('hand-thumbs-down-fill');
+    expect(items[4].get('.recommendation-mute-icon').attributes('data-icon')).toBe('slash-circle');
+    expect(items[4].get('.recommendation-mute-icon').attributes('data-context')).toBe('control');
     expect(items.every(item => item.element.tagName === 'BUTTON')).toBe(true);
     expect(items.every(item => item.attributes('role') === 'menuitem')).toBe(true);
 
@@ -152,6 +154,7 @@ describe('ArticleActionsMenu', () => {
     }
 
     expect(wrapper.emitted('toggle-favorite')).toEqual([[]]);
+    expect(wrapper.emitted('toggle-clicked')).toEqual([[]]);
     expect(wrapper.emitted('not-interested')).toEqual([[]]);
     expect(wrapper.emitted('more-like-this')).toEqual([[]]);
     expect(wrapper.emitted('mute-feed')).toEqual([[]]);
@@ -168,7 +171,16 @@ describe('ArticleActionsMenu', () => {
     expect(favoriteItem.get('.recommendation-favorite-icon').attributes('data-icon')).toBe('bookmark');
   });
 
-  // Verifies reader mode adds the current read-state action directly below Favorite.
+  it('offers to unmark a clicked article', () => {
+    const wrapper = mount(ArticleActionsMenu, {
+      props: { clickedAmount: 2 },
+      global: { stubs: { BootstrapIcon: BootstrapIconStub } }
+    });
+
+    expect(wrapper.findAll('[role="menuitem"]')[1].text()).toBe('Unmark clicked');
+  });
+
+  // Verifies reader mode adds the current read-state action alongside the state toggles.
   it('offers a reader-only read-status toggle', async () => {
     const wrapper = mount(ArticleActionsMenu, {
       props: { favoriteInd: 1, isReaderMode: true, status: 'read' },
@@ -180,20 +192,21 @@ describe('ArticleActionsMenu', () => {
 
     expect(items.map(item => item.text())).toEqual([
       'Unmark favorite',
+      'Mark as clicked',
       'Mark as unread',
       'More like this',
       'Not Interested',
       'Mute Feed for 7 Days'
     ]);
-    expect(items[1].get('.recommendation-status-icon').attributes('data-icon')).toBe('circle-fill');
+    expect(items[2].get('.recommendation-status-icon').attributes('data-icon')).toBe('circle-fill');
 
-    await items[1].trigger('click');
+    await items[2].trigger('click');
     expect(wrapper.emitted('toggle-read-status')).toEqual([[]]);
 
     await wrapper.setProps({ status: 'unread' });
     items = wrapper.findAll('[role="menuitem"]');
-    expect(items[1].text()).toBe('Mark as read');
-    expect(items[1].get('.recommendation-status-icon').attributes('data-icon')).toBe('record-circle-fill');
+    expect(items[2].text()).toBe('Mark as read');
+    expect(items[2].get('.recommendation-status-icon').attributes('data-icon')).toBe('record-circle-fill');
   });
 
   // Verifies Reader menus expand leftward while other article menus retain start alignment.
@@ -461,7 +474,7 @@ describe('ArticleHeader actions', () => {
       'data-status': 'read'
     });
     expect(wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon')))
-      .toEqual(['arrow-up-right-square-fill', 'bookmark-fill', 'fire']);
+      .toEqual(['bookmark-fill', 'fire']);
 
     await wrapper.get('.article-link').trigger('click');
     await wrapper.get('.actions-stub').trigger('click');
