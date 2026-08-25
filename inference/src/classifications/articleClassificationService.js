@@ -6,6 +6,21 @@ import qwenGenerationProvider from '../generation/providers/qwenGenerationProvid
 import { logInferenceDebug } from '../debug.js';
 
 const normalizeTagName = tag => String(tag || '').trim().toLowerCase();
+const TAG_HIERARCHY_SEPARATOR = /\s*(?:\/|>|→|›|\|)\s*/u;
+const normalizeGeneratedTag = tag => normalizeTagName(tag)
+  .replace(/[^\p{L}\p{N}]+/gu, ' ')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .slice(0, 32)
+  .trim();
+
+const splitTagHierarchy = tag => String(tag || '')
+  .split(TAG_HIERARCHY_SEPARATOR)
+  .map(normalizeGeneratedTag)
+  .filter(Boolean);
+
+// Expands explicit hierarchy-like model output into independent tags.
+const normalizeGeneratedTags = tags => tags.flatMap(splitTagHierarchy);
 const generationConfig = getGenerationConfig();
 const articleScoringConfig = getArticleScoringConfig();
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
@@ -169,11 +184,15 @@ export async function generateTags({
     'You are a precise assistant generating tags for one RSS article.',
     '',
     'Provide 3-5 SEO-friendly tags:',
-    '- Exactly one word per tag, lowercase, without punctuation or duplicates.',
+    '- Each array item must represent exactly one concise concept.',
+    '- Use one or at most two words per tag, lowercase, without punctuation or duplicates.',
     '- Prefer named entities, products, laws, events, policies, and mechanisms.',
     '- Avoid broad tags: news, politics, economy, business, technology, finance, world.',
-    '- Convert multi-word concepts into one meaningful token, such as ratehike,',
-    '  exportcontrols, ai, openai, ecb, or antitrust.',
+    '- Keep established multi-word concepts readable, such as rate hike or export controls.',
+    '- Never copy a category hierarchy into one tag and never concatenate separate category',
+    '  levels. For "news / computers / browsers", return separate relevant tags such as',
+    '  "computers" and "browsers"; never return "news computers browsers" or',
+    '  "newscomputersbrowsers".',
     '- At least two tags should refer to concrete entities or mechanisms.',
     '- Categories are only a starting signal; discard categories that remain broad.',
     '',
@@ -193,7 +212,7 @@ export async function generateTags({
     rateLimitDelayMs,
     operation: 'tag generation'
   });
-  const tags = Array.isArray(parsed.tags) ? parsed.tags : [];
+  const tags = Array.isArray(parsed.tags) ? parsed.tags.slice(0, 5) : [];
   logInferenceDebug(
     `completed tag-generation provider=${generationConfig.provider} ` +
     `article="${debugArticleLabel(title)}" count=${tags.length} durationMs=${Date.now() - startedAt}`
@@ -378,13 +397,10 @@ async function analyzeArticleContent({
     `received article-classification article="${articleLabel}" characters=${text?.length || 0}`
   );
   const categories = Array.isArray(categoryNames) ? categoryNames : [];
-  const normalizeGeneratedTag = tag => normalizeTagName(tag)
-    .replace(/[^\p{L}\p{N}]/gu, '')
-    .slice(0, 32);
-  const feedCategoryTags = [...new Set(categories
-    .map(normalizeGeneratedTag)
-    .filter(Boolean))].slice(0, 5);
-  const analysis = { ...defaultAnalysis(), tags: feedCategoryTags };
+  const hasProviderTags = categories.some(category =>
+    typeof category === 'string' && category.trim()
+  );
+  const analysis = defaultAnalysis();
 
   if (
     String(process.env.SKIP_ARTICLE_CLASSIFICATION_ANALYSIS).toLowerCase() === 'true' ||
@@ -401,11 +417,14 @@ async function analyzeArticleContent({
   const input = { text, title, categories, feedName, rateLimitDelayMs };
   if (canGenerate && text.length >= 500) {
     analysis.contentSummaryBullets = await generateBulletSummary(input);
-    const generatedTags = await generateTags(input);
-    analysis.tags = [...new Set([
-      ...feedCategoryTags,
-      ...generatedTags.map(normalizeGeneratedTag).filter(Boolean)
-    ])].slice(0, 5);
+    if (!hasProviderTags) {
+      const generatedTags = await generateTags(input);
+      analysis.tags = [...new Set(normalizeGeneratedTags(generatedTags))].slice(0, 5);
+    } else {
+      logInferenceDebug(
+        `skipped tag-generation article="${articleLabel}" reason=provider-tags-available`
+      );
+    }
   } else if (text.length < 500) {
     logInferenceDebug(
       `skipped article-generation article="${articleLabel}" reason=below-500-characters`

@@ -39,7 +39,7 @@ describe('analyzeArticleContent', () => {
       categories: ['Machine Learning', 'machine-learning', '---']
     })).resolves.toEqual({
       contentSummaryBullets: [],
-      tags: ['machinelearning'],
+      tags: [],
       advertisementScore: 70,
       sentimentScore: 70,
       qualityScore: 70

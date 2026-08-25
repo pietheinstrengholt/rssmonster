@@ -17,8 +17,11 @@ const CRAWL_TAG_TYPES = Object.keys(TAG_TYPE_PRIORITY);
 // This function normalizes tag names before storage or comparison.
 export const normalizeTagName = tag => String(tag || '').trim().toLowerCase();
 
+// Splits provider-owned category paths into distinct, useful tag names.
+const splitProviderTag = tag => String(tag || '').split(/\s*(?:\/|>|→|›|\|)\s*/u);
+
 // This function normalizes a list of tags and removes duplicate names.
-export const normalizeTagList = tags => {
+export const normalizeTagList = (tags, { splitHierarchies = false } = {}) => {
   // Returns an empty result when tags is not an array.
   if (!Array.isArray(tags)) {
     return [];
@@ -29,6 +32,7 @@ export const normalizeTagList = tags => {
 
   // Filters source values to the entries eligible while normalizing tag list.
   return tags
+    .flatMap(tag => splitHierarchies ? splitProviderTag(tag) : [tag])
     .map(normalizeTagName)
     .filter(tag => {
       // Rejects the value when tag is unavailable or seen contains tag.
@@ -59,7 +63,7 @@ export const buildArticleTags = ({
     { tagType: 'rule', tags: ruleTags }
   ].forEach(({ tagType, tags }) => {
     // Runs the callback required while building article tags.
-    normalizeTagList(tags).forEach(name => {
+    normalizeTagList(tags, { splitHierarchies: tagType === 'provider' }).forEach(name => {
       // Derives the existing through get while building article tags.
       const existing = byName.get(name);
       // Handles the case where existing is unavailable or tag type priority tag type exceeds tag type priority tag type.

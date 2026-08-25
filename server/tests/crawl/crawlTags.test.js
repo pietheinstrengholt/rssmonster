@@ -31,13 +31,16 @@ describe('crawl tag helpers', () => {
 
     expect(buildArticleTags({
       inferredTags: ['Hardware', 'geekcomputerspcs', ''],
-      providerTags: ['hardware', 'Provider topic'],
+      providerTags: ['hardware', 'Provider topic', 'Nieuws / computers / browsers'],
       feedTags: ['hardware', 'Security'],
       ruleTags: ['HARDWARE', 'Must Read']
     })).toEqual([
       { name: 'hardware', tagType: 'rule' },
       { name: 'geekcomputerspcs', tagType: 'inferred' },
       { name: 'provider topic', tagType: 'provider' },
+      { name: 'nieuws', tagType: 'provider' },
+      { name: 'computers', tagType: 'provider' },
+      { name: 'browsers', tagType: 'provider' },
       { name: 'security', tagType: 'feed' },
       { name: 'must read', tagType: 'rule' }
     ]);

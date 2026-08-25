@@ -81,6 +81,7 @@ describe('analyzeArticleContent response validation', () => {
     expect(tagPrompt).toContain('Article Categories: \n');
     expect(tagPrompt).toContain('{"tags"');
     expect(tagPrompt).not.toContain('not-an-array');
+    expect(tagPrompt).toContain('never concatenate separate category');
     expect(scoringPrompt).toContain('advertisementScore');
     expect(scoringPrompt).toContain('qualityScore');
     expect(scoringPrompt).not.toContain('writingScore');
@@ -143,14 +144,75 @@ describe('analyzeArticleContent response validation', () => {
     });
 
     expect(result.tags).toEqual([
-      '日本経済',
-      'الذكاءالاصطناعي',
-      'квантовыетехнологии'
+      '日本 経済',
+      'الذكاء الاصطناعي',
+      'квантовые технологии'
     ]);
   });
 
-  // Uses normalized feed categories without calling OpenAI when analysis is disabled.
-  it('returns category tags when OpenAI analysis is skipped', async () => {
+  it('splits explicit tag hierarchies and caps generated tags at five', async () => {
+    completionsCreate.mockResolvedValue({
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            tags: [
+              'Nieuws / computers / browsers',
+              'Browser privacy',
+              'Firefox',
+              'Chromium',
+              'Safari',
+              'Ignored sixth tag'
+            ]
+          })
+        }
+      }]
+    });
+    const { default: analyzeArticleContent } = await import(
+      '../src/classifications/articleClassificationService.js'
+    );
+
+    const result = await analyzeArticleContent({
+      text: 'Long article content '.repeat(40),
+      title: 'Browser article',
+      categories: [],
+      feedName: 'Test feed'
+    });
+
+    expect(result.tags).toEqual(['nieuws', 'computers', 'browsers', 'browser privacy', 'firefox']);
+  });
+
+  it('skips AI tag generation when the provider supplied article tags', async () => {
+    completionsCreate
+      .mockResolvedValueOnce({
+        choices: [{ message: { content: '{"contentSummaryBullets":["Useful fact"]}' } }]
+      })
+      .mockResolvedValueOnce({
+        choices: [{
+          message: {
+            content: '{"advertisementScore":90,"sentimentScore":80,"qualityScore":70}'
+          }
+        }]
+      });
+    const { default: analyzeArticleContent } = await import(
+      '../src/classifications/articleClassificationService.js'
+    );
+
+    const result = await analyzeArticleContent({
+      text: 'Long article content '.repeat(40),
+      title: 'Provider-tagged article',
+      categories: ['Nieuws / computers / browsers'],
+      feedName: 'Test feed'
+    });
+
+    expect(result.tags).toEqual([]);
+    expect(completionsCreate).toHaveBeenCalledTimes(2);
+    expect(completionsCreate.mock.calls.some(call =>
+      call[0].messages[1].content.includes('Provide 3-5 SEO-friendly tags')
+    )).toBe(false);
+  });
+
+  // Leaves provider categories to crawl persistence when analysis is disabled.
+  it('does not duplicate provider categories when OpenAI analysis is skipped', async () => {
     vi.stubEnv('SKIP_ARTICLE_CLASSIFICATION_ANALYSIS', 'true');
     const { default: analyzeArticleContent } = await import(
       '../src/classifications/articleClassificationService.js'
@@ -163,7 +225,7 @@ describe('analyzeArticleContent response validation', () => {
       feedName: 'Test feed'
     });
 
-    expect(result.tags).toEqual(['machinelearning']);
+    expect(result.tags).toEqual([]);
     expect(result.contentSummaryBullets).toEqual([]);
     expect(completionsCreate).not.toHaveBeenCalled();
   });
@@ -233,7 +295,7 @@ describe('analyzeArticleContent response validation', () => {
 
     expect(result).toMatchObject({
       contentSummaryBullets: [],
-      tags: ['technology'],
+      tags: [],
       advertisementScore: 90,
       sentimentScore: 80,
       qualityScore: 70
@@ -342,7 +404,7 @@ describe('analyzeArticleContent response validation', () => {
 
     expect(result).toMatchObject({
       contentSummaryBullets: ['Useful fact'],
-      tags: ['existingcategory'],
+      tags: [],
       advertisementScore: 20,
       sentimentScore: 70,
       qualityScore: 100
