@@ -1,5 +1,6 @@
 import express from 'express';
 import settingController from '../controllers/setting.js';
+import processingFailureController from '../controllers/processingFailure.js';
 import userMiddleware from "../middleware/users.js";
 
 export const router = express.Router();
@@ -10,6 +11,26 @@ router.get('/crawl-statistics', userMiddleware.isLoggedIn, settingController.get
 router.get('/islands', userMiddleware.isLoggedIn, settingController.getIslandsOverview);
 router.get('/topics', userMiddleware.isLoggedIn, settingController.getTopicsOverview);
 router.get('/official-sources', userMiddleware.isLoggedIn, settingController.getOfficialSources);
+router.get(
+  '/observability',
+  userMiddleware.isLoggedIn,
+  processingFailureController.getProcessingFailureGroups
+);
+router.get(
+  '/observability/groups/:fingerprint',
+  userMiddleware.isLoggedIn,
+  processingFailureController.getProcessingFailureOccurrences
+);
+router.get(
+  '/observability/failures/:failureId',
+  userMiddleware.isLoggedIn,
+  processingFailureController.getProcessingFailureDetail
+);
+router.delete(
+  '/observability',
+  userMiddleware.isLoggedIn,
+  processingFailureController.clearProcessingFailures
+);
 router.post('/', userMiddleware.isLoggedIn, settingController.setSettings);
 router.post('/official-sources', userMiddleware.isLoggedIn, settingController.setOfficialSources);
 router.patch('/developing-events', userMiddleware.isLoggedIn, settingController.setIncludeDevelopingEvents);

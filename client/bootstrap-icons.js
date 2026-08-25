@@ -1,5 +1,6 @@
 // Always order in alphabetical order
 export const bootstrapIconNames = [
+  'activity',
   'arrow-clockwise',
   'arrow-counterclockwise',
   'arrow-down-circle-fill',

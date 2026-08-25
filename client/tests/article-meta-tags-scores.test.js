@@ -96,6 +96,18 @@ describe('ArticleMeta', () => {
     expect(wrapper.find('.article-provenance-separator').exists()).toBe(false);
   });
 
+  it('renders a Recommended badge for an article with an interest score', () => {
+    const wrapper = mountArticleMeta({ hasInterestScore: true });
+
+    expect(wrapper.get('.recommended-badge').text()).toBe('Recommended');
+  });
+
+  it('omits the Recommended badge without an interest score', () => {
+    const wrapper = mountArticleMeta({ hasInterestScore: false });
+
+    expect(wrapper.find('.recommended-badge').exists()).toBe(false);
+  });
+
   // Verifies mobile metadata exposes the remaining non-neutral score indicators.
   it('renders mobile advertisement and sentiment indicators', () => {
     const wrapper = mountArticleMeta({

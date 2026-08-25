@@ -37,6 +37,18 @@ export const fetchTopicsOverview = () =>
 export const fetchCrawlStatistics = (params = {}) =>
   api.get('/setting/crawl-statistics', { params });
 
+export const fetchProcessingFailureGroups = (params = {}) =>
+  api.get('/setting/observability', { params });
+
+export const fetchProcessingFailureOccurrences = (fingerprint, params = {}) =>
+  api.get(`/setting/observability/groups/${encodeURIComponent(fingerprint)}`, { params });
+
+export const fetchProcessingFailureDetail = failureId =>
+  api.get(`/setting/observability/failures/${failureId}`);
+
+export const clearProcessingFailures = () =>
+  api.delete('/setting/observability');
+
 export const fetchOfficialSources = () =>
   api.get('/setting/official-sources');
 

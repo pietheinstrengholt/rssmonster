@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.11",
-    "eslint": "^10.9.0",
+    "eslint": "^10.9.1",
     "globals": "^17.11.0",
     "supertest": "^7.2.2",
     "vitest": "^4.1.11"

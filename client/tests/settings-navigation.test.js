@@ -76,6 +76,7 @@ describe('Settings navigation', () => {
       'Smart Folders',
       'Actions',
       'Crawl Statistics',
+      'Observability',
       'Feeds',
       'Official Sources',
       'Manage Users'
@@ -111,6 +112,13 @@ describe('Settings navigation', () => {
 
     expect(smartFolders).toMatchObject({
       label: 'Smart Folders',
+      visible: true
+    });
+  });
+
+  it('shows processing observability for every authenticated user', () => {
+    expect(getSettingsNavigation(false).find(item => item.key === 'observability')).toMatchObject({
+      label: 'Observability',
       visible: true
     });
   });

@@ -16,6 +16,7 @@ describe('Bootstrap icon delivery', () => {
   });
 
   it.each([
+    'activity',
     'sunrise-fill',
     'sliders2',
     'folder-plus',

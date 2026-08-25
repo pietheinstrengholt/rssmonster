@@ -95,13 +95,22 @@ describe('ArticleHeader media icon', () => {
     expect(wrapper.find('.media-video-icon').exists()).toBe(true);
   });
 
-  it('preserves the recommendation icon when video media is absent', () => {
+  it('hides the recommendation icon next to the article title', () => {
     const wrapper = mountArticleHeader({ hasVideoMedia: false });
     const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
 
-    expect(icons).toContain('award-fill');
+    expect(icons).not.toContain('award-fill');
+    expect(wrapper.find('.recommendation-icon').exists()).toBe(false);
     expect(icons).not.toContain('play-btn-fill');
     expect(icons).not.toContain('megaphone-fill');
+  });
+
+  it('hides the grouped-event icon next to the article title', () => {
+    const wrapper = mountArticleHeader({ hasInterestScore: false });
+    const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
+
+    expect(icons).not.toContain('megaphone-fill');
+    expect(wrapper.find('.event-icon').exists()).toBe(false);
   });
 });
 
@@ -270,6 +279,6 @@ describe('ArticleHeader podcast icon', () => {
     const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
 
     expect(icons).not.toContain('mic-fill');
-    expect(icons).toContain('award-fill');
+    expect(icons).not.toContain('award-fill');
   });
 });

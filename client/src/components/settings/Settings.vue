@@ -106,6 +106,8 @@ const SettingsIslands = createAsyncSettingsSection(() => import('./SettingsIslan
 const SettingsTopics = createAsyncSettingsSection(() => import('./SettingsTopics.vue'));
 // This component lazily loads crawl statistics.
 const SettingsCrawlStatistics = createAsyncSettingsSection(() => import('./SettingsCrawlStatistics.vue'));
+// This component lazily loads processing failure observability.
+const SettingsObservability = createAsyncSettingsSection(() => import('./SettingsObservability.vue'));
 // This component lazily loads feed management settings.
 const SettingsFeedsOverview = createAsyncSettingsSection(() => import('./SettingsFeedsOverview.vue'));
 // This component lazily loads official source settings.
@@ -130,6 +132,7 @@ export default {
     SettingsIslands,
     SettingsTopics,
     SettingsCrawlStatistics,
+    SettingsObservability,
     SettingsFeedsOverview,
     SettingsOfficialSources,
     SettingsManageUsers
@@ -175,6 +178,7 @@ export default {
         { key: 'topics', label: 'Topics', icon: 'diagram-3-fill', visible: aiEnabled },
         { key: 'islands', label: 'Islands', icon: 'compass-fill', visible: aiEnabled },
         { key: 'crawlStatistics', label: 'Crawl Statistics', icon: 'clipboard-data-fill', visible: true },
+        { key: 'observability', label: 'Observability', icon: 'activity', visible: true },
         { key: 'feeds', label: 'Feeds', icon: 'rss-fill', visible: true },
         { key: 'officialSources', label: 'Official Sources', icon: 'patch-check-fill', visible: true },
         { key: 'users', label: 'Manage Users', icon: 'people-fill', visible: this.authStore.role === 'admin' }
@@ -194,6 +198,7 @@ export default {
         topics: 'SettingsTopics',
         islands: 'SettingsIslands',
         crawlStatistics: 'SettingsCrawlStatistics',
+        observability: 'SettingsObservability',
         feeds: 'SettingsFeedsOverview',
         officialSources: 'SettingsOfficialSources',
         users: 'SettingsManageUsers'

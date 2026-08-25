@@ -39,7 +39,7 @@ Settings radius values follow four semantic roles: `--radius-dialog` for the mod
 
 Navigation is tailored to the current installation and user:
 
-- Welcome, Smart Folders, Actions, Crawl Statistics, Feeds, and Official Sources are available to regular authenticated users.
+- Welcome, Smart Folders, Actions, Crawl Statistics, Observability, Feeds, and Official Sources are available to regular authenticated users.
 - Scores, Topics, and Islands are shown only when AI features are enabled.
 - Manage Users is shown only to administrators. The section also protects its content if it is reached without administrator rights.
 
@@ -136,6 +136,14 @@ Island data is a fetched snapshot and changes only when loaded or explicitly ref
 Crawl Statistics is a read-only daily history of user-triggered crawl activity. It shows new articles, updated articles, completed crawls, and failed crawls for each day.
 
 The available date ranges are the last 7, 30, 90, or 365 days. Changing the range retrieves a new bounded snapshot. Only completed and failed user crawls are included. Loading, empty, and failure states are presented separately, and the user can explicitly refresh the current range.
+
+### Observability
+
+Observability is a read-only failure inbox for crawl, article, embedding, event, topic, and island processing. It deliberately excludes successful processing statistics and groups abnormal outcomes by their stable failure fingerprint.
+
+The overview can be bounded by date range, processing stage, and failure type. Selecting a group opens its individual occurrences without replacing the Settings section. Selecting an occurrence then loads its captured message, identifiers, retry state, stack trace, and structured context. Group and occurrence lists are paginated so older or less common failures remain available without an unbounded request.
+
+Clear records opens an explicit confirmation before permanently deleting all processing failures owned by the signed-in user. Successful cleanup refreshes the aggregate view; a failed cleanup keeps the confirmation available for retry.
 
 ### Feeds
 

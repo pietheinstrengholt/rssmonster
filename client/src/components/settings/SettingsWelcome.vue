@@ -123,6 +123,7 @@ export default {
         { key: 'topics', title: 'Topics', icon: 'diagram-3-fill', purpose: 'Review current events and longer-running topic groups.', capability: 'AI feature', visible: aiEnabled },
         { key: 'islands', title: 'Islands', icon: 'compass-fill', purpose: 'Explore the interests learned from your reading behavior.', capability: 'AI feature', visible: aiEnabled },
         { key: 'crawl-statistics', title: 'Crawl Statistics', icon: 'clipboard-data-fill', purpose: 'Review daily crawl outcomes and article activity.', visible: true },
+        { key: 'observability', title: 'Observability', icon: 'activity', purpose: 'Inspect grouped processing failures and captured diagnostics.', visible: true },
         { key: 'feeds', title: 'Feeds', icon: 'rss-fill', purpose: 'Manage subscriptions, feed health, and OPML transfers.', visible: true },
         { key: 'official-sources', title: 'Official Sources', icon: 'patch-check-fill', purpose: 'Mark trusted organization domains during crawl.', visible: true },
         { key: 'users', title: 'Manage Users', icon: 'people-fill', purpose: 'Review existing accounts and update roles or access.', capability: 'Admin only', visible: this.authStore.role === 'admin' }

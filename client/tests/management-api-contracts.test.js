@@ -18,9 +18,13 @@ import {
   updateCategoryOrder
 } from '../src/api/manager.js';
 import {
+  clearProcessingFailures,
   fetchCrawlStatistics,
   fetchIslandsOverview,
   fetchOfficialSources,
+  fetchProcessingFailureDetail,
+  fetchProcessingFailureGroups,
+  fetchProcessingFailureOccurrences,
   fetchSettings,
   fetchTopicsOverview,
   saveIncludeDevelopingEvents,
@@ -206,6 +210,25 @@ describe('settings API contracts', () => {
       '/setting/crawl-statistics',
       { params: {} }
     );
+  });
+
+  it('builds bounded processing failure drill-down requests', () => {
+    const params = { days: 30, limit: 50 };
+    const fingerprint = 'a/b';
+
+    fetchProcessingFailureGroups(params);
+    fetchProcessingFailureOccurrences(fingerprint, params);
+    fetchProcessingFailureDetail(91);
+    clearProcessingFailures();
+
+    expect(get).toHaveBeenNthCalledWith(1, '/setting/observability', { params });
+    expect(get).toHaveBeenNthCalledWith(
+      2,
+      '/setting/observability/groups/a%2Fb',
+      { params }
+    );
+    expect(get).toHaveBeenNthCalledWith(3, '/setting/observability/failures/91');
+    expect(del).toHaveBeenCalledWith('/setting/observability');
   });
 
   // Verifies official-source settings retain the complete source list.

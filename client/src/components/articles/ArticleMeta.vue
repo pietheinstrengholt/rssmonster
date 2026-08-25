@@ -7,6 +7,7 @@
       <span v-if="hasPublishedAt && hasSource" class="article-provenance-separator" aria-hidden="true">·</span>
       <span v-if="hasSource" class="article-source"><a v-if="sourceUrl" target="_blank" rel="noopener noreferrer" :href="sourceUrl">{{ sourceLabel }}</a><span v-else>{{ sourceLabel }}</span></span>
     </span>
+    <span v-if="hasInterestScore" class="recommended-badge">Recommended</span>
     <span v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none' && event.sourceCount >= 2" class="source-badge" :title="`${event.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ event.sourceCount }} sources</span>
     <button v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none'" type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
     <button v-if="duplicateCount > 0" type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="$emit('view-duplicate-articles')">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>
@@ -22,7 +23,7 @@ import { formatRelativeDate } from '../../utils/date.js';
 export default {
   emits: ['view-event-articles', 'view-duplicate-articles'],
   props: {
-    publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, neutralScore: { type: Number, required: true }
+    publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, hasInterestScore: { type: Boolean, default: false }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, neutralScore: { type: Number, required: true }
   },
   computed: {
     // Returns the author or feed name displayed as the article source.
@@ -141,20 +142,29 @@ export default {
   color: var(--badge-duplicate-text);
 }
 
+.recommended-badge,
 .source-badge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
   padding: 3px 8px;
-  background-color: var(--article-source-diversity-background);
   border: 1px solid var(--color-transparent);
   border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
-  color: var(--article-source-diversity-text);
   white-space: nowrap;
   vertical-align: middle;
+}
+
+.recommended-badge {
+  background-color: var(--badge-quality-bg);
+  color: var(--badge-quality-text);
+}
+
+.source-badge {
+  gap: 3px;
+  background-color: var(--article-source-diversity-background);
+  color: var(--article-source-diversity-text);
 }
 
 .source-diversity-icon {
