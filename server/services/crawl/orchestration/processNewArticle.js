@@ -69,6 +69,16 @@ const processNewArticle = async ({
         categories: articleData.categories,
         feedName: feed?.feedName || '',
         rateLimitDelayMs: RATE_LIMIT_DELAY_MS
+      }, {
+        signal: execution.signal,
+        processingContext: {
+          crawlRunId: execution.crawlRunId,
+          executionId: execution.executionId,
+          userId: feed?.userId,
+          feedId: feed?.id,
+          subjectType: 'feed_entry',
+          subjectId: articleData.externalId
+        }
       });
     analysis = applyAnalysisScoreOverrides(analysis, actionResult);
     throwIfExecutionExpired(execution);

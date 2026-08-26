@@ -3,7 +3,9 @@ import OpenAI from 'openai';
 import { getArticleScoringConfig, getGenerationConfig } from '../config/config.js';
 import modernBertArticleScoringProvider from './providers/modernBertArticleScoringProvider.js';
 import qwenGenerationProvider from '../generation/providers/qwenGenerationProvider.js';
-import { logInferenceDebug } from '../debug.js';
+import { getSafeErrorDetails, logInferenceDebug } from '../debug.js';
+import { getInferenceRequestId } from '../middleware/requestLifecycle.js';
+import { isInferenceQueueControlError } from '../queue/inferenceWorkQueue.js';
 
 const normalizeTagName = tag => String(tag || '').trim().toLowerCase();
 const TAG_HIERARCHY_SEPARATOR = /\s*(?:\/|>|→|›|\|)\s*/u;
@@ -29,6 +31,16 @@ const client = hasApiKey ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : 
 let openAIQueue = Promise.resolve();
 let rateLimitDelay = 0;
 
+const getRequestLogContext = () => {
+  const requestId = getInferenceRequestId();
+  return requestId ? ` requestId=${requestId}` : '';
+};
+
+const getGenerationRequestContext = context => ({
+  requestId: context.requestId || getInferenceRequestId(),
+  signal: context.signal
+});
+
 const defaultAnalysis = () => ({
   contentSummaryBullets: [],
   tags: [],
@@ -41,10 +53,6 @@ const truncateContentForLLM = (text, maxChars = 3500) => {
   if (!text || text.length <= maxChars) return text;
   return `${text.slice(0, 3000)}\n...\n${text.slice(-500)}`;
 };
-
-const debugArticleLabel = title => String(title || 'untitled')
-  .replace(/[\r\n]+/g, ' ')
-  .slice(0, 120);
 
 const parseJsonObject = raw => {
   if (typeof raw !== 'string' || !raw) return {};
@@ -89,9 +97,15 @@ const callOpenAI = ({ prompt, maxCompletionTokens, rateLimitDelayMs, operation, 
     } catch (error) {
       if (error.message?.includes('429') || error.message?.toLowerCase().includes('rate limit')) {
         rateLimitDelay = rateLimitDelayMs;
-        console.warn(`[OpenAI LLM] ${operation} rate limit hit, enabling request delay`);
+        console.warn(
+          `[OpenAI LLM] ${operation} rate limit hit, enabling request delay` +
+          getRequestLogContext()
+        );
       }
-      console.error(`Error during article ${operation}:`, error.message);
+      console.error(
+        `Error during article ${operation}${getRequestLogContext()}:`,
+        getSafeErrorDetails(error)
+      );
       return {};
     }
   });
@@ -99,14 +113,25 @@ const callOpenAI = ({ prompt, maxCompletionTokens, rateLimitDelayMs, operation, 
   return result;
 };
 
-const callGenerationProvider = ({ prompt, maxCompletionTokens, rateLimitDelayMs, operation }) => {
+const callGenerationProvider = ({
+  prompt,
+  maxCompletionTokens,
+  rateLimitDelayMs,
+  operation
+}, context = {}) => {
   if (generationConfig.provider === 'qwen') {
     return qwenGenerationProvider.generate({
       systemPrompt: 'You produce strict JSON only.',
       prompt,
-      maxNewTokens: maxCompletionTokens
+      maxNewTokens: maxCompletionTokens,
+      operation,
+      ...getGenerationRequestContext(context)
     }).then(parseJsonObject).catch(error => {
-      console.error(`Error during article ${operation}:`, error.message);
+      if (isInferenceQueueControlError(error)) throw error;
+      console.error(
+        `Error during article ${operation}${getRequestLogContext()}:`,
+        getSafeErrorDetails(error)
+      );
       return {};
     });
   }
@@ -126,10 +151,10 @@ export async function generateBulletSummary({
   title,
   feedName,
   rateLimitDelayMs = 0
-}) {
+}, context = {}) {
   const startedAt = Date.now();
   logInferenceDebug(
-    `calling bullet-summary provider=${generationConfig.provider} article="${debugArticleLabel(title)}"`
+    `calling bullet-summary provider=${generationConfig.provider}`
   );
   const prompt = [
     'You are a precise, neutral, and reliable assistant summarizing one RSS article.',
@@ -153,8 +178,8 @@ export async function generateBulletSummary({
     prompt,
     maxCompletionTokens: 250,
     rateLimitDelayMs,
-    operation: 'bullet summarization'
-  });
+    operation: 'article-bullet-summary'
+  }, context);
   const bullets = Array.isArray(parsed.contentSummaryBullets)
     ? parsed.contentSummaryBullets
       .filter(bullet => typeof bullet === 'string' && bullet.trim())
@@ -163,7 +188,7 @@ export async function generateBulletSummary({
     : [];
   logInferenceDebug(
     `completed bullet-summary provider=${generationConfig.provider} ` +
-    `article="${debugArticleLabel(title)}" count=${bullets.length} durationMs=${Date.now() - startedAt}`
+    `count=${bullets.length} durationMs=${Date.now() - startedAt}`
   );
   return bullets;
 }
@@ -175,10 +200,10 @@ export async function generateTags({
   categories,
   feedName,
   rateLimitDelayMs = 0
-}) {
+}, context = {}) {
   const startedAt = Date.now();
   logInferenceDebug(
-    `calling tag-generation provider=${generationConfig.provider} article="${debugArticleLabel(title)}"`
+    `calling tag-generation provider=${generationConfig.provider}`
   );
   const prompt = [
     'You are a precise assistant generating tags for one RSS article.',
@@ -210,12 +235,12 @@ export async function generateTags({
     prompt,
     maxCompletionTokens: 120,
     rateLimitDelayMs,
-    operation: 'tag generation'
-  });
+    operation: 'article-tag-generation'
+  }, context);
   const tags = Array.isArray(parsed.tags) ? parsed.tags.slice(0, 5) : [];
   logInferenceDebug(
     `completed tag-generation provider=${generationConfig.provider} ` +
-    `article="${debugArticleLabel(title)}" count=${tags.length} durationMs=${Date.now() - startedAt}`
+    `count=${tags.length} durationMs=${Date.now() - startedAt}`
   );
   return tags;
 }
@@ -226,20 +251,22 @@ export async function scoreArticle({
   title,
   feedName,
   rateLimitDelayMs = 0
-}) {
+}, context = {}) {
   const startedAt = Date.now();
   logInferenceDebug(
-    `calling article-scoring provider=${articleScoringConfig.provider} ` +
-    `article="${debugArticleLabel(title)}"`
+    `calling article-scoring provider=${articleScoringConfig.provider}`
   );
   if (articleScoringConfig.provider === 'modernbert') {
     const scores = await modernBertArticleScoringProvider.score({
       text: truncateContentForLLM(text),
       title,
-      feedName
+      feedName,
+      requestId: context.requestId || getInferenceRequestId(),
+      signal: context.signal,
+      operation: 'article-scoring'
     });
     logInferenceDebug(
-      `completed article-scoring provider=modernbert article="${debugArticleLabel(title)}" ` +
+      'completed article-scoring provider=modernbert ' +
       `durationMs=${Date.now() - startedAt}`
     );
     return scores;
@@ -377,7 +404,7 @@ export async function scoreArticle({
     qualityScore: bucketScore(parsed.qualityScore ?? parsed.writingScore)
   };
   logInferenceDebug(
-    `completed article-scoring provider=openai article="${debugArticleLabel(title)}" ` +
+    'completed article-scoring provider=openai ' +
     `durationMs=${Date.now() - startedAt}`
   );
   return scores;
@@ -390,11 +417,10 @@ async function analyzeArticleContent({
   categories: categoryNames,
   feedName,
   rateLimitDelayMs = 0
-}) {
+}, context = {}) {
   const startedAt = Date.now();
-  const articleLabel = debugArticleLabel(title);
   logInferenceDebug(
-    `received article-classification article="${articleLabel}" characters=${text?.length || 0}`
+    `received article-classification characters=${text?.length || 0}`
   );
   const categories = Array.isArray(categoryNames) ? categoryNames : [];
   const hasProviderTags = categories.some(category =>
@@ -410,36 +436,36 @@ async function analyzeArticleContent({
     const reason = String(process.env.SKIP_ARTICLE_CLASSIFICATION_ANALYSIS).toLowerCase() === 'true'
       ? 'disabled'
       : 'below-200-characters';
-    logInferenceDebug(`skipped article-classification article="${articleLabel}" reason=${reason}`);
+    logInferenceDebug(`skipped article-classification reason=${reason}`);
     return analysis;
   }
 
   const input = { text, title, categories, feedName, rateLimitDelayMs };
   if (canGenerate && text.length >= 500) {
-    analysis.contentSummaryBullets = await generateBulletSummary(input);
+    analysis.contentSummaryBullets = await generateBulletSummary(input, context);
     if (!hasProviderTags) {
-      const generatedTags = await generateTags(input);
+      const generatedTags = await generateTags(input, context);
       analysis.tags = [...new Set(normalizeGeneratedTags(generatedTags))].slice(0, 5);
     } else {
       logInferenceDebug(
-        `skipped tag-generation article="${articleLabel}" reason=provider-tags-available`
+        'skipped tag-generation reason=provider-tags-available'
       );
     }
   } else if (text.length < 500) {
     logInferenceDebug(
-      `skipped article-generation article="${articleLabel}" reason=below-500-characters`
+      'skipped article-generation reason=below-500-characters'
     );
   } else {
     logInferenceDebug(
-      `skipped article-generation article="${articleLabel}" reason=provider-unavailable`
+      'skipped article-generation reason=provider-unavailable'
     );
   }
   if (hasApiKey || articleScoringConfig.provider === 'modernbert') {
-    Object.assign(analysis, await scoreArticle(input));
+    Object.assign(analysis, await scoreArticle(input, context));
   }
   logInferenceDebug(
-    `completed article-classification article="${articleLabel}" ` +
-    `bullets=${analysis.contentSummaryBullets.length} tags=${analysis.tags.length} ` +
+    `completed article-classification bullets=${analysis.contentSummaryBullets.length} ` +
+    `tags=${analysis.tags.length} ` +
     `durationMs=${Date.now() - startedAt}`
   );
   return analysis;

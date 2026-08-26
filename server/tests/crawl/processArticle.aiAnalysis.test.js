@@ -292,6 +292,117 @@ describe('processArticle AI analysis controls', () => {
     });
   });
 
+  it('persists a queue-saturated classification fallback without an article error', async () => {
+    const defaultAnalysis = {
+      contentSummaryBullets: [],
+      tags: [],
+      advertisementScore: 70,
+      sentimentScore: 70,
+      qualityScore: 70
+    };
+    mocked.analyzeArticleContent.mockResolvedValue(defaultAnalysis);
+    mocked.applyActions.mockReturnValue({
+      shouldDiscard: false,
+      status: 'unread',
+      favoriteInd: false,
+      clickedAmount: 0,
+      hotInd: false,
+      tags: ['rule-tag'],
+      advertisementScore: null,
+      qualityScore: null
+    });
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
+
+    const result = await processArticle(
+      {
+        id: 1,
+        userId: 42,
+        feedName: 'Overloaded classification feed',
+        feedTags: ['feed-tag']
+      },
+      { externalId: 'article-123', externalIdType: 'guid' },
+      [],
+      null,
+      { count: () => 0 },
+      null
+    );
+
+    expect(mocked.saveArticle).toHaveBeenCalledWith(
+      expect.objectContaining({ feedTags: ['feed-tag'] }),
+      expect.objectContaining({ categories: ['AI'] }),
+      defaultAnalysis,
+      expect.objectContaining({ tags: ['rule-tag'] })
+    );
+    expect(result).toEqual({
+      newArticles: 1,
+      filteredArticles: 0,
+      updatedArticles: 0,
+      errors: 0
+    });
+  });
+
+  it('passes the feed execution signal to new-article analysis', async () => {
+    const controller = new AbortController();
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
+
+    await processArticle(
+      { id: 1, userId: 42, feedName: 'Signal feed' },
+      {},
+      [],
+      null,
+      { count: () => 0 },
+      null,
+      null,
+      null,
+      null,
+      { signal: controller.signal }
+    );
+
+    expect(mocked.analyzeArticleContent).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Article title' }),
+      expect.objectContaining({
+        signal: controller.signal,
+        processingContext: expect.objectContaining({
+          userId: 42,
+          feedId: 1,
+          subjectType: 'feed_entry'
+        })
+      })
+    );
+  });
+
+  it('passes the feed execution signal to revision analysis', async () => {
+    const controller = new AbortController();
+    mocked.updateArticle.mockResolvedValue(changedUpdatePlan({ contentChanged: true }));
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
+
+    await processArticle(
+      { id: 1, userId: 42, feedName: 'Revision signal feed' },
+      {},
+      [],
+      null,
+      { count: () => 0 },
+      null,
+      null,
+      null,
+      null,
+      { signal: controller.signal }
+    );
+
+    expect(mocked.analyzeArticleContent).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Article title' }),
+      expect.objectContaining({
+        signal: controller.signal,
+        processingContext: expect.objectContaining({
+          userId: 42,
+          feedId: 1,
+          articleId: 123,
+          subjectType: 'article'
+        })
+      })
+    );
+  });
+
   it('counts a concurrently committed winner as an update', async () => {
     const winner = { id: 99 };
     const duplicateCache = { add: vi.fn() };
@@ -1090,8 +1201,8 @@ describe('processArticle AI analysis controls', () => {
   it('logs inference timeouts without an article-processing stack trace', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const timeoutError = Object.assign(
-      new Error('Inference request timed out after 30000ms'),
-      { code: 'INFERENCE_TIMEOUT' }
+      new Error('private article https://user:password@example.com?token=secret'),
+      { code: 'INFERENCE_TIMEOUT', timeoutMs: 30000, requestId: 'crawl-inference-123' }
     );
     mocked.analyzeArticleContent.mockRejectedValue(timeoutError);
 
@@ -1107,9 +1218,57 @@ describe('processArticle AI analysis controls', () => {
 
     expect(consoleError).toHaveBeenCalledOnce();
     expect(consoleError).toHaveBeenCalledWith(
-      '[CRAWL] Inference request timed out after 30000ms'
+      '[CRAWL] Inference request timed out after 30000ms requestId=crawl-inference-123'
+    );
+    expect(JSON.stringify(consoleError.mock.calls)).not.toContain('private article');
+    expect(JSON.stringify(consoleError.mock.calls)).not.toContain('password');
+    expect(JSON.stringify(consoleError.mock.calls)).not.toContain('token=secret');
+    expect(result).toEqual({ newArticles: 0, updatedArticles: 0, errors: 1 });
+    consoleError.mockRestore();
+  });
+
+  it('logs circuit-open inference failures concisely without a stack trace', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const circuitError = Object.assign(
+      new Error('Inference circuit is open; retry after 30000ms'),
+      {
+        code: 'INFERENCE_CIRCUIT_OPEN',
+        requestId: 'circuit-request-123',
+        openedAt: 123456789,
+        retryAfterMs: 30000
+      }
+    );
+    mocked.analyzeArticleContent.mockRejectedValue(circuitError);
+
+    const { default: processArticle } = await import(
+      '../../services/crawl/orchestration/processArticle.js'
+    );
+    const result = await processArticle(
+      { id: 1, userId: 42, feedName: 'Unavailable inference feed', applyAiAnalysis: true },
+      {},
+      [],
+      null,
+      { count: () => 0 },
+      null
+    );
+
+    expect(consoleError).toHaveBeenCalledOnce();
+    expect(consoleError).toHaveBeenCalledWith(
+      '[CRAWL] Inference circuit is open; retry after 30000ms ' +
+      'requestId=circuit-request-123'
     );
     expect(result).toEqual({ newArticles: 0, updatedArticles: 0, errors: 1 });
+
+    await processArticle(
+      { id: 1, userId: 42, feedName: 'Same unavailable inference feed', applyAiAnalysis: true },
+      {},
+      [],
+      null,
+      { count: () => 0 },
+      null
+    );
+    expect(consoleError).toHaveBeenCalledOnce();
+    expect(mocked.recordProcessingFailure).toHaveBeenCalledTimes(2);
     consoleError.mockRestore();
   });
 
@@ -1153,7 +1312,10 @@ describe('processArticle AI analysis controls', () => {
       categories: [],
       feedName: 'Description feed',
       rateLimitDelayMs: 3000
-    });
+    }, expect.objectContaining({
+      signal: undefined,
+      processingContext: expect.objectContaining({ userId: 42, feedId: 1 })
+    }));
     expect(mocked.saveArticle).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({
@@ -1215,7 +1377,14 @@ describe('processArticle AI analysis controls', () => {
       categories: ['Updates'],
       feedName: 'Description update feed',
       rateLimitDelayMs: 3000
-    });
+    }, expect.objectContaining({
+      signal: undefined,
+      processingContext: expect.objectContaining({
+        userId: 42,
+        feedId: 1,
+        articleId: 123
+      })
+    }));
     expect(mocked.applyArticleUpdate).toHaveBeenCalledTimes(1);
     expect(result).toMatchObject({ updatedArticles: 1, errors: 0 });
   });

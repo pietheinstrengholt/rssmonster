@@ -1,8 +1,19 @@
 import { pipeline } from '@huggingface/transformers';
 import { getArticleScoringConfig } from '../../config/config.js';
 import { configureModelCache } from '../../embeddings/modelCache.js';
+import { logInferenceDebug } from '../../debug.js';
+import { createInferenceWorkQueue } from '../../queue/inferenceWorkQueue.js';
 
 const MODEL_DEVICE = 'cpu';
+const QUEUE_EVENT_STAGES = Object.freeze({
+  queued: 'queued',
+  started: 'inference_started',
+  completed: 'inference_completed',
+  failed: 'inference_failed',
+  aborted_pending: 'client_aborted_pending',
+  aborted_running: 'client_aborted_running',
+  rejected_full: 'overload_rejected'
+});
 
 const dimensions = [
   {
@@ -54,7 +65,22 @@ export const createModernBertArticleScoringProvider = ({
   });
   let classifier;
   let initializationPromise;
-  let scoringQueue = Promise.resolve();
+  const scoringQueue = createInferenceWorkQueue({
+    concurrency: 1,
+    maximumPending: config.queueMaxPending,
+    onEvent: event => {
+      const message = [
+        `article-scoring-queue stage=${QUEUE_EVENT_STAGES[event.type] || event.type}`,
+        `requestId=${JSON.stringify(event.requestId || 'unavailable')}`,
+        `operation=${JSON.stringify(event.operation || 'article-scoring')}`,
+        `running=${event.running}`,
+        `pending=${event.pending}`,
+        ...(event.queueWaitMs === undefined ? [] : [`queueWaitMs=${event.queueWaitMs}`]),
+        ...(event.executionMs === undefined ? [] : [`executionMs=${event.executionMs}`])
+      ].join(' ');
+      logInferenceDebug(message, { environment, logger: dependencies.logger });
+    }
+  });
 
   const initialize = async () => {
     if (classifier) return;
@@ -88,15 +114,16 @@ export const createModernBertArticleScoringProvider = ({
     return scores;
   };
 
-  const score = input => {
-    const result = scoringQueue.then(() => runScoring(input));
-    scoringQueue = result.catch(() => {});
-    return result;
-  };
+  const score = ({ signal, requestId, operation = 'article-scoring', ...input }) =>
+    scoringQueue.enqueue(
+      () => runScoring(input),
+      { signal, requestId, operation }
+    );
 
   return Object.freeze({
     initialize,
     score,
+    getQueueSnapshot: scoringQueue.getSnapshot,
     getMetadata: () => Object.freeze({
       provider: 'modernbert',
       modelId: config.modelId,

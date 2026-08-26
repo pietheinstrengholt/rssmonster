@@ -635,6 +635,11 @@ Genuinely new articles are enriched unless AI analysis is disabled for the feed.
 publisher identities may refresh lightweight article-level enrichment only when content, title,
 or description changes. Source-only changes do not spend an AI call.
 
+Classification queue saturation is treated as optional-enrichment overload rather than an article
+failure. The crawler records a warning and persists the article or revision with no generated
+summary, no inferred tags, and the existing default scores. Provider, feed, and rule tags remain
+eligible for persistence. Other inference failures continue to fail article processing.
+
 Typical enrichment includes:
 
 - summaries

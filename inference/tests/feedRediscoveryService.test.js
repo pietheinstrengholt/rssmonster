@@ -34,6 +34,7 @@ describe('rediscoverRssUrl', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     if (originalApiKey === undefined) {
       delete process.env.OPENAI_API_KEY;
     } else {
@@ -100,6 +101,36 @@ describe('rediscoverRssUrl', () => {
         ])
       })
     );
+  });
+
+  it('keeps feed rediscovery debug logs free of supplied URLs', async () => {
+    process.env.GENERATION_PROVIDER = 'qwen';
+    vi.stubEnv('INFERENCE_DEBUG', 'true');
+    mocked.qwenGenerate.mockResolvedValue(
+      '{"url":null,"confidence":0,"reason":"No replacement."}'
+    );
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const feedName = 'Private customer publisher';
+    const websiteUrl = 'https://private.example/account/48392?token=secret-value';
+    const oldRssUrl = 'https://private.example/feeds/old.xml?key=private-key';
+    const { rediscoverRssUrl } = await import(
+      '../src/feedRediscovery/feedRediscoveryService.js'
+    );
+
+    await rediscoverRssUrl({
+      feedName,
+      websiteUrl,
+      oldRssUrl
+    });
+
+    const debugOutput = logSpy.mock.calls.flat().join('\n');
+    expect(debugOutput).toContain('calling feed-rediscovery provider=qwen');
+    expect(debugOutput).toContain('completed feed-rediscovery provider=qwen');
+    expect(debugOutput).not.toContain(websiteUrl);
+    expect(debugOutput).not.toContain(oldRssUrl);
+    expect(debugOutput).not.toContain(feedName);
+    expect(debugOutput).not.toContain('website=');
+    logSpy.mockRestore();
   });
 
   it('rejects missing or malformed JSON completion content', async () => {

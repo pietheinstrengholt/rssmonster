@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { getGenerationConfig } from '../config/config.js';
 import qwenGenerationProvider from '../generation/providers/qwenGenerationProvider.js';
 import { logInferenceDebug } from '../debug.js';
+import { getInferenceRequestId } from '../middleware/requestLifecycle.js';
 
 // Coerces the has api key into the representation required for this service.
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
@@ -18,11 +19,10 @@ export async function rediscoverRssUrl({
   feedName,
   websiteUrl,
   oldRssUrl
-}) {
+}, context = {}) {
   const startedAt = Date.now();
   logInferenceDebug(
-    `calling feed-rediscovery provider=${generationConfig.provider} ` +
-    `website=${String(websiteUrl || 'unknown').slice(0, 160)}`
+    `calling feed-rediscovery provider=${generationConfig.provider}`
   );
   // Rejects processing when client is unavailable.
   if (generationConfig.provider === 'openai' && !client) {
@@ -75,7 +75,10 @@ export async function rediscoverRssUrl({
     ? await qwenGenerationProvider.generate({
       systemPrompt: 'You produce strict JSON only.',
       prompt,
-      maxNewTokens: 300
+      maxNewTokens: 300,
+      requestId: context.requestId || getInferenceRequestId(),
+      signal: context.signal,
+      operation: 'feed-rediscovery'
     })
     : (await client.chat.completions.create({
       model: generationConfig.feedRediscoveryModel,

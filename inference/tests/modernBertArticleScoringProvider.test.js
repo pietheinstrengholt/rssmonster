@@ -5,6 +5,14 @@ import {
 
 const { pipelineMock } = vi.hoisted(() => ({ pipelineMock: vi.fn() }));
 
+const createDeferred = () => {
+  let resolve;
+  const promise = new Promise(resolvePromise => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+};
+
 vi.mock('@huggingface/transformers', () => ({ env: {}, pipeline: pipelineMock }));
 
 const createDependencies = () => {
@@ -67,6 +75,134 @@ describe('ModernBERT article scoring provider', () => {
       sentimentScore: 0,
       qualityScore: 0
     });
+  });
+
+  it('serializes scoring and rejects work beyond configured pending capacity', async () => {
+    const firstResult = createDeferred();
+    const classifier = vi.fn()
+      .mockImplementationOnce(() => firstResult.promise)
+      .mockResolvedValue({ labels: [], scores: [] });
+    const dependencies = {
+      configureCache: vi.fn(),
+      loadClassifier: vi.fn().mockResolvedValue(classifier),
+      logger: { log: vi.fn() }
+    };
+    const provider = createModernBertArticleScoringProvider({
+      environment: {
+        MODERNBERT_QUEUE_MAX_PENDING: '1',
+        INFERENCE_DEBUG: 'true'
+      },
+      dependencies
+    });
+    const first = provider.score({ text: 'first' });
+    const second = provider.score({ text: 'second' });
+    await vi.waitFor(() => expect(classifier).toHaveBeenCalledOnce());
+
+    await expect(provider.score({
+      text: 'third',
+      requestId: 'overloaded-score',
+      operation: 'article-scoring'
+    })).rejects.toMatchObject({
+      name: 'InferenceQueueFullError',
+      code: 'INFERENCE_QUEUE_FULL',
+      requestId: 'overloaded-score',
+      operation: 'article-scoring',
+      queue: { running: 1, pending: 1, maximumPending: 1, concurrency: 1 }
+    });
+    expect(provider.getQueueSnapshot()).toMatchObject({
+      running: 1,
+      pending: 1,
+      maximumPending: 1,
+      rejected: 1
+    });
+    expect(dependencies.logger.log.mock.calls.flat().join('\n')).toContain(
+      'article-scoring-queue stage=overload_rejected'
+    );
+
+    firstResult.resolve({ labels: [], scores: [] });
+    await first;
+    await second;
+    expect(classifier).toHaveBeenCalledTimes(6);
+  });
+
+  it('removes pending scoring when its consumer aborts', async () => {
+    const firstResult = createDeferred();
+    const classifier = vi.fn()
+      .mockImplementationOnce(() => firstResult.promise)
+      .mockResolvedValue({ labels: [], scores: [] });
+    const dependencies = {
+      configureCache: vi.fn(),
+      loadClassifier: vi.fn().mockResolvedValue(classifier),
+      logger: { log: vi.fn() }
+    };
+    const provider = createModernBertArticleScoringProvider({
+      environment: { INFERENCE_DEBUG: 'true' },
+      dependencies
+    });
+    const running = provider.score({ text: 'running' });
+    const controller = new AbortController();
+    const pending = provider.score({
+      text: 'private pending article',
+      signal: controller.signal,
+      requestId: 'pending-score',
+      operation: 'article-scoring'
+    });
+    await vi.waitFor(() => expect(classifier).toHaveBeenCalledOnce());
+
+    controller.abort();
+
+    await expect(pending).rejects.toMatchObject({
+      code: 'INFERENCE_QUEUE_ABORTED',
+      phase: 'pending',
+      requestId: 'pending-score'
+    });
+    expect(provider.getQueueSnapshot()).toMatchObject({ running: 1, pending: 0, aborted: 1 });
+    firstResult.resolve({ labels: [], scores: [] });
+    await running;
+    expect(classifier).toHaveBeenCalledTimes(3);
+    const queueLogs = dependencies.logger.log.mock.calls.flat().join('\n');
+    expect(queueLogs).toContain(
+      'article-scoring-queue stage=client_aborted_pending requestId="pending-score"'
+    );
+    expect(queueLogs).not.toContain('private pending article');
+  });
+
+  it('keeps aborted running scoring accounted for until native settlement', async () => {
+    const firstResult = createDeferred();
+    const classifier = vi.fn()
+      .mockImplementationOnce(() => firstResult.promise)
+      .mockResolvedValue({ labels: [], scores: [] });
+    const dependencies = {
+      configureCache: vi.fn(),
+      loadClassifier: vi.fn().mockResolvedValue(classifier),
+      logger: { log: vi.fn() }
+    };
+    const provider = createModernBertArticleScoringProvider({
+      environment: { INFERENCE_DEBUG: 'true' },
+      dependencies
+    });
+    const controller = new AbortController();
+    const scoring = provider.score({
+      text: 'private running article',
+      signal: controller.signal,
+      requestId: 'running-score'
+    });
+    await vi.waitFor(() => expect(classifier).toHaveBeenCalledOnce());
+
+    controller.abort();
+
+    await expect(scoring).rejects.toMatchObject({
+      code: 'INFERENCE_QUEUE_ABORTED',
+      phase: 'running',
+      requestId: 'running-score'
+    });
+    expect(provider.getQueueSnapshot()).toMatchObject({ running: 1, aborted: 1 });
+    firstResult.resolve({ labels: [], scores: [] });
+    await vi.waitFor(() => expect(provider.getQueueSnapshot().running).toBe(0));
+    expect(classifier).toHaveBeenCalledTimes(3);
+    expect(dependencies.logger.log.mock.calls.flat().join('\n')).not.toContain(
+      'private running article'
+    );
   });
 
   it('maps NLI label probabilities to the existing score buckets', async () => {

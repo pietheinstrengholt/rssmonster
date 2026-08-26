@@ -27,6 +27,7 @@ describe('generation config', () => {
   it('uses OpenAI for every currently supported classification capability', () => {
     expect(getGenerationConfig({})).toEqual({
       provider: 'openai',
+      queueMaxPending: 4,
       modelId: 'gpt-4o-mini',
       dtype: undefined,
       articleModel: 'gpt-4o-mini',
@@ -63,12 +64,24 @@ describe('generation config', () => {
   });
 
   it('configures Qwen generation', () => {
-    expect(getGenerationConfig({ GENERATION_PROVIDER: 'qwen' })).toMatchObject({
+    expect(getGenerationConfig({
+      GENERATION_PROVIDER: 'qwen',
+      GENERATION_QUEUE_MAX_PENDING: '7'
+    })).toMatchObject({
       provider: 'qwen',
       modelId: 'onnx-community/Qwen3.5-0.8B-ONNX',
-      dtype: 'q4'
+      dtype: 'q4',
+      queueMaxPending: 7
     });
   });
+
+  it.each(['0', '-1', '1.5', 'invalid'])(
+    'rejects invalid generation queue capacity %s',
+    value => {
+      expect(() => getGenerationConfig({ GENERATION_QUEUE_MAX_PENDING: value }))
+        .toThrow('GENERATION_QUEUE_MAX_PENDING must be a positive integer');
+    }
+  );
 });
 
 describe('assistant config', () => {
@@ -85,6 +98,7 @@ describe('article scoring config', () => {
   it('uses OpenAI scoring by default', () => {
     expect(getArticleScoringConfig({})).toEqual({
       provider: 'openai',
+      queueMaxPending: 4,
       modelId: 'gpt-4o-mini',
       dtype: undefined
     });
@@ -93,6 +107,7 @@ describe('article scoring config', () => {
   it('configures the cached ModernBERT scoring model', () => {
     expect(getArticleScoringConfig({ ARTICLE_SCORING_PROVIDER: 'modernbert' })).toEqual({
       provider: 'modernbert',
+      queueMaxPending: 4,
       modelId: 'onnx-community/ModernBERT-base-nli-ONNX',
       dtype: 'q8'
     });
@@ -102,11 +117,20 @@ describe('article scoring config', () => {
     expect(getArticleScoringConfig({
       ARTICLE_SCORING_PROVIDER: 'modernbert',
       MODERNBERT_MODEL: 'local/test-model',
-      MODERNBERT_DTYPE: 'fp32'
-    })).toMatchObject({ modelId: 'local/test-model', dtype: 'fp32' });
+      MODERNBERT_DTYPE: 'fp32',
+      MODERNBERT_QUEUE_MAX_PENDING: '7'
+    })).toMatchObject({ modelId: 'local/test-model', dtype: 'fp32', queueMaxPending: 7 });
     expect(() => getArticleScoringConfig({ ARTICLE_SCORING_PROVIDER: 'other' }))
       .toThrow('ARTICLE_SCORING_PROVIDER must be openai or modernbert');
   });
+
+  it.each(['0', '-1', '1.5', 'invalid'])(
+    'rejects invalid ModernBERT queue capacity %s',
+    value => {
+      expect(() => getArticleScoringConfig({ MODERNBERT_QUEUE_MAX_PENDING: value }))
+        .toThrow('MODERNBERT_QUEUE_MAX_PENDING must be a positive integer');
+    }
+  );
 });
 
 describe('embedding config', () => {
@@ -115,7 +139,8 @@ describe('embedding config', () => {
       provider: 'openai',
       modelId: 'text-embedding-3-small',
       dimensions: 1536,
-      maxBatchSize: 8
+      maxBatchSize: 8,
+      queueMaxPending: 4
     });
   });
 
@@ -124,13 +149,23 @@ describe('embedding config', () => {
       provider: 'qwen',
       modelId: 'onnx-community/Qwen3-Embedding-0.6B-ONNX',
       dimensions: 1024,
-      maxBatchSize: 8
+      maxBatchSize: 8,
+      queueMaxPending: 4
     });
   });
 
   it('reads the model from the environment', () => {
-    expect(getEmbeddingConfig({ EMBEDDING_PROVIDER: 'qwen', EMBEDDING_MODEL: 'test/model' }))
-      .toEqual({ provider: 'qwen', modelId: 'test/model', dimensions: 1024, maxBatchSize: 8 });
+    expect(getEmbeddingConfig({
+      EMBEDDING_PROVIDER: 'qwen',
+      EMBEDDING_MODEL: 'test/model',
+      EMBEDDING_QUEUE_MAX_PENDING: '7'
+    })).toEqual({
+      provider: 'qwen',
+      modelId: 'test/model',
+      dimensions: 1024,
+      maxBatchSize: 8,
+      queueMaxPending: 7
+    });
   });
 
   it('rejects dimension reduction', () => {
@@ -142,4 +177,12 @@ describe('embedding config', () => {
     expect(() => getEmbeddingConfig({ EMBEDDING_MAX_BATCH_SIZE: '0' }))
       .toThrow('EMBEDDING_MAX_BATCH_SIZE must be a positive integer');
   });
+
+  it.each(['0', '-1', '1.5', 'invalid'])(
+    'rejects invalid embedding queue capacity %s',
+    value => {
+      expect(() => getEmbeddingConfig({ EMBEDDING_QUEUE_MAX_PENDING: value }))
+        .toThrow('EMBEDDING_QUEUE_MAX_PENDING must be a positive integer');
+    }
+  );
 });

@@ -55,12 +55,15 @@ GENERATION_PROVIDER=qwen
 ARTICLE_SCORING_PROVIDER=modernbert
 ASSISTANT_PROVIDER=openai
 EMBEDDING_MAX_BATCH_SIZE=8
+EMBEDDING_QUEUE_MAX_PENDING=4
 EMBEDDING_MODEL=onnx-community/Qwen3-Embedding-0.6B-ONNX
 EMBEDDING_DIMENSIONS=1024
 GENERATION_MODEL=onnx-community/Qwen3.5-0.8B-ONNX
 GENERATION_DTYPE=q4
+GENERATION_QUEUE_MAX_PENDING=4
 MODERNBERT_MODEL=onnx-community/ModernBERT-base-nli-ONNX
 MODERNBERT_DTYPE=q8
+MODERNBERT_QUEUE_MAX_PENDING=4
 OPENAI_API_KEY=your-openai-api-key
 ASSISTANT_MODEL=gpt-4o-mini
 ```
@@ -72,6 +75,27 @@ summaries, tags, Smart Folder recommendations, and feed rediscovery and accepts
 and writing/information-quality scores and accepts `openai` or `modernbert`.
 `ASSISTANT_PROVIDER` independently controls assistant responses and currently
 accepts only `openai`.
+
+Local Qwen embeddings use one running job and a bounded pending queue. The
+default `EMBEDDING_QUEUE_MAX_PENDING=4` permits four waiting batches and must be
+a positive integer. Disconnected pending requests are removed before execution;
+disconnected running requests remain accounted for until native inference
+settles. Excess requests receive HTTP `503`, `Retry-After: 5`, and
+`{"error":"inference_queue_full"}` without changing global readiness.
+
+Local Qwen generation uses one running job and a bounded pending queue. The
+default `GENERATION_QUEUE_MAX_PENDING=4` permits four waiting jobs; it must be a
+positive integer. Requests beyond that pending limit are rejected so slow local
+generation cannot create an unbounded backlog. Qwen-backed endpoints report
+that condition as HTTP `503` with `Retry-After: 5` and the stable JSON body
+`{"error":"inference_queue_full"}`.
+
+Local ModernBERT scoring also uses one running job and a bounded pending queue.
+The default `MODERNBERT_QUEUE_MAX_PENDING=4` permits four waiting scoring jobs
+and must be a positive integer. Disconnected pending requests are removed before
+execution; disconnected running requests remain accounted for until the native
+classifier settles. Scoring overload uses the same HTTP `503`, `Retry-After`,
+and `inference_queue_full` contract.
 
 Assistant model endpoints are limited per client address. The default allows
 100 requests per 15-minute window; use `ASSISTANT_RATE_LIMIT_WINDOW_MS` and
@@ -157,7 +181,18 @@ Check service health:
 
 ```bash
 curl http://127.0.0.1:3001/health
+curl http://127.0.0.1:3001/ready
 ```
+
+`/health` is liveness: it returns HTTP `200` while the Node/Express process is
+alive, including while models are starting. `/ready` is acceptance readiness:
+it returns HTTP `503` while required models are initializing, after an
+initialization failure, or during shutdown. Local generation or scoring queue
+saturation does not change global readiness; only requests needing the full
+queue receive the endpoint-level overload response. Every response includes
+`X-Request-ID`. Inference endpoints also return `503`, `Retry-After: 5`, and
+`{"error":"not_ready",...}` until model initialization completes; they do not
+enqueue work during that period.
 
 Inspect the active embedding provider and its loaded state:
 
@@ -166,9 +201,11 @@ curl http://127.0.0.1:3001/api/embeddings/info
 ```
 
 The information response reports the provider, model, dimensions, maximum
-batch size, and whether the model is loaded. Selected on-device models are
-loaded before the HTTP listener starts, and the console reports when crawling
-can begin. The response does not expose credentials or cache paths.
+batch size, and whether the model is loaded. The HTTP listener opens first,
+then selected on-device models load while `/ready` reports `503`. If model
+initialization fails, the service records the failed readiness state, closes
+the listener, and exits nonzero so the supplied PM2 configuration can restart
+it. The response does not expose credentials or cache paths.
 
 Set `INFERENCE_DEBUG=true`, or use `npm run dev`, to log model loading and
 content-safe request activity for embeddings, bullet summaries, tags, article
@@ -177,6 +214,7 @@ rediscovery. The logs include provider dispatch and completion duration, but
 not article bodies, prompts, generated content, vectors, or secrets.
 
 If the server reports an inference timeout, first confirm that the inference
-process is running and inspect its console. Missing local model assets are
-downloaded and initialized before the service begins listening. A capability
-assigned to OpenAI does not load its corresponding local model.
+process is running and inspect its console. The HTTP listener opens before
+missing local model assets are downloaded and initialized; `/health` remains
+available while `/ready` reports `503` until initialization completes. A
+capability assigned to OpenAI does not load its corresponding local model.

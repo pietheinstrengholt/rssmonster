@@ -21,6 +21,7 @@ describe('embedArticle token limit guard', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllEnvs();
   });
 
@@ -194,7 +195,12 @@ describe('embedArticle token limit guard', () => {
   it('returns null and warns when the provider fails', async () => {
     const { embedArticle } = await import('../../services/articles/embedArticle.js');
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    embedTextsMock.mockRejectedValue(new Error('provider unavailable'));
+    const providerError = Object.assign(
+      new Error('private article https://user:password@example.com?token=secret'), {
+      requestId: 'embedding-request-123'
+      }
+    );
+    embedTextsMock.mockRejectedValue(providerError);
 
     await expect(embedArticle({
       id: 18,
@@ -213,8 +219,60 @@ describe('embedArticle token limit guard', () => {
       userId: 7,
       stage: 'embedding',
       feedId: 9,
-      error: expect.objectContaining({ message: 'provider unavailable' })
+      error: providerError,
+      context: expect.objectContaining({
+        requestId: 'embedding-request-123'
+      })
     }));
-    expect(warning).toHaveBeenCalledWith('[EMBED] failed:', 'provider unavailable');
+    expect(warning).toHaveBeenCalledWith(
+      '[EMBED] failed:',
+      'Inference embeddings request failed requestId=embedding-request-123'
+    );
+    expect(JSON.stringify(warning.mock.calls)).not.toContain('private article');
+    expect(JSON.stringify(warning.mock.calls)).not.toContain('password');
+    expect(JSON.stringify(warning.mock.calls)).not.toContain('token=secret');
+  });
+
+  it('logs only the first embedding warning for one open circuit', async () => {
+    const { embedArticle } = await import('../../services/articles/embedArticle.js');
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const createCircuitError = requestId => Object.assign(
+      new Error('Inference circuit is open; retry after 30000ms'),
+      {
+        code: 'INFERENCE_CIRCUIT_OPEN',
+        openedAt: 123456789,
+        retryAfterMs: 30000,
+        requestId
+      }
+    );
+    embedTextsMock
+      .mockRejectedValueOnce(createCircuitError('embedding-circuit-1'))
+      .mockRejectedValueOnce(createCircuitError('embedding-circuit-2'));
+    const article = {
+      id: 18,
+      userId: 7,
+      feedId: 9,
+      title: 'A sufficiently descriptive title for circuit error handling',
+      description: 'A sufficiently descriptive summary that passes the embedding input threshold.'
+    };
+
+    await expect(embedArticle(article)).resolves.toBeNull();
+    await expect(embedArticle(article)).resolves.toBeNull();
+
+    expect(recordProcessingFailureMock).toHaveBeenCalledTimes(2);
+    expect(recordProcessingFailureMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        context: expect.objectContaining({
+          requestId: 'embedding-circuit-2'
+        })
+      })
+    );
+    expect(warning).toHaveBeenCalledOnce();
+    expect(warning).toHaveBeenCalledWith(
+      '[EMBED] failed:',
+      'Inference embeddings circuit is open; retry after 30000ms ' +
+      'requestId=embedding-circuit-1'
+    );
   });
 });

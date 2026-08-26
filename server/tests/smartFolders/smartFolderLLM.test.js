@@ -19,7 +19,8 @@ describe('getSmartFolderRecommendations', () => {
     await expect(getSmartFolderRecommendations({ insights })).resolves.toBe(result);
     expect(mocked.request).toHaveBeenCalledWith(
       '/api/smart-folder-recommendations',
-      { insights }
+      { insights },
+      { circuitKey: 'smart-folders' }
     );
   });
 });

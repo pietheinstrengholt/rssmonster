@@ -41,6 +41,7 @@ ARTICLE_SCORING_PROVIDER=openai
 EMBEDDING_MODEL=onnx-community/Qwen3-Embedding-0.6B-ONNX
 EMBEDDING_DIMENSIONS=1024
 EMBEDDING_MAX_BATCH_SIZE=8
+EMBEDDING_QUEUE_MAX_PENDING=4
 ```
 
 Qwen can provide embeddings separately from Qwen3.5 generation. With the
@@ -48,6 +49,12 @@ configuration above, Qwen3.5 generates article summaries, tags, Smart Folder
 recommendations, and feed rediscovery results. The assistant remains on OpenAI
 and therefore still requires `OPENAI_API_KEY`; the server never needs that
 credential.
+
+Qwen embedding inference runs one batch at a time and accepts four pending
+batches by default. Set `EMBEDDING_QUEUE_MAX_PENDING` to a positive integer to
+adjust that bound. Pending work is removed when its HTTP caller disconnects;
+requests beyond the bound receive the inference queue's stable `503` overload
+response.
 
 Transformers.js downloads missing model assets while the inference service
 starts and stores them under `inference/.cache/models` by default. Relative cache

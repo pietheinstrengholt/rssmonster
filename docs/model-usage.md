@@ -28,6 +28,8 @@ For a manual installation, add the inference connection to `server/.env`:
 ```env
 INFERENCE_URL=http://127.0.0.1:3001
 INFERENCE_TIMEOUT_MS=30000
+INFERENCE_CIRCUIT_FAILURE_THRESHOLD=5
+INFERENCE_CIRCUIT_COOLDOWN_MS=30000
 ```
 
 `INFERENCE_URL` is the base URL of the inference service. Use a private service
@@ -35,6 +37,15 @@ name instead of `127.0.0.1` when the processes run in separate containers.
 `INFERENCE_TIMEOUT_MS` applies to non-agent inference requests. Local model startup
 and CPU inference can need a longer timeout; the [Qwen guide](model-qwen.md)
 contains a suitable starting point.
+
+The failure threshold and cooldown configure capability-specific server circuit
+breakers. They prevent concurrent callers from repeatedly contacting inference
+through a known capability failure without allowing one model or endpoint to
+disable unrelated inference work. Queue-full responses remain immediate
+endpoint-level load shedding and do not open a circuit. After opening, the
+server waits at least the configured cooldown—and honors a longer `Retry-After`
+response—before allowing exactly one recovery probe. It does not retry timed-out
+or potentially accepted requests.
 
 Enable the AI interface exposed to the client and allow longer streamed agent
 requests with:
@@ -59,6 +70,7 @@ INFERENCE_HOST=127.0.0.1
 INFERENCE_PORT=3001
 INFERENCE_DEBUG=false
 EMBEDDING_MAX_BATCH_SIZE=8
+EMBEDDING_QUEUE_MAX_PENDING=4
 EMBEDDING_PROVIDER=qwen
 EMBEDDING_MODEL=onnx-community/Qwen3-Embedding-0.6B-ONNX
 EMBEDDING_DIMENSIONS=1024
@@ -68,6 +80,7 @@ GENERATION_DTYPE=q4
 ARTICLE_SCORING_PROVIDER=modernbert
 MODERNBERT_MODEL=onnx-community/ModernBERT-base-nli-ONNX
 MODERNBERT_DTYPE=q8
+MODERNBERT_QUEUE_MAX_PENDING=4
 OPENAI_API_KEY=your-openai-api-key
 ASSISTANT_PROVIDER=openai
 ASSISTANT_MODEL=gpt-4o-mini

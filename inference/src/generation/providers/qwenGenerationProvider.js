@@ -4,8 +4,19 @@ import {
 } from '@huggingface/transformers';
 import { getGenerationConfig } from '../../config/config.js';
 import { configureModelCache } from '../../embeddings/modelCache.js';
+import { logInferenceDebug } from '../../debug.js';
+import { createInferenceWorkQueue } from '../../queue/inferenceWorkQueue.js';
 
 const MODEL_DEVICE = 'cpu';
+const QUEUE_EVENT_STAGES = Object.freeze({
+  queued: 'queued',
+  started: 'inference_started',
+  completed: 'inference_completed',
+  failed: 'inference_failed',
+  aborted_pending: 'client_aborted_pending',
+  aborted_running: 'client_aborted_running',
+  rejected_full: 'overload_rejected'
+});
 
 const defaultDependencies = {
   configureCache: configureModelCache,
@@ -29,7 +40,22 @@ export const createQwenGenerationProvider = ({
   let processor;
   let model;
   let initializationPromise;
-  let generationQueue = Promise.resolve();
+  const generationQueue = createInferenceWorkQueue({
+    concurrency: 1,
+    maximumPending: config.queueMaxPending,
+    onEvent: event => {
+      const message = [
+        `generation-queue stage=${QUEUE_EVENT_STAGES[event.type] || event.type}`,
+        `requestId=${JSON.stringify(event.requestId || 'unavailable')}`,
+        `operation=${JSON.stringify(event.operation || 'qwen-generation')}`,
+        `running=${event.running}`,
+        `pending=${event.pending}`,
+        ...(event.queueWaitMs === undefined ? [] : [`queueWaitMs=${event.queueWaitMs}`]),
+        ...(event.executionMs === undefined ? [] : [`executionMs=${event.executionMs}`])
+      ].join(' ');
+      logInferenceDebug(message, { environment, logger: dependencies.logger });
+    }
+  });
 
   const initialize = async () => {
     if (processor && model) return;
@@ -68,15 +94,15 @@ export const createQwenGenerationProvider = ({
     )[0];
   };
 
-  const generate = input => {
-    const result = generationQueue.then(() => runGeneration(input));
-    generationQueue = result.catch(() => {});
-    return result;
-  };
+  const generate = ({ signal, requestId, operation, ...input }) => generationQueue.enqueue(
+    () => runGeneration(input),
+    { signal, requestId, operation }
+  );
 
   return Object.freeze({
     initialize,
     generate,
+    getQueueSnapshot: generationQueue.getSnapshot,
     getMetadata: () => Object.freeze({
       provider: 'qwen',
       modelId: config.modelId,

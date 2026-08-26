@@ -88,6 +88,45 @@ describe('analyzeArticleContent response validation', () => {
     expect(scoringPrompt).not.toContain('contentSummaryBullets');
   });
 
+  it('keeps article classification debug logs free of article titles', async () => {
+    vi.stubEnv('INFERENCE_DEBUG', 'true');
+    completionsCreate.mockResolvedValue({
+      choices: [{ message: { content: '{}' } }]
+    });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const privateTitle = 'Private acquisition discussion — customer 48392';
+    const privateText = 'Confidential body marker 7f291. '.repeat(40);
+    const privateFeedName = 'Internal customer intelligence feed';
+    const { default: analyzeArticleContent } = await import(
+      '../src/classifications/articleClassificationService.js'
+    );
+
+    await analyzeArticleContent({
+      text: privateText,
+      title: privateTitle,
+      categories: [],
+      feedName: privateFeedName
+    });
+    await analyzeArticleContent({
+      text: 'Short private article',
+      title: privateTitle,
+      categories: []
+    });
+
+    const debugOutput = logSpy.mock.calls.flat().join('\n');
+    expect(debugOutput).toContain('received article-classification');
+    expect(debugOutput).toContain('calling bullet-summary');
+    expect(debugOutput).toContain('completed tag-generation');
+    expect(debugOutput).toContain('calling article-scoring');
+    expect(debugOutput).toContain('completed article-classification');
+    expect(debugOutput).toContain('skipped article-classification');
+    expect(debugOutput).not.toContain(privateTitle);
+    expect(debugOutput).not.toContain('Confidential body marker 7f291');
+    expect(debugOutput).not.toContain(privateFeedName);
+    expect(debugOutput).not.toContain('article="');
+    logSpy.mockRestore();
+  });
+
   it('accepts writingScore as a legacy fallback for OpenAI scoring', async () => {
     completionsCreate
       .mockResolvedValueOnce({ choices: [{ message: { content: '{}' } }] })
@@ -302,7 +341,8 @@ describe('analyzeArticleContent response validation', () => {
     });
     expect(modernBertScore).toHaveBeenCalledOnce();
     expect(modernBertScore).toHaveBeenCalledWith(expect.objectContaining({
-      text: 'Medium article text '.repeat(16)
+      text: 'Medium article text '.repeat(16),
+      operation: 'article-scoring'
     }));
     expect(completionsCreate).not.toHaveBeenCalled();
   });
@@ -505,6 +545,53 @@ describe('analyzeArticleContent response validation', () => {
     });
     expect(errorSpy).toHaveBeenCalledTimes(2);
     errorSpy.mockRestore();
+  });
+
+  it.each([
+    'INFERENCE_QUEUE_FULL',
+    'INFERENCE_QUEUE_ABORTED'
+  ])('propagates Qwen queue control error %s without fallback', async code => {
+    vi.stubEnv('GENERATION_PROVIDER', 'qwen');
+    vi.stubEnv('ARTICLE_SCORING_PROVIDER', 'modernbert');
+    const queueError = Object.assign(new Error('queue control error'), { code });
+    qwenGenerate.mockRejectedValue(queueError);
+    const { default: analyzeArticleContent } = await import(
+      '../src/classifications/articleClassificationService.js'
+    );
+
+    await expect(analyzeArticleContent({
+      text: 'Long article content '.repeat(40),
+      categories: []
+    })).rejects.toBe(queueError);
+    expect(modernBertScore).not.toHaveBeenCalled();
+  });
+
+  it('passes request cancellation context to ModernBERT scoring', async () => {
+    vi.stubEnv('OPENAI_API_KEY', '');
+    vi.stubEnv('ARTICLE_SCORING_PROVIDER', 'modernbert');
+    const controller = new AbortController();
+    modernBertScore.mockResolvedValue({
+      advertisementScore: 80,
+      sentimentScore: 80,
+      qualityScore: 80
+    });
+    const { default: analyzeArticleContent } = await import(
+      '../src/classifications/articleClassificationService.js'
+    );
+
+    await analyzeArticleContent({
+      text: 'Medium article text '.repeat(16),
+      categories: []
+    }, {
+      requestId: 'modernbert-request',
+      signal: controller.signal
+    });
+
+    expect(modernBertScore).toHaveBeenCalledWith(expect.objectContaining({
+      requestId: 'modernbert-request',
+      signal: controller.signal,
+      operation: 'article-scoring'
+    }));
   });
 
   it.each([

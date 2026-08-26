@@ -1,6 +1,18 @@
 // Embedding orchestration will live here when a provider is added.
 import { getEmbeddingConfig } from '../config/config.js';
 import { createEmbeddingProvider } from './providers/index.js';
+import { logInferenceDebug } from '../debug.js';
+import { createInferenceWorkQueue } from '../queue/inferenceWorkQueue.js';
+
+const QUEUE_EVENT_STAGES = Object.freeze({
+  queued: 'queued',
+  started: 'inference_started',
+  completed: 'inference_completed',
+  failed: 'inference_failed',
+  aborted_pending: 'client_aborted_pending',
+  aborted_running: 'client_aborted_running',
+  rejected_full: 'overload_rejected'
+});
 
 export class EmbeddingValidationError extends Error {}
 
@@ -9,10 +21,29 @@ export const createEmbeddingService = ({
   environment = process.env,
   logger = console
 } = {}) => {
-  const { maxBatchSize } = getEmbeddingConfig(environment);
+  const config = getEmbeddingConfig(environment);
+  const { maxBatchSize } = config;
   const selectedProvider = provider || createEmbeddingProvider(environment);
   const debug = String(environment.INFERENCE_DEBUG || '').toLowerCase() === 'true';
   let inferenceQueue = Promise.resolve();
+  const localWorkQueue = config.provider === 'qwen'
+    ? createInferenceWorkQueue({
+        concurrency: 1,
+        maximumPending: config.queueMaxPending,
+        onEvent: event => {
+          const message = [
+            `embedding-queue stage=${QUEUE_EVENT_STAGES[event.type] || event.type}`,
+            `requestId=${JSON.stringify(event.requestId || 'unavailable')}`,
+            `operation=${JSON.stringify(event.operation || 'embeddings')}`,
+            `running=${event.running}`,
+            `pending=${event.pending}`,
+            ...(event.queueWaitMs === undefined ? [] : [`queueWaitMs=${event.queueWaitMs}`]),
+            ...(event.executionMs === undefined ? [] : [`executionMs=${event.executionMs}`])
+          ].join(' ');
+          logInferenceDebug(message, { environment, logger });
+        }
+      })
+    : null;
 
   const validateTexts = texts => {
     if (!Array.isArray(texts) || texts.length === 0) {
@@ -28,13 +59,21 @@ export const createEmbeddingService = ({
     }
   };
 
-  const runInference = operation => {
+  const runSerializedInference = operation => {
     const result = inferenceQueue.then(operation);
     inferenceQueue = result.catch(() => {});
     return result;
   };
 
-  const embed = async texts => {
+  const runInference = (operation, options) => localWorkQueue
+    ? localWorkQueue.enqueue(operation, options)
+    : runSerializedInference(operation);
+
+  const embed = async (texts, {
+    signal,
+    requestId,
+    operation = 'embeddings'
+  } = {}) => {
     validateTexts(texts);
     const metadata = selectedProvider.getMetadata();
     const startedAt = Date.now();
@@ -53,7 +92,7 @@ export const createEmbeddingService = ({
         );
       }
       return selectedProvider.embed(texts);
-    });
+    }, { signal, requestId, operation });
 
     if (debug) {
       logger.log(
@@ -86,6 +125,7 @@ export const createEmbeddingService = ({
   return Object.freeze({
     embed,
     getInfo,
+    getQueueSnapshot: () => localWorkQueue?.getSnapshot() || null,
     initialize: () => selectedProvider.initialize()
   });
 };
