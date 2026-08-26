@@ -31,16 +31,32 @@ describe('Qwen generation routing', () => {
       '../src/classifications/articleClassificationService.js'
     );
 
+    const controller = new AbortController();
     const result = await analyzeArticleContent({
       text: 'Article content '.repeat(40),
       title: 'Generated locally',
       categories: [],
       feedName: 'Feed'
+    }, {
+      requestId: 'article-request',
+      signal: controller.signal
     });
 
     expect(result.contentSummaryBullets).toEqual(['First fact']);
     expect(result.tags).toEqual(['qwen']);
     expect(mocked.generate).toHaveBeenCalledTimes(2);
+    expect(mocked.generate.mock.calls.map(([input]) => input)).toEqual([
+      expect.objectContaining({
+        requestId: 'article-request',
+        signal: controller.signal,
+        operation: 'article-bullet-summary'
+      }),
+      expect.objectContaining({
+        requestId: 'article-request',
+        signal: controller.signal,
+        operation: 'article-tag-generation'
+      })
+    ]);
   });
 
   it('uses Qwen for Smart Folder recommendations', async () => {
@@ -51,10 +67,16 @@ describe('Qwen generation routing', () => {
       '../src/smartFolderRecommendations/smartFolderRecommendationService.js'
     );
 
-    await expect(getSmartFolderRecommendations({ insights: {} })).resolves.toMatchObject({
+    await expect(getSmartFolderRecommendations(
+      { insights: {} },
+      { requestId: 'folder-request' }
+    )).resolves.toMatchObject({
       smartFolders: [{ name: 'AI', query: 'ai' }]
     });
-    expect(mocked.generate).toHaveBeenCalledOnce();
+    expect(mocked.generate).toHaveBeenCalledWith(expect.objectContaining({
+      requestId: 'folder-request',
+      operation: 'smart-folder-recommendations'
+    }));
   });
 
   it('uses Qwen for feed rediscovery', async () => {
@@ -71,7 +93,11 @@ describe('Qwen generation routing', () => {
       feedName: 'Example',
       websiteUrl: 'https://example.com',
       oldRssUrl: 'https://example.com/old.xml'
-    })).resolves.toMatchObject({ url: 'https://example.com/feed.xml' });
-    expect(mocked.generate).toHaveBeenCalledOnce();
+    }, { requestId: 'rediscovery-request' }))
+      .resolves.toMatchObject({ url: 'https://example.com/feed.xml' });
+    expect(mocked.generate).toHaveBeenCalledWith(expect.objectContaining({
+      requestId: 'rediscovery-request',
+      operation: 'feed-rediscovery'
+    }));
   });
 });

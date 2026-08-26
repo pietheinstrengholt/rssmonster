@@ -408,7 +408,7 @@ if [[ "$INFERENCE_HEALTHCHECK_HOST" == *:* &&
   "$INFERENCE_HEALTHCHECK_HOST" != \[*\] ]]; then
   INFERENCE_HEALTHCHECK_HOST="[$INFERENCE_HEALTHCHECK_HOST]"
 fi
-INFERENCE_HEALTHCHECK_URL="${INFERENCE_HEALTHCHECK_URL:-http://$INFERENCE_HEALTHCHECK_HOST:$INFERENCE_PORT/health}"
+INFERENCE_HEALTHCHECK_URL="${INFERENCE_HEALTHCHECK_URL:-http://$INFERENCE_HEALTHCHECK_HOST:$INFERENCE_PORT/ready}"
 
 echo "Server environment: $ENV_FILE"
 echo "Server host: $SERVER_HOST"
@@ -530,19 +530,17 @@ log "Health verification completed for RSSMonster web"
 
 log "Health verification started for inference"
 INFERENCE_HEALTHCHECK_PASSED=false
-INFERENCE_REQUIRES_EMBEDDING_MODEL=false
-if [[ "$INFERENCE_EMBEDDING_PROVIDER" == "qwen" ]]; then
-  INFERENCE_REQUIRES_EMBEDDING_MODEL=true
-fi
 for ((attempt = 1; attempt <= INFERENCE_HEALTHCHECK_ATTEMPTS; attempt++)); do
   INFERENCE_HEALTH_RESPONSE="$(
     curl --silent --show-error --fail --max-time 5 "$INFERENCE_HEALTHCHECK_URL" 2>/dev/null || true
   )"
-  if INFERENCE_HEALTH_RESPONSE="$INFERENCE_HEALTH_RESPONSE" INFERENCE_REQUIRES_EMBEDDING_MODEL="$INFERENCE_REQUIRES_EMBEDDING_MODEL" node <<'NODE'
+  if INFERENCE_HEALTH_RESPONSE="$INFERENCE_HEALTH_RESPONSE" node <<'NODE'
 const response = JSON.parse(process.env.INFERENCE_HEALTH_RESPONSE || '{}');
-const embeddingReady = process.env.INFERENCE_REQUIRES_EMBEDDING_MODEL !== 'true' ||
-  response.modelLoaded === true;
-process.exit(response.status === 'ok' && embeddingReady ? 0 : 1);
+process.exit(
+  response.status === 'ready' && response.state === 'ready' && response.acceptingWork === true
+    ? 0
+    : 1
+);
 NODE
   then
     INFERENCE_HEALTHCHECK_PASSED=true

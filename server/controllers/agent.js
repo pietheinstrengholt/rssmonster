@@ -3,8 +3,41 @@ import { Agent, run } from "@openai/agents";
 import sanitizeAgentOutput, { agentOutputToText } from '../utils/sanitizeAgentOutput.js';
 import { createRssMonsterAgentTools } from '../services/agent/rssMonsterAgentTools.js';
 import { createInferenceModelProvider } from '../services/agent/inferenceModelProvider.js';
+import { getSafeInferenceErrorDetails } from '../services/inference/inferenceClient.js';
 
 const elapsedMs = startedAt => Math.round((performance.now() - startedAt) * 10) / 10;
+const SAFE_ERROR_IDENTIFIER = /^[A-Za-z][A-Za-z0-9_.:-]{0,127}$/;
+const MAX_SAFE_STACK_FRAMES = 6;
+const MAX_SAFE_STACK_FRAME_LENGTH = 500;
+const URL_IN_STACK_FRAME = /\bhttps?:\/\/[^\s"'<>]+/gi;
+const isSafeErrorIdentifier = value =>
+  typeof value === 'string' && SAFE_ERROR_IDENTIFIER.test(value);
+
+const isInferenceError = error =>
+  String(error?.code || '').startsWith('INFERENCE_') ||
+  String(error?.name || '').startsWith('Inference');
+
+// Preserve code locations for internal failures without logging their potentially sensitive message.
+const getSafeAgentErrorDetails = error => {
+  const name = isSafeErrorIdentifier(error?.name) ? error.name : 'Error';
+  const code = isSafeErrorIdentifier(error?.code) ? error.code : null;
+  const stackFrames = String(error?.stack || '')
+    .split('\n')
+    .slice(1, MAX_SAFE_STACK_FRAMES + 1)
+    .map(frame => frame
+      .replace(URL_IN_STACK_FRAME, '<redacted-url>')
+      .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+      .trim()
+      .slice(0, MAX_SAFE_STACK_FRAME_LENGTH))
+    .filter(Boolean);
+
+  return Object.freeze({
+    name,
+    message: 'Assistant execution failed',
+    ...(code ? { code } : {}),
+    ...(stackFrames.length > 0 ? { stackFrames } : {})
+  });
+};
 
 const logAgentTiming = timing => {
   console.log(`[AGENT_TIMING] ${JSON.stringify(timing)}`);
@@ -239,12 +272,17 @@ export const postAgent = async (req, res) => {
       phase: 'request_error',
       totalMs: elapsedMs(requestStartedAt)
     });
-    console.error("Agent run error:", err);
+    const inferenceError = isInferenceError(err);
+    const safeError = inferenceError
+      ? getSafeInferenceErrorDetails(err, { capability: 'assistant' })
+      : getSafeAgentErrorDetails(err);
+    const clientError = inferenceError ? safeError.message : 'Assistant request failed';
+    console.error('Agent run error:', safeError);
     if (res.headersSent) {
-      writeSseEvent(res, 'error', { error: err?.message ?? String(err) });
+      writeSseEvent(res, 'error', { error: clientError });
       return res.end();
     }
-    return res.status(500).json({ error: err?.message ?? String(err) });
+    return res.status(500).json({ error: clientError });
   }
 };
 

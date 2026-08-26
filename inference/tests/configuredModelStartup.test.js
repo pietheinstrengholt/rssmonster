@@ -92,4 +92,22 @@ describe('configured model startup', () => {
       '[INFERENCE] All configured on-device models are loaded; crawl can start'
     );
   });
+
+  it('rejects startup when an initialized required model does not report loaded', async () => {
+    const logger = { log: vi.fn() };
+
+    await expect(initializeConfiguredModels({
+      embeddingService: createEmbeddingService({ loaded: false }),
+      articleScoringProvider: createScoringProvider(),
+      logger,
+      environment: {
+        EMBEDDING_PROVIDER: 'qwen',
+        ARTICLE_SCORING_PROVIDER: 'openai'
+      }
+    })).rejects.toThrow(
+      'Configured embedding model did not report loaded after initialization'
+    );
+
+    expect(logger.log).not.toHaveBeenCalled();
+  });
 });

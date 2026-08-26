@@ -5,6 +5,7 @@ import {
 } from '../embeddings/embeddingService.js';
 import { shouldSkipArticleEmbeddings } from '../../config/intelligentFeatures.js';
 import { recordProcessingFailure } from '../observability/processingFailures.js';
+import { getSafeInferenceErrorMessage } from '../inference/inferenceClient.js';
 
 /**
  * Core article embedding utility.
@@ -28,6 +29,21 @@ const MIN_TOPIC_LENGTH = 120;
 const MAX_TOPIC_LENGTH = 2200;
 // Defines the max embedding input tokens enforced by this service.
 const MAX_EMBEDDING_INPUT_TOKENS = 512;
+const INFERENCE_REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+let lastLoggedCircuitOpenedAt;
+
+const getSafeInferenceRequestId = error => (
+  typeof error?.requestId === 'string' && INFERENCE_REQUEST_ID_PATTERN.test(error.requestId)
+    ? error.requestId
+    : null
+);
+
+const shouldLogEmbeddingFailure = error => {
+  if (error?.code !== 'INFERENCE_CIRCUIT_OPEN' || error.openedAt === undefined) return true;
+  if (error.openedAt === lastLoggedCircuitOpenedAt) return false;
+  lastLoggedCircuitOpenedAt = error.openedAt;
+  return true;
+};
 
 // This function strips common news prefixes and source suffixes from titles.
 function normalizeTitle(title = '') {
@@ -323,6 +339,7 @@ export async function embedArticle(articleOrInput, options = {}) {
     };
   } catch (err) {
     const processingContext = options.processingContext || {};
+    const inferenceRequestId = getSafeInferenceRequestId(err);
     const userId = article?.userId ?? articleOrInput?.userId;
     if (userId) {
       await recordProcessingFailure({
@@ -336,11 +353,18 @@ export async function embedArticle(articleOrInput, options = {}) {
         articleId: article?.id ?? null,
         context: {
           embeddingModel: EMBEDDING_MODEL,
-          persist
+          persist,
+          ...(inferenceRequestId ? { requestId: inferenceRequestId } : {})
         }
       });
     }
-    console.warn('[EMBED] failed:', err.message);
+    if (shouldLogEmbeddingFailure(err)) {
+      const requestContext = inferenceRequestId ? ` requestId=${inferenceRequestId}` : '';
+      console.warn(
+        '[EMBED] failed:',
+        `${getSafeInferenceErrorMessage(err, { capability: 'embeddings' })}${requestContext}`
+      );
+    }
     return null;
   }
 }

@@ -1,6 +1,6 @@
 import express from 'express';
 import assistantModelService from '../assistant/assistantModelService.js';
-import { logInferenceDebug } from '../debug.js';
+import { getSafeErrorDetails, logInferenceDebug } from '../debug.js';
 import { createAssistantRateLimiter } from '../middleware/rateLimit.js';
 
 export const createAssistantRouter = ({
@@ -14,7 +14,10 @@ export const createAssistantRouter = ({
     try {
       res.status(200).json(await service.respond(req.body || {}));
     } catch (error) {
-      logger.error('[INFERENCE] Assistant model request failed:', error);
+      logger.error(
+        `[INFERENCE] Assistant model request failed requestId=${req.inferenceRequestId}:`,
+        getSafeErrorDetails(error)
+      );
       res.status(500).json({ error: 'Assistant inference failed' });
     }
   });
@@ -33,7 +36,10 @@ export const createAssistantRouter = ({
       res.end();
       logInferenceDebug(`completed assistant-stream durationMs=${Date.now() - startedAt}`, { logger });
     } catch (error) {
-      logger.error('[INFERENCE] Assistant streaming request failed:', error);
+      logger.error(
+        `[INFERENCE] Assistant streaming request failed requestId=${req.inferenceRequestId}:`,
+        getSafeErrorDetails(error)
+      );
       if (!res.headersSent) {
         res.status(500).json({ error: 'Assistant inference failed' });
       } else {

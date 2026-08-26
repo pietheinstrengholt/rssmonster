@@ -1,9 +1,40 @@
-import { assertInferenceEnabled } from '../../config/intelligentFeatures.js';
-
-const DEFAULT_INFERENCE_URL = 'http://127.0.0.1:3001';
-const DEFAULT_TIMEOUT_MS = 30_000;
+import {
+  getSafeInferenceErrorMessage,
+  requestInferenceJson
+} from '../inference/inferenceClient.js';
 
 export const DEFAULT_EMBEDDING_MODEL = 'text-embedding-3-small';
+
+const rethrowEmbeddingRequestError = (error, { info = false } = {}) => {
+  if (error?.code === 'INFERENCE_CIRCUIT_OPEN' || error?.code === 'FEED_EXECUTION_TIMEOUT') {
+    throw error;
+  }
+  if (error?.status) {
+    error.message = error.message.replace(
+      /^Inference request/,
+      info ? 'Inference embeddings info request' : 'Inference embeddings request'
+    );
+    throw error;
+  }
+  if (error?.code === 'INFERENCE_TIMEOUT') {
+    error.message = getSafeInferenceErrorMessage(error, {
+      capability: info ? 'embeddings info' : 'embeddings'
+    });
+    throw error;
+  }
+  if (error?.code === 'INFERENCE_UNAVAILABLE') {
+    error.message = getSafeInferenceErrorMessage(error, {
+      capability: info ? 'embeddings info' : 'embeddings'
+    });
+    throw error;
+  }
+  if (error?.message === 'Inference response is not valid JSON') {
+    error.message = info
+      ? 'Inference embeddings info response is malformed'
+      : 'Inference embeddings response is not valid JSON';
+  }
+  throw error;
+};
 
 const validateResponse = (payload, expectedCount) => {
   if (
@@ -32,30 +63,17 @@ const validateResponse = (payload, expectedCount) => {
   return payload;
 };
 
-const requestOptions = (options = {}) => ({
-  baseUrl: options.baseUrl || process.env.INFERENCE_URL || DEFAULT_INFERENCE_URL,
-  timeoutMs: Number(options.timeoutMs || process.env.INFERENCE_TIMEOUT_MS || DEFAULT_TIMEOUT_MS),
-  fetchImplementation: options.fetchImplementation || fetch
-});
-
 export async function getEmbeddingInfo(options = {}) {
-  assertInferenceEnabled();
-  const { baseUrl, timeoutMs, fetchImplementation } = requestOptions(options);
-  let response;
-
+  let payload;
   try {
-    response = await fetchImplementation(`${baseUrl.replace(/\/$/, '')}/api/embeddings/info`, {
-      signal: AbortSignal.timeout(timeoutMs)
+    payload = await requestInferenceJson('/api/embeddings/info', undefined, {
+      ...options,
+      circuitKey: 'embeddings',
+      method: 'GET'
     });
   } catch (error) {
-    throw new Error(`Inference embeddings service is unavailable: ${error.message}`);
+    rethrowEmbeddingRequestError(error, { info: true });
   }
-
-  if (!response.ok) {
-    throw new Error(`Inference embeddings info request failed with HTTP ${response.status}`);
-  }
-
-  const payload = await response.json().catch(() => null);
   if (!payload || typeof payload.model !== 'string' || !Number.isInteger(payload.dimensions)) {
     throw new Error('Inference embeddings info response is malformed');
   }
@@ -64,39 +82,15 @@ export async function getEmbeddingInfo(options = {}) {
 }
 
 export async function embedTexts(texts, options = {}) {
-  assertInferenceEnabled();
-  const { baseUrl, timeoutMs, fetchImplementation } = requestOptions(options);
-  let response;
-
-  try {
-    response = await fetchImplementation(`${baseUrl.replace(/\/$/, '')}/api/embeddings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ texts }),
-      signal: AbortSignal.timeout(timeoutMs)
-    });
-  } catch (error) {
-    if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-      throw new Error(`Inference embeddings request timed out after ${timeoutMs}ms`);
-    }
-    throw new Error(`Inference embeddings service is unavailable: ${error.message}`);
-  }
-
-  if (!response.ok) {
-    const detail = await response.text().catch(() => '');
-    throw new Error(
-      `Inference embeddings request failed with HTTP ${response.status}` +
-      (detail ? `: ${detail.slice(0, 200)}` : '')
-    );
-  }
-
   let payload;
   try {
-    payload = await response.json();
-  } catch {
-    throw new Error('Inference embeddings response is not valid JSON');
+    payload = await requestInferenceJson('/api/embeddings', { texts }, {
+      ...options,
+      circuitKey: 'embeddings'
+    });
+  } catch (error) {
+    rethrowEmbeddingRequestError(error);
   }
-
   return validateResponse(payload, texts.length);
 }
 

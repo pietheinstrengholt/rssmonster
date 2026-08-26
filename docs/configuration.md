@@ -240,6 +240,8 @@ reverse proxy so client addresses are interpreted correctly.
 | `INFERENCE_URL` | `http://127.0.0.1:3001` | Standalone inference service used for all model requests. |
 | `INFERENCE_TIMEOUT_MS` | `30000` | Timeout for embeddings, classification, recommendations, and feed rediscovery. |
 | `INFERENCE_AGENT_TIMEOUT_MS` | `300000` | Timeout for streamed assistant model requests. |
+| `INFERENCE_CIRCUIT_FAILURE_THRESHOLD` | `5` | Consecutive qualifying failures before a capability-specific server inference circuit opens. Must be a positive integer. |
+| `INFERENCE_CIRCUIT_COOLDOWN_MS` | `30000` | Minimum open-circuit cooldown before one half-open probe is allowed. Must be a positive integer. |
 | `INFERENCE_AI_ENABLED` | `false` | Master switch for server and client inference capabilities. Only explicit `true` allows inference requests. |
 | `INFERENCE_ASSISTANT_ENABLED` | `false` | Enables assistant routes and UI only when explicitly `true`. Enable it after configuring the provider and credentials in inference. |
 | `SKIP_ARTICLE_CLASSIFICATION_ANALYSIS` | `false` | When `true`, uses default article scores and feed-category tags without calling inference classification. |
@@ -255,6 +257,19 @@ OpenAI credentials and model names belong only in `inference/.env`; see
 [Model Usage](model-usage.md). The server executes authenticated assistant
 tools locally, while inference performs every provider model call. The server
 uses only `INFERENCE_ASSISTANT_ENABLED` and never receives the OpenAI key.
+
+The server process keeps independent circuit breakers for embeddings,
+classification, non-streaming assistant, Smart Folder, and feed-rediscovery
+requests. Connection failures, timeouts, HTTP `502`/`503`/`504`, and startup
+`not_ready` responses count toward the affected capability's threshold. Queue
+overload is intentional endpoint-level load shedding and does not trip a
+circuit. While a circuit is open, only that capability fails locally without
+contacting inference. After the cooldown—or a longer inference `Retry-After`—one
+half-open probe is allowed. Validation, authentication, ordinary `4xx`, and
+caller cancellation do not trip the circuit. Requests are never automatically
+retried. During crawl ingestion, classification queue overload is recorded as a
+warning and falls back to the existing default article analysis so it does not
+prevent article or revision persistence.
 
 ## Recommendations
 

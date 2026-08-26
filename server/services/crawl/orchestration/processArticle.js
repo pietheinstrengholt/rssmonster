@@ -7,12 +7,22 @@ import {
   throwIfExecutionExpired
 } from '../../feeds/executionDeadline.js';
 import { recordProcessingFailure } from '../../observability/processingFailures.js';
+import { getSafeInferenceErrorMessage } from '../../inference/inferenceClient.js';
 
 // Builds the empty article result assembled for this service.
 const emptyArticleResult = {
   newArticles: 0,
   updatedArticles: 0,
   errors: 0
+};
+
+let lastLoggedCircuitOpenedAt;
+
+const shouldLogInferenceAvailabilityError = error => {
+  if (error?.code !== 'INFERENCE_CIRCUIT_OPEN' || error.openedAt === undefined) return true;
+  if (error.openedAt === lastLoggedCircuitOpenedAt) return false;
+  lastLoggedCircuitOpenedAt = error.openedAt;
+  return true;
 };
 
 // This function coordinates publisher identity resolution with new and revision workflows.
@@ -89,8 +99,12 @@ const processArticle = async (
       feedId: feed?.id,
       context: { feedName: feed?.feedName }
     });
-    if (['INFERENCE_TIMEOUT', 'INFERENCE_UNAVAILABLE'].includes(err?.code)) {
-      console.error(`[CRAWL] ${err.message}`);
+    if (['INFERENCE_TIMEOUT', 'INFERENCE_UNAVAILABLE', 'INFERENCE_CIRCUIT_OPEN']
+      .includes(err?.code)) {
+      if (shouldLogInferenceAvailabilityError(err)) {
+        const requestContext = err.requestId ? ` requestId=${err.requestId}` : '';
+        console.error(`[CRAWL] ${getSafeInferenceErrorMessage(err)}${requestContext}`);
+      }
     } else {
       console.error('Error processing article:', err);
     }

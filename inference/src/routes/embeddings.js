@@ -1,5 +1,11 @@
 import express from 'express';
 import embeddingService, { EmbeddingValidationError } from '../embeddings/embeddingService.js';
+import { getSafeErrorDetails } from '../debug.js';
+import {
+  canWriteInferenceResponse,
+  createRequestCancellation,
+  handleInferenceQueueError
+} from '../middleware/requestCancellation.js';
 
 export const createEmbeddingsRouter = ({
   service = embeddingService,
@@ -12,16 +18,34 @@ export const createEmbeddingsRouter = ({
   });
 
   router.post('/', async (req, res) => {
+    const cancellation = createRequestCancellation(req, res);
     try {
-      res.status(200).json(await service.embed(req.body?.texts));
+      const result = await service.embed(req.body?.texts, {
+        requestId: req.inferenceRequestId,
+        signal: cancellation.signal,
+        operation: 'embeddings'
+      });
+      if (!cancellation.isDisconnected() && canWriteInferenceResponse(req, res)) {
+        res.status(200).json(result);
+      }
     } catch (error) {
       if (error instanceof EmbeddingValidationError) {
-        res.status(400).json({ error: error.message });
+        if (canWriteInferenceResponse(req, res)) {
+          res.status(400).json({ error: error.message });
+        }
         return;
       }
+      if (handleInferenceQueueError(error, req, res)) return;
 
-      logger.error('[INFERENCE] Embedding request failed:', error);
-      res.status(500).json({ error: 'Embedding inference failed' });
+      logger.error(
+        `[INFERENCE] Embedding request failed requestId=${req.inferenceRequestId}:`,
+        getSafeErrorDetails(error)
+      );
+      if (canWriteInferenceResponse(req, res)) {
+        res.status(500).json({ error: 'Embedding inference failed' });
+      }
+    } finally {
+      cancellation.cleanup();
     }
   });
 

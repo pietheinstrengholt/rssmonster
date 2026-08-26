@@ -19,6 +19,8 @@ describe('rediscoverRssUrl', () => {
     const result = { url: 'https://example.com/feed.xml', confidence: 0.9, reason: 'Official' };
     mocked.request.mockResolvedValue(result);
     await expect(rediscoverRssUrl(input)).resolves.toBe(result);
-    expect(mocked.request).toHaveBeenCalledWith('/api/feed-rediscovery', input);
+    expect(mocked.request).toHaveBeenCalledWith('/api/feed-rediscovery', input, {
+      circuitKey: 'feed-rediscovery'
+    });
   });
 });

@@ -9,14 +9,17 @@ const DEFAULT_OPENAI_EMBEDDING_DIMENSIONS = 1536;
 const DEFAULT_LOCAL_EMBEDDING_MODEL = 'onnx-community/Qwen3-Embedding-0.6B-ONNX';
 const DEFAULT_LOCAL_EMBEDDING_DIMENSIONS = 1024;
 const DEFAULT_EMBEDDING_MAX_BATCH_SIZE = 8;
+const DEFAULT_EMBEDDING_QUEUE_MAX_PENDING = 4;
 const DEFAULT_ASSISTANT_MODEL = 'gpt-4o-mini';
 const DEFAULT_OPENAI_CRAWL_MODEL = 'gpt-4o-mini';
 const DEFAULT_OPENAI_SMART_FOLDER_MODEL = 'gpt-4.1-mini';
 const DEFAULT_OPENAI_FEED_REDISCOVERY_MODEL = 'gpt-4.1-mini';
 const DEFAULT_MODERNBERT_MODEL = 'onnx-community/ModernBERT-base-nli-ONNX';
 const DEFAULT_MODERNBERT_DTYPE = 'q8';
+const DEFAULT_MODERNBERT_QUEUE_MAX_PENDING = 4;
 const DEFAULT_GENERATION_MODEL = 'onnx-community/Qwen3.5-0.8B-ONNX';
 const DEFAULT_GENERATION_DTYPE = 'q4';
+const DEFAULT_GENERATION_QUEUE_MAX_PENDING = 4;
 
 const parsePort = value => {
   const port = Number(value ?? DEFAULT_PORT);
@@ -36,6 +39,9 @@ export const getConfig = (env = process.env) => ({
 export const getEmbeddingConfig = (env = process.env) => {
   const provider = env.EMBEDDING_PROVIDER || DEFAULT_EMBEDDING_PROVIDER;
   const maxBatchSize = Number(env.EMBEDDING_MAX_BATCH_SIZE ?? DEFAULT_EMBEDDING_MAX_BATCH_SIZE);
+  const queueMaxPending = Number(
+    env.EMBEDDING_QUEUE_MAX_PENDING ?? DEFAULT_EMBEDDING_QUEUE_MAX_PENDING
+  );
 
   if (!['openai', 'qwen'].includes(provider)) {
     throw new Error('EMBEDDING_PROVIDER must be openai or qwen');
@@ -44,13 +50,17 @@ export const getEmbeddingConfig = (env = process.env) => {
   if (!Number.isInteger(maxBatchSize) || maxBatchSize < 1) {
     throw new Error('EMBEDDING_MAX_BATCH_SIZE must be a positive integer');
   }
+  if (!Number.isSafeInteger(queueMaxPending) || queueMaxPending <= 0) {
+    throw new Error('EMBEDDING_QUEUE_MAX_PENDING must be a positive integer');
+  }
 
   if (provider === 'openai') {
     return {
       provider,
       modelId: env.OPENAI_EMBEDDING_MODEL || DEFAULT_OPENAI_EMBEDDING_MODEL,
       dimensions: Number(env.OPENAI_EMBEDDING_DIMENSIONS ?? DEFAULT_OPENAI_EMBEDDING_DIMENSIONS),
-      maxBatchSize
+      maxBatchSize,
+      queueMaxPending
     };
   }
 
@@ -63,18 +73,26 @@ export const getEmbeddingConfig = (env = process.env) => {
     provider,
     modelId: env.EMBEDDING_MODEL || DEFAULT_LOCAL_EMBEDDING_MODEL,
     dimensions,
-    maxBatchSize
+    maxBatchSize,
+    queueMaxPending
   };
 };
 
 export const getGenerationConfig = (env = process.env) => {
   const provider = env.GENERATION_PROVIDER || DEFAULT_GENERATION_PROVIDER;
+  const queueMaxPending = Number(
+    env.GENERATION_QUEUE_MAX_PENDING ?? DEFAULT_GENERATION_QUEUE_MAX_PENDING
+  );
   if (!['openai', 'qwen'].includes(provider)) {
     throw new Error('GENERATION_PROVIDER must be openai or qwen');
+  }
+  if (!Number.isSafeInteger(queueMaxPending) || queueMaxPending <= 0) {
+    throw new Error('GENERATION_QUEUE_MAX_PENDING must be a positive integer');
   }
 
   return {
     provider,
+    queueMaxPending,
     modelId: provider === 'qwen'
       ? env.GENERATION_MODEL || DEFAULT_GENERATION_MODEL
       : env.OPENAI_MODEL_CRAWL || DEFAULT_OPENAI_CRAWL_MODEL,
@@ -101,12 +119,19 @@ export const getAssistantConfig = (env = process.env) => {
 
 export const getArticleScoringConfig = (env = process.env) => {
   const provider = env.ARTICLE_SCORING_PROVIDER || DEFAULT_ARTICLE_SCORING_PROVIDER;
+  const queueMaxPending = Number(
+    env.MODERNBERT_QUEUE_MAX_PENDING ?? DEFAULT_MODERNBERT_QUEUE_MAX_PENDING
+  );
   if (!['openai', 'modernbert'].includes(provider)) {
     throw new Error('ARTICLE_SCORING_PROVIDER must be openai or modernbert');
+  }
+  if (!Number.isSafeInteger(queueMaxPending) || queueMaxPending <= 0) {
+    throw new Error('MODERNBERT_QUEUE_MAX_PENDING must be a positive integer');
   }
 
   return {
     provider,
+    queueMaxPending,
     modelId: provider === 'modernbert'
       ? env.MODERNBERT_MODEL || DEFAULT_MODERNBERT_MODEL
       : env.OPENAI_MODEL_CRAWL || DEFAULT_OPENAI_CRAWL_MODEL,

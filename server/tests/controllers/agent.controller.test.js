@@ -206,12 +206,57 @@ describe('agent controller', () => {
 
   it('reports agent failures without an MCP connection lifecycle', async () => {
     mocked.run.mockRejectedValue(new Error('OpenAI unavailable'));
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
     const res = createResponse();
 
     await postAgent(createRequest(), res);
 
-    expect(res.write).toHaveBeenCalledWith(expect.stringContaining('event: error'));
+    expect(errorLog).toHaveBeenCalledWith('Agent run error:', expect.objectContaining({
+      name: 'Error',
+      message: 'Assistant execution failed',
+      stackFrames: expect.any(Array)
+    }));
+    expect(JSON.stringify(errorLog.mock.calls)).not.toContain('OpenAI unavailable');
+    expect(res.write).toHaveBeenCalledWith(expect.stringContaining(
+      '"error":"Assistant request failed"'
+    ));
     expect(res.end).toHaveBeenCalledOnce();
+  });
+
+  it('keeps credential-bearing inference failures out of logs and client errors', async () => {
+    const canaries = [
+      'Bearer test-secret-token',
+      'apiKey=test-secret-key',
+      'https://example.com/private?token=test-query-secret'
+    ];
+    const inferenceError = Object.assign(new Error(canaries.join(' ')), {
+      name: 'InferenceServiceUnavailableError',
+      code: 'INFERENCE_UNAVAILABLE',
+      requestId: 'assistant-stream-request-123',
+      durationMs: 25
+    });
+    mocked.run.mockRejectedValue(inferenceError);
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = createResponse();
+
+    await postAgent(createRequest(), res);
+
+    expect(errorLog).toHaveBeenCalledWith('Agent run error:', {
+      name: 'InferenceServiceUnavailableError',
+      message: 'Inference assistant service unavailable',
+      code: 'INFERENCE_UNAVAILABLE',
+      requestId: 'assistant-stream-request-123',
+      durationMs: 25
+    });
+    const emitted = JSON.stringify({
+      logs: errorLog.mock.calls,
+      writes: res.write.mock.calls,
+      json: res.json.mock.calls
+    });
+    for (const canary of canaries) expect(emitted).not.toContain(canary);
+    expect(emitted).not.toContain('test-secret');
+    expect(res.write).toHaveBeenCalledWith(expect.stringContaining(
+      '"error":"Inference assistant service unavailable"'
+    ));
   });
 });

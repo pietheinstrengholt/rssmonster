@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { getGenerationConfig } from '../config/config.js';
 import qwenGenerationProvider from '../generation/providers/qwenGenerationProvider.js';
 import { logInferenceDebug } from '../debug.js';
+import { getInferenceRequestId } from '../middleware/requestLifecycle.js';
 
 // Coerces the has api key into the representation required for this service.
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
@@ -44,7 +45,7 @@ function safeJsonParse(raw) {
 }
 
 // Requests personalized smart-folder recommendations from the LLM.
-export async function getSmartFolderRecommendations({ insights }) {
+export async function getSmartFolderRecommendations({ insights }, context = {}) {
   const startedAt = Date.now();
   logInferenceDebug(`calling smart-folder-recommendations provider=${generationConfig.provider}`);
   // Rejects processing when client is unavailable.
@@ -185,7 +186,10 @@ OUTPUT (STRICT JSON ONLY)
     ? await qwenGenerationProvider.generate({
       systemPrompt: 'Return ONLY valid JSON. No markdown. No prose.',
       prompt,
-      maxNewTokens: 300
+      maxNewTokens: 300,
+      requestId: context.requestId || getInferenceRequestId(),
+      signal: context.signal,
+      operation: 'smart-folder-recommendations'
     })
     : (await client.chat.completions.create({
       model: generationConfig.smartFolderModel,
@@ -201,7 +205,11 @@ OUTPUT (STRICT JSON ONLY)
 
   // Handles the case where parsed is unavailable or parsed smart folders is not an array.
   if (!parsed || !Array.isArray(parsed.smartFolders)) {
-    console.warn('LLM returned invalid JSON, falling back to empty result');
+    const requestId = getInferenceRequestId();
+    console.warn(
+      'LLM returned invalid JSON, falling back to empty result' +
+      (requestId ? ` requestId=${requestId}` : '')
+    );
     logInferenceDebug(
       `completed smart-folder-recommendations provider=${generationConfig.provider} ` +
       `count=0 durationMs=${Date.now() - startedAt}`
