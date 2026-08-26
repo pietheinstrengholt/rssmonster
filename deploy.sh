@@ -485,6 +485,8 @@ cp -R "$CLIENT_DIR/dist" "$SERVER_DIR/dist"
 
 cd "$APP_DIR"
 mkdir -p logs
+log "Clearing PM2 logs"
+run_with_timeout 1m pm2 flush
 log "PM2 reload started for web and worker"
 run_pm2_mutation "reload web and worker" 20m pm2 startOrReload "$ECOSYSTEM_FILE" --only "$PM2_WEB_APP_NAME,$PM2_WORKER_APP_NAME" --env production --update-env
 log "PM2 reload completed for web and worker"
