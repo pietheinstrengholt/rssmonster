@@ -29,7 +29,8 @@
         <BootstrapIcon v-if="hotInd === 1" icon="fire" class="hot-icon" title="Hot article" aria-label="Hot article" />
         <button v-if="showSimilarBadge" type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', eventId)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
         <button v-if="duplicateCount > 0" type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="$emit('view-duplicate-articles')">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>
-        <button v-for="tag in ruleTags" :key="'list-rule-' + tag.id" type="button" class="tag tag-rule" :aria-label="`Filter articles by tag ${formatTagName(tag.name)}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name) }}</button>
+        <button v-for="tag in visibleRuleTags" :key="'list-rule-' + tag.id" type="button" class="tag tag-rule" :aria-label="`Filter articles by tag ${formatTagName(tag.name)}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name) }}</button>
+        <button v-if="hasHiddenRuleTags" type="button" class="tag-disclosure" :aria-expanded="tagsExpanded ? 'true' : 'false'" :aria-label="tagsExpanded ? 'Show fewer tags' : `Show ${hiddenRuleTagCount} more tags`" @click.stop="tagsExpanded = !tagsExpanded">{{ tagsExpanded ? 'Show less' : `+${hiddenRuleTagCount}` }}</button>
       </div>
       <ArticlePreviewFallback v-if="!hasArticlePreview" :url="url" @open-original="$emit('article-clicked')" />
     </div>
@@ -54,6 +55,11 @@ import { usableHttpUrl } from '../../utils/content.js';
 export default {
   components: { ArticleActionsMenu, ArticlePreviewFallback, HighlightedText },
   emits: ['article-clicked', 'article-touched', 'more-like-this', 'mute-feed', 'not-interested', 'select-tag', 'swipe-cancel', 'swipe-touch-end', 'swipe-touch-move', 'swipe-touch-start', 'toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'view-duplicate-articles', 'view-event-articles'],
+  data() {
+    return {
+      tagsExpanded: false
+    };
+  },
   props: {
     url: { type: String, default: '' },
     title: { type: String, default: '' },
@@ -88,6 +94,18 @@ export default {
     // Returns tags assigned by rules for the compact metadata row.
     ruleTags() {
       return (this.tags || []).filter(tag => tag.tagType === 'rule');
+    },
+    // Returns the rule tags visible at the current disclosure level.
+    visibleRuleTags() {
+      return this.tagsExpanded ? this.ruleTags : this.ruleTags.slice(0, 3);
+    },
+    // Returns the number of rule tags hidden by the compact presentation.
+    hiddenRuleTagCount() {
+      return Math.max(0, this.ruleTags.length - 3);
+    },
+    // Returns whether the tag list needs an inline disclosure control.
+    hasHiddenRuleTags() {
+      return this.ruleTags.length > 3;
     },
     // Returns whether grouped-source diversity should be displayed.
     showSourceBadge() {
@@ -245,6 +263,7 @@ export default {
 }
 
 .tag,
+.tag-disclosure,
 .similar-badge,
 .duplicate-badge {
   appearance: none;
@@ -270,6 +289,17 @@ export default {
 .tag.tag-rule {
   background-color: var(--article-rule-tag-background);
   color: var(--article-rule-tag-text);
+}
+
+.tag-disclosure {
+  background-color: var(--surface-control);
+  border-color: var(--border-subtle);
+  color: var(--text-meta, var(--text-muted));
+}
+
+.tag-disclosure:hover {
+  background-color: var(--surface-chrome);
+  color: var(--text-secondary);
 }
 
 .similar-badge {
@@ -320,6 +350,7 @@ export default {
 }
 
 .tag:focus-visible,
+.tag-disclosure:focus-visible,
 .similar-badge:focus-visible,
 .duplicate-badge:focus-visible {
   outline: 2px solid var(--border-focus);

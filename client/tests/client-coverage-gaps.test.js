@@ -101,6 +101,67 @@ describe('push API contracts', () => {
 });
 
 describe('ArticleHeadlineRow interaction contract', () => {
+  const headlineRowStubs = {
+    ArticleActionsMenu: true,
+    BootstrapIcon: BootstrapIconStub,
+    HighlightedText: { props: ['text'], template: '<span>{{ text }}</span>' }
+  };
+
+  it('progressively discloses rule tags without triggering the article row', async () => {
+    const tags = Array.from({ length: 5 }, (_, index) => ({
+      id: index + 1,
+      name: `tag-${index + 1}`,
+      tagType: 'rule'
+    }));
+    const wrapper = mount(ArticleHeadlineRow, {
+      props: { tags, hasArticlePreview: true },
+      global: { stubs: headlineRowStubs }
+    });
+
+    expect(wrapper.findAll('.tag-rule').map(tag => tag.text())).toEqual(['Tag-1', 'Tag-2', 'Tag-3']);
+    expect(wrapper.get('.tag-disclosure').text()).toBe('+2');
+    expect(wrapper.get('.tag-disclosure').attributes()).toMatchObject({
+      'aria-expanded': 'false',
+      'aria-label': 'Show 2 more tags'
+    });
+
+    await wrapper.get('.tag-disclosure').trigger('click');
+
+    expect(wrapper.findAll('.tag-rule')).toHaveLength(5);
+    expect(wrapper.get('.tag-disclosure').text()).toBe('Show less');
+    expect(wrapper.get('.tag-disclosure').attributes()).toMatchObject({
+      'aria-expanded': 'true',
+      'aria-label': 'Show fewer tags'
+    });
+    expect(wrapper.emitted('article-touched')).toBeUndefined();
+
+    await wrapper.findAll('.tag-rule')[4].trigger('click');
+    expect(wrapper.emitted('select-tag')[0][0]).toEqual(tags[4]);
+    expect(wrapper.emitted('article-touched')).toBeUndefined();
+
+    await wrapper.get('.tag-disclosure').trigger('click');
+    expect(wrapper.findAll('.tag-rule')).toHaveLength(3);
+    expect(wrapper.get('.tag-disclosure').text()).toBe('+2');
+  });
+
+  it('shows all rule tags without disclosure when the compact limit is not exceeded', () => {
+    const wrapper = mount(ArticleHeadlineRow, {
+      props: {
+        tags: [
+          { id: 1, name: 'first', tagType: 'rule' },
+          { id: 2, name: 'second', tagType: 'rule' },
+          { id: 3, name: 'third', tagType: 'rule' },
+          { id: 4, name: 'ignored', tagType: 'manual' }
+        ],
+        hasArticlePreview: true
+      },
+      global: { stubs: headlineRowStubs }
+    });
+
+    expect(wrapper.findAll('.tag-rule')).toHaveLength(3);
+    expect(wrapper.find('.tag-disclosure').exists()).toBe(false);
+  });
+
   it('renders grouped metadata and forwards every compact-row interaction', async () => {
     const wrapper = mount(ArticleHeadlineRow, {
       props: {
