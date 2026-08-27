@@ -1,24 +1,26 @@
 <template>
-  <div v-if="categoryName || tags.length || showAdvertisement || showSentiment || showWritingQuality" class="article-tags">
+  <div v-if="categoryName || tags.length || hasQualityScores" class="article-tags">
     <button v-if="categoryName" type="button" class="tag-badge" :aria-label="`Filter articles by category ${categoryName}`" @click.stop="$emit('select-category')">{{ categoryName }}</button>
     <button v-for="tag in visibleTags" :key="tag.id" type="button" :class="['tag', { 'tag-rule': tag.tagType === 'rule' }]" :aria-label="`Filter articles by tag ${formatTagName(tag.name)}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name) }}</button>
     <button v-if="hasHiddenTags" type="button" class="tag-disclosure" :aria-expanded="tagsExpanded ? 'true' : 'false'" :aria-label="tagsExpanded ? 'Show fewer tags' : `Show ${hiddenTagCount} more tags`" @click.stop="tagsExpanded = !tagsExpanded">{{ tagsExpanded ? 'Show less' : `+${hiddenTagCount}` }}</button>
-    <span v-if="showWritingQuality" :class="['score', 'quality-score', scoreSeverityClass(qualityScore)]" :title="`Writing quality: ${qualityScore}`">Writing: {{ qualityScore }}</span>
-    <span v-if="showSentiment" :class="['score', 'sentiment-score', scoreSeverityClass(sentimentScore)]" :title="`Tone quality: ${sentimentScore}`">Tone: {{ sentimentScore }}</span>
-    <span v-if="showAdvertisement" :class="['score', 'ad-score', scoreSeverityClass(advertisementScore)]" :title="`Ad-free quality: ${advertisementScore}`">Ads: {{ advertisementScore }}</span>
+    <ArticleQualityExplanation
+      v-if="hasQualityScores"
+      :advertisement-score="advertisementScore"
+      :sentiment-score="sentimentScore"
+      :quality-score="qualityScore"
+    />
   </div>
 </template>
 <script>
+import { defineAsyncComponent } from 'vue';
 import { formatTagName } from '../../utils/tags';
 
-// Maps every analysis score onto the shared poor, medium, or good visual scale.
-const scoreSeverityClass = score => {
-  if (score >= 80) return 'score-good';
-  if (score >= 60) return 'score-medium';
-  return 'score-poor';
-};
+const ArticleQualityExplanation = defineAsyncComponent(
+  () => import('./ArticleQualityExplanation.vue')
+);
 
 export default {
+  components: { ArticleQualityExplanation },
   emits: ['select-category', 'select-tag'],
   props: {
     categoryName: { type: String, default: '' },
@@ -26,10 +28,7 @@ export default {
     isMobilePortrait: { type: Boolean, default: false },
     advertisementScore: { type: Number, default: undefined },
     sentimentScore: { type: Number, default: undefined },
-    qualityScore: { type: Number, default: undefined },
-    showAdvertisement: { type: Boolean, default: false },
-    showSentiment: { type: Boolean, default: false },
-    showWritingQuality: { type: Boolean, default: false }
+    qualityScore: { type: Number, default: undefined }
   },
   data() {
     return {
@@ -37,6 +36,11 @@ export default {
     };
   },
   computed: {
+    // Shows one complete quality summary only when every underlying score is available.
+    hasQualityScores() {
+      return [this.advertisementScore, this.sentimentScore, this.qualityScore]
+        .every(Number.isFinite);
+    },
     // Groups regular tags before rule tags while preserving order within each group.
     displayTags() {
       const ruleTags = this.tags.filter(tag => tag.tagType === 'rule');
@@ -56,7 +60,7 @@ export default {
       return this.displayTags.length > 3;
     }
   },
-  methods: { formatTagName, scoreSeverityClass }
+  methods: { formatTagName }
 };
 </script>
 
@@ -71,8 +75,7 @@ export default {
 
 .tag-badge,
 .tag,
-.tag-disclosure,
-.score {
+.tag-disclosure {
   display: inline-flex;
   align-items: center;
   padding: 3px 8px;
@@ -120,27 +123,6 @@ export default {
   color: var(--text-secondary);
 }
 
-.score {
-  border: 1px solid var(--color-transparent);
-  background-color: var(--surface-chrome);
-  color: var(--article-score-text);
-}
-
-.score.score-poor {
-  background-color: var(--article-score-poor-background);
-  color: var(--article-score-poor-text);
-}
-
-.score.score-medium {
-  background-color: var(--article-score-medium-background);
-  color: var(--article-score-medium-text);
-}
-
-.score.score-good {
-  background-color: var(--article-score-good-background);
-  color: var(--article-score-good-text);
-}
-
 .tag-badge:focus-visible,
 .tag:focus-visible,
 .tag-disclosure:focus-visible {
@@ -154,8 +136,7 @@ export default {
     min-width: 0;
   }
 
-  .tag:not(.tag-rule),
-  .score {
+  .tag:not(.tag-rule) {
     display: none;
   }
 }

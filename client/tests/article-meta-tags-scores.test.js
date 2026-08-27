@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
 import ArticleMeta from '../src/components/articles/ArticleMeta.vue';
+import ArticleQualityExplanation from '../src/components/articles/ArticleQualityExplanation.vue';
 import ArticleRecommendationExplanation from '../src/components/articles/ArticleRecommendationExplanation.vue';
 import ArticleTagsScores from '../src/components/articles/ArticleTagsScores.vue';
 
@@ -33,8 +34,17 @@ const mountArticleMeta = (props = {}, options = {}) => mount(ArticleMeta, {
 });
 
 // Mounts article tags and scores with representative defaults.
-const mountArticleTagsScores = (props = {}) => mount(ArticleTagsScores, {
-  props
+const mountArticleTagsScores = (props = {}, options = {}) => mount(ArticleTagsScores, {
+  ...options,
+  props,
+  global: {
+    ...options.global,
+    stubs: {
+      ...options.global?.stubs,
+      ArticleQualityExplanation,
+      BootstrapIcon: BootstrapIconStub
+    }
+  }
 });
 
 beforeEach(() => {
@@ -475,45 +485,55 @@ describe('ArticleTagsScores', () => {
     expect(parentClick).not.toHaveBeenCalled();
   });
 
-  // Verifies every enabled analysis dimension renders its score and explanatory title.
-  it('renders writing, tone, and ad scores', () => {
+  // Verifies the summary includes every dimension, including the neutral baseline score.
+  it('renders one average quality score with an individual score breakdown', async () => {
     const wrapper = mountArticleTagsScores({
       advertisementScore: 100,
-      sentimentScore: 90,
-      qualityScore: 80,
-      showAdvertisement: true,
-      showSentiment: true,
-      showWritingQuality: true
-    });
+      sentimentScore: 70,
+      qualityScore: 80
+    }, { attachTo: document.body });
+    await flushPromises();
 
-    expect(wrapper.get('.quality-score').text()).toBe('Writing: 80');
-    expect(wrapper.get('.sentiment-score').text()).toBe('Tone: 90');
-    expect(wrapper.get('.ad-score').text()).toBe('Ads: 100');
-    expect(wrapper.get('.ad-score').attributes('title')).toBe('Ad-free quality: 100');
-    expect(wrapper.findAll('.score').every(score => score.classes().includes('score-good'))).toBe(true);
-    expect(wrapper.find('.overall-score').exists()).toBe(false);
-    expect(wrapper.findAll('.score').map(score => score.classes()[1])).toEqual([
-      'quality-score',
-      'sentiment-score',
-      'ad-score'
+    const trigger = wrapper.get('.overall-score');
+    expect(trigger.text()).toBe('Quality: 83');
+    expect(trigger.element.tagName).toBe('BUTTON');
+    expect(trigger.classes()).toContain('score-good');
+    expect(trigger.attributes()).toMatchObject({
+      'aria-expanded': 'false',
+      'aria-label': 'Quality score 83. Show quality breakdown'
+    });
+    expect(wrapper.findAll('.quality-score, .sentiment-score, .ad-score')).toHaveLength(0);
+
+    await trigger.trigger('click');
+    await flushPromises();
+
+    const panel = document.querySelector('.quality-explanation-panel');
+    expect(panel.getAttribute('role')).toBe('dialog');
+    expect(panel.textContent).toContain('Article quality');
+    expect([...panel.querySelectorAll('.article-explanation-list strong:first-child')]
+      .map(item => item.textContent)).toEqual([
+      'Writing quality',
+      'Tone quality',
+      'Ad-free quality'
     ]);
-    expect(wrapper.findAll('.score').every(score => score.element.tagName === 'SPAN')).toBe(true);
+    expect([...panel.querySelectorAll('.article-explanation-item-value')]
+      .map(item => item.textContent)).toEqual(['80', '70', '100']);
+    expect(panel.textContent).toContain('Clarity, structure, and substance');
+    expect(panel.textContent).toContain('83 average quality score');
+    wrapper.unmount();
   });
 
-  // Verifies every analysis dimension uses the same score-severity thresholds.
-  it('assigns shared severity classes at the score boundaries', () => {
+  // Verifies the average badge uses the existing score-severity thresholds.
+  it('assigns severity from the average quality score', async () => {
     const wrapper = mountArticleTagsScores({
       advertisementScore: 60,
       sentimentScore: 79,
-      qualityScore: 80,
-      showAdvertisement: true,
-      showSentiment: true,
-      showWritingQuality: true
+      qualityScore: 80
     });
+    await flushPromises();
 
-    expect(wrapper.get('.ad-score').classes()).toContain('score-medium');
-    expect(wrapper.get('.sentiment-score').classes()).toContain('score-medium');
-    expect(wrapper.get('.quality-score').classes()).toContain('score-good');
+    expect(wrapper.get('.overall-score').text()).toBe('Quality: 73');
+    expect(wrapper.get('.overall-score').classes()).toContain('score-medium');
   });
 
   // Verifies child contracts contain data and events rather than injected presentation functions.

@@ -8,6 +8,7 @@ import articleSource from '../src/components/articles/Article.vue?raw';
 import articleActionsSource from '../src/components/articles/ArticleActionsMenu.vue?raw';
 import articleContentSource from '../src/components/articles/ArticleContent.vue?raw';
 import articleEndStateSource from '../src/components/articles/ArticleEndState.vue?raw';
+import articleExplanationPopoverSource from '../src/components/articles/ArticleExplanationPopover.vue?raw';
 import articleHeaderSource from '../src/components/articles/ArticleHeader.vue?raw';
 import articleHeadlineSource from '../src/components/articles/ArticleHeadlineRow.vue?raw';
 import articleMetaSource from '../src/components/articles/ArticleMeta.vue?raw';
@@ -156,13 +157,13 @@ describe('CSS ownership boundaries', () => {
 
   // Verifies application-owned article presentation follows the component that renders each selector.
   it('co-locates article child presentation with its markup owner', () => {
-    for (const source of [articleSource, articleActionsSource, articleContentSource, articleHeaderSource, articleHeadlineSource, articleMetaSource, articlePreviewFallbackSource, articleTagsSource]) {
+    for (const source of [articleSource, articleActionsSource, articleContentSource, articleExplanationPopoverSource, articleHeaderSource, articleHeadlineSource, articleMetaSource, articlePreviewFallbackSource, articleTagsSource]) {
       expect(source).toContain('<style scoped');
     }
 
     expect(articleHeaderSource).toContain('.article-header-left');
     expect(articleMetaSource).toContain('.article-provenance');
-    expect(articleTagsSource).toContain('.score.score-good');
+    expect(articleExplanationPopoverSource).toContain('.article-explanation-trigger.score-good');
     expect(articleContentSource).toContain('.article-content-wrapper');
     expect(articleActionsSource).toContain('.recommendation-action-item');
     expect(articleHeadlineSource).toContain('.article-list-row');

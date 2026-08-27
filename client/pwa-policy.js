@@ -62,6 +62,8 @@ export const PRECACHED_PNG_ICONS = Object.freeze([
 // These optional feature families must remain outside the install-time precache.
 export const OPTIONAL_DYNAMIC_MODULES = Object.freeze([
   'node_modules/vuedraggable/dist/vuedraggable.umd.js',
+  'src/components/articles/ArticleExplanationPopover.vue',
+  'src/components/articles/ArticleQualityExplanation.vue',
   'src/components/articles/ArticleRecommendationExplanation.vue',
   'src/components/assistant/ChatAssistant.vue',
   'src/components/briefing/BriefingPreferencesModal.vue',
@@ -87,6 +89,8 @@ export const OPTIONAL_DYNAMIC_MODULES = Object.freeze([
 
 // These emitted prefixes cover optional shared chunks that do not have stable source keys in the Vite manifest.
 export const OPTIONAL_CHUNK_PREFIXES = Object.freeze([
+  'assets/ArticleExplanationPopover-',
+  'assets/ArticleQualityExplanation-',
   'assets/ArticleRecommendationExplanation-',
   'assets/BaseDialog-',
   'assets/BriefingPreferencesModal-',
