@@ -363,22 +363,22 @@ describe('ArticleTagsScores', () => {
     });
 
     expect(wrapper.get('.tag-badge').text()).toBe('News');
-    expect(wrapper.findAll('.tag').map(tag => tag.text())).toEqual(['Science', 'Culture']);
-    expect(wrapper.findAll('.tag')[0].classes()).toContain('tag-rule');
-    expect(wrapper.findAll('.tag')[1].classes()).not.toContain('tag-rule');
+    expect(wrapper.findAll('.tag').map(tag => tag.text())).toEqual(['Culture', 'Science']);
+    expect(wrapper.findAll('.tag')[0].classes()).not.toContain('tag-rule');
+    expect(wrapper.findAll('.tag')[1].classes()).toContain('tag-rule');
     expect(wrapper.get('.tag-badge').element.tagName).toBe('BUTTON');
     expect(wrapper.get('.tag-badge').attributes()).toMatchObject({
       type: 'button',
       'aria-label': 'Filter articles by category News'
     });
     expect(wrapper.findAll('.tag').every(tag => tag.element.tagName === 'BUTTON')).toBe(true);
-    expect(wrapper.findAll('.tag')[0].attributes('aria-label')).toBe('Filter articles by tag Science');
+    expect(wrapper.findAll('.tag')[0].attributes('aria-label')).toBe('Filter articles by tag Culture');
 
     await wrapper.get('.tag-badge').trigger('click');
     await wrapper.findAll('.tag')[0].trigger('click');
 
     expect(wrapper.emitted('select-category')).toEqual([[]]);
-    expect(wrapper.emitted('select-tag')).toEqual([[ruleTag]]);
+    expect(wrapper.emitted('select-tag')).toEqual([[regularTag]]);
   });
 
   // Verifies expanded and reader metadata progressively disclose long tag lists.
