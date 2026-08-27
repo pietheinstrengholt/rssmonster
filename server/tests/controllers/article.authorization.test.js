@@ -7,11 +7,15 @@ import articleController from '../../controllers/article.js';
 
 const {
   Article,
+  ArticleTopic,
   BriefingPreference,
   Category,
   Event,
   Feed,
+  Island,
+  IslandTopic,
   Setting,
+  Tag,
   Topic,
   User,
   sequelize
@@ -222,6 +226,101 @@ describe('article ownership authorization', () => {
     expect(response.body[0].contentText).toBe('Article body');
     expect(response.body[0]).not.toHaveProperty('contentTextHash');
     expect(response.body[0]).not.toHaveProperty('contentSourceHash');
+  });
+
+  it('returns recommendation score, reasons, event name, and interest island with article details', async () => {
+    const owner = await createUser(uniqueName('article-recommendation-details-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    const topic = await Topic.create({
+      userId: owner.id,
+      name: `${owner.username} topic`,
+      topicKey: uniqueName('recommendation-topic-key').slice(0, 64)
+    });
+    const island = await Island.create({
+      userId: owner.id,
+      label: 'Software development',
+      weight: 0.8,
+      islandVector: [1, 0],
+      archivedInd: false
+    });
+    const event = await Event.create({
+      userId: owner.id,
+      topicId: topic.id,
+      representativeArticleId: article.id,
+      name: 'Runtime recommendation contract',
+      articleCount: 8,
+      sourceCount: 4,
+      sourceDiversityScore: 1.5
+    });
+    const ruleTag = await Tag.create({
+      articleId: article.id,
+      userId: owner.id,
+      name: 'JavaScript',
+      tagType: 'rule'
+    });
+    await Promise.all([
+      article.update({
+        eventId: event.id,
+        topicId: topic.id,
+        articleVector: [1, 0],
+        interestScore: 0.8,
+        advertisementScore: 80,
+        sentimentScore: 80,
+        qualityScore: 80,
+        publishedAt: new Date()
+      }),
+      feed.update({ feedTrust: 0.7 }),
+      Setting.upsert({ userId: owner.id, prioritizeHighTrust: true }),
+      ArticleTopic.create({
+        articleId: article.id,
+        topicId: topic.id,
+        confidence: 1,
+        primaryInd: true
+      }),
+      IslandTopic.create({
+        islandId: island.id,
+        topicId: topic.id,
+        similarity: 1,
+        confidence: 1
+      })
+    ]);
+
+    const response = await request(app)
+      .post('/api/articles/details')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ articleIds: String(article.id) });
+
+    expect(response.status).toBe(200);
+    expect(response.body[0].event.name).toBe('Runtime recommendation contract');
+    expect(response.body[0].recommendation.score).toEqual(expect.any(Number));
+    expect(response.body[0].recommendation.reasons.map(reason => reason.code)).toEqual([
+      'interest_match',
+      'event_coverage',
+      'source_diversity',
+      'rule_match',
+      'freshness',
+      'quality',
+      'feed_trust'
+    ]);
+    expect(response.body[0].recommendation.reasons).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: 'interest_match',
+        island: { id: island.id, name: island.label }
+      }),
+      expect.objectContaining({
+        code: 'event_coverage',
+        event: { id: event.id, name: event.name },
+        articleCount: 8
+      }),
+      expect.objectContaining({
+        code: 'source_diversity',
+        sourceCount: 4
+      }),
+      expect.objectContaining({
+        code: 'rule_match',
+        tags: [{ id: ruleTag.id, name: ruleTag.name }]
+      })
+    ]));
   });
 
   it('serializes developing-story presentation state from the Article model', async () => {

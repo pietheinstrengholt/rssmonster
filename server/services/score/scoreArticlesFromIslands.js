@@ -16,10 +16,20 @@ const {
 
 // Provides the shared dependencies used by this service.
 const { Op } = Sequelize;
+// Defines the fallback island article score threshold enforced by this service.
+const FALLBACK_ISLAND_ARTICLE_SCORE_THRESHOLD = 0.62;
+
+// This function exposes the same bounded threshold to read-side island attribution.
+export function resolveIslandArticleScoreThreshold(
+  value = process.env.ISLAND_ARTICLE_SCORE_THRESHOLD
+) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= -1 && parsed <= 1
+    ? parsed
+    : FALLBACK_ISLAND_ARTICLE_SCORE_THRESHOLD;
+}
 // Defines the default island article score threshold enforced by this service.
-const DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
-  process.env.ISLAND_ARTICLE_SCORE_THRESHOLD || '0.62'
-);
+const DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD = resolveIslandArticleScoreThreshold();
 // Defines the scorable article status enforced by this service.
 const SCORABLE_ARTICLE_STATUS = 'unread';
 
@@ -47,7 +57,7 @@ function cosineSimilarity(vectorA, vectorB) {
 }
 
 // This function finds the strongest island-derived score for one article vector.
-function strongestIslandScore(articleVector, islands, threshold) {
+export function strongestIslandScore(articleVector, islands, threshold) {
   let strongest = null;
 
   // Processes each islands entry in turn.

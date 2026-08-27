@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 
 import ArticleMeta from '../src/components/articles/ArticleMeta.vue';
+import ArticleRecommendationExplanation from '../src/components/articles/ArticleRecommendationExplanation.vue';
 import ArticleTagsScores from '../src/components/articles/ArticleTagsScores.vue';
 
 const BootstrapIconStub = {
@@ -10,7 +11,8 @@ const BootstrapIconStub = {
 };
 
 // Mounts article metadata with representative provenance and score values.
-const mountArticleMeta = (props = {}) => mount(ArticleMeta, {
+const mountArticleMeta = (props = {}, options = {}) => mount(ArticleMeta, {
+  ...options,
   props: {
     publishedAt: '2026-07-31T08:00:00.000Z',
     feed: {
@@ -21,7 +23,10 @@ const mountArticleMeta = (props = {}) => mount(ArticleMeta, {
     ...props
   },
   global: {
+    ...options.global,
     stubs: {
+      ...options.global?.stubs,
+      ArticleRecommendationExplanation,
       BootstrapIcon: BootstrapIconStub
     }
   }
@@ -96,16 +101,120 @@ describe('ArticleMeta', () => {
     expect(wrapper.find('.article-provenance-separator').exists()).toBe(false);
   });
 
-  it('renders a Recommended badge for an article with an interest score', () => {
+  it('renders a Matches your interests badge for an article with an interest score', () => {
     const wrapper = mountArticleMeta({ hasInterestScore: true });
 
-    expect(wrapper.get('.recommended-badge').text()).toBe('Recommended');
+    expect(wrapper.get('.recommended-badge').text()).toBe('Matches your interests');
   });
 
   it('omits the Recommended badge without an interest score', () => {
     const wrapper = mountArticleMeta({ hasInterestScore: false });
 
     expect(wrapper.find('.recommended-badge').exists()).toBe(false);
+  });
+
+  it('explains recommendation reasons from the article metadata badge', async () => {
+    const wrapper = mountArticleMeta({
+      hasInterestScore: true,
+      isRecommendationView: true,
+      recommendation: {
+        score: 0.7591,
+        reasons: [
+          {
+            code: 'interest_match',
+            value: 0.4,
+            island: { id: 7, name: 'Software development' }
+          },
+          {
+            code: 'event_coverage',
+            value: 0.3333,
+            articleCount: 4,
+            event: { id: 63, name: 'Runtime launch' }
+          },
+          { code: 'source_diversity', value: 0.3333, sourceCount: 2 },
+          {
+            code: 'rule_match',
+            value: 1,
+            tags: [{ id: 91, name: 'JavaScript' }]
+          },
+          { code: 'freshness', value: 0.6 },
+          { code: 'quality', value: 0.7 },
+          { code: 'feed_trust', value: 0.15 }
+        ]
+      }
+    }, { attachTo: document.body });
+    await flushPromises();
+    const trigger = wrapper.get('.recommended-badge');
+
+    expect(trigger.text()).toBe('Why recommended');
+    expect(trigger.element.tagName).toBe('BUTTON');
+    expect(trigger.attributes()).toMatchObject({
+      'aria-expanded': 'false',
+      'aria-label': 'Why recommended. Explain why this article was recommended'
+    });
+
+    await trigger.trigger('click');
+    await flushPromises();
+
+    const panel = document.querySelector('.recommendation-explanation-panel');
+    expect(trigger.attributes('aria-expanded')).toBe('true');
+    expect(panel.getAttribute('role')).toBe('dialog');
+    expect(panel.textContent).toContain(
+      'This article matched your “Software development” interest and is part of “Runtime launch”, covered by 4 articles from 2 sources.'
+    );
+    expect([...panel.querySelectorAll('.recommendation-explanation-list strong')]
+      .map(item => item.textContent)).toEqual([
+      'Interest match',
+      'Coverage and sources',
+      'Rule match',
+      'Freshness',
+      'Quality',
+      'Source trust'
+    ]);
+    expect(panel.textContent).toContain('76% recommendation score');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true
+    }));
+    await flushPromises();
+
+    expect(document.querySelector('.recommendation-explanation-panel')).toBeNull();
+    expect(document.activeElement).toBe(trigger.element);
+    wrapper.unmount();
+  });
+
+  it('keeps the interest label outside recommendation-ranked views', async () => {
+    const wrapper = mountArticleMeta({
+      hasInterestScore: true,
+      recommendation: {
+        score: 0.5,
+        reasons: [{ code: 'interest_match', value: 0.4 }]
+      }
+    });
+    await flushPromises();
+
+    expect(wrapper.get('.recommended-badge').text()).toBe('Matches your interests');
+    expect(wrapper.get('.recommended-badge').element.tagName).toBe('BUTTON');
+  });
+
+  it('hides recommendation explanations in ranked views without prior badge eligibility', async () => {
+    const recommendation = {
+      score: 0.4,
+      reasons: [{ code: 'freshness', value: 0.8 }]
+    };
+    const wrapper = mountArticleMeta({
+      recommendation,
+      isRecommendationView: true
+    });
+
+    expect(wrapper.find('.recommended-badge').exists()).toBe(false);
+
+    await wrapper.setProps({ hasInterestScore: true });
+    await flushPromises();
+
+    expect(wrapper.get('.recommended-badge').text()).toBe('Why recommended');
   });
 
   // Verifies mobile metadata exposes the remaining non-neutral score indicators.
@@ -270,6 +379,81 @@ describe('ArticleTagsScores', () => {
 
     expect(wrapper.emitted('select-category')).toEqual([[]]);
     expect(wrapper.emitted('select-tag')).toEqual([[ruleTag]]);
+  });
+
+  // Verifies expanded and reader metadata progressively disclose long tag lists.
+  it('groups tags beyond the first three behind an inline disclosure', async () => {
+    const tags = Array.from({ length: 6 }, (_, index) => ({
+      id: index + 1,
+      name: `tag-${index + 1}`,
+      tagType: index % 2 === 0 ? 'rule' : 'manual'
+    }));
+    const wrapper = mountArticleTagsScores({ tags });
+
+    expect(wrapper.findAll('.tag').map(tag => tag.text())).toEqual(['Tag-2', 'Tag-4', 'Tag-6']);
+    expect(wrapper.get('.tag-disclosure').text()).toBe('+3');
+    expect(wrapper.get('.tag-disclosure').attributes()).toMatchObject({
+      'aria-expanded': 'false',
+      'aria-label': 'Show 3 more tags'
+    });
+
+    await wrapper.get('.tag-disclosure').trigger('click');
+
+    expect(wrapper.findAll('.tag')).toHaveLength(6);
+    expect(wrapper.get('.tag-disclosure').text()).toBe('Show less');
+    expect(wrapper.get('.tag-disclosure').attributes()).toMatchObject({
+      'aria-expanded': 'true',
+      'aria-label': 'Show fewer tags'
+    });
+
+    await wrapper.findAll('.tag')[5].trigger('click');
+
+    expect(wrapper.emitted('select-tag')).toEqual([[tags[4]]]);
+
+    await wrapper.get('.tag-disclosure').trigger('click');
+
+    expect(wrapper.findAll('.tag')).toHaveLength(3);
+    expect(wrapper.get('.tag-disclosure').text()).toBe('+3');
+  });
+
+  // Keeps regular and rule tag colors in contiguous visual groups.
+  it('groups regular tags before rule tags while preserving their relative order', async () => {
+    const tags = [
+      { id: 1, name: 'hardware', tagType: 'provider' },
+      { id: 2, name: 'ai', tagType: 'inferred' },
+      { id: 3, name: 'openai', tagType: 'rule' },
+      { id: 4, name: 'security', tagType: 'provider' },
+      { id: 5, name: 'featured', tagType: 'rule' }
+    ];
+    const wrapper = mountArticleTagsScores({ tags });
+
+    expect(wrapper.findAll('.tag').map(tag => tag.text())).toEqual(['Hardware', 'Ai', 'Security']);
+
+    await wrapper.get('.tag-disclosure').trigger('click');
+
+    expect(wrapper.findAll('.tag').map(tag => tag.text())).toEqual([
+      'Hardware',
+      'Ai',
+      'Security',
+      'Openai',
+      'Featured'
+    ]);
+  });
+
+  // Preserves the mobile contract that only rule-generated tags are displayed and counted.
+  it('groups only visible rule tags in mobile portrait mode', () => {
+    const tags = [
+      { id: 1, name: 'manual-first', tagType: 'manual' },
+      ...Array.from({ length: 5 }, (_, index) => ({
+        id: index + 2,
+        name: `rule-${index + 1}`,
+        tagType: 'rule'
+      }))
+    ];
+    const wrapper = mountArticleTagsScores({ tags, isMobilePortrait: true });
+
+    expect(wrapper.findAll('.tag').map(tag => tag.text())).toEqual(['Rule-1', 'Rule-2', 'Rule-3']);
+    expect(wrapper.get('.tag-disclosure').text()).toBe('+2');
   });
 
   // Verifies nested metadata buttons do not bubble into a clickable article surface.

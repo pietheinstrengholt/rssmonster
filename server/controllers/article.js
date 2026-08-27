@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-const { Article, BriefingPreference, Feed, Tag, Event } = db;
+const { Article, BriefingPreference, Feed, Tag, Event, Setting } = db;
 import { Op, fn, col } from 'sequelize';
 import { searchArticles } from "../services/articleSearch/articleSearch.service.js";
 import { MAX_ARTICLE_SEARCH_LENGTH } from '../services/articleSearch/articleQueryParser.service.js';
@@ -10,6 +10,8 @@ import {
 } from '../services/dailyBriefing/dailyBriefing.service.js';
 import { resolvePredictedAffinity } from '../services/recommendations/predictedAffinityResolver.js';
 import { getArticleRecommendations as getArticleRecommendationsService } from '../services/recommendations/articleRecommendations.js';
+import { buildRecommendationPresentation } from '../services/recommendations/recommendedScore.js';
+import { loadInterestIslandAttributions } from '../services/recommendations/recommendationAttribution.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { retryDatabaseWrite } from '../utils/databaseRetry.js';
 
@@ -162,8 +164,10 @@ const loadArticleDetails = async (userId, articlesArray) => {
         required: false,
         attributes: [
           'id',
+          'name',
           'articleCount',
           'sourceCount',
+          'sourceDiversityScore',
           'topicId',
           'representativeArticleId',
           'developingArticleId'
@@ -203,6 +207,23 @@ const loadArticleDetails = async (userId, articlesArray) => {
   }
 
   attachPredictedAffinity(articles);
+
+  const [settings, interestIslandByArticleId] = await Promise.all([
+    Setting.findOne({
+      where: { userId },
+      attributes: ['prioritizeHighTrust'],
+      raw: true
+    }),
+    loadInterestIslandAttributions(userId, articles)
+  ]);
+  const prioritizeHighTrust = Boolean(Number(settings?.prioritizeHighTrust));
+
+  for (const article of articles) {
+    article.setDataValue('recommendation', buildRecommendationPresentation(article, {
+      prioritizeHighTrust,
+      interestIsland: interestIslandByArticleId.get(String(article.id)) || null
+    }));
+  }
 
   return articles;
 };

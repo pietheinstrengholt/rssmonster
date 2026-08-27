@@ -26,7 +26,7 @@ function normalizeInterestScore(rawInterestScore) {
 function resolveFeedTrustBoost(article, prioritizeHighTrust) {
   if (!prioritizeHighTrust) return 0;
 
-  const feed = article.get?.('Feed') ?? article.Feed ?? article.feed;
+  const feed = article.get?.('Feed') ?? article.get?.('feed') ?? article.Feed ?? article.feed;
   const rawFeedTrust = Number(feed?.feedTrust);
   if (!Number.isFinite(rawFeedTrust)) return 0;
   return Math.max(0, Math.min(1, rawFeedTrust));
@@ -85,7 +85,7 @@ export function computeRecommended(article, { prioritizeHighTrust = false } = {}
   const corroboration = coverage * crossSource;
 
   // Rule-based tag boost: articles matched by user-defined tag rules are more relevant
-  const tags = article.Tags ?? article.get?.('Tags') ?? [];
+  const tags = article.get?.('Tags') ?? article.get?.('tags') ?? article.Tags ?? article.tags ?? [];
   // Derives the has rule tag through some while computing recommended.
   const hasRuleTag = tags.some(t => t.tagType === 'rule');
   // Selects the rule boost based on whether has rule tag is available.
@@ -156,7 +156,7 @@ export function computeRecommendedBreakdown(article, { prioritizeHighTrust = fal
   const corroboration = coverage * crossSource;
 
   // Derives the tags required while computing recommended breakdown.
-  const tags = article.Tags ?? article.get?.('Tags') ?? [];
+  const tags = article.get?.('Tags') ?? article.get?.('tags') ?? article.Tags ?? article.tags ?? [];
   // Derives the has rule tag through some while computing recommended breakdown.
   const hasRuleTag = tags.some(t => t.tagType === 'rule');
   // Selects the rule boost based on whether has rule tag is available.
@@ -195,5 +195,97 @@ export function computeRecommendedBreakdown(article, { prioritizeHighTrust = fal
     eventArticleCount,
     sourceCount,
     recommended
+  };
+}
+
+// This function rounds recommendation values for a stable public API contract.
+const serializeRecommendationValue = value => Number(Number(value || 0).toFixed(4));
+
+// This function converts the scoring breakdown into frontend-ready promotion reasons.
+export function buildRecommendationPresentation(article, {
+  prioritizeHighTrust = false,
+  interestIsland = null
+} = {}) {
+  const breakdown = computeRecommendedBreakdown(article, { prioritizeHighTrust });
+  const event = article.get?.('event') ?? article.event;
+  const tags = article.get?.('Tags') ?? article.get?.('tags') ?? article.Tags ?? article.tags ?? [];
+  const reasons = [];
+
+  if (breakdown.interestScore > 0) {
+    reasons.push({
+      code: 'interest_match',
+      value: serializeRecommendationValue(breakdown.interestScore),
+      contribution: serializeRecommendationValue(RECOMMENDED_WEIGHTS.interest * breakdown.interestScore),
+      ...(interestIsland ? { island: interestIsland } : {})
+    });
+  }
+
+  if (breakdown.coverage > 0) {
+    reasons.push({
+      code: 'event_coverage',
+      value: serializeRecommendationValue(breakdown.coverage),
+      contribution: serializeRecommendationValue(
+        RECOMMENDED_WEIGHTS.coverage * breakdown.coverage + breakdown.eventBoost
+      ),
+      articleCount: breakdown.eventArticleCount,
+      ...(event ? {
+        event: {
+          id: event.id,
+          name: event.name || null
+        }
+      } : {})
+    });
+  }
+
+  if (breakdown.crossSource > 0) {
+    reasons.push({
+      code: 'source_diversity',
+      value: serializeRecommendationValue(breakdown.crossSource),
+      contribution: serializeRecommendationValue(
+        RECOMMENDED_WEIGHTS.crossSource * breakdown.crossSource
+        + RECOMMENDED_WEIGHTS.corroboration * breakdown.corroboration
+      ),
+      sourceCount: breakdown.sourceCount
+    });
+  }
+
+  if (breakdown.ruleBoost > 0) {
+    reasons.push({
+      code: 'rule_match',
+      value: 1,
+      contribution: serializeRecommendationValue(breakdown.ruleBoost),
+      tags: tags
+        .filter(tag => tag.tagType === 'rule')
+        .map(tag => ({ id: tag.id, name: tag.name }))
+    });
+  }
+
+  if (breakdown.freshness > 0) {
+    reasons.push({
+      code: 'freshness',
+      value: serializeRecommendationValue(breakdown.freshness),
+      contribution: serializeRecommendationValue(RECOMMENDED_WEIGHTS.freshness * breakdown.freshness)
+    });
+  }
+
+  if (breakdown.quality > 0) {
+    reasons.push({
+      code: 'quality',
+      value: serializeRecommendationValue(breakdown.quality),
+      contribution: serializeRecommendationValue(RECOMMENDED_WEIGHTS.quality * breakdown.quality)
+    });
+  }
+
+  if (breakdown.feedTrustBoost > 0) {
+    reasons.push({
+      code: 'feed_trust',
+      value: serializeRecommendationValue(breakdown.feedTrustBoost),
+      contribution: serializeRecommendationValue(breakdown.feedTrustBoost)
+    });
+  }
+
+  return {
+    score: serializeRecommendationValue(breakdown.recommended),
+    reasons
   };
 }

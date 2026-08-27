@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildRecommendationPresentation,
   computeRecommended,
   computeRecommendedBreakdown
 } from '../../services/recommendations/recommendedScore.js';
@@ -221,5 +222,62 @@ describe('computeRecommended', () => {
 
     expect(breakdown.feedTrustBoost).toBe(0.65);
     expect(breakdown.recommended).toBe(0.65);
+  });
+
+  it('serializes applicable promotion reasons with their domain metadata', () => {
+    const recommendation = buildRecommendationPresentation({
+      freshness: 0.8,
+      interestScore: 0.7,
+      quality: 0.9,
+      Feed: { feedTrust: 0.6 },
+      event: {
+        id: 12,
+        name: 'Example event',
+        articleCount: 8,
+        sourceCount: 4,
+        sourceDiversityScore: 1.5
+      },
+      Tags: [{ id: 4, name: 'JavaScript', tagType: 'rule' }]
+    }, {
+      prioritizeHighTrust: true,
+      interestIsland: { id: 7, name: 'Software development' }
+    });
+
+    expect(recommendation.score).toBeGreaterThan(0);
+    expect(recommendation.reasons.map(reason => reason.code)).toEqual([
+      'interest_match',
+      'event_coverage',
+      'source_diversity',
+      'rule_match',
+      'freshness',
+      'quality',
+      'feed_trust'
+    ]);
+    expect(recommendation.reasons[0]).toMatchObject({
+      island: { id: 7, name: 'Software development' }
+    });
+    expect(recommendation.reasons[1]).toMatchObject({
+      articleCount: 8,
+      event: { id: 12, name: 'Example event' }
+    });
+    expect(recommendation.reasons[2]).toMatchObject({ sourceCount: 4 });
+    expect(recommendation.reasons[3]).toMatchObject({
+      tags: [{ id: 4, name: 'JavaScript' }]
+    });
+  });
+
+  it('omits signals that did not promote the article', () => {
+    const recommendation = buildRecommendationPresentation({
+      freshness: 0.4,
+      interestScore: -0.8,
+      quality: 0.6,
+      event: { articleCount: 1, sourceCount: 1, sourceDiversityScore: 0 },
+      Tags: []
+    });
+
+    expect(recommendation.reasons.map(reason => reason.code)).toEqual([
+      'freshness',
+      'quality'
+    ]);
   });
 });

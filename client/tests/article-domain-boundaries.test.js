@@ -123,6 +123,19 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe('Article recommendation context', () => {
+  it.each([
+    [{ status: 'briefing', sort: 'desc', search: '' }, true],
+    [{ status: 'unread', sort: 'recommended', search: '' }, true],
+    [{ status: 'unread', sort: 'desc', search: 'tag:ai sort:recommended' }, true],
+    [{ status: 'unread', sort: 'desc', search: 'tag:ai' }, false]
+  ])('detects recommendation-ranked selections', (currentSelection, expected) => {
+    expect(Article.computed.isRecommendationView.call({
+      selectionStore: { currentSelection }
+    })).toBe(expected);
+  });
+});
+
 describe('Article mobile swipe behavior', () => {
   it('resets swipe state when the shared portrait query stops matching', () => {
     const context = createSwipeContext();

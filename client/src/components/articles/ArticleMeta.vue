@@ -7,7 +7,12 @@
       <span v-if="hasPublishedAt && hasSource" class="article-provenance-separator" aria-hidden="true">·</span>
       <span v-if="hasSource" class="article-source"><a v-if="sourceUrl" target="_blank" rel="noopener noreferrer" :href="sourceUrl">{{ sourceLabel }}</a><span v-else>{{ sourceLabel }}</span></span>
     </span>
-    <span v-if="hasInterestScore" class="recommended-badge">Recommended</span>
+    <ArticleRecommendationExplanation
+      v-if="showRecommendationExplanation"
+      :recommendation="recommendation"
+      :trigger-label="recommendationTriggerLabel"
+    />
+    <span v-else-if="hasInterestScore" class="recommended-badge">Matches your interests</span>
     <span v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none' && event.sourceCount >= 2" class="source-badge" :title="`${event.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ event.sourceCount }} sources</span>
     <button v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none'" type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
     <button v-if="duplicateCount > 0" type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="$emit('view-duplicate-articles')">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>
@@ -15,17 +20,34 @@
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
 import {
   getSentimentClass
 } from '../../services/articlePresentation.js';
 import { formatRelativeDate } from '../../utils/date.js';
 
+const ArticleRecommendationExplanation = defineAsyncComponent(
+  () => import('./ArticleRecommendationExplanation.vue')
+);
+
 export default {
+  components: { ArticleRecommendationExplanation },
   emits: ['view-event-articles', 'view-duplicate-articles'],
   props: {
-    publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, hasInterestScore: { type: Boolean, default: false }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, neutralScore: { type: Number, required: true }
+    publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, hasInterestScore: { type: Boolean, default: false }, isRecommendationView: { type: Boolean, default: false }, recommendation: { type: Object, default: null }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, neutralScore: { type: Number, required: true }
   },
   computed: {
+    // Returns whether the backend supplied reasons relevant to the active article context.
+    showRecommendationExplanation() {
+      const reasons = Array.isArray(this.recommendation?.reasons)
+        ? this.recommendation.reasons
+        : [];
+      return this.hasInterestScore && reasons.length > 0;
+    },
+    // Selects the badge label that matches the current collection context.
+    recommendationTriggerLabel() {
+      return this.isRecommendationView ? 'Why recommended' : 'Matches your interests';
+    },
     // Returns the author or feed name displayed as the article source.
     sourceLabel() {
       return String(this.author || this.feed?.feedName || '').trim();
