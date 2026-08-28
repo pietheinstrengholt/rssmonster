@@ -130,6 +130,16 @@ export const formatDuration = durationMs => {
   return `${(bounded / 1000).toFixed(1)}s`;
 };
 
+const crawlStatus = (category, httpStatus) => {
+  if (httpStatus === 304) return 'not-modified';
+  if (SUCCESS_CRAWL_OUTCOMES.has(category)) return 'success';
+  return 'failed';
+};
+
+const crawlError = category => String(category || CRAWL_OUTCOMES.UNKNOWN_ERROR)
+  .toLowerCase()
+  .replaceAll('_', '-');
+
 // Quotes one diagnostic as a safe single-line structured log value.
 const quoteLogValue = value => JSON.stringify(
   redactFeedLogText(value).replace(/[\r\n]+/g, ' ').slice(0, 500)
@@ -139,8 +149,10 @@ const quoteLogValue = value => JSON.stringify(
 export const formatCrawlResultLine = ({
   category,
   feedUrl,
+  userId = null,
   resolvedUrl = null,
   itemCount = null,
+  newArticleCount = 0,
   attempts = 1,
   durationMs = 0,
   httpStatus = null,
@@ -148,53 +160,51 @@ export const formatCrawlResultLine = ({
   errorCode = null,
   message = null
 }) => {
+  const status = crawlStatus(category, httpStatus);
   const fields = [
-    `[CRAWL] ${String(category).padEnd(17)}`,
-    `feed=${formatFeedLabel(feedUrl)}`
+    `[CRAWL] feed=${formatFeedLabel(feedUrl)}`,
+    `status=${status}`
   ];
   if (resolvedUrl && resolvedUrl !== feedUrl) {
     fields.push(`resolved=${formatFeedLabel(resolvedUrl)}`);
   }
-  if (itemCount !== null) fields.push(`items=${itemCount}`);
-  fields.push(`attempts=${Math.max(0, Number(attempts) || 0)}`);
-  fields.push(`duration=${formatDuration(durationMs)}`);
+  if (itemCount !== null && status !== 'not-modified') fields.push(`items=${itemCount}`);
+  if (status === 'success' && itemCount !== null) {
+    fields.push(`new=${Math.max(0, Number(newArticleCount) || 0)}`);
+  }
   if (httpStatus !== null) fields.push(`http=${httpStatus}`);
   if (retryAfterSeconds !== null) fields.push(`retryAfter=${retryAfterSeconds}s`);
+  if (status === 'failed') fields.push(`error=${crawlError(category)}`);
+  if (status === 'failed' || Number(attempts) > 1) {
+    fields.push(`attempts=${Math.max(0, Number(attempts) || 0)}`);
+  }
   if (errorCode) fields.push(`code=${errorCode}`);
-  if (message) fields.push(`error=${quoteLogValue(message)}`);
+  if (message) fields.push(`message=${quoteLogValue(message)}`);
+  if (userId !== null) fields.push(`user=${userId}`);
+  fields.push(`duration=${formatDuration(durationMs)}`);
   return fields.join(' ');
 };
 
-// Formats the compact aggregate emitted once after a crawl batch settles.
-export const formatCrawlSummaryLine = ({
-  total,
-  processed,
-  durationMs,
-  outcomeCounts
-}) => {
-  const entries = Object.entries(outcomeCounts || {})
-    .filter(([, count]) => count > 0)
-    .map(([category, count]) => `${category}:${count}`)
-    .join(',');
-  const successful = Object.entries(outcomeCounts || {})
-    .filter(([category]) => SUCCESS_CRAWL_OUTCOMES.has(category))
-    .reduce((sum, [, count]) => sum + count, 0);
-  return [
-    '[CRAWL] SUMMARY',
-    `total=${total}`,
-    `processed=${processed}`,
-    `successful=${successful}`,
-    `failed=${Math.max(0, total - successful)}`,
-    `duration=${formatDuration(durationMs)}`,
-    `outcomes=${entries || 'none'}`
-  ].join(' ');
-};
+export const formatCrawlCompletionLine = ({
+  feeds = 0,
+  newArticles = 0,
+  errors = 0,
+  userId = null,
+  durationMs = 0
+} = {}) => [
+  '[CRAWL] Completed',
+  `feeds=${Math.max(0, Number(feeds) || 0)}`,
+  `newArticles=${Math.max(0, Number(newArticles) || 0)}`,
+  `errors=${Math.max(0, Number(errors) || 0)}`,
+  ...(userId === null ? [] : [`user=${userId}`]),
+  `duration=${formatDuration(durationMs)}`
+].join(' ');
 
 export default {
   CRAWL_OUTCOMES,
   classifyCrawlOutcome,
   formatCrawlResultLine,
-  formatCrawlSummaryLine,
+  formatCrawlCompletionLine,
   formatDuration,
   formatFeedLabel,
   isSuccessfulCrawlOutcome

@@ -10,21 +10,12 @@ import {
   upsertTopicInCache
 } from '../shared/topicHelpers.js';
 import { generateTopicName } from '../shared/topicName.service.js';
-import { formatLogString } from '../../../utils/logging.js';
 
 // Provides the shared dependencies used by this service.
 const { Topic } = db;
 
 // This service creates event topics after validating that an event has enough corroborating evidence.
 // Behavioral topics are calibrated in calibrateBehavioralTopics.js and do not use these event-topic gates.
-
-// This function formats topic creation similarity values for concise logs.
-function formatTopicMetric(value, digits = 3) {
-  // Coerces the numeric into the representation required while performing format topic metric.
-  const numeric = Number(value);
-  // Selects the result based on whether numeric is finite.
-  return Number.isFinite(numeric) ? numeric.toFixed(digits) : 'n/a';
-}
 
 // Creates the topic.
 export async function createTopic({
@@ -84,13 +75,6 @@ export async function createTopic({
 
   // Handles the case where creation gate passed is unavailable.
   if (!creationGate.passed) {
-    console.log(
-      `[TOPIC] gated event=${currentEventId}` +
-      ` seeds=${topicSeedEvents.length}/${MIN_EVENTS_FOR_TOPIC_CREATION}` +
-      ` articles=${seedArticleCount}/${MIN_ARTICLES_FOR_TOPIC_CREATION}` +
-      ` topSim=${formatTopicMetric(topSeedSimilarity)}` +
-      ` reason=insufficient-evidence`
-    );
     debugTopicGate('topic-creation-gate-blocked', {
       userId: semanticUnit.userId,
       eventId: currentEventId,
@@ -123,13 +107,6 @@ export async function createTopic({
   });
 
   upsertTopicInCache(topicsCache, createdTopic);
-
-  console.log(
-    `[TOPIC] new-topic=${createdTopic.id} event=${currentEventId} ` +
-    `name=${formatLogString(topicName)} ` +
-    `seeds=${topicSeedEvents.length} articles=${seedArticleCount} ` +
-    `topSim=${formatTopicMetric(topSeedSimilarity)} gate=${creationGate.reason}`
-  );
 
   debugTopicGate(`topic-creation-gate-passed: ${creationGate.reason}`, {
     userId: semanticUnit.userId,

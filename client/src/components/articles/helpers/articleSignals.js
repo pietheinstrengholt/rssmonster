@@ -1,3 +1,5 @@
+import { hasUsableArticleAnalysis } from '../../../services/articleAnalysisPresentation.js';
+
 const TRUSTED_FEED_THRESHOLD = 0.85;
 
 // Converts score values stored as either 0-1 or 0-100 into percentages.
@@ -48,12 +50,14 @@ export function createArticleSignals({
   isOfficialSource,
   officialOrganization,
   qualityScore,
-  recommendationScore
+  recommendationScore,
+  aiAnalysisStatus
 }) {
   const signals = [];
   const eventSourceScore = getEventSourceScore(event);
 
-  if (hasHighQualityArticleSignal({ qualityScore, recommendationScore })) {
+  const usableQualityScore = hasUsableArticleAnalysis(aiAnalysisStatus) ? qualityScore : undefined;
+  if (hasHighQualityArticleSignal({ qualityScore: usableQualityScore, recommendationScore })) {
     signals.push({ label: 'High quality', icon: 'stars' });
   }
 
@@ -83,14 +87,18 @@ export const articleSignalComputed = {
       isOfficialSource: this.isOfficialSource,
       officialOrganization: this.officialOrganization,
       qualityScore: this.qualityScore,
-      recommendationScore: this.recommendationScore
+      recommendationScore: this.recommendationScore,
+      aiAnalysisStatus: this.aiAnalysisStatus
     });
   },
 
   // Returns whether quality or recommendation metadata clears the high-quality threshold.
   hasHighQualitySignal() {
+    const qualityScore = hasUsableArticleAnalysis(this.aiAnalysisStatus)
+      ? this.qualityScore
+      : undefined;
     return hasHighQualityArticleSignal({
-      qualityScore: this.qualityScore,
+      qualityScore,
       recommendationScore: this.recommendationScore
     });
   },

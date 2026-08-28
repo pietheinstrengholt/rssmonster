@@ -25,6 +25,8 @@ import {
   resolveEffectiveSequelizeCrawlConfiguration
 } from '../config/databaseRuntime.js';
 import { runPostCrawlSemanticPipeline } from '../services/crawl/index.js';
+import { withCrawlPriorityLease } from '../services/jobs/crawlPriorityLease.js';
+import { formatCrawlCompletionLine } from '../services/feeds/crawlResult.js';
 
 const { User, sequelize } = db;
 const databaseRuntimeCapabilities = getSequelizeRuntimeCapabilities(sequelize);
@@ -99,14 +101,12 @@ async function crawlUsersInBatches(users, userBatchSize) {
 }
 
 // This function runs the incremental crawl pipeline for every user.
-export async function runSemanticPipeline({
+async function runSemanticPipelineOperation({
   userBatchSize = DEFAULT_USER_BATCH_SIZE
 } = {}) {
   const resolvedBatchSize = Number.isInteger(userBatchSize) && userBatchSize > 0
     ? Math.min(userBatchSize, databaseRuntimeCapabilities.maxConcurrentUserCrawls)
     : DEFAULT_USER_BATCH_SIZE;
-
-  console.log('[SEMANTIC] Incremental crawl pipeline started');
 
   await sequelize.authenticate();
 
@@ -116,40 +116,33 @@ export async function runSemanticPipeline({
     raw: true
   });
 
-  console.log('\n[PHASE 1/5] Crawl feeds + persist raw articles');
-  console.log(`[PHASE 1/5] users=${users.length} userBatchSize=${resolvedBatchSize}`);
-
   const userResults = await crawlUsersInBatches(users, resolvedBatchSize);
   const result = aggregateCrawlResults(userResults);
-
-  console.log(
-    `[PHASE 1/5] feeds=${result.total} processed=${result.processed} ` +
-    `errors=${result.errors} timeouts=${result.timeouts} ` +
-    `alreadyRunning=${result.skippedCrawls}`
-  );
-
-  console.log('\n[PHASE 2/5] Generate article vectors');
-  console.log('[PHASE 3/5] Incremental Events');
-  console.log('[PHASE 4/5] Incremental Topics for touched Events');
-  console.log('[PHASE 5/5] Refresh Interest Scores from existing Islands');
   const semanticResult = await runPostCrawlSemanticPipeline(result);
-  console.log(
-    `[SEMANTIC] stage=completed users=${semanticResult.users} ` +
-    `embedded=${semanticResult.embedded} skipped=${semanticResult.skipped}`
-  );
-  console.log('[SEMANTIC] Incremental crawl pipeline Finished');
 
-  console.log('\n=== Crawl Pipeline Completed ===');
-  console.log(`Total feeds: ${result.total}`);
-  console.log(`Successfully processed: ${result.processed}`);
-  console.log(`Errors: ${result.errors}`);
-  console.log(`Timeouts: ${result.timeouts}`);
+  for (const userResult of userResults) {
+    if (userResult.reason === 'crawl_already_running') continue;
+    console.log(formatCrawlCompletionLine({
+      feeds: userResult.total,
+      newArticles: userResult.totalNewArticles,
+      errors: userResult.errors,
+      userId: userResult.userId,
+      durationMs: userResult.crawlStartedAt
+        ? Date.now() - new Date(userResult.crawlStartedAt).getTime()
+        : 0
+    }));
+  }
 
   return {
     crawl: result,
     semantic: semanticResult
   };
 }
+
+// Holds the cross-process priority gate for scheduled workers and direct CLI runs.
+export const runSemanticPipeline = options => withCrawlPriorityLease(
+  () => runSemanticPipelineOperation(options)
+);
 
 export default runSemanticPipeline;
 

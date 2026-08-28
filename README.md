@@ -221,7 +221,8 @@ The MySQL Compose deployment is the comprehensive RSSMonster profile. It is inte
 
 It starts:
 
-* the RSSMonster web application and dedicated crawl worker;
+* the RSSMonster web application, dedicated crawl worker, and
+  `rssmonster-ai-worker` background-enrichment worker;
 * MySQL 8.4;
 * Qwen3 Embedding for 1024-dimensional semantic vectors;
 * Qwen3.5 for local classification text generation, Smart Folder recommendations, and feed rediscovery; and
@@ -244,12 +245,12 @@ Use the separate MySQL Compose configuration:
 docker compose -f docker-compose.mysql.yml up -d --build
 ```
 
-On the first startup, the inference container downloads Qwen and ModernBERT into the persistent `inference-model-cache` volume. This can take several minutes depending on the host and network connection. RSSMonster and its crawl worker wait until MySQL is healthy and the inference models are loaded. The worker reports unhealthy after repeated crawl failures or a stale health state. Later starts reuse the downloaded models.
+On the first startup, the inference container downloads Qwen and ModernBERT into the persistent `inference-model-cache` volume. This can take several minutes depending on the host and network connection. RSSMonster, its crawl worker, and its AI worker wait until MySQL is healthy and the inference models are loaded. Each worker reports its own health. Later starts reuse the downloaded models.
 
 Follow the complete deployment while it starts:
 
 ```bash
-docker compose -f docker-compose.mysql.yml logs -f inference rssmonster rssmonster-worker
+docker compose -f docker-compose.mysql.yml logs -f inference rssmonster rssmonster-worker rssmonster-ai-worker
 ```
 
 ## Key Features
@@ -427,6 +428,7 @@ INFERENCE_AI_ENABLED=true
 INFERENCE_ASSISTANT_ENABLED=false
 SKIP_ARTICLE_CLASSIFICATION_ANALYSIS=false
 SKIP_ARTICLE_EMBEDDINGS=false
+SKIP_SEMANTIC_LABELING=false
 ```
 
 Set `INFERENCE_AI_ENABLED=false` to prevent every server and worker inference

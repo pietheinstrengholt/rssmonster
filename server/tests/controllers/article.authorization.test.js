@@ -98,6 +98,7 @@ describe('article ownership authorization', () => {
     expect(res.status).toBe(200);
     expect(res.body.article.contentHtml).toBe('Article body');
     expect(res.body.article.contentText).toBe('Article body');
+    expect(res.body.article.aiAnalysisStatus).toBe('complete');
     expect(article.contentOriginal).toBe('<p>Article body</p>');
     expect(res.body.article).not.toHaveProperty('contentOriginal');
     expect(JSON.stringify(res.body)).not.toContain('<p>Article body</p>');
@@ -219,6 +220,8 @@ describe('article ownership authorization', () => {
       status: article.status
     });
     expect(response.body[0]).toHaveProperty('quality');
+    expect(response.body[0]).toHaveProperty('aiAnalysisStatus', 'complete');
+    expect(response.body[0]).toHaveProperty('aiAnalysisCompletedAt', null);
     expect(response.body[0]).toHaveProperty('isDevelopingStory', false);
     expect(response.body[0]).not.toHaveProperty('articleVector');
     expect(response.body[0]).not.toHaveProperty('embedding_model');
@@ -239,6 +242,7 @@ describe('article ownership authorization', () => {
     const island = await Island.create({
       userId: owner.id,
       label: 'Software development',
+      generatedLabel: 'Developer tooling',
       weight: 0.8,
       islandVector: [1, 0],
       archivedInd: false
@@ -248,6 +252,7 @@ describe('article ownership authorization', () => {
       topicId: topic.id,
       representativeArticleId: article.id,
       name: 'Runtime recommendation contract',
+      generatedName: 'Runtime release coverage',
       articleCount: 8,
       sourceCount: 4,
       sourceDiversityScore: 1.5
@@ -292,6 +297,7 @@ describe('article ownership authorization', () => {
 
     expect(response.status).toBe(200);
     expect(response.body[0].event.name).toBe('Runtime recommendation contract');
+    expect(response.body[0].event.generatedName).toBe('Runtime release coverage');
     expect(response.body[0].recommendation.score).toEqual(expect.any(Number));
     expect(response.body[0].recommendation.reasons.map(reason => reason.code)).toEqual([
       'interest_match',
@@ -305,11 +311,16 @@ describe('article ownership authorization', () => {
     expect(response.body[0].recommendation.reasons).toEqual(expect.arrayContaining([
       expect.objectContaining({
         code: 'interest_match',
-        island: { id: island.id, name: island.label }
+        island: {
+          id: island.id,
+          name: island.label,
+          label: island.label,
+          generatedLabel: island.generatedLabel
+        }
       }),
       expect.objectContaining({
         code: 'event_coverage',
-        event: { id: event.id, name: event.name },
+        event: { id: event.id, name: event.name, generatedName: event.generatedName },
         articleCount: 8
       }),
       expect.objectContaining({

@@ -3,8 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CRAWL_OUTCOMES,
   classifyCrawlOutcome,
-  formatCrawlResultLine,
-  formatCrawlSummaryLine
+  formatCrawlResultLine
 } from '../../services/feeds/crawlResult.js';
 
 describe('feed crawl operational results', () => {
@@ -71,6 +70,7 @@ describe('feed crawl operational results', () => {
       feedUrl: 'https://www.plex.tv/feed/',
       resolvedUrl: 'https://www.plex.tv/feed/atom/',
       itemCount: 10,
+      newArticleCount: 4,
       attempts: 2,
       durationMs: 3200,
       httpStatus: 200,
@@ -79,30 +79,11 @@ describe('feed crawl operational results', () => {
       message: 'first line\nsecond line'
     });
 
-    expect(line).toContain('[CRAWL] RECOVERED');
-    expect(line).toContain('feed=www.plex.tv/feed/');
+    expect(line).toContain('[CRAWL] feed=www.plex.tv/feed/ status=success');
     expect(line).toContain('resolved=www.plex.tv/feed/atom/');
-    expect(line).toContain('items=10 attempts=2 duration=3.2s http=200');
-    expect(line).toContain('retryAfter=120s code=DETAIL');
-    expect(line).toContain('error="first line second line"');
+    expect(line).toContain('items=10 new=4 http=200 retryAfter=120s attempts=2');
+    expect(line).toContain('code=DETAIL message="first line second line" duration=3.2s');
     expect(line).not.toContain('\n');
-  });
-
-  it('formats one compact aggregate with only observed categories', () => {
-    expect(formatCrawlSummaryLine({
-      total: 4,
-      processed: 3,
-      durationMs: 4820,
-      outcomeCounts: {
-        SUCCESS: 2,
-        RECOVERED: 1,
-        NOT_FOUND: 1,
-        TIMEOUT: 0
-      }
-    })).toBe(
-      '[CRAWL] SUMMARY total=4 processed=3 successful=3 failed=1 ' +
-      'duration=4.8s outcomes=SUCCESS:2,RECOVERED:1,NOT_FOUND:1'
-    );
   });
 
   it('redacts query credentials from feed labels, resolved URLs, and errors', () => {

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
+import { bootstrapIconNames } from '../bootstrap-icons.js';
 import ArticleMeta from '../src/components/articles/ArticleMeta.vue';
 import ArticleQualityExplanation from '../src/components/articles/ArticleQualityExplanation.vue';
 import ArticleRecommendationExplanation from '../src/components/articles/ArticleRecommendationExplanation.vue';
@@ -178,7 +179,6 @@ describe('ArticleMeta', () => {
       'Coverage and sources',
       'Rule match',
       'Freshness',
-      'Quality',
       'Source trust'
     ]);
     expect(panel.textContent).toContain('76% recommendation score');
@@ -503,17 +503,17 @@ describe('ArticleTagsScores', () => {
     const wrapper = mountArticleTagsScores({
       advertisementScore: 100,
       sentimentScore: 70,
-      qualityScore: 80
+      qualityScore: 40
     }, { attachTo: document.body });
     await flushPromises();
 
     const trigger = wrapper.get('.overall-score');
-    expect(trigger.text()).toBe('Quality: 83');
+    expect(trigger.text()).toBe('Quality: 70');
     expect(trigger.element.tagName).toBe('BUTTON');
-    expect(trigger.classes()).toContain('score-good');
+    expect(trigger.classes()).toContain('score-medium');
     expect(trigger.attributes()).toMatchObject({
       'aria-expanded': 'false',
-      'aria-label': 'Quality score 83. Show quality breakdown'
+      'aria-label': 'Quality score 70. Show quality breakdown'
     });
     expect(wrapper.findAll('.quality-score, .sentiment-score, .ad-score')).toHaveLength(0);
 
@@ -530,9 +530,20 @@ describe('ArticleTagsScores', () => {
       'Ad-free quality'
     ]);
     expect([...panel.querySelectorAll('.article-explanation-item-value')]
-      .map(item => item.textContent)).toEqual(['80', '70', '100']);
+      .map(item => item.textContent)).toEqual(['40', '70', '100']);
+    expect([...panel.querySelectorAll('.article-explanation-icon')]
+      .map(item => item.classList[1])).toEqual([
+      'score-poor',
+      'score-medium',
+      'score-good'
+    ]);
+    const qualityIcons = [...panel.querySelectorAll(
+      '.article-explanation-icon .bootstrap-icon-stub'
+    )].map(item => item.dataset.icon);
+    expect(qualityIcons).toEqual(['pencil-square', 'chat-square-text-fill', 'megaphone']);
+    expect(qualityIcons.every(icon => bootstrapIconNames.includes(icon))).toBe(true);
     expect(panel.textContent).toContain('Clarity, structure, and substance');
-    expect(panel.textContent).toContain('83 average quality score');
+    expect(panel.textContent).toContain('70 average quality score');
     wrapper.unmount();
   });
 
@@ -547,6 +558,79 @@ describe('ArticleTagsScores', () => {
 
     expect(wrapper.get('.overall-score').text()).toBe('Quality: 73');
     expect(wrapper.get('.overall-score').classes()).toContain('score-medium');
+  });
+
+  it.each(['pending', 'processing'])(
+    'shows an analyzing state without placeholder scores or inferred tags while %s',
+    async aiAnalysisStatus => {
+      const wrapper = mountArticleTagsScores({
+        aiAnalysisStatus,
+        advertisementScore: 0,
+        sentimentScore: 50,
+        qualityScore: 50,
+        tags: [
+          { id: 1, name: 'provider-tag', tagType: 'provider' },
+          { id: 2, name: 'old-inference', tagType: 'inferred' }
+        ]
+      });
+      await flushPromises();
+
+      expect(wrapper.get('.analysis-state').text()).toBe('Analyzing…');
+      expect(wrapper.get('.analysis-state').attributes()).toMatchObject({
+        role: 'status',
+        'aria-label': 'Article analysis in progress'
+      });
+      expect(wrapper.find('.overall-score').exists()).toBe(false);
+      expect(wrapper.text()).toContain('Provider-tag');
+      expect(wrapper.text()).not.toContain('Old-inference');
+    }
+  );
+
+  it('shows completed scores after an article refresh updates its analysis state', async () => {
+    const wrapper = mountArticleTagsScores({
+      aiAnalysisStatus: 'pending',
+      advertisementScore: 0,
+      sentimentScore: 50,
+      qualityScore: 50
+    });
+
+    await wrapper.setProps({
+      aiAnalysisStatus: 'complete',
+      advertisementScore: 90,
+      sentimentScore: 80,
+      qualityScore: 70
+    });
+    await flushPromises();
+
+    expect(wrapper.find('.analysis-state').exists()).toBe(false);
+    expect(wrapper.get('.overall-score').text()).toBe('Quality: 80');
+  });
+
+  it('preserves skipped-feed score presentation', async () => {
+    const wrapper = mountArticleTagsScores({
+      aiAnalysisStatus: 'skipped',
+      advertisementScore: 100,
+      sentimentScore: 70,
+      qualityScore: 40
+    });
+    await flushPromises();
+
+    expect(wrapper.get('.overall-score').text()).toBe('Quality: 70');
+    expect(wrapper.find('.analysis-state').exists()).toBe(false);
+  });
+
+  it('shows failed analysis as unavailable without placeholder scores', async () => {
+    const wrapper = mountArticleTagsScores({
+      aiAnalysisStatus: 'failed',
+      advertisementScore: 0,
+      sentimentScore: 50,
+      qualityScore: 50
+    });
+    await flushPromises();
+
+    expect(wrapper.get('.analysis-state').text()).toBe('Analysis unavailable');
+    expect(wrapper.get('.analysis-state').attributes('aria-label')).toBe('Article analysis unavailable');
+    expect(wrapper.find('.overall-score').exists()).toBe(false);
   });
 
   // Verifies child contracts contain data and events rather than injected presentation functions.

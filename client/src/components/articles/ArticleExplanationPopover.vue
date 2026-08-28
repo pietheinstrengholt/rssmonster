@@ -43,7 +43,7 @@
 
           <ul :class="['article-explanation-list', listClass]">
             <li v-for="item in items" :key="item.code">
-              <span class="article-explanation-icon" aria-hidden="true">
+              <span :class="['article-explanation-icon', item.iconClass]" aria-hidden="true">
                 <BootstrapIcon :icon="item.icon" />
               </span>
               <span>
@@ -339,6 +339,21 @@ export default {
   color: var(--badge-quality-text);
   background: var(--badge-quality-bg);
   border-radius: var(--radius-control);
+}
+
+.article-explanation-icon.score-poor {
+  color: var(--article-score-poor-text);
+  background: var(--article-score-poor-background);
+}
+
+.article-explanation-icon.score-medium {
+  color: var(--article-score-medium-text);
+  background: var(--article-score-medium-background);
+}
+
+.article-explanation-icon.score-good {
+  color: var(--article-score-good-text);
+  background: var(--article-score-good-background);
 }
 
 .article-explanation-footer {

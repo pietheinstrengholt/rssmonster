@@ -97,7 +97,12 @@ describe('island profile persistence', () => {
     expect(mocks.evolveMemberships).toHaveBeenCalledWith(9, [
       { topicId: 4, similarity: 1, confidence: 0.9 }
     ], 'tx');
-    expect(result.summary).toMatchObject({ updatedIslandCount: 1, createdIslandCount: 0, totalMembershipCount: 1 });
+    expect(result.summary).toMatchObject({
+      updatedIslandCount: 1,
+      createdIslandCount: 0,
+      createdIslandIds: [],
+      totalMembershipCount: 1
+    });
   });
 
   it('creates a unique island and archives an unmatched stale low-confidence island', async () => {
@@ -126,7 +131,12 @@ describe('island profile persistence', () => {
       { islandId: 10, topicId: 7, similarity: 1, confidence: 0.8 }
     ], { transaction: 'tx' });
     expect(stale.update).toHaveBeenCalledWith(expect.objectContaining({ archivedInd: true }), { transaction: 'tx' });
-    expect(result.summary).toMatchObject({ createdIslandCount: 1, archivedIslandCount: 1, newMembershipCount: 1 });
+    expect(result.summary).toMatchObject({
+      createdIslandCount: 1,
+      createdIslandIds: [created.id],
+      archivedIslandCount: 1,
+      newMembershipCount: 1
+    });
   });
 
   it('ignores profiles without vectors or qualifying evidence', async () => {

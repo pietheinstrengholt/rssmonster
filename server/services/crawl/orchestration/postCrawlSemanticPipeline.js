@@ -4,6 +4,8 @@ import { runIncrementalEventsForUser } from '../../reconcile/semanticPipelineSco
 import scoreArticlesFromIslandsForUser from '../../score/scoreArticlesFromIslands.js';
 import { randomUUID } from 'node:crypto';
 import { recordProcessingFailure } from '../../observability/processingFailures.js';
+import { formatDuration } from '../../feeds/crawlResult.js';
+import { tryReconcileSemanticLabelJobsForUser } from '../../semanticLabels/semanticLabelJobs.js';
 
 // This function returns the users whose articles should be processed after a crawl.
 function getPostCrawlUserIds(result, userId = null) {
@@ -70,6 +72,7 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
       result?.executionIdsByUserId?.[userId] ?? randomUUID();
     const processingContext = { crawlRunId, executionId, userId };
     // Derives the embed summary through embed articles while performing run post crawl semantic pipeline.
+    const embeddingStartedAt = Date.now();
     const embedSummary = await runSemanticStage(
       'embedding',
       processingContext,
@@ -81,10 +84,15 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
     embedded += embedSummary.embeddedCount || 0;
     skipped += embedSummary.skippedCount || 0;
 
-    console.log(
-      `[SEMANTIC] user=${userId} stage=embedding ` +
-      `embedded=${embedSummary.embeddedCount || 0} skipped=${embedSummary.skippedCount || 0}`
-    );
+    if (Number(embedSummary.scannedCount || 0) > 0) {
+      console.log(
+        `[EMBEDDING] processed=${embedSummary.scannedCount || 0} ` +
+        `embedded=${embedSummary.embeddedCount || 0} ` +
+        `skipped=${embedSummary.skippedCount || 0} ` +
+        `user=${userId} ` +
+        `duration=${formatDuration(Date.now() - embeddingStartedAt)}`
+      );
+    }
 
     // Derives the duplicate result through mark duplicate articles for user while performing run post crawl semantic pipeline.
     const duplicateResult = await runSemanticStage(
@@ -93,12 +101,6 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
       () => markDuplicateArticlesForUser(userId, {
         createdAtFrom: result?.crawlStartedAt || null
       })
-    );
-
-    console.log(
-      `[SEMANTIC] user=${userId} stage=duplicates ` +
-      `scanned=${duplicateResult.scannedCount || 0} ` +
-      `duplicates=${duplicateResult.duplicateCount || 0}`
     );
 
     // Derives the event result through run incremental events for user while performing run post crawl semantic pipeline.
@@ -112,26 +114,37 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
       })
     );
 
-    console.log(
-      `[SEMANTIC] user=${userId} stage=events ` +
-      `articles=${eventResult.articleCount} ` +
-      `newEvents=${eventResult.newEventsCreatedCount} ` +
-      `linked=${eventResult.linkedToExistingEventCount} ` +
-      `unassigned=${eventResult.unassignedCount} ` +
-      `touchedEvents=${eventResult.touchedEventIds?.length || 0}`
-    );
+    if (Number(eventResult.articleCount || 0) > 0) {
+      console.log(
+        `[EVENTS] processed=${eventResult.articleCount || 0} ` +
+        `assigned=${Math.max(
+          Number(eventResult.articleCount || 0) - Number(eventResult.unassignedCount || 0),
+          0
+        )} ` +
+        `standalone=${eventResult.unassignedCount || 0} ` +
+        `newEvents=${eventResult.newEventsCreatedCount || 0} ` +
+        `existingEvents=${eventResult.linkedToExistingEventCount || 0} ` +
+        `touched=${eventResult.touchedEventIds?.length || 0} ` +
+        `user=${userId} ` +
+        `duration=${formatDuration(eventResult.durations?.eventsMs || 0)}`
+      );
+    }
 
     // Tracks topic stats for the processing summary.
     const topicStats = eventResult.topicAssignment?.stats || {};
-    console.log(
-      `[SEMANTIC] user=${userId} stage=topics ` +
-      `touchedTopics=${eventResult.touchedTopicIds?.length || 0} ` +
-      `createdTopics=${topicStats.newTopicsCreated || 0} ` +
-      `matchedEvents=${topicStats.eventsMatched || 0} ` +
-      `unmatchedEvents=${topicStats.eventsUnmatched || 0}`
-    );
+    if (Number(eventResult.topicAssignment?.eventCount || 0) > 0) {
+      console.log(
+        `[TOPICS] events=${eventResult.topicAssignment.eventCount || 0} ` +
+        `matched=${topicStats.eventsMatched || 0} ` +
+        `created=${topicStats.newTopicsCreated || 0} ` +
+        `unmatched=${topicStats.eventsUnmatched || 0} ` +
+        `user=${userId} ` +
+        `duration=${formatDuration(eventResult.durations?.topicsMs || 0)}`
+      );
+    }
 
     // Derives the scoring result through score articles from islands for user while performing run post crawl semantic pipeline.
+    const scoringStartedAt = Date.now();
     const scoringResult = await runSemanticStage(
       'interest_scoring',
       processingContext,
@@ -140,13 +153,17 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
       })
     );
 
-    console.log(
-      `[SEMANTIC] user=${userId} stage=interest-scores ` +
-      `updated=${scoringResult.updatedCount || 0} ` +
-      `topicScored=${scoringResult.topicScoredCount || 0} ` +
-      `fallbackScored=${scoringResult.fallbackScoredCount || 0}`
-    );
-    console.log(`[SEMANTIC] user=${userId} stage=completed`);
+    if (Number(eventResult.articleCount || 0) > 0 || Number(scoringResult.updatedCount || 0) > 0) {
+      console.log(
+        `[ISLANDS] interestScoresUpdated=${scoringResult.updatedCount || 0} ` +
+        `topicScored=${scoringResult.topicScoredCount || 0} ` +
+        `fallbackScored=${scoringResult.fallbackScoredCount || 0} ` +
+        `user=${userId} ` +
+        `duration=${formatDuration(Date.now() - scoringStartedAt)}`
+      );
+    }
+
+    await tryReconcileSemanticLabelJobsForUser(userId);
 
     results.push({
       userId,

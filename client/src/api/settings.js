@@ -37,6 +37,13 @@ export const fetchTopicsOverview = () =>
 export const fetchCrawlStatistics = (params = {}) =>
   api.get('/setting/crawl-statistics', { params });
 
+// This function retrieves the current user's read-only background processing status.
+export const fetchProcessingJobStatus = () =>
+  api.get('/setting/processing-jobs');
+
+export const clearCompletedProcessingJobs = () =>
+  api.delete('/setting/processing-jobs');
+
 export const fetchProcessingFailureGroups = (params = {}) =>
   api.get('/setting/observability', { params });
 

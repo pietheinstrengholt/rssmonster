@@ -176,3 +176,33 @@ export const replaceArticleDerivedTags = async ({
     tagType: tag.tagType
   }, { transaction })));
 };
+
+// Replaces only inference-owned tags while preserving every deterministic and manual row.
+export const replaceArticleInferredTags = async ({
+  articleId,
+  userId,
+  inferredTags,
+  transaction
+}) => {
+  const existingTags = await Tag.findAll({
+    where: { articleId, userId },
+    transaction
+  });
+  const preservedNames = new Set(existingTags
+    .filter(tag => tagValue(tag, 'tagType') !== 'inferred')
+    .map(tag => normalizeTagName(tagValue(tag, 'name')))
+    .filter(Boolean));
+  const desiredNames = normalizeTagList(inferredTags)
+    .filter(name => !preservedNames.has(name));
+
+  await Tag.destroy({
+    where: { articleId, userId, tagType: 'inferred' },
+    transaction
+  });
+  await Promise.all(desiredNames.map(name => Tag.create({
+    articleId,
+    userId,
+    name,
+    tagType: 'inferred'
+  }, { transaction })));
+};

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="categoryName || tags.length || hasQualityScores" class="article-tags">
+  <div v-if="categoryName || displayTags.length || hasQualityScores || analysisStateLabel" class="article-tags">
     <button v-if="categoryName" type="button" class="tag-badge" :aria-label="`Filter articles by category ${categoryName}`" @click.stop="$emit('select-category')">{{ categoryName }}</button>
     <button v-for="tag in visibleTags" :key="tag.id" type="button" :class="['tag', { 'tag-rule': tag.tagType === 'rule' }]" :aria-label="`Filter articles by tag ${formatTagName(tag.name)}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name) }}</button>
     <button v-if="hasHiddenTags" type="button" class="tag-disclosure" :aria-expanded="tagsExpanded ? 'true' : 'false'" :aria-label="tagsExpanded ? 'Show fewer tags' : `Show ${hiddenTagCount} more tags`" @click.stop="tagsExpanded = !tagsExpanded">{{ tagsExpanded ? 'Show less' : `+${hiddenTagCount}` }}</button>
@@ -9,11 +9,22 @@
       :sentiment-score="sentimentScore"
       :quality-score="qualityScore"
     />
+    <span
+      v-else-if="analysisStateLabel"
+      class="analysis-state"
+      :role="analysisInProgress ? 'status' : null"
+      :aria-label="analysisInProgress ? 'Article analysis in progress' : 'Article analysis unavailable'"
+    >{{ analysisStateLabel }}</span>
   </div>
 </template>
 <script>
 import { defineAsyncComponent } from 'vue';
 import { formatTagName } from '../../utils/tags';
+import {
+  hasArticleAnalysisFailed,
+  hasUsableArticleAnalysis,
+  isArticleAnalysisInProgress
+} from '../../services/articleAnalysisPresentation.js';
 
 const NEUTRAL_SCORE = 70;
 
@@ -30,7 +41,8 @@ export default {
     isMobilePortrait: { type: Boolean, default: false },
     advertisementScore: { type: Number, default: undefined },
     sentimentScore: { type: Number, default: undefined },
-    qualityScore: { type: Number, default: undefined }
+    qualityScore: { type: Number, default: undefined },
+    aiAnalysisStatus: { type: String, default: '' }
   },
   data() {
     return {
@@ -38,17 +50,28 @@ export default {
     };
   },
   computed: {
+    analysisInProgress() {
+      return isArticleAnalysisInProgress(this.aiAnalysisStatus);
+    },
+    analysisStateLabel() {
+      if (this.analysisInProgress) return 'Analyzing…';
+      return hasArticleAnalysisFailed(this.aiAnalysisStatus) ? 'Analysis unavailable' : '';
+    },
     // Hides the untouched ingestion defaults used when article scoring is disabled.
     hasQualityScores() {
       const scores = [this.advertisementScore, this.sentimentScore, this.qualityScore];
-      return scores.every(Number.isFinite)
+      return hasUsableArticleAnalysis(this.aiAnalysisStatus)
+        && scores.every(Number.isFinite)
         && scores.some(score => score !== NEUTRAL_SCORE);
     },
     // Groups regular tags before rule tags while preserving order within each group.
     displayTags() {
-      const ruleTags = this.tags.filter(tag => tag.tagType === 'rule');
+      const usableTags = hasUsableArticleAnalysis(this.aiAnalysisStatus)
+        ? this.tags
+        : this.tags.filter(tag => tag.tagType !== 'inferred');
+      const ruleTags = usableTags.filter(tag => tag.tagType === 'rule');
       if (this.isMobilePortrait) return ruleTags;
-      return [...this.tags.filter(tag => tag.tagType !== 'rule'), ...ruleTags];
+      return [...usableTags.filter(tag => tag.tagType !== 'rule'), ...ruleTags];
     },
     // Returns the tags visible at the current disclosure level.
     visibleTags() {
@@ -124,6 +147,12 @@ export default {
 .tag-disclosure:hover {
   background-color: var(--surface-chrome);
   color: var(--text-secondary);
+}
+
+.analysis-state {
+  color: var(--text-meta, var(--text-muted));
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .tag-badge:focus-visible,

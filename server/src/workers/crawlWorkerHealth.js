@@ -51,10 +51,28 @@ export const evaluateCrawlWorkerHealth = (state, {
   now = Date.now()
 } = {}) => {
   const updatedAt = Date.parse(state?.updatedAt);
-  const consecutiveFailures = Number(state?.consecutiveFailures);
+  const crawlState = state?.crawl || state;
+  const processingState = state?.processingJobs || null;
+  const consecutiveFailures = Number(crawlState?.consecutiveFailures);
   const knownStatus = ['starting', 'running', 'healthy', 'degraded'].includes(state?.status);
+  const knownCrawlStatus = ['starting', 'running', 'healthy', 'degraded'].includes(
+    crawlState?.status
+  );
+  const knownProcessingStatus = !processingState || (
+    processingState.enabled === false
+      ? processingState.status === 'disabled'
+      : ['starting', 'running', 'healthy', 'degraded', 'paused'].includes(
+          processingState.status
+        ) && Number.isInteger(Number(processingState.consecutiveFailures))
+  );
 
-  if (!knownStatus || !Number.isFinite(updatedAt) || !Number.isInteger(consecutiveFailures)) {
+  if (
+    !knownStatus ||
+    !knownCrawlStatus ||
+    !knownProcessingStatus ||
+    !Number.isFinite(updatedAt) ||
+    !Number.isInteger(consecutiveFailures)
+  ) {
     return { healthy: false, reason: 'invalid worker health state' };
   }
   if (now - updatedAt > maxStaleMs) {
@@ -62,6 +80,12 @@ export const evaluateCrawlWorkerHealth = (state, {
   }
   if (consecutiveFailures >= maxFailures) {
     return { healthy: false, reason: 'too many consecutive crawl failures' };
+  }
+  if (
+    processingState?.enabled !== false &&
+    Number(processingState?.consecutiveFailures) >= maxFailures
+  ) {
+    return { healthy: false, reason: 'too many consecutive processing-job failures' };
   }
 
   return { healthy: true, reason: state.status };
@@ -71,7 +95,19 @@ export const checkCrawlWorkerHealth = async ({
   environment = process.env,
   now = Date.now()
 } = {}) => {
+  const result = await readCrawlWorkerHealthState({ environment, now });
+  return { healthy: result.healthy, reason: result.reason };
+};
+
+// Reads the evaluated state for authenticated operational status consumers.
+export const readCrawlWorkerHealthState = async ({
+  environment = process.env,
+  now = Date.now()
+} = {}) => {
   const config = getCrawlWorkerHealthConfig(environment);
   const state = JSON.parse(await readFile(config.filePath, 'utf8'));
-  return evaluateCrawlWorkerHealth(state, { ...config, now });
+  return {
+    ...evaluateCrawlWorkerHealth(state, { ...config, now }),
+    state
+  };
 };

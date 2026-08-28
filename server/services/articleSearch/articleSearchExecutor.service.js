@@ -65,7 +65,7 @@ export const buildArticleSearchQuery = ({
   languageFilter
 }) => {
   // Collects the query attributes while building article search query.
-  const queryAttributes = ['id', 'feedId'];
+  const queryAttributes = ['id', 'feedId', 'aiAnalysisStatus'];
 
   // Derives the needs quality required while building article search query.
   const needsQuality = qualityFilter || sortQuality;
@@ -81,7 +81,12 @@ export const buildArticleSearchQuery = ({
 
   // Handles the case where needs quality is available.
   if (needsQuality) {
-    queryAttributes.push('advertisementScore', 'sentimentScore', 'qualityScore');
+    queryAttributes.push(
+      'advertisementScore',
+      'sentimentScore',
+      'qualityScore',
+      'qualityScoreActionOverrideInd'
+    );
   }
 
   // Handles the case where needs freshness is available.
@@ -130,7 +135,7 @@ export const buildArticleSearchQuery = ({
       articleQuery.include.unshift({
         model: Event,
         as: 'event',
-        attributes: ['id', 'name', 'articleCount', 'eventStrength', 'sourceDiversityScore', 'sourceCount', 'topicId'],
+        attributes: ['id', 'name', 'generatedName', 'articleCount', 'eventStrength', 'sourceDiversityScore', 'sourceCount', 'topicId'],
         required: false
       });
       articleQuery.include.push({

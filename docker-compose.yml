@@ -13,7 +13,8 @@ services:
       NODE_ENV: production
       PORT: 3000
 
-      # SQLite is the default database for simple self-hosted installations.
+      # SQLite is for lightweight local experimentation. This profile intentionally
+      # omits the AI worker; use the MySQL profile for database-intensive AI jobs.
       DB_DIALECT: sqlite
       DB_STORAGE: /app/data/rssmonster.sqlite
 
@@ -32,9 +33,12 @@ services:
       INFERENCE_AI_ENABLED: "false"
       SKIP_ARTICLE_CLASSIFICATION_ANALYSIS: "true"
       SKIP_ARTICLE_EMBEDDINGS: "true"
+      SKIP_SEMANTIC_LABELING: "true"
+      CRAWL_WORKER_HEALTH_FILE: /app/worker-health/crawl-worker-health.json
 
     volumes:
       - rssmonster-data:/app/data
+      - rssmonster-worker-health:/app/worker-health:ro
 
     init: true
 
@@ -72,6 +76,8 @@ services:
 
     environment:
       NODE_ENV: production
+      # Crawl-only by design. SQLite optional-job concurrency is limited to one,
+      # and this lightweight profile does not start rssmonster-ai-worker.
       DB_DIALECT: sqlite
       DB_STORAGE: /app/data/rssmonster.sqlite
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
@@ -80,12 +86,14 @@ services:
       INFERENCE_AI_ENABLED: "false"
       SKIP_ARTICLE_CLASSIFICATION_ANALYSIS: "true"
       SKIP_ARTICLE_EMBEDDINGS: "true"
-      CRAWL_WORKER_HEALTH_FILE: /tmp/rssmonster-crawl-worker-health.json
+      SKIP_SEMANTIC_LABELING: "true"
+      CRAWL_WORKER_HEALTH_FILE: /app/worker-health/crawl-worker-health.json
       CRAWL_WORKER_HEALTH_MAX_FAILURES: ${CRAWL_WORKER_HEALTH_MAX_FAILURES:-3}
       CRAWL_WORKER_HEALTH_MAX_STALE_MS: ${CRAWL_WORKER_HEALTH_MAX_STALE_MS:-900000}
 
     volumes:
       - rssmonster-data:/app/data
+      - rssmonster-worker-health:/app/worker-health
 
     init: true
 
@@ -104,3 +112,4 @@ services:
 
 volumes:
   rssmonster-data:
+  rssmonster-worker-health:

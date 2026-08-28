@@ -42,6 +42,12 @@ services:
       INFERENCE_ASSISTANT_ENABLED: ${INFERENCE_ASSISTANT_ENABLED:-false}
       SKIP_ARTICLE_CLASSIFICATION_ANALYSIS: "false"
       SKIP_ARTICLE_EMBEDDINGS: "false"
+      SKIP_SEMANTIC_LABELING: ${SKIP_SEMANTIC_LABELING:-false}
+      CRAWL_WORKER_HEALTH_FILE: /app/worker-health/crawl-worker-health.json
+      AI_WORKER_HEALTH_FILE: /app/worker-health/ai-worker-health.json
+
+    volumes:
+      - rssmonster-worker-health:/app/worker-health:ro
 
     init: true
 
@@ -101,11 +107,17 @@ services:
       INFERENCE_AI_ENABLED: "true"
       SKIP_ARTICLE_CLASSIFICATION_ANALYSIS: "false"
       SKIP_ARTICLE_EMBEDDINGS: "false"
-      CRAWL_WORKER_HEALTH_FILE: /tmp/rssmonster-crawl-worker-health.json
+      SKIP_SEMANTIC_LABELING: ${SKIP_SEMANTIC_LABELING:-false}
+      CRAWL_PRIORITY_LEASE_MS: ${CRAWL_PRIORITY_LEASE_MS:-90000}
+      CRAWL_PRIORITY_HEARTBEAT_MS: ${CRAWL_PRIORITY_HEARTBEAT_MS:-30000}
+      CRAWL_WORKER_HEALTH_FILE: /app/worker-health/crawl-worker-health.json
       CRAWL_WORKER_HEALTH_MAX_FAILURES: ${CRAWL_WORKER_HEALTH_MAX_FAILURES:-3}
       CRAWL_WORKER_HEALTH_MAX_STALE_MS: ${CRAWL_WORKER_HEALTH_MAX_STALE_MS:-900000}
 
     init: true
+
+    volumes:
+      - rssmonster-worker-health:/app/worker-health
 
     security_opt:
       - no-new-privileges:true
@@ -115,6 +127,72 @@ services:
         - CMD
         - node
         - src/workers/checkCrawlWorkerHealth.js
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 2m
+
+    networks:
+      - rssmonster-network
+
+  rssmonster-ai-worker:
+    image: rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}
+    container_name: rssmonster-ai-worker
+    restart: unless-stopped
+
+    depends_on:
+      rssmonster:
+        condition: service_healthy
+        restart: true
+      inference:
+        condition: service_healthy
+        restart: true
+
+    command:
+      - npm
+      - run
+      - start:ai-worker
+
+    environment:
+      NODE_ENV: production
+      DB_HOSTNAME: mysql
+      DB_DIALECT: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-rssmonster}
+      DB_USERNAME: ${DB_USERNAME:-rssmonster}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      FEVER_CREDENTIAL_SECRET: ${FEVER_CREDENTIAL_SECRET:?FEVER_CREDENTIAL_SECRET must be set}
+      RSSMONSTER_INTERNAL_HOST_ALLOWLIST: ${RSSMONSTER_INTERNAL_HOST_ALLOWLIST:-}
+      INFERENCE_URL: http://inference:3001
+      INFERENCE_TIMEOUT_MS: ${INFERENCE_TIMEOUT_MS:-600000}
+      INFERENCE_CIRCUIT_FAILURE_THRESHOLD: ${INFERENCE_CIRCUIT_FAILURE_THRESHOLD:-5}
+      INFERENCE_CIRCUIT_COOLDOWN_MS: ${INFERENCE_CIRCUIT_COOLDOWN_MS:-30000}
+      INFERENCE_AI_ENABLED: "true"
+      SKIP_ARTICLE_CLASSIFICATION_ANALYSIS: "false"
+      SKIP_ARTICLE_EMBEDDINGS: "false"
+      SKIP_SEMANTIC_LABELING: ${SKIP_SEMANTIC_LABELING:-false}
+      PROCESSING_JOB_POLL_INTERVAL_MS: ${PROCESSING_JOB_POLL_INTERVAL_MS:-1000}
+      PROCESSING_JOB_CONCURRENCY: ${PROCESSING_JOB_CONCURRENCY:-1}
+      PROCESSING_JOB_SHUTDOWN_TIMEOUT_MS: ${PROCESSING_JOB_SHUTDOWN_TIMEOUT_MS:-30000}
+      PROCESSING_JOB_REPORT_INTERVAL_MS: ${PROCESSING_JOB_REPORT_INTERVAL_MS:-60000}
+      AI_WORKER_HEALTH_FILE: /app/worker-health/ai-worker-health.json
+      AI_WORKER_HEALTH_MAX_FAILURES: ${AI_WORKER_HEALTH_MAX_FAILURES:-3}
+      AI_WORKER_HEALTH_MAX_STALE_MS: ${AI_WORKER_HEALTH_MAX_STALE_MS:-900000}
+
+    init: true
+
+    volumes:
+      - rssmonster-worker-health:/app/worker-health
+
+    security_opt:
+      - no-new-privileges:true
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - src/workers/checkAiWorkerHealth.js
       interval: 30s
       timeout: 5s
       retries: 3
@@ -223,6 +301,7 @@ services:
 volumes:
   mysql-data:
   inference-model-cache:
+  rssmonster-worker-health:
 
 networks:
   rssmonster-network:

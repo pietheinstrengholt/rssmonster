@@ -11,8 +11,14 @@ INFERENCE_ENV_FILE="$INFERENCE_DIR/.env"
 
 PM2_WEB_APP_NAME="rssmonster-web"
 PM2_WORKER_APP_NAME="rssmonster-worker"
+PM2_AI_WORKER_APP_NAME="rssmonster-ai-worker"
 PM2_INFERENCE_APP_NAME="rssmonster-inference"
-PM2_APP_NAMES=("$PM2_WEB_APP_NAME" "$PM2_WORKER_APP_NAME" "$PM2_INFERENCE_APP_NAME")
+PM2_APP_NAMES=(
+  "$PM2_WEB_APP_NAME"
+  "$PM2_WORKER_APP_NAME"
+  "$PM2_AI_WORKER_APP_NAME"
+  "$PM2_INFERENCE_APP_NAME"
+)
 OBSOLETE_PM2_APP_NAME="rssmonster-dev"
 ECOSYSTEM_FILE="$APP_DIR/ecosystem.config.cjs"
 
@@ -231,11 +237,13 @@ on_error() {
     echo "Current PM2 status:"
     pm2 describe "$PM2_WEB_APP_NAME" || true
     pm2 describe "$PM2_WORKER_APP_NAME" || true
+    pm2 describe "$PM2_AI_WORKER_APP_NAME" || true
     pm2 describe "$PM2_INFERENCE_APP_NAME" || true
     echo
     echo "Recent PM2 logs:"
     pm2 logs "$PM2_WEB_APP_NAME" --lines 50 --nostream || true
     pm2 logs "$PM2_WORKER_APP_NAME" --lines 50 --nostream || true
+    pm2 logs "$PM2_AI_WORKER_APP_NAME" --lines 50 --nostream || true
     pm2 logs "$PM2_INFERENCE_APP_NAME" --lines 50 --nostream || true
 
     if [[ "$PM2_MUTATED" == true ]]; then
@@ -487,9 +495,9 @@ cd "$APP_DIR"
 mkdir -p logs
 log "Clearing PM2 logs"
 run_with_timeout 1m pm2 flush
-log "PM2 reload started for web and worker"
-run_pm2_mutation "reload web and worker" 20m pm2 startOrReload "$ECOSYSTEM_FILE" --only "$PM2_WEB_APP_NAME,$PM2_WORKER_APP_NAME" --env production --update-env
-log "PM2 reload completed for web and worker"
+log "PM2 reload started for web, crawl worker, and AI worker"
+run_pm2_mutation "reload web, crawl worker, and AI worker" 20m pm2 startOrReload "$ECOSYSTEM_FILE" --only "$PM2_WEB_APP_NAME,$PM2_WORKER_APP_NAME,$PM2_AI_WORKER_APP_NAME" --env production --update-env
+log "PM2 reload completed for web, crawl worker, and AI worker"
 
 if [[ "$INFERENCE_CHANGED" == true ]]; then
   log "PM2 reload started for inference"

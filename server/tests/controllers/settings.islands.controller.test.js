@@ -51,6 +51,7 @@ const createArticleTopicFixture = async user => {
   const topic = await Topic.create({
     userId: user.id,
     name: uniqueName('islands-topic'),
+    generatedName: 'Generated primary topic',
     topicKey: uniqueName('topic-key'),
     topicType: 'behavioral',
     topicVector: [1, 0, 0],
@@ -112,6 +113,7 @@ const createEventTopicFixture = async user => {
   const topic = await Topic.create({
     userId: user.id,
     name: uniqueName('topics-topic'),
+    generatedName: 'Generated overview topic',
     topicKey: uniqueName('topics-topic-key'),
     topicType: 'event',
     topicVector: [1, 0, 0],
@@ -179,6 +181,7 @@ const createEventTopicFixture = async user => {
     topicId: topic.id,
     representativeArticleId: firstArticle.id,
     name: 'Readable event',
+    generatedName: 'Generated readable event',
     articleCount: 2,
     sourceCount: 1,
     eventStrength: 0.7,
@@ -251,6 +254,7 @@ describe('settings islands overview', () => {
     const island = await Island.create({
       userId: user.id,
       label: 'Readable island',
+      generatedLabel: 'Generated readable island',
       weight: 0.75,
       islandVector: [1, 0, 0],
       populationAudit: [{
@@ -286,6 +290,8 @@ describe('settings islands overview', () => {
     expect(res.body.islands).toHaveLength(1);
     expect(res.body.islands[0]).toMatchObject({
       id: island.id,
+      label: 'Readable island',
+      generatedLabel: 'Generated readable island',
       topicCount: 2,
       relatedArticleCount: 1,
       sourceArticleCount: 1,
@@ -311,7 +317,11 @@ describe('settings islands overview', () => {
       isNewArticle: false
     });
     expect(res.body.islands[0].relatedArticles[0].connectionTopics).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: topic.id, name: topic.name }),
+      expect.objectContaining({
+        id: topic.id,
+        name: topic.name,
+        generatedName: 'Generated primary topic'
+      }),
       expect.objectContaining({ id: secondaryTopic.id, name: secondaryTopic.name })
     ]));
   });
@@ -435,6 +445,7 @@ describe('settings topics overview', () => {
     expect(res.body.events[0]).toMatchObject({
       id: event.id,
       name: 'Readable event',
+      generatedName: 'Generated readable event',
       articleCount: 2,
       actualArticleCount: 2,
       topicCount: 2
@@ -447,6 +458,7 @@ describe('settings topics overview', () => {
       }),
       expect.objectContaining({
         id: topic.id,
+        generatedName: 'Generated overview topic',
         linkedEventCount: 1,
         linkedArticleCount: 2
       })

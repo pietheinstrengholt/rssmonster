@@ -26,10 +26,10 @@ Extract and normalize the feed entry
 Resolve article identity and deterministic duplicates
         |
         v
-Apply rules and lightweight enrichment
+Apply deterministic rules and filters
         |
         v
-Persist the article
+Persist the article and enqueue optional enrichment atomically
         |
         v
 Generate its embedding
@@ -48,6 +48,12 @@ This order is important. An embedding does not replace RSSMonster's normal
 article identity and revision checks. Semantic similarity is considered only
 after those deterministic checks, and similar articles are not automatically
 treated as duplicates.
+
+Article summaries, inferred tags, and inferred scores are handled by the
+worker's optional `processing_jobs` loop after persistence. They do not delay
+embedding. The worker pauses new optional claims while the critical post-crawl
+pipeline is active, preserving the ordered embedding → Event → Topic → Island
+scoring path.
 
 After a normal crawl, RSSMonster limits semantic processing to the users and
 new articles touched by that crawl. Existing vectors are reused rather than

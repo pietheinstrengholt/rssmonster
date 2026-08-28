@@ -1,6 +1,8 @@
 import db from '../../../models/index.js';
 import { saveArticleTags } from './tags.js';
 import buildArticlePersistenceValues from './buildArticlePersistenceValues.js';
+import { enqueueArticleEnrichmentJob } from '../enrichment/articleEnrichmentJobs.js';
+import { buildActionScoreOverrideIndicators } from '../enrichment/articleAnalysis.js';
 import {
   assertExecutionLeaseOwnership,
   throwIfExecutionExpired
@@ -113,7 +115,14 @@ const findConcurrentWinner = async ({ articleValues, error }) => {
    ------------------------------------------------------
    Persists article and generated tags
 ====================================================== */
-async function saveArticle(feed, data, analysis, actionResult, execution = {}) {
+async function saveArticle(
+  feed,
+  data,
+  analysis,
+  actionResult,
+  execution = {},
+  articleEnrichment = null
+) {
   throwIfExecutionExpired(execution);
   // Validate userId presence
   if (!feed || !feed.userId) {
@@ -135,6 +144,7 @@ async function saveArticle(feed, data, analysis, actionResult, execution = {}) {
     isOfficialSource: data.isOfficialSource,
     officialOrganization: data.officialOrganization,
     advertisementScore: analysis?.advertisementScore,
+    ...buildActionScoreOverrideIndicators(actionResult),
     sentimentScore: analysis?.sentimentScore,
     qualityScore: analysis?.qualityScore,
     publishedAt: data.publishedAt || new Date()
@@ -157,6 +167,16 @@ async function saveArticle(feed, data, analysis, actionResult, execution = {}) {
           providerTags: data.categories,
           feedTags: feed.feedTags,
           ruleTags: actionResult.tags,
+          transaction
+        });
+        throwIfExecutionExpired(execution);
+      }
+
+      if (articleEnrichment) {
+        await enqueueArticleEnrichmentJob({
+          article: createdArticle,
+          userId: feed.userId,
+          ...articleEnrichment,
           transaction
         });
         throwIfExecutionExpired(execution);

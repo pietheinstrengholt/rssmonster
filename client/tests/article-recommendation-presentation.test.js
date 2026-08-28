@@ -23,6 +23,27 @@ describe('article recommendation presentation', () => {
     expect(explanation.scoreLabel).toBe('76% recommendation score');
   });
 
+  it('prefers generated event and island labels while retaining deterministic fallbacks', () => {
+    const explanation = buildArticleRecommendationExplanation({
+      reasons: [
+        {
+          code: 'interest_match',
+          island: { label: 'Software development', generatedLabel: 'Developer tooling' }
+        },
+        {
+          code: 'event_coverage',
+          event: { name: 'Deterministic launch name', generatedName: 'Qwen Releases New Model' }
+        }
+      ]
+    });
+
+    expect(explanation.items.map(item => item.text)).toEqual([
+      'Matches your “Developer tooling” interest.',
+      'Part of “Qwen Releases New Model”.'
+    ]);
+    expect(explanation.summary).toContain('your “Developer tooling” interest');
+  });
+
   it('uses safe fallback wording when optional names are unavailable', () => {
     const explanation = buildArticleRecommendationExplanation({
       score: 2,
@@ -37,10 +58,25 @@ describe('article recommendation presentation', () => {
     expect(explanation.items.map(item => item.text)).toEqual([
       'Matches your learned interests.',
       'Matches one of your article rules.',
-      'Freshness contributed to its ranking.',
-      'Content quality contributed to its ranking.'
+      'Freshness contributed to its ranking.'
     ]);
     expect(explanation.scoreLabel).toBe('100% recommendation score');
+  });
+
+  it('shows quality only when the average quality is above 80 percent', () => {
+    const atThreshold = buildArticleRecommendationExplanation({
+      reasons: [{ code: 'quality', value: 0.8 }]
+    });
+    const aboveThreshold = buildArticleRecommendationExplanation({
+      reasons: [{ code: 'quality', value: 0.81 }]
+    });
+
+    expect(atThreshold.items).toEqual([]);
+    expect(aboveThreshold.items).toEqual([expect.objectContaining({
+      code: 'quality',
+      title: 'Quality',
+      text: 'Strong content quality.'
+    })]);
   });
 
   it('handles missing recommendation details without rendering invalid values', () => {

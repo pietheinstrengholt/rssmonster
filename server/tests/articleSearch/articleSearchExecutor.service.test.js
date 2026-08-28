@@ -84,6 +84,15 @@ describe('articleSearchExecutor.service', () => {
     expect(query).not.toHaveProperty('order');
   });
 
+  it('selects quality action provenance for runtime quality filters', () => {
+    const query = buildQuery({ qualityFilter: { operator: '>=', value: 0.8 } });
+
+    expect(query.attributes).toEqual(expect.arrayContaining([
+      'qualityScore',
+      'qualityScoreActionOverrideInd'
+    ]));
+  });
+
   it('counts a limited search from only the bounded matching IDs', async () => {
     mocked.articleFindAll.mockResolvedValue([{ id: 2 }, { id: 4 }]);
 

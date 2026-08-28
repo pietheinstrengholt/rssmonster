@@ -115,6 +115,8 @@ export default function buildArticlePersistenceValues(feed, data = {}) {
       contentText ? hashVisibleText(contentText) : null
     ),
     contentSummaryBullets: data.contentSummaryBullets ?? [],
+    aiAnalysisStatus: data.aiAnalysisStatus,
+    aiAnalysisCompletedAt: data.aiAnalysisCompletedAt,
     contentSourceHash: data.contentSourceHash || (
       contentOriginal ? hashOriginalContent(contentOriginal) : null
     ),
@@ -123,8 +125,10 @@ export default function buildArticlePersistenceValues(feed, data = {}) {
     language: data.language,
     embedding_model: data.embedding_model || null,
     advertisementScore: data.advertisementScore,
+    advertisementScoreActionOverrideInd: Boolean(data.advertisementScoreActionOverrideInd),
     sentimentScore: data.sentimentScore,
     qualityScore: data.qualityScore,
+    qualityScoreActionOverrideInd: Boolean(data.qualityScoreActionOverrideInd),
     publishedAt: normalizeArticleDate(data.publishedAt),
     modifiedAt: normalizeArticleDate(data.modifiedAt),
     publishedSource: normalizeArticleDate(data.publishedSource),

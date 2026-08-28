@@ -1,7 +1,7 @@
 <template>
   <div class="article-meta">
-    <BootstrapIcon v-if="isMobilePortrait && advertisementScore !== undefined && advertisementScore < neutralScore" icon="megaphone-fill" class="mobile-score-icon ad-icon" :title="`Promotional content detected (score: ${advertisementScore})`" />
-    <BootstrapIcon v-if="isMobilePortrait && sentimentScore !== undefined && sentimentScore < neutralScore" icon="arrow-down-circle-fill" :class="['mobile-score-icon', 'sentiment-icon', getSentimentClass(sentimentScore)]" :title="`Tone quality: ${sentimentScore}`" />
+    <BootstrapIcon v-if="showAnalysisScores && isMobilePortrait && advertisementScore !== undefined && advertisementScore < neutralScore" icon="megaphone-fill" class="mobile-score-icon ad-icon" :title="`Promotional content detected (score: ${advertisementScore})`" />
+    <BootstrapIcon v-if="showAnalysisScores && isMobilePortrait && sentimentScore !== undefined && sentimentScore < neutralScore" icon="arrow-down-circle-fill" :class="['mobile-score-icon', 'sentiment-icon', getSentimentClass(sentimentScore)]" :title="`Tone quality: ${sentimentScore}`" />
     <span v-if="hasProvenance" class="article-provenance">
       <span v-if="hasPublishedAt" class="article-published">{{ formatRelativeDate(publishedAt) }}</span>
       <span v-if="hasPublishedAt && hasSource" class="article-provenance-separator" aria-hidden="true">·</span>
@@ -25,6 +25,7 @@ import {
   getSentimentClass
 } from '../../services/articlePresentation.js';
 import { formatRelativeDate } from '../../utils/date.js';
+import { hasUsableArticleAnalysis } from '../../services/articleAnalysisPresentation.js';
 
 const ArticleRecommendationExplanation = defineAsyncComponent(
   () => import('./ArticleRecommendationExplanation.vue')
@@ -34,9 +35,13 @@ export default {
   components: { ArticleRecommendationExplanation },
   emits: ['view-event-articles', 'view-duplicate-articles'],
   props: {
-    publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, hasInterestScore: { type: Boolean, default: false }, isRecommendationView: { type: Boolean, default: false }, recommendation: { type: Object, default: null }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, neutralScore: { type: Number, required: true }
+    publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, hasInterestScore: { type: Boolean, default: false }, isRecommendationView: { type: Boolean, default: false }, recommendation: { type: Object, default: null }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, aiAnalysisStatus: { type: String, default: '' }, neutralScore: { type: Number, required: true }
   },
   computed: {
+    // Prevents ingestion defaults from appearing as completed mobile analysis signals.
+    showAnalysisScores() {
+      return hasUsableArticleAnalysis(this.aiAnalysisStatus);
+    },
     // Returns whether the backend supplied reasons relevant to the active article context.
     showRecommendationExplanation() {
       const reasons = Array.isArray(this.recommendation?.reasons)

@@ -7,6 +7,14 @@ export const createDefaultArticleAnalysis = () => ({
   qualityScore: 70
 });
 
+// Persists whether each overridable score is owned by deterministic article actions.
+export const buildActionScoreOverrideIndicators = actionResult => ({
+  advertisementScoreActionOverrideInd:
+    actionResult?.advertisementScore !== null && actionResult?.advertisementScore !== undefined,
+  qualityScoreActionOverrideInd:
+    actionResult?.qualityScore !== null && actionResult?.qualityScore !== undefined
+});
+
 // This function applies action-owned score overrides to a fresh analysis result.
 export const applyAnalysisScoreOverrides = (analysis, actionResult) => {
   // Builds the result assembled while applying analysis score overrides.

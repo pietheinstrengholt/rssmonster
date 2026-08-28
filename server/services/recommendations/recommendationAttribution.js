@@ -56,7 +56,7 @@ export async function loadInterestIslandAttributions(userId, articles) {
     }),
     Island.findAll({
       where: { userId, archivedInd: false },
-      attributes: ['id', 'label', 'weight', 'islandVector'],
+      attributes: ['id', 'label', 'generatedLabel', 'weight', 'islandVector'],
       order: [['id', 'ASC']],
       raw: true
     })
@@ -121,7 +121,9 @@ export async function loadInterestIslandAttributions(userId, articles) {
 
     attributions.set(String(articleId), {
       id: selectedIsland.id,
-      name: selectedIsland.label
+      name: selectedIsland.label,
+      label: selectedIsland.label,
+      generatedLabel: selectedIsland.generatedLabel
     });
   }
 

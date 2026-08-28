@@ -3,6 +3,10 @@ import { getArticleScoringConfig } from '../../config/config.js';
 import { configureModelCache } from '../../embeddings/modelCache.js';
 import { logInferenceDebug } from '../../debug.js';
 import { createInferenceWorkQueue } from '../../queue/inferenceWorkQueue.js';
+import {
+  LOCAL_INFERENCE_PRIORITIES,
+  runLocalInference
+} from '../../queue/localInferencePriorityGate.js';
 
 const MODEL_DEVICE = 'cpu';
 const QUEUE_EVENT_STAGES = Object.freeze({
@@ -116,7 +120,14 @@ export const createModernBertArticleScoringProvider = ({
 
   const score = ({ signal, requestId, operation = 'article-scoring', ...input }) =>
     scoringQueue.enqueue(
-      () => runScoring(input),
+      () => runLocalInference(
+        () => runScoring(input),
+        {
+          priority: LOCAL_INFERENCE_PRIORITIES.scoring,
+          requestId,
+          operation
+        }
+      ),
       { signal, requestId, operation }
     );
 

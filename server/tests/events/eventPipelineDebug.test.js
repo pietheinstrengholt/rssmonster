@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
 import {
   eventSummaryLine,
@@ -7,7 +7,12 @@ import {
 } from '../../services/events/eventPipelineDebug.js';
 
 describe('eventPipelineDebug', () => {
+  beforeEach(() => {
+    vi.stubEnv('EVENT_DEBUG', 'true');
+  });
+
   afterEach(() => {
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 

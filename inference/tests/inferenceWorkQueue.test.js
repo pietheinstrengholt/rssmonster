@@ -43,6 +43,25 @@ describe('inference work queue', () => {
     expect(executionOrder).toEqual(['first', 'second', 'third']);
   });
 
+  it('starts higher-priority pending work first while preserving FIFO ties', async () => {
+    const runningDeferred = createDeferred();
+    const executionOrder = [];
+    const queue = createInferenceWorkQueue({ concurrency: 1, maximumPending: 3 });
+    const running = queue.enqueue(() => runningDeferred.promise);
+    const normal = queue.enqueue(() => executionOrder.push('normal'), { priority: 10 });
+    const embeddingOne = queue.enqueue(() => executionOrder.push('embedding-one'), {
+      priority: 100
+    });
+    const embeddingTwo = queue.enqueue(() => executionOrder.push('embedding-two'), {
+      priority: 100
+    });
+
+    runningDeferred.resolve();
+    await Promise.all([running, normal, embeddingOne, embeddingTwo]);
+
+    expect(executionOrder).toEqual(['embedding-one', 'embedding-two', 'normal']);
+  });
+
   it('enforces configurable concurrency', async () => {
     const deferredTasks = Array.from({ length: 4 }, createDeferred);
     let active = 0;
@@ -328,6 +347,9 @@ describe('inference work queue', () => {
       concurrency: 1,
       maximumPending: -1
     })).toThrow('maximumPending must be a non-negative integer');
+    const priorityQueue = createInferenceWorkQueue({ concurrency: 1, maximumPending: 0 });
+    expect(() => priorityQueue.enqueue(() => {}, { priority: 1.5 }))
+      .toThrow('priority must be an integer');
 
     const queue = createInferenceWorkQueue({
       concurrency: 1,

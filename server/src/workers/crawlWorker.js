@@ -31,9 +31,12 @@ export const parseWorkerInterval = value => {
   return intervalMs;
 };
 
-// This function loads and authenticates the existing crawl pipeline dependencies.
+// This function loads and authenticates the deterministic crawl pipeline dependencies.
 const loadCrawlDependencies = async () => {
-  const [{ default: db }, { runSemanticPipeline }] = await Promise.all([
+  const [
+    { default: db },
+    { runSemanticPipeline }
+  ] = await Promise.all([
     import('../../models/index.js'),
     import('../../scripts/runSemanticPipeline.js')
   ]);
@@ -53,7 +56,7 @@ const loadCrawlDependencies = async () => {
   };
 };
 
-// This function creates an interruptible, single-iteration crawl worker lifecycle.
+// This function creates an interruptible, crawl-only worker lifecycle.
 export const createCrawlWorker = ({
   intervalMs = parseWorkerInterval(process.env.CRAWL_WORKER_INTERVAL_MS),
   loadDependencies = loadCrawlDependencies,
@@ -118,12 +121,10 @@ export const createCrawlWorker = ({
     void shutdown(signal);
   };
 
-  // This function identifies SIGTERM as the requested shutdown reason.
   const handleSigterm = () => {
     handleSignal('SIGTERM');
   };
 
-  // This function identifies SIGINT as the requested shutdown reason.
   const handleSigint = () => {
     handleSignal('SIGINT');
   };
@@ -135,12 +136,10 @@ export const createCrawlWorker = ({
     void shutdown(kind, 1);
   };
 
-  // This function records an unhandled rejection as a fatal worker error.
   const handleUnhandledRejection = reason => {
     handleFatalError('unhandled rejection', reason);
   };
 
-  // This function records an uncaught exception as a fatal worker error.
   const handleUncaughtException = error => {
     handleFatalError('uncaught exception', error);
   };
@@ -167,7 +166,10 @@ export const createCrawlWorker = ({
 
   // This function runs immediate and subsequent crawl iterations sequentially.
   const runLoop = async () => {
-    logger.log(`[CrawlWorker] Starting with intervalMs=${intervalMs}`);
+    const interval = intervalMs % 1000 === 0
+      ? `${intervalMs / 1000}s`
+      : `${intervalMs}ms`;
+    logger.log(`[CrawlWorker] Starting crawl worker interval=${interval}`);
     installProcessHandlers();
 
     try {

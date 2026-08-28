@@ -18,10 +18,12 @@ import {
   updateCategoryOrder
 } from '../src/api/manager.js';
 import {
+  clearCompletedProcessingJobs,
   clearProcessingFailures,
   fetchCrawlStatistics,
   fetchIslandsOverview,
   fetchOfficialSources,
+  fetchProcessingJobStatus,
   fetchProcessingFailureDetail,
   fetchProcessingFailureGroups,
   fetchProcessingFailureOccurrences,
@@ -229,6 +231,14 @@ describe('settings API contracts', () => {
     );
     expect(get).toHaveBeenNthCalledWith(3, '/setting/observability/failures/91');
     expect(del).toHaveBeenCalledWith('/setting/observability');
+  });
+
+  it('builds processing-job status and terminal cleanup requests', () => {
+    fetchProcessingJobStatus();
+    clearCompletedProcessingJobs();
+
+    expect(get).toHaveBeenCalledWith('/setting/processing-jobs');
+    expect(del).toHaveBeenCalledWith('/setting/processing-jobs');
   });
 
   // Verifies official-source settings retain the complete source list.

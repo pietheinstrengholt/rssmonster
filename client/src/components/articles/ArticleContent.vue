@@ -2,7 +2,7 @@
   <div v-if="viewMode === 'full' || viewMode === 'reader'" class="article-content-wrapper" :class="{ 'article-content-with-thumbnail': shouldShowFallbackImage && isInlineLeadImage }"><div v-if="shouldShowFallbackImage" :class="['media-content', 'enclosure', 'article-lead-image', `article-lead-image--${imageDisplayMode}`]" :style="thumbnailStyle"><img class="article-lead-image__media" :src="imageUrl" :width="leadImageDimensions.width || undefined" :height="leadImageDimensions.height || undefined" alt="" loading="lazy" decoding="async" @load="handleLeadImageLoad" @error="handleLeadImageError" /></div><div v-if="hasContent" class="article-full-content" v-html="renderedContent"></div></div>
   <div v-else-if="viewMode === 'summarized'" class="article-content-wrapper"><p v-if="hasContent" class="article-full-content"><HighlightedText :text="summarizedContent" :terms="highlightTerms" /></p></div>
   <div v-else-if="viewMode === 'minimal' && showMinimalContent" class="article-content-wrapper article-content-wrapper--minimal"><div v-if="hasContent" class="article-full-content" v-html="renderedContent"></div></div>
-  <div v-else-if="viewMode === 'summaryBullets'" class="article-content-wrapper"><ul v-if="contentSummaryBullets && contentSummaryBullets.length" class="article-summary"><li v-for="(bullet, index) in contentSummaryBullets.slice(0, visibleBulletCount)" :key="index"><HighlightedText :text="bullet" :terms="highlightTerms" /></li></ul><p v-else class="article-full-content">No summary available.</p></div>
+  <div v-else-if="viewMode === 'summaryBullets'" class="article-content-wrapper"><p v-if="analysisInProgress" class="article-full-content" role="status">Analyzing…</p><ul v-else-if="canShowAnalysis && contentSummaryBullets && contentSummaryBullets.length" class="article-summary"><li v-for="(bullet, index) in contentSummaryBullets.slice(0, visibleBulletCount)" :key="index"><HighlightedText :text="bullet" :terms="highlightTerms" /></li></ul><p v-else class="article-full-content">No summary available.</p></div>
 </template>
 <script>
 import {
@@ -13,10 +13,11 @@ import {
 } from '../../services/articleContentService.js';
 import HighlightedText from '../shared/HighlightedText.vue';
 import { highlightHtmlText } from '../../services/searchHighlight.js';
+import { hasUsableArticleAnalysis, isArticleAnalysisInProgress } from '../../services/articleAnalysisPresentation.js';
 
 export default {
   components: { HighlightedText },
-  props: { viewMode: { type: String, default: '' }, content: { type: String, default: '' }, contentText: { type: String, default: '' }, imageUrl: { type: String, default: '' }, imageWidth: { type: [Number, String], default: null }, imageHeight: { type: [Number, String], default: null }, imageMimeType: { type: String, default: '' }, imageSource: { type: String, default: '' }, contentSummaryBullets: { type: Array, default: () => [] }, visibleBulletCount: { type: Number, default: Infinity }, shouldShowImage: { type: Boolean, default: true }, showMinimalContent: { type: Boolean, default: false }, highlightTerms: { type: Array, default: () => [] } },
+  props: { viewMode: { type: String, default: '' }, content: { type: String, default: '' }, contentText: { type: String, default: '' }, imageUrl: { type: String, default: '' }, imageWidth: { type: [Number, String], default: null }, imageHeight: { type: [Number, String], default: null }, imageMimeType: { type: String, default: '' }, imageSource: { type: String, default: '' }, contentSummaryBullets: { type: Array, default: () => [] }, aiAnalysisStatus: { type: String, default: '' }, visibleBulletCount: { type: Number, default: Infinity }, shouldShowImage: { type: Boolean, default: true }, showMinimalContent: { type: Boolean, default: false }, highlightTerms: { type: Array, default: () => [] } },
   data() {
     return {
       loadedImageUrl: '',
@@ -26,6 +27,8 @@ export default {
     };
   },
   computed: {
+    analysisInProgress() { return isArticleAnalysisInProgress(this.aiAnalysisStatus); },
+    canShowAnalysis() { return hasUsableArticleAnalysis(this.aiAnalysisStatus); },
     // Returns whether this article has renderable content.
     hasContent() { return this.content !== NULL_ARTICLE_CONTENT; },
     // Returns cached display HTML and image metadata from one normalization pass.

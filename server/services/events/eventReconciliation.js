@@ -1,4 +1,5 @@
 import db from '../../models/index.js';
+import { debugSemanticLog } from '../observability/semanticLogging.js';
 import { Op } from 'sequelize';
 
 import {
@@ -164,7 +165,7 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
       eventStrength: strength
     }, { transaction });
 
-    console.log(
+    debugSemanticLog('event',
       `[EVENT] Reconciled event ${event.id}` +
       ` articles=${projection.articleCount}` +
       ` sources=${projection.sourceCount}` +

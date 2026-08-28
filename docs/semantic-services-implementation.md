@@ -18,10 +18,33 @@ Covered modules:
 - `server/services/events/*`
 - `server/services/topics/*`
 - `server/services/islands/*`
+- `server/services/jobs/*`
+- `server/services/semanticLabels/*`
 
 ---
 
 ## 1) High-level processing pipeline
+
+The production topology contains two independently supervised workers:
+
+```text
+rssmonster-worker
+ └─ crawl scheduler loop
+      └─ crawl → embedding → events → topics → island scoring
+
+rssmonster-ai-worker
+ └─ claim processing_jobs
+      ├─ summaries
+      ├─ quality scoring
+      ├─ inferred tags
+      └─ semantic labels
+```
+
+The crawl scheduler retains the critical ordering. It never waits for optional
+jobs to drain. A renewable database lease pauses new AI-worker claims while the
+semantic pipeline is active. Embeddings therefore remain synchronous with Event and Topic creation
+and Interest Island scoring, while generated article analysis and presentation
+labels can finish later.
 
 At runtime, the semantic pipeline is effectively:
 
@@ -269,6 +292,12 @@ Net effect: semantic topic membership + behavioral islands become a single per-a
 - If embeddings are unavailable, event/topic assignment can be partially skipped, reducing clustering quality.
 - Multi-source and evidence gates protect against over-fragmented/low-confidence events/topics.
 - The architecture is incremental-first but includes replay/recluster paths to recover consistency.
+- `processing_jobs` uses owned, identifier-only payloads, renewable leases, bounded claims, retry backoff, dead-lettering, and expired-lease recovery.
+- Article enrichment rechecks its content/version guard under lock and replaces only inferred tags; stale jobs cannot overwrite publisher revisions.
+- Semantic-label jobs start only after the Event, Topic, or Island exists and retain deterministic fallback names until completion.
+- Each completed post-crawl semantic pipeline performs a bounded, failure-isolated reconciliation for eligible null labels so post-commit enqueue gaps are repaired.
+- A manually started SQLite AI worker forces optional processing concurrency to one; the lightweight SQLite Compose profile does not start it. MySQL claims use transactional row locking with skip-locked behavior.
+- Structured worker health and logs report queue counts, retry/dead outcomes, and bounded latency without article text or inference prompts.
 
 ## 11) Regression test fixtures
 

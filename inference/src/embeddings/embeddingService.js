@@ -3,6 +3,10 @@ import { getEmbeddingConfig } from '../config/config.js';
 import { createEmbeddingProvider } from './providers/index.js';
 import { logInferenceDebug } from '../debug.js';
 import { createInferenceWorkQueue } from '../queue/inferenceWorkQueue.js';
+import {
+  LOCAL_INFERENCE_PRIORITIES,
+  runLocalInference
+} from '../queue/localInferencePriorityGate.js';
 
 const QUEUE_EVENT_STAGES = Object.freeze({
   queued: 'queued',
@@ -91,7 +95,14 @@ export const createEmbeddingService = ({
           `[INFERENCE DEBUG] calling embedding provider=${metadata.provider} count=${texts.length}`
         );
       }
-      return selectedProvider.embed(texts);
+      const providerOperation = () => selectedProvider.embed(texts);
+      return config.provider === 'qwen'
+        ? runLocalInference(providerOperation, {
+            priority: LOCAL_INFERENCE_PRIORITIES.embedding,
+            requestId,
+            operation: 'embeddings'
+          })
+        : providerOperation();
     }, { signal, requestId, operation });
 
     if (debug) {

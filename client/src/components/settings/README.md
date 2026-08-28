@@ -40,7 +40,7 @@ Settings radius values follow four semantic roles: `--radius-dialog` for the mod
 Navigation is tailored to the current installation and user:
 
 - Welcome, Smart Folders, Actions, Crawl Statistics, Observability, Feeds, and Official Sources are available to regular authenticated users.
-- Scores, Topics, and Islands are shown only when AI features are enabled.
+- Scores, Topics, Islands, and AI Processing are shown only when AI features are enabled.
 - Manage Users is shown only to administrators. The section also protects its content if it is reached without administrator rights.
 
 Hidden navigation is an access and capability boundary, not merely a visual preference. New settings sections should follow the same role and feature-gating behavior.
@@ -136,6 +136,14 @@ Island data is a fetched snapshot and changes only when loaded or explicitly ref
 Crawl Statistics is a read-only daily history of user-triggered crawl activity. It shows new articles, updated articles, completed crawls, and failed crawls for each day.
 
 The available date ranges are the last 7, 30, 90, or 365 days. Changing the range retrieves a new bounded snapshot. Only completed and failed user crawls are included. Loading, empty, and failure states are presented separately, and the user can explicitly refresh the current range.
+
+### AI Processing
+
+AI Processing is an operational view of the current user's optional background queue. It uses the server's canonical healthy, busy, degraded, or stalled state and gives queue health more emphasis than secondary latency and completion details. Internal task names are presented as Article analysis and Semantic labels.
+
+The section refreshes every 30 seconds only while mounted and also provides an explicit refresh control. Polling stops when the user leaves the section. A refresh failure remains local to this view and preserves the last successful snapshot when one is available.
+
+Clear records opens an explicit confirmation before permanently deleting the signed-in user's succeeded and dead job history. Pending, retrying, running, and cancelled jobs remain untouched. Successful cleanup refreshes the status view; a failed cleanup keeps the confirmation available for retry.
 
 ### Observability
 

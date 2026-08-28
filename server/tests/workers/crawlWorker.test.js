@@ -29,6 +29,12 @@ import {
 
 const originalExitCode = process.exitCode;
 
+const createWorkerDependencies = (overrides = {}) => ({
+  closeDatabase: vi.fn().mockResolvedValue(undefined),
+  runCrawl: vi.fn().mockResolvedValue(undefined),
+  ...overrides
+});
+
 // This test suite verifies scheduling and shutdown without connecting to feeds or MySQL.
 describe('crawl worker', () => {
   // This setup restores successful lazy dependencies before each worker lifecycle test.
@@ -73,9 +79,10 @@ describe('crawl worker', () => {
     dependencyMocks.runCrawl.mockImplementation(async () => {
       void worker.shutdown('test complete');
     });
+    const logger = { error: vi.fn(), log: vi.fn() };
     const worker = createCrawlWorker({
-      intervalMs: 1,
-      logger: { error: vi.fn(), log: vi.fn() },
+      intervalMs: 60_000,
+      logger,
       registerProcessHandlers: false
     });
 
@@ -84,6 +91,36 @@ describe('crawl worker', () => {
     expect(dependencyMocks.authenticate).toHaveBeenCalledOnce();
     expect(dependencyMocks.runCrawl).toHaveBeenCalledOnce();
     expect(dependencyMocks.closeDatabase).toHaveBeenCalledOnce();
+    expect(logger.log).toHaveBeenCalledWith(
+      '[CrawlWorker] Starting crawl worker interval=60s'
+    );
+  });
+
+  it('never consumes processing jobs even when queue methods are supplied', async () => {
+    const claimProcessingJobs = vi.fn();
+    const executeProcessingJob = vi.fn();
+    const recoverExpiredProcessingJobs = vi.fn();
+    const dependencies = createWorkerDependencies({
+      claimProcessingJobs,
+      executeProcessingJob,
+      recoverExpiredProcessingJobs
+    });
+    const worker = createCrawlWorker({
+      intervalMs: 1,
+      loadDependencies: async () => dependencies,
+      logger: { error: vi.fn(), log: vi.fn() },
+      registerProcessHandlers: false
+    });
+    dependencies.runCrawl.mockImplementation(async () => {
+      void worker.shutdown('test complete');
+    });
+
+    await worker.start();
+
+    expect(dependencies.runCrawl).toHaveBeenCalledOnce();
+    expect(claimProcessingJobs).not.toHaveBeenCalled();
+    expect(executeProcessingJob).not.toHaveBeenCalled();
+    expect(recoverExpiredProcessingJobs).not.toHaveBeenCalled();
   });
 
   // This test verifies failed authentication preserves the root error after cleanup also fails.

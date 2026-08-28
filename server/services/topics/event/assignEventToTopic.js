@@ -10,6 +10,7 @@ import {
   cosineSimilarity,
   generateTopicKey
 } from '../shared/topicHelpers.js';
+import { debugSemanticLog } from '../../observability/semanticLogging.js';
 import {
   updateMatchedTopics,
   updateIdentityTopic,
@@ -40,8 +41,8 @@ function formatTopicMetric(value, digits = 3) {
 
 // This function logs a single event-to-topic assignment.
 function logTopicAssignment(semanticUnit, assignment) {
-  console.log(
-    `[TOPIC] event=${semanticUnit.id} → topic=${assignment.topicId} ` +
+  debugSemanticLog('topic',
+    `event=${semanticUnit.id} → topic=${assignment.topicId} ` +
     `sim=${formatTopicMetric(assignment.confidence)} ` +
     `rank=${assignment.rank} primary=${Boolean(assignment.primaryInd)} matched`
   );
@@ -59,8 +60,8 @@ function logMultiTopicAssignment(semanticUnit, assignments) {
   // Derives the best sim through max while performing log multi topic assignment.
   const bestSim = Math.max(...assignments.map(assignment => Number(assignment.confidence || 0)));
 
-  console.log(
-    `[TOPIC] event=${semanticUnit.id} → topics=${topicIds} ` +
+  debugSemanticLog('topic',
+    `event=${semanticUnit.id} → topics=${topicIds} ` +
     `primary=${primaryTopicId} bestSim=${formatTopicMetric(bestSim)} ` +
     `matched=${assignments.length}`
   );
@@ -68,8 +69,8 @@ function logMultiTopicAssignment(semanticUnit, assignments) {
 
 // This function logs that an event could not be assigned to a topic.
 function logNoTopic(semanticUnit, bestTopicSim, gate = 'blocked') {
-  console.log(
-    `[TOPIC] event=${semanticUnit.id} → no-topic ` +
+  debugSemanticLog('topic',
+    `event=${semanticUnit.id} → no-topic ` +
     `bestSim=${formatTopicMetric(bestTopicSim)} gate=${gate}`
   );
 }

@@ -18,6 +18,7 @@ import {
   sortIslandsByWeight
 } from './islandVectorUtils.js';
 import { recordProcessingFailure } from '../observability/processingFailures.js';
+import { tryEnqueueGeneratedSemanticLabelJobsForUser } from '../semanticLabels/semanticLabelJobs.js';
 
 // This service recalibrates "interest islands" from user behavior and topic history.
 // Islands represent durable preference areas that can later score articles and group topics.
@@ -458,6 +459,11 @@ export async function runIslandCalibrationForUser(userId, options = {}) {
     profiles: behaviorResult.profiles
   };
 
+  const createdIslandIds = behaviorResult.persistenceSummary?.createdIslandIds || [];
+  if (createdIslandIds.length) {
+    await tryEnqueueGeneratedSemanticLabelJobsForUser(userId, { islandIds: createdIslandIds });
+  }
+
   await logIslandRunSummary(userId, result, startedAt);
 
   return result;
@@ -509,4 +515,3 @@ export async function runIslandCalibration(options = {}) {
 }
 
 export default runIslandCalibration;
-

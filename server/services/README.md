@@ -159,6 +159,21 @@ Upper layers describe what consistently matters.
 
 # Processing Pipeline
 
+Production separates the critical semantic path from durable optional enrichment.
+
+```
+rssmonster-worker
+ └─ crawl scheduler loop
+      └─ crawl → embedding → events → topics → island scoring
+
+rssmonster-ai-worker
+ └─ claim processing_jobs
+      ├─ summaries
+      ├─ quality scoring
+      ├─ inferred tags
+      └─ semantic labels
+```
+
 The semantic pipeline always flows in one direction.
 
 ```
@@ -178,6 +193,29 @@ Article interest scoring
 Downstream systems consume upstream results.
 
 Higher layers must never redefine lower layers.
+
+Embeddings, deterministic duplicate detection, Event creation, Topic assignment,
+and Island scoring stay ordered in the crawl loop. Optional job claiming pauses
+while this critical path is active. The crawl loop never waits for optional jobs
+to drain, and optional inference or labeling failures must not fail it.
+
+Article enrichment jobs are committed atomically with new or revised article
+rows. Their payloads contain owned identifiers, content/version guards, contract
+versions, and resolved action-owned score overrides, never article content.
+Handlers reload and lock the current target before writing, preserve every
+non-inferred tag provenance, and treat deleted, disabled, filtered, or stale
+targets as successfully obsolete.
+
+Event, Topic, and Island label jobs are enqueued only after the owned semantic
+target exists. Their handlers reload current bounded title context and update
+only the generated presentation field. Deterministic fallback labels remain the
+source of usable presentation while optional labels are absent.
+
+The database queue owns bounded claims, renewable leases, exponential retry
+backoff, terminal dead-lettering, and expired-lease recovery. SQLite processing
+concurrency is one; MySQL workers use locked, skip-locked claims. Operational
+snapshots and lifecycle logs must expose safe identifiers and counts without
+article content or inference prompts.
 
 ---
 

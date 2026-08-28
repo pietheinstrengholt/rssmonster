@@ -36,6 +36,12 @@ export default (sequelize) => {
         type: DataTypes.STRING(255),
         allowNull: true
       },
+      // Stores the optional generated event name used for presentation.
+      generatedName: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        defaultValue: null
+      },
       // Caches the number of articles grouped into the event, starting with its representative.
       articleCount: {
         type: DataTypes.INTEGER,

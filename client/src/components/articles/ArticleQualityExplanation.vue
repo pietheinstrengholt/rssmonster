@@ -40,13 +40,15 @@ export default {
         {
           code: 'writing',
           icon: 'pencil-square',
+          iconClass: scoreSeverityClass(this.qualityScore),
           title: 'Writing quality',
           value: this.qualityScore,
           text: 'Clarity, structure, and substance of the article.'
         },
         {
           code: 'tone',
-          icon: 'chat-left-text',
+          icon: 'chat-square-text-fill',
+          iconClass: scoreSeverityClass(this.sentimentScore),
           title: 'Tone quality',
           value: this.sentimentScore,
           text: 'Neutrality and emotional balance of the writing.'
@@ -54,6 +56,7 @@ export default {
         {
           code: 'ad-free',
           icon: 'megaphone',
+          iconClass: scoreSeverityClass(this.advertisementScore),
           title: 'Ad-free quality',
           value: this.advertisementScore,
           text: 'Freedom from promotional and marketing language.'

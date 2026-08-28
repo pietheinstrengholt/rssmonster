@@ -57,8 +57,8 @@
         <div class="article-layout">
           <ArticleHeader ref="articleHeading" :url="url" :title="title" :highlightTerms="highlightTerms" :clickedAmount="clickedAmount" :clickPending="clickMutationPending" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-clicked="toggleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" />
           <div class="meta-row">
-            <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :hasInterestScore="hasInterestScore" :isRecommendationView="isRecommendationView" :recommendation="recommendation" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" />
-            <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" @select-category="selectCategory" @select-tag="selectTag" />
+            <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :hasInterestScore="hasInterestScore" :isRecommendationView="isRecommendationView" :recommendation="recommendation" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :aiAnalysisStatus="aiAnalysisStatus" :neutralScore="NEUTRAL_SCORE" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" />
+            <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :aiAnalysisStatus="aiAnalysisStatus" @select-category="selectCategory" @select-tag="selectTag" />
           </div>
           <ArticlePreviewFallback v-if="!hasArticlePreview" :url="url" @open-original="articleClicked" />
           <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
@@ -72,11 +72,11 @@
           </div>
         </div>
         <ArticleMedia v-if="shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" @media-clicked="articleClicked" />
-        <ArticleContent :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :contentText="contentText" :highlightTerms="highlightTerms" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="showMinimalContent" />
+        <ArticleContent :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :contentText="contentText" :highlightTerms="highlightTerms" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :aiAnalysisStatus="aiAnalysisStatus" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="showMinimalContent" />
       </div>
     </div>
     <ArticleMedia v-if="isMinimalView && shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" @media-clicked="articleClicked" />
-    <ArticleContent v-if="isMinimalView" :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :contentText="contentText" :highlightTerms="highlightTerms" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="shouldShowMinimalContent" />
+    <ArticleContent v-if="isMinimalView" :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :contentText="contentText" :highlightTerms="highlightTerms" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :aiAnalysisStatus="aiAnalysisStatus" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="shouldShowMinimalContent" />
     <div class="article-divider"></div>
   </div>
 </template>
@@ -141,6 +141,7 @@ export default {
     advertisementScore: { type: Number, default: undefined },
     sentimentScore: { type: Number, default: undefined },
     qualityScore: { type: Number, default: undefined },
+    aiAnalysisStatus: { type: String, default: '' },
     recommendationScore: { type: Number, default: undefined },
     recommendation: { type: Object, default: null },
     isOfficialSource: { type: Boolean, default: false },

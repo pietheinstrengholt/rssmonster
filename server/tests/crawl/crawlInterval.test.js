@@ -141,9 +141,22 @@ describe('crawl interval controls', () => {
     });
     await vi.waitFor(() => {
       expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[CRAWL] SUMMARY')
+        expect.stringContaining('[CRAWL] Completed feeds=0')
       );
     });
+    const crawlLines = logSpy.mock.calls
+      .map(([line]) => String(line))
+      .filter(line => line.startsWith('[CRAWL]'));
+    expect(crawlLines).toEqual([
+      `[CRAWL] Started iteration user=${user.id}`,
+      '[CRAWL] No feeds due for crawling',
+      expect.stringMatching(
+        new RegExp(
+          `^\\[CRAWL\\] Completed feeds=0 newArticles=0 errors=0 user=${user.id} ` +
+          'duration=\\d+(?:ms|\\.\\d+s)$'
+        )
+      )
+    ]);
     logSpy.mockRestore();
   });
 
