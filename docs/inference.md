@@ -28,6 +28,7 @@ INFERENCE_TIMEOUT_MS=30000
 INFERENCE_AGENT_TIMEOUT_MS=300000
 INFERENCE_AI_ENABLED=true
 SKIP_ARTICLE_CLASSIFICATION_ANALYSIS=false
+SKIP_SEMANTIC_LABELING=false
 ```
 
 `INFERENCE_AI_ENABLED` is the server-wide kill switch. When it is not explicitly
@@ -101,11 +102,19 @@ Assistant model endpoints are limited per client address. The default allows
 100 requests per 15-minute window; use `ASSISTANT_RATE_LIMIT_WINDOW_MS` and
 `ASSISTANT_RATE_LIMIT_MAX` to adjust that policy.
 
-Article processing makes three separate calls: one for bullet summaries, one
-for tags, and one for advertisement, tone, and writing/information-quality
-scores. Set `ARTICLE_SCORING_PROVIDER=modernbert` to run only the scoring call
-locally. Transformers.js downloads missing ModernBERT assets during startup and
-reuses them from `INFERENCE_MODEL_CACHE_DIR` on later starts.
+Optional article enrichment is dispatched through one combined classification
+request that returns bullet summaries, inferred tags, advertisement and tone
+scores, and writing/information-quality scores. The inference service may still
+use different configured providers internally for generation and scoring.
+Transformers.js downloads missing ModernBERT assets during startup and reuses
+them from `INFERENCE_MODEL_CACHE_DIR` on later starts.
+
+For local Qwen/ModernBERT providers, embedding, scoring, and generation share a
+single priority gate. Waiting embedding work has the highest priority, followed
+by scoring and then generated text. This protects the ordered crawl pipeline
+when `rssmonster-ai-worker` is also using inference. An active call is allowed
+to finish; prioritization applies to queued work and does not interrupt model
+execution.
 
 Add the settings for the selected [OpenAI](model-openai.md) or
 [Qwen](model-qwen.md) provider. Keep the service on loopback or a private
@@ -159,7 +168,7 @@ repository root:
 ```bash
 pm2 startOrReload ecosystem.config.cjs --env production --update-env
 pm2 save
-pm2 status rssmonster-web rssmonster-worker rssmonster-inference
+pm2 status rssmonster-web rssmonster-worker rssmonster-ai-worker rssmonster-inference
 ```
 
 Useful inference commands are:

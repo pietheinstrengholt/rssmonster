@@ -345,12 +345,19 @@ describe('tag and cleanup controllers', () => {
       userId: 42,
       status: 'unread',
       filteredInd: false,
-      advertisementScore: { [Op.gte]: 0.2 },
-      sentimentScore: { [Op.gte]: 0.3 },
-      qualityScore: { [Op.gte]: 0.4 },
       publishedAt: { [Op.between]: [expect.any(Date), expect.any(Date)] }
     });
-    expect(articleWhere[Op.and]).toHaveLength(1);
+    expect(articleWhere[Op.and]).toHaveLength(2);
+    expect(articleWhere[Op.and][0][Op.or]).toEqual([
+      { aiAnalysisStatus: { [Op.in]: ['pending', 'processing', 'failed'] } },
+      {
+        [Op.and]: [
+          { advertisementScore: { [Op.gte]: 0.2 } },
+          { sentimentScore: { [Op.gte]: 0.3 } },
+          { qualityScore: { [Op.gte]: 0.4 } }
+        ]
+      }
+    ]);
     expect(mocked.articleLiteral).toHaveBeenCalledWith(expect.stringContaining(
       'articles.interestScore <> 0'
     ));

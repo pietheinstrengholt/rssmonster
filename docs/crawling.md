@@ -84,6 +84,13 @@ The principal execution controls are:
 | `CRAWL_TIMEOUT_MS` | `600000` | Overall deadline for one user's crawl invocation. |
 | `CRAWL_RUN_MAX_RUNNING_MINUTES` | `60` | Age at which an unfinished per-user crawl run is considered stale. |
 | `CRAWL_WORKER_INTERVAL_MS` | `60000` | Delay between complete worker iterations. |
+| `PROCESSING_JOB_WORKER_ENABLED` | `true` | Enable durable optional jobs in `rssmonster-ai-worker`, or in the combined SQLite worker. |
+| `PROCESSING_JOB_POLL_INTERVAL_MS` | `1000` | Delay between optional-job polls with no available work. |
+| `PROCESSING_JOB_CONCURRENCY` | `1` | Optional jobs executed concurrently; SQLite always uses `1`. |
+| `PROCESSING_JOB_SHUTDOWN_TIMEOUT_MS` | `30000` | Grace period for in-flight optional jobs during shutdown. |
+| `PROCESSING_JOB_REPORT_INTERVAL_MS` | `60000` | Interval for structured optional-queue operational snapshots. |
+| `CRAWL_PRIORITY_LEASE_MS` | `90000` | Renewable database lease used to pause new AI claims during the critical semantic pipeline. |
+| `CRAWL_PRIORITY_HEARTBEAT_MS` | `30000` | Crawl-priority lease renewal interval. |
 | `CRAWL_VERBOSE_LOGGING` | `false` | Include candidate, retry, and discovery diagnostics in crawl logs. |
 
 Additional response-size, parser, HTTP, per-origin, retry, and article-field
@@ -119,7 +126,7 @@ the feed-refresh API provides progress events for the web interface. A manual
 trigger follows the same run guard and feed-lease rules as the scheduled
 worker.
 
-## Running the Standalone Worker
+## Running the Workers
 
 For a direct foreground process:
 
@@ -128,10 +135,22 @@ cd server
 npm run start:worker
 ```
 
-The worker authenticates the database connection, runs an iteration
-immediately, waits for the configured interval, and repeats. Iteration errors
-are logged without terminating the loop. On `SIGINT` or `SIGTERM`, it stops
-scheduling work, lets the current iteration settle, and closes Sequelize.
+Run the optional-job consumer separately for MySQL or a manual split topology:
+
+```bash
+cd server
+npm run start:ai-worker
+```
+
+Each process authenticates its own Sequelize connection set. On `SIGINT` or
+`SIGTERM`, the crawl worker waits for its active crawl and the AI worker stops
+claiming, interrupts its poll, and waits up to
+`PROCESSING_JOB_SHUTDOWN_TIMEOUT_MS` for in-flight work. Remaining handlers are
+signalled to abort and their fenced leases can recover after expiry. Each
+process closes its own database connections once.
+
+For the unchanged lightweight SQLite Compose topology, `rssmonster-worker`
+continues to supervise both loops with processing concurrency forced to one.
 
 The web process does not schedule this loop. Keeping the crawler separate
 means a long crawl cannot prevent PM2 from supervising and restarting the web
@@ -139,35 +158,41 @@ application independently.
 
 ## PM2 Production Setup
 
-The root `ecosystem.config.cjs` defines one web process, one worker, and one
-inference process:
+The root `ecosystem.config.cjs` defines separate web, crawl, AI-worker, and
+inference processes:
 
 - `rssmonster-web` runs `server/bootstrap.js`;
 - `rssmonster-worker` runs `server/src/workers/crawlWorker.js` as one fork-mode
-  instance.
+  instance and does not consume optional jobs;
+- `rssmonster-ai-worker` runs `server/src/workers/aiWorker.js` as one fork-mode
+  instance and consumes `processing_jobs`;
 - `rssmonster-inference` runs `inference/src/index.js` as one fork-mode
   instance; see [Inference](inference.md).
 
-From the repository root, start or reload both processes with the production
+From the repository root, start or reload all processes with the production
 environment:
 
 ```bash
 pm2 startOrReload ecosystem.config.cjs --env production --update-env
 pm2 save
-pm2 status rssmonster-web rssmonster-worker rssmonster-inference
+pm2 status rssmonster-web rssmonster-worker rssmonster-ai-worker rssmonster-inference
 ```
 
 Useful operational commands include:
 
 ```bash
 pm2 logs rssmonster-worker
+pm2 logs rssmonster-ai-worker
 pm2 restart rssmonster-worker --update-env
+pm2 restart rssmonster-ai-worker --update-env
 pm2 describe rssmonster-worker
+pm2 describe rssmonster-ai-worker
 ```
 
-The worker's PM2 shutdown timeout is intentionally long so an in-progress
-crawl can finish before PM2 terminates it. The ecosystem file contains no
-secrets; both processes load `server/.env`.
+The crawl worker's PM2 shutdown timeout is intentionally long so an in-progress
+crawl can finish before PM2 terminates it. The AI worker has a bounded shutdown
+grace for leased work. The ecosystem file contains no secrets; all server
+processes load `server/.env`.
 
 After enabling the worker, disable any OS cron job that calls `/api/crawl` or
 runs `npm run crawl`. Leaving both schedulers enabled creates redundant crawl
@@ -179,8 +204,9 @@ pm2 delete rssmonster-dev
 pm2 save
 ```
 
-Do not add multiple PM2 worker instances. Scale feed throughput with the
-documented concurrency settings instead.
+Keep one scheduled crawl worker. MySQL can safely run more than one AI-worker
+instance because claiming uses transactional row locks with `SKIP LOCKED`, but
+start with one process and increase `PROCESSING_JOB_CONCURRENCY` gradually.
 
 ## Monitoring and Troubleshooting
 
@@ -189,9 +215,27 @@ also records its last outcome, diagnostic state, failure count, next fetch
 time, and crawl history. Feed observability and crawl statistics are available
 from the Settings interface.
 
+Every `PROCESSING_JOB_REPORT_INTERVAL_MS`, the AI worker emits a structured
+`processing_jobs.snapshot` object and includes the latest object in its own
+health file. It contains pending counts by type, oldest pending age, running and
+retry counts, dead and successful completion counts, and a bounded recent
+processing-latency sample. Per-job lifecycle events contain the job ID, type,
+attempt, user ID, and only safe article or semantic target identifiers. Payloads,
+article text, and inference prompts are never logged. Retry, dead-letter, lease
+loss, and expired-lease recovery outcomes are also retained in processing
+failure observability when an owned target is available.
+
+Authenticated clients can read the same user-scoped operational view from
+`GET /api/setting/processing-jobs`. The response includes worker availability,
+queue totals, per-job-type backlog, bounded recent completion latency, and at
+most ten safe dead-job summaries. It never includes payloads, deduplication
+keys, lease owners, prompts, or article content. The supplied Compose profiles
+share only the worker health file with the web container; queue data remains in
+the configured database.
+
 When feeds fall behind, check:
 
-1. `pm2 status rssmonster-worker` and the worker logs;
+1. `pm2 status rssmonster-worker` and the crawl-worker logs;
 2. database connectivity and pending migrations;
 3. whether feeds have a future `nextFetchAt` because of cache policy, backoff,
    or `Retry-After`;
@@ -201,3 +245,72 @@ When feeds fall behind, check:
 
 Verbose crawl logging can help with discovery and retry diagnosis, but it is
 noisier and should normally remain disabled.
+
+## Durable Optional Processing Queue
+
+Article enrichment and generated Event, Topic, and Island presentation labels
+are optional database-backed jobs. Article rows and their enrichment jobs are
+committed atomically. Job payloads contain identifiers and version guards, not
+article content. Handlers reload the current owned target before inference and
+lock and recheck it before persistence. A newer article revision therefore
+cannot be overwritten by an older job. Article enrichment replaces only
+inferred tags; provider, feed, rule, manual, and unknown tag provenance remains
+intact.
+
+Jobs move through these states:
+
+- `pending`: available now or after the recorded backoff time;
+- `running`: claimed by one lease owner until `leaseUntil`;
+- `succeeded`: completed or safely obsolete;
+- `dead`: failed terminally or exhausted `maxAttempts`; and
+- `cancelled`: explicitly excluded from future claims.
+
+Availability is an eligibility gate. Claims are ordered by explicit priority,
+then newest creation time, then stable ID, so recent articles are analyzed
+before an older same-priority backlog. Each claim
+increments `attempts`. Retryable failures use bounded exponential backoff with
+jitter; the fifth attempt is terminal by default. Active handlers renew their
+lease during long inference. Succeeded and dead records are retained for
+deduplication and operational history; they are not deleted on completion.
+Completion, retry, and dead-letter updates require
+the same user, lease owner, running state, and unexpired lease. On startup the
+worker performs one bounded recovery pass for expired running leases; normal
+claiming also recognizes expired leases.
+
+SQLite uses a one-connection pool and always forces optional concurrency to
+one, regardless of configuration; its Compose profile retains the combined
+worker. MySQL uses `rssmonster-ai-worker` and transactional row locks with
+`SKIP LOCKED`, so multiple AI workers sharing the database claim disjoint jobs.
+Increase `PROCESSING_JOB_CONCURRENCY` gradually while watching database, CPU,
+memory, and inference capacity. Optional claims pause during the crawl's
+critical semantic pipeline through the `worker_leases` row. Embeddings still complete before Event creation,
+Topic assignment, and Island scoring, and optional inference failures cannot
+fail that deterministic path.
+
+Deploy the schema migration that creates `worker_leases` before starting the
+split workers. If the crawl process exits unexpectedly, the lease expires and
+AI claiming resumes without an operator repair.
+
+### Dead-job recovery
+
+First list a bounded set for one explicit owner. The command never prints job
+payloads and lists at most 100 rows:
+
+```bash
+cd server
+npm run jobs:operator -- list-dead --user-id 42 --type article_enrichment --limit 20
+```
+
+After inspecting the output and correcting the underlying issue, requeue exact
+job IDs. Requeue requires both the owner and one or more IDs, resets their
+attempt counter, and only changes matching `dead` rows:
+
+```bash
+npm run jobs:operator -- requeue-dead --user-id 42 \
+  --job-id 11111111-1111-4111-8111-111111111111
+```
+
+The operator command performs no automatic scan, unbounded repair, migration,
+or semantic rebuild. Requeued handlers still enforce ownership, eligibility,
+and version guards, so obsolete work completes without overwriting current
+state.

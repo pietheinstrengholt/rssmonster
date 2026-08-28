@@ -118,6 +118,8 @@ const loadArticleDetails = async (userId, articlesArray) => {
       'contentHtml',
       'contentText',
       'contentSummaryBullets',
+      'aiAnalysisStatus',
+      'aiAnalysisCompletedAt',
       'isOfficialSource',
       'officialOrganization',
       'eventId',
@@ -165,6 +167,7 @@ const loadArticleDetails = async (userId, articlesArray) => {
         attributes: [
           'id',
           'name',
+          'generatedName',
           'articleCount',
           'sourceCount',
           'sourceDiversityScore',

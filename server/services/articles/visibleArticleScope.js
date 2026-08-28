@@ -1,6 +1,6 @@
-import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { applyArticleScoreEligibility } from './articleScoreEligibility.js';
 
 const { Setting } = db;
 
@@ -16,12 +16,13 @@ export const buildVisibleArticleWhere = async userId => {
     raw: true
   });
 
-  return {
+  return applyArticleScoreEligibility({
     userId,
     ...canonicalArticleWhere(),
-    filteredInd: false,
-    advertisementScore: { [Op.gte]: settings?.minAdvertisementScore ?? 0 },
-    sentimentScore: { [Op.gte]: settings?.minSentimentScore ?? 0 },
-    qualityScore: { [Op.gte]: settings?.minQualityScore ?? 0 }
-  };
+    filteredInd: false
+  }, {
+    minAdvertisementScore: settings?.minAdvertisementScore,
+    minSentimentScore: settings?.minSentimentScore,
+    minQualityScore: settings?.minQualityScore
+  });
 };

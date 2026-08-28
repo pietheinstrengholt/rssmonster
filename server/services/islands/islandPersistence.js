@@ -109,6 +109,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
 
   // Collects the created islands while performing persist interest island profiles.
   const createdIslands = [];
+  const createdIslandIds = [];
   let createdIslandCount = 0;
   let updatedIslandCount = 0;
   let archivedIslandCount = 0;
@@ -259,6 +260,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     }, { transaction });
     usedIslandNames.add(normalizeIslandName(uniqueLabel));
     createdIslandCount += 1;
+    createdIslandIds.push(Number(island.id));
 
     console.log(
       `[ISLAND] new-island=${island.id} ` +
@@ -351,6 +353,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
   createdIslands.summary = {
     existingIslandCount: existingIslands.length,
     createdIslandCount,
+    createdIslandIds,
     updatedIslandCount,
     archivedIslandCount,
     activeIslandCount: createdIslands.filter(island => !island.archivedInd).length,

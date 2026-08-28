@@ -12,6 +12,14 @@ const MAX_FEED_TRUST_BOOST = 0.10;
 const MAX_FEED_TRUST_PENALTY = 0.15;
 const MAX_FEED_DUPLICATION_PENALTY = 0.10;
 
+export const ARTICLE_AI_ANALYSIS_STATUSES = Object.freeze([
+  'pending',
+  'processing',
+  'complete',
+  'skipped',
+  'failed'
+]);
+
 // This function returns the stable SHA-256 identity for text content.
 const hashValue = value => createHash('sha256').update(value || '').digest('hex');
 
@@ -282,6 +290,18 @@ export default (sequelize) => {
       contentSummaryBullets: {
         type: DataTypes.JSON,
         allowNull: true
+      },
+      // Tracks whether optional article classification is queued, running, complete, skipped, or failed.
+      aiAnalysisStatus: {
+        type: DataTypes.ENUM(...ARTICLE_AI_ANALYSIS_STATUSES),
+        allowNull: false,
+        defaultValue: 'complete'
+      },
+      // Records when the current article version last completed optional AI analysis.
+      aiAnalysisCompletedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
       },
       // Stores the SHA-256 identity of normalized source content; null when no source body exists.
       contentSourceHash: {
@@ -582,6 +602,10 @@ export default (sequelize) => {
         {
           name: 'articles_userId_contentSourceHash_idx',
           fields: ['userId', 'contentSourceHash']
+        },
+        {
+          name: 'articles_userId_aiAnalysisStatus_idx',
+          fields: ['userId', 'aiAnalysisStatus']
         }
       ],
       charset: 'utf8mb4',

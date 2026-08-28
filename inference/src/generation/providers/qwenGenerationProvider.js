@@ -6,6 +6,10 @@ import { getGenerationConfig } from '../../config/config.js';
 import { configureModelCache } from '../../embeddings/modelCache.js';
 import { logInferenceDebug } from '../../debug.js';
 import { createInferenceWorkQueue } from '../../queue/inferenceWorkQueue.js';
+import {
+  LOCAL_INFERENCE_PRIORITIES,
+  runLocalInference
+} from '../../queue/localInferencePriorityGate.js';
 
 const MODEL_DEVICE = 'cpu';
 const QUEUE_EVENT_STAGES = Object.freeze({
@@ -95,7 +99,14 @@ export const createQwenGenerationProvider = ({
   };
 
   const generate = ({ signal, requestId, operation, ...input }) => generationQueue.enqueue(
-    () => runGeneration(input),
+    () => runLocalInference(
+      () => runGeneration(input),
+      {
+        priority: LOCAL_INFERENCE_PRIORITIES.generation,
+        requestId,
+        operation
+      }
+    ),
     { signal, requestId, operation }
   );
 

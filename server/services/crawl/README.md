@@ -320,13 +320,13 @@ Duplicate detection
         ↓
 Apply user actions
    ├─ filter match → persist articles using filteredInd = true
-   └─ accepted (filteredInd = false) → AI enrichment → persist article and tags
+   └─ accepted (filteredInd = false) → persist article and deterministic tags
         ↓
-AI enrichment
-        ↓
-Persist article and crawl-owned tags transactionally
+Atomically enqueue optional article_enrichment when enabled
         ↓
 Persist accepted hotlink observations
+        ↓
+After crawl: embedding → semantic duplicates → Events → Topics → Island scoring
 ```
 
 The order is intentional.
@@ -631,23 +631,29 @@ reevaluation of existing articles.
 
 # Analysis
 
-Genuinely new articles are enriched unless AI analysis is disabled for the feed. Existing
-publisher identities may refresh lightweight article-level enrichment only when content, title,
-or description changes. Source-only changes do not spend an AI call.
+Genuinely new articles enqueue durable enrichment unless AI analysis is disabled for the feed.
+Existing publisher identities enqueue a versioned replacement job only when content, title, or
+description changes. Source-only changes do not spend an AI call. The article and its job commit
+in one transaction, so ingestion never exposes one without the other.
 
-Classification queue saturation is treated as optional-enrichment overload rather than an article
-failure. The crawler records a warning and persists the article or revision with no generated
-summary, no inferred tags, and the existing default scores. Provider, feed, and rule tags remain
-eligible for persistence. Other inference failures continue to fail article processing.
+Classification runs in `rssmonster-ai-worker` (or the combined SQLite worker). Queue saturation and other
+retryable inference failures leave the article available in `pending` or `processing` state and
+retry with bounded backoff; they do not write default analysis as completed output. Exhausted jobs
+mark only the guarded article version `failed`, without filtering it from normal reading views.
+Feeds with analysis disabled retain the established fallback values with state `skipped`.
 
 Typical enrichment includes:
 
 - summaries
-- tags
-- language
-- sentiment
+- inferred tags
+- sentiment score
 - advertisement score
 - quality score
+
+Handlers reload Article and Feed rows by user, read article content from the database, and recheck
+the content and analysis-input hashes before and under the transactional article lock. Results
+cannot overwrite a newer revision. Action-owned score overrides keep precedence, and only inferred
+tags are replaced; provider, feed, rule, manual, and unknown provenance remains intact.
 
 Embeddings and clustering remain creation-time semantic enrichment performed by the post-crawl
 pipeline for genuinely new articles. Publisher revisions update the stored reading copy but do
@@ -657,7 +663,12 @@ Semantic state for existing articles is rebuilt only through explicit maintenanc
 workflows. Motivation is that the semantic pipeline is expensive and complex. It should not be 
 rerun for minor publisher changes.
 
-Actions and lightweight analysis receive one canonical representation: sanitized body HTML when
+Generated Event, Topic, and Island presentation labels also use durable `semantic_label` jobs.
+Jobs are enqueued only after the owned target exists, reload current bounded title context, and
+update only the generated label field. Deterministic names remain available while a label is
+pending or failed, and optional label failures never fail semantic persistence.
+
+Actions and article analysis receive one canonical representation: sanitized body HTML when
 available, otherwise safe description HTML, plus visible body text when available, otherwise
 normalized description text. Language detection uses the same canonical visible text.
 

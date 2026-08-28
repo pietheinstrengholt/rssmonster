@@ -272,6 +272,7 @@ describe('processArticle AI analysis controls', () => {
       expect.any(Object),
       expect.objectContaining({
         contentText: 'Article body with enough text to save.',
+        aiAnalysisStatus: 'skipped',
         isOfficialSource: false,
         officialOrganization: null
       }),
@@ -292,7 +293,7 @@ describe('processArticle AI analysis controls', () => {
     });
   });
 
-  it('persists a queue-saturated classification fallback without an article error', async () => {
+  it('persists the fallback and enqueues classification without an article error', async () => {
     const defaultAnalysis = {
       contentSummaryBullets: [],
       tags: [],
@@ -331,7 +332,12 @@ describe('processArticle AI analysis controls', () => {
       expect.objectContaining({ feedTags: ['feed-tag'] }),
       expect.objectContaining({ categories: ['AI'] }),
       defaultAnalysis,
-      expect.objectContaining({ tags: ['rule-tag'] })
+      expect.objectContaining({ tags: ['rule-tag'] }),
+      {},
+      {
+        providerTags: ['AI'],
+        actionResult: expect.objectContaining({ tags: ['rule-tag'] })
+      }
     );
     expect(result).toEqual({
       newArticles: 1,
@@ -341,7 +347,7 @@ describe('processArticle AI analysis controls', () => {
     });
   });
 
-  it('passes the feed execution signal to new-article analysis', async () => {
+  it('does not run new-article inference while preserving the execution context for persistence', async () => {
     const controller = new AbortController();
     const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
 
@@ -358,20 +364,18 @@ describe('processArticle AI analysis controls', () => {
       { signal: controller.signal }
     );
 
-    expect(mocked.analyzeArticleContent).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Article title' }),
-      expect.objectContaining({
-        signal: controller.signal,
-        processingContext: expect.objectContaining({
-          userId: 42,
-          feedId: 1,
-          subjectType: 'feed_entry'
-        })
-      })
+    expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
+    expect(mocked.saveArticle).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ aiAnalysisStatus: 'pending' }),
+      expect.any(Object),
+      expect.any(Object),
+      { signal: controller.signal },
+      expect.objectContaining({ providerTags: ['AI'] })
     );
   });
 
-  it('passes the feed execution signal to revision analysis', async () => {
+  it('does not run revision inference while preserving the execution context for persistence', async () => {
     const controller = new AbortController();
     mocked.updateArticle.mockResolvedValue(changedUpdatePlan({ contentChanged: true }));
     const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
@@ -389,18 +393,12 @@ describe('processArticle AI analysis controls', () => {
       { signal: controller.signal }
     );
 
-    expect(mocked.analyzeArticleContent).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Article title' }),
-      expect.objectContaining({
-        signal: controller.signal,
-        processingContext: expect.objectContaining({
-          userId: 42,
-          feedId: 1,
-          articleId: 123,
-          subjectType: 'article'
-        })
-      })
-    );
+    expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
+    expect(mocked.applyArticleUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      derivedValues: expect.objectContaining({ aiAnalysisStatus: 'pending' }),
+      articleEnrichment: expect.objectContaining({ providerTags: ['AI'] }),
+      execution: { signal: controller.signal }
+    }));
   });
 
   it('counts a concurrently committed winner as an update', async () => {
@@ -715,22 +713,30 @@ describe('processArticle AI analysis controls', () => {
     );
     expect(mocked.matchArticleDuplicate).not.toHaveBeenCalled();
     expect(mocked.applyActions).toHaveBeenCalled();
-    expect(mocked.analyzeArticleContent).toHaveBeenCalled();
+    expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
     expect(mocked.hotlinkCount).not.toHaveBeenCalled();
     expect(mocked.saveArticle).not.toHaveBeenCalled();
     expect(mocked.applyArticleUpdate).toHaveBeenCalledWith(expect.objectContaining({
       derivedValues: expect.objectContaining({
         filteredInd: false,
-        contentSummaryBullets: ['Updated bullet'],
+        contentSummaryBullets: [],
+        aiAnalysisStatus: 'pending',
         advertisementScore: 0,
-        sentimentScore: 90,
+        sentimentScore: 70,
         qualityScore: 0
       }),
       tagUpdates: {
-        inferredTags: ['updated-inferred'],
+        inferredTags: [],
         providerTags: ['AI'],
         feedTags: undefined,
         ruleTags: ['updated-rule']
+      },
+      articleEnrichment: {
+        providerTags: ['AI'],
+        actionResult: expect.objectContaining({
+          advertisementScore: 0,
+          qualityScore: 0
+        })
       },
       userId: 42
     }));
@@ -808,7 +814,7 @@ describe('processArticle AI analysis controls', () => {
     });
   });
 
-  it('reruns actions and analysis for a title-only publisher update', async () => {
+  it('reruns actions and enqueues analysis for a title-only publisher update', async () => {
     mocked.updateArticle.mockResolvedValue(changedUpdatePlan({
       titleChanged: true,
       metadataChanged: true
@@ -832,8 +838,12 @@ describe('processArticle AI analysis controls', () => {
       description: 'Article description',
       url: 'https://example.com/article'
     });
-    expect(mocked.analyzeArticleContent).toHaveBeenCalledTimes(1);
+    expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
     expect(mocked.applyArticleUpdate).toHaveBeenCalledTimes(1);
+    expect(mocked.applyArticleUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      derivedValues: expect.objectContaining({ aiAnalysisStatus: 'pending' }),
+      articleEnrichment: expect.objectContaining({ providerTags: ['AI'] })
+    }));
     expect(result).toMatchObject({ updatedArticles: 1, errors: 0 });
   });
 
@@ -963,12 +973,14 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.applyArticleUpdate).toHaveBeenCalledWith(expect.objectContaining({
       derivedValues: expect.objectContaining({
         contentSummaryBullets: [],
+        aiAnalysisStatus: 'skipped',
         advertisementScore: 70,
         sentimentScore: 70,
         qualityScore: 70
       }),
       tagUpdates: expect.objectContaining({ inferredTags: [] })
     }));
+    expect(mocked.applyArticleUpdate.mock.calls[0][0]).not.toHaveProperty('articleEnrichment');
   });
 
   it('persists only source fields when a changed existing article matches a discard rule', async () => {
@@ -1146,6 +1158,7 @@ describe('processArticle AI analysis controls', () => {
         contentText: 'Rejected body',
         contentSourceHash: 'rejected-content-hash',
         contentTextHash: 'rejected-text-hash',
+        aiAnalysisStatus: 'skipped',
         isOfficialSource: false,
         officialOrganization: null
       }),
@@ -1198,7 +1211,7 @@ describe('processArticle AI analysis controls', () => {
     consoleError.mockRestore();
   });
 
-  it('logs inference timeouts without an article-processing stack trace', async () => {
+  it('does not expose ingestion to inference timeout failures', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const timeoutError = Object.assign(
       new Error('private article https://user:password@example.com?token=secret'),
@@ -1216,18 +1229,13 @@ describe('processArticle AI analysis controls', () => {
       null
     );
 
-    expect(consoleError).toHaveBeenCalledOnce();
-    expect(consoleError).toHaveBeenCalledWith(
-      '[CRAWL] Inference request timed out after 30000ms requestId=crawl-inference-123'
-    );
-    expect(JSON.stringify(consoleError.mock.calls)).not.toContain('private article');
-    expect(JSON.stringify(consoleError.mock.calls)).not.toContain('password');
-    expect(JSON.stringify(consoleError.mock.calls)).not.toContain('token=secret');
-    expect(result).toEqual({ newArticles: 0, updatedArticles: 0, errors: 1 });
+    expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ newArticles: 1, errors: 0 });
     consoleError.mockRestore();
   });
 
-  it('logs circuit-open inference failures concisely without a stack trace', async () => {
+  it('does not expose ingestion to circuit-open inference failures', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const circuitError = Object.assign(
       new Error('Inference circuit is open; retry after 30000ms'),
@@ -1252,12 +1260,9 @@ describe('processArticle AI analysis controls', () => {
       null
     );
 
-    expect(consoleError).toHaveBeenCalledOnce();
-    expect(consoleError).toHaveBeenCalledWith(
-      '[CRAWL] Inference circuit is open; retry after 30000ms ' +
-      'requestId=circuit-request-123'
-    );
-    expect(result).toEqual({ newArticles: 0, updatedArticles: 0, errors: 1 });
+    expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ newArticles: 1, errors: 0 });
 
     await processArticle(
       { id: 1, userId: 42, feedName: 'Same unavailable inference feed', applyAiAnalysis: true },
@@ -1267,8 +1272,8 @@ describe('processArticle AI analysis controls', () => {
       { count: () => 0 },
       null
     );
-    expect(consoleError).toHaveBeenCalledOnce();
-    expect(mocked.recordProcessingFailure).toHaveBeenCalledTimes(2);
+    expect(consoleError).not.toHaveBeenCalled();
+    expect(mocked.recordProcessingFailure).not.toHaveBeenCalled();
     consoleError.mockRestore();
   });
 
@@ -1306,16 +1311,7 @@ describe('processArticle AI analysis controls', () => {
       description: '<p>Raw <strong>feed</strong> description</p>',
       url: 'https://example.com/description-only'
     });
-    expect(mocked.analyzeArticleContent).toHaveBeenCalledWith({
-      text: 'Raw feed description',
-      title: 'Description-only article',
-      categories: [],
-      feedName: 'Description feed',
-      rateLimitDelayMs: 3000
-    }, expect.objectContaining({
-      signal: undefined,
-      processingContext: expect.objectContaining({ userId: 42, feedId: 1 })
-    }));
+    expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
     expect(mocked.saveArticle).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({
@@ -1330,7 +1326,9 @@ describe('processArticle AI analysis controls', () => {
         descriptionText: 'Raw feed description'
       }),
       expect.any(Object),
-      expect.any(Object)
+      expect.any(Object),
+      {},
+      expect.objectContaining({ providerTags: [] })
     );
   });
 
@@ -1371,21 +1369,12 @@ describe('processArticle AI analysis controls', () => {
       description,
       url: 'https://example.com/description-update'
     });
-    expect(mocked.analyzeArticleContent).toHaveBeenCalledWith({
-      text: description,
-      title: 'Description update',
-      categories: ['Updates'],
-      feedName: 'Description update feed',
-      rateLimitDelayMs: 3000
-    }, expect.objectContaining({
-      signal: undefined,
-      processingContext: expect.objectContaining({
-        userId: 42,
-        feedId: 1,
-        articleId: 123
-      })
-    }));
+    expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
     expect(mocked.applyArticleUpdate).toHaveBeenCalledTimes(1);
+    expect(mocked.applyArticleUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      derivedValues: expect.objectContaining({ aiAnalysisStatus: 'pending' }),
+      articleEnrichment: expect.objectContaining({ providerTags: ['Updates'] })
+    }));
     expect(result).toMatchObject({ updatedArticles: 1, errors: 0 });
   });
 

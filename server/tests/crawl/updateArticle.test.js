@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   articleFindOne: vi.fn(),
+  articleChanged: vi.fn(),
   articleUpdate: vi.fn(),
+  enqueueArticleEnrichmentJob: vi.fn(),
   replaceArticleDerivedTags: vi.fn(),
   sequelizeTransaction: vi.fn(),
   transaction: { id: 'article-update-transaction' }
@@ -21,6 +23,10 @@ vi.mock('../../models/index.js', () => ({
 
 vi.mock('../../services/crawl/persistence/tags.js', () => ({
   replaceArticleDerivedTags: mocked.replaceArticleDerivedTags
+}));
+
+vi.mock('../../services/crawl/enrichment/articleEnrichmentJobs.js', () => ({
+  enqueueArticleEnrichmentJob: mocked.enqueueArticleEnrichmentJob
 }));
 
 // This function returns complete stored source state for deterministic update tests.
@@ -52,6 +58,7 @@ const storedArticle = (overrides = {}) => ({
   publishedSource: null,
   publishInferred: false,
   update: mocked.articleUpdate,
+  changed: mocked.articleChanged,
   ...overrides
 });
 
@@ -93,6 +100,7 @@ describe('updateArticle', () => {
     mocked.articleFindOne.mockResolvedValue(storedArticle());
     mocked.articleUpdate.mockResolvedValue(storedArticle());
     mocked.replaceArticleDerivedTags.mockResolvedValue();
+    mocked.enqueueArticleEnrichmentJob.mockResolvedValue({});
     mocked.sequelizeTransaction.mockImplementation(callback => callback(mocked.transaction));
   });
 
@@ -790,6 +798,33 @@ describe('updateArticle', () => {
       expect.any(Object),
       { transaction: mocked.transaction }
     );
+  });
+
+  it('enqueues revised article enrichment in the update transaction', async () => {
+    const article = storedArticle();
+    const module = await import('../../services/crawl/persistence/updateArticle.js');
+    const updatePlan = await module.default({ id: 7, userId: 42 }, incomingArticle({
+      title: 'Revised title'
+    }), { article });
+    const articleEnrichment = {
+      providerTags: ['Provider'],
+      actionResult: { advertisementScore: 10, qualityScore: 90 }
+    };
+
+    await module.applyArticleUpdate({
+      updatePlan,
+      derivedValues: { aiAnalysisStatus: 'pending' },
+      articleEnrichment,
+      userId: 42
+    });
+
+    expect(mocked.enqueueArticleEnrichmentJob).toHaveBeenCalledWith({
+      article,
+      userId: 42,
+      ...articleEnrichment,
+      transaction: mocked.transaction
+    });
+    expect(mocked.articleChanged).toHaveBeenCalledWith('aiAnalysisStatus', true);
   });
 
   it('skips lookup when external identity is incomplete', async () => {

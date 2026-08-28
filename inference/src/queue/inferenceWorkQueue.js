@@ -28,6 +28,10 @@ const validateSignal = signal => {
   }
 };
 
+const validatePriority = value => {
+  if (!Number.isSafeInteger(value)) throw new TypeError('priority must be an integer');
+};
+
 const sanitizeLabel = (value, maximumLength) => {
   if (typeof value !== 'string') return undefined;
   const sanitized = value.replace(CONTROL_CHARACTERS, '').slice(0, maximumLength);
@@ -161,6 +165,12 @@ export const createInferenceWorkQueue = ({
     }
   }
 
+  const queuePendingJob = job => {
+    const insertAt = pendingJobs.findIndex(candidate => candidate.priority < job.priority);
+    if (insertAt === -1) pendingJobs.push(job);
+    else pendingJobs.splice(insertAt, 0, job);
+  };
+
   const abortJob = job => {
     if (job.state === 'pending') {
       const pendingIndex = pendingJobs.indexOf(job);
@@ -187,8 +197,9 @@ export const createInferenceWorkQueue = ({
 
   const enqueue = (task, options = {}) => {
     if (typeof task !== 'function') throw new TypeError('task must be a function');
-    const { signal } = options;
+    const { signal, priority = 0 } = options;
     validateSignal(signal);
+    validatePriority(priority);
     const metadata = sanitizeMetadata(options);
 
     if (signal?.aborted) {
@@ -214,6 +225,7 @@ export const createInferenceWorkQueue = ({
       task,
       signal,
       metadata,
+      priority,
       enqueuedAt,
       resolve,
       reject,
@@ -225,7 +237,7 @@ export const createInferenceWorkQueue = ({
 
     const startImmediately = running < concurrency;
     counters.accepted += 1;
-    if (!startImmediately) pendingJobs.push(job);
+    if (!startImmediately) queuePendingJob(job);
     if (signal) {
       job.abortHandler = () => abortJob(job);
       signal.addEventListener('abort', job.abortHandler, { once: true });

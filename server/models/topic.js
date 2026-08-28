@@ -20,6 +20,12 @@ export default (sequelize) => {
         type: DataTypes.STRING(255),
         allowNull: false
       },
+      // Stores the optional generated topic name used for presentation.
+      generatedName: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        defaultValue: null
+      },
       // Stores the stable semantic identity used to match related topic records.
       topicKey: {
         type: DataTypes.STRING(64),

@@ -17,6 +17,7 @@ import {
 import { fetchFeedIds, fetchTaggedArticleIds } from './articleSearchDataAccess.service.js';
 import { buildTextSearchWhereClause } from './articleTextSearch.service.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { applyArticleScoreEligibility } from '../articles/articleScoreEligibility.js';
 import {
   ArticleSearchCursorError,
   articleSearchCursorExpiresAt,
@@ -369,15 +370,15 @@ export const searchArticles = async ({
      * Combines user/feed filtering with text search (OR on title/content)
      * and quality score thresholds.
      */
-    const baseWhere = {
+    const baseWhere = applyArticleScoreEligibility({
       userId: userId,
       feedId: feedIds,
-      ...canonicalArticleWhere(),
-      // Quality filters: get articles above minimum scores
-      advertisementScore: { [Op.gte]: finalMinAdvertisementScore },
-      sentimentScore: { [Op.gte]: finalMinSentimentScore },
-      qualityScore: { [Op.gte]: finalMinQualityScore }
-    };
+      ...canonicalArticleWhere()
+    }, {
+      minAdvertisementScore: finalMinAdvertisementScore,
+      minSentimentScore: finalMinSentimentScore,
+      minQualityScore: finalMinQualityScore
+    });
 
     // Text search logic:
     Object.assign(

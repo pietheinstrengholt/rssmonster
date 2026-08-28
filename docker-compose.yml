@@ -32,9 +32,12 @@ services:
       INFERENCE_AI_ENABLED: "false"
       SKIP_ARTICLE_CLASSIFICATION_ANALYSIS: "true"
       SKIP_ARTICLE_EMBEDDINGS: "true"
+      SKIP_SEMANTIC_LABELING: "true"
+      CRAWL_WORKER_HEALTH_FILE: /app/worker-health/crawl-worker-health.json
 
     volumes:
       - rssmonster-data:/app/data
+      - rssmonster-worker-health:/app/worker-health:ro
 
     init: true
 
@@ -80,12 +83,19 @@ services:
       INFERENCE_AI_ENABLED: "false"
       SKIP_ARTICLE_CLASSIFICATION_ANALYSIS: "true"
       SKIP_ARTICLE_EMBEDDINGS: "true"
-      CRAWL_WORKER_HEALTH_FILE: /tmp/rssmonster-crawl-worker-health.json
+      SKIP_SEMANTIC_LABELING: "true"
+      PROCESSING_JOB_WORKER_ENABLED: ${PROCESSING_JOB_WORKER_ENABLED:-true}
+      PROCESSING_JOB_POLL_INTERVAL_MS: ${PROCESSING_JOB_POLL_INTERVAL_MS:-1000}
+      PROCESSING_JOB_CONCURRENCY: ${PROCESSING_JOB_CONCURRENCY:-1}
+      PROCESSING_JOB_SHUTDOWN_TIMEOUT_MS: ${PROCESSING_JOB_SHUTDOWN_TIMEOUT_MS:-30000}
+      PROCESSING_JOB_REPORT_INTERVAL_MS: ${PROCESSING_JOB_REPORT_INTERVAL_MS:-60000}
+      CRAWL_WORKER_HEALTH_FILE: /app/worker-health/crawl-worker-health.json
       CRAWL_WORKER_HEALTH_MAX_FAILURES: ${CRAWL_WORKER_HEALTH_MAX_FAILURES:-3}
       CRAWL_WORKER_HEALTH_MAX_STALE_MS: ${CRAWL_WORKER_HEALTH_MAX_STALE_MS:-900000}
 
     volumes:
       - rssmonster-data:/app/data
+      - rssmonster-worker-health:/app/worker-health
 
     init: true
 
@@ -104,3 +114,4 @@ services:
 
 volumes:
   rssmonster-data:
+  rssmonster-worker-health:

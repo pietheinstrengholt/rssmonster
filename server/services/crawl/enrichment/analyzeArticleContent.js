@@ -16,7 +16,7 @@ import { createDefaultArticleAnalysis } from './articleAnalysis.js';
 ====================================================== */
 
 // This function analyzes canonical visible article text through inference.
-const isInferenceQueueFullError = error =>
+export const isInferenceQueueFullError = error =>
   error?.code === 'INFERENCE_UNAVAILABLE' &&
   error?.inferenceErrorCode === 'inference_queue_full';
 
@@ -54,7 +54,11 @@ const recordSkippedClassification = async (error, processingContext = {}) => {
   });
 };
 
-async function analyzeArticleContent(input, { signal, processingContext } = {}) {
+async function analyzeArticleContent(input, {
+  signal,
+  processingContext,
+  useQueueFullFallback = true
+} = {}) {
   if (shouldSkipArticleClassification()) {
     return createDefaultArticleAnalysis();
   }
@@ -66,6 +70,7 @@ async function analyzeArticleContent(input, { signal, processingContext } = {}) 
     });
   } catch (error) {
     if (!isInferenceQueueFullError(error)) throw error;
+    if (!useQueueFullFallback) throw error;
     await recordSkippedClassification(error, processingContext);
     return createDefaultArticleAnalysis();
   }

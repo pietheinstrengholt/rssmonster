@@ -163,6 +163,9 @@ By default the service listens at `http://127.0.0.1:3001`. Configure the listene
 - `POST /api/assistant/model` and `/api/assistant/model/stream` provide the model boundary used by the server-owned agent tools.
 - `POST /api/smart-folder-recommendations` generates personalized folder suggestions.
 - `POST /api/feed-rediscovery` suggests a replacement for a broken feed URL.
+- `POST /api/semantic-labels` generates event, topic, and interest-island labels from
+  bounded semantic context. Pass `context` plus one or more boolean selectors named
+  `event`, `topic`, and `island`; the response contains the requested labels.
 
 ```bash
 curl -X POST http://127.0.0.1:3001/api/embeddings \

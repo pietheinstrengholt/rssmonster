@@ -3,6 +3,8 @@
 import { computeRecommended } from '../recommendations/recommendedScore.js';
 import { debugRecommendedScores } from './articleDebug.service.js';
 
+const SCORE_FILTER_EXEMPT_ANALYSIS_STATUSES = new Set(['pending', 'processing', 'failed']);
+
 // Applies a numeric comparison operator to a score value.
 const compareValues = (left, operator, right) => {
   // Selects behavior from the supported operator values.
@@ -58,7 +60,12 @@ export function sortArticles(articles, {
   if (qualityFilter) {
     const beforeQualityCount = articles.length;
     // Filters source values to the entries eligible while performing sort articles.
-    articles = articles.filter(article => compareValues(article.quality, qualityFilter.operator, qualityFilter.value));
+    articles = articles.filter(article => (
+      SCORE_FILTER_EXEMPT_ANALYSIS_STATUSES.has(
+        article.get?.('aiAnalysisStatus') ?? article.aiAnalysisStatus
+      )
+      || compareValues(article.quality, qualityFilter.operator, qualityFilter.value)
+    ));
     console.log(`\x1b[31mApplied quality filter (${qualityFilter.operator}${qualityFilter.value}): ${beforeQualityCount} → ${articles.length} articles\x1b[0m`);
   }
 

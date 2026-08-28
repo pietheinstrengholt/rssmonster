@@ -787,6 +787,64 @@ describe('articleSearch.service', () => {
       expect(result.itemIds).toContain(articles.clicked.id); // 80/75/80
       expect(result.itemIds).not.toContain(articles.lowQuality.id); // 10/30/20
     });
+
+    it('keeps pending analysis visible under high score thresholds', async () => {
+      const pendingArticle = await Article.create({
+        userId: user.id,
+        feedId: feed.id,
+        url: 'https://example.com/article-pending-analysis-thresholds',
+        title: 'Pending optional analysis remains visible',
+        status: 'unread',
+        publishedAt: new Date(),
+        aiAnalysisStatus: 'pending',
+        advertisementScore: 0,
+        sentimentScore: 0,
+        qualityScore: 0
+      });
+
+      try {
+        const result = await searchArticles({
+          userId: user.id,
+          status: '%',
+          minAdvertisementScore: 99,
+          minSentimentScore: 99,
+          minQualityScore: 99
+        });
+
+        expect(result.itemIds).toContain(pendingArticle.id);
+        expect(result.itemIds).not.toContain(articles.recent.id);
+      } finally {
+        await pendingArticle.destroy();
+      }
+    });
+
+    it('keeps pending analysis in Smart Folder quality filters', async () => {
+      const pendingArticle = await Article.create({
+        userId: user.id,
+        feedId: feed.id,
+        url: 'https://example.com/article-pending-analysis-smart-folder',
+        title: 'Pending optional analysis remains in Smart Folders',
+        status: 'unread',
+        publishedAt: new Date(),
+        aiAnalysisStatus: 'pending',
+        advertisementScore: 0,
+        sentimentScore: 0,
+        qualityScore: 0
+      });
+
+      try {
+        const result = await searchArticles({
+          userId: user.id,
+          search: 'quality:>=0.99',
+          status: '%',
+          smartFolderSearch: true
+        });
+
+        expect(result.itemIds).toContain(pendingArticle.id);
+      } finally {
+        await pendingArticle.destroy();
+      }
+    });
   });
 
   // ============================

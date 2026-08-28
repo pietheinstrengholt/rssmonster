@@ -95,14 +95,19 @@ describe('dailyBriefing.service', () => {
       userId: 7,
       duplicateOfArticleId: { [Op.is]: null },
       filteredInd: false,
-      advertisementScore: { [Op.gte]: 40 },
-      sentimentScore: { [Op.gte]: 50 },
-      qualityScore: { [Op.gte]: 60 },
       publishedAt: { [Op.between]: [dateFrom, dateTo] },
       status: 'unread'
     });
-    expect(where[Op.and][0].sql).toContain('articles.interestScore <> 0');
-    expect(where[Op.and][0].sql).toContain('>= 3');
+    expect(where[Op.and][0][Op.or][0]).toEqual({
+      aiAnalysisStatus: { [Op.in]: ['pending', 'processing', 'failed'] }
+    });
+    expect(where[Op.and][0][Op.or][1][Op.and]).toEqual([
+      { advertisementScore: { [Op.gte]: 40 } },
+      { sentimentScore: { [Op.gte]: 50 } },
+      { qualityScore: { [Op.gte]: 60 } }
+    ]);
+    expect(where[Op.and][1].sql).toContain('articles.interestScore <> 0');
+    expect(where[Op.and][1].sql).toContain('>= 3');
   });
 
   // Returns an empty but fully structured briefing when no candidates are eligible.
@@ -139,7 +144,7 @@ describe('dailyBriefing.service', () => {
     ];
     const events = [
       { id: 1, name: '', representativeArticleId: 101, eventStrength: 10, topicId: 11, createdAt: generatedAt },
-      { id: 2, name: 'Second event', representativeArticleId: 102, eventStrength: 10, topicId: 12, createdAt: '2026-07-20T00:00:00Z' },
+      { id: 2, name: 'Second event', generatedName: 'Generated second event', representativeArticleId: 102, eventStrength: 10, topicId: 12, createdAt: '2026-07-20T00:00:00Z' },
       { id: 3, name: 'Third event', representativeArticleId: 103, eventStrength: 9, topicId: 13, createdAt: generatedAt },
       { id: 4, name: 'Fourth event', representativeArticleId: 104, eventStrength: 8, topicId: null, createdAt: generatedAt },
       { id: 5, name: 'Duplicate representative', representativeArticleId: 104, eventStrength: 7, topicId: null, createdAt: generatedAt },
@@ -170,7 +175,7 @@ describe('dailyBriefing.service', () => {
     ]);
     mocked.islandFindAll.mockResolvedValue([
       { id: 1, label: 'One', weight: 10 },
-      { id: 2, label: 'Two', weight: 20 },
+      { id: 2, label: 'Two', generatedLabel: 'Generated Two', weight: 20 },
       { id: 3, label: 'Three', weight: 5 }
     ]);
 
@@ -193,10 +198,18 @@ describe('dailyBriefing.service', () => {
     expect(result.filters.minDistinctSources).toBe(1);
     expect(result.morningSummary.items).toHaveLength(4);
     expect(result.morningSummary.items.map(item => item.eventId)).toEqual([2, 1, 3, 4]);
-    expect(result.morningSummary.items[0].island).toEqual({ id: 2, name: 'Two' });
+    expect(result.morningSummary.items[0]).toMatchObject({
+      headline: 'Generated second event',
+      island: {
+        id: 2,
+        name: 'Two',
+        label: 'Two',
+        generatedLabel: 'Generated Two'
+      }
+    });
     expect(result.morningSummary.items[1]).toMatchObject({
       headline: 'First title',
-      island: { id: 3, name: 'Three' }
+      island: { id: 3, name: 'Three', label: 'Three', generatedLabel: null }
     });
   });
 

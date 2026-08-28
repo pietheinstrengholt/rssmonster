@@ -115,6 +115,8 @@ export default function buildArticlePersistenceValues(feed, data = {}) {
       contentText ? hashVisibleText(contentText) : null
     ),
     contentSummaryBullets: data.contentSummaryBullets ?? [],
+    aiAnalysisStatus: data.aiAnalysisStatus,
+    aiAnalysisCompletedAt: data.aiAnalysisCompletedAt,
     contentSourceHash: data.contentSourceHash || (
       contentOriginal ? hashOriginalContent(contentOriginal) : null
     ),

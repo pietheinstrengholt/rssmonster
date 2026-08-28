@@ -532,6 +532,7 @@ export const getIslandsOverview = async (req, res, _next) => {
         'id',
         'userId',
         'label',
+        'generatedLabel',
         'weight',
         'populationAudit',
         'archivedInd',
@@ -724,6 +725,7 @@ export const getIslandsOverview = async (req, res, _next) => {
           atp.articleId,
           t.id AS topicId,
           t.name AS topicName,
+          t.generatedName AS topicGeneratedName,
           it.similarity,
           it.confidence
         FROM island_topics it
@@ -749,6 +751,7 @@ export const getIslandsOverview = async (req, res, _next) => {
       topics.push({
         id: Number(row.topicId),
         name: row.topicName,
+        generatedName: row.topicGeneratedName,
         similarity: Number(row.similarity || 0),
         confidence: Number(row.confidence || 0)
       });
@@ -1063,6 +1066,7 @@ export const getTopicsOverview = async (req, res, _next) => {
       SELECT
         e.id,
         e.name,
+        e.generatedName,
         e.status,
         e.articleCount,
         e.sourceCount,
@@ -1118,6 +1122,7 @@ export const getTopicsOverview = async (req, res, _next) => {
       SELECT
         t.id,
         t.name,
+        t.generatedName,
         t.topicType,
         t.affinityScore,
         t.evidenceScore,

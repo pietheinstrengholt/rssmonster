@@ -5,6 +5,7 @@ import buildArticlePersistenceValues, {
   selectMutableArticleSourceValues
 } from './buildArticlePersistenceValues.js';
 import { replaceArticleDerivedTags } from './tags.js';
+import { enqueueArticleEnrichmentJob } from '../enrichment/articleEnrichmentJobs.js';
 import {
   assertExecutionLeaseOwnership,
   throwIfExecutionExpired
@@ -640,11 +641,18 @@ export const applyArticleUpdate = async ({
   updatePlan,
   derivedValues = {},
   tagUpdates = null,
+  articleEnrichment = null,
   userId,
   execution = {}
 }) => sequelize.transaction(async transaction => {
   throwIfExecutionExpired(execution);
   await assertExecutionLeaseOwnership(execution, { transaction });
+  // A background handler may have changed these fields on another model instance.
+  for (const field of ['aiAnalysisStatus', 'aiAnalysisCompletedAt']) {
+    if (Object.hasOwn(derivedValues, field) && typeof updatePlan.article.changed === 'function') {
+      updatePlan.article.changed(field, true);
+    }
+  }
   await updatePlan.article.update({
     ...updatePlan.updateValues,
     ...derivedValues
@@ -657,6 +665,16 @@ export const applyArticleUpdate = async ({
       articleId: updatePlan.article.id,
       userId,
       ...tagUpdates,
+      transaction
+    });
+    throwIfExecutionExpired(execution);
+  }
+
+  if (articleEnrichment) {
+    await enqueueArticleEnrichmentJob({
+      article: updatePlan.article,
+      userId,
+      ...articleEnrichment,
       transaction
     });
     throwIfExecutionExpired(execution);

@@ -4,6 +4,7 @@ import { resolveDateFilterToRange } from '../articleSearch/articleDateParser.ser
 import { applyBriefingEligibility } from '../articleSearch/briefingEligibility.service.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { computeRecommended } from '../recommendations/recommendedScore.js';
+import { applyArticleScoreEligibility } from '../articles/articleScoreEligibility.js';
 
 // Provides the shared dependencies used by this service.
 const {
@@ -213,14 +214,15 @@ export const buildBriefingArticleWhere = async ({
   });
 
   // Builds the where assembled while building briefing article where.
-  const where = {
+  const where = applyArticleScoreEligibility({
     userId,
     ...canonicalArticleWhere(),
-    advertisementScore: { [Op.gte]: settings?.minAdvertisementScore ?? 0 },
-    sentimentScore: { [Op.gte]: settings?.minSentimentScore ?? 0 },
-    qualityScore: { [Op.gte]: settings?.minQualityScore ?? 0 },
     publishedAt: { [Op.between]: [dateFrom, dateTo] }
-  };
+  }, {
+    minAdvertisementScore: settings?.minAdvertisementScore,
+    minSentimentScore: settings?.minSentimentScore,
+    minQualityScore: settings?.minQualityScore
+  });
 
   // Handles the case where status is unread.
   if (status === 'unread') {
@@ -312,7 +314,12 @@ const resolveEventIsland = ({ eventId, eventTopicMap, islandLinksByTopic, island
 
   // Selects the result based on whether island is available.
   return island
-    ? { id: serializeId(island.id), name: island.label }
+    ? {
+        id: serializeId(island.id),
+        name: island.label,
+        label: island.label,
+        generatedLabel: island.generatedLabel || null
+      }
     : null;
 };
 
@@ -405,7 +412,9 @@ const buildMorningSummaryItems = ({
     items.push({
       eventId: serializeId(event.id),
       representativeArticleId: serializeId(event.representativeArticleId),
-      headline: normalizeWhitespace(event.name) || normalizeWhitespace(representativeArticle.title),
+      headline: normalizeWhitespace(event.generatedName)
+        || normalizeWhitespace(event.name)
+        || normalizeWhitespace(representativeArticle.title),
       text: extractBriefingExcerpt(representativeArticle.contentText, representativeArticle.title),
       island: resolveEventIsland({
         eventId: event.id,
@@ -467,6 +476,7 @@ export async function getDailyBriefing({
       attributes: [
         'id',
         'name',
+        'generatedName',
         'topicId',
         'representativeArticleId',
         'developingArticleId',
@@ -570,7 +580,7 @@ export async function getDailyBriefing({
   const islands = islandIds.length
     ? await Island.findAll({
       where: { id: { [Op.in]: islandIds }, userId, archivedInd: false },
-      attributes: ['id', 'label', 'weight'],
+      attributes: ['id', 'label', 'generatedLabel', 'weight'],
       raw: true
     })
     : [];

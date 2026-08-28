@@ -2,6 +2,7 @@ import { Op } from 'sequelize';
 import { randomUUID } from 'node:crypto';
 import db from '../../../models/index.js';
 import { recordProcessingFailure } from '../../observability/processingFailures.js';
+import { tryEnqueueGeneratedSemanticLabelJobsForUser } from '../../semanticLabels/semanticLabelJobs.js';
 import { canonicalArticleWhere } from '../../duplicates/articleDuplicates.js';
 import {
   blendTopicVectorWithAlpha,
@@ -370,6 +371,8 @@ async function calibrateBehavioralTopicsForUserInternal(userId, options = {}) {
       topicCount: 0,
       articleTopicLinkCount: 0,
       staleArticleTopicLinkCount,
+      touchedTopicIds: [],
+      createdTopicIds: [],
       communitiesConsidered: profiles.length ? buildBehavioralCommunities(profiles, communitySimilarityThreshold).length : 0
     };
   }
@@ -389,6 +392,7 @@ async function calibrateBehavioralTopicsForUserInternal(userId, options = {}) {
   let staleArticleTopicLinkCount = 0;
   // Collects the touched topic id while performing calibrate behavioral topics for user.
   const touchedTopicIds = [];
+  const createdTopicIds = [];
   // Collects the active article topic rows while performing calibrate behavioral topics for user.
   const activeArticleTopicRows = [];
 
@@ -412,7 +416,10 @@ async function calibrateBehavioralTopicsForUserInternal(userId, options = {}) {
         : await Topic.create(payload, { transaction });
 
       // Handles the case where best is unavailable.
-      if (!best) existingTopics.push(topic);
+      if (!best) {
+        existingTopics.push(topic);
+        createdTopicIds.push(Number(topic.id));
+      }
 
       articleTopicLinkCount += await upsertArticleTopicRows(topic, community, transaction);
       touchedTopicIds.push(Number(topic.id));
@@ -436,6 +443,7 @@ async function calibrateBehavioralTopicsForUserInternal(userId, options = {}) {
     articleTopicLinkCount,
     staleArticleTopicLinkCount,
     touchedTopicIds,
+    createdTopicIds,
     communitiesConsidered: communities.length
   };
 }
@@ -443,7 +451,13 @@ async function calibrateBehavioralTopicsForUserInternal(userId, options = {}) {
 // Runs behavioral topic calibration while retaining its terminal failure for diagnosis.
 export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
   try {
-    return await calibrateBehavioralTopicsForUserInternal(userId, options);
+    const result = await calibrateBehavioralTopicsForUserInternal(userId, options);
+    if (result.createdTopicIds.length) {
+      await tryEnqueueGeneratedSemanticLabelJobsForUser(userId, {
+        topicIds: result.createdTopicIds
+      });
+    }
+    return result;
   } catch (error) {
     await recordProcessingFailure({
       crawlRunId: options.processingContext?.crawlRunId || null,

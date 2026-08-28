@@ -69,7 +69,7 @@
                 <BootstrapIcon icon="compass-fill" />
               </span>
               <div>
-                <h5>{{ island.label || `Island #${island.id}` }}</h5>
+                <h5>{{ island.generatedLabel || island.label || `Island #${island.id}` }}</h5>
                 <p>
                   {{ formatCountLabel(island.sourceArticleCount, 'source article') }} &middot;
                   {{ formatCountLabel(island.topicCount, 'topic') }} linked &middot;
@@ -123,7 +123,7 @@
                   </span>
                   <small v-if="!article.evidence?.length">Behavioral source</small>
                   <small v-for="topic in article.connectionTopics" :key="`${article.id}-topic-${topic.id}`">
-                    Also connected through {{ topic.name }}
+                    Also connected through {{ topic.generatedName || topic.name }}
                   </small>
                 </div>
               </component>
@@ -147,7 +147,7 @@
                 <div class="interest-article-meta">
                   <span v-if="article.isPopulationSource" class="app-status-badge app-status-badge--primary">Source article</span>
                   <small v-for="topic in article.connectionTopics" :key="`${article.id}-topic-${topic.id}`">
-                    Via {{ topic.name }}
+                    Via {{ topic.generatedName || topic.name }}
                   </small>
                 </div>
               </component>

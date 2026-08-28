@@ -103,7 +103,8 @@ database volume.
 
 The comprehensive profile is intended for deployments with multiple active
 users, higher write concurrency, or local intelligent-content processing. It
-starts RSSMonster, a dedicated crawl worker, MySQL 8.4, and an inference service
+starts RSSMonster, a dedicated crawl worker, `rssmonster-ai-worker`, MySQL 8.4,
+and an inference service
 configured with:
 
 - Qwen3 Embedding for semantic vectors;
@@ -135,19 +136,20 @@ docker compose -f docker-compose.mysql.yml up -d --build
 ```
 
 On first startup, the inference service downloads its models into the persistent
-`inference-model-cache` volume. RSSMonster and its crawl worker wait for MySQL
-and inference to become healthy before starting. MySQL data is stored in the
+`inference-model-cache` volume. RSSMonster and both workers wait for MySQL and
+inference to become healthy before starting. MySQL data is stored in the
 `mysql-data` volume.
 
 Check the complete deployment or follow its startup logs with:
 
 ```bash
 docker compose -f docker-compose.mysql.yml ps
-docker compose -f docker-compose.mysql.yml logs -f inference rssmonster rssmonster-worker
+docker compose -f docker-compose.mysql.yml logs -f inference rssmonster rssmonster-worker rssmonster-ai-worker
 ```
 
-Both Docker profiles monitor the crawl worker independently. By default, three
-consecutive crawl failures or 15 minutes without a worker-state update mark the
+Both Docker profiles monitor the crawl worker independently. The MySQL profile
+also monitors `rssmonster-ai-worker` independently. By default, three
+consecutive failures or 15 minutes without a state update mark the relevant
 worker unhealthy. See the [configuration guide](configuration.md) to tune these
 thresholds.
 
@@ -468,6 +470,16 @@ kill -9 <PID>
 - Check `pm2 status rssmonster-inference` and its logs
 - Check API quota/billing in your OpenAI account
 - Ensure inference, the server, and the client are restarted after config changes
+
+### Background AI Processing Is Stalled
+
+- With MySQL Compose, check
+  `docker compose -f docker-compose.mysql.yml ps rssmonster-ai-worker` and its
+  logs. With SQLite Compose, background jobs remain in `rssmonster-worker`.
+- For PM2, check `pm2 status rssmonster-ai-worker` and
+  `pm2 logs rssmonster-ai-worker`.
+- Confirm the processing-job and worker-lease migrations have been applied and
+  that the AI worker can reach both the database and inference service.
 
 ---
 

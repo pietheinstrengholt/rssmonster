@@ -6,7 +6,8 @@ import {
   isAssistantEnabled,
   isInferenceEnabled,
   shouldSkipArticleClassification,
-  shouldSkipArticleEmbeddings
+  shouldSkipArticleEmbeddings,
+  shouldSkipSemanticLabeling
 } from '../../config/intelligentFeatures.js';
 
 describe('intelligent feature configuration', () => {
@@ -14,6 +15,7 @@ describe('intelligent feature configuration', () => {
     expect(isInferenceEnabled({})).toBe(false);
     expect(shouldSkipArticleClassification({})).toBe(true);
     expect(shouldSkipArticleEmbeddings({})).toBe(true);
+    expect(shouldSkipSemanticLabeling({})).toBe(true);
     expect(getDefaultFeedIntelligentFeatures({})).toEqual({
       applyAiAnalysis: false,
       generateEmbeddings: false
@@ -53,6 +55,21 @@ describe('intelligent feature configuration', () => {
       applyAiAnalysis: false,
       generateEmbeddings: false
     });
+  });
+
+  it('skips semantic labeling independently from other inference features', () => {
+    const environment = {
+      INFERENCE_AI_ENABLED: 'true',
+      SKIP_SEMANTIC_LABELING: 'TRUE'
+    };
+
+    expect(shouldSkipSemanticLabeling(environment)).toBe(true);
+    expect(shouldSkipArticleClassification(environment)).toBe(false);
+    expect(shouldSkipArticleEmbeddings(environment)).toBe(false);
+    expect(shouldSkipSemanticLabeling({
+      INFERENCE_AI_ENABLED: 'true',
+      SKIP_SEMANTIC_LABELING: 'false'
+    })).toBe(false);
   });
 
   it('lets the master switch override feature-specific settings', () => {

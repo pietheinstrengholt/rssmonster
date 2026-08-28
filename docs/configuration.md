@@ -20,16 +20,16 @@ The configuration file depends on how RSSMonster is run:
 - **MySQL Docker Compose:** use the same root `.env` with
   `docker-compose.mysql.yml`.
 - **Manual server installation:** copy `server/.env.example` to
-  `server/.env`. The web process and crawl worker both load this file.
+  `server/.env`. The web, crawl worker, and AI worker load this file.
 - **Client:** copy `client/.env.example` to `client/.env`. Variables beginning
   with `VITE_` are compiled into the client bundle, so rebuild the client after
   changing them.
 
 Restart the affected process or recreate its container after changing server
 settings. For Docker, only variables listed under a service's `environment`
-section are passed into the container. Add crawling options to the
-`rssmonster-worker` service and options used by both processes to both service
-sections. For example:
+section are passed into the container. Add crawling options to
+`rssmonster-worker`, processing-job options to `rssmonster-ai-worker`, and
+shared database or inference options to both services. For example:
 
 ```yaml
 services:
@@ -143,14 +143,32 @@ responses, and timeouts.
 | `CRAWL_RUN_MAX_RUNNING_MINUTES` | `60` | minutes | Age after which an unfinished crawl run is marked stale. |
 | `CRAWL_PARALLELPROCESSFLAG` | `0` | boolean integer | Set to `1` to allow parallel feed processing on MySQL. SQLite always forces `0`. |
 | `CRAWL_WORKER_INTERVAL_MS` | `60000` | ms | Delay between dedicated worker polls. Must be a positive integer. |
+| `PROCESSING_JOB_WORKER_ENABLED` | `true` | boolean | Enables durable optional-job consumption. PM2 and MySQL set this on `rssmonster-ai-worker`; SQLite keeps it in `rssmonster-worker`. |
+| `PROCESSING_JOB_POLL_INTERVAL_MS` | `1000` | ms | Delay when no optional processing work is available. |
+| `PROCESSING_JOB_CONCURRENCY` | `1` | jobs | Maximum optional jobs executed concurrently. SQLite always forces this to `1`. |
+| `PROCESSING_JOB_SHUTDOWN_TIMEOUT_MS` | `30000` | ms | Grace period for in-flight optional jobs before their abort signal is triggered. |
+| `PROCESSING_JOB_REPORT_INTERVAL_MS` | `60000` | ms | Interval for durable queue depth, retry, terminal outcome, and latency snapshots in worker logs and health state. |
+| `CRAWL_PRIORITY_LEASE_MS` | `90000` | ms | Duration of the renewable database gate that gives the crawl semantic pipeline priority over new optional claims. |
+| `CRAWL_PRIORITY_HEARTBEAT_MS` | `30000` | ms | Renewal interval for the crawl-priority lease. |
 | `CRAWL_WORKER_HEALTH_MAX_FAILURES` | `3` | failures | Consecutive failed crawl iterations allowed before the worker is unhealthy. |
 | `CRAWL_WORKER_HEALTH_MAX_STALE_MS` | `900000` | ms | Maximum age of the worker health state before the worker is unhealthy. |
+| `CRAWL_WORKER_HEALTH_FILE` | `/tmp/rssmonster-crawl-worker-health.json` | path | Crawl-worker heartbeat file. Compose overrides this with its shared health volume. |
+| `AI_WORKER_HEALTH_MAX_FAILURES` | `3` | failures | Consecutive failed AI-worker iterations allowed before its health check fails. |
+| `AI_WORKER_HEALTH_MAX_STALE_MS` | `900000` | ms | Maximum age of the AI-worker health state before it is considered stale. |
+| `AI_WORKER_HEALTH_FILE` | `/tmp/rssmonster-ai-worker-health.json` | path | AI-worker heartbeat file read by the status API and health check. Compose overrides this with its shared health volume. |
 | `CRAWL_VERBOSE_LOGGING` | `false` | boolean | Emits candidate, retry, and feed-discovery diagnostics in addition to final results. |
 
 `FEED_PARALLEL_CONCURRENCY` is the main MySQL throughput control. Raising it
 increases simultaneous network, parser, AI, and database work. Keep
 `FEED_LEASE_MS` comfortably above realistic feed-processing time so another
 worker does not reclaim active work.
+
+PM2 and the MySQL Compose profile run scheduled crawling in `rssmonster-worker`
+and optional jobs in `rssmonster-ai-worker`. A renewable database lease pauses
+new optional claims while the crawl, embedding, event, topic, and island-scoring
+pipeline is active; crawling never waits for the optional queue to drain. The
+SQLite Compose profile deliberately retains one combined worker and forces job
+concurrency to one.
 
 ### HTTP Fetch Behavior
 
@@ -246,11 +264,12 @@ reverse proxy so client addresses are interpreted correctly.
 | `INFERENCE_ASSISTANT_ENABLED` | `false` | Enables assistant routes and UI only when explicitly `true`. Enable it after configuring the provider and credentials in inference. |
 | `SKIP_ARTICLE_CLASSIFICATION_ANALYSIS` | `false` | When `true`, uses default article scores and feed-category tags without calling inference classification. |
 | `SKIP_ARTICLE_EMBEDDINGS` | `false` | When `true`, disables article vector generation and defaults new feeds to embeddings disabled. |
+| `SKIP_SEMANTIC_LABELING` | `false` | When `true`, skips generated event, topic, and island display labels while preserving deterministic names and labels. |
 | `INTERNAL_MCP_URL` | `http://127.0.0.1:$PORT/mcp` | Server-controlled MCP endpoint used by the natural-language assistant. Configure this when MCP is reached through another container or an HTTPS listener. |
 
 When `INFERENCE_AI_ENABLED` is not explicitly `true`, it overrides the
 feature-specific settings: classification and embeddings remain local or disabled,
-and assistant, Smart Folder recommendation, and feed-rediscovery requests return
+semantic labeling remains disabled, and assistant, Smart Folder recommendation, and feed-rediscovery requests return
 `INFERENCE_DISABLED` without contacting an inference endpoint.
 
 OpenAI credentials and model names belong only in `inference/.env`; see

@@ -1,5 +1,4 @@
 import applyActions from '../enrichment/applyActions.js';
-import analyzeArticleContent from '../enrichment/analyzeArticleContent.js';
 import {
   applyAnalysisScoreOverrides,
   createDefaultArticleAnalysis
@@ -18,9 +17,8 @@ import {
 } from '../runtime/hotlinkService.js';
 import processArticleRevision from './processArticleRevision.js';
 import { throwIfExecutionExpired } from '../../feeds/executionDeadline.js';
+import { shouldSkipArticleClassification } from '../../../config/intelligentFeatures.js';
 
-// Defines the rate limit delay ms enforced by this service.
-const RATE_LIMIT_DELAY_MS = 3000;
 // Builds the empty article result assembled for this service.
 const emptyArticleResult = {
   newArticles: 0,
@@ -56,32 +54,15 @@ const processNewArticle = async ({
   // Derives the action result through apply actions while processing new article.
   const actionResult = applyActions(actions, actionArticle);
 
+  const shouldEnqueueAnalysis = !actionResult.shouldDiscard &&
+    feed?.applyAiAnalysis !== false &&
+    !shouldSkipArticleClassification();
   let analysis = null;
   let hotlinkCount = 0;
   // Handles the case where action result should discard is unavailable.
   if (!actionResult.shouldDiscard) {
-    // Selects the result based on whether apply ai analysis is value.
-    analysis = feed?.applyAiAnalysis === false
-      ? createDefaultArticleAnalysis()
-      : await analyzeArticleContent({
-        text: articleData.analysisText,
-        title: articleData.title,
-        categories: articleData.categories,
-        feedName: feed?.feedName || '',
-        rateLimitDelayMs: RATE_LIMIT_DELAY_MS
-      }, {
-        signal: execution.signal,
-        processingContext: {
-          crawlRunId: execution.crawlRunId,
-          executionId: execution.executionId,
-          userId: feed?.userId,
-          feedId: feed?.id,
-          subjectType: 'feed_entry',
-          subjectId: articleData.externalId
-        }
-      });
+    analysis = createDefaultArticleAnalysis();
     analysis = applyAnalysisScoreOverrides(analysis, actionResult);
-    throwIfExecutionExpired(execution);
 
     // Hotness is derived only for articles accepted into the normal reading pipeline.
     hotlinkCount = await countArticleHotlinks(
@@ -101,6 +82,8 @@ const processNewArticle = async ({
   const persistenceData = {
     ...articleData,
     ...officialSource,
+    aiAnalysisStatus: shouldEnqueueAnalysis ? 'pending' : 'skipped',
+    aiAnalysisCompletedAt: null,
     hotInd: hotlinkCount > 0,
     hotlinks: hotlinkCount
   };
@@ -113,7 +96,13 @@ const processNewArticle = async ({
     analysis,
     actionResult
   ];
-  if (hasExecution) saveArguments.push(execution);
+  if (hasExecution || shouldEnqueueAnalysis) saveArguments.push(hasExecution ? execution : {});
+  if (shouldEnqueueAnalysis) {
+    saveArguments.push({
+      providerTags: articleData.categories,
+      actionResult
+    });
+  }
   const saveResult = await saveArticle(...saveArguments);
   const savedArticle = saveResult.article;
 
@@ -140,7 +129,6 @@ const processNewArticle = async ({
       hotlinkBatcher,
       duplicateCache,
       precomputedActionResult: actionResult,
-      precomputedAnalysis: analysis,
       ...(hasExecution ? { execution } : {})
     });
   }

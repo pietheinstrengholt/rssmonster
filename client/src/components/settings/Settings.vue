@@ -37,7 +37,12 @@
             :aria-current="active === item.key ? 'page' : undefined"
             @click="selectSection(item.key, $event)"
           >
-            <BootstrapIcon class="settings-sidebar-icon" :icon="item.icon" aria-hidden="true" />
+            <BootstrapIcon
+              class="settings-sidebar-icon"
+              :icon="item.icon"
+              context="control"
+              decorative
+            />
             <span>{{ item.label }}</span>
           </button>
         </aside>
@@ -106,6 +111,8 @@ const SettingsIslands = createAsyncSettingsSection(() => import('./SettingsIslan
 const SettingsTopics = createAsyncSettingsSection(() => import('./SettingsTopics.vue'));
 // This component lazily loads crawl statistics.
 const SettingsCrawlStatistics = createAsyncSettingsSection(() => import('./SettingsCrawlStatistics.vue'));
+// This component lazily loads optional AI processing health.
+const SettingsProcessingJobs = createAsyncSettingsSection(() => import('./SettingsProcessingJobs.vue'));
 // This component lazily loads processing failure observability.
 const SettingsObservability = createAsyncSettingsSection(() => import('./SettingsObservability.vue'));
 // This component lazily loads feed management settings.
@@ -132,6 +139,7 @@ export default {
     SettingsIslands,
     SettingsTopics,
     SettingsCrawlStatistics,
+    SettingsProcessingJobs,
     SettingsObservability,
     SettingsFeedsOverview,
     SettingsOfficialSources,
@@ -178,6 +186,7 @@ export default {
         { key: 'topics', label: 'Topics', icon: 'diagram-3-fill', visible: aiEnabled },
         { key: 'islands', label: 'Islands', icon: 'compass-fill', visible: aiEnabled },
         { key: 'crawlStatistics', label: 'Crawl Statistics', icon: 'clipboard-data-fill', visible: true },
+        { key: 'processingJobs', label: 'AI Processing', icon: 'cpu-fill', visible: aiEnabled },
         { key: 'observability', label: 'Observability', icon: 'activity', visible: true },
         { key: 'feeds', label: 'Feeds', icon: 'rss-fill', visible: true },
         { key: 'officialSources', label: 'Official Sources', icon: 'patch-check-fill', visible: true },
@@ -198,6 +207,7 @@ export default {
         topics: 'SettingsTopics',
         islands: 'SettingsIslands',
         crawlStatistics: 'SettingsCrawlStatistics',
+        processingJobs: 'SettingsProcessingJobs',
         observability: 'SettingsObservability',
         feeds: 'SettingsFeedsOverview',
         officialSources: 'SettingsOfficialSources',

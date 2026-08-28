@@ -21,6 +21,22 @@ module.exports = {
       }
     },
     {
+      name: 'rssmonster-ai-worker',
+      cwd: serverDirectory,
+      script: 'src/workers/aiWorker.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      restart_delay: 5000,
+      max_restarts: 10,
+      kill_timeout: 30000,
+      time: true,
+      env_production: {
+        NODE_ENV: 'production',
+        PROCESSING_JOB_WORKER_ENABLED: 'true'
+      }
+    },
+    {
       name: 'rssmonster-worker',
       cwd: serverDirectory,
       script: 'src/workers/crawlWorker.js',
@@ -32,7 +48,8 @@ module.exports = {
       kill_timeout: 900000,
       time: true,
       env_production: {
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        PROCESSING_JOB_WORKER_ENABLED: 'false'
       }
     },
     {

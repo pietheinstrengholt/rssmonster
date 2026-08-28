@@ -231,7 +231,8 @@ export function buildRecommendationPresentation(article, {
       ...(event ? {
         event: {
           id: event.id,
-          name: event.name || null
+          name: event.name || null,
+          generatedName: event.generatedName || null
         }
       } : {})
     });

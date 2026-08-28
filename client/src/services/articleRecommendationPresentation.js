@@ -10,14 +10,18 @@ const pluralized = (count, singular, plural = `${singular}s`) => (
 );
 
 const interestExplanation = reason => {
-  const islandName = String(reason?.island?.name || '').trim();
+  const islandName = String(
+    reason?.island?.generatedLabel || reason?.island?.label || reason?.island?.name || ''
+  ).trim();
   return islandName
     ? `Matches your ${quoted(islandName)} interest.`
     : 'Matches your learned interests.';
 };
 
 const coverageExplanation = (eventReason, sourceReason) => {
-  const eventName = String(eventReason?.event?.name || '').trim();
+  const eventName = String(
+    eventReason?.event?.generatedName || eventReason?.event?.name || ''
+  ).trim();
   const articleCount = finiteNumber(eventReason?.articleCount);
   const sourceCount = finiteNumber(sourceReason?.sourceCount);
   if (!eventReason && sourceCount > 0) {
@@ -105,7 +109,8 @@ export function buildArticleRecommendationExplanation(recommendation) {
   }
 
   const qualityReason = reasonByCode.get('quality');
-  if (qualityReason) {
+  const qualityValue = finiteNumber(qualityReason?.value);
+  if (qualityReason && qualityValue !== null && qualityValue > 0.8) {
     items.push({
       code: 'quality',
       icon: 'patch-check-fill',
@@ -125,7 +130,12 @@ export function buildArticleRecommendationExplanation(recommendation) {
 
   let summary = 'These signals contributed to this article’s position.';
   if (interestReason && (eventReason || sourceReason)) {
-    const islandName = String(interestReason?.island?.name || '').trim();
+    const islandName = String(
+      interestReason?.island?.generatedLabel
+        || interestReason?.island?.label
+        || interestReason?.island?.name
+        || ''
+    ).trim();
     const interestText = islandName
       ? `your ${quoted(islandName)} interest`
       : 'your learned interests';

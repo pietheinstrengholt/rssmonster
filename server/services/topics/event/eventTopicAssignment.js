@@ -113,6 +113,7 @@ export async function assignTopicsForEvents(userId, events, { assignmentContext 
     return {
       eventCount: 0,
       touchedTopicIds: [],
+      createdTopicIds: [],
       stats: { eventsSkipped: 0, eventsMatched: 0, eventsUnmatched: 0, newTopicsCreated: 0 }
     };
   }
@@ -128,6 +129,7 @@ export async function assignTopicsForEvents(userId, events, { assignmentContext 
 
   // Tracks distinct touched topic id while assigning topics for events.
   const touchedTopicIds = new Set();
+  const initialTopicIds = new Set(topicsCache.map(topic => Number(topic.id)));
   const initialTopicCount = topicsCache.length;
   let eventsSkipped = 0;
   let eventsMatched = 0;
@@ -181,10 +183,14 @@ export async function assignTopicsForEvents(userId, events, { assignmentContext 
 
   // Derives the new topics created required while assigning topics for events.
   const newTopicsCreated = topicsCache.length - initialTopicCount;
+  const createdTopicIds = topicsCache
+    .map(topic => Number(topic.id))
+    .filter(topicId => Number.isSafeInteger(topicId) && !initialTopicIds.has(topicId));
 
   return {
     eventCount: events.length,
     touchedTopicIds: [...touchedTopicIds],
+    createdTopicIds,
     stats: { eventsSkipped, eventsMatched, eventsUnmatched, newTopicsCreated }
   };
 }

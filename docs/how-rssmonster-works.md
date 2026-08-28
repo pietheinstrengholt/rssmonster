@@ -24,6 +24,62 @@ Feeds and articles
 Search expressions --------------------------------> Smart Folders
 ```
 
+## Worker and Pipeline Architecture
+
+The MySQL and PM2 production topology separates scheduled crawling from optional
+generated enrichment:
+
+```text
+rssmonster-worker
+ └─ crawl scheduler loop
+      └─ crawl → embedding → events → topics → island scoring
+
+rssmonster-ai-worker
+ └─ claim processing_jobs
+      ├─ summaries
+      ├─ quality scoring
+      ├─ inferred tags
+      └─ semantic labels
+```
+
+The lightweight SQLite Compose profile intentionally keeps both loops in its
+single `rssmonster-worker` container, with processing concurrency forced to one.
+
+The crawl scheduler owns the ordered, deterministic semantic path. Article
+identity and revision resolution happen before persistence; embeddings then
+complete before Event creation, Topic assignment, and Interest Island scoring.
+These stages are never moved into the optional queue.
+
+The AI worker consumes durable database jobs after their article,
+Event, Topic, or Island target exists. New and revised articles are immediately
+persisted with deterministic provider, feed, rule, and manual tags. When article
+analysis is enabled, the article and its `article_enrichment` job commit in the
+same transaction. Summaries, inferred tags, and inferred scores can therefore
+finish later without delaying crawling or embedding.
+
+Article analysis moves through `pending`, `processing`, `complete`, `skipped`,
+or `failed`. Pending, processing, and failed articles remain readable and are
+not rejected by inferred-score thresholds merely because placeholder scores are
+present. The interface shows an analyzing state instead of presenting those
+placeholders as completed inference.
+
+Jobs contain identifiers and version guards rather than article text. Handlers
+reload the current user-owned target and recheck article content hashes while
+holding the write lock, so an older job cannot overwrite a newer revision.
+Article enrichment replaces only inferred tags. Semantic-label jobs update only
+generated presentation fields; deterministic Event, Topic, and Island fallback
+names remain usable while labels are pending or failed.
+
+The crawl process publishes a renewable database lease while its critical
+semantic pipeline is active. The AI worker pauses new claims while that lease is
+live; already-running optional work is allowed to finish safely. Inside the local
+inference service, waiting embedding requests outrank classification and generated
+text requests. Running model calls are not preempted.
+Retryable inference failures use leases and bounded backoff, exhausted jobs are
+dead-lettered, and expired leases are recoverable. Failures in optional work do
+not fail crawling or deterministic semantic processing. See [Crawling](crawling.md#durable-optional-processing-queue)
+for queue states, concurrency, observability, shutdown, and operator recovery.
+
 ## Key Concepts
 
 ### Smart Folders
@@ -73,8 +129,10 @@ RSSMonster first fetches and normalizes articles while preserving their
 identity and source. Feed and article signals help rank what should be shown.
 When semantic processing is enabled, article embeddings help associate reports
 with Events, connect Events to Topics, and relate that content to a user's
-Interest Islands. Smart Folders provide a separate, deterministic way to build
-focused views using search rules.
+Interest Islands. Optional generated summaries, scores, inferred tags, and
+presentation labels can arrive afterward without changing that semantic order.
+Smart Folders provide a separate, deterministic way to build focused views
+using search rules.
 
 Start with [Concepts](concepts.md) for the broader philosophy and terminology.
 For implementation-level details about the semantic pipeline, service

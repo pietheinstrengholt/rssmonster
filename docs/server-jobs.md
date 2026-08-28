@@ -32,12 +32,13 @@ a routine scheduler unless its description explicitly calls for that use.
 | `npm start` | Start the Express application with `node bootstrap.js`. This is the normal server start command. |
 | `npm run start-server` | Alias for `npm start`; it starts the same `bootstrap.js` entry point. |
 | `npm run start:worker` | Start the long-running crawl worker directly. It runs an immediate crawl iteration and continues polling; see [Crawling](crawling.md). |
+| `npm run start:ai-worker` | Start the long-running durable processing-job consumer used by PM2 and MySQL Compose. |
 | `npm run dev` | Start the Express server with Node's watch mode and restart it when server source files change. |
 | `npm run debug` | Start the same watched development server with the Node inspector enabled. |
 
 In production, use the repository's PM2 ecosystem definition to supervise the
-web and worker processes instead of starting these commands in separate shell
-sessions.
+web, crawl-worker, AI-worker, and inference processes instead of starting these
+commands in separate shell sessions.
 
 ## Tests and Linting
 

@@ -6,7 +6,8 @@ import {
   checkCrawlWorkerHealth,
   createCrawlWorkerHealthReporter,
   evaluateCrawlWorkerHealth,
-  getCrawlWorkerHealthConfig
+  getCrawlWorkerHealthConfig,
+  readCrawlWorkerHealthState
 } from '../../src/workers/crawlWorkerHealth.js';
 
 const temporaryDirectories = [];
@@ -55,6 +56,38 @@ describe('crawl worker health', () => {
       .toBe(false);
   });
 
+  it('distinguishes processing-job health within the single worker check', () => {
+    const now = Date.parse('2026-08-21T12:15:00.000Z');
+    const state = {
+      status: 'degraded',
+      consecutiveFailures: 0,
+      updatedAt: '2026-08-21T12:14:00.000Z',
+      crawl: {
+        status: 'healthy',
+        consecutiveFailures: 0
+      },
+      processingJobs: {
+        enabled: true,
+        status: 'degraded',
+        consecutiveFailures: 3
+      }
+    };
+
+    expect(evaluateCrawlWorkerHealth(state, { now })).toEqual({
+      healthy: false,
+      reason: 'too many consecutive processing-job failures'
+    });
+    expect(evaluateCrawlWorkerHealth({
+      ...state,
+      status: 'healthy',
+      processingJobs: {
+        enabled: false,
+        status: 'disabled',
+        consecutiveFailures: 99
+      }
+    }, { now })).toEqual({ healthy: true, reason: 'healthy' });
+  });
+
   it('atomically persists and reads the worker state', async () => {
     const directory = await mkdtemp(path.join(tmpdir(), 'rssmonster-worker-health-'));
     temporaryDirectories.push(directory);
@@ -76,5 +109,20 @@ describe('crawl worker health', () => {
       },
       now: now.getTime()
     })).resolves.toEqual({ healthy: true, reason: 'healthy' });
+    await expect(readCrawlWorkerHealthState({
+      environment: {
+        CRAWL_WORKER_HEALTH_FILE: filePath,
+        CRAWL_WORKER_HEALTH_MAX_STALE_MS: '60000'
+      },
+      now: now.getTime()
+    })).resolves.toEqual({
+      healthy: true,
+      reason: 'healthy',
+      state: {
+        status: 'healthy',
+        consecutiveFailures: 0,
+        updatedAt: now.toISOString()
+      }
+    });
   });
 });

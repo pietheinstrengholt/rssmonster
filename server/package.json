@@ -28,6 +28,8 @@
     "start": "node bootstrap.js",
     "start-server": "node bootstrap.js",
     "start:worker": "node src/workers/crawlWorker.js",
+    "start:ai-worker": "node src/workers/aiWorker.js",
+    "jobs:operator": "node scripts/manageProcessingJobs.js",
     "dev": "node --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./services --watch-path=./utils --watch-path=./config bootstrap.js",
     "debug": "node --inspect --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./services --watch-path=./utils --watch-path=./config bootstrap.js",
     "db": "./node_modules/.bin/sequelize db:migrate",

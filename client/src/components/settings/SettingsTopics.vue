@@ -97,7 +97,7 @@
           <div class="settings-object-list">
             <article v-for="event in events" :key="event.id" class="settings-object-row">
               <div>
-                <strong>{{ event.name || `Event #${event.id}` }}</strong>
+                <strong>{{ event.generatedName || event.name || `Event #${event.id}` }}</strong>
                 <p>
                   {{ event.articleCount }} articles &middot; {{ event.topicCount }} topics &middot; {{ formatDate(event.updatedAt) }}
                 </p>
@@ -114,7 +114,7 @@
           <div class="settings-object-list">
             <article v-for="topic in topics" :key="topic.id" class="settings-object-row">
               <div>
-                <strong>{{ topic.name }}</strong>
+                <strong>{{ topic.generatedName || topic.name }}</strong>
                 <p>
                   {{ topic.linkedEventCount }} events &middot; {{ topic.linkedArticleCount }} articles &middot; {{ formatDate(topic.lastActivityAt) }}
                 </p>

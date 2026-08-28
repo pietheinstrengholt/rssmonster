@@ -22,6 +22,7 @@ import {
   fetchCrawlStatistics,
   fetchIslandsOverview,
   fetchOfficialSources,
+  fetchProcessingJobStatus,
   fetchProcessingFailureDetail,
   fetchProcessingFailureGroups,
   fetchProcessingFailureOccurrences,
@@ -229,6 +230,12 @@ describe('settings API contracts', () => {
     );
     expect(get).toHaveBeenNthCalledWith(3, '/setting/observability/failures/91');
     expect(del).toHaveBeenCalledWith('/setting/observability');
+  });
+
+  it('builds the read-only processing-job status request', () => {
+    fetchProcessingJobStatus();
+
+    expect(get).toHaveBeenCalledWith('/setting/processing-jobs');
   });
 
   // Verifies official-source settings retain the complete source list.

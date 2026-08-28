@@ -59,6 +59,8 @@ import ProcessingFailureModel from './processingFailure.js';
 import BriefingPreferenceModel from './briefingPreference.js';
 import FeedUrlAliasModel from './feedUrlAlias.js';
 import PushSubscriptionModel from './pushSubscription.js';
+import ProcessingJobModel from './processingJob.js';
+import WorkerLeaseModel from './workerLease.js';
 
 // ---- Initialize models ----
 const User = UserModel(sequelize);
@@ -84,6 +86,8 @@ const ProcessingFailure = ProcessingFailureModel(sequelize);
 const BriefingPreference = BriefingPreferenceModel(sequelize);
 const FeedUrlAlias = FeedUrlAliasModel(sequelize);
 const PushSubscription = PushSubscriptionModel(sequelize);
+const ProcessingJob = ProcessingJobModel(sequelize);
+const WorkerLease = WorkerLeaseModel(sequelize);
 
 // ---- Associations ----
 
@@ -147,6 +151,24 @@ User.hasMany(ProcessingFailure, {
   onDelete: 'CASCADE'
 });
 ProcessingFailure.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// User/Article ↔ ProcessingJob
+User.hasMany(ProcessingJob, {
+  foreignKey: 'userId',
+  as: 'processingJobs',
+  onDelete: 'CASCADE'
+});
+ProcessingJob.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Article.hasMany(ProcessingJob, {
+  foreignKey: 'articleId',
+  as: 'processingJobs',
+  onDelete: 'SET NULL'
+});
+ProcessingJob.belongsTo(Article, {
+  foreignKey: 'articleId',
+  as: 'article',
+  onDelete: 'SET NULL'
+});
 
 // User ↔ BriefingPreference
 User.hasOne(BriefingPreference, {
@@ -323,5 +345,7 @@ export default {
   ProcessingFailure,
   BriefingPreference,
   FeedUrlAlias,
-  PushSubscription
+  PushSubscription,
+  ProcessingJob,
+  WorkerLease
 };

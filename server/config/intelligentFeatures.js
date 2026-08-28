@@ -31,6 +31,10 @@ export const shouldSkipArticleClassification = (environment = process.env) =>
 export const shouldSkipArticleEmbeddings = (environment = process.env) =>
   !isInferenceEnabled(environment) || isTrue(environment.SKIP_ARTICLE_EMBEDDINGS);
 
+// Returns whether event, topic, and island display-label generation is disabled.
+export const shouldSkipSemanticLabeling = (environment = process.env) =>
+  !isInferenceEnabled(environment) || isTrue(environment.SKIP_SEMANTIC_LABELING);
+
 // Resolves processing defaults for feeds created by this server process.
 export const getDefaultFeedIntelligentFeatures = (environment = process.env) => ({
   applyAiAnalysis: !shouldSkipArticleClassification(environment),
@@ -43,5 +47,6 @@ export default {
   isAssistantEnabled,
   isInferenceEnabled,
   shouldSkipArticleClassification,
-  shouldSkipArticleEmbeddings
+  shouldSkipArticleEmbeddings,
+  shouldSkipSemanticLabeling
 };

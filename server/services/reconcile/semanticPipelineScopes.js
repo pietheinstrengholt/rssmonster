@@ -25,6 +25,7 @@ import {
 import { recomputeTopicStatsForUser } from '../topics/shared/topicStats.service.js';
 import { HOUR_MS } from '../events/articleEventTime.js';
 import { recordProcessingFailure } from '../observability/processingFailures.js';
+import { tryEnqueueGeneratedSemanticLabelJobsForUser } from '../semanticLabels/semanticLabelJobs.js';
 
 // Provides the shared dependencies used by this service.
 const { Article, Event, Feed, Topic, ArticleTopic, EventTopic } = db;
@@ -85,6 +86,12 @@ function buildAssignmentResult({
     articleCount: articles.length,
     touchedEventIds: [...new Set([...touchedEventIds].map(Number).filter(Boolean))],
     touchedTopicIds: [...new Set(touchedTopicIds.map(Number).filter(Boolean))],
+    createdEventIds: [...new Set([...(runContext.newEventIds || [])]
+      .map(Number)
+      .filter(Boolean))],
+    createdTopicIds: [...new Set((topicAssignment?.createdTopicIds || [])
+      .map(Number)
+      .filter(Boolean))],
     newEventsCreatedCount: Number(runContext.stats.newEventsCreatedCount || 0),
     linkedToExistingEventCount: Number(runContext.stats.linkedToExistingEventCount || 0),
     unassignedCount,
@@ -92,6 +99,7 @@ function buildAssignmentResult({
       skipped: true,
       eventCount: 0,
       touchedTopicIds: [],
+      createdTopicIds: [],
       stats: {
         eventsSkipped: 0,
         eventsMatched: 0,
@@ -606,6 +614,8 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
       articleCount: 0,
       touchedEventIds: [],
       touchedTopicIds: [],
+      createdEventIds: [],
+      createdTopicIds: [],
       newEventsCreatedCount: 0,
       linkedToExistingEventCount: 0,
       unassignedCount: 0,
@@ -613,6 +623,7 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
         skipped: skipTopicAssignment,
         eventCount: 0,
         touchedTopicIds: [],
+        createdTopicIds: [],
         stats: {
           eventsSkipped: 0,
           eventsMatched: 0,
@@ -651,7 +662,14 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
 // Runs incremental event processing while retaining standalone invocation failures.
 export async function runIncrementalEventsForUser(userId, options = {}) {
   try {
-    return await runIncrementalEventsForUserInternal(userId, options);
+    const result = await runIncrementalEventsForUserInternal(userId, options);
+    if (result.createdEventIds.length || result.createdTopicIds.length) {
+      await tryEnqueueGeneratedSemanticLabelJobsForUser(userId, {
+        eventIds: result.createdEventIds,
+        topicIds: result.createdTopicIds
+      });
+    }
+    return result;
   } catch (error) {
     await recordProcessingFailure({
       crawlRunId: options.processingContext?.crawlRunId || null,
@@ -706,6 +724,8 @@ export async function repairRecentEventsForUser(userId, options = {}) {
       articleCount: 0,
       touchedEventIds: [],
       touchedTopicIds: [],
+      createdEventIds: [],
+      createdTopicIds: [],
       newEventsCreatedCount: 0,
       linkedToExistingEventCount: 0,
       unassignedCount: 0,
@@ -713,6 +733,7 @@ export async function repairRecentEventsForUser(userId, options = {}) {
         skipped: skipTopicAssignment,
         eventCount: 0,
         touchedTopicIds: [],
+        createdTopicIds: [],
         stats: {
           eventsSkipped: 0,
           eventsMatched: 0,
@@ -878,6 +899,13 @@ export async function repairRecentEventsForUser(userId, options = {}) {
     ` pruned=${deletedCount})`
   );
 
+  if (repairResult.createdEventIds.length || repairResult.createdTopicIds.length) {
+    await tryEnqueueGeneratedSemanticLabelJobsForUser(userId, {
+      eventIds: repairResult.createdEventIds,
+      topicIds: repairResult.createdTopicIds
+    });
+  }
+
   return repairResult;
 }
 
@@ -898,6 +926,8 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
   let touchedTopicIds = [];
   // Collects the touched event id while performing backfill historical events for user.
   let touchedEventIds = [];
+  let createdEventIds = [];
+  let createdTopicIds = [];
   let newEventsCreatedCount = 0;
   let linkedToExistingEventCount = 0;
   let unassignedCount = 0;
@@ -934,6 +964,8 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
 
     touchedTopicIds = [...new Set([...touchedTopicIds, ...batchResult.touchedTopicIds])];
     touchedEventIds = [...new Set([...touchedEventIds, ...batchResult.touchedEventIds])];
+    createdEventIds = [...new Set([...createdEventIds, ...batchResult.createdEventIds])];
+    createdTopicIds = [...new Set([...createdTopicIds, ...batchResult.createdTopicIds])];
     newEventsCreatedCount += batchResult.newEventsCreatedCount;
     linkedToExistingEventCount += batchResult.linkedToExistingEventCount;
     unassignedCount += batchResult.unassignedCount;
@@ -953,12 +985,14 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
     `articles=${totalProcessed}`
   );
 
-  return {
+  const result = {
     userId,
     mode: 'historical-backfill',
     articleCount: totalProcessed,
     touchedEventIds,
     touchedTopicIds,
+    createdEventIds,
+    createdTopicIds,
     newEventsCreatedCount,
     linkedToExistingEventCount,
     unassignedCount,
@@ -966,6 +1000,7 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
       skipped: skipTopicAssignment,
       eventCount: touchedEventIds.length,
       touchedTopicIds,
+      createdTopicIds,
       stats: {
         eventsSkipped: 0,
         eventsMatched: 0,
@@ -974,6 +1009,15 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
       }
     }
   };
+
+  if (result.createdEventIds.length || result.createdTopicIds.length) {
+    await tryEnqueueGeneratedSemanticLabelJobsForUser(userId, {
+      eventIds: result.createdEventIds,
+      topicIds: result.createdTopicIds
+    });
+  }
+
+  return result;
 }
 
 // This function runs the full-rebuild topic scope for event and hybrid topic assignments for a user.
@@ -1038,7 +1082,12 @@ export async function rebuildAllTopicsForUser(userId, options = {}) {
   );
 
   // Derives the values through assign topics for events while performing rebuild all topics for user.
-  const { eventCount, touchedTopicIds, stats } = await assignTopicsForEvents(userId, events, {
+  const {
+    eventCount,
+    touchedTopicIds,
+    createdTopicIds = [],
+    stats
+  } = await assignTopicsForEvents(userId, events, {
     assignmentContext
   });
 
@@ -1056,6 +1105,10 @@ export async function rebuildAllTopicsForUser(userId, options = {}) {
     attributes: ['id', 'eventCount'],
     raw: true
   });
+
+  if (createdTopicIds.length) {
+    await tryEnqueueGeneratedSemanticLabelJobsForUser(userId, { topicIds: createdTopicIds });
+  }
 
   const topicCount = allUserTopics.length;
   // Aggregates source values into the total event links used while performing rebuild all topics for user.
@@ -1091,6 +1144,7 @@ export async function rebuildAllTopicsForUser(userId, options = {}) {
     userId,
     eventCount,
     touchedTopicIds,
+    createdTopicIds,
     stats,
     topicCount,
     totalEventLinks,

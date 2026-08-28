@@ -118,6 +118,20 @@ describe('analyzeArticleContent', () => {
     });
   });
 
+  it('lets durable jobs retry queue saturation instead of persisting defaults', async () => {
+    const error = Object.assign(new Error('Inference request failed with HTTP 503'), {
+      code: 'INFERENCE_UNAVAILABLE',
+      inferenceErrorCode: 'inference_queue_full'
+    });
+    mocked.request.mockRejectedValue(error);
+
+    await expect(analyzeArticleContent(
+      { text: 'Article content' },
+      { useQueueFullFallback: false }
+    )).rejects.toBe(error);
+    expect(mocked.recordProcessingFailure).not.toHaveBeenCalled();
+  });
+
   it('does not hide inference failures other than queue saturation', async () => {
     const error = Object.assign(new Error('Inference service unavailable'), {
       code: 'INFERENCE_UNAVAILABLE'

@@ -6,6 +6,7 @@ import { createHealthRouter, createReadinessRouter } from './routes/health.js';
 import { createAssistantRouter } from './routes/assistant.js';
 import { createClassificationsRouter } from './routes/classifications.js';
 import { createFeedRediscoveryRouter } from './routes/feedRediscovery.js';
+import { createSemanticLabelsRouter } from './routes/semanticLabels.js';
 import { createSmartFolderRecommendationsRouter } from './routes/smartFolderRecommendations.js';
 import { createAssistantRateLimiter } from './middleware/rateLimit.js';
 import { createRequestLifecycleMiddleware } from './middleware/requestLifecycle.js';
@@ -44,6 +45,7 @@ export const createApp = ({
   assistantService,
   smartFolderRecommendationService,
   feedRediscoveryService,
+  semanticLabelService,
   readinessState
 } = {}) => {
   const app = express();
@@ -77,6 +79,10 @@ export const createApp = ({
   }));
   app.use('/api/feed-rediscovery', createFeedRediscoveryRouter({
     service: feedRediscoveryService,
+    logger
+  }));
+  app.use('/api/semantic-labels', createSemanticLabelsRouter({
+    service: semanticLabelService,
     logger
   }));
 

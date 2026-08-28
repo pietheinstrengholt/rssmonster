@@ -1,6 +1,7 @@
 import express from 'express';
 import settingController from '../controllers/setting.js';
 import processingFailureController from '../controllers/processingFailure.js';
+import processingJobStatusController from '../controllers/processingJobStatus.js';
 import userMiddleware from "../middleware/users.js";
 
 export const router = express.Router();
@@ -11,6 +12,11 @@ router.get('/crawl-statistics', userMiddleware.isLoggedIn, settingController.get
 router.get('/islands', userMiddleware.isLoggedIn, settingController.getIslandsOverview);
 router.get('/topics', userMiddleware.isLoggedIn, settingController.getTopicsOverview);
 router.get('/official-sources', userMiddleware.isLoggedIn, settingController.getOfficialSources);
+router.get(
+  '/processing-jobs',
+  userMiddleware.isLoggedIn,
+  processingJobStatusController.getProcessingJobsStatus
+);
 router.get(
   '/observability',
   userMiddleware.isLoggedIn,

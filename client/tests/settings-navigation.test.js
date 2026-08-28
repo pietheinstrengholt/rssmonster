@@ -63,6 +63,9 @@ describe('Settings navigation', () => {
 
     expect(wrapper.get('.settings-surface').classes()).toEqual(['settings-surface']);
     expect(wrapper.get('.settings-surface .settings-dialog').exists()).toBe(true);
+    expect(wrapper.findAll('.settings-sidebar-icon').every(icon =>
+      icon.classes().includes('app-icon--control') && icon.attributes('aria-hidden') === 'true'
+    )).toBe(true);
     wrapper.unmount();
   });
 
@@ -97,6 +100,7 @@ describe('Settings navigation', () => {
     expect(enabledWrapper.findAll('.settings-welcome__capability').map(label => label.text())).toEqual([
       'AI feature',
       'AI feature',
+      'AI feature',
       'AI feature'
     ]);
     enabledWrapper.unmount();
@@ -129,6 +133,14 @@ describe('Settings navigation', () => {
     expect(navigation.find(item => item.key === 'scores')?.visible).toBe(false);
     expect(navigation.find(item => item.key === 'topics')?.visible).toBe(false);
     expect(navigation.find(item => item.key === 'islands')?.visible).toBe(false);
+    expect(navigation.find(item => item.key === 'processingJobs')?.visible).toBe(false);
+  });
+
+  it('shows AI Processing when AI features are available', () => {
+    expect(getSettingsNavigation(true).find(item => item.key === 'processingJobs')).toMatchObject({
+      label: 'AI Processing',
+      visible: true
+    });
   });
 
   it('preserves admin-only visibility for Manage Users', () => {

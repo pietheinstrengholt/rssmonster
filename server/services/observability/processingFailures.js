@@ -23,6 +23,12 @@ const boundedString = (value, maximum) => {
   return redactSensitiveText(String(value)).slice(0, maximum) || null;
 };
 
+// Produces the same bounded, credential-redacted message used by persisted failures.
+export const sanitizeProcessingFailureMessage = (
+  value,
+  maximum = MAX_MESSAGE_LENGTH
+) => boundedString(value, maximum);
+
 // Converts arbitrary context into a bounded, redacted JSON value.
 const sanitizeContext = context => {
   if (!context || typeof context !== 'object') return null;

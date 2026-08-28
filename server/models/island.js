@@ -17,6 +17,12 @@ export default (sequelize) => {
         type: DataTypes.STRING(255),
         allowNull: false
       },
+      // Stores the optional generated island label used for presentation.
+      generatedLabel: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        defaultValue: null
+      },
       // Measures the island's relative behavioral strength, defaulting to no weight.
       weight: {
         type: DataTypes.FLOAT,

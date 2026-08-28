@@ -38,7 +38,8 @@ const mocked = vi.hoisted(() => ({
   logEventProcessingSummary: vi.fn(),
   recomputeTopicStatsForUser: vi.fn(),
   reconcileTouchedEvents: vi.fn(),
-  recordProcessingFailure: vi.fn()
+  recordProcessingFailure: vi.fn(),
+  enqueueSemanticLabels: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -103,6 +104,10 @@ vi.mock('../../services/observability/processingFailures.js', () => ({
   recordProcessingFailure: mocked.recordProcessingFailure
 }));
 
+vi.mock('../../services/semanticLabels/semanticLabelJobs.js', () => ({
+  tryEnqueueGeneratedSemanticLabelJobsForUser: mocked.enqueueSemanticLabels
+}));
+
 import {
   backfillHistoricalEventsForUser,
   repairRecentEventsForUser,
@@ -132,6 +137,7 @@ describe('semantic pipeline scopes orchestration', () => {
     mocked.recomputeTopicStatsForUser.mockReset();
     mocked.reconcileTouchedEvents.mockReset();
     mocked.recordProcessingFailure.mockReset().mockResolvedValue(undefined);
+    mocked.enqueueSemanticLabels.mockReset().mockResolvedValue(undefined);
 
     mocked.Article.update.mockResolvedValue([0]);
     mocked.canonicalArticleWhere.mockReturnValue({ duplicateOfArticleId: null });
@@ -195,6 +201,8 @@ describe('semantic pipeline scopes orchestration', () => {
       }
 
       context.stats.newEventsCreatedCount++;
+      context.newEventIds ??= new Set();
+      context.newEventIds.add(20);
       return 20;
     });
     mocked.reconcileTouchedEvents.mockResolvedValue({
@@ -206,6 +214,7 @@ describe('semantic pipeline scopes orchestration', () => {
     mocked.assignTopicsForEvents.mockResolvedValue({
       eventCount: 2,
       touchedTopicIds: [400, 100],
+      createdTopicIds: [400],
       stats: {
         eventsSkipped: 0,
         eventsMatched: 1,
@@ -255,10 +264,16 @@ describe('semantic pipeline scopes orchestration', () => {
     expect(mocked.recomputeTopicStatsForUser).toHaveBeenCalledWith(7, [100, 200, 300, 400]);
     expect(mocked.articleCandidateCache.update).toHaveBeenCalledTimes(2);
     expect(mocked.articleCandidateCache.removeExpired).toHaveBeenCalledOnce();
+    expect(mocked.enqueueSemanticLabels).toHaveBeenCalledWith(7, {
+      eventIds: [20],
+      topicIds: [400]
+    });
     expect(result).toMatchObject({
       articleCount: 4,
       touchedEventIds: [10, 20],
       touchedTopicIds: [100, 200, 300, 400],
+      createdEventIds: [20],
+      createdTopicIds: [400],
       newEventsCreatedCount: 1,
       linkedToExistingEventCount: 1,
       unassignedCount: 2,
@@ -281,6 +296,7 @@ describe('semantic pipeline scopes orchestration', () => {
     expect(mocked.assignArticleToEvent).not.toHaveBeenCalled();
     expect(mocked.reconcileTouchedEvents).not.toHaveBeenCalled();
     expect(mocked.logEventProcessingSummary).toHaveBeenCalledOnce();
+    expect(mocked.enqueueSemanticLabels).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       articleCount: 1,
       touchedEventIds: [],
@@ -309,7 +325,11 @@ describe('semantic pipeline scopes orchestration', () => {
     mocked.EventTopic.findAll.mockResolvedValue([{ topicId: 80 }]);
     mocked.Article.count.mockResolvedValue(0);
     mocked.Event.destroy.mockResolvedValue(1);
-    mocked.assignArticleToEvent.mockResolvedValue(60);
+    mocked.assignArticleToEvent.mockImplementation(async (assignedArticle, cache, vectors, topics, context) => {
+      context.newEventIds ??= new Set();
+      context.newEventIds.add(60);
+      return 60;
+    });
     mocked.reconcileTouchedEvents.mockResolvedValue({ articlesByEventId: { 60: [article] } });
 
     const result = await repairRecentEventsForUser(12, { skipTopicAssignment: true });
@@ -325,7 +345,12 @@ describe('semantic pipeline scopes orchestration', () => {
       mode: 'recent-repair',
       articleCount: 1,
       touchedEventIds: [60],
+      createdEventIds: [60],
       topicAssignment: { skipped: true }
+    });
+    expect(mocked.enqueueSemanticLabels).toHaveBeenCalledWith(12, {
+      eventIds: [60],
+      topicIds: []
     });
   });
 
@@ -348,9 +373,12 @@ describe('semantic pipeline scopes orchestration', () => {
       .mockResolvedValueOnce([firstArticle])
       .mockResolvedValueOnce([secondArticle])
       .mockResolvedValueOnce([]);
-    mocked.assignArticleToEvent
-      .mockResolvedValueOnce(201)
-      .mockResolvedValueOnce(202);
+    mocked.assignArticleToEvent.mockImplementation(async (assignedArticle, cache, vectors, topics, context) => {
+      const eventId = assignedArticle.id === 101 ? 201 : 202;
+      context.newEventIds ??= new Set();
+      context.newEventIds.add(eventId);
+      return eventId;
+    });
     mocked.reconcileTouchedEvents
       .mockResolvedValueOnce({ articlesByEventId: { 201: [firstArticle] } })
       .mockResolvedValueOnce({ articlesByEventId: { 202: [secondArticle] } });
@@ -358,8 +386,8 @@ describe('semantic pipeline scopes orchestration', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
     mocked.assignTopicsForEvents
-      .mockResolvedValueOnce({ eventCount: 0, touchedTopicIds: [301], stats: {} })
-      .mockResolvedValueOnce({ eventCount: 0, touchedTopicIds: [302, 301], stats: {} });
+      .mockResolvedValueOnce({ eventCount: 0, touchedTopicIds: [301], createdTopicIds: [301], stats: {} })
+      .mockResolvedValueOnce({ eventCount: 0, touchedTopicIds: [302, 301], createdTopicIds: [302], stats: {} });
     mocked.EventTopic.findAll.mockResolvedValue([]);
     mocked.ArticleTopic.findAll.mockResolvedValue([]);
 
@@ -372,11 +400,17 @@ describe('semantic pipeline scopes orchestration', () => {
       articleCount: 2,
       touchedEventIds: [201, 202],
       touchedTopicIds: [301, 302],
+      createdEventIds: [201, 202],
+      createdTopicIds: [301, 302],
       topicAssignment: {
         skipped: false,
         eventCount: 2,
         touchedTopicIds: [301, 302]
       }
+    });
+    expect(mocked.enqueueSemanticLabels).toHaveBeenCalledWith(21, {
+      eventIds: [201, 202],
+      topicIds: [301, 302]
     });
   });
 });

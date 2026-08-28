@@ -13,7 +13,8 @@ const mocks = vi.hoisted(() => ({
   evolveMemberships: vi.fn(),
   persist: vi.fn(),
   score: vi.fn(),
-  recordProcessingFailure: vi.fn()
+  recordProcessingFailure: vi.fn(),
+  enqueueSemanticLabels: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -49,6 +50,9 @@ vi.mock('../../services/islands/islandPersistence.js', () => ({
 vi.mock('../../services/observability/processingFailures.js', () => ({
   recordProcessingFailure: mocks.recordProcessingFailure
 }));
+vi.mock('../../services/semanticLabels/semanticLabelJobs.js', () => ({
+  tryEnqueueGeneratedSemanticLabelJobsForUser: mocks.enqueueSemanticLabels
+}));
 
 import {
   calibrateIslandsFromBehavior,
@@ -75,6 +79,7 @@ describe('island calibration orchestration', () => {
     mocks.persist.mockResolvedValue([]);
     mocks.score.mockResolvedValue({ topicScoredCount: 0, fallbackScoredCount: 0, updatedCount: 0 });
     mocks.recordProcessingFailure.mockResolvedValue(undefined);
+    mocks.enqueueSemanticLabels.mockResolvedValue(undefined);
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -169,7 +174,7 @@ describe('island calibration orchestration', () => {
 
   it('runs behavior, enrichment, scoring, and summary reporting for one user', async () => {
     const islands = [{ id: 1 }];
-    islands.summary = { existingIslandCount: 2 };
+    islands.summary = { existingIslandCount: 2, createdIslandIds: [1] };
     mocks.buildArticles.mockResolvedValue([{ articles: [{ articleId: 3 }] }]);
     mocks.persist.mockResolvedValue(islands);
     mocks.score.mockResolvedValue({ topicScoredCount: 4, fallbackScoredCount: 2, updatedCount: 6 });
@@ -188,6 +193,19 @@ describe('island calibration orchestration', () => {
       rescoredArticleCount: 6
     });
     expect(mocks.islandCount).toHaveBeenCalled();
+    expect(mocks.enqueueSemanticLabels).toHaveBeenCalledWith(7, {
+      islandIds: [1]
+    });
+  });
+
+  it('does not enqueue labels for existing islands during recalibration', async () => {
+    const islands = [{ id: 4 }];
+    islands.summary = { updatedIslandCount: 1, createdIslandIds: [] };
+    mocks.persist.mockResolvedValue(islands);
+
+    await runIslandCalibrationForUser(7);
+
+    expect(mocks.enqueueSemanticLabels).not.toHaveBeenCalled();
   });
 
   it('continues full calibration after one user fails', async () => {

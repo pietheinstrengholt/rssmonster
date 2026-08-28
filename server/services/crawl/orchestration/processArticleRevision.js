@@ -1,5 +1,4 @@
 import applyActions from '../enrichment/applyActions.js';
-import analyzeArticleContent from '../enrichment/analyzeArticleContent.js';
 import {
   applyAnalysisScoreOverrides,
   createDefaultArticleAnalysis
@@ -12,9 +11,7 @@ import {
   persistAcceptedHotlinks
 } from '../runtime/hotlinkService.js';
 import { throwIfExecutionExpired } from '../../feeds/executionDeadline.js';
-
-// Defines the rate limit delay ms enforced by this service.
-const RATE_LIMIT_DELAY_MS = 3000;
+import { shouldSkipArticleClassification } from '../../../config/intelligentFeatures.js';
 
 // This function snapshots the identities that a committed article update may replace in the cache.
 const buildDuplicateCacheArticleState = article => ({
@@ -49,7 +46,6 @@ const processArticleRevision = async ({
   hotlinkBatcher,
   duplicateCache,
   precomputedActionResult = null,
-  precomputedAnalysis = null,
   execution = {}
 }) => {
   const hasExecution = Boolean(execution.signal || execution.deadlineAt);
@@ -106,39 +102,21 @@ const processArticleRevision = async ({
   }
 
   let analysis = null;
+  const shouldEnqueueAnalysis = requiresAnalysis &&
+    feed?.applyAiAnalysis !== false &&
+    !shouldSkipArticleClassification();
   // Handles the case where requires analysis is available.
   if (requiresAnalysis) {
-    // Selects the result based on whether apply ai analysis is value.
-    analysis = precomputedAnalysis || (
-      feed?.applyAiAnalysis === false
-        ? createDefaultArticleAnalysis()
-        : await analyzeArticleContent({
-            text: articleData.analysisText,
-            title: articleData.title,
-            categories: articleData.categories,
-            feedName: feed?.feedName || '',
-            rateLimitDelayMs: RATE_LIMIT_DELAY_MS
-          }, {
-            signal: execution.signal,
-            processingContext: {
-              crawlRunId: execution.crawlRunId,
-              executionId: execution.executionId,
-              userId: feed?.userId,
-              feedId: feed?.id,
-              articleId: updatePlan.article.id,
-              subjectType: 'article',
-              subjectId: updatePlan.article.id
-            }
-          })
-    );
+    analysis = createDefaultArticleAnalysis();
     analysis = applyAnalysisScoreOverrides(analysis, actionResult);
-    throwIfExecutionExpired(execution);
   }
 
   // Handles the case where analysis is available.
   if (analysis) {
     Object.assign(derivedValues, {
       contentSummaryBullets: analysis.contentSummaryBullets,
+      aiAnalysisStatus: shouldEnqueueAnalysis ? 'pending' : 'skipped',
+      aiAnalysisCompletedAt: null,
       advertisementScore: analysis.advertisementScore,
       sentimentScore: analysis.sentimentScore,
       qualityScore: analysis.qualityScore
@@ -190,6 +168,12 @@ const processArticleRevision = async ({
     updatePlan,
     derivedValues,
     tagUpdates,
+    ...(shouldEnqueueAnalysis ? {
+      articleEnrichment: {
+        providerTags: articleData.categories,
+        actionResult
+      }
+    } : {}),
     userId: feed.userId,
     ...(hasExecution ? { execution } : {})
   });

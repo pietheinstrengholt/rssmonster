@@ -6,6 +6,7 @@ const mocked = vi.hoisted(() => ({
   articleFindOne: vi.fn(),
   officialSourceFindAll: vi.fn(),
   tagCreate: vi.fn(),
+  enqueueArticleEnrichmentJob: vi.fn(),
   sequelizeTransaction: vi.fn(),
   transaction: { id: 'article-save-transaction' }
 }));
@@ -26,6 +27,10 @@ vi.mock('../../models/index.js', () => ({
       create: mocked.tagCreate
     }
   }
+}));
+
+vi.mock('../../services/crawl/enrichment/articleEnrichmentJobs.js', () => ({
+  enqueueArticleEnrichmentJob: mocked.enqueueArticleEnrichmentJob
 }));
 
 // This function returns a minimal valid saveArticle argument set for transaction tests.
@@ -85,12 +90,39 @@ describe('saveArticle feed tags', () => {
     mocked.articleFindOne.mockReset();
     mocked.officialSourceFindAll.mockReset();
     mocked.tagCreate.mockReset();
+    mocked.enqueueArticleEnrichmentJob.mockReset();
     mocked.sequelizeTransaction.mockReset();
     mocked.articleCreate.mockResolvedValue({ id: 123 });
     mocked.articleFindOne.mockResolvedValue(null);
     mocked.officialSourceFindAll.mockResolvedValue([]);
     mocked.tagCreate.mockResolvedValue({});
+    mocked.enqueueArticleEnrichmentJob.mockResolvedValue({});
     mocked.sequelizeTransaction.mockImplementation(callback => callback(mocked.transaction));
+  });
+
+  it('enqueues enrichment in the article transaction', async () => {
+    const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
+    const [feed, data, analysis, actionResult] = saveArguments();
+
+    await saveArticle(feed, {
+      ...data,
+      aiAnalysisStatus: 'pending'
+    }, analysis, actionResult, {}, {
+      providerTags: ['Provider'],
+      actionResult
+    });
+
+    expect(mocked.articleCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ aiAnalysisStatus: 'pending' }),
+      { transaction: mocked.transaction }
+    );
+    expect(mocked.enqueueArticleEnrichmentJob).toHaveBeenCalledWith({
+      article: { id: 123 },
+      userId: 42,
+      providerTags: ['Provider'],
+      actionResult,
+      transaction: mocked.transaction
+    });
   });
 
   it('adds feed tags as extra article-level tags', async () => {

@@ -54,6 +54,8 @@ const getEventArticles = async (req, res) => {
           required: false,
           attributes: [
             'id',
+            'name',
+            'generatedName',
             'articleCount',
             'sourceCount',
             'representativeArticleId',

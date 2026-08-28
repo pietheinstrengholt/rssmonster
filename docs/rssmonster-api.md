@@ -193,6 +193,7 @@ Maintenance routes can be expensive and should not be polled unnecessarily.
 | --- | --- | --- |
 | `GET`, `POST` | `/api/setting` | Get or update user settings |
 | `GET` | `/api/setting/crawl-statistics` | Get crawl statistics |
+| `GET` | `/api/setting/processing-jobs` | Get the current user's read-only AI processing queue and worker health status |
 | `GET` | `/api/setting/islands` | Get Interest Island insights |
 | `GET` | `/api/setting/topics` | Get topic insights |
 | `GET`, `POST` | `/api/setting/official-sources` | Get or update official-source settings |

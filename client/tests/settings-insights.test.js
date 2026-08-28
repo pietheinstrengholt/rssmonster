@@ -49,7 +49,8 @@ describe('SettingsIslands', () => {
         },
         islands: [{
           id: 2,
-          label: '',
+          label: 'Deterministic island',
+          generatedLabel: 'Generated island',
           sourceArticleCount: 2,
           topicCount: 1,
           relatedArticleCount: 2,
@@ -68,7 +69,7 @@ describe('SettingsIslands', () => {
               { type: 'negative', label: 'Dismissed' },
               { type: 'other', label: 'Other' }
             ],
-            connectionTopics: [{ id: 5, name: 'AI' }]
+            connectionTopics: [{ id: 5, name: 'AI', generatedName: 'Applied AI' }]
           }],
           relatedArticles: [
             { id: 20, isPopulationSource: true },
@@ -79,7 +80,7 @@ describe('SettingsIslands', () => {
               feedName: 'Daily',
               publishedAt: 'invalid',
               isPopulationSource: false,
-              connectionTopics: [{ id: 5, name: 'AI' }]
+              connectionTopics: [{ id: 5, name: 'AI', generatedName: 'Applied AI' }]
             }
           ]
         }]
@@ -90,7 +91,9 @@ describe('SettingsIslands', () => {
     await flushPromises();
 
     expect(fetchIslandsOverview).toHaveBeenCalledOnce();
-    expect(wrapper.text()).toContain('Island #2');
+    expect(wrapper.text()).toContain('Generated island');
+    expect(wrapper.text()).toContain('Applied AI');
+    expect(wrapper.text()).not.toContain('Deterministic island');
     expect(wrapper.text()).toContain('Showing 1 of 2');
     expect(wrapper.text()).toContain('0.75');
     expect(wrapper.text()).toContain('Favorite');
@@ -164,7 +167,8 @@ describe('SettingsTopics', () => {
         events: [
           {
             id: 3,
-            name: '',
+            name: 'Deterministic event',
+            generatedName: 'Generated event',
             articleCount: 4,
             topicCount: 1,
             status: 'archived',
@@ -174,6 +178,7 @@ describe('SettingsTopics', () => {
         topics: [{
           id: 6,
           name: 'Artificial intelligence',
+          generatedName: 'Generated AI topic',
           linkedEventCount: 2,
           linkedArticleCount: 5,
           topicType: 'hybrid',
@@ -189,8 +194,9 @@ describe('SettingsTopics', () => {
     expect(wrapper.text()).toContain('62.5%');
     expect(wrapper.text()).toContain('Events with 1 article');
     expect(wrapper.text()).toContain('Events with 2-5 articles');
-    expect(wrapper.text()).toContain('Event #3');
-    expect(wrapper.text()).toContain('Artificial intelligence');
+    expect(wrapper.text()).toContain('Generated event');
+    expect(wrapper.text()).toContain('Generated AI topic');
+    expect(wrapper.text()).not.toContain('Deterministic event');
     expect(wrapper.text()).toContain('No activity yet');
     expect(wrapper.get('.app-status-badge--neutral').text()).toContain('archived');
   });

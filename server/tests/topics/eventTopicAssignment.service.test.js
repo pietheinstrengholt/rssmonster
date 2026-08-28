@@ -100,6 +100,7 @@ describe('event topic assignment persistence', () => {
     await expect(assignTopicsForEvents(4, [])).resolves.toEqual({
       eventCount: 0,
       touchedTopicIds: [],
+      createdTopicIds: [],
       stats: { eventsSkipped: 0, eventsMatched: 0, eventsUnmatched: 0, newTopicsCreated: 0 }
     });
     expect(mocks.topicFindAll).not.toHaveBeenCalled();
@@ -123,7 +124,23 @@ describe('event topic assignment persistence', () => {
     expect(result).toEqual({
       eventCount: 3,
       touchedTopicIds: [7],
+      createdTopicIds: [],
       stats: { eventsSkipped: 1, eventsMatched: 1, eventsUnmatched: 1, newTopicsCreated: 0 }
     });
+  });
+
+  it('reports only topics added to the cache during the assignment run as created', async () => {
+    const existingTopic = { id: 7 };
+    mocks.topicFindAll.mockResolvedValue([existingTopic]);
+    mocks.assignSemanticUnitToTopic.mockImplementation(async ({ topicsCache }) => {
+      topicsCache.push({ id: 8 });
+      return [{ topicId: 8, confidence: 0.9, primaryInd: true }];
+    });
+
+    const result = await assignTopicsForEvents(4, [event()]);
+
+    expect(result.createdTopicIds).toEqual([8]);
+    expect(result.touchedTopicIds).toEqual([8]);
+    expect(result.stats.newTopicsCreated).toBe(1);
   });
 });

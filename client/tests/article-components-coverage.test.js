@@ -294,6 +294,25 @@ describe('ArticleContent presentation', () => {
 
     await summarized.setProps({ contentSummaryBullets: [] });
     expect(summarized.get('p').text()).toBe('No summary available.');
+
+    await summarized.setProps({
+      aiAnalysisStatus: 'pending',
+      contentSummaryBullets: ['Stale summary']
+    });
+    expect(summarized.get('[role="status"]').text()).toBe('Analyzing…');
+    expect(summarized.find('li').exists()).toBe(false);
+
+    await summarized.setProps({ aiAnalysisStatus: 'failed' });
+    expect(summarized.get('p').text()).toBe('No summary available.');
+
+    await summarized.setProps({ aiAnalysisStatus: 'skipped' });
+    expect(summarized.get('li').text()).toBe('Stale summary');
+
+    await summarized.setProps({
+      aiAnalysisStatus: 'complete',
+      contentSummaryBullets: ['Completed summary']
+    });
+    expect(summarized.get('li').text()).toBe('Completed summary');
   });
 
   it('summarizes canonical plain text without interpreting its contents', () => {
