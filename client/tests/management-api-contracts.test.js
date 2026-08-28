@@ -18,6 +18,7 @@ import {
   updateCategoryOrder
 } from '../src/api/manager.js';
 import {
+  clearCompletedProcessingJobs,
   clearProcessingFailures,
   fetchCrawlStatistics,
   fetchIslandsOverview,
@@ -232,10 +233,12 @@ describe('settings API contracts', () => {
     expect(del).toHaveBeenCalledWith('/setting/observability');
   });
 
-  it('builds the read-only processing-job status request', () => {
+  it('builds processing-job status and terminal cleanup requests', () => {
     fetchProcessingJobStatus();
+    clearCompletedProcessingJobs();
 
     expect(get).toHaveBeenCalledWith('/setting/processing-jobs');
+    expect(del).toHaveBeenCalledWith('/setting/processing-jobs');
   });
 
   // Verifies official-source settings retain the complete source list.

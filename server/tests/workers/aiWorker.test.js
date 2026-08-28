@@ -73,6 +73,7 @@ describe('AI worker', () => {
 
     await worker.start();
 
+    expect(healthReporter.mock.calls[0][0].status).toBe('starting');
     expect(dependencies.isCrawlPriorityLeaseActive).toHaveBeenCalledTimes(2);
     expect(dependencies.claimProcessingJobs).toHaveBeenCalledOnce();
     expect(dependencies.executeProcessingJob).toHaveBeenCalledOnce();

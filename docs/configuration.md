@@ -86,6 +86,14 @@ processing is disabled, concurrent user crawls are limited to one, and the
 user batch size is limited to one. Settings that request more concurrency are
 therefore ignored or capped when SQLite is active.
 
+SQLite is intended for lightweight local experimentation, not
+database-intensive processing such as background AI jobs. Optional-processing
+concurrency is therefore always limited to one on SQLite, and the default
+SQLite Compose profile intentionally does not start `rssmonster-ai-worker`.
+Use the MySQL Compose profile when background article analysis or semantic
+labeling is required. This is a deliberate product and deployment boundary,
+not a missing Compose service.
+
 ### MySQL
 
 ```env
@@ -97,9 +105,9 @@ DB_USERNAME=rssmonster
 DB_PASSWORD=replace-with-a-strong-password
 ```
 
-Use MySQL for higher write concurrency, multiple active users, or more
-demanding workloads. All five connection values are required when
-`DB_DIALECT=mysql`; the default port is `3306`.
+Use MySQL for higher write concurrency, multiple active users, background AI
+processing, or other demanding workloads. All five connection values are
+required when `DB_DIALECT=mysql`; the default port is `3306`.
 
 After changing databases or creating a new database, apply the canonical
 migrations from the `server` directory with `npm run db`. Docker images apply

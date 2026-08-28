@@ -41,6 +41,9 @@ export const fetchCrawlStatistics = (params = {}) =>
 export const fetchProcessingJobStatus = () =>
   api.get('/setting/processing-jobs');
 
+export const clearCompletedProcessingJobs = () =>
+  api.delete('/setting/processing-jobs');
+
 export const fetchProcessingFailureGroups = (params = {}) =>
   api.get('/setting/observability', { params });
 

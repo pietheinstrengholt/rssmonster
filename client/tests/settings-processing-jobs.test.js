@@ -2,9 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
 import SettingsProcessingJobs from '../src/components/settings/SettingsProcessingJobs.vue';
-import { fetchProcessingJobStatus } from '../src/api/settings.js';
+import {
+  clearCompletedProcessingJobs,
+  fetchProcessingJobStatus
+} from '../src/api/settings.js';
 
 vi.mock('../src/api/settings.js', () => ({
+  clearCompletedProcessingJobs: vi.fn(),
   fetchProcessingJobStatus: vi.fn()
 }));
 
@@ -57,6 +61,7 @@ const mountStatus = () => {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, 'error').mockImplementation(() => {});
+  clearCompletedProcessingJobs.mockResolvedValue({ data: { deletedCount: 14 } });
 });
 
 afterEach(() => {
@@ -152,6 +157,43 @@ describe('SettingsProcessingJobs', () => {
     expect(wrapper.text()).toContain('Article analysis');
     expect(wrapper.get('[role="alert"]').text())
       .toContain('Showing the last available status.');
+  });
+
+  it('requires confirmation before clearing completed and failed job records', async () => {
+    fetchProcessingJobStatus.mockResolvedValue({ data: statusFixture() });
+
+    mountStatus();
+    await flushPromises();
+    await wrapper.get('.processing-clear-button').trigger('click');
+
+    expect(clearCompletedProcessingJobs).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain('Clear completed and failed jobs?');
+    expect(wrapper.text()).toContain('Waiting and currently processing jobs will not be changed.');
+
+    const confirmationButtons = wrapper.findAll('.processing-clear-actions .app-button');
+    await confirmationButtons.find(button => button.text() === 'Clear job records').trigger('click');
+    await flushPromises();
+
+    expect(clearCompletedProcessingJobs).toHaveBeenCalledOnce();
+    expect(fetchProcessingJobStatus).toHaveBeenCalledTimes(2);
+    expect(wrapper.text()).toContain('Cleared 14 completed or failed jobs.');
+    expect(wrapper.text()).not.toContain('Clear completed and failed jobs?');
+  });
+
+  it('keeps the cleanup confirmation open when deletion fails', async () => {
+    fetchProcessingJobStatus.mockResolvedValue({ data: statusFixture() });
+    clearCompletedProcessingJobs.mockRejectedValue(new Error('Delete failed'));
+
+    mountStatus();
+    await flushPromises();
+    await wrapper.get('.processing-clear-button').trigger('click');
+    const confirmationButtons = wrapper.findAll('.processing-clear-actions .app-button');
+    await confirmationButtons.find(button => button.text() === 'Clear job records').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Unable to clear completed and failed jobs. Please try again.');
+    expect(wrapper.text()).toContain('Clear completed and failed jobs?');
+    expect(fetchProcessingJobStatus).toHaveBeenCalledOnce();
   });
 
   it('starts one conservative poll and clears it when unmounted', async () => {

@@ -235,6 +235,10 @@ the configured database. Retained dead jobs remain visible in the totals and
 failure list, but only a dead job from the most recent 60 minutes degrades an
 otherwise healthy queue.
 
+`DELETE /api/setting/processing-jobs` permanently removes only the authenticated
+user's `succeeded` and `dead` job records. Pending, retrying, running, cancelled,
+and other users' jobs remain untouched.
+
 When feeds fall behind, check:
 
 1. `pm2 status rssmonster-worker` and the crawl-worker logs;
@@ -282,8 +286,11 @@ again.
 
 SQLite uses a one-connection pool, so a manually started AI worker always
 forces optional concurrency to one regardless of configuration. The SQLite
-Compose profile does not start that process. MySQL uses `rssmonster-ai-worker`
-and transactional row locks with
+Compose profile deliberately does not start that process: SQLite is the
+lightweight local-experimentation option and is not intended for
+database-intensive background AI processing. This omission is an architectural
+constraint, not an incomplete deployment topology. MySQL uses
+`rssmonster-ai-worker` and transactional row locks with
 `SKIP LOCKED`, so multiple AI workers sharing the database claim disjoint jobs.
 Increase `PROCESSING_JOB_CONCURRENCY` gradually while watching database, CPU,
 memory, and inference capacity. Optional claims pause while any scheduled,

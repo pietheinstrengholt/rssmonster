@@ -108,7 +108,7 @@ export const createAiWorker = ({
   const inFlightJobs = new Set();
   const abortController = new AbortController();
   const health = {
-    status: config.enabled ? 'starting' : 'degraded',
+    status: 'starting',
     consecutiveFailures: 0,
     lastAttemptAt: null,
     lastSuccessAt: null,

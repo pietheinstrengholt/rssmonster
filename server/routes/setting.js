@@ -17,6 +17,11 @@ router.get(
   userMiddleware.isLoggedIn,
   processingJobStatusController.getProcessingJobsStatus
 );
+router.delete(
+  '/processing-jobs',
+  userMiddleware.isLoggedIn,
+  processingJobStatusController.clearCompletedProcessingJobs
+);
 router.get(
   '/observability',
   userMiddleware.isLoggedIn,

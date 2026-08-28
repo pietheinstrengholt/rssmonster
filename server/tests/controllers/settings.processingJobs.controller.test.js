@@ -65,4 +65,44 @@ describe('settings processing jobs status', () => {
     const unauthenticated = await request(app).get('/api/setting/processing-jobs');
     expect(unauthenticated.status).toBe(400);
   });
+
+  it('clears only the current user succeeded and dead jobs', async () => {
+    const [user, otherUser] = await Promise.all([createUser(), createUser()]);
+    const availableAt = new Date();
+    const createJob = (owner, status, suffix) => ProcessingJob.create({
+      type: 'article_enrichment',
+      userId: owner.id,
+      dedupeKey: uniqueName(suffix),
+      payload: {},
+      status,
+      attempts: status === 'pending' ? 0 : 1,
+      availableAt,
+      completedAt: ['succeeded', 'dead', 'cancelled'].includes(status) ? availableAt : null
+    });
+    const [succeeded, dead, pending, running, cancelled, foreignSucceeded, foreignDead] =
+      await Promise.all([
+        createJob(user, 'succeeded', 'owned-succeeded'),
+        createJob(user, 'dead', 'owned-dead'),
+        createJob(user, 'pending', 'owned-pending'),
+        createJob(user, 'running', 'owned-running'),
+        createJob(user, 'cancelled', 'owned-cancelled'),
+        createJob(otherUser, 'succeeded', 'foreign-succeeded'),
+        createJob(otherUser, 'dead', 'foreign-dead')
+      ]);
+
+    const response = await request(app)
+      .delete('/api/setting/processing-jobs')
+      .set('Authorization', authHeaderFor(user));
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ deletedCount: 2 });
+    await expect(ProcessingJob.findByPk(succeeded.id)).resolves.toBeNull();
+    await expect(ProcessingJob.findByPk(dead.id)).resolves.toBeNull();
+    for (const retained of [pending, running, cancelled, foreignSucceeded, foreignDead]) {
+      await expect(ProcessingJob.findByPk(retained.id)).resolves.not.toBeNull();
+    }
+
+    const unauthenticated = await request(app).delete('/api/setting/processing-jobs');
+    expect(unauthenticated.status).toBe(400);
+  });
 });

@@ -139,9 +139,11 @@ The available date ranges are the last 7, 30, 90, or 365 days. Changing the rang
 
 ### AI Processing
 
-AI Processing is a read-only operational view of the current user's optional background queue. It uses the server's canonical healthy, busy, degraded, or stalled state and gives queue health more emphasis than secondary latency and completion details. Internal task names are presented as Article analysis and Semantic labels.
+AI Processing is an operational view of the current user's optional background queue. It uses the server's canonical healthy, busy, degraded, or stalled state and gives queue health more emphasis than secondary latency and completion details. Internal task names are presented as Article analysis and Semantic labels.
 
 The section refreshes every 30 seconds only while mounted and also provides an explicit refresh control. Polling stops when the user leaves the section. A refresh failure remains local to this view and preserves the last successful snapshot when one is available.
+
+Clear records opens an explicit confirmation before permanently deleting the signed-in user's succeeded and dead job history. Pending, retrying, running, and cancelled jobs remain untouched. Successful cleanup refreshes the status view; a failed cleanup keeps the confirmation available for retry.
 
 ### Observability
 

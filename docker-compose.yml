@@ -13,7 +13,8 @@ services:
       NODE_ENV: production
       PORT: 3000
 
-      # SQLite is the default database for simple self-hosted installations.
+      # SQLite is for lightweight local experimentation. This profile intentionally
+      # omits the AI worker; use the MySQL profile for database-intensive AI jobs.
       DB_DIALECT: sqlite
       DB_STORAGE: /app/data/rssmonster.sqlite
 
@@ -75,6 +76,8 @@ services:
 
     environment:
       NODE_ENV: production
+      # Crawl-only by design. SQLite optional-job concurrency is limited to one,
+      # and this lightweight profile does not start rssmonster-ai-worker.
       DB_DIALECT: sqlite
       DB_STORAGE: /app/data/rssmonster.sqlite
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}

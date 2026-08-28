@@ -108,6 +108,51 @@
       <div v-if="error" class="app-notice app-notice--warning" role="alert">
         {{ error }} Showing the last available status.
       </div>
+
+      <div v-if="clearSuccess" class="app-notice processing-clear-success" role="status">
+        {{ clearSuccess }}
+      </div>
+
+      <section
+        v-if="showClearConfirmation"
+        class="settings-data-panel processing-clear-confirmation"
+        aria-labelledby="clear-processing-jobs-title"
+      >
+        <span class="processing-clear-icon" aria-hidden="true">
+          <BootstrapIcon icon="exclamation-triangle-fill" />
+        </span>
+        <div class="processing-clear-content">
+          <h4 id="clear-processing-jobs-title">Clear completed and failed jobs?</h4>
+          <p>
+            This permanently removes all completed and failed background job records for your
+            account. Waiting and currently processing jobs will not be changed. This action cannot
+            be undone.
+          </p>
+          <div v-if="clearError" class="app-notice app-notice--danger" role="alert">
+            {{ clearError }}
+          </div>
+          <div class="processing-clear-actions">
+            <button
+              type="button"
+              class="app-button app-button--secondary"
+              :disabled="clearing"
+              @click="cancelClear"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="app-button app-button--danger"
+              :disabled="clearing"
+              :aria-busy="clearing ? 'true' : 'false'"
+              @click="confirmClear"
+            >
+              <span v-if="clearing" class="app-loading-indicator app-loading-indicator--small" aria-hidden="true"></span>
+              {{ clearing ? 'Clearing...' : 'Clear job records' }}
+            </button>
+          </div>
+        </div>
+      </section>
     </template>
 
     <div v-else-if="error" class="app-notice app-notice--warning" role="alert">
@@ -115,13 +160,23 @@
     </div>
 
     <div class="settings-refresh-actions processing-refresh-actions">
+      <button
+        v-if="processingStatus"
+        type="button"
+        class="app-button app-button--outline-danger processing-clear-button"
+        :disabled="loading || refreshing || clearing"
+        @click="requestClear"
+      >
+        <BootstrapIcon icon="trash-fill" aria-hidden="true" />
+        Clear records
+      </button>
       <span v-if="lastUpdatedAt" class="processing-last-updated">
         Updated {{ formatTime(lastUpdatedAt) }}
       </span>
       <button
         type="button"
         class="settings-refresh-button app-button app-button--primary"
-        :disabled="loading || refreshing"
+        :disabled="loading || refreshing || clearing"
         :aria-busy="refreshing ? 'true' : 'false'"
         aria-label="Refresh AI processing status"
         @click="reload"
@@ -325,6 +380,62 @@
   font-size: 12px;
 }
 
+.processing-clear-button {
+  margin-right: auto;
+}
+
+.processing-clear-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 18px;
+  border-color: var(--settings-danger-border);
+}
+
+.processing-clear-success {
+  margin-bottom: 16px;
+  color: var(--settings-success-text);
+  background: var(--settings-success-bg);
+  border-color: var(--border-success);
+}
+
+.processing-clear-icon {
+  display: inline-flex;
+  width: var(--control-height-default);
+  height: var(--control-height-default);
+  flex: 0 0 var(--control-height-default);
+  align-items: center;
+  justify-content: center;
+  color: var(--settings-danger-text);
+  background: var(--settings-danger-bg);
+  border-radius: var(--radius-control);
+}
+
+.processing-clear-content {
+  min-width: 0;
+}
+
+.processing-clear-content h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.processing-clear-content > p {
+  margin: 6px 0 14px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.processing-clear-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 @media (max-width: 879px) {
   .processing-secondary dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -398,11 +509,28 @@
     justify-content: center;
     width: 100%;
   }
+
+  .processing-clear-confirmation {
+    flex-direction: column;
+  }
+
+  .processing-clear-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .processing-clear-actions .app-button {
+    justify-content: center;
+    width: 100%;
+  }
 }
 </style>
 
 <script>
-import { fetchProcessingJobStatus } from '../../api/settings.js';
+import {
+  clearCompletedProcessingJobs,
+  fetchProcessingJobStatus
+} from '../../api/settings.js';
 import SettingsMetric from './SettingsMetric.vue';
 import SettingsPageIntro from './SettingsPageIntro.vue';
 
@@ -455,12 +583,16 @@ export default {
   },
   data() {
     return {
+      clearError: null,
+      clearing: false,
+      clearSuccess: null,
       error: null,
       lastUpdatedAt: null,
       loading: false,
       pollIntervalId: null,
       processingStatus: null,
-      refreshing: false
+      refreshing: false,
+      showClearConfirmation: false
     };
   },
   computed: {
@@ -514,8 +646,38 @@ export default {
     if (this.pollIntervalId !== null) window.clearInterval(this.pollIntervalId);
   },
   methods: {
-    async reload() {
-      if (this.loading || this.refreshing) return;
+    requestClear() {
+      this.clearError = null;
+      this.clearSuccess = null;
+      this.showClearConfirmation = true;
+    },
+    cancelClear() {
+      if (this.clearing) return;
+      this.clearError = null;
+      this.showClearConfirmation = false;
+    },
+    async confirmClear() {
+      if (this.clearing) return;
+
+      this.clearing = true;
+      this.clearError = null;
+      try {
+        const response = await clearCompletedProcessingJobs();
+        const deletedCount = Number(response.data?.deletedCount) || 0;
+        this.showClearConfirmation = false;
+        await this.reload({ allowDuringClear: true });
+        this.clearSuccess = deletedCount === 1
+          ? 'Cleared 1 completed or failed job.'
+          : `Cleared ${this.formatNumber(deletedCount)} completed or failed jobs.`;
+      } catch (error) {
+        console.error('Error clearing completed processing jobs:', error);
+        this.clearError = 'Unable to clear completed and failed jobs. Please try again.';
+      } finally {
+        this.clearing = false;
+      }
+    },
+    async reload({ allowDuringClear = false } = {}) {
+      if (this.loading || this.refreshing || (this.clearing && !allowDuringClear)) return;
 
       const initialLoad = !this.processingStatus;
       this.loading = initialLoad;
