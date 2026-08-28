@@ -16,8 +16,8 @@ describe('API crawl priority', () => {
   });
 
   it('enters the critical-pipeline lease before an API crawl can start', async () => {
-    const leaseError = Object.assign(new Error('critical pipeline busy'), {
-      code: 'CRAWL_PRIORITY_LEASE_BUSY'
+    const leaseError = Object.assign(new Error('priority gate unavailable'), {
+      code: 'DATABASE_UNAVAILABLE'
     });
     mocked.withCrawlPriorityLease.mockRejectedValue(leaseError);
     const next = vi.fn();

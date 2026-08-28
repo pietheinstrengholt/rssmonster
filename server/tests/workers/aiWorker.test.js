@@ -137,6 +137,30 @@ describe('AI worker', () => {
     expect(JSON.stringify(logger.log.mock.calls)).not.toContain('processing_jobs.snapshot');
   });
 
+  it('periodically recovers leases that expire after worker startup', async () => {
+    const expiredJob = { id: 'expired-after-startup', status: 'dead' };
+    let recoveryCalls = 0;
+    const dependencies = dependenciesFor({
+      recoverExpiredProcessingJobs: vi.fn(async () => {
+        recoveryCalls += 1;
+        if (recoveryCalls < 2) return [];
+        void worker.shutdown('recovery observed');
+        return [expiredJob];
+      })
+    });
+    const worker = createAiWorker({
+      config: config({ reportIntervalMs: 1 }),
+      loadDependencies: async () => dependencies,
+      logger: { error: vi.fn(), log: vi.fn() },
+      registerProcessHandlers: false
+    });
+
+    await worker.start();
+
+    expect(dependencies.recoverExpiredProcessingJobs.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(dependencies.recordRecoveredProcessingJobLease).toHaveBeenCalledWith(expiredJob);
+  });
+
   it('waits for bounded in-flight work before closing the database', async () => {
     let finishJob;
     const jobExecution = new Promise(resolve => {

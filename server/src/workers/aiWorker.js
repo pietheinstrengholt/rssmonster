@@ -11,6 +11,7 @@ const DEFAULT_POLL_INTERVAL_MS = 1000;
 const DEFAULT_CONCURRENCY = 1;
 const DEFAULT_SHUTDOWN_TIMEOUT_MS = 30_000;
 const DEFAULT_REPORT_INTERVAL_MS = 60_000;
+const MAX_LEASE_RECOVERY_INTERVAL_MS = 60_000;
 
 const positiveInteger = (value, fallback, name) => {
   if (value === undefined || value === '') return fallback;
@@ -101,6 +102,7 @@ export const createAiWorker = ({
   let wakeSleep;
   let requestedExitCode = 0;
   let lastReportAt = 0;
+  let lastLeaseRecoveryAt = 0;
   let effectiveConcurrency = config.concurrency;
   let healthReportPromise = Promise.resolve();
   const inFlightJobs = new Set();
@@ -210,7 +212,14 @@ export const createAiWorker = ({
     health.inFlight = inFlightJobs.size;
   };
 
-  const recoverExpiredLeases = async () => {
+  const recoverExpiredLeases = async ({ force = false } = {}) => {
+    const now = Date.now();
+    const recoveryIntervalMs = Math.min(
+      config.reportIntervalMs,
+      MAX_LEASE_RECOVERY_INTERVAL_MS
+    );
+    if (!force && now - lastLeaseRecoveryAt < recoveryIntervalMs) return;
+    lastLeaseRecoveryAt = now;
     try {
       const jobs = await dependencies.recoverExpiredProcessingJobs({ limit: effectiveConcurrency });
       if (jobs.length) {
@@ -272,7 +281,7 @@ export const createAiWorker = ({
       dependencies = await loadDependencies();
       effectiveConcurrency = dependencies.databaseDialect === 'sqlite' ? 1 : config.concurrency;
       health.concurrency = effectiveConcurrency;
-      await recoverExpiredLeases();
+      await recoverExpiredLeases({ force: true });
 
       while (!stopping) {
         if (inFlightJobs.size >= effectiveConcurrency) {
@@ -289,6 +298,7 @@ export const createAiWorker = ({
             await sleep();
             continue;
           }
+          await recoverExpiredLeases();
           await reportOperations();
           health.status = 'running';
           health.lastAttemptAt = new Date().toISOString();

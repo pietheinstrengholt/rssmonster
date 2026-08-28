@@ -50,7 +50,7 @@ export const enqueueArticleEnrichmentJob = async ({
       analysisContractVersion: ARTICLE_ANALYSIS_CONTRACT_VERSION,
       scoreOverrides: scoreOverrides(actionResult)
     }
-  }, { transaction });
+  }, { transaction, reactivateTerminal: true });
 };
 
 export default enqueueArticleEnrichmentJob;

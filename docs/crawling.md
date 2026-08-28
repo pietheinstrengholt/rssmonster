@@ -276,8 +276,9 @@ lease during long inference. Succeeded and dead records are retained for
 deduplication and operational history; they are not deleted on completion.
 Completion, retry, and dead-letter updates require
 the same user, lease owner, running state, and unexpired lease. On startup the
-worker performs one bounded recovery pass for expired running leases; normal
-claiming also recognizes expired leases.
+worker performs one bounded recovery pass for expired running leases. An
+expired final attempt is dead-lettered; otherwise the job becomes claimable
+again.
 
 SQLite uses a one-connection pool, so a manually started AI worker always
 forces optional concurrency to one regardless of configuration. The SQLite
@@ -285,8 +286,9 @@ Compose profile does not start that process. MySQL uses `rssmonster-ai-worker`
 and transactional row locks with
 `SKIP LOCKED`, so multiple AI workers sharing the database claim disjoint jobs.
 Increase `PROCESSING_JOB_CONCURRENCY` gradually while watching database, CPU,
-memory, and inference capacity. Optional claims pause during every scheduled,
-manual, or API-triggered critical pipeline through the `worker_leases` row.
+memory, and inference capacity. Optional claims pause while any scheduled,
+manual, or API-triggered critical pipeline has an active holder row in
+`worker_leases`; concurrent crawls do not exclude one another.
 Embeddings still complete before Event creation, Topic assignment, and Island
 scoring, and optional inference failures cannot fail that deterministic path.
 

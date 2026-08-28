@@ -107,12 +107,28 @@ const recordJobFailure = async ({ job, error, status }) => {
 
 // Records an abandoned lease as a recoverable abnormal outcome without retaining job payloads.
 export const recordRecoveredProcessingJobLease = async job => {
+  const status = rowValue(job, 'status') === 'dead' ? 'dead' : 'pending';
   const error = Object.assign(new Error('Processing job lease expired before completion'), {
     name: 'ProcessingJobLeaseExpiredError',
     code: 'PROCESSING_JOB_LEASE_EXPIRED',
-    retryable: true
+    retryable: status !== 'dead'
   });
-  await recordJobFailure({ job, error, status: 'pending' });
+  if (status === 'dead' && rowValue(job, 'type') === 'article_enrichment') {
+    try {
+      await markArticleEnrichmentFailed(job);
+    } catch (markError) {
+      const guardedError = Object.assign(
+        new Error('Failed to mark expired article enrichment as exhausted'),
+        {
+          code: 'ARTICLE_ENRICHMENT_FAILURE_STATE_WRITE_FAILED',
+          retryable: true,
+          cause: markError
+        }
+      );
+      await recordJobFailure({ job, error: guardedError, status: 'dead' });
+    }
+  }
+  await recordJobFailure({ job, error, status });
 };
 
 // Executes one already-claimed job; worker polling remains a separate concern.

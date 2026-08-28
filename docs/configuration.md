@@ -146,7 +146,7 @@ responses, and timeouts.
 | `PROCESSING_JOB_POLL_INTERVAL_MS` | `1000` | ms | Delay when no optional processing work is available. |
 | `PROCESSING_JOB_CONCURRENCY` | `1` | jobs | Maximum optional jobs executed concurrently. A manually started AI worker on SQLite always forces this to `1`. |
 | `PROCESSING_JOB_SHUTDOWN_TIMEOUT_MS` | `30000` | ms | Grace period for in-flight optional jobs before their abort signal is triggered. |
-| `PROCESSING_JOB_REPORT_INTERVAL_MS` | `60000` | ms | Interval for durable queue depth, retry, terminal outcome, and latency snapshots in worker logs and health state. |
+| `PROCESSING_JOB_REPORT_INTERVAL_MS` | `60000` | ms | Interval for durable queue depth, retry, terminal outcome, and latency snapshots in AI-worker health state. |
 | `CRAWL_PRIORITY_LEASE_MS` | `90000` | ms | Duration of the renewable database gate that gives the crawl semantic pipeline priority over new optional claims. |
 | `CRAWL_PRIORITY_HEARTBEAT_MS` | `30000` | ms | Renewal interval for the crawl-priority lease. |
 | `CRAWL_WORKER_HEALTH_MAX_FAILURES` | `3` | failures | Consecutive failed crawl iterations allowed before the worker is unhealthy. |

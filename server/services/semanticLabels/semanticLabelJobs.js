@@ -205,4 +205,23 @@ export const reconcileSemanticLabelJobsForUser = async (userId, options = {}) =>
   return summary;
 };
 
+// Reconciliation repairs optional enqueue gaps without failing deterministic crawl work.
+export const tryReconcileSemanticLabelJobsForUser = async (userId, options = {}) => {
+  try {
+    return await reconcileSemanticLabelJobsForUser(userId, options);
+  } catch (error) {
+    (options.logger || console).warn(
+      `[SEMANTIC LABEL JOB] user=${userId} reconciliation skipped`,
+      { code: error?.code || 'SEMANTIC_LABEL_RECONCILIATION_FAILED' }
+    );
+    return {
+      eventCount: 0,
+      topicCount: 0,
+      islandCount: 0,
+      scannedCount: 0,
+      reconciliationFailed: true
+    };
+  }
+};
+
 export default enqueueGeneratedSemanticLabelJobsForUser;

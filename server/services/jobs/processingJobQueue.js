@@ -68,6 +68,12 @@ const leaseEligibility = now => ({
   ]
 });
 
+const attemptsRemaining = () => Sequelize.where(
+  Sequelize.col('attempts'),
+  Op.lt,
+  Sequelize.col('maxAttempts')
+);
+
 // Builds the indexed predicate for new or abandoned processing work.
 export const buildClaimableProcessingJobWhere = ({ userId = null, now }) => ({
   ...(userId ? { userId: requiredId(userId, 'userId') } : {}),
@@ -75,11 +81,13 @@ export const buildClaimableProcessingJobWhere = ({ userId = null, now }) => ({
     {
       status: 'pending',
       availableAt: { [Op.lte]: now },
-      ...leaseEligibility(now)
+      ...leaseEligibility(now),
+      [Op.and]: attemptsRemaining()
     },
     {
       status: 'running',
-      leaseUntil: { [Op.lte]: now }
+      leaseUntil: { [Op.lte]: now },
+      [Op.and]: attemptsRemaining()
     }
   ]
 });
@@ -94,7 +102,7 @@ export const enqueueProcessingJob = async ({
   priority = 0,
   maxAttempts = DEFAULT_PROCESSING_JOB_MAX_ATTEMPTS,
   availableAt = new Date()
-}, { transaction = null } = {}) => {
+}, { transaction = null, reactivateTerminal = false } = {}) => {
   const normalizedUserId = requiredId(userId, 'userId');
   const normalizedType = requiredString(type, 'type', 64);
   const normalizedDedupeKey = requiredString(dedupeKey, 'dedupeKey', 255);
@@ -134,6 +142,36 @@ export const enqueueProcessingJob = async ({
     },
     transaction
   });
+
+  if (!created && reactivateTerminal) {
+    const [reactivatedCount] = await ProcessingJob.update({
+      articleId: normalizedArticleId,
+      payload: payload ?? {},
+      priority: normalizedPriority,
+      status: 'pending',
+      attempts: 0,
+      maxAttempts: positiveInteger(maxAttempts, DEFAULT_PROCESSING_JOB_MAX_ATTEMPTS),
+      availableAt: normalizedDate(availableAt, 'availableAt'),
+      leaseOwner: null,
+      leaseUntil: null,
+      lastErrorCode: null,
+      lastErrorMessage: null,
+      startedAt: null,
+      completedAt: null
+    }, {
+      where: {
+        id: job.id,
+        userId: normalizedUserId,
+        type: normalizedType,
+        dedupeKey: normalizedDedupeKey,
+        status: { [Op.in]: ['succeeded', 'dead', 'cancelled'] }
+      },
+      transaction,
+      hooks: false
+    });
+    if (reactivatedCount === 1) await job.reload({ transaction });
+    return { job, created: false, reactivated: reactivatedCount === 1 };
+  }
 
   return { job, created };
 };
@@ -333,7 +371,7 @@ export const deadLetterProcessingJob = async ({ jobId, userId, leaseOwner }, err
   return updatedCount === 1;
 };
 
-// Releases a bounded batch of expired running jobs for explicit recovery passes.
+// Releases recoverable leases and dead-letters work that exhausted its claimed attempts.
 export const recoverExpiredProcessingJobs = async ({
   limit = 100,
   now = new Date()
@@ -345,8 +383,20 @@ export const recoverExpiredProcessingJobs = async ({
   }, async transaction => {
     const jobs = await ProcessingJob.findAll({
       where: {
-        status: 'running',
-        leaseUntil: { [Op.lte]: normalizedNow }
+        [Op.or]: [
+          {
+            status: 'running',
+            leaseUntil: { [Op.lte]: normalizedNow }
+          },
+          {
+            status: 'pending',
+            [Op.and]: Sequelize.where(
+              Sequelize.col('attempts'),
+              Op.gte,
+              Sequelize.col('maxAttempts')
+            )
+          }
+        ]
       },
       order: [['leaseUntil', 'ASC'], ['id', 'ASC']],
       limit: claimLimit(limit),
@@ -354,12 +404,19 @@ export const recoverExpiredProcessingJobs = async ({
     });
 
     for (const job of jobs) {
+      const terminal = Number(job.attempts) >= Number(job.maxAttempts);
       await job.update({
-        status: 'pending',
+        status: terminal ? 'dead' : 'pending',
         leaseOwner: null,
         leaseUntil: null,
         availableAt: normalizedNow,
-        completedAt: null
+        lastErrorCode: terminal
+          ? (job.lastErrorCode || 'PROCESSING_JOB_LEASE_EXPIRED')
+          : job.lastErrorCode,
+        lastErrorMessage: terminal
+          ? (job.lastErrorMessage || 'Processing job lease expired on its final attempt')
+          : job.lastErrorMessage,
+        completedAt: terminal ? normalizedNow : null
       }, { transaction, hooks: false });
     }
 

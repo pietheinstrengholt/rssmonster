@@ -55,7 +55,7 @@ describe('article enrichment job producer', () => {
           qualityScore: 95
         }
       }
-    }, { transaction });
+    }, { transaction, reactivateTerminal: true });
     expect(JSON.stringify(mocked.enqueueProcessingJob.mock.calls[0])).not.toContain('Article title');
     expect(JSON.stringify(mocked.enqueueProcessingJob.mock.calls[0])).not.toContain('Article description');
   });
@@ -90,5 +90,18 @@ describe('article enrichment job producer', () => {
     const [first, second] = mocked.enqueueProcessingJob.mock.calls.map(([job]) => job);
     expect(second.dedupeKey).not.toBe(first.dedupeKey);
     expect(second.payload.expectedContentTextHash).toBe('content-text-hash-v2');
+  });
+
+  it('allows a terminal A job to be reactivated when a revision returns from B to A', async () => {
+    await enqueueArticleEnrichmentJob({ article: article(), userId: 42 });
+    await enqueueArticleEnrichmentJob({
+      article: article({ contentTextHash: 'content-text-hash-v2' }),
+      userId: 42
+    });
+    await enqueueArticleEnrichmentJob({ article: article(), userId: 42 });
+
+    const calls = mocked.enqueueProcessingJob.mock.calls;
+    expect(calls[2][0].dedupeKey).toBe(calls[0][0].dedupeKey);
+    expect(calls[2][1]).toEqual({ transaction: undefined, reactivateTerminal: true });
   });
 });

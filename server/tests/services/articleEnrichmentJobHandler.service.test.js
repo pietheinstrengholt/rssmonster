@@ -20,8 +20,10 @@ import {
 } from '../../services/jobs/handlers/articleEnrichmentJobHandler.js';
 import {
   executeClaimedProcessingJob,
-  getProcessingJobHandler
+  getProcessingJobHandler,
+  recordRecoveredProcessingJobLease
 } from '../../services/jobs/processingJobHandlers.js';
+import { recoverExpiredProcessingJobs } from '../../services/jobs/processingJobQueue.js';
 
 const { Article, Category, Feed, ProcessingFailure, ProcessingJob, Tag, User } = db;
 
@@ -366,6 +368,24 @@ describe('article_enrichment processing-job handler', () => {
     expect(persisted.aiAnalysisStatus).toBe('failed');
     expect(persisted.filteredInd).toBe(false);
     expect(persisted.status).toBe('unread');
+  });
+
+  it('marks the guarded article failed when its final attempt expires after a worker crash', async () => {
+    const { article, job } = await createTarget({
+      jobOverrides: {
+        attempts: 3,
+        maxAttempts: 3,
+        leaseUntil: new Date(Date.now() - 1000)
+      }
+    });
+
+    const recovered = await recoverExpiredProcessingJobs({ now: new Date(), limit: 10 });
+    const recoveredJob = recovered.find(candidate => candidate.id === job.id);
+    expect(recoveredJob).toMatchObject({ status: 'dead' });
+    await recordRecoveredProcessingJobLease(recoveredJob);
+
+    expect((await article.reload()).aiAnalysisStatus).toBe('failed');
+    expect((await job.reload()).status).toBe('dead');
   });
 
   it('renews the claimed lease while inference is still running', async () => {

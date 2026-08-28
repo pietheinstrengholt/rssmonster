@@ -5,6 +5,7 @@ import scoreArticlesFromIslandsForUser from '../../score/scoreArticlesFromIsland
 import { randomUUID } from 'node:crypto';
 import { recordProcessingFailure } from '../../observability/processingFailures.js';
 import { formatDuration } from '../../feeds/crawlResult.js';
+import { tryReconcileSemanticLabelJobsForUser } from '../../semanticLabels/semanticLabelJobs.js';
 
 // This function returns the users whose articles should be processed after a crawl.
 function getPostCrawlUserIds(result, userId = null) {
@@ -161,6 +162,8 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
         `duration=${formatDuration(Date.now() - scoringStartedAt)}`
       );
     }
+
+    await tryReconcileSemanticLabelJobsForUser(userId);
 
     results.push({
       userId,

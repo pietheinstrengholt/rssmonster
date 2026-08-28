@@ -295,6 +295,7 @@ Net effect: semantic topic membership + behavioral islands become a single per-a
 - `processing_jobs` uses owned, identifier-only payloads, renewable leases, bounded claims, retry backoff, dead-lettering, and expired-lease recovery.
 - Article enrichment rechecks its content/version guard under lock and replaces only inferred tags; stale jobs cannot overwrite publisher revisions.
 - Semantic-label jobs start only after the Event, Topic, or Island exists and retain deterministic fallback names until completion.
+- Each completed post-crawl semantic pipeline performs a bounded, failure-isolated reconciliation for eligible null labels so post-commit enqueue gaps are repaired.
 - A manually started SQLite AI worker forces optional processing concurrency to one; the lightweight SQLite Compose profile does not start it. MySQL claims use transactional row locking with skip-locked behavior.
 - Structured worker health and logs report queue counts, retry/dead outcomes, and bounded latency without article text or inference prompts.
 

@@ -72,10 +72,11 @@ Article enrichment replaces only inferred tags. Semantic-label jobs update only
 generated presentation fields; deterministic Event, Topic, and Island fallback
 names remain usable while labels are pending or failed.
 
-Every scheduled, manual, and API-triggered crawl publishes a renewable database
-lease while its critical semantic pipeline is active. The AI worker pauses new
-claims while that lease is live; already-running optional work is allowed to
-finish safely. Inside the local inference service, waiting embedding requests
+Every scheduled, manual, and API-triggered crawl publishes its own renewable
+database lease while its critical semantic pipeline is active. The AI worker
+pauses new claims while any such lease is live; concurrent crawls do not exclude
+one another, and already-running optional work is allowed to finish safely.
+Inside the local inference service, waiting embedding requests
 outrank classification and generated text requests. Running model calls are not
 preempted.
 Retryable inference failures use leases and bounded backoff, exhausted jobs are

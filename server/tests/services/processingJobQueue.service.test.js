@@ -61,6 +61,39 @@ describe('processing job queue', () => {
     expect(duplicate.job.payload).toEqual({ suffix: 'created' });
   });
 
+  it('reactivates a terminal duplicate for a repeated article revision occurrence', async () => {
+    const dedupeKey = uniqueName('repeated-revision');
+    const first = await enqueue('revision-a', { dedupeKey, maxAttempts: 2 });
+    await first.job.update({
+      status: 'succeeded',
+      attempts: 2,
+      lastErrorCode: 'OLD_ERROR',
+      lastErrorMessage: 'old failure',
+      startedAt: NOW,
+      completedAt: NOW
+    }, { hooks: false });
+
+    const repeated = await enqueue('revision-a-again', {
+      dedupeKey,
+      payload: { revision: 'a-again' },
+      maxAttempts: 4
+    }, { reactivateTerminal: true });
+
+    expect(repeated).toMatchObject({ created: false, reactivated: true });
+    expect(repeated.job).toMatchObject({
+      status: 'pending',
+      attempts: 0,
+      maxAttempts: 4,
+      payload: { revision: 'a-again' },
+      leaseOwner: null,
+      leaseUntil: null,
+      lastErrorCode: null,
+      lastErrorMessage: null,
+      startedAt: null,
+      completedAt: null
+    });
+  });
+
   it('rejects an article-scoped job owned by another user', async () => {
     const articleOwner = await createUser();
     const category = await Category.create({
@@ -332,5 +365,38 @@ describe('processing job queue', () => {
       attempts: 2,
       leaseOwner: 'recovery-worker'
     });
+  });
+
+  it('dead-letters an expired final attempt instead of reclaiming it indefinitely', async () => {
+    const expired = await ProcessingJob.create({
+      type: 'article_enrichment',
+      userId: user.id,
+      dedupeKey: uniqueName('expired-final-attempt'),
+      payload: {},
+      status: 'running',
+      attempts: 2,
+      maxAttempts: 2,
+      availableAt: NOW,
+      leaseOwner: 'crashed-worker',
+      leaseUntil: new Date(NOW.getTime() - 1),
+      startedAt: new Date(NOW.getTime() - 60_000)
+    });
+
+    const recovered = await recoverExpiredProcessingJobs({ now: NOW, limit: 10 });
+
+    expect(recovered.map(job => job.id)).toContain(expired.id);
+    expect(await expired.reload()).toMatchObject({
+      status: 'dead',
+      attempts: 2,
+      leaseOwner: null,
+      leaseUntil: null,
+      lastErrorCode: 'PROCESSING_JOB_LEASE_EXPIRED',
+      completedAt: NOW
+    });
+    await expect(claimProcessingJobs({
+      userId: user.id,
+      now: NOW,
+      leaseOwner: 'next-worker'
+    })).resolves.toEqual([]);
   });
 });

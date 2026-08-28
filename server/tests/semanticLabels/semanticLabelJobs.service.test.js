@@ -13,7 +13,8 @@ import {
   reconcileSemanticLabelJobsForUser,
   SEMANTIC_LABEL_CONTRACT_VERSION,
   semanticLabelDedupeKey,
-  tryEnqueueGeneratedSemanticLabelJobsForUser
+  tryEnqueueGeneratedSemanticLabelJobsForUser,
+  tryReconcileSemanticLabelJobsForUser
 } from '../../services/semanticLabels/semanticLabelJobs.js';
 
 const enabledEnvironment = { INFERENCE_AI_ENABLED: 'true' };
@@ -153,6 +154,22 @@ describe('semantic label job producer', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       '[SEMANTIC LABEL JOB] user=7 enqueue skipped',
       { code: 'SEMANTIC_LABEL_ENQUEUE_FAILED' }
+    );
+  });
+
+  it('isolates reconciliation failures from the deterministic semantic pipeline', async () => {
+    const models = createModels({ events: [row(10)] });
+    const logger = { warn: vi.fn() };
+    mocked.enqueueProcessingJob.mockRejectedValue(new Error('queue unavailable'));
+
+    await expect(tryReconcileSemanticLabelJobsForUser(7, {
+      models,
+      environment: enabledEnvironment,
+      logger
+    })).resolves.toMatchObject({ reconciliationFailed: true });
+    expect(logger.warn).toHaveBeenCalledWith(
+      '[SEMANTIC LABEL JOB] user=7 reconciliation skipped',
+      { code: 'SEMANTIC_LABEL_RECONCILIATION_FAILED' }
     );
   });
 });

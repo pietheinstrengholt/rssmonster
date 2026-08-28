@@ -6,7 +6,8 @@ const mocked = vi.hoisted(() => ({
   runIncrementalEventsForUser: vi.fn(),
   scoreArticlesFromIslandsForUser: vi.fn(),
   runIslandCalibrationForUser: vi.fn(),
-  recordProcessingFailure: vi.fn()
+  recordProcessingFailure: vi.fn(),
+  tryReconcileSemanticLabelJobsForUser: vi.fn()
 }));
 
 vi.mock('../../services/articles/embedArticles.js', () => ({
@@ -33,6 +34,10 @@ vi.mock('../../services/observability/processingFailures.js', () => ({
   recordProcessingFailure: mocked.recordProcessingFailure
 }));
 
+vi.mock('../../services/semanticLabels/semanticLabelJobs.js', () => ({
+  tryReconcileSemanticLabelJobsForUser: mocked.tryReconcileSemanticLabelJobsForUser
+}));
+
 describe('runPostCrawlSemanticPipeline', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -45,6 +50,7 @@ describe('runPostCrawlSemanticPipeline', () => {
     mocked.scoreArticlesFromIslandsForUser.mockReset();
     mocked.runIslandCalibrationForUser.mockReset();
     mocked.recordProcessingFailure.mockReset().mockResolvedValue(undefined);
+    mocked.tryReconcileSemanticLabelJobsForUser.mockReset().mockResolvedValue({});
   });
 
   it('passes the crawl start time as the incremental clustering boundary', async () => {
@@ -110,6 +116,9 @@ describe('runPostCrawlSemanticPipeline', () => {
     expect(mocked.scoreArticlesFromIslandsForUser).toHaveBeenCalledWith(42, {
       createdAtFrom: crawlStartedAt
     });
+    expect(mocked.tryReconcileSemanticLabelJobsForUser).toHaveBeenCalledWith(42);
+    expect(mocked.tryReconcileSemanticLabelJobsForUser.mock.invocationCallOrder[0])
+      .toBeGreaterThan(mocked.scoreArticlesFromIslandsForUser.mock.invocationCallOrder[0]);
     expect(result.users).toBe(1);
     expect(result.embedded).toBe(2);
     expect(result.skipped).toBe(1);
@@ -146,6 +155,7 @@ describe('runPostCrawlSemanticPipeline', () => {
     expect(mocked.markDuplicateArticlesForUser).not.toHaveBeenCalled();
     expect(mocked.runIncrementalEventsForUser).not.toHaveBeenCalled();
     expect(mocked.scoreArticlesFromIslandsForUser).not.toHaveBeenCalled();
+    expect(mocked.tryReconcileSemanticLabelJobsForUser).not.toHaveBeenCalled();
     expect(log).not.toHaveBeenCalled();
   });
 
