@@ -65,6 +65,16 @@ describe('sidebar style cascade', () => {
     );
   });
 
+  it('keeps selected mobile category labels readable in dark mode', () => {
+    expect(mobileOptionsSource.match(
+      /--options-selected-text: var\(--color-primary-icon-dark\);/g
+    )).toHaveLength(2);
+    expect(mobileOptionsSource.match(/class="options-row-label"/g)).toHaveLength(2);
+    expect(mobileOptionsSource).toMatch(
+      /:global\(:root\[data-theme='dark'\] #mobile-container \.options-row\.selected > \.options-row-label\) \{\s*color: var\(--text-inverted\);/
+    );
+  });
+
   it('keeps section titles quieter than navigation rows in both themes', () => {
     expect(themeSource.match(/--sidebar-section-title-text: var\(--text-secondary\);/g)).toHaveLength(2);
     expect(themeSource).toContain('--sidebar-row-selected-text: var(--color-primary);');

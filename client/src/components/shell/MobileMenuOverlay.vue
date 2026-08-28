@@ -40,7 +40,7 @@
               <span class="options-row-icon" aria-hidden="true">
                 <BootstrapIcon icon="folder-fill" />
               </span>
-              <span>Show all categories</span>
+              <span class="options-row-label">Show all categories</span>
             </li>
             <li
               v-for="category in overviewStore.categories"
@@ -53,7 +53,7 @@
               <span class="options-row-icon" aria-hidden="true">
                 <BootstrapIcon icon="folder-fill" />
               </span>
-              <span>{{ category.name }}</span>
+              <span class="options-row-label">{{ category.name }}</span>
             </li>
           </ul>
         </section>
@@ -467,7 +467,7 @@
     --options-icon-background: var(--color-primary-surface-dark);
     --options-icon-color: var(--color-primary-icon-dark);
     --options-selected-background: var(--color-primary-surface-dark);
-    --options-selected-text: var(--color-primary-soft);
+    --options-selected-text: var(--color-primary-icon-dark);
   }
 }
 
@@ -479,7 +479,11 @@
   --options-icon-background: var(--color-primary-surface-dark);
   --options-icon-color: var(--color-primary-icon-dark);
   --options-selected-background: var(--color-primary-surface-dark);
-  --options-selected-text: var(--color-primary-soft);
+  --options-selected-text: var(--color-primary-icon-dark);
+}
+
+:global(:root[data-theme='dark'] #mobile-container .options-row.selected > .options-row-label) {
+  color: var(--text-inverted);
 }
 
 :global(body.mobile-options-open) {
