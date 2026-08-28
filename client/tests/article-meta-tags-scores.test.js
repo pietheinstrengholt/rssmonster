@@ -363,6 +363,19 @@ describe('ArticleTagsScores', () => {
     expect(wrapper.find('.article-tags').exists()).toBe(false);
   });
 
+  // Treats three neutral ingestion defaults as scoring-disabled metadata.
+  it('hides the quality badge when all scores have the default value', async () => {
+    const wrapper = mountArticleTagsScores({
+      advertisementScore: 70,
+      sentimentScore: 70,
+      qualityScore: 70
+    });
+    await flushPromises();
+
+    expect(wrapper.find('.article-tags').exists()).toBe(false);
+    expect(wrapper.find('.overall-score').exists()).toBe(false);
+  });
+
   // Verifies category and tag controls format labels and emit their selections.
   it('renders category and tags and emits selection events', async () => {
     const ruleTag = { id: 1, name: 'SCIENCE', tagType: 'rule' };

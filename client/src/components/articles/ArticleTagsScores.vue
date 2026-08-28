@@ -15,6 +15,8 @@
 import { defineAsyncComponent } from 'vue';
 import { formatTagName } from '../../utils/tags';
 
+const NEUTRAL_SCORE = 70;
+
 const ArticleQualityExplanation = defineAsyncComponent(
   () => import('./ArticleQualityExplanation.vue')
 );
@@ -36,10 +38,11 @@ export default {
     };
   },
   computed: {
-    // Shows one complete quality summary only when every underlying score is available.
+    // Hides the untouched ingestion defaults used when article scoring is disabled.
     hasQualityScores() {
-      return [this.advertisementScore, this.sentimentScore, this.qualityScore]
-        .every(Number.isFinite);
+      const scores = [this.advertisementScore, this.sentimentScore, this.qualityScore];
+      return scores.every(Number.isFinite)
+        && scores.some(score => score !== NEUTRAL_SCORE);
     },
     // Groups regular tags before rule tags while preserving order within each group.
     displayTags() {
