@@ -1,6 +1,7 @@
 import applyActions from '../enrichment/applyActions.js';
 import {
   applyAnalysisScoreOverrides,
+  buildActionScoreOverrideIndicators,
   createDefaultArticleAnalysis
 } from '../enrichment/articleAnalysis.js';
 import { resolveArticleActions } from '../enrichment/articleActions.js';
@@ -119,17 +120,20 @@ const processArticleRevision = async ({
       aiAnalysisCompletedAt: null,
       advertisementScore: analysis.advertisementScore,
       sentimentScore: analysis.sentimentScore,
-      qualityScore: analysis.qualityScore
+      qualityScore: analysis.qualityScore,
+      ...buildActionScoreOverrideIndicators(actionResult)
     });
   // Handles the case where action result is available.
   } else if (actionResult) {
-    // Score provenance is not stored, so only explicit new overrides are safe to apply here.
+    // Without re-analysis, preserve prior scores unless a fresh action explicitly owns one.
     if (actionResult.advertisementScore !== null) {
       derivedValues.advertisementScore = actionResult.advertisementScore;
+      derivedValues.advertisementScoreActionOverrideInd = true;
     }
     // Handles the case where action result quality score is not value.
     if (actionResult.qualityScore !== null) {
       derivedValues.qualityScore = actionResult.qualityScore;
+      derivedValues.qualityScoreActionOverrideInd = true;
     }
   }
 

@@ -81,7 +81,12 @@ export const buildArticleSearchQuery = ({
 
   // Handles the case where needs quality is available.
   if (needsQuality) {
-    queryAttributes.push('advertisementScore', 'sentimentScore', 'qualityScore');
+    queryAttributes.push(
+      'advertisementScore',
+      'sentimentScore',
+      'qualityScore',
+      'qualityScoreActionOverrideInd'
+    );
   }
 
   // Handles the case where needs freshness is available.

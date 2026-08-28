@@ -368,6 +368,12 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
+      // Marks advertisementScore as deterministic action output rather than unresolved inference.
+      advertisementScoreActionOverrideInd: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       // Scores emotional neutrality and tone quality from 0 to 100, defaulting to 50.
       sentimentScore: {
         type: DataTypes.INTEGER,
@@ -377,6 +383,12 @@ export default (sequelize) => {
       qualityScore: {
         type: DataTypes.INTEGER,
         defaultValue: 50
+      },
+      // Marks qualityScore as deterministic action output rather than unresolved inference.
+      qualityScoreActionOverrideInd: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
       },
       // Stores the predicted user-interest affinity, with zero representing no match.
       interestScore: {
@@ -623,6 +635,8 @@ export default (sequelize) => {
   Article.prototype.toJSON = function toJSON() {
     const values = sequelizeToJSON.call(this);
     delete values.contentOriginal;
+    delete values.advertisementScoreActionOverrideInd;
+    delete values.qualityScoreActionOverrideInd;
     return values;
   };
 

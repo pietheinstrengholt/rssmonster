@@ -348,16 +348,16 @@ describe('tag and cleanup controllers', () => {
       publishedAt: { [Op.between]: [expect.any(Date), expect.any(Date)] }
     });
     expect(articleWhere[Op.and]).toHaveLength(2);
-    expect(articleWhere[Op.and][0][Op.or]).toEqual([
-      { aiAnalysisStatus: { [Op.in]: ['pending', 'processing', 'failed'] } },
-      {
-        [Op.and]: [
-          { advertisementScore: { [Op.gte]: 0.2 } },
-          { sentimentScore: { [Op.gte]: 0.3 } },
-          { qualityScore: { [Op.gte]: 0.4 } }
-        ]
-      }
-    ]);
+    expect(articleWhere[Op.and][0][Op.and]).toHaveLength(3);
+    expect(articleWhere[Op.and][0][Op.and][0][Op.or][0]).toEqual({
+      advertisementScore: { [Op.gte]: 0.2 }
+    });
+    expect(articleWhere[Op.and][0][Op.and][1][Op.or][0]).toEqual({
+      sentimentScore: { [Op.gte]: 0.3 }
+    });
+    expect(articleWhere[Op.and][0][Op.and][2][Op.or][0]).toEqual({
+      qualityScore: { [Op.gte]: 0.4 }
+    });
     expect(mocked.articleLiteral).toHaveBeenCalledWith(expect.stringContaining(
       'articles.interestScore <> 0'
     ));

@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   authenticate: vi.fn(),
   findUsers: vi.fn(),
   performCrawl: vi.fn(),
-  runPostCrawlSemanticPipeline: vi.fn()
+  runPostCrawlSemanticPipeline: vi.fn(),
+  withCrawlPriorityLease: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -28,7 +29,15 @@ vi.mock('../../services/crawl/index.js', () => ({
   runPostCrawlSemanticPipeline: mocked.runPostCrawlSemanticPipeline
 }));
 
+vi.mock('../../services/jobs/crawlPriorityLease.js', () => ({
+  withCrawlPriorityLease: mocked.withCrawlPriorityLease
+}));
+
 describe('incremental crawl pipeline command', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   beforeEach(() => {
     mocked.authenticate.mockReset().mockResolvedValue(undefined);
     mocked.findUsers.mockReset().mockResolvedValue([
@@ -42,9 +51,11 @@ describe('incremental crawl pipeline command', () => {
       embedded: 0,
       skipped: 0
     });
+    mocked.withCrawlPriorityLease.mockReset().mockImplementation(operation => operation());
   });
 
   it('runs one normal crawl per user in bounded batches', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     let activeCrawls = 0;
     let maxActiveCrawls = 0;
 
@@ -55,6 +66,7 @@ describe('incremental crawl pipeline command', () => {
       activeCrawls -= 1;
 
       return {
+        userId,
         total: 1,
         processed: 1,
         errors: 0,
@@ -90,6 +102,10 @@ describe('incremental crawl pipeline command', () => {
         crawlStartedAt: new Date('2026-07-01T00:00:00.000Z')
       })
     );
+    expect(mocked.withCrawlPriorityLease).toHaveBeenCalledOnce();
     expect(result.crawl.processedUserIds).toEqual([1, 2, 3]);
+    expect(log.mock.calls.filter(([line]) => (
+      String(line).startsWith('[CRAWL] Completed')
+    ))).toHaveLength(3);
   });
 });

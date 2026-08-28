@@ -60,12 +60,17 @@ export function sortArticles(articles, {
   if (qualityFilter) {
     const beforeQualityCount = articles.length;
     // Filters source values to the entries eligible while performing sort articles.
-    articles = articles.filter(article => (
-      SCORE_FILTER_EXEMPT_ANALYSIS_STATUSES.has(
-        article.get?.('aiAnalysisStatus') ?? article.aiAnalysisStatus
-      )
-      || compareValues(article.quality, qualityFilter.operator, qualityFilter.value)
-    ));
+    articles = articles.filter(article => {
+      const analysisStatus = article.get?.('aiAnalysisStatus') ?? article.aiAnalysisStatus;
+      const actionOwned = Boolean(
+        article.get?.('qualityScoreActionOverrideInd') ??
+        article.qualityScoreActionOverrideInd
+      );
+      return (
+        (SCORE_FILTER_EXEMPT_ANALYSIS_STATUSES.has(analysisStatus) && !actionOwned) ||
+        compareValues(article.quality, qualityFilter.operator, qualityFilter.value)
+      );
+    });
     console.log(`\x1b[31mApplied quality filter (${qualityFilter.operator}${qualityFilter.value}): ${beforeQualityCount} → ${articles.length} articles\x1b[0m`);
   }
 

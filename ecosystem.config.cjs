@@ -32,8 +32,7 @@ module.exports = {
       kill_timeout: 30000,
       time: true,
       env_production: {
-        NODE_ENV: 'production',
-        PROCESSING_JOB_WORKER_ENABLED: 'true'
+        NODE_ENV: 'production'
       }
     },
     {
@@ -48,8 +47,7 @@ module.exports = {
       kill_timeout: 900000,
       time: true,
       env_production: {
-        NODE_ENV: 'production',
-        PROCESSING_JOB_WORKER_ENABLED: 'false'
+        NODE_ENV: 'production'
       }
     },
     {

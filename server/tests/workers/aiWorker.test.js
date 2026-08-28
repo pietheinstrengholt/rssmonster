@@ -16,14 +16,12 @@ const dependenciesFor = overrides => ({
   loadProcessingJobOperationalSnapshot: vi.fn().mockResolvedValue({
     event: 'processing_jobs.snapshot'
   }),
-  processingJobLogContext: vi.fn().mockReturnValue({}),
   recordRecoveredProcessingJobLease: vi.fn().mockResolvedValue(undefined),
   recoverExpiredProcessingJobs: vi.fn().mockResolvedValue([]),
   ...overrides
 });
 
 const config = overrides => ({
-  enabled: true,
   pollIntervalMs: 1,
   concurrency: 1,
   shutdownTimeoutMs: 100,
@@ -45,7 +43,6 @@ describe('AI worker', () => {
       env: { pm_exec_path: workerPath }
     })).toBe(true);
     expect(getAiWorkerConfig({})).toEqual({
-      enabled: true,
       pollIntervalMs: 1000,
       concurrency: 1,
       shutdownTimeoutMs: 30_000,
@@ -105,6 +102,39 @@ describe('AI worker', () => {
     expect(dependencies.recoverExpiredProcessingJobs).toHaveBeenCalledWith({ limit: 1 });
     expect(dependencies.claimProcessingJobs).toHaveBeenCalledWith({ limit: 1 });
     expect(healthReporter.mock.calls.some(([state]) => state.concurrency === 1)).toBe(true);
+  });
+
+  it('retains operational snapshots in health reporting without logging them', async () => {
+    const snapshot = {
+      event: 'processing_jobs.snapshot',
+      pendingByType: {},
+      runningCount: 0
+    };
+    const dependencies = dependenciesFor({
+      loadProcessingJobOperationalSnapshot: vi.fn().mockResolvedValue(snapshot)
+    });
+    const logger = { error: vi.fn(), log: vi.fn() };
+    const healthReporter = vi.fn().mockResolvedValue(undefined);
+    const worker = createAiWorker({
+      config: config(),
+      loadDependencies: async () => dependencies,
+      logger,
+      registerProcessHandlers: false,
+      healthReporter
+    });
+    dependencies.claimProcessingJobs.mockImplementation(async () => {
+      void worker.shutdown('test complete');
+      return [];
+    });
+
+    await worker.start();
+
+    expect(dependencies.loadProcessingJobOperationalSnapshot).toHaveBeenCalledOnce();
+    expect(healthReporter.mock.calls.some(
+      ([state]) => state.operationalSnapshot === snapshot
+    )).toBe(true);
+    expect(logger.log.mock.calls.some(([value]) => typeof value === 'object')).toBe(false);
+    expect(JSON.stringify(logger.log.mock.calls)).not.toContain('processing_jobs.snapshot');
   });
 
   it('waits for bounded in-flight work before closing the database', async () => {

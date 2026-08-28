@@ -722,8 +722,10 @@ describe('processArticle AI analysis controls', () => {
         contentSummaryBullets: [],
         aiAnalysisStatus: 'pending',
         advertisementScore: 0,
+        advertisementScoreActionOverrideInd: true,
         sentimentScore: 70,
-        qualityScore: 0
+        qualityScore: 0,
+        qualityScoreActionOverrideInd: true
       }),
       tagUpdates: {
         inferredTags: [],

@@ -98,14 +98,13 @@ describe('dailyBriefing.service', () => {
       publishedAt: { [Op.between]: [dateFrom, dateTo] },
       status: 'unread'
     });
-    expect(where[Op.and][0][Op.or][0]).toEqual({
-      aiAnalysisStatus: { [Op.in]: ['pending', 'processing', 'failed'] }
+    expect(where[Op.and][0][Op.and]).toHaveLength(3);
+    expect(where[Op.and][0][Op.and][0][Op.or][0]).toEqual({
+      advertisementScore: { [Op.gte]: 40 }
     });
-    expect(where[Op.and][0][Op.or][1][Op.and]).toEqual([
-      { advertisementScore: { [Op.gte]: 40 } },
-      { sentimentScore: { [Op.gte]: 50 } },
-      { qualityScore: { [Op.gte]: 60 } }
-    ]);
+    expect(where[Op.and][0][Op.and][2][Op.or][0]).toEqual({
+      qualityScore: { [Op.gte]: 60 }
+    });
     expect(where[Op.and][1].sql).toContain('articles.interestScore <> 0');
     expect(where[Op.and][1].sql).toContain('>= 3');
   });

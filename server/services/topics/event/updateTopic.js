@@ -5,6 +5,7 @@ import {
   shouldDriftTopicVector,
   upsertTopicInCache
 } from '../shared/topicHelpers.js';
+import { debugSemanticLog } from '../../observability/semanticLogging.js';
 
 // This service updates existing topics after semantic assignment matches.
 // It centralizes vector drift, activity timestamps, and in-memory cache refreshes.
@@ -19,8 +20,8 @@ function formatTopicMetric(value, digits = 3) {
 
 // This function logs when an event causes a topic vector to drift.
 function logTopicDrift({ topicId, similarity, semanticUnit }) {
-  console.log(
-    `[TOPIC] topic=${topicId} drift ` +
+  debugSemanticLog('topic',
+    `topic=${topicId} drift ` +
     `sim=${formatTopicMetric(similarity)} ` +
     `alpha=${formatTopicMetric(TOPIC_VECTOR_DRIFT_ALPHA, 2)} ` +
     `event=${semanticUnit?.id ?? 'n/a'}`

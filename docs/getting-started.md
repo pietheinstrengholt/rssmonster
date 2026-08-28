@@ -475,7 +475,8 @@ kill -9 <PID>
 
 - With MySQL Compose, check
   `docker compose -f docker-compose.mysql.yml ps rssmonster-ai-worker` and its
-  logs. With SQLite Compose, background jobs remain in `rssmonster-worker`.
+  logs. The lightweight SQLite Compose profile does not run background AI
+  processing.
 - For PM2, check `pm2 status rssmonster-ai-worker` and
   `pm2 logs rssmonster-ai-worker`.
 - Confirm the processing-job and worker-lease migrations have been applied and

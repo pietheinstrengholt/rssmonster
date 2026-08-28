@@ -636,7 +636,7 @@ Existing publisher identities enqueue a versioned replacement job only when cont
 description changes. Source-only changes do not spend an AI call. The article and its job commit
 in one transaction, so ingestion never exposes one without the other.
 
-Classification runs in `rssmonster-ai-worker` (or the combined SQLite worker). Queue saturation and other
+Classification runs only in `rssmonster-ai-worker`. Queue saturation and other
 retryable inference failures leave the article available in `pending` or `processing` state and
 retry with bounded backoff; they do not write default analysis as completed output. Exhausted jobs
 mark only the guarded article version `failed`, without filtering it from normal reading views.

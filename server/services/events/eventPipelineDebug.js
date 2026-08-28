@@ -1,5 +1,6 @@
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
+import { isSemanticDebugEnabled } from '../observability/semanticLogging.js';
 
 // Provides the shared dependencies used by this service.
 const { Event } = db;
@@ -79,6 +80,7 @@ async function countArticlesInRunCreatedEvents(userId, runContext) {
 
 // This function logs a compact run summary for incremental event assignment.
 export async function logEventProcessingSummary(userId, articles, runContext) {
+  if (!isSemanticDebugEnabled('event')) return;
   const totalArticles = articles.length;
   // Existing-event assignments count only articles attached to an event that already existed.
   // New-event assignments count all articles contained in events created during this run.

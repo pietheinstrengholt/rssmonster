@@ -818,6 +818,71 @@ describe('articleSearch.service', () => {
       }
     });
 
+    it.each(['pending', 'failed'])(
+      'enforces action-owned score overrides while %s inference remains unresolved',
+      async aiAnalysisStatus => {
+        const suffix = `${aiAnalysisStatus}-${Date.now()}`;
+        const unresolvedArticle = await Article.create({
+          userId: user.id,
+          feedId: feed.id,
+          url: `https://example.com/article-unresolved-${suffix}`,
+          title: `Unresolved ${aiAnalysisStatus} analysis`,
+          status: 'unread',
+          publishedAt: new Date(),
+          aiAnalysisStatus,
+          advertisementScore: 0,
+          sentimentScore: 0,
+          qualityScore: 0
+        });
+        const advertisementActionArticle = await Article.create({
+          userId: user.id,
+          feedId: feed.id,
+          url: `https://example.com/article-ad-action-${suffix}`,
+          title: `Advertisement action ${aiAnalysisStatus}`,
+          status: 'unread',
+          publishedAt: new Date(),
+          aiAnalysisStatus,
+          advertisementScore: 0,
+          advertisementScoreActionOverrideInd: true,
+          sentimentScore: 100,
+          qualityScore: 100
+        });
+        const qualityActionArticle = await Article.create({
+          userId: user.id,
+          feedId: feed.id,
+          url: `https://example.com/article-quality-action-${suffix}`,
+          title: `Quality action ${aiAnalysisStatus}`,
+          status: 'unread',
+          publishedAt: new Date(),
+          aiAnalysisStatus,
+          advertisementScore: 100,
+          sentimentScore: 100,
+          qualityScore: 0,
+          qualityScoreActionOverrideInd: true
+        });
+
+        try {
+          const result = await searchArticles({
+            userId: user.id,
+            status: '%',
+            minAdvertisementScore: 99,
+            minSentimentScore: 99,
+            minQualityScore: 99
+          });
+
+          expect(result.itemIds).toContain(unresolvedArticle.id);
+          expect(result.itemIds).not.toContain(advertisementActionArticle.id);
+          expect(result.itemIds).not.toContain(qualityActionArticle.id);
+        } finally {
+          await Promise.all([
+            unresolvedArticle.destroy(),
+            advertisementActionArticle.destroy(),
+            qualityActionArticle.destroy()
+          ]);
+        }
+      }
+    );
+
     it('keeps pending analysis in Smart Folder quality filters', async () => {
       const pendingArticle = await Article.create({
         userId: user.id,

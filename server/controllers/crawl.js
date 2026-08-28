@@ -8,8 +8,8 @@ import {
 import { acquireFeed } from '../services/feeds/feedAcquisition.js';
 import {
   classifyCrawlOutcome,
+  formatCrawlCompletionLine,
   formatCrawlResultLine,
-  formatCrawlSummaryLine,
   CRAWL_OUTCOMES
 } from '../services/feeds/crawlResult.js';
 import { persistFeedCrawlResult } from '../services/feeds/feedCrawlObservability.js';
@@ -63,6 +63,7 @@ import { sanitizeFeedPersistenceMetadata } from '../services/feeds/feedPersisten
 import { sendNewArticlePush } from '../services/push/pushNotifications.js';
 import { createStartUserCrawl } from '../services/crawl/startUserCrawl.js';
 import { recordProcessingFailure } from '../services/observability/processingFailures.js';
+import { withCrawlPriorityLease } from '../services/jobs/crawlPriorityLease.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -529,8 +530,10 @@ const runCrawl = async (userId = null, options = {}) => {
     console.log(formatCrawlResultLine({
       category,
       feedUrl: requestedUrl || feed?.url,
+      userId: feed?.userId ?? userId,
       resolvedUrl,
       itemCount,
+      newArticleCount: articlesNew,
       attempts: outcome?.discovery?.attempts ?? outcome?.attempts ?? 1,
       durationMs,
       httpStatus: outcome?.response?.status ?? outcome?.error?.status ?? null,
@@ -651,12 +654,7 @@ const runCrawl = async (userId = null, options = {}) => {
       timedOutFeeds: 0,
       crawlOutcomes: {}
     };
-    console.log(formatCrawlSummaryLine({
-      total: 0,
-      processed: 0,
-      durationMs: Date.now() - crawlStartedAt.getTime(),
-      outcomeCounts
-    }));
+    console.log('[CRAWL] No feeds due for crawling');
     return emptyResult;
   }
 
@@ -1433,13 +1431,6 @@ const runCrawl = async (userId = null, options = {}) => {
     });
   }
 
-  console.log(formatCrawlSummaryLine({
-    total: result.total,
-    processed: result.processed,
-    durationMs: Date.now() - crawlStartedAt.getTime(),
-    outcomeCounts
-  }));
-
   return result;
 };
 
@@ -1515,8 +1506,7 @@ const isActiveCrawlConstraintError = err => {
 // This function returns the normal no-op result for a crawl already in progress.
 const crawlAlreadyRunningResult = (userId, activeCrawlRun) => {
   console.log(
-    `[Crawl] Crawl already running for user ${userId} ` +
-    `(crawlRunId=${activeCrawlRun.id}).`
+    `[CRAWL] status=already-running user=${userId} crawlRunId=${activeCrawlRun.id}`
   );
 
   return {
@@ -1639,6 +1629,8 @@ const performCrawl = async (userId = null, options = {}) => {
       reason: null
     });
   }
+
+  console.log(`[CRAWL] Started iteration user=${userId ?? 'all'}`);
 
   let result;
   const crawlRunHeartbeat = crawlRun ? startCrawlRunHeartbeat(crawlRun) : null;
@@ -1774,7 +1766,8 @@ const performCrawl = async (userId = null, options = {}) => {
 };
 
 // This function runs a crawl and then groups crawled articles semantically.
-const performCrawlWithSemanticGrouping = async (userId = null, options = {}) => {
+const performCrawlWithSemanticGroupingOperation = async (userId = null, options = {}) => {
+  const iterationStartedAt = Date.now();
   const result = await performCrawl(userId, {
     ...options,
     suppressDoneEvent: true
@@ -1827,8 +1820,22 @@ const performCrawlWithSemanticGrouping = async (userId = null, options = {}) => 
     });
   }
 
+  console.log(formatCrawlCompletionLine({
+    feeds: result.total,
+    newArticles: result.totalNewArticles,
+    errors: result.errors,
+    userId,
+    durationMs: Date.now() - iterationStartedAt
+  }));
+
   return result;
 };
+
+// Holds the cross-process priority gate for every API or manually triggered critical pipeline.
+const performCrawlWithSemanticGrouping = (userId = null, options = {}) =>
+  withCrawlPriorityLease(
+    () => performCrawlWithSemanticGroupingOperation(userId, options)
+  );
 
 export const startUserCrawl = createStartUserCrawl(
   performCrawlWithSemanticGrouping

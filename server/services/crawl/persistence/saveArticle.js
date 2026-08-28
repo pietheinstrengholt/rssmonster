@@ -2,6 +2,7 @@ import db from '../../../models/index.js';
 import { saveArticleTags } from './tags.js';
 import buildArticlePersistenceValues from './buildArticlePersistenceValues.js';
 import { enqueueArticleEnrichmentJob } from '../enrichment/articleEnrichmentJobs.js';
+import { buildActionScoreOverrideIndicators } from '../enrichment/articleAnalysis.js';
 import {
   assertExecutionLeaseOwnership,
   throwIfExecutionExpired
@@ -143,6 +144,7 @@ async function saveArticle(
     isOfficialSource: data.isOfficialSource,
     officialOrganization: data.officialOrganization,
     advertisementScore: analysis?.advertisementScore,
+    ...buildActionScoreOverrideIndicators(actionResult),
     sentimentScore: analysis?.sentimentScore,
     qualityScore: analysis?.qualityScore,
     publishedAt: data.publishedAt || new Date()

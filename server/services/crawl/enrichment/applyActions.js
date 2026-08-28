@@ -10,6 +10,8 @@
    - clicked
    - tag (assign tag)
 ====================================================== */
+import { logFeedDebug } from '../../feeds/feedLogging.js';
+
 const ACTION_SEARCH_FIELDS = [
   'contentHtml',
   'contentText',
@@ -64,7 +66,10 @@ function applyActions(actions, article = {}) {
     switch (action.actionType) {
       // Discard action: takes precedence over all others
       case 'discard':
-        console.log(`Discard action "${action.name}" matched article "${article.title}". Storing it as filtered.`);
+        logFeedDebug(
+          `Discard action "${action.name}" matched article "${article.title}". ` +
+          'Storing it as filtered.'
+        );
         result.shouldDiscard = true;
         return result;
 

@@ -223,10 +223,10 @@ describe('crawl run article statistics', () => {
       .map(([line]) => line)
       .filter(line => String(line).startsWith('[CRAWL]'));
     expect(crawlLines).toHaveLength(2);
-    expect(crawlLines[0]).toContain('[CRAWL] RECOVERED');
-    expect(crawlLines[0]).toContain('items=1 attempts=2');
-    expect(crawlLines[1]).toContain('[CRAWL] SUMMARY');
-    expect(crawlLines[1]).toContain('outcomes=RECOVERED:1');
+    expect(crawlLines[0]).toBe(`[CRAWL] Started iteration user=${user.id}`);
+    expect(crawlLines[1]).toContain('status=success');
+    expect(crawlLines[1]).toContain('resolved=example.com/recovered.xml');
+    expect(crawlLines[1]).toContain('items=1 new=1 attempts=2');
     expect(result.crawlOutcomes).toEqual({ RECOVERED: 1 });
     expect(feedResult).toMatchObject({
       status: 'RECOVERED',

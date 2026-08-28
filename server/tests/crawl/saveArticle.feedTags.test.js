@@ -103,6 +103,8 @@ describe('saveArticle feed tags', () => {
   it('enqueues enrichment in the article transaction', async () => {
     const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
     const [feed, data, analysis, actionResult] = saveArguments();
+    actionResult.advertisementScore = 0;
+    analysis.advertisementScore = 0;
 
     await saveArticle(feed, {
       ...data,
@@ -113,7 +115,12 @@ describe('saveArticle feed tags', () => {
     });
 
     expect(mocked.articleCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ aiAnalysisStatus: 'pending' }),
+      expect.objectContaining({
+        aiAnalysisStatus: 'pending',
+        advertisementScore: 0,
+        advertisementScoreActionOverrideInd: true,
+        qualityScoreActionOverrideInd: false
+      }),
       { transaction: mocked.transaction }
     );
     expect(mocked.enqueueArticleEnrichmentJob).toHaveBeenCalledWith({

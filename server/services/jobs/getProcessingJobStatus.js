@@ -2,8 +2,7 @@ import { col, fn, Op } from 'sequelize';
 import db from '../../models/index.js';
 import { sanitizeProcessingFailureMessage } from '../observability/processingFailures.js';
 import {
-  DEFAULT_CRAWL_WORKER_HEALTH_MAX_STALE_MS,
-  readCrawlWorkerHealthState
+  DEFAULT_CRAWL_WORKER_HEALTH_MAX_STALE_MS
 } from '../../src/workers/crawlWorkerHealth.js';
 import { readAiWorkerHealthState } from '../../src/workers/aiWorkerHealth.js';
 
@@ -11,6 +10,7 @@ const { ProcessingJob } = db;
 export const PROCESSING_JOB_STATUS_RECENT_FAILURE_LIMIT = 10;
 export const PROCESSING_JOB_STATUS_LATENCY_SAMPLE_LIMIT = 500;
 export const PROCESSING_JOB_STATUS_LATENCY_WINDOW_MS = 24 * 60 * 60 * 1000;
+export const PROCESSING_JOB_STATUS_DEGRADED_FAILURE_WINDOW_MS = 60 * 60 * 1000;
 export const PROCESSING_JOB_STATUS_STALLED_AGE_MS =
   DEFAULT_CRAWL_WORKER_HEALTH_MAX_STALE_MS;
 export const PROCESSING_JOB_STATUS_DEGRADED_RETRY_COUNT = 3;
@@ -71,6 +71,7 @@ export const deriveProcessingJobHealthStatus = ({
   workerHealthy,
   workerRunning: running,
   mostRecentCompletionAt = null,
+  mostRecentFailureAt = null,
   now = new Date()
 }) => {
   const recentCompletionAge = mostRecentCompletionAt
@@ -78,13 +79,19 @@ export const deriveProcessingJobHealthStatus = ({
     : Number.POSITIVE_INFINITY;
   const oldRunnableBacklog = summary.oldestPendingAgeSeconds !== null &&
     summary.oldestPendingAgeSeconds * 1000 >= PROCESSING_JOB_STATUS_STALLED_AGE_MS;
+  const hasActiveWork = summary.pending > 0 || summary.running > 0 || summary.retrying > 0;
+  const recentFailureAge = mostRecentFailureAt
+    ? now.getTime() - new Date(mostRecentFailureAt).getTime()
+    : Number.POSITIVE_INFINITY;
+  const hasRecentDeadJob = summary.dead > 0 && Number.isFinite(recentFailureAge) &&
+    recentFailureAge <= PROCESSING_JOB_STATUS_DEGRADED_FAILURE_WINDOW_MS;
 
   if (summary.pending > 0 && (
     !running ||
     (oldRunnableBacklog && summary.running === 0 &&
       recentCompletionAge >= PROCESSING_JOB_STATUS_STALLED_AGE_MS)
   )) return 'stalled';
-  if (!workerHealthy || summary.dead > 0 ||
+  if ((hasActiveWork && !workerHealthy) || hasRecentDeadJob ||
       summary.retrying >= PROCESSING_JOB_STATUS_DEGRADED_RETRY_COUNT) {
     return 'degraded';
   }
@@ -104,15 +111,8 @@ const readWorkerHealth = async reader => {
   }
 };
 
-// Uses the dedicated AI heartbeat, falling back only when SQLite runs the combined worker.
-export const readProcessingWorkerHealthState = async options => {
-  try {
-    return await readAiWorkerHealthState(options);
-  } catch (error) {
-    if (error?.code !== 'ENOENT') throw error;
-    return readCrawlWorkerHealthState(options);
-  }
-};
+// Uses only the dedicated AI-worker heartbeat; the crawl worker never consumes jobs.
+export const readProcessingWorkerHealthState = options => readAiWorkerHealthState(options);
 
 // Returns bounded, user-owned queue status without loading job payloads.
 export const getProcessingJobStatus = async ({
@@ -268,6 +268,7 @@ export const getProcessingJobStatus = async ({
   };
   const running = workerRunning(workerHealth);
   const mostRecentCompletionAt = latencyRows[0]?.completedAt || null;
+  const mostRecentFailureAt = recentFailureRows[0]?.completedAt || null;
 
   return {
     health: {
@@ -276,6 +277,7 @@ export const getProcessingJobStatus = async ({
         workerHealthy: workerHealth.healthy,
         workerRunning: running,
         mostRecentCompletionAt,
+        mostRecentFailureAt,
         now
       }),
       workerRunning: running

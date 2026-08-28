@@ -84,9 +84,8 @@ The principal execution controls are:
 | `CRAWL_TIMEOUT_MS` | `600000` | Overall deadline for one user's crawl invocation. |
 | `CRAWL_RUN_MAX_RUNNING_MINUTES` | `60` | Age at which an unfinished per-user crawl run is considered stale. |
 | `CRAWL_WORKER_INTERVAL_MS` | `60000` | Delay between complete worker iterations. |
-| `PROCESSING_JOB_WORKER_ENABLED` | `true` | Enable durable optional jobs in `rssmonster-ai-worker`, or in the combined SQLite worker. |
 | `PROCESSING_JOB_POLL_INTERVAL_MS` | `1000` | Delay between optional-job polls with no available work. |
-| `PROCESSING_JOB_CONCURRENCY` | `1` | Optional jobs executed concurrently; SQLite always uses `1`. |
+| `PROCESSING_JOB_CONCURRENCY` | `1` | Optional jobs executed concurrently; a manually started SQLite AI worker always uses `1`. |
 | `PROCESSING_JOB_SHUTDOWN_TIMEOUT_MS` | `30000` | Grace period for in-flight optional jobs during shutdown. |
 | `PROCESSING_JOB_REPORT_INTERVAL_MS` | `60000` | Interval for structured optional-queue operational snapshots. |
 | `CRAWL_PRIORITY_LEASE_MS` | `90000` | Renewable database lease used to pause new AI claims during the critical semantic pipeline. |
@@ -149,8 +148,8 @@ claiming, interrupts its poll, and waits up to
 signalled to abort and their fenced leases can recover after expiry. Each
 process closes its own database connections once.
 
-For the unchanged lightweight SQLite Compose topology, `rssmonster-worker`
-continues to supervise both loops with processing concurrency forced to one.
+The lightweight SQLite Compose topology starts only the crawl worker and keeps
+AI processing disabled. It does not consume optional processing jobs.
 
 The web process does not schedule this loop. Keeping the crawler separate
 means a long crawl cannot prevent PM2 from supervising and restarting the web
@@ -215,9 +214,10 @@ also records its last outcome, diagnostic state, failure count, next fetch
 time, and crawl history. Feed observability and crawl statistics are available
 from the Settings interface.
 
-Every `PROCESSING_JOB_REPORT_INTERVAL_MS`, the AI worker emits a structured
-`processing_jobs.snapshot` object and includes the latest object in its own
-health file. It contains pending counts by type, oldest pending age, running and
+Every `PROCESSING_JOB_REPORT_INTERVAL_MS`, the AI worker collects a structured
+`processing_jobs.snapshot` and includes the latest object in its own health
+file without writing the periodic snapshot to standard output. It contains
+pending counts by type, oldest pending age, running and
 retry counts, dead and successful completion counts, and a bounded recent
 processing-latency sample. Per-job lifecycle events contain the job ID, type,
 attempt, user ID, and only safe article or semantic target identifiers. Payloads,
@@ -231,7 +231,9 @@ queue totals, per-job-type backlog, bounded recent completion latency, and at
 most ten safe dead-job summaries. It never includes payloads, deduplication
 keys, lease owners, prompts, or article content. The supplied Compose profiles
 share only the worker health file with the web container; queue data remains in
-the configured database.
+the configured database. Retained dead jobs remain visible in the totals and
+failure list, but only a dead job from the most recent 60 minutes degrades an
+otherwise healthy queue.
 
 When feeds fall behind, check:
 
@@ -277,15 +279,16 @@ the same user, lease owner, running state, and unexpired lease. On startup the
 worker performs one bounded recovery pass for expired running leases; normal
 claiming also recognizes expired leases.
 
-SQLite uses a one-connection pool and always forces optional concurrency to
-one, regardless of configuration; its Compose profile retains the combined
-worker. MySQL uses `rssmonster-ai-worker` and transactional row locks with
+SQLite uses a one-connection pool, so a manually started AI worker always
+forces optional concurrency to one regardless of configuration. The SQLite
+Compose profile does not start that process. MySQL uses `rssmonster-ai-worker`
+and transactional row locks with
 `SKIP LOCKED`, so multiple AI workers sharing the database claim disjoint jobs.
 Increase `PROCESSING_JOB_CONCURRENCY` gradually while watching database, CPU,
-memory, and inference capacity. Optional claims pause during the crawl's
-critical semantic pipeline through the `worker_leases` row. Embeddings still complete before Event creation,
-Topic assignment, and Island scoring, and optional inference failures cannot
-fail that deterministic path.
+memory, and inference capacity. Optional claims pause during every scheduled,
+manual, or API-triggered critical pipeline through the `worker_leases` row.
+Embeddings still complete before Event creation, Topic assignment, and Island
+scoring, and optional inference failures cannot fail that deterministic path.
 
 Deploy the schema migration that creates `worker_leases` before starting the
 split workers. If the crawl process exits unexpectedly, the lease expires and

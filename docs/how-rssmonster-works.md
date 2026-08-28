@@ -42,8 +42,9 @@ rssmonster-ai-worker
       └─ semantic labels
 ```
 
-The lightweight SQLite Compose profile intentionally keeps both loops in its
-single `rssmonster-worker` container, with processing concurrency forced to one.
+The lightweight SQLite Compose profile starts only `rssmonster-worker` and has
+AI processing disabled. It does not start `rssmonster-ai-worker` or consume
+optional processing jobs.
 
 The crawl scheduler owns the ordered, deterministic semantic path. Article
 identity and revision resolution happen before persistence; embeddings then
@@ -60,8 +61,9 @@ finish later without delaying crawling or embedding.
 Article analysis moves through `pending`, `processing`, `complete`, `skipped`,
 or `failed`. Pending, processing, and failed articles remain readable and are
 not rejected by inferred-score thresholds merely because placeholder scores are
-present. The interface shows an analyzing state instead of presenting those
-placeholders as completed inference.
+present. Deterministic advertisement and bad-quality action scores retain their
+configured threshold behavior in every analysis state. The interface shows an
+analyzing state instead of presenting placeholders as completed inference.
 
 Jobs contain identifiers and version guards rather than article text. Handlers
 reload the current user-owned target and recheck article content hashes while
@@ -70,11 +72,12 @@ Article enrichment replaces only inferred tags. Semantic-label jobs update only
 generated presentation fields; deterministic Event, Topic, and Island fallback
 names remain usable while labels are pending or failed.
 
-The crawl process publishes a renewable database lease while its critical
-semantic pipeline is active. The AI worker pauses new claims while that lease is
-live; already-running optional work is allowed to finish safely. Inside the local
-inference service, waiting embedding requests outrank classification and generated
-text requests. Running model calls are not preempted.
+Every scheduled, manual, and API-triggered crawl publishes a renewable database
+lease while its critical semantic pipeline is active. The AI worker pauses new
+claims while that lease is live; already-running optional work is allowed to
+finish safely. Inside the local inference service, waiting embedding requests
+outrank classification and generated text requests. Running model calls are not
+preempted.
 Retryable inference failures use leases and bounded backoff, exhausted jobs are
 dead-lettered, and expired leases are recoverable. Failures in optional work do
 not fail crawling or deterministic semantic processing. See [Crawling](crawling.md#durable-optional-processing-queue)

@@ -549,6 +549,7 @@ describe('repairRecentEventsForUser', () => {
       })
     ]);
 
+    vi.stubEnv('EVENT_DEBUG', 'true');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     let summaryOutput = '';
@@ -560,6 +561,7 @@ describe('repairRecentEventsForUser', () => {
         .join('\n');
     } finally {
       logSpy.mockRestore();
+      vi.unstubAllEnvs();
     }
 
     expect(summaryOutput).not.toContain('Articles linked to events');

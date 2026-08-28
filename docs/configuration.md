@@ -143,9 +143,8 @@ responses, and timeouts.
 | `CRAWL_RUN_MAX_RUNNING_MINUTES` | `60` | minutes | Age after which an unfinished crawl run is marked stale. |
 | `CRAWL_PARALLELPROCESSFLAG` | `0` | boolean integer | Set to `1` to allow parallel feed processing on MySQL. SQLite always forces `0`. |
 | `CRAWL_WORKER_INTERVAL_MS` | `60000` | ms | Delay between dedicated worker polls. Must be a positive integer. |
-| `PROCESSING_JOB_WORKER_ENABLED` | `true` | boolean | Enables durable optional-job consumption. PM2 and MySQL set this on `rssmonster-ai-worker`; SQLite keeps it in `rssmonster-worker`. |
 | `PROCESSING_JOB_POLL_INTERVAL_MS` | `1000` | ms | Delay when no optional processing work is available. |
-| `PROCESSING_JOB_CONCURRENCY` | `1` | jobs | Maximum optional jobs executed concurrently. SQLite always forces this to `1`. |
+| `PROCESSING_JOB_CONCURRENCY` | `1` | jobs | Maximum optional jobs executed concurrently. A manually started AI worker on SQLite always forces this to `1`. |
 | `PROCESSING_JOB_SHUTDOWN_TIMEOUT_MS` | `30000` | ms | Grace period for in-flight optional jobs before their abort signal is triggered. |
 | `PROCESSING_JOB_REPORT_INTERVAL_MS` | `60000` | ms | Interval for durable queue depth, retry, terminal outcome, and latency snapshots in worker logs and health state. |
 | `CRAWL_PRIORITY_LEASE_MS` | `90000` | ms | Duration of the renewable database gate that gives the crawl semantic pipeline priority over new optional claims. |
@@ -166,9 +165,9 @@ worker does not reclaim active work.
 PM2 and the MySQL Compose profile run scheduled crawling in `rssmonster-worker`
 and optional jobs in `rssmonster-ai-worker`. A renewable database lease pauses
 new optional claims while the crawl, embedding, event, topic, and island-scoring
-pipeline is active; crawling never waits for the optional queue to drain. The
-SQLite Compose profile deliberately retains one combined worker and forces job
-concurrency to one.
+pipeline is active; crawling never waits for the optional queue to drain.
+The lightweight SQLite Compose profile runs only `rssmonster-worker` and has
+AI processing disabled, so it does not start an optional-job consumer.
 
 ### HTTP Fetch Behavior
 

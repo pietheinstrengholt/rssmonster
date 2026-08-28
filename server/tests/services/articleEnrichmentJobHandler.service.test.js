@@ -179,16 +179,20 @@ describe('article_enrichment processing-job handler', () => {
       ['provider topic', 'provider'],
       ['rule-tag', 'rule']
     ]);
-    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
-      event: 'processing_job.completed',
-      jobId: job.id,
-      type: 'article_enrichment',
-      attempt: 1,
-      userId: feed.userId,
-      target: { articleId: article.id },
-      status: 'succeeded',
-      processingLatencyMs: expect.any(Number)
-    }));
+    expect(logger.log).toHaveBeenCalledTimes(2);
+    expect(logger.log.mock.calls[0][0]).toBe(
+      `[AiWorker] processing_job.started jobId=${JSON.stringify(job.id)} ` +
+      `type="article_enrichment" attempt=1 userId=${feed.userId} ` +
+      `target={"articleId":${article.id}}`
+    );
+    expect(logger.log.mock.calls[1][0]).toMatch(
+      new RegExp(
+        `^\\[AiWorker\\] processing_job\\.completed jobId="${job.id}" ` +
+        `type="article_enrichment" attempt=1 userId=${feed.userId} ` +
+        `target=\\{"articleId":${article.id}\\} status="succeeded" ` +
+        'processingLatencyMs=\\d+$'
+      )
+    );
     expect(JSON.stringify(logger.log.mock.calls)).not.toContain(article.contentText);
   });
 
@@ -333,17 +337,17 @@ describe('article_enrichment processing-job handler', () => {
     });
     expect(JSON.stringify(failure?.context || {})).not.toContain('private article body');
     expect(failure?.message).toBe('Article enrichment inference queue is full');
-    expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
-      event: 'processing_job.failed',
-      jobId: job.id,
-      type: 'article_enrichment',
-      attempt: 1,
-      userId: feed.userId,
-      target: { articleId: article.id },
-      status: 'pending',
-      errorCode: 'INFERENCE_QUEUE_FULL',
-      retryable: true
-    }));
+    expect(logger.log).toHaveBeenCalledTimes(2);
+    expect(logger.log.mock.calls[0][0]).toContain('[AiWorker] processing_job.started');
+    expect(logger.log.mock.calls[1][0]).toMatch(
+      new RegExp(
+        `^\\[AiWorker\\] processing_job\\.failed jobId="${job.id}" ` +
+        `type="article_enrichment" attempt=1 userId=${feed.userId} ` +
+        `target=\\{"articleId":${article.id}\\} status="pending" ` +
+        'errorCode="INFERENCE_QUEUE_FULL" retryable=true processingLatencyMs=\\d+ ' +
+        'availableAt="[^"]+"$'
+      )
+    );
     expect(JSON.stringify(logger.log.mock.calls)).not.toContain('private article body');
   });
 

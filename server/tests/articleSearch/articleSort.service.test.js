@@ -59,6 +59,21 @@ describe('articleSort.service', () => {
     expect(result.map(article => article.id)).toEqual([2]);
   });
 
+  it.each(['pending', 'failed'])(
+    'applies quality filters to %s action-owned scores while exempting placeholders',
+    aiAnalysisStatus => {
+      const result = sortArticles([
+        { id: 1, quality: 0, aiAnalysisStatus, qualityScoreActionOverrideInd: false },
+        { id: 2, quality: 0, aiAnalysisStatus, qualityScoreActionOverrideInd: true },
+        { id: 3, quality: 3, aiAnalysisStatus, qualityScoreActionOverrideInd: true }
+      ], {
+        qualityFilter: { operator: '>=', value: 2 }
+      });
+
+      expect(result.map(article => article.id)).toEqual([1, 3]);
+    }
+  );
+
   // Sorts recommended articles and sends the same scores to development diagnostics.
   it('sorts by recommended score and reports the breakdown input', () => {
     mocked.computeRecommended.mockImplementation(article => article.rank);

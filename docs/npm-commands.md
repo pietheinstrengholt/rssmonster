@@ -106,7 +106,7 @@ up production data and inspect the scope before using them.
 | --- | --- | --- |
 | `npm start` | None | Starts the Express application through `server/bootstrap.js`. Use it for a normal foreground server process. Production installations normally supervise this entry point with PM2. |
 | `npm run start-server` | None | Alias for `npm start`; it starts the same bootstrap entry point. Use whichever name is expected by the surrounding process configuration. |
-| `npm run start:worker` | None | Starts scheduled crawling. Set `PROCESSING_JOB_WORKER_ENABLED=true` only for the SQLite-compatible combined topology. Crawls run immediately and repeat after `CRAWL_WORKER_INTERVAL_MS`; see [Crawling](crawling.md). |
+| `npm run start:worker` | None | Starts scheduled crawling only. It never consumes article-analysis or semantic-label jobs. Crawls run immediately and repeat after `CRAWL_WORKER_INTERVAL_MS`; see [Crawling](crawling.md). |
 | `npm run start:ai-worker` | None | Starts the durable processing-job consumer used by PM2 and the MySQL Compose profile. It pauses new claims while the crawl-critical lease is active. |
 | `npm run jobs:operator -- list-dead --user-id <id> [--type <type>] [--limit <1-100>]` | Existing database with processing-job migration applied | Lists a bounded dead-job set for one explicit owner without returning payloads. |
 | `npm run jobs:operator -- requeue-dead --user-id <id> --job-id <uuid> [...]` | Exact dead-job IDs inspected by an operator | Requeues only the selected owner's exact dead jobs. This is manual recovery, not an automatic repair. |

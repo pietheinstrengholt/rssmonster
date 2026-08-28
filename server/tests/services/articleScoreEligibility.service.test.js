@@ -7,7 +7,7 @@ import {
 } from '../../services/articles/articleScoreEligibility.js';
 
 describe('articleScoreEligibility', () => {
-  it('exempts only unresolved and failed optional analysis from score thresholds', () => {
+  it('exempts only unresolved inference-owned score dimensions from thresholds', () => {
     expect(SCORE_THRESHOLD_EXEMPT_ANALYSIS_STATUSES).toEqual([
       'pending',
       'processing',
@@ -20,13 +20,31 @@ describe('articleScoreEligibility', () => {
       minQualityScore: 90
     });
 
-    expect(predicate[Op.or][0]).toEqual({
-      aiAnalysisStatus: { [Op.in]: ['pending', 'processing', 'failed'] }
-    });
-    expect(predicate[Op.or][1][Op.and]).toEqual([
+    expect(predicate[Op.and][0][Op.or]).toEqual([
       { advertisementScore: { [Op.gte]: 80 } },
+      {
+        [Op.and]: [
+          { aiAnalysisStatus: { [Op.in]: ['pending', 'processing', 'failed'] } },
+          { advertisementScoreActionOverrideInd: false }
+        ]
+      }
+    ]);
+    expect(predicate[Op.and][1][Op.or]).toEqual([
       { sentimentScore: { [Op.gte]: 85 } },
-      { qualityScore: { [Op.gte]: 90 } }
+      {
+        [Op.and]: [
+          { aiAnalysisStatus: { [Op.in]: ['pending', 'processing', 'failed'] } }
+        ]
+      }
+    ]);
+    expect(predicate[Op.and][2][Op.or]).toEqual([
+      { qualityScore: { [Op.gte]: 90 } },
+      {
+        [Op.and]: [
+          { aiAnalysisStatus: { [Op.in]: ['pending', 'processing', 'failed'] } },
+          { qualityScoreActionOverrideInd: false }
+        ]
+      }
     ]);
   });
 
@@ -36,6 +54,6 @@ describe('articleScoreEligibility', () => {
 
     expect(applyArticleScoreEligibility(where, {})).toBe(where);
     expect(where[Op.and][0]).toBe(existingCondition);
-    expect(where[Op.and][1][Op.or]).toBeDefined();
+    expect(where[Op.and][1][Op.and]).toHaveLength(3);
   });
 });

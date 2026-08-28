@@ -2,13 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencyMocks = vi.hoisted(() => ({
   authenticate: vi.fn(),
-  claimProcessingJobs: vi.fn(),
   closeDatabase: vi.fn(),
-  executeProcessingJob: vi.fn(),
-  loadProcessingJobOperationalSnapshot: vi.fn(),
-  processingJobLogContext: vi.fn(),
-  recordRecoveredProcessingJobLease: vi.fn(),
-  recoverExpiredProcessingJobs: vi.fn(),
   runCrawl: vi.fn()
 }));
 
@@ -17,8 +11,7 @@ vi.mock('../../models/index.js', () => ({
   default: {
     sequelize: {
       authenticate: dependencyMocks.authenticate,
-      close: dependencyMocks.closeDatabase,
-      getDialect: () => 'mysql'
+      close: dependencyMocks.closeDatabase
     }
   }
 }));
@@ -28,28 +21,8 @@ vi.mock('../../scripts/runSemanticPipeline.js', () => ({
   runSemanticPipeline: dependencyMocks.runCrawl
 }));
 
-vi.mock('../../services/jobs/crawlPriorityLease.js', () => ({
-  withCrawlPriorityLease: operation => operation()
-}));
-
-vi.mock('../../services/jobs/processingJobQueue.js', () => ({
-  claimProcessingJobs: dependencyMocks.claimProcessingJobs,
-  recoverExpiredProcessingJobs: dependencyMocks.recoverExpiredProcessingJobs
-}));
-
-vi.mock('../../services/jobs/processingJobHandlers.js', () => ({
-  executeClaimedProcessingJob: dependencyMocks.executeProcessingJob,
-  processingJobLogContext: dependencyMocks.processingJobLogContext,
-  recordRecoveredProcessingJobLease: dependencyMocks.recordRecoveredProcessingJobLease
-}));
-
-vi.mock('../../services/jobs/processingJobObservability.js', () => ({
-  loadProcessingJobOperationalSnapshot: dependencyMocks.loadProcessingJobOperationalSnapshot
-}));
-
 import {
   createCrawlWorker,
-  getProcessingJobWorkerConfig,
   isWorkerEntryPoint,
   parseWorkerInterval
 } from '../../src/workers/crawlWorker.js';
@@ -57,11 +30,7 @@ import {
 const originalExitCode = process.exitCode;
 
 const createWorkerDependencies = (overrides = {}) => ({
-  claimProcessingJobs: vi.fn().mockResolvedValue([]),
   closeDatabase: vi.fn().mockResolvedValue(undefined),
-  databaseDialect: 'mysql',
-  executeProcessingJob: vi.fn().mockResolvedValue({ status: 'succeeded' }),
-  recoverExpiredProcessingJobs: vi.fn().mockResolvedValue([]),
   runCrawl: vi.fn().mockResolvedValue(undefined),
   ...overrides
 });
@@ -72,14 +41,6 @@ describe('crawl worker', () => {
   beforeEach(() => {
     dependencyMocks.authenticate.mockReset().mockResolvedValue(undefined);
     dependencyMocks.closeDatabase.mockReset().mockResolvedValue(undefined);
-    dependencyMocks.claimProcessingJobs.mockReset().mockResolvedValue([]);
-    dependencyMocks.executeProcessingJob.mockReset().mockResolvedValue({ status: 'succeeded' });
-    dependencyMocks.loadProcessingJobOperationalSnapshot.mockReset().mockResolvedValue({
-      event: 'processing_jobs.snapshot'
-    });
-    dependencyMocks.processingJobLogContext.mockReset().mockReturnValue({});
-    dependencyMocks.recordRecoveredProcessingJobLease.mockReset().mockResolvedValue(undefined);
-    dependencyMocks.recoverExpiredProcessingJobs.mockReset().mockResolvedValue([]);
     dependencyMocks.runCrawl.mockReset().mockResolvedValue(undefined);
     process.exitCode = 0;
   });
@@ -113,43 +74,15 @@ describe('crawl worker', () => {
     expect(() => parseWorkerInterval('invalid')).toThrow(/positive finite integer/);
   });
 
-  it('validates optional processing-loop configuration', () => {
-    expect(getProcessingJobWorkerConfig({})).toEqual({
-      enabled: true,
-      pollIntervalMs: 1000,
-      concurrency: 1,
-      shutdownTimeoutMs: 30_000,
-      reportIntervalMs: 60_000
-    });
-    expect(getProcessingJobWorkerConfig({
-      PROCESSING_JOB_WORKER_ENABLED: 'false',
-      PROCESSING_JOB_POLL_INTERVAL_MS: '2500',
-      PROCESSING_JOB_CONCURRENCY: '3',
-      PROCESSING_JOB_SHUTDOWN_TIMEOUT_MS: '5000',
-      PROCESSING_JOB_REPORT_INTERVAL_MS: '15000'
-    })).toEqual({
-      enabled: false,
-      pollIntervalMs: 2500,
-      concurrency: 3,
-      shutdownTimeoutMs: 5000,
-      reportIntervalMs: 15_000
-    });
-    expect(() => getProcessingJobWorkerConfig({
-      PROCESSING_JOB_CONCURRENCY: '0'
-    })).toThrow(/positive finite integer/);
-    expect(() => getProcessingJobWorkerConfig({
-      PROCESSING_JOB_WORKER_ENABLED: 'sometimes'
-    })).toThrow(/must be true or false/);
-  });
-
   // This test verifies the default loader authenticates, runs, and closes its lazy dependencies.
   it('loads and closes the default crawl dependencies', async () => {
     dependencyMocks.runCrawl.mockImplementation(async () => {
       void worker.shutdown('test complete');
     });
+    const logger = { error: vi.fn(), log: vi.fn() };
     const worker = createCrawlWorker({
-      intervalMs: 1,
-      logger: { error: vi.fn(), log: vi.fn() },
+      intervalMs: 60_000,
+      logger,
       registerProcessHandlers: false
     });
 
@@ -158,6 +91,36 @@ describe('crawl worker', () => {
     expect(dependencyMocks.authenticate).toHaveBeenCalledOnce();
     expect(dependencyMocks.runCrawl).toHaveBeenCalledOnce();
     expect(dependencyMocks.closeDatabase).toHaveBeenCalledOnce();
+    expect(logger.log).toHaveBeenCalledWith(
+      '[CrawlWorker] Starting crawl worker interval=60s'
+    );
+  });
+
+  it('never consumes processing jobs even when queue methods are supplied', async () => {
+    const claimProcessingJobs = vi.fn();
+    const executeProcessingJob = vi.fn();
+    const recoverExpiredProcessingJobs = vi.fn();
+    const dependencies = createWorkerDependencies({
+      claimProcessingJobs,
+      executeProcessingJob,
+      recoverExpiredProcessingJobs
+    });
+    const worker = createCrawlWorker({
+      intervalMs: 1,
+      loadDependencies: async () => dependencies,
+      logger: { error: vi.fn(), log: vi.fn() },
+      registerProcessHandlers: false
+    });
+    dependencies.runCrawl.mockImplementation(async () => {
+      void worker.shutdown('test complete');
+    });
+
+    await worker.start();
+
+    expect(dependencies.runCrawl).toHaveBeenCalledOnce();
+    expect(claimProcessingJobs).not.toHaveBeenCalled();
+    expect(executeProcessingJob).not.toHaveBeenCalled();
+    expect(recoverExpiredProcessingJobs).not.toHaveBeenCalled();
   });
 
   // This test verifies failed authentication preserves the root error after cleanup also fails.
@@ -254,348 +217,6 @@ describe('crawl worker', () => {
     expect(Date.now() - shutdownStartedAt).toBeLessThan(1000);
     expect(closeDatabase).toHaveBeenCalledOnce();
     await workerPromise;
-  });
-
-  it('runs both loops concurrently while crawl-critical work pauses new job claims', async () => {
-    let finishFirstCrawl;
-    let finishJob;
-    const firstCrawl = new Promise(resolve => {
-      finishFirstCrawl = resolve;
-    });
-    const jobExecution = new Promise(resolve => {
-      finishJob = resolve;
-    });
-    const job = { id: 'job-1' };
-    let crawlCount = 0;
-    const dependencies = createWorkerDependencies({
-      runCrawl: vi.fn(async () => {
-        crawlCount++;
-        if (crawlCount === 1) await firstCrawl;
-      }),
-      claimProcessingJobs: vi.fn()
-        .mockResolvedValueOnce([job])
-        .mockResolvedValue([]),
-      executeProcessingJob: vi.fn(() => jobExecution)
-    });
-    const worker = createCrawlWorker({
-      intervalMs: 20,
-      processingJobPollIntervalMs: 1,
-      loadDependencies: async () => dependencies,
-      logger: { error: vi.fn(), log: vi.fn() },
-      registerProcessHandlers: false
-    });
-
-    const workerPromise = worker.start();
-    await vi.waitFor(() => expect(dependencies.runCrawl).toHaveBeenCalledOnce());
-    await new Promise(resolve => setTimeout(resolve, 10));
-    expect(dependencies.claimProcessingJobs).not.toHaveBeenCalled();
-
-    finishFirstCrawl();
-    await vi.waitFor(() => expect(dependencies.executeProcessingJob).toHaveBeenCalledWith(
-      job,
-      expect.objectContaining({ signal: expect.any(AbortSignal) })
-    ));
-    await vi.waitFor(() => expect(
-      dependencies.runCrawl.mock.calls.length
-    ).toBeGreaterThanOrEqual(2));
-    const shutdownPromise = worker.shutdown('test complete');
-    expect(dependencies.closeDatabase).not.toHaveBeenCalled();
-    finishJob({ status: 'succeeded' });
-
-    await shutdownPromise;
-    await workerPromise;
-    expect(dependencies.closeDatabase).toHaveBeenCalledOnce();
-  });
-
-  it('keeps crawling after a processing claim iteration fails', async () => {
-    const logger = { error: vi.fn(), log: vi.fn() };
-    let crawlCount = 0;
-    const dependencies = createWorkerDependencies({
-      runCrawl: vi.fn(async () => {
-        crawlCount++;
-        if (crawlCount === 2) void worker.shutdown('test complete');
-      }),
-      claimProcessingJobs: vi.fn().mockRejectedValue(new Error('test claim failure'))
-    });
-    const worker = createCrawlWorker({
-      intervalMs: 20,
-      processingJobPollIntervalMs: 1,
-      loadDependencies: async () => dependencies,
-      logger,
-      registerProcessHandlers: false
-    });
-
-    await worker.start();
-
-    expect(dependencies.runCrawl).toHaveBeenCalledTimes(2);
-    expect(dependencies.claimProcessingJobs).toHaveBeenCalled();
-    expect(logger.error).toHaveBeenCalledWith(
-      '[CrawlWorker] Processing-job claim iteration failed:',
-      expect.any(Error)
-    );
-  });
-
-  it('keeps processing jobs after a crawl iteration fails', async () => {
-    const logger = { error: vi.fn(), log: vi.fn() };
-    const job = { id: 'job-after-crawl-failure' };
-    const dependencies = createWorkerDependencies({
-      runCrawl: vi.fn().mockRejectedValue(new Error('test crawl failure')),
-      claimProcessingJobs: vi.fn().mockResolvedValueOnce([job]),
-      executeProcessingJob: vi.fn(async () => {
-        void worker.shutdown('test complete');
-        return { status: 'succeeded' };
-      })
-    });
-    const worker = createCrawlWorker({
-      intervalMs: 60_000,
-      processingJobPollIntervalMs: 1,
-      loadDependencies: async () => dependencies,
-      logger,
-      registerProcessHandlers: false
-    });
-
-    await worker.start();
-
-    expect(dependencies.executeProcessingJob).toHaveBeenCalledWith(
-      job,
-      expect.objectContaining({ signal: expect.any(AbortSignal) })
-    );
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('Crawl iteration failed'),
-      expect.any(Error)
-    );
-  });
-
-  it('stops claims and waits for bounded in-flight processing before closing once', async () => {
-    let finishJob;
-    const jobExecution = new Promise(resolve => {
-      finishJob = resolve;
-    });
-    const dependencies = createWorkerDependencies({
-      claimProcessingJobs: vi.fn()
-        .mockResolvedValueOnce([{ id: 'shutdown-job' }])
-        .mockResolvedValue([]),
-      executeProcessingJob: vi.fn(() => jobExecution)
-    });
-    const worker = createCrawlWorker({
-      intervalMs: 60_000,
-      processingJobPollIntervalMs: 1,
-      loadDependencies: async () => dependencies,
-      logger: { error: vi.fn(), log: vi.fn() },
-      registerProcessHandlers: false
-    });
-
-    const workerPromise = worker.start();
-    await vi.waitFor(() => expect(dependencies.executeProcessingJob).toHaveBeenCalledOnce());
-    const claimsBeforeShutdown = dependencies.claimProcessingJobs.mock.calls.length;
-    const shutdownPromise = worker.shutdown('SIGTERM');
-    await new Promise(resolve => setTimeout(resolve, 10));
-    expect(dependencies.claimProcessingJobs).toHaveBeenCalledTimes(claimsBeforeShutdown);
-    expect(dependencies.closeDatabase).not.toHaveBeenCalled();
-    finishJob({ status: 'succeeded' });
-
-    await shutdownPromise;
-    await workerPromise;
-    expect(dependencies.closeDatabase).toHaveBeenCalledOnce();
-  });
-
-  it('does not dispatch jobs returned by a claim that finishes after shutdown', async () => {
-    let finishClaim;
-    const pendingClaim = new Promise(resolve => {
-      finishClaim = resolve;
-    });
-    const dependencies = createWorkerDependencies({
-      claimProcessingJobs: vi.fn(() => pendingClaim)
-    });
-    const worker = createCrawlWorker({
-      intervalMs: 60_000,
-      processingJobPollIntervalMs: 1,
-      loadDependencies: async () => dependencies,
-      logger: { error: vi.fn(), log: vi.fn() },
-      registerProcessHandlers: false
-    });
-
-    const workerPromise = worker.start();
-    await vi.waitFor(() => expect(dependencies.claimProcessingJobs).toHaveBeenCalledOnce());
-    const shutdownPromise = worker.shutdown('SIGTERM');
-    finishClaim([{ id: 'leased-during-shutdown' }]);
-
-    await shutdownPromise;
-    await workerPromise;
-    expect(dependencies.executeProcessingJob).not.toHaveBeenCalled();
-    expect(dependencies.closeDatabase).toHaveBeenCalledOnce();
-  });
-
-  it('aborts in-flight processing after the configured shutdown grace period', async () => {
-    let receivedSignal;
-    const dependencies = createWorkerDependencies({
-      claimProcessingJobs: vi.fn().mockResolvedValueOnce([{ id: 'abort-job' }]),
-      executeProcessingJob: vi.fn((_job, { signal }) => {
-        receivedSignal = signal;
-        return new Promise(resolve => {
-          signal.addEventListener('abort', () => resolve({ status: 'pending' }), { once: true });
-        });
-      })
-    });
-    const worker = createCrawlWorker({
-      intervalMs: 60_000,
-      processingJobPollIntervalMs: 1,
-      processingJobShutdownTimeoutMs: 10,
-      loadDependencies: async () => dependencies,
-      logger: { error: vi.fn(), log: vi.fn() },
-      registerProcessHandlers: false
-    });
-
-    const workerPromise = worker.start();
-    await vi.waitFor(() => expect(dependencies.executeProcessingJob).toHaveBeenCalledOnce());
-    await worker.shutdown('SIGTERM');
-    await workerPromise;
-
-    expect(receivedSignal.aborted).toBe(true);
-    expect(dependencies.closeDatabase).toHaveBeenCalledOnce();
-  });
-
-  it('forces SQLite processing concurrency to one', async () => {
-    const healthReporter = vi.fn().mockResolvedValue(undefined);
-    const dependencies = createWorkerDependencies({
-      databaseDialect: 'sqlite',
-      claimProcessingJobs: vi.fn(async () => {
-        void worker.shutdown('test complete');
-        return [];
-      })
-    });
-    const worker = createCrawlWorker({
-      intervalMs: 60_000,
-      processingJobPollIntervalMs: 1,
-      processingJobConcurrency: 4,
-      loadDependencies: async () => dependencies,
-      logger: { error: vi.fn(), log: vi.fn() },
-      registerProcessHandlers: false,
-      healthReporter
-    });
-
-    await worker.start();
-
-    expect(dependencies.recoverExpiredProcessingJobs).toHaveBeenCalledWith({ limit: 1 });
-    expect(dependencies.claimProcessingJobs).toHaveBeenCalledWith({ limit: 1 });
-    expect(healthReporter.mock.calls.some(([state]) => (
-      state.processingJobs.concurrency === 1
-    ))).toBe(true);
-  });
-
-  it('continues into claiming when startup lease recovery fails', async () => {
-    const logger = { error: vi.fn(), log: vi.fn() };
-    const dependencies = createWorkerDependencies({
-      recoverExpiredProcessingJobs: vi.fn().mockRejectedValue(new Error('recovery failed')),
-      claimProcessingJobs: vi.fn(async () => {
-        void worker.shutdown('test complete');
-        return [];
-      })
-    });
-    const worker = createCrawlWorker({
-      intervalMs: 60_000,
-      processingJobPollIntervalMs: 1,
-      loadDependencies: async () => dependencies,
-      logger,
-      registerProcessHandlers: false
-    });
-
-    await worker.start();
-
-    expect(dependencies.recoverExpiredProcessingJobs).toHaveBeenCalledOnce();
-    expect(dependencies.claimProcessingJobs).toHaveBeenCalledOnce();
-    expect(dependencies.recoverExpiredProcessingJobs.mock.invocationCallOrder[0]).toBeLessThan(
-      dependencies.claimProcessingJobs.mock.invocationCallOrder[0]
-    );
-    expect(logger.error).toHaveBeenCalledWith(
-      '[CrawlWorker] Processing-job lease recovery failed:',
-      expect.any(Error)
-    );
-  });
-
-  it('logs and records each bounded expired-lease recovery', async () => {
-    const recoveredJob = {
-      id: 'recovered-job',
-      type: 'semantic_label',
-      attempts: 2,
-      userId: 8,
-      payload: { targetType: 'event', targetId: 22 }
-    };
-    const logger = { error: vi.fn(), log: vi.fn() };
-    const dependencies = createWorkerDependencies({
-      recoverExpiredProcessingJobs: vi.fn().mockResolvedValue([recoveredJob]),
-      processingJobLogContext: vi.fn().mockReturnValue({
-        jobId: recoveredJob.id,
-        type: recoveredJob.type,
-        attempt: 2,
-        userId: 8,
-        target: { targetType: 'event', targetId: 22 }
-      }),
-      recordRecoveredProcessingJobLease: vi.fn().mockResolvedValue(undefined),
-      claimProcessingJobs: vi.fn(async () => {
-        void worker.shutdown('test complete');
-        return [];
-      })
-    });
-    const worker = createCrawlWorker({
-      intervalMs: 60_000,
-      processingJobPollIntervalMs: 1,
-      loadDependencies: async () => dependencies,
-      logger,
-      registerProcessHandlers: false
-    });
-
-    await worker.start();
-
-    expect(dependencies.recordRecoveredProcessingJobLease).toHaveBeenCalledWith(recoveredJob);
-    expect(logger.log).toHaveBeenCalledWith({
-      event: 'processing_job.lease_recovered',
-      jobId: recoveredJob.id,
-      type: recoveredJob.type,
-      attempt: 2,
-      userId: 8,
-      target: { targetType: 'event', targetId: 22 }
-    });
-  });
-
-  it('reports a structured operational queue snapshot through logs and health', async () => {
-    const snapshot = {
-      event: 'processing_jobs.snapshot',
-      pendingByType: { article_enrichment: 2 },
-      oldestPendingJobAgeMs: 5000,
-      runningCount: 1,
-      retryCount: 1,
-      deadJobCount: 3,
-      completionCount: 10,
-      failureCount: 3,
-      processingLatencyMs: { sampleSize: 2, average: 100, maximum: 150 }
-    };
-    const logger = { error: vi.fn(), log: vi.fn() };
-    const healthReporter = vi.fn().mockResolvedValue(undefined);
-    const dependencies = createWorkerDependencies({
-      loadProcessingJobOperationalSnapshot: vi.fn().mockResolvedValue(snapshot),
-      claimProcessingJobs: vi.fn(async () => {
-        void worker.shutdown('test complete');
-        return [];
-      })
-    });
-    const worker = createCrawlWorker({
-      intervalMs: 60_000,
-      processingJobPollIntervalMs: 1,
-      processingJobReportIntervalMs: 1,
-      loadDependencies: async () => dependencies,
-      logger,
-      registerProcessHandlers: false,
-      healthReporter
-    });
-
-    await worker.start();
-
-    expect(dependencies.loadProcessingJobOperationalSnapshot).toHaveBeenCalledOnce();
-    expect(logger.log).toHaveBeenCalledWith(snapshot);
-    expect(healthReporter.mock.calls.some(([state]) => (
-      state.processingJobs.operationalSnapshot === snapshot
-    ))).toBe(true);
   });
 
   // This test verifies installed process handlers request shutdown and are removed afterward.

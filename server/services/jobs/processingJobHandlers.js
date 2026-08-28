@@ -32,12 +32,21 @@ export const processingJobLogContext = job => ({
   target: safeJobTarget(job)
 });
 
-const logJobEvent = (logger, job, event, details = {}) => {
-  logger?.log?.({
-    event,
+const compactLogField = ([key, value]) => value === undefined
+  ? null
+  : `${key}=${JSON.stringify(value)}`;
+
+// Formats job lifecycle data as one safe, grep-friendly worker log line.
+export const formatProcessingJobLogLine = (job, event, details = {}) => {
+  const fields = Object.entries({
     ...processingJobLogContext(job),
     ...details
-  });
+  }).map(compactLogField).filter(Boolean);
+  return `[AiWorker] ${event} ${fields.join(' ')}`;
+};
+
+const logJobEvent = (logger, job, event, details = {}) => {
+  logger?.log?.(formatProcessingJobLogLine(job, event, details));
 };
 
 export const processingJobHandlerRegistry = new Map([
@@ -200,13 +209,8 @@ export const executeClaimedProcessingJob = async (job, {
               code: 'ARTICLE_ENRICHMENT_FAILURE_STATE_WRITE_FAILED',
               retryable: true,
               cause: markError
-            });
-        await recordJobFailure({ job, error: guardedError, status: 'dead' });
-        logJobEvent(logger, job, 'processing_job.failure_state_write_failed', {
-          status: 'dead',
-          errorCode: guardedError.code,
-          processingLatencyMs: Date.now() - executionStartedAt
         });
+        await recordJobFailure({ job, error: guardedError, status: 'dead' });
       }
     }
     await recordJobFailure({ job, error, status });

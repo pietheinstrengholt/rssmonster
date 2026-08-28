@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   embedArticles: vi.fn(),
@@ -34,6 +34,10 @@ vi.mock('../../services/observability/processingFailures.js', () => ({
 }));
 
 describe('runPostCrawlSemanticPipeline', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   beforeEach(() => {
     mocked.embedArticles.mockReset();
     mocked.markDuplicateArticlesForUser.mockReset();
@@ -47,6 +51,7 @@ describe('runPostCrawlSemanticPipeline', () => {
     const crawlStartedAt = new Date('2026-07-01T12:00:00.000Z');
 
     mocked.embedArticles.mockResolvedValue({
+      scannedCount: 3,
       embeddedCount: 2,
       skippedCount: 1
     });
@@ -63,6 +68,7 @@ describe('runPostCrawlSemanticPipeline', () => {
       newEventsCreatedCount: 1,
       linkedToExistingEventCount: 1,
       unassignedCount: 1,
+      durations: { eventsMs: 1300, topicsMs: 420 },
       topicAssignment: {
         skipped: false,
         eventCount: 2,
@@ -80,6 +86,7 @@ describe('runPostCrawlSemanticPipeline', () => {
       topicScoredCount: 4,
       fallbackScoredCount: 1
     });
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     const { runPostCrawlSemanticPipeline } = await import('../../services/crawl/orchestration/postCrawlSemanticPipeline.js');
     const result = await runPostCrawlSemanticPipeline({
@@ -108,10 +115,22 @@ describe('runPostCrawlSemanticPipeline', () => {
     expect(result.skipped).toBe(1);
     expect(result.results[0].events.touchedEventIds).toEqual([10, 11]);
     expect(result.results[0].interestScores.updatedCount).toBe(5);
+    expect(log.mock.calls.map(([line]) => line)).toEqual([
+      expect.stringMatching(
+        /^\[EMBEDDING\] processed=3 embedded=2 skipped=1 user=42 duration=\d+(?:ms|\.\d+s)$/
+      ),
+      '[EVENTS] processed=3 assigned=2 standalone=1 newEvents=1 ' +
+        'existingEvents=1 touched=2 user=42 duration=1.3s',
+      '[TOPICS] events=2 matched=1 created=1 unmatched=1 user=42 duration=420ms',
+      expect.stringMatching(
+        /^\[ISLANDS\] interestScoresUpdated=5 topicScored=4 fallbackScored=1 user=42 duration=\d+(?:ms|\.\d+s)$/
+      )
+    ]);
   });
 
   // This test verifies a crawl with no affected users skips every semantic stage.
   it('returns an empty summary when the crawl did not process any users', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     const { runPostCrawlSemanticPipeline } = await import('../../services/crawl/orchestration/postCrawlSemanticPipeline.js');
     const result = await runPostCrawlSemanticPipeline(undefined, {
       onProgress: 'not-a-function'
@@ -127,6 +146,7 @@ describe('runPostCrawlSemanticPipeline', () => {
     expect(mocked.markDuplicateArticlesForUser).not.toHaveBeenCalled();
     expect(mocked.runIncrementalEventsForUser).not.toHaveBeenCalled();
     expect(mocked.scoreArticlesFromIslandsForUser).not.toHaveBeenCalled();
+    expect(log).not.toHaveBeenCalled();
   });
 
   // This test verifies explicit ownership, default counts, and progress callbacks.

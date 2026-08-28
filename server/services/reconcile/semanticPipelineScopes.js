@@ -26,6 +26,7 @@ import { recomputeTopicStatsForUser } from '../topics/shared/topicStats.service.
 import { HOUR_MS } from '../events/articleEventTime.js';
 import { recordProcessingFailure } from '../observability/processingFailures.js';
 import { tryEnqueueGeneratedSemanticLabelJobsForUser } from '../semanticLabels/semanticLabelJobs.js';
+import { debugSemanticLog } from '../observability/semanticLogging.js';
 
 // Provides the shared dependencies used by this service.
 const { Article, Event, Feed, Topic, ArticleTopic, EventTopic } = db;
@@ -73,7 +74,8 @@ function buildAssignmentResult({
   touchedEventIds,
   touchedTopicIds = [],
   runContext,
-  topicAssignment = null
+  topicAssignment = null,
+  durations = null
 }) {
   // Filters source values to the entries eligible while building assignment result.
   const assignedArticleCount = articles.filter(article => article.eventId != null).length;
@@ -95,6 +97,7 @@ function buildAssignmentResult({
     newEventsCreatedCount: Number(runContext.stats.newEventsCreatedCount || 0),
     linkedToExistingEventCount: Number(runContext.stats.linkedToExistingEventCount || 0),
     unassignedCount,
+    durations: durations || { eventsMs: 0, topicsMs: 0 },
     topicAssignment: topicAssignment || {
       skipped: true,
       eventCount: 0,
@@ -130,7 +133,7 @@ async function clearForeignEventReferencesForUser(userId) {
 
   // Handles the case where affected count is available.
   if (affectedCount) {
-    console.log(`[EVENT] Cleared ${affectedCount} foreign event references for user ${userId}`);
+    debugSemanticLog('event', `[EVENT] Cleared ${affectedCount} foreign event references for user ${userId}`);
   }
 }
 
@@ -245,7 +248,7 @@ async function embedArticlesForEventAssignment(articles, scope, processingContex
 
   // Handles the case where reused embedding count is available or generated embedding count is available.
   if (reusedEmbeddingCount || generatedEmbeddingCount) {
-    console.log(
+    debugSemanticLog('event',
       `[EVENT] ${scope}: embeddings reused=${reusedEmbeddingCount} generated=${generatedEmbeddingCount}`
     );
   }
@@ -440,6 +443,7 @@ async function assignTopicsForTouchedEvents({ userId, articles, touchedIds, arti
 
 // This function orchestrates one scoped event assignment pass.
 async function runEventAssignmentPass(userId, articles, scope, options = {}) {
+  const passStartedAt = Date.now();
   const {
     skipTopicAssignment = false,
     useTemporalEventCandidates = false,
@@ -485,31 +489,33 @@ async function runEventAssignmentPass(userId, articles, scope, options = {}) {
   // Derives the assignment summary through format event assignment summary while performing run event assignment pass.
   const assignmentSummary = formatEventAssignmentSummary(runContext);
 
-  console.log(`[EVENT] ${scope}: assignment summary ${assignmentSummary}`);
+  debugSemanticLog('event', `[EVENT] ${scope}: assignment summary ${assignmentSummary}`);
 
   // Handles the case where touched event id size is unavailable.
   if (!touchedEventIds.size) {
     await logEventProcessingSummary(userId, articles, runContext);
-    console.log(`[EVENT] ${scope}: no events created or updated`);
+    debugSemanticLog('event', `[EVENT] ${scope}: no events created or updated`);
     return buildAssignmentResult({
       userId,
       mode: scope,
       articles,
       touchedEventIds,
-      runContext
+      runContext,
+      durations: { eventsMs: Date.now() - passStartedAt, topicsMs: 0 }
     });
   }
 
   // Collects the touched id while performing run event assignment pass.
   const touchedIds = [...touchedEventIds];
 
-  console.log(
+  debugSemanticLog('event',
     `[EVENT] ${scope}: ${touchedIds.length} events touched ` +
     `(${articles.length} articles assigned)`
   );
 
   // Derives the values through reconcile touched events while performing run event assignment pass.
   const { articlesByEventId } = await reconcileTouchedEvents(userId, touchedIds);
+  const eventsDurationMs = Date.now() - passStartedAt;
 
   await logEventProcessingSummary(userId, articles, runContext);
 
@@ -520,12 +526,14 @@ async function runEventAssignmentPass(userId, articles, scope, options = {}) {
       mode: scope,
       articles,
       touchedEventIds,
-      runContext
+      runContext,
+      durations: { eventsMs: eventsDurationMs, topicsMs: 0 }
     });
   }
 
   // Derives the topic assignment through assign topics for touched events while performing run event assignment pass.
   let topicAssignment;
+  const topicsStartedAt = Date.now();
   try {
     topicAssignment = await assignTopicsForTouchedEvents({
       userId,
@@ -558,6 +566,10 @@ async function runEventAssignmentPass(userId, articles, scope, options = {}) {
     topicAssignment: {
       skipped: false,
       ...topicAssignment
+    },
+    durations: {
+      eventsMs: eventsDurationMs,
+      topicsMs: Date.now() - topicsStartedAt
     }
   });
 }
@@ -569,7 +581,7 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
     skipTopicAssignment = false,
     processingContext = null
   } = options;
-  console.log(`[EVENT] Incremental event assignment for user ${userId}`);
+  debugSemanticLog('event', `[EVENT] Incremental event assignment for user ${userId}`);
 
   // Derives the cache window hours through rolling event window hours while performing run incremental events for user.
   const cacheWindowHours = rollingEventWindowHours();
@@ -607,7 +619,7 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
 
   // Handles the case where articles is empty.
   if (!articles.length) {
-    console.log('[EVENT] No unclustered articles - nothing to do');
+    debugSemanticLog('event', '[EVENT] No unclustered articles - nothing to do');
     return {
       userId,
       mode: 'incremental',
@@ -619,6 +631,7 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
       newEventsCreatedCount: 0,
       linkedToExistingEventCount: 0,
       unassignedCount: 0,
+      durations: { eventsMs: 0, topicsMs: 0 },
       topicAssignment: {
         skipped: skipTopicAssignment,
         eventCount: 0,
@@ -634,7 +647,7 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
     };
   }
 
-  console.log(`[EVENT] ${articles.length} unclustered articles to assign`);
+  debugSemanticLog('event', `[EVENT] ${articles.length} unclustered articles to assign`);
   // Derives the cache reference date through latest article event date while performing run incremental events for user.
   const cacheReferenceDate = latestArticleEventDate(articles);
 
@@ -654,7 +667,7 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
 
   articleCandidateCache.removeExpired(cacheReferenceDate);
 
-  console.log(`[EVENT] Finished incremental pass for user ${userId}`);
+  debugSemanticLog('event', `[EVENT] Finished incremental pass for user ${userId}`);
 
   return result;
 }
@@ -689,7 +702,7 @@ export async function runIncrementalEventsForUser(userId, options = {}) {
 // This function runs the recent-repair event scope over the configured recency window.
 export async function repairRecentEventsForUser(userId, options = {}) {
   const { skipTopicAssignment = false } = options;
-  console.log(`[EVENT] Recent-repair event assignment for user ${userId}`);
+  debugSemanticLog('event', `[EVENT] Recent-repair event assignment for user ${userId}`);
 
   await clearForeignEventReferencesForUser(userId);
 
@@ -717,7 +730,7 @@ export async function repairRecentEventsForUser(userId, options = {}) {
 
   // Handles the case where window articles is empty.
   if (!windowArticles.length) {
-    console.log('[EVENT] No vectorized articles in recency window - nothing to do');
+    debugSemanticLog('event', '[EVENT] No vectorized articles in recency window - nothing to do');
     return {
       userId,
       mode: 'recent-repair',
@@ -774,7 +787,7 @@ export async function repairRecentEventsForUser(userId, options = {}) {
   // Collects the owned previous event id list while performing repair recent events for user.
   const ownedPreviousEventIdList = [...ownedPreviousEventIds];
 
-  console.log(
+  debugSemanticLog('event',
     `[EVENT] ${windowArticles.length} articles in ` +
     `${RECENCY_WINDOW_DAYS}-day window ` +
     `(${ownedPreviousEventIds.size}/${previousEventIds.size} events affected)`
@@ -869,7 +882,7 @@ export async function repairRecentEventsForUser(userId, options = {}) {
 
   // Handles the case where deleted count is available.
   if (deletedCount) {
-    console.log(`[EVENT] Removed ${deletedCount} empty events`);
+    debugSemanticLog('event', `[EVENT] Removed ${deletedCount} empty events`);
   }
 
   // Derives the repair result through run event assignment pass while performing repair recent events for user.
@@ -885,7 +898,7 @@ export async function repairRecentEventsForUser(userId, options = {}) {
   // Derives the summary through summarize article assignments while performing repair recent events for user.
   const summary = await summarizeArticleAssignments(userId, windowArticleIds);
 
-  console.log(
+  debugSemanticLog('event',
     `[EVENT] User ${userId} recent-repair summary: ` +
     `articles=${summary.totalArticles} ` +
     `articlesWithEvents=${summary.assignedArticles} ` +
@@ -893,7 +906,7 @@ export async function repairRecentEventsForUser(userId, options = {}) {
     `eventCoverage=${summary.assignedPct}%`
   );
 
-  console.log(
+  debugSemanticLog('event',
     `[EVENT] Finished recent-repair event pass for user ${userId}` +
     ` (window=${RECENCY_WINDOW_DAYS}d, articles=${windowArticles.length},` +
     ` pruned=${deletedCount})`
@@ -916,7 +929,7 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
     batchSize = 250
   } = options;
 
-  console.log(`[EVENT] Historical event backfill for user ${userId}`);
+  debugSemanticLog('event', `[EVENT] Historical event backfill for user ${userId}`);
 
   await clearForeignEventReferencesForUser(userId);
 
@@ -972,7 +985,7 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
     totalProcessed += articles.length;
     lastId = articles[articles.length - 1].id;
 
-    console.log(`[EVENT] Historical backfill processed=${totalProcessed}, lastId=${lastId}`);
+    debugSemanticLog('event', `[EVENT] Historical backfill processed=${totalProcessed}, lastId=${lastId}`);
   }
 
   // Handles the case where skip topic assignment is unavailable and touched topic id is non-empty.
@@ -980,7 +993,7 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
     await recomputeTopicStatsForUser(userId, touchedTopicIds);
   }
 
-  console.log(
+  debugSemanticLog('event',
     `[EVENT] Finished historical event backfill for user ${userId}, ` +
     `articles=${totalProcessed}`
   );
@@ -1025,7 +1038,7 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
 export async function rebuildAllTopicsForUser(userId, options = {}) {
   const { assignmentContext = 'full-rebuild' } = options;
 
-  console.log(`[TOPIC] Full-rebuild topics for user ${userId}`);
+  debugSemanticLog('event', `[TOPIC] Full-rebuild topics for user ${userId}`);
 
   // Loads the user topics needed while performing rebuild all topics for user.
   const userTopics = await Topic.findAll({
@@ -1128,17 +1141,17 @@ export async function rebuildAllTopicsForUser(userId, options = {}) {
     ? ((stats.newTopicsCreated / assignableEvents) * 100).toFixed(1)
     : '0';
 
-  console.log(`[TOPIC] === Topic Rebuild Summary for user ${userId} ===`);
-  console.log(`[TOPIC] Active topics          ${topicCount}`);
-  console.log(`[TOPIC] Events processed       ${eventCount}`);
-  console.log(`[TOPIC] Events matched         ${stats.eventsMatched}`);
-  console.log(`[TOPIC] Events unmatched       ${stats.eventsUnmatched}`);
-  console.log(`[TOPIC] Events skipped         ${stats.eventsSkipped} (no vector)`);
-  console.log(`[TOPIC] New topics created     ${stats.newTopicsCreated}`);
-  console.log(`[TOPIC] Average events/topic   ${avgEventsPerTopic}`);
-  console.log(`[TOPIC] Largest topic size     ${largestTopicSize} events`);
-  console.log(`[TOPIC] Topic reuse ratio      ${reuseRatio}%`);
-  console.log(`[TOPIC] Topic creation ratio   ${creationRatio}%`);
+  debugSemanticLog('event', `[TOPIC] === Topic Rebuild Summary for user ${userId} ===`);
+  debugSemanticLog('event', `[TOPIC] Active topics          ${topicCount}`);
+  debugSemanticLog('event', `[TOPIC] Events processed       ${eventCount}`);
+  debugSemanticLog('event', `[TOPIC] Events matched         ${stats.eventsMatched}`);
+  debugSemanticLog('event', `[TOPIC] Events unmatched       ${stats.eventsUnmatched}`);
+  debugSemanticLog('event', `[TOPIC] Events skipped         ${stats.eventsSkipped} (no vector)`);
+  debugSemanticLog('event', `[TOPIC] New topics created     ${stats.newTopicsCreated}`);
+  debugSemanticLog('event', `[TOPIC] Average events/topic   ${avgEventsPerTopic}`);
+  debugSemanticLog('event', `[TOPIC] Largest topic size     ${largestTopicSize} events`);
+  debugSemanticLog('event', `[TOPIC] Topic reuse ratio      ${reuseRatio}%`);
+  debugSemanticLog('event', `[TOPIC] Topic creation ratio   ${creationRatio}%`);
 
   return {
     userId,

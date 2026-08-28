@@ -21,21 +21,12 @@ const positiveInteger = (value, fallback, name) => {
   return parsed;
 };
 
-const enabledFlag = (value, fallback = true) => {
-  if (value === undefined || value === '') return fallback;
-  const normalized = String(value).trim().toLowerCase();
-  if (['true', '1', 'yes'].includes(normalized)) return true;
-  if (['false', '0', 'no'].includes(normalized)) return false;
-  throw new Error('PROCESSING_JOB_WORKER_ENABLED must be true or false.');
-};
-
 export const isAiWorkerEntryPoint = ({ argv = process.argv, env = process.env } = {}) => {
   const entryPath = env.pm_exec_path || argv[1];
   return Boolean(entryPath) && path.resolve(entryPath) === workerFile;
 };
 
 export const getAiWorkerConfig = (environment = process.env) => ({
-  enabled: enabledFlag(environment.PROCESSING_JOB_WORKER_ENABLED),
   pollIntervalMs: positiveInteger(
     environment.PROCESSING_JOB_POLL_INTERVAL_MS,
     DEFAULT_POLL_INTERVAL_MS,
@@ -87,10 +78,10 @@ const loadAiWorkerDependencies = async () => {
     closeDatabase: () => db.sequelize.close(),
     databaseDialect: db.sequelize.getDialect(),
     executeProcessingJob: processingHandlers.executeClaimedProcessingJob,
+    formatProcessingJobLogLine: processingHandlers.formatProcessingJobLogLine,
     isCrawlPriorityLeaseActive: crawlPriority.isCrawlPriorityLeaseActive,
     loadProcessingJobOperationalSnapshot:
       processingObservability.loadProcessingJobOperationalSnapshot,
-    processingJobLogContext: processingHandlers.processingJobLogContext,
     recordRecoveredProcessingJobLease:
       processingHandlers.recordRecoveredProcessingJobLease,
     recoverExpiredProcessingJobs: processingQueue.recoverExpiredProcessingJobs
@@ -201,11 +192,13 @@ export const createAiWorker = ({
       .catch(error => {
         health.status = 'degraded';
         health.consecutiveFailures++;
-        logger.error({
-          event: 'processing_job.execution_failed_abnormally',
-          ...(dependencies.processingJobLogContext?.(job) || { jobId: job?.id || null }),
-          errorCode: error?.code || error?.name || 'PROCESSING_JOB_EXECUTION_FAILED'
-        });
+        const errorCode = error?.code || error?.name || 'PROCESSING_JOB_EXECUTION_FAILED';
+        logger.error(dependencies.formatProcessingJobLogLine?.(
+          job,
+          'processing_job.failed',
+          { status: 'abnormal', errorCode }
+        ) || `[AiWorker] processing_job.failed jobId=${JSON.stringify(job?.id || null)} ` +
+          `status="abnormal" errorCode=${JSON.stringify(errorCode)}`);
       })
       .finally(() => {
         inFlightJobs.delete(task);
@@ -220,11 +213,8 @@ export const createAiWorker = ({
   const recoverExpiredLeases = async () => {
     try {
       const jobs = await dependencies.recoverExpiredProcessingJobs({ limit: effectiveConcurrency });
-      for (const job of jobs) {
-        logger.log({
-          event: 'processing_job.lease_recovered',
-          ...(dependencies.processingJobLogContext?.(job) || { jobId: job?.id || null })
-        });
+      if (jobs.length) {
+        logger.log(`[AiWorker] processing_job.leases_recovered count=${jobs.length}`);
       }
       if (dependencies.recordRecoveredProcessingJobLease) {
         await Promise.allSettled(jobs.map(job => (
@@ -246,14 +236,11 @@ export const createAiWorker = ({
     try {
       const snapshot = await dependencies.loadProcessingJobOperationalSnapshot();
       health.operationalSnapshot = snapshot;
-      logger.log(snapshot);
     } catch (error) {
       health.status = 'degraded';
       health.consecutiveFailures++;
-      logger.error({
-        event: 'processing_jobs.snapshot_failed',
-        errorCode: error?.code || error?.name || 'PROCESSING_JOB_SNAPSHOT_FAILED'
-      });
+      const errorCode = error?.code || error?.name || 'PROCESSING_JOB_SNAPSHOT_FAILED';
+      logger.error(`[AiWorker] processing_jobs.snapshot_failed errorCode=${JSON.stringify(errorCode)}`);
     }
   };
 
@@ -282,7 +269,6 @@ export const createAiWorker = ({
     installProcessHandlers();
     try {
       await reportHealth('starting');
-      if (!config.enabled) throw new Error('PROCESSING_JOB_WORKER_ENABLED is false');
       dependencies = await loadDependencies();
       effectiveConcurrency = dependencies.databaseDialect === 'sqlite' ? 1 : config.concurrency;
       health.concurrency = effectiveConcurrency;

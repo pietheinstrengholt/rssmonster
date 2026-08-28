@@ -3,6 +3,7 @@ import db from '../../models/index.js';
 import {
   deriveProcessingJobHealthStatus,
   getProcessingJobStatus,
+  PROCESSING_JOB_STATUS_DEGRADED_FAILURE_WINDOW_MS,
   PROCESSING_JOB_STATUS_RECENT_FAILURE_LIMIT,
   PROCESSING_JOB_STATUS_STALLED_AGE_MS
 } from '../../services/jobs/getProcessingJobStatus.js';
@@ -209,6 +210,12 @@ describe('processing job status service', () => {
       now: NOW
     })).toBe('healthy');
     expect(deriveProcessingJobHealthStatus({
+      summary: emptySummary,
+      workerHealthy: false,
+      workerRunning: false,
+      now: NOW
+    })).toBe('healthy');
+    expect(deriveProcessingJobHealthStatus({
       summary: { ...emptySummary, pending: 2, oldestPendingAgeSeconds: 10 },
       workerHealthy: true,
       workerRunning: true,
@@ -224,8 +231,18 @@ describe('processing job status service', () => {
       summary: { ...emptySummary, dead: 1 },
       workerHealthy: true,
       workerRunning: true,
+      mostRecentFailureAt: new Date(NOW.getTime() - 1000),
       now: NOW
     })).toBe('degraded');
+    expect(deriveProcessingJobHealthStatus({
+      summary: { ...emptySummary, dead: 1 },
+      workerHealthy: true,
+      workerRunning: true,
+      mostRecentFailureAt: new Date(
+        NOW.getTime() - PROCESSING_JOB_STATUS_DEGRADED_FAILURE_WINDOW_MS - 1
+      ),
+      now: NOW
+    })).toBe('healthy');
     expect(deriveProcessingJobHealthStatus({
       summary: { ...emptySummary, pending: 1, oldestPendingAgeSeconds: 1 },
       workerHealthy: false,
@@ -245,5 +262,26 @@ describe('processing job status service', () => {
       ),
       now: NOW
     })).toBe('stalled');
+  });
+
+  it('keeps historical dead jobs visible without permanently degrading health', async () => {
+    await createJob({
+      status: 'dead',
+      attempts: 5,
+      maxAttempts: 5,
+      completedAt: new Date(
+        NOW.getTime() - PROCESSING_JOB_STATUS_DEGRADED_FAILURE_WINDOW_MS - 1
+      )
+    });
+
+    const result = await getProcessingJobStatus({
+      userId: user.id,
+      now: NOW,
+      workerHealthReader: healthyWorker
+    });
+
+    expect(result.summary.dead).toBe(1);
+    expect(result.recentFailures).toHaveLength(1);
+    expect(result.health).toEqual({ status: 'healthy', workerRunning: true });
   });
 });
