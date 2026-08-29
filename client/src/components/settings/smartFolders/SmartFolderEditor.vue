@@ -276,12 +276,11 @@
                     <span>Sort by</span>
                     <select v-model="draftConfig.sort.field" class="app-form-select">
                         <option value="">None</option>
-                        <option value="trust">Trust</option>
-                        <option v-if="aiEnabled" value="recommended">Recommended</option>
-                        <option v-if="aiEnabled" value="attention">Most Engaged</option>
-                        <option v-if="aiEnabled" value="quality">Quality</option>
                         <option value="published-desc">Published date (newest)</option>
                         <option value="published-asc">Published date (oldest)</option>
+                        <option v-if="aiEnabled" value="topStories">Top Stories</option>
+                        <option v-if="aiEnabled" value="recommended">Recommended</option>
+                        <option v-if="aiEnabled" value="quality">Quality</option>
                     </select>
                 </label>
 

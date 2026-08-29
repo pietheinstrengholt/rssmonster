@@ -50,6 +50,16 @@ describe('articleSearch recommended include wiring', () => {
     expect(eventInclude).toBeDefined();
   });
 
+  it('includes event and feed quality associations when sorting by Top Stories', async () => {
+    await searchArticles({ userId: 1, sort: 'topStories', status: '%' });
+
+    const query = Article.findAll.mock.calls[0][0];
+    expect(query.include.find(item => item.as === 'event')).toBeDefined();
+    expect(query.include.find(item => item.model === Feed)).toBeDefined();
+    expect(query.include.find(item => item.model === Tag)).toBeUndefined();
+    expect(query.attributes).not.toContain('interestScore');
+  });
+
   it('includes feed quality fields when sorting by quality', async () => {
     await searchArticles({ userId: 1, sort: 'quality', status: '%' });
 

@@ -78,11 +78,18 @@ describe('articleQueryParser.service', () => {
     expect(result.textMode).toBe('terms');
   });
 
-  it('parses sort and limit', () => {
+  it('canonicalizes the legacy Trust sort while parsing a limit', () => {
     const result = parseArticleQuery({ search: 'sort:trust limit:50', defaultSort: 'desc' });
 
-    expect(result.sort).toBe('trust');
+    expect(result.sort).toBe('quality');
     expect(result.limit).toBe(50);
+    expect(result.hasSearchIntent).toBe(true);
+  });
+
+  it('parses the Top Stories sort using its canonical API identifier', () => {
+    const result = parseArticleQuery({ search: 'sort:topStories', defaultSort: 'desc' });
+
+    expect(result.sort).toBe('topStories');
     expect(result.hasSearchIntent).toBe(true);
   });
 

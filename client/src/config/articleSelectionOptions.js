@@ -28,12 +28,11 @@ export const ARTICLE_VIEW_MODE_OPTIONS = createOptions([
 ]);
 
 export const ARTICLE_SORT_OPTIONS = createOptions([
-  { value: 'asc', label: 'Oldest' },
   { value: 'desc', label: 'Newest' },
-  { value: 'trust', label: 'Trust' },
+  { value: 'asc', label: 'Oldest' },
+  { value: 'topStories', label: 'Top Stories', requiresAI: true },
   { value: 'recommended', label: 'Recommended', requiresAI: true },
-  { value: 'quality', label: 'Quality', requiresAI: true },
-  { value: 'attention', label: 'Most Engaged', requiresAI: true }
+  { value: 'quality', label: 'Quality', requiresAI: true }
 ]);
 
 export const ARTICLE_GROUPING_OPTIONS = createOptions([

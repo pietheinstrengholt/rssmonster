@@ -23,10 +23,14 @@ describe('query validation fundamentals', () => {
     expect(validateQuery()).toEqual({ valid: true, error: '' });
   });
 
-  it('leaves API sort values and query aliases unchanged', () => {
+  it('canonicalizes legacy Trust API sort values and query aliases', () => {
     expect(normalizeSortValueForApi('recommended')).toBe('recommended');
+    expect(normalizeSortValueForApi('TrUsT')).toBe('quality');
+    expect(normalizeSortValueForApi('TOPSTORIES')).toBe('topStories');
     expect(normalizeQuerySortAliasesForApi('sort:quality unread:true'))
       .toBe('sort:quality unread:true');
+    expect(normalizeQuerySortAliasesForApi('unread:true sort:trust'))
+      .toBe('unread:true sort:quality');
   });
 
   it('calculates edit distance for equal, inserted, removed, and replaced characters', () => {
@@ -184,6 +188,14 @@ describe('query validation trust sorting', () => {
   it('accepts trust sorting in searches and smart folders', () => {
     expect(validateSearchQuery('sort:trust')).toEqual({ valid: true, error: '' });
     expect(validateSmartFolderQuery('unread:true sort:trust')).toEqual({ valid: true, error: '' });
+  });
+});
+
+describe('query validation intelligent sorting', () => {
+  it('accepts Top Stories in searches and smart folders', () => {
+    expect(validateSearchQuery('sort:topStories')).toEqual({ valid: true, error: '' });
+    expect(validateSmartFolderQuery('unread:true sort:topStories'))
+      .toEqual({ valid: true, error: '' });
   });
 });
 

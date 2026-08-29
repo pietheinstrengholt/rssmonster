@@ -24,7 +24,7 @@ export const expressionPatterns = [
     { name: 'title', regex: /^title:(.+)$/i },
     { name: 'author', regex: /^author:(.+)$/i },
     { name: 'language', regex: /^language:[a-z]{2,3}$/i },
-    { name: 'sort', regex: /^sort:(desc|asc|trust|recommended|quality|attention)$/ },
+    { name: 'sort', regex: /^sort:(desc|asc|trust|topStories|recommended|quality|attention)$/i },
     { name: 'limit', regex: /^limit:\s*(\d+)$/i },
     { name: 'quality', regex: /^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
     { name: 'freshness', regex: /^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
@@ -42,9 +42,18 @@ export const expressionPatterns = [
  */
 export const knownKeywords = ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'event', 'island', 'briefing', 'developing', 'eventCount', 'hot', 'tag', 'title', 'author', 'language', 'sort', 'limit', 'quality', 'freshness', 'firstSeen'];
 
-export const normalizeSortValueForApi = sort => sort;
+export const normalizeSortValueForApi = sort => {
+    const normalized = String(sort).toLowerCase();
+    if (normalized === 'trust') return 'quality';
+    if (normalized === 'topstories') return 'topStories';
+    return sort;
+};
 
-export const normalizeQuerySortAliasesForApi = query => query;
+export const normalizeQuerySortAliasesForApi = query => (
+    typeof query === 'string'
+        ? query.replace(/(\bsort:\s*)trust\b/gi, '$1quality')
+        : query
+);
 
 /**
  * Pattern to detect wrong syntax (using = instead of :)

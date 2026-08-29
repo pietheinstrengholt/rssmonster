@@ -52,7 +52,7 @@ unless a filter's detailed description below states otherwise.
 | Quality score | `quality:0.7`, `quality:=0.7`, `quality:>0.7`, `quality:>=0.7`, `quality:<0.7`, `quality:<=0.7` |
 | Freshness score | `freshness:0.5`, `freshness:=0.5`, `freshness:>0.5`, `freshness:>=0.5`, `freshness:<0.5`, `freshness:<=0.5` |
 | Publication date | `@today`, `@yesterday`, `@lastweek`, `@YYYY-MM-DD`, `@"N days ago"`, `@N days ago`, `@"last Monday"`, `@last Monday` |
-| Sorting | `sort:desc`, `sort:asc`, `sort:trust`, `sort:recommended`, `sort:quality`, `sort:attention` |
+| Sorting | `sort:desc`, `sort:asc`, `sort:topStories`, `sort:recommended`, `sort:quality`; legacy expressions also accept `sort:trust` and `sort:attention` |
 | Result limit | `limit:50` |
 
 Use the lowercase expression spellings shown above. Boolean values are
@@ -109,10 +109,11 @@ Both score filters accept `>`, `<`, `>=`, `<=`, or `=`. Omitting the operator us
 ### Sorting and limits
 
 - `sort:desc` orders newest first; `sort:asc` orders oldest first.
-- `sort:trust` orders by feed trust, then newest publication date and article ID.
-- `sort:recommended` uses freshness, interest, quality, event coverage, source diversity, corroboration, and applicable boosts.
-- `sort:quality` orders by computed article quality.
-- `sort:attention` orders by recorded reading attention and outbound-click activity.
+- `sort:quality` orders by `70%` article quality and `30%` FeedTrust.
+- `sort:trust` is retained as a legacy alias for `sort:quality`.
+- `sort:recommended` emphasizes personal interest, then freshness, Quality, corroboration, and an applicable rule-match boost.
+- `sort:topStories` emphasizes current Event importance, freshness, and Quality without personal-interest input.
+- `sort:attention` remains available for manually authored legacy queries, but Most Engaged is no longer shown in the toolbar or Smart Folder editor.
 - `limit:50` caps the result set and overrides the normal search or Smart Folder limit.
 
 Use a positive integer for `limit`. A value of `0` is treated as though no
@@ -139,12 +140,13 @@ Date filters replace the normal published-date window; they are inclusive of the
 - If you provide search text, RSSMonster searches **all statuses** unless you add a status token. Without search text it defaults to unread.
 - When any search expression is used and no `limit` is provided, results are capped at 500 after sorting. Smart folders may apply their own limits.
 - Quality filters run after fetching, so they can reduce results even when the limit is higher.
+- Recommended, Top Stories, and Quality rank the complete eligible candidate set before applying a result limit. They return a stable ordered ID collection for incremental loading rather than cursor-paginating an already limited SQL page.
 
 ---
 
 ## Combining Tokens
 
-- Mix tokens freely: `title:ai tag:ml island:true @yesterday sort:attention limit:100`
+- Mix tokens freely: `title:ai tag:ml island:true @yesterday sort:recommended limit:100`
 - Title + content: `title:typescript decorators` -> title matches "typescript", content matches any of `decorators`.
 - Status + date: `unread:true @today` keeps only unread items from the last 24 hours.
 

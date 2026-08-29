@@ -99,7 +99,13 @@ The current article query and structured introduction interpret `24h` through th
 
 Minimum distinct sources requires an eligible event to be represented by a chosen number of separate feeds. The current interface offers values from one through five sources. Higher values favor stories corroborated across more subscriptions but can substantially reduce the briefing.
 
-Prioritize high-trust coverage uses recommended ordering and adds the feed's bounded trust score to each article's runtime recommendation score. It affects priority rather than acting as a strict trust cutoff. The structured morning summary currently keeps its own deterministic event-strength ordering and does not use the trust-priority preference.
+Prioritize high-trust coverage does not add a raw FeedTrust value to Recommended.
+The article list always receives FeedTrust only through Recommended's bounded
+Quality contribution. For the structured morning summary, enabling this option
+uses Recommended ordering before the normal event-strength, publication-time,
+and ID fallbacks; disabling it starts directly with event strength. The option
+therefore changes summary ordering without introducing an unweighted trust
+boost.
 
 ### Saving
 

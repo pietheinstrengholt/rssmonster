@@ -180,13 +180,13 @@ The two `showOnly` preferences are mutually exclusive. When both are disabled,
 the normal interest-matched and developing-event union is used.
 
 Daily Briefing always uses `sort:recommended` and event grouping, regardless of
-sort or grouping supplied by a caller. When its `prioritizeHighTrust`
-preference is enabled, each candidate feed's bounded `feedTrust` value is added
-to the runtime recommendation score. The generic Unread
-preference adds the same bounded trust value to Recommended, Newest, Oldest,
-Quality, and Most Engaged ranking. Explicit Trust sorting remains an exact
-database ordering by feed trust, publication date, and article ID. The two
-stored preferences are resolved independently and do not change eligibility or
+sort or grouping supplied by a caller. Recommended is personalized by signed
+interest, freshness, Quality, corroboration, and matching rule tags. Top Stories
+is non-personalized and uses event importance, freshness, and Quality. Both use
+Quality's fixed article-quality and feed-trust weights; neither adds a separate
+raw feed-trust preference boost. The generic Unread `prioritizeHighTrust`
+preference still affects the chronological Newest and Oldest sorts and the
+legacy `sort:attention` path. These preferences do not change eligibility or
 sidebar counts.
 
 Tag values should currently be a single unquoted token. Quoted tag values retain
@@ -237,17 +237,24 @@ status scope.
 
 ## Sorting
 
+The toolbar and Smart Folder editor expose Newest, Oldest, Top Stories,
+Recommended, and Quality. The service also retains two aliases for existing
+saved or manually authored expressions.
+
 | Expression | Behavior |
 | --- | --- |
 | `sort:desc` | Newest publication first. This is the normal default. |
 | `sort:asc` | Oldest publication first. |
-| `sort:trust` | Feed trust descending, then newest publication first. |
-| `sort:recommended` | Recommendation score descending. Uses freshness, interest, quality, event coverage, publisher diversity, corroboration, event boost, and rule-tag boost. |
-| `sort:quality` | Computed article quality descending. |
-| `sort:attention` | Computed attention score descending. |
+| `sort:trust` | Legacy alias for `sort:quality`. |
+| `sort:topStories` | Non-personalized event importance, freshness, and Quality descending. |
+| `sort:recommended` | Personalized signed interest, freshness, Quality, corroboration, and rule-tag boost descending. |
+| `sort:quality` | 70% article-only quality and 30% feed trust, descending. |
+| `sort:attention` | Legacy computed attention score descending; no longer exposed as an editor option. |
 
-Computed score sorts are performed in memory. Trust sorting is performed in the database. When multiple `sort:` tokens are
-present, the last recognized token wins.
+Computed score sorts are performed in memory across the complete eligible
+candidate set before a result limit is applied. They return a stable ordered ID
+collection for incremental loading. When multiple `sort:` tokens are present,
+the last recognized token wins.
 
 ## Limits
 
@@ -448,11 +455,15 @@ Ordering answers the question "what should the reader see first?" after eligibil
 Supported ranking concepts include:
 
 - Chronological order, newest or oldest first.
-- Recommended order, prioritizing articles with stronger usefulness signals.
+- Top Stories order, prioritizing current multi-source event coverage.
+- Recommended order, prioritizing personalized relevance signals.
 - Quality order, prioritizing higher-quality articles.
-- Attention order, prioritizing articles with stronger engagement or attention signals.
+- Legacy Attention order, retained for existing manually authored expressions.
 
-Recommended ranking is a product-level judgment, not a synonym for recency. It may consider article quality, user interest, feed trust, event strength, source diversity, source count, and other signals that represent likely reading value.
+Recommended ranks signed personal interest most strongly, with smaller freshness,
+Quality, corroboration, and rule-match contributions. Top Stories deliberately
+ignores personal interest and ranks event importance alongside freshness and
+Quality. Both are product-level judgments rather than synonyms for recency.
 
 When a ranking model depends on event or source context, search must treat that context as part of the ranking concept. Missing context should reduce confidence or score rather than make an otherwise eligible article invalid, unless the query explicitly requires that context.
 

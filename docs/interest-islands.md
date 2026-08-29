@@ -213,8 +213,8 @@ selects articles without such a relationship. See [Search](search.md) and
 
 ## Inspecting Your Islands
 
-Open **Settings > Islands** for a read-only explanation of what RSSMonster has
-learned. The overview shows:
+Open **Settings > Islands** for an explanation of what RSSMonster has learned.
+The overview itself is read-only and shows:
 
 - the number of active Interest Islands;
 - articles connected to active Islands through Topics;
@@ -225,10 +225,12 @@ learned. The overview shows:
 
 ![Interest Island insights in the Settings menu](assets/interestislands.png)
 
-The overview is a snapshot. Use its **Refresh** button to fetch the latest
-state. Low coverage is not automatically a problem: Islands are based on
-explicit behavior and conservative semantic relationships, so most of a large
-library may remain outside them.
+The overview is a snapshot. Use **Refresh** to fetch the latest state without
+changing it. **Recalculate Islands** deliberately rebuilds the signed-in user's
+Islands from existing evidence and refreshes article interest scores before
+reloading the overview. Low coverage is not automatically a problem: Islands
+are based on explicit behavior and conservative semantic relationships, so
+most of a large library may remain outside them.
 
 ## Calibration and Normal Crawls
 

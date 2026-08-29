@@ -78,11 +78,11 @@ export default (sequelize) => {
       /**
        * Feed quality & trust
        */
-      // Scores the feed's observed trustworthiness for article quality adjustment.
+      // Estimates how consistently valuable this source has been as a source of articles.
       feedTrust: {
         type: DataTypes.FLOAT,
         allowNull: false,
-        defaultValue: 0.5
+        defaultValue: 0.75
       },
       // Stores the observed proportion of feed articles identified as duplicates.
       feedDuplicationRate: {

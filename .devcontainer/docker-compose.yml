@@ -1,88 +1,79 @@
-version: '3'
+name: rssmonster-devcontainer
 
 services:
-  app:
-    build: 
+  workspace:
+    build:
       context: .
-      dockerfile: server.dockerfile
+      dockerfile: Dockerfile
       args:
-        # [Choice] Node.js version: 14, 12, 10
-        VARIANT: 18
-        # On Linux, you may need to update USER_UID and USER_GID below if not your local UID is not 1000.
-        USER_UID: 1000
-        USER_GID: 1000
+        VARIANT: 22-bookworm
 
-    volumes:
-      - ..:/workspace:cached
-      
-    # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
+    init: true
 
-    # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
-    #network_mode: service:mysql
+    depends_on:
+      mysql:
+        condition: service_healthy
 
     environment:
       NODE_ENV: development
       PORT: 3000
+
+      DB_DIALECT: mysql
+      DB_HOSTNAME: mysql
+      DB_PORT: 3306
       DB_DATABASE: rssmonster
       DB_USERNAME: rssmonster
       DB_PASSWORD: rssmonster
-      DB_HOSTNAME: mysql
+
       JWT_SECRET: development-only-jwt-secret
       FEVER_CREDENTIAL_SECRET: development-only-fever-secret
-    ports:
-      - 3000:3000
 
-    # Uncomment the next line to use a non-root user for all processes.
-    # user: node
+      INFERENCE_URL: http://127.0.0.1:3001
+      INFERENCE_AI_ENABLED: "true"
+      INTERNAL_MCP_URL: http://127.0.0.1:3000/mcp
 
-  client:
-    build: 
-      context: .
-      dockerfile: client.dockerfile
-      args:
-        # [Choice] Node.js version: 14, 12, 10
-        VARIANT: 18
-        # On Linux, you may need to update USER_UID and USER_GID below if not your local UID is not 1000.
-        USER_UID: 1000
-        USER_GID: 1000
+      VITE_APP_HOSTNAME: http://localhost:3000
+      VITE_BASE_URL: /
 
     volumes:
       - ..:/workspace:cached
-      
-    # Overrides default command so things don't shut down after the process ends.
-    command: sleep infinity
-
-    # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
-    #network_mode: service:mysql
-    network_mode: host
-
-    environment:
-      NODE_ENV: development
-      VITE_APP_HOSTNAME: http://app:3000
-      VITE_BASE_URL: /
-      PORT: 8080
-
-    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally. 
-    # (Adding the "ports" property to this file will not forward from a Codespace.)
+      - client-node-modules:/workspace/client/node_modules
+      - server-node-modules:/workspace/server/node_modules
+      - inference-node-modules:/workspace/inference/node_modules
+      - inference-model-cache:/workspace/inference/.cache/models
+      - npm-cache:/home/node/.npm
 
   mysql:
-    container_name: mysql
-    image: mysql:5.7
-    restart: always
-    volumes:
-      - ../mysql-data:/var/lib/mysql
-    command: [mysqld, --default-authentication-plugin=mysql_native_password, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --innodb_monitor_enable=all]
-    environment:
-      MYSQL_ROOT_PASSWORD: "rssmonster"
-      MYSQL_DATABASE: "rssmonster"
-      MYSQL_USER: "rssmonster"
-      MYSQL_PASSWORD: "rssmonster"
-      MYSQL_ROOT_HOST: '%'
-    ports:
-      - 3306:3306
-    # Add "forwardPorts": ["3306"] to **devcontainer.json** to forward MySQL locally.
-    # (Adding the "ports" property to this file will not forward from a Codespace.)
+    image: mysql:8.4
+    restart: unless-stopped
 
-#volumes:
-  #mysql-data:
+    environment:
+      MYSQL_DATABASE: rssmonster
+      MYSQL_USER: rssmonster
+      MYSQL_PASSWORD: rssmonster
+      MYSQL_ROOT_PASSWORD: rssmonster
+
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping --host=127.0.0.1 --user=root --password="$${MYSQL_ROOT_PASSWORD}" --silent
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 45s
+
+volumes:
+  client-node-modules:
+  server-node-modules:
+  inference-node-modules:
+  inference-model-cache:
+  mysql-data:
+  npm-cache:

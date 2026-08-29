@@ -3,11 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils';
 
 import SettingsIslands from '../src/components/settings/SettingsIslands.vue';
 import SettingsTopics from '../src/components/settings/SettingsTopics.vue';
-import { fetchIslandsOverview, fetchTopicsOverview } from '../src/api/settings';
+import { fetchIslandsOverview, fetchTopicsOverview, recalculateIslands } from '../src/api/settings';
 
 vi.mock('../src/api/settings', () => ({
   fetchIslandsOverview: vi.fn(),
-  fetchTopicsOverview: vi.fn()
+  fetchTopicsOverview: vi.fn(),
+  recalculateIslands: vi.fn()
 }));
 
 let wrapper;
@@ -132,6 +133,58 @@ describe('SettingsIslands', () => {
 
     expect(wrapper.vm.loading).toBe(false);
     expect(wrapper.text()).toContain('Failed to load islands overview.');
+  });
+
+  it('recalculates islands and refreshes the overview', async () => {
+    let resolveRecalculation;
+    fetchIslandsOverview.mockResolvedValue({ data: { islands: [] } });
+    recalculateIslands.mockImplementation(() => new Promise(resolve => {
+      resolveRecalculation = resolve;
+    }));
+    mountInsights(SettingsIslands);
+    await flushPromises();
+
+    await wrapper.get('.settings-recalculate-button').trigger('click');
+
+    expect(wrapper.get('.settings-recalculate-button').attributes('aria-busy')).toBe('true');
+    expect(wrapper.get('.settings-recalculate-button').text()).toContain('Recalculating…');
+    expect(wrapper.get('.settings-refresh-button').element.disabled).toBe(true);
+
+    resolveRecalculation({
+      data: { islandCount: 2, rescoredArticleCount: 5 }
+    });
+    await flushPromises();
+
+    expect(recalculateIslands).toHaveBeenCalledOnce();
+    expect(fetchIslandsOverview).toHaveBeenCalledTimes(2);
+    expect(wrapper.text()).toContain('Recalculated 2 islands and rescored 5 articles.');
+    expect(wrapper.vm.recalculating).toBe(false);
+  });
+
+  it('reports island recalculation failures without replacing the overview', async () => {
+    fetchIslandsOverview.mockResolvedValue({ data: { islands: [] } });
+    recalculateIslands.mockRejectedValue(new Error('failed'));
+    mountInsights(SettingsIslands);
+    await flushPromises();
+
+    await wrapper.get('.settings-recalculate-button').trigger('click');
+    await flushPromises();
+
+    expect(fetchIslandsOverview).toHaveBeenCalledOnce();
+    expect(wrapper.text()).toContain('Failed to recalculate interest islands.');
+    expect(wrapper.vm.recalculating).toBe(false);
+  });
+
+  it('reports zero recalculation counts when the response omits them', async () => {
+    fetchIslandsOverview.mockResolvedValue({ data: { islands: [] } });
+    recalculateIslands.mockResolvedValue({});
+    mountInsights(SettingsIslands);
+    await flushPromises();
+
+    await wrapper.get('.settings-recalculate-button').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Recalculated 0 islands and rescored 0 articles.');
   });
 });
 

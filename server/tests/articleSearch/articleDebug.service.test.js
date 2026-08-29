@@ -44,10 +44,12 @@ describe('articleDebug.service', () => {
     mocked.computeRecommendedBreakdown.mockReturnValue({
       freshness: 0.12345,
       interestScore: 0.23456,
+      positiveInterest: 0.23456,
+      negativeInterest: 0,
+      quality: 0.76543,
       coverage: 0.34567,
       crossSource: 0.45678,
       corroboration: 0.56789,
-      eventBoost: 0.1,
       ruleBoost: 0.2,
       eventArticleCount: 8,
       sourceCount: 3
@@ -66,10 +68,11 @@ describe('articleDebug.service', () => {
       { article: getterArticle, recommended: 0.98765 },
       { article: plainArticle, recommended: 0.4 },
       { article: noEventArticle, recommended: 0.1 }
-    ], { prioritizeHighTrust: true });
+    ]);
 
     expect(console.log).toHaveBeenCalledTimes(2);
-    expect(console.log.mock.calls[0][0]).toContain('feedTrustBoost');
+    expect(console.log.mock.calls[0][0]).toContain('positiveInterest');
+    expect(console.log.mock.calls[0][0]).not.toContain('feedTrustBoost');
     expect(console.log.mock.calls[1][0]).toContain('articlesWithEvents=2');
     expect(console.log.mock.calls[1][0]).toContain('events=1');
     expect(console.log.mock.calls[1][0]).toContain('eventCoverage=66.7%');
@@ -82,10 +85,7 @@ describe('articleDebug.service', () => {
       }),
       expect.objectContaining({ articleId: 3, eventName: '' })
     ]));
-    expect(mocked.computeRecommendedBreakdown).toHaveBeenCalledWith(
-      expect.any(Object),
-      { prioritizeHighTrust: true }
-    );
+    expect(mocked.computeRecommendedBreakdown).toHaveBeenCalledWith(expect.any(Object));
   });
 
   // Handles an empty ranking result without dividing by zero.

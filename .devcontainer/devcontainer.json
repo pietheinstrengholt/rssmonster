@@ -1,51 +1,80 @@
-// Update the VARIANT arg in docker-compose.yml to pick a Node.js version: 10, 12, 14 
 {
-	"name": "RSSMonster",
-	"dockerComposeFile": "docker-compose.yml",
-	"service": "app",
-	"runServices": ["app", "client", "mysql"],
-	"workspaceFolder": "/workspace",
-
-	// Set *default* container specific settings.json values on container create.
-	"settings": {
-		"terminal.integrated.shell.linux": "/bin/bash",
-		"sqltools.connections": [{
-			"name": "Container database",
-			"driver": "MySQL",
-			"previewLimit": 50,
-			"server": "localhost",
-			"port": 3306,
-			"database": "rssmonster",
-			"username": "rssmonster",
-			"password": "rssmonster"
-		}]
-	},
-
-	"remoteEnv": {
-		"VITE_APP_HOSTNAME": "http://localhost:3000"
-	},
-
-	// Add the IDs of extensions you want installed when the container is created.
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"dbaeumer.vscode-eslint",
-				"mtxr.sqltools",
-				"mtxr.sqltools-driver-mysql"
-			]
-		}
-	},
-
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [3000, 3306, 8080],
-
-	"containerEnv": {
-		"DB_HOSTNAME": "mysql"
-	},
-
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "yarn install",
-
-	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
-	"remoteUser": "node"
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.schema.json",
+  "name": "RSSMonster development",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "workspace",
+  "runServices": [
+    "workspace",
+    "mysql"
+  ],
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "remoteUser": "node",
+  "updateRemoteUserUID": true,
+  "postCreateCommand": {
+    "client": "npm ci --prefix client",
+    "server": "npm ci --prefix server",
+    "inference": "npm ci --prefix inference"
+  },
+  "waitFor": "postCreateCommand",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "eslint.workingDirectories": [
+          "client",
+          "server",
+          "inference"
+        ],
+        "sqltools.connections": [
+          {
+            "name": "RSSMonster development",
+            "driver": "MySQL",
+            "previewLimit": 50,
+            "server": "mysql",
+            "port": 3306,
+            "database": "rssmonster",
+            "username": "rssmonster",
+            "password": "rssmonster"
+          }
+        ]
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "Vue.volar",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-mysql"
+      ]
+    }
+  },
+  "forwardPorts": [
+    3000,
+    3001,
+    8080,
+    "mysql:3306"
+  ],
+  "portsAttributes": {
+    "3000": {
+      "label": "RSSMonster API",
+      "protocol": "http",
+      "onAutoForward": "notify"
+    },
+    "3001": {
+      "label": "RSSMonster inference",
+      "protocol": "http",
+      "onAutoForward": "silent"
+    },
+    "3306": {
+      "label": "RSSMonster MySQL",
+      "onAutoForward": "silent"
+    },
+    "8080": {
+      "label": "RSSMonster client",
+      "protocol": "http",
+      "onAutoForward": "openBrowserOnce"
+    }
+  },
+  "otherPortsAttributes": {
+    "onAutoForward": "ignore"
+  }
 }

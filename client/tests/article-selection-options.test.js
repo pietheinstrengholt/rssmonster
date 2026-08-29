@@ -23,7 +23,7 @@ describe('article selection option configuration', () => {
       'Daily briefing', 'Unread', 'Favorite', 'Hot', 'Clicked', 'Read'
     ]);
     expect(ARTICLE_SORT_OPTIONS.map(option => option.label)).toEqual([
-      'Oldest', 'Newest', 'Trust', 'Recommended', 'Quality', 'Most Engaged'
+      'Newest', 'Oldest', 'Top Stories', 'Recommended', 'Quality'
     ]);
     expect(ARTICLE_GROUPING_OPTIONS.map(option => option.mobileLabel)).toEqual([
       'All articles', 'Cluster per event', 'Cluster per topic'

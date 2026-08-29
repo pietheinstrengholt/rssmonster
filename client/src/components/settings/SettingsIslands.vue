@@ -157,8 +157,25 @@
       </section>
     </div>
 
+    <div v-if="recalculationMessage" class="app-notice app-notice--success" role="status">
+      {{ recalculationMessage }}
+    </div>
+    <div v-if="recalculationError" class="app-notice app-notice--danger" role="alert">
+      {{ recalculationError }}
+    </div>
+
     <div class="settings-refresh-actions">
-      <button type="button" class="settings-refresh-button app-button app-button--primary" @click="reload" :disabled="loading">
+      <button
+        type="button"
+        class="settings-recalculate-button app-button app-button--secondary"
+        :disabled="loading || recalculating"
+        :aria-busy="recalculating ? 'true' : 'false'"
+        @click="recalculate"
+      >
+        <BootstrapIcon icon="arrow-repeat" aria-hidden="true" />
+        {{ recalculating ? 'Recalculating…' : 'Recalculate Islands' }}
+      </button>
+      <button type="button" class="settings-refresh-button app-button app-button--primary" @click="reload" :disabled="loading || recalculating">
         <BootstrapIcon icon="arrow-clockwise" aria-hidden="true" />
         Refresh
       </button>
@@ -171,6 +188,10 @@
   margin-bottom: 1rem;
   font-family: var(--font-family);
   font-weight: 500;
+}
+
+.settings-refresh-actions {
+  gap: 10px;
 }
 
 .interest-island-row {
@@ -412,7 +433,7 @@
 </style>
 
 <script>
-import { fetchIslandsOverview } from '../../api/settings';
+import { fetchIslandsOverview, recalculateIslands } from '../../api/settings';
 import SettingsMetric from './SettingsMetric.vue';
 import SettingsPageIntro from './SettingsPageIntro.vue';
 
@@ -427,6 +448,9 @@ export default {
     return {
       loading: false,
       error: null,
+      recalculating: false,
+      recalculationMessage: null,
+      recalculationError: null,
       islands: [],
       userId: null,
       totals: {
@@ -486,6 +510,24 @@ export default {
       }
 
       this.loading = false;
+    },
+    async recalculate() {
+      this.recalculating = true;
+      this.recalculationMessage = null;
+      this.recalculationError = null;
+
+      try {
+        const response = await recalculateIslands();
+        const islandCount = Number(response.data?.islandCount || 0);
+        const rescoredArticleCount = Number(response.data?.rescoredArticleCount || 0);
+        this.recalculationMessage = `Recalculated ${this.formatCountLabel(islandCount, 'island')} and rescored ${this.formatCountLabel(rescoredArticleCount, 'article')}.`;
+        await this.reload();
+      } catch (err) {
+        console.error('Failed recalculating interest islands:', err);
+        this.recalculationError = 'Failed to recalculate interest islands.';
+      } finally {
+        this.recalculating = false;
+      }
     }
   }
 };

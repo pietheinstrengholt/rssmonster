@@ -371,11 +371,12 @@ npm run feedtrust
 ```
 
 This analyzes your feeds based on:
-- **Originality** — how often they publish unique content
-- **Quality** — average article scores
-- **Engagement** — what you actually read and star
+- **Article quality** — average usable article-quality scores
+- **Engagement** — supporting evidence from meaningfully exposed articles
+- **Originality** — actual duplicate relationships, not shared Event coverage
+- **Negative feedback** — explicit negative actions among exposed articles
 
-[Learn more about scoring →](scoring.md)
+[Learn how FeedTrust works →](feedtrust.md)
 
 ### Rebuild Article Clusters
 

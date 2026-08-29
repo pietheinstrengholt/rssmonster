@@ -327,7 +327,9 @@ const resolveEventIsland = ({ eventId, eventTopicMap, islandLinksByTopic, island
 const buildSummaryRecommendationArticle = (event, representativeArticle) => ({
   freshness: representativeArticle.freshness,
   interestScore: representativeArticle.interestScore,
-  quality: representativeArticle.quality,
+  qualityScore: representativeArticle.qualityScore,
+  sentimentScore: representativeArticle.sentimentScore,
+  advertisementScore: representativeArticle.advertisementScore,
   Feed: representativeArticle.Feed ?? representativeArticle.feed,
   Tags: representativeArticle.Tags ?? [],
   event

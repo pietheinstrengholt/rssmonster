@@ -74,7 +74,7 @@ Quality is not a value judgment — it is a signal used for:
 
 Uniqueness measures how much **new information** an article adds relative to others in the same cluster.
 
-Articles rank higher when they:
+The signal is higher when articles:
 - Provide original reporting
 - Add context or analysis
 - Are not near-duplicates
@@ -98,17 +98,22 @@ This prevents “latest wins” behavior while still surfacing breaking news.
 
 ## Feed Trust
 
-Feed trust is a long-term score (`0.0 – 1.0`) earned by each source.
+Feed trust is a recent-history score (`0.0 – 1.0`) estimating how consistently
+valuable each source has been as a source of articles.
 
 Trust reflects:
-- Originality of published articles
-- Average quality
-- User engagement (reads, clicks, stars)
-- Publishing consistency
+- Average article quality
+- Supporting engagement from meaningfully exposed articles
+- Deterministic originality versus actual duplicates
+- Explicit negative-feedback quality
 
-Trust is **earned over time**, not configured manually.
+Sparse evidence is shrunk toward the neutral value `0.75`; publication volume,
+semantic event co-coverage, mute state, crawl health, and topic interest are not
+FeedTrust inputs.
 
 High-trust feeds influence ranking more, but never silence others.
+
+[Read the complete FeedTrust model →](feedtrust.md)
 
 ## Adaptive feed scheduling
 
@@ -136,29 +141,21 @@ Engagement signals include:
 - Clicks
 - Starred articles
 
-These signals are aggregated to:
-- Improve feed trust
-- Stabilize ranking
-- Reduce noise over time
+These signals support different features: meaningfully exposed articles
+provide bounded evidence for FeedTrust, while Interest Islands and Recommended
+ranking own personal topic relevance.
 
 RSSMonster does not track behavior externally.
 
 ---
 
-## Importance
+## Ranking
 
-**Importance** is a runtime score that determines article ranking.
-
-It combines:
-- Freshness
-- Quality
-- Uniqueness
-- Feed trust
-
-Importance answers:
-> “How likely is this article worth my attention right now?”
-
-It is recalculated dynamically, not stored permanently.
+RSSMonster exposes several ranking modes rather than one universal Importance
+score. Quality combines article quality with FeedTrust; Recommended adds
+personal interest, freshness, corroboration, and rule evidence; Top Stories
+emphasizes current multi-source Event importance. See
+[Scoring and Ranking](scoring.md).
 
 ---
 

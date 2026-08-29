@@ -10,6 +10,16 @@ const DATE_DAYS_AGO_PATTERN = /@"?(\d+)\s+days\s+ago"?/i;
 const ISO_DATE_TOKEN_PATTERN = /^@(\d{4}-\d{2}-\d{2})$/;
 export const MAX_ARTICLE_SEARCH_LENGTH = 4096;
 
+// Canonicalizes supported article sorts while retaining Trust as a legacy Quality alias.
+export const normalizeArticleSort = sortValue => {
+  const normalized = String(sortValue || 'desc').toLowerCase();
+  if (normalized === 'trust') return 'quality';
+  if (normalized === 'topstories') return 'topStories';
+  return ['asc', 'desc', 'recommended', 'quality', 'attention'].includes(normalized)
+    ? normalized
+    : 'desc';
+};
+
 // Parses a boolean field token such as unread:true or hot:false.
 const parseBooleanFilter = (token, key) => {
   // Derives the match through match while parsing boolean filter.
@@ -173,7 +183,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
   let text = '';
   let textMode = 'none';
   // Normalizes the sort before parsing article query.
-  let sort = String(defaultSort || 'desc').toLowerCase();
+  let sort = normalizeArticleSort(defaultSort);
   let sortExplicit = false;
   let limit = null;
 
@@ -287,10 +297,10 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     }
 
     // Derives the sort match through match while parsing article query.
-    const sortMatch = cleaned.match(/^sort:\s*(desc|asc|trust|recommended|quality|attention)$/i);
+    const sortMatch = cleaned.match(/^sort:\s*(desc|asc|trust|topStories|recommended|quality|attention)$/i);
     // Handles the case where sort match is available.
     if (sortMatch) {
-      sort = sortMatch[1].toLowerCase();
+      sort = normalizeArticleSort(sortMatch[1]);
       sortExplicit = true;
       continue;
     }

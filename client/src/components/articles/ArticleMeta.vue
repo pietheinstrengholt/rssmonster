@@ -1,6 +1,6 @@
 <template>
   <div class="article-meta">
-    <BootstrapIcon v-if="showAnalysisScores && isMobilePortrait && advertisementScore !== undefined && advertisementScore < neutralScore" icon="megaphone-fill" class="mobile-score-icon ad-icon" :title="`Promotional content detected (score: ${advertisementScore})`" />
+    <!-- <BootstrapIcon v-if="showAnalysisScores && isMobilePortrait && advertisementScore !== undefined && advertisementScore < neutralScore" icon="megaphone-fill" class="mobile-score-icon ad-icon" :title="`Promotional content detected (score: ${advertisementScore})`" /> -->
     <BootstrapIcon v-if="showAnalysisScores && isMobilePortrait && sentimentScore !== undefined && sentimentScore < neutralScore" icon="arrow-down-circle-fill" :class="['mobile-score-icon', 'sentiment-icon', getSentimentClass(sentimentScore)]" :title="`Tone quality: ${sentimentScore}`" />
     <span v-if="hasProvenance" class="article-provenance">
       <span v-if="hasPublishedAt" class="article-published">{{ formatRelativeDate(publishedAt) }}</span>

@@ -69,7 +69,9 @@ const defaultSelection = () => ({
 // This function restricts persisted sort values to supported article orderings.
 const normalizeSort = value => {
   const normalized = String(value ?? 'desc').toLowerCase();
-  return ['asc', 'desc', 'trust', 'recommended', 'quality', 'attention'].includes(normalized)
+  if (normalized === 'trust') return 'quality';
+  if (normalized === 'topstories') return 'topStories';
+  return ['asc', 'desc', 'recommended', 'quality', 'attention'].includes(normalized)
     ? normalized
     : 'desc';
 };
@@ -80,7 +82,7 @@ const removeSortTokens = query => {
 
   const cleaned = String(query)
     .split(/([\s,]+)/)
-    .filter(part => !/^sort:(desc|asc|trust|recommended|quality|attention)[.,;]*$/i.test(part.trim()))
+    .filter(part => !/^sort:(desc|asc|trust|topStories|recommended|quality|attention)[.,;]*$/i.test(part.trim()))
     .join('')
     .replace(/\s+/g, ' ')
     .trim();

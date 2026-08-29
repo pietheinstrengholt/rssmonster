@@ -3,18 +3,20 @@ import {
   saveIncludeDevelopingEvents,
   saveMarkAsReadOnScroll,
   savePrioritizeHighTrust,
-  saveStartupViewMode
+  saveStartupViewMode,
+  recalculateIslands
 } from '../src/api/settings.js';
 
-const { patch } = vi.hoisted(() => ({ patch: vi.fn() }));
+const { patch, post } = vi.hoisted(() => ({ patch: vi.fn(), post: vi.fn() }));
 
 vi.mock('../src/api/client', () => ({
-  default: { patch }
+  default: { patch, post }
 }));
 
 describe('settings API', () => {
   beforeEach(() => {
     patch.mockReset();
+    post.mockReset();
   });
 
   it('sends only the developing-events boolean to its dedicated endpoint', () => {
@@ -46,6 +48,14 @@ describe('settings API', () => {
 
     expect(patch).toHaveBeenCalledWith('/setting/prioritize-high-trust', {
       prioritizeHighTrust: true
+    });
+  });
+
+  it('starts island recalculation with an extended request timeout', () => {
+    recalculateIslands();
+
+    expect(post).toHaveBeenCalledWith('/setting/islands/recalculate', null, {
+      timeout: 120000
     });
   });
 });

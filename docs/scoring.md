@@ -1,257 +1,173 @@
 ---
 layout: page
-title: Feed Scoring
+title: Scoring and Ranking
 parent: How RSSMonster Works
-nav_order: 2
+nav_order: 7
 ---
 
-# Feed Scoring
+# Scoring and Ranking
 
-RSSMonster assigns each subscribed feed a trust score between `0.0` and `1.0`.
-The score estimates how useful that source is to the current user based on
-recent publishing behavior and reading interactions.
+RSSMonster keeps several scoring concepts separate so each one has a clear
+meaning. A score may describe one article, a source's recent history, personal
+relevance, or the importance of a current story. No single score decides
+whether an article is allowed to exist or be read.
 
-Feed trust is not a fact-checking score and does not claim that every article
-from a high-scoring feed is correct. It is also distinct from crawl health and
-article quality:
+## Core Signals
 
-- **Feed trust** measures source usefulness, originality, consistency, and
-  user affinity.
-- **Crawl health and reliability** describe whether RSSMonster can fetch the
-  feed successfully.
-- **Article quality** evaluates an individual article's content signals.
+### Article quality
 
-Feed scores are user-specific because feeds and their article interactions are
-stored per user.
+Article quality asks: **How good is this particular article?**
 
-## The Observation Window
-
-Each recalculation examines articles published by the feed during the previous
-30 days. Older articles do not affect the new observation, which lets the score
-adapt when a source changes while preventing its entire history from
-dominating forever.
-
-If a feed has no articles in that window, RSSMonster keeps its existing trust
-and attention metrics unchanged.
-
-## Inputs to Feed Trust
-
-RSSMonster derives the observed score from three positive dimensions and
-several penalties.
-
-### Originality
-
-Originality uses RSSMonster's event relationships to estimate whether a feed
-often provides representative reporting or repeats coverage found elsewhere.
-
-For recent articles assigned to events, RSSMonster considers:
-
-- the proportion selected as the representative article for their event;
-- the average number of articles in those events; and
-- the proportion belonging to events with at least two articles.
-
-An article in a single-article event is treated as original for this
-calculation. Articles in events containing two or more articles contribute to
-the feed's duplication rate. Larger event clusters and a high duplication rate
-reduce originality, while frequently supplying the representative article
-raises it.
-
-Event membership is semantic evidence, not deterministic duplicate identity.
-A lower originality contribution therefore means that the source commonly
-covers stories also covered elsewhere; it does not necessarily mean that its
-articles are literal copies.
-
-### Engagement
-
-Engagement measures how the user responds to recent articles from the feed.
-Each article can contribute:
-
-| Signal | Contribution |
-| --- | ---: |
-| Favorite/bookmark | `1.0` |
-| One or more outbound clicks | `0.5` |
-| Skimmed, attention bucket 1 | `0.25` |
-| Read, attention bucket 2 | `0.75` |
-| Deep read, attention bucket 3 | `1.25` |
-| Highly engaged, attention bucket 4 | `1.75` |
-
-The combined contribution of one article is capped at `2.5`. RSSMonster then
-averages these contributions across every recent article from the feed and
-normalizes the result to the `0.0`–`1.0` range. Feeds that publish many ignored
-articles therefore do not receive the same engagement signal as feeds whose
-articles are regularly saved, opened, or read.
-
-See [Bookmarks](bookmarks.md) for why favorites are particularly useful as an
-explicit interest signal.
-
-### Publishing Consistency
-
-Consistency is based on recent publication frequency. It rises linearly until
-the feed reaches four articles per day, where this contribution is fully
-satisfied. This rewards sources that publish consistently without giving an
-unbounded advantage to very high-volume feeds.
-
-### Negative Feedback and Volume
-
-The observed score can be reduced by:
-
-- articles explicitly marked **Not Interested**;
-- very high publishing volume; and
-- recent feed-mute history.
-
-The high-volume penalty starts above 25 articles per day and reaches its
-maximum at 50 or more articles per day. It can reduce the observed score by up
-to 15%. Negative feedback uses a gradual square-root penalty, also capped at
-15%, so a small amount of feedback matters without letting a few observations
-overwhelm the entire score. Recent mute history can apply a further penalty of
-up to 10%.
-
-## How the Score Is Combined
-
-The scoring calculation starts from a neutral observation of `0.75` and makes
-bounded adjustments:
+It is a normalized `0.0`–`1.0` content score derived from the article's stored
+quality, sentiment, and advertising scores. Feed reputation is not inserted
+into the article-level value.
 
 ```text
-observed trust = 0.75
-  + (originality - 0.50) × 0.10
-  + (engagement - 0.35) × 0.35
-  + (consistency - 0.25) × 0.08
+articleQuality =
+    0.50 × qualityScore
+  + 0.25 × sentimentScore
+  + 0.25 × advertisementScore
 ```
 
-The result is clamped to `0.0`–`1.0`, after which volume, negative-feedback,
-and mute penalties are applied.
+The persisted inputs use `0`–`100`; the result is clamped to that range and
+divided by `100` once. A missing component uses the neutral-good value `70`.
+Higher `advertisementScore` means less promotional content, so all three inputs
+have the same higher-is-better direction.
 
-Engagement has the largest positive influence. Originality and consistency
-move the result more gently, so a feed is not rewarded merely for publishing
-frequently or being the only source covering a story.
+### FeedTrust
 
-## Confidence for New and Small Feeds
+FeedTrust asks: **How consistently valuable has this source been as a source of
+articles?**
 
-RSSMonster avoids making strong judgments from very small samples:
+It summarizes 30 days of article quality, supporting engagement, deterministic
+originality, and explicit negative feedback. It is user-specific and remains
+separate from factual verification, crawl health, and topic interest. See
+[FeedTrust](feedtrust.md) for the complete conceptual model.
 
-- 10 or fewer recent articles have zero sample confidence;
-- confidence increases linearly from 10 to 100 articles; and
-- 100 or more recent articles provide full sample confidence.
+### Freshness
 
-The observed result is blended toward the neutral `0.75` baseline according to
-that confidence. A small feed can still accumulate useful metrics, but a short
-run of articles cannot immediately push its trust score to an extreme.
-
-New feed records begin with a stored score of `0.5`. Recalculation moves that
-stored value gradually toward the confidence-weighted observation.
-
-## Smoothing Over Time
-
-After confidence weighting, RSSMonster applies an exponential moving average:
+Freshness is a time-decay value derived from publication time:
 
 ```text
-new trust = 0.35 × new observation + 0.65 × previous trust
+freshness = exp(-ageInHours / 48)
 ```
 
-Only 35% of one recalculation comes from the latest observation. The other 65%
-comes from the previous stored score. This makes feed trust responsive over
-time but resistant to sudden spikes, sparse data, and one unusually good or
-bad batch of articles.
+A missing publication time produces zero. Intelligent ranking clamps the value
+to `0`–`1`, which also prevents a future publication timestamp from producing
+an out-of-range contribution.
 
-## Attention Metrics Stored with the Score
+### Personal interest
 
-The same recalculation stores additional per-feed behavior metrics:
+Interest is the signed affinity between an article and the user's Interest
+Islands. Positive affinity promotes relevant material; negative affinity can
+penalize it. This is the primary personalization concept, rather than
+FeedTrust.
 
-- average attention among articles that received an attention bucket;
-- deep-read ratio;
-- skim ratio;
-- ignored-article ratio;
-- average clicks per article;
-- proportion of articles receiving at least one click; and
-- number of attention samples.
+### Event evidence
 
-These metrics help RSSMonster estimate reading affinity for new, unread
-articles from the feed. They are supporting observations and should not be
-confused with the final trust score itself.
-
-## Recalculating Feed Scores
-
-Feed trust is calculated as a batch operation rather than after every click or
-read. This keeps the score stable and avoids expensive recalculation during
-normal reading.
-
-From the interface:
-
-1. Open **Settings → Feeds**.
-2. Select **Recalculate Scores**.
-
-The interface recalculates active feeds owned by the signed-in user and then
-reloads the feed table. The table displays each feed's trust score separately
-from its crawl reliability.
-
-For a command-line installation, run from the `server` directory:
-
-```bash
-npm run feedtrust
-```
-
-The command processes all active feeds. Run it periodically with the scheduler
-appropriate to your installation if you want scores refreshed automatically.
-
-## How Feed Trust Affects RSSMonster
-
-### Trust Sorting
-
-Use the Trust sort in the interface or this search expression:
+Events contribute coverage, publisher diversity, and corroboration signals.
+These describe how strongly a current occurrence is supported across articles
+and sources. Event co-coverage is not FeedTrust duplication evidence.
 
 ```text
-sort:trust
+coverage        = min(log2(eventArticleCount) / 6, 1)
+sourceDiversity = min(ln(sourceCount + 1) / 2.56, 1)
+sourceSpread    = min(log2(sourceCount) / log2(8), 1)
+crossSource     = max(sourceDiversity, sourceSpread)
+corroboration   = coverage × crossSource
 ```
 
-Articles are ordered by feed trust from highest to lowest, then by newest
-publication date and article ID. Trust sorting changes order; it does not hide
-articles from lower-scoring feeds.
+These primitives are shared by Recommended and Top Stories. An article without
+an Event receives zero for every Event-derived value.
 
-See the [Search Guide](search.md) for combining Trust sorting with other
-filters or using it in a Smart Folder.
+## Ranking Modes
 
-### Article Quality
+### Chronological
 
-Feed trust and duplication history can gently adjust an article's computed
-quality after a feed has enough attention samples. Confidence begins above 10
-attention samples and reaches full strength at 100.
+`sort:desc` orders newest first and `sort:asc` orders oldest first. These modes
+are available when users want a conventional RSS inbox without intelligent
+ranking. The optional Unread high-trust preference is a legacy override that
+can blend bounded FeedTrust into these chronological modes; when disabled,
+ordering is strictly by publication time and stable article ID.
 
-At full confidence, feed evidence can boost the article-quality multiplier by
-up to 10% or reduce it by up to 15%. The feed duplication rate contributes a
-penalty of up to 10%. The final multiplier remains bounded between `0.85` and
-`1.10`, so feed reputation refines article quality rather than replacing the
-article's own content signals.
+### Quality
 
-Because article quality is one input to Recommended ranking, this creates a
-small indirect feed-trust influence even when explicit trust prioritization is
-disabled.
+Quality ranking combines the value of the individual article with the source's
+recent record:
 
-### Prioritize High-Trust Coverage
+```text
+Quality = 0.70 × articleQuality + 0.30 × feedTrust
+```
 
-The Unread and Daily Briefing preferences include **Prioritize high-trust
-coverage**. When enabled, RSSMonster adds the feed's bounded trust score during
-runtime ordering. This makes trusted feeds more prominent in Recommended and
-other supported ordering modes without imposing a minimum-trust cutoff.
+The two inputs remain independently visible and conceptually distinct.
 
-The setting affects priority, not eligibility: relevant coverage from a
-lower-scoring feed can still appear.
+`sort:trust` is retained as a legacy alias for `sort:quality`; it does not
+perform a pure FeedTrust-only sort.
 
-### Trusted-Source Signal
+### Recommended
 
-Articles from feeds with a trust score above `0.85` can display a **Trusted
-source** signal. This is a product-level indication that the feed has developed
-strong behavioral trust; it is not an independent verification of the
-article's factual accuracy.
+Recommended is personalized. Its bounded base score combines:
 
-## Interpreting Feed Trust
+```text
+Recommended =
+    0.45 × positiveInterest
+  + 0.25 × freshness
+  + 0.20 × Quality
+  + 0.10 × corroboration
+  - 0.30 × negativeInterest
+  + ruleMatchBoost
+```
 
-Feed trust is most useful comparatively: it helps answer which subscribed
-sources have recently been original, consistently useful, and engaging for a
-particular user. Avoid treating small score differences as precise judgments.
-Sample size, recent behavior, and smoothing deliberately make the score evolve
-over multiple recalculations.
+`positiveInterest = max(interestScore, 0)`,
+`negativeInterest = max(-interestScore, 0)`, and a matching rule contributes
+`0.08` once regardless of how many rule tags match. The final result is clamped
+to `0`–`1`.
 
-Most importantly, a low trust score does not remove a feed or filter its
-articles. RSSMonster keeps the underlying sources accessible and uses trust as
-one transparent signal among article quality, freshness, personal interest,
-event coverage, source diversity, and corroboration.
+Because Quality already contains a bounded FeedTrust contribution, Recommended
+does not add FeedTrust again as an independent raw boost. Event coverage,
+cross-source evidence, and event size are not separate Recommended terms;
+corroboration is its only Event-derived contribution.
+
+### Top Stories
+
+Top Stories is event-driven and non-personalized. It first derives Event
+importance from coverage, cross-source evidence, and corroboration, then ranks:
+
+```text
+eventImportance =
+    0.45 × coverage
+  + 0.35 × crossSource
+  + 0.20 × corroboration
+
+Top Stories =
+    0.60 × eventImportance
+  + 0.25 × freshness
+  + 0.15 × Quality
+```
+
+Top Stories answers which current, corroborated Events matter broadly.
+Recommended answers which articles are likely to matter to this user. Top
+Stories does not use Interest Islands or rule tags. A standalone article
+remains eligible and can receive only its freshness and Quality contributions.
+
+### Visible and legacy sorts
+
+The visible toolbar order is **Newest, Oldest, Top Stories, Recommended,
+Quality**. `sort:attention` remains accepted in manually authored search and
+legacy Smart Folder expressions, but Most Engaged is no longer a toolbar or
+Smart Folder editor option. `sort:trust` remains an API/query compatibility
+alias for Quality.
+
+Recommended, Top Stories, and Quality are computed across the complete eligible
+candidate set before a result limit is applied. Equal scores fall back to
+`publishedAt DESC`, then `id DESC`. These computed modes use a stable ordered ID
+collection for incremental article loading rather than database cursor pages.
+
+## Filters Versus Ranking
+
+Ranking changes order. It does not make an otherwise ineligible article
+eligible, and a low score does not delete or unsubscribe a source. Smart Folder
+and search filters determine eligibility before runtime ranking is applied.
+
+See the [Search Guide](search.md) for the supported sort expressions and
+[Smart Folders](smart-folders.md) for reusable filtered views.

@@ -1,9 +1,35 @@
 import db from '../models/index.js';
 import { isAssistantEnabled } from '../config/intelligentFeatures.js';
+import runIslandCalibration from '../scripts/runIslandsCommand.js';
 const { CrawlRun, Island, OfficialSource, Setting } = db;
 
 const DEFAULT_CRAWL_STATISTICS_DAYS = 30;
 const MAX_CRAWL_STATISTICS_DAYS = 365;
+
+// This function recalibrates Interest Islands for the signed-in user.
+export const recalculateIslands = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const result = await runIslandCalibration({ userId });
+
+    return res.status(200).json({
+      message: 'Interest islands recalculated',
+      islandCount: Number(result?.islandCount || 0),
+      articleCount: Number(result?.articleCount || 0),
+      enrichedIslandCount: Number(result?.enrichedIslandCount || 0),
+      islandTopicLinkCount: Number(result?.islandTopicLinkCount || 0),
+      rescoredArticleCount: Number(result?.rescoredArticleCount || 0)
+    });
+  } catch (err) {
+    console.error('Error in recalculateIslands:', err);
+    return res.status(500).json({ error: 'Unable to recalculate interest islands' });
+  }
+};
 
 // This function formats a ratio as a one-decimal percentage number.
 const percentage = (part, total) => total
@@ -1244,6 +1270,7 @@ export const getTopicsOverview = async (req, res, _next) => {
 };
 
 export default {
+  recalculateIslands,
   getCrawlStatistics,
   getOfficialSources,
   setOfficialSources,

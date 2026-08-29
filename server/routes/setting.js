@@ -10,6 +10,7 @@ export const router = express.Router();
 router.get('/', userMiddleware.isLoggedIn, settingController.getSettings);
 router.get('/crawl-statistics', userMiddleware.isLoggedIn, settingController.getCrawlStatistics);
 router.get('/islands', userMiddleware.isLoggedIn, settingController.getIslandsOverview);
+router.post('/islands/recalculate', userMiddleware.isLoggedIn, settingController.recalculateIslands);
 router.get('/topics', userMiddleware.isLoggedIn, settingController.getTopicsOverview);
 router.get('/official-sources', userMiddleware.isLoggedIn, settingController.getOfficialSources);
 router.get(

@@ -2,11 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   computeRecommended: vi.fn(),
+  computeTopStories: vi.fn(),
   debugRecommendedScores: vi.fn()
 }));
 
 vi.mock('../../services/recommendations/recommendedScore.js', () => ({
   computeRecommended: mocked.computeRecommended
+}));
+
+vi.mock('../../services/recommendations/topStoriesScore.js', () => ({
+  computeTopStories: mocked.computeTopStories
 }));
 
 vi.mock('../../services/articleSearch/articleDebug.service.js', () => ({
@@ -19,6 +24,7 @@ describe('articleSort.service', () => {
   // Resets ranking collaborators and suppresses filter diagnostics between scenarios.
   beforeEach(() => {
     mocked.computeRecommended.mockReset();
+    mocked.computeTopStories.mockReset();
     mocked.debugRecommendedScores.mockReset();
     vi.spyOn(console, 'log').mockImplementation(() => {});
   });
@@ -82,51 +88,63 @@ describe('articleSort.service', () => {
     const result = sortArticles(articles, { sortRecommended: true });
 
     expect(result.map(article => article.id)).toEqual([2, 1]);
-    expect(mocked.computeRecommended).toHaveBeenCalledWith(
-      expect.any(Object),
-      { prioritizeHighTrust: false }
-    );
+    expect(mocked.computeRecommended).toHaveBeenCalledWith(expect.any(Object));
     expect(mocked.debugRecommendedScores).toHaveBeenCalledWith([
       { article: articles[1], recommended: 0.9 },
       { article: articles[0], recommended: 0.2 }
-    ], { prioritizeHighTrust: false });
+    ]);
   });
 
-  // Passes the selected settings context into every recommendation score calculation.
-  it('forwards high-trust prioritization to recommendation scoring', () => {
-    mocked.computeRecommended.mockImplementation(article => article.rank);
-    const articles = [{ id: 1, rank: 0.2 }, { id: 2, rank: 0.9 }];
+  it('sorts Top Stories without using the Recommended scorer', () => {
+    mocked.computeTopStories.mockImplementation(article => article.rank);
+    const articles = [{ id: 1, rank: 0.8 }, { id: 2, rank: 0.3 }];
 
-    sortArticles(articles, { sortRecommended: true, prioritizeHighTrust: true });
+    const result = sortArticles(articles, { sortTopStories: true });
 
-    expect(mocked.computeRecommended).toHaveBeenCalledWith(
-      expect.any(Object),
-      { prioritizeHighTrust: true }
-    );
-    expect(mocked.debugRecommendedScores).toHaveBeenCalledWith(
-      expect.any(Array),
-      { prioritizeHighTrust: true }
-    );
+    expect(result.map(article => article.id)).toEqual([1, 2]);
+    expect(mocked.computeTopStories).toHaveBeenCalledTimes(2);
+    expect(mocked.computeRecommended).not.toHaveBeenCalled();
+  });
+
+  it('breaks equal intelligent scores by publication date and article id descending', () => {
+    mocked.computeTopStories.mockReturnValue(0.5);
+    const result = sortArticles([
+      { id: 3, publishedAt: '2026-01-01T00:00:00Z' },
+      { id: 1, publishedAt: '2026-01-02T00:00:00Z' },
+      { id: 2, publishedAt: '2026-01-02T00:00:00Z' }
+    ], { sortTopStories: true });
+
+    expect(result.map(article => article.id)).toEqual([2, 1, 3]);
   });
 
   // Sorts by virtual quality values from highest to lowest.
   it('sorts by quality score', () => {
     const result = sortArticles([
-      { id: 1, quality: 0.3 },
-      { id: 2, quality: 0.8 }
+      { id: 1, qualityScore: 30, sentimentScore: 30, advertisementScore: 30 },
+      { id: 2, qualityScore: 80, sentimentScore: 80, advertisementScore: 80 }
     ], { sortQuality: true });
 
     expect(result.map(article => article.id)).toEqual([2, 1]);
   });
 
-  // Adds feed trust to Quality without replacing the selected quality signal.
-  it('boosts quality sorting with feed trust', () => {
+  // Applies the fixed 70/30 Quality formula without an additional preference boost.
+  it('combines article quality and feed trust with fixed weights', () => {
     const result = sortArticles([
-      { id: 1, quality: 0.8, Feed: { feedTrust: 0.1 } },
-      { id: 2, quality: 0.3, Feed: { feedTrust: 0.9 } }
+      { id: 1, qualityScore: 60, sentimentScore: 60, advertisementScore: 60, Feed: { feedTrust: 0.1 } },
+      { id: 2, qualityScore: 30, sentimentScore: 30, advertisementScore: 30, Feed: { feedTrust: 1 } }
     ], { sortQuality: true, prioritizeHighTrust: true });
 
     expect(result.map(article => article.id)).toEqual([2, 1]);
+  });
+
+  it('bounds feed trust and uses the neutral fallback when it is missing', () => {
+    const result = sortArticles([
+      { id: 1, qualityScore: 50, sentimentScore: 50, advertisementScore: 50, Feed: { feedTrust: -1 } },
+      { id: 2, qualityScore: 30, sentimentScore: 30, advertisementScore: 30 },
+      { id: 3, qualityScore: 10, sentimentScore: 10, advertisementScore: 10, Feed: { feedTrust: 4 } }
+    ], { sortQuality: true });
+
+    expect(result.map(article => article.id)).toEqual([3, 2, 1]);
   });
 
   // Treats missing attention as zero while sorting descending.
@@ -159,19 +177,4 @@ describe('articleSort.service', () => {
     expect(result.map(article => article.id)).toEqual([2, 1]);
   });
 
-  // Preserves the database's exact Trust ordering instead of applying a second boost.
-  it('does not re-rank explicit Trust sorting', () => {
-    const articles = [
-      { id: 2, freshness: 0.1, Feed: { feedTrust: 0.9 } },
-      { id: 1, freshness: 0.9, Feed: { feedTrust: 0.1 } }
-    ];
-
-    const result = sortArticles(articles, {
-      sortTrust: true,
-      sortDirection: 'trust',
-      prioritizeHighTrust: true
-    });
-
-    expect(result).toEqual(articles);
-  });
 });

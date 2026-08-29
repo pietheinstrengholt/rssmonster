@@ -66,7 +66,7 @@ The editor supports:
 - Tag, title, author, language, and free-text matching
 - Quality and freshness thresholds when AI is enabled
 - Event and cluster filters when AI is enabled
-- Trust, recommendation, engagement, quality, and publication-date ordering where supported
+- Top Stories, Recommended, Quality, and publication-date ordering where supported
 - Maximum result sizes of 50, 100, 250, or 500 articles
 
 Mutually exclusive choices remain mutually exclusive. Read and unread cannot both be selected, and conflicting event options disable one another. The generated query is validated using the same search contract used elsewhere in the client. Invalid folders show an explanation and block persistence.
@@ -123,13 +123,18 @@ The data is a fetched snapshot. It changes only when the section is loaded or re
 
 ### Islands
 
-Islands is a read-only explanation of the interest clusters RSSMonster has learned from reading, favorite, and click behavior.
+Islands explains the interest clusters RSSMonster has learned from reading,
+favorite, and click behavior. The overview is read-only, with one explicit
+recalculation action that rebuilds the signed-in user's Islands and article
+interest scores from existing evidence.
 
 The overview shows how many islands exist, how many articles are inside and outside them, and the resulting library coverage. Each island can show its activity state, effective interest weight, behavioral evidence, connected topics, source articles, and topic-related articles. Linked articles open in a separate browser context.
 
 The section explains why an island exists rather than providing controls to edit the learned model. Users grow or reinforce islands through normal reading behavior. If no islands exist, the empty state directs users toward reading, favoriting, and clicking relevant articles.
 
-Island data is a fetched snapshot and changes only when loaded or explicitly refreshed.
+Island data is a fetched snapshot and changes only when loaded, explicitly
+refreshed, or deliberately recalculated. Recalculation reports its own success
+or failure and then refreshes the overview.
 
 ### Crawl Statistics
 
@@ -205,7 +210,8 @@ Settings sections follow these principles:
 3. Saving indicators prevent duplicate submissions.
 4. Failed saves retain the user's editable state whenever possible.
 5. Successful changes that affect feeds, article visibility, sidebar navigation, or account state refresh the relevant local data and wider application.
-6. Read-only insight sections never mutate semantic or crawl data.
+6. Insight sections remain read-only unless they expose a clearly labeled,
+   deliberate operational action such as recalculating Interest Islands.
 
 Some sections save a whole ordered collection rather than one row at a time. For Smart Folders, Actions, and Official Sources, removing an item in the interface remains a local change until the collection is successfully saved.
 

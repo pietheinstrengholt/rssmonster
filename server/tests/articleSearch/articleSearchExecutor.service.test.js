@@ -39,9 +39,9 @@ const buildQuery = overrides => buildArticleSearchQuery({
   baseWhere: { feedId: [4] },
   smartFolderSearch: false,
   sortRecommended: false,
+  sortTopStories: false,
   sortQuality: false,
   sortAttention: false,
-  sortTrust: false,
   prioritizeHighTrust: false,
   workingSort: 'desc',
   qualityFilter: null,
@@ -81,6 +81,26 @@ describe('articleSearchExecutor.service', () => {
     const query = buildQuery({ sortAttention: true });
 
     expect(query.attributes).toEqual(expect.arrayContaining(['attentionBucket', 'clickedAmount']));
+    expect(query).not.toHaveProperty('order');
+  });
+
+  it('loads shared event and Quality inputs for Top Stories without Interest Islands or rule tags', () => {
+    const query = buildQuery({ sortTopStories: true });
+
+    expect(query.attributes).toEqual(expect.arrayContaining([
+      'publishedAt',
+      'qualityScore',
+      'sentimentScore',
+      'advertisementScore'
+    ]));
+    expect(query.attributes).not.toContain('interestScore');
+    expect(query.include).toEqual(expect.arrayContaining([
+      expect.objectContaining({ as: 'event' }),
+      expect.objectContaining({ model: expect.objectContaining({ name: 'Feed' }) })
+    ]));
+    expect(query.include).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ model: expect.objectContaining({ name: 'Tag' }) })
+    ]));
     expect(query).not.toHaveProperty('order');
   });
 

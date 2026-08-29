@@ -153,6 +153,24 @@ describe('Smart Folder query domain', () => {
     expect(buildSmartFolderQuery(parseSmartFolderQuery(query))).toBe(query);
   });
 
+  it('canonicalizes a legacy Trust sort when opening and rebuilding a folder', () => {
+    const config = parseSmartFolderQuery('unread:true sort:trust limit:50');
+
+    expect(config.sort.field).toBe('quality');
+    expect(buildSmartFolderQuery(config)).toBe('unread:true sort:quality limit:50');
+  });
+
+  it.each([
+    ['topStories', 'topStories'],
+    ['topstories', 'topStories'],
+    ['TOPSTORIES', 'topStories']
+  ])('canonicalizes the %s Top Stories sort token', (storedSort, expectedSort) => {
+    const query = `unread:true sort:${storedSort} limit:50`;
+
+    expect(buildSmartFolderQuery(parseSmartFolderQuery(query)))
+      .toBe(`unread:true sort:${expectedSort} limit:50`);
+  });
+
   it.each(['developing:true', 'developing:false'])(
     'round-trips the developing story filter %s',
     developingFilter => {

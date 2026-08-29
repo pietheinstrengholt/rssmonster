@@ -31,6 +31,9 @@ export const savePrioritizeHighTrust = prioritizeHighTrust =>
 export const fetchIslandsOverview = () =>
   api.get('/setting/islands');
 
+export const recalculateIslands = () =>
+  api.post('/setting/islands/recalculate', null, { timeout: 120000 });
+
 export const fetchTopicsOverview = () =>
   api.get('/setting/topics');
 

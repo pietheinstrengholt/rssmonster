@@ -53,7 +53,7 @@ describe('Feed model', () => {
 
     // ---- Defaults ----
     expect(feed.status).toBe('active');
-    expect(feed.feedTrust).toBe(0.5);
+    expect(feed.feedTrust).toBe(0.75);
     expect(feed.feedDuplicationRate).toBe(0);
     expect(feed.errorCount).toBe(0);
     expect(feed.errorMessage).toBeNull();

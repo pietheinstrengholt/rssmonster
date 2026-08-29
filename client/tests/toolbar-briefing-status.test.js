@@ -160,7 +160,7 @@ describe('toolbar Daily Briefing status', () => {
     expect(groupingButton.element.disabled).toBe(true);
     expect(sortButton.attributes('title')).toContain('Briefing settings');
 
-    wrapper.vm.sortClicked('trust');
+    wrapper.vm.sortClicked('quality');
     wrapper.vm.setGrouping('topic');
 
     expect(store.selectionStore.setSelectedSort).not.toHaveBeenCalled();
@@ -172,7 +172,7 @@ describe('toolbar Daily Briefing status', () => {
     store.selectionStore.currentSelection.status = 'briefing';
     const wrapper = mount(MobileToolbar);
     const sortOption = wrapper.findAll('#readModeDropdown-menu [role="menuitem"]')
-      .find(option => option.text() === 'Trust');
+      .find(option => option.text() === 'Quality');
     const groupingOption = wrapper.findAll('#readModeDropdown-menu [role="menuitem"]')
       .find(option => option.text() === 'Cluster per topic');
 
@@ -181,7 +181,7 @@ describe('toolbar Daily Briefing status', () => {
     expect(sortOption.element.disabled).toBe(true);
     expect(groupingOption.element.disabled).toBe(true);
 
-    wrapper.vm.sortClicked('trust');
+    wrapper.vm.sortClicked('quality');
     wrapper.vm.setGrouping('topic');
 
     expect(store.selectionStore.setSelectedSort).not.toHaveBeenCalled();
@@ -189,18 +189,22 @@ describe('toolbar Daily Briefing status', () => {
   });
 });
 
-describe('toolbar Trust sort option', () => {
-  it.each([DesktopToolbar, MobileToolbar])('shows and selects Trust in %s', async (component) => {
-    const store = createStore(false);
+describe('toolbar intelligent sort options', () => {
+  it.each([DesktopToolbar, MobileToolbar])('shows Top Stories and Quality without retired options in %s', async (component) => {
+    const store = createStore(true);
     const wrapper = mount(component);
     const options = component === DesktopToolbar
       ? desktopSortDropdown(wrapper).findAll('[role="menuitem"]')
       : wrapper.findAll('#readModeDropdown-menu [role="menuitem"]');
-    const trustOption = options.find(option => option.text() === 'Trust');
+    const qualityOption = options.find(option => option.text() === 'Quality');
+    const topStoriesOption = options.find(option => option.text() === 'Top Stories');
 
-    expect(trustOption).toBeDefined();
-    await trustOption.trigger('click');
+    expect(options.some(option => option.text() === 'Trust')).toBe(false);
+    expect(options.some(option => option.text() === 'Most Engaged')).toBe(false);
+    expect(qualityOption).toBeDefined();
+    expect(topStoriesOption).toBeDefined();
+    await topStoriesOption.trigger('click');
 
-    expect(store.selectionStore.setSelectedSort).toHaveBeenCalledWith('trust');
+    expect(store.selectionStore.setSelectedSort).toHaveBeenCalledWith('topStories');
   });
 });

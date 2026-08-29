@@ -6,7 +6,7 @@ const { Article, BriefingPreference, Setting } = db;
 import { Op } from 'sequelize';
 import { sortArticles } from './articleSort.service.js';
 import { resolveDateFilterToRange } from './articleDateParser.service.js';
-import { parseArticleQuery } from './articleQueryParser.service.js';
+import { normalizeArticleSort, parseArticleQuery } from './articleQueryParser.service.js';
 import {
   buildArticleSearchQuery,
   executeSearch,
@@ -41,45 +41,20 @@ const articleValue = (article, key) => (
   typeof article.get === 'function' ? article.get(key) : article[key]
 );
 
-// Normalizes the sort.
-const normalizeSort = sortValue => {
-  // Normalizes the normalized before normalizing sort.
-  const normalized = String(sortValue || 'desc').toLowerCase();
-  // Selects the result based on whether value contains normalized.
-  return ['asc', 'desc', 'trust', 'recommended', 'quality', 'attention'].includes(normalized)
-    ? normalized
-    : 'desc';
-};
-
 // Adds one cursor predicate without overwriting an existing ID or grouping condition.
 const appendCursorCondition = (where, condition) => {
   where[Op.and] ??= [];
   where[Op.and].push(condition);
 };
 
-const cursorTrustOrder = () => db.Sequelize.fn(
-  'ROUND',
-  db.Sequelize.col('feed.feedTrust'),
-  6
-);
-
 // Returns the persisted sort values needed to continue after one article.
-const cursorPositionForArticle = (article, sort) => {
+const cursorPositionForArticle = article => {
   const publishedAt = articleValue(article, 'publishedAt');
   const articleId = Number(articleValue(article, 'id'));
   const position = {
     publishedAt: new Date(publishedAt).toISOString(),
     articleId
   };
-
-  if (sort === 'trust') {
-    const feed = article.get?.('Feed') ?? article.Feed ?? article.feed;
-    const feedTrust = Number(feed?.feedTrust);
-    if (!Number.isFinite(feedTrust)) {
-      throw new ArticleSearchCursorError('CURSOR_POSITION_INVALID', 'Unable to create the article cursor.');
-    }
-    position.feedTrust = Number(feedTrust.toFixed(6));
-  }
 
   return position;
 };
@@ -90,32 +65,6 @@ const applyCursorPosition = (articleQuery, sort, position) => {
   const articleId = Number(position?.articleId);
   if (!Number.isSafeInteger(articleId) || Number.isNaN(publishedAt.getTime())) {
     throw new ArticleSearchCursorError('CURSOR_MALFORMED', 'The article cursor is malformed.');
-  }
-
-  if (sort === 'trust') {
-    if (typeof position?.feedTrust !== 'number' || !Number.isFinite(position.feedTrust)) {
-      throw new ArticleSearchCursorError('CURSOR_MALFORMED', 'The article cursor is malformed.');
-    }
-    const feedTrust = position.feedTrust;
-
-    const feedTrustOrder = cursorTrustOrder();
-    appendCursorCondition(articleQuery.where, {
-      [Op.or]: [
-        db.Sequelize.where(feedTrustOrder, { [Op.lt]: feedTrust }),
-        {
-          [Op.and]: [
-            db.Sequelize.where(feedTrustOrder, { [Op.eq]: feedTrust }),
-            {
-              [Op.or]: [
-                { publishedAt: { [Op.lt]: publishedAt } },
-                { publishedAt, id: { [Op.lt]: articleId } }
-              ]
-            }
-          ]
-        }
-      ]
-    });
-    return;
   }
 
   const comparison = sort === 'asc' ? Op.gt : Op.lt;
@@ -131,7 +80,7 @@ const applyCursorPosition = (articleQuery, sort, position) => {
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: favorite:true/false, unread:true/false, clicked:true/false,
  * event:true/false, island:true/false, briefing:true/false, developing:true/false, eventCount:>=2, tag:name, title:text, author:text, language:en,
- * sort:desc/asc/trust/recommended/quality/attention, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+ * sort:desc/asc/trust/topStories/recommended/quality/attention, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
 // Searches article ids for a user using query-string filters, score thresholds, feed/category scope, and optional ranking.
 export const searchArticles = async ({
@@ -306,19 +255,19 @@ export const searchArticles = async ({
      * Determine final filter values.
      * Field filters from search string take precedence over query parameters.
      */
-    // Sort: search token (sort:asc/desc/trust/recommended/quality/attention) overrides query param
+    // Sort: search token (sort:asc/desc/trust/topStories/recommended/quality/attention) overrides query param
     // Smart folder optimization: skip sort entirely (only counting articles)
-    const logicalSort = normalizeSort(sortFilter !== null ? sortFilter : sort);
+    const logicalSort = normalizeArticleSort(sortFilter !== null ? sortFilter : sort);
     // Derives the sort recommended required while performing search articles.
     const sortRecommended = logicalSort === 'recommended';
+    // Derives the Top Stories runtime ranking requirement.
+    const sortTopStories = logicalSort === 'topStories';
     // Derives the sort quality required while performing search articles.
     const sortQuality = logicalSort === 'quality';
     // Derives the sort attention required while performing search articles.
     const sortAttention = logicalSort === 'attention';
-    // Derives the sort trust required while performing search articles.
-    const sortTrust = logicalSort === 'trust';
     // Selects the database sort based on whether value contains logical sort.
-    const databaseSort = ['trust', 'recommended', 'quality', 'attention'].includes(logicalSort)
+    const databaseSort = ['topStories', 'recommended', 'quality', 'attention'].includes(logicalSort)
       ? 'desc'
       : logicalSort;
     debugLog(`\x1b[31mFinal sort value: "${databaseSort}" (logical: ${logicalSort}, smartFolder: ${smartFolderSearch})\x1b[0m`);
@@ -407,9 +356,9 @@ export const searchArticles = async ({
       baseWhere,
       smartFolderSearch,
       sortRecommended,
+      sortTopStories,
       sortQuality,
       sortAttention,
-      sortTrust,
       prioritizeHighTrust,
       workingSort: databaseSort,
       qualityFilter,
@@ -459,7 +408,7 @@ export const searchArticles = async ({
     };
     // Coerces the runtime filters required into the representation required while performing search articles.
     const runtimeFiltersRequired = Boolean(qualityFilter || freshnessFilter);
-    const needsHighTrustRuntimeSort = prioritizeHighTrust && !sortTrust;
+    const needsHighTrustRuntimeSort = prioritizeHighTrust;
     // Selects the result limit based on whether smart folder search is available.
     const resultLimit = limitFilter || (smartFolderSearch ? limitCount : null);
 
@@ -479,7 +428,7 @@ export const searchArticles = async ({
 
     if (pagination) {
       if (
-        !['asc', 'desc', 'trust'].includes(logicalSort)
+        !['asc', 'desc'].includes(logicalSort)
         || runtimeFiltersRequired
         || needsHighTrustRuntimeSort
       ) {
@@ -491,13 +440,6 @@ export const searchArticles = async ({
       }
 
       const pageSize = pagination.pageSize;
-      if (logicalSort === 'trust') {
-        articleQuery.order = [
-          [cursorTrustOrder(), 'DESC'],
-          ['publishedAt', 'DESC'],
-          ['id', 'DESC']
-        ];
-      }
       const cursorQuery = {
         search: rawSearch,
         categoryId: String(categoryId ?? '%'),
@@ -563,7 +505,7 @@ export const searchArticles = async ({
           queryHash,
           sort: logicalSort,
           snapshotMaxArticleId,
-          position: cursorPositionForArticle(articles.at(-1), logicalSort),
+          position: cursorPositionForArticle(articles.at(-1)),
           consumedCount: nextConsumedCount,
           totalCount,
           sourceCount,
@@ -618,6 +560,7 @@ export const searchArticles = async ({
     if (
       !smartFolderSearch
       || sortRecommended
+      || sortTopStories
       || sortQuality
       || sortAttention
       || qualityFilter
@@ -626,9 +569,9 @@ export const searchArticles = async ({
     ) {
       articles = sortArticles(articles, {
         sortRecommended,
+        sortTopStories,
         sortQuality,
         sortAttention,
-        sortTrust,
         sortDirection: logicalSort,
         qualityFilter,
         freshnessFilter,
