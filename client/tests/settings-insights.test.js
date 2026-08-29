@@ -136,14 +136,23 @@ describe('SettingsIslands', () => {
   });
 
   it('recalculates islands and refreshes the overview', async () => {
+    let resolveRecalculation;
     fetchIslandsOverview.mockResolvedValue({ data: { islands: [] } });
-    recalculateIslands.mockResolvedValue({
-      data: { islandCount: 2, rescoredArticleCount: 5 }
-    });
+    recalculateIslands.mockImplementation(() => new Promise(resolve => {
+      resolveRecalculation = resolve;
+    }));
     mountInsights(SettingsIslands);
     await flushPromises();
 
     await wrapper.get('.settings-recalculate-button').trigger('click');
+
+    expect(wrapper.get('.settings-recalculate-button').attributes('aria-busy')).toBe('true');
+    expect(wrapper.get('.settings-recalculate-button').text()).toContain('Recalculating…');
+    expect(wrapper.get('.settings-refresh-button').element.disabled).toBe(true);
+
+    resolveRecalculation({
+      data: { islandCount: 2, rescoredArticleCount: 5 }
+    });
     await flushPromises();
 
     expect(recalculateIslands).toHaveBeenCalledOnce();
@@ -164,6 +173,18 @@ describe('SettingsIslands', () => {
     expect(fetchIslandsOverview).toHaveBeenCalledOnce();
     expect(wrapper.text()).toContain('Failed to recalculate interest islands.');
     expect(wrapper.vm.recalculating).toBe(false);
+  });
+
+  it('reports zero recalculation counts when the response omits them', async () => {
+    fetchIslandsOverview.mockResolvedValue({ data: { islands: [] } });
+    recalculateIslands.mockResolvedValue({});
+    mountInsights(SettingsIslands);
+    await flushPromises();
+
+    await wrapper.get('.settings-recalculate-button').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Recalculated 0 islands and rescored 0 articles.');
   });
 });
 
