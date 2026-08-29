@@ -20,7 +20,6 @@
 
 <script>
 import ArticleRelatedStoryPopover from './ArticleRelatedStoryPopover.vue';
-import { fetchStorySourceArticles } from '../../api/articles.js';
 
 export default {
   components: { ArticleRelatedStoryPopover },
@@ -29,7 +28,10 @@ export default {
     sourceCount: { type: Number, required: true }
   },
   methods: {
-    fetchArticles: fetchStorySourceArticles
+    async fetchArticles(articleId) {
+      const { fetchStorySourceArticles } = await import('../../api/articles.js');
+      return fetchStorySourceArticles(articleId);
+    }
   }
 };
 </script>

@@ -24,7 +24,6 @@
 
 <script>
 import ArticleRelatedStoryPopover from './ArticleRelatedStoryPopover.vue';
-import { fetchDevelopingStoryArticles } from '../../api/articles.js';
 
 export default {
   components: { ArticleRelatedStoryPopover },
@@ -33,7 +32,10 @@ export default {
     iconClass: { type: [String, Array, Object], default: 'developing-story-icon' }
   },
   methods: {
-    fetchArticles: fetchDevelopingStoryArticles
+    async fetchArticles(articleId) {
+      const { fetchDevelopingStoryArticles } = await import('../../api/articles.js');
+      return fetchDevelopingStoryArticles(articleId);
+    }
   }
 };
 </script>
