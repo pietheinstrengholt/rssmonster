@@ -64,11 +64,12 @@ repeated positive engagement. The behavioral calibration service considers:
 - outbound article clicks, capped at three clicks per article; and
 - deep reads with an attention bucket of at least three.
 
-Bookmarks contribute `4` evidence points, each counted click contributes
-`1.5`, and a deep read contributes `3`. A behavioral community must currently
-contain at least three articles, reach a combined score of at least `8`, and
-span at least two feeds or two calendar days. This prevents a single click or
-one reading session from creating durable Topic memory.
+Bookmarks contribute `4` evidence points, each counted click contributes `2`
+up to a maximum of `6` per article, and a deep read contributes `1`. A
+behavioral community must currently contain at least three articles, reach a
+combined score of at least `8`, and span at least two feeds or two calendar
+days. This prevents a single click or one reading session from creating durable
+Topic memory.
 
 Behavioral Topics link directly to their evidence articles. They never own
 Events and are excluded from Event-to-Topic matching.

@@ -85,7 +85,7 @@ describe('calibrateBehavioralTopicsForUser', () => {
 
     expect(topic).toBeTruthy();
     expect(topic.eventCount).toBe(0);
-    expect(topic.evidenceScore).toBeGreaterThanOrEqual(6);
+    expect(topic.evidenceScore).toBe(11);
     expect(topic.behavioralArticleCount).toBe(3);
     expect(topic.lastBehaviorAt).toBeTruthy();
 
@@ -278,5 +278,4 @@ describe('calibrateBehavioralTopicsForUser', () => {
     expect(eventArticleLinksAfter).toBe(3);
   });
 });
-
 

@@ -56,8 +56,8 @@ export const ISLAND_DEBUG = ['1', 'true', 'yes'].includes(
 export const SIGNAL_WEIGHTS = {
   positive: 4,
   star: 4,
-  click: 1.5,
-  deepRead: 3,
+  click: 2,
+  deepRead: 1,
   negative: 4,
   topicAffinity: 2,
   eventCount: 0.25

@@ -29,9 +29,9 @@ describe('behavioral article island profiles', () => {
     });
 
     expect(result).toEqual({
-      positiveScore: 15.5,
+      positiveScore: 15,
       negativeScore: 4,
-      engagementScore: 15.5,
+      engagementScore: 15,
       positiveSignals: { positives: 1, stars: 1, clicks: 3, deepReads: 1, negatives: 1 }
     });
   });

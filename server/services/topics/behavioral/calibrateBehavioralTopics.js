@@ -23,8 +23,8 @@ const { Article, ArticleTopic, Topic } = db;
 // Defines the signal weights enforced by this service.
 const SIGNAL_WEIGHTS = {
   star: 4,
-  click: 1.5,
-  deepRead: 3
+  click: 2,
+  deepRead: 1
 };
 
 // Defines the default community similarity threshold enforced by this service.

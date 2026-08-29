@@ -54,8 +54,8 @@ explicit behavioral signal. The current signal weights are:
 | --- | ---: |
 | Positive feedback | `+4` |
 | Bookmark or favorite | `+4` |
-| Outbound click | `+1.5`, up to three clicks per article |
-| Deep read | `+3` when attention bucket is at least three |
+| Outbound click | `+2`, up to three clicks per article (`+6` maximum) |
+| Deep read | `+1` when attention bucket is at least three |
 | Negative feedback | `-4` |
 
 Positive signals are reduced gradually as articles age. The default half-life
