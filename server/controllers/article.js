@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-const { Article, BriefingPreference, Feed, Tag, Event, Setting } = db;
+const { Article, BriefingPreference, Feed, Tag, Event } = db;
 import { Op, fn, col } from 'sequelize';
 import { searchArticles } from "../services/articleSearch/articleSearch.service.js";
 import { MAX_ARTICLE_SEARCH_LENGTH } from '../services/articleSearch/articleQueryParser.service.js';
@@ -19,8 +19,8 @@ import { retryDatabaseWrite } from '../utils/databaseRetry.js';
 const normalizeGrouping = value => (value === 'event' || value === 'topic' ? value : 'none');
 
 const cursorCompatibleScope = ({ sort, search }) => (
-  ['asc', 'desc', 'trust'].includes(String(sort || 'desc').toLowerCase())
-  && !/(?:^|\s)sort:(?:recommended|quality|attention)(?:\s|$)/i.test(String(search || ''))
+  ['asc', 'desc'].includes(String(sort || 'desc').toLowerCase())
+  && !/(?:^|\s)sort:(?:trust|topStories|recommended|quality|attention)(?:\s|$)/i.test(String(search || ''))
   && !/(?:^|\s)(?:quality|freshness):/i.test(String(search || ''))
 );
 
@@ -211,19 +211,10 @@ const loadArticleDetails = async (userId, articlesArray) => {
 
   attachPredictedAffinity(articles);
 
-  const [settings, interestIslandByArticleId] = await Promise.all([
-    Setting.findOne({
-      where: { userId },
-      attributes: ['prioritizeHighTrust'],
-      raw: true
-    }),
-    loadInterestIslandAttributions(userId, articles)
-  ]);
-  const prioritizeHighTrust = Boolean(Number(settings?.prioritizeHighTrust));
+  const interestIslandByArticleId = await loadInterestIslandAttributions(userId, articles);
 
   for (const article of articles) {
     article.setDataValue('recommendation', buildRecommendationPresentation(article, {
-      prioritizeHighTrust,
       interestIsland: interestIslandByArticleId.get(String(article.id)) || null
     }));
   }

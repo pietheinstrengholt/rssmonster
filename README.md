@@ -259,7 +259,7 @@ docker compose -f docker-compose.mysql.yml logs -f inference rssmonster rssmonst
 * **Semantic event discovery**: Group related reporting, compare sources, identify duplicate coverage, and connect events to broader topics and personal interest islands.
 * **Smart Folders**: Build reusable views with queries such as `@today unread:true sort:recommended`, `unread:true quality:>0.7 sort:quality`, or `event:true island:true eventCount:>=3 sort:recommended`.
 * **Advanced search**: Combine article state, dates, tags, text, semantic filters, score thresholds, and sorting. See the [search guide](docs/search.md) for the supported operators.
-* **Transparent ranking signals**: Recommended ordering considers freshness, interest, quality, event coverage, publisher diversity, corroboration, rule tags, and optional feed-trust preference. Quality, uniqueness, attention, and feed trust remain visible signals with dedicated sorting or filtering where supported.
+* **Transparent ranking signals**: Recommended ordering emphasizes personal interest, with freshness, Quality, corroboration, and rule tags as supporting signals. Top Stories separately ranks current multi-source event importance without personalization. Quality, uniqueness, attention, and feed trust remain inspectable signals where supported; attention sorting is retained only for legacy search expressions.
 * **PWA and mobile support**: Install RSSMonster on supported devices for an app-like experience with offline support and responsive controls.
 * **OPML and generated RSS**: Import or export subscriptions through OPML, and create filtered RSS feeds from stored articles through the `/rss` endpoint.
 * **Third-party client compatibility**: Connect Fever clients such as Reeder or Google Reader clients including News+, FeedMe, Reeder, Vienna RSS, and ReadKit.
@@ -354,10 +354,17 @@ Historical semantic rebuilding is available through `npm run semantic:all`. It r
 
 ## How Ranking Scores Work (End User)
 
-* **Recommended / importance ranking**: Combines freshness, personal interest, article quality, event coverage, publisher diversity, and cross-source corroboration. Meaningful multi-article events and user-defined rule tags can add small boosts; prioritizing high-trust feeds is an explicit preference. The result favors timely, relevant, well-supported stories while keeping its inputs inspectable.
-* **Attention**: Reflects how people interact with an article. A quick skim gives a small boost; reads, deep reads, and highly engaged sessions boost more. Re-opens and outbound clicks add a modest extra lift. No interaction means no attention boost.
-* **Quality**: Evaluates tone, writing, and promotional content. Sentiment, writing quality, and advertisement detection combine into a single 0–1 score, which feed-quality evidence can gently adjust.
+The visible sort order is **Newest, Oldest, Top Stories, Recommended, Quality**.
+
+* **Recommended**: Emphasizes signed personal interest, then freshness and Quality, with small corroboration and rule-match contributions. It does not add a separate raw feed-trust preference boost.
+* **Top Stories**: Ignores personalization and combines event coverage, cross-source diversity, corroboration, freshness, and Quality to surface broadly supported current stories.
+* **Article quality**: Evaluates one article's writing, tone, and promotional content as an independent `0–1` signal.
+* **Quality ranking**: Combines `70%` article quality with `30%` FeedTrust while keeping both concepts separate.
 * **Uniqueness**: Describes how standalone an article is. Articles in larger event clusters receive a lower uniqueness signal, helping the interface identify redundant coverage without removing access to the underlying articles.
+
+Legacy `sort:attention` queries remain accepted for compatibility, but Most
+Engaged is no longer a visible sort option. Legacy `sort:trust` queries resolve
+to Quality.
 
 ## Prerequisites
 
@@ -610,7 +617,7 @@ inference service, so it works with either OpenAI or Qwen.
 
 ### Calculate Feed Trust Scores
 
-Feed trust scores help identify high-quality sources based on originality, article quality, and user engagement:
+Feed trust estimates how consistently valuable a subscribed source has been as a source of articles:
 
 ```bash
 cd server
@@ -619,10 +626,10 @@ npm run feedtrust
 
 This command calculates trust scores from `0.0` to `1.0` for active feeds using:
 
-* **Originality (35%)**: How often the feed publishes original content versus syndicated articles
-* **Quality (25%)**: Average quality score of articles from the feed
-* **Engagement (20%)**: User interaction such as favorites and clicks
-* **Consistency (20%)**: Placeholder for future enhancements
+* **Article quality (50%)**: Average existing normalized article quality
+* **Engagement (20%)**: Usefulness observed through reads, favorites, and clicks
+* **Originality (15%)**: Canonical articles versus deterministically linked duplicates
+* **Negative-feedback quality (15%)**: Explicit negative feedback among exposed articles
 
 **When to use this:**
 
@@ -630,7 +637,9 @@ This command calculates trust scores from `0.0` to `1.0` for active feeds using:
 * after significant changes in reading patterns;
 * to identify low-quality or noisy feeds.
 
-The trust score uses an exponential moving average (EMA) to adapt over time while remaining resistant to short-term fluctuations.
+Each signal has its own evidence confidence and shrinks toward the neutral score of `0.75` when evidence is sparse. Recalculating unchanged data produces the same result.
+
+[Read the conceptual FeedTrust model](docs/feedtrust.md).
 
 ## Optional AI Assistant (Model Context Protocol)
 

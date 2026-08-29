@@ -301,12 +301,10 @@ describe('article ownership authorization', () => {
     expect(response.body[0].recommendation.score).toEqual(expect.any(Number));
     expect(response.body[0].recommendation.reasons.map(reason => reason.code)).toEqual([
       'interest_match',
-      'event_coverage',
       'source_diversity',
       'rule_match',
       'freshness',
-      'quality',
-      'feed_trust'
+      'quality'
     ]);
     expect(response.body[0].recommendation.reasons).toEqual(expect.arrayContaining([
       expect.objectContaining({
@@ -319,13 +317,9 @@ describe('article ownership authorization', () => {
         }
       }),
       expect.objectContaining({
-        code: 'event_coverage',
-        event: { id: event.id, name: event.name, generatedName: event.generatedName },
-        articleCount: 8
-      }),
-      expect.objectContaining({
         code: 'source_diversity',
-        sourceCount: 4
+        sourceCount: 4,
+        event: { id: event.id, name: event.name, generatedName: event.generatedName }
       }),
       expect.objectContaining({
         code: 'rule_match',

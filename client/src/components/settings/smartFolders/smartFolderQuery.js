@@ -94,9 +94,10 @@ function applyEventCountToken(config, token) {
 
 // Maps stored sort aliases onto the editor's select values.
 function applySortToken(config, token) {
-    const sortValue = token.split(':')[1];
+    const parsedSortValue = token.split(':')[1];
+    const sortValue = parsedSortValue === 'trust' ? 'quality' : parsedSortValue;
 
-    if (['trust', 'recommended', 'quality', 'attention'].includes(sortValue)) {
+    if (['topStories', 'recommended', 'quality', 'attention'].includes(sortValue)) {
         config.sort.field = sortValue;
         return;
     }

@@ -153,6 +153,19 @@ describe('Smart Folder query domain', () => {
     expect(buildSmartFolderQuery(parseSmartFolderQuery(query))).toBe(query);
   });
 
+  it('canonicalizes a legacy Trust sort when opening and rebuilding a folder', () => {
+    const config = parseSmartFolderQuery('unread:true sort:trust limit:50');
+
+    expect(config.sort.field).toBe('quality');
+    expect(buildSmartFolderQuery(config)).toBe('unread:true sort:quality limit:50');
+  });
+
+  it('round-trips the Top Stories sort', () => {
+    const query = 'unread:true sort:topStories limit:50';
+
+    expect(buildSmartFolderQuery(parseSmartFolderQuery(query))).toBe(query);
+  });
+
   it.each(['developing:true', 'developing:false'])(
     'round-trips the developing story filter %s',
     developingFilter => {

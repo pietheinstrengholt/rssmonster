@@ -6,14 +6,14 @@ nav_order: 7
 
 ## What makes RSSMonster different from other RSS readers?
 
-RSSMonster is a **signal-driven RSS reader**.  
-Instead of showing articles purely in chronological order, it ranks them by **importance** using quality, uniqueness, freshness, and feed trust.
+RSSMonster is a **signal-driven RSS reader**. It offers chronological ordering
+alongside transparent Quality, Recommended, and Top Stories modes.
 
 Traditional readers answer:
 > “What’s new?”
 
-RSSMonster answers:
-> “What actually matters?”
+RSSMonster can also answer:
+> “What is valuable, relevant to me, or important right now?”
 
 ---
 
@@ -21,12 +21,9 @@ RSSMonster answers:
 
 Yes — but **you control it**.
 
-RSSMonster uses transparent, deterministic scoring based on:
-- Article quality
-- Originality
-- Feed trust
-- Freshness
-- Your own engagement
+RSSMonster composes visible signals such as article quality, FeedTrust,
+freshness, personal interest, reading attention, and Event corroboration. Each
+ranking mode gives those signals a specific meaning.
 
 There is:
 - No black-box personalization
@@ -52,14 +49,15 @@ RSSMonster does not force ranking — it *enables* it.
 
 ## Why are some articles hidden or ranked very low?
 
-Articles may rank lower when they:
-- Are near-duplicates of other articles
-- Come from low-trust feeds
-- Have low writing quality
-- Are old or stale
-- Provide little original information
+The selected sort determines ordering. Recommended can place an article later
+because of weak or negative personal interest, age, Quality, or limited Event
+corroboration. Top Stories emphasizes Event evidence, freshness, and Quality;
+Quality emphasizes article quality and FeedTrust. Newest and Oldest remain
+chronological unless the optional legacy high-trust preference is enabled.
 
-Nothing is deleted automatically unless you create a rule that does so.
+Filters and automated actions are separate from sorting and can exclude an
+article from a view. Duplicate and Event grouping can also show one
+representative first while keeping the related sources available.
 
 ---
 
@@ -91,10 +89,18 @@ Clusters allow RSSMonster to:
 ## How is article quality calculated?
 
 Article quality is a normalized score (0.0 – 1.0) based on:
-- Writing structure
-- Promotional language detection
-- Sentiment neutrality
-- Content richness
+
+```text
+articleQuality =
+    0.50 × qualityScore
+  + 0.25 × sentimentScore
+  + 0.25 × advertisementScore
+```
+
+The inputs use `0`–`100` and the result is normalized to `0`–`1`. The
+advertisement component scores the absence of promotional content, so higher
+is better. Quality ordering then combines `70%` article quality with `30%`
+FeedTrust.
 
 Quality is used for ranking, filtering, and automation — not censorship.
 
@@ -104,7 +110,7 @@ Quality is used for ranking, filtering, and automation — not censorship.
 
 Uniqueness measures **how much new information** an article adds compared to others in the same cluster.
 
-Original reporting ranks higher than:
+The signal is higher for original reporting than for:
 - Rewrites
 - Syndicated copies
 - Press-release clones
@@ -113,29 +119,34 @@ Original reporting ranks higher than:
 
 ## How does feed trust work?
 
-Feed trust is a long-term score (0.0 – 1.0) earned over time.
+Feed trust estimates how consistently valuable a source has recently been as a
+source of articles.
 
 It is based on:
-- Originality of published articles
-- Average quality
-- User engagement (reads, clicks, stars)
-- Consistency of publishing
+- Average existing article quality
+- Supporting engagement among exposed articles
+- Originality based on actual duplicate links
+- Explicit negative feedback
 
-Trust improves ranking reliability but never fully hides content.
+It is not factual verification, crawl health, topic interest, or a reward for
+publishing frequently. Trust improves ranking reliability but never fully hides
+content.
 
 ---
 
 ## Why doesn’t feed trust update immediately?
 
-Feed trust is designed to be **stable**, not reactive.
+Feed trust is recalculated from a rolling 30-day evidence window.
 
 It updates in batches to:
-- Avoid spikes
-- Prevent gaming
-- Reflect long-term behavior
+- Reuse the same transparent evidence model for every feed
+- Keep sparse signals close to neutral through per-signal confidence
+- Produce the same result when unchanged data is recalculated
 
 You can manually recalculate trust using:
 
 ```bash
 npm run feedtrust
 ```
+
+[Read the complete FeedTrust explanation →](feedtrust.md)

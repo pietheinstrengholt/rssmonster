@@ -2,14 +2,12 @@
  * Feed Trust calculation CLI runner
  *
  * This script calculates a trust score (0-1) for each feed.
- * Feed trust does not measure article quality; article quality is scored
- * separately. Instead, trust reflects source usefulness and user affinity:
- * - Engagement: How many articles users favorite, click, skim, or read deeply
- * - Originality: How many articles are original vs duplicates
- * - Consistency: Publishing frequency/cadence
- * - Negative signals: High volume, negative feedback, and recent mutes
- *
- * Uses exponential moving average (EMA) to smoothly update trust over time.
+ * Feed trust does not replace article quality; it summarizes a source's
+ * consistent article value while keeping the article-level score separate:
+ * - Article value: The average canonical article-quality score
+ * - Engagement: How useful exposed articles proved to the user
+ * - Originality: How many articles are canonical rather than actual duplicates
+ * - Negative feedback: How often exposed articles receive explicit rejection
  *
  * Usage:
  *   npm run feedtrust
@@ -19,7 +17,8 @@
 
 import { Op } from 'sequelize';
 import db from '../models/index.js';
-const { Feed, Article, Event } = db;
+const { Feed, Article } = db;
+import { computeArticleQuality } from '../services/articles/articleQuality.js';
 import { resolvePredictedAffinity } from '../services/recommendations/predictedAffinityResolver.js';
 
 /* ------------------------------------------------------------------
@@ -27,37 +26,22 @@ import { resolvePredictedAffinity } from '../services/recommendations/predictedA
  * These parameters tune how trust scores are calculated and updated
  * ------------------------------------------------------------------ */
 
-// EMA_ALPHA controls how quickly the trust score responds to new data
-// Higher alpha = faster response to recent observations (more volatile)
-// Lower alpha = slower response, more stable (historical bias)
-// 0.35 means: new_trust = 0.35 * observed + 0.65 * previous_trust
-const EMA_ALPHA = 0.35;
-// NEUTRAL_TRUST: Starting point for trust. Behavior nudges feeds up or down from here.
+// Feed trust and uncertain component observations share one neutral value.
 const NEUTRAL_TRUST = 0.75;
-// MIN_CONFIDENCE_SAMPLES/FULL_CONFIDENCE_SAMPLES: Low-sample feeds stay close to neutral.
-const MIN_CONFIDENCE_SAMPLES = 10;
-const FULL_CONFIDENCE_SAMPLES = 100;
-// HIGH_VOLUME_THRESHOLD_PER_DAY: Feeds publishing more than this per day start getting penalized
-// Helps identify spam/clickbait feeds that flood with content
-const HIGH_VOLUME_THRESHOLD_PER_DAY = 25;
-// HIGH_VOLUME_MAX_PENALTY: Maximum trust reduction applied at extreme volumes
-// e.g., a feed at 50+ articles/day loses up to 15% trust
-const HIGH_VOLUME_MAX_PENALTY = 0.15;
-// NEGATIVE_MAX_PENALTY: Maximum trust reduction for negativeInd articles.
-// Applies a gentle, sublinear scaling (sqrt) so a few negatives still signal
-// an issue without overwhelming the score when counts are low.
-const NEGATIVE_MAX_PENALTY = 0.15;
-// MUTE_MAX_PENALTY: Maximum penalty when a feed has been muted recently
-// MUTE_STALE_MONTHS: Penalize if mutedUntil is within the last MUTE_STALE_MONTHS
-const MUTE_MAX_PENALTY = 0.10;
-const MUTE_STALE_MONTHS = 6;
+const QUALITY_CONFIDENCE_TARGET = 4;
+const ENGAGEMENT_CONFIDENCE_TARGET = 8;
+const ORIGINALITY_CONFIDENCE_TARGET = 8;
+const FEEDBACK_CONFIDENCE_TARGET = 8;
 // LOOKBACK_DAYS: Only analyze articles published in the last 30 days
 // Prevents old, stale data from influencing current feed trust
 const LOOKBACK_DAYS = 30;
 
-// Articles in events of 2+ are considered duplicates or syndicated coverage.
-// An event with 1 article is original; 2+ means the content appears elsewhere.
-const DUPLICATION_EVENT_ARTICLE_THRESHOLD = 2;
+const FEED_TRUST_WEIGHTS = Object.freeze({
+  articleQuality: 0.50,
+  engagement: 0.20,
+  originality: 0.15,
+  negativeFeedbackQuality: 0.15
+});
 
 /* ------------------------------------------------------------------
  * Helpers
@@ -65,6 +49,27 @@ const DUPLICATION_EVENT_ARTICLE_THRESHOLD = 2;
 
 const clamp = (value, min = 0, max = 1) =>
   Math.max(min, Math.min(max, value));
+
+const confidenceForSamples = (sampleCount, target) =>
+  clamp(sampleCount / target);
+
+const confidenceAdjusted = (observed, confidence) =>
+  NEUTRAL_TRUST * (1 - confidence) + observed * confidence;
+
+const hasUsableArticleQuality = article => {
+  if (['pending', 'processing', 'failed'].includes(article.aiAnalysisStatus)) return false;
+  return ['qualityScore', 'sentimentScore', 'advertisementScore']
+    .every(field => article[field] != null && Number.isFinite(Number(article[field])));
+};
+
+// Reading state and explicit actions are the available evidence that an article was meaningfully exposed.
+const hasMeaningfulExposure = article => (
+  article.status === 'read' ||
+  Number(article.attentionBucket) > 0 ||
+  Number(article.clickedAmount) > 0 ||
+  Boolean(article.favoriteInd) ||
+  Number(article.negativeInd) === 1
+);
 
 const attentionWeightFromBucket = (bucket) => {
   switch (bucket) {
@@ -103,188 +108,122 @@ export async function calculateFeedTrustForFeed(feedId) {
       feedId: feed.id,
       publishedAt: { [Op.gte]: since }
     },
-    include: [
-      { model: Event, as: 'event' }
+    attributes: [
+      'id',
+      'status',
+      'duplicateOfArticleId',
+      'favoriteInd',
+      'negativeInd',
+      'clickedAmount',
+      'attentionBucket',
+      'qualityScore',
+      'sentimentScore',
+      'advertisementScore',
+      'aiAnalysisStatus'
     ]
   });
 
-  if (!articles.length) {
-    const predicted = resolvePredictedAffinity({
-      article: {
-        attentionBucket: 0,
-        status: 'unread'
-      },
-      feed
-    });
-
-    return {
-      trust: feed.feedTrust ?? NEUTRAL_TRUST,
-      duplicationRate: feed.feedDuplicationRate ?? 0,
-
-      feedAttentionAvg: feed.feedAttentionAvg ?? 0,
-      feedDeepReadRatio: feed.feedDeepReadRatio ?? 0,
-      feedSkimRatio: feed.feedSkimRatio ?? 0,
-      feedIgnoreRatio: feed.feedIgnoreRatio ?? 0,
-      feedClickAvg: feed.feedClickAvg ?? 0,
-      feedClickRatio: feed.feedClickRatio ?? 0,
-      feedAttentionSampleSize: feed.feedAttentionSampleSize ?? 0,
-      sampleConfidence: 0,
-
-      predictedAffinity: predicted?.predictedAffinity ?? 'cold',
-      predictedConfidence: predicted?.confidence ?? 0.25
-    };
-  }
-
   /* ============================================================
-   * METRIC 1: DUPLICATION RATE
+   * METRIC 1: AVERAGE ARTICLE QUALITY
    * ============================================================ */
 
-  let duplicatedArticles = 0;
-  let duplicationSamples = 0;
-
-  for (const article of articles) {
-    if (!article.event) continue;
-    duplicationSamples++;
-    if ((article.event.articleCount || 1) >= DUPLICATION_EVENT_ARTICLE_THRESHOLD) {
-      duplicatedArticles++;
-    }
-  }
-
-  const feedDuplicationRate =
-    duplicationSamples > 0
-      ? duplicatedArticles / duplicationSamples
-      : 0;
-
-  /* ============================================================
-   * METRIC 2: ORIGINALITY
-   * ============================================================ */
-
-  let representativeCount = 0;
-  let totalEventArticleCount = 0;
-  let eventSamples = 0;
-
-  for (const article of articles) {
-    if (!article.event) continue;
-    eventSamples++;
-    totalEventArticleCount += article.event.articleCount || 1;
-    if (article.event.representativeArticleId === article.id) {
-      representativeCount++;
-    }
-  }
-
-  const representativeRatio =
-    eventSamples > 0 ? representativeCount / eventSamples : 0.5;
-
-  const averageEventArticleCount =
-    eventSamples > 0 ? totalEventArticleCount / eventSamples : 1;
-
-  const baseOriginality = clamp(
-    0.65 * representativeRatio +
-    0.35 * (1 / Math.log2(averageEventArticleCount + 1))
-  );
-
-  const originality = clamp(
-    baseOriginality * (1 - feedDuplicationRate * 0.7)
+  const qualityArticles = articles.filter(hasUsableArticleQuality);
+  const averageArticleQuality = qualityArticles.length > 0
+    ? qualityArticles.reduce((sum, article) => sum + computeArticleQuality(article), 0) /
+      qualityArticles.length
+    : NEUTRAL_TRUST;
+  const qualityConfidence = confidenceForSamples(
+    qualityArticles.length,
+    QUALITY_CONFIDENCE_TARGET
   );
 
   /* ============================================================
-   * METRIC 3: ENGAGEMENT
+   * METRIC 2: ENGAGEMENT
    * ============================================================ */
 
-  let engagementSum = 0;
-
-  for (const article of articles) {
+  const engagementArticles = articles.filter(hasMeaningfulExposure);
+  const engagementSum = engagementArticles.reduce((sum, article) => {
     const explicitEngagement =
       (article.favoriteInd ? 1 : 0) +
       (article.clickedAmount > 0 ? 0.5 : 0);
-
     const attentionEngagement =
       attentionWeightFromBucket(article.attentionBucket);
 
-    engagementSum += Math.min(
+    return sum + Math.min(
       explicitEngagement + attentionEngagement,
       2.5
     );
-  }
-
-  const engagement = clamp(
-    (engagementSum / articles.length) / 2.5
+  }, 0);
+  const engagement = engagementArticles.length > 0
+    ? clamp((engagementSum / engagementArticles.length) / 2.5)
+    : NEUTRAL_TRUST;
+  const engagementConfidence = confidenceForSamples(
+    engagementArticles.length,
+    ENGAGEMENT_CONFIDENCE_TARGET
   );
 
   /* ============================================================
-   * METRIC 4: CONSISTENCY
+   * METRIC 3: ORIGINALITY
    * ============================================================ */
 
-  const articlesPerDay = articles.length / LOOKBACK_DAYS;
-  const consistency = clamp(articlesPerDay / 4);
+  // duplicateOfArticleId is RSSMonster's deterministic duplicate/syndication evidence.
+  // Undefined means the field was unavailable, so it must not be guessed from events.
+  const originalityArticles = articles.filter(article => article.duplicateOfArticleId !== undefined);
+  const duplicatedArticles = originalityArticles.filter(
+    article => article.duplicateOfArticleId !== null
+  ).length;
+  const feedDuplicationRate = originalityArticles.length > 0
+    ? duplicatedArticles / originalityArticles.length
+    : 0;
+  const originality = originalityArticles.length > 0
+    ? 1 - feedDuplicationRate
+    : NEUTRAL_TRUST;
+  const originalityConfidence = confidenceForSamples(
+    originalityArticles.length,
+    ORIGINALITY_CONFIDENCE_TARGET
+  );
 
   /* ============================================================
-   * METRIC 5: NEGATIVE FEEDBACK
+   * METRIC 4: NEGATIVE FEEDBACK QUALITY
    * ============================================================ */
 
-  let negativeCount = 0;
-  for (const article of articles) {
-    if (article.negativeInd === 1) negativeCount++;
-  }
-  const negativeRate =
-    articles.length > 0 ? negativeCount / articles.length : 0;
+  const feedbackArticles = engagementArticles;
+  const negativeCount = feedbackArticles.filter(
+    article => Number(article.negativeInd) === 1
+  ).length;
+  const negativeFeedbackQuality = feedbackArticles.length > 0
+    ? 1 - negativeCount / feedbackArticles.length
+    : NEUTRAL_TRUST;
+  const negativeFeedbackConfidence = confidenceForSamples(
+    feedbackArticles.length,
+    FEEDBACK_CONFIDENCE_TARGET
+  );
 
   /* ============================================================
-   * METRIC 6: OBSERVED TRUST
+   * DETERMINISTIC FEED TRUST
    * ============================================================ */
 
-  const originalityAdjustment = (originality - 0.5) * 0.10;
-  const engagementAdjustment = (engagement - 0.35) * 0.35;
-  const consistencyAdjustment = (consistency - 0.25) * 0.08;
-
-  const observedTrust = clamp(
-    NEUTRAL_TRUST +
-    originalityAdjustment +
-    engagementAdjustment +
-    consistencyAdjustment
+  const effectiveAverageArticleQuality = confidenceAdjusted(
+    averageArticleQuality,
+    qualityConfidence
   );
-
-  const highVolumePenalty = clamp(
-    (articlesPerDay - HIGH_VOLUME_THRESHOLD_PER_DAY) /
-      HIGH_VOLUME_THRESHOLD_PER_DAY,
-    0,
-    1
-  ) * HIGH_VOLUME_MAX_PENALTY;
-
-  const negativePenalty =
-    clamp(Math.sqrt(negativeRate) * NEGATIVE_MAX_PENALTY);
-
-  let observedWithPenalties = clamp(
-    observedTrust *
-    (1 - highVolumePenalty) *
-    (1 - negativePenalty)
+  const effectiveEngagement = confidenceAdjusted(engagement, engagementConfidence);
+  const effectiveOriginality = confidenceAdjusted(originality, originalityConfidence);
+  const effectiveNegativeFeedbackQuality = confidenceAdjusted(
+    negativeFeedbackQuality,
+    negativeFeedbackConfidence
   );
-
-  if (feed.mutedUntil) {
-    const cutoff =
-      Date.now() - MUTE_STALE_MONTHS * 30 * 24 * 60 * 60 * 1000;
-    const muteTime = new Date(feed.mutedUntil).getTime();
-    if (muteTime >= cutoff && muteTime <= Date.now()) {
-      observedWithPenalties *= (1 - MUTE_MAX_PENALTY);
-    }
-  }
-
-  const sampleConfidence = clamp(
-    (articles.length - MIN_CONFIDENCE_SAMPLES) /
-      (FULL_CONFIDENCE_SAMPLES - MIN_CONFIDENCE_SAMPLES),
-    0,
-    1
+  const newTrust = clamp(
+    FEED_TRUST_WEIGHTS.articleQuality * effectiveAverageArticleQuality +
+    FEED_TRUST_WEIGHTS.engagement * effectiveEngagement +
+    FEED_TRUST_WEIGHTS.originality * effectiveOriginality +
+    FEED_TRUST_WEIGHTS.negativeFeedbackQuality * effectiveNegativeFeedbackQuality
   );
-
-  const confidenceWeightedObserved = clamp(
-    NEUTRAL_TRUST * (1 - sampleConfidence) +
-    observedWithPenalties * sampleConfidence
-  );
-
-  const previousTrust = feed.feedTrust ?? NEUTRAL_TRUST;
-  const newTrust =
-    EMA_ALPHA * confidenceWeightedObserved +
-    (1 - EMA_ALPHA) * previousTrust;
+  const sampleConfidence =
+    FEED_TRUST_WEIGHTS.articleQuality * qualityConfidence +
+    FEED_TRUST_WEIGHTS.engagement * engagementConfidence +
+    FEED_TRUST_WEIGHTS.originality * originalityConfidence +
+    FEED_TRUST_WEIGHTS.negativeFeedbackQuality * negativeFeedbackConfidence;
 
   /* ============================================================
    * FEED ATTENTION STATS (NEW)
@@ -375,6 +314,17 @@ export async function calculateFeedTrustForFeed(feedId) {
     feedClickRatio,
     feedAttentionSampleSize: attentionSamples,
     sampleConfidence,
+
+    averageArticleQuality,
+    engagement,
+    originality,
+    negativeFeedbackQuality,
+    componentConfidences: {
+      quality: qualityConfidence,
+      engagement: engagementConfidence,
+      originality: originalityConfidence,
+      negativeFeedback: negativeFeedbackConfidence
+    },
 
     predictedAffinity: predicted?.predictedAffinity ?? 'unknown',
     predictedConfidence: predicted?.confidence ?? 0

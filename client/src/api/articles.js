@@ -1,16 +1,32 @@
 import api from './client';
+import {
+  normalizeQuerySortAliasesForApi,
+  normalizeSortValueForApi
+} from '../services/queryValidation';
+
+// Canonicalizes legacy sort aliases before article collection requests reach the API.
+const normalizeArticleParams = params => {
+  const normalized = { ...params };
+  if (Object.hasOwn(normalized, 'sort')) {
+    normalized.sort = normalizeSortValueForApi(normalized.sort);
+  }
+  if (Object.hasOwn(normalized, 'search')) {
+    normalized.search = normalizeQuerySortAliasesForApi(normalized.search);
+  }
+  return normalized;
+};
 
 /**
  * Fetch article IDs based on current selection
  */
 export const fetchArticleIds = params =>
-  api.get('/articles', { params: { ...params, includeFirstPage: true } });
+  api.get('/articles', { params: { ...normalizeArticleParams(params), includeFirstPage: true } });
 
 // Fetches one bounded page from a stable database-native article snapshot.
 export const fetchArticlePage = (params, { pageSize, cursor = null } = {}) =>
   api.get('/articles', {
     params: {
-      ...params,
+      ...normalizeArticleParams(params),
       pagination: 'cursor',
       pageSize,
       ...(cursor ? { cursor } : {})
@@ -20,7 +36,7 @@ export const fetchArticlePage = (params, { pageSize, cursor = null } = {}) =>
 // Counts articles matching the active selection that arrived after one snapshot boundary.
 export const fetchNewerArticleCount = (params, snapshotMaxArticleId) =>
   api.get('/articles', {
-    params: { ...params, newerThanArticleId: snapshotMaxArticleId }
+    params: { ...normalizeArticleParams(params), newerThanArticleId: snapshotMaxArticleId }
   });
 
 // This function fetches the structured Daily Briefing for the selected period and status.
@@ -33,7 +49,7 @@ export const fetchDailyBriefing = params =>
 export const fetchArticleDetails = (articleIds, sort) =>
   api.post('/articles/details', {
     articleIds: articleIds.join(','),
-    sort
+    sort: normalizeSortValueForApi(sort)
   });
 
 // This function fetches semantic recommendations for one selected Reader article.
@@ -108,7 +124,7 @@ export const markMoreLikeThis = (articleId) =>
  */
 export const markAllAsRead = (currentSelection, snapshotArticleIds) =>
   api.post('/articles/markasread', {
-    ...currentSelection,
+    ...normalizeArticleParams(currentSelection),
     scope: 'matching',
     ...(snapshotArticleIds === undefined ? {} : { snapshotArticleIds })
   });

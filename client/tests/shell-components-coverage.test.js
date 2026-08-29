@@ -358,12 +358,12 @@ describe('MobileToolbar behavior coverage', () => {
 
     wrapper.vm.setGrouping('none');
     wrapper.vm.setGrouping('topic');
-    wrapper.vm.sortClicked('trust');
+    wrapper.vm.sortClicked('quality');
     wrapper.vm.emitClickEvent('mobile', 'mobile');
 
     expect(setGrouping).toHaveBeenCalledOnce();
     expect(setGrouping).toHaveBeenCalledWith('topic');
-    expect(setSort).toHaveBeenCalledWith('trust');
+    expect(setSort).toHaveBeenCalledWith('quality');
     expect(wrapper.emitted('mobile')).toEqual([['mobile']]);
     expect(wrapper.vm.getCategoryCount({})).toBe(0);
     expect(wrapper.vm.capitalize(42)).toBe('');

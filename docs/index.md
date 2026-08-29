@@ -30,9 +30,12 @@ RSSMonster doesn't just collect articles—it reads them. It evaluates quality, 
 
 ### 🎯 **You See What Matters First**
 
-Instead of "newest first," RSSMonster ranks by **importance**. Breaking news from multiple trusted sources? Top of your list. Duplicate coverage? Clustered together and shown once. Promotional spam? Filtered out or ranked low automatically.
+Alongside chronological ordering, RSSMonster provides separate **Quality**,
+**Recommended**, and **Top Stories** rankings. Breaking news with broad
+corroboration can rise in Top Stories, while Recommended emphasizes personal
+interest. Duplicate coverage remains grouped and available for comparison.
 
-[Learn how scoring works →](scoring.md)
+[Learn how scoring works →](scoring.md) · [Understand FeedTrust →](feedtrust.md)
 
 ### 📂 **Smart Folders Do The Work For You**
 
@@ -98,7 +101,8 @@ RSSMonster works out of the box with sensible defaults, but every ranking decisi
 - **[Core Concepts](concepts.html)** — How RSSMonster thinks about content
 - **[Compare RSSMonster](comparison.html)** — Feature comparison with Feedbin, CommaFeed, selfoss, FreshRSS, and Tiny Tiny RSS
 - **[Smart Folders](smart-folders.html)** — Create powerful dynamic views
-- **[Scoring & Ranking](scoring.html)** — Importance, quality, and attention explained
+- **[Scoring & Ranking](scoring.html)** — Newest, Oldest, Quality, Recommended, and Top Stories explained
+- **[FeedTrust](feedtrust.html)** — How RSSMonster estimates consistent source value
 - **[Search Guide](search.html)** — Master search expressions
 - **[Article Embedding](article-embedding.html)** — How semantic article representations work
 - **[API & Integrations](api.html)** — Fever API, Google Reader API, and more

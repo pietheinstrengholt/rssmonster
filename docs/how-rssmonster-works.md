@@ -15,7 +15,7 @@ The major concepts build on one another:
 ```text
 Feeds and articles
         |
-        +--> Feed scoring
+        +--> FeedTrust
         |
         +--> Article embeddings --> Events --> Topics
                                       |          |
@@ -93,12 +93,13 @@ expressions used by RSSMonster search. New articles appear automatically when
 they match a folder's query, without moving or copying the articles from their
 feeds.
 
-### Feed Scoring
+### FeedTrust
 
-[Feed Scoring](scoring.md) assigns a user-specific trust score to each feed.
-The score combines signals about the source and the user's interactions to help
-prioritize useful material. It is separate from crawl reliability, article
-quality, and factual verification.
+[FeedTrust](feedtrust.md) estimates how consistently valuable a subscribed
+source has been as a source of articles. It combines recent article quality,
+supporting engagement, deterministic originality, and explicit negative
+feedback. It is separate from crawl reliability, personal topic interest,
+article-level quality, and factual verification.
 
 ### Article Embedding
 
@@ -126,6 +127,12 @@ personalization layer. They learn durable areas of interest from article
 relationships and reading signals such as clicks, bookmarks, and explicit
 feedback. An Interest Island answers: **what does this user consistently care
 about?**
+
+### Scoring and Ranking
+
+[Scoring and Ranking](scoring.md) explains how article quality, FeedTrust,
+freshness, personal interest, attention, and Event evidence remain separate and
+are composed by Quality, Recommended, and Top Stories ordering.
 
 ## Putting the Layers Together
 

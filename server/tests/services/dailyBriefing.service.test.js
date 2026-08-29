@@ -275,6 +275,72 @@ describe('dailyBriefing.service', () => {
     expect(result.morningSummary.items.map(item => item.eventId)).toEqual([2, 1]);
   });
 
+  // Preserves the canonical article-quality components when summary events use Recommended ordering.
+  it('uses canonical article quality when recommendation-ranking morning summary events', async () => {
+    const generatedAt = new Date('2026-07-31T12:00:00Z');
+    mocked.articleFindAll
+      .mockResolvedValueOnce([
+        { id: 1, eventId: 1, feedId: 10, topicId: null },
+        { id: 2, eventId: 2, feedId: 20, topicId: null }
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 101,
+          title: 'Low-quality strong event',
+          contentText: 'This lower-quality event has enough useful detail for the morning summary.',
+          publishedAt: generatedAt,
+          freshness: 0.5,
+          interestScore: 0,
+          qualityScore: 0,
+          sentimentScore: 0,
+          advertisementScore: 0,
+          Feed: { feedTrust: 0.5 },
+          Tags: []
+        },
+        {
+          id: 102,
+          title: 'High-quality event',
+          contentText: 'This higher-quality event has enough useful detail for the morning summary.',
+          publishedAt: generatedAt,
+          freshness: 0.5,
+          interestScore: 0,
+          qualityScore: 100,
+          sentimentScore: 100,
+          advertisementScore: 100,
+          Feed: { feedTrust: 0.5 },
+          Tags: []
+        }
+      ]);
+    mocked.eventFindAll.mockResolvedValue([
+      {
+        id: 1,
+        representativeArticleId: 101,
+        eventStrength: 20,
+        articleCount: 1,
+        sourceCount: 1,
+        sourceDiversityScore: 0,
+        createdAt: generatedAt
+      },
+      {
+        id: 2,
+        representativeArticleId: 102,
+        eventStrength: 1,
+        articleCount: 1,
+        sourceCount: 1,
+        sourceDiversityScore: 0,
+        createdAt: generatedAt
+      }
+    ]);
+
+    const result = await getDailyBriefing({
+      userId: 9,
+      generatedAt,
+      prioritizeHighTrust: true
+    });
+
+    expect(result.morningSummary.items.map(item => item.eventId)).toEqual([2, 1]);
+  });
+
   // Selects the independently configured developing article for morning-summary content.
   it('uses developing event articles in the morning summary when enabled', async () => {
     const generatedAt = new Date('2026-07-31T12:00:00Z');

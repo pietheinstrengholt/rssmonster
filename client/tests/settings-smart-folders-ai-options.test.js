@@ -55,7 +55,6 @@ describe('SettingsSmartFolders AI options', () => {
     expect(wrapper.text()).not.toContain('Events & Clusters');
     expect(optionLabels).toEqual([
       'None',
-      'Trust',
       'Published date (newest)',
       'Published date (oldest)'
     ]);
@@ -69,11 +68,15 @@ describe('SettingsSmartFolders AI options', () => {
 
     expect(wrapper.text()).toContain('Quality & Scores');
     expect(wrapper.text()).toContain('Events & Clusters');
-    expect(optionLabels).toEqual(expect.arrayContaining([
+    expect(optionLabels).toEqual([
+      'None',
+      'Published date (newest)',
+      'Published date (oldest)',
+      'Top Stories',
       'Recommended',
-      'Most Engaged',
       'Quality'
-    ]));
+    ]);
+    expect(optionLabels).not.toContain('Most Engaged');
   });
 
   it('creates non-AI folders without a hidden AI sort', async () => {

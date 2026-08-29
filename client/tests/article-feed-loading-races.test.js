@@ -601,8 +601,8 @@ describe('ArticleFeed loading races', () => {
 
     await context.getContent();
 
-    expect(selectionStore.currentSelection.sort).toBe('trust');
-    expect(fetchArticleDetails).toHaveBeenCalledWith([7], 'trust');
+    expect(selectionStore.currentSelection.sort).toBe('quality');
+    expect(fetchArticleDetails).toHaveBeenCalledWith([7], 'quality');
   });
 
   it('loads another page only when the sentinel intersects and loading is ready', () => {

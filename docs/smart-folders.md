@@ -18,7 +18,8 @@ They update automatically as new articles arrive.
 - Each Smart Folder stores a search expression (same syntax as the [Search Guide](search.md)).
 - Results refresh continuously as new items match the query.
 - Limit: each folder returns up to `limitCount` articles (default 50).
-- Sorting respects the query (`sort:trust`, `sort:recommended`, `sort:quality`, `sort:attention`, `sort:desc|asc`).
+- Sorting respects the query (`sort:desc|asc`, `sort:topStories`, `sort:recommended`, and `sort:quality`; legacy `sort:trust` aliases Quality).
+- The editor exposes Newest, Oldest, Top Stories, Recommended, and Quality. Manually authored legacy `sort:attention` expressions remain valid even though Most Engaged is no longer an editor option.
 
 ---
 
@@ -33,12 +34,11 @@ Use the same tokens as the search bar: status (`unread:true`, `favorite:true`), 
 ---
 
 ## Recipes
-- Top stories today: `@today unread:true sort:recommended limit:100`
+- Top stories today: `@today unread:true sort:topStories limit:100`
 - High-quality long reads: `quality:>0.75 sort:quality unread:true`
-- Engaged items: `sort:attention clicked:true limit:80`
-- Trusted sources: `sort:trust unread:true limit:80`
-- Hot right now: `hot:true sort:attention`
-- Events with broad coverage: `event:true eventCount:>=3 sort:recommended`
+- Consistently valuable articles and sources: `sort:quality unread:true limit:80`
+- Hot right now: `hot:true sort:desc`
+- Events with broad coverage: `event:true eventCount:>=3 sort:topStories`
 - Interest-aligned events: `event:true island:true sort:recommended`
 - Articles outside active interests: `island:false sort:desc`
 - Topic by tag: `tag:ai unread:true sort:recommended`

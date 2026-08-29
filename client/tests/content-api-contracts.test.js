@@ -75,6 +75,23 @@ describe('article content API contracts', () => {
     );
   });
 
+  it('canonicalizes legacy Trust sorting in article requests', () => {
+    fetchArticleIds({ sort: 'trust', search: 'unread:true sort:trust' });
+    fetchArticleDetails([3], 'trust');
+
+    expect(get).toHaveBeenCalledWith('/articles', {
+      params: {
+        sort: 'quality',
+        search: 'unread:true sort:quality',
+        includeFirstPage: true
+      }
+    });
+    expect(post).toHaveBeenCalledWith('/articles/details', {
+      articleIds: '3',
+      sort: 'quality'
+    });
+  });
+
   // Verifies read-state requests use the expected dedicated and bulk endpoints.
   it('builds article read-state requests', () => {
     const seenPayload = {

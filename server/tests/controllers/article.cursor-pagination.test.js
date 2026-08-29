@@ -156,44 +156,14 @@ describe('article cursor pagination', () => {
     expect(second.body.page.hasMore).toBe(false);
   });
 
-  it('paginates trust order and isolates cursor ownership', async () => {
-    const { user, category } = await createUserFeed('cursor-trust');
-    const highTrustFeed = await Feed.create({
-      userId: user.id,
-      categoryId: category.id,
-      feedName: uniqueName('high-trust'),
-      url: `https://example.com/${uniqueName('high-trust')}.xml`,
-      feedTrust: 0.9
-    });
-    const lowTrustFeed = await Feed.create({
-      userId: user.id,
-      categoryId: category.id,
-      feedName: uniqueName('low-trust'),
-      url: `https://example.com/${uniqueName('low-trust')}.xml`,
-      feedTrust: 0.2
-    });
-    const lowNewest = await createArticle(user, lowTrustFeed, 'Low newest', new Date('2026-08-11T12:00:00Z'));
-    const highOlder = await createArticle(user, highTrustFeed, 'High older', new Date('2026-08-09T12:00:00Z'));
-    const first = await getPage(user, { sort: 'trust', pageSize: 1 });
-    const second = await getPage(user, {
-      sort: 'trust',
-      pageSize: 1,
-      cursor: first.body.page.nextCursor
-    });
+  it('treats the legacy Trust alias as a computed sort without cursor pagination', async () => {
+    const { user, feed } = await createUserFeed('cursor-trust-alias');
+    await createArticle(user, feed, 'Legacy Trust alias', new Date('2026-08-11T12:00:00Z'));
 
-    expect(first.status).toBe(200);
-    expect(second.status).toBe(200);
-    expect(first.body.page.itemIds).toEqual([highOlder.id]);
-    expect(second.body.page.itemIds).toEqual([lowNewest.id]);
+    const response = await getPage(user, { sort: 'trust', pageSize: 1 });
 
-    const { user: otherUser } = await createUserFeed('cursor-other-user');
-    const foreignResponse = await getPage(otherUser, {
-      sort: 'trust',
-      pageSize: 1,
-      cursor: first.body.page.nextCursor
-    });
-    expect(foreignResponse.status).toBe(403);
-    expect(foreignResponse.body.error.code).toBe('CURSOR_USER_MISMATCH');
+    expect(response.status).toBe(422);
+    expect(response.body.error.code).toBe('CURSOR_SORT_UNSUPPORTED');
   });
 
   it('rejects mismatched, invalid, expired, unsupported, and invalid-size requests', async () => {

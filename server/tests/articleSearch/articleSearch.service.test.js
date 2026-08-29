@@ -963,7 +963,7 @@ describe('articleSearch.service', () => {
       expect(oldIdx).toBeLessThan(recentIdx);
     });
 
-    it('sorts by feed trust, then publication date, then article id', async () => {
+    it('canonicalizes legacy Trust sorting to the combined Quality ordering', async () => {
       const testSuffix = `${Date.now()}-${Math.random()}`;
       const highTrustFeed = await Feed.create({
         userId: user.id,
@@ -1044,15 +1044,11 @@ describe('articleSearch.service', () => {
 
         expect(result.itemIds.indexOf(highTrustOlder.id))
           .toBeLessThan(result.itemIds.indexOf(lowTrustNewest.id));
-        expect(result.itemIds.indexOf(highTrustTieSecond.id))
-          .toBeLessThan(result.itemIds.indexOf(highTrustTieFirst.id));
-        expect(result.itemIds.indexOf(highTrustTieFirst.id))
-          .toBeLessThan(result.itemIds.indexOf(highTrustOlder.id));
         expect(overrideResult.itemIds.indexOf(highTrustOlder.id))
           .toBeLessThan(overrideResult.itemIds.indexOf(lowTrustNewest.id));
 
         const persistedSetting = await Setting.findOne({ where: { userId: user.id } });
-        expect(persistedSetting.sort).toBe('trust');
+        expect(persistedSetting.sort).toBe('quality');
         expect(Boolean(persistedSetting.includeDevelopingEvents)).toBe(true);
         expect(persistedSetting.startupViewMode).toBe('default');
       } finally {
@@ -1065,7 +1061,7 @@ describe('articleSearch.service', () => {
       }
     });
 
-    it('sorts by recommended using loaded cluster attributes', async () => {
+    it('sorts intelligent API modes using loaded cluster attributes', async () => {
       let lowCoverageArticle;
       let highCoverageArticle;
       let lowCluster;
@@ -1126,13 +1122,24 @@ describe('articleSearch.service', () => {
         await lowCoverageArticle.update({ eventId: lowCluster.id });
         await highCoverageArticle.update({ eventId: highCluster.id });
 
-        const result = await searchArticles({ userId: user.id, status: 'unread', sort: 'recommended' });
-        const lowCoverageIdx = result.itemIds.indexOf(lowCoverageArticle.id);
-        const highCoverageIdx = result.itemIds.indexOf(highCoverageArticle.id);
+        const recommended = await searchArticles({
+          userId: user.id,
+          status: 'unread',
+          sort: 'recommended'
+        });
+        const topStories = await searchArticles({
+          userId: user.id,
+          status: 'unread',
+          sort: 'topStories'
+        });
+        const lowCoverageIdx = recommended.itemIds.indexOf(lowCoverageArticle.id);
+        const highCoverageIdx = recommended.itemIds.indexOf(highCoverageArticle.id);
 
         expect(highCoverageIdx).toBeGreaterThanOrEqual(0);
         expect(lowCoverageIdx).toBeGreaterThanOrEqual(0);
         expect(highCoverageIdx).toBeLessThan(lowCoverageIdx);
+        expect(topStories.itemIds.indexOf(highCoverageArticle.id))
+          .toBeLessThan(topStories.itemIds.indexOf(lowCoverageArticle.id));
       } finally {
         if (lowCluster) {
           await Event.destroy({ where: { id: lowCluster.id } });
@@ -1149,7 +1156,7 @@ describe('articleSearch.service', () => {
       }
     });
 
-    it('applies unread and briefing high-trust recommendation boosts independently', async () => {
+    it('keeps Recommended personalized when high-trust preferences are enabled', async () => {
       const testSuffix = `${Date.now()}-${Math.random()}`;
       const highTrustFeed = await Feed.create({
         userId: user.id,
@@ -1204,57 +1211,53 @@ describe('articleSearch.service', () => {
           { prioritizeHighTrust: true },
           { where: { userId: user.id } }
         );
-        await briefingPreference.update({ prioritizeHighTrust: false });
+        await briefingPreference.update({ prioritizeHighTrust: true });
 
-        // Loads every generic Unread sort that should blend in the stored trust preference.
-        const unreadBoostedResults = await Promise.all(
-          ['recommended', 'desc', 'asc', 'quality', 'attention'].map(sortValue => searchArticles({
-            userId: user.id,
-            status: 'unread',
-            sort: sortValue
-          }))
-        );
-        const exactTrustSort = await searchArticles({
+        const results = Object.fromEntries(await Promise.all(
+          ['recommended', 'desc', 'asc', 'quality', 'attention'].map(async sortValue => [
+            sortValue,
+            await searchArticles({
+              userId: user.id,
+              status: 'unread',
+              sort: sortValue
+            })
+          ])
+        ));
+        const legacyTrustAlias = await searchArticles({
           userId: user.id,
           status: 'unread',
           sort: 'trust'
         });
-        const briefingNotBoosted = await searchArticles({
+        const briefingRecommended = await searchArticles({
           userId: user.id,
           status: 'briefing',
-          sort: 'asc'
+          sort: 'recommended'
         });
 
-        for (const unreadBoosted of unreadBoostedResults) {
-          expect(unreadBoosted.itemIds.indexOf(highTrustArticle.id))
-            .toBeLessThan(unreadBoosted.itemIds.indexOf(lowTrustArticle.id));
+        expect(results.recommended.itemIds.indexOf(lowTrustArticle.id))
+          .toBeLessThan(results.recommended.itemIds.indexOf(highTrustArticle.id));
+        expect(briefingRecommended.itemIds.indexOf(lowTrustArticle.id))
+          .toBeLessThan(briefingRecommended.itemIds.indexOf(highTrustArticle.id));
+
+        for (const trustWeightedSort of ['desc', 'asc', 'quality', 'attention']) {
+          expect(results[trustWeightedSort].itemIds.indexOf(highTrustArticle.id))
+            .toBeLessThan(results[trustWeightedSort].itemIds.indexOf(lowTrustArticle.id));
         }
-        expect(exactTrustSort.itemIds.indexOf(highTrustArticle.id))
-          .toBeLessThan(exactTrustSort.itemIds.indexOf(lowTrustArticle.id));
-        expect(briefingNotBoosted.itemIds.indexOf(lowTrustArticle.id))
-          .toBeLessThan(briefingNotBoosted.itemIds.indexOf(highTrustArticle.id));
+        expect(legacyTrustAlias.itemIds.indexOf(highTrustArticle.id))
+          .toBeLessThan(legacyTrustAlias.itemIds.indexOf(lowTrustArticle.id));
 
         await Setting.update(
           { prioritizeHighTrust: false },
           { where: { userId: user.id } }
         );
-        await briefingPreference.update({ prioritizeHighTrust: true });
-
-        const unreadNotBoosted = await searchArticles({
+        const recommendedWithoutPreference = await searchArticles({
           userId: user.id,
           status: 'unread',
           sort: 'recommended'
         });
-        const briefingBoosted = await searchArticles({
-          userId: user.id,
-          status: 'briefing',
-          sort: 'recommended'
-        });
 
-        expect(unreadNotBoosted.itemIds.indexOf(lowTrustArticle.id))
-          .toBeLessThan(unreadNotBoosted.itemIds.indexOf(highTrustArticle.id));
-        expect(briefingBoosted.itemIds.indexOf(highTrustArticle.id))
-          .toBeLessThan(briefingBoosted.itemIds.indexOf(lowTrustArticle.id));
+        expect(recommendedWithoutPreference.itemIds.indexOf(lowTrustArticle.id))
+          .toBeLessThan(recommendedWithoutPreference.itemIds.indexOf(highTrustArticle.id));
       } finally {
         await Setting.update(
           { prioritizeHighTrust: false },

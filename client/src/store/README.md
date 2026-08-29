@@ -106,9 +106,9 @@ The selection domain keeps the subset of briefing preferences needed to construc
 
 - A 24-hour or seven-day period, with seven days as the default
 - Whether only unread articles are included
-- Whether high-trust ordering is preferred
+- Whether the legacy high-trust preference is enabled
 
-When Daily Briefing is selected, these values produce the briefing marker, date filter, optional unread filter, and optional trust-boosted recommended sort used by article search. If a relevant preference changes while Briefing is active, the query is rebuilt.
+When Daily Briefing is selected, these values produce the briefing marker, date filter, optional unread filter, and Recommended sort used by article search. Recommended never receives a separate raw FeedTrust boost; FeedTrust contributes only through Quality. The high-trust preference can change structured morning-summary ordering, so changing it while Briefing is active still rebuilds and refreshes the briefing.
 
 Other briefing preferences are enforced by the server and may not appear in query text. A numeric briefing revision invalidates the active collection after those non-query preferences change, allowing consumers to reload without inventing a fake query term.
 

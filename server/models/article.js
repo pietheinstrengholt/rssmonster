@@ -1,16 +1,11 @@
 import { DataTypes } from 'sequelize';
 import { createHash } from 'node:crypto';
 import normalizeUrl from '../services/crawl/content/normalizeUrl.js';
+import { computeArticleQuality } from '../services/articles/articleQuality.js';
 import { hashOriginalContent, hashVisibleText } from '../utils/articleContentHashes.js';
 import { unsignedIntegerType } from './databaseTypes.js';
 
 const TAU_HOURS = 48; // tune this globally
-const NEUTRAL_FEED_TRUST = 0.75;
-const MIN_FEED_CONFIDENCE_SAMPLES = 10;
-const FULL_FEED_CONFIDENCE_SAMPLES = 100;
-const MAX_FEED_TRUST_BOOST = 0.10;
-const MAX_FEED_TRUST_PENALTY = 0.15;
-const MAX_FEED_DUPLICATION_PENALTY = 0.10;
 
 export const ARTICLE_AI_ANALYSIS_STATUSES = Object.freeze([
   'pending',
@@ -41,50 +36,6 @@ const populateArticleHashes = article => {
   if (!article.contentSourceHash && article.contentOriginal) {
     article.contentSourceHash = hashOriginalContent(article.contentOriginal);
   }
-};
-
-// This function clamps a numeric score into a bounded range.
-const clamp = (value, min = 0, max = 1) =>
-  Math.max(min, Math.min(max, value));
-
-// This function reads a numeric value from a Sequelize model or plain object.
-const numericValue = (source, key, fallback = 0) => {
-  const value = typeof source?.getDataValue === 'function'
-    ? source.getDataValue(key)
-    : source?.[key];
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? numeric : fallback;
-};
-
-// This function returns how much feed-level metrics should influence article quality.
-const feedQualityConfidence = feed => {
-  const sampleSize = Math.max(numericValue(feed, 'feedAttentionSampleSize', 0), 0);
-  return clamp(
-    (sampleSize - MIN_FEED_CONFIDENCE_SAMPLES) /
-      (FULL_FEED_CONFIDENCE_SAMPLES - MIN_FEED_CONFIDENCE_SAMPLES)
-  );
-};
-
-// This function gently adjusts article quality using feed trust and duplication history.
-const applyFeedQualityAdjustment = (baseQuality, feed) => {
-  if (!feed) return baseQuality;
-
-  const confidence = feedQualityConfidence(feed);
-  if (confidence <= 0) return baseQuality;
-
-  const feedTrust = clamp(numericValue(feed, 'feedTrust', NEUTRAL_FEED_TRUST));
-  const duplicationRate = clamp(numericValue(feed, 'feedDuplicationRate', 0));
-  const trustAdjustment = feedTrust >= NEUTRAL_FEED_TRUST
-    ? ((feedTrust - NEUTRAL_FEED_TRUST) / (1 - NEUTRAL_FEED_TRUST)) * MAX_FEED_TRUST_BOOST
-    : -((NEUTRAL_FEED_TRUST - feedTrust) / NEUTRAL_FEED_TRUST) * MAX_FEED_TRUST_PENALTY;
-  const duplicationPenalty = duplicationRate * MAX_FEED_DUPLICATION_PENALTY;
-  const multiplier = clamp(
-    1 + confidence * (trustAdjustment - duplicationPenalty),
-    1 - MAX_FEED_TRUST_PENALTY,
-    1 + MAX_FEED_TRUST_BOOST
-  );
-
-  return clamp(baseQuality * multiplier);
 };
 
 export default (sequelize) => {
@@ -463,51 +414,27 @@ export default (sequelize) => {
           return Math.exp(-ageHours / TAU_HOURS);
         }
       },
-      // Derives normalized overall quality from content scores and loaded feed-quality evidence.
+      // Derives normalized article-only quality from the persisted content scores.
       quality: {
         type: DataTypes.VIRTUAL(DataTypes.FLOAT),
         get() {
-          // Default to a neutral-good baseline when no scoring is available
-          const DEFAULT_SCORE = 70;
-
-          const advertisementScore =
-            this.getDataValue('advertisementScore') ?? DEFAULT_SCORE;
-
-          const sentimentScore =
-            this.getDataValue('sentimentScore') ?? DEFAULT_SCORE;
-
-          const qualityScore =
-            this.getDataValue('qualityScore') ?? DEFAULT_SCORE;
-
           /**
-           * Overall article quality score (0–1).
+           * Article-only quality score (0–1).
            *
            * Scoring semantics:
            * - All component scores range from 0–100
            * - Higher scores always indicate better quality
            *
            * Weighting:
-           * - sentimentScore:      50%  (tone, neutrality, emotional quality)
-           * - qualityScore:        35%  (writing clarity, structure, substance)
-           * - advertisementScore:  15%  (absence of promotion or marketing)
+           * - qualityScore:        50%  (writing clarity, structure, substance)
+           * - sentimentScore:      25%  (tone, neutrality, emotional quality)
+           * - advertisementScore:  25%  (absence of promotion or marketing)
            *
            * Default behavior:
-           * - Articles without scores start at a neutral-good baseline (70)
+           * - Null scores use a neutral-good baseline (70)
            *   to avoid unfair penalization during ingestion or reprocessing.
-           *
-           * Feed adjustment:
-           * - If Feed association is loaded, gently adjust by trust and duplication history
-           * - Low-sample feeds stay close to the article-only score
            */
-          let overall =
-            sentimentScore * 0.5 +
-            qualityScore * 0.35 +
-            advertisementScore * 0.15;
-
-          overall = Math.max(0, Math.min(100, overall));
-          const baseQuality = overall / 100;
-
-          return applyFeedQualityAdjustment(baseQuality, this.get('Feed'));
+          return computeArticleQuality(this);
         }
       },
       // Derives a uniqueness score that decreases as the associated event grows.

@@ -86,7 +86,7 @@ Global stacking uses semantic tokens from `assets/styles/theme.css`: `--layer-co
 Both toolbar variants control the same article-selection dimensions:
 
 - **Status** chooses Daily briefing, Unread, Favorites, Hot, Clicked, or Read.
-- **Sort** chooses Oldest, Newest, or Trust, with additional AI ordering when available.
+- **Sort** chooses Oldest or Newest, with additional AI ordering when available.
 - **Grouping** chooses ungrouped articles, event clusters, or topic clusters when AI is available.
 - **Search** updates the shared article query.
 
@@ -117,7 +117,7 @@ Desktop presents separate dropdowns for:
 
 - **View:** Reader, Expanded, Summarized, Summary Bullets when AI is enabled, and Headlines.
 - **Show:** Daily briefing when AI is enabled, Unread, Favorite, Hot, Clicked, and Read.
-- **Sort:** Oldest, Newest, Trust, plus Recommended, Quality, and Most Engaged when AI is enabled.
+- **Sort:** Newest and Oldest, plus Top Stories, Recommended, and Quality when AI is enabled.
 - **Grouping:** None, Events, and Topics when AI is enabled.
 
 Each dropdown shows its active value directly in the toolbar and marks the selected option in its menu. Grouping is omitted entirely when AI is unavailable rather than showing nonfunctional choices.

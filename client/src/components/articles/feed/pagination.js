@@ -5,14 +5,14 @@ import {
   fetchArticlePage
 } from '../../../api/articles.js';
 
-const COMPUTED_SORT_PATTERN = /(?:^|\s)sort:(?:recommended|quality|attention)(?:\s|$)/i;
+const COMPUTED_SORT_PATTERN = /(?:^|\s)sort:(?:trust|topStories|recommended|quality|attention)(?:\s|$)/i;
 const RUNTIME_FILTER_PATTERN = /(?:^|\s)(?:quality|freshness):/i;
 
 // Returns whether the active selection can use database keyset pagination.
 export const supportsArticleCursorPagination = selection => {
   const sort = String(selection?.sort || 'desc').toLowerCase();
   const search = String(selection?.search || '');
-  return ['asc', 'desc', 'trust'].includes(sort)
+  return ['asc', 'desc'].includes(sort)
     && !COMPUTED_SORT_PATTERN.test(search)
     && !RUNTIME_FILTER_PATTERN.test(search);
 };

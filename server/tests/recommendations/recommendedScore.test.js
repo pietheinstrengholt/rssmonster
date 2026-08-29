@@ -5,279 +5,152 @@ import {
   computeRecommendedBreakdown
 } from '../../services/recommendations/recommendedScore.js';
 
+const articleWith = ({
+  interestScore = 0,
+  freshness = 0.5,
+  quality = 0.5,
+  event = null,
+  tags = []
+} = {}) => ({
+  interestScore,
+  freshness,
+  qualityScore: quality * 100,
+  sentimentScore: quality * 100,
+  advertisementScore: quality * 100,
+  Feed: { feedTrust: quality },
+  event,
+  Tags: tags
+});
+
+const strongEvent = {
+  id: 12,
+  name: 'Widely covered event',
+  articleCount: 64,
+  sourceCount: 8,
+  sourceDiversityScore: Math.log(9)
+};
+
 describe('computeRecommended', () => {
-  it('ranks larger corroborated events higher with equal freshness/quality', () => {
-    const standalone = {
-      freshness: 0.5,
-      quality: 0.7,
-      get: key => {
-        if (key === 'event') return { articleCount: 1, sourceDiversityScore: 0 };
-        if (key === 'Tags') return [];
-        return undefined;
-      }
-    };
+  it('materially raises ranking for strong positive interest', () => {
+    const neutral = computeRecommended(articleWith({ interestScore: 0 }));
+    const interested = computeRecommended(articleWith({ interestScore: 1 }));
 
-    const highlyCorroborated = {
-      freshness: 0.5,
-      quality: 0.7,
-      get: key => {
-        if (key === 'event') return { articleCount: 32, sourceDiversityScore: 2.0 };
-        if (key === 'Tags') return [];
-        return undefined;
-      }
-    };
-
-    expect(computeRecommended(highlyCorroborated)).toBeGreaterThan(computeRecommended(standalone));
+    expect(interested - neutral).toBeCloseTo(0.45, 6);
   });
 
-  it('reads event associations from plain object properties when get() is not present', () => {
-    const article = {
-      freshness: 0.6,
-      quality: 0.7,
-      event: { articleCount: 20, sourceDiversityScore: 1.8 },
-      Tags: []
-    };
+  it('applies negative interest as an asymmetric penalty', () => {
+    const neutral = computeRecommended(articleWith({ interestScore: 0 }));
+    const negative = computeRecommended(articleWith({ interestScore: -0.5 }));
 
-    const score = computeRecommended(article);
-
-    expect(score).toBeGreaterThan(0.5);
-    expect(score).toBeLessThanOrEqual(1);
+    expect(neutral - negative).toBeCloseTo(0.15, 6);
   });
 
-  it('strongly prioritizes same-size events when corroborated by more sources', () => {
-    const sameSizeSingleSource = {
-      freshness: 0.5,
-      quality: 0.7,
-      event: {
-        articleCount: 24,
-        sourceCount: 1,
-        sourceDiversityScore: 0
-      },
-      Tags: []
-    };
+  it('ranks fresh articles above otherwise-equal stale articles', () => {
+    const stale = computeRecommended(articleWith({ freshness: 0 }));
+    const fresh = computeRecommended(articleWith({ freshness: 1 }));
 
-    const sameSizeMultiSource = {
-      freshness: 0.5,
-      quality: 0.7,
-      event: {
-        articleCount: 24,
-        sourceCount: 8,
-        sourceDiversityScore: 2.4
-      },
-      Tags: []
-    };
-
-    const singleSourceScore = computeRecommended(sameSizeSingleSource);
-    const multiSourceScore = computeRecommended(sameSizeMultiSource);
-
-    expect(multiSourceScore).toBeGreaterThan(singleSourceScore);
-    expect(multiSourceScore - singleSourceScore).toBeGreaterThan(0.2);
+    expect(fresh - stale).toBeCloseTo(0.25, 6);
   });
 
-  it('ranks a corroborated event above an isolated fresh singleton', () => {
-    const freshSingleton = {
-      freshness: 1,
-      quality: 0.7,
-      interestScore: 0,
-      event: {
-        articleCount: 1,
-        sourceCount: 1,
-        sourceDiversityScore: 0
-      },
-      Tags: []
-    };
+  it('uses Quality as a secondary signal that does not dominate interest', () => {
+    const highQuality = computeRecommended(articleWith({ quality: 1 }));
+    const lowQuality = computeRecommended(articleWith({ quality: 0 }));
+    const interested = computeRecommended(articleWith({ quality: 0, interestScore: 1 }));
 
-    const developingEvent = {
-      freshness: 0.55,
-      quality: 0.7,
-      interestScore: 0,
-      event: {
-        articleCount: 8,
-        sourceCount: 6,
-        sourceDiversityScore: 1.9
-      },
-      Tags: []
-    };
-
-    expect(computeRecommended(developingEvent)).toBeGreaterThan(computeRecommended(freshSingleton));
+    expect(highQuality - lowQuality).toBeCloseTo(0.2, 6);
+    expect(interested).toBeGreaterThan(highQuality);
   });
 
-  it('prioritizes articles with stronger interest affinity', () => {
-    const baseArticle = {
-      freshness: 0.5,
-      quality: 0.7,
-      event: {
-        articleCount: 12,
-        sourceCount: 3,
-        sourceDiversityScore: 1.4
-      },
-      Tags: []
-    };
+  it('gives full corroboration only a modest advantage', () => {
+    const standalone = computeRecommended(articleWith());
+    const corroborated = computeRecommended(articleWith({ event: strongEvent }));
 
-    const lowInterestScore = computeRecommended({
-      ...baseArticle,
-      interestScore: -1
-    });
-    const neutralInterestScore = computeRecommended({
-      ...baseArticle,
-      interestScore: 0
-    });
-    const highInterestScore = computeRecommended({
-      ...baseArticle,
-      interestScore: 1
-    });
-
-    expect(highInterestScore).toBeGreaterThan(lowInterestScore);
-    expect(neutralInterestScore).toBeGreaterThan(lowInterestScore);
-    expect(highInterestScore - lowInterestScore).toBeCloseTo(0.44, 3);
+    expect(corroborated - standalone).toBeCloseTo(0.1, 6);
   });
 
-  it('adds bounded feed trust only when high-trust prioritization is enabled', () => {
-    const article = {
-      freshness: 0,
-      quality: 0,
-      interestScore: 0,
-      Feed: { feedTrust: 0.8 },
-      event: { articleCount: 1, sourceCount: 1, sourceDiversityScore: 0 },
-      Tags: []
-    };
+  it('does not let event size dominate a highly relevant niche article', () => {
+    const largeEvent = computeRecommended(articleWith({ event: strongEvent }));
+    const relevantStandalone = computeRecommended(articleWith({ interestScore: 0.5 }));
 
-    expect(computeRecommended(article)).toBe(0);
-    expect(computeRecommended(article, { prioritizeHighTrust: true })).toBe(0.8);
+    expect(relevantStandalone).toBeGreaterThan(largeEvent);
   });
 
-  it('clamps invalid and out-of-range feed trust boosts', () => {
-    const baseArticle = {
-      freshness: 0,
-      quality: 0,
-      interestScore: 0,
-      event: { articleCount: 1, sourceCount: 1, sourceDiversityScore: 0 },
-      Tags: []
-    };
+  it('adds one 0.08 rule boost without stacking multiple rule tags', () => {
+    const base = computeRecommended(articleWith());
+    const oneRule = computeRecommended(articleWith({ tags: [{ tagType: 'rule' }] }));
+    const twoRules = computeRecommended(articleWith({
+      tags: [{ tagType: 'rule' }, { tagType: 'rule' }]
+    }));
 
-    expect(computeRecommended({ ...baseArticle, Feed: { feedTrust: 4 } }, {
-      prioritizeHighTrust: true
-    })).toBe(1);
-    expect(computeRecommended({ ...baseArticle, Feed: { feedTrust: 'invalid' } }, {
-      prioritizeHighTrust: true
-    })).toBe(0);
+    expect(oneRule - base).toBeCloseTo(0.08, 6);
+    expect(twoRules).toBe(oneRule);
   });
 
-  it('explains bounded recommendation signals and rule boosts', () => {
-    const breakdown = computeRecommendedBreakdown({
-      freshness: 0.8,
-      interestScore: 4,
-      quality: 0.9,
-      event: {
-        articleCount: 128,
-        sourceCount: 16,
-        sourceDiversityScore: 5
-      },
-      Tags: [{ tagType: 'rule' }]
-    });
+  it('does not add raw feed trust when high-trust prioritization is enabled', () => {
+    const lowTrust = articleWith({ quality: 0.5 });
+    const highTrust = { ...lowTrust, Feed: { feedTrust: 1 } };
+    const ordinary = computeRecommended(highTrust);
+    const preferenceEnabled = computeRecommended(highTrust, { prioritizeHighTrust: true });
+
+    expect(preferenceEnabled).toBe(ordinary);
+    expect(ordinary - computeRecommended(lowTrust)).toBeCloseTo(0.03, 6);
+  });
+
+  it('keeps final scores within zero and one', () => {
+    expect(computeRecommended(articleWith({ interestScore: -5, freshness: -2, quality: 0 })))
+      .toBe(0);
+    expect(computeRecommended(articleWith({
+      interestScore: 5,
+      freshness: 5,
+      quality: 1,
+      event: strongEvent,
+      tags: [{ tagType: 'rule' }]
+    }))).toBe(1);
+  });
+
+  it('exposes the signed-interest and shared-event breakdown', () => {
+    const breakdown = computeRecommendedBreakdown(articleWith({
+      interestScore: -0.4,
+      event: strongEvent,
+      tags: [{ tagType: 'rule' }]
+    }));
 
     expect(breakdown).toMatchObject({
-      freshness: 0.8,
-      interestScore: 1,
-      quality: 0.9,
+      interestScore: -0.4,
+      positiveInterest: 0,
+      negativeInterest: 0.4,
       coverage: 1,
       crossSource: 1,
       corroboration: 1,
-      eventBoost: 0.1,
-      ruleBoost: 0.15,
-      eventArticleCount: 128,
-      sourceCount: 16,
-      recommended: 1
+      ruleBoost: 0.08
     });
   });
 
-  it('explains defaults and invalid event metadata without producing NaN', () => {
-    const breakdown = computeRecommendedBreakdown({
-      interestScore: 'invalid',
-      get: key => key === 'event' ? { articleCount: 0, sourceCount: 0 } : undefined
-    });
-
-    expect(breakdown).toMatchObject({
-      freshness: 0.5,
-      interestScore: 0,
-      quality: 0.7,
-      coverage: 0,
-      eventBoost: 0,
-      ruleBoost: 0,
-      eventArticleCount: 1,
-      sourceCount: 1
-    });
-    expect(Number.isFinite(breakdown.recommended)).toBe(true);
-  });
-
-  it('includes the optional feed-trust boost in the score breakdown', () => {
-    const breakdown = computeRecommendedBreakdown({
-      freshness: 0,
-      quality: 0,
-      interestScore: 0,
-      Feed: { feedTrust: 0.65 },
-      event: { articleCount: 1, sourceCount: 1, sourceDiversityScore: 0 },
-      Tags: []
-    }, { prioritizeHighTrust: true });
-
-    expect(breakdown.feedTrustBoost).toBe(0.65);
-    expect(breakdown.recommended).toBe(0.65);
-  });
-
-  it('serializes applicable promotion reasons with their domain metadata', () => {
-    const recommendation = buildRecommendationPresentation({
-      freshness: 0.8,
+  it('serializes only signals that positively promoted the article', () => {
+    const presentation = buildRecommendationPresentation(articleWith({
       interestScore: 0.7,
+      freshness: 0.8,
       quality: 0.9,
-      Feed: { feedTrust: 0.6 },
-      event: {
-        id: 12,
-        name: 'Example event',
-        articleCount: 8,
-        sourceCount: 4,
-        sourceDiversityScore: 1.5
-      },
-      Tags: [{ id: 4, name: 'JavaScript', tagType: 'rule' }]
-    }, {
+      event: strongEvent,
+      tags: [{ id: 4, name: 'JavaScript', tagType: 'rule' }]
+    }), {
       prioritizeHighTrust: true,
       interestIsland: { id: 7, name: 'Software development' }
     });
 
-    expect(recommendation.score).toBeGreaterThan(0);
-    expect(recommendation.reasons.map(reason => reason.code)).toEqual([
+    expect(presentation.reasons.map(reason => reason.code)).toEqual([
       'interest_match',
-      'event_coverage',
       'source_diversity',
       'rule_match',
       'freshness',
-      'quality',
-      'feed_trust'
-    ]);
-    expect(recommendation.reasons[0]).toMatchObject({
-      island: { id: 7, name: 'Software development' }
-    });
-    expect(recommendation.reasons[1]).toMatchObject({
-      articleCount: 8,
-      event: { id: 12, name: 'Example event' }
-    });
-    expect(recommendation.reasons[2]).toMatchObject({ sourceCount: 4 });
-    expect(recommendation.reasons[3]).toMatchObject({
-      tags: [{ id: 4, name: 'JavaScript' }]
-    });
-  });
-
-  it('omits signals that did not promote the article', () => {
-    const recommendation = buildRecommendationPresentation({
-      freshness: 0.4,
-      interestScore: -0.8,
-      quality: 0.6,
-      event: { articleCount: 1, sourceCount: 1, sourceDiversityScore: 0 },
-      Tags: []
-    });
-
-    expect(recommendation.reasons.map(reason => reason.code)).toEqual([
-      'freshness',
       'quality'
     ]);
+    expect(presentation.reasons[0]).toMatchObject({
+      island: { id: 7, name: 'Software development' }
+    });
+    expect(presentation.reasons[1]).toMatchObject({
+      sourceCount: 8,
+      event: { id: 12, name: 'Widely covered event' }
+    });
   });
 });

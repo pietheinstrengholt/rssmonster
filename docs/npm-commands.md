@@ -146,7 +146,7 @@ command merely because an incremental run created no assignments.
 
 | Command | Arguments | What it does and when to use it |
 | --- | --- | --- |
-| `npm run feedtrust` | None | Recalculates each feed's user-specific trust score from recent engagement, originality, consistency, volume, and negative signals. Use it after importing behavioral history or changing feed-trust logic. |
+| `npm run feedtrust` | None | Recalculates each feed's user-specific trust score from article quality, exposed engagement, deterministic originality, and negative feedback. Use it after importing behavioral history or changing feed-trust logic. |
 | `npm run seed:island-taxonomy` | Sequelize seed options | Applies only the `20260520104500-island-taxonomy.js` seed. Use it to create the built-in Interest Island taxonomy. This changes database data. |
 | `npm run seed:undo:island-taxonomy` | Sequelize seed options | **Destructive.** Undoes only the built-in Interest Island taxonomy seed. Use it only when intentionally removing that seeded taxonomy. |
 | `npm run seed:official-sources` | `--userId=<integer-id>` or `--userId <integer-id>` | Creates or updates built-in official-source rules for every user by default, or one user when specified. Use it after installing the official-source schema, adding a user that needs the defaults, or changing the built-in rules. |

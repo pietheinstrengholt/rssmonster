@@ -35,9 +35,9 @@ export const buildArticleSearchQuery = ({
   baseWhere,
   smartFolderSearch,
   sortRecommended,
+  sortTopStories,
   sortQuality,
   sortAttention,
-  sortTrust,
   prioritizeHighTrust = false,
   workingSort,
   qualityFilter,
@@ -68,16 +68,17 @@ export const buildArticleSearchQuery = ({
   const queryAttributes = ['id', 'feedId', 'aiAnalysisStatus'];
 
   // Derives the needs quality required while building article search query.
-  const needsQuality = qualityFilter || sortQuality;
+  const needsQuality = qualityFilter || sortRecommended || sortTopStories || sortQuality;
   // Derives the needs freshness required while building article search query.
   const needsFreshness = freshnessFilter
     || sortRecommended
-    || (prioritizeHighTrust && !sortTrust && ['asc', 'desc'].includes(workingSort));
+    || sortTopStories
+    || (prioritizeHighTrust && ['asc', 'desc'].includes(workingSort));
   const needsAttention = sortAttention;
   const needsInterestScore = sortRecommended;
-  const needsFeedTrust = prioritizeHighTrust && !sortTrust;
+  const needsFeedTrust = needsQuality || prioritizeHighTrust;
   // Derives the needs published required while building article search query.
-  const needsPublished = !smartFolderSearch || needsFreshness || sortTrust;
+  const needsPublished = !smartFolderSearch || needsFreshness;
 
   // Handles the case where needs quality is available.
   if (needsQuality) {
@@ -121,7 +122,7 @@ export const buildArticleSearchQuery = ({
   };
 
   // Handles the case where sort recommended is available or needs quality is available or sort trust is available.
-  if (sortRecommended || needsQuality || sortTrust || needsFeedTrust) {
+  if (sortRecommended || needsQuality || needsFeedTrust) {
     articleQuery.include = [
       {
         model: Feed,
@@ -130,14 +131,18 @@ export const buildArticleSearchQuery = ({
       }
     ];
 
-    // Handles the case where sort recommended is available.
-    if (sortRecommended) {
+    // Handles the case where event-aware intelligent sorting is available.
+    if (sortRecommended || sortTopStories) {
       articleQuery.include.unshift({
         model: Event,
         as: 'event',
         attributes: ['id', 'name', 'generatedName', 'articleCount', 'eventStrength', 'sourceDiversityScore', 'sourceCount', 'topicId'],
         required: false
       });
+    }
+
+    // Recommended alone needs rule tags for its bounded relevance boost.
+    if (sortRecommended) {
       articleQuery.include.push({
         model: Tag,
         attributes: ['id', 'tagType'],
@@ -146,15 +151,8 @@ export const buildArticleSearchQuery = ({
     }
   }
 
-  // Handles the case where sort trust is available.
-  if (sortTrust) {
-    articleQuery.order = [
-      [Feed, 'feedTrust', 'DESC'],
-      ['publishedAt', 'DESC'],
-      ['id', 'DESC']
-    ];
-  // Handles the case where smart folder search is unavailable and sort recommended is unavailable and sort quality is unavailable and sort attention is unavailable.
-  } else if (!smartFolderSearch && !sortRecommended && !sortQuality && !sortAttention) {
+  // Handles the case where smart folder search is unavailable and no computed sort is active.
+  if (!smartFolderSearch && !sortRecommended && !sortTopStories && !sortQuality && !sortAttention) {
     // Derives the sql sort direction through to sql sort direction while building article search query.
     const sqlSortDirection = toSqlSortDirection(workingSort);
     articleQuery.order = [
