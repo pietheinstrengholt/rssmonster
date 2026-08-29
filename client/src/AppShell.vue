@@ -70,7 +70,9 @@
       @dismiss="dismissActionError"
     />
 
-    <component :is="activeDialogComponent" v-if="activeDialogComponent" />
+    <Teleport to="body">
+      <component :is="activeDialogComponent" v-if="activeDialogComponent" />
+    </Teleport>
 
   </div>
 </template>

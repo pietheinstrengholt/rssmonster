@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import AppShell, { DIALOG_COMPONENTS } from '../src/AppShell.vue';
+import appShellSource from '../src/AppShell.vue?raw';
 
 const supportedDialogs = [
   ['NewCategory', 'NewCategory'],
@@ -23,6 +24,13 @@ const resolveActiveDialog = identifier => AppShell.computed.activeDialogComponen
 });
 
 describe('AppShell dialog registry', () => {
+  // Keeps dialogs outside shell scrolling and stacking contexts on compact mobile layouts.
+  it('renders the active dialog in the document-level overlay host', () => {
+    expect(appShellSource).toMatch(
+      /<Teleport to="body">\s*<component :is="activeDialogComponent" v-if="activeDialogComponent" \/>\s*<\/Teleport>/
+    );
+  });
+
   // Verifies every supported identifier retains its expected explicit async component.
   it.each(supportedDialogs)('maps %s to %s', async (identifier, expectedName) => {
     const asyncComponent = DIALOG_COMPONENTS[identifier];
