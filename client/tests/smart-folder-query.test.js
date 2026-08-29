@@ -160,10 +160,15 @@ describe('Smart Folder query domain', () => {
     expect(buildSmartFolderQuery(config)).toBe('unread:true sort:quality limit:50');
   });
 
-  it('round-trips the Top Stories sort', () => {
-    const query = 'unread:true sort:topStories limit:50';
+  it.each([
+    ['topStories', 'topStories'],
+    ['topstories', 'topStories'],
+    ['TOPSTORIES', 'topStories']
+  ])('canonicalizes the %s Top Stories sort token', (storedSort, expectedSort) => {
+    const query = `unread:true sort:${storedSort} limit:50`;
 
-    expect(buildSmartFolderQuery(parseSmartFolderQuery(query))).toBe(query);
+    expect(buildSmartFolderQuery(parseSmartFolderQuery(query)))
+      .toBe(`unread:true sort:${expectedSort} limit:50`);
   });
 
   it.each(['developing:true', 'developing:false'])(

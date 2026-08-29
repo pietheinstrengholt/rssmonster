@@ -92,18 +92,22 @@ function applyEventCountToken(config, token) {
     config.events.minimumCount = match ? Number(match[1]) : 2;
 }
 
+const SMART_FOLDER_SORT_FIELDS = {
+    trust: 'quality',
+    topstories: 'topStories',
+    recommended: 'recommended',
+    quality: 'quality',
+    attention: 'attention',
+    desc: 'published-desc',
+    asc: 'published-asc'
+};
+
 // Maps stored sort aliases onto the editor's select values.
 function applySortToken(config, token) {
-    const parsedSortValue = token.split(':')[1];
-    const sortValue = parsedSortValue === 'trust' ? 'quality' : parsedSortValue;
+    const parsedSortValue = token.split(':')[1]?.toLowerCase();
+    const sortField = SMART_FOLDER_SORT_FIELDS[parsedSortValue];
 
-    if (['topStories', 'recommended', 'quality', 'attention'].includes(sortValue)) {
-        config.sort.field = sortValue;
-        return;
-    }
-
-    if (sortValue === 'desc') config.sort.field = 'published-desc';
-    if (sortValue === 'asc') config.sort.field = 'published-asc';
+    if (sortField) config.sort.field = sortField;
 }
 
 // Parses supported filters and preserves unrecognized tokens as the editor's free text.
