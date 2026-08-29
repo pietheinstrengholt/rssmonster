@@ -227,8 +227,8 @@ describe('ArticleMeta', () => {
     expect(wrapper.get('.recommended-badge').text()).toBe('Why recommended');
   });
 
-  // Verifies mobile metadata exposes the remaining non-neutral score indicators.
-  it('renders mobile advertisement and sentiment indicators', () => {
+  // Verifies mobile metadata exposes the remaining non-neutral sentiment indicator.
+  it('hides the mobile advertisement indicator and renders the sentiment indicator', () => {
     const wrapper = mountArticleMeta({
       isMobilePortrait: true,
       advertisementScore: 1,
@@ -236,12 +236,9 @@ describe('ArticleMeta', () => {
     });
     const icons = wrapper.findAll('.bootstrap-icon-stub');
 
-    expect(icons.map(icon => icon.attributes('data-icon'))).toEqual([
-      'megaphone-fill',
-      'arrow-down-circle-fill'
-    ]);
+    expect(icons.map(icon => icon.attributes('data-icon'))).toEqual(['arrow-down-circle-fill']);
     expect(wrapper.get('.sentiment-icon').classes()).toContain('sentiment-very-poor');
-    expect(wrapper.get('.ad-icon').attributes('title')).toBe('Promotional content detected (score: 1)');
+    expect(wrapper.find('.ad-icon').exists()).toBe(false);
   });
 
   // Verifies grouping and duplicate controls emit their domain events.
