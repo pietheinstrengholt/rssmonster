@@ -82,7 +82,14 @@ describe('developing story icon', () => {
     const representativeWrapper = mountArticle(100, false);
 
     expect(developingWrapper.getComponent('.developing-story-icon').props('icon')).toBe('lightning-charge-fill');
+    expect(developingWrapper.getComponent({ name: 'ArticleDevelopingStoryPopover' }).props('articleId')).toBe(103);
     expect(representativeWrapper.find('.developing-story-icon').exists()).toBe(false);
+  });
+
+  it('falls back to the event developing pointer when a refreshed card has no id prop', () => {
+    const wrapper = mountArticle(undefined, true);
+
+    expect(wrapper.getComponent({ name: 'ArticleDevelopingStoryPopover' }).props('articleId')).toBe(103);
   });
 
   it('renders in the reader list for the developing article', () => {
@@ -94,7 +101,9 @@ describe('developing story icon', () => {
       event: developingEvent
     });
 
-    expect(wrapper.getComponent('.article-reader__developing-icon').props('icon')).toBe('lightning-charge-fill');
+    const popover = wrapper.getComponent({ name: 'ArticleDevelopingStoryPopover' });
+    expect(popover.props('articleId')).toBe(103);
+    expect(popover.props('iconClass')).toBe('article-reader__developing-icon');
   });
 
   it('does not render when the API developing-story field is false', () => {

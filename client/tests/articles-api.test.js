@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  fetchDevelopingStoryArticles,
+  fetchStorySourceArticles,
   fetchNewerArticleCount,
   markAllAsRead,
   markArticlesAsRead
@@ -15,6 +17,22 @@ describe('articles API', () => {
   beforeEach(() => {
     get.mockReset();
     post.mockReset();
+  });
+
+  it('requests the related articles for one developing story without global error handling', () => {
+    fetchDevelopingStoryArticles(42);
+
+    expect(get).toHaveBeenCalledWith('/articles/42/developing-story', {
+      suppressGlobalError: true
+    });
+  });
+
+  it('requests same-story articles from different sources without global error handling', () => {
+    fetchStorySourceArticles(42);
+
+    expect(get).toHaveBeenCalledWith('/articles/42/story-sources', {
+      suppressGlobalError: true
+    });
   });
 
   it('requests a newer-article count with the active selection and snapshot boundary', () => {

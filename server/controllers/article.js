@@ -15,6 +15,28 @@ import { loadInterestIslandAttributions } from '../services/recommendations/reco
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { retryDatabaseWrite } from '../utils/databaseRetry.js';
 
+const RELATED_STORY_ARTICLE_LIMIT = 50;
+
+// This function serializes a related-story row without relying on direct association properties.
+const serializeRelatedStoryArticle = articleRow => {
+  const article = typeof articleRow?.get === 'function'
+    ? articleRow.get({ plain: true })
+    : articleRow;
+  const feed = article?.feed || {};
+
+  return {
+    id: article?.id,
+    title: article?.title,
+    url: article?.url,
+    publishedAt: article?.publishedAt,
+    feed: {
+      id: feed.id ?? null,
+      name: feed.feedName || 'Unknown feed',
+      favicon: feed.favicon || null
+    }
+  };
+};
+
 // This function normalizes article grouping values used by API consumers.
 const normalizeGrouping = value => (value === 'event' || value === 'topic' ? value : 'none');
 
@@ -505,6 +527,160 @@ const getArticleRecommendations = async (req, res, _next) => {
   } catch (err) {
     console.error('Error in getArticleRecommendations:', err);
     return res.status(500).json({ error: 'Unable to load article recommendations' });
+  }
+};
+
+// This function returns the other visible articles belonging to one developing story.
+const getDevelopingStoryArticles = async (req, res, _next) => {
+  const userId = req.userData?.userId;
+  const articleId = Number(req.params.articleId);
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized: missing userId' });
+  }
+
+  if (!Number.isSafeInteger(articleId) || articleId <= 0) {
+    return res.status(400).json({ error: 'Invalid articleId' });
+  }
+
+  try {
+    const sourceArticle = await Article.findOne({
+      where: { id: articleId, userId, ...canonicalArticleWhere() },
+      attributes: ['id', 'status', 'eventId'],
+      include: [{
+        model: Event,
+        as: 'event',
+        required: false,
+        where: { userId },
+        attributes: [
+          'id',
+          'name',
+          'generatedName',
+          'representativeArticleId',
+          'developingArticleId'
+        ]
+      }]
+    });
+
+    if (!sourceArticle) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    const sourceEvent = sourceArticle.get('event');
+    const isDevelopingPointer = sourceEvent
+      && Number(sourceEvent.developingArticleId) === Number(sourceArticle.id)
+      && Number(sourceEvent.developingArticleId) !== Number(sourceEvent.representativeArticleId);
+    if (!sourceArticle.eventId || !isDevelopingPointer) {
+      return res.status(404).json({ error: 'Developing story not found' });
+    }
+
+    const relatedArticles = await Article.findAll({
+      where: {
+        eventId: sourceArticle.eventId,
+        userId,
+        id: { [Op.ne]: sourceArticle.id },
+        ...canonicalArticleWhere()
+      },
+      attributes: ['id', 'title', 'url', 'publishedAt'],
+      include: [{
+        model: Feed,
+        required: true,
+        attributes: ['id', 'feedName', 'favicon']
+      }],
+      order: [['publishedAt', 'DESC'], ['id', 'DESC']],
+      limit: RELATED_STORY_ARTICLE_LIMIT + 1,
+      raw: true,
+      nest: true
+    });
+    const hasMore = relatedArticles.length > RELATED_STORY_ARTICLE_LIMIT;
+
+    return res.status(200).json({
+      event: {
+        id: sourceEvent.id,
+        name: sourceEvent.name,
+        generatedName: sourceEvent.generatedName
+      },
+      articles: relatedArticles
+        .slice(0, RELATED_STORY_ARTICLE_LIMIT)
+        .map(serializeRelatedStoryArticle),
+      hasMore
+    });
+  } catch (err) {
+    console.error('Error in getDevelopingStoryArticles:', err);
+    return res.status(500).json({ error: 'Unable to load developing story articles' });
+  }
+};
+
+// This function returns corroborating event articles published by other subscribed feeds.
+const getStorySourceArticles = async (req, res, _next) => {
+  const userId = req.userData?.userId;
+  const articleId = Number(req.params.articleId);
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized: missing userId' });
+  }
+
+  if (!Number.isSafeInteger(articleId) || articleId <= 0) {
+    return res.status(400).json({ error: 'Invalid articleId' });
+  }
+
+  try {
+    const sourceArticle = await Article.findOne({
+      where: { id: articleId, userId, ...canonicalArticleWhere() },
+      attributes: ['id', 'eventId', 'feedId'],
+      include: [{
+        model: Event,
+        as: 'event',
+        required: false,
+        where: { userId },
+        attributes: ['id', 'name', 'generatedName']
+      }]
+    });
+
+    if (!sourceArticle) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    const sourceEvent = sourceArticle.get('event');
+    if (!sourceArticle.eventId || !sourceEvent) {
+      return res.status(404).json({ error: 'Story sources not found' });
+    }
+
+    const relatedArticles = await Article.findAll({
+      where: {
+        eventId: sourceArticle.eventId,
+        userId,
+        id: { [Op.ne]: sourceArticle.id },
+        feedId: { [Op.ne]: sourceArticle.feedId },
+        ...canonicalArticleWhere()
+      },
+      attributes: ['id', 'title', 'url', 'publishedAt'],
+      include: [{
+        model: Feed,
+        required: true,
+        attributes: ['id', 'feedName', 'favicon']
+      }],
+      order: [['publishedAt', 'DESC'], ['id', 'DESC']],
+      limit: RELATED_STORY_ARTICLE_LIMIT + 1,
+      raw: true,
+      nest: true
+    });
+    const hasMore = relatedArticles.length > RELATED_STORY_ARTICLE_LIMIT;
+
+    return res.status(200).json({
+      event: {
+        id: sourceEvent.id,
+        name: sourceEvent.name,
+        generatedName: sourceEvent.generatedName
+      },
+      articles: relatedArticles
+        .slice(0, RELATED_STORY_ARTICLE_LIMIT)
+        .map(serializeRelatedStoryArticle),
+      hasMore
+    });
+  } catch (err) {
+    console.error('Error in getStorySourceArticles:', err);
+    return res.status(500).json({ error: 'Unable to load story source articles' });
   }
 };
 
@@ -1359,6 +1535,8 @@ export default {
   getDuplicateArticles,
   getArticle,
   getArticleRecommendations,
+  getDevelopingStoryArticles,
+  getStorySourceArticles,
   markAsRead,
   markClicked,
   markNotInterested,

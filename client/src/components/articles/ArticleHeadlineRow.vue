@@ -24,8 +24,16 @@
       <div class="article-list-meta">
         <span class="article-list-feed">{{ sourceLabel }}</span>
         <span class="article-list-dot">·</span>
-        <span v-if="showSourceBadge" class="source-badge" :title="`${sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ sourceCount }} sources</span>
-        <BootstrapIcon v-if="isDevelopingStory" icon="lightning-charge-fill" class="developing-story-icon" title="Developing story" aria-label="Developing story" />
+        <ArticleStorySourcesPopover
+          v-if="showSourceBadge"
+          :article-id="articleId"
+          :source-count="sourceCount"
+        />
+        <ArticleDevelopingStoryPopover
+          v-if="isDevelopingStory"
+          :article-id="articleId"
+          icon-class="developing-story-icon"
+        />
         <BootstrapIcon v-if="hotInd === 1" icon="fire" class="hot-icon" title="Hot article" aria-label="Hot article" />
         <button v-if="showSimilarBadge" type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', eventId)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
         <button v-if="duplicateCount > 0" type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="$emit('view-duplicate-articles')">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>
@@ -46,14 +54,16 @@
 
 <script>
 import ArticleActionsMenu from './ArticleActionsMenu.vue';
+import ArticleDevelopingStoryPopover from './ArticleDevelopingStoryPopover.vue';
 import ArticlePreviewFallback from './ArticlePreviewFallback.vue';
+import ArticleStorySourcesPopover from './ArticleStorySourcesPopover.vue';
 import HighlightedText from '../shared/HighlightedText.vue';
 import { formatRelativeDate } from '../../utils/date';
 import { formatTagName } from '../../utils/tags';
 import { usableHttpUrl } from '../../utils/content.js';
 
 export default {
-  components: { ArticleActionsMenu, ArticlePreviewFallback, HighlightedText },
+  components: { ArticleActionsMenu, ArticleDevelopingStoryPopover, ArticlePreviewFallback, ArticleStorySourcesPopover, HighlightedText },
   emits: ['article-clicked', 'article-touched', 'more-like-this', 'mute-feed', 'not-interested', 'select-tag', 'swipe-cancel', 'swipe-touch-end', 'swipe-touch-move', 'swipe-touch-start', 'toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'view-duplicate-articles', 'view-event-articles'],
   data() {
     return {
@@ -61,6 +71,7 @@ export default {
     };
   },
   props: {
+    articleId: { type: [Number, String], default: null },
     url: { type: String, default: '' },
     title: { type: String, default: '' },
     status: { type: String, default: '' },

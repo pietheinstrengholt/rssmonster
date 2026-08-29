@@ -12,6 +12,7 @@ const BootstrapIconStub = {
 function mountArticleHeader(props = {}) {
   return mount(ArticleHeader, {
     props: {
+      articleId: 42,
       title: 'Article title',
       hasInterestScore: true,
       isGroupedView: true,

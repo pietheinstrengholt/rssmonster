@@ -226,6 +226,8 @@
   --article-rule-tag-text: var(--badge-tag-rule-text);
   --article-source-diversity-background: #ECFEFF;
   --article-source-diversity-text: #0E7490;
+  --article-feed-icon-background: var(--badge-ad-bg);
+  --article-feed-icon-text: var(--badge-ad-text);
 
   /* Article score badges */
   --article-score-text: var(--badge-tag-text);

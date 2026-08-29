@@ -147,7 +147,11 @@
             </a>
           </span>
           <span class="article-reader__item-badges">
-            <BootstrapIcon v-if="article.isDevelopingStory" icon="lightning-charge-fill" class="article-reader__developing-icon" title="Developing story" aria-label="Developing story" />
+            <ArticleDevelopingStoryPopover
+              v-if="article.isDevelopingStory"
+              :article-id="article.id ?? article.event?.developingArticleId"
+              icon-class="article-reader__developing-icon"
+            />
             <span v-if="article.favoriteInd === 1" class="article-reader__badge article-reader__badge--favorite">Favorite</span>
             <span v-if="article.hotInd === 1" class="article-reader__badge article-reader__badge--hot">Hot</span>
             <span v-if="similarCount(article)" class="article-reader__badge">{{ similarCount(article) }} similar</span>
@@ -247,6 +251,7 @@ import {
   getArticleKeyboardCommand
 } from '../../services/articleKeyboardCommands.js';
 import ArticleItem from "./Article.vue";
+import ArticleDevelopingStoryPopover from './ArticleDevelopingStoryPopover.vue';
 import ArticleRecommendations from './ArticleRecommendations.vue';
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
@@ -271,6 +276,7 @@ const PREVIEW_LENGTH = 150;
 export default {
   components: {
     ArticleItem,
+    ArticleDevelopingStoryPopover,
     ArticleRecommendations,
     ArticleEmptyState,
     ArticleEndState,
@@ -1184,6 +1190,12 @@ export default {
   flex-wrap: wrap;
   gap: 5px;
   margin-top: 8px;
+}
+
+.article-reader__item-badges :deep(.article-developing-story-popover) {
+  pointer-events: auto;
+  position: relative;
+  z-index: 3;
 }
 
 .article-reader__badge {

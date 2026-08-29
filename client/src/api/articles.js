@@ -58,6 +58,18 @@ export const fetchArticleRecommendations = articleId =>
     suppressGlobalError: true
   });
 
+// This function fetches the other articles belonging to one developing story.
+export const fetchDevelopingStoryArticles = articleId =>
+  api.get(`/articles/${articleId}/developing-story`, {
+    suppressGlobalError: true
+  });
+
+// This function fetches same-story articles published by different feeds.
+export const fetchStorySourceArticles = articleId =>
+  api.get(`/articles/${articleId}/story-sources`, {
+    suppressGlobalError: true
+  });
+
 // This function fetches duplicates belonging to one canonical article.
 export const fetchDuplicateArticles = articleId =>
   api.get(`/articles/duplicates/${articleId}`);

@@ -417,6 +417,213 @@ describe('article ownership authorization', () => {
     });
   });
 
+  it('GET developing story returns only the owner’s other canonical event articles', async () => {
+    const owner = await createUser(uniqueName('developing-popover-owner'));
+    const foreignUser = await createUser(uniqueName('developing-popover-viewer'));
+    const { article: representativeArticle, feed } = await createArticleFor(owner);
+    await feed.update({ favicon: 'https://example.com/favicon.ico' });
+    const developingArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/developing-popover`,
+      title: 'Latest developing coverage',
+      publishedAt: new Date('2026-05-01T12:00:00Z')
+    });
+    const relatedArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'read',
+      url: `https://example.com/${owner.username}/related-popover`,
+      title: 'Earlier event coverage',
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+    const filteredArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      filteredInd: true,
+      url: `https://example.com/${owner.username}/filtered-popover`,
+      title: 'Filtered event coverage',
+      publishedAt: new Date('2026-05-01T10:00:00Z')
+    });
+    const event = await Event.create({
+      userId: owner.id,
+      representativeArticleId: representativeArticle.id,
+      developingArticleId: developingArticle.id,
+      name: 'Developing popover event',
+      articleCount: 4
+    });
+    await Article.update(
+      { eventId: event.id },
+      { where: { id: [
+        representativeArticle.id,
+        developingArticle.id,
+        relatedArticle.id,
+        filteredArticle.id
+      ] } }
+    );
+
+    const ownerResponse = await request(app)
+      .get(`/api/articles/${developingArticle.id}/developing-story`)
+      .set('Authorization', authHeaderFor(owner));
+    const foreignResponse = await request(app)
+      .get(`/api/articles/${developingArticle.id}/developing-story`)
+      .set('Authorization', authHeaderFor(foreignUser));
+
+    expect(ownerResponse.status).toBe(200);
+    expect(ownerResponse.body).toMatchObject({
+      event: { id: event.id, name: 'Developing popover event' },
+      hasMore: false
+    });
+    expect(ownerResponse.body.articles.map(article => article.id)).toEqual([
+      relatedArticle.id,
+      representativeArticle.id
+    ]);
+    expect(ownerResponse.body.articles[0]).toMatchObject({
+      title: 'Earlier event coverage',
+      feed: {
+        id: feed.id,
+        name: feed.feedName,
+        favicon: 'https://example.com/favicon.ico'
+      }
+    });
+    expect(JSON.stringify(ownerResponse.body)).not.toContain('Filtered event coverage');
+    expect(foreignResponse.status).toBe(404);
+
+    await developingArticle.update({ status: 'read' });
+    const readDevelopingResponse = await request(app)
+      .get(`/api/articles/${developingArticle.id}/developing-story`)
+      .set('Authorization', authHeaderFor(owner));
+    expect(readDevelopingResponse.status).toBe(200);
+    expect(readDevelopingResponse.body.articles.map(article => article.id)).toEqual([
+      relatedArticle.id,
+      representativeArticle.id
+    ]);
+  });
+
+  it('GET developing story rejects an event article that is not the developing article', async () => {
+    const owner = await createUser(uniqueName('non-developing-popover-owner'));
+    const { article: representativeArticle, feed } = await createArticleFor(owner);
+    const developingArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/actual-developing`,
+      title: 'Actual developing article',
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+    const event = await Event.create({
+      userId: owner.id,
+      representativeArticleId: representativeArticle.id,
+      developingArticleId: developingArticle.id,
+      name: 'Strict developing event'
+    });
+    await Article.update(
+      { eventId: event.id },
+      { where: { id: [representativeArticle.id, developingArticle.id] } }
+    );
+
+    const response = await request(app)
+      .get(`/api/articles/${representativeArticle.id}/developing-story`)
+      .set('Authorization', authHeaderFor(owner));
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe('Developing story not found');
+  });
+
+  it('GET story sources returns canonical event articles from different owned feeds', async () => {
+    const owner = await createUser(uniqueName('story-sources-owner'));
+    const foreignUser = await createUser(uniqueName('story-sources-viewer'));
+    const { article: sourceArticle, category, feed: sourceFeed } = await createArticleFor(owner);
+    const otherFeed = await Feed.create({
+      userId: owner.id,
+      categoryId: category.id,
+      feedName: 'Other reporting feed',
+      url: `https://other.example/${owner.username}.xml`,
+      favicon: 'https://other.example/favicon.ico'
+    });
+    const otherSourceArticle = await Article.create({
+      userId: owner.id,
+      feedId: otherFeed.id,
+      status: 'unread',
+      url: `https://other.example/${owner.username}/same-story`,
+      title: 'Corroborating report',
+      publishedAt: new Date('2026-05-01T12:00:00Z')
+    });
+    const sameSourceArticle = await Article.create({
+      userId: owner.id,
+      feedId: sourceFeed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/same-feed-update`,
+      title: 'Same-feed update',
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+    const filteredOtherSourceArticle = await Article.create({
+      userId: owner.id,
+      feedId: otherFeed.id,
+      status: 'unread',
+      filteredInd: true,
+      url: `https://other.example/${owner.username}/filtered-same-story`,
+      title: 'Filtered corroborating report',
+      publishedAt: new Date('2026-05-01T10:00:00Z')
+    });
+    const event = await Event.create({
+      userId: owner.id,
+      representativeArticleId: sourceArticle.id,
+      developingArticleId: sourceArticle.id,
+      name: 'Multi-source event',
+      articleCount: 4,
+      sourceCount: 2
+    });
+    await Article.update(
+      { eventId: event.id },
+      { where: { id: [
+        sourceArticle.id,
+        otherSourceArticle.id,
+        sameSourceArticle.id,
+        filteredOtherSourceArticle.id
+      ] } }
+    );
+
+    const ownerResponse = await request(app)
+      .get(`/api/articles/${sourceArticle.id}/story-sources`)
+      .set('Authorization', authHeaderFor(owner));
+    const foreignResponse = await request(app)
+      .get(`/api/articles/${sourceArticle.id}/story-sources`)
+      .set('Authorization', authHeaderFor(foreignUser));
+
+    expect(ownerResponse.status).toBe(200);
+    expect(ownerResponse.body).toMatchObject({
+      event: { id: event.id, name: 'Multi-source event' },
+      hasMore: false
+    });
+    expect(ownerResponse.body.articles).toEqual([expect.objectContaining({
+      id: otherSourceArticle.id,
+      title: 'Corroborating report',
+      feed: {
+        id: otherFeed.id,
+        name: 'Other reporting feed',
+        favicon: 'https://other.example/favicon.ico'
+      }
+    })]);
+    expect(JSON.stringify(ownerResponse.body)).not.toContain('Same-feed update');
+    expect(JSON.stringify(ownerResponse.body)).not.toContain('Filtered corroborating report');
+    expect(foreignResponse.status).toBe(404);
+  });
+
+  it('GET story sources rejects an owned article without an event', async () => {
+    const owner = await createUser(uniqueName('story-sources-no-event-owner'));
+    const { article } = await createArticleFor(owner);
+
+    const response = await request(app)
+      .get(`/api/articles/${article.id}/story-sources`)
+      .set('Authorization', authHeaderFor(owner));
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe('Story sources not found');
+  });
+
   it('GET duplicate articles returns owned duplicates and rejects foreign users', async () => {
     const owner = await createUser(uniqueName('duplicate-owner'));
     const foreignUser = await createUser(uniqueName('duplicate-viewer'));

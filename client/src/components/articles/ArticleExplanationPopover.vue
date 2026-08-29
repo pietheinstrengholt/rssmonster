@@ -9,7 +9,7 @@
       :aria-label="ariaLabel"
       @click.stop="toggle"
     >
-      {{ triggerLabel }}
+      <slot name="trigger">{{ triggerLabel }}</slot>
     </button>
 
     <Teleport to="body">
@@ -39,22 +39,24 @@
             </button>
           </header>
 
-          <p :id="summaryId" class="article-explanation-summary">{{ summary }}</p>
+          <p v-if="summary" :id="summaryId" class="article-explanation-summary">{{ summary }}</p>
 
-          <ul :class="['article-explanation-list', listClass]">
-            <li v-for="item in items" :key="item.code">
-              <span :class="['article-explanation-icon', item.iconClass]" aria-hidden="true">
-                <BootstrapIcon :icon="item.icon" />
-              </span>
-              <span>
-                <span class="article-explanation-item-heading">
-                  <strong>{{ item.title }}</strong>
-                  <strong v-if="item.value !== undefined" class="article-explanation-item-value">{{ item.value }}</strong>
+          <slot name="content">
+            <ul :class="['article-explanation-list', listClass]">
+              <li v-for="item in items" :key="item.code">
+                <span :class="['article-explanation-icon', item.iconClass]" aria-hidden="true">
+                  <BootstrapIcon :icon="item.icon" />
                 </span>
-                <span>{{ item.text }}</span>
-              </span>
-            </li>
-          </ul>
+                <span>
+                  <span class="article-explanation-item-heading">
+                    <strong>{{ item.title }}</strong>
+                    <strong v-if="item.value !== undefined" class="article-explanation-item-value">{{ item.value }}</strong>
+                  </span>
+                  <span>{{ item.text }}</span>
+                </span>
+              </li>
+            </ul>
+          </slot>
 
           <p v-if="footerLabel" class="article-explanation-footer">{{ footerLabel }}</p>
         </section>
@@ -68,13 +70,14 @@ const VIEWPORT_EDGE_GAP = 8;
 const PANEL_OFFSET = 6;
 
 export default {
+  emits: ['open'],
   props: {
-    triggerLabel: { type: String, required: true },
+    triggerLabel: { type: String, default: '' },
     triggerClass: { type: [String, Array, Object], default: '' },
     ariaLabel: { type: String, required: true },
     dialogTitle: { type: String, required: true },
-    summary: { type: String, required: true },
-    items: { type: Array, required: true },
+    summary: { type: String, default: '' },
+    items: { type: Array, default: () => [] },
     footerLabel: { type: String, default: '' },
     rootClass: { type: String, default: '' },
     panelClass: { type: String, default: '' },
@@ -120,6 +123,7 @@ export default {
       }
 
       this.isOpen = true;
+      this.$emit('open');
       document.addEventListener('pointerdown', this.handleDocumentPointerDown);
       document.addEventListener('keydown', this.handleDocumentKeydown);
       window.addEventListener('resize', this.positionPanel);
@@ -177,8 +181,25 @@ export default {
     },
     handlePanelKeydown(event) {
       if (event.key !== 'Tab') return;
-      event.preventDefault();
-      this.$refs.closeButton?.focus();
+      const focusable = [...(this.$refs.panel?.querySelectorAll(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ) || [])];
+      if (!focusable.length) return;
+
+      const currentIndex = focusable.indexOf(document.activeElement);
+      if (currentIndex === -1) {
+        event.preventDefault();
+        focusable[0].focus();
+        return;
+      }
+
+      if (event.shiftKey && currentIndex === 0) {
+        event.preventDefault();
+        focusable.at(-1).focus();
+      } else if (!event.shiftKey && currentIndex === focusable.length - 1) {
+        event.preventDefault();
+        focusable[0].focus();
+      }
     }
   }
 };

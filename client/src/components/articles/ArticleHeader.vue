@@ -7,7 +7,12 @@
       <BootstrapIcon v-if="isMastodonArticle" icon="mastodon" class="article-kind-icon mastodon-icon" />
       <BootstrapIcon v-if="isMediumArticle" icon="medium" class="article-kind-icon medium-icon" />
       <BootstrapIcon v-if="isPodcastArticle" icon="mic-fill" class="article-kind-icon podcast-icon" />
-      <BootstrapIcon v-if="isDeveloping" icon="lightning-charge-fill" class="article-kind-icon developing-story-icon" title="Developing story" />
+      <ArticleDevelopingStoryPopover
+        v-if="isDeveloping"
+        class="article-kind-popover"
+        :article-id="articleId"
+        :icon-class="['article-kind-icon', 'developing-story-icon']"
+      />
       <BootstrapIcon v-if="hasVideoMedia" icon="play-btn-fill" class="article-kind-icon media-video-icon" />
       <template v-else>
         <!-- <BootstrapIcon v-if="clickedAmount > 0" icon="arrow-up-right-square-fill" class="article-kind-icon clicked-icon" /> -->
@@ -27,13 +32,15 @@
 
 <script>
 import ArticleActionsMenu from './ArticleActionsMenu.vue';
+import ArticleDevelopingStoryPopover from './ArticleDevelopingStoryPopover.vue';
 import HighlightedText from '../shared/HighlightedText.vue';
 import { usableHttpUrl } from '../../utils/content.js';
 
 export default {
-  components: { ArticleActionsMenu, HighlightedText },
+  components: { ArticleActionsMenu, ArticleDevelopingStoryPopover, HighlightedText },
   emits: ['article-clicked', 'toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed'],
   props: {
+    articleId: { type: [Number, String], default: null },
     url: { type: String, default: '' }, title: { type: String, default: '' }, clickedAmount: { type: Number, default: 0 },
     clickPending: { type: Boolean, default: false },
     favoriteInd: { type: Number, default: 0 }, favoritePending: { type: Boolean, default: false }, hotInd: { type: Number, default: 0 }, status: { type: String, default: '' },
@@ -158,6 +165,11 @@ export default {
   flex-shrink: 0;
   line-height: 1;
   vertical-align: middle;
+}
+
+.article-kind-popover {
+  flex: 0 0 auto;
+  margin-right: 8px;
 }
 
 .article-kind-icon svg {

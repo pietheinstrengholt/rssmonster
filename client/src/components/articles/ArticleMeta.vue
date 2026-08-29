@@ -13,7 +13,11 @@
       :trigger-label="recommendationTriggerLabel"
     />
     <span v-else-if="hasInterestScore" class="recommended-badge">Matches your interests</span>
-    <span v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none' && event.sourceCount >= 2" class="source-badge" :title="`${event.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ event.sourceCount }} sources</span>
+    <ArticleStorySourcesPopover
+      v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none' && event.sourceCount >= 2"
+      :article-id="articleId"
+      :source-count="event.sourceCount"
+    />
     <button v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none'" type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
     <button v-if="duplicateCount > 0" type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="$emit('view-duplicate-articles')">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>
   </div>
@@ -26,16 +30,16 @@ import {
 } from '../../services/articlePresentation.js';
 import { formatRelativeDate } from '../../utils/date.js';
 import { hasUsableArticleAnalysis } from '../../services/articleAnalysisPresentation.js';
+import ArticleStorySourcesPopover from './ArticleStorySourcesPopover.vue';
 
 const ArticleRecommendationExplanation = defineAsyncComponent(
   () => import('./ArticleRecommendationExplanation.vue')
 );
-
 export default {
-  components: { ArticleRecommendationExplanation },
+  components: { ArticleRecommendationExplanation, ArticleStorySourcesPopover },
   emits: ['view-event-articles', 'view-duplicate-articles'],
   props: {
-    publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, hasInterestScore: { type: Boolean, default: false }, isRecommendationView: { type: Boolean, default: false }, recommendation: { type: Object, default: null }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, aiAnalysisStatus: { type: String, default: '' }, neutralScore: { type: Number, required: true }
+    articleId: { type: [Number, String], default: null }, publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, hasInterestScore: { type: Boolean, default: false }, isRecommendationView: { type: Boolean, default: false }, recommendation: { type: Object, default: null }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, aiAnalysisStatus: { type: String, default: '' }, neutralScore: { type: Number, required: true }
   },
   computed: {
     // Prevents ingestion defaults from appearing as completed mobile analysis signals.
