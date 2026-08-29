@@ -104,4 +104,28 @@ describe('safe inference error details', () => {
       message: 'Failed to read /models/cache/model.onnx'
     });
   });
+
+  it('omits invalid status values and empty startup messages', () => {
+    expect(getSafeErrorDetails()).toEqual({ name: 'Error' });
+    expect(getSafeErrorDetails({ name: 'TypeError', status: 399 })).toEqual({ name: 'TypeError' });
+    expect(getSafeErrorDetails({ name: 'RangeError', status: 600 })).toEqual({ name: 'RangeError' });
+    expect(getSafeErrorDetails({ name: 'SyntaxError', status: 400.5 }))
+      .toEqual({ name: 'SyntaxError' });
+    expect(getSafeStartupErrorDetails({ message: 42 })).toEqual({ name: 'Error' });
+    expect(getSafeStartupErrorDetails({ message: '\n\t' })).toEqual({ name: 'Error' });
+  });
+
+  it('redacts standalone bearer tokens and bounds startup messages', () => {
+    const details = getSafeStartupErrorDetails({
+      message: `Bearer private-token ${'x'.repeat(600)}`,
+      code: 'ENOENT',
+      cause: { code: 'ENOENT' }
+    });
+
+    expect(details.code).toBe('ENOENT');
+    expect(details).not.toHaveProperty('causeCode');
+    expect(details.message).toMatch(/^Bearer REDACTED /);
+    expect(details.message).toHaveLength(500);
+    expect(details.message).not.toContain('private-token');
+  });
 });

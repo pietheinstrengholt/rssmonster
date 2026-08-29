@@ -87,10 +87,32 @@ describe('generateSemanticLabels', () => {
   });
 
   it.each([
+    ['', null],
+    ['not json', null],
+    ['prefix {"topic":"Embedded JSON"} suffix', 'Embedded JSON'],
+    ['prefix {broken} suffix', null],
+    ['{"topic":"   "}', null],
+    [`{"topic":"${'x'.repeat(256)}"}`, null],
+    ['{"topic":"line\\n break"}', 'line break']
+  ])('normalizes provider output %#', async (output, expected) => {
+    mocked.qwenGenerate.mockResolvedValue(output);
+    const { generateSemanticLabels } = await import(
+      '../src/semanticLabels/semanticLabelService.js'
+    );
+
+    await expect(generateSemanticLabels({
+      context: 'Evidence',
+      topic: true
+    })).resolves.toEqual({ topic: expected });
+  });
+
+  it.each([
     [undefined, 'request body is required'],
     [{ context: 'Evidence' }, 'at least one of event, topic, or island must be true'],
     [{ context: '', event: true }, 'context is required'],
     [{ context: 'Evidence', event: 'yes' }, 'event must be a boolean'],
+    [[], 'request body is required'],
+    [{ context: null, event: true }, 'context is required'],
     [{ context: 'x'.repeat(6001), topic: true }, 'context must not exceed 6000 characters']
   ])('rejects invalid input %#', async (input, message) => {
     const { generateSemanticLabels } = await import(
@@ -121,5 +143,31 @@ describe('generateSemanticLabels', () => {
       max_tokens: 96
     }));
     expect(mocked.qwenGenerate).not.toHaveBeenCalled();
+  });
+
+  it('requires an API key for the OpenAI provider', async () => {
+    vi.stubEnv('GENERATION_PROVIDER', 'openai');
+    const { generateSemanticLabels } = await import(
+      '../src/semanticLabels/semanticLabelService.js'
+    );
+
+    await expect(generateSemanticLabels({
+      context: 'Evidence',
+      topic: true
+    })).rejects.toThrow('OpenAI API key not configured');
+  });
+
+  it('treats a missing OpenAI response choice as empty output', async () => {
+    vi.stubEnv('GENERATION_PROVIDER', 'openai');
+    vi.stubEnv('OPENAI_API_KEY', 'test-key');
+    mocked.createCompletion.mockResolvedValue({ choices: [] });
+    const { generateSemanticLabels } = await import(
+      '../src/semanticLabels/semanticLabelService.js'
+    );
+
+    await expect(generateSemanticLabels({
+      context: 'Evidence',
+      topic: true
+    })).resolves.toEqual({ topic: null });
   });
 });

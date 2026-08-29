@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createRequestLifecycleMiddleware,
   getInferenceRequestId,
-  isValidRequestId
+  isValidRequestId,
+  resolveRequestId
 } from '../src/middleware/requestLifecycle.js';
 
 const createExchange = ({ requestId = 'request-123', statusCode = 200 } = {}) => {
@@ -27,6 +28,10 @@ describe('inference request lifecycle', () => {
     expect(isValidRequestId('contains spaces')).toBe(false);
     expect(isValidRequestId('line\nbreak')).toBe(false);
     expect(isValidRequestId('x'.repeat(129))).toBe(false);
+    expect(isValidRequestId(123)).toBe(false);
+    expect(resolveRequestId('valid-id')).toBe('valid-id');
+    expect(resolveRequestId(null)).toMatch(/^[0-9a-f-]{36}$/);
+    expect(getInferenceRequestId()).toBeUndefined();
   });
 
   it('preserves the request ID and exposes it through request context', () => {
@@ -106,5 +111,50 @@ describe('inference request lifecycle', () => {
       '[INFERENCE DEBUG] request_aborted requestId="request-123" ' +
       'method="POST" path="/api/classifications/article" durationMs=20'
     );
+  });
+
+  it('uses safe fallbacks and sanitizes the logged path', () => {
+    const logger = { log: vi.fn() };
+    const req = Object.assign(new EventEmitter(), {
+      method: '',
+      originalUrl: `/safe\npath?secret=${'x'.repeat(300)}`
+    });
+    const res = Object.assign(new EventEmitter(), {
+      statusCode: 200,
+      writableFinished: false,
+      setHeader: vi.fn()
+    });
+
+    createRequestLifecycleMiddleware({
+      environment: { INFERENCE_DEBUG: 'true' },
+      logger,
+      now: () => 1
+    })(req, res, vi.fn());
+    res.writableFinished = true;
+    res.emit('close');
+
+    expect(res.locals.inferenceRequestId).toBe(req.inferenceRequestId);
+    expect(logger.log.mock.calls[0][0]).toContain('method="UNKNOWN" path="/safepath"');
+    expect(logger.log).toHaveBeenCalledOnce();
+  });
+
+  it('uses the root path when no request URL is available', () => {
+    const logger = { log: vi.fn() };
+    const req = Object.assign(new EventEmitter(), {
+      method: 'GET',
+      get: vi.fn()
+    });
+    const res = Object.assign(new EventEmitter(), {
+      locals: {},
+      setHeader: vi.fn(),
+      writableFinished: false
+    });
+
+    createRequestLifecycleMiddleware({
+      environment: { INFERENCE_DEBUG: 'true' },
+      logger
+    })(req, res, vi.fn());
+
+    expect(logger.log.mock.calls[0][0]).toContain('path="/"');
   });
 });
