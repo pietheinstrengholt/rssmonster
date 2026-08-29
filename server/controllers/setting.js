@@ -27,7 +27,7 @@ export const recalculateIslands = async (req, res, _next) => {
     });
   } catch (err) {
     console.error('Error in recalculateIslands:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Unable to recalculate interest islands' });
   }
 };
 

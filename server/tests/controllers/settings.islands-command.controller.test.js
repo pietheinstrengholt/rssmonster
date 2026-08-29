@@ -61,13 +61,20 @@ describe('settings island recalculation', () => {
   });
 
   it('reports command failures', async () => {
-    mocked.runIslandCalibration.mockRejectedValue(new Error('calibration failed'));
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const internalError = new Error('SQLITE_ERROR: no such column: secret_schema');
+    mocked.runIslandCalibration.mockRejectedValue(internalError);
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const res = responseRecorder();
 
     await recalculateIslands({ userData: { userId: 42 } }, res);
 
     expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: 'calibration failed' });
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'Unable to recalculate interest islands'
+    });
+    expect(res.json).not.toHaveBeenCalledWith(
+      expect.objectContaining({ error: expect.stringContaining('secret_schema') })
+    );
+    expect(consoleError).toHaveBeenCalledWith('Error in recalculateIslands:', internalError);
   });
 });
