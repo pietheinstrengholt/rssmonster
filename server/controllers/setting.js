@@ -292,7 +292,6 @@ export const getSettings = async (req, res, _next) => {
       }
     }
 
-    //return all query params
     return res.status(200).json({
       userId: userId,
       categoryId: categoryId,

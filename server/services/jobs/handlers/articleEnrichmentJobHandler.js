@@ -11,13 +11,10 @@ import {
   buildArticleAnalysisInputHash
 } from '../../crawl/enrichment/articleEnrichmentJobs.js';
 import { replaceArticleInferredTags } from '../../crawl/persistence/tags.js';
+import { getModelValue as rowValue } from '../../../utils/modelValue.js';
 
 const { Article, Feed, Tag, sequelize } = db;
 const RATE_LIMIT_DELAY_MS = 3000;
-
-const rowValue = (row, field) => typeof row?.getDataValue === 'function'
-  ? row.getDataValue(field)
-  : row?.[field];
 
 const positiveId = (value, field) => {
   const parsed = Number(value);

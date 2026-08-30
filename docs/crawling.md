@@ -82,7 +82,8 @@ The principal execution controls are:
 | `FEED_TIMEOUT_MS` | `60000` | Complete processing deadline for one feed. |
 | `FEED_LEASE_MS` | `120000` | Feed-claim lease; the effective value is at least twice the feed timeout. |
 | `CRAWL_TIMEOUT_MS` | `600000` | Overall deadline for one user's crawl invocation. |
-| `CRAWL_RUN_MAX_RUNNING_MINUTES` | `60` | Age at which an unfinished per-user crawl run is considered stale. |
+| `CRAWL_RUN_HEARTBEAT_INTERVAL_MS` | `30000` | Renewal interval for an active per-user crawl run. |
+| `CRAWL_RUN_STALE_AFTER_MS` | `120000` | Missing-heartbeat age at which a crawl run is considered stale; effectively at least three heartbeat intervals. |
 | `CRAWL_WORKER_INTERVAL_MS` | `60000` | Delay between complete worker iterations. |
 | `PROCESSING_JOB_POLL_INTERVAL_MS` | `1000` | Delay between optional-job polls with no available work. |
 | `PROCESSING_JOB_CONCURRENCY` | `1` | Optional jobs executed concurrently; a manually started SQLite AI worker always uses `1`. |
@@ -101,8 +102,9 @@ RSSMonster uses two database-backed layers of protection:
 
 - A per-user active crawl-run constraint prevents a scheduled and API-triggered
   crawl from running for the same user at the same time. A duplicate trigger
-  becomes a no-op. Runs older than `CRAWL_RUN_MAX_RUNNING_MINUTES` are marked
-  failed so work can recover after a crashed process.
+  becomes a no-op. Active runs renew an ownership heartbeat; runs missing that
+  heartbeat for `CRAWL_RUN_STALE_AFTER_MS` are marked failed so work can recover
+  after a crashed process.
 - Each due feed is claimed with an expiring lease. Active work renews that lease,
   and persistence checks ownership before writing. This protects against
   overlap across worker processes and hosts that share the same database.

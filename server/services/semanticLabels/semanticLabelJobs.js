@@ -2,6 +2,7 @@ import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { shouldSkipSemanticLabeling } from '../../config/intelligentFeatures.js';
 import { enqueueProcessingJob } from '../jobs/processingJobQueue.js';
+import { getModelValue as rowValue } from '../../utils/modelValue.js';
 
 export const SEMANTIC_LABEL_JOB_TYPE = 'semantic_label';
 export const SEMANTIC_LABEL_CONTRACT_VERSION = 1;
@@ -19,10 +20,6 @@ export const SEMANTIC_LABEL_TARGET_CONFIG = Object.freeze({
   topic: Object.freeze({ field: 'generatedName' }),
   island: Object.freeze({ field: 'generatedLabel' })
 });
-
-const rowValue = (row, field) => typeof row?.getDataValue === 'function'
-  ? row.getDataValue(field)
-  : row?.[field];
 
 const positiveId = (value, field) => {
   const parsed = Number(value);

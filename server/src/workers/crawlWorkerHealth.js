@@ -1,29 +1,22 @@
-import { readFile, rename, writeFile } from 'node:fs/promises';
+import {
+  createWorkerHealthReporter,
+  parsePositiveIntegerConfig,
+  readWorkerHealthState
+} from './workerHealth.js';
 
 export const DEFAULT_CRAWL_WORKER_HEALTH_FILE =
   '/tmp/rssmonster-crawl-worker-health.json';
 export const DEFAULT_CRAWL_WORKER_HEALTH_MAX_FAILURES = 3;
 export const DEFAULT_CRAWL_WORKER_HEALTH_MAX_STALE_MS = 15 * 60 * 1000;
 
-const positiveInteger = (value, fallback, name) => {
-  if (typeof value === 'undefined' || value === '') return fallback;
-
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error(`${name} must be a positive integer.`);
-  }
-
-  return parsed;
-};
-
 export const getCrawlWorkerHealthConfig = (environment = process.env) => ({
   filePath: environment.CRAWL_WORKER_HEALTH_FILE || DEFAULT_CRAWL_WORKER_HEALTH_FILE,
-  maxFailures: positiveInteger(
+  maxFailures: parsePositiveIntegerConfig(
     environment.CRAWL_WORKER_HEALTH_MAX_FAILURES,
     DEFAULT_CRAWL_WORKER_HEALTH_MAX_FAILURES,
     'CRAWL_WORKER_HEALTH_MAX_FAILURES'
   ),
-  maxStaleMs: positiveInteger(
+  maxStaleMs: parsePositiveIntegerConfig(
     environment.CRAWL_WORKER_HEALTH_MAX_STALE_MS,
     DEFAULT_CRAWL_WORKER_HEALTH_MAX_STALE_MS,
     'CRAWL_WORKER_HEALTH_MAX_STALE_MS'
@@ -33,17 +26,7 @@ export const getCrawlWorkerHealthConfig = (environment = process.env) => ({
 export const createCrawlWorkerHealthReporter = ({
   filePath = getCrawlWorkerHealthConfig().filePath,
   now = () => new Date()
-} = {}) => async state => {
-  const persistedState = {
-    ...state,
-    updatedAt: now().toISOString()
-  };
-  const temporaryPath = `${filePath}.${process.pid}.tmp`;
-
-  await writeFile(temporaryPath, `${JSON.stringify(persistedState)}\n`, 'utf8');
-  await rename(temporaryPath, filePath);
-  return persistedState;
-};
+} = {}) => createWorkerHealthReporter({ filePath, now });
 
 export const evaluateCrawlWorkerHealth = (state, {
   maxFailures = DEFAULT_CRAWL_WORKER_HEALTH_MAX_FAILURES,
@@ -105,9 +88,8 @@ export const readCrawlWorkerHealthState = async ({
   now = Date.now()
 } = {}) => {
   const config = getCrawlWorkerHealthConfig(environment);
-  const state = JSON.parse(await readFile(config.filePath, 'utf8'));
-  return {
-    ...evaluateCrawlWorkerHealth(state, { ...config, now }),
-    state
-  };
+  return readWorkerHealthState({
+    filePath: config.filePath,
+    evaluate: state => evaluateCrawlWorkerHealth(state, { ...config, now })
+  });
 };

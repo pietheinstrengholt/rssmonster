@@ -9,6 +9,7 @@ import {
   SEMANTIC_LABEL_CONTRACT_VERSION,
   SEMANTIC_LABEL_TARGET_CONFIG
 } from '../../semanticLabels/semanticLabelJobs.js';
+import { getModelValue as rowValue } from '../../../utils/modelValue.js';
 
 const defaultModels = {
   Article: db.Article,
@@ -17,10 +18,6 @@ const defaultModels = {
   island: db.Island,
   topic: db.Topic
 };
-
-const rowValue = (row, field) => typeof row?.getDataValue === 'function'
-  ? row.getDataValue(field)
-  : row?.[field];
 
 const positiveId = (value, field) => {
   const parsed = Number(value);

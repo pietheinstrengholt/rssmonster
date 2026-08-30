@@ -863,20 +863,26 @@ export async function repairRecentEventsForUser(userId, options = {}) {
 
   let deletedCount = 0;
 
-  // Handles the case where owned previous event id size is available.
   if (ownedPreviousEventIds.size) {
-    // Processes each owned previous event id entry in turn.
-    for (const eventId of ownedPreviousEventIds) {
-      // Derives the remaining through count while performing repair recent events for user.
-      const remaining = await Article.count({
-        where: { eventId, userId, ...canonicalArticleWhere() }
-      });
+    const retainedEventRows = await Article.findAll({
+      where: {
+        eventId: { [Op.in]: ownedPreviousEventIdList },
+        userId,
+        ...canonicalArticleWhere()
+      },
+      attributes: ['eventId'],
+      group: ['eventId'],
+      raw: true
+    });
+    const retainedEventIds = new Set(
+      retainedEventRows.map(row => Number(row.eventId)).filter(Number.isFinite)
+    );
+    const emptyEventIds = ownedPreviousEventIdList.filter(id => !retainedEventIds.has(id));
 
-      // Handles the case where remaining is value.
-      if (remaining === 0) {
-        await Event.destroy({ where: { id: eventId, userId } });
-        deletedCount++;
-      }
+    if (emptyEventIds.length) {
+      deletedCount = await Event.destroy({
+        where: { id: { [Op.in]: emptyEventIds }, userId }
+      });
     }
   }
 

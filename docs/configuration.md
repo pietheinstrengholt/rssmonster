@@ -148,7 +148,9 @@ responses, and timeouts.
 | `FEED_LEASE_MS` | `120000` | ms | Duration of a feed claim. The effective value is never less than twice `FEED_TIMEOUT_MS`. |
 | `CRAWL_TIMEOUT_MS` | `600000` | ms | Overall deadline for a crawl invocation. |
 | `CRAWL_DUPLICATE_CACHE_DAYS` | `30` | days | Article history loaded into the deterministic duplicate cache. Higher values use more memory and database work. |
-| `CRAWL_RUN_MAX_RUNNING_MINUTES` | `60` | minutes | Age after which an unfinished crawl run is marked stale. |
+| `CRAWL_RUN_HEARTBEAT_INTERVAL_MS` | `30000` | ms | Renewal interval for an active crawl run's ownership heartbeat. |
+| `CRAWL_RUN_STALE_AFTER_MS` | `120000` | ms | Age after which a missing crawl-run heartbeat is treated as stale. The effective value is at least three heartbeat intervals. |
+| `CRAWL_USER_BATCH_SIZE` | `5` | users | Users crawled concurrently on MySQL. SQLite always uses `1`. |
 | `CRAWL_PARALLELPROCESSFLAG` | `0` | boolean integer | Set to `1` to allow parallel feed processing on MySQL. SQLite always forces `0`. |
 | `CRAWL_WORKER_INTERVAL_MS` | `60000` | ms | Delay between dedicated worker polls. Must be a positive integer. |
 | `PROCESSING_JOB_POLL_INTERVAL_MS` | `1000` | ms | Delay when no optional processing work is available. |
@@ -272,7 +274,6 @@ reverse proxy so client addresses are interpreted correctly.
 | `SKIP_ARTICLE_CLASSIFICATION_ANALYSIS` | `false` | When `true`, uses default article scores and feed-category tags without calling inference classification. |
 | `SKIP_ARTICLE_EMBEDDINGS` | `false` | When `true`, disables article vector generation and defaults new feeds to embeddings disabled. |
 | `SKIP_SEMANTIC_LABELING` | `false` | When `true`, skips generated event, topic, and island display labels while preserving deterministic names and labels. |
-| `INTERNAL_MCP_URL` | `http://127.0.0.1:$PORT/mcp` | Server-controlled MCP endpoint used by the natural-language assistant. Configure this when MCP is reached through another container or an HTTPS listener. |
 
 When `INFERENCE_AI_ENABLED` is not explicitly `true`, it overrides the
 feature-specific settings: classification and embeddings remain local or disabled,

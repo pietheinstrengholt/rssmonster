@@ -11,10 +11,7 @@ import {
   markArticleEnrichmentFailed
 } from './handlers/articleEnrichmentJobHandler.js';
 import { handleSemanticLabelJob } from './handlers/semanticLabelJobHandler.js';
-
-const rowValue = (row, field) => typeof row?.getDataValue === 'function'
-  ? row.getDataValue(field)
-  : row?.[field];
+import { getModelValue as rowValue } from '../../utils/modelValue.js';
 
 const safeJobTarget = job => {
   const type = rowValue(job, 'type');

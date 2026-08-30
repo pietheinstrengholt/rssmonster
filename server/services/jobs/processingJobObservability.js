@@ -1,13 +1,10 @@
 import db from '../../models/index.js';
 import { col, fn, Op } from 'sequelize';
+import { getModelValue as rowValue } from '../../utils/modelValue.js';
 
 const { ProcessingFailure, ProcessingJob } = db;
 const DEFAULT_LATENCY_SAMPLE_LIMIT = 500;
 const MAX_LATENCY_SAMPLE_LIMIT = 1000;
-
-const rowValue = (row, field) => typeof row?.getDataValue === 'function'
-  ? row.getDataValue(field)
-  : row?.[field];
 
 const boundedLimit = value => {
   const parsed = Number.parseInt(value, 10);

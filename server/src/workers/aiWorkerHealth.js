@@ -1,26 +1,23 @@
-import { readFile, rename, writeFile } from 'node:fs/promises';
 import {
   DEFAULT_CRAWL_WORKER_HEALTH_MAX_FAILURES,
   DEFAULT_CRAWL_WORKER_HEALTH_MAX_STALE_MS
 } from './crawlWorkerHealth.js';
+import {
+  createWorkerHealthReporter,
+  parsePositiveIntegerConfig,
+  readWorkerHealthState
+} from './workerHealth.js';
 
 export const DEFAULT_AI_WORKER_HEALTH_FILE = '/tmp/rssmonster-ai-worker-health.json';
 
-const positiveInteger = (value, fallback, name) => {
-  if (value === undefined || value === '') return fallback;
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed <= 0) throw new Error(`${name} must be a positive integer.`);
-  return parsed;
-};
-
 export const getAiWorkerHealthConfig = (environment = process.env) => ({
   filePath: environment.AI_WORKER_HEALTH_FILE || DEFAULT_AI_WORKER_HEALTH_FILE,
-  maxFailures: positiveInteger(
+  maxFailures: parsePositiveIntegerConfig(
     environment.AI_WORKER_HEALTH_MAX_FAILURES,
     DEFAULT_CRAWL_WORKER_HEALTH_MAX_FAILURES,
     'AI_WORKER_HEALTH_MAX_FAILURES'
   ),
-  maxStaleMs: positiveInteger(
+  maxStaleMs: parsePositiveIntegerConfig(
     environment.AI_WORKER_HEALTH_MAX_STALE_MS,
     DEFAULT_CRAWL_WORKER_HEALTH_MAX_STALE_MS,
     'AI_WORKER_HEALTH_MAX_STALE_MS'
@@ -30,13 +27,7 @@ export const getAiWorkerHealthConfig = (environment = process.env) => ({
 export const createAiWorkerHealthReporter = ({
   filePath = getAiWorkerHealthConfig().filePath,
   now = () => new Date()
-} = {}) => async state => {
-  const persistedState = { ...state, updatedAt: now().toISOString() };
-  const temporaryPath = `${filePath}.${process.pid}.tmp`;
-  await writeFile(temporaryPath, `${JSON.stringify(persistedState)}\n`, 'utf8');
-  await rename(temporaryPath, filePath);
-  return persistedState;
-};
+} = {}) => createWorkerHealthReporter({ filePath, now });
 
 export const evaluateAiWorkerHealth = (state, {
   maxFailures = DEFAULT_CRAWL_WORKER_HEALTH_MAX_FAILURES,
@@ -64,8 +55,10 @@ export const readAiWorkerHealthState = async ({
   now = Date.now()
 } = {}) => {
   const config = getAiWorkerHealthConfig(environment);
-  const state = JSON.parse(await readFile(config.filePath, 'utf8'));
-  return { ...evaluateAiWorkerHealth(state, { ...config, now }), state };
+  return readWorkerHealthState({
+    filePath: config.filePath,
+    evaluate: state => evaluateAiWorkerHealth(state, { ...config, now })
+  });
 };
 
 export const checkAiWorkerHealth = async options => {

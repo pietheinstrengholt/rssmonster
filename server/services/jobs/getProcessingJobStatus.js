@@ -5,6 +5,7 @@ import {
   DEFAULT_CRAWL_WORKER_HEALTH_MAX_STALE_MS
 } from '../../src/workers/crawlWorkerHealth.js';
 import { readAiWorkerHealthState } from '../../src/workers/aiWorkerHealth.js';
+import { getModelValue as rowValue } from '../../utils/modelValue.js';
 
 const { ProcessingJob } = db;
 export const PROCESSING_JOB_STATUS_RECENT_FAILURE_LIMIT = 10;
@@ -15,10 +16,6 @@ export const PROCESSING_JOB_STATUS_STALLED_AGE_MS =
   DEFAULT_CRAWL_WORKER_HEALTH_MAX_STALE_MS;
 export const PROCESSING_JOB_STATUS_DEGRADED_RETRY_COUNT = 3;
 const MAX_PUBLIC_ERROR_MESSAGE_LENGTH = 500;
-
-const rowValue = (row, field) => typeof row?.getDataValue === 'function'
-  ? row.getDataValue(field)
-  : row?.[field];
 
 const countValue = row => Number(rowValue(row, 'count') || 0);
 

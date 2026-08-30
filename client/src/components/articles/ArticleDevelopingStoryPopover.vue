@@ -23,6 +23,7 @@
 </template>
 
 <script>
+import { fetchDevelopingStoryArticles } from '../../api/articles.js';
 import ArticleRelatedStoryPopover from './ArticleRelatedStoryPopover.vue';
 
 export default {
@@ -32,8 +33,7 @@ export default {
     iconClass: { type: [String, Array, Object], default: 'developing-story-icon' }
   },
   methods: {
-    async fetchArticles(articleId) {
-      const { fetchDevelopingStoryArticles } = await import('../../api/articles.js');
+    fetchArticles(articleId) {
       return fetchDevelopingStoryArticles(articleId);
     }
   }

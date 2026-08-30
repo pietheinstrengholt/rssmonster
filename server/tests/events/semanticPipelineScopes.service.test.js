@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Op } from 'sequelize';
 
 const mocked = vi.hoisted(() => ({
   Article: {
-    count: vi.fn(),
     destroy: vi.fn(),
     findAll: vi.fn(),
     update: vi.fn()
@@ -118,7 +118,6 @@ import {
 describe('semantic pipeline scopes orchestration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocked.Article.count.mockReset();
     mocked.Article.findAll.mockReset();
     mocked.Article.update.mockReset();
     mocked.Event.destroy.mockReset();
@@ -319,11 +318,11 @@ describe('semantic pipeline scopes orchestration', () => {
       .mockResolvedValueOnce([1]);
     mocked.Article.findAll
       .mockResolvedValueOnce([article])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ eventId: 60 }]);
     mocked.Event.findAll.mockResolvedValueOnce([{ id: 50 }]);
     mocked.ArticleTopic.findAll.mockResolvedValue([{ topicId: 70 }]);
     mocked.EventTopic.findAll.mockResolvedValue([{ topicId: 80 }]);
-    mocked.Article.count.mockResolvedValue(0);
     mocked.Event.destroy.mockResolvedValue(1);
     mocked.assignArticleToEvent.mockImplementation(async (assignedArticle, cache, vectors, topics, context) => {
       context.newEventIds ??= new Set();
@@ -335,7 +334,14 @@ describe('semantic pipeline scopes orchestration', () => {
     const result = await repairRecentEventsForUser(12, { skipTopicAssignment: true });
 
     expect(mocked.EventTopic.destroy).toHaveBeenCalledOnce();
-    expect(mocked.Event.destroy).toHaveBeenCalledWith({ where: { id: 50, userId: 12 } });
+    expect(mocked.Article.findAll).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      attributes: ['eventId'],
+      group: ['eventId'],
+      raw: true
+    }));
+    expect(mocked.Event.destroy).toHaveBeenCalledWith({
+      where: { id: { [Op.in]: [50] }, userId: 12 }
+    });
     expect(mocked.reconcileTouchedEvents).toHaveBeenCalledWith(12, [60]);
     expect(mocked.Article.findAll).toHaveBeenLastCalledWith(expect.objectContaining({
       attributes: ['eventId'],

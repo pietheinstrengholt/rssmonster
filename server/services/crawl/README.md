@@ -752,10 +752,10 @@ entry point before loading feeds, actions, or article caches. A database-enforce
 constraint allows only one `running` row per user across all workers. A duplicate acquisition is a
 normal `crawl_already_running` outcome; crawls for different users may still run concurrently.
 
-A running row older than `CRAWL_RUN_MAX_RUNNING_MINUTES` (60 minutes by default) is conditionally
-marked `failed` before replacement. The same unique constraint arbitrates concurrent recovery
-attempts, so only one replacement can become active. The threshold must remain longer than a valid
-user crawl because this first recovery design intentionally has no heartbeat or renewable lease.
+An active run renews its ownership heartbeat every `CRAWL_RUN_HEARTBEAT_INTERVAL_MS` (30 seconds by
+default). A run whose heartbeat is older than `CRAWL_RUN_STALE_AFTER_MS` (effectively at least three
+heartbeat intervals) is conditionally marked `failed` before replacement. The same unique constraint
+arbitrates concurrent recovery attempts, so only one replacement can become active.
 
 Serializing normal ingestion per user keeps the crawl's loaded action set, duplicate caches,
 publisher-update classification, and filtering decisions from being interleaved by another crawl.

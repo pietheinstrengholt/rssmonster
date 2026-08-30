@@ -5,13 +5,11 @@ import { franc } from 'franc-min';
 // Returns the franc language code for cleaned text when input is present.
 export const get = (text) => {
   if (text) {
-    //remove html
-    var cleanText = text.replace(/<\/?[^>]+(>|$)/g, "");
-    //return language
+    const cleanText = text.replace(/<\/?[^>]+(>|$)/g, "");
     return franc(cleanText);
   }
 };
 
 export default {
   get
-}
+};
