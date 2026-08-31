@@ -148,6 +148,23 @@ const resolveContent = (entry, feedFormat) => {
   return { value: null, kind: null };
 };
 
+// This function returns the first Media RSS group description text. Video feeds such
+// as YouTube carry their synopsis only in media:group/media:description and provide no
+// summary or content element, so without this they normalize to an empty body.
+const resolveMediaGroupDescription = entry => {
+  const groups = [
+    ...(entry?.media?.group ? [entry.media.group] : []),
+    ...(Array.isArray(entry?.media?.groups) ? entry.media.groups : [])
+  ];
+  for (const group of groups) {
+    const value = group?.description?.value ?? group?.description;
+    if (hasTextValue(value)) {
+      return value;
+    }
+  }
+  return null;
+};
+
 // This function selects summary content and its safest known interpretation.
 const resolveDescription = (entry, feedFormat) => {
   if (hasTextValue(entry.description)) {
@@ -169,6 +186,10 @@ const resolveDescription = (entry, feedFormat) => {
       value: entry.atom.summary,
       kind: normalizeContentKind(entry.atom.summaryKind)
     };
+  }
+  const mediaGroupDescription = resolveMediaGroupDescription(entry);
+  if (hasTextValue(mediaGroupDescription)) {
+    return { value: mediaGroupDescription, kind: 'text' };
   }
   return { value: null, kind: null };
 };
