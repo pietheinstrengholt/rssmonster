@@ -136,10 +136,10 @@ still be recorded during release smoke testing.
 - Historical Google preference, recommendation, friend, broadcast, note, and
   sharing endpoints are not implemented because no intended RSSMonster client
   flow currently requires them.
-- OPML import performs the same URL validation, guarded outbound discovery,
-  canonical URL handling, metadata initialization, and duplicate handling as
-  regular feed creation. Uploads are held in memory and are limited to 1 MiB;
-  no user-controlled filename is written.
+- OPML import validates and normalizes declared URLs, rejects known duplicates,
+  and stores subscriptions without requiring outbound discovery or successful
+  parsing. The guarded crawler validates content afterward. Uploads are held in
+  memory and are limited to 1 MiB; no user-controlled filename is written.
 - `FEED_MAX_COUNT` controls the maximum claimed crawl batch size. Deployments
   using the previous `MAX_FEEDCOUNT` name remain temporarily supported when the
   new name is absent. This is not a subscription-count cap, so the API does not

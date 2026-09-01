@@ -302,8 +302,13 @@ Click **"Add Feed"** and paste an RSS feed URL. RSSMonster will:
 
 If you're migrating from another RSS reader:
 1. Export your feeds as OPML from your old reader
-2. Go to **Settings → Import OPML**
+2. Go to **Settings → Feeds** and choose **Import OPML**
 3. Upload the file
+4. Review the categories and subscriptions found in the file
+5. Approve the preview to create the subscriptions, or discard it without making changes
+
+See [OPML Import and Export](opml.md) for preview statuses, duplicate handling,
+category editing, and export details.
 
 ### 4. Set Up Feed Crawling
 

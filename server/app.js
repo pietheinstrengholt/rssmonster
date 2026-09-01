@@ -54,6 +54,7 @@ import userRoutes from "./routes/user.js";
 import mcpRoutes from "./routes/mcp.js";
 import agentRoutes from "./routes/agent.js";
 import opmlRoutes from "./routes/opml.js";
+import { OPML_PREVIEW_JSON_MAX_BYTES } from './services/feeds/opmlImport.js';
 import actionRoutes from "./routes/action.js";
 import rssRoutes from "./routes/rss.js";
 import tagRoutes from "./routes/tag.js";
@@ -100,6 +101,7 @@ app.use('/mcp', mcpRateLimiter);
 
 // Body parsing
 app.use(express.urlencoded({ extended: true }));
+app.use('/api/opml/import', express.json({ limit: OPML_PREVIEW_JSON_MAX_BYTES }));
 app.use(express.json());
 
 // Explicit CORS headers

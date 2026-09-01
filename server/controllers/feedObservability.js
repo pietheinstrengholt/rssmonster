@@ -167,7 +167,8 @@ export const getFeedObservability = async (req, res, _next) => {
         health: deriveFeedOverviewHealth(
           feedData,
           reliabilityPct,
-          summary.totalCrawls
+          summary.totalCrawls,
+          articleCount
         ),
         lastCrawlAt: feedData.lastCrawlAt ?? null,
         lastCrawlStatus: feedData.lastCrawlStatus ?? null,

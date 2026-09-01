@@ -189,7 +189,7 @@ describe('feed operational controllers', () => {
           articlesPerDay: 0,
           eventArticleCount: 0,
           eventCoveragePct: 0,
-          health: 'HEALTHY',
+          health: 'NEW',
           reliabilityPct: null,
           lastCrawlAt: null,
           lastCrawlStatus: null,

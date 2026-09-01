@@ -27,7 +27,7 @@ RSSMonster exposes REST-style endpoints plus compatibility layers for common RSS
 - Tags: `GET /api/tag`, `POST /api/tag`, `DELETE /api/tag/:articleId/:tag`
 - Smart Folders: `GET /api/smartfolders`, `POST /api/smartfolders` (replace list), `GET /api/smartfolders/insights`
 - Crawl triggers: `POST /api/crawl` (manual crawl), `POST /api/cleanup`
-- OPML: `POST /api/opml/import`, `GET /api/opml/export`
+- OPML: `POST /api/opml/preview`, `GET /api/opml/preview/:previewId/status`, `POST /api/opml/import`, `GET /api/opml/export`
 
 Note: Endpoints may require specific payload shapes; see controller code for details.
 

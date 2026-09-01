@@ -7,7 +7,9 @@ import {
 } from '../src/api/feeds';
 import {
   exportOpml,
-  importOpml
+  importOpml,
+  pollOpmlPreview,
+  previewOpml
 } from '../src/api/opml';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
@@ -18,7 +20,9 @@ vi.mock('../src/api/feeds', () => ({
 
 vi.mock('../src/api/opml', () => ({
   exportOpml: vi.fn(),
-  importOpml: vi.fn()
+  importOpml: vi.fn(),
+  pollOpmlPreview: vi.fn(),
+  previewOpml: vi.fn()
 }));
 
 // Creates a feed-overview context with live computed properties and store actions.
@@ -159,6 +163,10 @@ describe('SettingsFeedsOverview actions', () => {
     context.healthFilter = 'RECOVERED';
     context.searchQuery = '';
     expect(context.filteredFeeds.map(feed => feed.id)).toEqual([4]);
+
+    context.feeds.push({ id: 5, feedName: 'Imported Source', health: 'NEW' });
+    context.healthFilter = 'NEW';
+    expect(context.filteredFeeds.map(feed => feed.id)).toEqual([5]);
   });
 
   // Verifies summary cards use backend health while excluding disabled feeds from attention.
@@ -167,11 +175,12 @@ describe('SettingsFeedsOverview actions', () => {
     context.feeds = [
       ...createFeeds(),
       { id: 4, health: 'RECOVERED', articleCount: 0 },
-      { id: 5, health: 'DEGRADED', articleCount: 0 }
+      { id: 5, health: 'DEGRADED', articleCount: 0 },
+      { id: 6, health: 'NEW', articleCount: 0 }
     ];
 
     expect(context.feedStats.map(stat => [stat.label, stat.value])).toEqual([
-      ['Total Feeds', 5],
+      ['Total Feeds', 6],
       ['Healthy Feeds', 1],
       ['Need Attention', 3],
       ['Total Articles', '150']
@@ -187,12 +196,14 @@ describe('SettingsFeedsOverview actions', () => {
     expect(context.feedStatus({ status: 'ACTIVE' })).toBe('active');
     expect(context.feedStatus({})).toBe('disabled');
     expect(context.feedHealthLabel(active)).toBe('Healthy');
+    expect(context.feedHealthLabel({ health: 'NEW' })).toBe('New');
     expect(context.feedHealthLabel({ health: 'RECOVERED' })).toBe('Recovered');
     expect(context.feedHealthLabel({ health: 'DEGRADED' })).toBe('Degraded');
     expect(context.feedHealthLabel(error)).toBe('Failing');
     expect(context.feedHealthLabel(disabled)).toBe('Disabled');
     expect(context.feedHealthLabel({})).toBe('Unknown');
     expect(context.feedRowClass(error)).toBe('feeds-table-row--failing');
+    expect(context.feedRowClass({ health: 'NEW' })).toBe('feeds-table-row--new');
     expect(context.feedRowClass({ health: 'RECOVERED' })).toBe('feeds-table-row--recovered');
     expect(context.feedRowClass({ health: 'DEGRADED' })).toBe('feeds-table-row--degraded');
     expect(context.feedRowClass(disabled)).toBe('feeds-table-row--disabled');
@@ -301,8 +312,8 @@ describe('SettingsFeedsOverview actions', () => {
       .toBe('Could not download the OPML export. Please try again.');
   });
 
-  // Verifies a selected OPML file is imported, refreshed, emitted, and cleared.
-  it('imports an OPML file and refreshes the overview', async () => {
+  // Verifies a selected OPML file is previewed without changing subscriptions.
+  it('previews a selected OPML file and clears the input', async () => {
     const context = createContext({
       fetchFeeds: vi.fn().mockResolvedValue()
     });
@@ -310,36 +321,149 @@ describe('SettingsFeedsOverview actions', () => {
       type: 'text/xml'
     });
     const target = { files: [file], value: 'C:\\fakepath\\feeds.opml' };
-    importOpml.mockResolvedValue({
-      data: { categoriesCreated: 2, feedsCreated: 5 }
+    const preview = {
+      subscriptionCount: 5,
+      categories: [{ name: 'News', subscriptionCount: 5 }],
+      subscriptions: [{ inputUrl: 'https://example.test/feed' }]
+    };
+    previewOpml.mockResolvedValue({
+      data: {
+        previewId: 'preview-job',
+        status: 'running',
+        checkedFeeds: 0,
+        totalFeeds: 5
+      }
+    });
+    pollOpmlPreview.mockImplementation(async (_status, { onProgress }) => {
+      onProgress({ checkedFeeds: 3, totalFeeds: 5 });
+      return preview;
     });
 
-    await SettingsFeedsOverview.methods.handleFileSelect.call(context, { target });
+    const previewRequest = SettingsFeedsOverview.methods.handleFileSelect.call(
+      context,
+      { target }
+    );
 
-    expect(importOpml).toHaveBeenCalledWith(file);
-    expect(context.opmlMessage)
-      .toBe('Import completed: 2 categories and 5 feeds added.');
-    expect(context.fetchFeeds).toHaveBeenCalledOnce();
-    expect(context.$emit).toHaveBeenCalledWith('saved');
+    expect(context.opmlPreviewOpen).toBe(true);
+    expect(context.opmlPreviewLoading).toBe(true);
+    expect(context.opmlPreview).toBeNull();
+
+    await previewRequest;
+
+    expect(previewOpml).toHaveBeenCalledWith(file);
+    expect(pollOpmlPreview).toHaveBeenCalledWith(
+      expect.objectContaining({ previewId: 'preview-job' }),
+      expect.objectContaining({ onProgress: expect.any(Function) })
+    );
+    expect(context.opmlPreview).toBe(preview);
+    expect(context.opmlPreviewLoading).toBe(false);
+    expect(context.opmlPreviewCheckedFeeds).toBe(3);
+    expect(context.opmlPreviewTotalFeeds).toBe(5);
+    expect(importOpml).not.toHaveBeenCalled();
+    expect(context.fetchFeeds).not.toHaveBeenCalled();
+    expect(context.$emit).not.toHaveBeenCalled();
     expect(target.value).toBe('');
   });
 
-  // Verifies missing files are ignored and failed imports clear the file input.
-  it('handles missing and failed OPML imports', async () => {
+  // Verifies missing files are ignored and failed previews remain in the dialog.
+  it('handles missing and failed OPML previews', async () => {
     const context = createContext();
     const emptyTarget = { files: [], value: '' };
     await context.handleFileSelect({ target: emptyTarget });
-    expect(importOpml).not.toHaveBeenCalled();
+    expect(previewOpml).not.toHaveBeenCalled();
 
     const file = new File(['invalid'], 'bad.opml');
     const target = { files: [file], value: 'selected' };
-    importOpml.mockRejectedValue(new Error('invalid'));
+    previewOpml.mockResolvedValue({
+      data: {
+        previewId: 'failed-job',
+        status: 'running',
+        checkedFeeds: 0,
+        totalFeeds: 1
+      }
+    });
+    pollOpmlPreview.mockRejectedValue(new Error('validation failed'));
     await context.handleFileSelect({ target });
 
-    expect(context.opmlError)
-      .toBe('Could not import this OPML file. Check the file and try again.');
+    expect(context.opmlPreviewOpen).toBe(true);
+    expect(context.opmlPreviewLoading).toBe(false);
+    expect(context.opmlPreview).toBeNull();
+    expect(context.opmlDialogError)
+      .toBe('Could not preview this OPML file. Check the file and try again.');
     expect(target.value).toBe('');
     expect(context.$emit).not.toHaveBeenCalled();
+
+    context.discardOpmlPreview();
+    expect(context.opmlPreviewOpen).toBe(false);
+    expect(context.opmlDialogError).toBeNull();
+  });
+
+  it('imports an approved preview and refreshes the overview', async () => {
+    const preview = {
+      subscriptionCount: 5,
+      categories: [],
+      subscriptions: [{ inputUrl: 'https://example.test/feed' }]
+    };
+    const context = createContext({
+      opmlPreviewOpen: true,
+      opmlPreview: preview,
+      feeds: createFeeds()
+    });
+    const importedFeed = {
+      id: 4,
+      categoryId: 30,
+      feedName: 'Imported Feed',
+      url: 'https://imported.example/feed',
+      status: 'active',
+      health: 'HEALTHY'
+    };
+    importOpml.mockResolvedValue({
+      data: { categoriesCreated: 1, feedsCreated: 1, feedsFailed: 1 }
+    });
+    fetchFeeds.mockResolvedValueOnce({
+      data: { feeds: [...createFeeds(), importedFeed] }
+    });
+
+    const selectedPreview = {
+      ...preview,
+      subscriptionCount: 1,
+      subscriptions: preview.subscriptions.slice(0, 1)
+    };
+    await context.confirmOpmlImport(selectedPreview);
+
+    expect(importOpml).toHaveBeenCalledWith(selectedPreview);
+    expect(context.opmlMessage)
+      .toBe('Import completed: 1 category and 1 feed added. 1 feed could not be added.');
+    expect(context.opmlPreview).toBeNull();
+    expect(context.opmlPreviewOpen).toBe(false);
+    expect(fetchFeeds).toHaveBeenCalledWith({ forceRefresh: true });
+    expect(context.feeds).toHaveLength(4);
+    expect(context.feeds.at(-1)).toEqual(importedFeed);
+    expect(context.feedStats.find(stat => stat.label === 'Total Feeds')?.value)
+      .toBe(4);
+    expect(context.$emit).toHaveBeenCalledWith('saved');
+    expect(context.opmlImporting).toBe(false);
+  });
+
+  it('keeps a failed import preview open and supports discarding it', async () => {
+    const preview = {
+      subscriptionCount: 1,
+      categories: [],
+      subscriptions: [{ inputUrl: 'https://example.test/feed' }]
+    };
+    const context = createContext({ opmlPreviewOpen: true, opmlPreview: preview });
+    importOpml.mockRejectedValue(new Error('failed'));
+
+    await context.confirmOpmlImport();
+
+    expect(context.opmlPreview).toBe(preview);
+    expect(context.opmlDialogError)
+      .toBe('Could not import these subscriptions. Please try again.');
+
+    context.discardOpmlPreview();
+    expect(context.opmlPreviewOpen).toBe(false);
+    expect(context.opmlPreview).toBeNull();
+    expect(context.opmlDialogError).toBeNull();
   });
 
   // Verifies trust recalculation reports partial success, refreshes, and finalizes loading.

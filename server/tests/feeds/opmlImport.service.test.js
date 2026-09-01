@@ -19,7 +19,7 @@ vi.mock('../../services/feeds/feedManagement.js', () => ({
   isFeedManagementError: mocked.isFeedManagementError
 }));
 
-const { importOpmlSubscriptions } = await import(
+const { importOpmlPreview, importOpmlSubscriptions } = await import(
   '../../services/feeds/opmlImport.js'
 );
 
@@ -76,7 +76,8 @@ describe('OPML subscription processing', () => {
         description: 'Created description',
         categoryName: 'Technology',
         useDefaultCategory: false,
-        allowExisting: true
+        allowExisting: true,
+        skipDiscovery: true
       })
     );
     expect(mocked.addFeedSubscription).toHaveBeenNthCalledWith(
@@ -85,7 +86,8 @@ describe('OPML subscription processing', () => {
         inputUrl: 'https://example.com/unexpected.xml',
         title: undefined,
         categoryName: undefined,
-        useDefaultCategory: true
+        useDefaultCategory: true,
+        skipDiscovery: true
       })
     );
     expect(consoleError).toHaveBeenCalledWith(
@@ -93,5 +95,57 @@ describe('OPML subscription processing', () => {
       unexpectedError
     );
     consoleError.mockRestore();
+  });
+
+  it('imports only explicitly selected subscriptions', async () => {
+    mocked.countCategories
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(3);
+    mocked.addFeedSubscription.mockResolvedValue({ created: true });
+
+    await expect(importOpmlPreview({
+      userId: 42,
+      preview: {
+        subscriptions: [{
+          inputUrl: 'https://example.com/existing.xml',
+          alreadySubscribed: true,
+          selectedForImport: false
+        }, {
+          inputUrl: 'https://example.com/new.xml',
+          categoryName: 'News',
+          description: '',
+          alreadySubscribed: false,
+          selectedForImport: true
+        }, {
+          inputUrl: 'https://example.com/not-selected.xml',
+          categoryName: 'News',
+          selectedForImport: false
+        }, {
+          inputUrl: 'https://example.com/new.xml#duplicate',
+          categoryName: 'News',
+          duplicateInFile: true,
+          selectedForImport: false
+        }]
+      }
+    })).resolves.toEqual({
+      categoriesCreated: 1,
+      feedsCreated: 1,
+      feedsExisting: 0,
+      feedsFailed: 0
+    });
+
+    expect(mocked.addFeedSubscription).toHaveBeenCalledOnce();
+    expect(mocked.addFeedSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({
+        inputUrl: 'https://example.com/new.xml',
+        description: '',
+        skipDiscovery: true
+      })
+    );
+    expect(mocked.addFeedSubscription).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        inputUrl: 'https://example.com/not-selected.xml'
+      })
+    );
   });
 });

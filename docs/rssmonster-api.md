@@ -182,7 +182,9 @@ for all expressions, including expressions shared with Smart Folders.
 | `GET` | `/api/crawl` | Trigger a crawl |
 | `POST` | `/api/cleanup` | Run authenticated cleanup processing |
 | `GET` | `/api/opml/export` | Export subscriptions as OPML |
-| `POST` | `/api/opml/import` | Import the multipart `opmlFile` upload |
+| `POST` | `/api/opml/preview` | Start validation for a multipart `opmlFile` upload and return a preview job ID |
+| `GET` | `/api/opml/preview/:previewId/status` | Poll user-scoped validation progress and return the completed JSON preview |
+| `POST` | `/api/opml/import` | Import only subscriptions marked `selectedForImport: true` in a JSON preview returned by the preview endpoint |
 
 Although `/api/crawl` changes server state, its current route uses `GET`.
 Maintenance routes can be expensive and should not be polled unnecessarily.

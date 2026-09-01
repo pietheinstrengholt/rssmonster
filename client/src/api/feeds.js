@@ -3,8 +3,9 @@ import api from './client';
 /**
  * Fetch all feeds
  */
-export const fetchFeeds = () =>
-  api.get('/feeds');
+export const fetchFeeds = ({ forceRefresh = false } = {}) => forceRefresh
+  ? api.get('/feeds', { params: { refreshedAt: Date.now() } })
+  : api.get('/feeds');
 
 /**
  * Fetch one feed's overview observability snapshot.

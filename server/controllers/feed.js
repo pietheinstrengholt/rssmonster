@@ -199,7 +199,8 @@ const getFeeds = async (req, res, _next) => {
         health: deriveFeedOverviewHealth(
           feedData,
           reliabilityPct,
-          crawlStats?.totalCount || 0
+          crawlStats?.totalCount || 0,
+          countsByFeedId[feed.id]?.articleCount ?? 0
         ),
         reliabilityPct,
         lastCrawlAt: feedData.lastCrawlAt ?? null,

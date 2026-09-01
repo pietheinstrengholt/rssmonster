@@ -564,6 +564,25 @@ export const discoverFeedSubscription = async ({ userId, inputUrl }) => {
   };
 };
 
+// Builds a subscription candidate from declared imported metadata without fetching it.
+const importedFeedSubscription = inputUrl => {
+  const query = normalizeFeedUrl(inputUrl);
+  return {
+    query,
+    feedUrl: query,
+    feedName: null,
+    feedDesc: null,
+    feedType: null,
+    favicon: null,
+    publisherSelf: null,
+    aliases: discoveryAliasCandidates({
+      inputUrl,
+      query,
+      feedUrl: query
+    })
+  };
+};
+
 // This function updates one feed and its category in a single transaction.
 export const updateFeedSubscription = async ({
   userId,
@@ -717,7 +736,8 @@ export const addFeedSubscription = async ({
   status = 'active',
   crawlSince = '7d',
   allowExisting = false,
-  updateExisting = false
+  updateExisting = false,
+  skipDiscovery = false
 }) => {
   // Handles the case where category id is not undefined and category id is not value.
   if (categoryId !== undefined && categoryId !== null) {
@@ -735,8 +755,10 @@ export const addFeedSubscription = async ({
     }
   }
 
-  // Derives the discovery through discover feed subscription while performing add feed subscription.
-  const discovery = await discoverFeedSubscription({ userId, inputUrl });
+  // OPML already supplies the subscription metadata and must remain importable while offline.
+  const discovery = skipDiscovery
+    ? importedFeedSubscription(inputUrl)
+    : await discoverFeedSubscription({ userId, inputUrl });
 
   try {
     // Serializes alias assignment and feed creation within the user's identity namespace.

@@ -61,6 +61,7 @@
         <div class="feeds-toolbar-filters">
           <select v-model="healthFilter" class="feeds-status-filter settings-control" aria-label="Filter feeds by health">
             <option value="all">All Health</option>
+            <option value="NEW">New</option>
             <option value="HEALTHY">Healthy</option>
             <option value="RECOVERED">Recovered</option>
             <option value="DEGRADED">Degraded</option>
@@ -160,6 +161,17 @@
       </template>
     </template>
   </div>
+  <OpmlImportPreview
+    v-if="opmlPreviewOpen"
+    :preview="opmlPreview"
+    :loading="opmlPreviewLoading"
+    :checked-feeds="opmlPreviewCheckedFeeds"
+    :total-feeds="opmlPreviewTotalFeeds"
+    :busy="opmlImporting"
+    :error="opmlDialogError"
+    @confirm="confirmOpmlImport"
+    @discard="discardOpmlPreview"
+  />
 </template>
 
 <style scoped>
@@ -366,7 +378,6 @@
 
 .feeds-table {
   width: 100%;
-  min-width: 1040px;
   border-collapse: collapse;
   font-size: 14px;
 }
@@ -451,6 +462,7 @@
 }
 
 .feeds-status-pill--healthy { background: var(--settings-success-bg); color: var(--settings-success-text); }
+.feeds-status-pill--new { background: var(--settings-info-bg); color: var(--settings-info-text); }
 .feeds-status-pill--recovered { background: var(--settings-orange-bg); border-color: var(--settings-orange-border); color: var(--text-primary); }
 .feeds-status-pill--degraded { background: var(--settings-orange-bg); color: var(--settings-orange-text); }
 .feeds-status-pill--failing { background: var(--settings-danger-bg); color: var(--settings-danger-text); }
@@ -484,6 +496,7 @@
 }
 
 .feeds-table-row--healthy td:first-child { box-shadow: inset 3px 0 var(--settings-success-text); }
+.feeds-table-row--new td:first-child { box-shadow: inset 3px 0 var(--settings-info-text); }
 .feeds-table-row--recovered td:first-child { box-shadow: inset 3px 0 var(--article-warning-text); }
 .feeds-table-row--degraded td:first-child { box-shadow: inset 3px 0 var(--color-warning); }
 .feeds-table-row--failing td:first-child { box-shadow: inset 3px 0 var(--color-danger); }
@@ -590,11 +603,18 @@ import { useOverviewStore } from '../../store/overview.js';
 import { useSelectionStore } from '../../store/selection.js';
 import { useUiStore } from '../../store/ui.js';
 import { fetchFeeds, recalculateFeedTrust } from '../../api/feeds';
-import { exportOpml, importOpml } from '../../api/opml';
+import {
+  exportOpml,
+  importOpml,
+  pollOpmlPreview,
+  previewOpml
+} from '../../api/opml';
 import { formatRelativeDate } from '../../utils/date.js';
 import SettingsFeedDetails from './SettingsFeedDetails.vue';
+import OpmlImportPreview from '../dialogs/feeds/OpmlImportPreview.vue';
 
 const FEED_HEALTH_LABELS = Object.freeze({
+    NEW: 'New',
     HEALTHY: 'Healthy',
     RECOVERED: 'Recovered',
     DEGRADED: 'Degraded',
@@ -603,7 +623,7 @@ const FEED_HEALTH_LABELS = Object.freeze({
 });
 
 export default {
-  components: { SettingsFeedDetails },
+  components: { OpmlImportPreview, SettingsFeedDetails },
   emits: ['close', 'saved'],
     data() {
         return {
@@ -612,6 +632,13 @@ export default {
             feedsError: null,
             opmlMessage: null,
             opmlError: null,
+            opmlPreviewOpen: false,
+            opmlPreviewLoading: false,
+            opmlPreviewCheckedFeeds: 0,
+            opmlPreviewTotalFeeds: null,
+            opmlPreview: null,
+            opmlImporting: false,
+            opmlDialogError: null,
             feedTrustLoading: false,
             feedTrustMessage: null,
             feedTrustError: null,
@@ -634,11 +661,11 @@ export default {
         }
     },
     methods: {
-        async fetchFeeds() {
+        async fetchFeeds({ forceRefresh = false } = {}) {
             try {
                 this.feedsLoading = true;
                 this.feedsError = null;
-                const resp = await fetchFeeds();
+                const resp = await fetchFeeds({ forceRefresh });
                 if (resp && resp.data && Array.isArray(resp.data.feeds)) {
                     const deletedIds = new Set(
                         this.overviewStore.deletedFeedIds.map(id => String(id))
@@ -766,21 +793,65 @@ export default {
             const file = event?.target?.files?.[0];
             if (!file) return;
 
+            this.opmlPreviewOpen = true;
+            this.opmlPreviewLoading = true;
+            this.opmlPreviewCheckedFeeds = 0;
+            this.opmlPreviewTotalFeeds = null;
+            this.opmlPreview = null;
+            this.opmlDialogError = null;
             try {
-                const response = await importOpml(file);
-                const categoriesCreated = Number(response?.data?.categoriesCreated || 0);
-                const feedsCreated = Number(response?.data?.feedsCreated || 0);
-                this.opmlMessage = `Import completed: ${categoriesCreated} categories and ${feedsCreated} feeds added.`;
-
-                await this.fetchFeeds();
-                this.$emit('saved');
+                const response = await previewOpml(file);
+                this.opmlPreview = await pollOpmlPreview(response.data, {
+                    onProgress: status => {
+                        this.opmlPreviewCheckedFeeds = Number(status?.checkedFeeds || 0);
+                        this.opmlPreviewTotalFeeds = Number(status?.totalFeeds || 0);
+                    }
+                });
             } catch (err) {
-                console.error('Error importing feeds from OPML:', err);
-                this.opmlError = 'Could not import this OPML file. Check the file and try again.';
+                console.error('Error previewing feeds from OPML:', err);
+                this.opmlDialogError = 'Could not preview this OPML file. Check the file and try again.';
             } finally {
+                this.opmlPreviewLoading = false;
                 if (event?.target) {
                     event.target.value = '';
                 }
+            }
+        },
+        discardOpmlPreview() {
+            if (this.opmlPreviewLoading || this.opmlImporting) return;
+            this.opmlPreviewOpen = false;
+            this.opmlPreviewLoading = false;
+            this.opmlPreviewCheckedFeeds = 0;
+            this.opmlPreviewTotalFeeds = null;
+            this.opmlPreview = null;
+            this.opmlDialogError = null;
+        },
+        async confirmOpmlImport(selectedPreview = this.opmlPreview) {
+            if (!this.opmlPreview || this.opmlPreviewLoading || this.opmlImporting) return;
+
+            this.opmlImporting = true;
+            this.opmlDialogError = null;
+            try {
+                const response = await importOpml(selectedPreview);
+                const categoriesCreated = Number(response?.data?.categoriesCreated || 0);
+                const feedsCreated = Number(response?.data?.feedsCreated || 0);
+                const feedsFailed = Number(response?.data?.feedsFailed || 0);
+                const categoryLabel = categoriesCreated === 1 ? 'category' : 'categories';
+                const feedLabel = feedsCreated === 1 ? 'feed' : 'feeds';
+                const failedFeedLabel = feedsFailed === 1 ? 'feed' : 'feeds';
+                this.opmlMessage = `Import completed: ${categoriesCreated} ${categoryLabel} and ${feedsCreated} ${feedLabel} added.` +
+                    (feedsFailed > 0
+                        ? ` ${feedsFailed} ${failedFeedLabel} could not be added.`
+                        : '');
+                this.opmlPreviewOpen = false;
+                this.opmlPreview = null;
+                await this.fetchFeeds({ forceRefresh: true });
+                this.$emit('saved');
+            } catch (err) {
+                console.error('Error importing feeds from OPML:', err);
+                this.opmlDialogError = 'Could not import these subscriptions. Please try again.';
+            } finally {
+                this.opmlImporting = false;
             }
         },
         async handleRecalculateFeedTrust() {

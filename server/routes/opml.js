@@ -25,7 +25,15 @@ const router = express.Router();
 // Export OPML
 router.get("/export", userMiddleware.isLoggedIn, opmlController.exportOpml);
 
-// Import OPML
-router.post("/import", userMiddleware.isLoggedIn, uploadOpml, opmlController.importOpml);
+// Preview an OPML upload without creating subscriptions
+router.post("/preview", userMiddleware.isLoggedIn, uploadOpml, opmlController.previewOpml);
+router.get(
+  "/preview/:previewId/status",
+  userMiddleware.isLoggedIn,
+  opmlController.getOpmlPreviewStatus
+);
+
+// Import a previously previewed JSON contract
+router.post("/import", userMiddleware.isLoggedIn, opmlController.importOpml);
 
 export default router;

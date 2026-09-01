@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   categoryFindAll: vi.fn(),
-  importOpmlSubscriptions: vi.fn()
+  getOpmlPreviewJob: vi.fn(),
+  importOpmlPreview: vi.fn(),
+  startOpmlPreviewJob: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -20,9 +22,14 @@ vi.mock('../../services/feeds/opmlImport.js', () => {
 
   return {
     OpmlImportError,
-    importOpmlSubscriptions: mocked.importOpmlSubscriptions
+    importOpmlPreview: mocked.importOpmlPreview
   };
 });
+
+vi.mock('../../services/feeds/opmlPreviewJobs.js', () => ({
+  getOpmlPreviewJob: mocked.getOpmlPreviewJob,
+  startOpmlPreviewJob: mocked.startOpmlPreviewJob
+}));
 
 const {
   OpmlImportError
@@ -30,7 +37,9 @@ const {
 const {
   exportOpml,
   generateOpml,
-  importOpml
+  getOpmlPreviewStatus,
+  importOpml,
+  previewOpml
 } = await import('../../controllers/opml.js');
 
 // Builds an authenticated OPML request with optional upload overrides.
@@ -56,7 +65,9 @@ const createResponse = () => {
 describe('OPML controller', () => {
   beforeEach(() => {
     mocked.categoryFindAll.mockReset();
-    mocked.importOpmlSubscriptions.mockReset();
+    mocked.getOpmlPreviewJob.mockReset();
+    mocked.importOpmlPreview.mockReset();
+    mocked.startOpmlPreviewJob.mockReset();
   });
 
   it('generates escaped OPML with categories and optional feed descriptions', async () => {
@@ -114,24 +125,31 @@ describe('OPML controller', () => {
     );
   });
 
-  it('rejects OPML export and import without a user ID', async () => {
+  it('rejects OPML export, preview, and import without a user ID', async () => {
     const exportRes = createResponse();
+    const previewRes = createResponse();
     const importRes = createResponse();
+    const statusRes = createResponse();
     const req = createRequest({ userData: {} });
 
     await exportOpml(req, exportRes);
+    await previewOpml(req, previewRes);
+    await getOpmlPreviewStatus(req, statusRes);
     await importOpml(req, importRes);
 
     expect(exportRes.status).toHaveBeenCalledWith(401);
+    expect(previewRes.status).toHaveBeenCalledWith(401);
     expect(importRes.status).toHaveBeenCalledWith(401);
+    expect(statusRes.status).toHaveBeenCalledWith(401);
     expect(mocked.categoryFindAll).not.toHaveBeenCalled();
-    expect(mocked.importOpmlSubscriptions).not.toHaveBeenCalled();
+    expect(mocked.startOpmlPreviewJob).not.toHaveBeenCalled();
+    expect(mocked.importOpmlPreview).not.toHaveBeenCalled();
   });
 
   it('requires an uploaded OPML buffer', async () => {
     const res = createResponse();
 
-    await importOpml(createRequest(), res);
+    await previewOpml(createRequest(), res);
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({
@@ -139,21 +157,77 @@ describe('OPML controller', () => {
     });
   });
 
-  it('returns the import summary produced by the subscription service', async () => {
+  it('starts OPML preview validation without importing it', async () => {
+    const job = {
+      previewId: 'preview-job',
+      status: 'running',
+      checkedFeeds: 0,
+      totalFeeds: 1
+    };
+    mocked.startOpmlPreviewJob.mockResolvedValue(job);
+    const buffer = Buffer.from('<opml />');
+    const res = createResponse();
+
+    await previewOpml(createRequest({ file: { buffer } }), res);
+
+    expect(mocked.startOpmlPreviewJob).toHaveBeenCalledWith({
+      userId: 42,
+      content: buffer
+    });
+    expect(mocked.importOpmlPreview).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(202);
+    expect(res.json).toHaveBeenCalledWith(job);
+  });
+
+  it('returns user-scoped OPML preview progress and completed results', async () => {
+    const job = {
+      previewId: 'preview-job',
+      status: 'running',
+      checkedFeeds: 37,
+      totalFeeds: 120
+    };
+    mocked.getOpmlPreviewJob.mockReturnValue(job);
+    const res = createResponse();
+
+    await getOpmlPreviewStatus(createRequest({
+      params: { previewId: 'preview-job' }
+    }), res);
+
+    expect(mocked.getOpmlPreviewJob).toHaveBeenCalledWith({
+      previewId: 'preview-job',
+      userId: 42
+    });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(job);
+  });
+
+  it('does not disclose missing or foreign OPML preview jobs', async () => {
+    mocked.getOpmlPreviewJob.mockReturnValue(null);
+    const res = createResponse();
+
+    await getOpmlPreviewStatus(createRequest({
+      params: { previewId: 'foreign-job' }
+    }), res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: 'OPML preview not found' });
+  });
+
+  it('returns the import summary produced from a preview', async () => {
     const result = {
       feedsCreated: 2,
       feedsExisting: 1,
       feedsFailed: 0
     };
-    mocked.importOpmlSubscriptions.mockResolvedValue(result);
-    const buffer = Buffer.from('<opml />');
+    mocked.importOpmlPreview.mockResolvedValue(result);
+    const preview = { subscriptions: [{ inputUrl: 'https://example.test/feed' }] };
     const res = createResponse();
 
-    await importOpml(createRequest({ file: { buffer } }), res);
+    await importOpml(createRequest({ body: preview }), res);
 
-    expect(mocked.importOpmlSubscriptions).toHaveBeenCalledWith({
+    expect(mocked.importOpmlPreview).toHaveBeenCalledWith({
       userId: 42,
-      content: buffer
+      preview
     });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
@@ -163,14 +237,14 @@ describe('OPML controller', () => {
   });
 
   it('maps invalid OPML to a client error', async () => {
-    mocked.importOpmlSubscriptions.mockRejectedValue(
+    mocked.importOpmlPreview.mockRejectedValue(
       new OpmlImportError('Invalid OPML format')
     );
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const res = createResponse();
 
     await importOpml(
-      createRequest({ file: { buffer: Buffer.from('invalid') } }),
+      createRequest({ body: { invalid: true } }),
       res
     );
 
@@ -181,14 +255,14 @@ describe('OPML controller', () => {
   });
 
   it('does not expose unexpected OPML service errors', async () => {
-    mocked.importOpmlSubscriptions.mockRejectedValue(
+    mocked.importOpmlPreview.mockRejectedValue(
       new Error('database details')
     );
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const res = createResponse();
 
     await importOpml(
-      createRequest({ file: { buffer: Buffer.from('valid') } }),
+      createRequest({ body: { subscriptions: [] } }),
       res
     );
 

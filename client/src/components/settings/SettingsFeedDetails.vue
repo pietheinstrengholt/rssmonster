@@ -212,6 +212,7 @@ import {
 import { formatRelativeDate } from '../../utils/date.js';
 
 const HEALTH_LABELS = Object.freeze({
+  NEW: 'New',
   HEALTHY: 'Healthy',
   RECOVERED: 'Recovered',
   DEGRADED: 'Degraded',

@@ -205,6 +205,7 @@ describe('SettingsFeedDetails', () => {
 
   // Verifies every backend health state is rendered as visible text without recalculation.
   it.each([
+    ['NEW', 'New'],
     ['RECOVERED', 'Recovered'],
     ['DEGRADED', 'Degraded'],
     ['FAILING', 'Failing'],

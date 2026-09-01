@@ -202,11 +202,12 @@ It preserves path and query case, meaningful query parameters, the distinction b
 HTTPS, and the presence of `www`. The normalized URL must never replace the observed fetch URL;
 `Feed.url` remains the active endpoint.
 
-Every subscription path, including the regular API, Google Reader compatibility endpoints, and
-OPML import, checks URL aliases before outbound discovery and before creating a feed. Observed
-input, discovered alternate, redirect, final, publisher-self, manual, and historical URLs are
-stored as persistent aliases. A normalized alias may identify only one feed per user, and the
-database constraint is the final guard against concurrent subscription races.
+Regular subscription paths check URL aliases before outbound discovery and before creating a feed.
+OPML import checks known aliases but stores the declared endpoint without outbound discovery; its
+first successful crawl can add verified redirect, final, and publisher-self evidence. Observed input,
+discovered alternate, redirect, final, publisher-self, manual, and historical URLs are stored as
+persistent aliases. A normalized alias may identify only one feed per user, and the database
+constraint is the final guard against concurrent subscription races.
 
 Redirect and discovery promotion resolves endpoint ownership before changing `Feed.url`. URL
 promotion and duplicate reconciliation run transactionally, lock user/feed rows in stable order,

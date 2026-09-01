@@ -1299,19 +1299,10 @@ describe('Google Reader API compatibility foundation', () => {
       )).toBe(true);
     });
 
-    it('[compatible] imports bounded OPML through guarded feed discovery', async () => {
+    it('[compatible] imports bounded OPML without requiring feed discovery', async () => {
       const fixture = await createFixture();
-      const canonicalUrl = 'https://canonical-opml.example.test/feed.xml';
-      mocked.discoverRssLink.mockResolvedValue({
-        url: canonicalUrl,
-        parsedFeed: {
-          title: 'Discovered OPML Feed',
-          description: 'Discovered through the shared flow',
-          format: 'rss',
-          faviconUrl: 'https://canonical-opml.example.test/favicon.ico',
-          entries: []
-        }
-      });
+      const feedUrl = 'https://opml.example.test/discover';
+      mocked.discoverRssLink.mockResolvedValue(undefined);
       const opml = `<?xml version="1.0"?>
         <opml version="2.0"><body>
           <outline text="Imported">
@@ -1328,7 +1319,7 @@ describe('Google Reader API compatibility foundation', () => {
         .attach('subscriptions_file', Buffer.from(opml), 'subscriptions.opml')
         .set('Authorization', greaderAuthHeaderFor(fixture.user));
       const feeds = await Feed.findAll({
-        where: { userId: fixture.user.id, url: canonicalUrl }
+        where: { userId: fixture.user.id, url: feedUrl }
       });
       const category = await Category.findOne({
         where: { userId: fixture.user.id, name: 'Imported' }
@@ -1340,9 +1331,8 @@ describe('Google Reader API compatibility foundation', () => {
       expect(feeds).toHaveLength(1);
       expect(feeds[0].categoryId).toBe(category.id);
       expect(feeds[0].feedName).toBe('Requested title');
-      expect(feeds[0].favicon).toBe(
-        'https://canonical-opml.example.test/favicon.ico'
-      );
+      expect(feeds[0].favicon).toBeNull();
+      expect(mocked.discoverRssLink).not.toHaveBeenCalled();
     });
 
     it('[compatible] rejects oversized OPML before parsing or discovery', async () => {

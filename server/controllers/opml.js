@@ -2,8 +2,12 @@ import db from '../models/index.js';
 const { Feed, Category } = db;
 import {
   OpmlImportError,
-  importOpmlSubscriptions
+  importOpmlPreview
 } from '../services/feeds/opmlImport.js';
+import {
+  getOpmlPreviewJob,
+  startOpmlPreviewJob
+} from '../services/feeds/opmlPreviewJobs.js';
 
 /**
  * Generate OPML content for a user's feeds
@@ -93,7 +97,7 @@ function escapeXml(unsafe) {
     .replace(/'/g, '&apos;');
 }
 
-export const importOpml = async (req, res, _next) => {
+export const previewOpml = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -106,9 +110,54 @@ export const importOpml = async (req, res, _next) => {
       return res.status(400).json({ error: 'No OPML file provided' });
     }
 
-    const result = await importOpmlSubscriptions({
+    const result = await startOpmlPreviewJob({
       userId,
       content: req.file.buffer
+    });
+
+    return res.status(202).json(result);
+  } catch (err) {
+    console.error('Error previewing OPML:', err);
+    if (err instanceof OpmlImportError) {
+      return res.status(400).json({ error: err.message });
+    }
+    return res.status(500).json({ error: 'OPML preview failed' });
+  }
+};
+
+export const getOpmlPreviewStatus = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const result = getOpmlPreviewJob({
+      previewId: req.params.previewId,
+      userId
+    });
+    if (!result) {
+      return res.status(404).json({ error: 'OPML preview not found' });
+    }
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error('Error reading OPML preview status:', err);
+    return res.status(500).json({ error: 'OPML preview status failed' });
+  }
+};
+
+export const importOpml = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const result = await importOpmlPreview({
+      userId,
+      preview: req.body
     });
 
     return res.status(200).json({
@@ -126,5 +175,7 @@ export const importOpml = async (req, res, _next) => {
 
 export default {
   exportOpml,
+  previewOpml,
+  getOpmlPreviewStatus,
   importOpml
 };

@@ -12,6 +12,7 @@ import request from 'supertest';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
+import { clearOpmlPreviewJobs } from '../../services/feeds/opmlPreviewJobs.js';
 import {
   LABEL_PREFIX,
   createGreaderUser,
@@ -20,13 +21,19 @@ import {
 } from '../helpers/greaderCompatibilityFixture.js';
 
 const mocked = vi.hoisted(() => ({
-  discoverRssLink: vi.fn()
+  discoverRssLink: vi.fn(),
+  testOpmlConnection: vi.fn()
 }));
 
 vi.mock('../../services/feeds/discoverRssLink.js', () => ({
   default: {
     discoverRssLink: mocked.discoverRssLink
   }
+}));
+
+vi.mock('../../services/feeds/opmlConnection.js', async importOriginal => ({
+  ...(await importOriginal()),
+  testOpmlConnection: mocked.testOpmlConnection
 }));
 
 const { Article, Category, Feed, FeedUrlAlias, User, sequelize } = db;
@@ -48,6 +55,18 @@ const regularAuthHeaderFor = user => {
   }, getJwtSecret());
 
   return `Bearer ${token}`;
+};
+
+// This function polls one asynchronous OPML preview until it reaches a terminal state.
+const waitForOpmlPreview = async (user, previewId) => {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const response = await request(app)
+      .get(`/api/opml/preview/${previewId}/status`)
+      .set('Authorization', regularAuthHeaderFor(user));
+    if (response.body.status !== 'running') return response;
+    await new Promise(resolve => setImmediate(resolve));
+  }
+  throw new Error('OPML preview did not complete');
 };
 
 // This function returns deterministic discovered metadata for controller tests.
@@ -92,9 +111,11 @@ describe('shared feed-management integration', () => {
     mocked.discoverRssLink.mockReset().mockImplementation(async input =>
       discoveredFeedFor(input)
     );
+    mocked.testOpmlConnection.mockReset().mockResolvedValue('available');
   });
 
   afterEach(async () => {
+    clearOpmlPreviewJobs();
     if (ownedUserIds.length > 0) {
       await User.destroy({ where: { id: { [Op.in]: ownedUserIds } } });
     }
@@ -278,19 +299,30 @@ describe('shared feed-management integration', () => {
     });
   });
 
-  it('routes regular and Reader OPML imports through the same feed initialization', async () => {
+  it('stores regular and Reader OPML subscriptions without feed discovery', async () => {
     const regularUser = trackUser(await createGreaderUser());
     const readerUser = trackUser(await createGreaderUser());
+    await createCategory(regularUser, 'Existing Category');
+    mocked.testOpmlConnection.mockResolvedValue('temporarily_unavailable');
+    mocked.discoverRssLink.mockResolvedValue(undefined);
     const opml = Buffer.from(`<?xml version="1.0"?>
       <opml version="2.0"><body><outline text="Imported">
         <outline type="rss" text="Imported title"
           xmlUrl="https://opml-shared.example.test/source" />
       </outline></body></opml>`);
 
+    const previewStart = await request(app)
+      .post('/api/opml/preview')
+      .set('Authorization', regularAuthHeaderFor(regularUser))
+      .attach('opmlFile', opml, 'regular.opml');
+    const previewResponse = await waitForOpmlPreview(
+      regularUser,
+      previewStart.body.previewId
+    );
     const regularResponse = await request(app)
       .post('/api/opml/import')
       .set('Authorization', regularAuthHeaderFor(regularUser))
-      .attach('opmlFile', opml, 'regular.opml');
+      .send(previewResponse.body.preview);
     const readerResponse = await request(app)
       .post('/api/greader/reader/api/0/subscription/import')
       .field('T', greaderActionTokenFor(readerUser))
@@ -301,6 +333,31 @@ describe('shared feed-management integration', () => {
       Feed.findOne({ where: { userId: readerUser.id } })
     ]);
 
+    expect(previewStart.status).toBe(202);
+    expect(previewStart.body).toMatchObject({
+      status: 'running',
+      checkedFeeds: 0,
+      totalFeeds: 1
+    });
+    expect(previewResponse.status).toBe(200);
+    expect(previewResponse.body.preview).toMatchObject({
+      subscriptionCount: 1,
+      categories: [{ name: 'Imported', subscriptionCount: 1 }],
+      categoryOptions: expect.arrayContaining([{
+        name: 'Existing Category',
+        alreadyExists: true,
+        fromOpml: false
+      }, {
+        name: 'Imported',
+        alreadyExists: false,
+        fromOpml: true
+      }]),
+      subscriptions: [{
+        alreadySubscribed: false,
+        connectionStatus: 'temporarily_unavailable'
+      }]
+    });
+    expect(mocked.testOpmlConnection).toHaveBeenCalledOnce();
     expect(regularResponse.status).toBe(200);
     expect(regularResponse.body).toMatchObject({
       message: 'OPML import completed',
@@ -312,11 +369,11 @@ describe('shared feed-management integration', () => {
     expect(readerResponse.status).toBe(200);
     expect(readerResponse.text).toBe('OK');
     expect(regularFeed).toMatchObject({
-      url: 'https://opml-shared.example.test/canonical.xml',
+      url: 'https://opml-shared.example.test/source',
       feedName: 'Imported title',
-      feedDesc: 'Discovered publisher description',
-      feedType: 'rss',
-      favicon: 'https://opml-shared.example.test/favicon.ico'
+      feedDesc: null,
+      feedType: null,
+      favicon: null
     });
     expect(readerFeed).toMatchObject({
       url: regularFeed.url,
@@ -325,6 +382,7 @@ describe('shared feed-management integration', () => {
       feedType: regularFeed.feedType,
       favicon: regularFeed.favicon
     });
+    expect(mocked.discoverRssLink).not.toHaveBeenCalled();
   });
 
   it('returns regular validation failure and a protocol zero-result for discovery failure', async () => {
@@ -709,17 +767,32 @@ describe('shared feed-management integration', () => {
     const opml = Buffer.from(`<?xml version="1.0"?>
       <opml version="2.0"><body><outline type="rss" text="Same feed"
         xmlUrl="https://shared-alias.example.test/source#opml" /></body></opml>`);
+    const previewStart = await request(app)
+      .post('/api/opml/preview')
+      .set('Authorization', regularAuthHeaderFor(user))
+      .attach('opmlFile', opml, 'aliases.opml');
+    const previewed = await waitForOpmlPreview(user, previewStart.body.previewId);
     const imported = await request(app)
       .post('/api/opml/import')
       .set('Authorization', regularAuthHeaderFor(user))
-      .attach('opmlFile', opml, 'aliases.opml');
+      .send(previewed.body.preview);
 
     expect(regular.status).toBe(201);
     expect(reader.status).toBe(200);
     expect(reader.body.numResults).toBe(1);
     expect(readerEdit.status).toBe(200);
+    expect(previewed.status).toBe(200);
+    expect(previewStart.status).toBe(202);
+    expect(previewStart.body.totalFeeds).toBe(0);
+    expect(previewed.body.preview.subscriptions).toEqual([
+      expect.objectContaining({
+        alreadySubscribed: true,
+        connectionStatus: 'not_checked'
+      })
+    ]);
+    expect(mocked.testOpmlConnection).not.toHaveBeenCalled();
     expect(imported.status).toBe(200);
-    expect(imported.body).toMatchObject({ feedsCreated: 0, feedsExisting: 1 });
+    expect(imported.body).toMatchObject({ feedsCreated: 0, feedsExisting: 0 });
     expect(mocked.discoverRssLink).toHaveBeenCalledTimes(callsAfterRegular);
     expect(await Feed.count({ where: { userId: user.id } })).toBe(1);
     expect(await Feed.count({

@@ -15,8 +15,12 @@ import {
   validateFeed
 } from '../src/api/feeds.js';
 import {
+  OPML_PREVIEW_TIMEOUT_MS,
   exportOpml,
-  importOpml
+  getOpmlPreviewStatus,
+  importOpml,
+  pollOpmlPreview,
+  previewOpml
 } from '../src/api/opml.js';
 
 const { del, get, post, put } = vi.hoisted(() => ({
@@ -43,10 +47,15 @@ beforeEach(() => {
 describe('feeds API contracts', () => {
   // Verifies feed retrieval and validation retain the URL and category.
   it('builds feed retrieval and validation requests', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(123456);
     fetchFeeds();
+    fetchFeeds({ forceRefresh: true });
     validateFeed('https://example.com/feed.xml', 3);
 
-    expect(get).toHaveBeenCalledWith('/feeds');
+    expect(get).toHaveBeenNthCalledWith(1, '/feeds');
+    expect(get).toHaveBeenNthCalledWith(2, '/feeds', {
+      params: { refreshedAt: 123456 }
+    });
     expect(post).toHaveBeenCalledWith('/feeds/validate', {
       url: 'https://example.com/feed.xml',
       categoryId: 3
@@ -130,25 +139,125 @@ describe('OPML API contracts', () => {
     });
   });
 
-  // Verifies OPML import posts the selected file as multipart form data.
-  it('builds the OPML import request', () => {
+  // Verifies OPML preview posts the selected file as multipart form data.
+  it('builds the OPML preview request', () => {
     const file = new File(['<opml />'], 'feeds.opml', {
       type: 'text/xml'
     });
 
-    importOpml(file);
+    previewOpml(file);
 
     expect(post).toHaveBeenCalledWith(
-      '/opml/import',
+      '/opml/preview',
       expect.any(FormData),
       {
         headers: {
           'Content-Type': 'multipart/form-data'
         },
-        timeout: 60000
+        timeout: OPML_PREVIEW_TIMEOUT_MS
       }
     );
+    expect(OPML_PREVIEW_TIMEOUT_MS).toBe(300000);
     const formData = post.mock.calls[0][1];
     expect(formData.get('opmlFile')).toBe(file);
+  });
+
+  it('polls OPML preview progress until the completed JSON is returned', async () => {
+    const progress = vi.fn();
+    const waitForNextPoll = vi.fn().mockResolvedValue();
+    const preview = {
+      subscriptionCount: 1,
+      categories: [],
+      subscriptions: [{ inputUrl: 'https://example.test/feed' }]
+    };
+    get
+      .mockResolvedValueOnce({
+        data: {
+          previewId: 'job/id',
+          status: 'running',
+          checkedFeeds: 37,
+          totalFeeds: 120
+        }
+      })
+      .mockResolvedValueOnce({
+        data: {
+          previewId: 'job/id',
+          status: 'completed',
+          checkedFeeds: 120,
+          totalFeeds: 120,
+          preview
+        }
+      });
+
+    await expect(pollOpmlPreview({
+      previewId: 'job/id',
+      status: 'running',
+      checkedFeeds: 0,
+      totalFeeds: 120
+    }, {
+      onProgress: progress,
+      clock: () => 1000,
+      waitForNextPoll
+    })).resolves.toBe(preview);
+
+    expect(get).toHaveBeenNthCalledWith(
+      1,
+      '/opml/preview/job%2Fid/status',
+      { timeout: 15000 }
+    );
+    expect(get).toHaveBeenCalledTimes(2);
+    expect(waitForNextPoll).toHaveBeenCalledTimes(2);
+    expect(progress).toHaveBeenLastCalledWith(expect.objectContaining({
+      status: 'completed',
+      checkedFeeds: 120
+    }));
+  });
+
+  it('builds a direct OPML preview status request', () => {
+    getOpmlPreviewStatus('preview-job');
+
+    expect(get).toHaveBeenCalledWith(
+      '/opml/preview/preview-job/status',
+      { timeout: 15000 }
+    );
+  });
+
+  it('stops polling on failed jobs and at the five-minute client deadline', async () => {
+    await expect(pollOpmlPreview({
+      previewId: 'failed-job',
+      status: 'failed',
+      error: 'Validation failed'
+    })).rejects.toThrow('Validation failed');
+
+    const clock = vi.fn()
+      .mockReturnValueOnce(0)
+      .mockReturnValue(OPML_PREVIEW_TIMEOUT_MS);
+    await expect(pollOpmlPreview({
+      previewId: 'slow-job',
+      status: 'running',
+      checkedFeeds: 37,
+      totalFeeds: 120
+    }, {
+      clock,
+      waitForNextPoll: vi.fn()
+    })).rejects.toThrow('OPML preview validation timed out');
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  // Verifies OPML import posts the editable preview as JSON.
+  it('builds the OPML import request', () => {
+    const preview = {
+      subscriptionCount: 1,
+      categories: [],
+      subscriptions: [{ inputUrl: 'https://example.test/feed' }]
+    };
+
+    importOpml(preview);
+
+    expect(post).toHaveBeenCalledWith(
+      '/opml/import',
+      preview,
+      { timeout: 60000 }
+    );
   });
 });

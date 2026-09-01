@@ -313,10 +313,11 @@ include:
 - adding a URL proposed by the separate manual rediscovery assistant.
 
 The shared service normalizes inputs, enforces user/category ownership, resolves
-known aliases before repeating discovery, prevents duplicate subscriptions, and
-registers verified identity evidence transactionally. OPML input has its own
-1 MiB document limit and sends every discovered subscription through the same
-guarded flow.
+known aliases, prevents duplicate subscriptions, and registers identity evidence
+transactionally. Regular additions perform guarded discovery before creation.
+OPML input has its own 1 MiB document limit and creates selected subscriptions
+from the declared URL and metadata without requiring the remote feed to be
+available or parseable during import.
 
 `rediscoverRssUrl.js` itself only produces a suggested replacement URL. It does
 not prove or persist feed identity. The update dialog presents the suggestion as

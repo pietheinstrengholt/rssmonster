@@ -1,4 +1,5 @@
 export const FEED_OVERVIEW_HEALTH = Object.freeze({
+  NEW: 'NEW',
   HEALTHY: 'HEALTHY',
   RECOVERED: 'RECOVERED',
   DEGRADED: 'DEGRADED',
@@ -14,11 +15,39 @@ const MIN_RELIABILITY_OBSERVATIONS = 5;
 export const deriveFeedOverviewHealth = (
   feed,
   reliabilityPct = null,
-  reliabilityObservationCount = 0
+  reliabilityObservationCount = 0,
+  articleCount = null
 ) => {
   if (feed?.status === 'disabled') return FEED_OVERVIEW_HEALTH.DISABLED;
 
   const consecutiveFailures = Math.max(0, Number(feed?.consecutiveFailures) || 0);
+  const hasRecordedError = feed?.status === 'error' ||
+    Math.max(0, Number(feed?.errorCount) || 0) > 0 ||
+    consecutiveFailures > 0 ||
+    Boolean(
+      feed?.errorMessage ||
+      feed?.errorSince ||
+      feed?.lastCrawlErrorCategory
+    );
+  const hasRecordedCrawl = reliabilityObservationCount > 0 ||
+    Boolean(
+      feed?.lastCrawlAt ||
+      feed?.lastCrawlStatus ||
+      feed?.lastAttemptAt ||
+      feed?.lastFetched ||
+      feed?.lastSuccessAt ||
+      feed?.lastSuccessfulCrawlAt ||
+      feed?.lastFetchOutcome
+    );
+  if (
+    articleCount !== null &&
+    Math.max(0, Number(articleCount) || 0) === 0 &&
+    !hasRecordedCrawl &&
+    !hasRecordedError
+  ) {
+    return FEED_OVERVIEW_HEALTH.NEW;
+  }
+
   if (
     feed?.lastCrawlStatus === 'FAILED' &&
     consecutiveFailures >= FAILING_CONSECUTIVE_FAILURES
@@ -33,7 +62,7 @@ export const deriveFeedOverviewHealth = (
       reliabilityPct !== null &&
       reliabilityPct < DEGRADED_RELIABILITY_PCT
     ) ||
-    (!feed?.lastCrawlStatus && feed?.status === 'error')
+    (!feed?.lastCrawlStatus && hasRecordedError)
   ) {
     return FEED_OVERVIEW_HEALTH.DEGRADED;
   }

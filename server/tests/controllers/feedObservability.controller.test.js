@@ -255,8 +255,8 @@ describe('feed observability controller', () => {
     expect(res.status).toHaveBeenCalledWith(200);
   });
 
-  // Verifies no-history feeds remain healthy with neutral rates and statistics.
-  it('returns neutral rolling metrics for a healthy feed without crawl history', async () => {
+  // Verifies untouched feeds remain new with neutral rates and statistics.
+  it('returns neutral rolling metrics for a new feed without crawl history', async () => {
     mocked.feedFindOne.mockResolvedValue(ownedFeed({
       lastCrawlAt: null,
       lastCrawlStatus: null,
@@ -280,7 +280,7 @@ describe('feed observability controller', () => {
     await controller.getFeedObservability(createRequest(), res);
 
     expect(res.json.mock.calls[0][0]).toMatchObject({
-      feed: { health: 'HEALTHY' },
+      feed: { health: 'NEW' },
       summary: {
         totalCrawls: 0,
         successRatePct: null,
