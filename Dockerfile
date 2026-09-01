@@ -44,11 +44,12 @@ COPY --from=server-deps /build/server/node_modules ./node_modules
 # Copy built Vue client into the directory served by Express.
 COPY --from=client-build /build/client/dist ./dist
 
-# Create the non-root runtime user and writable SQLite data directory.
+# Create the non-root runtime user and writable persistent-volume mount points.
+# Docker copies this ownership into newly created named volumes.
 RUN addgroup -S rssmonster \
     && adduser -S rssmonster -G rssmonster \
-    && mkdir -p /app/data \
-    && chown -R rssmonster:rssmonster /app/server /app/data
+    && mkdir -p /app/data /app/worker-health \
+    && chown -R rssmonster:rssmonster /app/server /app/data /app/worker-health
 
 USER rssmonster
 
