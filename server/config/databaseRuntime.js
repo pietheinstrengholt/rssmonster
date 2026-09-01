@@ -98,9 +98,9 @@ export const installDatabaseConnectionPolicy = sequelize => {
     const connection = await getConnection(options);
     if (configuredConnections.has(connection)) return connection;
 
+    await runSqlitePragma(connection, `PRAGMA busy_timeout = ${SQLITE_BUSY_TIMEOUT_MS}`);
     await runSqlitePragma(connection, 'PRAGMA journal_mode = WAL');
     await runSqlitePragma(connection, 'PRAGMA foreign_keys = ON');
-    await runSqlitePragma(connection, `PRAGMA busy_timeout = ${SQLITE_BUSY_TIMEOUT_MS}`);
     configuredConnections.add(connection);
     return connection;
   };

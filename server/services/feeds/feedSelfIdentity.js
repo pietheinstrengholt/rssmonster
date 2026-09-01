@@ -23,6 +23,7 @@ import {
   FETCH_OUTCOMES,
   isSuccessfulFetchOutcome
 } from './http/contracts.js';
+import { retryDatabaseTransaction } from '../../utils/databaseRetry.js';
 
 const { Article, Feed, User, sequelize } = db;
 const REJECTED_SELF_RECHECK_MS = 24 * 60 * 60 * 1000;
@@ -444,7 +445,7 @@ export const persistPublisherSelfIdentity = async ({
   if (!feed?.id || !feed?.userId || !validation) return feed;
 
   throwIfExecutionExpired(execution);
-  const resolvedFeed = await sequelize.transaction(async transaction => {
+  const resolvedFeed = await retryDatabaseTransaction(sequelize, async transaction => {
     await User.findByPk(feed.userId, {
       attributes: ['id'],
       transaction,

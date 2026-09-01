@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { resolveEffectiveCrawlConfiguration } from '../../config/databaseRuntime.js';
+import {
+  installDatabaseConnectionPolicy,
+  resolveEffectiveCrawlConfiguration
+} from '../../config/databaseRuntime.js';
 
 describe('resolveEffectiveCrawlConfiguration', () => {
   // Confirms MySQL retains configured crawl concurrency values.
@@ -45,5 +48,32 @@ describe('resolveEffectiveCrawlConfiguration', () => {
 
     expect(result).toEqual({ parallelProcessFlag: 0, userBatchSize: 1 });
     expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  // Confirms lock waiting is active before SQLite attempts to switch journal mode.
+  it('configures the busy timeout before WAL on each SQLite connection', async () => {
+    const statements = [];
+    const connection = {
+      run: (sql, callback) => {
+        statements.push(sql);
+        callback(null);
+      }
+    };
+    const sequelize = {
+      getDialect: () => 'sqlite',
+      connectionManager: {
+        getConnection: vi.fn().mockResolvedValue(connection)
+      }
+    };
+
+    installDatabaseConnectionPolicy(sequelize);
+    await sequelize.connectionManager.getConnection();
+    await sequelize.connectionManager.getConnection();
+
+    expect(statements).toEqual([
+      'PRAGMA busy_timeout = 5000',
+      'PRAGMA journal_mode = WAL',
+      'PRAGMA foreign_keys = ON'
+    ]);
   });
 });

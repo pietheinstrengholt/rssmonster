@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   isDatabaseDeadlock,
+  isRetryableTransactionConflict,
+  isSqliteLockConflict,
+  retryDatabaseTransaction,
   retryDatabaseWrite
 } from '../../utils/databaseRetry.js';
 
@@ -47,5 +50,45 @@ describe('database write retry', () => {
     expect(wait).toHaveBeenCalledTimes(2);
     expect(isDatabaseDeadlock(deadlock)).toBe(true);
     expect(isDatabaseDeadlock(ordinaryError)).toBe(false);
+  });
+
+  it.each([
+    { code: 'SQLITE_BUSY' },
+    { parent: { code: 'SQLITE_BUSY_SNAPSHOT' } },
+    { original: { code: 'SQLITE_LOCKED_SHAREDCACHE' } }
+  ])('recognizes SQLite lock conflicts from wrapped errors', error => {
+    expect(isSqliteLockConflict(error)).toBe(true);
+    expect(isRetryableTransactionConflict(error)).toBe(true);
+  });
+
+  it('retries the complete SQLite IMMEDIATE transaction callback', async () => {
+    const busy = { original: { code: 'SQLITE_BUSY' } };
+    const transaction = vi.fn(async (options, operation) => operation({ options }));
+    const sequelize = { getDialect: () => 'sqlite', transaction };
+    const operation = vi.fn()
+      .mockRejectedValueOnce(busy)
+      .mockResolvedValue('reconciled');
+    const wait = vi.fn().mockResolvedValue();
+
+    await expect(retryDatabaseTransaction(sequelize, operation, {
+      random: () => 0.5,
+      wait
+    })).resolves.toBe('reconciled');
+
+    expect(transaction).toHaveBeenCalledTimes(2);
+    expect(transaction.mock.calls[0][0]).toEqual({ type: 'IMMEDIATE' });
+    expect(operation).toHaveBeenCalledTimes(2);
+    expect(wait).toHaveBeenCalledWith(25);
+  });
+
+  it('does not broaden individual write retries to SQLite lock errors', async () => {
+    const busy = { code: 'SQLITE_BUSY' };
+    const operation = vi.fn().mockRejectedValue(busy);
+    const wait = vi.fn().mockResolvedValue();
+
+    await expect(retryDatabaseWrite(operation, { wait })).rejects.toBe(busy);
+
+    expect(operation).toHaveBeenCalledOnce();
+    expect(wait).not.toHaveBeenCalled();
   });
 });

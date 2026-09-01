@@ -5,6 +5,7 @@ import {
   assertExecutionLeaseOwnership,
   throwIfExecutionExpired
 } from './executionDeadline.js';
+import { retryDatabaseTransaction } from '../../utils/databaseRetry.js';
 
 const {
   Article,
@@ -569,7 +570,7 @@ export const reconcileDuplicateFeeds = async ({
       execution
     });
   }
-  return sequelize.transaction(innerTransaction => reconcileInTransaction({
+  return retryDatabaseTransaction(sequelize, innerTransaction => reconcileInTransaction({
     userId,
     feedIds,
     transaction: innerTransaction,

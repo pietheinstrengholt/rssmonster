@@ -6,6 +6,7 @@ import {
 import { buildFeedUrlIdentity } from './feedUrlIdentity.js';
 import { assertFeedPersistenceUrl } from './feedPersistenceMetadata.js';
 import { reconcileDuplicateFeeds } from './feedReconciliation.js';
+import { retryDatabaseTransaction } from '../../utils/databaseRetry.js';
 
 const { Feed, FeedUrlAlias, User, sequelize } = db;
 
@@ -212,7 +213,7 @@ export const persistDiscoveredFeedUrl = async ({
   const persistedUrl = assertFeedPersistenceUrl(discoveredUrl);
 
   throwIfExecutionExpired(execution);
-  const resolvedFeed = await sequelize.transaction(async transaction => {
+  const resolvedFeed = await retryDatabaseTransaction(sequelize, async transaction => {
     await User.findByPk(feed.userId, {
       attributes: ['id'],
       transaction,
