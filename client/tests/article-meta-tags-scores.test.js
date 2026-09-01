@@ -227,8 +227,8 @@ describe('ArticleMeta', () => {
     expect(wrapper.get('.recommended-badge').text()).toBe('Why recommended');
   });
 
-  // Verifies mobile metadata exposes the remaining non-neutral sentiment indicator.
-  it('hides the mobile advertisement indicator and renders the sentiment indicator', () => {
+  // Verifies mobile metadata keeps analysis score indicators hidden.
+  it('hides the mobile advertisement and sentiment indicators', () => {
     const wrapper = mountArticleMeta({
       isMobilePortrait: true,
       advertisementScore: 1,
@@ -236,8 +236,8 @@ describe('ArticleMeta', () => {
     });
     const icons = wrapper.findAll('.bootstrap-icon-stub');
 
-    expect(icons.map(icon => icon.attributes('data-icon'))).toEqual(['arrow-down-circle-fill']);
-    expect(wrapper.get('.sentiment-icon').classes()).toContain('sentiment-very-poor');
+    expect(icons).toHaveLength(0);
+    expect(wrapper.find('.sentiment-icon').exists()).toBe(false);
     expect(wrapper.find('.ad-icon').exists()).toBe(false);
   });
 
