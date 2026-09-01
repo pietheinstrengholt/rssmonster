@@ -482,4 +482,43 @@ describe('Feedsmith adapter', () => {
       })
     ]));
   });
+
+  it('uses the Media RSS group description when a video entry has no summary or content', () => {
+    const feed = parseFeedSource(`
+      <feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
+        <title>Video channel</title><id>video-feed</id>
+        <entry>
+          <title>Episode one</title><id>yt:video:abc123</id>
+          <link href="https://videos.example/watch?v=abc123" />
+          <media:group>
+            <media:title>Episode one</media:title>
+            <media:description>How the build was filmed.</media:description>
+          </media:group>
+        </entry>
+      </feed>
+    `, { feedUrl: 'https://videos.example/feeds/videos.xml' });
+
+    expect(feed.entries[0]).toMatchObject({
+      description: 'How the build was filmed.',
+      descriptionKind: 'text'
+    });
+  });
+
+  it('prefers a declared summary over the Media RSS group description', () => {
+    const feed = parseFeedSource(`
+      <feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
+        <title>Video channel</title><id>video-feed</id>
+        <entry>
+          <title>Episode two</title><id>yt:video:def456</id>
+          <link href="https://videos.example/watch?v=def456" />
+          <summary>Canonical summary.</summary>
+          <media:group>
+            <media:description>Fallback description.</media:description>
+          </media:group>
+        </entry>
+      </feed>
+    `, { feedUrl: 'https://videos.example/feeds/videos.xml' });
+
+    expect(feed.entries[0].description).toBe('Canonical summary.');
+  });
 });
