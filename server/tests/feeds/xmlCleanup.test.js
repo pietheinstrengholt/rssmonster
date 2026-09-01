@@ -11,6 +11,13 @@ const rss = channel =>
   `<rss version="2.0"><channel>${channel}</channel></rss>`;
 
 describe('conservative dirty XML cleanup', () => {
+  it('removes a BOM and leading whitespace before an XML declaration', () => {
+    const source = '\uFEFF\n \t<?xml version="1.0" encoding="UTF-8"?>' +
+      rss('<title>Whitespace-prefixed RSS</title>');
+
+    expect(parseFeedSource(source).title).toBe('Whitespace-prefixed RSS');
+  });
+
   it('removes warning text before plausible RSS and Atom roots', () => {
     expect(parseFeedSource(
       `PHP Warning: publisher notice<br />${rss('<title>Recovered RSS</title>')}`
