@@ -43,6 +43,14 @@ cd rssmonster
 
 Create a `.env` file in the repository root:
 
+```bash
+touch .env
+chmod 600 .env
+```
+
+This restricts the file to the account that owns it. Then add the required
+secrets:
+
 ```env
 JWT_SECRET=replace-with-a-long-random-secret
 FEVER_CREDENTIAL_SECRET=replace-with-a-different-long-random-secret
@@ -67,6 +75,11 @@ Inference-backed classifications, embeddings, the assistant, AI feed repair,
 and Smart Folder recommendations are disabled in this quick-start deployment,
 so no inference service is required.
 Open `http://localhost:3000` and create your first account.
+The port is bound to host loopback by default. To make a direct, non-proxied
+installation reachable from other machines, set
+`RSSMONSTER_BIND_ADDRESS=0.0.0.0` and keep `TRUST_PROXY=false`. For reverse-proxy
+deployments, keep the loopback binding and follow the
+[proxy and network security guidance](configuration.md#proxy-and-network-security).
 
 Check the deployment or follow its logs with:
 
@@ -77,12 +90,20 @@ docker compose logs -f rssmonster rssmonster-worker
 
 ### Updating RSSMonster
 
+The quick start uses the moving `latest` tag. For an unattended production
+deployment, first pin a published source-revision tag or image digest in the
+root `.env`; see [Pinning the Docker image](configuration.md#pinning-the-docker-image).
+Change that pin deliberately when you are ready to update. Then run:
+
 ```bash
 docker compose pull
 docker compose up -d
 ```
 
 Pending migrations are applied automatically when the new container starts.
+Back up the database and stable configuration secrets before changing a
+production image pin. See [Backup and Restore](backup-restore.md) for the SQLite
+and MySQL procedures.
 
 ### SQLite Data Persistence
 

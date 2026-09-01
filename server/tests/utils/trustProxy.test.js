@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { getTrustProxySetting } from '../../utils/trustProxy.js';
 
 describe('trust proxy configuration', () => {
-  it('trusts only loopback proxies by default', () => {
-    expect(getTrustProxySetting(undefined)).toBe('loopback');
-    expect(getTrustProxySetting('')).toBe('loopback');
+  it('does not trust forwarded proxy headers by default', () => {
+    expect(getTrustProxySetting(undefined)).toBe(false);
+    expect(getTrustProxySetting('')).toBe(false);
   });
 
   it('supports explicit proxy hop counts and addresses', () => {

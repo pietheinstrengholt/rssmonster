@@ -97,6 +97,7 @@ RSSMonster works out of the box with sensible defaults, but every ranking decisi
 
 - **[Getting Started](getting-started.html)** — Installation, setup, first steps
 - **[Configuration](configuration.html)** — Environment variables and tuning
+- **[Backup and Restore](backup-restore.html)** — Protect and recover Docker data and secrets
 - **[First Login](first-login.html)** — Registration, sign-in, and development login
 - **[Core Concepts](concepts.html)** — How RSSMonster thinks about content
 - **[Compare RSSMonster](comparison.html)** — Feature comparison with Feedbin, CommaFeed, selfoss, FreshRSS, and Tiny Tiny RSS

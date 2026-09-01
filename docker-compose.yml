@@ -2,12 +2,12 @@ name: rssmonster
 
 services:
   rssmonster:
-    image: rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}
+    image: "${RSSMONSTER_IMAGE:-rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}}"
     container_name: rssmonster
     restart: unless-stopped
 
     ports:
-      - "${RSSMONSTER_PORT:-3000}:3000"
+      - "${RSSMONSTER_BIND_ADDRESS:-127.0.0.1}:${RSSMONSTER_PORT:-3000}:3000"
 
     environment:
       NODE_ENV: production
@@ -23,7 +23,7 @@ services:
       FEVER_CREDENTIAL_SECRET: ${FEVER_CREDENTIAL_SECRET:?FEVER_CREDENTIAL_SECRET must be set}
 
       # Optional deployment settings.
-      TRUST_PROXY: ${TRUST_PROXY:-loopback}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
       RSSMONSTER_INTERNAL_HOST_ALLOWLIST: ${RSSMONSTER_INTERNAL_HOST_ALLOWLIST:-}
       FEED_MAX_COUNT: ${FEED_MAX_COUNT:-100}
       FEED_CONNECT_TIMEOUT_MS: ${FEED_CONNECT_TIMEOUT_MS:-10000}
@@ -49,6 +49,12 @@ services:
     security_opt:
       - no-new-privileges:true
 
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
     healthcheck:
       test:
         - CMD
@@ -64,7 +70,7 @@ services:
       start_period: 60s
 
   rssmonster-worker:
-    image: rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}
+    image: "${RSSMONSTER_IMAGE:-rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}}"
     container_name: rssmonster-worker
     restart: unless-stopped
 
@@ -107,6 +113,12 @@ services:
 
     security_opt:
       - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
     healthcheck:
       test:

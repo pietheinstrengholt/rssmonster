@@ -2,7 +2,7 @@ name: rssmonster
 
 services:
   rssmonster:
-    image: rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}
+    image: "${RSSMONSTER_IMAGE:-rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}}"
     container_name: rssmonster
     restart: unless-stopped
 
@@ -15,7 +15,7 @@ services:
         restart: true
 
     ports:
-      - "${RSSMONSTER_PORT:-3000}:3000"
+      - "${RSSMONSTER_BIND_ADDRESS:-127.0.0.1}:${RSSMONSTER_PORT:-3000}:3000"
 
     environment:
       NODE_ENV: production
@@ -37,7 +37,7 @@ services:
       FEED_CONNECT_TIMEOUT_MS: ${FEED_CONNECT_TIMEOUT_MS:-10000}
       FEED_BODY_TIMEOUT_MS: ${FEED_BODY_TIMEOUT_MS:-30000}
       FEED_TIMEOUT_MS: ${FEED_TIMEOUT_MS:-60000}
-      TRUST_PROXY: ${TRUST_PROXY:-loopback}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
       INFERENCE_URL: http://inference:3001
       INFERENCE_TIMEOUT_MS: ${INFERENCE_TIMEOUT_MS:-600000}
       INFERENCE_CIRCUIT_FAILURE_THRESHOLD: ${INFERENCE_CIRCUIT_FAILURE_THRESHOLD:-5}
@@ -58,6 +58,12 @@ services:
     security_opt:
       - no-new-privileges:true
 
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
     healthcheck:
       test:
         - CMD
@@ -76,7 +82,7 @@ services:
       - rssmonster-network
 
   rssmonster-worker:
-    image: rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}
+    image: "${RSSMONSTER_IMAGE:-rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}}"
     container_name: rssmonster-worker
     restart: unless-stopped
 
@@ -130,6 +136,12 @@ services:
     security_opt:
       - no-new-privileges:true
 
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
     healthcheck:
       test:
         - CMD
@@ -144,7 +156,7 @@ services:
       - rssmonster-network
 
   rssmonster-ai-worker:
-    image: rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}
+    image: "${RSSMONSTER_IMAGE:-rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}}"
     container_name: rssmonster-ai-worker
     restart: unless-stopped
 
@@ -195,6 +207,12 @@ services:
 
     security_opt:
       - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
     healthcheck:
       test:
@@ -251,6 +269,12 @@ services:
     security_opt:
       - no-new-privileges:true
 
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
     healthcheck:
       test:
         - CMD
@@ -302,6 +326,12 @@ services:
 
     security_opt:
       - no-new-privileges:true
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
     networks:
       - rssmonster-network

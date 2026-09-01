@@ -131,6 +131,14 @@ cd rssmonster
 
 Create a `.env` file in the repository root:
 
+```bash
+touch .env
+chmod 600 .env
+```
+
+This restricts the file to the account that owns it. Then add the required
+secrets:
+
 ```env
 JWT_SECRET=replace-with-a-long-random-secret
 FEVER_CREDENTIAL_SECRET=replace-with-a-long-random-secret
@@ -166,6 +174,13 @@ http://localhost:3000
 ```
 
 and create your first account.
+
+Docker publishes this port on host loopback by default. To expose a direct,
+non-proxied installation to other machines, set
+`RSSMONSTER_BIND_ADDRESS=0.0.0.0` and keep `TRUST_PROXY=false`. Reverse-proxy
+deployments should retain the loopback bind and configure proxy trust for their
+actual Docker network path; see the
+[configuration guide](docs/configuration.md#proxy-and-network-security).
 
 Check the deployment:
 
@@ -752,6 +767,14 @@ docker compose up -d
 ```
 
 This quick profile requires no separate database server or inference models and keeps persistent application data in a Docker volume.
+
+The quick start uses `latest` for convenience. Do not use that moving tag for
+unattended production deployments. Pin `RSSMONSTER_TAG` to a published
+`sha-...` tag, or set `RSSMONSTER_IMAGE` to the complete
+`rssmonster/rssmonster@sha256:...` digest reference. See
+[Pinning the Docker image](docs/configuration.md#pinning-the-docker-image).
+Before changing a production pin, follow the SQLite or MySQL procedures in
+[Backup and Restore](docs/backup-restore.md).
 
 For the comprehensive MySQL and local-inference deployment:
 

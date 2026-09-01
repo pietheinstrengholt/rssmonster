@@ -38,8 +38,22 @@ services:
       CRAWL_VERBOSE_LOGGING: ${CRAWL_VERBOSE_LOGGING:-false}
 ```
 
-Do not commit `.env` files. Store secrets as long, random values and restrict
-access to them.
+Do not commit `.env` files. Store secrets as long, random values. On systems
+with POSIX file permissions, restrict each secret-bearing environment file to
+its owner after creating it:
+
+```bash
+chmod 600 .env
+# For a manual server installation:
+chmod 600 server/.env
+```
+
+The root `.env` remains on the Docker host: Compose reads it for variable
+substitution and passes the configured values into the containers. It is
+excluded from Docker build contexts and is not mounted into the containers, so
+neither the Dockerfile nor Compose can set its host permissions. On platforms
+without POSIX permissions, use the platform's access controls to grant access
+only to the account that runs RSSMonster.
 
 ## Docker Configuration
 
@@ -47,11 +61,13 @@ The supplied Compose files accept these root `.env` values:
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `RSSMONSTER_TAG` | `latest` | RSSMonster image tag to run. |
+| `RSSMONSTER_IMAGE` | unset | Complete RSSMonster image reference. When set, it overrides `RSSMONSTER_TAG` and can include a digest. |
+| `RSSMONSTER_TAG` | `latest` | RSSMonster image tag used when `RSSMONSTER_IMAGE` is unset. Use `latest` only for quick starts or deliberate rolling updates. |
+| `RSSMONSTER_BIND_ADDRESS` | `127.0.0.1` | Host address on which Docker publishes the application port. |
 | `RSSMONSTER_PORT` | `3000` | Host port mapped to container port 3000. |
 | `JWT_SECRET` | required | Secret used to sign login tokens. |
 | `FEVER_CREDENTIAL_SECRET` | required | Secret used to protect Fever API credentials. Keep it stable after users create credentials. |
-| `TRUST_PROXY` | `loopback` | Express trusted-proxy setting; see [Proxy and network security](#proxy-and-network-security). |
+| `TRUST_PROXY` | `false` | Express trusted-proxy setting; see [Proxy and network security](#proxy-and-network-security). |
 | `RSSMONSTER_INTERNAL_HOST_ALLOWLIST` | empty | Explicit exceptions for feeds hosted on private networks. |
 
 The MySQL Compose file additionally accepts:
@@ -65,6 +81,36 @@ The MySQL Compose file additionally accepts:
 
 Generate secrets with `openssl rand -hex 32`. Use a different value for each
 secret and password.
+
+### Pinning the Docker image
+
+The quick start defaults to `latest` for convenience. Do not use this moving tag
+for unattended production deployments: a later `docker compose pull` can change
+the running application and apply database migrations without selecting a
+specific release first.
+
+The image publishing workflow creates a `sha-` tag for each published source
+revision. Pin that tag in the root `.env`:
+
+```env
+RSSMONSTER_TAG=sha-abcdef0
+```
+
+For cryptographic pinning, use the published manifest digest as the complete
+image reference instead:
+
+```env
+RSSMONSTER_IMAGE=rssmonster/rssmonster@sha256:replace-with-published-digest
+```
+
+`RSSMONSTER_IMAGE` takes precedence over `RSSMONSTER_TAG` and applies to the web,
+crawl-worker, and AI-worker containers so they always run the same image. Change
+the pin deliberately when updating, review the release or source changes, back
+up the database, and then run `docker compose pull` followed by
+`docker compose up -d` with the applicable Compose file.
+
+See [Backup and Restore](backup-restore.md) for consistent SQLite and MySQL
+procedures and guidance on preserving the root `.env` separately.
 
 ## Database
 
@@ -224,18 +270,49 @@ acceptable.
 
 ### `TRUST_PROXY`
 
-RSSMonster defaults to `loopback`, which is appropriate for a reverse proxy on
-the same host. It also accepts a positive proxy hop count or an Express trusted
-address/subnet expression. `false` disables proxy trust. The value `true` is
+RSSMonster defaults to `false`, so forwarded client-address headers are ignored
+unless a trusted proxy is configured. It accepts `loopback`, a positive proxy
+hop count, or an Express trusted address/subnet expression. The value `true` is
 rejected because trusting every proxy can let clients spoof their address and
 affect rate limiting.
 
-Examples:
+The supplied Docker profiles publish the application on host loopback by
+default. This keeps clients from bypassing a reverse proxy and sending forged
+forwarding headers directly to RSSMonster:
 
 ```env
-TRUST_PROXY=loopback
-# TRUST_PROXY=1
-# TRUST_PROXY=false
+RSSMONSTER_BIND_ADDRESS=127.0.0.1
+```
+
+When a reverse proxy runs directly on the Docker host, Docker port forwarding
+usually makes the proxy connection appear to RSSMonster as a Docker bridge
+address, not as loopback. With the port restricted to host loopback and exactly
+one proxy hop, use:
+
+```env
+RSSMONSTER_BIND_ADDRESS=127.0.0.1
+TRUST_PROXY=1
+```
+
+When the reverse proxy runs in a container, attach it to the same Docker network
+and send traffic to `rssmonster:3000`. Keep the published host port on loopback,
+or remove the `ports` entry in a Compose override, and trust the exact proxy
+address/subnet when it is stable. `TRUST_PROXY=1` is also appropriate when that
+container is the only possible route to RSSMonster and there is exactly one
+proxy hop.
+
+For a manual, non-Docker installation where a same-host proxy connects directly
+to `127.0.0.1`, `TRUST_PROXY=loopback` is appropriate. Prefer explicit trusted
+addresses or subnets when traffic can arrive through paths with different hop
+counts. Do not expose the application directly to untrusted clients while using
+a hop-count setting.
+
+To intentionally expose Docker directly on every host interface, disable proxy
+trust and opt into the broader bind address:
+
+```env
+RSSMONSTER_BIND_ADDRESS=0.0.0.0
+TRUST_PROXY=false
 ```
 
 ### `RSSMONSTER_INTERNAL_HOST_ALLOWLIST`
@@ -334,7 +411,7 @@ DB_DIALECT=sqlite
 DB_STORAGE=/var/lib/rssmonster/rssmonster.sqlite
 JWT_SECRET=replace-with-a-long-random-secret
 FEVER_CREDENTIAL_SECRET=replace-with-a-different-long-random-secret
-TRUST_PROXY=loopback
+TRUST_PROXY=false
 ```
 
 MySQL with modest parallel crawling:
@@ -352,7 +429,7 @@ FEVER_CREDENTIAL_SECRET=replace-with-a-different-long-random-secret
 CRAWL_PARALLELPROCESSFLAG=1
 FEED_PARALLEL_CONCURRENCY=3
 CRAWL_WORKER_INTERVAL_MS=60000
-TRUST_PROXY=loopback
+TRUST_PROXY=false
 ```
 
 Start with defaults, change one group of settings at a time, and inspect crawl

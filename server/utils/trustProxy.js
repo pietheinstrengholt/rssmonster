@@ -1,4 +1,4 @@
-const DEFAULT_TRUST_PROXY = 'loopback';
+const DEFAULT_TRUST_PROXY = false;
 
 // This function converts the deployment setting into an Express trust proxy value.
 export const getTrustProxySetting = (

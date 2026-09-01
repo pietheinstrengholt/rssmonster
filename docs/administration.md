@@ -9,6 +9,8 @@ nav_order: 6
 These pages cover the operational tasks used to run and maintain an RSSMonster
 server.
 
+- [Backup and Restore](backup-restore.md) provides procedures for the SQLite
+  and MySQL Docker Compose profiles, including secrets and verification.
 - [Server Jobs](server-jobs.md) lists every npm command exposed by the server,
   including tests, database tasks, semantic maintenance, and repair utilities.
 - [Crawling](crawling.md) explains feed scheduling, concurrency, safety limits,
