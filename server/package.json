@@ -59,7 +59,7 @@
   "license": "MIT",
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.11",
-    "eslint": "^10.9.0",
+    "eslint": "^10.9.1",
     "globals": "^17.11.0",
     "supertest": "^7.2.2",
     "vitest": "^4.1.11"
@@ -72,22 +72,22 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "express-rate-limit": "^8.6.2",
+    "express-rate-limit": "^8.7.0",
     "feedsmith": "^2.9.6",
     "franc-min": "^6.2.0",
     "he": "^1.2.0",
     "jsonwebtoken": "^9.0.3",
-    "morgan": "^1.11.0",
-    "multer": "^2.2.0",
-    "mysql2": "3.23.3",
+    "morgan": "^1.12.0",
+    "multer": "^2.3.0",
+    "mysql2": "3.24.2",
     "sanitize-html": "^2.17.7",
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.6.5",
     "sqlite3": "^6.0.1",
-    "undici": "^8.10.0",
+    "undici": "^8.10.1",
     "web-push": "^3.6.7",
     "xml2js": "^0.6.2",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "optionalDependencies": {
     "fsevents": "^2.3.3"

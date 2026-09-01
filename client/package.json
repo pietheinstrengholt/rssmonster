@@ -23,19 +23,19 @@
     "node": ">=22.19.0"
   },
   "dependencies": {
-    "@vue/server-renderer": "^3.5.41",
-    "axios": "^1.19.0",
+    "@vue/server-renderer": "^3.5.42",
+    "axios": "^1.20.0",
     "js-cookie": "^3.0.8",
     "pinia": "^4.0.3",
-    "vue": "^3.5.41",
+    "vue": "^3.5.42",
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.8",
     "@vitest/coverage-v8": "^4.1.11",
-    "@vue/compiler-sfc": "^3.5.41",
-    "@vue/test-utils": "^2.4.11",
-    "baseline-browser-mapping": "^2.11.19",
+    "@vue/compiler-sfc": "^3.5.42",
+    "@vue/test-utils": "^2.5.0",
+    "baseline-browser-mapping": "^2.11.20",
     "bootstrap-icons": "^1.13.1",
     "eslint": "^10.9.1",
     "eslint-plugin-vue": "^10.10.0",
