@@ -51,7 +51,7 @@ describe('feed environment example defaults', () => {
   });
 
   it('documents the current crawl batch default under its preferred name', () => {
-    expect(exampleValue('FEED_MAX_COUNT')).toBe('10');
+    expect(exampleValue('FEED_MAX_COUNT')).toBe('100');
     expect(exampleValue('FEED_PARALLEL_CONCURRENCY')).toBe('3');
     expect(exampleValue('MAX_FEEDCOUNT')).toBeUndefined();
   });

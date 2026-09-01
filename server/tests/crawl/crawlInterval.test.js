@@ -25,9 +25,9 @@ describe('crawl interval controls', () => {
     expect(resolveFeedMaxCount({ FEED_MAX_COUNT: '25', MAX_FEEDCOUNT: '12' }))
       .toBe(25);
     expect(resolveFeedMaxCount({ MAX_FEEDCOUNT: '12' })).toBe(12);
-    expect(resolveFeedMaxCount({})).toBe(10);
+    expect(resolveFeedMaxCount({})).toBe(100);
     expect(resolveFeedMaxCount({ FEED_MAX_COUNT: 'invalid', MAX_FEEDCOUNT: '12' }))
-      .toBe(10);
+      .toBe(100);
   });
 
   it('uses a conservative configurable parallel feed concurrency', () => {

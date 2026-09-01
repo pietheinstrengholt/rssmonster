@@ -82,7 +82,7 @@ export const resolveFeedMaxCount = (environment = process.env) => {
     environment.FEED_MAX_COUNT ?? environment.MAX_FEEDCOUNT ?? '',
     10
   );
-  return Number.isInteger(configured) && configured > 0 ? configured : 10;
+  return Number.isInteger(configured) && configured > 0 ? configured : 100;
 };
 
 // Resolves the application-wide parallel feed worker setting with a conservative default.

@@ -142,7 +142,7 @@ responses, and timeouts.
 
 | Variable | Default | Unit | Effect |
 | --- | ---: | --- | --- |
-| `FEED_MAX_COUNT` | `10` | feeds | Maximum feeds claimed by one crawl invocation. |
+| `FEED_MAX_COUNT` | `100` | feeds | Maximum feeds claimed by one crawl invocation. |
 | `FEED_PARALLEL_CONCURRENCY` | `3` | feeds | Process-wide simultaneous feed workers. SQLite caps this at 1. |
 | `FEED_TIMEOUT_MS` | `60000` | ms | Overall processing deadline for one feed. |
 | `FEED_LEASE_MS` | `120000` | ms | Duration of a feed claim. The effective value is never less than twice `FEED_TIMEOUT_MS`. |

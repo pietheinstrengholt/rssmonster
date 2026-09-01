@@ -32,7 +32,7 @@ and deterministic jitter. An HTTP `304` or unchanged response is successful
 and skips parsing and article processing.
 
 `FEED_MAX_COUNT` limits how many feeds one crawl invocation claims for one
-user; the default is `10`. The scheduled all-user pipeline therefore processes
+user; the default is `100`. The scheduled all-user pipeline therefore processes
 up to that many due feeds per user during each iteration. A later worker poll
 claims the next due batch.
 
@@ -75,7 +75,7 @@ The principal execution controls are:
 
 | Variable | Default | Purpose |
 | --- | ---: | --- |
-| `FEED_MAX_COUNT` | `10` | Due feeds claimed per user and crawl invocation. |
+| `FEED_MAX_COUNT` | `100` | Due feeds claimed per user and crawl invocation. |
 | `CRAWL_USER_BATCH_SIZE` | `5` | Users crawled concurrently on MySQL; SQLite uses `1`. |
 | `CRAWL_PARALLELPROCESSFLAG` | `0` | Enable parallel feed processing on MySQL when set to `1`. |
 | `FEED_PARALLEL_CONCURRENCY` | `3` | Maximum simultaneous feed workers in the process. |
