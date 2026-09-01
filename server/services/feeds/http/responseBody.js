@@ -49,6 +49,7 @@ export const readResponseText = async (
   response,
   {
     maxBytes = getFeedResponseMaxBytes(),
+    timeoutMs = null,
     deadlineAt = null,
     signal = null
   } = {}
@@ -84,10 +85,21 @@ export const readResponseText = async (
   const contentHasher = createHash('sha256');
   const byteChunks = [];
   let rawBytes = 0;
+  const configuredBodyDeadlineAt = Number.isSafeInteger(timeoutMs) && timeoutMs > 0
+    ? Date.now() + timeoutMs
+    : null;
+  const parsedOverallDeadlineAt = Number(deadlineAt);
+  const overallDeadlineAt = Number.isFinite(parsedOverallDeadlineAt) &&
+    parsedOverallDeadlineAt > 0
+    ? parsedOverallDeadlineAt
+    : null;
+  const bodyDeadlineAt = configuredBodyDeadlineAt && overallDeadlineAt
+    ? Math.min(configuredBodyDeadlineAt, overallDeadlineAt)
+    : configuredBodyDeadlineAt || overallDeadlineAt;
 
   while (true) {
     try {
-      throwIfExecutionExpired({ deadlineAt, signal });
+      throwIfExecutionExpired({ deadlineAt: bodyDeadlineAt, signal });
     } catch {
       void Promise.resolve(response.body.cancel(createHttpError({
         type: 'timed_out',
@@ -113,14 +125,14 @@ export const readResponseText = async (
         signal.addEventListener('abort', abortBody, { once: true });
       }
       if (
-        deadlineAt !== null &&
-        deadlineAt !== undefined &&
-        Number.isFinite(Number(deadlineAt)) &&
-        Number(deadlineAt) > 0
+        bodyDeadlineAt !== null &&
+        bodyDeadlineAt !== undefined &&
+        Number.isFinite(Number(bodyDeadlineAt)) &&
+        Number(bodyDeadlineAt) > 0
       ) {
         timeoutId = setTimeout(
           resolveTimeout,
-          Math.max(1, remainingDeadlineMs(deadlineAt))
+          Math.max(1, remainingDeadlineMs(bodyDeadlineAt))
         );
       }
     });

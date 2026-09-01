@@ -1,6 +1,15 @@
 // Defines absolute feed execution deadlines shared across acquisition and persistence.
 
 const transactionLeaseAssertions = new WeakMap();
+export const DEFAULT_FEED_TIMEOUT_MS = 60000;
+
+// Resolves the complete per-feed processing deadline from configuration.
+export const resolveFeedTimeoutMs = (environment = process.env) => {
+  const configured = Number(environment.FEED_TIMEOUT_MS);
+  return Number.isSafeInteger(configured) && configured > 0
+    ? configured
+    : DEFAULT_FEED_TIMEOUT_MS;
+};
 
 // Creates the stable timeout error used across feed execution layers.
 export const createFeedTimeoutError = (message = 'Feed execution timed out') => {
@@ -136,6 +145,7 @@ export default {
   isFeedTimeoutError,
   remainingDeadlineMs,
   resolveDeadlineAt,
+  resolveFeedTimeoutMs,
   throwIfExecutionExpired,
   withExecutionTimeout
 };

@@ -52,7 +52,10 @@ import {
   processArticle,
   runPostCrawlSemanticPipeline
 } from '../services/crawl/index.js';
-import { withExecutionTimeout } from '../services/feeds/executionDeadline.js';
+import {
+  resolveFeedTimeoutMs,
+  withExecutionTimeout
+} from '../services/feeds/executionDeadline.js';
 import createArticleDuplicateCache, {
   addSharedUserArticleHashes,
   createSharedUserArticleHashIds
@@ -123,7 +126,7 @@ const acquireParallelFeedSlot = limit => new Promise(resolve => {
 });
 
 // Timeout wrapper for feed processing (default 60 seconds)
-const FEED_TIMEOUT_MS = parseInt(process.env.FEED_TIMEOUT_MS) || 60000;
+const FEED_TIMEOUT_MS = resolveFeedTimeoutMs();
 
 // Keeps claims beyond the feed deadline while allowing crashed workers to recover.
 const FEED_LEASE_MS = Math.max(

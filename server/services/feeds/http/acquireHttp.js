@@ -36,7 +36,8 @@ const requestIdentity = request => JSON.stringify({
   headers: request.headers,
   previousContentHash: request.previousContentHash,
   retries: request.retries,
-  timeoutMs: request.timeoutMs
+  connectTimeoutMs: request.connectTimeoutMs,
+  bodyTimeoutMs: request.bodyTimeoutMs
 });
 
 // Cancels a policy-discarded body without exposing transport-specific behavior.
@@ -127,6 +128,7 @@ const acquireRequest = async (request, transport) => {
   }
 
   const bodyResult = await readResponseText(response, {
+    timeoutMs: request.bodyTimeoutMs,
     deadlineAt: request.deadlineAt,
     signal: request.signal
   });
@@ -165,7 +167,7 @@ export const acquireHttp = async (
   const request = createHttpRequest(requestInput);
   const callerDeadlineAt = resolveDeadlineAt(
     request.deadlineAt,
-    request.timeoutMs
+    request.connectTimeoutMs + request.bodyTimeoutMs
   );
   try {
     const sharedOutcome = await requestCoalescer.run(
@@ -173,10 +175,7 @@ export const acquireHttp = async (
       sharedSignal => {
         const sharedRequest = createHttpRequest({
           ...request,
-          deadlineAt: Math.min(
-            callerDeadlineAt,
-            Date.now() + request.timeoutMs
-          ),
+          deadlineAt: callerDeadlineAt,
           signal: sharedSignal
         });
         return acquireRequest(sharedRequest, transport);

@@ -82,12 +82,17 @@ export const translateTransportError = error => {
   if (
     error?.name === 'TimeoutError' ||
     error?.name === 'AbortError' ||
-    code === 'ETIMEDOUT'
+    code === 'ETIMEDOUT' ||
+    code === 'UND_ERR_CONNECT_TIMEOUT'
   ) {
     return createHttpError({
       type: 'timed_out',
-      message: 'The fetch operation timed out',
-      code: 'REQUEST_TIMEOUT'
+      message: code === 'UND_ERR_CONNECT_TIMEOUT'
+        ? 'The connection attempt timed out'
+        : 'The fetch operation timed out',
+      code: code === 'UND_ERR_CONNECT_TIMEOUT'
+        ? 'CONNECT_TIMEOUT'
+        : 'REQUEST_TIMEOUT'
     });
   }
 
@@ -156,7 +161,10 @@ export const executeHttpRequest = async (
   fetchImplementation,
   { requestPolicy = originRequestPolicy } = {}
 ) => {
-  const deadline = resolveDeadlineAt(request.deadlineAt, request.timeoutMs);
+  const deadline = resolveDeadlineAt(
+    request.deadlineAt,
+    request.connectTimeoutMs + request.bodyTimeoutMs
+  );
 
   // Performs guarded attempts and retries eligible transient failures and timeouts.
   const attemptFetch = async attempt => {
@@ -202,6 +210,7 @@ export const executeHttpRequest = async (
         fetchImplementation,
         redirect => redirects.push(createHttpRedirect(redirect)),
         {
+          connectTimeoutMs: request.connectTimeoutMs,
           // Holds a separate permit for every redirect hop's actual origin.
           beforeRequest: url => requestPolicy.acquire(url, {
             deadlineAt: deadline,

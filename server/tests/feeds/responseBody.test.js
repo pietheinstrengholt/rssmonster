@@ -148,7 +148,7 @@ describe('neutral response body reader', () => {
       const transportResult = await executeHttpRequest(createHttpRequest({
         url: `http://127.0.0.1:${port}/redirect`,
         retries: 0,
-        timeoutMs: 1000
+        bodyTimeoutMs: 1000
       }));
       const result = await readResponseText(
         transportResult.response,
@@ -183,7 +183,7 @@ describe('neutral response body reader', () => {
           'if-modified-since': 'Sun, 09 Aug 2026 11:55:00 GMT'
         },
         retries: 0,
-        timeoutMs: 1000
+        bodyTimeoutMs: 1000
       }));
 
       expect(receivedHeaders['if-none-match']).toBe('"feed-v2"');
@@ -198,7 +198,7 @@ describe('neutral response body reader', () => {
     }
   });
 
-  it('keeps the total deadline active during body reads', async () => {
+  it('starts the configured body deadline after response headers arrive', async () => {
     const server = createServer((_request, response) => {
       response.writeHead(200);
       response.write('partial');
@@ -212,9 +212,11 @@ describe('neutral response body reader', () => {
       const transportResult = await executeHttpRequest(createHttpRequest({
         url: `http://127.0.0.1:${port}/feed`,
         retries: 0,
-        timeoutMs: 200
+        bodyTimeoutMs: 200
       }));
-      const result = await readResponseText(transportResult.response);
+      const result = await readResponseText(transportResult.response, {
+        timeoutMs: 200
+      });
 
       expect(result.error.type).toBe('timed_out');
       expect(result.error.code).toBe('BODY_TIMEOUT');
@@ -240,13 +242,13 @@ describe('neutral response body reader', () => {
     const first = await executeHttpRequest(createHttpRequest({
       url: 'https://publisher.example/slow',
       retries: 0,
-      timeoutMs: 2000
+      bodyTimeoutMs: 2000
     }), fetchImplementation, { requestPolicy });
     let secondSettled = false;
     const second = executeHttpRequest(createHttpRequest({
       url: 'https://publisher.example/second',
       retries: 0,
-      timeoutMs: 2000
+      bodyTimeoutMs: 2000
     }), fetchImplementation, { requestPolicy }).then(result => {
       secondSettled = true;
       return result;
@@ -273,12 +275,12 @@ describe('neutral response body reader', () => {
     const first = await executeHttpRequest(createHttpRequest({
       url: 'https://publisher.example/oversized',
       retries: 0,
-      timeoutMs: 2000
+      bodyTimeoutMs: 2000
     }), fetchImplementation, { requestPolicy });
     const second = executeHttpRequest(createHttpRequest({
       url: 'https://publisher.example/next',
       retries: 0,
-      timeoutMs: 2000
+      bodyTimeoutMs: 2000
     }), fetchImplementation, { requestPolicy });
 
     const bodyResult = await readResponseText(first.response, { maxBytes: 8 });
@@ -315,14 +317,14 @@ describe('neutral response body reader', () => {
     const redirected = await executeHttpRequest(createHttpRequest({
       url: 'https://alpha.example/start',
       retries: 0,
-      timeoutMs: 2000
+      bodyTimeoutMs: 2000
     }), fetchImplementation, { requestPolicy });
     let alphaSettled = false;
     let betaSettled = false;
     const alpha = executeHttpRequest(createHttpRequest({
       url: 'https://alpha.example/other',
       retries: 0,
-      timeoutMs: 2000
+      bodyTimeoutMs: 2000
     }), fetchImplementation, { requestPolicy }).then(result => {
       alphaSettled = true;
       return result;
@@ -330,7 +332,7 @@ describe('neutral response body reader', () => {
     const beta = executeHttpRequest(createHttpRequest({
       url: 'https://beta.example/other',
       retries: 0,
-      timeoutMs: 2000
+      bodyTimeoutMs: 2000
     }), fetchImplementation, { requestPolicy }).then(result => {
       betaSettled = true;
       return result;

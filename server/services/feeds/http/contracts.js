@@ -14,15 +14,30 @@ export const FETCH_OUTCOMES = Object.freeze({
 });
 
 const fetchOutcomeTypes = new Set(Object.values(FETCH_OUTCOMES));
-const DEFAULT_FEED_HTTP_TIMEOUT_MS = 10000;
+export const DEFAULT_FEED_CONNECT_TIMEOUT_MS = 10000;
+export const DEFAULT_FEED_BODY_TIMEOUT_MS = 30000;
 
-// Resolves the optional per-request feed timeout without making invalid configuration fatal.
-export const resolveFeedHttpTimeoutMs = (environment = process.env) => {
-  const configured = Number(environment.FEED_HTTP_TIMEOUT_MS);
+// Resolves one positive timeout without making invalid configuration fatal.
+const resolvePositiveTimeoutMs = (value, fallback) => {
+  const configured = Number(value);
   return Number.isFinite(configured) && Number.isInteger(configured) && configured > 0
     ? configured
-    : DEFAULT_FEED_HTTP_TIMEOUT_MS;
+    : fallback;
 };
+
+// Resolves the connection phase timeout used by the guarded HTTP connector.
+export const resolveFeedConnectTimeoutMs = (environment = process.env) =>
+  resolvePositiveTimeoutMs(
+    environment.FEED_CONNECT_TIMEOUT_MS,
+    DEFAULT_FEED_CONNECT_TIMEOUT_MS
+  );
+
+// Resolves the absolute response-body download timeout after headers arrive.
+export const resolveFeedBodyTimeoutMs = (environment = process.env) =>
+  resolvePositiveTimeoutMs(
+    environment.FEED_BODY_TIMEOUT_MS,
+    DEFAULT_FEED_BODY_TIMEOUT_MS
+  );
 
 // Normalizes headers into an immutable lower-case string map.
 const normalizeHeaders = (headers = {}) => Object.freeze(
@@ -39,7 +54,8 @@ export const createHttpRequest = ({
   url,
   headers = {},
   retries = 1,
-  timeoutMs = resolveFeedHttpTimeoutMs(),
+  connectTimeoutMs = resolveFeedConnectTimeoutMs(),
+  bodyTimeoutMs = resolveFeedBodyTimeoutMs(),
   previousContentHash = null,
   deadlineAt = null,
   signal = null
@@ -47,7 +63,8 @@ export const createHttpRequest = ({
   url: String(url || ''),
   headers: normalizeHeaders(headers),
   retries,
-  timeoutMs,
+  connectTimeoutMs,
+  bodyTimeoutMs,
   previousContentHash,
   deadlineAt,
   signal
@@ -138,6 +155,7 @@ export default {
   createHttpRedirect,
   createHttpRequest,
   createHttpResponse,
-  resolveFeedHttpTimeoutMs,
+  resolveFeedConnectTimeoutMs,
+  resolveFeedBodyTimeoutMs,
   isSuccessfulFetchOutcome
 };

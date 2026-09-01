@@ -1,12 +1,14 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 
+import { resolveFeedTimeoutMs } from '../../services/feeds/executionDeadline.js';
+
 const fetchURL = vi.fn();
 const mockedHttp = vi.hoisted(() => ({ requests: [] }));
 
 vi.mock('../../services/feeds/http/acquireHttp.js', () => ({
   acquireHttp: request => {
     mockedHttp.requests.push(request);
-    return fetchURL(request.url, request.retries, request.timeoutMs);
+    return fetchURL(request.url, request.retries, request);
   }
 }));
 
@@ -157,7 +159,9 @@ describe('discoverRssLink', () => {
     expect(fetchURL).toHaveBeenCalledWith(
       'https://www.youtube.com/@rssmonster',
       undefined,
-      undefined
+      expect.objectContaining({
+        url: 'https://www.youtube.com/@rssmonster'
+      })
     );
   });
 
@@ -317,7 +321,11 @@ describe('discoverRssLink', () => {
     });
 
     await expect(discoverRssLink(rssUrl)).resolves.toBe(rssUrl);
-    expect(fetchURL).toHaveBeenCalledWith(rssUrl, 1, 10000);
+    expect(fetchURL).toHaveBeenCalledWith(
+      rssUrl,
+      1,
+      expect.objectContaining({ url: rssUrl })
+    );
   });
 
   it('returns the parsed direct feed without fetching it twice', async () => {
@@ -630,7 +638,11 @@ describe('discoverRssLink', () => {
     });
 
     await expect(discoverRssLink(profileUrl)).resolves.toBe(rssUrl);
-    expect(fetchURL).toHaveBeenCalledWith(rssUrl, 0, 3000);
+    expect(fetchURL).toHaveBeenCalledWith(
+      rssUrl,
+      0,
+      expect.objectContaining({ url: rssUrl })
+    );
   });
 
   it('discovers Mastodon profile RSS by appending .rss', async () => {
@@ -650,7 +662,11 @@ describe('discoverRssLink', () => {
     });
 
     await expect(discoverRssLink(profileUrl)).resolves.toBe(rssUrl);
-    expect(fetchURL).toHaveBeenCalledWith(rssUrl, 0, 3000);
+    expect(fetchURL).toHaveBeenCalledWith(
+      rssUrl,
+      0,
+      expect.objectContaining({ url: rssUrl })
+    );
   });
 
   it('does not fetch the original URL again after the initial attempt', async () => {
@@ -670,13 +686,15 @@ describe('discoverRssLink', () => {
     expect(originalCalls).toHaveLength(1);
   });
 
-  it('stops discovery after the initial request times out', async () => {
+  it('stops discovery when the overall feed deadline expires', async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+    const startedAt = Date.parse('2026-01-01T00:00:00.000Z');
+    const expectedTimeoutMs = resolveFeedTimeoutMs();
+    vi.setSystemTime(startedAt);
     fetchURL.mockReset();
 
-    fetchURL.mockImplementation(async (_candidate, _retries, timeoutMs) => {
-      vi.setSystemTime(Date.now() + timeoutMs);
+    fetchURL.mockImplementation(async (_candidate, _retries, request) => {
+      vi.setSystemTime(request.deadlineAt);
       return {
         type: 'timed_out',
         error: { type: 'timed_out', message: 'The fetch operation timed out' }
@@ -685,17 +703,23 @@ describe('discoverRssLink', () => {
 
     await expect(
       discoverRssLink('https://example.com/news')
-    ).resolves.toBeUndefined();
+    ).rejects.toMatchObject({
+      name: 'TimeoutError',
+      code: 'FEED_EXECUTION_TIMEOUT'
+    });
 
     const allocatedMs = fetchURL.mock.calls.reduce(
-      (total, call) => total + call[2],
+      (total, call) => total + call[2].deadlineAt - startedAt,
       0
     );
-    expect(allocatedMs).toBe(10000);
+    expect(allocatedMs).toBe(expectedTimeoutMs);
     expect(fetchURL.mock.calls[0]).toEqual([
       'https://example.com/news',
       1,
-      10000
+      expect.objectContaining({
+        url: 'https://example.com/news',
+        deadlineAt: startedAt + expectedTimeoutMs
+      })
     ]);
     expect(fetchURL).toHaveBeenCalledTimes(1);
 

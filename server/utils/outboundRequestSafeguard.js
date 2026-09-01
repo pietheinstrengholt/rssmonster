@@ -270,29 +270,47 @@ const resolveSafeConnectionTarget = async (hostnameInput, portInput) => {
   return addresses[0].address;
 };
 
-const defaultConnector = buildConnector({});
+const guardedDispatchers = new Map();
 
-// Connects only after the selected DNS result has passed the SSRF policy.
-const guardedConnector = (options, callback) => {
-  const originalHostname = normalizeHostname(options.hostname);
+// Creates one SSRF-guarded connector with an explicit TCP/TLS phase timeout.
+const createGuardedDispatcher = connectTimeoutMs => {
+  const defaultConnector = buildConnector({ timeout: connectTimeoutMs });
+  const guardedConnector = (options, callback) => {
+    const originalHostname = normalizeHostname(options.hostname);
 
-  resolveSafeConnectionTarget(originalHostname, options.port)
-    .then(address => {
-      defaultConnector(
-        {
-          ...options,
-          hostname: address,
-          servername:
-            options.servername ||
-            (isIP(originalHostname) === 0 ? originalHostname : undefined)
-        },
-        callback
-      );
-    })
-    .catch(error => callback(error, null));
+    resolveSafeConnectionTarget(originalHostname, options.port)
+      .then(address => {
+        defaultConnector(
+          {
+            ...options,
+            hostname: address,
+            servername:
+              options.servername ||
+              (isIP(originalHostname) === 0 ? originalHostname : undefined)
+          },
+          callback
+        );
+      })
+      .catch(error => callback(error, null));
+  };
+
+  return new Agent({ connect: guardedConnector });
 };
 
-const guardedDispatcher = new Agent({ connect: guardedConnector });
+// Reuses process-lifetime connection pools for each configured timeout.
+const getGuardedDispatcher = connectTimeoutMs => {
+  const normalizedTimeoutMs = Number.isSafeInteger(connectTimeoutMs) &&
+    connectTimeoutMs > 0
+    ? connectTimeoutMs
+    : 10000;
+  if (!guardedDispatchers.has(normalizedTimeoutMs)) {
+    guardedDispatchers.set(
+      normalizedTimeoutMs,
+      createGuardedDispatcher(normalizedTimeoutMs)
+    );
+  }
+  return guardedDispatchers.get(normalizedTimeoutMs);
+};
 
 // Cancels an intermediate redirect response without masking the main result.
 const cancelResponseBody = async response => {
@@ -336,7 +354,7 @@ export const fetchWithOutboundRequestSafeguard = async (
       response = await fetchImplementation(currentUrl, {
         ...options,
         redirect: 'manual',
-        dispatcher: guardedDispatcher
+        dispatcher: getGuardedDispatcher(requestLifecycle.connectTimeoutMs)
       });
     } catch (error) {
       await requestLifecycle.afterRequest?.(lifecycleToken);

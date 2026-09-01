@@ -16,6 +16,7 @@ import {
 import {
   isFeedTimeoutError,
   resolveDeadlineAt,
+  resolveFeedTimeoutMs,
   throwIfExecutionExpired
 } from './executionDeadline.js';
 import { assertFeedPersistenceUrl } from './feedPersistenceMetadata.js';
@@ -427,20 +428,14 @@ const unique = (arr) => {
 
 // Defines the direct fetch retries enforced by this service.
 const DIRECT_FETCH_RETRIES = 1;
-// Defines the direct fetch timeout ms enforced by this service.
-const DIRECT_FETCH_TIMEOUT_MS = 10000;
 // Defines the fallback fetch retries enforced by this service.
 const FALLBACK_FETCH_RETRIES = 0;
-// Defines the fallback fetch timeout ms enforced by this service.
-const FALLBACK_FETCH_TIMEOUT_MS = 3000;
-// Defines the discovery timeout ms enforced by this service.
-const DISCOVERY_TIMEOUT_MS = 15000;
 
 // Creates an error when RSS discovery has exhausted its overall time budget.
-const createDiscoveryTimeoutError = () => {
+const createDiscoveryTimeoutError = timeoutMs => {
   // Derives the error required while creating discovery timeout error.
   const error = new Error(
-    `RSS discovery timed out after ${DISCOVERY_TIMEOUT_MS}ms`
+    `RSS discovery timed out after ${timeoutMs}ms`
   );
   error.name = 'TimeoutError';
   return error;
@@ -464,9 +459,10 @@ export const discoverRssLink = async (url, feed, options = {}) => {
     }
 
     // Derives the discovery deadline required while performing discover rss link.
+    const discoveryTimeoutMs = resolveFeedTimeoutMs();
     const discoveryDeadline = resolveDeadlineAt(
       options.execution?.deadlineAt ?? options.deadlineAt,
-      DISCOVERY_TIMEOUT_MS
+      discoveryTimeoutMs
     );
     const execution = options.execution || {
       deadlineAt: discoveryDeadline,
@@ -515,19 +511,17 @@ export const discoverRssLink = async (url, feed, options = {}) => {
     const fetchCandidate = async (
       candidate,
       retries,
-      timeoutMs,
       requestState = {},
       provenance = { role: 'candidate', kind: 'speculative' }
     ) => {
       // Derives the remaining ms required while performing fetch candidate.
       const remainingMs = discoveryDeadline - Date.now();
       // Rejects processing when remaining ms is at most value.
-      if (remainingMs <= 0) throw createDiscoveryTimeoutError();
+      if (remainingMs <= 0) throw createDiscoveryTimeoutError(discoveryTimeoutMs);
 
       const outcome = await acquireHttp({
         url: candidate,
         retries,
-        timeoutMs: Math.min(timeoutMs, remainingMs),
         deadlineAt: discoveryDeadline,
         signal: execution.signal,
         ...requestState
@@ -544,7 +538,6 @@ export const discoverRssLink = async (url, feed, options = {}) => {
     const initialOutcome = await fetchCandidate(
       url,
       DIRECT_FETCH_RETRIES,
-      DIRECT_FETCH_TIMEOUT_MS,
       options.conditionalRequest,
       { role: 'primary', kind: 'primary' }
     );
@@ -703,7 +696,6 @@ export const discoverRssLink = async (url, feed, options = {}) => {
       const homepageOutcome = await fetchCandidate(
         baseUrl,
         FALLBACK_FETCH_RETRIES,
-        FALLBACK_FETCH_TIMEOUT_MS,
         {},
         { role: 'candidate', kind: 'homepage', speculative: true }
       );
@@ -780,7 +772,6 @@ export const discoverRssLink = async (url, feed, options = {}) => {
         const candidateOutcome = await fetchCandidate(
           candidate.url,
           FALLBACK_FETCH_RETRIES,
-          FALLBACK_FETCH_TIMEOUT_MS,
           {},
           {
             role: 'candidate',
@@ -868,7 +859,6 @@ export const discoverRssLink = async (url, feed, options = {}) => {
                   const metaOutcome = await fetchCandidate(
                     resolvedMetaUrl,
                     FALLBACK_FETCH_RETRIES,
-                    FALLBACK_FETCH_TIMEOUT_MS,
                     {},
                     {
                       role: 'candidate',

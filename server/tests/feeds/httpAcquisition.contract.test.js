@@ -9,7 +9,8 @@ import {
   createHttpError,
   createHttpRequest,
   createHttpResponse,
-  resolveFeedHttpTimeoutMs
+  resolveFeedBodyTimeoutMs,
+  resolveFeedConnectTimeoutMs
 } from '../../services/feeds/http/contracts.js';
 import {
   executeHttpRequest,
@@ -42,52 +43,65 @@ const immediateRequestPolicy = () => ({
   acquire: vi.fn().mockResolvedValue(vi.fn())
 });
 
-// Runs one assertion with a temporary feed HTTP timeout environment value.
-const withFeedHttpTimeout = (value, assertion) => {
-  const previous = process.env.FEED_HTTP_TIMEOUT_MS;
+// Runs one assertion with temporary feed phase timeout environment values.
+const withFeedPhaseTimeouts = (connectValue, bodyValue, assertion) => {
+  const previousConnect = process.env.FEED_CONNECT_TIMEOUT_MS;
+  const previousBody = process.env.FEED_BODY_TIMEOUT_MS;
   try {
-    if (value === undefined) delete process.env.FEED_HTTP_TIMEOUT_MS;
-    else process.env.FEED_HTTP_TIMEOUT_MS = value;
+    if (connectValue === undefined) delete process.env.FEED_CONNECT_TIMEOUT_MS;
+    else process.env.FEED_CONNECT_TIMEOUT_MS = connectValue;
+    if (bodyValue === undefined) delete process.env.FEED_BODY_TIMEOUT_MS;
+    else process.env.FEED_BODY_TIMEOUT_MS = bodyValue;
     assertion();
   } finally {
-    if (previous === undefined) delete process.env.FEED_HTTP_TIMEOUT_MS;
-    else process.env.FEED_HTTP_TIMEOUT_MS = previous;
+    if (previousConnect === undefined) delete process.env.FEED_CONNECT_TIMEOUT_MS;
+    else process.env.FEED_CONNECT_TIMEOUT_MS = previousConnect;
+    if (previousBody === undefined) delete process.env.FEED_BODY_TIMEOUT_MS;
+    else process.env.FEED_BODY_TIMEOUT_MS = previousBody;
   }
 };
 
 describe('feed HTTP acquisition contract', () => {
-  it('defaults feed HTTP requests to ten seconds', () => {
-    expect(resolveFeedHttpTimeoutMs({})).toBe(10000);
-    withFeedHttpTimeout(undefined, () => {
-      expect(createHttpRequest({ url: 'https://example.com/feed.xml' }).timeoutMs)
-        .toBe(10000);
+  it('defaults connections to ten seconds and bodies to thirty seconds', () => {
+    expect(resolveFeedConnectTimeoutMs({})).toBe(10000);
+    expect(resolveFeedBodyTimeoutMs({})).toBe(30000);
+    withFeedPhaseTimeouts(undefined, undefined, () => {
+      expect(createHttpRequest({ url: 'https://example.com/feed.xml' }))
+        .toMatchObject({ connectTimeoutMs: 10000, bodyTimeoutMs: 30000 });
     });
   });
 
-  it('uses a valid configured feed HTTP timeout', () => {
-    expect(resolveFeedHttpTimeoutMs({ FEED_HTTP_TIMEOUT_MS: '15000' })).toBe(15000);
-    withFeedHttpTimeout('15000', () => {
-      expect(createHttpRequest({ url: 'https://example.com/feed.xml' }).timeoutMs)
-        .toBe(15000);
+  it('uses valid configured feed phase timeouts', () => {
+    expect(resolveFeedConnectTimeoutMs({ FEED_CONNECT_TIMEOUT_MS: '12000' }))
+      .toBe(12000);
+    expect(resolveFeedBodyTimeoutMs({ FEED_BODY_TIMEOUT_MS: '35000' }))
+      .toBe(35000);
+    withFeedPhaseTimeouts('12000', '35000', () => {
+      expect(createHttpRequest({ url: 'https://example.com/feed.xml' }))
+        .toMatchObject({ connectTimeoutMs: 12000, bodyTimeoutMs: 35000 });
     });
   });
 
   it.each(['invalid', '0', '-1', '1.5', 'Infinity', ''])(
-    'falls back to ten seconds for invalid timeout value %j',
+    'falls back to phase defaults for invalid timeout value %j',
     value => {
-      expect(resolveFeedHttpTimeoutMs({ FEED_HTTP_TIMEOUT_MS: value })).toBe(10000);
-      withFeedHttpTimeout(value, () => {
-        expect(createHttpRequest({ url: 'https://example.com/feed.xml' }).timeoutMs)
-          .toBe(10000);
+      expect(resolveFeedConnectTimeoutMs({ FEED_CONNECT_TIMEOUT_MS: value }))
+        .toBe(10000);
+      expect(resolveFeedBodyTimeoutMs({ FEED_BODY_TIMEOUT_MS: value }))
+        .toBe(30000);
+      withFeedPhaseTimeouts(value, value, () => {
+        expect(createHttpRequest({ url: 'https://example.com/feed.xml' }))
+          .toMatchObject({ connectTimeoutMs: 10000, bodyTimeoutMs: 30000 });
       });
     }
   );
 
-  it('preserves an explicit request timeout override', () => {
+  it('preserves explicit phase timeout overrides', () => {
     expect(createHttpRequest({
       url: 'https://example.com/feed.xml',
-      timeoutMs: 2500
-    }).timeoutMs).toBe(2500);
+      connectTimeoutMs: 2500,
+      bodyTimeoutMs: 7500
+    })).toMatchObject({ connectTimeoutMs: 2500, bodyTimeoutMs: 7500 });
   });
 
   it('defines exactly the supported closed outcome set', () => {
@@ -262,13 +276,12 @@ describe('feed HTTP acquisition contract', () => {
   });
 
   it.each([
-    ['longer parent deadline', 5000, 1000, 1000],
-    ['shorter parent deadline', 500, 1000, 500],
-    ['missing parent deadline', null, 1000, 1000]
-  ])('caps the shared request with the %s', async (
+    ['longer parent deadline', 5000, 5000],
+    ['shorter parent deadline', 500, 500],
+    ['missing parent deadline', null, 1000]
+  ])('uses the %s as the hard request deadline', async (
     _label,
     parentOffsetMs,
-    timeoutMs,
     expectedOffsetMs
   ) => {
     vi.useFakeTimers();
@@ -279,7 +292,8 @@ describe('feed HTTP acquisition contract', () => {
     });
     const request = {
       url: `https://example.com/shared-deadline-${expectedOffsetMs}.xml`,
-      timeoutMs,
+      connectTimeoutMs: 250,
+      bodyTimeoutMs: 750,
       ...(parentOffsetMs === null
         ? {}
         : { deadlineAt: now.getTime() + parentOffsetMs })
@@ -292,6 +306,49 @@ describe('feed HTTP acquisition contract', () => {
       expect(transport.mock.calls[0][0].deadlineAt).toBe(
         now.getTime() + expectedOffsetMs
       );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('starts the body timeout after response headers arrive', async () => {
+    vi.useFakeTimers();
+    const now = new Date('2026-08-10T12:00:00.000Z');
+    vi.setSystemTime(now);
+    let delivered = false;
+    const body = createHttpBodyStream({
+      read: async () => {
+        if (delivered) return { done: true, chunk: null };
+        await new Promise(resolve => setTimeout(resolve, 750));
+        delivered = true;
+        return { done: false, chunk: new TextEncoder().encode('slow feed') };
+      },
+      cancel: vi.fn()
+    });
+    const transport = vi.fn(async () => {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      return {
+        response: createHttpResponse({
+          status: 200,
+          url: 'https://example.com/slow-body.xml',
+          body
+        })
+      };
+    });
+
+    try {
+      const pending = acquireHttp({
+        url: 'https://example.com/slow-body.xml',
+        connectTimeoutMs: 1000,
+        bodyTimeoutMs: 1000,
+        deadlineAt: now.getTime() + 5000
+      }, { transport });
+
+      await vi.advanceTimersByTimeAsync(3000);
+      await expect(pending).resolves.toMatchObject({
+        type: FETCH_OUTCOMES.CHANGED,
+        bodyText: 'slow feed'
+      });
     } finally {
       vi.useRealTimers();
     }
@@ -491,13 +548,25 @@ describe('Fetch transport exception translation', () => {
     expect(translated.code).toBe(expectedCode);
   });
 
+  it('classifies the guarded connector deadline as a connection timeout', () => {
+    const translated = translateTransportError(Object.assign(
+      new Error('connection timed out'),
+      { code: 'UND_ERR_CONNECT_TIMEOUT' }
+    ));
+
+    expect(translated).toMatchObject({
+      type: FETCH_OUTCOMES.TIMED_OUT,
+      code: 'CONNECT_TIMEOUT'
+    });
+  });
+
   it('returns translated errors instead of throwing client exceptions', async () => {
     const clientError = new TypeError('fetch failed');
     const result = await executeHttpRequest(
       createHttpRequest({
         url: 'https://example.com/feed.xml',
         retries: 0,
-        timeoutMs: 1000
+        bodyTimeoutMs: 1000
       }),
       vi.fn().mockRejectedValue(clientError)
     );
@@ -520,7 +589,7 @@ describe('Fetch transport exception translation', () => {
       createHttpRequest({
         url: 'https://example.com/feed.xml',
         retries: 1,
-        timeoutMs: 2000
+        bodyTimeoutMs: 2000
       }),
       vi.fn().mockRejectedValue(new TypeError('fetch failed'))
     );
@@ -541,7 +610,7 @@ describe('Fetch transport exception translation', () => {
         createHttpRequest({
           url: 'https://example.com/slow-success.xml',
           retries: 1,
-          timeoutMs: 10000
+          bodyTimeoutMs: 10000
         }),
         fetchImplementation,
         { requestPolicy: immediateRequestPolicy() }
@@ -582,7 +651,7 @@ describe('Fetch transport exception translation', () => {
       createHttpRequest({
         url: 'https://example.com/retry-success.xml',
         retries: 1,
-        timeoutMs: 2000
+        bodyTimeoutMs: 2000
       }),
       fetchImplementation,
       { requestPolicy: immediateRequestPolicy() }
@@ -609,7 +678,7 @@ describe('Fetch transport exception translation', () => {
       createHttpRequest({
         url: 'https://example.com/no-retry-budget.xml',
         retries: 1,
-        timeoutMs: 10000,
+        bodyTimeoutMs: 10000,
         deadlineAt
       }),
       fetchImplementation,
@@ -634,7 +703,7 @@ describe('Fetch transport exception translation', () => {
       createHttpRequest({
         url: 'https://example.com/parent-abort.xml',
         retries: 1,
-        timeoutMs: 2000,
+        bodyTimeoutMs: 2000,
         signal: parentController.signal
       }),
       fetchImplementation,
@@ -663,7 +732,7 @@ describe('Fetch transport exception translation', () => {
       createHttpRequest({
         url: 'https://example.com/non-retryable.xml',
         retries: 1,
-        timeoutMs: 1000
+        bodyTimeoutMs: 1000
       }),
       fetchImplementation,
       { requestPolicy: immediateRequestPolicy() }
@@ -685,7 +754,7 @@ describe('Fetch transport exception translation', () => {
       createHttpRequest({
         url: 'https://example.com/absolute-deadline.xml',
         retries: 1,
-        timeoutMs: 1000,
+        bodyTimeoutMs: 1000,
         deadlineAt
       }),
       fetchImplementation,

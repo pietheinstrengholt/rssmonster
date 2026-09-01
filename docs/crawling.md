@@ -80,6 +80,8 @@ The principal execution controls are:
 | `CRAWL_PARALLELPROCESSFLAG` | `0` | Enable parallel feed processing on MySQL when set to `1`. |
 | `FEED_PARALLEL_CONCURRENCY` | `3` | Maximum simultaneous feed workers in the process. |
 | `FEED_TIMEOUT_MS` | `60000` | Complete processing deadline for one feed. |
+| `FEED_CONNECT_TIMEOUT_MS` | `10000` | TCP/TLS connection deadline for each feed request. |
+| `FEED_BODY_TIMEOUT_MS` | `30000` | Body download deadline starting after response headers arrive. |
 | `FEED_LEASE_MS` | `120000` | Feed-claim lease; the effective value is at least twice the feed timeout. |
 | `CRAWL_TIMEOUT_MS` | `600000` | Overall deadline for one user's crawl invocation. |
 | `CRAWL_RUN_HEARTBEAT_INTERVAL_MS` | `30000` | Renewal interval for an active per-user crawl run. |

@@ -183,7 +183,8 @@ AI processing disabled, so it does not start an optional-job consumer.
 
 | Variable | Default | Unit | Effect |
 | --- | ---: | --- | --- |
-| `FEED_HTTP_TIMEOUT_MS` | `10000` | ms | Deadline for an individual feed HTTP request. |
+| `FEED_CONNECT_TIMEOUT_MS` | `10000` | ms | Maximum time allowed to establish a feed TCP/TLS connection. |
+| `FEED_BODY_TIMEOUT_MS` | `30000` | ms | Maximum time allowed to download a feed body after response headers arrive. |
 | `FEED_RESPONSE_MAX_BYTES` | `10485760` | bytes | Maximum downloaded response body (10 MiB). |
 | `FEED_ORIGIN_MAX_CONCURRENCY` | `2` | requests | Simultaneous requests to the same origin. |
 | `FEED_ORIGIN_MIN_SPACING_MS` | `250` | ms | Minimum delay between requests to the same origin. Set to `0` to disable spacing. |
@@ -191,8 +192,12 @@ AI processing disabled, so it does not start an optional-job consumer.
 | `FEED_RETRY_AFTER_MAX_MS` | `604800000` | ms | Maximum accepted `Retry-After` delay (seven days). |
 
 Lower per-origin concurrency and larger spacing are gentler on publishers.
-Increasing response or timeout limits can accommodate unusual feeds, but also
-increases the resources a slow or oversized response may consume.
+The connection and body limits apply to their individual HTTP phases, while
+`FEED_TIMEOUT_MS` remains the hard deadline for all acquisition, parsing, and
+persistence work for one feed. Increasing response or timeout limits can
+accommodate unusual feeds, but also increases the resources a slow or oversized
+response may consume. Replace the former `FEED_HTTP_TIMEOUT_MS` setting with
+the two phase-specific settings when upgrading an existing manual installation.
 
 ### Parser Safety Limits
 
