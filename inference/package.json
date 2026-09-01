@@ -31,5 +31,8 @@
     "globals": "^17.11.0",
     "supertest": "^7.2.2",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "adm-zip": "0.6.0"
   }
 }
