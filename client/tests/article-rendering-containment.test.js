@@ -71,11 +71,12 @@ describe('Article rendering containment', () => {
     ]));
   });
 
-  // Verifies normal and compact cards reserve distinct realistic sizes while print renders every article.
-  it('defines view-specific intrinsic sizes and disables skipping for print', () => {
-    expect(articleSource).toMatch(/\.article-card\s*\{[^}]*content-visibility:\s*auto;[^}]*contain-intrinsic-size:\s*auto 720px;/s);
+  // Verifies article contents remain rendered while normal and compact cards retain their intrinsic sizes.
+  it('avoids dynamic content skipping and defines view-specific intrinsic sizes', () => {
+    expect(articleSource).toMatch(/\.article-card\s*\{[^}]*content-visibility:\s*visible;[^}]*contain-intrinsic-size:\s*auto 720px;/s);
     expect(articleSource).toMatch(/\.article-list-card\s*\{[^}]*contain-intrinsic-size:\s*auto 72px;/s);
     expect(articleSource).toMatch(/@media print\s*\{\s*\.article-card\s*\{[^}]*content-visibility:\s*visible;[^}]*contain-intrinsic-size:\s*none;/s);
+    expect(articleSource).not.toContain('.article-card:has(.article-actions .app-dropdown__menu--open)');
   });
 
   // Verifies swipe clipping stays local to each article while the collection can expand vertically.
@@ -95,9 +96,8 @@ describe('Article rendering containment', () => {
     expect(articleListSource).not.toMatch(/\.article-list-view\.article-list-view--expanded::after/);
   });
 
-  // Verifies an open actions menu escapes article containment and stacks above surrounding content.
-  it('raises an article while its actions menu is open', () => {
-    expect(articleSource).toMatch(/\.article-card:has\(\.article-actions \.app-dropdown__menu--open\)\)\s*\{[^}]*content-visibility:\s*visible;[^}]*position:\s*relative;[^}]*z-index:\s*var\(--layer-dropdown\);/s);
+  // Verifies an open actions menu stacks above surrounding content without changing article containment.
+  it('raises the actions menu above surrounding content', () => {
     expect(articleActionsSource).toMatch(/\.app-dropdown__menu\s*\{[^}]*z-index:\s*calc\(var\(--layer-dropdown\) \+ 1\);/s);
   });
 

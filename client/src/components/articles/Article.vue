@@ -442,16 +442,10 @@ export default {
   --article-space-section: 12px;
   --article-inline-padding: 16px;
   background-color: var(--surface-card);
-  content-visibility: auto;
+  /* Keep article contents rendered to avoid Chromium crashes when an actions menu closes. */
+  content-visibility: visible;
   contain-intrinsic-size: auto 720px;
   margin-bottom: 0px;
-}
-
-/* Lets an open article menu escape rendering containment and overlay surrounding content. */
-:global(.article-card:has(.article-actions .app-dropdown__menu--open)) {
-  content-visibility: visible;
-  position: relative;
-  z-index: var(--layer-dropdown);
 }
 
 .article-card .article-body {
