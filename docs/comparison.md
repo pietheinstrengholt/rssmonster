@@ -1,118 +1,129 @@
 ---
 layout: page
-title: Compare RSSMonster
+title: Compare self-hosted RSS readers
+description: "Compare RSSMonster with FreshRSS, Miniflux, selfoss, Tiny Tiny RSS, Feedbin, and CommaFeed to find the right fit for minimal reading, extensibility, self-hosting, or semantic discovery."
 nav_order: 3
+has_children: true
+permalink: /compare/
 ---
 
-# How RSSMonster Compares
+# Compare RSSMonster
 
-RSSMonster, Feedbin, CommaFeed, selfoss, FreshRSS, and Tiny Tiny RSS can all
-collect feeds and provide a focused place to read them. The main difference is
-what happens after an article arrives.
+There is no single best RSS reader. Miniflux deliberately keeps reading
+minimal, FreshRSS emphasizes maturity and extensibility, selfoss supports
+extensible source types, Tiny Tiny RSS serves configurable power-user
+workflows, CommaFeed offers a familiar Google Reader-style experience, and
+Feedbin provides a polished managed service.
 
-RSSMonster is designed for people whose problem is no longer *getting* enough
-information, but deciding which stories deserve attention. Its semantic layer
-groups coverage into Events and Topics, models evolving interests, and exposes
-the signals behind recommended ordering. The other readers in this comparison
-generally emphasize a traditional chronological inbox, search, rules, or a
-broad extension ecosystem.
+RSSMonster is aimed at users whose main problem is no longer subscribing to
+feeds, but making sense of everything those feeds produce. This overview is a
+quick decision aid; follow the individual comparisons for researched details
+and trade-offs.
 
-> **Naming note:** “Flux RSS” is interpreted here as **FreshRSS**, the
-> established self-hosted reader. If you meant a different project, please
-> [open an issue](https://github.com/pietheinstrengholt/rssmonster/issues) so
-> this comparison can be updated.
+## Quick comparison
 
-## At a Glance
+| Reader | Best for | Design philosophy | Hosting model | Organization and discovery |
+|:--|:--|:--|:--|:--|
+| [RSSMonster](#what-makes-rssmonster-different) | High-volume, overlapping feed collections | RSS with an optional information-management layer | Self-hosted | Smart Folders, related stories, Events, Topics, and explainable rankings |
+| [FreshRSS]({{ '/compare/freshrss/' | relative_url }}) | Mature general-purpose RSS | Traditional feed management plus extensibility | Self-hosted | Advanced filters, saved user queries, labels, themes, and extensions |
+| [Miniflux]({{ '/compare/miniflux/' | relative_url }}) | Minimalism and focused reading | Deliberately simple and opinionated | Self-hosted | Categories, bookmarks, search, and feed filters; no comparable semantic ranking layer is documented |
+| [selfoss]({{ '/compare/selfoss/' | relative_url }}) | Lightweight, extensible aggregation | Bring different source types into one stream | Self-hosted | Source filters, tags, and custom spouts; no comparable story layer is documented |
+| [Tiny Tiny RSS]({{ '/compare/tiny-tiny-rss/' | relative_url }}) | Power users wanting explicit control | Configurable RSS through filters, scoring, and plug-ins | Self-hosted | Regex automation, numeric scoring, folders, tags, labels, and plug-ins |
+| [Feedbin]({{ '/compare/feedbin/' | relative_url }}) | Polished reading without server maintenance | Managed chronological feed-reading service | Hosted subscription | Expressive search, saved searches, actions, and visible article changes |
+| [CommaFeed]({{ '/compare/commafeed/' | relative_url }}) | A familiar Google Reader-style workflow | Straightforward RSS with flexible deployment | Self-hosted or a limited free public instance | Feed/category organization, read-state rules, and several client APIs |
 
-The table describes built-in or officially documented capabilities as of
-**21 August 2026**. “Not documented” does not mean a feature is impossible;
-an extension, community integration, or newer release may provide it.
+## Which one should I choose?
 
-| Capability | RSSMonster | Feedbin | CommaFeed | selfoss | FreshRSS | Tiny Tiny RSS |
-|:--|:--|:--|:--|:--|:--|:--|
-| **Primary deployment** | Self-hosted; single-container SQLite quick start, with MySQL support | Hosted subscription; source is available, but upstream does not recommend production self-hosting | Free hosted service or self-hosted; official Docker image | Self-hosted lightweight PHP application; official docs point to an unofficial Docker image | Self-hosted, with Docker and conventional web-server installation options | Self-hosted; Docker is the supported installation path |
-| **Core organization** | Feeds, categories, tags, Smart Folders, Events, Topics, and Interest Islands | Feeds, tags, and saved searches | Feeds and categories in a Google Reader-style interface | Sources and tags in a unified multi-source stream | Feeds, categories, labels, favorites, and user queries | Feed folders, labels, tags, and special feeds |
-| **Reusable query views** | Smart Folders use composable article, score, state, date, and semantic filters | Saved searches use an expressive full-text query syntax | No comparable saved-query feature is highlighted in the official feature list | Source and tag filtering; no comparable saved-query feature is documented | User queries save advanced search and filter expressions | Advanced full-text, field, and date search; reusable saved-query views are not documented |
-| **Incoming-content automation** | Rules can delete, star, mark read, flag advertising, or lower quality | Actions can star, mark read, and send push notifications | User-defined rules can automatically mark matching articles as read | Extensible through custom spouts and plug-ins; comparable built-in article actions are not documented | Filter actions can automatically mark articles read or favorite them | Regex filters can delete, mark read, star, tag, label, publish, modify score, or invoke a plug-in |
-| **Story-level grouping** | Built-in semantic Events group reporting about the same occurrence; Topics connect Events into longer-running themes | Not documented as a built-in capability | Not documented as a built-in capability | Not documented as a built-in capability | Not documented as a built-in capability | Deduplication is documented, but semantic story/event grouping is not |
-| **Personalized discovery** | Interest Islands connect reading, favorites, and clicks to explainable areas of interest | No comparable semantic interest model is documented | No comparable semantic interest model is documented | No comparable semantic interest model is documented | No comparable semantic interest model is documented | Rule-based scoring is available; no comparable semantic interest model is documented |
-| **Ranking approach** | Quality combines article quality with FeedTrust; Recommended emphasizes personal interest; Top Stories emphasizes current multi-source Event importance; signals remain inspectable | Chronological or text-relevance search ordering; no comparable explainable story-ranking layer is documented | Traditional feed views; no comparable story-ranking layer is documented | Traditional unified stream; no comparable story-ranking layer is documented | Newest/oldest ordering with advanced filters; no comparable story-ranking layer is documented | User-authored filters can modify a visible numeric score and affect ordering |
-| **Third-party client API** | Google Reader-compatible API, Fever API, and native RSSMonster API | Feedbin API and a broad client ecosystem | REST API and Fever-compatible API | RESTful JSON API | Google Reader-compatible and Fever APIs | Native JSON API |
-| **Responsive reading** | Dedicated desktop reading modes, responsive phone/tablet layouts, dark mode, and installable PWA | Polished responsive hosted web interface, themes, and native-client sync | Four layouts, dark mode, responsive web UI, and keyboard shortcuts | Adaptive web layout plus a third-party Android app | Responsive web UI, themes, and native-client APIs | Web interface, themes, keyboard shortcuts, and native-client API |
+### Choose Miniflux if...
 
-## Where Each Reader Stands Out
+You want RSS to stay deliberately minimal and predictable.
+[Read RSSMonster vs Miniflux →]({{ '/compare/miniflux/' | relative_url }})
 
-### RSSMonster
+### Choose FreshRSS if...
 
-Choose RSSMonster when you follow overlapping sources and want to reduce the
-cost of repeated coverage. Its distinguishing path is
-**Article → Event → Topic → Interest Island**, combined with declarative Smart
-Folders and visible ranking signals. Start with [How RSSMonster Works](how-rssmonster-works.md),
-[Smart Folders](smart-folders.md), and [Scoring & Ranking](scoring.md).
+You value maturity, configurability, extensions, and a broad self-hosted
+ecosystem. [Read RSSMonster vs FreshRSS →]({{ '/compare/freshrss/' | relative_url }})
 
-### Feedbin
+### Choose selfoss if...
 
-Feedbin is a strong choice when you want a polished hosted service rather than
-operating your own server. It combines an excellent reading interface with
-saved searches, actions, full-content extraction, newsletters, podcasts,
-YouTube, and broad native-app support. Although its source is available, the
-project explicitly says that production self-hosting is complex and not its
-primary goal.
+You want lightweight PHP deployment or custom spouts that aggregate sources
+beyond ordinary feeds. [Read RSSMonster vs selfoss →]({{ '/compare/selfoss/' | relative_url }})
 
-### CommaFeed
+### Choose Tiny Tiny RSS if...
 
-CommaFeed is a strong choice for a familiar Google Reader-style experience,
-straightforward Docker deployment, responsive layouts, push notifications,
-and installations serving many users. It focuses on a fast, conventional feed
-workflow rather than semantic grouping and recommendation.
+You want a long-established platform with deep filters, rule-based scoring,
+and plug-ins. [Read RSSMonster vs Tiny Tiny RSS →]({{ '/compare/tiny-tiny-rss/' | relative_url }})
 
-### selfoss
+### Choose Feedbin if...
 
-selfoss is a strong choice when low overhead and extensibility matter. It is a
-small PHP application that supports SQLite, MySQL, and PostgreSQL, and its
-“spout” plug-in model can aggregate sources beyond ordinary RSS feeds.
+You want a polished managed service and client ecosystem without operating the
+infrastructure yourself. [Read RSSMonster vs Feedbin →]({{ '/compare/feedbin/' | relative_url }})
 
-### FreshRSS
+### Choose CommaFeed if...
 
-FreshRSS is a strong general-purpose self-hosted choice with a mature ecosystem.
-It offers multi-user hosting, responsive layouts, advanced filtering, saved
-user queries, themes, extensions, WebSub, and both Google Reader-compatible
-and Fever client access.
+You want a recognizable Google Reader-style reader with broad database,
+packaging, and client-API choices.
+[Read RSSMonster vs CommaFeed →]({{ '/compare/commafeed/' | relative_url }})
 
-### Tiny Tiny RSS
+### Choose RSSMonster if...
 
-Tiny Tiny RSS is a strong choice for power users who want detailed regex
-filters, plug-ins, full-text PostgreSQL search, and explicit rule-based scoring.
-Its numeric scoring is transparent and flexible, although it is configured by
-the user rather than derived from semantic relationships between stories.
+Your challenge is managing many overlapping articles and you want Smart
+Folders, related coverage, duplicate/revision analysis, Events, and optional
+rankings without giving up chronological RSS.
 
-## Sources and Scope
+## The main trade-off
 
-This is a product-level comparison, not a performance benchmark. Capabilities
-were checked against RSSMonster's current documentation and these official
-project sources:
+Miniflux protects a small conceptual surface. CommaFeed stays close to a
+familiar feed-and-category workflow. FreshRSS and Tiny Tiny RSS add depth
+through configuration, queries, rules, and extensions, while selfoss extends
+the kinds of sources that can enter the stream. RSSMonster adds more structure
+after articles arrive. These are different answers to different problems, not
+positions in a quality ranking.
 
-- **RSSMonster:** [Smart Folders](smart-folders.md), [Search](search.md),
-  [Events](events.md), [Topics](topics.md), [Interest Islands](interest-islands.md),
-  [APIs & Integrations](api.md), and [Usability](usability.md)
-- **Feedbin:** [product features](https://feedbin.com/),
-  [search syntax](https://feedbin.com/help/search-syntax/),
-  [saved searches](https://feedbin.com/help/saved-searches/), and
-  [self-hosting guidance](https://github.com/feedbin/feedbin#readme)
-- **CommaFeed:** [official features and installation](https://athou.github.io/commafeed/)
-- **selfoss:** [official features](https://selfoss.aditu.de/) and
-  [installation options](https://selfoss.aditu.de/docs/administration/installation/)
-- **FreshRSS:** [official manual](https://freshrss.github.io/FreshRSS/),
-  [filtering](https://freshrss.github.io/FreshRSS/en/users/10_filter.html),
-  [user queries](https://freshrss.github.io/FreshRSS/en/users/user_queries.html),
-  and [mobile/API access](https://freshrss.github.io/FreshRSS/en/users/06_Mobile_access.html)
-- **Tiny Tiny RSS:** [official features](https://tt-rss.org/),
-  [search](https://tt-rss.org/docs/Search.html),
-  [content filters](https://tt-rss.org/docs/Content-Filters.html),
-  [scoring](https://tt-rss.org/docs/Scoring.html), and
-  [API reference](https://tt-rss.org/docs/API-Reference.html)
+Feedbin sits across another axis: managed convenience versus self-hosted
+control. Its service operates the feed infrastructure for the subscriber;
+RSSMonster and the other self-hosted projects place that responsibility with
+the operator.
 
-If a capability or source has changed, please
-[report it](https://github.com/pietheinstrengholt/rssmonster/issues). The goal
-is to help readers choose the right tool, not to make every row favor
-RSSMonster.
+## What makes RSSMonster different?
+
+Most RSS readers naturally support a short and useful path:
+
+```text
+Feeds -> Articles -> Read
+```
+
+RSSMonster keeps that path, including chronological ordering. When semantic
+processing is enabled, it can add another layer without changing which articles
+are ingested:
+
+```text
+Articles -> duplicates / revisions -> related coverage -> Events -> Topics
+         -> Interest Islands -> Recommended / Top Stories / Smart Folders
+```
+
+The semantic layer is optional, and small local models can perform much of its
+processing on infrastructure controlled by the operator. The goal is to reduce
+information overload without replacing RSS with an opaque recommendation feed.
+See [How RSSMonster Works]({{ '/how-rssmonster-works.html' | relative_url }}),
+[Smart Folders]({{ '/smart-folders.html' | relative_url }}), and
+[Scoring and Ranking]({{ '/scoring.html' | relative_url }}) for the technical
+details.
+
+## Detailed comparisons
+
+- **[RSSMonster vs FreshRSS]({{ '/compare/freshrss/' | relative_url }})** —
+  maturity and extensibility versus semantic organization.
+- **[RSSMonster vs Miniflux]({{ '/compare/miniflux/' | relative_url }})** —
+  minimalism versus information management.
+- **[RSSMonster vs selfoss]({{ '/compare/selfoss/' | relative_url }})** —
+  extensible aggregation versus post-ingestion organization.
+- **[RSSMonster vs Tiny Tiny RSS]({{ '/compare/tiny-tiny-rss/' | relative_url }})** —
+  traditional power-user control versus semantic discovery.
+- **[RSSMonster vs Feedbin]({{ '/compare/feedbin/' | relative_url }})** —
+  managed convenience versus self-hosted control.
+- **[RSSMonster vs CommaFeed]({{ '/compare/commafeed/' | relative_url }})** —
+  a familiar feed workflow versus story-level structure.
+
+The detailed pages use current official product sources and distinguish an
+undocumented built-in capability from proof that a workflow is impossible.

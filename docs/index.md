@@ -100,7 +100,7 @@ RSSMonster works out of the box with sensible defaults, but every ranking decisi
 - **[Backup and Restore](backup-restore.html)** — Protect and recover Docker data and secrets
 - **[First Login](first-login.html)** — Registration, sign-in, and development login
 - **[Core Concepts](concepts.html)** — How RSSMonster thinks about content
-- **[Compare RSSMonster](comparison.html)** — Feature comparison with Feedbin, CommaFeed, selfoss, FreshRSS, and Tiny Tiny RSS
+- **[Compare RSSMonster]({{ '/compare/' | relative_url }})** — Find the RSS reader whose design philosophy best fits your workflow
 - **[Smart Folders](smart-folders.html)** — Create powerful dynamic views
 - **[Scoring & Ranking](scoring.html)** — Newest, Oldest, Quality, Recommended, and Top Stories explained
 - **[FeedTrust](feedtrust.html)** — How RSSMonster estimates consistent source value
