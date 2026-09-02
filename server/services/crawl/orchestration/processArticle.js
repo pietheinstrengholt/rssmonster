@@ -36,7 +36,8 @@ const processArticle = async (
   feedPublishedFallback = null,
   rssFeedTitle = null,
   feedFormat = null,
-  execution = {}
+  execution = {},
+  compiledItemFilter = null
 ) => {
   try {
     const hasExecution = Boolean(execution.signal || execution.deadlineAt);
@@ -48,11 +49,15 @@ const processArticle = async (
       feedPublishedFallback,
       rssFeedTitle,
       feedFormat,
+      compiledItemFilter,
       execution
     });
     throwIfExecutionExpired(execution);
     // Returns early when candidate is unavailable.
     if (!candidate) return emptyArticleResult;
+    if (candidate.filtered) {
+      return { ...emptyArticleResult, filteredArticles: 1 };
+    }
 
     // Publisher identity matching happens before duplicate suppression because
     // identity determines revisions while duplicate matching detects equivalent content.

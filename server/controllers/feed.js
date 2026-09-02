@@ -16,12 +16,13 @@ import {
   updateFeedSubscription
 } from '../services/feeds/feedManagement.js';
 import { deriveFeedOverviewHealth } from '../services/feeds/feedOverviewHealth.js';
+import { compileItemFilter } from '../services/crawl/filtering/itemFilter.js';
 
 const UPDATE_INTERVAL_MINUTES = [null, 0, 5, 15, 30, 60, 120, 360, 720, 1440];
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const RETRY_CRAWL_RESULT_ATTRIBUTES = [
   'id', 'status', 'errorCategory', 'durationMs', 'itemsFetched', 'articlesNew',
-  'articlesUpdated', 'articlesUnchanged', 'articlesDuplicate'
+  'articlesUpdated', 'articlesFiltered', 'articlesUnchanged', 'articlesDuplicate'
 ];
 
 // This function normalizes feed tag input from arrays or text fields.
@@ -59,6 +60,12 @@ const normalizeBooleanControl = (value, fieldName) => {
   }
 
   throw new Error(`Invalid ${fieldName}`);
+};
+
+// This function stores non-empty item filter text while keeping the optional field nullable.
+const normalizeItemFilter = value => {
+  const expression = String(value ?? '');
+  return expression.trim() ? expression : null;
 };
 
 // This function maps shared feed-management failures to regular API responses.
@@ -334,6 +341,7 @@ const updateFeed = async (req, res, _next) => {
     let feedTags;
     let generateEmbeddings;
     let applyAiAnalysis;
+    let itemFilter;
 
     try {
       updateIntervalMinutes = typeof req.body.updateIntervalMinutes === 'undefined'
@@ -348,6 +356,10 @@ const updateFeed = async (req, res, _next) => {
       applyAiAnalysis = typeof req.body.applyAiAnalysis === 'undefined'
         ? feed.applyAiAnalysis
         : normalizeBooleanControl(req.body.applyAiAnalysis, 'applyAiAnalysis');
+      itemFilter = typeof req.body.itemFilter === 'undefined'
+        ? feed.itemFilter
+        : normalizeItemFilter(req.body.itemFilter);
+      compileItemFilter(itemFilter);
     } catch (validationError) {
       return res.status(400).json({ error: validationError.message });
     }
@@ -365,7 +377,8 @@ const updateFeed = async (req, res, _next) => {
         updateIntervalMinutes,
         feedTags,
         generateEmbeddings,
-        applyAiAnalysis
+        applyAiAnalysis,
+        itemFilter
       }
     });
     return res.status(200).json({ feed: updatedFeed });

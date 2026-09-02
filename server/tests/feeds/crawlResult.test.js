@@ -51,6 +51,10 @@ describe('feed crawl operational results', () => {
       outcome: { type: 'changed' },
       error: { name: 'SequelizeValidationError' }
     }, CRAWL_OUTCOMES.VALIDATION_ERROR],
+    ['invalid stored item filter', {
+      outcome: { type: 'changed' },
+      error: { code: 'FEED_ITEM_FILTER_INVALID' }
+    }, CRAWL_OUTCOMES.VALIDATION_ERROR],
     ['security rejection', {
       outcome: { type: 'security_rejected' }
     }, CRAWL_OUTCOMES.SECURITY_REJECTED],
@@ -71,6 +75,7 @@ describe('feed crawl operational results', () => {
       resolvedUrl: 'https://www.plex.tv/feed/atom/',
       itemCount: 10,
       newArticleCount: 4,
+      filteredArticleCount: 3,
       attempts: 2,
       durationMs: 3200,
       httpStatus: 200,
@@ -81,7 +86,7 @@ describe('feed crawl operational results', () => {
 
     expect(line).toContain('[CRAWL] feed=www.plex.tv/feed/ status=success');
     expect(line).toContain('resolved=www.plex.tv/feed/atom/');
-    expect(line).toContain('items=10 new=4 http=200 retryAfter=120s attempts=2');
+    expect(line).toContain('items=10 new=4 filtered=3 http=200 retryAfter=120s attempts=2');
     expect(line).toContain('code=DETAIL message="first line second line" duration=3.2s');
     expect(line).not.toContain('\n');
   });

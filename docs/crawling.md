@@ -23,6 +23,10 @@ Repeated runs are expected. Stable publisher IDs, normalized URLs, duplicate
 checks, crawl-run guards, and feed leases make ingestion idempotent and prevent
 the same due work from being processed concurrently.
 
+Individual feeds can also reject entries before identity lookup, persistence,
+and semantic processing. See [Filtering Feed Items](feed-item-filters.md) for
+the supported expressions and non-retroactive behavior.
+
 ## Scheduling Due Feeds
 
 `nextFetchAt` is the scheduling authority. A feed is eligible only when that

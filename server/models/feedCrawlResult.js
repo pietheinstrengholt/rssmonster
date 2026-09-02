@@ -41,6 +41,8 @@ export default (sequelize) => sequelize.define('feed_crawl_results', {
   articlesNew: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   // Counts meaningfully revised articles.
   articlesUpdated: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  // Counts entries rejected by configured filtering before visible persistence.
+  articlesFiltered: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   // Counts known publisher entries that required no persistence change.
   articlesUnchanged: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   // Counts entries suppressed by duplicate detection.

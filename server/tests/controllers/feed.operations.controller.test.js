@@ -14,7 +14,8 @@ const mocked = vi.hoisted(() => ({
   publishEvent: vi.fn(),
   rediscoverRssUrl: vi.fn(),
   subscribe: vi.fn(),
-  unsubscribe: vi.fn()
+  unsubscribe: vi.fn(),
+  updateFeedSubscription: vi.fn()
 }));
 
 vi.mock('../../models/index.js', async () => {
@@ -85,7 +86,7 @@ vi.mock('../../services/feeds/feedManagement.js', () => ({
   isFeedManagementError: vi.fn(() => false),
   normalizeFeedUrl: vi.fn(value => value),
   removeFeedSubscription: vi.fn(),
-  updateFeedSubscription: vi.fn()
+  updateFeedSubscription: mocked.updateFeedSubscription
 }));
 
 const feedController = (await import('../../controllers/feed.js')).default;
@@ -270,6 +271,75 @@ describe('feed operational controllers', () => {
     });
   });
 
+  it('persists an optional item filter through the existing feed update flow', async () => {
+    mocked.feedFindOne.mockResolvedValue({
+      id: 8,
+      updateIntervalMinutes: null,
+      feedTags: [],
+      generateEmbeddings: true,
+      applyAiAnalysis: true,
+      itemFilter: null
+    });
+    mocked.updateFeedSubscription.mockResolvedValue({
+      id: 8,
+      itemFilter: 'title:/Hollow Knight|Silksong/i'
+    });
+    const res = createResponse();
+
+    await feedController.updateFeed(createRequest({
+      body: {
+        categoryId: 3,
+        feedName: 'Games',
+        feedDesc: 'Game news',
+        url: 'https://example.com/rss.xml',
+        status: 'active',
+        itemFilter: 'title:/Hollow Knight|Silksong/i'
+      }
+    }), res);
+
+    expect(mocked.updateFeedSubscription).toHaveBeenCalledWith({
+      userId: 42,
+      feedId: 8,
+      categoryId: 3,
+      updates: expect.objectContaining({
+        itemFilter: 'title:/Hollow Knight|Silksong/i'
+      })
+    });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      feed: { id: 8, itemFilter: 'title:/Hollow Knight|Silksong/i' }
+    });
+  });
+
+  it('rejects an invalid item filter before updating the feed', async () => {
+    mocked.feedFindOne.mockResolvedValue({
+      id: 8,
+      updateIntervalMinutes: null,
+      feedTags: [],
+      generateEmbeddings: true,
+      applyAiAnalysis: true,
+      itemFilter: null
+    });
+    const res = createResponse();
+
+    await feedController.updateFeed(createRequest({
+      body: {
+        categoryId: 3,
+        feedName: 'Games',
+        feedDesc: 'Game news',
+        url: 'https://example.com/rss.xml',
+        status: 'active',
+        itemFilter: 'title:/[unterminated/'
+      }
+    }), res);
+
+    expect(mocked.updateFeedSubscription).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'Invalid item filter: the regular expression or its flags could not be parsed.'
+    });
+  });
+
   it.each(['SUCCESS', 'RECOVERED', 'FAILED'])(
     'returns one completed %s manual retry result',
     async status => {
@@ -295,6 +365,7 @@ describe('feed operational controllers', () => {
           itemsFetched: status === 'FAILED' ? 0 : 100,
           articlesNew: status === 'FAILED' ? 0 : 3,
           articlesUpdated: 1,
+          articlesFiltered: 0,
           articlesUnchanged: 96,
           articlesDuplicate: 0
         })

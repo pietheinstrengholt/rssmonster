@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { compileItemFilter } from '../../services/crawl/filtering/itemFilter.js';
 
 const mocked = vi.hoisted(() => ({
   actionFindAll: vi.fn(),
@@ -239,6 +240,38 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.processHtmlContent).not.toHaveBeenCalled();
     expect(mocked.updateArticle).not.toHaveBeenCalled();
     expect(mocked.saveArticle).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-matching item before identity, enrichment, or persistence', async () => {
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
+    const compiledItemFilter = compileItemFilter('title:/^Accepted article$/');
+
+    const result = await processArticle(
+      { id: 1, userId: 42, feedName: 'Filtered feed' },
+      {},
+      [],
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      {},
+      compiledItemFilter
+    );
+
+    expect(mocked.processHtmlContent).toHaveBeenCalledOnce();
+    expect(mocked.detectArticleImage).not.toHaveBeenCalled();
+    expect(mocked.updateArticle).not.toHaveBeenCalled();
+    expect(mocked.applyActions).not.toHaveBeenCalled();
+    expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
+    expect(mocked.saveArticle).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      newArticles: 0,
+      updatedArticles: 0,
+      errors: 0,
+      filteredArticles: 1
+    });
   });
 
   it('skips OpenAI analysis when the feed disables AI analysis', async () => {

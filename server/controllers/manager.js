@@ -20,6 +20,7 @@ const OVERVIEW_FEED_ATTRIBUTES = [
   'status',
   'updateIntervalMinutes',
   'feedTags',
+  'itemFilter',
   'generateEmbeddings',
   'applyAiAnalysis'
 ];

@@ -76,7 +76,7 @@ const crawlDetailAttributes = [
   'id', 'status', 'errorCategory', 'errorCode', 'httpStatus', 'errorMessage',
   'requestedUrl', 'resolvedUrl', 'recoveryAttempted', 'recoverySucceeded',
   'attemptCount', 'attemptSummary', 'itemsFetched', 'articlesNew',
-  'articlesUpdated', 'articlesUnchanged', 'articlesDuplicate', 'durationMs',
+  'articlesUpdated', 'articlesFiltered', 'articlesUnchanged', 'articlesDuplicate', 'durationMs',
   'startedAt', 'completedAt'
 ];
 

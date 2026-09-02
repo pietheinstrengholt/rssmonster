@@ -108,6 +108,8 @@ export default (sequelize) => {
       feedsRecovered: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
       // Counts entries fetched across final feed results.
       articlesFetched: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
+      // Counts entries rejected by configured filtering before visible persistence.
+      articlesFiltered: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
       // Counts entries known to require no article change.
       articlesUnchanged: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
       // Counts entries suppressed as duplicates.

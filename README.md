@@ -274,6 +274,7 @@ docker compose -f docker-compose.mysql.yml logs -f inference rssmonster rssmonst
 * **Semantic event discovery**: Group related reporting, compare sources, identify duplicate coverage, and connect events to broader topics and personal interest islands.
 * **Smart Folders**: Build reusable views with queries such as `@today unread:true sort:recommended`, `unread:true quality:>0.7 sort:quality`, or `event:true island:true eventCount:>=3 sort:recommended`.
 * **Advanced search**: Combine article state, dates, tags, text, semantic filters, score thresholds, and sorting. See the [search guide](docs/search.md) for the supported operators.
+* **Feed item filters**: Keep or exclude future entries per feed using title, content, URL, author, or category regular expressions. See [Filtering Feed Items](docs/feed-item-filters.md).
 * **Transparent ranking signals**: Recommended ordering emphasizes personal interest, with freshness, Quality, corroboration, and rule tags as supporting signals. Top Stories separately ranks current multi-source event importance without personalization. Quality, uniqueness, attention, and feed trust remain inspectable signals where supported; attention sorting is retained only for legacy search expressions.
 * **PWA and mobile support**: Install RSSMonster on supported devices for an app-like experience with offline support and responsive controls.
 * **OPML and generated RSS**: Import or export subscriptions through OPML, and create filtered RSS feeds from stored articles through the `/rss` endpoint.

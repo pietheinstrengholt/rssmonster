@@ -67,6 +67,7 @@ import { sendNewArticlePush } from '../services/push/pushNotifications.js';
 import { createStartUserCrawl } from '../services/crawl/startUserCrawl.js';
 import { recordProcessingFailure } from '../services/observability/processingFailures.js';
 import { withCrawlPriorityLease } from '../services/jobs/crawlPriorityLease.js';
+import { compileItemFilter } from '../services/crawl/filtering/itemFilter.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -406,6 +407,7 @@ const runCrawl = async (userId = null, options = {}) => {
   const crawlStats = options.crawlStats || {
     newArticles: 0,
     updatedArticles: 0,
+    filteredArticles: 0,
     articleErrors: 0,
     errors: 0,
     processedFeeds: 0,
@@ -459,6 +461,7 @@ const runCrawl = async (userId = null, options = {}) => {
   let crawlTimedOut = false;
   let totalNewArticles = 0;
   let totalUpdatedArticles = 0;
+  let totalFilteredArticles = 0;
   let totalArticleErrors = 0;
   let totalFetchedArticles = 0;
   let totalUnchangedArticles = 0;
@@ -516,6 +519,7 @@ const runCrawl = async (userId = null, options = {}) => {
     startedAt,
     articlesNew = 0,
     articlesUpdated = 0,
+    articlesFiltered = 0,
     articlesUnchanged = 0,
     articlesDuplicate = 0
   }) => {
@@ -537,6 +541,7 @@ const runCrawl = async (userId = null, options = {}) => {
       resolvedUrl,
       itemCount,
       newArticleCount: articlesNew,
+      filteredArticleCount: articlesFiltered,
       attempts: outcome?.discovery?.attempts ?? outcome?.attempts ?? 1,
       durationMs,
       httpStatus: outcome?.response?.status ?? outcome?.error?.status ?? null,
@@ -557,6 +562,7 @@ const runCrawl = async (userId = null, options = {}) => {
       itemCount,
       articlesNew,
       articlesUpdated,
+      articlesFiltered,
       articlesUnchanged,
       articlesDuplicate
     });
@@ -614,6 +620,7 @@ const runCrawl = async (userId = null, options = {}) => {
     totalFeeds: feeds.length,
     newArticles: 0,
     updatedArticles: 0,
+    filteredArticles: 0,
     articleErrors: 0,
     errors: 0,
     timeouts: 0,
@@ -631,6 +638,7 @@ const runCrawl = async (userId = null, options = {}) => {
         totalFeeds: 0,
         newArticles: 0,
         updatedArticles: 0,
+        filteredArticles: 0,
         articleErrors: 0,
         errors: 0,
         timeouts: 0,
@@ -649,6 +657,7 @@ const runCrawl = async (userId = null, options = {}) => {
       crawlStartedAt,
       totalNewArticles: 0,
       totalUpdatedArticles: 0,
+      totalFilteredArticles: 0,
       totalArticleErrors: 0,
       totalFetchedArticles: 0,
       totalUnchangedArticles: 0,
@@ -719,6 +728,7 @@ const runCrawl = async (userId = null, options = {}) => {
   ) => {
     let feedNewArticles = 0;
     let feedUpdatedArticles = 0;
+    let feedFilteredArticles = 0;
     let feedArticleErrors = 0;
     let feedUnchangedArticles = 0;
     let feedDuplicateArticles = 0;
@@ -756,6 +766,7 @@ const runCrawl = async (userId = null, options = {}) => {
         totalFeeds: feeds.length,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        filteredArticles: totalFilteredArticles,
         articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount,
@@ -792,9 +803,11 @@ const runCrawl = async (userId = null, options = {}) => {
           totalFeeds: feeds.length,
           feedNewArticles,
           feedUpdatedArticles,
+          feedFilteredArticles,
           feedArticleErrors,
           newArticles: totalNewArticles,
           updatedArticles: totalUpdatedArticles,
+          filteredArticles: totalFilteredArticles,
           articleErrors: totalArticleErrors,
           errors: errorCount,
           timeouts: timeoutCount,
@@ -834,9 +847,11 @@ const runCrawl = async (userId = null, options = {}) => {
           totalFeeds: feeds.length,
           feedNewArticles,
           feedUpdatedArticles,
+          feedFilteredArticles,
           feedArticleErrors,
           newArticles: totalNewArticles,
           updatedArticles: totalUpdatedArticles,
+          filteredArticles: totalFilteredArticles,
           articleErrors: totalArticleErrors,
           errors: errorCount,
           timeouts: timeoutCount,
@@ -865,6 +880,8 @@ const runCrawl = async (userId = null, options = {}) => {
       throwIfAborted(signal);
 
       const entries = parsedFeed.entries || [];
+      // Compile once for this feed so invalid stored expressions fail before item processing.
+      const compiledItemFilter = compileItemFilter(activeFeed.itemFilter);
 
       emitProgress({
         type: 'feed_parsed',
@@ -875,6 +892,7 @@ const runCrawl = async (userId = null, options = {}) => {
         entries: entries.length,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        filteredArticles: totalFilteredArticles,
         articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount,
@@ -904,23 +922,28 @@ const runCrawl = async (userId = null, options = {}) => {
             parsedFeed.publishedAt,
             parsedFeed.title,
             parsedFeed.format,
-            execution
+            execution,
+            compiledItemFilter
           );
           const newArticles = Number(articleResult?.newArticles || 0);
           const updatedArticles = Number(articleResult?.updatedArticles || 0);
+          const filteredArticles = Number(articleResult?.filteredArticles || 0);
           const articleErrors = Number(articleResult?.errors || 0);
           const unchangedArticles = Number(articleResult?.unchangedArticles || 0);
           const duplicateArticles = Number(articleResult?.duplicateArticles || 0);
           feedNewArticles += newArticles;
           feedUpdatedArticles += updatedArticles;
+          feedFilteredArticles += filteredArticles;
           feedArticleErrors += articleErrors;
           feedUnchangedArticles += unchangedArticles;
           feedDuplicateArticles += duplicateArticles;
           totalNewArticles += newArticles;
           totalUpdatedArticles += updatedArticles;
+          totalFilteredArticles += filteredArticles;
           totalArticleErrors += articleErrors;
           crawlStats.newArticles = totalNewArticles;
           crawlStats.updatedArticles = totalUpdatedArticles;
+          crawlStats.filteredArticles = totalFilteredArticles;
           crawlStats.articleErrors = totalArticleErrors;
           throwIfAborted(signal);
           await assertFeedLeaseOwnership(execution.lease);
@@ -957,9 +980,11 @@ const runCrawl = async (userId = null, options = {}) => {
         totalFeeds: feeds.length,
         feedNewArticles,
         feedUpdatedArticles,
+        feedFilteredArticles,
         feedArticleErrors,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        filteredArticles: totalFilteredArticles,
         articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount,
@@ -1000,9 +1025,11 @@ const runCrawl = async (userId = null, options = {}) => {
         totalFeeds: feeds.length,
         feedNewArticles,
         feedUpdatedArticles,
+        feedFilteredArticles,
         feedArticleErrors,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        filteredArticles: totalFilteredArticles,
         articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount,
@@ -1018,6 +1045,7 @@ const runCrawl = async (userId = null, options = {}) => {
         itemCount: entries.length,
         articlesNew: feedNewArticles,
         articlesUpdated: feedUpdatedArticles,
+        articlesFiltered: feedFilteredArticles,
         articlesUnchanged: feedUnchangedArticles,
         articlesDuplicate: feedDuplicateArticles
       };
@@ -1051,6 +1079,7 @@ const runCrawl = async (userId = null, options = {}) => {
         totalFeeds: feeds.length,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        filteredArticles: totalFilteredArticles,
         articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount,
@@ -1066,9 +1095,11 @@ const runCrawl = async (userId = null, options = {}) => {
         totalFeeds: feeds.length,
         feedNewArticles,
         feedUpdatedArticles,
+        feedFilteredArticles,
         feedArticleErrors,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        filteredArticles: totalFilteredArticles,
         articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount,
@@ -1086,6 +1117,7 @@ const runCrawl = async (userId = null, options = {}) => {
         itemCount: outcome?.parsedFeed?.entries?.length ?? null,
         articlesNew: feedNewArticles,
         articlesUpdated: feedUpdatedArticles,
+        articlesFiltered: feedFilteredArticles,
         articlesUnchanged: feedUnchangedArticles,
         articlesDuplicate: feedDuplicateArticles
       };
@@ -1185,6 +1217,7 @@ const runCrawl = async (userId = null, options = {}) => {
           totalFeeds: feeds.length,
           newArticles: totalNewArticles,
           updatedArticles: totalUpdatedArticles,
+          filteredArticles: totalFilteredArticles,
           articleErrors: totalArticleErrors,
           errors: errorCount,
           timeouts: timeoutCount,
@@ -1242,6 +1275,7 @@ const runCrawl = async (userId = null, options = {}) => {
         startedAt: new Date(startedAt),
         articlesNew: finalResult?.articlesNew || 0,
         articlesUpdated: finalResult?.articlesUpdated || 0,
+        articlesFiltered: finalResult?.articlesFiltered || 0,
         articlesUnchanged: finalResult?.articlesUnchanged || 0,
         articlesDuplicate: finalResult?.articlesDuplicate || 0
       });
@@ -1260,6 +1294,7 @@ const runCrawl = async (userId = null, options = {}) => {
         processedFeeds: processedCount,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        filteredArticles: totalFilteredArticles,
         articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount
@@ -1407,6 +1442,7 @@ const runCrawl = async (userId = null, options = {}) => {
     crawlStartedAt,
     totalNewArticles,
     totalUpdatedArticles,
+    totalFilteredArticles,
     totalArticleErrors,
     totalFetchedArticles,
     totalUnchangedArticles,
@@ -1427,6 +1463,7 @@ const runCrawl = async (userId = null, options = {}) => {
       processedFeeds: result.processed,
       newArticles: totalNewArticles,
       updatedArticles: totalUpdatedArticles,
+      filteredArticles: totalFilteredArticles,
       articleErrors: totalArticleErrors,
       errors: result.errors,
       timeouts: result.timeouts,
@@ -1522,6 +1559,7 @@ const crawlAlreadyRunningResult = (userId, activeCrawlRun) => {
     crawlStartedAt: null,
     totalNewArticles: 0,
     totalUpdatedArticles: 0,
+    totalFilteredArticles: 0,
     totalArticleErrors: 0,
     failedFeeds: 0,
     timedOutFeeds: 0,
@@ -1569,6 +1607,7 @@ const performCrawl = async (userId = null, options = {}) => {
   const crawlStats = {
     newArticles: 0,
     updatedArticles: 0,
+    filteredArticles: 0,
     articleErrors: 0,
     errors: 0,
     processedFeeds: 0,
@@ -1585,6 +1624,7 @@ const performCrawl = async (userId = null, options = {}) => {
         ownerToken: executionId,
         newArticles: 0,
         updatedArticles: 0,
+        articlesFiltered: 0,
         articleErrors: 0,
         errors: 0,
         processedFeeds: 0,
@@ -1666,6 +1706,7 @@ const performCrawl = async (userId = null, options = {}) => {
           errorMessage: err?.message || String(err) || 'Unknown crawl error',
           newArticles: crawlStats.newArticles,
           updatedArticles: crawlStats.updatedArticles,
+          articlesFiltered: crawlStats.filteredArticles,
           articleErrors: crawlStats.articleErrors,
           errors: crawlStats.errors,
           processedFeeds: crawlStats.processedFeeds,
@@ -1722,6 +1763,7 @@ const performCrawl = async (userId = null, options = {}) => {
           Number(result.crawlOutcomes?.EMPTY_FEED || 0),
         feedsRecovered: Number(result.crawlOutcomes?.RECOVERED || 0),
         articlesFetched: result.totalFetchedArticles,
+        articlesFiltered: result.totalFilteredArticles,
         articlesUnchanged: result.totalUnchangedArticles,
         articlesDuplicate: result.totalDuplicateArticles,
         durationMs: calculateCrawlDurationMs(crawlRun.startedAt, completedAt)
@@ -1790,6 +1832,7 @@ const performCrawlWithSemanticGroupingOperation = async (userId = null, options 
         processedFeeds: 0,
         newArticles: 0,
         updatedArticles: 0,
+        filteredArticles: 0,
         articleErrors: 0,
         errors: 0,
         timeouts: 0,
@@ -1816,6 +1859,7 @@ const performCrawlWithSemanticGroupingOperation = async (userId = null, options 
       processedFeeds: result.processed,
       newArticles: result.totalNewArticles || 0,
       updatedArticles: result.totalUpdatedArticles || 0,
+      filteredArticles: result.totalFilteredArticles || 0,
       articleErrors: result.totalArticleErrors || 0,
       errors: result.errors,
       timeouts: result.timeouts,

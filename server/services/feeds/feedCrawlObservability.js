@@ -77,6 +77,7 @@ export const persistFeedCrawlResult = async ({
   itemCount = 0,
   articlesNew = 0,
   articlesUpdated = 0,
+  articlesFiltered = 0,
   articlesUnchanged = 0,
   articlesDuplicate = 0
 }) => {
@@ -107,6 +108,7 @@ export const persistFeedCrawlResult = async ({
     itemsFetched: Math.max(0, Number(itemCount) || 0),
     articlesNew: Math.max(0, Number(articlesNew) || 0),
     articlesUpdated: Math.max(0, Number(articlesUpdated) || 0),
+    articlesFiltered: Math.max(0, Number(articlesFiltered) || 0),
     articlesUnchanged: Math.max(0, Number(articlesUnchanged) || 0),
     articlesDuplicate: Math.max(0, Number(articlesDuplicate) || 0),
     durationMs: Math.max(0, Math.round(Number(durationMs) || 0)),

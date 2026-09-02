@@ -105,6 +105,7 @@ RSSMonster works out of the box with sensible defaults, but every ranking decisi
 - **[Scoring & Ranking](scoring.html)** — Newest, Oldest, Quality, Recommended, and Top Stories explained
 - **[FeedTrust](feedtrust.html)** — How RSSMonster estimates consistent source value
 - **[Search Guide](search.html)** — Master search expressions
+- **[Feed Item Filters](feed-item-filters.html)** — Accept or reject future entries from individual feeds
 - **[Article Embedding](article-embedding.html)** — How semantic article representations work
 - **[API & Integrations](api.html)** — Fever API, Google Reader API, and more
 - **[Rule-Based Tags](tag.html#rule-based-tags)** — Apply tags automatically using filters

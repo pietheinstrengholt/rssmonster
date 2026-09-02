@@ -67,6 +67,9 @@ tag during article processing. A [Smart Folder](smart-folders.md) uses a
 [search expression](search.md) to build a dynamic view without modifying the
 article.
 
+To reject matching entries before they are stored or enriched, configure a
+[feed item filter](feed-item-filters.md) instead.
+
 ## Finding Tagged Articles
 
 Tags appear as clickable labels on the articles themselves. Rule-assigned tags

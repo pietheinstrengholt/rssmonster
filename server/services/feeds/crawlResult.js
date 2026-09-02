@@ -48,6 +48,7 @@ const isValidationError = error => {
   return name.includes('ValidationError') ||
     name === 'SequelizeUniqueConstraintError' ||
     code === 'FEED_VALIDATION_ERROR' ||
+    code === 'FEED_ITEM_FILTER_INVALID' ||
     code === 'ARTICLE_VALIDATION_ERROR';
 };
 
@@ -153,6 +154,7 @@ export const formatCrawlResultLine = ({
   resolvedUrl = null,
   itemCount = null,
   newArticleCount = 0,
+  filteredArticleCount = 0,
   attempts = 1,
   durationMs = 0,
   httpStatus = null,
@@ -171,6 +173,7 @@ export const formatCrawlResultLine = ({
   if (itemCount !== null && status !== 'not-modified') fields.push(`items=${itemCount}`);
   if (status === 'success' && itemCount !== null) {
     fields.push(`new=${Math.max(0, Number(newArticleCount) || 0)}`);
+    fields.push(`filtered=${Math.max(0, Number(filteredArticleCount) || 0)}`);
   }
   if (httpStatus !== null) fields.push(`http=${httpStatus}`);
   if (retryAfterSeconds !== null) fields.push(`retryAfter=${retryAfterSeconds}s`);

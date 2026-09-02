@@ -100,6 +100,7 @@ const buildMergedFeedValues = (survivor, losers) => {
     updateIntervalMinutes: survivor.updateIntervalMinutes ??
       losers.find(feed => feed.updateIntervalMinutes !== null)?.updateIntervalMinutes ?? null,
     feedTags: feeds.reduce((tags, feed) => mergeFeedTags(tags, feed.feedTags), []),
+    itemFilter: survivor.itemFilter ?? losers.find(feed => feed.itemFilter)?.itemFilter ?? null,
     generateEmbeddings: feeds.every(feed => feed.generateEmbeddings !== false),
     applyAiAnalysis: feeds.every(feed => feed.applyAiAnalysis !== false),
     crawlSince,

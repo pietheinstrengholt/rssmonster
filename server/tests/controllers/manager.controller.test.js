@@ -95,6 +95,7 @@ describe('manager controller', () => {
           'status',
           'updateIntervalMinutes',
           'feedTags',
+          'itemFilter',
           'generateEmbeddings',
           'applyAiAnalysis'
         ],

@@ -159,6 +159,12 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: []
       },
+      // Stores the optional expression used to accept newly crawled items from this feed.
+      itemFilter: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        defaultValue: null
+      },
       // Controls whether newly crawled articles receive semantic embeddings.
       generateEmbeddings: {
         type: DataTypes.BOOLEAN,

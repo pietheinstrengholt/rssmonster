@@ -31,7 +31,7 @@ This table reflects built-in or officially documented behavior as of
 | **Source extensibility** | RSS/Atom feeds with full-content extraction | Spouts can collect RSS, images, social sources, email, logs, or custom application data |
 | **Traditional reading** | Chronological feeds remain available alongside alternative rankings | A unified traditional stream with newest, unread, and starred views |
 | **Interface** | Responsive modes including a three-pane desktop Reader view | Adaptive web layout for desktop and mobile |
-| **Filtering and saved views** | Advanced search expressions power reusable Smart Folders | Source filters can restrict incoming items; streams can be viewed by source or tag |
+| **Filtering and saved views** | Per-feed item filters restrict incoming entries; advanced search expressions power reusable Smart Folders | Source filters can restrict incoming items; streams can be viewed by source or tag |
 | **Story organization** | Related articles, duplicates, Events, Topics, and Interest Islands when semantic processing is enabled | Source and tag organization; a comparable semantic story hierarchy is not documented |
 | **Ranking** | Optional Quality, Recommended, and Top Stories modes with inspectable signals | A traditional stream; comparable built-in semantic rankings are not documented |
 | **Databases** | SQLite or MySQL | SQLite, MySQL, or PostgreSQL |
@@ -109,6 +109,7 @@ selfoss installation.
 - You mainly consume RSS but follow many overlapping sources.
 - Duplicate/revision analysis and related-story grouping would reduce noise.
 - You want Events, Topics, and optional interest-based discovery.
+- You want per-feed item filters for incoming entries.
 - You want advanced searches preserved as Smart Folders.
 - You want local semantic processing and explainable ranking signals.
 - A three-pane reading workflow is more important than arbitrary source plug-ins.

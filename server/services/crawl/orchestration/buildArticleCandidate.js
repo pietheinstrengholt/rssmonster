@@ -12,6 +12,7 @@ import articleIdentityResolver, {
 import { hashVisibleText } from '../../../utils/articleContentHashes.js';
 import language from '../../../utils/language.js';
 import processDescriptionContent from '../content/processDescriptionContent.js';
+import { matchesItemFilter } from '../filtering/itemFilter.js';
 
 // Defines the min analysis language text length enforced by this service.
 const MIN_ANALYSIS_LANGUAGE_TEXT_LENGTH = 20;
@@ -86,6 +87,7 @@ const buildArticleCandidate = async ({
   entry,
   feedPublishedFallback = null,
   rssFeedTitle = null,
+  compiledItemFilter = null,
   execution = {}
 }) => {
   // Extracts the entry fields while building article candidate.
@@ -202,6 +204,24 @@ const buildArticleCandidate = async ({
     contentText = analysisText;
     contentTextHash = hashVisibleText(analysisText);
   }
+  // Generate a useful title for feeds whose entries do not provide one.
+  if (titleWasMissing) {
+    fields.title = generateTitleFromContent(
+      contentText || descriptionText || rssFeedTitle
+    ) || 'Untitled';
+  }
+
+  // Reject non-matching entries before identity queries, image detection, or persistence.
+  if (!matchesItemFilter({
+    title: fields.title,
+    content: analysisText,
+    url: fields.link,
+    author: fields.author,
+    categories: fields.categories
+  }, compiledItemFilter)) {
+    return { filtered: true };
+  }
+
   contentLanguage = resolveAnalysisLanguage({
     currentLanguage: contentLanguage,
     text: analysisText,
@@ -209,13 +229,6 @@ const buildArticleCandidate = async ({
     title: fields.title,
     execution
   });
-
-  // Generate a useful title for feeds whose entries do not provide one.
-  if (titleWasMissing) {
-    fields.title = generateTitleFromContent(
-      contentText || descriptionText || rssFeedTitle
-    ) || 'Untitled';
-  }
 
   // Detects the article image while building article candidate.
   const leadImage = await detectArticleImage({

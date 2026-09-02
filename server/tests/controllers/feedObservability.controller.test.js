@@ -331,6 +331,7 @@ describe('feed observability controller', () => {
       itemsFetched: 0,
       articlesNew: 0,
       articlesUpdated: 0,
+      articlesFiltered: 0,
       articlesUnchanged: 0,
       articlesDuplicate: 0,
       durationMs: 10000,

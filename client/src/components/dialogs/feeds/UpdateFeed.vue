@@ -205,6 +205,88 @@
               </div>
             </div>
 
+            <!-- Feed item filter -->
+            <section class="feed-filter-panel" aria-labelledby="feed-filter-title">
+              <header class="feed-filter-header">
+                <div class="feed-filter-title-row">
+                  <h3 id="feed-filter-title">Item filter</h3>
+                </div>
+                <p>Only store items that match this filter expression.</p>
+              </header>
+
+              <div class="update-feed__field feed-filter-field">
+                <label class="app-form-label feed-filter-label" for="feed-item-filter">
+                  Filter expression
+                  <span class="feed-filter-tooltip">
+                    <button
+                      type="button"
+                      class="feed-filter-tooltip-trigger"
+                      aria-label="About item filters"
+                      aria-describedby="feed-filter-tooltip-text"
+                    >
+                      <BootstrapIcon icon="info-circle-fill" aria-hidden="true" />
+                    </button>
+                    <span id="feed-filter-tooltip-text" class="feed-filter-tooltip-text" role="tooltip">
+                      When a filter is set, only items that match the specified filter expression are stored in the database.
+                    </span>
+                  </span>
+                </label>
+                <input
+                  id="feed-item-filter"
+                  v-model="feed.itemFilter"
+                  type="text"
+                  class="app-form-control"
+                  :class="{ 'feed-filter-input--invalid': itemFilterInvalid }"
+                  :aria-invalid="itemFilterInvalid ? 'true' : 'false'"
+                  :aria-describedby="itemFilterInvalid ? 'feed-item-filter-help feed-item-filter-error' : 'feed-item-filter-help'"
+                  placeholder="Example: title:/Hollow Knight|Silksong/i"
+                />
+                <div id="feed-item-filter-help" class="app-form-help">
+                  Use regular expressions to include or exclude items by title, content, URL, author, or category.
+                  When empty, all items are accepted.
+                </div>
+                <div
+                  v-if="itemFilterInvalid"
+                  id="feed-item-filter-error"
+                  class="feed-filter-error"
+                  role="alert"
+                >
+                  {{ itemFilterError }}
+                </div>
+              </div>
+
+              <div class="feed-filter-help-grid">
+                <section>
+                  <h4>Examples</h4>
+                  <dl>
+                    <div><dt><code>/regex/</code></dt><dd>Match title or content</dd></div>
+                    <div><dt><code>title:/regex/</code></dt><dd>Match title</dd></div>
+                    <div><dt><code>content:/regex/</code></dt><dd>Match content</dd></div>
+                    <div><dt><code>!title:/regex/</code></dt><dd>Exclude matching titles</dd></div>
+                  </dl>
+                </section>
+                <section>
+                  <h4>Supported fields</h4>
+                  <dl>
+                    <div><dt><code>title:</code></dt><dd>Item title</dd></div>
+                    <div><dt><code>content:</code></dt><dd>Item content</dd></div>
+                    <div><dt><code>url:</code></dt><dd>Item URL</dd></div>
+                    <div><dt><code>author:</code></dt><dd>Item author</dd></div>
+                    <div><dt><code>category:</code></dt><dd>Item category</dd></div>
+                  </dl>
+                </section>
+                <section>
+                  <h4>Tips</h4>
+                  <ul>
+                    <li>Use <code>/.../</code> for regular expressions.</li>
+                    <li>Add <code>!</code> in front to exclude matches.</li>
+                    <li>Field-specific filters are more precise.</li>
+                    <li>Leave empty to accept all items.</li>
+                  </ul>
+                </section>
+              </div>
+            </section>
+
             <!-- Error info -->
             <div
               class="update-feed__field"
@@ -237,7 +319,7 @@
       <button
         type="button"
         class="app-button app-button--primary base-dialog__button base-dialog__button--primary update-feed__save"
-        :disabled="isBusy"
+        :disabled="isBusy || itemFilterInvalid"
         :aria-busy="updating ? 'true' : 'false'"
         @click="updateFeed"
       >
@@ -264,6 +346,7 @@ import { useUiStore } from '../../../store/ui.js';
 import BaseDialog from '../BaseDialog.vue';
 import { deleteFeed as deleteFeedAPI, rediscoverRss, updateFeed } from '../../../api/feeds';
 import { notifyActionError } from '../../../services/actionNotifications.js';
+import { validateItemFilter } from '../../../services/itemFilterValidation.js';
 
 export default {
   name: 'UpdateFeed',
@@ -318,6 +401,18 @@ export default {
     isBusy() {
       return this.updating || this.deleting || this.rediscovering;
     },
+    // This function exposes the current item filter validation result to the form.
+    itemFilterValidation() {
+      return validateItemFilter(this.feed.itemFilter);
+    },
+    // This function reports whether the current item filter blocks persistence.
+    itemFilterInvalid() {
+      return !this.itemFilterValidation.valid;
+    },
+    // This function returns the current item filter validation message.
+    itemFilterError() {
+      return this.itemFilterValidation.error;
+    },
     feedTagsInput: {
       // This function presents stored feed tags as editable comma-separated text.
       get() {
@@ -349,6 +444,7 @@ export default {
           this.feed.feedTags = Array.isArray(this.feed.feedTags) ? this.feed.feedTags : [];
           this.feed.generateEmbeddings = this.feed.generateEmbeddings ?? true;
           this.feed.applyAiAnalysis = this.feed.applyAiAnalysis ?? true;
+          this.feed.itemFilter = this.feed.itemFilter ?? '';
           this.originalFeed = JSON.parse(JSON.stringify(feed)); // Store original for comparison
           return;
         }
@@ -425,7 +521,12 @@ export default {
 
     // This function updates the feed and syncs category changes in the store.
     async updateFeed() {
-      if (this.updating || this.deleting || this.rediscovering) return;
+      if (
+        this.updating ||
+        this.deleting ||
+        this.rediscovering ||
+        !validateItemFilter(this.feed.itemFilter).valid
+      ) return;
 
       this.updating = true;
       try {
@@ -438,7 +539,8 @@ export default {
           updateIntervalMinutes: this.feed.updateIntervalMinutes,
           feedTags: this.feed.feedTags,
           generateEmbeddings: this.feed.generateEmbeddings,
-          applyAiAnalysis: this.feed.applyAiAnalysis
+          applyAiAnalysis: this.feed.applyAiAnalysis,
+          itemFilter: this.feed.itemFilter?.trim() ? this.feed.itemFilter : null
         });
 
         const updatedFeed = result.data.feed;
@@ -510,6 +612,157 @@ export default {
   background: var(--surface-chrome);
 }
 
+.feed-filter-panel {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border-default);
+  border-radius: 0.5rem;
+  background: var(--surface-chrome);
+}
+
+.feed-filter-header {
+  margin-bottom: 1rem;
+}
+
+.feed-filter-header p {
+  margin: 0.375rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.feed-filter-title-row,
+.feed-filter-label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.feed-filter-title-row h3,
+.feed-filter-help-grid h4 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.feed-filter-title-row h3 {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.feed-filter-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+.feed-filter-tooltip-trigger {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: help;
+}
+
+.feed-filter-tooltip-trigger :deep(svg) {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.feed-filter-tooltip-trigger:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.feed-filter-tooltip-text {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  width: min(18rem, calc(100vw - 4rem));
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border-default);
+  border-radius: 0.375rem;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-modal);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.25rem);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.feed-filter-tooltip:hover .feed-filter-tooltip-text,
+.feed-filter-tooltip:focus-within .feed-filter-tooltip-text {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.feed-filter-field {
+  margin-bottom: 1rem;
+}
+
+.feed-filter-input--invalid {
+  border-color: var(--border-danger);
+  background: var(--bg-danger-subtle);
+  color: var(--text-danger);
+}
+
+.feed-filter-error {
+  margin-top: 0.375rem;
+  color: var(--text-danger);
+  font-size: 0.75rem;
+}
+
+.feed-filter-help-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.feed-filter-help-grid h4 {
+  margin-bottom: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.feed-filter-help-grid dl,
+.feed-filter-help-grid ul {
+  margin: 0;
+}
+
+.feed-filter-help-grid dl > div {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.375rem;
+}
+
+.feed-filter-help-grid dt,
+.feed-filter-help-grid dd {
+  margin: 0;
+}
+
+.feed-filter-help-grid ul {
+  padding-left: 1rem;
+}
+
+.feed-filter-help-grid li + li {
+  margin-top: 0.375rem;
+}
+
+.feed-filter-help-grid code {
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  background: var(--settings-query-code-bg);
+  color: var(--settings-query-code-text);
+  font-size: inherit;
+}
+
 .update-feed__footer {
   display: flex;
   width: 100%;
@@ -534,9 +787,18 @@ export default {
   border-color: var(--border-subtle);
 }
 
+:global(:root[data-theme='dark']) .feed-filter-panel {
+  background: var(--surface-card);
+  border-color: var(--border-subtle);
+}
+
 @media (min-width: 768px) {
   .update-feed__processing-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .feed-filter-help-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

@@ -39,6 +39,7 @@ describe('CrawlRun model', () => {
     expect(crawlRun.ownerToken).toBeNull();
     expect(crawlRun.newArticles).toBeNull();
     expect(crawlRun.updatedArticles).toBeNull();
+    expect(crawlRun.articlesFiltered).toBeNull();
     expect(crawlRun.articleErrors).toBeNull();
     expect(crawlRun.errors).toBeNull();
     expect(crawlRun.durationMs).toBeNull();
@@ -61,6 +62,7 @@ describe('CrawlRun model', () => {
   it('declares nullable crawl article counters', () => {
     expect(CrawlRun.rawAttributes.newArticles.allowNull).toBe(true);
     expect(CrawlRun.rawAttributes.updatedArticles.allowNull).toBe(true);
+    expect(CrawlRun.rawAttributes.articlesFiltered.allowNull).toBe(true);
     expect(CrawlRun.rawAttributes.articleErrors.allowNull).toBe(true);
     expect(CrawlRun.rawAttributes.errors.allowNull).toBe(true);
     expect(CrawlRun.rawAttributes.durationMs.allowNull).toBe(true);

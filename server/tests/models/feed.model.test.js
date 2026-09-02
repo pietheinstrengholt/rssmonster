@@ -58,6 +58,7 @@ describe('Feed model', () => {
     expect(feed.errorCount).toBe(0);
     expect(feed.errorMessage).toBeNull();
     expect(feed.errorSince).toBeNull();
+    expect(feed.itemFilter).toBeNull();
     expect(feed.lastFetched).toBeNull();
     expect(feed.etag).toBeNull();
     expect(feed.lastModified).toBeNull();

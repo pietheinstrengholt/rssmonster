@@ -134,6 +134,20 @@ describe('UpdateFeed', () => {
     expect(window.getComputedStyle(overlay.element).display).not.toBe('none');
   });
 
+  // Verifies the filter information is available through an accessible tooltip trigger.
+  it('explains the item filter persistence behavior', () => {
+    const { wrapper: dialogWrapper } = mountUpdateFeed();
+    const trigger = dialogWrapper.get('.feed-filter-tooltip-trigger');
+    const tooltip = dialogWrapper.get('#feed-filter-tooltip-text');
+
+    expect(trigger.attributes('aria-label')).toBe('About item filters');
+    expect(trigger.attributes('aria-describedby')).toBe('feed-filter-tooltip-text');
+    expect(tooltip.attributes('role')).toBe('tooltip');
+    expect(tooltip.text()).toBe(
+      'When a filter is set, only items that match the specified filter expression are stored in the database.'
+    );
+  });
+
   // Verifies an active operation disables the form and every dismissal or mutation action.
   it('locks rendered interactions while an operation is active', async () => {
     const { wrapper: dialogWrapper } = mountUpdateFeed();
@@ -162,7 +176,8 @@ describe('UpdateFeed', () => {
       updateIntervalMinutes: null,
       feedTags: ['local'],
       generateEmbeddings: true,
-      applyAiAnalysis: true
+      applyAiAnalysis: true,
+      itemFilter: ''
     });
     expect(sourceFeed.feedName).toBe('Example');
     expect(sourceFeed.feedTags).toBeUndefined();
@@ -225,7 +240,8 @@ describe('UpdateFeed', () => {
       updateIntervalMinutes: 30,
       feedTags: ['updated'],
       generateEmbeddings: false,
-      applyAiAnalysis: false
+      applyAiAnalysis: false,
+      itemFilter: 'title:/games/i'
     };
     updateFeed.mockResolvedValue({
       data: { feed: { ...context.feed } }
@@ -242,7 +258,8 @@ describe('UpdateFeed', () => {
       updateIntervalMinutes: 30,
       feedTags: ['updated'],
       generateEmbeddings: false,
-      applyAiAnalysis: false
+      applyAiAnalysis: false,
+      itemFilter: 'title:/games/i'
     });
     expect(context.overviewStore.updateFeed).toHaveBeenCalledWith({
       ...context.feed,
@@ -250,6 +267,28 @@ describe('UpdateFeed', () => {
     });
     expect(context.selectionStore.selectFeed).toHaveBeenCalledWith(10, 2);
     expect(context.uiStore.setShowModal).toHaveBeenCalledWith('');
+  });
+
+  // Verifies invalid item filters show feedback and cannot be submitted.
+  it('validates the item filter before updating the feed', async () => {
+    const { wrapper: dialogWrapper } = mountUpdateFeed();
+    const input = dialogWrapper.get('#feed-item-filter');
+
+    await input.setValue('title:/(/');
+
+    expect(input.attributes('aria-invalid')).toBe('true');
+    expect(dialogWrapper.get('#feed-item-filter-error').text()).toContain(
+      'could not be parsed'
+    );
+    expect(dialogWrapper.get('.update-feed__save').attributes('disabled')).toBeDefined();
+    await dialogWrapper.get('.update-feed__save').trigger('click');
+    expect(updateFeed).not.toHaveBeenCalled();
+
+    await input.setValue('title:/Hollow Knight|Silksong/i');
+
+    expect(input.attributes('aria-invalid')).toBe('false');
+    expect(dialogWrapper.find('#feed-item-filter-error').exists()).toBe(false);
+    expect(dialogWrapper.get('.update-feed__save').attributes('disabled')).toBeUndefined();
   });
 
   // Verifies save failures preserve the modal and notify the user.

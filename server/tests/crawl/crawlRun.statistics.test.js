@@ -226,7 +226,7 @@ describe('crawl run article statistics', () => {
     expect(crawlLines[0]).toBe(`[CRAWL] Started iteration user=${user.id}`);
     expect(crawlLines[1]).toContain('status=success');
     expect(crawlLines[1]).toContain('resolved=example.com/recovered.xml');
-    expect(crawlLines[1]).toContain('items=1 new=1 attempts=2');
+    expect(crawlLines[1]).toContain('items=1 new=1 filtered=0 attempts=2');
     expect(result.crawlOutcomes).toEqual({ RECOVERED: 1 });
     expect(feedResult).toMatchObject({
       status: 'RECOVERED',
@@ -259,6 +259,7 @@ describe('crawl run article statistics', () => {
       status: 'completed',
       newArticles: 0,
       updatedArticles: 0,
+      articlesFiltered: 1,
       articleErrors: 0,
       errors: 0,
       processedFeeds: 1,
@@ -266,6 +267,64 @@ describe('crawl run article statistics', () => {
       timedOutFeeds: 0,
       durationMs: expect.any(Number)
     });
+  });
+
+  it('compiles a configured filter once per feed and persists filtered totals', async () => {
+    const { user, feed } = await createUserFeed('configuredfilterstats');
+    await feed.update({ itemFilter: 'title:/accepted/i' });
+    const onProgress = vi.fn();
+    mocked.processArticle
+      .mockResolvedValueOnce({
+        newArticles: 0,
+        updatedArticles: 0,
+        filteredArticles: 1,
+        errors: 0
+      })
+      .mockResolvedValueOnce({ newArticles: 1, updatedArticles: 0, errors: 0 });
+
+    const result = await crawlController.performCrawl(user.id, { onProgress });
+    const crawlRun = await CrawlRun.findOne({ where: { userId: user.id } });
+    const feedResult = await FeedCrawlResult.findOne({ where: { crawlRunId: crawlRun.id } });
+    const firstCompiledFilter = mocked.processArticle.mock.calls[0][10];
+
+    expect(firstCompiledFilter).toMatchObject({
+      expression: 'title:/accepted/i',
+      field: 'title',
+      negated: false
+    });
+    expect(mocked.processArticle.mock.calls[1][10]).toBe(firstCompiledFilter);
+    expect(result.totalFilteredArticles).toBe(1);
+    expect(crawlRun.articlesFiltered).toBe(1);
+    expect(feedResult.articlesFiltered).toBe(1);
+    expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'done',
+      filteredArticles: 1
+    }));
+  });
+
+  it('fails a feed observably when its stored filter cannot compile', async () => {
+    const { user, feed } = await createUserFeed('invalidstoredfilter');
+    await feed.update({ itemFilter: 'title:/[unterminated/' });
+
+    const result = await crawlController.performCrawl(user.id);
+    const crawlRun = await CrawlRun.findOne({ where: { userId: user.id } });
+    const feedResult = await FeedCrawlResult.findOne({ where: { crawlRunId: crawlRun.id } });
+
+    expect(mocked.processArticle).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      processed: 1,
+      errors: 1,
+      crawlOutcomes: { VALIDATION_ERROR: 1 }
+    });
+    expect(crawlRun).toMatchObject({ status: 'completed', failedFeeds: 1 });
+    expect(feedResult).toMatchObject({
+      status: 'FAILED',
+      errorCategory: 'VALIDATION_ERROR',
+      errorCode: 'FEED_ITEM_FILTER_INVALID',
+      itemsFetched: 2,
+      articlesFiltered: 0
+    });
+    expect(feedResult.errorMessage).toContain('Invalid item filter');
   });
 
   it.each(['unchanged', 'not_modified'])(
