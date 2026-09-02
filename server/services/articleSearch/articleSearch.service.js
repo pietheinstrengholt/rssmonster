@@ -29,6 +29,24 @@ import {
 // Defines the default briefing search enforced by this service.
 const DEFAULT_BRIEFING_SEARCH = 'briefing:true @lastweek sort:recommended';
 
+// Validates optional internal execution ceilings without changing normal search behavior.
+const normalizeExecutionBounds = executionBounds => {
+  if (executionBounds === null || executionBounds === undefined) return null;
+
+  const maxResults = Number(executionBounds?.maxResults);
+  const maxCandidates = Number(executionBounds?.maxCandidates);
+  if (
+    !Number.isSafeInteger(maxResults)
+    || maxResults < 1
+    || !Number.isSafeInteger(maxCandidates)
+    || maxCandidates < maxResults
+  ) {
+    throw new TypeError('Invalid article search execution bounds');
+  }
+
+  return { maxResults, maxCandidates };
+};
+
 // Emits article-search diagnostics only during local development.
 const debugLog = (...args) => {
   if (process.env.NODE_ENV === 'development') {
@@ -103,12 +121,14 @@ export const searchArticles = async ({
     limitCount = null, // Maximum number of results (used by smart folders)
     countOnly = false, // Return only the matching count without materializing ids when possible
     minArticleIdExclusive = null, // Restrict an internal count to articles admitted after a snapshot
-    pagination = null // Opt-in keyset pagination descriptor for database-native sorts
+    pagination = null, // Opt-in keyset pagination descriptor for database-native sorts
+    executionBounds = null // Optional trusted ceilings for bounded internal consumers
 }) => {
     // Rejects processing when user id is unavailable.
     if (!userId) {
         throw new Error("Missing userId");
     }
+    const normalizedExecutionBounds = normalizeExecutionBounds(executionBounds);
 
     /**
      * Smart folder optimization: skip settings fetch when score thresholds are explicit.
@@ -409,8 +429,14 @@ export const searchArticles = async ({
     // Coerces the runtime filters required into the representation required while performing search articles.
     const runtimeFiltersRequired = Boolean(qualityFilter || freshnessFilter);
     const needsHighTrustRuntimeSort = prioritizeHighTrust;
-    // Selects the result limit based on whether smart folder search is available.
-    const resultLimit = limitFilter || (smartFolderSearch ? limitCount : null);
+    // Selects the result limit based on the expression, saved-view default, and caller ceiling.
+    const requestedResultLimit = limitFilter || (smartFolderSearch ? limitCount : null);
+    const resultLimit = normalizedExecutionBounds
+      ? Math.min(
+          requestedResultLimit ?? normalizedExecutionBounds.maxResults,
+          normalizedExecutionBounds.maxResults
+        )
+      : requestedResultLimit;
 
     // Handles the case where count only is available and runtime filters required is unavailable.
     if (countOnly && !runtimeFiltersRequired) {
@@ -551,8 +577,30 @@ export const searchArticles = async ({
       };
     }
 
-    // Fetch articles based on constructed query
-    let articles = await executeSearch(articleQuery);
+    const runtimeOrderingRequired = sortRecommended
+      || sortTopStories
+      || sortQuality
+      || sortAttention
+      || needsHighTrustRuntimeSort;
+    const boundedCandidateExecution = normalizedExecutionBounds
+      && (runtimeOrderingRequired || runtimeFiltersRequired);
+    if (boundedCandidateExecution && !articleQuery.order) {
+      articleQuery.order = [
+        ['publishedAt', 'DESC'],
+        ['id', 'DESC']
+      ];
+    }
+    const executionLimit = normalizedExecutionBounds
+      ? boundedCandidateExecution
+        ? normalizedExecutionBounds.maxCandidates
+        : resultLimit
+      : null;
+
+    // Fetch articles based on the prepared query and optional internal execution ceiling.
+    let articles = await executeSearch({
+      ...articleQuery,
+      ...(executionLimit ? { limit: executionLimit } : {})
+    });
     
     debugLog(`\x1b[33mFetched ${articles.length} articles from database (before in-memory filters)\x1b[0m`);
 
@@ -585,16 +633,10 @@ export const searchArticles = async ({
     // Maps source values into the result produced while performing search articles.
     itemIds = articles.map(article => article.id);
     
-    // Apply limit filter from search expression (limit:50)
-    // Takes precedence over default limits
-    if (limitFilter && itemIds.length > limitFilter) {
-      itemIds = itemIds.slice(0, limitFilter);
-      debugLog(`\x1b[31mApplied limit filter: ${limitFilter} articles\x1b[0m`);
-    // Handles the case where smart folder search is available and limit count is available and item id count exceeds limit count.
-    } else if (smartFolderSearch && limitCount && itemIds.length > limitCount) {
-      // Smart folder optimization: apply limitCount
-      itemIds = itemIds.slice(0, limitCount);
-      debugLog(`\x1b[31mLimited smart folder results to ${limitCount} articles\x1b[0m`);
+    // Applies the expression, saved-view, or trusted internal result ceiling.
+    if (resultLimit && itemIds.length > resultLimit) {
+      itemIds = itemIds.slice(0, resultLimit);
+      debugLog(`\x1b[31mLimited search results to ${resultLimit} articles\x1b[0m`);
     // Handles the case where smart folder search is unavailable and limit filter is unavailable.
     } else if (!smartFolderSearch && !limitFilter) {
       // Limit to 500 articles when search expressions are used (non-smart folder, no explicit limit)

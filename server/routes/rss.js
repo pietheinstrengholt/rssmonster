@@ -7,4 +7,7 @@ const router = express.Router();
 // RSS feed generated from the authenticated user's stored articles
 router.get('/', userMiddleware.isLoggedIn, rssController.generateRss);
 
+// Public RSS feed authenticated by an opaque Generated Feed bearer token.
+router.get('/generated/:token', rssController.generatePublicGeneratedFeed);
+
 export default router;

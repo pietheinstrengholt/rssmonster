@@ -9,6 +9,55 @@ const DATE_DAYS_AGO_PATTERN = /@"?(\d+)\s+days\s+ago"?/i;
 // Defines the iso date token pattern enforced by this service.
 const ISO_DATE_TOKEN_PATTERN = /^@(\d{4}-\d{2}-\d{2})$/;
 export const MAX_ARTICLE_SEARCH_LENGTH = 4096;
+const BOOLEAN_FILTER_KEYS = [
+  'favorite',
+  'star',
+  'unread',
+  'read',
+  'clicked',
+  'seen',
+  'hot',
+  'island',
+  'briefing',
+  'developing'
+];
+const KNOWN_FILTER_KEYS = new Set([
+  ...BOOLEAN_FILTER_KEYS,
+  'firstseen',
+  'tag',
+  'title',
+  'author',
+  'language',
+  'sort',
+  'quality',
+  'freshness',
+  'event',
+  'eventcount',
+  'limit'
+]);
+
+// Identifies an invalid persisted expression without changing lenient interactive search behavior.
+export class ArticleExpressionValidationError extends Error {
+  constructor(code, message, token = null) {
+    super(message);
+    this.name = 'ArticleExpressionValidationError';
+    this.code = code;
+    this.token = token;
+  }
+}
+
+// Rejects one token while preserving a structured error contract for API callers.
+const rejectExpressionToken = (code, message, token) => {
+  throw new ArticleExpressionValidationError(code, message, token);
+};
+
+// Returns the normalized field name from a structured expression token.
+const expressionFieldName = token => {
+  const separatorIndex = token.indexOf(':');
+  return separatorIndex > 0
+    ? token.slice(0, separatorIndex).toLowerCase()
+    : null;
+};
 
 // Canonicalizes supported article sorts while retaining Trust as a legacy Quality alias.
 export const normalizeArticleSort = sortValue => {
@@ -174,9 +223,21 @@ const parseQuotedDatePattern = search => {
 };
 
 // Converts a raw article search expression into normalized search text, filters, sorting, and limit data.
-export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) => {
+export const parseArticleQuery = ({ search = '', defaultSort = 'desc', strict = false } = {}) => {
   // Normalizes the raw search before parsing article query.
   const rawSearch = String(search).trim();
+  if (strict && rawSearch.length > MAX_ARTICLE_SEARCH_LENGTH) {
+    throw new ArticleExpressionValidationError(
+      'EXPRESSION_TOO_LONG',
+      `Expression must not exceed ${MAX_ARTICLE_SEARCH_LENGTH} characters.`
+    );
+  }
+  if (strict && (rawSearch.match(/"/g)?.length || 0) % 2 !== 0) {
+    throw new ArticleExpressionValidationError(
+      'EXPRESSION_UNTERMINATED_QUOTE',
+      'Expression contains an unterminated quoted value.'
+    );
+  }
   // Builds the filters assembled while parsing article query.
   const filters = {};
   let workingSearch = rawSearch;
@@ -234,7 +295,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     // Simplified boolean filter parsing
     let matchedBooleanFilter = false;
     // Processes each entry entry in turn.
-    for (const key of ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'hot', 'island', 'briefing', 'developing']) {
+    for (const key of BOOLEAN_FILTER_KEYS) {
       // Parses the boolean filter while parsing article query.
       const value = parseBooleanFilter(cleaned, key);
       // Handles the case where value is not value.
@@ -254,8 +315,16 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     const firstSeenAgeMatch = cleaned.match(/^firstSeen:\s*(\d+)([hd])$/i);
     // Handles the case where first seen age match is available.
     if (firstSeenAgeMatch) {
+      const firstSeenAgeValue = parseInt(firstSeenAgeMatch[1], 10);
+      if (strict && !Number.isSafeInteger(firstSeenAgeValue)) {
+        rejectExpressionToken(
+          'EXPRESSION_INVALID_TOKEN',
+          `Invalid first-seen range: "${cleaned}".`,
+          cleaned
+        );
+      }
       filters.firstSeenAge = {
-        value: parseInt(firstSeenAgeMatch[1], 10),
+        value: firstSeenAgeValue,
         unit: firstSeenAgeMatch[2].toLowerCase()
       };
       continue;
@@ -265,6 +334,13 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     const tag = parseTextFilter(cleaned, 'tag:');
     // Handles the case where tag is available.
     if (tag) {
+      if (strict && !tag.trim().replace(/^"|"$/g, '')) {
+        rejectExpressionToken(
+          'EXPRESSION_INVALID_TOKEN',
+          `Tag filter cannot be empty: "${cleaned}".`,
+          cleaned
+        );
+      }
       filters.tag = tag.trim();
       continue;
     }
@@ -275,7 +351,15 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
       const title = parseTextFilter(cleaned, 'title:');
       // Handles the case where title is available.
       if (title) {
-        filters.title = title.trim().replace(/^"|"$/g, '');
+        const titleValue = title.trim().replace(/^"|"$/g, '');
+        if (strict && !titleValue) {
+          rejectExpressionToken(
+            'EXPRESSION_INVALID_TOKEN',
+            `Title filter cannot be empty: "${cleaned}".`,
+            cleaned
+          );
+        }
+        filters.title = titleValue;
         continue;
       }
     }
@@ -284,7 +368,15 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     const author = parseTextFilter(cleaned, 'author:');
     // Handles the case where author is available.
     if (author) {
-      filters.author = author.trim().replace(/^"|"$/g, '');
+      const authorValue = author.trim().replace(/^"|"$/g, '');
+      if (strict && !authorValue) {
+        rejectExpressionToken(
+          'EXPRESSION_INVALID_TOKEN',
+          `Author filter cannot be empty: "${cleaned}".`,
+          cleaned
+        );
+      }
+      filters.author = authorValue;
       continue;
     }
 
@@ -310,6 +402,13 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     // Handles the case where quality match is available.
     if (qualityMatch) {
       filters.quality = parseNumberOperatorFilter(qualityMatch[1]);
+      if (strict && (!filters.quality || !Number.isFinite(filters.quality.value))) {
+        rejectExpressionToken(
+          'EXPRESSION_INVALID_TOKEN',
+          `Invalid numeric filter: "${cleaned}".`,
+          cleaned
+        );
+      }
       continue;
     }
 
@@ -318,6 +417,13 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     // Handles the case where freshness match is available.
     if (freshnessMatch) {
       filters.freshness = parseNumberOperatorFilter(freshnessMatch[1]);
+      if (strict && (!filters.freshness || !Number.isFinite(filters.freshness.value))) {
+        rejectExpressionToken(
+          'EXPRESSION_INVALID_TOKEN',
+          `Invalid numeric filter: "${cleaned}".`,
+          cleaned
+        );
+      }
       continue;
     }
 
@@ -333,7 +439,15 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     const eventCountMatch = cleaned.match(/^eventCount:\s*(?:>=\s*)?(\d+)$/i);
     // Handles the case where event count match is available.
     if (eventCountMatch) {
-      filters.eventCount = parseInt(eventCountMatch[1], 10);
+      const eventCount = parseInt(eventCountMatch[1], 10);
+      if (strict && !Number.isSafeInteger(eventCount)) {
+        rejectExpressionToken(
+          'EXPRESSION_INVALID_TOKEN',
+          `Invalid event count: "${cleaned}".`,
+          cleaned
+        );
+      }
+      filters.eventCount = eventCount;
       continue;
     }
 
@@ -342,6 +456,13 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     // Handles the case where limit match is available.
     if (limitMatch) {
       limit = parseInt(limitMatch[1], 10);
+      if (strict && (!Number.isSafeInteger(limit) || limit < 1)) {
+        rejectExpressionToken(
+          'EXPRESSION_INVALID_TOKEN',
+          `Invalid result limit: "${cleaned}".`,
+          cleaned
+        );
+      }
       continue;
     }
 
@@ -355,8 +476,58 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
 
     // Handles the case where cleaned matches the expected format.
     if (ISO_DATE_TOKEN_PATTERN.test(cleaned)) {
+      if (strict) {
+        rejectExpressionToken(
+          'EXPRESSION_INVALID_TOKEN',
+          `Invalid calendar date: "${cleaned}".`,
+          cleaned
+        );
+      }
       filters.date ??= null;
       continue;
+    }
+
+    if (strict) {
+      const fieldName = expressionFieldName(cleaned);
+      if (fieldName) {
+        if (!KNOWN_FILTER_KEYS.has(fieldName)) {
+          rejectExpressionToken(
+            'EXPRESSION_UNKNOWN_FILTER',
+            `Unknown expression field: "${fieldName}".`,
+            cleaned
+          );
+        }
+        rejectExpressionToken(
+          'EXPRESSION_INVALID_TOKEN',
+          `Invalid expression token: "${cleaned}".`,
+          cleaned
+        );
+      }
+
+      const equalsMatch = cleaned.match(/^([A-Za-z]+)=/);
+      if (equalsMatch && KNOWN_FILTER_KEYS.has(equalsMatch[1].toLowerCase())) {
+        rejectExpressionToken(
+          'EXPRESSION_INVALID_TOKEN',
+          `Use a colon instead of equals in "${cleaned}".`,
+          cleaned
+        );
+      }
+
+      if (cleaned.startsWith('@')) {
+        rejectExpressionToken(
+          'EXPRESSION_INVALID_TOKEN',
+          `Invalid date expression: "${cleaned}".`,
+          cleaned
+        );
+      }
+
+      if (/^""$/.test(cleaned)) {
+        rejectExpressionToken(
+          'EXPRESSION_INVALID_TOKEN',
+          'Quoted search text cannot be empty.',
+          cleaned
+        );
+      }
     }
 
     remainingTokens.push(cleaned);
@@ -382,4 +553,27 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     limit,
     hasSearchIntent
   };
+};
+
+// Validates a persisted expression through the same parser used to execute article searches.
+export const validateArticleExpression = (
+  expression,
+  { allowEmpty = false, defaultSort = 'desc' } = {}
+) => {
+  const normalizedExpression = String(expression ?? '').trim();
+  if (!normalizedExpression) {
+    if (allowEmpty) {
+      return parseArticleQuery({ search: '', defaultSort, strict: true });
+    }
+    throw new ArticleExpressionValidationError(
+      'EXPRESSION_REQUIRED',
+      'Expression cannot be empty.'
+    );
+  }
+
+  return parseArticleQuery({
+    search: normalizedExpression,
+    defaultSort,
+    strict: true
+  });
 };

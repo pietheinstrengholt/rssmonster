@@ -101,6 +101,8 @@ const createAsyncSettingsSection = loader => defineAsyncComponent({
 
 // This component lazily loads Smart Folder settings.
 const SettingsSmartFolders = createAsyncSettingsSection(() => import('./SettingsSmartFolders.vue'));
+// This component lazily loads Generated Feed settings.
+const SettingsGeneratedFeeds = createAsyncSettingsSection(() => import('./SettingsGeneratedFeeds.vue'));
 // This component lazily loads article action settings.
 const SettingsActions = createAsyncSettingsSection(() => import('./SettingsActions.vue'));
 // This component lazily loads AI score settings.
@@ -134,6 +136,7 @@ export default {
   components: {
     SettingsWelcome,
     SettingsSmartFolders,
+    SettingsGeneratedFeeds,
     SettingsActions,
     SettingsScores,
     SettingsIslands,
@@ -181,6 +184,7 @@ export default {
       return [
         { key: 'welcome', label: 'Welcome', icon: 'info-circle-fill', visible: true },
         { key: 'smartfolders', label: 'Smart Folders', icon: 'folder-fill', visible: true },
+        { key: 'generatedFeeds', label: 'Generated Feeds', icon: 'rss-fill', visible: true },
         { key: 'actions', label: 'Actions', icon: 'lightning-charge-fill', visible: true },
         { key: 'scores', label: 'Scores', icon: 'bar-chart-fill', visible: aiEnabled },
         { key: 'topics', label: 'Topics', icon: 'diagram-3-fill', visible: aiEnabled },
@@ -202,6 +206,7 @@ export default {
       return {
         welcome: 'SettingsWelcome',
         smartfolders: 'SettingsSmartFolders',
+        generatedFeeds: 'SettingsGeneratedFeeds',
         actions: 'SettingsActions',
         scores: 'SettingsScores',
         topics: 'SettingsTopics',

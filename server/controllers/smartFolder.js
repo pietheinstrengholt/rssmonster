@@ -3,6 +3,10 @@
 import db from '../models/index.js';
 import { Op, fn, col, literal } from 'sequelize';
 import { searchArticles } from "../services/articleSearch/articleSearch.service.js";
+import {
+  ArticleExpressionValidationError,
+  validateArticleExpression
+} from '../services/articleSearch/articleQueryParser.service.js';
 import { fetchFeedIds } from '../services/articleSearch/articleSearchDataAccess.service.js';
 import { getSmartFolderRecommendations } from '../services/smartFolders/smartFolderLLM.js';
 const { Article, Feed, Tag, SmartFolder, Setting } = db;
@@ -135,8 +139,6 @@ const postSmartFolder = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    await SmartFolder.destroy({ where: { userId } });
-
     const payload = smartFolders
       .filter(sf => sf && (sf.name || sf.query))
       .map(sf => ({
@@ -145,6 +147,25 @@ const postSmartFolder = async (req, res, next) => {
         query: sf.query || '',
         limitCount: sf.limitCount || 50
       }));
+
+    for (const [index, smartFolder] of payload.entries()) {
+      try {
+        validateArticleExpression(smartFolder.query);
+      } catch (error) {
+        if (error instanceof ArticleExpressionValidationError) {
+          return res.status(400).json({
+            error: {
+              code: error.code,
+              message: error.message,
+              index
+            }
+          });
+        }
+        throw error;
+      }
+    }
+
+    await SmartFolder.destroy({ where: { userId } });
 
     const created = payload.length
       ? await SmartFolder.bulkCreate(payload)

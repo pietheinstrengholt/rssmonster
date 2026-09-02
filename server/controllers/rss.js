@@ -1,38 +1,30 @@
-import { Builder } from 'xml2js';
 import db from '../models/index.js';
-const { Article, Feed, Category } = db;
+const { Article, Feed, Category, GeneratedFeed } = db;
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { executeGeneratedFeedExpression } from '../services/generatedFeeds/generatedFeedExecution.js';
+import { buildRssXml } from '../services/rss/rssRenderer.js';
 
-// Build an RSS 2.0 XML document from a list of articles
-const buildRssXml = (articles, meta) => {
-  const builder = new Builder({ cdata: true });
+const GENERATED_FEED_NOT_FOUND = { message: 'Generated Feed not found' };
+const GENERATED_FEED_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43,64}$/;
 
-  const items = articles.map(article => ({
-    title: article.title || 'No title',
-    ...(article.url ? { link: article.url } : {}),
-    guid: article.id,
-    pubDate: new Date(article.publishedAt || article.createdAt || Date.now()).toUTCString(),
-    description: article.contentHtml || article.content || '',
-    category: article.Feed?.title ? [article.Feed.title] : undefined
-  }));
+const requestBaseUrl = req => `${req.protocol}://${req.get('host')}`;
 
-  const rssObject = {
-    rss: {
-      $: { version: '2.0' },
-      channel: [
-        {
-          title: meta.title,
-          link: meta.link,
-          description: meta.description,
-          language: meta.language,
-          lastBuildDate: new Date().toUTCString(),
-          item: items
-        }
-      ]
-    }
-  };
+const loadRssArticles = async ({ userId, itemIds }) => {
+  if (!itemIds.length) return [];
 
-  return builder.buildObject(rssObject);
+  const articles = await Article.findAll({
+    where: {
+      id: itemIds,
+      userId,
+      ...canonicalArticleWhere()
+    },
+    include: [Feed]
+  });
+  const articlesById = new Map(articles.map(article => [String(article.id), article]));
+
+  return itemIds
+    .map(id => articlesById.get(String(id)))
+    .filter(Boolean);
 };
 
 // GET /rss?feedId=456&limit=50&starred=true&unread=true
@@ -84,14 +76,17 @@ const generateRss = async (req, res, next) => {
       limit: queryLimit
     });
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = requestBaseUrl(req);
+    const selfLink = `${baseUrl}${req.originalUrl}`;
     const rssXml = buildRssXml(articles, {
       title: 'RSSMonster generated feed',
       link: baseUrl,
+      selfLink,
       description: 'RSS feed generated from stored articles',
       language: 'en'
     });
 
+    res.set('Content-Location', selfLink);
     res.set('Content-Type', 'application/rss+xml');
     return res.send(rssXml);
   } catch (err) {
@@ -100,6 +95,54 @@ const generateRss = async (req, res, next) => {
   }
 };
 
+// GET /rss/generated/:token
+// Resolves an opaque bearer token and dynamically renders its stored article expression.
+const generatePublicGeneratedFeed = async (req, res, next) => {
+  try {
+    if (!GENERATED_FEED_TOKEN_PATTERN.test(req.params.token)) {
+      return res.status(404).json(GENERATED_FEED_NOT_FOUND);
+    }
+
+    const generatedFeed = await GeneratedFeed.findOne({
+      where: { token: req.params.token, enabled: true },
+      attributes: ['name', 'description', 'expression', 'userId']
+    });
+    if (!generatedFeed) return res.status(404).json(GENERATED_FEED_NOT_FOUND);
+
+    const result = await executeGeneratedFeedExpression({
+      userId: generatedFeed.userId,
+      expression: generatedFeed.expression
+    });
+    const articles = await loadRssArticles({
+      userId: generatedFeed.userId,
+      itemIds: result.itemIds
+    });
+    const feedUrl = `${requestBaseUrl(req)}${req.originalUrl.split('?')[0]}`;
+    const rssXml = buildRssXml(articles, {
+      title: `RSSMonster - ${generatedFeed.name}`,
+      link: feedUrl,
+      selfLink: feedUrl,
+      description: generatedFeed.description
+        || `Generated RSSMonster feed: ${generatedFeed.name}`,
+      language: 'en'
+    });
+
+    res.set({
+      'Cache-Control': 'private, no-store',
+      'Content-Location': feedUrl,
+      'Content-Type': 'application/rss+xml'
+    });
+    return res.send(rssXml);
+  } catch (err) {
+    console.error('Error generating public Generated Feed:', {
+      name: err?.name || 'Error',
+      code: err?.original?.code || err?.code || null
+    });
+    return next(err);
+  }
+};
+
 export default {
+  generatePublicGeneratedFeed,
   generateRss
 };

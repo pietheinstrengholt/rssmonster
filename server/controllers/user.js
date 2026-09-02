@@ -8,6 +8,7 @@ const {
   Hotlink,
   Action,
   SmartFolder,
+  GeneratedFeed,
   Topic,
   Event,
   ArticleTopic,
@@ -286,6 +287,7 @@ const deleteUser = async (req, res, _next) => {
       await destroyByUserIdSafe({ model: Hotlink, userId: user.id, transaction, label: 'hotlinks' });
       await destroyByUserIdSafe({ model: Action, userId: user.id, transaction, label: 'actions' });
       await destroyByUserIdSafe({ model: SmartFolder, userId: user.id, transaction, label: 'smart_folders' });
+      await destroyByUserIdSafe({ model: GeneratedFeed, userId: user.id, transaction, label: 'generated_feeds' });
       await destroyByUserIdSafe({ model: Article, userId: user.id, transaction, label: 'articles' });
       await destroyByUserIdSafe({ model: Event, userId: user.id, transaction, label: 'events' });
       await destroyByUserIdSafe({ model: Topic, userId: user.id, transaction, label: 'topics' });

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   REQUEST_LOG_FORMAT,
+  redactSensitivePathValues,
   redactSensitiveQueryValues,
   requestUrlForLogging
 } from '../../utils/requestLogging.js';
@@ -45,6 +46,16 @@ describe('request logging', () => {
     ).toBe(
       '/api/feeds/refresh/job-7/events?token=[REDACTED]'
     );
+  });
+
+  it('redacts Generated Feed bearer tokens carried in URL paths', () => {
+    const token = 'generated-feed-bearer-token';
+
+    expect(redactSensitivePathValues(`/rss/generated/${token}`))
+      .toBe('/rss/generated/[REDACTED]');
+    expect(requestUrlForLogging({
+      originalUrl: `/rss/generated/${token}?preview=true`
+    })).toBe('/rss/generated/[REDACTED]?preview=true');
   });
 
   it('keeps bearer credentials out of the configured request log output', () => {

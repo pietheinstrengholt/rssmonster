@@ -6,6 +6,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { bootstrapIconNames } from './bootstrap-icons.js'
 import {
+  NAVIGATION_FALLBACK_DENYLIST,
   OPTIONAL_ASSET_RUNTIME_CACHE,
   PRECACHE_GLOB_PATTERNS
 } from './pwa-policy.js'
@@ -76,6 +77,7 @@ export default defineConfig({
             importScripts: ['/push-sw.js'],
             globPatterns: PRECACHE_GLOB_PATTERNS,
             cleanupOutdatedCaches: true,
+            navigateFallbackDenylist: NAVIGATION_FALLBACK_DENYLIST,
             runtimeCaching: [OPTIONAL_ASSET_RUNTIME_CACHE],
           },
           // Favicons generates the manifest and all of its icon assets.

@@ -362,6 +362,58 @@ describe('smartFolder controller', () => {
       });
     });
 
+    it('rejects invalid expressions before replacing existing folders', async () => {
+      const res = createRes();
+
+      await smartFolderController.postSmartFolder(
+        {
+          userData: { userId: 42 },
+          body: {
+            smartFolders: [
+              { name: 'Valid', query: 'unread:true limit:50' },
+              { name: 'Invalid', query: 'quallity:>=0.7' }
+            ]
+          }
+        },
+        res,
+        vi.fn()
+      );
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: {
+          code: 'EXPRESSION_UNKNOWN_FILTER',
+          message: 'Unknown expression field: "quallity".',
+          index: 1
+        }
+      });
+      expect(mocked.smartFolderDestroy).not.toHaveBeenCalled();
+      expect(mocked.smartFolderBulkCreate).not.toHaveBeenCalled();
+    });
+
+    it('rejects a named Smart Folder without an expression before replacement', async () => {
+      const res = createRes();
+
+      await smartFolderController.postSmartFolder(
+        {
+          userData: { userId: 42 },
+          body: { smartFolders: [{ name: 'Missing expression', query: '' }] }
+        },
+        res,
+        vi.fn()
+      );
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: {
+          code: 'EXPRESSION_REQUIRED',
+          message: 'Expression cannot be empty.',
+          index: 0
+        }
+      });
+      expect(mocked.smartFolderDestroy).not.toHaveBeenCalled();
+    });
+
     it('forwards folder persistence errors to Express', async () => {
       const error = new Error('save failed');
       mocked.smartFolderDestroy.mockRejectedValue(error);

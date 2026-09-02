@@ -9,6 +9,7 @@ import {
   REVALIDATED_ENTRY_CACHE_CONTROL,
   createStaticCacheHeaders
 } from '../../utils/staticCache.js';
+import { serveServiceWorkerFallback } from '../../utils/serviceWorkerFallback.js';
 
 let app;
 let fixtureDirectory;
@@ -31,6 +32,7 @@ describe('production static cache headers', () => {
     app.use(express.static(fixtureDirectory, {
       setHeaders: createStaticCacheHeaders(fixtureDirectory)
     }));
+    app.get('/sw.js', serveServiceWorkerFallback);
     // This route verifies API responses remain outside the static cache policy.
     app.get('/api/example', (request, response) => response.json({ ok: true }));
   });
@@ -61,6 +63,13 @@ describe('production static cache headers', () => {
     expect(response.headers['cache-control']).toBe(REVALIDATED_ENTRY_CACHE_CONTROL);
     expect(response.headers.etag).toBeTruthy();
     expect(response.headers['last-modified']).toBeTruthy();
+  });
+
+  it('serves the built service worker before the development retirement fallback', async () => {
+    const response = await request(app).get('/sw.js');
+
+    expect(response.text).toBe('self.skipWaiting();');
+    expect(response.text).not.toContain('self.registration.unregister()');
   });
 
   it('does not apply immutable caching to unrelated root files', async () => {

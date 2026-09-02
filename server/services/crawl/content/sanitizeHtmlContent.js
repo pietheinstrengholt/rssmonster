@@ -1,4 +1,5 @@
 import sanitizeHtml from 'sanitize-html';
+import { load } from 'cheerio';
 import {
   ALLOWED_TAGS,
   GLOBAL_ATTRS,
@@ -208,9 +209,20 @@ const sanitizeOptions = {
   }
 };
 
+// Removes source elements whose media parent was stripped while preserving picture sources.
+function removeOrphanedSourceElements(html) {
+  if (!html.includes('<source')) return html;
+
+  const $ = load(html, null, false);
+  $('source').each((_, element) => {
+    if (!$(element).parent().is('picture')) $(element).remove();
+  });
+  return $.html();
+}
+
 // This function applies security sanitization to cleaned feed HTML.
 function sanitizeHtmlContent(html) {
-  return sanitizeHtml(html, sanitizeOptions);
+  return removeOrphanedSourceElements(sanitizeHtml(html, sanitizeOptions));
 }
 
 export { sanitizeOptions };

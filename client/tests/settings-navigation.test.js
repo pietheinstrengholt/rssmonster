@@ -77,6 +77,7 @@ describe('Settings navigation', () => {
     expect(directory.find('h6').exists()).toBe(false);
     expect(headings).toEqual([
       'Smart Folders',
+      'Generated Feeds',
       'Actions',
       'Crawl Statistics',
       'Observability',
@@ -118,6 +119,15 @@ describe('Settings navigation', () => {
       label: 'Smart Folders',
       visible: true
     });
+  });
+
+  it('shows Generated Feeds for every authenticated user', () => {
+    expect(getSettingsNavigation(false).find(item => item.key === 'generatedFeeds')).toMatchObject({
+      label: 'Generated Feeds',
+      visible: true
+    });
+    expect(Settings.computed.activeComponent.call({ active: 'generatedFeeds' }))
+      .toBe('SettingsGeneratedFeeds');
   });
 
   it('shows processing observability for every authenticated user', () => {

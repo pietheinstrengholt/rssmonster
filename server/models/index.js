@@ -44,6 +44,7 @@ import TagModel from './tag.js';
 import ActionModel from './action.js';
 import SettingModel from './setting.js';
 import SmartFolderModel from './smartFolder.js';
+import GeneratedFeedModel from './generatedFeed.js';
 import TopicModel from './topic.js';
 import EventModel from './event.js';
 import ArticleTopicModel from './articleTopic.js';
@@ -71,6 +72,7 @@ const Tag = TagModel(sequelize);
 const Action = ActionModel(sequelize);
 const Setting = SettingModel(sequelize);
 const SmartFolder = SmartFolderModel(sequelize);
+const GeneratedFeed = GeneratedFeedModel(sequelize);
 const Topic = TopicModel(sequelize);
 const Event = EventModel(sequelize);
 const ArticleTopic = ArticleTopicModel(sequelize);
@@ -213,6 +215,14 @@ Tag.belongsTo(Article, { foreignKey: 'articleId' });
 User.hasMany(SmartFolder, { foreignKey: 'userId', onDelete: 'CASCADE' });
 SmartFolder.belongsTo(User, { foreignKey: 'userId' });
 
+// User ↔ GeneratedFeed
+User.hasMany(GeneratedFeed, {
+  foreignKey: 'userId',
+  as: 'generatedFeeds',
+  onDelete: 'CASCADE'
+});
+GeneratedFeed.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
 // User ↔ Topic
 User.hasMany(Topic, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Topic.belongsTo(User, { foreignKey: 'userId' });
@@ -331,6 +341,7 @@ export default {
   Action,
   Setting,
   SmartFolder,
+  GeneratedFeed,
   Topic,
   Event,
   ArticleTopic,

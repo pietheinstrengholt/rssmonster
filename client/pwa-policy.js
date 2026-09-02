@@ -79,12 +79,14 @@ export const OPTIONAL_DYNAMIC_MODULES = Object.freeze([
   'src/components/settings/SettingsActions.vue',
   'src/components/settings/SettingsCrawlStatistics.vue',
   'src/components/settings/SettingsFeedsOverview.vue',
+  'src/components/settings/SettingsGeneratedFeeds.vue',
   'src/components/settings/SettingsIslands.vue',
   'src/components/settings/SettingsManageUsers.vue',
   'src/components/settings/SettingsOfficialSources.vue',
   'src/components/settings/SettingsScores.vue',
   'src/components/settings/SettingsSmartFolders.vue',
-  'src/components/settings/SettingsTopics.vue'
+  'src/components/settings/SettingsTopics.vue',
+  'src/components/settings/shared/ExpressionEditor.vue'
 ]);
 
 // These emitted prefixes cover optional shared chunks that do not have stable source keys in the Vite manifest.
@@ -100,6 +102,7 @@ export const OPTIONAL_CHUNK_PREFIXES = Object.freeze([
   'assets/ConfirmDialog-',
   'assets/DeleteCategory-',
   'assets/DeleteFeed-',
+  'assets/ExpressionEditor-',
   'assets/NewCategory-',
   'assets/NewFeed-',
   'assets/PreferencesDialogShell-',
@@ -108,6 +111,7 @@ export const OPTIONAL_CHUNK_PREFIXES = Object.freeze([
   'assets/SettingsActions-',
   'assets/SettingsCrawlStatistics-',
   'assets/SettingsFeedsOverview-',
+  'assets/SettingsGeneratedFeeds-',
   'assets/SettingsIslands-',
   'assets/SettingsManageUsers-',
   'assets/SettingsOfficialSources-',
@@ -122,6 +126,11 @@ export const OPTIONAL_CHUNK_PREFIXES = Object.freeze([
 export const OPTIONAL_ASSET_CACHE_NAME = 'rssmonster-optional-hashed-assets-v1';
 export const OPTIONAL_ASSET_CACHE_MAX_ENTRIES = 60;
 export const OPTIONAL_ASSET_CACHE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+
+// Public RSS documents must reach the server instead of resolving to the cached application shell.
+export const NAVIGATION_FALLBACK_DENYLIST = Object.freeze([
+  /^\/rss(?:\/|$)/
+]);
 
 // This route matches only same-origin, content-hashed JavaScript and CSS emitted under /assets/.
 export const isOptionalHashedAssetRequest = ({ request, url }) =>

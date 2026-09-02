@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  NAVIGATION_FALLBACK_DENYLIST,
   OPTIONAL_ASSET_CACHE_MAX_ENTRIES,
   OPTIONAL_ASSET_RUNTIME_CACHE,
   PRECACHE_GLOB_PATTERNS,
@@ -18,6 +19,14 @@ const createRouteInput = (url, destination) => ({
 });
 
 describe('PWA cache policy', () => {
+  it('does not replace public RSS navigations with the application shell', () => {
+    const isDenied = pathname => NAVIGATION_FALLBACK_DENYLIST.some(pattern => pattern.test(pathname));
+
+    expect(isDenied('/rss')).toBe(true);
+    expect(isDenied('/rss/generated/opaque-token')).toBe(true);
+    expect(isDenied('/settings/generated-feeds')).toBe(false);
+  });
+
   it('keeps stable entry and responsive-shell patterns without broad asset globs', () => {
     expect(PRECACHE_GLOB_PATTERNS).toEqual(expect.arrayContaining([
       'index.html',

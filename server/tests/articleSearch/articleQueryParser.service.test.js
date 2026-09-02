@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { parseArticleQuery } from '../../services/articleSearch/articleQueryParser.service.js';
+import {
+  ArticleExpressionValidationError,
+  MAX_ARTICLE_SEARCH_LENGTH,
+  parseArticleQuery,
+  validateArticleExpression
+} from '../../services/articleSearch/articleQueryParser.service.js';
 
 describe('articleQueryParser.service', () => {
   it('parses mixed filters and quoted text', () => {
@@ -194,5 +199,76 @@ describe('articleQueryParser.service', () => {
     expect(title.filters.title).toBe('OpenAI');
     expect(author.filters.author).toBe('Ada');
     expect(quotedAuthor.filters.author).toBe('Ada Lovelace');
+  });
+});
+
+describe('persisted article expression validation', () => {
+  it('returns the shared parser result for a valid Smart Folder expression', () => {
+    const result = validateArticleExpression(
+      'unread:true tag:security quality:>=0.70 @today sort:recommended limit:50'
+    );
+
+    expect(result).toMatchObject({
+      filters: {
+        unread: true,
+        tag: 'security',
+        quality: { operator: '>=', value: 0.7 },
+        date: { type: 'today' }
+      },
+      sort: 'recommended',
+      limit: 50,
+      hasSearchIntent: true
+    });
+  });
+
+  it('allows ordinary free text while rejecting unknown structured fields', () => {
+    expect(validateArticleExpression('security policy')).toMatchObject({
+      text: 'security policy',
+      textMode: 'terms'
+    });
+
+    expect(() => validateArticleExpression('quallity:>=0.7')).toThrowError(
+      expect.objectContaining({
+        name: 'ArticleExpressionValidationError',
+        code: 'EXPRESSION_UNKNOWN_FILTER',
+        message: 'Unknown expression field: "quallity".',
+        token: 'quallity:>=0.7'
+      })
+    );
+  });
+
+  it.each([
+    ['', 'EXPRESSION_REQUIRED'],
+    ['quality=nope', 'EXPRESSION_INVALID_TOKEN'],
+    ['quality:nope', 'EXPRESSION_INVALID_TOKEN'],
+    ['unread:maybe', 'EXPRESSION_INVALID_TOKEN'],
+    ['language:english', 'EXPRESSION_INVALID_TOKEN'],
+    ['sort:newest', 'EXPRESSION_INVALID_TOKEN'],
+    ['limit:0', 'EXPRESSION_INVALID_TOKEN'],
+    ['tag:', 'EXPRESSION_INVALID_TOKEN'],
+    ['title:""', 'EXPRESSION_INVALID_TOKEN'],
+    ['@2026-02-31', 'EXPRESSION_INVALID_TOKEN'],
+    ['@tomorrow', 'EXPRESSION_INVALID_TOKEN'],
+    ['title:"unterminated', 'EXPRESSION_UNTERMINATED_QUOTE']
+  ])('rejects invalid persisted expression %j', (expression, code) => {
+    try {
+      validateArticleExpression(expression);
+      throw new Error('Expected expression validation to fail.');
+    } catch (error) {
+      expect(error).toBeInstanceOf(ArticleExpressionValidationError);
+      expect(error.code).toBe(code);
+    }
+  });
+
+  it('enforces the shared expression length limit', () => {
+    expect(() => validateArticleExpression('x'.repeat(MAX_ARTICLE_SEARCH_LENGTH + 1)))
+      .toThrowError(expect.objectContaining({ code: 'EXPRESSION_TOO_LONG' }));
+  });
+
+  it('supports an explicitly empty optional expression', () => {
+    expect(validateArticleExpression('', { allowEmpty: true })).toMatchObject({
+      textMode: 'none',
+      hasSearchIntent: false
+    });
   });
 });

@@ -298,25 +298,15 @@
             </fieldset>
         </div>
 
-        <div class="smart-folder-generated-query">
-            <span>Generated query</span>
-
-            <code :class="{ 'input-invalid': generatedQueryInvalid }" :title="generatedQueryError">{{ generatedSmartFolderQuery }}</code>
-
-            <button
-                type="button"
-                class="app-button app-button--icon-only smart-folder-query-copy"
-                title="Copy query"
-                aria-label="Copy generated query"
-                @click="copyGeneratedQuery"
-            >
-                <BootstrapIcon icon="copy" />
-            </button>
-        </div>
-
-        <p v-if="generatedQueryInvalid" class="smart-folder-query-error">
-            {{ generatedQueryError }}
-        </p>
+        <ExpressionEditor
+            ref="expressionEditor"
+            :model-value="generatedSmartFolderQuery"
+            class="smart-folder-generated-query"
+            label="Generated query"
+            copy-label="Copy generated query"
+            readonly
+            copyable
+        />
 
         <div class="smart-folder-config-actions">
             <button type="button" class="app-button app-button--outline-danger smart-folder-config-delete" @click="$emit('delete')">
@@ -341,6 +331,7 @@
 
 <script>
 import { validateSmartFolderQuery } from '../../../services/queryValidation';
+import ExpressionEditor from '../shared/ExpressionEditor.vue';
 import {
     buildSmartFolderQuery,
     createEmptySmartFolderConfig,
@@ -357,6 +348,7 @@ function createEditorDraft(smartFolder) {
 }
 
 export default {
+    components: { ExpressionEditor },
     emits: ['cancel', 'delete', 'save', 'save-copy', 'validation-change'],
     props: {
         smartFolder: { type: Object, required: true },
@@ -380,10 +372,6 @@ export default {
         // This function reports whether the current draft prevents saving.
         generatedQueryInvalid() {
             return !this.generatedQueryValidation.valid;
-        },
-        // This function returns the current query validation message.
-        generatedQueryError() {
-            return this.generatedQueryValidation.error;
         }
     },
     watch: {
@@ -463,7 +451,7 @@ export default {
         },
         // This function copies the current generated query when Clipboard support is available.
         async copyGeneratedQuery() {
-            await navigator.clipboard?.writeText(this.generatedSmartFolderQuery);
+            await this.$refs.expressionEditor?.copyExpression();
         },
         // This function submits the current editor draft to replace the selected folder.
         save() {
@@ -571,37 +559,7 @@ export default {
 }
 
 .smart-folder-generated-query {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
   margin-top: 16px;
-  padding: 14px 16px;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-panel);
-  background: var(--surface-card);
-}
-
-.smart-folder-generated-query span {
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.smart-folder-generated-query code {
-  overflow: hidden;
-  padding: 6px 9px;
-  border-radius: var(--radius-control);
-  background: var(--settings-query-code-bg);
-  color: var(--settings-query-code-text);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.smart-folder-query-error {
-  margin: 8px 0 0;
-  color: var(--settings-danger-text);
-  font-size: 13px;
 }
 
 .smart-folder-config-actions {
@@ -615,8 +573,7 @@ export default {
   white-space: nowrap;
 }
 
-:global(:root[data-theme='dark']) .smart-folder-panel,
-:global(:root[data-theme='dark']) .smart-folder-generated-query {
+:global(:root[data-theme='dark']) .smart-folder-panel {
   background: var(--bg-modal);
   border-color: var(--border-default);
 }
@@ -636,14 +593,6 @@ export default {
   .smart-folder-config__top,
   .smart-folder-config-grid {
     grid-template-columns: 1fr;
-  }
-
-  .smart-folder-generated-query {
-    grid-template-columns: 1fr auto;
-  }
-
-  .smart-folder-generated-query span {
-    grid-column: 1 / -1;
   }
 
   .smart-folder-config-actions {

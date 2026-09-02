@@ -256,6 +256,12 @@ candidate set before a result limit is applied. They return a stable ordered ID
 collection for incremental loading. When multiple `sort:` tokens are present,
 the last recognized token wins.
 
+Trusted internal consumers may opt into explicit execution bounds. Database-native
+sorts then apply the result ceiling directly to the query. Runtime filters and
+computed sorts operate over a deterministic, newest-first candidate window before
+the result ceiling is applied. Normal interactive searches retain complete-set
+ranking semantics.
+
 ## Limits
 
 ```text

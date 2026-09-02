@@ -20,6 +20,7 @@ const mocked = vi.hoisted(() => {
       Event: createModel(),
       EventTopic: createModel(),
       Feed: createModel(),
+      GeneratedFeed: createModel(),
       Hotlink: createModel(),
       Island: createModel(),
       IslandTopic: createModel(),
@@ -397,6 +398,10 @@ describe('user controller administration', () => {
       transaction: 'transaction'
     });
     expect(mocked.models.Setting.destroy).toHaveBeenCalledWith({
+      where: { userId: 2 },
+      transaction: 'transaction'
+    });
+    expect(mocked.models.GeneratedFeed.destroy).toHaveBeenCalledWith({
       where: { userId: 2 },
       transaction: 'transaction'
     });

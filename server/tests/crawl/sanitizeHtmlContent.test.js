@@ -4,6 +4,18 @@ import { describe, expect, it } from 'vitest';
 import sanitizeHtmlContent from '../../services/crawl/content/sanitizeHtmlContent.js';
 
 describe('sanitizeHtmlContent publisher cards', () => {
+  it('keeps picture sources but removes sources orphaned by stripped media parents', () => {
+    const sanitized = sanitizeHtmlContent(
+      '<picture><source srcset="https://example.test/image.webp 1x"><img src="https://example.test/image.jpg"></picture>' +
+      '<video controls><source src="https://example.test/video.mp4" type="video/mp4"></source>Fallback</video>'
+    );
+
+    expect(sanitized).toContain('<picture><source srcset="https://example.test/image.webp 1x"><img src="https://example.test/image.jpg"></picture>');
+    expect(sanitized).not.toContain('video.mp4');
+    expect(sanitized).not.toContain('</source>');
+    expect(sanitized).toContain('Fallback');
+  });
+
   it('removes document wrappers from sanitized fragments', () => {
     const sanitized = sanitizeHtmlContent(
       '<html><head></head><body><p>Article body</p></body></html>'

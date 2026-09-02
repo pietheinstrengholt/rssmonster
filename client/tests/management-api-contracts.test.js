@@ -12,6 +12,13 @@ import {
 import { cleanupOldArticles } from '../src/api/cleanup.js';
 import { triggerCrawl } from '../src/api/crawl.js';
 import {
+  createGeneratedFeed,
+  deleteGeneratedFeed,
+  fetchGeneratedFeeds,
+  regenerateGeneratedFeedToken,
+  updateGeneratedFeed
+} from '../src/api/generatedFeeds.js';
+import {
   fetchOverview,
   fetchOverviewCounts,
   fetchOverviewLite,
@@ -147,6 +154,28 @@ describe('manager API contracts', () => {
     expect(post).toHaveBeenCalledWith('/manager/updateorder', {
       order: [3, 1, 2]
     });
+  });
+});
+
+describe('Generated Feed API contracts', () => {
+  it('builds management requests without placing bearer tokens in route identifiers', () => {
+    const generatedFeed = {
+      name: 'Security',
+      expression: 'tag:security',
+      enabled: true
+    };
+
+    fetchGeneratedFeeds();
+    createGeneratedFeed(generatedFeed);
+    updateGeneratedFeed(7, { enabled: false });
+    regenerateGeneratedFeedToken(7);
+    deleteGeneratedFeed(7);
+
+    expect(get).toHaveBeenCalledWith('/generated-feeds');
+    expect(post).toHaveBeenNthCalledWith(1, '/generated-feeds', generatedFeed);
+    expect(put).toHaveBeenCalledWith('/generated-feeds/7', { enabled: false });
+    expect(post).toHaveBeenNthCalledWith(2, '/generated-feeds/7/regenerate-token');
+    expect(del).toHaveBeenCalledWith('/generated-feeds/7');
   });
 });
 

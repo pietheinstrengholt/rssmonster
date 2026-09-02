@@ -1311,6 +1311,24 @@ describe('articleSearch.service', () => {
       expect(result.articleCount).toBe(3);
       expect(result).not.toHaveProperty('itemIds');
     });
+
+    it('allows trusted internal callers to clamp an expression result limit', async () => {
+      const result = await searchArticles({
+        userId: user.id,
+        search: 'limit:4',
+        status: '%',
+        executionBounds: { maxResults: 2, maxCandidates: 5 }
+      });
+
+      expect(result.itemIds).toHaveLength(2);
+    });
+
+    it('rejects invalid internal execution bounds', async () => {
+      await expect(searchArticles({
+        userId: user.id,
+        executionBounds: { maxResults: 50, maxCandidates: 49 }
+      })).rejects.toThrow('Invalid article search execution bounds');
+    });
   });
 
   // ============================

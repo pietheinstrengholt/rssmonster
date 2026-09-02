@@ -79,6 +79,7 @@ const createResponse = () => {
 const createRequest = (overrides = {}) => ({
   body: {},
   get: vi.fn(() => 'rss.example.test'),
+  originalUrl: '/rss',
   protocol: 'https',
   query: {},
   userData: { userId: 42 },
@@ -261,16 +262,18 @@ describe('RSS controller edge cases', () => {
   it('applies RSS filters, caps the limit, and emits feed metadata', async () => {
     mocked.articleFindAll.mockResolvedValue([{
       id: 7,
+      userId: 42,
       title: '',
       url: 'https://example.test/article',
       content: 'Fallback content',
       createdAt: new Date('2026-07-01T10:00:00Z'),
-      Feed: { title: 'Technology' }
+      feed: { feedName: 'Technology' }
     }]);
     const res = createResponse();
 
     await rssController.generateRss(
       createRequest({
+        originalUrl: '/rss?feedId=9&categoryId=3&limit=500&starred=true&unread=true',
         query: {
           categoryId: '3',
           feedId: '9',
@@ -297,6 +300,10 @@ describe('RSS controller edge cases', () => {
       limit: 200
     }));
     expect(res.set).toHaveBeenCalledWith('Content-Type', 'application/rss+xml');
+    expect(res.set).toHaveBeenCalledWith(
+      'Content-Location',
+      'https://rss.example.test/rss?feedId=9&categoryId=3&limit=500&starred=true&unread=true'
+    );
     expect(res.send.mock.calls[0][0]).toContain('<title>No title</title>');
     expect(res.send.mock.calls[0][0]).toContain('Fallback content');
     expect(res.send.mock.calls[0][0]).toContain('Technology');

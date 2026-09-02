@@ -118,6 +118,7 @@ export default {
 
       return [
         { key: 'smart-folders', title: 'Smart Folders', icon: 'folder-fill', purpose: 'Build saved searches that update as new articles arrive.', visible: true },
+        { key: 'generated-feeds', title: 'Generated Feeds', icon: 'rss-fill', purpose: 'Expose article expressions as private RSS URLs for other readers.', visible: true },
         { key: 'actions', title: 'Actions', icon: 'lightning-charge-fill', purpose: 'Automate how matching articles are handled during crawl.', visible: true },
         { key: 'scores', title: 'Scores', icon: 'bar-chart-fill', purpose: 'Set AI score thresholds that control article visibility.', capability: 'AI feature', visible: aiEnabled },
         { key: 'topics', title: 'Topics', icon: 'diagram-3-fill', purpose: 'Review current events and longer-running topic groups.', capability: 'AI feature', visible: aiEnabled },

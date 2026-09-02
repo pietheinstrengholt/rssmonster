@@ -28,4 +28,15 @@ describe('Express smoke test', () => {
 
     expect(res.status).toBe(200);
   });
+
+  it('retires stale application-shell workers when no built worker is available', async () => {
+    const res = await request(app).get('/sw.js');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/^application\/javascript/);
+    expect(res.headers['cache-control']).toBe('no-cache');
+    expect(res.text).toContain("self.addEventListener('activate'");
+    expect(res.text).toContain('self.registration.unregister()');
+    expect(res.text).not.toContain('NavigationRoute');
+  });
 });

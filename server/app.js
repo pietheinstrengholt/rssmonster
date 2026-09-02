@@ -31,6 +31,7 @@ import {
 } from './utils/requestLogging.js';
 import { getTrustProxySetting } from './utils/trustProxy.js';
 import { createStaticCacheHeaders } from './utils/staticCache.js';
+import { serveServiceWorkerFallback } from './utils/serviceWorkerFallback.js';
 
 // Sequelize + models (single source of truth)
 import db from './models/index.js';
@@ -59,6 +60,7 @@ import actionRoutes from "./routes/action.js";
 import rssRoutes from "./routes/rss.js";
 import tagRoutes from "./routes/tag.js";
 import smartFolderRoutes from "./routes/smartFolder.js";
+import generatedFeedRoutes from './routes/generatedFeed.js';
 import greaderRoutes from "./routes/greader.js";
 import eventRoutes from "./routes/events.js";
 import topicRoutes from "./routes/topics.js";
@@ -91,6 +93,7 @@ app.use(morgan(REQUEST_LOG_FORMAT, {
 app.use(express.static("dist", {
   setHeaders: createStaticCacheHeaders()
 }));
+app.get('/sw.js', serveServiceWorkerFallback);
 
 // CORS
 app.use(cors());
@@ -136,6 +139,7 @@ app.use("/api/opml", opmlRoutes);
 app.use("/api/actions", actionRoutes);
 app.use("/api/tags", tagRoutes);
 app.use("/api/smartfolders", smartFolderRoutes);
+app.use('/api/generated-feeds', generatedFeedRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/topics", topicRoutes);
 app.use("/api/briefing", briefingRoutes);
