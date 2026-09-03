@@ -22,6 +22,8 @@ Feeds and articles
                                       +----------+--> Interest Islands
 
 Search expressions --------------------------------> Smart Folders
+        |
+        +------------------------------------------> Generated Feeds --> RSS clients
 ```
 
 ## Worker and Pipeline Architecture
@@ -92,6 +94,13 @@ for queue states, concurrency, observability, shutdown, and operator recovery.
 expressions used by RSSMonster search. New articles appear automatically when
 they match a folder's query, without moving or copying the articles from their
 feeds.
+
+### Generated Feeds
+
+[Generated Feeds](generated-feeds.md) apply those same saved expressions when
+an external RSS client requests a private tokenized URL. They dynamically
+render up to 50 current matching articles without copying or materializing a
+second collection of articles.
 
 ### FeedTrust
 

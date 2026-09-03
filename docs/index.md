@@ -102,6 +102,7 @@ RSSMonster works out of the box with sensible defaults, but every ranking decisi
 - **[Core Concepts](concepts.html)** — How RSSMonster thinks about content
 - **[Compare RSSMonster]({{ '/compare/' | relative_url }})** — Find the RSS reader whose design philosophy best fits your workflow
 - **[Smart Folders](smart-folders.html)** — Create powerful dynamic views
+- **[Generated Feeds](generated-feeds.html)** — Share an expression-backed article selection as a private RSS feed
 - **[Scoring & Ranking](scoring.html)** — Newest, Oldest, Quality, Recommended, and Top Stories explained
 - **[FeedTrust](feedtrust.html)** — How RSSMonster estimates consistent source value
 - **[Search Guide](search.html)** — Master search expressions
