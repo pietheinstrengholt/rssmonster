@@ -15,6 +15,9 @@ const {
   EventTopic,
   Island,
   IslandTopic,
+  EmailVerificationToken,
+  PasswordResetToken,
+  EmailDelivery,
   sequelize,
   Sequelize
 } = db;
@@ -23,6 +26,11 @@ import {
   createFeverApiKey,
   createFeverCredentialHash
 } from '../utils/apiCredentials.js';
+import {
+  changeUserEmail,
+  EmailVerificationError
+} from '../services/email/emailVerification.js';
+import { EmailConfigurationError } from '../config/email.js';
 
 const { Op } = Sequelize;
 
@@ -172,31 +180,42 @@ const postUsers = async (req, res, _next) => {
       });
     }
 
-    // If the password is provided, update it; otherwise, just update username and role
+    const updateValues = {
+      username: req.body.username,
+      role: req.body.role
+    };
+
+    // If the password is provided, rotate it and the dependent Fever credential together.
     if (req.body.password) {
-      // Hash the password
       const hash = await bcrypt.hash(req.body.password, 10);
       const feverApiKey = createFeverApiKey(
         req.body.username,
         req.body.password
       );
-      // Update the user with the new password, username, and role
-      await user.update({
-        username: req.body.username,
-        role: req.body.role,
+      Object.assign(updateValues, {
         password: hash,
         feverCredentialHash: createFeverCredentialHash(feverApiKey)
       });
-    } else {
-      // Update the user with the new username and role only
-      await user.update({
-        username: req.body.username,
-        role: req.body.role
-      });
     }
+
+    await sequelize.transaction(async transaction => {
+      if (Object.prototype.hasOwnProperty.call(req.body, 'email')) {
+        await changeUserEmail(user.id, req.body.email, {
+          allowNull: true,
+          transaction
+        });
+      }
+      await user.update(updateValues, { transaction });
+    });
     
     return res.status(200).json({ user });
   } catch (err) {
+    if (err instanceof EmailConfigurationError) {
+      return res.status(400).json({ message: 'Please enter a valid email address.' });
+    }
+    if (err instanceof EmailVerificationError) {
+      return res.status(err.status).json({ code: err.code, message: err.message });
+    }
     console.error('Error in postUsers:', err);
     return res.status(500).json({ error: err.message });
   }
@@ -288,6 +307,9 @@ const deleteUser = async (req, res, _next) => {
       await destroyByUserIdSafe({ model: Action, userId: user.id, transaction, label: 'actions' });
       await destroyByUserIdSafe({ model: SmartFolder, userId: user.id, transaction, label: 'smart_folders' });
       await destroyByUserIdSafe({ model: GeneratedFeed, userId: user.id, transaction, label: 'generated_feeds' });
+      await destroyByUserIdSafe({ model: EmailDelivery, userId: user.id, transaction, label: 'email_deliveries' });
+      await destroyByUserIdSafe({ model: EmailVerificationToken, userId: user.id, transaction, label: 'email_verification_tokens' });
+      await destroyByUserIdSafe({ model: PasswordResetToken, userId: user.id, transaction, label: 'password_reset_tokens' });
       await destroyByUserIdSafe({ model: Article, userId: user.id, transaction, label: 'articles' });
       await destroyByUserIdSafe({ model: Event, userId: user.id, transaction, label: 'events' });
       await destroyByUserIdSafe({ model: Topic, userId: user.id, transaction, label: 'topics' });

@@ -123,6 +123,7 @@ const SettingsFeedsOverview = createAsyncSettingsSection(() => import('./Setting
 const SettingsOfficialSources = createAsyncSettingsSection(() => import('./SettingsOfficialSources.vue'));
 // This component lazily loads administrator user management.
 const SettingsManageUsers = createAsyncSettingsSection(() => import('./SettingsManageUsers.vue'));
+const SettingsAccount = createAsyncSettingsSection(() => import('./SettingsAccount.vue'));
 
 export default {
   name: 'SettingsModal',
@@ -146,7 +147,8 @@ export default {
     SettingsObservability,
     SettingsFeedsOverview,
     SettingsOfficialSources,
-    SettingsManageUsers
+    SettingsManageUsers,
+    SettingsAccount
   },
   // This function creates modal navigation and focus restoration state.
   data() {
@@ -183,6 +185,7 @@ export default {
 
       return [
         { key: 'welcome', label: 'Welcome', icon: 'info-circle-fill', visible: true },
+        { key: 'account', label: 'Account', icon: 'person-circle', visible: true },
         { key: 'smartfolders', label: 'Smart Folders', icon: 'folder-fill', visible: true },
         { key: 'generatedFeeds', label: 'Generated Feeds', icon: 'rss-fill', visible: true },
         { key: 'actions', label: 'Actions', icon: 'lightning-charge-fill', visible: true },
@@ -205,6 +208,7 @@ export default {
     activeComponent() {
       return {
         welcome: 'SettingsWelcome',
+        account: 'SettingsAccount',
         smartfolders: 'SettingsSmartFolders',
         generatedFeeds: 'SettingsGeneratedFeeds',
         actions: 'SettingsActions',

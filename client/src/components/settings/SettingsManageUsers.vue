@@ -41,6 +41,18 @@
                 </select>
               </div>
               <div class="manage-users__field">
+                <label for="user-email">Email address <span>Optional</span></label>
+                <input
+                  id="user-email"
+                  v-model="user.email"
+                  class="app-form-control"
+                  type="email"
+                  autocomplete="email"
+                  maxlength="320"
+                />
+                <p class="manage-users__field-status">{{ emailVerificationStatus(user) }}</p>
+              </div>
+              <div class="manage-users__field">
                 <label for="password">New password <span>Optional</span></label>
                 <input id="password" class="app-form-control" type="password" placeholder="Leave blank to keep the current password" />
               </div>
@@ -64,6 +76,24 @@
               >
                 Review RSSMonster accounts, update roles, and manage user access from one place.
               </SettingsPageIntro>
+              <section class="manage-users__email-service" aria-label="Email delivery status">
+                <div>
+                  <p class="manage-users__eyebrow">Email delivery</p>
+                  <div class="manage-users__service-statuses">
+                    <span>Configuration: <strong>{{ emailConfiguration.configured ? 'Configured' : 'Incomplete' }}</strong></span>
+                    <span>Service: <strong>{{ emailConfiguration.enabled ? 'Enabled' : 'Disabled' }}</strong></span>
+                  </div>
+                </div>
+                <button
+                  v-if="emailConfiguration.enabled"
+                  type="button"
+                  class="app-button app-button--secondary settings-control"
+                  :disabled="testingSmtp || !emailConfiguration.configured"
+                  @click="testSmtpConnection"
+                >
+                  {{ testingSmtp ? 'Testing SMTP...' : 'Test SMTP connection' }}
+                </button>
+              </section>
               <p
                 v-if="message"
                 class="manage-users__message"
@@ -78,6 +108,7 @@
                     <tr>
                       <th scope="col">User</th>
                       <th scope="col">Role</th>
+                      <th scope="col">Email</th>
                       <th scope="col" class="manage-users__actions-heading">Actions</th>
                     </tr>
                   </thead>
@@ -93,6 +124,10 @@
                         </div>
                       </td>
                       <td><span class="manage-users__role" :class="{ 'manage-users__role--admin': listedUser.role === 'admin' }">{{ listedUser.role }}</span></td>
+                      <td>
+                        <span class="manage-users__email-address">{{ listedUser.email || 'Not configured' }}</span>
+                        <span class="manage-users__email-status">{{ emailVerificationStatus(listedUser) }}</span>
+                      </td>
                       <td>
                         <div class="manage-users__actions">
                           <button class="manage-users__action" @click="editUser(listedUser.id)">Edit</button>
@@ -139,10 +174,29 @@
   border-radius: var(--radius-panel);
 }
 
+.manage-users__email-service {
+  align-items: center;
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-panel);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+}
+
+.manage-users__service-statuses {
+  color: var(--text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 13px;
+  gap: 8px 20px;
+}
+
 .manage-users__table {
   border-collapse: collapse;
   width: 100%;
-  min-width: 520px;
+  min-width: 680px;
   font-size: 14px;
 }
 
@@ -204,6 +258,23 @@
 .manage-users__username,
 .manage-users__id {
   display: block;
+}
+
+.manage-users__email-address,
+.manage-users__email-status {
+  display: block;
+}
+
+.manage-users__email-address {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.manage-users__email-status,
+.manage-users__field-status {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 2px;
 }
 
 .manage-users__username {
@@ -349,6 +420,10 @@
   font-weight: 400;
 }
 
+.manage-users__field-status {
+  margin-bottom: 0;
+}
+
 .manage-users__field .app-form-control,
 .manage-users__field .app-form-select {
   background-color: var(--bg-input);
@@ -470,6 +545,12 @@
 }
 
 @media (max-width: 600px) {
+  .manage-users__email-service {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
   .manage-users__editor,
   .manage-users__confirmation {
     padding-left: 20px;
@@ -491,7 +572,13 @@
 <script>
 import { mapStores } from 'pinia';
 import { useAuthStore } from '../../store/auth.js';
-import { fetchUsers, updateUser, deleteUser } from '../../api/users';
+import {
+  deleteUser,
+  fetchEmailConfiguration,
+  fetchUsers,
+  testSmtpConnectivity,
+  updateUser
+} from '../../api/users';
 import { isFatalActionError } from '../../services/actionNotifications.js';
 import SettingsPageIntro from './SettingsPageIntro.vue';
 
@@ -508,12 +595,15 @@ export default {
           return;
         }
         this.fetchUsers(); // Fetch users when the component is created
+        this.fetchEmailConfiguration();
     },
     // This function creates user-management view state.
     data() {
         return {
           users: [], // This will hold the list of users
           user: null, // This will hold the user being edited
+          emailConfiguration: { configured: false, enabled: false },
+          testingSmtp: false,
           message: '',
           messageType: 'success',
           userIdToDelete: null // This will hold the ID of the deleted user
@@ -530,6 +620,38 @@ export default {
       // This function identifies the signed-in account so it cannot delete itself.
       isCurrentUser(userId) {
         return String(userId) === String(this.authStore.userId);
+      },
+      emailVerificationStatus(user) {
+        if (!user.email) return 'No email';
+        return user.emailVerifiedAt ? 'Verified' : 'Not verified';
+      },
+      async fetchEmailConfiguration() {
+        if (!this.hasAdminRights()) return;
+        try {
+          const response = await fetchEmailConfiguration();
+          this.emailConfiguration = response.data;
+        } catch (error) {
+          console.error('Error loading email configuration status:', error);
+          this.message = 'Could not load email configuration status.';
+          this.messageType = 'error';
+        }
+      },
+      async testSmtpConnection() {
+        if (!this.hasAdminRights() || this.testingSmtp) return;
+        this.testingSmtp = true;
+        this.message = '';
+        try {
+          const response = await testSmtpConnectivity();
+          this.message = response.data.message;
+          this.messageType = 'success';
+        } catch (error) {
+          console.error('SMTP connectivity test error:', error);
+          this.message = error.response?.data?.message ||
+            'Could not connect to the configured SMTP server.';
+          this.messageType = 'error';
+        } finally {
+          this.testingSmtp = false;
+        }
       },
       // This function prevents user-management actions when admin rights are absent.
       hasAdminRights() {
@@ -613,6 +735,7 @@ export default {
         try {
           await updateUser(userId, {
             username: this.user.username,
+            email: this.user.email || null,
             role: this.user.role,
             password: userPassword
           });

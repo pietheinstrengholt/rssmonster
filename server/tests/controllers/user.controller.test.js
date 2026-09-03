@@ -10,6 +10,7 @@ const mocked = vi.hoisted(() => {
 
   return {
     bcryptHash: vi.fn(),
+    changeUserEmail: vi.fn(),
     createFeverApiKey: vi.fn(),
     createFeverCredentialHash: vi.fn(),
     models: {
@@ -44,6 +45,11 @@ vi.mock('bcryptjs', () => ({
 vi.mock('../../utils/apiCredentials.js', () => ({
   createFeverApiKey: mocked.createFeverApiKey,
   createFeverCredentialHash: mocked.createFeverCredentialHash
+}));
+
+vi.mock('../../services/email/emailVerification.js', async importOriginal => ({
+  ...(await importOriginal()),
+  changeUserEmail: mocked.changeUserEmail
 }));
 
 vi.mock('../../models/index.js', async () => {
@@ -104,6 +110,10 @@ const resetMocks = () => {
   mocked.userFindByPk.mockReset();
   mocked.userFindOne.mockReset();
   mocked.bcryptHash.mockReset().mockResolvedValue('password-hash');
+  mocked.changeUserEmail.mockReset().mockResolvedValue({
+    email: 'updated@example.com',
+    emailVerifiedAt: null
+  });
   mocked.createFeverApiKey.mockReset().mockReturnValue('fever-api-key');
   mocked.createFeverCredentialHash
     .mockReset()
@@ -282,7 +292,7 @@ describe('user controller administration', () => {
       role: 'admin',
       password: 'password-hash',
       feverCredentialHash: 'fever-credential-hash'
-    });
+    }, { transaction: 'transaction' });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ user });
   });
@@ -306,9 +316,46 @@ describe('user controller administration', () => {
     expect(user.update).toHaveBeenCalledWith({
       username: 'renamed-reader',
       role: 'user'
-    });
+    }, { transaction: 'transaction' });
     expect(mocked.bcryptHash).not.toHaveBeenCalled();
     expect(mocked.createFeverApiKey).not.toHaveBeenCalled();
+  });
+
+  it('allows an administrator to replace or clear an account email address', async () => {
+    const user = createUserRecord();
+    mocked.userFindOne.mockResolvedValue({ id: 1, role: 'admin' });
+    mocked.userFindByPk.mockResolvedValue(user);
+    const res = createResponse();
+
+    await userController.postUsers(
+      createRequest({
+        body: {
+          username: 'reader',
+          email: ' Reader@Example.COM ',
+          role: 'user'
+        }
+      }),
+      res
+    );
+
+    expect(mocked.changeUserEmail).toHaveBeenCalledWith(
+      2,
+      ' Reader@Example.COM ',
+      { allowNull: true, transaction: 'transaction' }
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+
+    await userController.postUsers(
+      createRequest({
+        body: { username: 'reader', email: null, role: 'user' }
+      }),
+      createResponse()
+    );
+    expect(mocked.changeUserEmail).toHaveBeenLastCalledWith(
+      2,
+      null,
+      { allowNull: true, transaction: 'transaction' }
+    );
   });
 
   it('returns a server error when a user update fails', async () => {

@@ -1,6 +1,9 @@
 <template>
   <div class="app-root">
     <app-install-prompt />
+    <p v-if="emailVerificationMessage" class="email-verification-banner" role="status">
+      {{ emailVerificationMessage }}
+    </p>
     <!-- Loading state during session validation -->
     <div v-if="isLoading" class="loading-container">
       <p>Loading...</p>
@@ -22,29 +25,65 @@
         </header>
 
         <form class="auth-form" @submit.prevent="submitAuthentication">
-          <p class="auth-form-title" id="signin">{{ showSignup ? 'Create your account' : 'Sign in to RSSMonster' }}</p>
+          <p class="auth-form-title" id="signin">{{ authFormTitle }}</p>
         
           <!-- Username input -->
-          <div class="auth-field">
+          <div v-if="!passwordResetMode && !emailEnrollmentMode" class="auth-field">
             <input class="app-form-control" type="text" id="username" v-model="username" />
             <label class="app-form-label" for="username">Username</label>
           </div>
 
           <!-- Password input -->
-          <div class="auth-field">
+          <div v-if="!passwordResetMode && !emailEnrollmentMode" class="auth-field">
             <input class="app-form-control" type="password" id="password" v-model="password" />
             <label class="app-form-label" for="password">Password</label>
           </div>
 
           <!-- Password repeat input (signup only) -->
-          <div v-if="showSignup" class="auth-field">
+          <div v-if="showSignup && registrationEmailEnabled && !passwordResetMode" class="auth-field">
+            <input class="app-form-control" type="email" id="email" v-model="email" autocomplete="email" required />
+            <label class="app-form-label" for="email">Email address</label>
+          </div>
+
+          <div v-if="showSignup && !passwordResetMode" class="auth-field">
             <input class="app-form-control" type="password" id="password_repeat" v-model="password_repeat" />
             <label class="app-form-label" for="password_repeat">Password (repeat)</label>
           </div>
 
+          <div v-if="passwordResetMode === 'request'" class="auth-field">
+            <input class="app-form-control" type="email" id="reset-email" v-model="resetEmail" autocomplete="email" required />
+            <label class="app-form-label" for="reset-email">Email address</label>
+          </div>
+
+          <template v-if="passwordResetMode === 'confirm'">
+            <div class="auth-field">
+              <input class="app-form-control" type="password" id="reset-password" v-model="resetPassword" autocomplete="new-password" required />
+              <label class="app-form-label" for="reset-password">New password</label>
+            </div>
+            <div class="auth-field">
+              <input class="app-form-control" type="password" id="reset-password-repeat" v-model="resetPasswordRepeat" autocomplete="new-password" required />
+              <label class="app-form-label" for="reset-password-repeat">Repeat new password</label>
+            </div>
+          </template>
+
+          <div v-if="emailEnrollmentMode" class="auth-field">
+            <input class="app-form-control" type="email" id="enrollment-email" v-model="enrollmentEmail" autocomplete="email" required />
+            <label class="app-form-label" for="enrollment-email">Email address</label>
+          </div>
+
           <!-- Submit button -->
-          <button type="submit" class="auth-submit auth-submit--block" :disabled="isSubmitting">
-            {{ isSubmitting ? (showSignup ? 'Registering...' : 'Signing in...') : (showSignup ? 'Register' : 'Sign in') }}
+          <button v-if="!emailEnrollmentVerified" type="submit" class="auth-submit auth-submit--block" :disabled="isSubmitting">
+            {{ authSubmitLabel }}
+          </button>
+
+          <button
+            v-if="emailEnrollmentMode && enrollmentEmail && enrollmentEmail === enrollmentSavedEmail && !emailEnrollmentVerified"
+            type="button"
+            class="auth-submit auth-submit--block auth-submit--secondary"
+            :disabled="isSubmitting"
+            @click="resendEmailEnrollment"
+          >
+            Resend verification email
           </button>
 
           <p v-if="message" class="auth-message" role="status" aria-live="polite">{{ message }}</p>
@@ -54,8 +93,13 @@
           <span>or</span>
         </div>
 
-        <p v-if="showSignup" class="auth-register">Already a member? <a href="#!" @click.prevent="switchAuthMode(false)">Click here to sign in</a></p>
-        <p v-else class="auth-register">Not a member? <a href="#!" @click.prevent="switchAuthMode(true)">Create an account</a></p>
+        <p v-if="emailEnrollmentMode" class="auth-register"><a href="#!" @click.prevent="leaveEmailEnrollment">Back to sign in</a></p>
+        <p v-else-if="passwordResetMode" class="auth-register"><a href="#!" @click.prevent="leavePasswordReset">Back to sign in</a></p>
+        <p v-else-if="showSignup" class="auth-register">Already a member? <a href="#!" @click.prevent="switchAuthMode(false)">Click here to sign in</a></p>
+        <template v-else>
+          <p class="auth-register">Not a member? <a href="#!" @click.prevent="switchAuthMode(true)">Create an account</a></p>
+          <p class="auth-register"><a href="#!" @click.prevent="startPasswordReset">Forgot password?</a></p>
+        </template>
       </section>
 
       <footer class="auth-footer">
@@ -107,33 +151,105 @@ export default {
   data() {
     return {
       username: '',
+      email: '',
       password: '',
       password_repeat: '',
       message: '',
       showSignup: false,
       isAuthenticated: false,
       isLoading: true,
-      isSubmitting: false
+      isSubmitting: false,
+      emailVerificationMessage: '',
+      passwordResetMode: null,
+      passwordResetToken: '',
+      resetEmail: '',
+      resetPassword: '',
+      resetPasswordRepeat: '',
+      registrationEmailEnabled: false,
+      emailEnrollmentMode: false,
+      emailEnrollmentToken: '',
+      enrollmentEmail: '',
+      enrollmentSavedEmail: '',
+      emailEnrollmentVerified: false,
+      emailEnrollmentPoll: null
     };
   },
   async created() {
     window.removeEventListener('auth:expired', this.handleAuthExpired);
     window.addEventListener('auth:expired', this.handleAuthExpired);
 
+    await this.confirmEmailFromLocation?.();
+    this.loadPasswordResetFromLocation?.();
+    await this.loadAuthConfiguration?.();
     await this.checkSession();
     this.isLoading = false;
   },
   beforeUnmount() {
     window.removeEventListener('auth:expired', this.handleAuthExpired);
+    this.stopEmailEnrollmentPolling?.();
   },
   computed: {
-    ...mapStores(useAuthStore)
+    ...mapStores(useAuthStore),
+    authFormTitle() {
+      if (this.emailEnrollmentMode) return 'Verify your email address';
+      if (this.passwordResetMode === 'request') return 'Reset your password';
+      if (this.passwordResetMode === 'confirm') return 'Choose a new password';
+      return this.showSignup ? 'Create your account' : 'Sign in to RSSMonster';
+    },
+    authSubmitLabel() {
+      if (this.emailEnrollmentMode) {
+        return this.isSubmitting ? 'Sending...' : 'Save and send verification';
+      }
+      if (this.passwordResetMode === 'request') {
+        return this.isSubmitting ? 'Sending...' : 'Send reset email';
+      }
+      if (this.passwordResetMode === 'confirm') {
+        return this.isSubmitting ? 'Updating...' : 'Update password';
+      }
+      if (this.showSignup) return this.isSubmitting ? 'Registering...' : 'Register';
+      return this.isSubmitting ? 'Signing in...' : 'Sign in';
+    }
   },
   methods: {
+    async loadAuthConfiguration() {
+      try {
+        const configuration = await authApi.getAuthConfiguration();
+        this.registrationEmailEnabled = configuration.emailEnabled === true;
+      } catch {
+        this.registrationEmailEnabled = false;
+      }
+    },
     // This function routes session expiry through the root session cleanup flow.
     handleAuthExpired() {
       console.warn('Session expired — logging out');
       this.logout();
+    },
+    async confirmEmailFromLocation() {
+      const url = new URL(window.location.href);
+      const hashParameters = new URLSearchParams(url.hash.replace(/^#/, ''));
+      const token = hashParameters.get('verify-email-token');
+      if (!token) return;
+      hashParameters.delete('verify-email-token');
+      url.hash = hashParameters.toString();
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+      try {
+        const response = await authApi.confirmEmailVerification(token);
+        this.emailVerificationMessage = response.message;
+      } catch (error) {
+        this.emailVerificationMessage = error.response?.data?.message ||
+          'This verification link is invalid or has expired.';
+      }
+    },
+    loadPasswordResetFromLocation() {
+      const url = new URL(window.location.href);
+      const hashParameters = new URLSearchParams(url.hash.replace(/^#/, ''));
+      const token = hashParameters.get('reset-password-token');
+      if (!token) return;
+      this.passwordResetToken = token;
+      this.passwordResetMode = 'confirm';
+      hashParameters.delete('reset-password-token');
+      url.hash = hashParameters.toString();
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
     },
     // This function validates a saved token only while its session generation remains current.
     async checkSession() {
@@ -163,7 +279,7 @@ export default {
       } catch (error) {
         if (!this.authStore.isSessionRequestCurrent(requestId)) return;
         console.error('Session validation error:', error);
-        this.logout();
+        this.logout({ preservePasswordReset: Boolean(this.passwordResetMode) });
       }
     },
     // This function bootstraps the configured development user while retaining normal login fallback.
@@ -176,7 +292,7 @@ export default {
         this.establishSession(response);
       } catch (error) {
         if (!this.authStore.isSessionRequestCurrent(requestId)) return;
-        this.logout();
+        this.logout({ preservePasswordReset: Boolean(this.passwordResetMode) });
 
         if (error.response?.status >= 500) {
           console.error('Development login error:', error);
@@ -193,7 +309,13 @@ export default {
       this.message = '';
 
       try {
-        if (this.showSignup) {
+        if (this.emailEnrollmentMode) {
+          await this.submitEmailEnrollment();
+        } else if (this.passwordResetMode === 'request') {
+          await this.requestPasswordReset();
+        } else if (this.passwordResetMode === 'confirm') {
+          await this.confirmPasswordReset();
+        } else if (this.showSignup) {
           await this.register();
         } else {
           await this.login();
@@ -204,8 +326,48 @@ export default {
     },
     // This function switches authentication modes without retaining stale feedback.
     switchAuthMode(showSignup) {
+      this.passwordResetMode = null;
       this.showSignup = showSignup;
       this.message = '';
+    },
+    startPasswordReset() {
+      this.showSignup = false;
+      this.passwordResetMode = 'request';
+      this.message = '';
+    },
+    leavePasswordReset() {
+      this.passwordResetMode = null;
+      this.passwordResetToken = '';
+      this.resetPassword = '';
+      this.resetPasswordRepeat = '';
+      this.message = '';
+    },
+    async requestPasswordReset() {
+      try {
+        const response = await authApi.requestPasswordReset(this.resetEmail);
+        this.message = response.message;
+      } catch (error) {
+        this.message = error.response?.status === 429
+          ? 'Too many reset requests. Please try again later.'
+          : 'The reset request could not be completed. Please try again later.';
+      }
+    },
+    async confirmPasswordReset() {
+      try {
+        const response = await authApi.confirmPasswordReset({
+          token: this.passwordResetToken,
+          password: this.resetPassword,
+          passwordRepeat: this.resetPasswordRepeat
+        });
+        this.passwordResetMode = null;
+        this.passwordResetToken = '';
+        this.resetPassword = '';
+        this.resetPasswordRepeat = '';
+        this.message = response.message;
+      } catch (error) {
+        this.message = error.response?.data?.message ||
+          'This password reset link is invalid or has expired.';
+      }
     },
     // This function authenticates the entered credentials and establishes the session.
     async login() {
@@ -220,6 +382,17 @@ export default {
         const response = await authApi.login(credentials);
         if (!this.authStore.isSessionRequestCurrent(requestId)) return;
         this.message = response.message;
+
+        if (response.emailVerificationRequired === true) {
+          this.emailEnrollmentMode = true;
+          this.emailEnrollmentToken = response.emailEnrollmentToken;
+          this.enrollmentEmail = response.email || '';
+          this.enrollmentSavedEmail = response.email || '';
+          this.emailEnrollmentVerified = false;
+          this.password = '';
+          this.startEmailEnrollmentPolling();
+          return;
+        }
 
         if (!response?.token) return;
         this.establishSession(response);
@@ -256,6 +429,75 @@ export default {
           'Login failed. Please try again.';
       }
     },
+    async submitEmailEnrollment() {
+      try {
+        const response = await authApi.updateEmailEnrollment(
+          this.emailEnrollmentToken,
+          this.enrollmentEmail
+        );
+        this.enrollmentEmail = response.email;
+        this.enrollmentSavedEmail = response.email;
+        this.emailEnrollmentVerified = response.verified;
+        this.message = response.message;
+        this.startEmailEnrollmentPolling();
+      } catch (error) {
+        this.message = error.response?.data?.message ||
+          'Could not save or send verification for this email address.';
+      }
+    },
+    async resendEmailEnrollment() {
+      if (this.isSubmitting) return;
+      this.isSubmitting = true;
+      try {
+        const response = await authApi.resendEmailEnrollment(this.emailEnrollmentToken);
+        this.message = response.message;
+        this.startEmailEnrollmentPolling();
+      } catch (error) {
+        this.message = error.response?.data?.message ||
+          'Could not resend the verification email.';
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+    async checkEmailEnrollmentStatus() {
+      try {
+        const status = await authApi.getEmailEnrollmentStatus(this.emailEnrollmentToken);
+        this.emailEnrollmentVerified = status.verified;
+        if (status.verified) {
+          this.message = 'Email address verified. Return to sign in to continue.';
+          this.stopEmailEnrollmentPolling();
+        }
+      } catch (error) {
+        if (error.response?.status === 401) {
+          this.message = 'This verification session expired. Return to sign in and try again.';
+          this.stopEmailEnrollmentPolling();
+        }
+      }
+    },
+    startEmailEnrollmentPolling() {
+      this.stopEmailEnrollmentPolling();
+      if (!this.emailEnrollmentToken || this.emailEnrollmentVerified) return;
+      this.checkEmailEnrollmentStatus();
+      this.emailEnrollmentPoll = window.setInterval(
+        this.checkEmailEnrollmentStatus,
+        3000
+      );
+    },
+    stopEmailEnrollmentPolling() {
+      if (this.emailEnrollmentPoll !== null) {
+        window.clearInterval(this.emailEnrollmentPoll);
+        this.emailEnrollmentPoll = null;
+      }
+    },
+    leaveEmailEnrollment() {
+      this.stopEmailEnrollmentPolling();
+      this.emailEnrollmentMode = false;
+      this.emailEnrollmentToken = '';
+      this.enrollmentEmail = '';
+      this.enrollmentSavedEmail = '';
+      this.emailEnrollmentVerified = false;
+      this.message = '';
+    },
     // This function persists the standard server authentication response for every login flow.
     establishSession(response) {
       const expiresInDays = (response.expiresInSeconds || 86400) / 86400;
@@ -278,13 +520,15 @@ export default {
         const credentials = {
           username: this.username,
           password: this.password,
-          password_repeat: this.password_repeat
+          password_repeat: this.password_repeat,
+          ...(this.registrationEmailEnabled ? { email: this.email } : {})
         };
         const response = await authApi.register(credentials);
         this.message = response.message;
         if (response.registered === true) {
           this.showSignup = false;
           this.username = '';
+          this.email = '';
           this.password = '';
           this.password_repeat = '';
         }
@@ -320,15 +564,29 @@ export default {
       }
     },
     // This function clears Axios, Pinia, and cookie authentication state together.
-    logout() {
+    logout({ preservePasswordReset = false } = {}) {
       this.authStore.clearSession();
       Cookies.remove('token');
 
       this.isAuthenticated = false;
       this.username = '';
+      this.email = '';
       this.password = '';
       this.password_repeat = '';
       this.showSignup = false;
+      if (!preservePasswordReset) {
+        this.passwordResetMode = null;
+        this.passwordResetToken = '';
+        this.resetEmail = '';
+        this.resetPassword = '';
+        this.resetPasswordRepeat = '';
+      }
+      this.stopEmailEnrollmentPolling?.();
+      this.emailEnrollmentMode = false;
+      this.emailEnrollmentToken = '';
+      this.enrollmentEmail = '';
+      this.enrollmentSavedEmail = '';
+      this.emailEnrollmentVerified = false;
       this.message = '';
     }
   }
@@ -336,6 +594,14 @@ export default {
 </script>
 
 <style scoped>
+.email-verification-banner {
+  background: var(--settings-info-bg);
+  color: var(--settings-info-text);
+  margin: 0;
+  padding: 12px 20px;
+  text-align: center;
+}
+
 .auth-page {
   align-items: center;
   background: var(--surface-page);

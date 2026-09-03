@@ -6,8 +6,16 @@ import App from '../src/App.vue';
 import * as authApi from '../src/api/auth';
 
 vi.mock('../src/api/auth', () => ({
+  confirmEmailVerification: vi.fn(),
+  confirmPasswordReset: vi.fn(),
+  developmentLogin: vi.fn().mockRejectedValue({ response: { status: 404 } }),
+  getAuthConfiguration: vi.fn(),
+  getEmailEnrollmentStatus: vi.fn(),
   login: vi.fn(),
   register: vi.fn(),
+  requestPasswordReset: vi.fn(),
+  resendEmailEnrollment: vi.fn(),
+  updateEmailEnrollment: vi.fn(),
   validateSession: vi.fn()
 }));
 
@@ -53,6 +61,8 @@ const createDeferred = () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  authApi.getAuthConfiguration.mockResolvedValue({ emailEnabled: false });
+  authApi.getEmailEnrollmentStatus.mockResolvedValue({ email: null, verified: false });
   vi.spyOn(Cookies, 'get').mockReturnValue(undefined);
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
@@ -115,7 +125,94 @@ describe('App authentication form', () => {
     expect(authApi.register).not.toHaveBeenCalled();
   });
 
+  it('moves an unverified legacy account into email enrollment without a normal session', async () => {
+    authApi.login.mockResolvedValueOnce({
+      message: 'A verified email address is required before signing in.',
+      emailVerificationRequired: true,
+      email: null,
+      emailEnrollmentToken: 'enrollment-token'
+    });
+    authApi.updateEmailEnrollment.mockResolvedValueOnce({
+      email: 'reader@example.com',
+      verified: false,
+      message: 'Verification email queued. Waiting for confirmation.'
+    });
+    const wrapper = await mountAuthForm();
+    await wrapper.get('#username').setValue('legacy-reader');
+    await wrapper.get('#password').setValue('password');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(wrapper.find('#username').exists()).toBe(false);
+    expect(wrapper.get('#enrollment-email').element.value).toBe('');
+    await wrapper.get('#enrollment-email').setValue('reader@example.com');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(authApi.updateEmailEnrollment).toHaveBeenCalledWith(
+      'enrollment-token',
+      'reader@example.com'
+    );
+    expect(wrapper.get('#enrollment-email').element.value).toBe('reader@example.com');
+    expect(wrapper.text()).toContain('Waiting for confirmation');
+
+    authApi.getEmailEnrollmentStatus.mockResolvedValueOnce({
+      email: 'reader@example.com',
+      verified: true
+    });
+    await wrapper.vm.checkEmailEnrollmentStatus();
+    await flushPromises();
+    expect(wrapper.text()).toContain('Email address verified. Return to sign in');
+    expect(wrapper.find('button[type="submit"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('keeps an unverified address editable and resends from enrollment', async () => {
+    authApi.login.mockResolvedValueOnce({
+      message: 'A verified email address is required before signing in.',
+      emailVerificationRequired: true,
+      email: 'mistake@example.com',
+      emailEnrollmentToken: 'enrollment-token'
+    });
+    authApi.resendEmailEnrollment.mockResolvedValueOnce({
+      email: 'mistake@example.com',
+      verified: false,
+      message: 'Verification email queued. Waiting for confirmation.'
+    });
+    const wrapper = await mountAuthForm();
+    await wrapper.get('#username').setValue('legacy-reader');
+    await wrapper.get('#password').setValue('password');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    const email = wrapper.get('#enrollment-email');
+    expect(email.element.value).toBe('mistake@example.com');
+    await wrapper.findAll('button').find(button =>
+      button.text().includes('Resend verification email')
+    ).trigger('click');
+    await flushPromises();
+    expect(authApi.resendEmailEnrollment).toHaveBeenCalledWith('enrollment-token');
+
+    await email.setValue('corrected@example.com');
+    expect(email.element.value).toBe('corrected@example.com');
+    expect(wrapper.text()).not.toContain('Resend verification email');
+    authApi.updateEmailEnrollment.mockResolvedValueOnce({
+      email: 'corrected@example.com',
+      verified: false,
+      message: 'Verification email queued. Waiting for confirmation.'
+    });
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(authApi.updateEmailEnrollment).toHaveBeenCalledWith(
+      'enrollment-token',
+      'corrected@example.com'
+    );
+    wrapper.unmount();
+  });
+
   it('submits registration through the form from the repeat-password field', async () => {
+    authApi.getAuthConfiguration.mockResolvedValueOnce({ emailEnabled: true });
     authApi.register.mockResolvedValueOnce({
       message: 'Account created with new wording.',
       registered: true
@@ -123,6 +220,7 @@ describe('App authentication form', () => {
     const wrapper = await mountAuthForm();
     await wrapper.find('.auth-register a').trigger('click');
     await wrapper.find('#username').setValue('new-reader');
+    await wrapper.find('#email').setValue('Reader@Example.COM');
     await wrapper.find('#password').setValue('secret');
     await wrapper.find('#password_repeat').setValue('secret');
 
@@ -130,11 +228,93 @@ describe('App authentication form', () => {
 
     expect(authApi.register).toHaveBeenCalledWith({
       username: 'new-reader',
+      email: 'Reader@Example.COM',
       password: 'secret',
       password_repeat: 'secret'
     });
     expect(authApi.login).not.toHaveBeenCalled();
     expect(wrapper.vm.showSignup).toBe(false);
+  });
+
+  it('keeps email off login and disabled registration forms', async () => {
+    const wrapper = await mountAuthForm();
+
+    expect(wrapper.find('#email').exists()).toBe(false);
+    await wrapper.find('.auth-register a').trigger('click');
+    expect(wrapper.find('#email').exists()).toBe(false);
+    await wrapper.find('#username').setValue('username-only');
+    await wrapper.find('#password').setValue('password');
+    await wrapper.find('#password_repeat').setValue('password');
+    authApi.register.mockResolvedValueOnce({ registered: true, message: 'Registered!' });
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(authApi.register).toHaveBeenCalledWith({
+      username: 'username-only',
+      password: 'password',
+      password_repeat: 'password'
+    });
+  });
+
+  it('shows and requires email only on registration when email is enabled', async () => {
+    authApi.getAuthConfiguration.mockResolvedValueOnce({ emailEnabled: true });
+    const wrapper = await mountAuthForm();
+
+    expect(wrapper.find('#email').exists()).toBe(false);
+    await wrapper.find('.auth-register a').trigger('click');
+
+    const email = wrapper.get('#email');
+    expect(email.attributes('required')).toBeDefined();
+    expect(wrapper.get('label[for="email"]').text()).toBe('Email address');
+  });
+
+  it('confirms a verification token from the URL and removes it from browser history', async () => {
+    authApi.confirmEmailVerification.mockResolvedValueOnce({ message: 'Email address verified.' });
+    window.history.replaceState({}, '', '/#verify-email-token=opaque-token');
+
+    const wrapper = await mountAuthForm();
+
+    expect(authApi.confirmEmailVerification).toHaveBeenCalledWith('opaque-token');
+    expect(wrapper.get('.email-verification-banner').text()).toBe('Email address verified.');
+    expect(window.location.hash).toBe('');
+  });
+
+  it('requests a reset from the forgot-password state', async () => {
+    authApi.requestPasswordReset.mockResolvedValueOnce({
+      message: 'If that address can receive password resets, an email has been queued.'
+    });
+    const wrapper = await mountAuthForm();
+
+    await wrapper.findAll('.auth-register a')[1].trigger('click');
+    await wrapper.get('#reset-email').setValue('reader@example.com');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(authApi.requestPasswordReset).toHaveBeenCalledWith('reader@example.com');
+    expect(wrapper.text()).toContain('If that address can receive password resets');
+  });
+
+  it('loads and completes the reset-password state from a URL fragment', async () => {
+    authApi.confirmPasswordReset.mockResolvedValueOnce({
+      message: 'Password updated. You can now sign in.'
+    });
+    window.history.replaceState({}, '', '/#reset-password-token=opaque-reset-token');
+    const wrapper = await mountAuthForm();
+
+    expect(wrapper.get('#reset-password').exists()).toBe(true);
+    expect(window.location.hash).toBe('');
+    await wrapper.get('#reset-password').setValue('replacement-password');
+    await wrapper.get('#reset-password-repeat').setValue('replacement-password');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(authApi.confirmPasswordReset).toHaveBeenCalledWith({
+      token: 'opaque-reset-token',
+      password: 'replacement-password',
+      passwordRepeat: 'replacement-password'
+    });
+    expect(wrapper.vm.passwordResetMode).toBeNull();
+    expect(wrapper.text()).toContain('Password updated');
   });
 
   it('blocks duplicate submissions and restores state after success', async () => {

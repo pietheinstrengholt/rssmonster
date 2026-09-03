@@ -17,6 +17,27 @@ export default (sequelize) => {
         allowNull: false,
         unique: true
       },
+      // Stores the optional normalized address used for account and delivery email.
+      email: {
+        type: DataTypes.STRING(320),
+        allowNull: true,
+        defaultValue: null,
+        validate: {
+          isEmail: true
+        }
+      },
+      // Records when the current email address was confirmed by its owner.
+      emailVerifiedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
+      },
+      // Records the credential boundary used to invalidate sessions after password changes.
+      passwordChangedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
+      },
       // Stores the hashed password used for account authentication.
       password: {
         type: DataTypes.STRING,
@@ -52,6 +73,13 @@ export default (sequelize) => {
       }
     },
     {
+      indexes: [
+        {
+          name: 'users_email_unique',
+          unique: true,
+          fields: ['email']
+        }
+      ],
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci'
     }

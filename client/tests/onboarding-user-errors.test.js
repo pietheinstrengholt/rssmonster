@@ -4,7 +4,13 @@ import InitialFeeds from '../src/components/onboarding/InitialFeeds.vue';
 import SettingsManageUsers from '../src/components/settings/SettingsManageUsers.vue';
 import { createCategory } from '../src/api/categories';
 import { createFeed } from '../src/api/feeds';
-import { deleteUser, fetchUsers, updateUser } from '../src/api/users';
+import {
+  deleteUser,
+  fetchEmailConfiguration,
+  fetchUsers,
+  testSmtpConnectivity,
+  updateUser
+} from '../src/api/users';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/categories', () => ({
@@ -17,7 +23,9 @@ vi.mock('../src/api/feeds', () => ({
 
 vi.mock('../src/api/users', () => ({
   deleteUser: vi.fn(),
+  fetchEmailConfiguration: vi.fn(),
   fetchUsers: vi.fn(),
+  testSmtpConnectivity: vi.fn(),
   updateUser: vi.fn()
 }));
 
@@ -57,6 +65,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, 'error').mockImplementation(() => {});
   fetchUsers.mockResolvedValue({ data: { users: [] } });
+  fetchEmailConfiguration.mockResolvedValue({
+    data: { configured: false, enabled: false }
+  });
+  testSmtpConnectivity.mockResolvedValue({
+    data: { verified: true, message: 'SMTP connection succeeded.' }
+  });
   updateUser.mockResolvedValue({ data: {} });
   deleteUser.mockResolvedValue({ data: {} });
 });
@@ -180,6 +194,70 @@ describe('user-management failure handling', () => {
     expect(wrapper.find('.manage-users__empty').exists()).toBe(false);
   });
 
+  it('shows email configuration, account addresses, and tests SMTP when enabled', async () => {
+    fetchEmailConfiguration.mockResolvedValue({
+      data: { configured: true, enabled: true }
+    });
+    fetchUsers.mockResolvedValue({
+      data: {
+        users: [{
+          id: 42,
+          role: 'user',
+          username: 'reader',
+          email: 'reader@example.com',
+          emailVerifiedAt: '2026-09-02T08:00:00.000Z'
+        }]
+      }
+    });
+
+    const wrapper = mountManageUsers();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Configuration: Configured');
+    expect(wrapper.text()).toContain('Service: Enabled');
+    expect(wrapper.text()).toContain('reader@example.com');
+    expect(wrapper.text()).toContain('Verified');
+
+    await findButton(wrapper, 'Test SMTP connection').trigger('click');
+    await flushPromises();
+
+    expect(testSmtpConnectivity).toHaveBeenCalledOnce();
+    expect(wrapper.text()).toContain('SMTP connection succeeded.');
+  });
+
+  it('allows an administrator to edit an account email address', async () => {
+    fetchUsers
+      .mockResolvedValueOnce({
+        data: {
+          users: [{
+            id: 42,
+            role: 'user',
+            username: 'reader',
+            email: 'old@example.com',
+            emailVerifiedAt: '2026-09-02T08:00:00.000Z'
+          }]
+        }
+      })
+      .mockResolvedValueOnce({ data: { users: [] } });
+
+    const wrapper = mountManageUsers();
+    await flushPromises();
+    await findButton(wrapper, 'Edit').trigger('click');
+
+    expect(wrapper.get('#user-email').element.value).toBe('old@example.com');
+    expect(wrapper.text()).toContain('Verified');
+    await wrapper.get('#user-email').setValue('new@example.com');
+    await findButton(wrapper, 'Save changes').trigger('click');
+    await flushPromises();
+
+    expect(updateUser).toHaveBeenCalledWith(42, {
+      email: 'new@example.com',
+      password: '',
+      role: 'user',
+      username: 'reader'
+    });
+  });
+
   it('prevents the current administrator from opening self-deletion', async () => {
     fetchUsers.mockResolvedValue({
       data: {
@@ -229,6 +307,7 @@ describe('user-management failure handling', () => {
     await flushPromises();
 
     expect(updateUser).toHaveBeenCalledWith(42, {
+      email: null,
       password: 'new-password',
       role: 'admin',
       username: 'reader'

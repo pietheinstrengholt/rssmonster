@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import express from 'express';
 import request from 'supertest';
-import { createRateLimiter } from '../../middleware/rateLimit.js';
+import {
+  createPasswordResetRateLimiter,
+  createRateLimiter
+} from '../../middleware/rateLimit.js';
 
 // This function creates a small Express app with the production limiter structure.
 const createTestApp = ({ apiLimit = 2, mcpLimit = 1 } = {}) => {
@@ -90,5 +93,23 @@ describe('rate limiting middleware', () => {
       .get('/api/data')
       .set('X-Forwarded-For', '192.0.2.2')
       .expect(200);
+  });
+
+  it('applies a separate strict IP limit to password-reset requests', async () => {
+    const app = express();
+    app.set('trust proxy', 'loopback');
+    app.post(
+      '/api/auth/password-reset/request',
+      createPasswordResetRateLimiter({ windowMs: 60_000, limit: 2 }),
+      (_req, res) => res.status(202).json({ accepted: true })
+    );
+
+    await request(app).post('/api/auth/password-reset/request').expect(202);
+    await request(app).post('/api/auth/password-reset/request').expect(202);
+    const limited = await request(app).post('/api/auth/password-reset/request').expect(429);
+
+    expect(limited.body).toEqual({
+      message: 'Too many requests. Please try again later.'
+    });
   });
 });

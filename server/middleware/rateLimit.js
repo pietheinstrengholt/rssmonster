@@ -3,6 +3,8 @@ import { rateLimit } from 'express-rate-limit';
 const DEFAULT_WINDOW_MS = 15 * 60 * 1000;
 const DEFAULT_API_LIMIT = 600;
 const DEFAULT_MCP_LIMIT = 100;
+const DEFAULT_PASSWORD_RESET_WINDOW_MS = 60 * 60 * 1000;
+const DEFAULT_PASSWORD_RESET_LIMIT = 5;
 
 // This function reads a positive integer from the environment or uses its default.
 const getPositiveInteger = (name, defaultValue) => {
@@ -69,3 +71,17 @@ export const mcpRateLimiter = createRateLimiter({
   limit: mcpLimit,
   identifier: 'mcp'
 });
+
+export const createPasswordResetRateLimiter = ({
+  windowMs = getPositiveInteger(
+    'PASSWORD_RESET_RATE_LIMIT_WINDOW_MS',
+    DEFAULT_PASSWORD_RESET_WINDOW_MS
+  ),
+  limit = getPositiveInteger('PASSWORD_RESET_RATE_LIMIT_MAX', DEFAULT_PASSWORD_RESET_LIMIT)
+} = {}) => createRateLimiter({
+  windowMs,
+  limit,
+  identifier: 'password-reset'
+});
+
+export const passwordResetRateLimiter = createPasswordResetRateLimiter();

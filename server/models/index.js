@@ -62,6 +62,9 @@ import FeedUrlAliasModel from './feedUrlAlias.js';
 import PushSubscriptionModel from './pushSubscription.js';
 import ProcessingJobModel from './processingJob.js';
 import WorkerLeaseModel from './workerLease.js';
+import EmailVerificationTokenModel from './emailVerificationToken.js';
+import PasswordResetTokenModel from './passwordResetToken.js';
+import EmailDeliveryModel from './emailDelivery.js';
 
 // ---- Initialize models ----
 const User = UserModel(sequelize);
@@ -90,6 +93,9 @@ const FeedUrlAlias = FeedUrlAliasModel(sequelize);
 const PushSubscription = PushSubscriptionModel(sequelize);
 const ProcessingJob = ProcessingJobModel(sequelize);
 const WorkerLease = WorkerLeaseModel(sequelize);
+const EmailVerificationToken = EmailVerificationTokenModel(sequelize);
+const PasswordResetToken = PasswordResetTokenModel(sequelize);
+const EmailDelivery = EmailDeliveryModel(sequelize);
 
 // ---- Associations ----
 
@@ -171,6 +177,30 @@ ProcessingJob.belongsTo(Article, {
   as: 'article',
   onDelete: 'SET NULL'
 });
+
+// User ↔ Email verification token
+User.hasMany(EmailVerificationToken, {
+  foreignKey: 'userId',
+  as: 'emailVerificationTokens',
+  onDelete: 'CASCADE'
+});
+EmailVerificationToken.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// User ↔ Password reset token
+User.hasMany(PasswordResetToken, {
+  foreignKey: 'userId',
+  as: 'passwordResetTokens',
+  onDelete: 'CASCADE'
+});
+PasswordResetToken.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// User ↔ Email delivery
+User.hasMany(EmailDelivery, {
+  foreignKey: 'userId',
+  as: 'emailDeliveries',
+  onDelete: 'CASCADE'
+});
+EmailDelivery.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 // User ↔ BriefingPreference
 User.hasOne(BriefingPreference, {
@@ -358,5 +388,8 @@ export default {
   FeedUrlAlias,
   PushSubscription,
   ProcessingJob,
-  WorkerLease
+  WorkerLease,
+  EmailVerificationToken,
+  PasswordResetToken,
+  EmailDelivery
 };

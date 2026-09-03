@@ -10,3 +10,25 @@ console.log('Starting application.');
 const { startCacheRefresh, startServer } = await import('./app.js');
 await startServer();
 startCacheRefresh();
+
+try {
+  const { getEmailConfiguration } = await import('./config/email.js');
+  const emailConfiguration = getEmailConfiguration();
+  if (emailConfiguration.enabled) {
+    const { createEmailDeliveryWorker } = await import(
+      './services/email/emailDeliveryWorker.js'
+    );
+    const emailWorker = createEmailDeliveryWorker({
+      configuration: emailConfiguration,
+      logger: console
+    });
+    void emailWorker.start();
+  } else {
+    console.log('[EmailWorker] disabled');
+  }
+} catch (error) {
+  console.error(
+    '[EmailWorker] startup.failed errorCode=' +
+    JSON.stringify(error?.code || error?.name || 'UNKNOWN_ERROR')
+  );
+}

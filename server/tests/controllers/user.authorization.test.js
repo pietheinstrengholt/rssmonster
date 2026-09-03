@@ -37,6 +37,7 @@ describe('user admin authorization', () => {
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
     process.env.DISABLE_LISTENER = 'true';
+    process.env.EMAIL_ENABLED = 'false';
 
     const mod = await import('../../app.js');
     app = mod.default;
@@ -71,6 +72,26 @@ describe('user admin authorization', () => {
     expect(res.body).toEqual({
       message: 'Access denied. Only admins can view all users.'
     });
+  });
+
+  it('restricts email status and SMTP tests to administrators', async () => {
+    const admin = await createUser(uniqueName('admin'), 'admin');
+    const nonAdmin = await createUser(uniqueName('viewer'));
+
+    const status = await request(app)
+      .get('/api/users/email-configuration')
+      .set('Authorization', authHeaderFor(admin));
+    const forbidden = await request(app)
+      .get('/api/users/email-configuration')
+      .set('Authorization', authHeaderFor(nonAdmin));
+    const disabledTest = await request(app)
+      .post('/api/users/email-configuration/test')
+      .set('Authorization', authHeaderFor(admin));
+
+    expect(status.status).toBe(200);
+    expect(status.body).toEqual({ configured: true, enabled: false });
+    expect(forbidden.status).toBe(403);
+    expect(disabledTest.status).toBe(409);
   });
 
   it('POST user update does not return stored credentials', async () => {

@@ -13,6 +13,13 @@ describe('model schema declarations', () => {
       unique: true
     });
     expect(Setting.rawAttributes.userId.unique).toBe(true);
+    expect(User.options.indexes).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        name: 'users_email_unique',
+        unique: true,
+        fields: ['email']
+      })
+    ]));
     expect(Feed.options.indexes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

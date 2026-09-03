@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   getJwtSecret: vi.fn(),
-  verify: vi.fn()
+  verify: vi.fn(),
+  userFindByPk: vi.fn()
 }));
 
 vi.mock('jsonwebtoken', () => ({
@@ -13,6 +14,12 @@ vi.mock('jsonwebtoken', () => ({
 
 vi.mock('../../config/auth.js', () => ({
   getJwtSecret: mocked.getJwtSecret
+}));
+
+vi.mock('../../models/index.js', () => ({
+  default: {
+    User: { findByPk: mocked.userFindByPk }
+  }
 }));
 
 const userMiddleware = (await import('../../middleware/users.js')).default;
@@ -30,8 +37,13 @@ const createResponse = () => {
 
 describe('user authentication middleware', () => {
   beforeEach(() => {
+    process.env.EMAIL_ENABLED = 'false';
     mocked.getJwtSecret.mockReset().mockReturnValue('jwt-secret');
     mocked.verify.mockReset();
+    mocked.userFindByPk.mockReset().mockResolvedValue({
+      id: 42,
+      passwordChangedAt: null
+    });
   });
 
   it('validates registration usernames, passwords, and confirmation', () => {
@@ -92,10 +104,40 @@ describe('user authentication middleware', () => {
     expect(res.status).not.toHaveBeenCalled();
   });
 
-  it('rejects sessions without an authorization header', () => {
+  it('requires and normalizes registration email only when email is enabled', () => {
+    process.env.EMAIL_ENABLED = 'true';
+    const missingRes = createResponse();
+
+    userMiddleware.validateRegister({
+      body: {
+        username: 'reader',
+        password: 'password',
+        password_repeat: 'password'
+      }
+    }, missingRes, vi.fn());
+    expect(missingRes.send).toHaveBeenCalledWith({
+      message: 'Please enter an email address.'
+    });
+
+    const next = vi.fn();
+    const request = {
+      body: {
+        username: 'reader',
+        email: ' Reader@Example.COM ',
+        password: 'password',
+        password_repeat: 'password'
+      }
+    };
+    userMiddleware.validateRegister(request, createResponse(), next);
+
+    expect(request.body.email).toBe('reader@example.com');
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it('rejects sessions without an authorization header', async () => {
     const res = createResponse();
 
-    userMiddleware.isLoggedIn({ headers: {} }, res, vi.fn());
+    await userMiddleware.isLoggedIn({ headers: {} }, res, vi.fn());
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.send).toHaveBeenCalledWith({
@@ -104,7 +146,7 @@ describe('user authentication middleware', () => {
     expect(mocked.verify).not.toHaveBeenCalled();
   });
 
-  it('decodes valid bearer sessions and attaches their user data', () => {
+  it('decodes valid bearer sessions and attaches their user data', async () => {
     const decoded = { userId: 42, username: 'reader' };
     mocked.verify.mockReturnValue(decoded);
     const req = {
@@ -114,7 +156,7 @@ describe('user authentication middleware', () => {
     };
     const next = vi.fn();
 
-    userMiddleware.isLoggedIn(req, createResponse(), next);
+    await userMiddleware.isLoggedIn(req, createResponse(), next);
 
     expect(mocked.verify).toHaveBeenCalledWith(
       'signed-token',
@@ -122,15 +164,18 @@ describe('user authentication middleware', () => {
     );
     expect(req.userData).toBe(decoded);
     expect(next).toHaveBeenCalledOnce();
+    expect(mocked.userFindByPk).toHaveBeenCalledWith(42, {
+      attributes: ['id', 'passwordChangedAt']
+    });
   });
 
-  it('rejects malformed or unverifiable sessions', () => {
+  it('rejects malformed or unverifiable sessions', async () => {
     mocked.verify.mockImplementation(() => {
       throw new Error('invalid token');
     });
     const res = createResponse();
 
-    userMiddleware.isLoggedIn(
+    await userMiddleware.isLoggedIn(
       {
         headers: {
           authorization: 'Bearer invalid-token'
@@ -144,5 +189,26 @@ describe('user authentication middleware', () => {
     expect(res.send).toHaveBeenCalledWith({
       message: 'Your session is not valid!'
     });
+  });
+
+  it('rejects a session issued before the current password version', async () => {
+    mocked.verify.mockReturnValue({
+      userId: 42,
+      username: 'reader',
+      passwordChangedAt: null
+    });
+    mocked.userFindByPk.mockResolvedValue({
+      id: 42,
+      passwordChangedAt: new Date('2026-09-02T12:00:00Z')
+    });
+    const res = createResponse();
+    const next = vi.fn();
+
+    await userMiddleware.isLoggedIn({
+      headers: { authorization: 'Bearer old-token' }
+    }, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 });

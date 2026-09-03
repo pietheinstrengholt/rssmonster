@@ -6,6 +6,12 @@ import api from './client';
 export const fetchUsers = () =>
   api.get('/users');
 
+export const fetchEmailConfiguration = () =>
+  api.get('/users/email-configuration');
+
+export const testSmtpConnectivity = () =>
+  api.post('/users/email-configuration/test');
+
 /**
  * Update a user
  */

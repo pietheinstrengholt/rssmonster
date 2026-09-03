@@ -16,6 +16,7 @@ const uniqueName = prefix => `${prefix}-${Date.now()}-${Math.random().toString(3
 // This function restores authentication flags so each environment case is isolated.
 const resetDevelopmentLoginEnvironment = () => {
   process.env.NODE_ENV = 'test';
+  process.env.EMAIL_ENABLED = 'false';
   delete process.env.ENABLE_DEVELOPMENT_LOGIN;
   delete process.env.DEVELOPMENT_LOGIN_USER_ID;
 };
@@ -25,6 +26,7 @@ describe('auth controller', () => {
     process.env.NODE_ENV = 'test';
     process.env.DISABLE_LISTENER = 'true';
     process.env.JWT_SECRET = 'test-secret-used-for-sign-and-verify';
+    process.env.EMAIL_ENABLED = 'false';
 
     const mod = await import('../../app.js');
     app = mod.default;
@@ -59,6 +61,65 @@ describe('auth controller', () => {
       createFeverCredentialHash(feverApiKey)
     );
     expect(user.feverCredentialHash).not.toBe(feverApiKey);
+  });
+
+  it('publishes and enforces the registration email capability', async () => {
+    process.env.EMAIL_ENABLED = 'true';
+    const configuration = await request(app).get('/api/auth/configuration');
+    const password = 'correct-password';
+    const registration = await request(app).post('/api/auth/register').send({
+      username: uniqueName('email-required'),
+      password,
+      password_repeat: password
+    });
+
+    expect(configuration.status).toBe(200);
+    expect(configuration.body).toEqual({ emailEnabled: true });
+    expect(registration.status).toBe(400);
+    expect(registration.body).toEqual({ message: 'Please enter an email address.' });
+    process.env.EMAIL_ENABLED = 'false';
+  });
+
+  it('accepts and normalizes an optional registration email', async () => {
+    const username = uniqueName('registered-email-user');
+    const password = 'correct-password';
+
+    const registerRes = await request(app)
+      .post('/api/auth/register')
+      .send({
+        username,
+        email: '  Reader@Example.COM ',
+        password,
+        password_repeat: password
+      });
+
+    expect(registerRes.status).toBe(201);
+    const user = await User.findOne({ where: { username } });
+    expect(user.email).toBe('reader@example.com');
+    expect(user.emailVerifiedAt).toBeNull();
+  });
+
+  it('rejects a duplicate registration email without exposing database details', async () => {
+    const password = 'correct-password';
+    const firstUsername = uniqueName('registered-email-first');
+    const secondUsername = uniqueName('registered-email-second');
+    const email = `${uniqueName('duplicate')}@example.com`;
+    const first = await request(app).post('/api/auth/register').send({
+      username: firstUsername,
+      email,
+      password,
+      password_repeat: password
+    });
+    const duplicate = await request(app).post('/api/auth/register').send({
+      username: secondUsername,
+      email: email.toUpperCase(),
+      password,
+      password_repeat: password
+    });
+
+    expect(first.status).toBe(201);
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body).toEqual({ message: 'This email address is already in use.' });
   });
 
   it('registers a concurrent bootstrap loser as a normal user', async () => {

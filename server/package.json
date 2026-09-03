@@ -80,6 +80,7 @@
     "morgan": "^1.12.0",
     "multer": "^2.3.0",
     "mysql2": "3.24.2",
+    "nodemailer": "^9.1.1",
     "sanitize-html": "^2.17.7",
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.6.5",

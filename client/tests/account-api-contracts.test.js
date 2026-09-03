@@ -2,8 +2,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { compactAgentMessages, sendChatMessages } from '../src/api/agent.js';
 import {
+  confirmEmailVerification,
+  confirmPasswordReset,
+  getAuthConfiguration,
+  getEmailEnrollmentStatus,
+  getEmailSettings,
   login,
+  requestEmailVerification,
+  requestPasswordReset,
+  resendEmailEnrollment,
   register,
+  updateEmail,
+  updateEmailEnrollment,
   validateSession
 } from '../src/api/auth.js';
 import {
@@ -12,13 +22,16 @@ import {
 } from '../src/api/briefing.js';
 import {
   deleteUser,
+  fetchEmailConfiguration,
   fetchUsers,
+  testSmtpConnectivity,
   updateUser
 } from '../src/api/users.js';
 
-const { del, get, post, put } = vi.hoisted(() => ({
+const { del, get, patch, post, put } = vi.hoisted(() => ({
   del: vi.fn(),
   get: vi.fn(),
+  patch: vi.fn(),
   post: vi.fn(),
   put: vi.fn()
 }));
@@ -27,6 +40,7 @@ vi.mock('../src/api/client', () => ({
   default: {
     delete: del,
     get,
+    patch,
     post,
     put
   }
@@ -37,6 +51,15 @@ beforeEach(() => {
 });
 
 describe('authentication API contracts', () => {
+  it('loads the public registration configuration', async () => {
+    get.mockResolvedValueOnce({ data: { emailEnabled: true } });
+
+    await expect(getAuthConfiguration()).resolves.toEqual({ emailEnabled: true });
+    expect(get).toHaveBeenCalledWith('/auth/configuration', {
+      suppressGlobalError: true
+    });
+  });
+
   // Verifies session validation scopes the bootstrap token to one request.
   it('validates a supplied saved token and returns response data', async () => {
     post.mockResolvedValue({
@@ -96,6 +119,82 @@ describe('authentication API contracts', () => {
     );
   });
 
+  it('builds email management and verification requests', async () => {
+    get.mockResolvedValueOnce({ data: { email: 'reader@example.com' } });
+    patch.mockResolvedValueOnce({ data: { email: 'new@example.com' } });
+    post
+      .mockResolvedValueOnce({ data: { requested: true } })
+      .mockResolvedValueOnce({ data: { verified: true } });
+
+    await getEmailSettings();
+    await updateEmail('new@example.com');
+    await requestEmailVerification();
+    await confirmEmailVerification('opaque-token');
+
+    expect(get).toHaveBeenCalledWith('/auth/email');
+    expect(patch).toHaveBeenCalledWith('/auth/email', { email: 'new@example.com' });
+    expect(post).toHaveBeenNthCalledWith(1, '/auth/verify-email/request');
+    expect(post).toHaveBeenNthCalledWith(
+      2,
+      '/auth/verify-email/confirm',
+      { token: 'opaque-token' },
+      { suppressGlobalError: true }
+    );
+  });
+
+  it('builds password-reset requests without authentication bootstrap side effects', async () => {
+    post
+      .mockResolvedValueOnce({ data: { accepted: true } })
+      .mockResolvedValueOnce({ data: { reset: true } });
+    const confirmation = {
+      token: 'opaque-token',
+      password: 'replacement-password',
+      passwordRepeat: 'replacement-password'
+    };
+
+    await requestPasswordReset('reader@example.com');
+    await confirmPasswordReset(confirmation);
+
+    expect(post).toHaveBeenNthCalledWith(
+      1,
+      '/auth/password-reset/request',
+      { email: 'reader@example.com' },
+      { suppressGlobalError: true }
+    );
+    expect(post).toHaveBeenNthCalledWith(
+      2,
+      '/auth/password-reset/confirm',
+      confirmation,
+      { suppressGlobalError: true }
+    );
+  });
+
+  it('uses the restricted email-enrollment credential for enrollment requests', async () => {
+    get.mockResolvedValueOnce({ data: { email: null, verified: false } });
+    put.mockResolvedValueOnce({ data: { email: 'reader@example.com', verified: false } });
+    post.mockResolvedValueOnce({ data: { email: 'reader@example.com', verified: false } });
+
+    await getEmailEnrollmentStatus('enrollment-token');
+    await updateEmailEnrollment('enrollment-token', 'reader@example.com');
+    await resendEmailEnrollment('enrollment-token');
+
+    const options = {
+      headers: { Authorization: 'Bearer enrollment-token' },
+      suppressGlobalError: true
+    };
+    expect(get).toHaveBeenCalledWith('/auth/email-enrollment', options);
+    expect(put).toHaveBeenCalledWith(
+      '/auth/email-enrollment',
+      { email: 'reader@example.com' },
+      options
+    );
+    expect(post).toHaveBeenCalledWith(
+      '/auth/email-enrollment/resend',
+      undefined,
+      options
+    );
+  });
+
 });
 
 describe('user and preference API contracts', () => {
@@ -104,10 +203,14 @@ describe('user and preference API contracts', () => {
     const updates = { role: 'admin', active: true };
 
     fetchUsers();
+    fetchEmailConfiguration();
+    testSmtpConnectivity();
     updateUser(7, updates);
     deleteUser(8);
 
     expect(get).toHaveBeenCalledWith('/users');
+    expect(get).toHaveBeenCalledWith('/users/email-configuration');
+    expect(post).toHaveBeenCalledWith('/users/email-configuration/test');
     expect(post).toHaveBeenCalledWith('/users/7', updates);
     expect(del).toHaveBeenCalledWith('/users/8');
   });

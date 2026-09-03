@@ -19,6 +19,8 @@ server.
   the standalone embedding service.
 - [npm Commands](npm-commands.md) is the complete client, server, and inference
   command reference, including supported arguments and usage guidance.
+- [Email Configuration](email-configuration.md) explains how to enable SMTP,
+  configure credentials and TLS, and verify connectivity from the admin UI.
 
 Run administrative commands from the `server` directory unless a command says
 otherwise. Before running a command that changes stored data, back up the
