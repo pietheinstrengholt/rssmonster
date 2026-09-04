@@ -5,7 +5,7 @@ export const fetchSmartFolders = () =>
   api.get('/smartfolders?withCounts=false');
 
 export const fetchSmartFolderCounts = () =>
-  api.get('/smartfolders/counts');
+  api.get('/smartfolders/counts', { params: { refreshedAt: Date.now() } });
 
 /**
  * Save smart folders

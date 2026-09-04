@@ -47,7 +47,8 @@ const { default: smartFolderController } = await import('../../controllers/smart
 const createRes = () => {
   const res = {
     status: vi.fn(),
-    json: vi.fn()
+    json: vi.fn(),
+    setHeader: vi.fn()
   };
 
   res.status.mockReturnValue(res);
@@ -240,6 +241,7 @@ describe('smartFolder controller', () => {
       );
 
       expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'private, no-store');
       expect(mocked.searchArticles).toHaveBeenCalledWith(expect.objectContaining({
         resolvedFeedIds: [8]
       }));

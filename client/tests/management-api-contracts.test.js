@@ -287,6 +287,7 @@ describe('settings API contracts', () => {
 describe('Smart Folder API contracts', () => {
   // Verifies Smart Folder reads use distinct structure, count, and insight endpoints.
   it('builds Smart Folder read requests', () => {
+    const dateNow = vi.spyOn(Date, 'now').mockReturnValue(1234);
     fetchSmartFolders();
     fetchSmartFolderCounts();
     fetchSmartFolderInsights();
@@ -295,8 +296,13 @@ describe('Smart Folder API contracts', () => {
       1,
       '/smartfolders?withCounts=false'
     );
-    expect(get).toHaveBeenNthCalledWith(2, '/smartfolders/counts');
+    expect(get).toHaveBeenNthCalledWith(
+      2,
+      '/smartfolders/counts',
+      { params: { refreshedAt: 1234 } }
+    );
     expect(get).toHaveBeenNthCalledWith(3, '/smartfolders/insights');
+    dateNow.mockRestore();
   });
 
   // Verifies Smart Folder saves preserve folder fields and tolerate an empty input.

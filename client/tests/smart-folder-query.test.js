@@ -6,6 +6,7 @@ import {
   parseSmartFolderQuery,
   parseSmartFolderScoreToken,
   quoteSmartFolderValue,
+  smartFolderQueryRequiresUnread,
   stripSmartFolderQuotes,
   tokenizeSmartFolderQuery
 } from '../src/components/settings/smartFolders/smartFolderQuery.js';
@@ -38,6 +39,16 @@ describe('Smart Folder query domain', () => {
       '"free phrase"',
       'limit:20'
     ]);
+  });
+
+  it.each([
+    ['unread:true tag:news', true],
+    ['favorite:true', false],
+    ['unread:true unread:false', false],
+    ['unread:false unread:true', true],
+    ['"unread:true"', false]
+  ])('identifies the effective unread filter in %j', (query, expected) => {
+    expect(smartFolderQueryRequiresUnread(query)).toBe(expected);
   });
 
   it.each([

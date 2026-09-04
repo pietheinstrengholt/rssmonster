@@ -1387,6 +1387,46 @@ describe('article ownership authorization', () => {
     findAllSpy.mockRestore();
   });
 
+  it('marks every unread article in a recommended Smart Folder expression', async () => {
+    const owner = await createUser(uniqueName('smart-folder-read-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    await article.update({ title: 'Windows 11 first matching article' });
+    const secondArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/windows-11-second`,
+      title: 'Windows 11 second matching article',
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+    const excludedArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/windows-10-excluded`,
+      title: 'Windows 10 excluded article',
+      publishedAt: new Date('2026-05-01T12:00:00Z')
+    });
+
+    const response = await request(app)
+      .post('/api/articles/markasread')
+      .set('Authorization', authHeaderFor(owner))
+      .send({
+        scope: 'matching',
+        smartFolderId: 20,
+        search: 'unread:true title:"Windows 11" sort:recommended limit:50',
+        grouping: 'none',
+        sort: 'desc'
+      });
+
+    await Promise.all([article.reload(), secondArticle.reload(), excludedArticle.reload()]);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ updatedCount: 2, matchedCount: 2 });
+    expect([article.status, secondArticle.status]).toEqual(['read', 'read']);
+    expect(excludedArticle.status).toBe('unread');
+  });
+
   // Verifies an empty query-based bulk read returns stable zero counts.
   it('returns zero counts when a bulk read query has no matches', async () => {
     const owner = await createUser(uniqueName('empty-search-read-owner'));

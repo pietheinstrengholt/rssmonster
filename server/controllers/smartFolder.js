@@ -119,6 +119,7 @@ const getSmartFolderCounts = async (req, res, next) => {
     }
 
     const smartFolders = await getSmartFolderCountsForUser(userId);
+    res.setHeader('Cache-Control', 'private, no-store');
     res.status(200).json({ total: smartFolders.length, smartFolders });
   } catch (err) {
     next(err);

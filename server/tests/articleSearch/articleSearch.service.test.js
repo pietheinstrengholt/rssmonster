@@ -375,6 +375,44 @@ describe('articleSearch.service', () => {
       expect(result.itemIds).toContain(articles.old.id);
       expect(result.itemIds.length).toBe(1);
     });
+
+    it('keeps Smart Folder counts aligned with an unread recommended title search', async () => {
+      const query = 'unread:true title:"Windows 11" sort:recommended limit:50';
+      const matchingArticle = await Article.create({
+        userId: user.id,
+        feedId: feed.id,
+        url: 'https://example.com/windows-11-smart-folder',
+        title: 'Windows 11 feature update',
+        contentText: 'A matching operating system update.',
+        status: 'unread',
+        publishedAt: new Date(),
+        advertisementScore: 90,
+        sentimentScore: 90,
+        qualityScore: 90
+      });
+
+      try {
+        const countResult = await searchArticles({
+          userId: user.id,
+          search: query,
+          status: 'unread',
+          smartFolderSearch: true,
+          limitCount: 50,
+          countOnly: true
+        });
+        const articleResult = await searchArticles({
+          userId: user.id,
+          search: query,
+          status: 'unread',
+          grouping: 'none'
+        });
+
+        expect(countResult.articleCount).toBe(1);
+        expect(articleResult.itemIds).toEqual([matchingArticle.id]);
+      } finally {
+        await matchingArticle.destroy();
+      }
+    });
   });
 
   // ============================

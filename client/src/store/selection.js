@@ -420,6 +420,8 @@ export const useSelectionStore = defineStore('selection', {
         feedId: '%',
         status: 'unread',
         sort: 'desc',
+        grouping: 'none',
+        includeDevelopingEvents: false,
         tag: null,
         smartFolderId: smartFolder?.id ?? null,
         search,

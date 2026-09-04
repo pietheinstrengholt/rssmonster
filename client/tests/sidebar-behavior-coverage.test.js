@@ -233,6 +233,35 @@ describe('Sidebar navigation and action coverage', () => {
     window.removeEventListener(ACTION_ERROR_EVENT, handleNotification);
   });
 
+  it('marks the complete active Smart Folder selection and refreshes its counts', async () => {
+    const stores = createStores();
+    stores.selectionStore.setSmartFolder({
+      id: 20,
+      query: 'unread:true title:"Windows 11" sort:recommended limit:50',
+      limitCount: 50,
+      markAsReadOnScroll: true
+    });
+    const fetchSmartFolderCounts = vi.spyOn(
+      stores.overviewStore,
+      'fetchSmartFolderCounts'
+    ).mockResolvedValue(true);
+    const wrapper = mountSidebar(stores.pinia);
+    const selection = { ...stores.selectionStore.currentSelection };
+    markAllAsRead.mockResolvedValueOnce({ data: { updatedCount: 2 } });
+
+    await wrapper.vm.markAsRead(selection);
+
+    expect(markAllAsRead).toHaveBeenCalledWith(selection);
+    expect(selection).toMatchObject({
+      smartFolderId: 20,
+      search: 'unread:true title:"Windows 11" sort:recommended limit:50 limit:50'
+    });
+    expect(stores.selectionStore.effectiveMarkAsReadOnScroll).toBe(true);
+    expect(fetchSmartFolderCounts).toHaveBeenCalledOnce();
+    expect(wrapper.emitted('forceReload')).toHaveLength(1);
+    expect(wrapper.vm.markingAsRead).toBe(false);
+  });
+
   it('persists category ordering and reports persistence failures', async () => {
     const stores = createStores();
     const applyOrder = vi.spyOn(stores.overviewStore, 'applyCategoryOrder');

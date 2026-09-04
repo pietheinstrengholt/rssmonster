@@ -46,6 +46,18 @@ export function tokenizeSmartFolderQuery(query) {
     return String(query || '').match(/(?:[A-Za-z]+:)?"[^"]*"|\S+/g) || [];
 }
 
+// Reports the effective unread filter using the server parser's last-token-wins behavior.
+export function smartFolderQueryRequiresUnread(query) {
+    let unread = false;
+
+    tokenizeSmartFolderQuery(query).forEach(token => {
+        const match = token.replace(/[.,;]+$/, '').match(/^unread:(true|false)$/i);
+        if (match) unread = match[1].toLowerCase() === 'true';
+    });
+
+    return unread;
+}
+
 // Restores a query value for display in an editor field.
 export function stripSmartFolderQuotes(value) {
     return String(value || '').replace(/^"|"$/g, '').replace(/\\"/g, '"');

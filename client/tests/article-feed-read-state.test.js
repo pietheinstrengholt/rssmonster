@@ -149,7 +149,7 @@ describe('article feed read-state reconciliation', () => {
 
     expect(persisted).toBe(true);
     expect(markArticleSeen).toHaveBeenCalledWith(1, {
-      grouping: 'event',
+      grouping: 'none',
       visibleSeconds: 3,
       selectedStatus: 'read'
     });
@@ -177,7 +177,7 @@ describe('article feed read-state reconciliation', () => {
     await context.markArticleSeen(1, 3);
 
     expect(markArticleSeen).toHaveBeenCalledWith(1, {
-      grouping: 'event',
+      grouping: 'none',
       visibleSeconds: 3,
       selectedStatus: 'unread'
     });
@@ -205,7 +205,7 @@ describe('article feed read-state reconciliation', () => {
     await context.toggleArticleReadStatus({ id: 1, status: 'unread' });
 
     expect(markArticleSeen).toHaveBeenCalledWith(1, {
-      grouping: 'event',
+      grouping: 'none',
       visibleSeconds: 0,
       selectedStatus: 'unread'
     });

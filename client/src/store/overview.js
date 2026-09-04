@@ -755,11 +755,12 @@ export const useOverviewStore = defineStore('overview', {
       const smartFolder = this.smartFolders.find(folder =>
         idsMatch(folder.id, smartFolderId)
       );
-      if (!smartFolder) return false;
 
-      smartFolder.ArticleCount = normalizeCount(smartFolder.ArticleCount - 1);
+      if (smartFolder) {
+        smartFolder.ArticleCount = normalizeCount(smartFolder.ArticleCount - 1);
+      }
       this.scheduleSmartFolderCountsRefresh();
-      return true;
+      return Boolean(smartFolder);
     },
 
     // This action removes one displayed unread-only Briefing group from cached counters.

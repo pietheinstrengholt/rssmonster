@@ -579,6 +579,21 @@ describe('data store overview and count behavior', () => {
     expect(store.smartFolders[0].ArticleCount).toBe(0);
   });
 
+  it('still refreshes active Smart Folder counts while folder structure is unavailable', async () => {
+    vi.useFakeTimers();
+    fetchSmartFolderCounts.mockResolvedValue({
+      data: { smartFolders: [{ id: 7, ArticleCount: 0 }] }
+    });
+    const store = createStore();
+    const selectionStore = useSelectionStore();
+    selectionStore.setSmartFolder({ id: 7, query: 'unread:true' });
+
+    expect(store.decreaseActiveSmartFolderCount()).toBe(false);
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(fetchSmartFolderCounts).toHaveBeenCalledOnce();
+  });
+
   it('coalesces repeated Smart Folder decrements into one trailing refresh', async () => {
     vi.useFakeTimers();
     fetchSmartFolderCounts.mockResolvedValue({

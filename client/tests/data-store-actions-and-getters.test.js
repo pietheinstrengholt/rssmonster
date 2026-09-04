@@ -191,6 +191,7 @@ describe('data store remaining actions and getters', () => {
 
     store.setSelectedCategoryId(4);
     store.setSelectedFeedId(9);
+    store.setCurrentSelection({ grouping: 'topic', includeDevelopingEvents: true });
     expect(store.currentSelection).toMatchObject({
       categoryId: '4',
       feedId: '9'
@@ -207,6 +208,8 @@ describe('data store remaining actions and getters', () => {
       feedId: '%',
       status: 'unread',
       sort: 'desc',
+      grouping: 'none',
+      includeDevelopingEvents: false,
       smartFolderId: 3,
       search: 'science limit:15'
     });

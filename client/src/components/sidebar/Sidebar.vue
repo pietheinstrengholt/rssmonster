@@ -533,12 +533,18 @@ export default {
 
       try {
         await markAllAsRead(currentSelection);
+        if (
+          currentSelection.smartFolderId !== null &&
+          currentSelection.smartFolderId !== undefined
+        ) {
+          await this.overviewStore.fetchSmartFolderCounts();
+        }
         this.$emit('forceReload');
-        this.markingAsRead = false;
       } catch (error) {
-        this.markingAsRead = false;
         console.error('Error marking the current selection as read:', error);
         notifyActionError('Could not mark these articles as read. Please try again.', error);
+      } finally {
+        this.markingAsRead = false;
       }
     },
 

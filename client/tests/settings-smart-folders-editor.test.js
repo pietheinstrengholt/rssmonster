@@ -88,6 +88,35 @@ describe('SettingsSmartFolders coordinator', () => {
     expect(context.overviewStore.smartFolders[0].name).toBe('Unread');
   });
 
+  it('normalizes stale scrolling preferences before a bulk save', async () => {
+    const context = createContext();
+    context.overviewStore.smartFolders = [
+      {
+        id: 1,
+        name: 'All favorites',
+        query: 'favorite:true limit:25',
+        limitCount: 25,
+        markAsReadOnScroll: true
+      },
+      {
+        id: 2,
+        name: 'Unread',
+        query: 'unread:true limit:25',
+        limitCount: 25,
+        markAsReadOnScroll: true
+      }
+    ];
+    saveSmartFolders.mockResolvedValue({ data: { smartFolders: [] } });
+
+    await context.fetchSmartFolders();
+    await context.save();
+
+    expect(context.smartFolders.map(folder => folder.markAsReadOnScroll))
+      .toEqual([false, true]);
+    expect(saveSmartFolders.mock.calls[0][0].map(folder => folder.markAsReadOnScroll))
+      .toEqual([false, true]);
+  });
+
   it('adds valid recommendations and prevents duplicate queries', async () => {
     const context = createContext();
     await context.fetchSmartFolders();
@@ -144,7 +173,7 @@ describe('SettingsSmartFolders coordinator', () => {
       markAsReadOnScroll: true
     });
     expect(context.smartFolders.at(-1).name).toBe('Copied copy');
-    expect(context.smartFolders.at(-1).markAsReadOnScroll).toBe(true);
+    expect(context.smartFolders.at(-1).markAsReadOnScroll).toBe(false);
 
     context.selectedSmartFolderId = context.smartFolders[0].localId;
     context.removeSmartFolder(0);

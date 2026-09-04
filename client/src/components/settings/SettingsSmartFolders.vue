@@ -460,6 +460,11 @@ import { validateSmartFolderQuery } from '../../services/queryValidation';
 import { notifyActionError } from '../../services/actionNotifications.js';
 import SmartFolderEditor from './smartFolders/SmartFolderEditor.vue';
 import SmartFolderInsights from './smartFolders/SmartFolderInsights.vue';
+import { smartFolderQueryRequiresUnread } from './smartFolders/smartFolderQuery.js';
+
+const effectiveSmartFolderMarkAsReadOnScroll = smartFolder =>
+    smartFolderQueryRequiresUnread(smartFolder?.query) &&
+    Boolean(smartFolder?.markAsReadOnScroll);
 
 export default {
     components: {
@@ -522,7 +527,7 @@ export default {
                     name: smartFolder.name,
                     query: smartFolder.query,
                     limitCount: smartFolder.limitCount || 50,
-                    markAsReadOnScroll: Boolean(smartFolder.markAsReadOnScroll)
+                    markAsReadOnScroll: effectiveSmartFolderMarkAsReadOnScroll(smartFolder)
                 }));
                 this.loaded = true;
             } catch (err) {
@@ -551,7 +556,7 @@ export default {
                 name: recommendation.name,
                 query: recommendation.query,
                 limitCount: 50,
-                markAsReadOnScroll: Boolean(recommendation.markAsReadOnScroll)
+                markAsReadOnScroll: effectiveSmartFolderMarkAsReadOnScroll(recommendation)
             });
         },
         // This function creates and opens a new Smart Folder using the available sort capabilities.
@@ -613,7 +618,7 @@ export default {
                 name: `${update.name || 'Smart Folder'} copy`,
                 query: update.query,
                 limitCount: update.limitCount,
-                markAsReadOnScroll: Boolean(update.markAsReadOnScroll)
+                markAsReadOnScroll: effectiveSmartFolderMarkAsReadOnScroll(update)
             });
 
             this.cancelSmartFolderConfig();
@@ -645,9 +650,16 @@ export default {
             try {
                 this.commitOpenEditor();
 
-                const filteredSmartFolders = this.smartFolders.filter(
-                    smartFolder => smartFolder && smartFolder.name && smartFolder.name.trim() !== ''
-                );
+                const filteredSmartFolders = this.smartFolders
+                    .filter(
+                        smartFolder => smartFolder && smartFolder.name &&
+                            smartFolder.name.trim() !== ''
+                    )
+                    .map(smartFolder => ({
+                        ...smartFolder,
+                        markAsReadOnScroll:
+                            effectiveSmartFolderMarkAsReadOnScroll(smartFolder)
+                    }));
                 await saveSmartFolders(filteredSmartFolders);
 
                 await this.overviewStore.fetchSmartFolders();
