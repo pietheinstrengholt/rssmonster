@@ -6,6 +6,8 @@ import {
   highlightTextSegments,
   parseSearchHighlightTerms
 } from '../src/services/searchHighlight.js';
+import Article from '../src/components/articles/Article.vue';
+import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
 
 describe('search highlighting', () => {
   it('keeps quoted phrases together and unquoted terms separate', () => {
@@ -35,4 +37,21 @@ describe('search highlighting', () => {
     expect(html).toContain('<a href="/windows-11"><mark class="search-highlight">Windows 11</mark></a>');
     expect(html).not.toContain('/<mark');
   });
+
+  it.each([Article, ArticleReaderLayout])(
+    'suppresses terms from an active Smart Folder query in $name',
+    component => {
+      const selectionStore = {
+        currentSelection: {
+          search: 'Windows 11',
+          smartFolderId: 4
+        }
+      };
+
+      expect(component.computed.highlightTerms.call({ selectionStore })).toEqual([]);
+
+      selectionStore.currentSelection.smartFolderId = null;
+      expect(component.computed.highlightTerms.call({ selectionStore })).toEqual(['Windows', '11']);
+    }
+  );
 });

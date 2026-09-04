@@ -357,8 +357,9 @@ export default {
   },
   computed: {
     ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useFeedRefreshStore),
-    // Returns the visible text intent represented by the active article search.
+    // Returns visible text intent only for a direct search, not a saved Smart Folder query.
     highlightTerms() {
+      if (this.selectionStore.currentSelection.smartFolderId !== null) return [];
       return parseSearchHighlightTerms(this.selectionStore.currentSelection.search);
     },
     // Exposes the active status from the explicit collection presentation contract.

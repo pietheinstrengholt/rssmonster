@@ -179,8 +179,9 @@ export default {
     }
   },
   computed: {
-    // Returns only the text-bearing terms from the active search expression.
+    // Returns text-bearing terms only for a direct search, not a saved Smart Folder query.
     highlightTerms() {
+      if (this.selectionStore.currentSelection.smartFolderId !== null) return [];
       return parseSearchHighlightTerms(this.selectionStore.currentSelection.search);
     },
     ...mapStores(useSelectionStore, useOverviewStore),
