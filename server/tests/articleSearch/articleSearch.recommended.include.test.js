@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
 import { searchArticles } from '../../services/articleSearch/articleSearch.service.js';
 
-const { Article, Feed, Setting, Tag } = db;
+const { Article, BriefingPreference, Feed, Setting, Tag } = db;
 
 describe('articleSearch recommended include wiring', () => {
   beforeEach(() => {
@@ -15,6 +15,14 @@ describe('articleSearch recommended include wiring', () => {
     vi.spyOn(Feed, 'findAll').mockResolvedValue([{ id: 1 }]);
     vi.spyOn(Tag, 'findAll').mockResolvedValue([]);
     vi.spyOn(Article, 'findAll').mockResolvedValue([]);
+    vi.spyOn(BriefingPreference, 'findOne').mockResolvedValue({
+      selectionPeriod: '7d',
+      includeOnlyUnreadArticles: false,
+      minDistinctSources: 1,
+      prioritizeHighTrust: false,
+      showOnlyInterestMatchedArticles: false,
+      showOnlyDevelopingEventArticles: false
+    });
   });
 
   afterEach(() => {
@@ -58,6 +66,21 @@ describe('articleSearch recommended include wiring', () => {
     expect(query.include.find(item => item.model === Feed)).toBeDefined();
     expect(query.include.find(item => item.model === Tag)).toBeUndefined();
     expect(query.attributes).not.toContain('interestScore');
+  });
+
+  it('uses Top Stories ranking without dropping the canonical briefing scope', async () => {
+    await searchArticles({
+      userId: 1,
+      status: 'briefing',
+      briefingSort: 'topStories',
+      executionBounds: { maxResults: 20, maxCandidates: 500 }
+    });
+
+    const query = Article.findAll.mock.calls[0][0];
+    expect(query.include.find(item => item.as === 'event')).toBeDefined();
+    expect(query.include.find(item => item.model === Feed)).toBeDefined();
+    expect(query.include.find(item => item.model === Tag)).toBeUndefined();
+    expect(query.limit).toBe(500);
   });
 
   it('includes feed quality fields when sorting by quality', async () => {

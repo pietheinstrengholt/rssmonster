@@ -11,7 +11,10 @@ export const DEFAULT_EMAIL_RETRY_BASE_MS = 30 * 1000;
 export const DEFAULT_EMAIL_RETRY_MAX_MS = 60 * 60 * 1000;
 const MAX_CLAIM_LIMIT = 100;
 const CLAIM_DEADLOCK_ATTEMPTS = 3;
-const VERIFIED_ADDRESS_MESSAGE_TYPES = new Set(['daily_digest', 'password_reset']);
+const VERIFIED_ADDRESS_MESSAGE_TYPES = new Set([
+  'daily_digest',
+  'password_reset'
+]);
 
 const positiveInteger = (value, fallback) => {
   const parsed = Number.parseInt(value, 10);

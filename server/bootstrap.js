@@ -22,7 +22,12 @@ try {
       configuration: emailConfiguration,
       logger: console
     });
+    const { createDailyBriefingScheduler } = await import(
+      './services/dailyBriefing/dailyBriefingScheduler.js'
+    );
+    const dailyBriefingScheduler = createDailyBriefingScheduler({ logger: console });
     void emailWorker.start();
+    void dailyBriefingScheduler.start();
   } else {
     console.log('[EmailWorker] disabled');
   }

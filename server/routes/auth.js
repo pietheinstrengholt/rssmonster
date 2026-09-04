@@ -6,6 +6,7 @@ import passwordResetController from '../controllers/passwordReset.js';
 import { passwordResetRateLimiter } from '../middleware/rateLimit.js';
 import emailEnrollmentController from '../controllers/emailEnrollment.js';
 import emailEnrollmentMiddleware from '../middleware/emailEnrollment.js';
+import accountSettingsController from '../controllers/accountSettings.js';
 
 export const router = express.Router();
 
@@ -15,6 +16,13 @@ router.post('/register', userMiddleware.validateRegister, authController.registe
 router.post('/login', authController.login);
 router.post('/development-login', authController.developmentLogin);
 router.post('/validate', userMiddleware.isLoggedIn, authController.validate);
+router.get('/account', userMiddleware.isLoggedIn, accountSettingsController.get);
+router.patch('/account', userMiddleware.isLoggedIn, accountSettingsController.update);
+router.post(
+  '/account/daily-briefing-test',
+  userMiddleware.isLoggedIn,
+  accountSettingsController.sendDailyBriefingTest
+);
 router.get('/email', userMiddleware.isLoggedIn, emailVerificationController.getEmail);
 router.patch('/email', userMiddleware.isLoggedIn, emailVerificationController.changeEmail);
 router.post(

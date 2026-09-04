@@ -54,6 +54,21 @@ export const updateEmail = async email => {
   return response.data;
 };
 
+export const getAccountSettings = async () => {
+  const response = await api.get('/auth/account');
+  return response.data;
+};
+
+export const updateAccountSettings = async settings => {
+  const response = await api.patch('/auth/account', settings);
+  return response.data;
+};
+
+export const sendDailyBriefingTest = async () => {
+  const response = await api.post('/auth/account/daily-briefing-test');
+  return response.data;
+};
+
 export const requestEmailVerification = async () => {
   const response = await api.post('/auth/verify-email/request');
   return response.data;

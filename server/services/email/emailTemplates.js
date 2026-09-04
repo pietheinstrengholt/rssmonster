@@ -4,7 +4,7 @@ const TEMPLATE_TYPES = new Set([
   'daily_digest',
   'test_email'
 ]);
-const MAX_DAILY_BRIEFING_ITEMS = 50;
+const MAX_DAILY_BRIEFING_ITEMS = 10;
 
 export class EmailTemplateError extends Error {
   constructor(message) {
@@ -99,58 +99,129 @@ const renderPasswordReset = payload => {
   };
 };
 
-const normalizeBriefingItems = items => {
+const normalizeBriefingItems = (items, field, seenIds) => {
   if (!Array.isArray(items) || items.length > MAX_DAILY_BRIEFING_ITEMS) {
     throw new EmailTemplateError(
-      `items must be an array with at most ${MAX_DAILY_BRIEFING_ITEMS} entries`
+      `${field} must be an array with at most ${MAX_DAILY_BRIEFING_ITEMS} entries`
     );
   }
-  return items.map((item, index) => ({
-    headline: requiredText(item?.headline, `items[${index}].headline`, 500),
-    text: optionalText(item?.text),
-    source: optionalText(item?.source, 320),
-    url: requiredHttpUrl(item?.url, `items[${index}].url`)
-  }));
+  return items.map((item, index) => {
+    const articleId = Number(item?.articleId);
+    if (!Number.isSafeInteger(articleId) || articleId <= 0 || seenIds.has(articleId)) {
+      throw new EmailTemplateError(`${field}[${index}].articleId must be unique and positive`);
+    }
+    const publishedAt = new Date(item?.publishedAt);
+    if (Number.isNaN(publishedAt.getTime())) {
+      throw new EmailTemplateError(`${field}[${index}].publishedAt must be a valid date`);
+    }
+    seenIds.add(articleId);
+    return {
+      articleId,
+      headline: requiredText(item?.headline, `${field}[${index}].headline`, 500),
+      excerpt: optionalText(item?.excerpt),
+      source: requiredText(item?.source, `${field}[${index}].source`, 320),
+      publishedAt,
+      url: requiredHttpUrl(item?.url, `${field}[${index}].url`)
+    };
+  });
 };
+
+const formatPublicationDate = (date, timezone) => new Intl.DateTimeFormat('en-US', {
+  timeZone: timezone,
+  dateStyle: 'medium'
+}).format(date);
+
+const renderStoryHtml = (item, timezone) => {
+  const metadata = `${item.source} · ${formatPublicationDate(item.publishedAt, timezone)}`;
+  return '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" ' +
+    'style="border-collapse:separate;margin:0 0 14px"><tr><td style="background:#ffffff;' +
+    'border:1px solid #e5e7eb;border-left:4px solid #f97316;border-radius:8px;padding:18px">' +
+    `<div style="color:#6b7280;font-size:12px;line-height:1.5;margin:0 0 7px">${escapeHtml(metadata)}</div>` +
+    `<a href="${escapeHtml(item.url)}" style="color:#172033;font-size:18px;font-weight:700;` +
+    `line-height:1.35;text-decoration:none">${escapeHtml(item.headline)}</a>` +
+    (item.excerpt
+      ? `<p style="color:#4b5563;font-size:14px;line-height:1.6;margin:10px 0 0">${escapeHtml(item.excerpt)}</p>`
+      : '') +
+    `<p style="margin:12px 0 0"><a href="${escapeHtml(item.url)}" style="color:#ea580c;` +
+    'font-size:13px;font-weight:700;text-decoration:none">Read article →</a></p>' +
+    '</td></tr></table>';
+};
+
+const renderBriefingSectionHtml = (title, items, timezone) => items.length
+  ? `<h2 style="color:#9a3412;font-size:13px;letter-spacing:0.08em;margin:28px 0 12px;` +
+    `text-transform:uppercase">${escapeHtml(title)}</h2>` +
+    items.map(item => renderStoryHtml(item, timezone)).join('')
+  : '';
+
+const renderBriefingSectionText = (title, items, timezone) => items.length
+  ? `${title.toUpperCase()}\n${'-'.repeat(title.length)}\n\n` + items.map((item, index) => [
+    `${index + 1}. ${item.headline}`,
+    `${item.source} · ${formatPublicationDate(item.publishedAt, timezone)}`,
+    item.excerpt,
+    item.url
+  ].filter(Boolean).join('\n')).join('\n\n')
+  : '';
 
 const renderDailyBriefing = payload => {
   const briefingUrl = requiredHttpUrl(payload.briefingUrl, 'briefingUrl');
-  const items = normalizeBriefingItems(payload.items);
+  const preferencesUrl = requiredHttpUrl(payload.preferencesUrl, 'preferencesUrl');
+  const timezone = requiredText(payload.timezone || 'UTC', 'timezone', 64);
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: timezone }).format();
+  } catch {
+    throw new EmailTemplateError('timezone must be a valid IANA timezone');
+  }
+  const seenIds = new Set();
+  const recommended = normalizeBriefingItems(payload.recommended, 'recommended', seenIds);
+  const topStories = normalizeBriefingItems(payload.topStories, 'topStories', seenIds);
+  const articleCount = recommended.length + topStories.length;
   const subjectDate = optionalHeaderText(payload.subjectDate, 100);
-  const subject = subjectDate
-    ? `Your RSSMonster briefing for ${subjectDate}`
-    : 'Your RSSMonster daily briefing';
-  const textItems = items.length
-    ? items.map((item, index) => [
-      `${index + 1}. ${item.headline}`,
-      item.source,
-      item.text,
-      item.url
-    ].filter(Boolean).join('\n')).join('\n\n')
-    : 'No stories matched your briefing preferences.';
-  const htmlItems = items.length
-    ? '<ol style="padding-left:22px">' + items.map(item =>
-      '<li style="margin-bottom:22px">' +
-      `<a href="${escapeHtml(item.url)}" style="color:#1d4ed8;font-weight:700">` +
-      `${escapeHtml(item.headline)}</a>` +
-      (item.source ? `<div style="color:#667085;font-size:13px">${escapeHtml(item.source)}</div>` : '') +
-      (item.text ? `<p style="line-height:1.5;margin:8px 0">${escapeHtml(item.text)}</p>` : '') +
-      '</li>'
-    ).join('') + '</ol>'
-    : '<p>No stories matched your briefing preferences.</p>';
+  const subject = payload.testMode
+    ? 'RSSMonster daily briefing test — example email'
+    : subjectDate
+      ? `Your RSSMonster briefing for ${subjectDate}`
+      : 'Your RSSMonster daily briefing';
+  const emptyMessage = 'No new articles were received for your daily digest.';
+  const textSections = [
+    renderBriefingSectionText('Recommended', recommended, timezone),
+    renderBriefingSectionText('Top Stories', topStories, timezone)
+  ].filter(Boolean).join('\n\n');
+  const text = articleCount
+    ? `RSSMonster Daily Briefing\n\n${textSections}`
+    : `RSSMonster Daily Briefing\n\n${emptyMessage}`;
+  const htmlSections =
+    renderBriefingSectionHtml('Recommended', recommended, timezone) +
+    renderBriefingSectionHtml('Top Stories', topStories, timezone);
 
   return {
     subject,
-    text: `${textItems}\n\nOpen your briefing:\n${briefingUrl}`,
-    html: renderLayout({
-      title: 'Your daily briefing',
-      introduction: items.length
-        ? 'Here are the stories selected from your feeds.'
-        : 'Your briefing is quiet today.',
-      content: htmlItems,
-      action: { label: 'Open RSSMonster', url: briefingUrl },
-      footer: 'You can change daily briefing email preferences in RSSMonster.'
-    })
+    text: `${text}\n\nOpen full briefing: ${briefingUrl}\n\nManage email preferences: ${preferencesUrl}`,
+    html: '<!doctype html><html><head><meta name="viewport" content="width=device-width,' +
+      ' initial-scale=1"><style>@media only screen and (max-width:600px){.rss-shell{' +
+      'width:100%!important}.rss-pad{padding:20px 14px!important}}</style></head>' +
+      '<body style="background:#f3f4f6;margin:0;padding:0"><table role="presentation" width="100%" ' +
+      'cellspacing="0" cellpadding="0" style="border-collapse:collapse"><tr><td align="center" ' +
+      'style="padding:24px 10px"><table class="rss-shell" role="presentation" width="640" ' +
+      'cellspacing="0" cellpadding="0" style="border-collapse:separate;max-width:640px;width:100%">' +
+      '<tr><td style="background:#172033;border-radius:10px 10px 0 0;padding:22px 28px">' +
+      '<div style="color:#ffffff;font-family:Arial,sans-serif;font-size:22px;font-weight:800">' +
+      '<span style="color:#f97316">RSS</span>Monster</div>' +
+      '<div style="color:#d1d5db;font-family:Arial,sans-serif;font-size:13px;margin-top:5px">' +
+      'Your daily briefing</div></td></tr><tr><td class="rss-pad" style="background:#fff7ed;' +
+      'border-top:5px solid #f97316;padding:28px;font-family:Arial,sans-serif">' +
+      (articleCount
+        ? '<p style="color:#4b5563;font-size:14px;line-height:1.6;margin:0">' +
+          'Fresh stories selected from your feeds.</p>' + htmlSections
+        : `<p style="background:#ffffff;border:1px solid #fed7aa;border-radius:8px;color:#7c2d12;` +
+          `font-size:15px;line-height:1.6;margin:0;padding:20px">${escapeHtml(emptyMessage)}</p>`) +
+      `<p style="margin:28px 0 8px;text-align:center"><a href="${escapeHtml(briefingUrl)}" ` +
+      'style="background:#f97316;border-radius:7px;color:#ffffff;display:inline-block;font-size:15px;' +
+      'font-weight:700;padding:13px 20px;text-decoration:none">Open full briefing</a></p>' +
+      '</td></tr><tr><td style="background:#172033;border-radius:0 0 10px 10px;color:#9ca3af;' +
+      'font-family:Arial,sans-serif;font-size:12px;line-height:1.6;padding:20px 28px;text-align:center">' +
+      `This email follows your RSSMonster Daily Briefing preferences.<br><a href="${escapeHtml(preferencesUrl)}" ` +
+      'style="color:#fdba74;text-decoration:underline">Manage account and email preferences</a>' +
+      '</td></tr></table></td></tr></table></body></html>'
   };
 };
 

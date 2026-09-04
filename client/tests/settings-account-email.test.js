@@ -2,16 +2,31 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SettingsAccount from '../src/components/settings/SettingsAccount.vue';
 import {
-  getEmailSettings,
+  getAccountSettings,
   requestEmailVerification,
-  updateEmail
+  sendDailyBriefingTest,
+  updateAccountSettings
 } from '../src/api/auth.js';
 
 vi.mock('../src/api/auth.js', () => ({
-  getEmailSettings: vi.fn(),
+  getAccountSettings: vi.fn(),
   requestEmailVerification: vi.fn(),
-  updateEmail: vi.fn()
+  sendDailyBriefingTest: vi.fn(),
+  updateAccountSettings: vi.fn()
 }));
+
+const settings = {
+  username: 'reader',
+  email: 'reader@example.com',
+  emailVerifiedAt: '2026-09-02T08:00:00.000Z',
+  emailServiceEnabled: true,
+  serverTimezone: 'UTC',
+  emailDigestConfigured: false,
+  emailDigestEnabled: false,
+  emailDigestTime: '08:00',
+  emailDigestTimezone: 'UTC',
+  emailDigestSkipWhenEmpty: true
+};
 
 const mountAccount = () => mount(SettingsAccount, {
   global: {
@@ -21,51 +36,100 @@ const mountAccount = () => mount(SettingsAccount, {
   }
 });
 
-describe('account email settings', () => {
+describe('account settings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    getAccountSettings.mockResolvedValue({ ...settings });
   });
 
-  it('loads verification state and clears it after replacing the email', async () => {
-    getEmailSettings.mockResolvedValueOnce({
-      email: 'old@example.com',
-      emailVerifiedAt: '2026-09-02T08:00:00.000Z'
-    });
-    updateEmail.mockResolvedValueOnce({
-      email: 'new@example.com',
-      emailVerifiedAt: null,
-      message: 'Email address saved. Verify it before using email features.'
+  it('shows the fixed username and suggests the browser timezone for a disabled digest', async () => {
+    const wrapper = mountAccount();
+    await flushPromises();
+
+    expect(wrapper.get('#account-username').element.readOnly).toBe(true);
+    expect(wrapper.get('#account-username').element.value).toBe('reader');
+    expect(wrapper.get('#account-digest-time').element.value).toBe('08:00');
+    expect(wrapper.get('#account-digest-timezone').element.value).toBe(
+      Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+    );
+    expect(wrapper.get('#account-digest-skip-empty').element.checked).toBe(true);
+  });
+
+  it('saves email, digest, timezone, and optional password fields together', async () => {
+    updateAccountSettings.mockResolvedValueOnce({
+      ...settings,
+      emailDigestConfigured: true,
+      emailDigestEnabled: true,
+      emailDigestTime: '09:30',
+      emailDigestTimezone: 'Europe/Amsterdam',
+      message: 'Account settings updated.',
+      passwordChanged: false
     });
     const wrapper = mountAccount();
     await flushPromises();
 
-    expect(wrapper.text()).toContain('Status: Verified');
-    await wrapper.get('#account-email').setValue('new@example.com');
+    await wrapper.get('#account-digest-enabled').setValue(true);
+    await wrapper.get('#account-digest-time').setValue('09:30');
+    await wrapper.get('#account-digest-timezone').setValue('Europe/Amsterdam');
     await wrapper.get('form').trigger('submit');
     await flushPromises();
 
-    expect(updateEmail).toHaveBeenCalledWith('new@example.com');
-    expect(wrapper.text()).toContain('Status: Not verified');
-    expect(wrapper.text()).toContain('Email address saved');
+    expect(updateAccountSettings).toHaveBeenCalledWith(expect.objectContaining({
+      email: 'reader@example.com',
+      password: '',
+      passwordRepeat: '',
+      emailDigestEnabled: true,
+      emailDigestTime: '09:30',
+      emailDigestTimezone: 'Europe/Amsterdam',
+      emailDigestSkipWhenEmpty: true
+    }));
+    expect(wrapper.text()).toContain('Account settings updated.');
+    expect(wrapper.get('.account-settings__message').classes())
+      .toContain('account-settings__message--success');
   });
 
-  it('requests verification only for a saved unverified address', async () => {
-    getEmailSettings.mockResolvedValueOnce({
-      email: 'reader@example.com',
-      emailVerifiedAt: null
-    });
+  it('does not submit when the two new passwords differ', async () => {
+    const wrapper = mountAccount();
+    await flushPromises();
+
+    await wrapper.get('#account-password').setValue('new-password');
+    await wrapper.get('#account-password-repeat').setValue('different-password');
+    await wrapper.get('form').trigger('submit');
+
+    expect(wrapper.text()).toContain('Both passwords must match.');
+    expect(updateAccountSettings).not.toHaveBeenCalled();
+  });
+
+  it('requests verification only for the saved unverified address', async () => {
+    getAccountSettings.mockResolvedValueOnce({ ...settings, emailVerifiedAt: null });
     requestEmailVerification.mockResolvedValueOnce({
       message: 'If verification is needed, a verification email has been queued.'
     });
     const wrapper = mountAccount();
     await flushPromises();
 
-    const buttons = wrapper.findAll('button');
-    await buttons[1].trigger('click');
+    await wrapper.get('.account-settings__verify').trigger('click');
     await flushPromises();
 
     expect(requestEmailVerification).toHaveBeenCalledOnce();
     expect(wrapper.text()).toContain('verification email has been queued');
+  });
+
+  it('requests a daily briefing test for a verified address', async () => {
+    sendDailyBriefingTest.mockResolvedValueOnce({
+      queued: true,
+      message: 'Daily briefing test email queued.'
+    });
+    const wrapper = mountAccount();
+    await flushPromises();
+
+    await wrapper.get('.account-settings__digest-test').trigger('click');
+    await flushPromises();
+
+    expect(sendDailyBriefingTest).toHaveBeenCalledOnce();
+    expect(wrapper.text()).toContain('Daily briefing test email queued.');
+    expect(wrapper.get('.account-settings__message').classes())
+      .toContain('account-settings__message--success');
   });
 });

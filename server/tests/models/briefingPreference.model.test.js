@@ -38,7 +38,11 @@ describe('BriefingPreference model', () => {
       showOnlyDevelopingEventArticles: false,
       minDistinctSources: 1,
       prioritizeHighTrust: false,
-      selectionPeriod: '7d'
+      selectionPeriod: '7d',
+      emailDigestEnabled: false,
+      emailDigestTime: '08:00',
+      emailDigestTimezone: 'UTC',
+      emailDigestSkipWhenEmpty: true
     });
     expect(preference.createdAt).toBeInstanceOf(Date);
     expect(preference.updatedAt).toBeInstanceOf(Date);
@@ -46,6 +50,24 @@ describe('BriefingPreference model', () => {
 
   it('declares only the supported selection periods', () => {
     expect(BriefingPreference.rawAttributes.selectionPeriod.values).toEqual(['24h', '7d']);
+  });
+
+  it('validates digest time and IANA timezone values', async () => {
+    await expect(BriefingPreference.build({
+      userId: 1,
+      emailDigestTime: '23:59',
+      emailDigestTimezone: 'Europe/Amsterdam'
+    }).validate()).resolves.toBeTruthy();
+
+    await expect(BriefingPreference.build({
+      userId: 1,
+      emailDigestTime: '24:00'
+    }).validate()).rejects.toThrow('emailDigestTime must use 24-hour HH:mm format');
+
+    await expect(BriefingPreference.build({
+      userId: 1,
+      emailDigestTimezone: 'Not/A_Timezone'
+    }).validate()).rejects.toThrow('emailDigestTimezone must be a valid IANA timezone');
   });
 
   it('does not expose the retired muted-interest field', () => {

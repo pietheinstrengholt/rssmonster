@@ -122,7 +122,8 @@ export const searchArticles = async ({
     countOnly = false, // Return only the matching count without materializing ids when possible
     minArticleIdExclusive = null, // Restrict an internal count to articles admitted after a snapshot
     pagination = null, // Opt-in keyset pagination descriptor for database-native sorts
-    executionBounds = null // Optional trusted ceilings for bounded internal consumers
+    executionBounds = null, // Optional trusted ceilings for bounded internal consumers
+    briefingSort = 'recommended' // Internal ranking override while retaining briefing filters
 }) => {
     // Rejects processing when user id is unavailable.
     if (!userId) {
@@ -206,8 +207,10 @@ export const searchArticles = async ({
                 'briefing:true',
                 Number(briefingPreferences.includeOnlyUnreadArticles) ? 'unread:true' : null,
                 briefingPreferences.selectionPeriod === '24h' ? '@today' : '@lastweek',
-                'sort:recommended'
+                `sort:${briefingSort === 'topStories' ? 'topStories' : 'recommended'}`
             ].filter(Boolean).join(' ');
+        } else if (briefingSort === 'topStories') {
+            rawSearch = rawSearch.replace(/sort:recommended/i, 'sort:topStories');
         }
     }
 

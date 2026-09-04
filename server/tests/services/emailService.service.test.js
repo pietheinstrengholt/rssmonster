@@ -152,7 +152,13 @@ describe('mail service and durable outbox', () => {
       const user = await createUser();
       const { service } = createTestService();
       const templateData = templateType === 'daily_digest'
-        ? { briefingUrl: 'https://rss.example.com/briefing', items: [] }
+        ? {
+            briefingUrl: 'https://rss.example.com/briefing',
+            preferencesUrl: 'https://rss.example.com/settings',
+            timezone: 'UTC',
+            recommended: [],
+            topStories: []
+          }
         : { actionUrl: 'https://rss.example.com/reset' };
       const input = {
         userId: user.id,
@@ -273,6 +279,43 @@ describe('mail service and durable outbox', () => {
       providerMessageId: 'provider-message-id',
       completedAt: NOW
     });
+  });
+
+  it('delivers an empty-state daily briefing test to the verified address', async () => {
+    const user = await createUser({ emailVerifiedAt: NOW });
+    const { service, transport } = createTestService();
+    const queued = await service.enqueueEmail({
+      userId: user.id,
+      recipient: user.email,
+      templateType: 'daily_digest',
+      templateData: {
+        briefingUrl: 'https://rss.example.com',
+        preferencesUrl: 'https://rss.example.com',
+        timezone: 'UTC',
+        recommended: [],
+        topStories: [],
+        testMode: true
+      },
+      dedupeKey: uniqueValue('daily-digest-test'),
+      scheduledAt: NOW
+    });
+    const [claimed] = await service.claimPendingEmails({
+      now: NOW,
+      leaseOwner: 'email-worker-digest-test'
+    });
+
+    expect(queued.delivery.payload.subject)
+      .toBe('RSSMonster daily briefing test — example email');
+    expect(queued.delivery.payload.text).toContain('No new articles were received');
+    expect(queued.delivery.payload.html).toContain('No new articles were received');
+    await expect(service.sendClaimedEmail(claimed, { now: () => NOW }))
+      .resolves.toMatchObject({ status: 'sent' });
+    expect(transport.sendMail).toHaveBeenCalledWith(expect.objectContaining({
+      to: user.email,
+      subject: 'RSSMonster daily briefing test — example email',
+      text: expect.stringContaining('No new articles were received'),
+      html: expect.stringContaining('No new articles were received')
+    }));
   });
 
   it('passes a mutable sender address to Nodemailer message composition', async () => {
