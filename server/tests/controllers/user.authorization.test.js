@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
@@ -35,15 +35,30 @@ const authHeaderFor = user => {
 
 describe('user admin authorization', () => {
   beforeAll(async () => {
-    process.env.NODE_ENV = 'test';
-    process.env.DISABLE_LISTENER = 'true';
-    process.env.EMAIL_ENABLED = 'false';
+    vi.stubEnv('NODE_ENV', 'test');
+    vi.stubEnv('DISABLE_LISTENER', 'true');
+    vi.stubEnv('EMAIL_ENABLED', 'false');
+    vi.stubEnv('PUBLIC_APP_URL', 'https://rss.example.com');
+    vi.stubEnv('SMTP_HOST', 'smtp.example.com');
+    vi.stubEnv('SMTP_PORT', '587');
+    vi.stubEnv('SMTP_SECURE', 'false');
+    vi.stubEnv('SMTP_REQUIRE_TLS', 'true');
+    vi.stubEnv('SMTP_POOL', 'false');
+    vi.stubEnv('SMTP_USER', '');
+    vi.stubEnv('SMTP_PASSWORD', '');
+    vi.stubEnv('SMTP_PASSWORD_FILE', '');
+    vi.stubEnv('EMAIL_FROM', 'RSSMonster <rssmonster@example.com>');
+    vi.stubEnv('EMAIL_REPLY_TO', '');
 
     const mod = await import('../../app.js');
     app = mod.default;
 
     await sequelize.authenticate();
   }, 50_000);
+
+  afterAll(() => {
+    vi.unstubAllEnvs();
+  });
 
   it('GET user by ID allows admins even when the token has no role claim', async () => {
     const admin = await createUser(uniqueName('admin'), 'admin');
