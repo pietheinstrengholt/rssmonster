@@ -11,6 +11,43 @@ Generated Feeds expose a dynamic selection of articles from RSSMonster as a
 standard RSS 2.0 feed. They are useful when you want to read a focused subset
 of your RSSMonster content in another RSS reader, automation, or service.
 
+## Why this is useful
+
+A Generated Feed turns an RSSMonster expression into an interoperability
+boundary. Its URL can be consumed by another RSS reader, an automation, a
+service, or a person. This can be useful even when RSSMonster is not your
+primary reader.
+
+For example, RSSMonster can act as an RSS filtering proxy. Suppose a website
+publishes one enormous feed containing 200 articles a day, but you only care
+about cybersecurity. Subscribe to the source in RSSMonster, create a Smart
+Folder such as:
+
+```text
+tag:security quality:>0.6 sort:quality
+```
+
+Then create a Generated Feed with the same expression. A downstream
+application sees only the matching, higher-quality security articles instead
+of the entire source feed. The `quality` value is RSSMonster's normalized
+`0.0`–`1.0` article-quality score, which includes the advertising score; a
+higher advertising score means the article is less promotional. See
+[Scoring and Ranking](scoring.md) for the complete calculation.
+
+Other examples include:
+
+- **Curated feeds for other people.** Follow 150 sources privately, then give
+  colleagues a focused feed such as **Piethein's Data & AI Picks** containing
+  only articles you consider useful.
+- **Processing pipelines.** Feed a narrowly selected stream into local LLM
+  inference, an ONNX model, or another small-model service for downstream
+  classification, extraction, summarization, or automation.
+
+The generated URL is a bearer secret rather than a public publishing control.
+Share it only with the intended readers or systems; the
+[access and token security](#access-and-token-security) section explains how
+to disable a feed or invalidate an old URL.
+
 A Generated Feed combines two things:
 
 - a saved expression using the same language as Search and Smart Folders;
