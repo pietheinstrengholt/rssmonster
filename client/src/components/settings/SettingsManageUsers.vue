@@ -500,6 +500,7 @@
 .manage-users__message--success {
   background: var(--settings-success-bg);
   color: var(--settings-success-text);
+  margin-bottom: 10px;
 }
 
 .manage-users__empty {
