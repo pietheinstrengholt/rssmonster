@@ -521,7 +521,8 @@ export default {
                     id: smartFolder.id,
                     name: smartFolder.name,
                     query: smartFolder.query,
-                    limitCount: smartFolder.limitCount || 50
+                    limitCount: smartFolder.limitCount || 50,
+                    markAsReadOnScroll: Boolean(smartFolder.markAsReadOnScroll)
                 }));
                 this.loaded = true;
             } catch (err) {
@@ -549,7 +550,8 @@ export default {
                 localId: `local-${Date.now()}`,
                 name: recommendation.name,
                 query: recommendation.query,
-                limitCount: 50
+                limitCount: 50,
+                markAsReadOnScroll: Boolean(recommendation.markAsReadOnScroll)
             });
         },
         // This function creates and opens a new Smart Folder using the available sort capabilities.
@@ -558,7 +560,8 @@ export default {
                 localId: `local-${Date.now()}`,
                 name: 'New Smart Folder',
                 query: this.aiEnabled ? 'sort:recommended limit:50' : 'limit:50',
-                limitCount: 50
+                limitCount: 50,
+                markAsReadOnScroll: false
             };
 
             this.smartFolders.push(smartFolder);
@@ -609,7 +612,8 @@ export default {
                 localId: `local-${Date.now()}`,
                 name: `${update.name || 'Smart Folder'} copy`,
                 query: update.query,
-                limitCount: update.limitCount
+                limitCount: update.limitCount,
+                markAsReadOnScroll: Boolean(update.markAsReadOnScroll)
             });
 
             this.cancelSmartFolderConfig();

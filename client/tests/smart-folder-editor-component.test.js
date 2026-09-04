@@ -31,13 +31,15 @@ describe('SmartFolderEditor', () => {
       id: 1,
       name: 'Configured',
       query: 'unread:true limit:50',
-      limitCount: 50
+      limitCount: 50,
+      markAsReadOnScroll: true
     };
     const wrapper = mountEditor({ smartFolder });
 
     expect(wrapper.vm.draftConfig).toMatchObject({
       name: 'Configured',
       limitCount: 50,
+      markAsReadOnScroll: true,
       status: { unread: true, read: false }
     });
 
@@ -53,6 +55,37 @@ describe('SmartFolderEditor', () => {
       + '"free phrase" quality:>=0.80 eventCount:>=4 sort:asc limit:75'
     );
     expect(wrapper.vm.generatedQueryInvalid).toBe(false);
+  });
+
+  it('enables scrolling configuration only for unread folders and keeps it out of the query', async () => {
+    const wrapper = mountEditor({
+      smartFolder: {
+        id: 1,
+        name: 'Unread',
+        query: 'unread:true limit:50',
+        limitCount: 50,
+        markAsReadOnScroll: true
+      }
+    });
+    const scrollingCheckbox = wrapper.get('[name="markAsReadOnScroll"]');
+    const unreadCheckbox = wrapper.findAll('input[type="checkbox"]')[0];
+
+    expect(scrollingCheckbox.element.disabled).toBe(false);
+    expect(scrollingCheckbox.element.checked).toBe(true);
+    expect(wrapper.vm.generatedSmartFolderQuery).toBe('unread:true limit:50');
+
+    await unreadCheckbox.setValue(false);
+
+    expect(scrollingCheckbox.element.disabled).toBe(true);
+    expect(scrollingCheckbox.element.checked).toBe(false);
+    expect(wrapper.vm.draftConfig.markAsReadOnScroll).toBe(false);
+  });
+
+  it('shows scrolling configuration as disabled for a non-unread folder', () => {
+    const wrapper = mountEditor();
+
+    expect(wrapper.get('[name="markAsReadOnScroll"]').element.disabled).toBe(true);
+    expect(wrapper.vm.draftConfig.markAsReadOnScroll).toBe(false);
   });
 
   it('enforces mutually exclusive status and event filters', () => {
@@ -98,7 +131,8 @@ describe('SmartFolderEditor', () => {
     await wrapper.get('form').trigger('submit');
     expect(wrapper.emitted('save')?.[0]?.[0]).toMatchObject({
       name: 'Edited',
-      limitCount: 75
+      limitCount: 75,
+      markAsReadOnScroll: false
     });
 
     const buttons = wrapper.findAll('.smart-folder-config-actions button');
@@ -106,7 +140,10 @@ describe('SmartFolderEditor', () => {
     await buttons[1].trigger('click');
     await buttons[0].trigger('click');
 
-    expect(wrapper.emitted('save-copy')?.[0]?.[0].name).toBe('Edited');
+    expect(wrapper.emitted('save-copy')?.[0]?.[0]).toMatchObject({
+      name: 'Edited',
+      markAsReadOnScroll: false
+    });
     expect(wrapper.emitted('cancel')).toHaveLength(1);
     expect(wrapper.emitted('delete')).toHaveLength(1);
   });

@@ -31,6 +31,12 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 50
+      },
+      // Controls whether scrolling past matching unread articles marks them as read.
+      markAsReadOnScroll: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
       }
     },
     {

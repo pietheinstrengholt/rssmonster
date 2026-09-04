@@ -83,17 +83,16 @@ export const articleFeedReadStateMethods = {
   // Persists an article's seen status and updates local read state.
   async markArticleSeen(articleId, visibleSeconds = 0) {
     const selection = this.selectionStore.currentSelection;
-    const shouldMarkRead = selection.status === 'unread'
-      || (
-        selection.status === 'briefing'
-        && this.selectionStore.effectiveMarkAsReadOnScroll === true
-      );
+    const shouldMarkRead = ['unread', 'briefing'].includes(selection.status)
+      && this.selectionStore.effectiveMarkAsReadOnScroll === true;
 
     try {
       const response = await markArticleSeen(articleId, {
         grouping: selection.grouping,
         visibleSeconds,
-        selectedStatus: shouldMarkRead ? 'unread' : selection.status
+        selectedStatus: shouldMarkRead
+          ? 'unread'
+          : (selection.status === 'unread' ? 'read' : selection.status)
       });
 
       this.applyArticleSeenResponse(response.data, {
@@ -125,6 +124,7 @@ export const articleFeedReadStateMethods = {
       }
       if (readArticles.length > 0) {
         this.overviewStore.decreaseBriefingCount(updatedArticle);
+        this.overviewStore.decreaseActiveSmartFolderCount();
       }
     }
   },

@@ -124,6 +124,7 @@ const supportedSelection = selection => Object.fromEntries(
 // This function creates selection and settings-resource state for one user session.
 const initialSelectionState = () => ({
   currentSelection: defaultSelection(),
+  activeSmartFolderMarkAsReadOnScroll: false,
   briefingSelectionPeriod: DEFAULT_BRIEFING_SELECTION_PERIOD,
   briefingIncludeOnlyUnreadArticles: false,
   briefingMarkAsReadOnScroll: false,
@@ -140,11 +141,17 @@ export const useSelectionStore = defineStore('selection', {
 
   getters: {
     // This getter selects the scrolling behavior owned by the active article collection.
-    effectiveMarkAsReadOnScroll: state => (
-      state.currentSelection.status === 'briefing'
-        ? state.briefingMarkAsReadOnScroll
-        : state.currentSelection.markAsReadOnScroll
-    )
+    effectiveMarkAsReadOnScroll: state => {
+      if (state.currentSelection.status === 'briefing') {
+        return state.briefingMarkAsReadOnScroll;
+      }
+
+      if (state.currentSelection.smartFolderId !== null) {
+        return state.activeSmartFolderMarkAsReadOnScroll;
+      }
+
+      return state.currentSelection.markAsReadOnScroll;
+    }
   },
 
   actions: {
@@ -404,6 +411,9 @@ export const useSelectionStore = defineStore('selection', {
         ? smartFolder.query +
           (smartFolder.limitCount ? ` limit:${smartFolder.limitCount}` : '')
         : null;
+      this.activeSmartFolderMarkAsReadOnScroll = Boolean(
+        smartFolder?.markAsReadOnScroll
+      );
 
       this.applySelection({
         categoryId: '%',

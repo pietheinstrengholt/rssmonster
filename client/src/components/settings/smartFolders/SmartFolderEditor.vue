@@ -42,6 +42,17 @@
                     Unread
                 </label>
 
+                <label class="smart-folder-check smart-folder-check--nested">
+                    <input
+                        v-model="draftConfig.markAsReadOnScroll"
+                        name="markAsReadOnScroll"
+                        type="checkbox"
+                        class="app-form-check-input"
+                        :disabled="!draftConfig.status.unread"
+                    />
+                    Mark as read while scrolling
+                </label>
+
                 <label class="smart-folder-check">
                     <input
                         v-model="draftConfig.status.read"
@@ -344,7 +355,10 @@ function createEditorDraft(smartFolder) {
     const config = createEmptySmartFolderConfig();
     config.name = smartFolder?.name || '';
     config.limitCount = Number(smartFolder?.limitCount) || 50;
-    return parseSmartFolderQuery(smartFolder?.query || '', config);
+    const draft = parseSmartFolderQuery(smartFolder?.query || '', config);
+    draft.markAsReadOnScroll = draft.status.unread
+        && Boolean(smartFolder?.markAsReadOnScroll);
+    return draft;
 }
 
 export default {
@@ -389,7 +403,8 @@ export default {
             return {
                 name: this.draftConfig.name,
                 query: this.generatedSmartFolderQuery,
-                limitCount: this.draftConfig.limitCount
+                limitCount: this.draftConfig.limitCount,
+                markAsReadOnScroll: this.draftConfig.markAsReadOnScroll
             };
         },
         // This function prevents read and unread filters from remaining selected together.
@@ -400,6 +415,10 @@ export default {
 
             if (changedKey === 'read' && this.draftConfig.status.read) {
                 this.draftConfig.status.unread = false;
+            }
+
+            if (!this.draftConfig.status.unread) {
+                this.draftConfig.markAsReadOnScroll = false;
             }
         },
         // This function preserves the existing mutually exclusive event filter choices.
@@ -530,6 +549,10 @@ export default {
   gap: 9px;
   color: var(--text-secondary);
   font-size: 13px;
+}
+
+.smart-folder-check--nested {
+  padding-left: 26px;
 }
 
 .smart-folder-range input {

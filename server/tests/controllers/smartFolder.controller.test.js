@@ -63,8 +63,21 @@ describe('smartFolder controller', () => {
 
   describe('getSmartFolders', () => {
     it('returns folders with ArticleCount resolved via searchArticles', async () => {
-      const folderA = { id: 1, name: 'Top Stories', query: 'sort:recommended', limitCount: 25, dataValues: {} };
-      const folderB = { id: 2, name: 'Unread', query: 'unread:true', dataValues: {} };
+      const folderA = {
+        id: 1,
+        name: 'Top Stories',
+        query: 'sort:recommended',
+        limitCount: 25,
+        markAsReadOnScroll: false,
+        dataValues: {}
+      };
+      const folderB = {
+        id: 2,
+        name: 'Unread',
+        query: 'unread:true',
+        markAsReadOnScroll: true,
+        dataValues: {}
+      };
 
       mocked.smartFolderFindAll.mockResolvedValue([folderA, folderB]);
       mocked.settingFindOne.mockResolvedValue({
@@ -85,7 +98,7 @@ describe('smartFolder controller', () => {
 
       expect(mocked.smartFolderFindAll).toHaveBeenCalledWith({
         where: { userId: 42 },
-        attributes: ['id', 'name', 'query', 'limitCount'],
+        attributes: ['id', 'name', 'query', 'limitCount', 'markAsReadOnScroll'],
         order: [['name', 'ASC']]
       });
 
@@ -115,6 +128,8 @@ describe('smartFolder controller', () => {
 
       expect(folderA.dataValues.ArticleCount).toBe(4);
       expect(folderB.dataValues.ArticleCount).toBe(0);
+      expect(folderA.markAsReadOnScroll).toBe(false);
+      expect(folderB.markAsReadOnScroll).toBe(true);
       expect(mocked.settingFindOne).toHaveBeenCalledOnce();
       expect(mocked.feedFindAll).toHaveBeenCalledOnce();
 
@@ -290,7 +305,7 @@ describe('smartFolder controller', () => {
         body: {
           smartFolders: [
             { name: 'Top Stories', query: 'event:true sort:recommended', limitCount: 30 },
-            { query: 'unread:true' },
+            { query: 'unread:true', markAsReadOnScroll: true },
             { name: '', query: '' },
             null
           ]
@@ -308,13 +323,15 @@ describe('smartFolder controller', () => {
           userId: 42,
           name: 'Top Stories',
           query: 'event:true sort:recommended',
-          limitCount: 30
+          limitCount: 30,
+          markAsReadOnScroll: false
         },
         {
           userId: 42,
           name: '',
           query: 'unread:true',
-          limitCount: 50
+          limitCount: 50,
+          markAsReadOnScroll: true
         }
       ]);
 
@@ -326,13 +343,15 @@ describe('smartFolder controller', () => {
             userId: 42,
             name: 'Top Stories',
             query: 'event:true sort:recommended',
-            limitCount: 30
+            limitCount: 30,
+            markAsReadOnScroll: false
           },
           {
             userId: 42,
             name: '',
             query: 'unread:true',
-            limitCount: 50
+            limitCount: 50,
+            markAsReadOnScroll: true
           }
         ]
       });
@@ -385,6 +404,66 @@ describe('smartFolder controller', () => {
           code: 'EXPRESSION_UNKNOWN_FILTER',
           message: 'Unknown expression field: "quallity".',
           index: 1
+        }
+      });
+      expect(mocked.smartFolderDestroy).not.toHaveBeenCalled();
+      expect(mocked.smartFolderBulkCreate).not.toHaveBeenCalled();
+    });
+
+    it('rejects a non-boolean scrolling preference before replacing folders', async () => {
+      const res = createRes();
+
+      await smartFolderController.postSmartFolder(
+        {
+          userData: { userId: 42 },
+          body: {
+            smartFolders: [{
+              name: 'Unread',
+              query: 'unread:true',
+              markAsReadOnScroll: 'true'
+            }]
+          }
+        },
+        res,
+        vi.fn()
+      );
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: {
+          code: 'SMART_FOLDER_INVALID_MARK_AS_READ_ON_SCROLL',
+          message: 'markAsReadOnScroll must be a boolean.',
+          index: 0
+        }
+      });
+      expect(mocked.smartFolderDestroy).not.toHaveBeenCalled();
+      expect(mocked.smartFolderBulkCreate).not.toHaveBeenCalled();
+    });
+
+    it('requires an unread:true filter when scrolling should mark articles read', async () => {
+      const res = createRes();
+
+      await smartFolderController.postSmartFolder(
+        {
+          userData: { userId: 42 },
+          body: {
+            smartFolders: [{
+              name: 'Favorites',
+              query: 'favorite:true',
+              markAsReadOnScroll: true
+            }]
+          }
+        },
+        res,
+        vi.fn()
+      );
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: {
+          code: 'SMART_FOLDER_MARK_AS_READ_ON_SCROLL_REQUIRES_UNREAD',
+          message: 'markAsReadOnScroll requires unread:true.',
+          index: 0
         }
       });
       expect(mocked.smartFolderDestroy).not.toHaveBeenCalled();

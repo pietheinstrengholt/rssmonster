@@ -196,7 +196,12 @@ describe('data store remaining actions and getters', () => {
       feedId: '9'
     });
 
-    store.setSmartFolder({ id: 3, query: 'science', limitCount: 15 });
+    store.setSmartFolder({
+      id: 3,
+      query: 'science',
+      limitCount: 15,
+      markAsReadOnScroll: true
+    });
     expect(store.currentSelection).toMatchObject({
       categoryId: '%',
       feedId: '%',
@@ -205,14 +210,42 @@ describe('data store remaining actions and getters', () => {
       smartFolderId: 3,
       search: 'science limit:15'
     });
+    expect(store.activeSmartFolderMarkAsReadOnScroll).toBe(true);
+    expect(store.effectiveMarkAsReadOnScroll).toBe(true);
 
     store.setSmartFolder({ id: 4, query: 'history', limitCount: 0 });
     expect(store.currentSelection.search).toBe('history');
+    expect(store.effectiveMarkAsReadOnScroll).toBe(false);
     store.setSmartFolder(null);
     expect(store.currentSelection).toMatchObject({
       smartFolderId: null,
       search: null
     });
+    expect(store.activeSmartFolderMarkAsReadOnScroll).toBe(false);
+  });
+
+  // Verifies collection-specific preferences do not overwrite the durable unread preference.
+  it('resolves effective scrolling behavior by active collection', () => {
+    const { selectionStore: store } = createStores();
+    store.setCurrentSelection({ markAsReadOnScroll: false });
+
+    store.setSmartFolder({
+      id: 3,
+      query: 'unread:true',
+      markAsReadOnScroll: true
+    });
+    expect(store.effectiveMarkAsReadOnScroll).toBe(true);
+    expect(store.currentSelection.markAsReadOnScroll).toBe(false);
+
+    store.selectCategory(4);
+    expect(store.effectiveMarkAsReadOnScroll).toBe(false);
+
+    store.setBriefingFilters({
+      includeOnlyUnreadArticles: true,
+      markAsReadOnScroll: true
+    });
+    store.setSelectedStatus('briefing');
+    expect(store.effectiveMarkAsReadOnScroll).toBe(true);
   });
 
   // Verifies lightweight data fetchers provide defaults and forward grouping context.

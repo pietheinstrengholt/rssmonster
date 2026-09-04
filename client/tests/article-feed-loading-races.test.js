@@ -45,7 +45,8 @@ const createLoadingContext = (dataStore = {
 }) => {
   const stores = createFocusedStores({
     overview: {
-      increaseReadCount: dataStore.increaseReadCount || vi.fn()
+      increaseReadCount: dataStore.increaseReadCount || vi.fn(),
+      decreaseActiveSmartFolderCount: vi.fn()
     },
     selection: {
       currentSelection: dataStore.currentSelection
@@ -693,5 +694,6 @@ describe('ArticleFeed loading races', () => {
 
     expect(context.articles.map(article => article.status)).toEqual(['read', 'read']);
     expect(context.overviewStore.increaseReadCount).toHaveBeenCalledTimes(2);
+    expect(context.overviewStore.decreaseActiveSmartFolderCount).toHaveBeenCalledOnce();
   });
 });

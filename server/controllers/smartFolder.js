@@ -92,7 +92,7 @@ const getSmartFolders = async (req, res, next) => {
 
     const smartFolders = await SmartFolder.findAll({
       where: { userId },
-      attributes: ['id', 'name', 'query', 'limitCount'],
+      attributes: ['id', 'name', 'query', 'limitCount', 'markAsReadOnScroll'],
       order: [['name', 'ASC']]
     });
 
@@ -145,12 +145,37 @@ const postSmartFolder = async (req, res, next) => {
         userId,
         name: sf.name || '',
         query: sf.query || '',
-        limitCount: sf.limitCount || 50
+        limitCount: sf.limitCount || 50,
+        markAsReadOnScroll: sf.markAsReadOnScroll === undefined
+          ? false
+          : sf.markAsReadOnScroll
       }));
 
     for (const [index, smartFolder] of payload.entries()) {
+      if (typeof smartFolder.markAsReadOnScroll !== 'boolean') {
+        return res.status(400).json({
+          error: {
+            code: 'SMART_FOLDER_INVALID_MARK_AS_READ_ON_SCROLL',
+            message: 'markAsReadOnScroll must be a boolean.',
+            index
+          }
+        });
+      }
+
       try {
-        validateArticleExpression(smartFolder.query);
+        const parsedExpression = validateArticleExpression(smartFolder.query);
+        if (
+          smartFolder.markAsReadOnScroll &&
+          parsedExpression.filters.unread !== true
+        ) {
+          return res.status(400).json({
+            error: {
+              code: 'SMART_FOLDER_MARK_AS_READ_ON_SCROLL_REQUIRES_UNREAD',
+              message: 'markAsReadOnScroll requires unread:true.',
+              index
+            }
+          });
+        }
       } catch (error) {
         if (error instanceof ArticleExpressionValidationError) {
           return res.status(400).json({

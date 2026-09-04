@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
 
-const { Article, Feed, Hotlink, Setting, User } = db;
+const { Article, Feed, Hotlink, Setting, SmartFolder, User } = db;
 
 describe('model schema declarations', () => {
   it('keeps model uniqueness in sync with migrations', () => {
@@ -76,6 +76,13 @@ describe('model schema declarations', () => {
     expect(Setting.rawAttributes.markAsReadOnScroll).toMatchObject({
       allowNull: false,
       defaultValue: true
+    });
+  });
+
+  it('declares Smart Folder mark-as-read scrolling disabled by default', () => {
+    expect(SmartFolder.rawAttributes.markAsReadOnScroll).toMatchObject({
+      allowNull: false,
+      defaultValue: false
     });
   });
 

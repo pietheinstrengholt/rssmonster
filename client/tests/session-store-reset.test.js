@@ -54,6 +54,7 @@ describe('coordinated Pinia session reset', () => {
 
     authStore.setSession({ token: 'old-token', role: 'admin' });
     selectionStore.$patch({
+      activeSmartFolderMarkAsReadOnScroll: true,
       briefingIncludeOnlyUnreadArticles: true,
       briefingMarkAsReadOnScroll: true,
       briefingPrioritizeHighTrust: true,
@@ -129,6 +130,7 @@ describe('coordinated Pinia session reset', () => {
       tag: null
     });
     expect(selectionStore).toMatchObject({
+      activeSmartFolderMarkAsReadOnScroll: false,
       briefingIncludeOnlyUnreadArticles: false,
       briefingMarkAsReadOnScroll: false,
       briefingPrioritizeHighTrust: false,

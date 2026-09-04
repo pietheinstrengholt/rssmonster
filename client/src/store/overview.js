@@ -22,6 +22,17 @@ const COUNT_FIELDS = [
   'clickedCount'
 ];
 const OVERVIEW_COUNT_FIELDS = [...COUNT_FIELDS];
+const SMART_FOLDER_COUNT_REFRESH_DELAY_MS = 500;
+const smartFolderCountRefreshRuntimeByStore = new WeakMap();
+
+// This function returns the non-reactive debounce timer owned by one overview store.
+const getSmartFolderCountRefreshRuntime = store => {
+  if (!smartFolderCountRefreshRuntimeByStore.has(store)) {
+    smartFolderCountRefreshRuntimeByStore.set(store, { timer: null });
+  }
+
+  return smartFolderCountRefreshRuntimeByStore.get(store);
+};
 
 // This function compares identifiers consistently across numeric API data and string selections.
 const idsMatch = (left, right) => String(left) === String(right);
@@ -179,6 +190,7 @@ export const useOverviewStore = defineStore('overview', {
   actions: {
     // This action makes every overview resource request from the previous session obsolete.
     invalidateSessionRequests() {
+      this.cancelScheduledSmartFolderCountsRefresh();
       this.overviewStructureRequestId++;
       this.overviewCountsRequestId++;
       this.smartFoldersRequestId++;
@@ -188,6 +200,7 @@ export const useOverviewStore = defineStore('overview', {
 
     // This action clears user overview data and resource state while retaining invalidation generations.
     resetSessionState() {
+      this.cancelScheduledSmartFolderCountsRefresh();
       const requestIds = {
         overviewStructureRequestId: this.overviewStructureRequestId,
         overviewCountsRequestId: this.overviewCountsRequestId,
@@ -432,6 +445,7 @@ export const useOverviewStore = defineStore('overview', {
 
     // This action refreshes Smart Folder counts without hiding cached folders.
     async fetchSmartFolderCounts() {
+      this.cancelScheduledSmartFolderCountsRefresh();
       const requestId = ++this.smartFolderCountsRequestId;
       this.smartFolderCountsStatus = 'loading';
       this.smartFolderCountsError = null;
@@ -456,6 +470,24 @@ export const useOverviewStore = defineStore('overview', {
         }
         return false;
       }
+    },
+
+    // This action cancels the trailing Smart Folder count refresh owned by this session.
+    cancelScheduledSmartFolderCountsRefresh() {
+      const runtime = getSmartFolderCountRefreshRuntime(this);
+      clearTimeout(runtime.timer);
+      runtime.timer = null;
+    },
+
+    // This action invalidates stale count requests and coalesces automatic read updates.
+    scheduleSmartFolderCountsRefresh() {
+      const runtime = getSmartFolderCountRefreshRuntime(this);
+      ++this.smartFolderCountsRequestId;
+      clearTimeout(runtime.timer);
+      runtime.timer = setTimeout(() => {
+        runtime.timer = null;
+        void this.fetchSmartFolderCounts();
+      }, SMART_FOLDER_COUNT_REFRESH_DELAY_MS);
     },
 
     // This action fetches top tags for the active selection grouping.
@@ -713,6 +745,21 @@ export const useOverviewStore = defineStore('overview', {
         this.unreadCount--;
         this.readCount++;
       }
+    },
+
+    // This action immediately reconciles the selected folder before refreshing all folder counts.
+    decreaseActiveSmartFolderCount() {
+      const smartFolderId = useSelectionStore().currentSelection.smartFolderId;
+      if (smartFolderId === null) return false;
+
+      const smartFolder = this.smartFolders.find(folder =>
+        idsMatch(folder.id, smartFolderId)
+      );
+      if (!smartFolder) return false;
+
+      smartFolder.ArticleCount = normalizeCount(smartFolder.ArticleCount - 1);
+      this.scheduleSmartFolderCountsRefresh();
+      return true;
     },
 
     // This action removes one displayed unread-only Briefing group from cached counters.

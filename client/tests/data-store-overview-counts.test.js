@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useOverviewStore } from '../src/store/overview.js';
 import { useSelectionStore } from '../src/store/selection.js';
@@ -10,6 +10,7 @@ import {
   fetchOverviewCounts,
   fetchOverviewLite
 } from '../src/api/manager';
+import { fetchSmartFolderCounts } from '../src/api/smartfolders';
 import { fetchTopTags } from '../src/api/tags';
 
 vi.mock('../src/api/settings', () => ({
@@ -92,6 +93,10 @@ beforeEach(() => {
   });
   fetchOverviewCounts.mockResolvedValue({ data: createOverview() });
   fetchTopTags.mockResolvedValue({ data: { tags: [] } });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('data store overview and count behavior', () => {
@@ -526,6 +531,89 @@ describe('data store overview and count behavior', () => {
     store.increaseReadCount(article);
     store.decreaseReadCount(article);
     expect(store).toMatchObject({ unreadCount: 0, readCount: 0 });
+  });
+
+  // Verifies Smart Folder counts respond immediately and stale responses cannot undo the change.
+  it('decrements the active Smart Folder and debounces an authoritative count refresh', async () => {
+    vi.useFakeTimers();
+    const staleCounts = deferred();
+    fetchSmartFolderCounts
+      .mockReturnValueOnce(staleCounts.promise)
+      .mockResolvedValueOnce({
+        data: { smartFolders: [{ id: 7, ArticleCount: 2 }] }
+      });
+    const store = createStore();
+    const selectionStore = useSelectionStore();
+    store.smartFolders = [{ id: 7, ArticleCount: 5 }];
+    selectionStore.setSmartFolder({
+      id: '7',
+      query: 'unread:true',
+      markAsReadOnScroll: true
+    });
+
+    const staleRequest = store.fetchSmartFolderCounts();
+    expect(store.decreaseActiveSmartFolderCount()).toBe(true);
+    expect(store.smartFolders[0].ArticleCount).toBe(4);
+
+    staleCounts.resolve({
+      data: { smartFolders: [{ id: 7, ArticleCount: 9 }] }
+    });
+    expect(await staleRequest).toBe(false);
+    expect(store.smartFolders[0].ArticleCount).toBe(4);
+
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(fetchSmartFolderCounts).toHaveBeenCalledTimes(2);
+    expect(store.smartFolders[0].ArticleCount).toBe(2);
+  });
+
+  it('clamps active Smart Folder counts and ignores non-folder selections', () => {
+    vi.useFakeTimers();
+    const store = createStore();
+    const selectionStore = useSelectionStore();
+    store.smartFolders = [{ id: 7, ArticleCount: 0 }];
+
+    expect(store.decreaseActiveSmartFolderCount()).toBe(false);
+    selectionStore.setSmartFolder({ id: 7, query: 'unread:true' });
+    expect(store.decreaseActiveSmartFolderCount()).toBe(true);
+    expect(store.smartFolders[0].ArticleCount).toBe(0);
+  });
+
+  it('coalesces repeated Smart Folder decrements into one trailing refresh', async () => {
+    vi.useFakeTimers();
+    fetchSmartFolderCounts.mockResolvedValue({
+      data: { smartFolders: [{ id: 7, ArticleCount: 1 }] }
+    });
+    const store = createStore();
+    const selectionStore = useSelectionStore();
+    store.smartFolders = [{ id: 7, ArticleCount: 3 }];
+    selectionStore.setSmartFolder({ id: 7, query: 'unread:true' });
+
+    store.decreaseActiveSmartFolderCount();
+    await vi.advanceTimersByTimeAsync(300);
+    store.decreaseActiveSmartFolderCount();
+
+    expect(store.smartFolders[0].ArticleCount).toBe(1);
+    await vi.advanceTimersByTimeAsync(499);
+    expect(fetchSmartFolderCounts).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchSmartFolderCounts).toHaveBeenCalledOnce();
+  });
+
+  it('cancels a scheduled Smart Folder count refresh during session reset', async () => {
+    vi.useFakeTimers();
+    const store = createStore();
+    const selectionStore = useSelectionStore();
+    store.smartFolders = [{ id: 7, ArticleCount: 3 }];
+    selectionStore.setSmartFolder({ id: 7, query: 'unread:true' });
+
+    store.decreaseActiveSmartFolderCount();
+    store.resetSessionState();
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(fetchSmartFolderCounts).not.toHaveBeenCalled();
+    expect(store.smartFolders).toEqual([]);
   });
 
   // Verifies scroll-reading reconciles the displayed unread-only Briefing group once.

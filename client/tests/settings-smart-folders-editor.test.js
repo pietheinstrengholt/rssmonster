@@ -36,7 +36,8 @@ const createContext = (overrides = {}) => {
         id: 1,
         name: 'Unread',
         query: 'unread:true limit:25',
-        limitCount: 25
+        limitCount: 25,
+        markAsReadOnScroll: true
       }]
     },
     selection: { currentSelection: { AIEnabled: true } }
@@ -80,7 +81,8 @@ describe('SettingsSmartFolders coordinator', () => {
       id: 1,
       name: 'Unread',
       query: 'unread:true limit:25',
-      limitCount: 25
+      limitCount: 25,
+      markAsReadOnScroll: true
     }]);
     context.smartFolders[0].name = 'Local edit';
     expect(context.overviewStore.smartFolders[0].name).toBe('Unread');
@@ -105,6 +107,7 @@ describe('SettingsSmartFolders coordinator', () => {
       query: 'tag:security limit:50'
     });
     expect(context.smartFolders).toHaveLength(2);
+    expect(context.smartFolders.at(-1).markAsReadOnScroll).toBe(false);
   });
 
   it('coordinates add, edit, copy, cancel, and remove operations', async () => {
@@ -116,14 +119,16 @@ describe('SettingsSmartFolders coordinator', () => {
     expect(context.smartFolders.at(-1)).toMatchObject({
       localId: 'local-1234',
       name: 'New Smart Folder',
-      query: 'sort:recommended limit:50'
+      query: 'sort:recommended limit:50',
+      markAsReadOnScroll: false
     });
     expect(context.selectedSmartFolderId).toBe('local-1234');
 
     context.saveSmartFolderConfig(1, {
       name: 'Edited',
       query: 'favorite:true limit:100',
-      limitCount: 100
+      limitCount: 100,
+      markAsReadOnScroll: false
     });
     expect(context.smartFolders[1]).toMatchObject({
       name: 'Edited',
@@ -135,9 +140,11 @@ describe('SettingsSmartFolders coordinator', () => {
     context.saveSmartFolderAsCopy({
       name: 'Copied',
       query: 'hot:true limit:50',
-      limitCount: 50
+      limitCount: 50,
+      markAsReadOnScroll: true
     });
     expect(context.smartFolders.at(-1).name).toBe('Copied copy');
+    expect(context.smartFolders.at(-1).markAsReadOnScroll).toBe(true);
 
     context.selectedSmartFolderId = context.smartFolders[0].localId;
     context.removeSmartFolder(0);
@@ -153,7 +160,8 @@ describe('SettingsSmartFolders coordinator', () => {
       getFolderUpdate: vi.fn(() => ({
         name: 'Updated unread',
         query: 'unread:true limit:100',
-        limitCount: 100
+        limitCount: 100,
+        markAsReadOnScroll: true
       }))
     };
     context.smartFolders.push({
@@ -171,7 +179,8 @@ describe('SettingsSmartFolders coordinator', () => {
     expect(saveSmartFolders.mock.calls[0][0][0]).toMatchObject({
       name: 'Updated unread',
       query: 'unread:true limit:100',
-      limitCount: 100
+      limitCount: 100,
+      markAsReadOnScroll: true
     });
     expect(context.overviewStore.fetchSmartFolders).toHaveBeenCalledOnce();
     expect(context.$emit).toHaveBeenCalledWith('saved');

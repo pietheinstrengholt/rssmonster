@@ -30,6 +30,7 @@ const createContext = (overrides = {}) => {
     overview: {
       increaseReadCount: vi.fn(),
       decreaseBriefingCount: vi.fn(),
+      decreaseActiveSmartFolderCount: vi.fn(),
       decreaseReadCount: vi.fn(),
       fetchOverviewSplit: vi.fn().mockResolvedValue()
     },
@@ -126,6 +127,91 @@ describe('article feed read-state reconciliation', () => {
     });
     expect(context.articles.map(article => article.status)).toEqual(['read', 'read', 'read']);
     expect(context.overviewStore.increaseReadCount).toHaveBeenCalledTimes(2);
+    expect(context.overviewStore.decreaseActiveSmartFolderCount).toHaveBeenCalledOnce();
+  });
+
+  // Verifies the persistence boundary cannot mark unread Smart Folder articles when disabled.
+  it('records disabled Smart Folder articles as seen without marking them read', async () => {
+    const context = createContext();
+    context.selectionStore.setSmartFolder({
+      id: 7,
+      query: 'unread:true',
+      markAsReadOnScroll: false
+    });
+    markArticleSeen.mockResolvedValue({
+      data: {
+        ...context.articles[0],
+        firstSeen: '2026-08-08T10:00:00Z'
+      }
+    });
+
+    const persisted = await context.markArticleSeen(1, 3);
+
+    expect(persisted).toBe(true);
+    expect(markArticleSeen).toHaveBeenCalledWith(1, {
+      grouping: 'event',
+      visibleSeconds: 3,
+      selectedStatus: 'read'
+    });
+    expect(context.articles[0].status).toBe('unread');
+    expect(context.overviewStore.increaseReadCount).not.toHaveBeenCalled();
+    expect(context.overviewStore.decreaseActiveSmartFolderCount).not.toHaveBeenCalled();
+  });
+
+  // Verifies an enabled Smart Folder uses the automatic unread transition and count path.
+  it('marks enabled Smart Folder articles read and reconciles its count', async () => {
+    const context = createContext();
+    context.selectionStore.setSmartFolder({
+      id: 7,
+      query: 'unread:true',
+      markAsReadOnScroll: true
+    });
+    markArticleSeen.mockResolvedValue({
+      data: {
+        ...context.articles[0],
+        status: 'read',
+        readArticles: [context.articles[0]]
+      }
+    });
+
+    await context.markArticleSeen(1, 3);
+
+    expect(markArticleSeen).toHaveBeenCalledWith(1, {
+      grouping: 'event',
+      visibleSeconds: 3,
+      selectedStatus: 'unread'
+    });
+    expect(context.articles[0].status).toBe('read');
+    expect(context.overviewStore.increaseReadCount).toHaveBeenCalledOnce();
+    expect(context.overviewStore.decreaseActiveSmartFolderCount).toHaveBeenCalledOnce();
+  });
+
+  // Verifies an explicit read command bypasses only the automatic-scrolling preference.
+  it('keeps explicit mark-as-read available in a disabled Smart Folder', async () => {
+    const context = createContext();
+    context.selectionStore.setSmartFolder({
+      id: 7,
+      query: 'unread:true',
+      markAsReadOnScroll: false
+    });
+    markArticleSeen.mockResolvedValue({
+      data: {
+        ...context.articles[0],
+        status: 'read',
+        readArticles: [context.articles[0]]
+      }
+    });
+
+    await context.toggleArticleReadStatus({ id: 1, status: 'unread' });
+
+    expect(markArticleSeen).toHaveBeenCalledWith(1, {
+      grouping: 'event',
+      visibleSeconds: 0,
+      selectedStatus: 'unread'
+    });
+    expect(context.articles[0].status).toBe('read');
+    expect(context.overviewStore.increaseReadCount).toHaveBeenCalledOnce();
+    expect(context.overviewStore.decreaseActiveSmartFolderCount).toHaveBeenCalledOnce();
   });
 
   // Verifies Briefing scrolling translates its enabled preference into an unread transition.
