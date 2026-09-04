@@ -3,7 +3,11 @@ import db from '../../models/index.js';
 
 const mocked = vi.hoisted(() => ({
   acquireFeed: vi.fn(),
+  createHotlinkBatcher: vi.fn(),
+  hotlinkBatchFlush: vi.fn(),
+  hotArticleCutoffDate: vi.fn(),
   processArticle: vi.fn(),
+  runHotArticleReconciliation: vi.fn(),
   runPostCrawlSemanticPipeline: vi.fn()
 }));
 
@@ -11,8 +15,14 @@ vi.mock('../../services/feeds/feedAcquisition.js', () => ({
   acquireFeed: mocked.acquireFeed
 }));
 
+vi.mock('../../services/crawl/runtime/hotlinkBatcher.js', () => ({
+  default: mocked.createHotlinkBatcher
+}));
+
 vi.mock('../../services/crawl/index.js', () => ({
+  hotArticleCutoffDate: mocked.hotArticleCutoffDate,
   processArticle: mocked.processArticle,
+  runHotArticleReconciliation: mocked.runHotArticleReconciliation,
   runPostCrawlSemanticPipeline: mocked.runPostCrawlSemanticPipeline
 }));
 
@@ -61,7 +71,15 @@ describe('crawl run article statistics', () => {
         entries: [{ externalId: 'new' }, { externalId: 'updated' }]
       }
     }));
+    mocked.hotlinkBatchFlush.mockReset().mockResolvedValue(undefined);
+    mocked.createHotlinkBatcher.mockReset().mockReturnValue({
+      flush: mocked.hotlinkBatchFlush
+    });
     mocked.processArticle.mockReset();
+    mocked.hotArticleCutoffDate.mockReset().mockReturnValue(
+      new Date('2026-08-21T12:00:00.000Z')
+    );
+    mocked.runHotArticleReconciliation.mockReset().mockResolvedValue({});
     mocked.runPostCrawlSemanticPipeline.mockReset();
   });
 
@@ -72,6 +90,16 @@ describe('crawl run article statistics', () => {
       .mockResolvedValueOnce({ newArticles: 0, updatedArticles: 1, errors: 0 });
 
     await crawlController.performCrawl(user.id);
+
+    expect(mocked.runHotArticleReconciliation).toHaveBeenCalledWith({
+      processedUserIds: [user.id],
+      cutoffDate: new Date('2026-08-21T12:00:00.000Z'),
+      crawlRunId: expect.any(Number),
+      executionId: expect.any(String),
+      source: 'crawl'
+    });
+    expect(mocked.hotlinkBatchFlush.mock.invocationCallOrder[0])
+      .toBeLessThan(mocked.runHotArticleReconciliation.mock.invocationCallOrder[0]);
 
     const crawlRun = await CrawlRun.findOne({ where: { userId: user.id } });
     const feedResult = await FeedCrawlResult.findOne({ where: { crawlRunId: crawlRun.id } });

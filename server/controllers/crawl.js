@@ -49,7 +49,9 @@ import {
   isSuccessfulFetchOutcome
 } from '../services/feeds/http/contracts.js';
 import {
+  hotArticleCutoffDate,
   processArticle,
+  runHotArticleReconciliation,
   runPostCrawlSemanticPipeline
 } from '../services/crawl/index.js';
 import {
@@ -1400,6 +1402,14 @@ const runCrawl = async (userId = null, options = {}) => {
       }
     }
   }
+
+  await runHotArticleReconciliation({
+    processedUserIds: [...processedUserIds],
+    cutoffDate: hotArticleCutoffDate(),
+    crawlRunId: options.crawlRunId,
+    executionId: options.executionId,
+    source: 'crawl'
+  });
 
   // Persists observations only after all feed work settles to avoid competing with convergence locks.
   for (const observation of feedCrawlObservations) {

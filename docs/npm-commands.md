@@ -150,7 +150,7 @@ command merely because an incremental run created no assignments.
 | `npm run seed:island-taxonomy` | Sequelize seed options | Applies only the `20260520104500-island-taxonomy.js` seed. Use it to create the built-in Interest Island taxonomy. This changes database data. |
 | `npm run seed:undo:island-taxonomy` | Sequelize seed options | **Destructive.** Undoes only the built-in Interest Island taxonomy seed. Use it only when intentionally removing that seeded taxonomy. |
 | `npm run seed:official-sources` | `--userId=<integer-id>` or `--userId <integer-id>` | Creates or updates built-in official-source rules for every user by default, or one user when specified. Use it after installing the official-source schema, adding a user that needs the defaults, or changing the built-in rules. |
-| `npm run hotlinks` | None | Clears and rebuilds recent article hotlink indicators and counts. Use it to repair hotlink state after logic changes or inconsistent derived data. |
+| `npm run hotlinks` | None | Reconciles recent article hotlink indicators and counts from retained observations and clears aged-out state. Use it to repair hotlink state after logic changes or inconsistent derived data. |
 | `npm run repair-duplicates` | None | Recalculates every canonical article's `duplicateCount` from stored duplicate relationships. Use it to repair inconsistent counts; it does not perform duplicate detection itself. |
 
 ### Semantic Regression Fixtures

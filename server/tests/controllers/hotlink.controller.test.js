@@ -7,7 +7,17 @@ const mocked = vi.hoisted(() => ({
   destroy: vi.fn(),
   findAll: vi.fn(),
   findOne: vi.fn(),
+  hotArticleCutoffDate: vi.fn(),
+  runHotArticleReconciliation: vi.fn(),
   transaction: vi.fn()
+}));
+
+vi.mock('../../services/crawl/hot/reconcileHotArticles.js', () => ({
+  hotArticleCutoffDate: mocked.hotArticleCutoffDate
+}));
+
+vi.mock('../../services/crawl/hot/runHotArticleReconciliation.js', () => ({
+  default: mocked.runHotArticleReconciliation
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -41,6 +51,10 @@ describe('hotlink controller', () => {
     mocked.destroy.mockReset().mockResolvedValue(undefined);
     mocked.findAll.mockReset().mockResolvedValue([]);
     mocked.findOne.mockReset().mockResolvedValue(null);
+    mocked.hotArticleCutoffDate.mockReset().mockReturnValue(
+      new Date('2026-08-21T12:00:00.000Z')
+    );
+    mocked.runHotArticleReconciliation.mockReset().mockResolvedValue({});
     mocked.transaction.mockReset().mockImplementation(callback =>
       callback('transaction')
     );
@@ -51,14 +65,50 @@ describe('hotlink controller', () => {
   });
 
   it('removes hotlinks older than the retention window', async () => {
-    const beforeCleanup = Date.now() - 14 * 24 * 60 * 60 * 1000;
-
     await clearCache();
 
     const cleanupDate = mocked.destroy.mock.calls[0][0].where.createdAt[Op.lte];
-    expect(cleanupDate).toBeInstanceOf(Date);
-    expect(cleanupDate.getTime()).toBeGreaterThanOrEqual(beforeCleanup);
-    expect(cleanupDate.getTime()).toBeLessThanOrEqual(Date.now());
+    expect(cleanupDate).toEqual(new Date('2026-08-21T12:00:00.000Z'));
+  });
+
+  it('reconciles users whose expired observations were removed', async () => {
+    const cutoffDate = new Date('2026-08-21T12:00:00.000Z');
+    mocked.findAll.mockResolvedValueOnce([
+      { userId: 20 },
+      { userId: 30 }
+    ]);
+
+    await clearCache();
+
+    expect(mocked.findAll).toHaveBeenCalledWith({
+      attributes: ['userId'],
+      where: {
+        createdAt: { [Op.lte]: cutoffDate }
+      },
+      group: ['userId'],
+      transaction: 'transaction',
+      raw: true
+    });
+    expect(mocked.destroy.mock.invocationCallOrder[0])
+      .toBeLessThan(mocked.runHotArticleReconciliation.mock.invocationCallOrder[0]);
+    expect(mocked.runHotArticleReconciliation).toHaveBeenCalledWith({
+      processedUserIds: [20, 30],
+      cutoffDate,
+      transaction: 'transaction',
+      continueOnError: false,
+      source: 'observation_cleanup'
+    });
+  });
+
+  it('propagates reconciliation failures through the cleanup transaction', async () => {
+    const error = new Error('hot reconciliation failed');
+    mocked.findAll.mockResolvedValueOnce([{ userId: 20 }]);
+    mocked.runHotArticleReconciliation.mockRejectedValueOnce(error);
+
+    await expect(clearCache()).rejects.toBe(error);
+
+    expect(mocked.destroy).toHaveBeenCalledTimes(1);
+    expect(mocked.transaction).toHaveBeenCalledTimes(1);
   });
 
   it('skips cleanup when a legacy database lacks the createdAt column', async () => {
@@ -152,7 +202,7 @@ describe('hotlink controller', () => {
     expect(mocked.destroy).not.toHaveBeenCalled();
   });
 
-  it('atomically replaces one source article hotlink set', async () => {
+  it('counts repeated links from the same source article only once', async () => {
     await setMany(
       ['https://example.com/one', 'https://example.com/one'],
       10,

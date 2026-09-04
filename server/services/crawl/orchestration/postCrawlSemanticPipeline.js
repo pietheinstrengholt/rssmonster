@@ -6,6 +6,8 @@ import { randomUUID } from 'node:crypto';
 import { recordProcessingFailure } from '../../observability/processingFailures.js';
 import { formatDuration } from '../../feeds/crawlResult.js';
 import { tryReconcileSemanticLabelJobsForUser } from '../../semanticLabels/semanticLabelJobs.js';
+import { hotArticleCutoffDate } from '../hot/reconcileHotArticles.js';
+import runHotArticleReconciliation from '../hot/runHotArticleReconciliation.js';
 
 // This function returns the users whose articles should be processed after a crawl.
 function getPostCrawlUserIds(result, userId = null) {
@@ -102,6 +104,18 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
         createdAtFrom: result?.crawlStartedAt || null
       })
     );
+
+    // Semantic duplicate marking changes source eligibility after the normal
+    // end-of-crawl reconciliation. Reconcile again only when that state changed.
+    if (Number(duplicateResult.duplicateCount || 0) > 0) {
+      await runHotArticleReconciliation({
+        processedUserIds: [userId],
+        cutoffDate: hotArticleCutoffDate(),
+        crawlRunId,
+        executionId,
+        source: 'semantic_duplicates'
+      });
+    }
 
     // Derives the event result through run incremental events for user while performing run post crawl semantic pipeline.
     const eventResult = await runSemanticStage(

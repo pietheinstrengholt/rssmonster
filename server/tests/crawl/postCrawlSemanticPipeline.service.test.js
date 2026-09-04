@@ -7,7 +7,8 @@ const mocked = vi.hoisted(() => ({
   scoreArticlesFromIslandsForUser: vi.fn(),
   runIslandCalibrationForUser: vi.fn(),
   recordProcessingFailure: vi.fn(),
-  tryReconcileSemanticLabelJobsForUser: vi.fn()
+  tryReconcileSemanticLabelJobsForUser: vi.fn(),
+  runHotArticleReconciliation: vi.fn()
 }));
 
 vi.mock('../../services/articles/embedArticles.js', () => ({
@@ -38,6 +39,14 @@ vi.mock('../../services/semanticLabels/semanticLabelJobs.js', () => ({
   tryReconcileSemanticLabelJobsForUser: mocked.tryReconcileSemanticLabelJobsForUser
 }));
 
+vi.mock('../../services/crawl/hot/reconcileHotArticles.js', () => ({
+  hotArticleCutoffDate: () => new Date('2026-08-21T12:00:00.000Z')
+}));
+
+vi.mock('../../services/crawl/hot/runHotArticleReconciliation.js', () => ({
+  default: mocked.runHotArticleReconciliation
+}));
+
 describe('runPostCrawlSemanticPipeline', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -51,6 +60,30 @@ describe('runPostCrawlSemanticPipeline', () => {
     mocked.runIslandCalibrationForUser.mockReset();
     mocked.recordProcessingFailure.mockReset().mockResolvedValue(undefined);
     mocked.tryReconcileSemanticLabelJobsForUser.mockReset().mockResolvedValue({});
+    mocked.runHotArticleReconciliation.mockReset().mockResolvedValue({});
+  });
+
+  it('reconciles hotness after semantic duplicate eligibility changes', async () => {
+    mocked.embedArticles.mockResolvedValue({});
+    mocked.markDuplicateArticlesForUser.mockResolvedValue({ duplicateCount: 2 });
+    mocked.runIncrementalEventsForUser.mockResolvedValue({});
+    mocked.scoreArticlesFromIslandsForUser.mockResolvedValue({});
+
+    const { runPostCrawlSemanticPipeline } = await import('../../services/crawl/orchestration/postCrawlSemanticPipeline.js');
+    await runPostCrawlSemanticPipeline({
+      processedUserIds: [42],
+      crawlRunId: 91
+    }, {
+      executionId: 'a0d0cabe-6e98-46e4-9665-d14ca7e44496'
+    });
+
+    expect(mocked.runHotArticleReconciliation).toHaveBeenCalledWith({
+      processedUserIds: [42],
+      cutoffDate: new Date('2026-08-21T12:00:00.000Z'),
+      crawlRunId: 91,
+      executionId: 'a0d0cabe-6e98-46e4-9665-d14ca7e44496',
+      source: 'semantic_duplicates'
+    });
   });
 
   it('passes the crawl start time as the incremental clustering boundary', async () => {

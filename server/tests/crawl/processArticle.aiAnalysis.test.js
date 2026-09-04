@@ -1070,7 +1070,7 @@ describe('processArticle AI analysis controls', () => {
       tagUpdates: null,
       userId: 42
     }));
-    expect(hotlinkBatcher.add).not.toHaveBeenCalled();
+    expect(hotlinkBatcher.add).toHaveBeenCalledWith([], result.article.id);
     expect(mocked.hotlinkSetMany).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       updatedArticles: 1,

@@ -94,6 +94,12 @@ const processArticleRevision = async ({
     });
     refreshDuplicateCache(duplicateCache, previousArticleState, article);
 
+    // Replacing the observation set with an empty set removes links retained
+    // from the previously accepted revision.
+    const hotlinkArguments = [[], feed, article.id, hotlinkBatcher];
+    if (hasExecution) hotlinkArguments.push(execution);
+    await persistAcceptedHotlinks(...hotlinkArguments);
+
     return {
       article,
       newArticles: 0,

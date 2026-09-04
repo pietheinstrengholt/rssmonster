@@ -11,7 +11,9 @@ import { Op } from 'sequelize';
 
 const mocked = vi.hoisted(() => ({
   acquireFeed: vi.fn(),
+  hotArticleCutoffDate: vi.fn(() => new Date('2026-08-21T12:00:00.000Z')),
   processArticle: vi.fn(),
+  runHotArticleReconciliation: vi.fn(),
   runPostCrawlSemanticPipeline: vi.fn()
 }));
 
@@ -20,7 +22,9 @@ vi.mock('../../services/feeds/feedAcquisition.js', () => ({
 }));
 
 vi.mock('../../services/crawl/index.js', () => ({
+  hotArticleCutoffDate: mocked.hotArticleCutoffDate,
   processArticle: mocked.processArticle,
+  runHotArticleReconciliation: mocked.runHotArticleReconciliation,
   runPostCrawlSemanticPipeline: mocked.runPostCrawlSemanticPipeline
 }));
 
@@ -89,6 +93,7 @@ describe('crawl feed-lease lifecycle integration', () => {
     mocked.acquireFeed.mockReset().mockImplementation(async ({ feed }) =>
       successfulOutcome(feed));
     mocked.processArticle.mockReset();
+    mocked.runHotArticleReconciliation.mockReset().mockResolvedValue({});
     mocked.runPostCrawlSemanticPipeline.mockReset().mockResolvedValue(undefined);
   });
 
@@ -264,6 +269,8 @@ describe('crawl feed-lease lifecycle integration', () => {
     expect(result).toMatchObject({ total: 2, processed: 2, errors: 0 });
     expect(activeFeedIds.size).toBe(2);
     expect(feeds.every(feed => feed.leaseOwner === null)).toBe(true);
+    expect(Math.max(...mocked.processArticle.mock.invocationCallOrder))
+      .toBeLessThan(mocked.runHotArticleReconciliation.mock.invocationCallOrder[0]);
   });
 
   it('bounds parallel feed processing without reducing the claimed batch', async () => {

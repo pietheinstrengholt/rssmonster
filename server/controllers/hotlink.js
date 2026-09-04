@@ -4,17 +4,41 @@ import {
   assertExecutionLeaseOwnership,
   throwIfExecutionExpired
 } from '../services/feeds/executionDeadline.js';
+import {
+  hotArticleCutoffDate
+} from '../services/crawl/hot/reconcileHotArticles.js';
+import runHotArticleReconciliation from
+  '../services/crawl/hot/runHotArticleReconciliation.js';
 const { Hotlink, sequelize } = db;
 
 export const clearCache = async () => {
   try {
     // cleanup old records more than 14 days old
-    await Hotlink.destroy({
-      where: {
-        createdAt: {
-          [Op.lte]: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
-        }
-      }
+    const cutoffDate = hotArticleCutoffDate();
+    await sequelize.transaction(async transaction => {
+      const expiredUserRows = await Hotlink.findAll({
+        attributes: ['userId'],
+        where: {
+          createdAt: { [Op.lte]: cutoffDate }
+        },
+        group: ['userId'],
+        transaction,
+        raw: true
+      });
+      await Hotlink.destroy({
+        where: {
+          createdAt: { [Op.lte]: cutoffDate }
+        },
+        transaction
+      });
+
+      await runHotArticleReconciliation({
+        processedUserIds: expiredUserRows.map(row => row.userId),
+        cutoffDate,
+        transaction,
+        continueOnError: false,
+        source: 'observation_cleanup'
+      });
     });
   } catch (err) {
     // Some legacy databases may miss hotlinks.createdAt; skip cleanup instead of crashing.

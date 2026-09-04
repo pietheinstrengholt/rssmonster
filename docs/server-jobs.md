@@ -93,7 +93,7 @@ intentional.
 | `npm run seed:island-taxonomy` | Apply the named Sequelize seed that creates the Interest Island taxonomy. This changes database data. |
 | `npm run seed:undo:island-taxonomy` | Undo that specific taxonomy seed. This removes seeded taxonomy data and is destructive. |
 | `npm run seed:official-sources` | Create or update the built-in official-source rules. Pass `--userId=<id>` to scope it to one user. |
-| `npm run hotlinks` | Rebuild recent article hotlink indicators and counts. It clears the existing indicators before recalculating them. |
+| `npm run hotlinks` | Reconcile recent article hotlink indicators and counts from retained observations, using the same rules as post-crawl reconciliation. |
 | `npm run repair-duplicates` | Recalculate `Article.duplicateCount` values from stored duplicate relationships. |
 
 ## Regression Fixture Commands
