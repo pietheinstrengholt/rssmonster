@@ -107,7 +107,7 @@
                                 aria-label="Remove smart folder"
                                 @click.stop="removeSmartFolder(index)"
                             >
-                                <BootstrapIcon icon="three-dots-vertical" />
+                                <BootstrapIcon icon="trash3-fill" />
                             </button>
                         </div>
 
