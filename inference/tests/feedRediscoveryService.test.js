@@ -2,20 +2,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   createCompletion: vi.fn(),
-  qwenGenerate: vi.fn()
+  qwenGenerate: vi.fn(),
+  OpenAIMock: vi.fn()
 }));
 
 vi.mock('openai', () => ({
-  default: class OpenAI {
+  default: mocked.OpenAIMock.mockImplementation(function OpenAI() {
     // This constructor exposes the mocked chat completion API to the service.
-    constructor() {
-      this.chat = {
-        completions: {
-          create: mocked.createCompletion
-        }
-      };
-    }
-  }
+    this.chat = {
+      completions: {
+        create: mocked.createCompletion
+      }
+    };
+  })
 }));
 
 vi.mock('../src/generation/providers/qwenGenerationProvider.js', () => ({
@@ -30,6 +29,7 @@ describe('rediscoverRssUrl', () => {
     vi.resetModules();
     mocked.createCompletion.mockReset();
     mocked.qwenGenerate.mockReset();
+    mocked.OpenAIMock.mockClear();
     delete process.env.OPENAI_API_KEY;
   });
 
@@ -101,6 +101,37 @@ describe('rediscoverRssUrl', () => {
         ])
       })
     );
+  });
+
+  it('passes the configured base URL to the OpenAI client', async () => {
+    process.env.OPENAI_API_KEY = 'test-key';
+    vi.stubEnv('OPENAI_BASE_URL', 'https://litellm.example/v1');
+    await import('../src/feedRediscovery/feedRediscoveryService.js');
+
+    expect(mocked.OpenAIMock).toHaveBeenCalledWith({
+      apiKey: 'test-key',
+      baseURL: 'https://litellm.example/v1'
+    });
+  });
+
+  it('omits temperature when configured for a compatible gateway', async () => {
+    process.env.OPENAI_API_KEY = 'test-key';
+    vi.stubEnv('OPENAI_OMIT_TEMPERATURE', 'true');
+    mocked.createCompletion.mockResolvedValue({
+      choices: [{ message: { content: '{"url":null,"confidence":0,"reason":"No replacement."}' } }]
+    });
+    const { rediscoverRssUrl } = await import(
+      '../src/feedRediscovery/feedRediscoveryService.js'
+    );
+
+    await rediscoverRssUrl({
+      feedName: 'Publisher',
+      websiteUrl: 'https://example.com',
+      oldRssUrl: 'https://example.com/old.xml'
+    });
+
+    expect(mocked.createCompletion).toHaveBeenCalledOnce();
+    expect(mocked.createCompletion.mock.calls[0][0]).not.toHaveProperty('temperature');
   });
 
   it('keeps feed rediscovery debug logs free of supplied URLs', async () => {

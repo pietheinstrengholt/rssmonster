@@ -42,6 +42,25 @@ describe('assistant model service', () => {
     const service = createAssistantModelService({ environment: { OPENAI_API_KEY: 'default-key' } });
 
     await expect(service.respond({ request: {} })).resolves.toEqual({ output: ['default'] });
-    expect(OpenAIProviderMock).toHaveBeenCalledWith({ apiKey: 'default-key' });
+    expect(OpenAIProviderMock).toHaveBeenCalledWith({
+      apiKey: 'default-key',
+      useResponses: false
+    });
+  });
+
+  it('passes the configured base URL to the Chat Completions provider', async () => {
+    const service = createAssistantModelService({
+      environment: {
+        OPENAI_API_KEY: 'default-key',
+        OPENAI_BASE_URL: 'https://litellm.example/v1'
+      }
+    });
+
+    await expect(service.respond({ request: {} })).resolves.toEqual({ output: ['default'] });
+    expect(OpenAIProviderMock).toHaveBeenCalledWith({
+      apiKey: 'default-key',
+      baseURL: 'https://litellm.example/v1',
+      useResponses: false
+    });
   });
 });

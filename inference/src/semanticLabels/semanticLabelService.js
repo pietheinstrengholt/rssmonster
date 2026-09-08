@@ -1,5 +1,9 @@
 import OpenAI from 'openai';
-import { getGenerationConfig } from '../config/config.js';
+import {
+  getGenerationConfig,
+  getOpenAIClientOptions,
+  getOpenAIOmitTemperature
+} from '../config/config.js';
 import qwenGenerationProvider from '../generation/providers/qwenGenerationProvider.js';
 import { logInferenceDebug } from '../debug.js';
 import { getInferenceRequestId } from '../middleware/requestLifecycle.js';
@@ -16,7 +20,10 @@ const TYPE_RULES = Object.freeze({
 
 const generationConfig = getGenerationConfig();
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
-const client = hasApiKey ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+const omitTemperature = getOpenAIOmitTemperature();
+const client = hasApiKey
+  ? new OpenAI(getOpenAIClientOptions(process.env.OPENAI_API_KEY))
+  : null;
 
 export class SemanticLabelInputError extends Error {
   constructor(message) {
@@ -116,7 +123,7 @@ const requestGeneration = async (prompt, context = {}) => {
       },
       { role: 'user', content: prompt }
     ],
-    temperature: 0,
+    ...(omitTemperature ? {} : { temperature: 0 }),
     max_tokens: MAX_GENERATION_TOKENS
   });
   return response.choices?.[0]?.message?.content || '';

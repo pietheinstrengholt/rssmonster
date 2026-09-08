@@ -54,4 +54,19 @@ describe('OpenAI embedding provider', () => {
     await expect(provider.embed(['text'])).resolves.toEqual([[1]]);
     expect(OpenAIMock).toHaveBeenCalledWith({ apiKey: 'default-key' });
   });
+
+  it('passes the configured base URL to the OpenAI client', async () => {
+    const provider = createOpenAIEmbeddingProvider({
+      environment: {
+        OPENAI_API_KEY: 'default-key',
+        OPENAI_BASE_URL: 'https://litellm.example/v1'
+      }
+    });
+
+    await expect(provider.embed(['text'])).resolves.toEqual([[1]]);
+    expect(OpenAIMock).toHaveBeenCalledWith({
+      apiKey: 'default-key',
+      baseURL: 'https://litellm.example/v1'
+    });
+  });
 });

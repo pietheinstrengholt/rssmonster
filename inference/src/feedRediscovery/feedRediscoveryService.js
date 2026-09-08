@@ -1,16 +1,21 @@
 // Uses OpenAI to suggest a replacement RSS or Atom URL when an existing feed stops working.
 // The response is expected to be strict JSON with a URL, confidence score, and user-facing reason.
 import OpenAI from 'openai';
-import { getGenerationConfig } from '../config/config.js';
+import {
+  getGenerationConfig,
+  getOpenAIClientOptions,
+  getOpenAIOmitTemperature
+} from '../config/config.js';
 import qwenGenerationProvider from '../generation/providers/qwenGenerationProvider.js';
 import { logInferenceDebug } from '../debug.js';
 import { getInferenceRequestId } from '../middleware/requestLifecycle.js';
 
 // Coerces the has api key into the representation required for this service.
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
+const omitTemperature = getOpenAIOmitTemperature();
 // Selects the client based on whether has api key is available.
 const client = hasApiKey
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  ? new OpenAI(getOpenAIClientOptions(process.env.OPENAI_API_KEY))
   : null;
 const generationConfig = getGenerationConfig();
 
@@ -86,7 +91,7 @@ export async function rediscoverRssUrl({
         { role: 'system', content: 'You produce strict JSON only.' },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.2,
+      ...(omitTemperature ? {} : { temperature: 0.2 }),
       max_tokens: 300
     })).choices?.[0]?.message?.content;
   try {

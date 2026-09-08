@@ -36,6 +36,14 @@ export const getConfig = (env = process.env) => ({
   port: parsePort(env.INFERENCE_PORT)
 });
 
+export const getOpenAIClientOptions = (apiKey, env = process.env) => ({
+  apiKey,
+  ...(env.OPENAI_BASE_URL ? { baseURL: env.OPENAI_BASE_URL } : {})
+});
+
+export const getOpenAIOmitTemperature = (env = process.env) =>
+  String(env.OPENAI_OMIT_TEMPERATURE || '').toLowerCase() === 'true';
+
 export const getEmbeddingConfig = (env = process.env) => {
   const provider = env.EMBEDDING_PROVIDER || DEFAULT_EMBEDDING_PROVIDER;
   const maxBatchSize = Number(env.EMBEDDING_MAX_BATCH_SIZE ?? DEFAULT_EMBEDDING_MAX_BATCH_SIZE);

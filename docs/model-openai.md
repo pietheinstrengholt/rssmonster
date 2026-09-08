@@ -33,6 +33,11 @@ GENERATION_PROVIDER=openai
 ARTICLE_SCORING_PROVIDER=openai
 ASSISTANT_PROVIDER=openai
 OPENAI_API_KEY=your-openai-api-key
+# Optional OpenAI-compatible gateway base URL, including the /v1 path.
+# OPENAI_BASE_URL=https://gateway.example/v1
+# Omit temperature from Chat Completions requests when required by the gateway/model.
+OPENAI_OMIT_TEMPERATURE=false
+ASSISTANT_REASONING_EFFORT=
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 OPENAI_EMBEDDING_DIMENSIONS=1536
 ASSISTANT_MODEL=gpt-4o-mini
@@ -41,6 +46,22 @@ OPENAI_MODEL_SMART_FOLDERS=gpt-4.1-mini
 OPENAI_MODEL_FEED_REDISCOVERY=gpt-4.1-mini
 EMBEDDING_MAX_BATCH_SIZE=8
 ```
+
+`OPENAI_BASE_URL` is optional. When it is set, every OpenAI client used by
+the inference service—including embeddings, article analysis, Smart Folder
+recommendations, feed rediscovery, semantic labels, and the assistant—uses
+that base URL. When it is absent, the existing OpenAI endpoint behavior is
+unchanged. The assistant uses the Chat Completions API for compatibility with
+OpenAI-compatible gateways that do not implement the Responses API.
+
+`OPENAI_OMIT_TEMPERATURE` defaults to `false`. Set it to `true` when the
+configured gateway or model rejects the `temperature` parameter. This removes
+that field from RSSMonster Chat Completions requests while preserving the
+existing temperature values by default.
+
+`ASSISTANT_REASONING_EFFORT` is optional. Set it to a value supported by the
+selected model (for example `low`, `medium`, or `high`) when the gateway rejects
+the SDK default or when a specific reasoning level is required.
 
 Do not commit either `.env` file. Local models are loaded per capability: for
 example, `EMBEDDING_PROVIDER=openai` does not load Qwen3 Embedding, while a

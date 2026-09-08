@@ -1,8 +1,8 @@
 import OpenAI from 'openai';
-import { getEmbeddingConfig } from '../../config/config.js';
+import { getEmbeddingConfig, getOpenAIClientOptions } from '../../config/config.js';
 
 const defaultDependencies = {
-  createClient: apiKey => new OpenAI({ apiKey }),
+  createClient: (apiKey, environment) => new OpenAI(getOpenAIClientOptions(apiKey, environment)),
   logger: console
 };
 
@@ -21,7 +21,7 @@ export const createOpenAIEmbeddingProvider = ({
   const initialize = async () => {
     if (client) return;
     if (!environment.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is required');
-    client = dependencies.createClient(environment.OPENAI_API_KEY);
+    client = dependencies.createClient(environment.OPENAI_API_KEY, environment);
     dependencies.logger.log(`[INFERENCE] Initialized OpenAI embedding provider ${config.modelId}`);
   };
 
