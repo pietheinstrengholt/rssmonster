@@ -89,6 +89,36 @@ describe('analyzeArticleContent response validation', () => {
     expect(scoringPrompt).not.toContain('contentSummaryBullets');
   });
 
+  it('passes the configured base URL to the OpenAI client', async () => {
+    vi.stubEnv('OPENAI_BASE_URL', 'https://litellm.example/v1');
+    await import('../src/classifications/articleClassificationService.js');
+
+    expect(OpenAIMock).toHaveBeenCalledWith({
+      apiKey: 'test-key',
+      baseURL: 'https://litellm.example/v1'
+    });
+  });
+
+  it('omits temperature from every OpenAI classification request when configured', async () => {
+    vi.stubEnv('OPENAI_OMIT_TEMPERATURE', 'true');
+    completionsCreate.mockResolvedValue({ choices: [{ message: { content: '{}' } }] });
+    const { default: analyzeArticleContent } = await import(
+      '../src/classifications/articleClassificationService.js'
+    );
+
+    await analyzeArticleContent({
+      text: 'Article content '.repeat(40),
+      title: 'No temperature test',
+      categories: [],
+      feedName: 'Test feed'
+    });
+
+    expect(completionsCreate).toHaveBeenCalledTimes(3);
+    for (const [request] of completionsCreate.mock.calls) {
+      expect(request).not.toHaveProperty('temperature');
+    }
+  });
+
   it('keeps article classification debug logs free of article titles', async () => {
     vi.stubEnv('INFERENCE_DEBUG', 'true');
     completionsCreate.mockResolvedValue({

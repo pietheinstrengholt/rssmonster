@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   agentConstructor: vi.fn(),
+  runnerOptions: null,
   run: vi.fn()
 }));
 
@@ -12,7 +13,14 @@ vi.mock('@openai/agents', () => ({
       Object.assign(this, options);
     }
   },
-  run: mocked.run,
+  Runner: class Runner {
+    constructor(options) {
+      mocked.runnerOptions = options;
+    }
+    run(...args) {
+      return mocked.run(...args);
+    }
+  },
   tool: options => options
 }));
 
@@ -54,8 +62,13 @@ const createStreamResult = (finalOutput, events = []) => ({
 
 describe('agent controller', () => {
   beforeEach(() => {
-    Object.values(mocked).forEach(mock => mock.mockReset());
+    mocked.agentConstructor.mockReset();
+    mocked.run.mockReset();
     vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    delete process.env.ASSISTANT_REASONING_EFFORT;
   });
 
   it('rejects requests without an authenticated user', async () => {
@@ -93,14 +106,17 @@ describe('agent controller', () => {
     );
     expect(mocked.agentConstructor.mock.calls[0][0]).not.toHaveProperty('mcpServers');
     expect(mocked.agentConstructor.mock.calls[0][0].tools).toHaveLength(19);
+    expect(mocked.agentConstructor.mock.calls[0][0]).not.toHaveProperty('modelSettings');
+    expect(mocked.runnerOptions).toEqual(expect.objectContaining({
+      modelProvider: expect.any(Object),
+      tracingDisabled: true
+    }));
     expect(mocked.run).toHaveBeenCalledWith(
       expect.any(Object),
       'Latest question',
       expect.objectContaining({
         chatHistory: messages.slice(0, 2),
-        stream: true,
-        modelProvider: expect.any(Object),
-        tracingDisabled: true
+        stream: true
       })
     );
     expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/event-stream; charset=utf-8');
@@ -108,6 +124,17 @@ describe('agent controller', () => {
     expect(res.write).toHaveBeenCalledWith(expect.stringContaining('event: text'));
     expect(res.write).toHaveBeenCalledWith(expect.stringContaining('event: complete'));
     expect(res.end).toHaveBeenCalledOnce();
+  });
+
+  it('passes an explicitly configured reasoning effort to the assistant model', async () => {
+    process.env.ASSISTANT_REASONING_EFFORT = 'high';
+    mocked.run.mockResolvedValue(createStreamResult('<p>OK</p>'));
+
+    await postAgent(createRequest(), createResponse());
+
+    expect(mocked.agentConstructor.mock.calls[0][0].modelSettings).toEqual({
+      reasoning: { effort: 'high' }
+    });
   });
 
   it('excludes the active turn and compacts rendered assistant history', async () => {

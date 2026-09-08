@@ -4,7 +4,9 @@ import {
   getAssistantConfig,
   getConfig,
   getGenerationConfig,
-  getEmbeddingConfig
+  getEmbeddingConfig,
+  getOpenAIClientOptions,
+  getOpenAIOmitTemperature
 } from '../src/config/config.js';
 
 describe('inference config', () => {
@@ -20,6 +22,25 @@ describe('inference config', () => {
   it('rejects an invalid port', () => {
     expect(() => getConfig({ INFERENCE_PORT: 'invalid' }))
       .toThrow('INFERENCE_PORT must be an integer between 1 and 65535');
+  });
+
+  it('keeps the OpenAI client options unchanged without a base URL', () => {
+    expect(getOpenAIClientOptions('test-key', {})).toEqual({ apiKey: 'test-key' });
+  });
+
+  it('adds the configured OpenAI base URL to client options', () => {
+    expect(getOpenAIClientOptions('test-key', {
+      OPENAI_BASE_URL: 'https://litellm.example/v1'
+    })).toEqual({
+      apiKey: 'test-key',
+      baseURL: 'https://litellm.example/v1'
+    });
+  });
+
+  it('omits temperature only for an explicit true value', () => {
+    expect(getOpenAIOmitTemperature({})).toBe(false);
+    expect(getOpenAIOmitTemperature({ OPENAI_OMIT_TEMPERATURE: 'false' })).toBe(false);
+    expect(getOpenAIOmitTemperature({ OPENAI_OMIT_TEMPERATURE: 'true' })).toBe(true);
   });
 });
 

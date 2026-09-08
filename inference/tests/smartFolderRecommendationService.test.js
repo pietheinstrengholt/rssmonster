@@ -69,6 +69,35 @@ describe('getSmartFolderRecommendations', () => {
     expect(request.messages[1].content).not.toContain('sort:attention');
   });
 
+  it('passes the configured base URL to the OpenAI client', async () => {
+    vi.stubEnv('OPENAI_BASE_URL', 'https://litellm.example/v1');
+    completionsCreate.mockResolvedValue({ choices: [] });
+    const { getSmartFolderRecommendations } = await import(
+      '../src/smartFolderRecommendations/smartFolderRecommendationService.js'
+    );
+
+    await expect(getSmartFolderRecommendations({ insights: {} })).resolves.toEqual({
+      smartFolders: []
+    });
+    expect(OpenAIMock).toHaveBeenCalledWith({
+      apiKey: 'test-key',
+      baseURL: 'https://litellm.example/v1'
+    });
+  });
+
+  it('omits temperature when configured for a compatible gateway', async () => {
+    vi.stubEnv('OPENAI_OMIT_TEMPERATURE', 'true');
+    completionsCreate.mockResolvedValue({ choices: [] });
+    const { getSmartFolderRecommendations } = await import(
+      '../src/smartFolderRecommendations/smartFolderRecommendationService.js'
+    );
+
+    await getSmartFolderRecommendations({ insights: {} });
+
+    expect(completionsCreate).toHaveBeenCalledOnce();
+    expect(completionsCreate.mock.calls[0][0]).not.toHaveProperty('temperature');
+  });
+
   // Verifies that markdown fences around otherwise valid provider JSON are tolerated.
   it('parses fenced JSON responses', async () => {
     completionsCreate.mockResolvedValue({
@@ -165,4 +194,3 @@ describe('getSmartFolderRecommendations', () => {
     await expect(getSmartFolderRecommendations({ insights: {} })).rejects.toBe(providerError);
   });
 });
-

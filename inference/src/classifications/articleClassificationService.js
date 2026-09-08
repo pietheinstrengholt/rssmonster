@@ -1,6 +1,11 @@
 // inference/src/classifications/articleClassificationService.js
 import OpenAI from 'openai';
-import { getArticleScoringConfig, getGenerationConfig } from '../config/config.js';
+import {
+  getArticleScoringConfig,
+  getGenerationConfig,
+  getOpenAIClientOptions,
+  getOpenAIOmitTemperature
+} from '../config/config.js';
 import modernBertArticleScoringProvider from './providers/modernBertArticleScoringProvider.js';
 import qwenGenerationProvider from '../generation/providers/qwenGenerationProvider.js';
 import { getSafeErrorDetails, logInferenceDebug } from '../debug.js';
@@ -26,8 +31,11 @@ const normalizeGeneratedTags = tags => tags.flatMap(splitTagHierarchy);
 const generationConfig = getGenerationConfig();
 const articleScoringConfig = getArticleScoringConfig();
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
+const omitTemperature = getOpenAIOmitTemperature();
 const canGenerate = generationConfig.provider === 'qwen' || hasApiKey;
-const client = hasApiKey ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+const client = hasApiKey
+  ? new OpenAI(getOpenAIClientOptions(process.env.OPENAI_API_KEY))
+  : null;
 let openAIQueue = Promise.resolve();
 let rateLimitDelay = 0;
 
@@ -90,7 +98,7 @@ const callOpenAI = ({ prompt, maxCompletionTokens, rateLimitDelayMs, operation, 
           { role: 'system', content: 'You produce strict JSON only.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.2,
+        ...(omitTemperature ? {} : { temperature: 0.2 }),
         max_completion_tokens: maxCompletionTokens
       });
       return parseJsonObject(response.choices?.[0]?.message?.content || '');

@@ -1,16 +1,21 @@
 // Generates personalized Smart Folder suggestions inside the inference service.
 // It sanitizes model output into strict JSON before returning suggestions to callers.
 import OpenAI from 'openai';
-import { getGenerationConfig } from '../config/config.js';
+import {
+  getGenerationConfig,
+  getOpenAIClientOptions,
+  getOpenAIOmitTemperature
+} from '../config/config.js';
 import qwenGenerationProvider from '../generation/providers/qwenGenerationProvider.js';
 import { logInferenceDebug } from '../debug.js';
 import { getInferenceRequestId } from '../middleware/requestLifecycle.js';
 
 // Coerces the has api key into the representation required for this service.
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
+const omitTemperature = getOpenAIOmitTemperature();
 // Selects the client based on whether has api key is available.
 const client = hasApiKey
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  ? new OpenAI(getOpenAIClientOptions(process.env.OPENAI_API_KEY))
   : null;
 const generationConfig = getGenerationConfig();
 
@@ -197,7 +202,7 @@ OUTPUT (STRICT JSON ONLY)
         { role: 'system', content: 'Return ONLY valid JSON. No markdown. No prose.' },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.2,
+      ...(omitTemperature ? {} : { temperature: 0.2 }),
       max_tokens: 300
     })).choices?.[0]?.message?.content;
   // Derives the parsed through safe json parse while performing get smart folder recommendations.

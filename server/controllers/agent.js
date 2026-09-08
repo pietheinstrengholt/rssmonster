@@ -1,5 +1,5 @@
 // server/controllers/agent.js
-import { Agent, run } from "@openai/agents";
+import { Agent, Runner } from "@openai/agents";
 import sanitizeAgentOutput, { agentOutputToText } from '../utils/sanitizeAgentOutput.js';
 import { createRssMonsterAgentTools } from '../services/agent/rssMonsterAgentTools.js';
 import { createInferenceModelProvider } from '../services/agent/inferenceModelProvider.js';
@@ -74,6 +74,10 @@ const HISTORY_FILTER_FIELDS = [
 ];
 const inferenceModelProvider = createInferenceModelProvider({
   timeoutMs: Number(process.env.INFERENCE_AGENT_TIMEOUT_MS || 300_000)
+});
+const agentRunner = new Runner({
+  modelProvider: inferenceModelProvider,
+  tracingDisabled: true
 });
 
 const compactChatHistory = (messages, currentUserIndex) => {
@@ -185,9 +189,13 @@ export const postAgent = async (req, res) => {
     const toolSetupMs = elapsedMs(toolSetupStartedAt);
 
     const agentSetupStartedAt = performance.now();
+    const reasoningEffort = String(process.env.ASSISTANT_REASONING_EFFORT || '').trim();
     const agent = new Agent({
       name: "RSS feeds management and retrieval assistant",
       instructions: RSSMONSTER_AGENT_INSTRUCTIONS,
+      ...(reasoningEffort ? {
+        modelSettings: { reasoning: { effort: reasoningEffort } }
+      } : {}),
       tools
     });
     const agentSetupMs = elapsedMs(agentSetupStartedAt);
@@ -215,13 +223,10 @@ export const postAgent = async (req, res) => {
     writeSseEvent(res, 'status', { message: 'Agent is thinking…' });
 
     const agentRunStartedAt = performance.now();
-    const result = await run(agent, input, {
+    const result = await agentRunner.run(agent, input, {
       chatHistory,
       signal: abortController.signal,
-      stream: true,
-      modelProvider: inferenceModelProvider,
-      // Provider tracing would otherwise create a second direct OpenAI path from the server.
-      tracingDisabled: true
+      stream: true
     });
     let streamedOutput = '';
     for await (const event of result) {

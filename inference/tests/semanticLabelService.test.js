@@ -2,19 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   createCompletion: vi.fn(),
-  qwenGenerate: vi.fn()
+  qwenGenerate: vi.fn(),
+  OpenAIMock: vi.fn()
 }));
 
 vi.mock('openai', () => ({
-  default: class OpenAI {
-    constructor() {
-      this.chat = {
-        completions: {
-          create: mocked.createCompletion
-        }
-      };
-    }
-  }
+  default: mocked.OpenAIMock.mockImplementation(function OpenAI() {
+    this.chat = {
+      completions: {
+        create: mocked.createCompletion
+      }
+    };
+  })
 }));
 
 vi.mock('../src/generation/providers/qwenGenerationProvider.js', () => ({
@@ -26,6 +25,7 @@ describe('generateSemanticLabels', () => {
     vi.resetModules();
     mocked.createCompletion.mockReset();
     mocked.qwenGenerate.mockReset();
+    mocked.OpenAIMock.mockClear();
     vi.stubEnv('GENERATION_PROVIDER', 'qwen');
     vi.stubEnv('OPENAI_API_KEY', '');
   });
@@ -126,6 +126,7 @@ describe('generateSemanticLabels', () => {
   it('uses the configured OpenAI generation provider when selected', async () => {
     vi.stubEnv('GENERATION_PROVIDER', 'openai');
     vi.stubEnv('OPENAI_API_KEY', 'test-key');
+    vi.stubEnv('OPENAI_BASE_URL', 'https://litellm.example/v1');
     mocked.createCompletion.mockResolvedValue({
       choices: [{ message: { content: '{"island":"Local AI"}' } }]
     });
@@ -142,7 +143,28 @@ describe('generateSemanticLabels', () => {
       temperature: 0,
       max_tokens: 96
     }));
+    expect(mocked.OpenAIMock).toHaveBeenCalledWith({
+      apiKey: 'test-key',
+      baseURL: 'https://litellm.example/v1'
+    });
     expect(mocked.qwenGenerate).not.toHaveBeenCalled();
+  });
+
+  it('omits temperature when configured for a compatible gateway', async () => {
+    vi.stubEnv('GENERATION_PROVIDER', 'openai');
+    vi.stubEnv('OPENAI_API_KEY', 'test-key');
+    vi.stubEnv('OPENAI_OMIT_TEMPERATURE', 'true');
+    mocked.createCompletion.mockResolvedValue({
+      choices: [{ message: { content: '{"topic":"Local AI"}' } }]
+    });
+    const { generateSemanticLabels } = await import(
+      '../src/semanticLabels/semanticLabelService.js'
+    );
+
+    await generateSemanticLabels({ context: 'Qwen and self-hosting', topic: true });
+
+    expect(mocked.createCompletion).toHaveBeenCalledOnce();
+    expect(mocked.createCompletion.mock.calls[0][0]).not.toHaveProperty('temperature');
   });
 
   it('requires an API key for the OpenAI provider', async () => {
