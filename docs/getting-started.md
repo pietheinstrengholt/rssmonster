@@ -160,10 +160,12 @@ FEVER_CREDENTIAL_SECRET=replace-with-a-different-long-random-secret
 Then use the separate MySQL Compose configuration:
 
 ```bash
-docker compose -f docker-compose.mysql.yml up -d --build
+docker compose -f docker-compose.mysql.yml up -d --pull always
 ```
 
-On first startup, the inference service downloads its models into the persistent
+The application and inference images are pulled from Docker Hub, so image
+updaters such as Watchtower can keep the complete deployment current without a
+local source checkout or build. On first startup, the inference service downloads its models into the persistent
 `inference-model-cache` volume. RSSMonster and both workers wait for MySQL and
 inference to become healthy before starting. MySQL data is stored in the
 `mysql-data` volume. Downloads can take several minutes depending on the host

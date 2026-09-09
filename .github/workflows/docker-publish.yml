@@ -77,8 +77,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract Docker metadata
-        id: meta
+      - name: Extract application Docker metadata
+        id: app-meta
         uses: docker/metadata-action@v6
         with:
           images: rssmonster/rssmonster
@@ -92,8 +92,23 @@ jobs:
             org.opencontainers.image.revision=${{ steps.commit.outputs.sha }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
-      - name: Build and push
-        id: build
+      - name: Extract inference Docker metadata
+        id: inference-meta
+        uses: docker/metadata-action@v6
+        with:
+          images: rssmonster/rssmonster-inference
+          tags: |
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_run' }}
+            type=raw,value=sha-${{ steps.commit.outputs.short_sha }}
+            type=ref,event=tag
+          labels: |
+            org.opencontainers.image.title=RSSMonster Inference
+            org.opencontainers.image.description=Inference service for RSSMonster
+            org.opencontainers.image.revision=${{ steps.commit.outputs.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Build and push application
+        id: app-build
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -101,10 +116,26 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           pull: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.app-meta.outputs.tags }}
+          labels: ${{ steps.app-meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: mode=max
+          sbom: true
+
+      - name: Build and push inference
+        id: inference-build
+        uses: docker/build-push-action@v7
+        with:
+          context: ./inference
+          file: ./inference/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          pull: true
+          tags: ${{ steps.inference-meta.outputs.tags }}
+          labels: ${{ steps.inference-meta.outputs.labels }}
+          cache-from: type=gha,scope=inference
+          cache-to: type=gha,mode=max,scope=inference
           provenance: mode=max
           sbom: true
 
@@ -112,12 +143,17 @@ jobs:
         shell: bash
         run: |
           {
-            echo "## Docker image published"
+            echo "## Docker images published"
             echo
             echo "- Commit: \`${{ steps.commit.outputs.sha }}\`"
-            echo "- Digest: \`${{ steps.build.outputs.digest }}\`"
-            echo "- Tags:"
+            echo "- Application digest: \`${{ steps.app-build.outputs.digest }}\`"
+            echo "- Inference digest: \`${{ steps.inference-build.outputs.digest }}\`"
+            echo "- Application tags:"
             echo '```'
-            echo "${{ steps.meta.outputs.tags }}"
+            echo "${{ steps.app-meta.outputs.tags }}"
+            echo '```'
+            echo "- Inference tags:"
+            echo '```'
+            echo "${{ steps.inference-meta.outputs.tags }}"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

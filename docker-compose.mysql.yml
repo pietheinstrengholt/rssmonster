@@ -229,9 +229,7 @@ services:
       - rssmonster-network
 
   inference:
-    build:
-      context: ./inference
-      dockerfile: Dockerfile
+    image: "${RSSMONSTER_INFERENCE_IMAGE:-rssmonster/rssmonster-inference:${RSSMONSTER_TAG:-latest}}"
     container_name: rssmonster-inference
     restart: unless-stopped
 
