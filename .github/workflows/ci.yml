@@ -180,12 +180,7 @@ jobs:
           docker compose -f docker-compose.mysql.yml config > /dev/null
 
       - name: Build inference Docker image
-        env:
-          JWT_SECRET: ci-jwt-secret
-          FEVER_CREDENTIAL_SECRET: ci-fever-credential-secret
-          DB_PASSWORD: ci-database-password
-          MYSQL_ROOT_PASSWORD: ci-root-database-password
-        run: docker compose -f docker-compose.mysql.yml build inference
+        run: docker build -t rssmonster-inference:ci ./inference
 
   client:
     name: Client
