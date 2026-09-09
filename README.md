@@ -89,10 +89,6 @@ available. Bookmark articles, open original sources, and control when articles
 are marked read. [Keyboard shortcuts](docs/keyboard-shortcuts.md), portrait
 bookmark swipes, and light, dark, or system themes support everyday reading.
 
-Install the [Progressive Web App](docs/web-app-and-notifications.md) on supported
-devices and optionally enable Web Push for new articles. The app caches its
-shell; loading articles and saving reading state still require server access.
-
 ### Organization
 
 Arrange subscriptions into categories, label articles with tags, and keep
@@ -136,24 +132,33 @@ limitations when choosing a client.
 
 ## Choose a deployment
 
-Choose the profile before starting: the screenshots showcase capabilities from
-the broader product, and the default profile deliberately runs without models.
+Run RSSMonster as a desktop app or host a server for access across devices.
+The screenshots showcase capabilities from the broader product; desktop mode
+and the SQLite quick start run without inference models.
 
 | Deployment | Best for | Included capabilities |
 | --- | --- | --- |
+| **[Desktop app (Electron)](docs/desktop.md)** | Reading locally on Windows, macOS, or Linux | Existing reader with a local SQLite database and manual feed refresh. No Docker, separate server setup, worker processes, scheduled crawling, or inference/AI. |
 | **SQLite quick start** | Trying RSSMonster and lightweight personal reading | Web reader, scheduled crawling, search, subscriptions, and rule-based organization. No separate database service, inference service, or AI worker. |
 | **Comprehensive MySQL deployment** | Local intelligent processing, multiple active users, and higher write concurrency | MySQL 8.4, crawl and AI workers, Qwen embeddings and generation, and ModernBERT scoring for analysis, semantic organization, and recommendations. |
 
-Saved search-based Smart Folders work in both profiles. Choose the comprehensive
-profile for local classification, embeddings, scoring, semantic labels, Smart
+Install the [Progressive Web App](docs/web-app-and-notifications.md) on supported
+devices to use an existing self-hosted RSSMonster server in its own app window,
+with optional Web Push for new articles. The PWA caches its shell; loading
+articles and saving reading state still require access to that server. The
+Electron desktop app runs its own backend and stores its data locally.
+
+Saved search-based Smart Folders work in desktop mode and both server profiles.
+Choose the comprehensive profile for local classification, embeddings, scoring, semantic labels, Smart
 Folder recommendations, and feed rediscovery **without an OpenAI API key**.
-These inference-backed features are disabled in the SQLite quick start; the
-optional OpenAI assistant requires separate configuration. For model downloads,
+These inference-backed features are disabled in desktop mode and the SQLite quick
+start; the optional OpenAI assistant requires separate configuration. For model downloads,
 credentials, startup, and readiness checks, follow the
 [MySQL deployment guide](docs/getting-started.md#comprehensive-mysql-deployment).
 
-Database choice and inference settings are separate configuration concerns; these
-are the two supplied deployment profiles. Read [database configuration](docs/configuration.md#database)
+For self-hosting, database choice and inference settings are separate configuration
+concerns; SQLite and MySQL are the two supplied server profiles.
+Read [database configuration](docs/configuration.md#database)
 and [model usage](docs/model-usage.md) before customizing a source installation.
 
 ## Docker Quick Start
