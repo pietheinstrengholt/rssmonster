@@ -1889,11 +1889,23 @@ const performCrawlWithSemanticGroupingOperation = async (userId = null, options 
   return result;
 };
 
+const activeCrawls = new Set();
+
 // Holds the cross-process priority gate for every API or manually triggered critical pipeline.
-const performCrawlWithSemanticGrouping = (userId = null, options = {}) =>
-  withCrawlPriorityLease(
+const performCrawlWithSemanticGrouping = (userId = null, options = {}) => {
+  const completion = withCrawlPriorityLease(
     () => performCrawlWithSemanticGroupingOperation(userId, options)
   );
+  activeCrawls.add(completion);
+  const settled = () => activeCrawls.delete(completion);
+  void completion.then(settled, settled);
+  return completion;
+};
+
+// HTTP responses can finish before a manual crawl; hosts must drain both before closing the DB.
+export const waitForActiveCrawls = async () => {
+  while (activeCrawls.size) await Promise.allSettled([...activeCrawls]);
+};
 
 export const startUserCrawl = createStartUserCrawl(
   performCrawlWithSemanticGrouping

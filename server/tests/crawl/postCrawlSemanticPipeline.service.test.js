@@ -50,6 +50,7 @@ vi.mock('../../services/crawl/hot/runHotArticleReconciliation.js', () => ({
 describe('runPostCrawlSemanticPipeline', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   beforeEach(() => {
@@ -61,6 +62,14 @@ describe('runPostCrawlSemanticPipeline', () => {
     mocked.recordProcessingFailure.mockReset().mockResolvedValue(undefined);
     mocked.tryReconcileSemanticLabelJobsForUser.mockReset().mockResolvedValue({});
     mocked.runHotArticleReconciliation.mockReset().mockResolvedValue({});
+  });
+
+  it('does not run semantic stages in desktop mode', async () => {
+    vi.stubEnv('RSSMONSTER_MODE', 'desktop');
+    const { runPostCrawlSemanticPipeline } = await import('../../services/crawl/orchestration/postCrawlSemanticPipeline.js');
+    const result = await runPostCrawlSemanticPipeline({ processedUserIds: [42] });
+    expect(result).toEqual({ users: 0, embedded: 0, skipped: 0, results: [] });
+    for (const operation of Object.values(mocked)) expect(operation).not.toHaveBeenCalled();
   });
 
   it('reconciles hotness after semantic duplicate eligibility changes', async () => {

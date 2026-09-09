@@ -20,6 +20,7 @@ import morgan from 'morgan';
 import cors from 'cors';
 import fs from 'fs';
 import https from 'https';
+import http from 'node:http';
 import {
   apiRateLimiter,
   mcpRateLimiter
@@ -90,9 +91,8 @@ app.use(morgan(REQUEST_LOG_FORMAT, {
 }));
 
 // Static assets
-app.use(express.static("dist", {
-  setHeaders: createStaticCacheHeaders()
-}));
+let serveStatic = express.static('dist', { setHeaders: createStaticCacheHeaders() });
+app.use((req, res, next) => serveStatic(req, res, next));
 app.get('/sw.js', serveServiceWorkerFallback);
 
 // CORS
@@ -155,52 +155,46 @@ app.use(errorController.get404);
 // --------------------
 // Server startup
 // --------------------
-const port = process.env.PORT || 3000;
+export const startServer = async ({
+  port = process.env.PORT || 3000,
+  host,
+  staticDirectory
+} = {}) => {
+  // DB
+  await sequelize.authenticate();
+  console.log('Database connection established');
 
-export const startServer = async () => {
-  try {
-    // DB
-    await sequelize.authenticate();
-    console.log('Database connection established');
-
-    if (process.env.DISABLE_LISTENER === 'true') {
-      console.log('Server listener disabled by DISABLE_LISTENER env.');
-      return;
-    }
-
-    if (process.env.ENABLE_HTTPS === 'true') {
-      const options = {
-        cert: fs.readFileSync('cert/fullchain.pem'),
-        key: fs.readFileSync('cert/privkey.pem')
-      };
-
-      https.createServer(options, app).listen(port, () => {
-        console.log(`HTTPS server running on port ${port}`);
-      });
-    } else {
-      app.listen(port, () => {
-        console.log(`HTTP server running on port ${port}`);
-      });
-    }
-  } catch (err) {
-    console.error('Startup failed:', err);
-    process.exit(1);
+  if (process.env.DISABLE_LISTENER === 'true') {
+    console.log('Server listener disabled by DISABLE_LISTENER env.');
+    return;
   }
+
+  if (staticDirectory) {
+    serveStatic = express.static(staticDirectory, { setHeaders: createStaticCacheHeaders() });
+  }
+
+  const secure = process.env.ENABLE_HTTPS === 'true';
+  const server = secure
+    ? https.createServer({
+      cert: fs.readFileSync('cert/fullchain.pem'),
+      key: fs.readFileSync('cert/privkey.pem')
+    }, app)
+    : http.createServer(app);
+
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(port, host, () => {
+      server.removeListener('error', reject);
+      console.log(`${secure ? 'HTTPS' : 'HTTP'} server running on port ${server.address().port}`);
+      resolve();
+    });
+  });
+  return server;
 };
 
-// --------------------
-// Process-level safety
-// --------------------
-process.on('uncaughtException', err => {
-  if (err?.name === 'RequestError') {
-    console.error('UncaughtException:', err.message);
-  } else {
-    console.error('UncaughtException:', err);
-  }
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+export const stopServer = server => new Promise((resolve, reject) => {
+  if (!server?.listening) return resolve();
+  server.close(error => error ? reject(error) : resolve());
 });
 
 // --------------------

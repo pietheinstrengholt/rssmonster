@@ -38,6 +38,11 @@ async function runSemanticStage(stage, processingContext, operation) {
 
 // This function runs the incremental semantic hierarchy for users touched by a crawl.
 export async function runPostCrawlSemanticPipeline(result, options = {}) {
+  // Desktop ingestion retains deterministic article processing without semantic post-processing.
+  if (process.env.RSSMONSTER_MODE === 'desktop') {
+    return { users: 0, embedded: 0, skipped: 0, results: [] };
+  }
+
   // Derives the user id through get post crawl user id while performing run post crawl semantic pipeline.
   const userIds = getPostCrawlUserIds(result, options.userId);
   // Selects the on progress based on whether options is function.

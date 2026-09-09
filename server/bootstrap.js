@@ -7,9 +7,29 @@ const serverDir = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(serverDir, '.env'), quiet: true });
 console.log('Environment variables loaded from .env file if present.');
 console.log('Starting application.');
-const { startCacheRefresh, startServer } = await import('./app.js');
-await startServer();
-startCacheRefresh();
+// --------------------
+// Process-level safety
+// --------------------
+process.on('uncaughtException', err => {
+  if (err?.name === 'RequestError') {
+    console.error('UncaughtException:', err.message);
+  } else {
+    console.error('UncaughtException:', err);
+  }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+try {
+  const { startCacheRefresh, startServer } = await import('./app.js');
+  await startServer();
+  startCacheRefresh();
+} catch (error) {
+  console.error('Startup failed:', error);
+  process.exit(1);
+}
 
 try {
   const { getEmailConfiguration } = await import('./config/email.js');

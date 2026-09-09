@@ -1,0 +1,170 @@
+name: Desktop Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag (must match the package versions)
+        required: true
+        default: v2.3.0
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  source:
+    name: Verify release version
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      sha: ${{ steps.version.outputs.sha }}
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Check tag and package versions
+        id: version
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync, appendFileSync } from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const tag = process.env.RELEASE_TAG;
+          assert.match(tag, /^v\d+\.\d+\.\d+$/);
+          for (const directory of ['client', 'server', 'inference']) {
+            const pkg = JSON.parse(readFileSync(`${directory}/package.json`, 'utf8'));
+            assert.equal(`v${pkg.version}`, tag, `${directory} version must match ${tag}`);
+          }
+          const sha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+          appendFileSync(process.env.GITHUB_OUTPUT, `tag=${tag}\nsha=${sha}\n`);
+          NODE
+
+  build:
+    name: Build ${{ matrix.platform }} ${{ matrix.arch }}
+    needs: source
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux
+            arch: x64
+          - os: windows-2022
+            platform: win
+            arch: x64
+          - os: macos-15-intel
+            platform: mac
+            arch: x64
+          - os: macos-15
+            platform: mac
+            arch: arm64
+    steps:
+      - name: Checkout verified revision
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.source.outputs.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            client/package-lock.json
+            server/package-lock.json
+            desktop/package-lock.json
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          npm ci --prefix client
+          npm ci --prefix server
+          npm ci --prefix desktop
+
+      - name: Lint desktop
+        run: npm run lint --prefix desktop
+
+      - name: Build installers
+        run: npm run desktop:build:${{ matrix.platform }} --prefix desktop -- ${{ matrix.arch }}
+
+      - name: Test desktop runtime and SQLite persistence
+        run: npm test --prefix desktop
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.exe
+            desktop/release/*.AppImage
+            desktop/release/*.deb
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+  release:
+    name: Attach installers to draft release
+    needs: [source, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download installers
+        uses: actions/download-artifact@v8
+        with:
+          pattern: desktop-*
+          merge-multiple: true
+          path: installers
+
+      - name: Create or update draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.source.outputs.tag }}
+        shell: bash
+        run: |
+          version=${RELEASE_TAG#v}
+          assets=(
+            "installers/RSSMonster-Setup-$version-x64.exe"
+            "installers/RSSMonster-$version-x64.dmg"
+            "installers/RSSMonster-$version-arm64.dmg"
+            "installers/RSSMonster-$version-x86_64.AppImage"
+            "installers/RSSMonster-$version-amd64.deb"
+          )
+          for asset in "${assets[@]}"; do
+            test -s "$asset"
+          done
+          if draft=$(gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft'); then
+            if [[ "$draft" != "true" ]]; then
+              echo "Release $RELEASE_TAG is already published; refusing to replace its assets."
+              exit 1
+            fi
+          else
+            gh release create "$RELEASE_TAG" --verify-tag --draft \
+              --title "RSSMonster $RELEASE_TAG" --generate-notes
+          fi
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          gh release view "$RELEASE_TAG" --json url --jq '.url' >> "$GITHUB_STEP_SUMMARY"

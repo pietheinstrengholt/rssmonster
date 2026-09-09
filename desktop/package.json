@@ -1,0 +1,31 @@
+{
+  "name": "rssmonster-desktop",
+  "private": true,
+  "type": "module",
+  "main": "main.js",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "postinstall": "install-electron",
+    "build": "node build.js",
+    "start": "electron .",
+    "dev": "npm run build && npm start",
+    "test": "node --test tests/*.test.js",
+    "test:electron": "electron tests/helpers/electron-check.js",
+    "lint": "node ../server/node_modules/eslint/bin/eslint.js --config ../server/eslint.config.js . --ignore-pattern .stage/ --ignore-pattern release/",
+    "desktop": "npm run dev",
+    "desktop:build": "node package.js",
+    "desktop:build:mac": "node package.js mac",
+    "desktop:build:win": "node package.js win",
+    "desktop:build:linux": "node package.js linux",
+    "test:packaged": "node tests/package-check.js"
+  },
+  "dependencies": {
+    "umzug": "2.3.0"
+  },
+  "devDependencies": {
+    "electron": "44.2.0",
+    "electron-builder": "26.15.3"
+  }
+}

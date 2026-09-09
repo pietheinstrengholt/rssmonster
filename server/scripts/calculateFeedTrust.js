@@ -393,7 +393,7 @@ export async function calculateFeedTrustForAllFeeds({ userId = null } = {}) {
  * CLI EXECUTION
  * ================================================================ */
 
-if (process.argv[1].includes('calculateFeedTrust')) {
+if (process.argv[1]?.includes('calculateFeedTrust')) {
   calculateFeedTrustForAllFeeds()
     .then(() => {
       console.log('[FEED-TRUST] Done');
