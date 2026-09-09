@@ -16,6 +16,7 @@ ongoing stories, and rank articles by quality or personal interest.
 ## Start reading
 
 - [Get Started →]({% link getting-started.md %}) — Installation and first steps.
+- [Run the Desktop App →]({% link desktop.md %}) — Read locally with Electron and SQLite.
 - [See It In Action →]({% link usability.md %}) — Reading modes and mobile layouts.
 - [Deep Dive →]({% link how-rssmonster-works.md %}) — How it all works.
 
@@ -57,6 +58,9 @@ about stored articles in natural language. Ordinary search uses the documented
 expression syntax; conversational requests belong in the assistant.
 
 ## Use RSSMonster beyond the browser tab
+
+[Run RSSMonster as a desktop app]({% link desktop.md %}) with its own local SQLite
+database and manual feed refresh, without Docker or a separate server.
 
 [Install the web app and enable notifications]({% link web-app-and-notifications.md %}),
 configure [account recovery and briefing emails]({% link account.md %}), or connect a

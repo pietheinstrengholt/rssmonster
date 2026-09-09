@@ -5,7 +5,11 @@ nav_order: 2
 has_children: true
 ---
 
-Choose the SQLite profile for lightweight personal reading, or the MySQL profile
+For a local app with manual feed refresh, see
+[RSSMonster Desktop]({% link desktop.md %}). It runs the reader and SQLite on your
+computer without Docker or a separate server.
+
+For self-hosting, choose the SQLite profile for lightweight personal reading, or the MySQL profile
 for local inference and background analysis. First-time model downloads can take
 several minutes; later starts reuse the cache.
 

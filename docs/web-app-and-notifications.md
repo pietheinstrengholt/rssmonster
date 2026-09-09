@@ -12,6 +12,10 @@ an app. RSSMonster's PWA gives you an icon on your Home Screen or app launcher
 and opens in its own window on supported devices. It connects to the same
 self-hosted RSSMonster instance and account you use in the browser.
 
+For an app that runs its own local backend and SQLite database, see
+[RSSMonster Desktop (Electron)]({% link desktop.md %}). Desktop uses manual refresh
+and does not include the PWA's notification functionality.
+
 Use it to open your feeds quickly, read and bookmark articles, check your
 [Daily Briefing]({% link daily-briefing.md %}), and receive notifications when new
 articles arrive. Notifications are optional and require both server configuration
