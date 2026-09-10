@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SettingsObservability from '../src/components/settings/SettingsObservability.vue';
 
 const mocks = vi.hoisted(() => ({
+  fetchServiceHealth: vi.fn(),
   clearProcessingFailures: vi.fn(),
   fetchProcessingFailureDetail: vi.fn(),
   fetchProcessingFailureGroups: vi.fn(),
@@ -61,6 +62,11 @@ const mountObservability = () => mount(SettingsObservability, {
 describe('SettingsObservability', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mocks.fetchServiceHealth.mockResolvedValue({ data: {
+      checkedAt: '2026-09-10T10:00:00.000Z',
+      services: [{ id: 'web', label: 'Web server', status: 'healthy', detail: 'Responding.' },
+        { id: 'smtp', label: 'SMTP', status: 'unknown', detail: 'Connectivity not checked.' }]
+    } });
     mocks.fetchProcessingFailureGroups.mockResolvedValue({ data: groupPayload });
     mocks.fetchProcessingFailureOccurrences.mockResolvedValue({
       data: { pagination: { total: 1 }, failures: [occurrence] }
@@ -75,6 +81,20 @@ describe('SettingsObservability', () => {
       }
     });
     mocks.clearProcessingFailures.mockResolvedValue({ data: { deletedCount: 4 } });
+  });
+
+  it('shows health evidence separately from failure totals', async () => {
+    const wrapper = mountObservability();
+    await flushPromises();
+    expect(wrapper.get('.observability-health').text()).toContain('Healthy');
+    expect(wrapper.get('.observability-health').text()).toContain('Connectivity not checked.');
+    expect(wrapper.text()).toContain('Total failure logs (all time)');
+    mocks.fetchServiceHealth.mockRejectedValueOnce(new Error('Offline'));
+    await wrapper.get('.observability-health button').trigger('click');
+    await flushPromises();
+    expect(wrapper.get('.observability-health').text()).not.toContain('Healthy');
+    expect(wrapper.findAll('.observability-health-list li')).toHaveLength(6);
+    expect(wrapper.text()).toContain('Unable to check service health');
   });
 
   it('loads and renders similar failure aggregates', async () => {

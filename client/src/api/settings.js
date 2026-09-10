@@ -67,3 +67,6 @@ export const fetchOfficialSources = () =>
 
 export const saveOfficialSources = officialSources =>
   api.post('/setting/official-sources', { officialSources });
+
+export const fetchServiceHealth = () =>
+  api.get('/setting/observability/health');

@@ -1,4 +1,5 @@
 import express from 'express';
+import { getServicesHealth } from '../controllers/serviceHealth.js';
 import settingController from '../controllers/setting.js';
 import processingFailureController from '../controllers/processingFailure.js';
 import processingJobStatusController from '../controllers/processingJobStatus.js';
@@ -8,6 +9,7 @@ export const router = express.Router();
 
 // GET /api/setting
 router.get('/', userMiddleware.isLoggedIn, settingController.getSettings);
+router.get('/observability/health', userMiddleware.isLoggedIn, getServicesHealth);
 router.get('/crawl-statistics', userMiddleware.isLoggedIn, settingController.getCrawlStatistics);
 router.get('/islands', userMiddleware.isLoggedIn, settingController.getIslandsOverview);
 router.post('/islands/recalculate', userMiddleware.isLoggedIn, settingController.recalculateIslands);

@@ -3,12 +3,36 @@
     <SettingsPageIntro
       eyebrow="Settings — Observability"
       icon="activity"
-      title="Processing failures"
+      title="Service health & processing failures"
       title-id="processing-failures-title"
     >
       Inspect abnormal crawl, article, embedding, event, topic, and island processing outcomes.
       Similar failures are grouped so recurring problems remain easy to spot.
     </SettingsPageIntro>
+
+    <section class="settings-data-panel observability-health" aria-labelledby="service-health-title" :aria-busy="healthLoading">
+      <div class="observability-section-heading">
+        <div>
+          <h4 id="service-health-title">Service health</h4>
+          <p>Current service checks, independent of the failure filters below.</p>
+        </div>
+        <button type="button" class="app-button app-button--outline-secondary" :disabled="healthLoading" @click="loadHealth">
+          {{ healthLoading ? 'Checking…' : 'Refresh health' }}
+        </button>
+      </div>
+      <ul class="observability-health-list" aria-live="polite">
+        <li v-for="service in services" :key="service.id">
+          <strong>{{ service.label }}</strong>
+          <span class="observability-health-status" :class="`observability-health-status--${service.status}`">
+            <span class="observability-health-dot" aria-hidden="true"></span>
+            {{ formatLabel(service.status) }}
+          </span>
+          <small>{{ service.detail }}</small>
+        </li>
+      </ul>
+      <p v-if="healthError" class="app-notice app-notice--danger" role="alert">{{ healthError }}</p>
+      <p v-else-if="healthCheckedAt" class="observability-health-caption">Checked {{ formatDateTime(healthCheckedAt) }}</p>
+    </section>
 
     <template v-if="view === 'groups'">
       <div class="observability-toolbar settings-toolbar">
@@ -57,7 +81,8 @@
       </div>
 
       <div v-if="hasLoaded" class="observability-metric-grid">
-        <SettingsMetric label="Occurrences" :value="formatNumber(summary.totalOccurrences)" />
+        <SettingsMetric label="Total failure logs (all time)" :value="formatNumber(summary.totalLogs)" />
+        <SettingsMetric label="Matching occurrences" :value="formatNumber(summary.totalOccurrences)" />
         <SettingsMetric label="Similar groups" :value="formatNumber(summary.groupCount)" />
         <SettingsMetric label="Fatal" :value="formatNumber(summary.fatalOccurrences)" />
         <SettingsMetric label="Timeouts" :value="formatNumber(summary.timeoutOccurrences)" />
@@ -299,12 +324,17 @@ import {
   clearProcessingFailures,
   fetchProcessingFailureDetail,
   fetchProcessingFailureGroups,
-  fetchProcessingFailureOccurrences
+  fetchProcessingFailureOccurrences,
+  fetchServiceHealth
 } from '../../api/settings';
 import SettingsMetric from './SettingsMetric.vue';
 import SettingsPageIntro from './SettingsPageIntro.vue';
 
 const PAGE_SIZE = 50;
+const emptyServices = status => [
+  ['web', 'Web server'], ['database', 'Database'], ['crawler', 'Crawler'],
+  ['ai-worker', 'AI worker'], ['inference', 'Inference'], ['smtp', 'SMTP']
+].map(([id, label]) => ({ id, label, status, detail: '' }));
 
 export default {
   name: 'SettingsObservability',
@@ -322,6 +352,10 @@ export default {
       filters: { days: 30, failureType: '', stage: '' },
       groups: [],
       hasLoaded: false,
+      services: emptyServices('checking'),
+      healthLoading: false,
+      healthError: null,
+      healthCheckedAt: null,
       loading: false,
       occurrencePagination: { total: 0 },
       occurrences: [],
@@ -344,8 +378,25 @@ export default {
   },
   created() {
     this.reloadGroups();
+    this.loadHealth();
   },
   methods: {
+    async loadHealth() {
+      this.healthLoading = true;
+      this.healthError = null;
+      this.healthCheckedAt = null;
+      this.services = emptyServices('checking');
+      try {
+        const response = await fetchServiceHealth();
+        this.services = response.data.services;
+        this.healthCheckedAt = response.data.checkedAt;
+      } catch {
+        this.services = emptyServices('unknown');
+        this.healthError = 'Unable to check service health. Please try again.';
+      } finally {
+        this.healthLoading = false;
+      }
+    },
     formatDateTime(value) {
       if (!value) return 'Unknown time';
       return new Intl.DateTimeFormat(undefined, {
@@ -509,6 +560,59 @@ export default {
 </script>
 
 <style scoped>
+.observability-health-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.observability-health-list li {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  flex: 1 1 140px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.observability-health-list strong {
+  color: var(--text-primary);
+}
+
+.observability-health-list small,
+.observability-health-caption {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.observability-health-caption {
+  margin: 16px 0 0;
+}
+
+.observability-health-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.observability-health-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.observability-health-status--healthy { color: var(--settings-success-text); }
+.observability-health-status--unhealthy { color: var(--settings-danger-text); }
+.observability-health-status--degraded,
+.observability-health-status--starting { color: var(--color-warning); }
+
 .observability-toolbar {
   align-items: flex-end;
   gap: 12px;
@@ -532,7 +636,7 @@ export default {
 
 .observability-metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 14px;
   margin-bottom: 18px;
 }

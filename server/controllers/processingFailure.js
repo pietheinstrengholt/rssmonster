@@ -88,7 +88,8 @@ export const getProcessingFailureGroups = async (req, res, _next) => {
       userId,
       occurredAt: { [Op.gte]: query.where.occurredAt[Op.gte] }
     };
-    const [summaryRow, totalGroups, stageRows, groupRows] = await Promise.all([
+    const [totalLogs, summaryRow, totalGroups, stageRows, groupRows] = await Promise.all([
+      ProcessingFailure.count({ where: { userId } }),
       ProcessingFailure.findOne({
         attributes: [
           [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalOccurrences'],
@@ -146,6 +147,7 @@ export const getProcessingFailureGroups = async (req, res, _next) => {
       days: query.days,
       filters: { stage: query.stage, failureType: query.failureType },
       summary: {
+        totalLogs: Number(totalLogs) || 0,
         totalOccurrences: Number(summaryRow?.totalOccurrences) || 0,
         groupCount: Number(totalGroups) || 0,
         fatalOccurrences: Number(summaryRow?.fatalOccurrences) || 0,

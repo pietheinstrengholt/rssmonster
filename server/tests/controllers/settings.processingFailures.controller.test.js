@@ -77,6 +77,7 @@ describe('settings processing failure observability', () => {
 
     expect(groups.status).toBe(200);
     expect(groups.body.summary).toMatchObject({
+      totalLogs: 2,
       totalOccurrences: 2,
       groupCount: 1,
       fatalOccurrences: 0,
@@ -92,6 +93,12 @@ describe('settings processing failure observability', () => {
       })
     ]);
     expect(groups.body.availableStages).toContain('embedding');
+
+    const filtered = await request(app)
+      .get('/api/setting/observability?days=7&stage=feed_fetch')
+      .set('Authorization', authHeaderFor(user));
+    expect(filtered.status).toBe(200);
+    expect(filtered.body.summary).toMatchObject({ totalLogs: 2, totalOccurrences: 0, groupCount: 0 });
 
     const occurrences = await request(app)
       .get(`/api/setting/observability/groups/${fingerprint}?days=7`)
