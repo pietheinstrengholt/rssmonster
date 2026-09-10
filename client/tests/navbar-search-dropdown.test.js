@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils';
 import { createPinia } from 'pinia';
 import DesktopToolbar from '../src/components/shell/DesktopToolbar.vue';
 import { useSelectionStore } from '../src/store/selection.js';
+import { useOverviewStore } from '../src/store/overview.js';
 import { getRecentSearches, saveRecentSearches } from '../src/services/recentSearches.js';
 
 let wrapper;
@@ -15,6 +16,43 @@ function mountToolbar() {
 }
 beforeEach(() => { localStorage.clear(); vi.useFakeTimers(); });
 afterEach(() => { wrapper?.unmount(); wrapper = null; vi.useRealTimers(); vi.restoreAllMocks(); });
+
+it.each([
+  ['metroid', 'none', false],
+  ['metroid sort:quality developing:true', 'event', true]
+])('replaces Daily Briefing with the navbar expression %s', async (query, grouping, includeDevelopingEvents) => {
+  const input = mountToolbar();
+  search.mockRestore();
+  const store = useSelectionStore();
+  vi.spyOn(useOverviewStore(), 'fetchTopTags').mockResolvedValue([]);
+  store.setBriefingFilters({
+    selectionPeriod: '24h',
+    includeOnlyUnreadArticles: true,
+    showOnlyDevelopingEventArticles: true
+  });
+  store.setSelectedStatus('briefing');
+
+  await input.setValue(query);
+  await vi.advanceTimersByTimeAsync(300);
+
+  expect(store.currentSelection).toMatchObject({
+    status: 'unread',
+    search: query,
+    sort: 'desc',
+    grouping,
+    includeDevelopingEvents
+  });
+  store.setBriefingSelectionPeriod('7d');
+  expect(store.currentSelection.search).toBe(query);
+
+  await input.setValue('');
+  await vi.advanceTimersByTimeAsync(300);
+  expect(store.currentSelection.status).toBe('unread');
+  expect(store.currentSelection.search).toBe('');
+
+  store.setSelectedStatus('briefing');
+  expect(store.currentSelection.search).toBe('briefing:true unread:true @lastweek sort:recommended');
+});
 
 it('opens on shortcut focus and click; Escape and outside press preserve the query', async () => {
   const input = mountToolbar();

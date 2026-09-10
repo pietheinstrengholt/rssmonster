@@ -90,7 +90,7 @@ Navigation transitions update all related fields together so watchers never obse
 | Select a category | Keeps status, sort, grouping, and view; selects all feeds in that category; clears tag, query, and Smart Folder |
 | Select a feed | Keeps status, sort, grouping, and view; selects its parent category; clears tag, query, and Smart Folder |
 | Select a tag | Keeps status, sort, grouping, and view; returns to all categories and feeds; clears query and Smart Folder |
-| Enter a free-form search | Clears the tag and exits any Smart Folder; restores ordinary presentation, removing inherited folder presentation tokens unless explicitly changed in the new search |
+| Enter a free-form search | Clears the tag and exits any Smart Folder; restores ordinary presentation, removing inherited folder presentation tokens unless explicitly changed in the new search. A nonempty search exits Daily Briefing into ordinary search with Newest sorting, no grouping, and developing-event inclusion disabled unless requested by the expression |
 | Select a Smart Folder | Captures ordinary presentation on first entry; returns to all categories and feeds, uses Unread with expression overrides, clears tag, and applies explicit expression sorting/grouping and its result limit |
 | Clear a Smart Folder through Smart Folder navigation | Returns to all categories and feeds with Unread and no saved query; restores ordinary sort, grouping, and developing-event preference |
 | Change explicit sort | Normalizes unsupported values to Newest and removes any embedded sort instruction from the query |

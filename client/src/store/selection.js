@@ -401,6 +401,10 @@ export const useSelectionStore = defineStore('selection', {
         ...detached,
         tag: null,
         smartFolderId: null,
+        // A manual search leaves Briefing so its server-owned query cannot replace the expression.
+        ...(this.currentSelection.status === 'briefing' && String(search ?? '').trim()
+          ? { status: 'unread', sort: 'desc', grouping: 'none', includeDevelopingEvents: false }
+          : {}),
         ...developingSelection(search)
       });
     },
