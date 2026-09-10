@@ -22,7 +22,7 @@ settings, see the [configuration guide]({% link configuration.md %}).
 
 For a manual/source installation, make sure you have:
 
-- **Node.js** 22.19.0 or higher
+- **Node.js** 24 for the source installation guides
 - **npm** (comes bundled with Node.js)
 - **Git** for cloning the repository
 
@@ -188,6 +188,9 @@ thresholds.
 ---
 
 ## Manual Installation
+
+For platform-specific steps, follow [macOS Installation]({% link osx-installation.md %})
+or [Ubuntu Installation]({% link ubuntu-installation.md %}). Both guides use Node.js 24.
 
 ### Step 1: Clone the Repository
 

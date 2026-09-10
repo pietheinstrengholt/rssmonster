@@ -221,7 +221,7 @@ Use the [documentation index](docs/index.md) to explore the complete guides.
 
 | Topic | Guides |
 | --- | --- |
-| Installation and deployment | [Getting Started](docs/getting-started.md), [manual installation](docs/getting-started.md#manual-installation), [production deployment](docs/getting-started.md#production-deployment) |
+| Installation and deployment | [Getting Started](docs/getting-started.md), [manual installation](docs/getting-started.md#manual-installation), [macOS](docs/osx-installation.md), [Ubuntu](docs/ubuntu-installation.md), [production deployment](docs/getting-started.md#production-deployment) |
 | Configuration and storage | [Environment settings and reverse proxies](docs/configuration.md), [SQLite and MySQL](docs/configuration.md#database), [Backup and Restore](docs/backup-restore.md) |
 | Local inference and models | [Inference administration](docs/inference.md), [Model Usage](docs/model-usage.md), [Assistant and MCP](docs/assistant.md) |
 | Finding and organizing articles | [Search](docs/search.md), [Smart Folders](docs/smart-folders.md), [feed item filters](docs/feed-item-filters.md), [Actions](docs/actions.md) |

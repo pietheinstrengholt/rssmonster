@@ -14,7 +14,7 @@ It assumes a fresh Mac and installs:
 * Apple Command Line Tools
 * Homebrew
 * Git
-* Node.js 22
+* Node.js 24
 * npm
 * MySQL 8.4
 * RSSMonster client dependencies
@@ -82,20 +82,20 @@ git config --global user.name "Your Name"
 git config --global user.email "your-email@example.com"
 ```
 
-## 4. Install Node.js 22
+## 4. Install Node.js 24
 
-RSSMonster uses Node.js 22.
+RSSMonster uses Node.js 24.
 
 Install the versioned Homebrew package:
 
 ```bash
-brew install node@22
+brew install node@24
 ```
 
 Add it to your shell path:
 
 ```bash
-echo 'export PATH="/opt/homebrew/opt/node@22/bin:$PATH"' >> ~/.zshrc
+echo 'export PATH="/opt/homebrew/opt/node@24/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
@@ -106,8 +106,7 @@ node --version
 npm --version
 ```
 
-Use Node.js `22.19.0` or later; for this guide, verify that the installed
-Node.js 22 release meets that minimum.
+For this guide, verify that Node.js reports `v24.x.x`.
 
 npm is included with Node.js and does not need to be installed separately.
 
@@ -527,7 +526,7 @@ git --version
 brew --version
 ```
 
-RSSMonster development should use Node.js 22.
+RSSMonster development should use Node.js 24.
 
 ## Intel Macs
 
@@ -546,7 +545,7 @@ On an Intel Mac, Homebrew normally uses:
 For example, the Node.js path becomes:
 
 ```bash
-echo 'export PATH="/usr/local/opt/node@22/bin:$PATH"' >> ~/.zshrc
+echo 'export PATH="/usr/local/opt/node@24/bin:$PATH"' >> ~/.zshrc
 ```
 
 And MySQL:
@@ -568,9 +567,9 @@ echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
 brew update
-brew install git node@22 mysql@8.4
+brew install git node@24 mysql@8.4
 
-echo 'export PATH="/opt/homebrew/opt/node@22/bin:$PATH"' >> ~/.zshrc
+echo 'export PATH="/opt/homebrew/opt/node@24/bin:$PATH"' >> ~/.zshrc
 echo 'export PATH="/opt/homebrew/opt/mysql@8.4/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 
