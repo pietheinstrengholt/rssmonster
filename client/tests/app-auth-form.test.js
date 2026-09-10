@@ -10,6 +10,8 @@ vi.mock('../src/api/auth', () => ({
   confirmPasswordReset: vi.fn(),
   developmentLogin: vi.fn().mockRejectedValue({ response: { status: 404 } }),
   getAuthConfiguration: vi.fn(),
+  getOidcLoginUrl: vi.fn(() => '/api/auth/oidc/login'),
+  exchangeOidcCode: vi.fn(),
   getEmailEnrollmentStatus: vi.fn(),
   login: vi.fn(),
   register: vi.fn(),
@@ -72,6 +74,50 @@ afterEach(() => {
 });
 
 describe('App authentication form', () => {
+  it('offers provider login only when configured', async () => {
+    authApi.getAuthConfiguration.mockResolvedValueOnce({ oidcEnabled: true, registrationEnabled: false });
+    const wrapper = await mountAuthForm();
+    expect(wrapper.get('a.auth-provider').attributes('href')).toBe('/api/auth/oidc/login');
+    expect(wrapper.text()).toContain('Sign in with identity provider');
+    wrapper.unmount();
+  });
+
+  it('keeps provider sign-in available alongside the local registration form', async () => {
+    authApi.getAuthConfiguration.mockResolvedValueOnce({ oidcEnabled: true, registrationEnabled: true });
+    const wrapper = await mountAuthForm();
+    wrapper.vm.switchAuthMode(true);
+    await flushPromises();
+    expect(wrapper.get('a.auth-provider').attributes('href')).toBe('/api/auth/oidc/login');
+    expect(wrapper.find('#password_repeat').exists()).toBe(true);
+    expect(authApi.register).not.toHaveBeenCalled();
+    wrapper.vm.startPasswordReset();
+    await flushPromises();
+    expect(wrapper.find('a.auth-provider').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('exchanges the handoff code after removing it from browser history', async () => {
+    window.history.replaceState({}, '', '/#oidc-code=one-time-code');
+    authApi.exchangeOidcCode.mockImplementationOnce(async code => {
+      expect(code).toBe('one-time-code');
+      expect(window.location.hash).toBe('');
+      return { token: 'oidc-session', user: { id: 42, role: 'user' }, expiresInSeconds: 300 };
+    });
+    const wrapper = await mountAuthForm();
+    expect(wrapper.vm.authStore.token).toBe('oidc-session');
+    expect(wrapper.vm.isAuthenticated).toBe(true);
+    expect(authApi.validateSession).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it('shows a recoverable error when the provider callback fails', async () => {
+    window.history.replaceState({}, '', '/#oidc-error=failed');
+    const wrapper = await mountAuthForm();
+    expect(window.location.hash).toBe('');
+    expect(wrapper.text()).toContain('Provider sign-in failed');
+    expect(authApi.exchangeOidcCode).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
   it('blocks signup while preserving login and password recovery when registration is disabled', async () => {
     authApi.getAuthConfiguration.mockResolvedValueOnce({ registrationEnabled: false, emailEnabled: false });
     authApi.login.mockResolvedValueOnce({ message: 'Signed in.' });
@@ -397,4 +443,59 @@ describe('App authentication form', () => {
     await wrapper.find('.auth-register a').trigger('click');
     expect(wrapper.find('.auth-message').exists()).toBe(false);
   });
+});
+
+it('shows only provider login and discards password reset mode when local authentication is disabled', async () => {
+  window.history.replaceState({}, '', '/#reset-password-token=old-token');
+  authApi.getAuthConfiguration.mockResolvedValue({ localAuthEnabled: false, registrationEnabled: true, oidcEnabled: true });
+  const wrapper = await mountAuthForm();
+  expect(wrapper.find('#username').exists()).toBe(false);
+  expect(wrapper.find('#reset-password').exists()).toBe(false);
+  expect(wrapper.text()).not.toContain('Forgot password?');
+  expect(wrapper.text()).not.toContain('Create an account');
+  expect(wrapper.find('a[href="/api/auth/oidc/login"]').exists()).toBe(true);
+  wrapper.vm.switchAuthMode(true);
+  wrapper.vm.startPasswordReset();
+  await wrapper.vm.login();
+  expect(wrapper.vm.showSignup).toBe(false);
+  expect(wrapper.vm.passwordResetMode).toBeNull();
+  expect(authApi.login).not.toHaveBeenCalled();
+  expect(authApi.developmentLogin).not.toHaveBeenCalled();
+  wrapper.unmount();
+});
+
+
+it('toggles password visibility without submitting or changing the credential', async () => {
+  const wrapper = await mountAuthForm();
+  await wrapper.get('#password').setValue('unchanged-password');
+  const toggle = wrapper.get('button[aria-controls="password"]');
+  expect(toggle.attributes('type')).toBe('button');
+  expect(toggle.attributes('aria-label')).toBe('Show password');
+  await toggle.trigger('click');
+  expect(wrapper.get('#password').attributes('type')).toBe('text');
+  expect(toggle.attributes('aria-label')).toBe('Hide password');
+  expect(wrapper.vm.password).toBe('unchanged-password');
+  expect(authApi.login).not.toHaveBeenCalled();
+  await toggle.trigger('click');
+  expect(wrapper.get('#password').attributes('type')).toBe('password');
+  wrapper.unmount();
+});
+
+it('uses the local heading as a divider only beside provider sign-in', async () => {
+  authApi.getAuthConfiguration.mockResolvedValueOnce({ oidcEnabled: true, registrationEnabled: true, emailEnabled: true });
+  const wrapper = await mountAuthForm();
+  expect(wrapper.get('form').attributes('aria-labelledby')).toBe('signin');
+  expect(wrapper.get('#signin').classes()).toContain('auth-section-divider');
+  wrapper.vm.switchAuthMode(true);
+  await flushPromises();
+  expect(wrapper.get('#signin').classes()).toContain('auth-form-title');
+  for (const id of ['username', 'password', 'password_repeat', 'email']) {
+    expect(wrapper.get('label[for="' + id + '"]').text()).toBeTruthy();
+    expect(wrapper.get('#' + id).attributes('placeholder')).toBeTruthy();
+  }
+  const repeat = wrapper.get('button[aria-controls="password_repeat"]');
+  await repeat.trigger('click');
+  expect(wrapper.get('#password_repeat').attributes('type')).toBe('text');
+  expect(wrapper.get('#password').attributes('type')).toBe('password');
+  wrapper.unmount();
 });

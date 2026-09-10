@@ -52,11 +52,12 @@
                 />
                 <p class="manage-users__field-status">{{ emailVerificationStatus(user) }}</p>
               </div>
-              <div class="manage-users__field">
+              <p v-if="user.localPasswordEnabled === false">This account uses provider sign-in. Local password changes are unavailable.</p>
+              <div v-if="user.localPasswordEnabled !== false" class="manage-users__field">
                 <label for="password">New password <span>Optional</span></label>
                 <input id="password" class="app-form-control" type="password" placeholder="Leave blank to keep the current password" />
               </div>
-              <div class="manage-users__field">
+              <div v-if="user.localPasswordEnabled !== false" class="manage-users__field">
                 <label for="password-repeat">Confirm new password</label>
                 <input id="password-repeat" class="app-form-control" type="password" placeholder="Repeat the new password" />
               </div>
@@ -720,8 +721,8 @@ export default {
         }
 
         // Logic to update user
-        const userPassword = this.$el.querySelector('#password').value;
-        const userPasswordRepeat = this.$el.querySelector('#password-repeat').value;
+        const userPassword = this.$el.querySelector('#password')?.value || '';
+        const userPasswordRepeat = this.$el.querySelector('#password-repeat')?.value || '';
         const validationMessage = this.validatePassword(userPassword, userPasswordRepeat);
 
         if (validationMessage) {

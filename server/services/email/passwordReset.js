@@ -1,3 +1,4 @@
+import { isLocalAuthEnabled } from '../../config/auth.js';
 import { createHash, randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
@@ -56,7 +57,7 @@ export const requestPasswordReset = async (email, {
   createToken = () => randomBytes(TOKEN_BYTES).toString('base64url'),
   cooldownMs = PASSWORD_RESET_ACCOUNT_COOLDOWN_MS
 } = {}) => {
-  if (!configuration.enabled) return { accepted: true };
+  if (!isLocalAuthEnabled() || !configuration.enabled) return { accepted: true };
 
   let normalizedEmail;
   try {
@@ -72,7 +73,7 @@ export const requestPasswordReset = async (email, {
       transaction,
       lock: transaction.LOCK.UPDATE
     });
-    if (!user) return;
+    if (!user?.password) return;
 
     if (cooldownMs > 0) {
       const cooldownStart = new Date(now.getTime() - cooldownMs);
@@ -117,6 +118,7 @@ export const confirmPasswordReset = async ({ token, password, passwordRepeat }, 
   now = new Date(),
   hashPassword = value => bcrypt.hash(value, 10)
 } = {}) => {
+  if (!isLocalAuthEnabled()) throw new PasswordResetError('LOCAL_AUTH_DISABLED', 'Local authentication is disabled.', 403);
   const rawToken = normalizeToken(token);
   const validatedPassword = validateResetPassword(password, passwordRepeat);
   const passwordHash = await hashPassword(validatedPassword);
@@ -139,7 +141,7 @@ export const confirmPasswordReset = async ({ token, password, passwordRepeat }, 
       transaction,
       lock: transaction.LOCK.UPDATE
     });
-    if (!user) {
+    if (!user?.password) {
       throw new PasswordResetError(
         'PASSWORD_RESET_INVALID',
         'This password reset link is invalid or has expired.'

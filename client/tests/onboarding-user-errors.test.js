@@ -284,6 +284,22 @@ describe('user-management failure handling', () => {
     expect(deleteUser).not.toHaveBeenCalled();
   });
 
+  it('edits a provider-only account without local password controls', async () => {
+    fetchUsers.mockResolvedValueOnce({ data: { users: [{ id: 42, role: 'user', username: 'provider-reader', localPasswordEnabled: false }] } });
+    const wrapper = mountManageUsers();
+    await flushPromises();
+    await findButton(wrapper, 'Edit').trigger('click');
+    expect(wrapper.find('#password').exists()).toBe(false);
+    expect(wrapper.find('#password-repeat').exists()).toBe(false);
+    await wrapper.get('#role').setValue('admin');
+    await findButton(wrapper, 'Save changes').trigger('click');
+    await flushPromises();
+    expect(updateUser).toHaveBeenCalledWith(42, {
+      email: null, password: '', role: 'admin', username: 'provider-reader'
+    });
+    wrapper.unmount();
+  });
+
   it('updates an account with a validated password and refreshes the directory', async () => {
     fetchUsers
       .mockResolvedValueOnce({

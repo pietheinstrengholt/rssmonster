@@ -44,6 +44,16 @@ describe('email verification service', () => {
     vi.restoreAllMocks();
   });
 
+  it('blocks provider-only settings changes but permits unverified enrollment', async () => {
+    const user = await createUser({ password: null, feverCredentialHash: null });
+    await expect(changeUserEmail(user.id, 'new@example.com')).rejects.toMatchObject({ code: 'EMAIL_MANAGED_BY_PROVIDER', status: 403 });
+    await expect(changeUserEmail(user.id, 'enrollment@example.com', { allowEnrollment: true })).resolves.toMatchObject({ email: 'enrollment@example.com', emailVerifiedAt: null });
+    await user.reload();
+    await user.update({ emailVerifiedAt: new Date() });
+    await expect(changeUserEmail(user.id, 'other@example.com', { allowEnrollment: true })).rejects.toMatchObject({ status: 403 });
+    await expect(changeUserEmail(user.id, user.email)).resolves.toMatchObject({ email: user.email });
+  });
+
   it('normalizes an owned email change, clears verification, and invalidates old tokens', async () => {
     const user = await createUser({
       email: 'old@example.com',

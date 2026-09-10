@@ -44,7 +44,7 @@ const updateEmail = async (req, res) => {
         message: 'This email address is already verified.'
       });
     }
-    const settings = await changeUserEmail(req.userData.userId, req.body?.email);
+    const settings = await changeUserEmail(req.userData.userId, req.body?.email, { allowEnrollment: true });
     await requestUserEmailVerification(req.userData.userId);
     return res.status(202).json({
       ...safeStatus(settings),

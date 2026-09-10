@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import api from '../src/api/client.js';
 import {
   developmentLogin,
+  exchangeOidcCode,
+  linkOidcAccount,
   validateSession
 } from '../src/api/auth.js';
 
@@ -57,4 +59,14 @@ describe('session validation API', () => {
       { suppressGlobalError: true }
     );
   });
+});
+
+
+it('includes browser credentials only on OIDC handoff and linking requests', async () => {
+  const post = vi.spyOn(api, 'post').mockResolvedValue({ data: { accepted: true } });
+  await exchangeOidcCode('handoff-code');
+  await linkOidcAccount('current-password');
+  expect(post).toHaveBeenNthCalledWith(1, '/auth/oidc/exchange', { code: 'handoff-code' }, { suppressGlobalError: true, withCredentials: true });
+  expect(post).toHaveBeenNthCalledWith(2, '/auth/oidc/link', { password: 'current-password' }, { suppressGlobalError: true, withCredentials: true });
+  expect(api.defaults.withCredentials).not.toBe(true);
 });

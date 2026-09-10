@@ -21,6 +21,7 @@ import cors from 'cors';
 import fs from 'fs';
 import https from 'https';
 import http from 'node:http';
+import { getAuthConfiguration, validateAuthConfiguration } from './config/auth.js';
 import {
   apiRateLimiter,
   mcpRateLimiter
@@ -96,7 +97,16 @@ app.use((req, res, next) => serveStatic(req, res, next));
 app.get('/sw.js', serveServiceWorkerFallback);
 
 // CORS
-app.use(cors());
+app.use(cors((req, next) => {
+  if (!req.path.startsWith('/api/auth/oidc/')) return next(null, {});
+  try {
+    const { oidc } = getAuthConfiguration();
+    const origin = oidc ? new URL(oidc.frontendUrl).origin : null;
+    return next(null, { origin: origin && req.get('origin') === origin ? origin : false, credentials: true });
+  } catch (error) {
+    return next(error);
+  }
+}));
 
 // Rate limiting
 app.use(['/api', '/mcp', '/rss'], apiRateLimiter);
@@ -109,7 +119,7 @@ app.use(express.json());
 
 // Explicit CORS headers
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  if (!req.path.startsWith('/api/auth/oidc/')) res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
     "Access-Control-Allow-Methods",
     "OPTIONS, GET, POST, PUT, PATCH, DELETE"
@@ -160,6 +170,7 @@ export const startServer = async ({
   host,
   staticDirectory
 } = {}) => {
+  validateAuthConfiguration();
   // DB
   await sequelize.authenticate();
   console.log('Database connection established');

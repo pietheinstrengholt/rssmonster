@@ -1,9 +1,8 @@
 import db from '../models/index.js';
 const { User } = db;
-const EMAIL_ENROLLMENT_EXPIRES_IN_SECONDS = 30 * 60;
-import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { getJwtSecret, isRegistrationEnabled } from '../config/auth.js';
+import { createAuthenticatedSession, createEmailEnrollmentResponse } from "../services/auth/session.js";
+import { isRegistrationEnabled, isLocalAuthEnabled, getAuthConfiguration } from '../config/auth.js';
 import {
   createFeverApiKey,
   createFeverCredentialHash
@@ -34,47 +33,6 @@ const isEmailConflict = error =>
 const isDevelopmentLoginEnabled = () =>
   process.env.NODE_ENV === 'development' &&
   process.env.ENABLE_DEVELOPMENT_LOGIN === 'true';
-
-// This function creates the standard JWT response shared by supported login flows.
-const createAuthenticatedSession = async (user) => {
-  const expiresInSeconds = Number(process.env.JWT_EXPIRES_IN) || 86400;
-  const token = jwt.sign(
-    {
-      username: user.username,
-      userId: user.id,
-      passwordChangedAt: user.passwordChangedAt?.getTime?.() || null,
-      purpose: 'session'
-    },
-    getJwtSecret(),
-    {
-      expiresIn: expiresInSeconds
-    }
-  );
-
-  await user.update({
-    lastLogin: new Date()
-  });
-
-  return {
-    message: 'Connected!',
-    token,
-    user,
-    expiresInSeconds,
-    agenticFeaturesEnabled: isAssistantEnabled()
-  };
-};
-
-const createEmailEnrollmentResponse = user => ({
-  message: 'A verified email address is required before signing in.',
-  emailVerificationRequired: true,
-  email: user.email,
-  emailEnrollmentToken: jwt.sign({
-    userId: user.id,
-    passwordChangedAt: user.passwordChangedAt?.getTime?.() || null,
-    purpose: 'email-enrollment'
-  }, getJwtSecret(), { expiresIn: EMAIL_ENROLLMENT_EXPIRES_IN_SECONDS }),
-  expiresInSeconds: EMAIL_ENROLLMENT_EXPIRES_IN_SECONDS
-});
 
 const register = async (req, res, _next) => {
   try {        
@@ -156,7 +114,7 @@ const login = async (req, res, _next) => {
     // Check if the user exists
     const user = await User.findOne({ where: { username } });
     
-    if (!user) {
+    if (!user?.password) {
       return res.status(401).json({ 
         message: 'Username or password incorrect!' 
       });
@@ -252,7 +210,9 @@ const validate = async (req, res, _next) => {
 };
 
 const configuration = (_req, res) => res.status(200).json({
-  registrationEnabled: isRegistrationEnabled(),
+  registrationEnabled: isRegistrationEnabled() && isLocalAuthEnabled(),
+  localAuthEnabled: isLocalAuthEnabled(),
+  oidcEnabled: getAuthConfiguration().oidcEnabled,
   emailEnabled: isEmailEnabled()
 });
 

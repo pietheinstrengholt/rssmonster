@@ -20,6 +20,8 @@ server.
   the standalone inference service.
 - [npm Commands]({% link npm-commands.md %}) is the complete client, server, and inference
   command reference, including supported arguments and usage guidance.
+- [OIDC Configuration]({% link oidc-configuration.md %}) explains OpenID Connect sign-in with Google as an example,
+  provider-only login, account linking, and automatic account creation.
 - [Email Configuration]({% link email-configuration.md %}) explains how to enable SMTP,
   configure credentials and TLS, and verify connectivity from the admin UI.
 - [Progressive Web App and Notifications]({% link web-app-and-notifications.md %}) covers

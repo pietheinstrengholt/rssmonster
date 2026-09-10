@@ -1,3 +1,4 @@
+import { isLocalAuthEnabled } from '../config/auth.js';
 import db from '../models/index.js';
 const { Feed, Category, Article, User, Hotlink } = db;
 import { Op } from 'sequelize';
@@ -32,6 +33,7 @@ export const getFever = async (req, res, _next) => {
 export const postFever = async (req, res, _next) => {
   try {
     const arr = responseBase();
+    if (!isLocalAuthEnabled()) return sendFeverResponse(req, res, 200, arr);
     const apiKey = await resolveFeverApiKey(req, res);
 
     //check if api_key is provided, clients implement the api_key in different ways
@@ -555,7 +557,7 @@ async function resolveFeverApiKey(req, res) {
     }
 
     const user = await User.findOne({ where: { username } });
-    const passwordMatches = user
+    const passwordMatches = user?.password
       ? await bcrypt.compare(password, user.password)
       : false;
 

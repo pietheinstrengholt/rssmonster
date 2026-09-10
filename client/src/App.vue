@@ -1,8 +1,8 @@
 <template>
   <div class="app-root">
     <app-install-prompt />
-    <p v-if="emailVerificationMessage" class="email-verification-banner" role="status">
-      {{ emailVerificationMessage }}
+    <p v-if="emailVerificationMessage || oidcMessage" class="email-verification-banner" role="status">
+      {{ emailVerificationMessage || oidcMessage }}
     </p>
     <!-- Loading state during session validation -->
     <div v-if="isLoading" class="loading-container">
@@ -24,56 +24,100 @@
           <p>Your intelligent RSS reader</p>
         </header>
 
-        <form class="auth-form" @submit.prevent="submitAuthentication">
-          <p class="auth-form-title" id="signin">{{ authFormTitle }}</p>
+        <a v-if="oidcEnabled && !passwordResetMode && !emailEnrollmentMode"
+          class="auth-provider" :href="oidcLoginUrl">
+          <span class="auth-provider-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><path d="m10 17 5-5-5-5M15 12H3" /></svg></span>
+          <span class="auth-provider-label">Sign in with identity provider</span>
+          <span class="auth-provider-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6" /></svg></span>
+        </a>
+
+        <form v-if="localAuthEnabled || emailEnrollmentMode" class="auth-form" aria-labelledby="signin" @submit.prevent="submitAuthentication">
+          <p :class="oidcEnabled && !showSignup && !passwordResetMode && !emailEnrollmentMode ? 'auth-section-divider' : 'auth-form-title'" id="signin"><span>{{ authFormTitle }}</span></p>
         
           <!-- Username input -->
           <div v-if="!passwordResetMode && !emailEnrollmentMode" class="auth-field">
-            <input class="app-form-control" type="text" id="username" v-model="username" />
             <label class="app-form-label" for="username">Username</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></svg></span>
+              <input class="app-form-control auth-input" type="text" id="username" v-model="username" autocomplete="username" placeholder="Enter your username" />
+            </div>
           </div>
 
           <!-- Password input -->
           <div v-if="!passwordResetMode && !emailEnrollmentMode" class="auth-field">
-            <input class="app-form-control" type="password" id="password" v-model="password" />
             <label class="app-form-label" for="password">Password</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg></span>
+              <input class="app-form-control auth-input auth-input--with-action" :type="visiblePasswords['password'] ? 'text' : 'password'" id="password" v-model="password" :autocomplete="showSignup ? 'new-password' : 'current-password'" placeholder="Enter your password" />
+              <button type="button" class="auth-input-action" :aria-label="visiblePasswords['password'] ? 'Hide password' : 'Show password'" :aria-pressed="Boolean(visiblePasswords['password'])" aria-controls="password" @click="visiblePasswords['password'] = !visiblePasswords['password']">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12" /><circle cx="12" cy="12" r="3" /><path v-if="visiblePasswords['password']" d="m3 3 18 18" /></svg>
+              </button>
+            </div>
           </div>
 
           <!-- Password repeat input (signup only) -->
           <div v-if="showSignup && registrationEmailEnabled && !passwordResetMode" class="auth-field">
-            <input class="app-form-control" type="email" id="email" v-model="email" autocomplete="email" required />
             <label class="app-form-label" for="email">Email address</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg></span>
+              <input class="app-form-control auth-input" type="email" id="email" v-model="email" autocomplete="email" required placeholder="Enter your email address" />
+            </div>
           </div>
 
           <div v-if="showSignup && !passwordResetMode" class="auth-field">
-            <input class="app-form-control" type="password" id="password_repeat" v-model="password_repeat" />
             <label class="app-form-label" for="password_repeat">Password (repeat)</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg></span>
+              <input class="app-form-control auth-input auth-input--with-action" :type="visiblePasswords['password_repeat'] ? 'text' : 'password'" id="password_repeat" v-model="password_repeat" autocomplete="new-password" placeholder="Repeat your password" />
+              <button type="button" class="auth-input-action" :aria-label="visiblePasswords['password_repeat'] ? 'Hide repeat password' : 'Show repeat password'" :aria-pressed="Boolean(visiblePasswords['password_repeat'])" aria-controls="password_repeat" @click="visiblePasswords['password_repeat'] = !visiblePasswords['password_repeat']">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12" /><circle cx="12" cy="12" r="3" /><path v-if="visiblePasswords['password_repeat']" d="m3 3 18 18" /></svg>
+              </button>
+            </div>
           </div>
 
           <div v-if="passwordResetMode === 'request'" class="auth-field">
-            <input class="app-form-control" type="email" id="reset-email" v-model="resetEmail" autocomplete="email" required />
             <label class="app-form-label" for="reset-email">Email address</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg></span>
+              <input class="app-form-control auth-input" type="email" id="reset-email" v-model="resetEmail" autocomplete="email" required placeholder="Enter your email address" />
+            </div>
           </div>
 
           <template v-if="passwordResetMode === 'confirm'">
             <div class="auth-field">
-              <input class="app-form-control" type="password" id="reset-password" v-model="resetPassword" autocomplete="new-password" required />
               <label class="app-form-label" for="reset-password">New password</label>
+              <div class="auth-input-wrapper">
+                <span class="auth-input-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg></span>
+                <input class="app-form-control auth-input auth-input--with-action" :type="visiblePasswords['reset-password'] ? 'text' : 'password'" id="reset-password" v-model="resetPassword" autocomplete="new-password" required placeholder="Enter your new password" />
+                <button type="button" class="auth-input-action" :aria-label="visiblePasswords['reset-password'] ? 'Hide new password' : 'Show new password'" :aria-pressed="Boolean(visiblePasswords['reset-password'])" aria-controls="reset-password" @click="visiblePasswords['reset-password'] = !visiblePasswords['reset-password']">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12" /><circle cx="12" cy="12" r="3" /><path v-if="visiblePasswords['reset-password']" d="m3 3 18 18" /></svg>
+                </button>
+              </div>
             </div>
             <div class="auth-field">
-              <input class="app-form-control" type="password" id="reset-password-repeat" v-model="resetPasswordRepeat" autocomplete="new-password" required />
               <label class="app-form-label" for="reset-password-repeat">Repeat new password</label>
+              <div class="auth-input-wrapper">
+                <span class="auth-input-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg></span>
+                <input class="app-form-control auth-input auth-input--with-action" :type="visiblePasswords['reset-password-repeat'] ? 'text' : 'password'" id="reset-password-repeat" v-model="resetPasswordRepeat" autocomplete="new-password" required placeholder="Repeat your new password" />
+                <button type="button" class="auth-input-action" :aria-label="visiblePasswords['reset-password-repeat'] ? 'Hide repeat new password' : 'Show repeat new password'" :aria-pressed="Boolean(visiblePasswords['reset-password-repeat'])" aria-controls="reset-password-repeat" @click="visiblePasswords['reset-password-repeat'] = !visiblePasswords['reset-password-repeat']">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12" /><circle cx="12" cy="12" r="3" /><path v-if="visiblePasswords['reset-password-repeat']" d="m3 3 18 18" /></svg>
+                </button>
+              </div>
             </div>
           </template>
 
           <div v-if="emailEnrollmentMode" class="auth-field">
-            <input class="app-form-control" type="email" id="enrollment-email" v-model="enrollmentEmail" autocomplete="email" required />
             <label class="app-form-label" for="enrollment-email">Email address</label>
+            <div class="auth-input-wrapper">
+              <span class="auth-input-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg></span>
+              <input class="app-form-control auth-input" type="email" id="enrollment-email" v-model="enrollmentEmail" autocomplete="email" required placeholder="Enter your email address" />
+            </div>
           </div>
 
           <!-- Submit button -->
           <button v-if="!emailEnrollmentVerified" type="submit" class="auth-submit auth-submit--block" :disabled="isSubmitting">
-            {{ authSubmitLabel }}
+            <span>{{ authSubmitLabel }}</span>
+            <svg v-if="!isSubmitting && !showSignup && !passwordResetMode && !emailEnrollmentMode" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
           </button>
 
           <button
@@ -89,16 +133,18 @@
           <p v-if="message" class="auth-message" role="status" aria-live="polite">{{ message }}</p>
         </form>
 
-        <div class="auth-divider">
+        <p v-if="!localAuthEnabled && !emailEnrollmentMode && message" class="auth-message" role="status">{{ message }}</p>
+
+        <div v-if="localAuthEnabled || emailEnrollmentMode" class="auth-divider" :class="{ 'auth-divider--spacer': oidcEnabled && !showSignup && !passwordResetMode && !emailEnrollmentMode }" aria-hidden="true">
           <span>or</span>
         </div>
 
         <p v-if="emailEnrollmentMode" class="auth-register"><a href="#!" @click.prevent="leaveEmailEnrollment">Back to sign in</a></p>
         <p v-else-if="passwordResetMode" class="auth-register"><a href="#!" @click.prevent="leavePasswordReset">Back to sign in</a></p>
         <p v-else-if="showSignup" class="auth-register">Already a member? <a href="#!" @click.prevent="switchAuthMode(false)">Click here to sign in</a></p>
-        <template v-else>
+        <template v-else-if="localAuthEnabled">
           <p v-if="registrationEnabled" class="auth-register">Not a member? <a href="#!" @click.prevent="switchAuthMode(true)">Create an account</a></p>
-          <p class="auth-register"><a href="#!" @click.prevent="startPasswordReset">Forgot password?</a></p>
+          <p class="auth-register auth-register--secondary"><a href="#!" @click.prevent="startPasswordReset">Forgot password?</a></p>
         </template>
       </section>
 
@@ -153,6 +199,7 @@ export default {
       username: '',
       email: '',
       password: '',
+      visiblePasswords: {},
       password_repeat: '',
       message: '',
       showSignup: false,
@@ -167,6 +214,9 @@ export default {
       resetPasswordRepeat: '',
       registrationEmailEnabled: false,
       registrationEnabled: false,
+      localAuthEnabled: true,
+      oidcEnabled: false,
+      oidcMessage: '',
       emailEnrollmentMode: false,
       emailEnrollmentToken: '',
       enrollmentEmail: '',
@@ -182,7 +232,7 @@ export default {
     await this.confirmEmailFromLocation?.();
     this.loadPasswordResetFromLocation?.();
     await this.loadAuthConfiguration?.();
-    await this.checkSession();
+    if (!await this.completeOidcFromLocation?.()) await this.checkSession();
     this.isLoading = false;
   },
   beforeUnmount() {
@@ -190,6 +240,9 @@ export default {
     this.stopEmailEnrollmentPolling?.();
   },
   computed: {
+    oidcLoginUrl() {
+      return authApi.getOidcLoginUrl();
+    },
     ...mapStores(useAuthStore),
     authFormTitle() {
       if (this.emailEnrollmentMode) return 'Verify your email address';
@@ -212,15 +265,58 @@ export default {
     }
   },
   methods: {
+    async completeOidcFromLocation() {
+      const url = new URL(window.location.href);
+      const parameters = new URLSearchParams(url.hash.slice(1));
+      const code = parameters.get('oidc-code');
+      const failed = parameters.has('oidc-error');
+      if (!code && !failed) return false;
+      parameters.delete('oidc-code');
+      parameters.delete('oidc-error');
+      url.hash = parameters.toString();
+      window.history.replaceState({}, '', url);
+      if (failed) {
+        this.message = 'Provider sign-in failed. Please try again or link your account from Account settings first.';
+        return true;
+      }
+      const requestId = this.authStore.beginSessionRequest();
+      try {
+        const response = await authApi.exchangeOidcCode(code);
+        if (!this.authStore.isSessionRequestCurrent(requestId)) return true;
+        this.message = response.message;
+        if (response.emailVerificationRequired === true) {
+          this.emailEnrollmentMode = true;
+          this.emailEnrollmentToken = response.emailEnrollmentToken;
+          this.enrollmentEmail = response.email || '';
+          this.enrollmentSavedEmail = response.email || '';
+          this.emailEnrollmentVerified = false;
+          this.startEmailEnrollmentPolling();
+          return true;
+        }
+        if (response.token) {
+          this.establishSession(response);
+          if (response.oidcLinked) this.oidcMessage = 'Provider account linked. You can now use provider sign-in.';
+          return true;
+        }
+      } catch {
+        if (!this.authStore.isSessionRequestCurrent(requestId)) return true;
+        this.message = 'Provider sign-in could not be completed. Please start again.';
+      }
+      return true;
+    },
     async loadAuthConfiguration() {
       try {
         const configuration = await authApi.getAuthConfiguration();
         this.registrationEmailEnabled = configuration.emailEnabled === true;
-        this.registrationEnabled = configuration.registrationEnabled !== false;
+        this.localAuthEnabled = configuration.localAuthEnabled !== false;
+        this.registrationEnabled = this.localAuthEnabled && configuration.registrationEnabled !== false;
+        if (!this.localAuthEnabled) this.leavePasswordReset();
+        this.oidcEnabled = configuration.oidcEnabled === true;
         if (!this.registrationEnabled) this.showSignup = false;
       } catch {
         this.registrationEmailEnabled = false;
         this.registrationEnabled = false;
+        this.oidcEnabled = false;
         this.showSignup = false;
       }
     },
@@ -289,6 +385,7 @@ export default {
     },
     // This function bootstraps the configured development user while retaining normal login fallback.
     async tryDevelopmentLogin() {
+      if (this.localAuthEnabled === false) return;
       const requestId = this.authStore.beginSessionRequest();
 
       try {
@@ -331,12 +428,13 @@ export default {
     },
     // This function switches authentication modes without retaining stale feedback.
     switchAuthMode(showSignup) {
-      if (showSignup && !this.registrationEnabled) return;
+      if (showSignup && (!this.registrationEnabled || this.localAuthEnabled === false)) return;
       this.passwordResetMode = null;
       this.showSignup = showSignup;
       this.message = '';
     },
     startPasswordReset() {
+      if (this.localAuthEnabled === false) return;
       this.showSignup = false;
       this.passwordResetMode = 'request';
       this.message = '';
@@ -349,6 +447,7 @@ export default {
       this.message = '';
     },
     async requestPasswordReset() {
+      if (this.localAuthEnabled === false) return;
       try {
         const response = await authApi.requestPasswordReset(this.resetEmail);
         this.message = response.message;
@@ -359,6 +458,7 @@ export default {
       }
     },
     async confirmPasswordReset() {
+      if (this.localAuthEnabled === false) return;
       try {
         const response = await authApi.confirmPasswordReset({
           token: this.passwordResetToken,
@@ -377,6 +477,7 @@ export default {
     },
     // This function authenticates the entered credentials and establishes the session.
     async login() {
+      if (this.localAuthEnabled === false) return;
       const requestId = this.authStore.beginSessionRequest();
 
       try {
@@ -522,7 +623,7 @@ export default {
     },
     // This function creates an account and returns to sign-in after confirmed success.
     async register() {
-      if (!this.registrationEnabled) return;
+      if (!this.registrationEnabled || this.localAuthEnabled === false) return;
       try {
         const credentials = {
           username: this.username,
@@ -617,21 +718,23 @@ export default {
   flex-direction: column;
   justify-content: center;
   min-height: 100vh;
-  padding: 48px 20px;
+  padding: 40px 20px;
+  box-sizing: border-box;
 }
 
 .auth-card {
   background: var(--surface-card);
+  box-sizing: border-box;
   border: 1px solid var(--border-default);
   border-radius: 16px;
-  box-shadow: 0 24px 80px var(--shadow-card-subtle-color);
-  max-width: 680px;
-  padding: 36px;
+  box-shadow: 0 12px 40px var(--shadow-card-subtle-color);
+  max-width: 620px;
+  padding: 42px 52px 40px;
   width: 100%;
 }
 
 .auth-brand {
-  margin-bottom: 30px;
+  margin-bottom: 36px;
   text-align: center;
 }
 
@@ -678,7 +781,7 @@ export default {
 
 .auth-page .auth-field {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   gap: 7px;
   position: relative;
 }
@@ -686,10 +789,11 @@ export default {
 .auth-page .auth-field .app-form-control {
   background-color: var(--bg-input);
   border: 1px solid var(--border-control);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--text-primary);
-  min-height: var(--control-height-touch);
-  padding: 10px 12px;
+  min-height: 52px;
+  width: 100%;
+  padding: 12px 14px 12px 44px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
@@ -712,14 +816,16 @@ export default {
   align-items: center;
   background-color: var(--color-primary);
   border: 1px solid var(--color-primary);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--text-inverted);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
   font-weight: 700;
   justify-content: center;
-  min-height: var(--control-height-touch);
+  gap: 10px;
+  min-height: 52px;
+  padding: 12px 16px;
   margin-top: 2px;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
@@ -742,6 +848,122 @@ export default {
 
 .auth-submit--block {
   width: 100%;
+}
+
+.auth-provider {
+  align-items: center;
+  background: var(--surface-card);
+  border: 1px solid var(--border-control);
+  border-radius: 10px;
+  box-shadow: 0 2px 6px var(--shadow-card-subtle-color);
+  color: var(--text-primary);
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 20px;
+  gap: 12px;
+  min-height: 56px;
+  padding: 14px 16px;
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-provider:hover {
+  background: var(--surface-chrome);
+  border-color: var(--border-focus);
+  box-shadow: 0 4px 12px var(--shadow-card-subtle-color);
+}
+
+.auth-provider:focus-visible,
+.auth-input-action:focus-visible,
+.auth-register a:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 3px;
+  box-shadow: var(--shadow-focus-primary);
+}
+
+.auth-provider-label {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.auth-provider-icon,
+.auth-provider-chevron {
+  color: var(--text-secondary);
+  display: flex;
+}
+
+.auth-provider + .auth-form {
+  margin-top: 30px;
+}
+
+.auth-section-divider {
+  align-items: center;
+  color: var(--text-secondary);
+  display: flex;
+  font-size: 13px;
+  gap: 14px;
+  line-height: 1.5;
+  margin: 0 0 6px;
+  text-align: center;
+}
+
+.auth-section-divider::before,
+.auth-section-divider::after {
+  background: var(--border-subtle);
+  content: "";
+  flex: 1;
+  height: 1px;
+}
+
+.auth-input-wrapper {
+  position: relative;
+}
+
+.auth-input-icon {
+  align-items: center;
+  color: var(--text-tertiary);
+  display: flex;
+  left: 14px;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.auth-page .auth-field .auth-input--with-action {
+  padding-right: 52px;
+}
+
+.auth-page .auth-field .auth-input::placeholder {
+  color: var(--text-tertiary);
+  opacity: 1;
+}
+
+.auth-input-action {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  min-height: var(--control-height-touch);
+  width: var(--control-height-touch);
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.auth-input-action:hover {
+  background: var(--surface-chrome);
+  color: var(--text-primary);
+}
+
+.auth-provider + .auth-message {
+  margin-top: 18px;
 }
 
 .auth-message {
@@ -774,6 +996,16 @@ export default {
   height: 1px;
 }
 
+.auth-divider--spacer::before,
+.auth-divider--spacer::after,
+.auth-divider--spacer span {
+  display: none;
+}
+
+.auth-divider--spacer {
+  margin: 24px 0 0;
+}
+
 .auth-register {
   color: var(--text-secondary);
   font-size: 14px;
@@ -794,6 +1026,15 @@ export default {
   text-decoration: underline;
 }
 
+.auth-register + .auth-register {
+  margin-top: 8px;
+}
+
+.auth-register--secondary a {
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .auth-footer {
   align-items: center;
   color: var(--text-secondary);
@@ -802,13 +1043,17 @@ export default {
   font-size: 13px;
   gap: 5px;
   line-height: 1.4;
-  margin-top: 22px;
+  margin-top: 24px;
   text-align: center;
 }
 
 .auth-footer strong {
   color: var(--text-primary);
   font-weight: 700;
+}
+
+.auth-footer span {
+  font-size: 12px;
 }
 
 .loading-container {
@@ -836,7 +1081,7 @@ export default {
 :global(:root[data-theme='dark'] .auth-card) {
   background: var(--surface-card);
   border-color: var(--border-default);
-  box-shadow: 0 24px 80px var(--shadow-settings-dialog-dark-color);
+  box-shadow: 0 12px 40px var(--shadow-settings-dialog-dark-color);
 }
 
 :global(:root[data-theme='dark'] .auth-logo) {
@@ -921,7 +1166,7 @@ export default {
   }
 
   .auth-brand {
-    margin-bottom: 24px;
+    margin-bottom: 30px;
   }
 
   .auth-brand h1 {

@@ -49,3 +49,12 @@ Disable the email option and save to stop future scheduled briefings.
 
 The content follows [Daily Briefing]({% link daily-briefing.md %}) preferences. Browser
 [Push notifications]({% link web-app-and-notifications.md %}) are configured separately.
+
+## OIDC Account Email
+
+For OIDC-only accounts, the email field is read-only and managed by the identity
+provider. Verified provider email changes are applied on login; conflicting
+addresses reject login without merging accounts. If the provider supplies no
+verified email, required email enrollment remains available during sign-in. Local
+accounts with a linked provider retain email editing for recovery. See
+[OIDC Configuration]({% link oidc-configuration.md %}) for Google setup.

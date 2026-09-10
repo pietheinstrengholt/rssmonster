@@ -20,3 +20,9 @@ verifies the SMTP transport at startup, immediately drains pending work, and pol
 seconds for new or retryable deliveries. Database leases preserve safe behavior when multiple
 web processes run concurrently. Lifecycle logs contain delivery IDs, user IDs, message types,
 attempt counts, statuses, and sanitized error codes only.
+
+Passwordless OIDC accounts have provider-managed email. Account/admin email writes
+are rejected unless the normalized address is unchanged. The enrollment endpoint
+may set an address only while it is unverified, checked under the user-row lock.
+Validated provider claims may synchronize and verify an address at login through
+the same email-change transaction; old verification tokens are invalidated.

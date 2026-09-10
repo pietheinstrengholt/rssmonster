@@ -1,3 +1,4 @@
+import { isLocalAuthEnabled } from '../config/auth.js';
 import { DataTypes } from 'sequelize';
 
 export default (sequelize) => {
@@ -38,18 +39,18 @@ export default (sequelize) => {
         allowNull: true,
         defaultValue: null
       },
-      // Stores the hashed password used for account authentication.
+      // Stores the local password hash, or null for an OIDC-only account.
       password: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         validate: {
           notEmpty: true
         }
       },
-      // Stores the protected credential used to authenticate Fever API requests.
+      // Stores the protected Fever credential, or null when local credentials are absent.
       feverCredentialHash: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         unique: true
       },
       // Determines the account's authorization role, defaulting to a standard user.
@@ -88,6 +89,8 @@ export default (sequelize) => {
   // This function prevents stored credentials from being serialized in API responses.
   User.prototype.toJSON = function toJSON() {
     const values = { ...this.get({ plain: true }) };
+    if (Object.hasOwn(values, 'password')) values.localPasswordEnabled = isLocalAuthEnabled() && Boolean(values.password);
+    else if (Object.hasOwn(values, 'localPasswordEnabled')) values.localPasswordEnabled = isLocalAuthEnabled() && Boolean(values.localPasswordEnabled);
     delete values.password;
     delete values.feverCredentialHash;
     delete values.bootstrapAdminClaim;

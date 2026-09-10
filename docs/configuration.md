@@ -201,6 +201,162 @@ See [First Login]({% link first-login.md %}) for administrator setup before
 disabling registration, the normal registration flow, and the security
 implications of enabling development login.
 
+### Authentication Policies and OIDC
+
+For a provider-neutral setup guide, a Google example, and a preview of provider-only login, see
+[OIDC Configuration]({% link oidc-configuration.md %}).
+
+Authentication configuration separates local account registration, local sign-in,
+and OIDC sign-in. OIDC account provisioning is an additional independent policy:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `ALLOW_REGISTRATION` | `true` | Allows visitors to create local accounts. Disabling it does not disable login. |
+| `LOCAL_AUTH_ENABLED` | `true` | Enables local password login, registration, password recovery/changes, development login, and password-derived Fever/Google Reader access. |
+| `OIDC_ENABLED` | `false` | Enables provider sign-in for linked identities and, when allowed, automatic provisioning. |
+| `OIDC_AUTO_PROVISION` | `false` | Allows a valid, previously unknown provider identity to create an ordinary OIDC-only account. Independent of public local registration. |
+
+Values accept `true` or `false`, ignoring case and surrounding whitespace. Unset
+or blank values use the defaults. Other values stop server startup with a
+configuration error; this also applies to `ALLOW_REGISTRATION`.
+
+OIDC uses a server-owned Authorization Code flow with PKCE, state, nonce, and
+ID-token signature validation. The browser receives a normal RSSMonster session
+after a short-lived, single-use handoff; provider tokens stay on the server.
+Sign in locally and link your identity provider from **Settings → Account**
+by confirming your current password. You can then sign out and use **Sign in
+with identity provider**. With automatic provisioning disabled, unknown identities
+are rejected, even if their email matches an existing account. Your local user ID,
+role, feeds and reading state remain unchanged. Existing email-verification
+requirements still apply.
+
+Set `OIDC_AUTO_PROVISION=true` to create accounts after a valid provider login,
+including when `ALLOW_REGISTRATION=false`. Each identity is keyed by its exact,
+case-sensitive issuer and subject; a unique SHA-256 key enforces this independently
+of the database's text collation. Account and identity creation are transactional,
+and concurrent first logins converge on the same account. Emails never link
+accounts automatically. A verified provider email is normalized and saved when
+creating an account; an unverified email is ignored. An email already used by an
+existing account causes provisioning to fail, so link that existing account
+explicitly instead. Later logins synchronize verified provider email for OIDC-only accounts. Linked
+local accounts retain their locally managed email settings.
+
+Provisioned accounts receive a stable generated username, the ordinary `user`
+role, and no local password or Fever credential. Password recovery, account
+settings and administrator password updates cannot create local credentials for
+these accounts. Manage the provider password at the provider; legacy Google
+Reader and Fever password authentication are unavailable for OIDC-only accounts.
+Linking an existing local account preserves its credentials and API access.
+
+By default, no additional claim restrictions apply to OIDC sign-in. Optional
+allowlists restrict every provider login, including existing linked accounts,
+new provisioning, and account linking:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `OIDC_ALLOWED_EMAIL_DOMAINS` | empty | Comma-separated exact email domains, e.g. `example.com,example.org`. Requires a valid ID-token email and boolean `email_verified=true`. Domain matching ignores case; subdomains and suffix matches are not included. Use ASCII/punycode domains, without wildcards or `@`. |
+| `OIDC_ALLOWED_GROUPS` | empty | Comma-separated group names. At least one must match exactly, including case, in an ID-token array of strings. |
+| `OIDC_GROUPS_CLAIM` | `groups` | Literal top-level ID-token claim containing that array. Dots or slashes in the name are literal, not a nested path. |
+
+Blank allowlists disable that restriction. When both are configured, both must
+pass. Missing, unverified, or malformed required claims deny access before
+account lookup or creation. Configure your provider to include the necessary
+claims in its ID token; RSSMonster does not fetch groups from another endpoint.
+Restrictions never map provider groups or claims to administrator roles.
+Malformed nonempty lists stop startup when OIDC is enabled.
+
+For an email-domain restriction during your Google test, set
+`OIDC_ALLOWED_EMAIL_DOMAINS=example.com` to your intended email domain. This
+checks verified email addresses, not organization membership. Allowing
+`gmail.com` permits any verified address in that domain subject to the other
+login/provisioning policies; it is not a list of individual test users. Keep
+provider-side application access restrictions in place as needed.
+
+Policy changes invalidate pending OIDC callbacks and handoffs. Existing web
+sessions retain their normal expiry; claim restrictions apply at the next OIDC
+login and do not restrict local login when it remains enabled.
+
+Set `LOCAL_AUTH_ENABLED=false` only after configuring and testing OIDC and
+linking your administrator account. Local registration is then unavailable even
+if `ALLOW_REGISTRATION=true`. Password reset requests and confirmations,
+account/admin password changes, development login, and password-confirmed
+provider linking are blocked. Existing Fever keys/cookies and Google Reader
+tokens are rejected. Passwords remain stored, so re-enabling local authentication
+restores their use. Existing web sessions retain their normal expiry and password
+version checks; this setting does not revoke them. Email verification and
+non-password account settings remain available.
+
+Create the initial administrator locally before closing public registration. OIDC never promotes the first provider user. An
+existing administrator may explicitly promote an account through Manage Users.
+
+The following provider settings stay on the server and are not exposed by the
+public authentication configuration endpoint:
+
+| Variable | Default | Validation when `OIDC_ENABLED=true` |
+| --- | --- | --- |
+| `OIDC_ISSUER_URL` | none | Required HTTPS issuer URL; use the issuer, not its discovery-document URL. |
+| `OIDC_CLIENT_ID` | none | Required nonempty client identifier. |
+| `OIDC_CLIENT_SECRET` | none | Required nonempty secret, retained only on the server. |
+| `OIDC_REDIRECT_URI` | none | Required HTTPS callback URL with path `/api/auth/oidc/callback`. HTTP is accepted only for `localhost`, `127.0.0.1`, or `[::1]` to support local testing. |
+| `OIDC_FRONTEND_URL` | callback origin | Optional frontend root URL for the final handoff. Must share the callback scheme and hostname; a different port is allowed. |
+| `OIDC_SCOPES` | `openid profile email` | Space-separated scopes; must include `openid`. |
+
+Issuer and callback URLs cannot contain credentials, query parameters, or
+fragments. Provider settings are ignored while OIDC is disabled, so existing
+installations need no new configuration. By default, the callback origin is
+the fixed frontend return destination. Set `OIDC_FRONTEND_URL` when the frontend
+runs on a different port, such as `http://localhost:8080` with the API on port
+3000. This configured frontend origin is also the only accepted origin for
+credentialed OIDC linking and handoff requests. Scheme and hostname must match
+the callback so the browser-bound SameSite cookie works across ports. Arbitrary
+return URLs, different hostnames, and frontend subpaths are not supported.
+
+Apply `20260910000000-add-oidc-login.js` and
+`20260910001000-allow-oidc-only-users.js` through the normal upgrade procedure
+before enabling OIDC. They add identity and temporary login tables and make local
+credentials nullable while preserving existing credential values. Rolling back
+the nullable-credential migration is refused while passwordless accounts exist.
+All server instances must share the database, JWT secret and OIDC configuration.
+
+#### Test with Google
+
+1. Create an OAuth client of type **Web application** in Google Cloud, configure
+   its consent screen/audience, and add your Google account as a test user if
+   the application is in testing mode.
+2. Register the exact authorized redirect URI, for example
+   `http://localhost:3000/api/auth/oidc/callback` for a local installation.
+3. Configure the server (or the Compose service's `environment`):
+
+   ```env
+   OIDC_ENABLED=true
+   OIDC_ISSUER_URL=https://accounts.google.com
+   OIDC_CLIENT_ID=your-google-client-id
+   OIDC_CLIENT_SECRET=your-google-client-secret
+   OIDC_REDIRECT_URI=http://localhost:3000/api/auth/oidc/callback
+   OIDC_SCOPES=openid profile email
+   OIDC_AUTO_PROVISION=false
+   LOCAL_AUTH_ENABLED=true
+   ```
+
+4. Restart the server or recreate the container, open `http://localhost:3000`,
+   sign in to an existing RSSMonster account, and link Google in **Settings →
+   Account**. Confirm your current RSSMonster password and choose your Google
+   account. Then sign out of RSSMonster and test provider sign-in.
+5. Verify that an unlinked Google account is rejected and that successful login
+   returns to the same RSSMonster account and data. You may keep
+   `ALLOW_REGISTRATION=false` throughout linking and provider sign-in.
+
+For remote deployments, use the public HTTPS address in both Google and
+`OIDC_REDIRECT_URI`. See [Google's OIDC documentation](https://developers.google.com/identity/openid-connect/openid-connect)
+for client setup and redirect requirements.
+
+Starting another login in the same browser replaces its pending browser cookie;
+finish the newest attempt. Abandoned attempts expire after ten minutes, and the
+handoff code expires after one minute. A provider outage leaves local login
+available only when `LOCAL_AUTH_ENABLED=true`. RSSMonster logout does not sign out of Google, and suspending a
+provider account does not immediately revoke existing RSSMonster JWTs; their
+normal expiry and password-change invalidation still apply.
+
 ## Feed Crawling and Scheduling
 
 Most installations should begin with the example defaults. Increase

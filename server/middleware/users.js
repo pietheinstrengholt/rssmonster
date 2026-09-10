@@ -1,9 +1,14 @@
 import jwt from "jsonwebtoken";
-import { getJwtSecret, isRegistrationEnabled } from '../config/auth.js';
+import { getJwtSecret, isRegistrationEnabled, isLocalAuthEnabled } from '../config/auth.js';
 import { isEmailEnabled, normalizeEmailAddress } from '../config/email.js';
 import db from '../models/index.js';
 
 const { User } = db;
+
+const requireLocalAuth = (_req, res, next) => {
+  if (!isLocalAuthEnabled()) return res.status(403).json({ message: 'Local authentication is disabled.' });
+  next();
+};
 
 const validateRegister = (req, res, next) => {
   if (!isRegistrationEnabled()) {
@@ -80,6 +85,7 @@ const isLoggedIn = async (req, res, next) => {
 };
 
 export default {
+  requireLocalAuth,
   validateRegister,
   isLoggedIn
 }

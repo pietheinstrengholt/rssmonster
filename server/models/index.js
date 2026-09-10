@@ -37,6 +37,8 @@ installDatabaseConnectionPolicy(sequelize);
 
 // ---- Import model factories ----
 import UserModel from './user.js';
+import OidcIdentityModel from './oidcIdentity.js';
+import OidcTransactionModel from './oidcTransaction.js';
 import CategoryModel from './category.js';
 import FeedModel from './feed.js';
 import ArticleModel from './article.js';
@@ -68,6 +70,8 @@ import EmailDeliveryModel from './emailDelivery.js';
 
 // ---- Initialize models ----
 const User = UserModel(sequelize);
+const OidcIdentity = OidcIdentityModel(sequelize);
+const OidcTransaction = OidcTransactionModel(sequelize);
 const Category = CategoryModel(sequelize);
 const Feed = FeedModel(sequelize);
 const Article = ArticleModel(sequelize);
@@ -98,6 +102,10 @@ const PasswordResetToken = PasswordResetTokenModel(sequelize);
 const EmailDelivery = EmailDeliveryModel(sequelize);
 
 // ---- Associations ----
+OidcIdentity.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
+User.hasMany(OidcIdentity, { foreignKey: 'userId', onDelete: 'CASCADE' });
+OidcTransaction.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
+OidcTransaction.belongsTo(User, { foreignKey: 'linkUserId', as: 'linkUser', onDelete: 'CASCADE' });
 
 // User ↔ Action
 User.hasMany(Action, { foreignKey: 'userId', onDelete: 'CASCADE' });
@@ -364,6 +372,8 @@ export default {
   sequelize,
   Sequelize,
   User,
+  OidcIdentity,
+  OidcTransaction,
   Category,
   Feed,
   Article,

@@ -8,6 +8,10 @@ import {
 } from '../../utils/requestLogging.js';
 
 describe('request logging', () => {
+  it('omits all OIDC callback parameters, including encoded names and provider errors', () => {
+    expect(requestUrlForLogging({ originalUrl: '/api/auth/oidc/callback?%63ode=secret&state=private&error_description=private' }))
+      .toBe('/api/auth/oidc/callback');
+  });
   it('redacts compatibility API credentials while preserving other parameters', () => {
     expect(
       redactSensitiveQueryValues(

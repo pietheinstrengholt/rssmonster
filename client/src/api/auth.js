@@ -1,4 +1,16 @@
-import api from './client';
+import api, { API_BASE_URL } from './client';
+
+export const getOidcLoginUrl = () => `${API_BASE_URL}/auth/oidc/login`;
+
+export const exchangeOidcCode = async code => {
+  const response = await api.post('/auth/oidc/exchange', { code }, { suppressGlobalError: true, withCredentials: true });
+  return response.data;
+};
+
+export const linkOidcAccount = async password => {
+  const response = await api.post('/auth/oidc/link', { password }, { suppressGlobalError: true, withCredentials: true });
+  return response.data;
+};
 
 export const getAuthConfiguration = async () => {
   const response = await api.get('/auth/configuration', {

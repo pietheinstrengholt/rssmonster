@@ -76,7 +76,7 @@ describe('auth controller', () => {
     });
 
     expect(configuration.status).toBe(200);
-    expect(configuration.body).toEqual({ emailEnabled: true, registrationEnabled: true });
+    expect(configuration.body).toEqual({ emailEnabled: true, registrationEnabled: true, localAuthEnabled: true, oidcEnabled: false });
     expect(registration.status).toBe(400);
     expect(registration.body).toEqual({ message: 'Please enter an email address.' });
     process.env.EMAIL_ENABLED = 'false';

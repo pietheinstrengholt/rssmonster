@@ -2,6 +2,8 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SettingsAccount from '../src/components/settings/SettingsAccount.vue';
 import {
+  getAuthConfiguration,
+  linkOidcAccount,
   getAccountSettings,
   requestEmailVerification,
   sendDailyBriefingTest,
@@ -9,6 +11,8 @@ import {
 } from '../src/api/auth.js';
 
 vi.mock('../src/api/auth.js', () => ({
+  getAuthConfiguration: vi.fn(),
+  linkOidcAccount: vi.fn(),
   getAccountSettings: vi.fn(),
   requestEmailVerification: vi.fn(),
   sendDailyBriefingTest: vi.fn(),
@@ -37,10 +41,49 @@ const mountAccount = () => mount(SettingsAccount, {
 });
 
 describe('account settings', () => {
+  it('makes provider-managed email read-only independently of local login policy', async () => {
+    getAccountSettings.mockResolvedValueOnce({ ...settings, emailManagedByProvider: true });
+    const wrapper = mountAccount();
+    await flushPromises();
+    expect(wrapper.get('#account-email').attributes('readonly')).toBeDefined();
+    expect(wrapper.text()).toContain('Your email address is managed by your identity provider.');
+    wrapper.unmount();
+    getAccountSettings.mockResolvedValueOnce({ ...settings, localPasswordEnabled: false, emailManagedByProvider: false });
+    const local = mountAccount();
+    await flushPromises();
+    expect(local.get('#account-email').attributes('readonly')).toBeUndefined();
+    local.unmount();
+  });
+
+  it('hides local password and linking controls for a provider-only account', async () => {
+    getAccountSettings.mockResolvedValueOnce({ ...settings, localPasswordEnabled: false });
+    getAuthConfiguration.mockResolvedValueOnce({ oidcEnabled: true });
+    const wrapper = mountAccount();
+    await flushPromises();
+    expect(wrapper.find('#account-password').exists()).toBe(false);
+    expect(wrapper.find('#account-link-password').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Manage your password with your identity provider');
+    wrapper.unmount();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => {});
     getAccountSettings.mockResolvedValue({ ...settings });
+    getAuthConfiguration.mockResolvedValue({ oidcEnabled: false });
+  });
+
+  it('offers linking when configured and clears the confirmation password after failure', async () => {
+    getAuthConfiguration.mockResolvedValueOnce({ oidcEnabled: true });
+    linkOidcAccount.mockRejectedValueOnce(new Error('Incorrect password'));
+    const wrapper = mountAccount();
+    await flushPromises();
+    await wrapper.get('#account-link-password').setValue('current-password');
+    await wrapper.get('#account-link-password').element.closest('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await flushPromises();
+    expect(linkOidcAccount).toHaveBeenCalledWith('current-password');
+    expect(wrapper.get('#account-link-password').element.value).toBe('');
+    expect(wrapper.text()).toContain('Could not link the provider');
+    wrapper.unmount();
   });
 
   it('shows the fixed username and suggests the browser timezone for a disabled digest', async () => {

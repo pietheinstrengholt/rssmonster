@@ -9,6 +9,19 @@
       Manage your sign-in details, recovery address, and emailed daily briefings.
     </SettingsPageIntro>
 
+    <section v-if="oidcEnabled && localPasswordEnabled" class="account-settings__section" aria-labelledby="account-provider-title">
+      <h3 id="account-provider-title">Identity provider</h3>
+      <p class="account-settings__description">Link a provider identity to sign in to this account. Confirm your current password, then choose your account at the provider.</p>
+      <form @submit.prevent="linkProvider">
+        <label for="account-link-password">Current password</label>
+        <input id="account-link-password" v-model="linkPassword" class="app-form-control settings-control"
+          type="password" autocomplete="current-password" maxlength="128" required />
+        <button class="app-button app-button--secondary settings-control" type="submit" :disabled="busy || !linkPassword">
+          Link identity provider
+        </button>
+      </form>
+    </section>
+
     <form class="account-settings__form" @submit.prevent="saveAccount">
       <section class="account-settings__section" aria-labelledby="account-identity-title">
         <h3 id="account-identity-title">Sign-in details</h3>
@@ -23,7 +36,8 @@
         />
         <p class="account-settings__hint">Your username cannot be changed.</p>
 
-        <div class="account-settings__grid">
+        <p v-if="!localPasswordEnabled" class="account-settings__hint">This account uses provider sign-in. Manage your password with your identity provider.</p>
+        <div v-if="localPasswordEnabled" class="account-settings__grid">
           <div>
             <label for="account-password">New password</label>
             <input
@@ -60,8 +74,11 @@
         <p class="account-settings__description">
           Used for password recovery and daily briefings.
         </p>
+        <p v-if="emailManagedByProvider" id="account-email-managed" class="account-settings__hint">Your email address is managed by your identity provider.</p>
         <label for="account-email">Email address</label>
         <input
+          :readonly="emailManagedByProvider"
+          :aria-describedby="emailManagedByProvider ? 'account-email-managed' : undefined"
           id="account-email"
           v-model="email"
           class="app-form-control settings-control"
@@ -174,6 +191,8 @@
 
 <script>
 import {
+  getAuthConfiguration,
+  linkOidcAccount,
   getAccountSettings,
   requestEmailVerification,
   sendDailyBriefingTest,
@@ -203,6 +222,10 @@ export default {
   data() {
     return {
       username: '',
+      oidcEnabled: false,
+      localPasswordEnabled: true,
+      emailManagedByProvider: false,
+      linkPassword: '',
       email: '',
       savedEmail: '',
       emailVerifiedAt: null,
@@ -233,10 +256,31 @@ export default {
   },
   async created() {
     await this.loadAccount();
+    try {
+      this.oidcEnabled = (await getAuthConfiguration()).oidcEnabled === true;
+    } catch {
+      this.oidcEnabled = false;
+    }
   },
   methods: {
+    async linkProvider() {
+      if (this.busy || !this.linkPassword) return;
+      this.busy = true;
+      try {
+        const result = await linkOidcAccount(this.linkPassword);
+        window.location.assign(result.authorizationUrl);
+      } catch {
+        this.message = 'Could not link the provider. Check your current password and try again.';
+        this.messageType = 'error';
+      } finally {
+        this.linkPassword = '';
+        this.busy = false;
+      }
+    },
     applySettings(settings, { suggestTimezone = false } = {}) {
       this.username = settings.username || '';
+      this.emailManagedByProvider = settings.emailManagedByProvider === true;
+      this.localPasswordEnabled = settings.localPasswordEnabled !== false;
       this.email = settings.email || '';
       this.savedEmail = settings.email || '';
       this.emailVerifiedAt = settings.emailVerifiedAt || null;

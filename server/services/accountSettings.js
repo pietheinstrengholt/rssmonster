@@ -1,3 +1,4 @@
+import { isLocalAuthEnabled } from '../config/auth.js';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
 import { Op } from 'sequelize';
@@ -94,6 +95,8 @@ const hasCustomizedDigestSettings = preference => Boolean(preference && (
 
 const serializeAccountSettings = (user, preference, { passwordChanged = false } = {}) => ({
   username: user.username,
+  emailManagedByProvider: !user.password,
+  localPasswordEnabled: isLocalAuthEnabled() && Boolean(user.password),
   email: user.email,
   emailVerifiedAt: user.emailVerifiedAt,
   emailServiceEnabled: emailServiceIsAvailable(),
@@ -110,7 +113,7 @@ const serializeAccountSettings = (user, preference, { passwordChanged = false } 
 
 export const getAccountSettings = async userId => {
   const user = await User.findByPk(userId, {
-    attributes: ['id', 'username', 'email', 'emailVerifiedAt']
+    attributes: ['id', 'username', 'email', 'emailVerifiedAt', 'password']
   });
   if (!user) throw new AccountSettingsError('USER_NOT_FOUND', 'Account not found.', 404);
   const preference = await BriefingPreference.findOne({ where: { userId } });
@@ -128,17 +131,23 @@ export const updateAccountSettings = async (userId, values, { now = new Date() }
   );
   const emailDigestTime = validateDigestTime(values.emailDigestTime);
   const emailDigestTimezone = validateDigestTimezone(values.emailDigestTimezone);
+  if (!isLocalAuthEnabled() && (values.password || values.passwordRepeat)) {
+    throw new AccountSettingsError('LOCAL_PASSWORD_DISABLED', 'Local password changes are unavailable.', 403);
+  }
   const password = validatePassword(values.password, values.passwordRepeat);
   const passwordHash = password ? await bcrypt.hash(password, 10) : null;
 
   return sequelize.transaction(async transaction => {
     const existingUser = await User.findByPk(userId, {
-      attributes: ['id', 'email'],
+      attributes: ['id', 'email', 'password'],
       transaction,
       lock: transaction.LOCK.UPDATE
     });
     if (!existingUser) {
       throw new AccountSettingsError('USER_NOT_FOUND', 'Account not found.', 404);
+    }
+    if (password && !existingUser.password) {
+      throw new AccountSettingsError('LOCAL_PASSWORD_DISABLED', 'This account uses provider sign-in. Local password changes are unavailable.', 403);
     }
 
     const previousEmail = existingUser.email;

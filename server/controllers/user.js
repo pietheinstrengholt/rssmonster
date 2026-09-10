@@ -1,6 +1,9 @@
+import { isLocalAuthEnabled } from '../config/auth.js';
 import db from '../models/index.js';
 const {
   User,
+  OidcIdentity,
+  OidcTransaction,
   Setting,
   Article,
   Feed,
@@ -110,6 +113,7 @@ const getUsers = async (req, res, _next) => {
     const users = await User.findAll({
       order: [["username", "ASC"]],
       attributes: {
+        include: [[Sequelize.literal('password IS NOT NULL'), 'localPasswordEnabled']],
         exclude: ['password', 'feverCredentialHash']
       }
     });
@@ -143,6 +147,7 @@ const getUser = async (req, res, _next) => {
     const { userId } = req.params;
     const user = await User.findByPk(userId, {
       attributes: {
+        include: [[Sequelize.literal('password IS NOT NULL'), 'localPasswordEnabled']],
         exclude: ['password', 'feverCredentialHash']
       }
     });
@@ -187,6 +192,9 @@ const postUsers = async (req, res, _next) => {
 
     // If the password is provided, rotate it and the dependent Fever credential together.
     if (req.body.password) {
+      if (!isLocalAuthEnabled() || !user.password) {
+        return res.status(403).json({ message: 'This account uses provider sign-in. Local password changes are unavailable.' });
+      }
       const hash = await bcrypt.hash(req.body.password, 10);
       const feverApiKey = createFeverApiKey(
         req.body.username,
@@ -303,6 +311,8 @@ const deleteUser = async (req, res, _next) => {
       }
 
       // Delete direct user-linked rows before deleting the user.
+      await destroyByUserIdSafe({ model: OidcIdentity, userId: user.id, transaction, label: 'oidc_identities' });
+      await destroyByUserIdSafe({ model: OidcTransaction, userId: user.id, transaction, label: 'oidc_transactions' });
       await destroyByUserIdSafe({ model: Setting, userId: user.id, transaction, label: 'settings' });
       await destroyByUserIdSafe({ model: Hotlink, userId: user.id, transaction, label: 'hotlinks' });
       await destroyByUserIdSafe({ model: Action, userId: user.id, transaction, label: 'actions' });

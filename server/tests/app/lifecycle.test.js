@@ -14,6 +14,18 @@ afterEach(async () => {
 });
 
 describe('programmatic Express lifecycle', () => {
+  it.each([
+    { ALLOW_REGISTRATION: 'invalid' },
+    { LOCAL_AUTH_ENABLED: 'false', OIDC_ENABLED: 'false' },
+    { OIDC_ENABLED: 'true', OIDC_ISSUER_URL: '' }
+  ])('rejects invalid authentication configuration before connecting to the database: %j', async environment => {
+    for (const [name, value] of Object.entries(environment)) vi.stubEnv(name, value);
+    const authenticate = vi.spyOn(db.sequelize, 'authenticate');
+    await expect(startServer({ host: '127.0.0.1', port: 0 }))
+      .rejects.toMatchObject({ code: 'AUTH_CONFIGURATION_INVALID' });
+    expect(authenticate).not.toHaveBeenCalled();
+  });
+
   it('returns a ready loopback listener, serves an absolute bundle path and closes it', async () => {
     vi.stubEnv('DISABLE_LISTENER', 'false');
     vi.stubEnv('ENABLE_HTTPS', 'false');

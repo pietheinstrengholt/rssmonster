@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Op } from 'sequelize';
+import { Op, literal } from 'sequelize';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../../config/auth.js';
 
@@ -101,6 +101,7 @@ const createResponse = () => {
 const createUserRecord = (overrides = {}) => ({
   id: 2,
   username: 'reader',
+  password: 'local-password-hash',
   role: 'user',
   update: vi.fn().mockResolvedValue(undefined),
   destroy: vi.fn().mockResolvedValue(undefined),
@@ -172,6 +173,7 @@ describe('user controller administration', () => {
     expect(mocked.userFindAll).toHaveBeenCalledWith({
       order: [['username', 'ASC']],
       attributes: {
+        include: [[literal('password IS NOT NULL'), 'localPasswordEnabled']],
         exclude: ['password', 'feverCredentialHash']
       }
     });
@@ -198,6 +200,7 @@ describe('user controller administration', () => {
 
     expect(mocked.userFindByPk).toHaveBeenCalledWith('2', {
       attributes: {
+        include: [[literal('password IS NOT NULL'), 'localPasswordEnabled']],
         exclude: ['password', 'feverCredentialHash']
       }
     });

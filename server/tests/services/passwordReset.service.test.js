@@ -41,6 +41,20 @@ const requestWithToken = (user, rawToken, options = {}) => requestPasswordReset(
 });
 
 describe('password reset service', () => {
+  it('does not issue or redeem password resets for a passwordless account', async () => {
+    const user = await createUser({ password: null, feverCredentialHash: null });
+    const enqueue = vi.fn();
+    expect(await requestWithToken(user, 'P'.repeat(43), { enqueue })).toEqual({ accepted: true });
+    expect(enqueue).not.toHaveBeenCalled();
+    const rawToken = 'Q'.repeat(43);
+    await PasswordResetToken.create({
+      userId: user.id, tokenHash: createHash('sha256').update(rawToken).digest('hex'),
+      expiresAt: new Date(Date.now() + 60_000)
+    });
+    await expect(confirmPasswordReset({ token: rawToken, password: 'new-password', passwordRepeat: 'new-password' }))
+      .rejects.toMatchObject({ code: 'PASSWORD_RESET_INVALID' });
+    expect((await user.reload()).password).toBeNull();
+  });
   beforeAll(async () => {
     await sequelize.authenticate();
   });

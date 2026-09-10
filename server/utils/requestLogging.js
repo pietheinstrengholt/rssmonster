@@ -22,6 +22,8 @@ export const redactSensitivePathValues = requestUrl =>
 
 // This function returns the only request URL representation permitted in access logs.
 export const requestUrlForLogging = req =>
-  redactSensitivePathValues(
+  (req.originalUrl || req.url || '').split('?')[0].startsWith('/api/auth/oidc/')
+    ? (req.originalUrl || req.url).split('?')[0]
+    : redactSensitivePathValues(
     redactSensitiveQueryValues(req.originalUrl || req.url)
   );

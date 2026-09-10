@@ -43,12 +43,11 @@ const requireEnabledConfiguration = configuration => {
 // Changes only the signed-in user's address and invalidates credentials for the old address.
 export const changeUserEmail = async (userId, email, {
   allowNull = false,
+  allowEnrollment = false,
+  providerVerified = false,
   now = new Date(),
   transaction = null
 } = {}) => {
-  const normalizedEmail = allowNull && !String(email || '').trim()
-    ? null
-    : normalizeEmailAddress(email);
 
   try {
     const changeEmail = async activeTransaction => {
@@ -60,19 +59,26 @@ export const changeUserEmail = async (userId, email, {
         throw new EmailVerificationError('USER_NOT_FOUND', 'Account not found.', 404);
       }
 
-      if (user.email === normalizedEmail) {
+      const normalizedEmail = (allowNull || (!user.password && user.email === null && !allowEnrollment)) && !providerVerified && !String(email || '').trim()
+        ? null
+        : normalizeEmailAddress(email);
+      if (!user.password && user.email !== normalizedEmail && !providerVerified && !(allowEnrollment && !user.emailVerifiedAt)) {
+        throw new EmailVerificationError('EMAIL_MANAGED_BY_PROVIDER', 'Your email address is managed by your identity provider.', 403);
+      }
+
+      if (user.email === normalizedEmail && (!providerVerified || user.emailVerifiedAt)) {
         return { email: user.email, emailVerifiedAt: user.emailVerifiedAt };
       }
 
       await user.update(
-        { email: normalizedEmail, emailVerifiedAt: null },
+        { email: normalizedEmail, emailVerifiedAt: providerVerified ? now : null },
         { transaction: activeTransaction }
       );
       await EmailVerificationToken.update({ usedAt: now }, {
         where: { userId: user.id, usedAt: { [Op.is]: null } },
         transaction: activeTransaction
       });
-      return { email: user.email, emailVerifiedAt: null };
+      return { email: user.email, emailVerifiedAt: user.emailVerifiedAt };
     };
 
     return transaction
