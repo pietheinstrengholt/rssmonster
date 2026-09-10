@@ -77,6 +77,83 @@ and writing/information-quality scores and accepts `openai` or `modernbert`.
 `ASSISTANT_PROVIDER` independently controls assistant responses and currently
 accepts only `openai`.
 
+Here, `openai` selects the OpenAI-compatible API adapter. It can connect to
+OpenAI or a gateway such as a locally hosted Ollama instance. The built-in
+`qwen` and `modernbert` providers run models directly inside inference;
+Ollama runs as a separate service reached through `OPENAI_BASE_URL`.
+
+## OpenAI-Compatible Gateways and Ollama
+
+Configure gateway settings in `inference/.env`:
+
+| Setting | Behavior |
+| --- | --- |
+| `OPENAI_BASE_URL` | Optional API base URL, including `/v1` for Ollama. Applies to every OpenAI client in inference: embeddings, article analysis, Smart Folder recommendations, feed rediscovery, semantic labels, and assistant requests. Unset it to keep the default OpenAI endpoint. |
+| `OPENAI_API_KEY` | Required by RSSMonster's OpenAI adapter. Use the gateway's credential, or a non-empty placeholder such as `ollama` for local Ollama, which ignores the key. |
+| `OPENAI_OMIT_TEMPERATURE` | Defaults to `false`. Set to `true` to omit the explicit temperature values in article analysis, recommendations, rediscovery, and semantic-label Chat Completions requests if the gateway/model rejects them. |
+
+The assistant's Agents SDK provider uses Chat Completions, so the gateway does
+not need Responses API support. The server's assistant runner explicitly uses
+RSSMonster's inference model provider; model calls therefore use the configured
+inference endpoint and `ASSISTANT_MODEL` instead of the SDK default provider.
+
+For an assistant backed by local Ollama, keep the other capability settings and
+replace the assistant and gateway values in `inference/.env`:
+
+```env
+ASSISTANT_PROVIDER=openai
+# Replace with a model installed in Ollama that supports tool calling.
+ASSISTANT_MODEL=your-local-tool-capable-model
+OPENAI_BASE_URL=http://127.0.0.1:11434/v1
+OPENAI_API_KEY=ollama
+OPENAI_OMIT_TEMPERATURE=false
+```
+
+Enable chat and optionally choose reasoning effort in `server/.env`:
+
+```env
+INFERENCE_AI_ENABLED=true
+INFERENCE_ASSISTANT_ENABLED=true
+INFERENCE_AGENT_TIMEOUT_MS=300000
+# Optional; leave blank unless the selected model supports the requested value.
+ASSISTANT_REASONING_EFFORT=
+```
+
+`ASSISTANT_REASONING_EFFORT` is read by the **server**, not inference. A non-empty
+value, such as `low`, `medium`, or `high` when supported by the model, overrides
+the assistant's reasoning effort. Blank or unset values add no explicit override.
+Restart the affected processes after changing configuration.
+
+Use an Ollama address reachable from the inference process. Inside a container,
+`127.0.0.1` refers to that container; use the Ollama service's network hostname
+or a reachable host address instead. The MySQL Compose profile forwards the
+assistant provider, model, key, and server reasoning effort from the root `.env`,
+but currently does not forward `OPENAI_BASE_URL` or `OPENAI_OMIT_TEMPERATURE`.
+Add those two variables to the inference service's `environment` through a
+Compose override when using a gateway with that profile.
+
+The base URL and key are shared by all capabilities assigned to `openai`.
+For Ollama generation or scoring, also set the corresponding provider to
+`openai` and use installed model names for `OPENAI_MODEL_CRAWL`,
+`OPENAI_MODEL_SMART_FOLDERS`, and `OPENAI_MODEL_FEED_REDISCOVERY` as applicable.
+Those models must produce the JSON RSSMonster expects. Assistant models must
+support tool calling and streaming; compatibility depends on the selected model
+and gateway, not just availability of a Chat Completions endpoint.
+
+For Ollama embeddings, use `EMBEDDING_PROVIDER=openai` with an installed
+embedding model in `OPENAI_EMBEDDING_MODEL` and its output size in
+`OPENAI_EMBEDDING_DIMENSIONS`. The dimension setting describes the returned
+vectors; RSSMonster does not send it as a dimension-reduction request. Do not
+switch models or providers on a database containing existing semantic vectors:
+the vector spaces are not interchangeable and no vector migration is provided.
+
+This allows model inference to stay within your environment when every selected
+provider runs locally. Selecting a cloud-backed gateway model still sends its
+requests to that provider. See [Ollama's OpenAI compatibility documentation](https://docs.ollama.com/api/openai-compatibility)
+for its supported API features.
+
+## Local Queues and Article Enrichment
+
 Local Qwen embeddings use one running job and a bounded pending queue. The
 default `EMBEDDING_QUEUE_MAX_PENDING=4` permits four waiting batches and must be
 a positive integer. Disconnected pending requests are removed before execution;

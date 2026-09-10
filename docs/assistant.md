@@ -35,16 +35,29 @@ chat in `server/.env`:
 INFERENCE_AI_ENABLED=true
 INFERENCE_ASSISTANT_ENABLED=true
 INFERENCE_AGENT_TIMEOUT_MS=300000
+# Optional; use a reasoning effort supported by the selected model.
+ASSISTANT_REASONING_EFFORT=
 ```
 
-The assistant adapter currently supports OpenAI only. Put its credentials in
+The assistant uses the `openai` adapter for OpenAI or OpenAI-compatible gateways,
+including local Ollama. Put its credentials and model settings in
 `inference/.env`:
 
 ```env
 OPENAI_API_KEY=your-openai-api-key
 ASSISTANT_PROVIDER=openai
 ASSISTANT_MODEL=gpt-4o-mini
+# Optional gateway endpoint; choose a model available at that endpoint.
+# OPENAI_BASE_URL=http://127.0.0.1:11434/v1
 ```
+
+Model calls run through RSSMonster's configured inference provider using Chat
+Completions. A gateway does not need Responses API support, but the assistant
+model must support tool calling and streaming. For local Ollama, use a non-empty
+placeholder key such as `ollama` and an installed model name. See
+[the inference gateway guide]({% link inference.md %}#openai-compatible-gateways-and-ollama)
+for setup and Compose forwarding requirements. The optional reasoning effort
+setting belongs in `server/.env`; leave it blank unless needed by your model.
 
 Local embeddings, classification, summaries, scoring, Smart Folder recommendations,
 and feed rediscovery do not require this key when configured with Qwen and

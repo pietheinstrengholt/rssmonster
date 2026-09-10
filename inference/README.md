@@ -43,6 +43,29 @@ The server and inference service now use an explicit reliability contract:
 Production startup loads `inference/.env` before provider singletons are
 created, ensuring model, dtype, provider, and queue settings take effect.
 
+## OpenAI-compatible gateways
+
+The `openai` adapter also supports gateways such as local Ollama. Configure
+`OPENAI_BASE_URL` (for example `http://127.0.0.1:11434/v1`) and `OPENAI_API_KEY`
+in `inference/.env`; local Ollama accepts a placeholder key such as `ollama`.
+The endpoint and key apply to every capability assigned to `openai`, so select
+model names available at that endpoint. Without a base URL override, the
+default OpenAI endpoint is used.
+
+Set `OPENAI_OMIT_TEMPERATURE=true` only when the gateway/model rejects the
+temperature values sent by article analysis, recommendations, rediscovery, or
+semantic labeling. It defaults to `false`.
+
+The assistant runner uses RSSMonster's inference model provider, whose Agents
+SDK adapter uses Chat Completions. Select an installed tool-capable model with
+`ASSISTANT_PROVIDER=openai` and `ASSISTANT_MODEL`. Responses API support is not
+required. The optional `ASSISTANT_REASONING_EFFORT` is read from **server/.env**;
+leave it blank for no explicit override or use a value supported by the model.
+
+See [the inference guide](../docs/inference.md#openai-compatible-gateways-and-ollama)
+for the local Ollama example, container networking, Compose environment
+forwarding, and embedding compatibility constraints.
+
 ## Embedding model
 
 `EMBEDDING_PROVIDER` selects the provider for article, event, topic, island,

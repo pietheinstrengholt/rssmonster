@@ -20,6 +20,8 @@ Configure the RSSMonster server to reach inference:
 # server/.env
 INFERENCE_URL=http://127.0.0.1:3001
 INFERENCE_TIMEOUT_MS=30000
+# Optional assistant reasoning override; use only a value supported by the model.
+ASSISTANT_REASONING_EFFORT=
 ```
 
 Configure the provider and credential in the inference service:
@@ -37,7 +39,6 @@ OPENAI_API_KEY=your-openai-api-key
 # OPENAI_BASE_URL=https://gateway.example/v1
 # Omit temperature from Chat Completions requests when required by the gateway/model.
 OPENAI_OMIT_TEMPERATURE=false
-ASSISTANT_REASONING_EFFORT=
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 OPENAI_EMBEDDING_DIMENSIONS=1536
 ASSISTANT_MODEL=gpt-4o-mini
@@ -59,9 +60,16 @@ configured gateway or model rejects the `temperature` parameter. This removes
 that field from RSSMonster Chat Completions requests while preserving the
 existing temperature values by default.
 
-`ASSISTANT_REASONING_EFFORT` is optional. Set it to a value supported by the
-selected model (for example `low`, `medium`, or `high`) when the gateway rejects
-the SDK default or when a specific reasoning level is required.
+`ASSISTANT_REASONING_EFFORT` is optional and belongs in `server/.env`. Set it to
+a value supported by the selected model (for example `low`, `medium`, or `high`) when the gateway rejects
+the SDK default or when a specific reasoning level is required. Leave it blank
+to add no explicit override.
+
+The `openai` provider also supports local Ollama through its compatible API;
+it does not require using OpenAI's hosted models. See
+[OpenAI-compatible gateways and Ollama]({% link inference.md %}#openai-compatible-gateways-and-ollama)
+for a local assistant example, model requirements, embedding constraints, and
+container configuration.
 
 Do not commit either `.env` file. Local models are loaded per capability: for
 example, `EMBEDDING_PROVIDER=openai` does not load Qwen3 Embedding, while a
