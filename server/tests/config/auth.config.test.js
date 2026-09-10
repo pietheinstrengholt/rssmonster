@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   getFeverCredentialSecret,
-  getJwtSecret
+  getJwtSecret,
+  isRegistrationEnabled
 } from '../../config/auth.js';
 
 const originalJwtSecret = process.env.JWT_SECRET;
@@ -10,6 +11,7 @@ const originalFeverCredentialSecret =
   process.env.FEVER_CREDENTIAL_SECRET;
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   if (originalJwtSecret === undefined) {
     delete process.env.JWT_SECRET;
   } else {
@@ -22,6 +24,18 @@ afterEach(() => {
     process.env.FEVER_CREDENTIAL_SECRET =
       originalFeverCredentialSecret;
   }
+});
+
+describe('registration configuration', () => {
+  it.each([undefined, 'true'])('enables registration with %s', value => {
+    vi.stubEnv('ALLOW_REGISTRATION', value);
+    expect(isRegistrationEnabled()).toBe(true);
+  });
+
+  it.each(['false', ' FALSE '])('disables registration with %s', value => {
+    vi.stubEnv('ALLOW_REGISTRATION', value);
+    expect(isRegistrationEnabled()).toBe(false);
+  });
 });
 
 describe('JWT configuration', () => {

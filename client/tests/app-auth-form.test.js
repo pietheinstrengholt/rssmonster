@@ -72,6 +72,41 @@ afterEach(() => {
 });
 
 describe('App authentication form', () => {
+  it('blocks signup while preserving login and password recovery when registration is disabled', async () => {
+    authApi.getAuthConfiguration.mockResolvedValueOnce({ registrationEnabled: false, emailEnabled: false });
+    authApi.login.mockResolvedValueOnce({ message: 'Signed in.' });
+    authApi.requestPasswordReset.mockResolvedValueOnce({ message: 'Reset requested.' });
+    const wrapper = await mountAuthForm();
+
+    expect(wrapper.text()).not.toContain('Create an account');
+    wrapper.vm.switchAuthMode(true);
+    expect(wrapper.vm.showSignup).toBe(false);
+    await wrapper.vm.register();
+    expect(authApi.register).not.toHaveBeenCalled();
+    await wrapper.get('#username').setValue('reader');
+    await wrapper.get('#password').setValue('password');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(authApi.login).toHaveBeenCalledWith({ username: 'reader', password: 'password' });
+
+    await wrapper.get('.auth-register a').trigger('click');
+    await wrapper.get('#reset-email').setValue('reader@example.com');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(authApi.requestPasswordReset).toHaveBeenCalledWith('reader@example.com');
+    wrapper.unmount();
+  });
+
+  it('keeps signup unavailable when authentication configuration cannot be loaded', async () => {
+    authApi.getAuthConfiguration.mockRejectedValueOnce(new Error('Network error'));
+    const wrapper = await mountAuthForm();
+    expect(wrapper.text()).not.toContain('Create an account');
+    wrapper.vm.switchAuthMode(true);
+    expect(wrapper.vm.showSignup).toBe(false);
+    expect(wrapper.text()).toContain('Forgot password?');
+    wrapper.unmount();
+  });
+
   // Verifies the mount host retains the sole application ID across authentication branches.
   it('uses semantic roots without duplicating the Vue mount ID', async () => {
     const mountHost = document.createElement('div');

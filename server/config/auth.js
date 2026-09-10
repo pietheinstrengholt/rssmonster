@@ -15,3 +15,7 @@ export const getFeverCredentialSecret = () => {
 
   return process.env.FEVER_CREDENTIAL_SECRET;
 };
+
+// Public registration stays enabled unless explicitly disabled by the operator.
+export const isRegistrationEnabled = () =>
+  String(process.env.ALLOW_REGISTRATION ?? 'true').trim().toLowerCase() !== 'false';

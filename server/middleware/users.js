@@ -1,11 +1,15 @@
 import jwt from "jsonwebtoken";
-import { getJwtSecret } from '../config/auth.js';
+import { getJwtSecret, isRegistrationEnabled } from '../config/auth.js';
 import { isEmailEnabled, normalizeEmailAddress } from '../config/email.js';
 import db from '../models/index.js';
 
 const { User } = db;
 
 const validateRegister = (req, res, next) => {
+  if (!isRegistrationEnabled()) {
+    return res.status(403).json({ message: 'Public registration is disabled.' });
+  }
+
   // username min length 3
   if (!req.body.username || req.body.username.length < 3) {
     return res.status(400).send({

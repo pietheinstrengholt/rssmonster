@@ -14,7 +14,8 @@ const createRegistrationContext = () => ({
   password: 'secret123',
   password_repeat: 'secret123',
   message: '',
-  showSignup: true
+  showSignup: true,
+  registrationEnabled: true
 });
 
 describe('App registration errors', () => {

@@ -97,7 +97,7 @@
         <p v-else-if="passwordResetMode" class="auth-register"><a href="#!" @click.prevent="leavePasswordReset">Back to sign in</a></p>
         <p v-else-if="showSignup" class="auth-register">Already a member? <a href="#!" @click.prevent="switchAuthMode(false)">Click here to sign in</a></p>
         <template v-else>
-          <p class="auth-register">Not a member? <a href="#!" @click.prevent="switchAuthMode(true)">Create an account</a></p>
+          <p v-if="registrationEnabled" class="auth-register">Not a member? <a href="#!" @click.prevent="switchAuthMode(true)">Create an account</a></p>
           <p class="auth-register"><a href="#!" @click.prevent="startPasswordReset">Forgot password?</a></p>
         </template>
       </section>
@@ -166,6 +166,7 @@ export default {
       resetPassword: '',
       resetPasswordRepeat: '',
       registrationEmailEnabled: false,
+      registrationEnabled: false,
       emailEnrollmentMode: false,
       emailEnrollmentToken: '',
       enrollmentEmail: '',
@@ -215,8 +216,12 @@ export default {
       try {
         const configuration = await authApi.getAuthConfiguration();
         this.registrationEmailEnabled = configuration.emailEnabled === true;
+        this.registrationEnabled = configuration.registrationEnabled !== false;
+        if (!this.registrationEnabled) this.showSignup = false;
       } catch {
         this.registrationEmailEnabled = false;
+        this.registrationEnabled = false;
+        this.showSignup = false;
       }
     },
     // This function routes session expiry through the root session cleanup flow.
@@ -326,6 +331,7 @@ export default {
     },
     // This function switches authentication modes without retaining stale feedback.
     switchAuthMode(showSignup) {
+      if (showSignup && !this.registrationEnabled) return;
       this.passwordResetMode = null;
       this.showSignup = showSignup;
       this.message = '';
@@ -516,6 +522,7 @@ export default {
     },
     // This function creates an account and returns to sign-in after confirmed success.
     async register() {
+      if (!this.registrationEnabled) return;
       try {
         const credentials = {
           username: this.username,

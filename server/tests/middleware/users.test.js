@@ -12,7 +12,8 @@ vi.mock('jsonwebtoken', () => ({
   }
 }));
 
-vi.mock('../../config/auth.js', () => ({
+vi.mock('../../config/auth.js', async importOriginal => ({
+  ...await importOriginal(),
   getJwtSecret: mocked.getJwtSecret
 }));
 

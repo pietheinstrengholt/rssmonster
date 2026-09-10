@@ -19,6 +19,7 @@ const resetDevelopmentLoginEnvironment = () => {
   process.env.EMAIL_ENABLED = 'false';
   delete process.env.ENABLE_DEVELOPMENT_LOGIN;
   delete process.env.DEVELOPMENT_LOGIN_USER_ID;
+  delete process.env.ALLOW_REGISTRATION;
 };
 
 describe('auth controller', () => {
@@ -27,6 +28,7 @@ describe('auth controller', () => {
     process.env.DISABLE_LISTENER = 'true';
     process.env.JWT_SECRET = 'test-secret-used-for-sign-and-verify';
     process.env.EMAIL_ENABLED = 'false';
+    delete process.env.ALLOW_REGISTRATION;
 
     const mod = await import('../../app.js');
     app = mod.default;
@@ -74,11 +76,29 @@ describe('auth controller', () => {
     });
 
     expect(configuration.status).toBe(200);
-    expect(configuration.body).toEqual({ emailEnabled: true });
+    expect(configuration.body).toEqual({ emailEnabled: true, registrationEnabled: true });
     expect(registration.status).toBe(400);
     expect(registration.body).toEqual({ message: 'Please enter an email address.' });
     process.env.EMAIL_ENABLED = 'false';
   });
+
+  it.each([{}, { username: 'blocked-reader', password: 'password', password_repeat: 'password' }])(
+    'blocks registration before validation or database access for %j', async body => {
+      process.env.ALLOW_REGISTRATION = 'false';
+      const findUser = vi.spyOn(User, 'findOne');
+      const countUsers = vi.spyOn(User, 'count').mockResolvedValue(0);
+      const createUser = vi.spyOn(User, 'create');
+      const configuration = await request(app).get('/api/auth/configuration');
+      const response = await request(app).post('/api/auth/register').send(body);
+
+      expect(configuration.body.registrationEnabled).toBe(false);
+      expect(response.status).toBe(403);
+      expect(response.body).toEqual({ message: 'Public registration is disabled.' });
+      expect(findUser).not.toHaveBeenCalled();
+      expect(countUsers).not.toHaveBeenCalled();
+      expect(createUser).not.toHaveBeenCalled();
+    }
+  );
 
   it('accepts and normalizes an optional registration email', async () => {
     const username = uniqueName('registered-email-user');
@@ -153,6 +173,7 @@ describe('auth controller', () => {
   });
 
   it('validates a login token signed with JWT_SECRET', async () => {
+    process.env.ALLOW_REGISTRATION = 'false';
     const username = uniqueName('jwt-secret-user');
     const password = 'correct-password';
     const passwordHash = await bcrypt.hash(password, 10);

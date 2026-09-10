@@ -180,6 +180,7 @@ setting. Evaluate query behavior and memory use before changing it.
 | `PORT` | `3000` | HTTP port used by the server. The supplied containers set this to 3000. |
 | `JWT_SECRET` | none | Required secret for signing and verifying JWTs. |
 | `JWT_EXPIRES_IN` | `86400` | Login-token lifetime in seconds. The example file uses `604800` (seven days). |
+| `ALLOW_REGISTRATION` | `true` | Set to `false` to disable public account creation. Hides signup and rejects registration API requests with HTTP 403, including when no users exist. Existing accounts, login, and password recovery are unaffected. |
 | `FEVER_CREDENTIAL_SECRET` | none | Required secret for keyed Fever credential hashes. Changing it invalidates existing Fever API credentials. |
 | `ENABLE_DEVELOPMENT_LOGIN` | `false` | Enables login without normal credentials, but only when `NODE_ENV=development`. Never enable it in a shared environment. |
 | `DEVELOPMENT_LOGIN_USER_ID` | none | Existing positive user ID selected by development login. It must be set when development login is enabled. |
@@ -190,8 +191,15 @@ Authentication and API credential flows require these secrets. The supplied
 Compose files refuse to start without them. Keep both values stable across
 restarts and upgrades.
 
-See [First Login]({% link first-login.md %}) for the normal registration flow and the
-security implications of enabling development login.
+For a manual installation, add `ALLOW_REGISTRATION=false` to `server/.env` and
+restart the server. For Docker Compose, add `ALLOW_REGISTRATION: "false"` under
+the `rssmonster` service's `environment` and recreate the container. Adding it
+only to the root `.env` does not pass it into the container automatically.
+Leave it unset or set it to `true` to allow registration again.
+
+See [First Login]({% link first-login.md %}) for administrator setup before
+disabling registration, the normal registration flow, and the security
+implications of enabling development login.
 
 ## Feed Crawling and Scheduling
 

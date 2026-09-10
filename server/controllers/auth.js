@@ -3,7 +3,7 @@ const { User } = db;
 const EMAIL_ENROLLMENT_EXPIRES_IN_SECONDS = 30 * 60;
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { getJwtSecret } from '../config/auth.js';
+import { getJwtSecret, isRegistrationEnabled } from '../config/auth.js';
 import {
   createFeverApiKey,
   createFeverCredentialHash
@@ -252,6 +252,7 @@ const validate = async (req, res, _next) => {
 };
 
 const configuration = (_req, res) => res.status(200).json({
+  registrationEnabled: isRegistrationEnabled(),
   emailEnabled: isEmailEnabled()
 });
 
