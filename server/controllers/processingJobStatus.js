@@ -1,4 +1,11 @@
 import db from '../models/index.js';
+import {
+  isInferenceEnabled,
+  isAssistantEnabled,
+  shouldSkipArticleClassification,
+  shouldSkipArticleEmbeddings,
+  shouldSkipSemanticLabeling
+} from '../config/intelligentFeatures.js';
 import { requeueFailedProcessingJobs } from '../services/jobs/processingJobOperator.js';
 import { getProcessingJobStatus } from '../services/jobs/getProcessingJobStatus.js';
 
@@ -13,7 +20,16 @@ export const getProcessingJobsStatus = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    return res.status(200).json(await getProcessingJobStatus({ userId }));
+    return res.status(200).json({
+      ...await getProcessingJobStatus({ userId }),
+      features: {
+        inference: isInferenceEnabled(),
+        assistant: isAssistantEnabled(),
+        classification: !shouldSkipArticleClassification(),
+        embeddings: !shouldSkipArticleEmbeddings(),
+        semanticLabeling: !shouldSkipSemanticLabeling()
+      }
+    });
   } catch (error) {
     console.error('Error in getProcessingJobsStatus:', error);
     return res.status(500).json({ error: 'Unable to load processing-job status' });

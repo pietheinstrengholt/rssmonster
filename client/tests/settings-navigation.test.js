@@ -143,7 +143,7 @@ describe('Settings navigation', () => {
     expect(navigation.find(item => item.key === 'scores')?.visible).toBe(false);
     expect(navigation.find(item => item.key === 'topics')?.visible).toBe(false);
     expect(navigation.find(item => item.key === 'islands')?.visible).toBe(false);
-    expect(navigation.find(item => item.key === 'processingJobs')?.visible).toBe(false);
+    expect(navigation.find(item => item.key === 'processingJobs')?.visible).toBe(true);
   });
 
   it('shows AI Processing when AI features are available', () => {

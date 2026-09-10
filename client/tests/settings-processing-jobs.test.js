@@ -73,6 +73,37 @@ afterEach(() => {
 });
 
 describe('SettingsProcessingJobs', () => {
+  it.each([
+    [true, [true, true, true, true], ['Enabled', 'Enabled', 'Enabled', 'Enabled']],
+    [true, [false, true, false, true], ['Disabled', 'Enabled', 'Disabled', 'Enabled']],
+    [true, [true, false, true, false], ['Enabled', 'Disabled', 'Enabled', 'Disabled']],
+    [false, [true, true, true, true], ['Disabled', 'Disabled', 'Disabled', 'Disabled']]
+  ])('shows effective feature states for master %s and flags %j', async (inference, flags, expected) => {
+    const [assistant, classification, embeddings, semanticLabeling] = flags;
+    fetchProcessingJobStatus.mockResolvedValue({ data: statusFixture({
+      features: { inference, assistant, classification, embeddings, semanticLabeling }
+    }) });
+    mountStatus();
+    await flushPromises();
+    expect(wrapper.findAll('.processing-features dt').map(item => item.text())).toEqual([
+      'Conversation + MCP', 'Article analysis', 'Embeddings', 'Semantic labeling'
+    ]);
+    expect(wrapper.findAll('.processing-features .app-status-badge').map(item => item.text())).toEqual(expected);
+    if (!inference) {
+      expect(wrapper.get('.processing-features').text()).toContain('master switch');
+      expect(wrapper.get('.processing-health .app-status-badge').text()).toBe('Disabled');
+      expect(wrapper.get('.processing-health').text()).not.toContain('operating normally');
+    }
+  });
+
+  it('does not report missing feature configuration as enabled or disabled', async () => {
+    fetchProcessingJobStatus.mockResolvedValue({ data: statusFixture() });
+    mountStatus();
+    await flushPromises();
+    expect(wrapper.findAll('.processing-features .app-status-badge').map(item => item.text()))
+      .toEqual(['Unavailable', 'Unavailable', 'Unavailable', 'Unavailable']);
+  });
+
   it('queues failed jobs once, blocks concurrent actions, and refreshes the status', async () => {
     fetchProcessingJobStatus.mockResolvedValue({ data: statusFixture({ summary: { dead: 3 } }) });
     let resolveRetry;

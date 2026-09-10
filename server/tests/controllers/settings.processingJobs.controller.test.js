@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
@@ -26,6 +26,32 @@ describe('settings processing jobs status', () => {
     app = (await import('../../app.js')).default;
     await sequelize.authenticate();
   }, 50_000);
+
+  it.each([
+    ['true', 'true', 'false', 'false', 'false', [true, true, true, true, true]],
+    ['true', 'false', 'true', 'false', 'true', [true, false, false, true, false]],
+    ['true', 'true', 'false', 'true', 'false', [true, true, true, false, true]],
+    ['false', 'true', 'false', 'false', 'false', [false, false, false, false, false]],
+    ['', 'true', 'false', 'false', 'false', [false, false, false, false, false]]
+  ])('reports effective AI features for flags %s %s %s %s %s', async (master, assistant, classification, embeddings, labels, expected) => {
+    vi.stubEnv('INFERENCE_AI_ENABLED', master);
+    vi.stubEnv('INFERENCE_ASSISTANT_ENABLED', assistant);
+    vi.stubEnv('SKIP_ARTICLE_CLASSIFICATION_ANALYSIS', classification);
+    vi.stubEnv('SKIP_ARTICLE_EMBEDDINGS', embeddings);
+    vi.stubEnv('SKIP_SEMANTIC_LABELING', labels);
+    try {
+      const user = await createUser();
+      const response = await request(app).get('/api/setting/processing-jobs')
+        .set('Authorization', authHeaderFor(user));
+      expect(response.status).toBe(200);
+      expect(response.body.features).toEqual(Object.fromEntries(
+        ['inference', 'assistant', 'classification', 'embeddings', 'semanticLabeling']
+          .map((key, index) => [key, expected[index]])
+      ));
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 
   it('authenticates and returns only the current user queue status', async () => {
     const [user, otherUser] = await Promise.all([createUser(), createUser()]);

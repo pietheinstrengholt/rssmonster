@@ -6,8 +6,7 @@
       title="Background AI processing"
       title-id="processing-jobs-title"
     >
-      Check whether article analysis and semantic labels are processing normally without
-      interrupting feed crawling.
+      See which AI features are enabled on this server and check background processing health.
     </SettingsPageIntro>
 
     <div v-if="loading" class="settings-state" role="status" aria-live="polite">
@@ -16,9 +15,27 @@
     </div>
 
     <template v-else-if="processingStatus">
+      <section class="processing-features settings-panel" aria-labelledby="processing-features-title">
+        <h4 id="processing-features-title">AI features</h4>
+        <p v-if="processingStatus.features?.inference === false">
+          All AI features are disabled by the server’s master switch.
+        </p>
+        <p v-else>Configured on the server. Individual feed settings may limit article processing.</p>
+        <dl class="processing-features__list">
+          <div v-for="feature in aiFeatures" :key="feature.key" class="processing-features__item">
+            <dt>{{ feature.label }}</dt>
+            <dd>
+              <span class="app-status-badge" :class="feature.enabled === true ? 'app-status-badge--success' : 'app-status-badge--neutral'">
+                {{ feature.enabled === true ? 'Enabled' : feature.enabled === false ? 'Disabled' : 'Unavailable' }}
+              </span>
+              <p>{{ feature.description }}</p>
+            </dd>
+          </div>
+        </dl>
+      </section>
       <section
         class="processing-health settings-panel"
-        :class="`processing-health--${health.status}`"
+        :class="`processing-health--${processingStatus.features?.inference === false ? 'disabled' : health.status}`"
         aria-labelledby="processing-health-title"
         aria-live="polite"
       >
@@ -209,6 +226,47 @@
 </template>
 
 <style scoped>
+.processing-features {
+  margin-bottom: 16px;
+  padding: 18px;
+}
+
+.processing-features h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.processing-features p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.processing-features__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin: 18px 0 0;
+}
+
+.processing-features__item {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.processing-features dt {
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.processing-features dd {
+  margin: 0;
+}
+
 .processing-health {
   display: flex;
   align-items: center;
@@ -217,6 +275,10 @@
   margin-bottom: 16px;
   padding: 18px;
   border-left: 3px solid var(--settings-success-text);
+}
+
+.processing-health--disabled {
+  border-left-color: var(--text-muted);
 }
 
 .processing-health--busy {
@@ -576,7 +638,19 @@ const JOB_TYPE_LABELS = Object.freeze({
   article_enrichment: 'Article analysis',
   semantic_label: 'Semantic labels'
 });
+const AI_FEATURES = Object.freeze([
+  { key: 'assistant', label: 'Conversation + MCP', description: 'Agentic chat and MCP tools.' },
+  { key: 'classification', label: 'Article analysis', description: 'Generated tags, summaries, and quality scores.' },
+  { key: 'embeddings', label: 'Embeddings', description: 'Article recommendations and event, topic, and island generation.' },
+  { key: 'semanticLabeling', label: 'Semantic labeling', description: 'Generated labels for events, topics, and islands.' }
+]);
 const HEALTH_PRESENTATION = Object.freeze({
+  disabled: {
+    label: 'Disabled',
+    badgeClass: 'app-status-badge--neutral',
+    icon: 'pause-circle',
+    description: 'AI processing is disabled in the server configuration.'
+  },
   healthy: {
     label: 'Healthy',
     badgeClass: 'app-status-badge--success',
@@ -627,6 +701,13 @@ export default {
     };
   },
   computed: {
+    aiFeatures() {
+      const features = this.processingStatus?.features;
+      return AI_FEATURES.map(feature => ({
+        ...feature,
+        enabled: features?.inference === false ? false : features?.[feature.key]
+      }));
+    },
     health() {
       return {
         status: 'degraded',
@@ -635,13 +716,14 @@ export default {
       };
     },
     healthPresentation() {
+      if (this.processingStatus?.features?.inference === false) return HEALTH_PRESENTATION.disabled;
       return HEALTH_PRESENTATION[this.health.status] || HEALTH_PRESENTATION.degraded;
     },
     healthBadgeClass() {
       return this.healthPresentation.badgeClass;
     },
     healthDescription() {
-      if (!this.health.workerRunning && this.health.status !== 'stalled') {
+      if (this.processingStatus?.features?.inference !== false && !this.health.workerRunning && this.health.status !== 'stalled') {
         return `${this.healthPresentation.description} The worker is not currently reporting as active.`;
       }
       return this.healthPresentation.description;

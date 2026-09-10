@@ -193,7 +193,7 @@ export default {
         { key: 'topics', label: 'Topics', icon: 'diagram-3-fill', visible: aiEnabled },
         { key: 'islands', label: 'Islands', icon: 'compass-fill', visible: aiEnabled },
         { key: 'crawlStatistics', label: 'Crawl Statistics', icon: 'clipboard-data-fill', visible: true },
-        { key: 'processingJobs', label: 'AI Processing', icon: 'cpu-fill', visible: aiEnabled },
+        { key: 'processingJobs', label: 'AI Processing', icon: 'cpu-fill', visible: true },
         { key: 'observability', label: 'Observability', icon: 'activity', visible: true },
         { key: 'feeds', label: 'Feeds', icon: 'rss-fill', visible: true },
         { key: 'officialSources', label: 'Official Sources', icon: 'patch-check-fill', visible: true },
