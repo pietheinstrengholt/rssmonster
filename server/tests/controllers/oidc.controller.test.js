@@ -234,9 +234,18 @@ describe('server-owned OIDC flow', () => {
 
   it('keeps the public configuration free of provider secrets and disables routes when OIDC is off', async () => {
     const response = await request(app).get('/api/auth/configuration');
-    expect(response.body).toEqual({ registrationEnabled: false, localAuthEnabled: true, emailEnabled: false, oidcEnabled: true });
+    expect(response.body).toEqual({ registrationEnabled: false, localAuthEnabled: true, developmentLoginEnabled: false, emailEnabled: false, oidcEnabled: true });
     vi.stubEnv('OIDC_ENABLED', 'false');
     expect((await request(app).get('/api/auth/oidc/login')).status).toBe(404);
+  });
+
+  it('does not advertise development login when local authentication is disabled', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('ENABLE_DEVELOPMENT_LOGIN', 'true');
+    vi.stubEnv('LOCAL_AUTH_ENABLED', 'false');
+    const response = await request(app).get('/api/auth/configuration');
+    expect(response.status).toBe(200);
+    expect(response.body.developmentLoginEnabled).toBe(false);
   });
 });
 

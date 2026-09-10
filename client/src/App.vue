@@ -215,6 +215,7 @@ export default {
       registrationEmailEnabled: false,
       registrationEnabled: false,
       localAuthEnabled: true,
+      developmentLoginEnabled: false,
       oidcEnabled: false,
       oidcMessage: '',
       emailEnrollmentMode: false,
@@ -309,11 +310,13 @@ export default {
         const configuration = await authApi.getAuthConfiguration();
         this.registrationEmailEnabled = configuration.emailEnabled === true;
         this.localAuthEnabled = configuration.localAuthEnabled !== false;
+        this.developmentLoginEnabled = configuration.developmentLoginEnabled === true;
         this.registrationEnabled = this.localAuthEnabled && configuration.registrationEnabled !== false;
         if (!this.localAuthEnabled) this.leavePasswordReset();
         this.oidcEnabled = configuration.oidcEnabled === true;
         if (!this.registrationEnabled) this.showSignup = false;
       } catch {
+        this.developmentLoginEnabled = false;
         this.registrationEmailEnabled = false;
         this.registrationEnabled = false;
         this.oidcEnabled = false;
@@ -385,7 +388,7 @@ export default {
     },
     // This function bootstraps the configured development user while retaining normal login fallback.
     async tryDevelopmentLogin() {
-      if (this.localAuthEnabled === false) return;
+      if (!this.developmentLoginEnabled || this.localAuthEnabled === false) return;
       const requestId = this.authStore.beginSessionRequest();
 
       try {

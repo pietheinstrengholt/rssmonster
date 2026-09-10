@@ -74,6 +74,27 @@ afterEach(() => {
 });
 
 describe('App authentication form', () => {
+  it.each([false, undefined])('skips development login unless explicitly enabled (%s)', async developmentLoginEnabled => {
+    authApi.getAuthConfiguration.mockResolvedValueOnce({ developmentLoginEnabled });
+    const wrapper = await mountAuthForm();
+    expect(authApi.developmentLogin).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it('attempts development login when the server advertises it', async () => {
+    authApi.getAuthConfiguration.mockResolvedValueOnce({ developmentLoginEnabled: true });
+    const wrapper = await mountAuthForm();
+    expect(authApi.developmentLogin).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
+
+  it('skips development login when configuration cannot be loaded', async () => {
+    authApi.getAuthConfiguration.mockRejectedValueOnce(new Error('Network error'));
+    const wrapper = await mountAuthForm();
+    expect(authApi.developmentLogin).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
   it('offers provider login only when configured', async () => {
     authApi.getAuthConfiguration.mockResolvedValueOnce({ oidcEnabled: true, registrationEnabled: false });
     const wrapper = await mountAuthForm();

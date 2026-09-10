@@ -41,6 +41,23 @@ describe('auth controller', () => {
     vi.restoreAllMocks();
   });
 
+  it.each([
+    ['development', 'true', 'true', true],
+    ['development', 'false', 'true', false],
+    ['production', 'true', 'true', false]
+  ])('reports development login for environment %s, bypass %s, local auth %s', async (environment, bypass, localAuth, enabled) => {
+    vi.stubEnv('NODE_ENV', environment);
+    vi.stubEnv('ENABLE_DEVELOPMENT_LOGIN', bypass);
+    vi.stubEnv('LOCAL_AUTH_ENABLED', localAuth);
+    try {
+      const response = await request(app).get('/api/auth/configuration');
+      expect(response.status).toBe(200);
+      expect(response.body.developmentLoginEnabled).toBe(enabled);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('stores a protected Fever credential when registering', async () => {
     const username = uniqueName('registered-user');
     const password = 'correct-password';
@@ -76,7 +93,7 @@ describe('auth controller', () => {
     });
 
     expect(configuration.status).toBe(200);
-    expect(configuration.body).toEqual({ emailEnabled: true, registrationEnabled: true, localAuthEnabled: true, oidcEnabled: false });
+    expect(configuration.body).toEqual({ emailEnabled: true, registrationEnabled: true, localAuthEnabled: true, developmentLoginEnabled: false, oidcEnabled: false });
     expect(registration.status).toBe(400);
     expect(registration.body).toEqual({ message: 'Please enter an email address.' });
     process.env.EMAIL_ENABLED = 'false';

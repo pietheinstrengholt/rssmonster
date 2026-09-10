@@ -212,6 +212,7 @@ const validate = async (req, res, _next) => {
 const configuration = (_req, res) => res.status(200).json({
   registrationEnabled: isRegistrationEnabled() && isLocalAuthEnabled(),
   localAuthEnabled: isLocalAuthEnabled(),
+  developmentLoginEnabled: isLocalAuthEnabled() && isDevelopmentLoginEnabled(),
   oidcEnabled: getAuthConfiguration().oidcEnabled,
   emailEnabled: isEmailEnabled()
 });

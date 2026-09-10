@@ -123,6 +123,7 @@ describe('authentication lifecycle', () => {
       user: { id: 9, role: 'user' }
     });
     const context = createAuthContext();
+    context.developmentLoginEnabled = true;
 
     await App.methods.tryDevelopmentLogin.call(context);
 
