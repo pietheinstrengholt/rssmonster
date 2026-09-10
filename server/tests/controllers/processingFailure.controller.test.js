@@ -57,7 +57,7 @@ describe('processing failure settings controller', () => {
       timeoutOccurrences: '3',
       retryableOccurrences: '2'
     });
-    mocked.count.mockResolvedValue(1);
+    mocked.count.mockResolvedValueOnce(12).mockResolvedValueOnce(1);
     mocked.findAll
       .mockResolvedValueOnce([{ stage: 'feed_fetch' }, { stage: 'embedding' }])
       .mockResolvedValueOnce([{
@@ -82,10 +82,17 @@ describe('processing failure settings controller', () => {
       query: { days: '30', failureType: 'TIMEOUT', limit: '25', stage: 'feed_fetch' }
     }), res);
 
-    expect(mocked.count.mock.calls[0][0].where).toMatchObject({
-      userId: 42,
-      stage: 'feed_fetch',
-      failureType: 'TIMEOUT'
+    expect(mocked.count).toHaveBeenCalledTimes(2);
+    expect(mocked.count).toHaveBeenCalledWith({ where: { userId: 42 } });
+    expect(mocked.count).toHaveBeenCalledWith({
+      where: {
+        userId: 42,
+        stage: 'feed_fetch',
+        failureType: 'TIMEOUT',
+        occurredAt: { [Sequelize.Op.gte]: expect.any(Date) }
+      },
+      distinct: true,
+      col: 'fingerprint'
     });
     expect(mocked.findAll.mock.calls[1][0]).toMatchObject({
       order: [
@@ -99,6 +106,7 @@ describe('processing failure settings controller', () => {
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       summary: {
+        totalLogs: 12,
         totalOccurrences: 4,
         groupCount: 1,
         fatalOccurrences: 1,
