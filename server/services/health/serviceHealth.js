@@ -1,10 +1,10 @@
+import { isInferenceConfigured } from '../inference/configuration.js';
 import db from '../../models/index.js';
 import { checkDatabaseHealth } from './databaseHealth.js';
 import { readCrawlWorkerHealthState } from '../../src/workers/crawlWorkerHealth.js';
 import { readAiWorkerHealthState } from '../../src/workers/aiWorkerHealth.js';
-import { isInferenceEnabled } from '../../config/intelligentFeatures.js';
 import { getEmailConfigurationStatus } from '../../config/email.js';
-import { getInferenceRequestConfig } from '../inference/inferenceClient.js';
+import { getAIHealth } from '../ai/health.js';
 
 const service = (id, label, status, detail) => ({ id, label, status, detail });
 
@@ -32,21 +32,15 @@ const databaseHealth = async () => {
 };
 
 const inferenceHealth = async () => {
-  if (!isInferenceEnabled()) return service('inference', 'Inference', 'disabled', 'Inference is disabled.');
-  try {
-    const { baseUrl, fetchImplementation } = getInferenceRequestConfig();
-    const response = await fetchImplementation(`${baseUrl.replace(/\/$/, '')}/ready`, {
-      signal: AbortSignal.timeout(3000)
-    });
-    const body = await response.json();
-    if (response.ok && body.acceptingWork === true && body.state === 'ready') {
-      return service('inference', 'Inference', 'healthy', 'Models are ready to accept work.');
-    }
-    return service('inference', 'Inference', body.state === 'starting' ? 'starting' : 'unhealthy',
-      'Inference is not ready to accept work.');
-  } catch {
+  if (!await isInferenceConfigured()) return service('inference', 'Inference', 'disabled', 'No inference service configured.');
+  let status;
+  try { status = await getAIHealth(); } catch {
     return service('inference', 'Inference', 'unhealthy', 'Inference readiness check failed or timed out.');
   }
+  if (!status.enabled) return service('inference', 'Inference', 'disabled', 'Inference is disabled.');
+  if (status.ready) return service('inference', 'Inference', 'healthy', 'Models are ready to accept work.');
+  return service('inference', 'Inference', status.state === 'starting' ? 'starting' : 'unhealthy',
+    status.reachable ? 'Inference is not ready to accept work.' : 'Inference readiness check failed or timed out.');
 };
 
 // Read-only snapshot; historical failure totals do not establish current service health.

@@ -1,4 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { validateHeaderValue } from 'node:http';
+import { getEffectiveInferenceConfiguration, getEnvironmentInferenceConfiguration, inferenceConfigurationIdentity } from './configuration.js';
+import { InferenceDisabledError } from '../../config/intelligentFeatures.js';
 import { assertInferenceEnabled } from '../../config/intelligentFeatures.js';
 import {
   createInferenceCircuitBreaker,
@@ -34,6 +37,8 @@ const SAFE_ERROR_CODES = new Set([
   'ABORT_ERR',
   'INFERENCE_CIRCUIT_OPEN',
   'INFERENCE_HTTP_ERROR',
+  'INFERENCE_UNAUTHORIZED',
+  'INFERENCE_INVALID_API_KEY',
   'INFERENCE_STREAM_ERROR',
   'INFERENCE_TIMEOUT',
   'INFERENCE_UNAVAILABLE'
@@ -75,6 +80,8 @@ export const createInferenceRequestSignal = (timeoutMs, callerSignal) => {
 
 export const getSafeInferenceErrorMessage = (error, { capability } = {}) => {
   const subject = capability ? `Inference ${capability}` : 'Inference';
+  if (error?.code === 'INFERENCE_INVALID_API_KEY') return 'Inference API key cannot be sent as an HTTP header';
+  if (error?.code === 'INFERENCE_UNAUTHORIZED') return 'Inference authentication failed';
   if (error?.code === 'INFERENCE_TIMEOUT') {
     const timeoutMs = Number(error.timeoutMs);
     return `${subject} request timed out` +
@@ -145,7 +152,7 @@ export class InferenceServiceUnavailableError extends Error {
     const reason = cause?.cause?.code || cause?.code;
     const transportCode = SAFE_TRANSPORT_CODES.has(reason) ? reason : null;
     super(
-      'Inference service unavailable. Check INFERENCE_URL and ensure the service is running.' +
+      'Inference service unavailable. Check INFERENCE_BASE_URL and ensure the service is running.' +
       (transportCode ? ` (${transportCode})` : ''),
       { cause }
     );
@@ -168,10 +175,46 @@ export class InferenceHttpError extends Error {
 export { InferenceCircuitOpenError };
 
 export const getInferenceRequestConfig = (options = {}) => ({
-  baseUrl: options.baseUrl || process.env.INFERENCE_URL || DEFAULT_INFERENCE_URL,
+  baseUrl: options.baseUrl || getEnvironmentInferenceConfiguration()?.baseUrl || DEFAULT_INFERENCE_URL,
   timeoutMs: Number(options.timeoutMs || process.env.INFERENCE_TIMEOUT_MS || DEFAULT_TIMEOUT_MS),
   fetchImplementation: options.fetchImplementation || fetch
 });
+
+// Shared by JSON and streaming; credentials never enter capability payloads or diagnostics.
+const getRequestHeaders = (requestId, hasBody, key) => {
+  if (key) {
+    try { validateHeaderValue('X-Inference-API-Key', key); } catch {
+      // Native header-validation errors can quote the supplied value.
+      throw Object.assign(new Error('Inference API key cannot be sent as an HTTP header'), { code: 'INFERENCE_INVALID_API_KEY' });
+    }
+  }
+  return {
+    ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+    'X-Request-ID': requestId,
+    ...(key ? { 'X-Inference-API-Key': key } : {})
+  };
+};
+
+const unauthorizedError = () => Object.assign(new InferenceHttpError(401), {
+  message: 'Inference authentication failed', code: 'INFERENCE_UNAUTHORIZED'
+});
+
+// A 401 is conclusive without reading an untrusted or potentially stalled error body.
+const discardUnauthorizedBody = response => { void response.body?.cancel().catch(() => {}); };
+
+let activeConfigurationIdentity;
+const resolveTransportConfiguration = async options => {
+  const configuration = options.configuration || (options.baseUrl
+    ? { source: 'environment', baseUrl: options.baseUrl, apiKey: process.env.INFERENCE_API_KEY || null }
+    : await getEffectiveInferenceConfiguration());
+  if (!configuration.baseUrl) throw new InferenceDisabledError();
+  const identity = inferenceConfigurationIdentity(configuration);
+  if (activeConfigurationIdentity !== identity) {
+    capabilityCircuitBreakers.clear();
+    activeConfigurationIdentity = identity;
+  }
+  return { ...getInferenceRequestConfig({ ...options, baseUrl: configuration.baseUrl }), apiKey: configuration.apiKey };
+};
 
 export const getInferenceCircuitSnapshot = circuitKey =>
   capabilityCircuitBreakers.get(circuitKey)?.getSnapshot() || null;
@@ -194,7 +237,11 @@ export const requestInferenceJson = async (path, payload, options = {}) => {
   } catch (error) {
     throw attachRequestMetadata(error, { requestId, inferencePath: path, startedAt, now });
   }
-  const { baseUrl, timeoutMs, fetchImplementation } = getInferenceRequestConfig(options);
+  let configuration;
+  try { configuration = await resolveTransportConfiguration(options); } catch (error) {
+    throw attachRequestMetadata(error, { requestId, inferencePath: path, startedAt, now });
+  }
+  const { baseUrl, timeoutMs, fetchImplementation, apiKey } = configuration;
   const normalizedBaseUrl = baseUrl.replace(/\/$/, '');
   const circuitKey = options.circuitKey || path;
   const circuitBreaker = options.circuitBreaker || getCapabilityCircuitBreaker(circuitKey, {
@@ -265,16 +312,19 @@ export const requestInferenceJson = async (path, payload, options = {}) => {
     throw unavailableError;
   };
   try {
+    requestSignal.throwIfAborted();
     response = await fetchImplementation(`${normalizedBaseUrl}${path}`, {
       method,
-      headers: {
-        ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-        'X-Request-ID': requestId
-      },
+      headers: getRequestHeaders(requestId, hasBody, apiKey),
+      ...(apiKey ? { redirect: 'error' } : {}),
       ...(hasBody ? { body } : {}),
       signal: requestSignal
     });
   } catch (error) {
+    if (error.code === 'INFERENCE_INVALID_API_KEY') {
+      circuitBreaker.recordFailure(admission, { qualifies: false, requestId, inferencePath: path, category: 'authentication_configuration' });
+      throw attachRequestMetadata(error, { requestId, inferencePath: path, startedAt, now });
+    }
     if (callerAbortedRequest()) {
       circuitBreaker.recordFailure(admission, {
         qualifies: false,
@@ -309,7 +359,13 @@ export const requestInferenceJson = async (path, payload, options = {}) => {
     throw unavailableError;
   }
 
-  if (!response.ok) {
+  if (response.status === 401) {
+    discardUnauthorizedBody(response);
+    circuitBreaker.recordSuccess(admission, { requestId, inferencePath: path });
+    throw attachRequestMetadata(unauthorizedError(), { requestId, inferencePath: path, startedAt, now });
+  }
+
+  if (!response.ok && !options.includeHttpStatus) {
     let detail;
     try {
       detail = await response.text();
@@ -330,6 +386,7 @@ export const requestInferenceJson = async (path, payload, options = {}) => {
       ),
       { requestId, inferencePath: path, startedAt, now }
     );
+    httpError.retryAfterMs = retryAfterMs;
     if (qualifiesForCircuit) {
       circuitBreaker.recordFailure(admission, {
         qualifies: true,
@@ -344,6 +401,8 @@ export const requestInferenceJson = async (path, payload, options = {}) => {
     throw httpError;
   }
 
+  const invalidResponseError = () => Object.assign(new Error('Inference response is not valid JSON'),
+    options.includeHttpStatus ? { status: response.status } : {});
   let result;
   try {
     result = await response.json();
@@ -357,7 +416,7 @@ export const requestInferenceJson = async (path, payload, options = {}) => {
       inferencePath: path,
       category: 'invalid_response'
     });
-    throw attachRequestMetadata(new Error('Inference response is not valid JSON'), {
+    throw attachRequestMetadata(invalidResponseError(), {
       requestId, inferencePath: path, startedAt, now
     });
   }
@@ -368,13 +427,106 @@ export const requestInferenceJson = async (path, payload, options = {}) => {
       inferencePath: path,
       category: 'invalid_response'
     });
-    throw attachRequestMetadata(new Error('Inference response is not valid JSON'), {
+    throw attachRequestMetadata(invalidResponseError(), {
       requestId, inferencePath: path, startedAt, now
     });
   }
   circuitBreaker.recordSuccess(admission, { requestId, inferencePath: path });
-  return result;
+  return options.includeHttpStatus ? { ok: response.ok, status: response.status, body: result } : result;
 };
+
+// Streaming keeps its existing independent transport behavior; JSON calls own the assistant circuit.
+export async function* requestInferenceStream(path, payload, options = {}) {
+  assertInferenceEnabled();
+  const { baseUrl, timeoutMs, fetchImplementation, apiKey } = await resolveTransportConfiguration(options);
+  const requestId = resolveRequestId(options.requestId);
+  const startedAt = Date.now();
+  const consumerController = new AbortController();
+  const requestSignal = AbortSignal.any([
+    createInferenceRequestSignal(timeoutMs, options.signal), consumerController.signal
+  ]);
+  const attachMetadata = error => Object.assign(error, {
+    requestId,
+    inferencePath: path,
+    durationMs: Date.now() - startedAt
+  });
+  const callerAbortedRequest = () => Boolean(
+    options.signal?.aborted &&
+    requestSignal.aborted &&
+    requestSignal.reason === options.signal.reason
+  );
+  const wrapFailure = (cause, phase) => {
+    if (callerAbortedRequest()) {
+      const error = new Error('Assistant inference request aborted', { cause });
+      error.name = 'AbortError';
+      error.code = 'ABORT_ERR';
+      return attachMetadata(error);
+    }
+    if (requestSignal.aborted) {
+      return attachMetadata(new InferenceTimeoutError(timeoutMs, cause));
+    }
+    if (phase === 'transport') {
+      return attachMetadata(new InferenceServiceUnavailableError(baseUrl, cause));
+    }
+    const error = new Error('Assistant inference stream failed', { cause });
+    error.name = 'InferenceStreamError';
+    error.code = 'INFERENCE_STREAM_ERROR';
+    return attachMetadata(error);
+  };
+  let response;
+  try {
+    requestSignal.throwIfAborted();
+    response = await fetchImplementation(`${baseUrl.replace(/\/$/, '')}${path}`, {
+      method: 'POST',
+      headers: getRequestHeaders(requestId, true, apiKey),
+      ...(apiKey ? { redirect: 'error' } : {}),
+      body: JSON.stringify(payload),
+      signal: requestSignal
+    });
+  } catch (error) {
+    if (error.code === 'INFERENCE_INVALID_API_KEY') throw attachMetadata(error);
+    throw wrapFailure(error, 'transport');
+  }
+
+  if (response.status === 401) {
+    discardUnauthorizedBody(response);
+    throw attachMetadata(unauthorizedError());
+  }
+
+  if (!response.ok) {
+    let detail;
+    try { detail = await response.text(); } catch (error) { throw wrapFailure(error, 'stream'); }
+    const inferenceErrorCode = parseInferenceErrorCode(detail);
+    const error = new InferenceHttpError(response.status, inferenceErrorCode,
+      QUALIFYING_HTTP_STATUSES.has(response.status) || RECOGNIZED_INFERENCE_ERRORS.has(inferenceErrorCode));
+    error.retryAfterMs = parseRetryAfterMs(response.headers.get('Retry-After'), Date.now);
+    throw attachMetadata(error);
+  }
+  if (!response.body) throw attachMetadata(new InferenceHttpError(response.status));
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (line.trim()) yield JSON.parse(line);
+      }
+      if (done) break;
+    }
+    if (buffer.trim()) yield JSON.parse(buffer);
+  } catch (error) {
+    throw wrapFailure(error, 'stream');
+  } finally {
+    consumerController.abort();
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
 
 export default {
   createInferenceRequestSignal,
@@ -382,5 +534,6 @@ export default {
   getSafeInferenceErrorMessage,
   getInferenceRequestConfig,
   getInferenceCircuitSnapshot,
-  requestInferenceJson
+  requestInferenceJson,
+  requestInferenceStream
 };

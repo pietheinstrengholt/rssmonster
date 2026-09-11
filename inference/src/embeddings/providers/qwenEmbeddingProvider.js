@@ -19,7 +19,7 @@ export const createQwenEmbeddingProvider = ({
   environment = process.env,
   dependencies = defaultDependencies
 } = {}) => {
-  const config = getEmbeddingConfig({ ...environment, EMBEDDING_PROVIDER: 'qwen' });
+  const config = getEmbeddingConfig({ ...environment, EMBEDDING_PROVIDER: 'local' });
   const metadata = Object.freeze({
     provider: 'qwen3-embedding',
     modelId: config.modelId,
@@ -64,5 +64,3 @@ export const createQwenEmbeddingProvider = ({
     isLoaded: () => Boolean(extractor)
   });
 };
-
-export default createQwenEmbeddingProvider();

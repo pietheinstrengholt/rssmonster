@@ -1,3 +1,4 @@
+import { getAvailableInferenceCapabilities } from '../services/inference/status.js';
 import db from '../models/index.js';
 const { User } = db;
 import bcrypt from "bcryptjs";
@@ -199,7 +200,7 @@ const validate = async (req, res, _next) => {
       message: 'This is the secret content. Only logged in users can see that!', 
       data: req.userData, 
       user,
-      agenticFeaturesEnabled: isAssistantEnabled()
+      agenticFeaturesEnabled: isAssistantEnabled() && (await getAvailableInferenceCapabilities()).assistant
     });
   } catch (err) {
     console.error('Validation error:', err);

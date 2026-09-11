@@ -88,7 +88,7 @@ describe('inference client', () => {
       inferencePath: '/api/test',
       durationMs: expect.any(Number),
       message: 'Inference service unavailable. ' +
-        'Check INFERENCE_URL and ensure the service is running. (ECONNREFUSED)'
+        'Check INFERENCE_BASE_URL and ensure the service is running. (ECONNREFUSED)'
     });
     await unavailableRequest.catch(error => {
       expect(error).toBeInstanceOf(InferenceServiceUnavailableError);

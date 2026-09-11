@@ -26,13 +26,13 @@ The inference service currently supports these model families:
 For a manual installation, add the inference connection to `server/.env`:
 
 ```env
-INFERENCE_URL=http://127.0.0.1:3001
+INFERENCE_BASE_URL=http://127.0.0.1:3001
 INFERENCE_TIMEOUT_MS=30000
 INFERENCE_CIRCUIT_FAILURE_THRESHOLD=5
 INFERENCE_CIRCUIT_COOLDOWN_MS=30000
 ```
 
-`INFERENCE_URL` is the base URL of the inference service. Use a private service
+`INFERENCE_BASE_URL` is the base URL of the inference service. Use a private service
 name instead of `127.0.0.1` when the processes run in separate containers.
 `INFERENCE_TIMEOUT_MS` applies to non-agent inference requests. Local model startup
 and CPU inference can need a longer timeout; the [Qwen guide]({% link model-qwen.md %})
@@ -61,7 +61,8 @@ SKIP_SEMANTIC_LABELING=false
 even when feature-specific skip flags are false. Background article analysis and
 generated labels also need the AI worker; see [How RSSMonster Works]({% link how-rssmonster-works.md %}).
 
-The server contains no OpenAI key, provider, or model name. Embeddings, article
+The server does not configure provider API keys, providers, or model names; it displays
+metadata discovered from inference. Embeddings, article
 classification, the assistant, Smart Folder recommendations, and feed
 rediscovery all call inference. Keep `INFERENCE_ASSISTANT_ENABLED=false` for
 local processing without chat. Enable it only after configuring the provider
@@ -77,32 +78,35 @@ INFERENCE_PORT=3001
 INFERENCE_DEBUG=false
 EMBEDDING_MAX_BATCH_SIZE=8
 EMBEDDING_QUEUE_MAX_PENDING=4
-EMBEDDING_PROVIDER=qwen
+EMBEDDING_PROVIDER=local
 EMBEDDING_MODEL=onnx-community/Qwen3-Embedding-0.6B-ONNX
 EMBEDDING_DIMENSIONS=1024
-GENERATION_PROVIDER=qwen
+GENERATION_PROVIDER=local
 GENERATION_MODEL=onnx-community/Qwen3.5-0.8B-ONNX
 GENERATION_DTYPE=q4
-ARTICLE_SCORING_PROVIDER=modernbert
-MODERNBERT_MODEL=onnx-community/ModernBERT-base-nli-ONNX
+CLASSIFICATION_PROVIDER=local
+CLASSIFICATION_MODEL=onnx-community/ModernBERT-base-nli-ONNX
 MODERNBERT_DTYPE=q8
 MODERNBERT_QUEUE_MAX_PENDING=4
 INFERENCE_MODEL_CACHE_DIR=.cache/models
 ```
 
 This example runs embeddings, generation, and scoring locally without an
-OpenAI key. The optional assistant currently uses OpenAI; configure its
+OpenAI key. The optional assistant uses a compatible endpoint; configure its
 credentials separately using [Assistant and MCP]({% link assistant.md %}).
 
-Set `EMBEDDING_PROVIDER=openai` or `EMBEDDING_PROVIDER=qwen`, then add the
+Set `EMBEDDING_PROVIDER=openai-compatible` or `EMBEDDING_PROVIDER=local`, then add the
 provider-specific settings described in the child pages. Independently set
-`GENERATION_PROVIDER=openai` or `GENERATION_PROVIDER=qwen` for bullet
+`GENERATION_PROVIDER=openai-compatible` or `GENERATION_PROVIDER=local` for bullet
 summaries, tags, Smart Folder recommendations, and feed rediscovery. Assistant
-responses are selected independently with `ASSISTANT_PROVIDER=openai`. Select
+responses are selected independently with `ASSISTANT_PROVIDER=openai-compatible`. Select
 advertisement, tone, and quality scoring independently with
-`ARTICLE_SCORING_PROVIDER=openai` or `ARTICLE_SCORING_PROVIDER=modernbert`.
+`CLASSIFICATION_PROVIDER=openai-compatible` or `CLASSIFICATION_PROVIDER=local`.
 The latter downloads `onnx-community/ModernBERT-base-nli-ONNX` into the shared
 inference model cache during service startup when it is not already cached.
+Every remote capability has independent `*_BASE_URL`, `*_API_KEY`, and `*_MODEL` settings.
+See [Inference]({% link inference.md %}#capability-configuration) for mixed endpoints,
+workload model overrides, and legacy migration.
 Start the service from the `inference` directory:
 
 ```bash

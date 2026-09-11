@@ -70,3 +70,8 @@ export const saveOfficialSources = officialSources =>
 
 export const fetchServiceHealth = () =>
   api.get('/setting/observability/health');
+
+export const fetchInferenceSettings = () => api.get('/setting/inference');
+export const saveInferenceSettings = input => api.put('/setting/inference', input);
+export const clearInferenceSettings = () => api.delete('/setting/inference');
+export const testInferenceSettings = configuration => api.post('/setting/inference/test', configuration);

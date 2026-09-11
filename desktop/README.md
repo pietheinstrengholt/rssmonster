@@ -2,7 +2,8 @@
 
 Electron runs the existing Express backend and Vue frontend over loopback HTTP.
 Desktop uses SQLite, manual feed refresh only, no worker process, no scheduled
-crawling, and no inference/AI functionality. The self-hosted distribution is unchanged.
+crawling, and optional remote inference configured through Settings or environment.
+No inference service or models are bundled. Background AI jobs still require a worker.
 
 ## Develop
 
@@ -96,7 +97,7 @@ points and the entire standalone inference service/models. It retains the two sc
 imported by controllers, three worker-health helpers imported by status services,
 and taxonomy constants imported by a migration. These are shared code, not running
 workers or seeds. Server-side inference client/SDK imports remain because the existing
-Express routes import them, but inference is disabled before any server import.
+Express routes import them; remote inference uses the shared deployment resolver.
 
 ## Data and lifecycle
 

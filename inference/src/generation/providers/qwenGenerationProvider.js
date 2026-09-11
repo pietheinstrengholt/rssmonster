@@ -40,7 +40,7 @@ export const createQwenGenerationProvider = ({
   environment = process.env,
   dependencies = defaultDependencies
 } = {}) => {
-  const config = getGenerationConfig({ ...environment, GENERATION_PROVIDER: 'qwen' });
+  const config = getGenerationConfig({ ...environment, GENERATION_PROVIDER: 'local' });
   let processor;
   let model;
   let initializationPromise;

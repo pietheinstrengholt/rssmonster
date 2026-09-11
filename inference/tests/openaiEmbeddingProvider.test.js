@@ -43,7 +43,7 @@ describe('OpenAI embedding provider', () => {
     const provider = createOpenAIEmbeddingProvider({ environment: {} });
 
     expect(provider.isLoaded()).toBe(false);
-    await expect(provider.initialize()).rejects.toThrow('OPENAI_API_KEY is required');
+    await expect(provider.initialize()).rejects.toThrow('EMBEDDING_API_KEY is required');
   });
 
   it('creates the default OpenAI client', async () => {

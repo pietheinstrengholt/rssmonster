@@ -400,7 +400,7 @@ and optional jobs in `rssmonster-ai-worker`. A renewable database lease pauses
 new optional claims while the crawl, embedding, event, topic, and island-scoring
 pipeline is active; crawling never waits for the optional queue to drain.
 The lightweight SQLite Compose profile runs only `rssmonster-worker` and has
-AI processing disabled, so it does not start an optional-job consumer.
+no optional-job consumer by default. Remote inference connectivity is configured independently.
 
 ### HTTP Fetch Behavior
 
@@ -561,18 +561,19 @@ reverse proxy so client addresses are interpreted correctly.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `INFERENCE_URL` | `http://127.0.0.1:3001` | Standalone inference service used for all model requests. |
+| `INFERENCE_BASE_URL` | unset | Deployment-managed inference endpoint. Takes precedence over Settings; without either, inference is not configured. |
+| `INFERENCE_API_KEY` | unset | Optional opaque shared secret; set the exact same value on server/workers and inference. No inference key disables authentication. |
 | `INFERENCE_TIMEOUT_MS` | `30000` | Timeout for embeddings, classification, recommendations, and feed rediscovery. |
 | `INFERENCE_AGENT_TIMEOUT_MS` | `300000` | Timeout for streamed assistant model requests. |
 | `INFERENCE_CIRCUIT_FAILURE_THRESHOLD` | `5` | Consecutive qualifying failures before a capability-specific server inference circuit opens. Must be a positive integer. |
 | `INFERENCE_CIRCUIT_COOLDOWN_MS` | `30000` | Minimum open-circuit cooldown before one half-open probe is allowed. Must be a positive integer. |
-| `INFERENCE_AI_ENABLED` | `false` | Master switch for server and client inference capabilities. Only explicit `true` allows inference requests. |
-| `INFERENCE_ASSISTANT_ENABLED` | `false` | Enables assistant routes and UI only when explicitly `true`. Enable it after configuring the provider and credentials in inference. |
+| `INFERENCE_AI_ENABLED` | unset | Optional permission override. Explicit `false` prohibits inference; otherwise a configured endpoint is required. |
+| `INFERENCE_ASSISTANT_ENABLED` | unset | Optional permission override. Explicit `false` disables assistant use; otherwise readiness and advertised capability determine availability. |
 | `SKIP_ARTICLE_CLASSIFICATION_ANALYSIS` | `false` | When `true`, uses default article scores and feed-category tags without calling inference classification. |
 | `SKIP_ARTICLE_EMBEDDINGS` | `false` | When `true`, disables article vector generation and defaults new feeds to embeddings disabled. |
 | `SKIP_SEMANTIC_LABELING` | `false` | When `true`, skips generated event, topic, and island display labels while preserving deterministic names and labels. |
 
-When `INFERENCE_AI_ENABLED` is not explicitly `true`, it overrides the
+When `INFERENCE_AI_ENABLED` is explicitly `false`, it overrides the
 feature-specific settings: classification and embeddings remain local or disabled,
 semantic labeling remains disabled, and assistant, Smart Folder recommendation, and feed-rediscovery requests return
 `INFERENCE_DISABLED` without contacting an inference endpoint.
@@ -580,7 +581,8 @@ semantic labeling remains disabled, and assistant, Smart Folder recommendation, 
 OpenAI credentials and model names belong only in `inference/.env`; see
 [Model Usage]({% link model-usage.md %}). The server executes authenticated assistant
 tools locally, while inference performs every provider model call. The server
-uses only `INFERENCE_ASSISTANT_ENABLED` and never receives the OpenAI key.
+uses the shared inference connection and advertised capabilities, respecting optional
+permission overrides, and never receives provider API keys.
 
 The server process keeps independent circuit breakers for embeddings,
 classification, non-streaming assistant, Smart Folder, and feed-rediscovery
@@ -662,3 +664,10 @@ Email and browser notifications are independent optional features:
 
 Neither feature is enabled merely by installing the web app. Pass the appropriate
 variables to each responsible process and recreate containers after changes.
+
+See [inference authentication]({% link inference.md %}#optional-shared-secret-authentication) for key generation, HTTPS, protected endpoints, and the legacy `INFERENCE_URL` fallback.
+
+Inference connections can also be saved by an administrator in Settings → AI / Inference
+on MySQL, SQLite, or Desktop. A nonempty environment URL always takes precedence and
+hides editing controls; capability status remains visible. See the inference guide
+for encrypted key storage, keep/replace/remove semantics, and worker limitations.

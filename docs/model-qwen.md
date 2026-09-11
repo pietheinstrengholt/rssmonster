@@ -20,7 +20,7 @@ on low-power hardware and during the first model load:
 
 ```env
 # server/.env
-INFERENCE_URL=http://127.0.0.1:3001
+INFERENCE_BASE_URL=http://127.0.0.1:3001
 INFERENCE_TIMEOUT_MS=600000
 ```
 
@@ -32,11 +32,11 @@ INFERENCE_HOST=127.0.0.1
 INFERENCE_PORT=3001
 INFERENCE_DEBUG=false
 INFERENCE_MODEL_CACHE_DIR=.cache/models
-EMBEDDING_PROVIDER=qwen
-GENERATION_PROVIDER=qwen
+EMBEDDING_PROVIDER=local
+GENERATION_PROVIDER=local
 GENERATION_MODEL=onnx-community/Qwen3.5-0.8B-ONNX
 GENERATION_DTYPE=q4
-ARTICLE_SCORING_PROVIDER=modernbert
+CLASSIFICATION_PROVIDER=local
 EMBEDDING_MODEL=onnx-community/Qwen3-Embedding-0.6B-ONNX
 EMBEDDING_DIMENSIONS=1024
 EMBEDDING_MAX_BATCH_SIZE=8
@@ -46,7 +46,7 @@ EMBEDDING_QUEUE_MAX_PENDING=4
 Qwen can provide embeddings separately from Qwen3.5 generation. With the
 configuration above, Qwen3.5 generates article summaries, tags, Smart Folder
 recommendations, and feed rediscovery results. ModernBERT scores article quality
-locally. These capabilities require no OpenAI key. The optional assistant remains OpenAI-only; follow
+locally. These capabilities require no OpenAI key. The optional assistant uses an independently configured compatible endpoint; follow
 [Assistant and MCP]({% link assistant.md %}) to enable it separately.
 
 Qwen embedding inference runs one batch at a time and accepts four pending

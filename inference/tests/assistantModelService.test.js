@@ -35,7 +35,7 @@ describe('assistant model service', () => {
   it('requires an API key when the provider is first used', async () => {
     const service = createAssistantModelService({ environment: {} });
 
-    await expect(service.respond({ request: {} })).rejects.toThrow('OPENAI_API_KEY is required');
+    await expect(service.respond({ request: {} })).rejects.toThrow('ASSISTANT_API_KEY is required');
   });
 
   it('creates the default OpenAI provider', async () => {

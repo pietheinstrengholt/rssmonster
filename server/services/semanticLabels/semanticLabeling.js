@@ -1,11 +1,10 @@
+import { isInferenceConfigured } from '../inference/configuration.js';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { shouldSkipSemanticLabeling } from '../../config/intelligentFeatures.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
-import {
-  getSafeInferenceErrorDetails,
-  requestInferenceJson
-} from '../inference/inferenceClient.js';
+import { getSafeInferenceErrorDetails } from '../ai/errors.js';
+import { generateSemanticLabels } from '../ai/capabilities/generation.js';
 
 export const MAX_SEMANTIC_LABEL_ARTICLE_TITLES = 12;
 const MAX_ARTICLE_TITLE_LENGTH = 300;
@@ -36,11 +35,7 @@ export const normalizeGeneratedSemanticLabel = value => {
   return label;
 };
 
-export const requestSemanticLabels = (input, options = {}) =>
-  requestInferenceJson('/api/semantic-labels', input, {
-    circuitKey: 'semantic-labels',
-    ...options
-  });
+export const requestSemanticLabels = generateSemanticLabels;
 
 export const loadEventSemanticLabelTitles = async (eventId, userId, models = defaultModels) => {
   const articles = await models.Article.findAll({
@@ -110,7 +105,7 @@ const emptySummary = () => ({
 export async function populateGeneratedSemanticLabelsForUser(userId, targets = {}, options = {}) {
   const summary = emptySummary();
   const environment = options.environment || process.env;
-  if (shouldSkipSemanticLabeling(environment)) return summary;
+  if (shouldSkipSemanticLabeling(environment) || !await isInferenceConfigured()) return summary;
 
   const models = options.models || defaultModels;
   const requestLabels = options.requestLabels || requestSemanticLabels;

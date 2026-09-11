@@ -18,67 +18,54 @@ Configure the RSSMonster server to reach inference:
 
 ```env
 # server/.env
-INFERENCE_URL=http://127.0.0.1:3001
+INFERENCE_BASE_URL=http://127.0.0.1:3001
 INFERENCE_TIMEOUT_MS=30000
 # Optional assistant reasoning override; use only a value supported by the model.
 ASSISTANT_REASONING_EFFORT=
 ```
 
-Configure the provider and credential in the inference service:
+Configure each remote capability in `inference/.env`:
 
 ```env
-# inference/.env
-INFERENCE_HOST=127.0.0.1
-INFERENCE_PORT=3001
-EMBEDDING_PROVIDER=openai
-GENERATION_PROVIDER=openai
-ARTICLE_SCORING_PROVIDER=openai
-ASSISTANT_PROVIDER=openai
-OPENAI_API_KEY=your-openai-api-key
-# Optional OpenAI-compatible gateway base URL, including the /v1 path.
-# OPENAI_BASE_URL=https://gateway.example/v1
-# Omit temperature from Chat Completions requests when required by the gateway/model.
-OPENAI_OMIT_TEMPERATURE=false
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-OPENAI_EMBEDDING_DIMENSIONS=1536
+EMBEDDING_PROVIDER=openai-compatible
+EMBEDDING_BASE_URL=https://api.openai.com/v1
+EMBEDDING_API_KEY=your-embedding-api-key
+EMBEDDING_MODEL=text-embedding-3-small
+EMBEDDING_DIMENSIONS=1536
+
+GENERATION_PROVIDER=openai-compatible
+GENERATION_BASE_URL=https://api.openai.com/v1
+GENERATION_API_KEY=your-generation-api-key
+GENERATION_MODEL=gpt-4o-mini
+
+CLASSIFICATION_PROVIDER=openai-compatible
+CLASSIFICATION_BASE_URL=https://api.openai.com/v1
+CLASSIFICATION_API_KEY=your-classification-api-key
+CLASSIFICATION_MODEL=gpt-4o-mini
+
+ASSISTANT_PROVIDER=openai-compatible
+ASSISTANT_BASE_URL=https://api.openai.com/v1
+ASSISTANT_API_KEY=your-assistant-api-key
 ASSISTANT_MODEL=gpt-4o-mini
-OPENAI_MODEL_CRAWL=gpt-4o-mini
-OPENAI_MODEL_SMART_FOLDERS=gpt-4.1-mini
-OPENAI_MODEL_FEED_REDISCOVERY=gpt-4.1-mini
-EMBEDDING_MAX_BATCH_SIZE=8
 ```
 
-`OPENAI_BASE_URL` is optional. When it is set, every OpenAI client used by
-the inference service—including embeddings, article analysis, Smart Folder
-recommendations, feed rediscovery, semantic labels, and the assistant—uses
-that base URL. When it is absent, the existing OpenAI endpoint behavior is
-unchanged. The assistant uses the Chat Completions API for compatibility with
-OpenAI-compatible gateways that do not implement the Responses API.
+OpenAI uses the generic `openai-compatible` adapter. Each capability can instead
+use a different compatible endpoint and credential. Remote classification uses
+the existing LLM scoring flow. The assistant uses Chat Completions through the
+Agents SDK and requires tool calling and streaming support. No local model is
+loaded for a capability selected as external.
 
-`OPENAI_OMIT_TEMPERATURE` defaults to `false`. Set it to `true` when the
-configured gateway or model rejects the `temperature` parameter. This removes
-that field from RSSMonster Chat Completions requests while preserving the
-existing temperature values by default.
+`GENERATION_MODEL` defaults all generated text workloads to one model; optional
+`GENERATION_ARTICLE_MODEL`, `GENERATION_SMART_FOLDER_MODEL`, and
+`GENERATION_FEED_REDISCOVERY_MODEL` override it. Set
+`OPENAI_OMIT_TEMPERATURE=true` when the endpoint rejects explicit temperature.
+Assistant reasoning is optional and belongs in `server/.env`.
 
-`ASSISTANT_REASONING_EFFORT` is optional and belongs in `server/.env`. Set it to
-a value supported by the selected model (for example `low`, `medium`, or `high`) when the gateway rejects
-the SDK default or when a specific reasoning level is required. Leave it blank
-to add no explicit override.
-
-The `openai` provider also supports local Ollama through its compatible API;
-it does not require using OpenAI's hosted models. See
-[OpenAI-compatible gateways and Ollama]({% link inference.md %}#openai-compatible-gateways-and-ollama)
-for a local assistant example, model requirements, embedding constraints, and
-container configuration.
-
-Do not commit either `.env` file. Local models are loaded per capability: for
-example, `EMBEDDING_PROVIDER=openai` does not load Qwen3 Embedding, while a
-separate `GENERATION_PROVIDER=qwen` would still load Qwen3.5 generation.
-
-The same inference-side credential powers every capability assigned to OpenAI,
-including article generation or scoring, the assistant, Smart Folder
-recommendations, and feed rediscovery. Never place the OpenAI key in
-`server/.env`.
+See [Inference]({% link inference.md %}#capability-configuration) for mixed
+endpoint examples, container networking, configuration validation, and legacy
+migration. Keep credentials exclusively in inference. Existing `openai`
+provider names and `OPENAI_*` model/connection settings remain deprecated
+aliases for one release; migrate providers and model settings together.
 
 ## Observed Semantic Behavior
 

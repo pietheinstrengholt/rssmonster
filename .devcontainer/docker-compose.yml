@@ -29,7 +29,8 @@ services:
       JWT_SECRET: development-only-jwt-secret
       FEVER_CREDENTIAL_SECRET: development-only-fever-secret
 
-      INFERENCE_URL: http://127.0.0.1:3001
+      INFERENCE_BASE_URL: ${INFERENCE_BASE_URL:-${INFERENCE_URL:-http://127.0.0.1:3001}}
+      INFERENCE_API_KEY: ${INFERENCE_API_KEY:-}
       INFERENCE_AI_ENABLED: "true"
       INTERNAL_MCP_URL: http://127.0.0.1:3000/mcp
 

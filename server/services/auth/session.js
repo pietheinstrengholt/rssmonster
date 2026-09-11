@@ -1,3 +1,4 @@
+import { getAvailableInferenceCapabilities } from '../inference/status.js';
 import jwt from "jsonwebtoken";
 import { getJwtSecret } from "../../config/auth.js";
 import { isAssistantEnabled } from "../../config/intelligentFeatures.js";
@@ -29,7 +30,7 @@ export const createAuthenticatedSession = async (user) => {
     token,
     user,
     expiresInSeconds,
-    agenticFeaturesEnabled: isAssistantEnabled()
+    agenticFeaturesEnabled: isAssistantEnabled() && (await getAvailableInferenceCapabilities()).assistant
   };
 };
 

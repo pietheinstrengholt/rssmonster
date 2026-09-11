@@ -437,3 +437,15 @@ A semantic change is complete when:
 5. Semantic decisions remain explainable.
 6. Incremental processing and rebuilds converge toward the same result.
 7. Existing tests continue to pass or are updated accordingly.
+
+
+# AI Capability Boundary
+
+Application and domain services use `ai/capabilities/` through their existing
+embedding, enrichment, labeling, feed, Smart Folder, and agent entry points.
+Only `ai/providers/inference.js` maps these operations to inference HTTP routes;
+`inference/inferenceClient.js` owns transport resilience, including streamed
+assistant requests. The server has no model-provider configuration.
+
+See [AI capabilities](ai/README.md) for contracts, dependency injection,
+configuration versus readiness, and the migration map.

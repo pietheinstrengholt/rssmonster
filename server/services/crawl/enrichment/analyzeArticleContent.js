@@ -1,5 +1,6 @@
+import { isInferenceConfigured } from '../../inference/configuration.js';
 // server/services/crawl/enrichment/analyzeArticleContent.js
-import { requestInferenceJson } from '../../inference/inferenceClient.js';
+import { classifyArticle } from '../../ai/capabilities/classification.js';
 import { shouldSkipArticleClassification } from '../../../config/intelligentFeatures.js';
 import { recordProcessingFailure } from '../../observability/processingFailures.js';
 import { createDefaultArticleAnalysis } from './articleAnalysis.js';
@@ -56,18 +57,16 @@ const recordSkippedClassification = async (error, processingContext = {}) => {
 
 async function analyzeArticleContent(input, {
   signal,
+  requestId,
   processingContext,
   useQueueFullFallback = true
 } = {}) {
-  if (shouldSkipArticleClassification()) {
+  if (shouldSkipArticleClassification() || !await isInferenceConfigured()) {
     return createDefaultArticleAnalysis();
   }
 
   try {
-    return await requestInferenceJson('/api/classifications/article', input, {
-      circuitKey: 'classification',
-      signal
-    });
+    return await classifyArticle(input, { signal, ...(requestId ? { requestId } : {}) });
   } catch (error) {
     if (!isInferenceQueueFullError(error)) throw error;
     if (!useQueueFullFallback) throw error;

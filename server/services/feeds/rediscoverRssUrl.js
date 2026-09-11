@@ -1,8 +1,6 @@
-import { requestInferenceJson } from '../inference/inferenceClient.js';
+import { rediscoverFeed } from '../ai/capabilities/generation.js';
 
 // Requests a replacement RSS or Atom URL through the inference service.
-export async function rediscoverRssUrl(input) {
-  return requestInferenceJson('/api/feed-rediscovery', input, {
-    circuitKey: 'feed-rediscovery'
-  });
+export async function rediscoverRssUrl(input, options = {}) {
+  return rediscoverFeed(input, options);
 }

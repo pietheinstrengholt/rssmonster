@@ -3,7 +3,7 @@ import { Agent, Runner } from "@openai/agents";
 import sanitizeAgentOutput, { agentOutputToText } from '../utils/sanitizeAgentOutput.js';
 import { createRssMonsterAgentTools } from '../services/agent/rssMonsterAgentTools.js';
 import { createInferenceModelProvider } from '../services/agent/inferenceModelProvider.js';
-import { getSafeInferenceErrorDetails } from '../services/inference/inferenceClient.js';
+import { getSafeInferenceErrorDetails } from '../services/ai/errors.js';
 
 const elapsedMs = startedAt => Math.round((performance.now() - startedAt) * 10) / 10;
 const SAFE_ERROR_IDENTIFIER = /^[A-Za-z][A-Za-z0-9_.:-]{0,127}$/;

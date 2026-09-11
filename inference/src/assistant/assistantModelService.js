@@ -1,11 +1,11 @@
 import { OpenAIProvider } from '@openai/agents';
-import { getAssistantConfig, getOpenAIClientOptions } from '../config/config.js';
+import { getAssistantConfig, getCompatibleClientOptions, getCompatibleApiKey } from '../config/config.js';
 import { logInferenceDebug } from '../debug.js';
 
 export const createAssistantModelService = ({
   environment = process.env,
-  createProvider = (apiKey, providerEnvironment) => new OpenAIProvider({
-    ...getOpenAIClientOptions(apiKey, providerEnvironment),
+  createProvider = (_apiKey, providerEnvironment) => new OpenAIProvider({
+    ...getCompatibleClientOptions('ASSISTANT', providerEnvironment),
     useResponses: false
   })
 } = {}) => {
@@ -14,8 +14,9 @@ export const createAssistantModelService = ({
 
   const getProvider = () => {
     if (provider) return provider;
-    if (!environment.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is required');
-    provider = createProvider(environment.OPENAI_API_KEY, environment);
+    const apiKey = getCompatibleApiKey('ASSISTANT', environment);
+    if (!apiKey) throw new Error('ASSISTANT_API_KEY is required (legacy alias: OPENAI_API_KEY)');
+    provider = createProvider(apiKey, environment);
     return provider;
   };
 

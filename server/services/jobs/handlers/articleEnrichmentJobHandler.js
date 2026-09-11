@@ -1,4 +1,6 @@
+import { isInferenceConfigured } from '../../inference/configuration.js';
 import db from '../../../models/index.js';
+import { isClassificationScore, validateArticleClassification } from '../../ai/capabilities/classification.js';
 import { shouldSkipArticleClassification } from '../../../config/intelligentFeatures.js';
 import analyzeArticleContent, {
   isInferenceQueueFullError
@@ -41,29 +43,18 @@ export class ArticleEnrichmentJobError extends Error {
 
 const obsolete = reason => ({ status: 'obsolete', reason });
 
-const validScore = value => typeof value === 'number' &&
-  Number.isFinite(value) &&
-  value >= 0 &&
-  value <= 100;
+const validScore = isClassificationScore;
 
 const validateAnalysis = analysis => {
-  if (
-    !analysis ||
-    !Array.isArray(analysis.contentSummaryBullets) ||
-    !analysis.contentSummaryBullets.every(value => typeof value === 'string') ||
-    !Array.isArray(analysis.tags) ||
-    !analysis.tags.every(value => typeof value === 'string') ||
-    !validScore(analysis.advertisementScore) ||
-    !validScore(analysis.sentimentScore) ||
-    !validScore(analysis.qualityScore)
-  ) {
+  try {
+    return validateArticleClassification(analysis);
+  } catch {
     throw new ArticleEnrichmentJobError(
       'ARTICLE_ENRICHMENT_INVALID_RESULT',
       'Article enrichment returned an invalid result',
       { retryable: false }
     );
   }
-  return analysis;
 };
 
 const validateScoreOverrides = overrides => {
@@ -176,7 +167,7 @@ const prepareAnalysisInput = async target => sequelize.transaction(async transac
     await skipArticle(article, transaction);
     return obsolete('article_filtered');
   }
-  if (rowValue(feed, 'applyAiAnalysis') === false || shouldSkipArticleClassification()) {
+  if (rowValue(feed, 'applyAiAnalysis') === false || shouldSkipArticleClassification() || !await isInferenceConfigured()) {
     await skipArticle(article, transaction);
     return obsolete('analysis_disabled');
   }
@@ -231,7 +222,7 @@ const persistAnalysis = async ({ target, analysis, completedAt }) =>
       await skipArticle(article, transaction);
       return obsolete('article_filtered');
     }
-    if (rowValue(feed, 'applyAiAnalysis') === false || shouldSkipArticleClassification()) {
+    if (rowValue(feed, 'applyAiAnalysis') === false || shouldSkipArticleClassification() || !await isInferenceConfigured()) {
       await skipArticle(article, transaction);
       return obsolete('analysis_disabled');
     }
@@ -284,6 +275,12 @@ export const handleArticleEnrichmentJob = async (job, {
       }
     });
   } catch (error) {
+    if (error?.code === 'AI_INVALID_RESPONSE') {
+      throw new ArticleEnrichmentJobError(
+        'ARTICLE_ENRICHMENT_INVALID_RESULT', 'Article enrichment returned an invalid result',
+        { retryable: false, cause: error, feedId: prepared.feedId }
+      );
+    }
     const code = inferenceFailureCode(error);
     throw new ArticleEnrichmentJobError(
       code,

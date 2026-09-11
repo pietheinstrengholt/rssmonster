@@ -4,7 +4,7 @@ import { createQwenEmbeddingProvider } from './qwenEmbeddingProvider.js';
 
 export const createEmbeddingProvider = (environment = process.env) => {
   const { provider } = getEmbeddingConfig(environment);
-  return provider === 'qwen'
+  return provider === 'local'
     ? createQwenEmbeddingProvider({ environment })
     : createOpenAIEmbeddingProvider({ environment });
 };

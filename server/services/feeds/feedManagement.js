@@ -1,3 +1,5 @@
+import { isInferenceConfigured } from '../inference/configuration.js';
+import { getDefaultFeedIntelligentFeatures } from '../../config/intelligentFeatures.js';
 import db from '../../models/index.js';
 import discoverRssLink from './discoverRssLink.js';
 import parseFeed from './parser.js';
@@ -784,6 +786,8 @@ export const addFeedSubscription = async ({
   feedType = null,
   sourceConfig = null
 }) => {
+  const configuredInference = await isInferenceConfigured();
+  const intelligentFeatures = configuredInference ? getDefaultFeedIntelligentFeatures() : { applyAiAnalysis: false, generateEmbeddings: false };
   // Handles the case where category id is not undefined and category id is not value.
   if (categoryId !== undefined && categoryId !== null) {
     // Loads the owned category needed while performing add feed subscription.
@@ -882,6 +886,7 @@ export const addFeedSubscription = async ({
 
       // Performs the create operation while performing add feed subscription.
       const feed = await Feed.create({
+        ...intelligentFeatures,
         userId,
         categoryId: category.id,
         feedName,

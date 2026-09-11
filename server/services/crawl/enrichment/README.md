@@ -37,7 +37,7 @@ generate summary bullets and tags;
 return advertisement, sentiment, and quality scores;
 normalize and validate AI output;
 respect feed AI settings;
-handle unavailable API keys and rate limits;
+handle inference availability and rate limits through the AI classification capability;
 avoid semantic embedding or clustering responsibilities.
 
 ## Article Actions

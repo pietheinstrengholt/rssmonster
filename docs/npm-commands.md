@@ -43,7 +43,7 @@ the complete, version-matched list:
 npm run dev -- --help       # Vite, from client
 npm test -- --help          # Vitest, from any package
 npm run lint -- --help      # ESLint, from any package
-npm run db -- --help        # Sequelize CLI, from server
+npm run db -- --help        # Migration runner help, from server
 ```
 
 Vitest commands also accept a file or name filter. For example,
@@ -117,7 +117,7 @@ up production data and inspect the scope before using them.
 
 | Command | Arguments | What it does and when to use it |
 | --- | --- | --- |
-| `npm run db` | Sequelize `db:migrate` options | Applies pending Sequelize migrations to the configured database. Use it during a controlled install or deployment. Back up production data first; this command changes the schema. |
+| `npm run db` | No arguments (or `--help`) | Applies pending historical and ESM Sequelize migrations to the configured database. Use it during a controlled install or deployment. Back up production data first; this command changes the schema. |
 | `npm run crawl` | None | Runs one all-user incremental crawl and semantic pipeline, then exits. It fetches due feeds, persists articles, generates vectors, updates Events and Topics, and refreshes interest scores. Use it for a one-off run or external scheduler, but do not schedule it alongside the dedicated worker. |
 | `npm run crawl:recover` | `--all` | Without arguments, marks only stale running crawl records as failed so they can recover. `--all` marks every currently running crawl record as failed, including active work. Use the default for stale-run recovery; reserve `--all` for a confirmed administrative reset. |
 

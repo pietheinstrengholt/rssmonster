@@ -67,7 +67,7 @@ jobs:
 
       - name: Run migrations
         working-directory: server
-        run: npx sequelize db:migrate
+        run: npm run db
 
       - name: Seed database
         working-directory: server
@@ -119,12 +119,12 @@ jobs:
         env:
           DB_STORAGE: ${{ runner.temp }}/rssmonster-seed-smoke.sqlite
         run: |
-          npx sequelize db:migrate
+          npm run db
           npx sequelize db:seed:all
 
       - name: Prepare SQLite test database
         working-directory: server
-        run: npx sequelize db:migrate
+        run: npm run db
 
       # The full suite retains MySQL-specific locking and concurrency contracts.
       - name: Test SQLite compatibility

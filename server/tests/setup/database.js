@@ -9,3 +9,4 @@ process.env.JWT_SECRET =
 process.env.FEVER_CREDENTIAL_SECRET =
   process.env.FEVER_CREDENTIAL_SECRET || 'test-fever-credential-secret';
 process.env.INFERENCE_AI_ENABLED = 'true';
+process.env.INFERENCE_BASE_URL = 'http://127.0.0.1:3001';

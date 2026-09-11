@@ -1,11 +1,10 @@
+import { isInferenceConfigured } from '../inference/configuration.js';
 // services/articles/embedArticle.js
-import {
-  DEFAULT_EMBEDDING_MODEL,
-  embedTexts
-} from '../embeddings/embeddingService.js';
+import { embedTexts } from '../embeddings/embeddingService.js';
+import { LEGACY_EMBEDDING_MODEL } from '../embeddings/legacyEmbeddingMetadata.js';
 import { shouldSkipArticleEmbeddings } from '../../config/intelligentFeatures.js';
 import { recordProcessingFailure } from '../observability/processingFailures.js';
-import { getSafeInferenceErrorMessage } from '../inference/inferenceClient.js';
+import { getSafeInferenceErrorMessage } from '../ai/errors.js';
 
 /**
  * Core article embedding utility.
@@ -18,8 +17,8 @@ import { getSafeInferenceErrorMessage } from '../inference/inferenceClient.js';
  * This is the single source of truth for article-vector creation and storage.
  */
 
-// Defines the embedding model enforced by this service.
-export const EMBEDDING_MODEL = DEFAULT_EMBEDDING_MODEL;
+// Compatibility metadata for historical vectors; new embeddings use the model returned by inference.
+export const EMBEDDING_MODEL = LEGACY_EMBEDDING_MODEL;
 
 // Defines the min event length enforced by this service.
 const MIN_EVENT_LENGTH = 60;
@@ -273,7 +272,7 @@ function isArticleInstance(record) {
 // This function embeds one article or input object and optionally persists the event vector.
 // It returns both event and topic vectors when enough text is available.
 export async function embedArticle(articleOrInput, options = {}) {
-  if (shouldSkipArticleEmbeddings()) return null;
+  if (shouldSkipArticleEmbeddings() || !await isInferenceConfigured()) return null;
 
   // `persist=true` means this function owns writing vectors to the Article row.
   const { allowShortEventText = false, persist = true } = options;
@@ -317,7 +316,7 @@ export async function embedArticle(articleOrInput, options = {}) {
     const response = await embedTexts(includeTopicVector ? [eventText, topicText] : [eventText]);
     const eventVector = response.embeddings[0] || null;
     const topicVector = includeTopicVector ? response.embeddings[1] || null : null;
-    const embeddingModel = response.model || EMBEDDING_MODEL;
+    const embeddingModel = response.model;
 
     // Handles the case where article is available and persist is available and event vector is available.
     if (article && persist && eventVector) {
@@ -352,7 +351,7 @@ export async function embedArticle(articleOrInput, options = {}) {
         feedId: article?.feedId ?? articleOrInput?.feedId ?? null,
         articleId: article?.id ?? null,
         context: {
-          embeddingModel: EMBEDDING_MODEL,
+          embeddingModel: article?.embedding_model || null,
           persist,
           ...(inferenceRequestId ? { requestId: inferenceRequestId } : {})
         }

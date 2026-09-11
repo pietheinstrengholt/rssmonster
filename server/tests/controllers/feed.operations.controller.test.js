@@ -473,10 +473,12 @@ describe('feed operational controllers', () => {
     );
     expect(unauthorizedRes.status).toHaveBeenCalledWith(401);
 
-    mocked.feedFindOne.mockRejectedValue(new Error('rediscovery failed'));
+    mocked.feedFindOne.mockRejectedValue(new Error('rediscovery failed with private token'));
     const failureRes = createResponse();
     await feedController.rediscoverFeedRss(createRequest(), failureRes);
     expect(failureRes.status).toHaveBeenCalledWith(500);
+    expect(failureRes.json).toHaveBeenCalledWith({ error: 'Inference feed rediscovery request failed' });
+    expect(JSON.stringify(console.error.mock.calls)).not.toContain('private token');
   });
 
   it('mutes an owned feed until the requested time', async () => {

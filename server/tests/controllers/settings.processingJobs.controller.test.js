@@ -1,7 +1,17 @@
+vi.mock('../../services/inference/status.js', async importOriginal => ({
+  ...await importOriginal(),
+  getInferenceStatus: vi.fn(async () => ({ ready: true, capabilities: {
+    embeddings: { available: true, provider: 'local', model: 'onnx-community/ModernBERT-base-nli-ONNX', apiKey: 'must-not-leak' },
+    generation: { available: true, provider: 'openai-compatible', model: 'generation-model' },
+    classification: { available: true, provider: 'local', model: 'classification-model' },
+    assistant: { available: true, provider: 'openai-compatible', model: 'assistant-model' }
+  } }))
+}));
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
+import { getInferenceStatus } from '../../services/inference/status.js';
 import { getJwtSecret } from '../../config/auth.js';
 
 const { ProcessingJob, User, sequelize } = db;
@@ -32,7 +42,7 @@ describe('settings processing jobs status', () => {
     ['true', 'false', 'true', 'false', 'true', [true, false, false, true, false]],
     ['true', 'true', 'false', 'true', 'false', [true, true, true, false, true]],
     ['false', 'true', 'false', 'false', 'false', [false, false, false, false, false]],
-    ['', 'true', 'false', 'false', 'false', [false, false, false, false, false]]
+    ['', 'true', 'false', 'false', 'false', [true, true, true, true, true]]
   ])('reports effective AI features for flags %s %s %s %s %s', async (master, assistant, classification, embeddings, labels, expected) => {
     vi.stubEnv('INFERENCE_AI_ENABLED', master);
     vi.stubEnv('INFERENCE_ASSISTANT_ENABLED', assistant);
@@ -44,6 +54,12 @@ describe('settings processing jobs status', () => {
       const response = await request(app).get('/api/setting/processing-jobs')
         .set('Authorization', authHeaderFor(user));
       expect(response.status).toBe(200);
+      expect(response.body.capabilityModels).toEqual(master === 'false' ? {} : {
+        embeddings: { provider: 'local', model: 'onnx-community/ModernBERT-base-nli-ONNX' },
+        generation: { provider: 'openai-compatible', model: 'generation-model' },
+        classification: { provider: 'local', model: 'classification-model' },
+        assistant: { provider: 'openai-compatible', model: 'assistant-model' }
+      });
       expect(response.body.features).toEqual(Object.fromEntries(
         ['inference', 'assistant', 'classification', 'embeddings', 'semanticLabeling']
           .map((key, index) => [key, expected[index]])
@@ -51,6 +67,21 @@ describe('settings processing jobs status', () => {
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+
+  it.each(['not_ready', 'unavailable', 'configuration_error'])('omits model metadata when inference is %s', async state => {
+    if (state === 'configuration_error') getInferenceStatus.mockRejectedValueOnce(new Error('Private configuration error'));
+    else getInferenceStatus.mockResolvedValueOnce({ ready: state !== 'not_ready', capabilities: {
+      embeddings: { available: state !== 'unavailable', provider: 'local', model: 'inactive-model' }
+    } });
+    const user = await createUser();
+    const response = await request(app).get('/api/setting/processing-jobs')
+      .set('Authorization', authHeaderFor(user));
+    expect(response.status).toBe(200);
+    expect(response.body.capabilityModels).toEqual({});
+    expect(response.body.features.inference).toBe(false);
+    expect(response.body.features.embeddings).toBe(false);
+    expect(JSON.stringify(response.body)).not.toContain('Private configuration error');
   });
 
   it('authenticates and returns only the current user queue status', async () => {

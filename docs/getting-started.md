@@ -142,8 +142,8 @@ configured with:
 
 These local features require no OpenAI API key. The optional natural-language
 assistant remains hidden unless `INFERENCE_ASSISTANT_ENABLED=true` is set after
-configuring `ASSISTANT_PROVIDER=openai` and `OPENAI_API_KEY`, because its
-current inference adapter is OpenAI-only.
+configuring `ASSISTANT_PROVIDER=openai-compatible`, `ASSISTANT_BASE_URL`,
+`ASSISTANT_API_KEY`, and a tool-capable `ASSISTANT_MODEL`.
 
 Add the required credentials to the root `.env` file alongside the application
 secrets:
@@ -500,7 +500,7 @@ kill -9 <PID>
 
 ### AI Assistant Not Working
 
-- Verify `OPENAI_API_KEY` is set in `inference/.env`
+- Verify the selected remote capability has its `*_API_KEY` and `*_BASE_URL` set in `inference/.env`
 - Check `pm2 status rssmonster-inference` and its logs
 - Check API quota/billing in your OpenAI account
 - Ensure inference, the server, and the client are restarted after config changes
@@ -531,3 +531,13 @@ Now that RSSMonster is running, explore these guides:
 ---
 
 **Questions?** Check the [documentation index]({% link index.md %}) or [open an issue](https://github.com/pietheinstrengholt/rssmonster/issues) on GitHub.
+
+## Optional inference on every deployment
+
+MySQL, SQLite, and Desktop can connect to a standalone RSSMonster inference service.
+Use `INFERENCE_BASE_URL` and an optional matching `INFERENCE_API_KEY`, or configure
+Settings → AI / Inference as an administrator. Environment URLs take precedence and
+hide editable controls while keeping discovered capability status visible. Leaving
+both environment and saved endpoints unset keeps inference optional. Provider/model
+configuration remains inside inference. See [Inference]({% link inference.md %}) for
+setup, encryption, upgrades, and SQLite/Desktop worker limitations.

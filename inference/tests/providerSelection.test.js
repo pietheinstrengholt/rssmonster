@@ -14,6 +14,6 @@ describe('embedding provider selection', () => {
 
   it('rejects unknown providers', () => {
     expect(() => createEmbeddingProvider({ EMBEDDING_PROVIDER: 'unknown' }))
-      .toThrow('EMBEDDING_PROVIDER must be openai or qwen');
+      .toThrow('EMBEDDING_PROVIDER must be local or openai-compatible');
   });
 });

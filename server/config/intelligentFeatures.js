@@ -1,4 +1,4 @@
-// Recognizes explicit true environment flags without treating other values as enabled.
+// Explicit deployment switches remain permission overrides; connection availability is resolved separately.
 const isTrue = value => String(value || '').trim().toLowerCase() === 'true';
 
 export class InferenceDisabledError extends Error {
@@ -11,11 +11,12 @@ export class InferenceDisabledError extends Error {
 
 // Returns whether this server process may contact the inference service.
 export const isInferenceEnabled = (environment = process.env) =>
-  isTrue(environment.INFERENCE_AI_ENABLED);
+  environment.INFERENCE_AI_ENABLED === undefined || environment.INFERENCE_AI_ENABLED === '' || isTrue(environment.INFERENCE_AI_ENABLED);
 
-// Reports whether the separately configured assistant provider is available.
+// Reports server permission; only inference discovery establishes assistant availability.
 export const isAssistantEnabled = (environment = process.env) =>
-  isInferenceEnabled(environment) && isTrue(environment.INFERENCE_ASSISTANT_ENABLED);
+  isInferenceEnabled(environment) && (environment.INFERENCE_ASSISTANT_ENABLED === undefined ||
+    environment.INFERENCE_ASSISTANT_ENABLED === '' || isTrue(environment.INFERENCE_ASSISTANT_ENABLED));
 
 // Rejects inference calls when the server-wide capability switch is disabled.
 export const assertInferenceEnabled = (environment = process.env) => {

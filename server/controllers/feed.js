@@ -2,6 +2,7 @@ import db from '../models/index.js';
 const { Feed, FeedCrawlResult, Article, Category } = db;
 
 import { rediscoverRssUrl } from '../services/feeds/rediscoverRssUrl.js';
+import { getSafeInferenceErrorDetails, getSafeInferenceErrorMessage } from '../services/ai/errors.js';
 import crawlController from './crawl.js';
 import { crawlJobManager } from '../services/crawl/index.js';
 import { normalizeTagList } from '../services/crawl/persistence/tags.js';
@@ -608,8 +609,8 @@ const rediscoverFeedRss = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Error in rediscoverFeedRss:', err);
-    return res.status(500).json({ error: err.message });
+    console.error('Error in rediscoverFeedRss:', getSafeInferenceErrorDetails(err, { capability: 'feed rediscovery' }));
+    return res.status(500).json({ error: getSafeInferenceErrorMessage(err, { capability: 'feed rediscovery' }) });
   }
 };
 

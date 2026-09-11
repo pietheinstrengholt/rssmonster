@@ -30,7 +30,7 @@ export const createEmbeddingService = ({
   const selectedProvider = provider || createEmbeddingProvider(environment);
   const debug = String(environment.INFERENCE_DEBUG || '').toLowerCase() === 'true';
   let inferenceQueue = Promise.resolve();
-  const localWorkQueue = config.provider === 'qwen'
+  const localWorkQueue = config.provider === 'local'
     ? createInferenceWorkQueue({
         concurrency: 1,
         maximumPending: config.queueMaxPending,
@@ -96,7 +96,7 @@ export const createEmbeddingService = ({
         );
       }
       const providerOperation = () => selectedProvider.embed(texts);
-      return config.provider === 'qwen'
+      return config.provider === 'local'
         ? runLocalInference(providerOperation, {
             priority: LOCAL_INFERENCE_PRIORITIES.embedding,
             requestId,

@@ -559,7 +559,7 @@ describe('smartFolder controller', () => {
 
       expect(mocked.articleFindAll).toHaveBeenCalledTimes(2);
       expect(mocked.getSmartFolderRecommendations).toHaveBeenCalledWith({
-        distilledInsights: {
+        insights: {
           window: 'last 14 days',
           engagement: {
             unreadRatio: 0.8,

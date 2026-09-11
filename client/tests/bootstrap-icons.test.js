@@ -17,6 +17,10 @@ describe('Bootstrap icon delivery', () => {
 
   it.each([
     'activity',
+    'check-circle-fill',
+    'chevron-right',
+    'cpu-fill',
+    'pause-circle',
     'sunrise-fill',
     'sliders2',
     'folder-plus',

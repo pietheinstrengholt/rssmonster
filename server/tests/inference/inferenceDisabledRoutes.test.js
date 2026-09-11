@@ -1,4 +1,5 @@
 import express from 'express';
+import db from '../../models/index.js';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,6 +20,7 @@ describe('disabled inference routes', () => {
 
   beforeEach(() => {
     vi.stubEnv('INFERENCE_AI_ENABLED', 'false');
+    vi.spyOn(db.User, 'findByPk').mockResolvedValue({ id: 42, passwordChangedAt: null });
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     authorization = `Bearer ${jwt.sign(

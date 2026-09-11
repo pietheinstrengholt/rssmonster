@@ -18,7 +18,7 @@
       <section class="processing-features settings-panel" aria-labelledby="processing-features-title">
         <h4 id="processing-features-title">AI features</h4>
         <p v-if="processingStatus.features?.inference === false">
-          All AI features are disabled by the server’s master switch.
+          No AI features are currently available. Check the inference connection and server feature settings.
         </p>
         <p v-else>Configured on the server. Individual feed settings may limit article processing.</p>
         <dl class="processing-features__list">
@@ -29,6 +29,12 @@
                 {{ feature.enabled === true ? 'Enabled' : feature.enabled === false ? 'Disabled' : 'Unavailable' }}
               </span>
               <p>{{ feature.description }}</p>
+              <template v-if="feature.enabled === true">
+                <p v-for="model in feature.models" :key="model.capability" class="processing-features__model">
+                  <strong>{{ model.capability === 'classification' ? 'Classification model' : model.capability === 'generation' ? 'Generation model' : 'Model' }}:</strong> {{ model.model }}<br>
+                  <strong>Provider:</strong> {{ model.provider }}
+                </p>
+              </template>
             </dd>
           </div>
         </dl>
@@ -265,6 +271,10 @@
 
 .processing-features dd {
   margin: 0;
+}
+
+.processing-features__model {
+  overflow-wrap: anywhere;
 }
 
 .processing-health {
@@ -639,17 +649,17 @@ const JOB_TYPE_LABELS = Object.freeze({
   semantic_label: 'Semantic labels'
 });
 const AI_FEATURES = Object.freeze([
-  { key: 'assistant', label: 'Conversation + MCP', description: 'Agentic chat and MCP tools.' },
-  { key: 'classification', label: 'Article analysis', description: 'Generated tags, summaries, and quality scores.' },
-  { key: 'embeddings', label: 'Embeddings', description: 'Article recommendations and event, topic, and island generation.' },
-  { key: 'semanticLabeling', label: 'Semantic labeling', description: 'Generated labels for events, topics, and islands.' }
+  { key: 'assistant', capabilities: ['assistant'], label: 'Conversation + MCP', description: 'Agentic chat and MCP tools.' },
+  { key: 'classification', capabilities: ['classification', 'generation'], label: 'Article analysis', description: 'Generated tags, summaries, and quality scores.' },
+  { key: 'embeddings', capabilities: ['embeddings'], label: 'Embeddings', description: 'Article recommendations and event, topic, and island generation.' },
+  { key: 'semanticLabeling', capabilities: ['generation'], label: 'Semantic labeling', description: 'Generated labels for events, topics, and islands.' }
 ]);
 const HEALTH_PRESENTATION = Object.freeze({
   disabled: {
     label: 'Disabled',
     badgeClass: 'app-status-badge--neutral',
     icon: 'pause-circle',
-    description: 'AI processing is disabled in the server configuration.'
+    description: 'No AI features are currently available for processing.'
   },
   healthy: {
     label: 'Healthy',
@@ -705,6 +715,10 @@ export default {
       const features = this.processingStatus?.features;
       return AI_FEATURES.map(feature => ({
         ...feature,
+        models: feature.capabilities.flatMap(capability => {
+          const model = this.processingStatus?.capabilityModels?.[capability];
+          return model?.model ? [{ ...model, capability }] : [];
+        }),
         enabled: features?.inference === false ? false : features?.[feature.key]
       }));
     },

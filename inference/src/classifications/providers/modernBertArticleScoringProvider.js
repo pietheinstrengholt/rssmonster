@@ -65,7 +65,7 @@ export const createModernBertArticleScoringProvider = ({
 } = {}) => {
   const config = getArticleScoringConfig({
     ...environment,
-    ARTICLE_SCORING_PROVIDER: 'modernbert'
+    CLASSIFICATION_PROVIDER: 'local'
   });
   let classifier;
   let initializationPromise;

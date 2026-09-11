@@ -123,6 +123,7 @@ const SettingsFeedsOverview = createAsyncSettingsSection(() => import('./Setting
 const SettingsOfficialSources = createAsyncSettingsSection(() => import('./SettingsOfficialSources.vue'));
 // This component lazily loads administrator user management.
 const SettingsManageUsers = createAsyncSettingsSection(() => import('./SettingsManageUsers.vue'));
+const SettingsInference = createAsyncSettingsSection(() => import('./SettingsInference.vue'));
 const SettingsAccount = createAsyncSettingsSection(() => import('./SettingsAccount.vue'));
 
 export default {
@@ -148,7 +149,8 @@ export default {
     SettingsFeedsOverview,
     SettingsOfficialSources,
     SettingsManageUsers,
-    SettingsAccount
+    SettingsAccount,
+    SettingsInference
   },
   // This function creates modal navigation and focus restoration state.
   data() {
@@ -197,6 +199,7 @@ export default {
         { key: 'observability', label: 'Observability', icon: 'activity', visible: true },
         { key: 'feeds', label: 'Feeds', icon: 'rss-fill', visible: true },
         { key: 'officialSources', label: 'Official Sources', icon: 'patch-check-fill', visible: true },
+        { key: 'inference', label: 'AI / Inference', icon: 'cpu-fill', visible: this.authStore.role === 'admin' },
         { key: 'users', label: 'Manage Users', icon: 'people-fill', visible: this.authStore.role === 'admin' }
       ];
     },
@@ -209,6 +212,7 @@ export default {
       return {
         welcome: 'SettingsWelcome',
         account: 'SettingsAccount',
+        inference: 'SettingsInference',
         smartfolders: 'SettingsSmartFolders',
         generatedFeeds: 'SettingsGeneratedFeeds',
         actions: 'SettingsActions',

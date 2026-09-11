@@ -1,4 +1,5 @@
 import db from '../models/index.js';
+import { getAvailableInferenceCapabilities } from '../services/inference/status.js';
 import { isAssistantEnabled } from '../config/intelligentFeatures.js';
 import runIslandCalibration from '../scripts/runIslandsCommand.js';
 const { CrawlRun, Island, OfficialSource, Setting } = db;
@@ -248,7 +249,8 @@ export const getSettings = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const aiEnabled = process.env.INFERENCE_AI_ENABLED === 'true';
+    const available = await getAvailableInferenceCapabilities();
+    const aiEnabled = available.embeddings || available.generation || available.classification;
 
     // Set first-load defaults based on whether AI features are available.
     let categoryId = "%";
@@ -310,7 +312,7 @@ export const getSettings = async (req, res, _next) => {
       startupViewMode,
       markAsReadOnScroll,
       AIEnabled: aiEnabled,
-      AssistantEnabled: isAssistantEnabled()
+      AssistantEnabled: isAssistantEnabled() && available.assistant
     });
   } catch (err) {
     console.error('Error in getSettings:', err);

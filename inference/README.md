@@ -43,52 +43,47 @@ The server and inference service now use an explicit reliability contract:
 Production startup loads `inference/.env` before provider singletons are
 created, ensuring model, dtype, provider, and queue settings take effect.
 
-## OpenAI-compatible gateways
+## Providers and configuration
 
-The `openai` adapter also supports gateways such as local Ollama. Configure
-`OPENAI_BASE_URL` (for example `http://127.0.0.1:11434/v1`) and `OPENAI_API_KEY`
-in `inference/.env`; local Ollama accepts a placeholder key such as `ollama`.
-The endpoint and key apply to every capability assigned to `openai`, so select
-model names available at that endpoint. Without a base URL override, the
-default OpenAI endpoint is used.
+Each capability independently selects `local` or `openai-compatible` through
+`EMBEDDING_PROVIDER`, `GENERATION_PROVIDER`, or `CLASSIFICATION_PROVIDER`.
+`ASSISTANT_PROVIDER` supports `openai-compatible`. Each remote capability owns
+its `*_BASE_URL`, `*_API_KEY`, and `*_MODEL`; embeddings also configure
+`EMBEDDING_DIMENSIONS`. OpenAI, Ollama, LM Studio, and other compatible services
+use the same transport adapter. Assistant calls use Chat Completions with tools
+and streaming through the existing Agents SDK adapter.
 
-Set `OPENAI_OMIT_TEMPERATURE=true` only when the gateway/model rejects the
-temperature values sent by article analysis, recommendations, rediscovery, or
-semantic labeling. It defaults to `false`.
+`GENERATION_MODEL` supplies the default for summaries, tags, recommendations,
+feed rediscovery, and semantic labels. Optional remote workload overrides are
+`GENERATION_ARTICLE_MODEL`, `GENERATION_SMART_FOLDER_MODEL`, and
+`GENERATION_FEED_REDISCOVERY_MODEL`. Local generation uses one loaded model.
+`OPENAI_OMIT_TEMPERATURE` remains the shared compatibility switch for generated
+text and remote scores; assistant reasoning remains configured in server/.env.
 
-The assistant runner uses RSSMonster's inference model provider, whose Agents
-SDK adapter uses Chat Completions. Select an installed tool-capable model with
-`ASSISTANT_PROVIDER=openai` and `ASSISTANT_MODEL`. Responses API support is not
-required. The optional `ASSISTANT_REASONING_EFFORT` is read from **server/.env**;
-leave it blank for no explicit override or use a value supported by the model.
+See [the inference configuration guide](../docs/inference.md#capability-configuration)
+for fully local, mixed Ollama/LM Studio/OpenAI, fully external, and migration
+examples. Old provider names and global OpenAI settings remain deprecated
+aliases for one release. Explicit compatible providers require endpoints and
+keys at startup. Legacy `openai` keeps its historical model settings and default
+OpenAI URL. Startup validates configuration before loading any selected models;
+external endpoints are not probed. Leave assistant settings and legacy global
+credentials unset for local inference without chat.
 
-See [the inference guide](../docs/inference.md#openai-compatible-gateways-and-ollama)
-for the local Ollama example, container networking, Compose environment
-forwarding, and embedding compatibility constraints.
-
-## Embedding model
-
-`EMBEDDING_PROVIDER` selects the provider for article, event, topic, island,
-taxonomy, and other semantic vectors. It accepts `openai` or `qwen`.
-
-`GENERATION_PROVIDER` independently selects the provider for bullet summaries,
-tags, Smart Folder recommendations, and feed rediscovery. It accepts `openai`
-or `qwen`. `ASSISTANT_PROVIDER` separately controls assistant responses and
-currently supports `openai`. `ARTICLE_SCORING_PROVIDER`
-selects advertisement, tone, and writing/information-quality scoring and
-accepts `openai` or `modernbert`. For example, local Qwen embeddings, OpenAI
-generation, and local ModernBERT scoring can run together:
+## Local models
 
 ```env
-EMBEDDING_PROVIDER=qwen
-GENERATION_PROVIDER=qwen
-ASSISTANT_PROVIDER=openai
-ARTICLE_SCORING_PROVIDER=modernbert
+EMBEDDING_PROVIDER=local
+EMBEDDING_MODEL=onnx-community/Qwen3-Embedding-0.6B-ONNX
+EMBEDDING_DIMENSIONS=1024
+GENERATION_PROVIDER=local
+GENERATION_MODEL=onnx-community/Qwen3.5-0.8B-ONNX
+CLASSIFICATION_PROVIDER=local
+CLASSIFICATION_MODEL=onnx-community/ModernBERT-base-nli-ONNX
 ```
 
 Article classification is orchestrated as three separate calls: bullet
 summarization and tag generation use `GENERATION_PROVIDER`; combined
-advertisement/tone/quality scoring uses `ARTICLE_SCORING_PROVIDER`.
+advertisement/tone/quality scoring uses `CLASSIFICATION_PROVIDER`.
 
 Qwen generation uses `onnx-community/Qwen3.5-0.8B-ONNX` in non-thinking mode
 through the model card's Transformers.js processor and conditional-generation
@@ -111,7 +106,7 @@ its HTTP request disconnects, while already-running native work remains
 accounted for until it settles. Queue overload uses the same stable `503`,
 `Retry-After`, and `inference_queue_full` HTTP contract as local generation.
 
-OpenAI is the default embedding provider and preserves RSSMonster's existing `text-embedding-3-small` behavior. Configure it with `EMBEDDING_PROVIDER=openai`, `OPENAI_API_KEY`, and optionally `OPENAI_EMBEDDING_MODEL`.
+The compatible embedding adapter retains `text-embedding-3-small` as its remote default. Configure `EMBEDDING_PROVIDER=openai-compatible`, `EMBEDDING_BASE_URL`, `EMBEDDING_API_KEY`, `EMBEDDING_MODEL`, and `EMBEDDING_DIMENSIONS`.
 
 Local Qwen embedding inference runs one batch and permits four pending batches
 by default. Configure the positive pending limit with
@@ -120,7 +115,7 @@ execution, while disconnected running work remains accounted for until native
 inference settles. Excess requests receive `503`, `Retry-After: 5`, and
 `{"error":"inference_queue_full"}` without changing global readiness.
 
-The Qwen provider uses `onnx-community/Qwen3-Embedding-0.6B-ONNX` through Transformers.js. It follows the model card's `feature-extraction` pipeline with last-token pooling and L2 normalization on CPU using `fp32`, returning the model's native 1024-dimensional vectors. Select it with `EMBEDDING_PROVIDER=qwen`. The provider initializes during service startup and reuses one pipeline instance for the lifetime of the Node process. Embedding requests are processed one at a time to avoid concurrent inference through the same model instance.
+The Qwen provider uses `onnx-community/Qwen3-Embedding-0.6B-ONNX` through Transformers.js. It follows the model card's `feature-extraction` pipeline with last-token pooling and L2 normalization on CPU using `fp32`, returning the model's native 1024-dimensional vectors. Select it with `EMBEDDING_PROVIDER=local`. The provider initializes during service startup and reuses one pipeline instance for the lifetime of the Node process. Embedding requests are processed one at a time to avoid concurrent inference through the same model instance.
 
 Do not switch an RSSMonster database with existing semantic vectors between providers. The current schema does not attach embedding-space metadata to event, topic, or island aggregate vectors, and no vector migration is provided.
 
@@ -195,3 +190,25 @@ curl -X POST http://127.0.0.1:3001/api/embeddings \
   -H 'Content-Type: application/json' \
   -d '{"texts":["RSS readers organize articles into feeds."]}'
 ```
+
+## Inference API contract
+
+`GET /api/capabilities` returns version 1 service metadata and explicit embeddings,
+generation, classification, and assistant entries. It is available outside the
+work readiness gate, reads captured configuration and local model loaded state,
+and never initializes models or probes providers. Credentials and base URLs are
+excluded. `/health` remains liveness, `/ready` remains the required-work readiness
+gate, and `/api/embeddings/info` retains specialized embedding details.
+
+See [the inference API contract](../docs/inference.md#inference-api-contract) for
+the schema, configured/available semantics, examples, and compatibility rules.
+
+## Optional inference authentication
+
+The server transport uses `INFERENCE_BASE_URL` (`INFERENCE_URL` remains a fallback)
+and sends `X-Inference-API-Key` when `INFERENCE_API_KEY` is nonempty. Configure the
+exact same opaque shared secret on server/workers and inference. With no inference
+key, authentication is disabled. `/health` remains public; `/ready` and all API
+routes are protected when enabled. HTTP 401 maps to `INFERENCE_UNAUTHORIZED` and
+does not open transient failure circuits. Keys stay out of metadata and logs.
+See the inference documentation for generation, HTTPS, and deployment examples.

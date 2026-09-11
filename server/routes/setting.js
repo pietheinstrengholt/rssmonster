@@ -5,7 +5,14 @@ import processingFailureController from '../controllers/processingFailure.js';
 import processingJobStatusController from '../controllers/processingJobStatus.js';
 import userMiddleware from "../middleware/users.js";
 
+import { requireInferenceAdministrator, getInferenceSettings, putInferenceSettings, deleteInferenceSettings, testInferenceSettings } from '../controllers/inferenceSettings.js';
+
 export const router = express.Router();
+router.use('/inference', userMiddleware.isLoggedIn, requireInferenceAdministrator);
+router.get('/inference', getInferenceSettings);
+router.put('/inference', putInferenceSettings);
+router.delete('/inference', deleteInferenceSettings);
+router.post('/inference/test', testInferenceSettings);
 
 // GET /api/setting
 router.get('/', userMiddleware.isLoggedIn, settingController.getSettings);

@@ -7,7 +7,7 @@ import {
   throwIfExecutionExpired
 } from '../../feeds/executionDeadline.js';
 import { recordProcessingFailure } from '../../observability/processingFailures.js';
-import { getSafeInferenceErrorMessage } from '../../inference/inferenceClient.js';
+import { getSafeInferenceErrorMessage } from '../../ai/errors.js';
 
 // Builds the empty article result assembled for this service.
 const emptyArticleResult = {

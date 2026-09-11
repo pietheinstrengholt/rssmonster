@@ -1,3 +1,4 @@
+import { isInferenceConfigured } from '../../inference/configuration.js';
 import applyActions from '../enrichment/applyActions.js';
 import {
   applyAnalysisScoreOverrides,
@@ -56,7 +57,7 @@ const processNewArticle = async ({
 
   const shouldEnqueueAnalysis = !actionResult.shouldDiscard &&
     feed?.applyAiAnalysis !== false &&
-    !shouldSkipArticleClassification();
+    !shouldSkipArticleClassification() && await isInferenceConfigured();
   let analysis = null;
   let hotlinkCount = 0;
   // Handles the case where action result should discard is unavailable.

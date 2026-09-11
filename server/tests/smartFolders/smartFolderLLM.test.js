@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({ request: vi.fn() }));
-vi.mock('../../services/inference/inferenceClient.js', () => ({
-  requestInferenceJson: mocked.request
+vi.mock('../../services/ai/capabilities/generation.js', () => ({
+  generateSmartFolderRecommendations: mocked.request
 }));
 
 const { getSmartFolderRecommendations } = await import(
@@ -18,9 +18,8 @@ describe('getSmartFolderRecommendations', () => {
     mocked.request.mockResolvedValue(result);
     await expect(getSmartFolderRecommendations({ insights })).resolves.toBe(result);
     expect(mocked.request).toHaveBeenCalledWith(
-      '/api/smart-folder-recommendations',
       { insights },
-      { circuitKey: 'smart-folders' }
+      {}
     );
   });
 });

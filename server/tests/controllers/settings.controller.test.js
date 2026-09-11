@@ -1,4 +1,5 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+vi.mock('../../services/inference/status.js', () => ({ getAvailableInferenceCapabilities: async () => ({ embeddings: process.env.INFERENCE_AI_ENABLED === 'true', generation: process.env.INFERENCE_AI_ENABLED === 'true', classification: process.env.INFERENCE_AI_ENABLED === 'true', assistant: process.env.INFERENCE_AI_ENABLED === 'true' }) }));
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';

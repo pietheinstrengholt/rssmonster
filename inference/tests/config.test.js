@@ -5,7 +5,7 @@ import {
   getConfig,
   getGenerationConfig,
   getEmbeddingConfig,
-  getOpenAIClientOptions,
+  getCompatibleClientOptions,
   getOpenAIOmitTemperature
 } from '../src/config/config.js';
 
@@ -25,11 +25,12 @@ describe('inference config', () => {
   });
 
   it('keeps the OpenAI client options unchanged without a base URL', () => {
-    expect(getOpenAIClientOptions('test-key', {})).toEqual({ apiKey: 'test-key' });
+    expect(getCompatibleClientOptions('EMBEDDING', { OPENAI_API_KEY: 'test-key' })).toEqual({ apiKey: 'test-key' });
   });
 
   it('adds the configured OpenAI base URL to client options', () => {
-    expect(getOpenAIClientOptions('test-key', {
+    expect(getCompatibleClientOptions('EMBEDDING', {
+      OPENAI_API_KEY: 'test-key',
       OPENAI_BASE_URL: 'https://litellm.example/v1'
     })).toEqual({
       apiKey: 'test-key',
@@ -47,7 +48,7 @@ describe('inference config', () => {
 describe('generation config', () => {
   it('uses OpenAI for every currently supported classification capability', () => {
     expect(getGenerationConfig({})).toEqual({
-      provider: 'openai',
+      provider: 'openai-compatible',
       queueMaxPending: 4,
       modelId: 'gpt-4o-mini',
       dtype: undefined,
@@ -62,8 +63,8 @@ describe('generation config', () => {
       EMBEDDING_PROVIDER: 'qwen',
       GENERATION_PROVIDER: 'openai'
     };
-    expect(getEmbeddingConfig(environment).provider).toBe('qwen');
-    expect(getGenerationConfig(environment).provider).toBe('openai');
+    expect(getEmbeddingConfig(environment).provider).toBe('local');
+    expect(getGenerationConfig(environment).provider).toBe('openai-compatible');
   });
 
   it('reads capability model overrides', () => {
@@ -81,7 +82,7 @@ describe('generation config', () => {
 
   it('rejects unsupported generation providers', () => {
     expect(() => getGenerationConfig({ GENERATION_PROVIDER: 'other' }))
-      .toThrow('GENERATION_PROVIDER must be openai or qwen');
+      .toThrow('GENERATION_PROVIDER must be local or openai-compatible');
   });
 
   it('configures Qwen generation', () => {
@@ -89,7 +90,7 @@ describe('generation config', () => {
       GENERATION_PROVIDER: 'qwen',
       GENERATION_QUEUE_MAX_PENDING: '7'
     })).toMatchObject({
-      provider: 'qwen',
+      provider: 'local',
       modelId: 'onnx-community/Qwen3.5-0.8B-ONNX',
       dtype: 'q4',
       queueMaxPending: 7
@@ -107,18 +108,18 @@ describe('generation config', () => {
 
 describe('assistant config', () => {
   it('keeps the assistant on its independent OpenAI provider', () => {
-    expect(getAssistantConfig({})).toEqual({ provider: 'openai', modelId: 'gpt-4o-mini' });
+    expect(getAssistantConfig({})).toEqual({ provider: 'openai-compatible', modelId: 'gpt-4o-mini' });
     expect(getAssistantConfig({ ASSISTANT_MODEL: 'assistant-model' }).modelId)
       .toBe('assistant-model');
     expect(() => getAssistantConfig({ ASSISTANT_PROVIDER: 'qwen' }))
-      .toThrow('ASSISTANT_PROVIDER must be openai');
+      .toThrow('ASSISTANT_PROVIDER must be openai-compatible');
   });
 });
 
 describe('article scoring config', () => {
   it('uses OpenAI scoring by default', () => {
     expect(getArticleScoringConfig({})).toEqual({
-      provider: 'openai',
+      provider: 'openai-compatible',
       queueMaxPending: 4,
       modelId: 'gpt-4o-mini',
       dtype: undefined
@@ -127,7 +128,7 @@ describe('article scoring config', () => {
 
   it('configures the cached ModernBERT scoring model', () => {
     expect(getArticleScoringConfig({ ARTICLE_SCORING_PROVIDER: 'modernbert' })).toEqual({
-      provider: 'modernbert',
+      provider: 'local',
       queueMaxPending: 4,
       modelId: 'onnx-community/ModernBERT-base-nli-ONNX',
       dtype: 'q8'
@@ -142,7 +143,7 @@ describe('article scoring config', () => {
       MODERNBERT_QUEUE_MAX_PENDING: '7'
     })).toMatchObject({ modelId: 'local/test-model', dtype: 'fp32', queueMaxPending: 7 });
     expect(() => getArticleScoringConfig({ ARTICLE_SCORING_PROVIDER: 'other' }))
-      .toThrow('ARTICLE_SCORING_PROVIDER must be openai or modernbert');
+      .toThrow('CLASSIFICATION_PROVIDER must be local or openai-compatible');
   });
 
   it.each(['0', '-1', '1.5', 'invalid'])(
@@ -157,7 +158,7 @@ describe('article scoring config', () => {
 describe('embedding config', () => {
   it('uses the existing OpenAI embedding defaults', () => {
     expect(getEmbeddingConfig({})).toEqual({
-      provider: 'openai',
+      provider: 'openai-compatible',
       modelId: 'text-embedding-3-small',
       dimensions: 1536,
       maxBatchSize: 8,
@@ -167,7 +168,7 @@ describe('embedding config', () => {
 
   it('uses the Qwen3 embedding defaults', () => {
     expect(getEmbeddingConfig({ EMBEDDING_PROVIDER: 'qwen' })).toEqual({
-      provider: 'qwen',
+      provider: 'local',
       modelId: 'onnx-community/Qwen3-Embedding-0.6B-ONNX',
       dimensions: 1024,
       maxBatchSize: 8,
@@ -181,7 +182,7 @@ describe('embedding config', () => {
       EMBEDDING_MODEL: 'test/model',
       EMBEDDING_QUEUE_MAX_PENDING: '7'
     })).toEqual({
-      provider: 'qwen',
+      provider: 'local',
       modelId: 'test/model',
       dimensions: 1024,
       maxBatchSize: 8,

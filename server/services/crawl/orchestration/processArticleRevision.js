@@ -1,3 +1,4 @@
+import { isInferenceConfigured } from '../../inference/configuration.js';
 import applyActions from '../enrichment/applyActions.js';
 import {
   applyAnalysisScoreOverrides,
@@ -111,7 +112,7 @@ const processArticleRevision = async ({
   let analysis = null;
   const shouldEnqueueAnalysis = requiresAnalysis &&
     feed?.applyAiAnalysis !== false &&
-    !shouldSkipArticleClassification();
+    !shouldSkipArticleClassification() && await isInferenceConfigured();
   // Handles the case where requires analysis is available.
   if (requiresAnalysis) {
     analysis = createDefaultArticleAnalysis();

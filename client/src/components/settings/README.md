@@ -242,3 +242,12 @@ Future sections should preserve:
 - Independent section persistence
 - Clear distinctions between local drafts, saved state, and fetched insight snapshots
 - Application refreshes after changes that affect article results or sidebar state
+
+### AI / Inference
+
+Administrators manage one deployment connection. Environment-managed connections show
+status/capability cards only. Otherwise an endpoint form and explicit keep/replace/remove
+key actions are available; existing secrets are never retrieved or stored in the browser.
+Save applies drafts, Test connection probes the current form without saving, Refresh checks
+the saved endpoint, and removal requires
+confirmation. Loading and explicit refresh use a bounded server status cache.

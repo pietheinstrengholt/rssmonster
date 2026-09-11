@@ -13,6 +13,8 @@ import { createRequestLifecycleMiddleware } from './middleware/requestLifecycle.
 import { createReadinessGate } from './middleware/readinessGate.js';
 import { createReadinessState } from './readiness/readinessState.js';
 import { getSafeErrorDetails } from './debug.js';
+import { createCapabilities } from './capabilities.js';
+import { createAuthenticationMiddleware } from './middleware/authentication.js';
 
 export const handleAppError = (error, req, res, next, logger = console) => {
   if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
@@ -46,7 +48,9 @@ export const createApp = ({
   smartFolderRecommendationService,
   feedRediscoveryService,
   semanticLabelService,
-  readinessState
+  readinessState,
+  localGeneration,
+  localClassification
 } = {}) => {
   const app = express();
   const readiness = readinessState || createReadinessState({ initialState: 'ready', logger });
@@ -61,7 +65,10 @@ export const createApp = ({
 
   const readinessGate = createReadinessGate({ readiness });
   app.use('/health', createHealthRouter({ readiness }));
+  app.use(createAuthenticationMiddleware({ environment }));
   app.use('/ready', createReadinessRouter({ readiness }));
+  const getCapabilities = createCapabilities({ environment, readiness, embeddingService, localGeneration, localClassification });
+  app.get('/api/capabilities', (_req, res) => res.json(getCapabilities()));
 
   const assistantRateLimiter = createAssistantRateLimiter({ environment });
   app.use('/api/assistant', readinessGate, express.json({ limit: '1mb' }), createAssistantRouter({

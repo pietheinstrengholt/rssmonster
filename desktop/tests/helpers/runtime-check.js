@@ -25,10 +25,28 @@ const fixture = createServer(async (_req, res) => {
     <pubDate>${new Date().toUTCString()}</pubDate></item></channel></rss>`);
 });
 await new Promise(resolve => fixture.listen(0, '127.0.0.1', resolve));
+const inference = createServer((req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  if (req.url !== '/health' && req.headers['x-inference-api-key'] !== 'desktop-test-key') {
+    res.writeHead(401); res.end(JSON.stringify({ error: 'unauthorized' })); return;
+  }
+  const capabilities = Object.fromEntries(['embeddings', 'generation', 'classification', 'assistant'].map(name => [name, {
+    configured: true, available: true, provider: 'openai-compatible', model: 'desktop-test-model',
+    ...(name === 'embeddings' ? { dimensions: 1024 } : {})
+  }]));
+  res.end(JSON.stringify(req.url === '/api/capabilities'
+    ? { service: 'rssmonster-inference', apiVersion: '1', version: '2.3.0', status: 'ready', capabilities }
+    : { status: 'ok', state: 'ready', acceptingWork: true }));
+});
+await new Promise(resolve => inference.listen(0, '127.0.0.1', resolve));
+const inferenceUrl = `http://127.0.0.1:${inference.address().port}`;
+
 process.env.RSSMONSTER_INTERNAL_HOST_ALLOWLIST = `127.0.0.1:${fixture.address().port}`;
-// A normal deployment's enabled flags must never leak into desktop startup.
+// Inference permission is deployment-independent; no endpoint still means unavailable.
 process.env.INFERENCE_AI_ENABLED = 'true';
 process.env.EMAIL_ENABLED = 'true';
+delete process.env.INFERENCE_BASE_URL;
+delete process.env.INFERENCE_URL;
 const runtime = await startRuntime(userData);
 const { default: db } = await import('../../../server/models/index.js');
 const { waitForActiveCrawls } = await import('../../../server/controllers/crawl.js');
@@ -44,7 +62,7 @@ const api = async (route, body, method = body ? 'POST' : 'GET') => {
   return result;
 };
 try {
-  assert.equal(process.env.INFERENCE_AI_ENABLED, 'false');
+  assert.equal(process.env.INFERENCE_AI_ENABLED, 'true');
   assert.equal(process.env.EMAIL_ENABLED, 'false');
   assert.equal(db.sequelize.options.storage, path.join(userData, 'rssmonster.sqlite'));
   const html = await (await fetch(runtime.origin)).text();
@@ -71,6 +89,11 @@ try {
     assert.ok(result.feed.id);
     assert.equal(result.feed.generateEmbeddings, false);
     assert.equal(result.feed.applyAiAnalysis, false);
+    const saved = await api('/setting/inference', { baseUrl: inferenceUrl, apiKeyAction: 'replace', apiKey: 'desktop-test-key' }, 'PUT');
+    assert.equal(saved.apiKeyConfigured, true);
+    assert.equal(JSON.stringify(saved).includes('desktop-test-key'), false);
+    assert.equal((await api('/setting/inference/test', {})).ready, true);
+
     assert.equal(await db.Article.count(), 0);
     assert.equal(await db.CrawlRun.count(), 0);
     let unblock;
@@ -87,6 +110,14 @@ try {
     await stopping;
     await assert.rejects(fetch(`${runtime.origin}/api/health`));
   } else {
+    const persisted = await api('/setting/inference');
+    assert.equal(persisted.configurationSource, 'database');
+    assert.equal(persisted.apiKeyConfigured, true);
+    assert.equal(JSON.stringify(persisted).includes('desktop-test-key'), false);
+    await api('/setting/inference', { baseUrl: inferenceUrl, apiKeyAction: 'keep' }, 'PUT');
+    const checked = await api('/setting/inference/test', {});
+    assert.equal(checked.ready, true);
+    assert.equal(checked.capabilities.embeddings.dimensions, 1024);
     assert.equal(await db.Article.count(), 1);
     const article = await db.Article.findOne();
     assert.equal(article.title, 'Desktop persisted article');
@@ -111,6 +142,7 @@ try {
 } finally {
   await runtime.stop();
   await new Promise(resolve => fixture.close(resolve));
+  await new Promise(resolve => inference.close(resolve));
 }
 // SSE job retention timers are owned by the reused server; Electron exits after the DB drain too.
 process.exit(0);

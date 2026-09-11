@@ -1,23 +1,23 @@
 // Uses OpenAI to suggest a replacement RSS or Atom URL when an existing feed stops working.
 // The response is expected to be strict JSON with a URL, confidence score, and user-facing reason.
-import OpenAI from 'openai';
+import { createCompatibleClient } from '../providers/openaiCompatible.js';
 import {
   getGenerationConfig,
-  getOpenAIClientOptions,
+  getCompatibleApiKey,
   getOpenAIOmitTemperature
 } from '../config/config.js';
 import qwenGenerationProvider from '../generation/providers/qwenGenerationProvider.js';
 import { logInferenceDebug } from '../debug.js';
 import { getInferenceRequestId } from '../middleware/requestLifecycle.js';
 
+const generationConfig = getGenerationConfig();
 // Coerces the has api key into the representation required for this service.
-const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
+const hasApiKey = Boolean(getCompatibleApiKey('GENERATION'));
 const omitTemperature = getOpenAIOmitTemperature();
 // Selects the client based on whether has api key is available.
-const client = hasApiKey
-  ? new OpenAI(getOpenAIClientOptions(process.env.OPENAI_API_KEY))
+const client = generationConfig.provider === 'openai-compatible' && hasApiKey
+  ? createCompatibleClient('GENERATION')
   : null;
-const generationConfig = getGenerationConfig();
 
 // Asks the LLM for the most likely replacement feed URL for a broken feed.
 export async function rediscoverRssUrl({
@@ -30,7 +30,7 @@ export async function rediscoverRssUrl({
     `calling feed-rediscovery provider=${generationConfig.provider}`
   );
   // Rejects processing when client is unavailable.
-  if (generationConfig.provider === 'openai' && !client) {
+  if (generationConfig.provider === 'openai-compatible' && !client) {
     throw new Error('OpenAI API key not configured');
   }
 
@@ -76,7 +76,7 @@ export async function rediscoverRssUrl({
   `;
 
   // Performs the create operation while performing rediscover rss url.
-  const raw = generationConfig.provider === 'qwen'
+  const raw = generationConfig.provider === 'local'
     ? await qwenGenerationProvider.generate({
       systemPrompt: 'You produce strict JSON only.',
       prompt,
@@ -102,7 +102,7 @@ export async function rediscoverRssUrl({
     );
     return result;
   } catch {
-    const providerName = generationConfig.provider === 'openai' ? 'OpenAI' : 'Qwen';
+    const providerName = generationConfig.provider === 'openai-compatible' ? 'OpenAI' : 'Qwen';
     throw new Error(`Invalid JSON returned from ${providerName}`);
   }
 }

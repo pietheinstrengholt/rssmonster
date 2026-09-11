@@ -1,9 +1,9 @@
 // inference/src/classifications/articleClassificationService.js
-import OpenAI from 'openai';
+import { createCompatibleClient } from '../providers/openaiCompatible.js';
 import {
   getArticleScoringConfig,
   getGenerationConfig,
-  getOpenAIClientOptions,
+  getCompatibleApiKey,
   getOpenAIOmitTemperature
 } from '../config/config.js';
 import modernBertArticleScoringProvider from './providers/modernBertArticleScoringProvider.js';
@@ -30,11 +30,14 @@ const splitTagHierarchy = tag => String(tag || '')
 const normalizeGeneratedTags = tags => tags.flatMap(splitTagHierarchy);
 const generationConfig = getGenerationConfig();
 const articleScoringConfig = getArticleScoringConfig();
-const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
+const hasApiKey = Boolean(getCompatibleApiKey('GENERATION'));
 const omitTemperature = getOpenAIOmitTemperature();
-const canGenerate = generationConfig.provider === 'qwen' || hasApiKey;
-const client = hasApiKey
-  ? new OpenAI(getOpenAIClientOptions(process.env.OPENAI_API_KEY))
+const canGenerate = generationConfig.provider === 'local' || hasApiKey;
+const client = generationConfig.provider === 'openai-compatible' && hasApiKey
+  ? createCompatibleClient('GENERATION')
+  : null;
+const scoringClient = articleScoringConfig.provider === 'openai-compatible' && getCompatibleApiKey('CLASSIFICATION')
+  ? createCompatibleClient('CLASSIFICATION')
   : null;
 let openAIQueue = Promise.resolve();
 let rateLimitDelay = 0;
@@ -86,13 +89,13 @@ const bucketScore = (value, fallback = 70) => {
     );
 };
 
-const callOpenAI = ({ prompt, maxCompletionTokens, rateLimitDelayMs, operation, model }) => {
+const callOpenAI = ({ prompt, maxCompletionTokens, rateLimitDelayMs, operation, model, requestClient = client }) => {
   const result = openAIQueue.then(async () => {
     try {
       if (rateLimitDelay > 0) {
         await new Promise(resolve => setTimeout(resolve, rateLimitDelay));
       }
-      const response = await client.chat.completions.create({
+      const response = await requestClient.chat.completions.create({
         model,
         messages: [
           { role: 'system', content: 'You produce strict JSON only.' },
@@ -128,7 +131,7 @@ const callGenerationProvider = ({
   rateLimitDelayMs,
   operation
 }, context = {}) => {
-  if (generationConfig.provider === 'qwen') {
+  if (generationConfig.provider === 'local') {
     return qwenGenerationProvider.generate({
       systemPrompt: 'You produce strict JSON only.',
       prompt,
@@ -265,7 +268,7 @@ export async function scoreArticle({
   logInferenceDebug(
     `calling article-scoring provider=${articleScoringConfig.provider}`
   );
-  if (articleScoringConfig.provider === 'modernbert') {
+  if (articleScoringConfig.provider === 'local') {
     const scores = await modernBertArticleScoringProvider.score({
       text: truncateContentForLLM(text),
       title,
@@ -275,7 +278,7 @@ export async function scoreArticle({
       operation: 'article-scoring'
     });
     logInferenceDebug(
-      'completed article-scoring provider=modernbert ' +
+      'completed article-scoring provider=local ' +
       `durationMs=${Date.now() - startedAt}`
     );
     return scores;
@@ -405,7 +408,8 @@ export async function scoreArticle({
     maxCompletionTokens: 100,
     rateLimitDelayMs,
     operation: 'scoring',
-    model: articleScoringConfig.modelId
+    model: articleScoringConfig.modelId,
+    requestClient: scoringClient
   });
   const scores = {
     advertisementScore: bucketScore(parsed.advertisementScore),
@@ -413,7 +417,7 @@ export async function scoreArticle({
     qualityScore: bucketScore(parsed.qualityScore ?? parsed.writingScore)
   };
   logInferenceDebug(
-    'completed article-scoring provider=openai ' +
+    'completed article-scoring provider=openai-compatible ' +
     `durationMs=${Date.now() - startedAt}`
   );
   return scores;
@@ -469,7 +473,7 @@ async function analyzeArticleContent({
       'skipped article-generation reason=provider-unavailable'
     );
   }
-  if (hasApiKey || articleScoringConfig.provider === 'modernbert') {
+  if (scoringClient || articleScoringConfig.provider === 'local') {
     Object.assign(analysis, await scoreArticle(input, context));
   }
   logInferenceDebug(

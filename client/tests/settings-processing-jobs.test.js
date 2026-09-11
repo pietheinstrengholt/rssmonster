@@ -90,10 +90,33 @@ describe('SettingsProcessingJobs', () => {
     ]);
     expect(wrapper.findAll('.processing-features .app-status-badge').map(item => item.text())).toEqual(expected);
     if (!inference) {
-      expect(wrapper.get('.processing-features').text()).toContain('master switch');
+      expect(wrapper.get('.processing-features').text()).toContain('No AI features are currently available');
       expect(wrapper.get('.processing-health .app-status-badge').text()).toBe('Disabled');
       expect(wrapper.get('.processing-health').text()).not.toContain('operating normally');
+      expect(wrapper.get('.processing-health').text()).toContain('No AI features are currently available for processing.');
     }
+  });
+
+  it('shows advertised models for enabled features, including both article analysis models', async () => {
+    fetchProcessingJobStatus.mockResolvedValue({ data: statusFixture({
+      features: { inference: true, assistant: false, classification: true, embeddings: true, semanticLabeling: true },
+      capabilityModels: {
+        embeddings: { provider: 'local', model: 'onnx-community/ModernBERT-base-nli-ONNX' },
+        classification: { provider: 'local', model: 'classification-model' },
+        generation: { provider: 'openai-compatible', model: 'generation-model' },
+        assistant: { provider: 'openai-compatible', model: 'disabled-assistant' }
+      }
+    }) });
+    mountStatus();
+    await flushPromises();
+    const rows = wrapper.findAll('.processing-features__item');
+    expect(rows[0].text()).not.toContain('disabled-assistant');
+    expect(rows[1].text()).toContain('Classification model: classification-model');
+    expect(rows[1].text()).toContain('Generation model: generation-model');
+    expect(rows[2].text()).toContain('Model: onnx-community/ModernBERT-base-nli-ONNX');
+    expect(rows[2].text()).toContain('Provider: local');
+    expect(rows[3].text()).toContain('Generation model: generation-model');
+    expect(rows[3].text()).toContain('Provider: openai-compatible');
   });
 
   it('does not report missing feature configuration as enabled or disabled', async () => {

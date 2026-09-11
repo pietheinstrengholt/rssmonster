@@ -1,3 +1,4 @@
+import { isInferenceConfigured } from '../inference/configuration.js';
 // services/articles/embedArticles.js
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
@@ -46,7 +47,7 @@ function resolveCreatedAtFrom(options = {}) {
 // This function backfills embeddings for one user's articles in stable id-ordered batches.
 // It delegates vector creation and persistence to embedArticle so storage behavior stays centralized.
 export async function embedArticles(userId, options = {}) {
-  if (shouldSkipArticleEmbeddings()) {
+  if (shouldSkipArticleEmbeddings() || !await isInferenceConfigured()) {
     return {
       userId,
       scannedCount: 0,

@@ -4,8 +4,8 @@ const mocked = vi.hoisted(() => ({
   recordProcessingFailure: vi.fn(),
   request: vi.fn()
 }));
-vi.mock('../../services/inference/inferenceClient.js', () => ({
-  requestInferenceJson: mocked.request
+vi.mock('../../services/ai/capabilities/classification.js', () => ({
+  classifyArticle: mocked.request
 }));
 vi.mock('../../services/observability/processingFailures.js', () => ({
   recordProcessingFailure: mocked.recordProcessingFailure
@@ -37,9 +37,8 @@ describe('analyzeArticleContent', () => {
 
     await expect(analyzeArticleContent(input)).resolves.toBe(result);
     expect(mocked.request).toHaveBeenCalledWith(
-      '/api/classifications/article',
       input,
-      { circuitKey: 'classification', signal: undefined }
+      { signal: undefined }
     );
   });
 
@@ -51,9 +50,8 @@ describe('analyzeArticleContent', () => {
     await analyzeArticleContent(input, { signal: controller.signal });
 
     expect(mocked.request).toHaveBeenCalledWith(
-      '/api/classifications/article',
       input,
-      { circuitKey: 'classification', signal: controller.signal }
+      { signal: controller.signal }
     );
   });
 

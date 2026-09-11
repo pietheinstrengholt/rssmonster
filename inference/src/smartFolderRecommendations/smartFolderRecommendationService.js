@@ -1,23 +1,23 @@
 // Generates personalized Smart Folder suggestions inside the inference service.
 // It sanitizes model output into strict JSON before returning suggestions to callers.
-import OpenAI from 'openai';
+import { createCompatibleClient } from '../providers/openaiCompatible.js';
 import {
   getGenerationConfig,
-  getOpenAIClientOptions,
+  getCompatibleApiKey,
   getOpenAIOmitTemperature
 } from '../config/config.js';
 import qwenGenerationProvider from '../generation/providers/qwenGenerationProvider.js';
 import { logInferenceDebug } from '../debug.js';
 import { getInferenceRequestId } from '../middleware/requestLifecycle.js';
 
+const generationConfig = getGenerationConfig();
 // Coerces the has api key into the representation required for this service.
-const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
+const hasApiKey = Boolean(getCompatibleApiKey('GENERATION'));
 const omitTemperature = getOpenAIOmitTemperature();
 // Selects the client based on whether has api key is available.
-const client = hasApiKey
-  ? new OpenAI(getOpenAIClientOptions(process.env.OPENAI_API_KEY))
+const client = generationConfig.provider === 'openai-compatible' && hasApiKey
+  ? createCompatibleClient('GENERATION')
   : null;
-const generationConfig = getGenerationConfig();
 
 // Safely extracts JSON from raw LLM output, including fenced or prose-wrapped responses.
 function safeJsonParse(raw) {
@@ -54,7 +54,7 @@ export async function getSmartFolderRecommendations({ insights }, context = {}) 
   const startedAt = Date.now();
   logInferenceDebug(`calling smart-folder-recommendations provider=${generationConfig.provider}`);
   // Rejects processing when client is unavailable.
-  if (generationConfig.provider === 'openai' && !client) {
+  if (generationConfig.provider === 'openai-compatible' && !client) {
     throw new Error('OpenAI API key not configured');
   }
 
@@ -187,7 +187,7 @@ OUTPUT (STRICT JSON ONLY)
 `;
 
   // Performs the create operation while performing get smart folder recommendations.
-  const raw = generationConfig.provider === 'qwen'
+  const raw = generationConfig.provider === 'local'
     ? await qwenGenerationProvider.generate({
       systemPrompt: 'Return ONLY valid JSON. No markdown. No prose.',
       prompt,

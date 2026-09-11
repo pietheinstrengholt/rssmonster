@@ -355,6 +355,21 @@ describe('article_enrichment processing-job handler', () => {
     expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
   });
 
+  it.each(['capability', 'persistence'])('rejects malformed classification at the %s boundary without retrying', async boundary => {
+    const { article, job } = await createTarget();
+    if (boundary === 'capability') {
+      mocked.analyzeArticleContent.mockRejectedValue(Object.assign(new Error('Classification response is malformed'), {
+        code: 'AI_INVALID_RESPONSE'
+      }));
+    } else {
+      mocked.analyzeArticleContent.mockResolvedValue({ qualityScore: 80 });
+    }
+    await expect(handleArticleEnrichmentJob(job)).rejects.toMatchObject({
+      code: 'ARTICLE_ENRICHMENT_INVALID_RESULT', retryable: false
+    });
+    expect((await article.reload()).contentSummaryBullets).toBeNull();
+  });
+
   it('requeues inference queue saturation without writing default analysis', async () => {
     const logger = { log: vi.fn() };
     const { article, job } = await createTarget();

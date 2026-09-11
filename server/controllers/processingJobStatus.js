@@ -1,3 +1,4 @@
+import { getAvailableInferenceCapabilities, getInferenceStatus } from '../services/inference/status.js';
 import db from '../models/index.js';
 import {
   isInferenceEnabled,
@@ -20,14 +21,19 @@ export const getProcessingJobsStatus = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
+    const status = await getInferenceStatus().catch(() => null);
+    const available = await getAvailableInferenceCapabilities(status);
     return res.status(200).json({
       ...await getProcessingJobStatus({ userId }),
+      capabilityModels: Object.fromEntries(Object.entries(status?.capabilities || {})
+        .filter(([name]) => available[name])
+        .map(([name, capability]) => [name, { provider: capability.provider, model: capability.model }])),
       features: {
-        inference: isInferenceEnabled(),
-        assistant: isAssistantEnabled(),
-        classification: !shouldSkipArticleClassification(),
-        embeddings: !shouldSkipArticleEmbeddings(),
-        semanticLabeling: !shouldSkipSemanticLabeling()
+        inference: isInferenceEnabled() && Object.values(available).some(Boolean),
+        assistant: isAssistantEnabled() && available.assistant,
+        classification: !shouldSkipArticleClassification() && available.classification,
+        embeddings: !shouldSkipArticleEmbeddings() && available.embeddings,
+        semanticLabeling: !shouldSkipSemanticLabeling() && available.generation
       }
     });
   } catch (error) {

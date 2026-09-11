@@ -11,16 +11,10 @@ import {
 } from '../../config/intelligentFeatures.js';
 
 describe('intelligent feature configuration', () => {
-  it('fails closed when inference is not explicitly enabled', () => {
-    expect(isInferenceEnabled({})).toBe(false);
-    expect(shouldSkipArticleClassification({})).toBe(true);
-    expect(shouldSkipArticleEmbeddings({})).toBe(true);
-    expect(shouldSkipSemanticLabeling({})).toBe(true);
-    expect(getDefaultFeedIntelligentFeatures({})).toEqual({
-      applyAiAnalysis: false,
-      generateEmbeddings: false
-    });
-    expect(() => assertInferenceEnabled({})).toThrow(InferenceDisabledError);
+  it('permits configured connections by default while preserving an explicit kill switch', () => {
+    expect(isInferenceEnabled({})).toBe(true);
+    expect(isAssistantEnabled({})).toBe(true);
+    expect(() => assertInferenceEnabled({ INFERENCE_AI_ENABLED: 'false' })).toThrow(InferenceDisabledError);
   });
 
   it('preserves intelligent feed defaults when inference is enabled', () => {
@@ -30,8 +24,8 @@ describe('intelligent feature configuration', () => {
     });
   });
 
-  it('enables the assistant only when both inference capability flags are explicit', () => {
-    expect(isAssistantEnabled({ INFERENCE_AI_ENABLED: 'true' })).toBe(false);
+  it('preserves explicit assistant and inference permission overrides', () => {
+    expect(isAssistantEnabled({ INFERENCE_AI_ENABLED: 'true', INFERENCE_ASSISTANT_ENABLED: 'false' })).toBe(false);
     expect(isAssistantEnabled({
       INFERENCE_AI_ENABLED: 'true',
       INFERENCE_ASSISTANT_ENABLED: 'true'

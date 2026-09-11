@@ -63,10 +63,12 @@ existing Vue frontend over `http://127.0.0.1` on an available local port. The
 reader continues using the same HTTP REST API as the web version. The server is
 bound to your computer's loopback interface, not exposed to your network.
 
-Desktop starts no inference service, AI worker, or crawl worker process. AI
-content processing, embeddings, and inference-backed features such as the
-assistant are unavailable. Network access is still needed to fetch feeds and
-load remote article media.
+Desktop starts no inference service, AI worker, or crawl worker process. Administrators
+can connect a remote inference service in Settings → AI / Inference using its endpoint
+and optional matching API key. Environment URLs take precedence and hide those controls.
+Remote capabilities are discovered through the same server API as other deployments.
+Background enrichment jobs still require an AI worker, which Desktop does not start.
+Network access is needed for remote inference, feeds, and article media.
 
 ## Storage, backups, and updates
 
@@ -128,6 +130,6 @@ for platform-specific commands, native SQLite handling, and verification details
 ## Current scope
 
 Desktop provides a local SQLite reader with manual refresh. Background crawling,
-worker services, inference/AI, tray mode, notifications, signing, notarization,
+worker services, bundled inference/models, tray mode, notifications, signing, notarization,
 and auto-update are outside this initial version. The self-hosted version retains
 its existing worker and optional inference functionality.

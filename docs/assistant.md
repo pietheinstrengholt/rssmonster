@@ -39,16 +39,17 @@ INFERENCE_AGENT_TIMEOUT_MS=300000
 ASSISTANT_REASONING_EFFORT=
 ```
 
-The assistant uses the `openai` adapter for OpenAI or OpenAI-compatible gateways,
+The assistant uses the `openai-compatible` adapter for OpenAI or OpenAI-compatible gateways,
 including local Ollama. Put its credentials and model settings in
 `inference/.env`:
 
 ```env
-OPENAI_API_KEY=your-openai-api-key
-ASSISTANT_PROVIDER=openai
+ASSISTANT_API_KEY=your-openai-api-key
+ASSISTANT_BASE_URL=https://api.openai.com/v1
+ASSISTANT_PROVIDER=openai-compatible
 ASSISTANT_MODEL=gpt-4o-mini
 # Optional gateway endpoint; choose a model available at that endpoint.
-# OPENAI_BASE_URL=http://127.0.0.1:11434/v1
+# ASSISTANT_BASE_URL=http://127.0.0.1:11434/v1
 ```
 
 Model calls run through RSSMonster's configured inference provider using Chat

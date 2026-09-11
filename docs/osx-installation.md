@@ -356,7 +356,8 @@ npm install
 cp .env.example .env
 ```
 
-Put `OPENAI_API_KEY`, `ASSISTANT_PROVIDER`, and `ASSISTANT_MODEL` in
+For chat, put `ASSISTANT_API_KEY`, `ASSISTANT_BASE_URL`,
+`ASSISTANT_PROVIDER=openai-compatible`, and `ASSISTANT_MODEL` in
 `inference/.env`. Provider credentials never belong in `server/.env`. Then
 return with `cd ../server` before running the database commands below.
 
@@ -387,7 +388,7 @@ npm run db
 This runs the Sequelize migrations:
 
 ```text
-sequelize db:migrate
+npm run db
 ```
 
 A successful migration should show Sequelize applying the RSSMonster database migrations without authentication errors.

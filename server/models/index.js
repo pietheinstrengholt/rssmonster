@@ -45,6 +45,7 @@ import ArticleModel from './article.js';
 import TagModel from './tag.js';
 import ActionModel from './action.js';
 import SettingModel from './setting.js';
+import InferenceSettingModel from './inferenceSetting.js';
 import SmartFolderModel from './smartFolder.js';
 import GeneratedFeedModel from './generatedFeed.js';
 import TopicModel from './topic.js';
@@ -78,6 +79,7 @@ const Article = ArticleModel(sequelize);
 const Tag = TagModel(sequelize);
 const Action = ActionModel(sequelize);
 const Setting = SettingModel(sequelize);
+const InferenceSetting = InferenceSettingModel(sequelize);
 const SmartFolder = SmartFolderModel(sequelize);
 const GeneratedFeed = GeneratedFeedModel(sequelize);
 const Topic = TopicModel(sequelize);
@@ -380,6 +382,7 @@ export default {
   Tag,
   Action,
   Setting,
+  InferenceSetting,
   SmartFolder,
   GeneratedFeed,
   Topic,

@@ -155,8 +155,8 @@ describe('rediscoverRssUrl', () => {
     });
 
     const debugOutput = logSpy.mock.calls.flat().join('\n');
-    expect(debugOutput).toContain('calling feed-rediscovery provider=qwen');
-    expect(debugOutput).toContain('completed feed-rediscovery provider=qwen');
+    expect(debugOutput).toContain('calling feed-rediscovery provider=local');
+    expect(debugOutput).toContain('completed feed-rediscovery provider=local');
     expect(debugOutput).not.toContain(websiteUrl);
     expect(debugOutput).not.toContain(oldRssUrl);
     expect(debugOutput).not.toContain(feedName);

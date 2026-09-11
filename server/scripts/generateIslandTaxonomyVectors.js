@@ -7,7 +7,7 @@
  *   npm run taxonomy:vectors -- --force
  *
  * Env:
- *   INFERENCE_URL=http://127.0.0.1:3001 (optional)
+ *   INFERENCE_BASE_URL=http://127.0.0.1:3001 (optional)
  */
 
 import { createRequire } from 'node:module';

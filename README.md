@@ -134,12 +134,12 @@ limitations when choosing a client.
 
 Run RSSMonster as a desktop app or host a server for access across devices.
 The screenshots showcase capabilities from the broader product; desktop mode
-and the SQLite quick start run without inference models.
+and the SQLite quick start do not bundle inference models, but can connect to remote inference.
 
 | Deployment | Best for | Included capabilities |
 | --- | --- | --- |
-| **[Desktop app (Electron)](docs/desktop.md)** | Reading locally on Windows, macOS, or Linux | Existing reader with a local SQLite database and manual feed refresh. No Docker, separate server setup, worker processes, scheduled crawling, or inference/AI. |
-| **SQLite quick start** | Trying RSSMonster and lightweight personal reading | Web reader, scheduled crawling, search, subscriptions, and rule-based organization. No separate database service, inference service, or AI worker. |
+| **[Desktop app (Electron)](docs/desktop.md)** | Reading locally on Windows, macOS, or Linux | Existing reader with a local SQLite database and manual feed refresh. No Docker, separate server setup, worker processes, or scheduled crawling. Optional remote inference via Settings. |
+| **SQLite quick start** | Trying RSSMonster and lightweight personal reading | Web reader, scheduled crawling, search, subscriptions, and rule-based organization. No separate database service, bundled inference service, or AI worker. Optional remote inference via Settings or environment. |
 | **Comprehensive MySQL deployment** | Local intelligent processing, multiple active users, and higher write concurrency | MySQL 8.4, crawl and AI workers, Qwen embeddings and generation, and ModernBERT scoring for analysis, semantic organization, and recommendations. |
 
 Install the [Progressive Web App](docs/web-app-and-notifications.md) on supported
@@ -151,8 +151,11 @@ Electron desktop app runs its own backend and stores its data locally.
 Saved search-based Smart Folders work in desktop mode and both server profiles.
 Choose the comprehensive profile for local classification, embeddings, scoring, semantic labels, Smart
 Folder recommendations, and feed rediscovery **without an OpenAI API key**.
-These inference-backed features are disabled in desktop mode and the SQLite quick
-start; the optional OpenAI assistant requires separate configuration. For model downloads,
+Desktop and SQLite can connect to an inference service through **Settings → AI / Inference**
+or `INFERENCE_BASE_URL` and an optional matching `INFERENCE_API_KEY`. Environment URLs
+take precedence and hide configuration controls; discovered capabilities remain visible.
+Background enrichment still requires an AI worker, which these lightweight profiles do not start.
+Provider/model settings remain inside inference. For model downloads,
 credentials, startup, and readiness checks, follow the
 [MySQL deployment guide](docs/getting-started.md#comprehensive-mysql-deployment).
 

@@ -32,7 +32,6 @@ export const configureRuntime = async userData => {
     RSSMONSTER_MODE: 'desktop',
     DB_DIALECT: 'sqlite',
     DB_STORAGE: path.join(userData, 'rssmonster.sqlite'),
-    INFERENCE_AI_ENABLED: 'false',
     EMAIL_ENABLED: 'false',
     ENABLE_HTTPS: 'false',
     ENABLE_DEVELOPMENT_LOGIN: 'false',
