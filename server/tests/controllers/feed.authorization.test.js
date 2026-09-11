@@ -1,9 +1,11 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
 import { crawlJobManager } from '../../services/crawl/index.js';
+import * as inferenceStatus from '../../services/inference/status.js';
+import * as rssRediscovery from '../../services/feeds/rediscoverRssUrl.js';
 
 const { Article, Category, Event, Feed, User, sequelize } = db;
 
@@ -50,6 +52,10 @@ const createFeedFor = async user => {
 };
 
 describe('feed ownership authorization', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
     process.env.DISABLE_LISTENER = 'true';
@@ -305,6 +311,8 @@ describe('feed ownership authorization', () => {
   });
 
   it('POST rediscover-rss rejects foreign-user feed before rediscovery', async () => {
+    vi.spyOn(inferenceStatus, 'getAvailableInferenceCapabilities').mockResolvedValue({ generation: true });
+    const rediscover = vi.spyOn(rssRediscovery, 'rediscoverRssUrl').mockResolvedValue({ url: null });
     const owner = await createUser(uniqueName('feed-owner'));
     const foreignUser = await createUser(uniqueName('feed-rediscover'));
     const { feed } = await createFeedFor(owner);
@@ -315,6 +323,7 @@ describe('feed ownership authorization', () => {
 
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: 'Feed not found' });
+    expect(rediscover).not.toHaveBeenCalled();
   });
 
   it('GET refresh events rejects unauthenticated and query-token access', async () => {
