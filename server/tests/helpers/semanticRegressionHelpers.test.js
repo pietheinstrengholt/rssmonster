@@ -94,7 +94,9 @@ import {
   insertMissingFixtureArticles,
   loadFixture,
   loadIncrementalFixture,
-  loadIncrementalVectorFixture
+  loadIncrementalVectorFixture,
+  selectLegacyFixture,
+  selectOccurrenceFixture
 } from './semanticRegressionIncremental.js';
 import {
   expectSemanticRegressionIslandsBuilt,
@@ -161,6 +163,32 @@ beforeEach(() => {
 });
 
 describe('semantic regression incremental helpers', () => {
+  it('selects occurrence articles and feeds without changing the legacy corpus', () => {
+    const legacy = { feedId: 1, content: 'legacy body' };
+    const occurrence = { feedId: 2, content: 'new body', regression: { scenario: 'monthly' } };
+    const fixture = { categories: [{ id: 1 }], feeds: [{ id: 1 }, { id: 2 }], articles: [legacy, occurrence] };
+    expect(selectLegacyFixture(fixture)).toEqual({ ...fixture, feeds: [{ id: 1 }], articles: [legacy] });
+    expect(selectOccurrenceFixture(fixture)).toEqual({ ...fixture, feeds: [{ id: 2 }], articles: [occurrence] });
+    expect(fixture.articles).toEqual([legacy, occurrence]);
+  });
+
+  it('preserves monthly spacing when occurrence insertion opts out of date compression', async () => {
+    const fixture = {
+      feeds: [{ id: 1, url: 'https://fixture.test/feed' }],
+      articles: [
+        { feedId: 1, content: 'August update', publishedAt: '2026-08-11T10:00:00Z' },
+        { feedId: 1, content: 'September update', publishedAt: '2026-09-08T10:00:00Z' }
+      ]
+    };
+    const vectors = new Map(fixture.articles.map(article => [hashContent(article.content), {
+      articleVector: [0.1, 0.2], embeddingModel: 'fixture-model'
+    }]));
+    await insertMissingFixtureArticles(9, fixture, vectors, 'https://fixture.test', { preservePublishedAt: true });
+    const inserted = mocked.Article.create.mock.calls.map(([article]) => article);
+    expect(inserted.map(article => article.publishedAt)).toEqual(fixture.articles.map(article => new Date(article.publishedAt)));
+    expect(inserted[1].publishedAt - inserted[0].publishedAt).toBe(28 * 24 * 3600000);
+  });
+
   it('loads BOM-prefixed fixtures through both fixture entry points', async () => {
     mocked.readFile.mockResolvedValue('\uFEFF{"articles":[]}');
 

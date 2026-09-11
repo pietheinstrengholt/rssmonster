@@ -310,27 +310,48 @@ Remain eventless
 
 For every Article:
 
-1. Resolve or load the Article.
-2. Reject missing and duplicate Articles before assignment work begins.
-3. Resolve the Event vector:
-   - prefer an explicitly supplied Event vector
-   - otherwise use the persisted `articleVector`
-4. If no usable vector exists:
-   - follow the existing topic-only path
-   - preserve the existing no-vector counters
-5. Search nearby candidate Events.
-6. If a sufficiently similar Event exists:
-   - join that Event.
-7. Otherwise search nearby candidate Articles.
-8. Include both:
-   - assigned Articles
-   - unassigned Articles
-9. If assigned Articles consistently point to one Event:
-   - join that Event.
-10. If enough similar unassigned Articles exist:
-   - create a new Event.
-11. Otherwise:
-   - leave the Article eventless.
+1. Resolve the Article and reject duplicates or filtered input.
+2. Prefer an explicitly supplied Event vector, otherwise use `articleVector`.
+3. Preserve the existing eventless/topic-only behavior when no vector exists.
+4. Retrieve bounded Event candidates and nearby Article candidates before choosing.
+5. Union centroid-discovered and member-discovered Event IDs; load missing Events in one bounded query.
+6. Evaluate every Event through `evaluateArticleAgainstEvent` in `eventOccurrencePolicy.js`.
+7. Select a clear winner, leave ambiguous coverage unassigned, or consider new Event creation.
+8. Revalidate membership inside the existing transaction before writing.
+
+The shared policy separates hard ownership/canonical/time gates from supporting
+semantic, headline, and entity evidence. Either the centroid/name or the strongest
+qualifying member can support a match. A witness must supply its own semantic and
+lexical/entity evidence; raw supporting-member count does not boost the score.
+The existing near-identical headline exception and very strong semantic fallback
+remain available through the same policy for all discovery paths.
+
+Every join checks the proposed **whole Event span**, including member-backed joins.
+The existing positive temporal-score boundary is retained: the span must be less
+than `EVENT_MAX_GAP_HOURS` (24 hours by default).
+
+The ranking score retains the existing semantic/headline/temporal weights
+(0.75/0.15/0.10), recency decay, and 0.03 entity bonus. It is not a probability.
+`EVENT_MIN_WINNER_MARGIN` defaults to 0.03 undecayed evidence points, matching the
+size of the existing entity bonus. The recency-ranked winner must exceed every
+qualifying alternative by this evidence margin. Exact ties remain ambiguous even
+when the configured margin is zero. Age alone cannot disambiguate an occurrence.
+This initial margin is conservative and should be evaluated with semantic fixtures.
+
+`selectEventDecision` returns `join`, `reject`, or `ambiguous` with stable reason
+codes. `assignArticleToEvent` retains its Event-ID-or-null caller contract and
+exposes bounded diagnostics through `runContext.lastDecision`. Ambiguous coverage
+remains canonical and unassigned, preserving reading state and behavioral Topic
+evidence. A later assignment pass can reconsider it; this does not add a retry
+scheduler or change the incremental scope's creation-time boundary.
+
+Creation validates the complete locked seed group using the same policy. Each
+Article is compared with a leave-one-out centroid and one stable other-member
+witness, avoiding self-corroboration and all-pairs work. An incompatible proposal
+is left unassigned rather than partially written. Minimum article/source settings
+still apply. This does not add action, version, or entity extraction: recurring
+occurrences beyond the time window are separated, while difficult same-window
+occurrences still depend on the existing semantic and lexical evidence.
 
 ---
 
@@ -604,3 +625,41 @@ An Event change is complete when:
 5. Event metadata remains synchronized with member Articles.
 6. Cache and persisted state remain consistent.
 7. Relevant tests continue to pass or are updated accordingly.
+
+## Deterministic occurrence evidence
+
+`occurrenceFeatures.js` extracts transient hints from bounded title/description
+text and caches them by record and input text. It preserves product-scoped
+versions (including dotted versions, Windows release identifiers, GPT/RTX and
+CVE identifiers), recognizes explicit occurrence-place slots, and normalizes a
+small set of actions and existing-product/new-generation states. It deliberately
+leaves unknown phrasing and unscoped numbers neutral; it is not a general NER or
+geographic alias resolver.
+
+Retrieval still uses the existing vector/time paths. The shared
+`evaluateArticleAgainstEvent` policy consumes the hints when selecting an Event
+or validating a proposed seed group. Preliminary Event evidence uses up to 16
+canonical member records, including members that do not independently meet the
+semantic support threshold. Consensus requires a strict majority of informative
+members and at least two votes for a multi-member Event. A lone sampled feature
+or a noisy representative name cannot establish its identity. If member evidence
+is unavailable, hints remain neutral until the existing membership transaction
+loads and rechecks committed members. Seed validation excludes the incoming
+Article from its own occurrence evidence.
+
+Explicit conflicting versions of the same product and incompatible single
+incident locations reject the join. City-only reporting is compatible with a
+venue qualified by the same city. Action and object-state differences each
+subtract at most 0.02 from evidence score (recency-adjusted for ranking); the
+specific combination of an existing-product price cut and a new-generation
+launch rejects the join. Merely announcing prices or opening pre-orders does
+not meet that conflicting state combination. Matching hints supply explanatory
+support without relaxing semantic or temporal eligibility.
+
+Results expose `versionAgreement`/`versionConflict`,
+`locationAgreement`/`locationConflict`, `actionAgreement`/`actionConflict`, and
+`objectAgreement`/`objectConflict`. Reason codes use the corresponding
+`version_match`, `version_conflict`, `location_match`, `location_conflict`,
+`action_match`, `action_conflict`, `object_match`, and `object_conflict` names.
+No body content is added to diagnostics. No schema, inference call, or global
+similarity threshold is changed.

@@ -108,3 +108,19 @@ export const EVENT_LIFECYCLE = SEMANTIC_GRANULARITY.eventLifecycle;
 export const TOPIC_VECTOR_ALPHA = SEMANTIC_GRANULARITY.topicUpdate.vectorAlpha;
 // Defines the event strength config enforced by this service.
 export const EVENT_STRENGTH_CONFIG = SEMANTIC_GRANULARITY.eventStrength;
+
+// Minimum undecayed evidence advantage, initially the size of the existing entity bonus.
+// This is a conservative ambiguity rule, not a calibrated probability threshold.
+const configuredWinnerMargin = Number.parseFloat(process.env.EVENT_MIN_WINNER_MARGIN ?? '0.03');
+export const EVENT_MIN_WINNER_MARGIN = Number.isFinite(configuredWinnerMargin) && configuredWinnerMargin >= 0
+  ? configuredWinnerMargin
+  : 0.03;
+
+// Defines the min event articles enforced by this service.
+export const MIN_EVENT_ARTICLES = Number.parseInt(process.env.MIN_EVENT_ARTICLES || '2', 10);
+// Defines the min event sources enforced by this service.
+export const MIN_EVENT_SOURCES = Number.parseInt(process.env.MIN_EVENT_SOURCES || '2', 10);
+// Defines the require multi source for event enforced by this service.
+export const REQUIRE_MULTI_SOURCE_FOR_EVENT = ['1', 'true', 'yes'].includes(
+  String(process.env.REQUIRE_MULTI_SOURCE_FOR_EVENT || 'false').toLowerCase()
+);

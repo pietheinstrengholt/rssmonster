@@ -19,6 +19,7 @@ export const INCREMENTAL_VECTOR_FIXTURE_PATH = await resolveSemanticVectorFixtur
   'semantic-regression-incremental'
 );
 export const FIXTURE_USERNAME = 'semantic-regression-user';
+// The original corpus remains separate from the explicitly selected occurrence cases.
 export const EXPECTED_INCREMENTAL_ARTICLE_COUNT = 91;
 
 // This function loads a JSON fixture from disk.
@@ -28,8 +29,25 @@ export async function loadFixture(path) {
 }
 
 // This function loads the incremental article fixture.
-export function loadIncrementalFixture() {
-  return loadFixture(INCREMENTAL_FIXTURE_PATH);
+export async function loadIncrementalFixture({ occurrences = false } = {}) {
+  const fixture = await loadFixture(INCREMENTAL_FIXTURE_PATH);
+  return occurrences ? selectOccurrenceFixture(fixture) : selectLegacyFixture(fixture);
+}
+
+// Keep frozen vector spaces and legacy date normalization isolated from occurrence cases.
+export function selectLegacyFixture(fixture) {
+  const occurrenceFeedIds = new Set(fixture.articles.filter(article => article.regression).map(article => article.feedId));
+  return {
+    ...fixture,
+    ...(fixture.feeds ? { feeds: fixture.feeds.filter(feed => !occurrenceFeedIds.has(feed.id)) } : {}),
+    articles: fixture.articles.filter(article => !article.regression)
+  };
+}
+
+export function selectOccurrenceFixture(fixture) {
+  const articles = fixture.articles.filter(article => article.regression);
+  const feedIds = new Set(articles.map(article => article.feedId));
+  return { ...fixture, feeds: fixture.feeds.filter(feed => feedIds.has(feed.id)), articles };
 }
 
 // This function loads the incremental vector fixture with a clear remediation message.
@@ -197,7 +215,9 @@ export async function findIncrementalArticleIds(userId, fixture = null) {
 }
 
 // This function inserts any fixture articles that are not already present by content hash.
-export async function insertMissingFixtureArticles(userId, fixture, vectorByContentSourceHash, urlPrefix) {
+export async function insertMissingFixtureArticles(userId, fixture, vectorByContentSourceHash, urlPrefix, {
+  preservePublishedAt = false
+} = {}) {
   const categoryIdMap = await ensureFixtureCategories(userId, fixture.categories);
   const feedIdMap = await ensureFixtureFeeds(userId, fixture.feeds, categoryIdMap);
   const now = Date.now();
@@ -223,7 +243,9 @@ export async function insertMissingFixtureArticles(userId, fixture, vectorByCont
     }
 
     const fallbackPublished = new Date(now - (fixture.articles.length - index) * 5 * 60 * 1000);
-    const publishedAt = resolvePublished(fixtureArticle, fallbackPublished);
+    const publishedAt = preservePublishedAt
+      ? new Date(fixtureArticle.publishedAt)
+      : resolvePublished(fixtureArticle, fallbackPublished);
 
     await Article.create({
       userId,

@@ -10,6 +10,7 @@ import db from '../../models/index.js';
 import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
 import { repairRecentEventsForUser } from '../../services/reconcile/semanticPipelineScopes.js';
 import { printSemanticArticleRankingTable } from '../helpers/semanticRegressionReport.js';
+import { selectLegacyFixture } from '../helpers/semanticRegressionIncremental.js';
 import {
   printSemanticRegressionTrace,
   refreshSemanticRegressionTrace,
@@ -42,7 +43,7 @@ let semanticRegressionUserId = null;
 
 // This function loads the baseline semantic fixture.
 function loadFixture() {
-  return readFile(FIXTURE_PATH, 'utf8').then(JSON.parse);
+  return readFile(FIXTURE_PATH, 'utf8').then(JSON.parse).then(selectLegacyFixture);
 }
 
 // This function loads the baseline semantic vector fixture.

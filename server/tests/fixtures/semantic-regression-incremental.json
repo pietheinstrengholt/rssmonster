@@ -240,8 +240,48 @@
                       "feedType":  "rss",
                       "url":  "https://www.ad.nl/home/rss.xml",
                       "status":  "active"
-                  }
-              ],
+                  },
+        {
+          "id": 901,
+          "categoryId": 1,
+          "feedName": "Northline Dispatch",
+          "description": "Fictional independent newsroom for semantic regression coverage.",
+          "feedDesc": "Fictional independent newsroom",
+          "feedType": "rss",
+          "url": "https://newsroom-1.example.test/rss",
+          "status": "active"
+        },
+        {
+          "id": 902,
+          "categoryId": 1,
+          "feedName": "Signal Ledger",
+          "description": "Fictional independent newsroom for semantic regression coverage.",
+          "feedDesc": "Fictional independent newsroom",
+          "feedType": "rss",
+          "url": "https://newsroom-2.example.test/rss",
+          "status": "active"
+        },
+        {
+          "id": 903,
+          "categoryId": 1,
+          "feedName": "Harbour Chronicle",
+          "description": "Fictional independent newsroom for semantic regression coverage.",
+          "feedDesc": "Fictional independent newsroom",
+          "feedType": "rss",
+          "url": "https://newsroom-3.example.test/rss",
+          "status": "active"
+        },
+        {
+          "id": 904,
+          "categoryId": 1,
+          "feedName": "Continental Wire",
+          "description": "Fictional independent newsroom for semantic regression coverage.",
+          "feedDesc": "Fictional independent newsroom",
+          "feedType": "rss",
+          "url": "https://newsroom-4.example.test/rss",
+          "status": "active"
+        }
+    ],
     "articles":  [
                      {
                          "sourceId":  747,
@@ -1607,6 +1647,726 @@
                          "contentHtml": null,
                          "publishedAt": "2026-07-22T09:24:00.000Z",
                          "firstSeen":  null
-                     }
-                 ]
+                     },
+        {
+          "sourceId": "orion-launch-c",
+          "feedId": 903,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-3.example.test/articles/orion-launch-c",
+          "title": "Acme launches its ARM-powered Orion X1 notebook",
+          "description": "Acme took the wraps off the Orion X1 in Berlin on September 10. The new 14-inch notebook combines an Aster ARM processor with a claimed 20-hour battery life. This is the laptop announced at this morning’s press conference, with deliveries scheduled for October.",
+          "contentOriginal": "Acme took the wraps off the Orion X1 in Berlin on September 10. The new 14-inch notebook combines an Aster ARM processor with a claimed 20-hour battery life. This is the laptop announced at this morning’s press conference, with deliveries scheduled for October.",
+          "contentHtml": "<p>Acme took the wraps off the Orion X1 in Berlin on September 10. The new 14-inch notebook combines an Aster ARM processor with a claimed 20-hour battery life. This is the laptop announced at this morning’s press conference, with deliveries scheduled for October.</p>",
+          "publishedAt": "2026-09-10T10:00:00Z",
+          "firstSeen": "2026-09-10T10:00:00Z",
+          "regression": {
+            "scenario": "orion",
+            "group": "launch",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "orion-launch-d",
+          "feedId": 904,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-4.example.test/articles/orion-launch-d",
+          "title": "Orion X1 debuts with 20-hour battery life",
+          "description": "The Orion X1 made its debut at Acme’s Berlin presentation on September 10. Its Aster ARM processor powers a 14-inch laptop designed to run for 20 hours between charges. European buyers will receive the notebook in October.",
+          "contentOriginal": "The Orion X1 made its debut at Acme’s Berlin presentation on September 10. Its Aster ARM processor powers a 14-inch laptop designed to run for 20 hours between charges. European buyers will receive the notebook in October.",
+          "contentHtml": "<p>The Orion X1 made its debut at Acme’s Berlin presentation on September 10. Its Aster ARM processor powers a 14-inch laptop designed to run for 20 hours between charges. European buyers will receive the notebook in October.</p>",
+          "publishedAt": "2026-09-10T10:20:00Z",
+          "firstSeen": "2026-09-10T10:20:00Z",
+          "regression": {
+            "scenario": "orion",
+            "group": "launch",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "orion-pricing",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/orion-pricing",
+          "title": "Acme reveals Orion X1 pricing after launch",
+          "description": "Following this morning’s Orion X1 announcement in Berlin, Acme has published prices for the same 14-inch Aster ARM laptop. The notebook with its claimed 20-hour battery starts at 999 euros. These pricing details complete the September 10 launch, with October deliveries unchanged.",
+          "contentOriginal": "Following this morning’s Orion X1 announcement in Berlin, Acme has published prices for the same 14-inch Aster ARM laptop. The notebook with its claimed 20-hour battery starts at 999 euros. These pricing details complete the September 10 launch, with October deliveries unchanged.",
+          "contentHtml": "<p>Following this morning’s Orion X1 announcement in Berlin, Acme has published prices for the same 14-inch Aster ARM laptop. The notebook with its claimed 20-hour battery starts at 999 euros. These pricing details complete the September 10 launch, with October deliveries unchanged.</p>",
+          "publishedAt": "2026-09-10T16:00:00Z",
+          "firstSeen": "2026-09-10T16:00:00Z",
+          "regression": {
+            "scenario": "orion",
+            "group": "followup",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "orion-preorders",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/orion-preorders",
+          "title": "Orion X1 pre-orders open following yesterday’s announcement",
+          "description": "Pre-orders opened this morning for the Orion X1 that Acme unveiled in Berlin on September 10. The 14-inch Aster ARM notebook offers a claimed 20 hours of battery life and starts at 999 euros. Acme says the orders relate to yesterday’s launch and will ship in October.",
+          "contentOriginal": "Pre-orders opened this morning for the Orion X1 that Acme unveiled in Berlin on September 10. The 14-inch Aster ARM notebook offers a claimed 20 hours of battery life and starts at 999 euros. Acme says the orders relate to yesterday’s launch and will ship in October.",
+          "contentHtml": "<p>Pre-orders opened this morning for the Orion X1 that Acme unveiled in Berlin on September 10. The 14-inch Aster ARM notebook offers a claimed 20 hours of battery life and starts at 999 euros. Acme says the orders relate to yesterday’s launch and will ship in October.</p>",
+          "publishedAt": "2026-09-11T07:30:00Z",
+          "firstSeen": "2026-09-11T07:30:00Z",
+          "regression": {
+            "scenario": "orion",
+            "group": "followup",
+            "wave": 3
+          }
+        },
+        {
+          "sourceId": "os-42-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/os-42-a",
+          "title": "Acme releases Orion OS 4.2",
+          "description": "Acme released Orion OS 4.2 on September 12. This is a distinct production release with its own installer and release notes. The update improves wireless reliability, fixes memory handling and is available through the Orion system updater.",
+          "contentOriginal": "Acme released Orion OS 4.2 on September 12. This is a distinct production release with its own installer and release notes. The update improves wireless reliability, fixes memory handling and is available through the Orion system updater.",
+          "contentHtml": "<p>Acme released Orion OS 4.2 on September 12. This is a distinct production release with its own installer and release notes. The update improves wireless reliability, fixes memory handling and is available through the Orion system updater.</p>",
+          "publishedAt": "2026-09-12T09:00:00Z",
+          "firstSeen": "2026-09-12T09:00:00Z",
+          "regression": {
+            "scenario": "versions",
+            "group": "42",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "os-42-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/os-42-b",
+          "title": "Orion OS 4.2 rolls out to Acme computers",
+          "description": "Orion computers can now download Acme’s Orion OS 4.2, released on September 12. Its separately numbered installer brings wireless reliability improvements and memory fixes. Acme has published release notes for this specific version in the system updater.",
+          "contentOriginal": "Orion computers can now download Acme’s Orion OS 4.2, released on September 12. Its separately numbered installer brings wireless reliability improvements and memory fixes. Acme has published release notes for this specific version in the system updater.",
+          "contentHtml": "<p>Orion computers can now download Acme’s Orion OS 4.2, released on September 12. Its separately numbered installer brings wireless reliability improvements and memory fixes. Acme has published release notes for this specific version in the system updater.</p>",
+          "publishedAt": "2026-09-12T09:15:00Z",
+          "firstSeen": "2026-09-12T09:15:00Z",
+          "regression": {
+            "scenario": "versions",
+            "group": "42",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "os-43-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/os-43-a",
+          "title": "Acme releases Orion OS 4.3",
+          "description": "Acme released Orion OS 4.3 on September 12. This is a distinct production release with its own installer and release notes. The update improves wireless reliability, fixes memory handling and is available through the Orion system updater.",
+          "contentOriginal": "Acme released Orion OS 4.3 on September 12. This is a distinct production release with its own installer and release notes. The update improves wireless reliability, fixes memory handling and is available through the Orion system updater.",
+          "contentHtml": "<p>Acme released Orion OS 4.3 on September 12. This is a distinct production release with its own installer and release notes. The update improves wireless reliability, fixes memory handling and is available through the Orion system updater.</p>",
+          "publishedAt": "2026-09-12T15:00:00Z",
+          "firstSeen": "2026-09-12T15:00:00Z",
+          "regression": {
+            "scenario": "versions",
+            "group": "43",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "os-43-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/os-43-b",
+          "title": "Orion OS 4.3 rolls out to Acme computers",
+          "description": "Orion computers can now download Acme’s Orion OS 4.3, released on September 12. Its separately numbered installer brings wireless reliability improvements and memory fixes. Acme has published release notes for this specific version in the system updater.",
+          "contentOriginal": "Orion computers can now download Acme’s Orion OS 4.3, released on September 12. Its separately numbered installer brings wireless reliability improvements and memory fixes. Acme has published release notes for this specific version in the system updater.",
+          "contentHtml": "<p>Orion computers can now download Acme’s Orion OS 4.3, released on September 12. Its separately numbered installer brings wireless reliability improvements and memory fixes. Acme has published release notes for this specific version in the system updater.</p>",
+          "publishedAt": "2026-09-12T15:15:00Z",
+          "firstSeen": "2026-09-12T15:15:00Z",
+          "regression": {
+            "scenario": "versions",
+            "group": "43",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "security-august-1",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/security-august-1",
+          "title": "Acme issues August 2026 security update",
+          "description": "Acme published its scheduled August 2026 security bulletin on 2026-08-11. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. The vendor lists enterprise rollout guidance.",
+          "contentOriginal": "Acme published its scheduled August 2026 security bulletin on 2026-08-11. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. The vendor lists enterprise rollout guidance.",
+          "contentHtml": "<p>Acme published its scheduled August 2026 security bulletin on 2026-08-11. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. The vendor lists enterprise rollout guidance.</p>",
+          "publishedAt": "2026-08-11T10:10:00Z",
+          "firstSeen": "2026-08-11T10:10:00Z",
+          "regression": {
+            "scenario": "monthly",
+            "group": "august",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "security-august-2",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/security-august-2",
+          "title": "August security fixes arrive for Acme devices",
+          "description": "Acme published its scheduled August 2026 security bulletin on 2026-08-11. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. Support teams are checking compatibility before deployment.",
+          "contentOriginal": "Acme published its scheduled August 2026 security bulletin on 2026-08-11. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. Support teams are checking compatibility before deployment.",
+          "contentHtml": "<p>Acme published its scheduled August 2026 security bulletin on 2026-08-11. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. Support teams are checking compatibility before deployment.</p>",
+          "publishedAt": "2026-08-11T10:20:00Z",
+          "firstSeen": "2026-08-11T10:20:00Z",
+          "regression": {
+            "scenario": "monthly",
+            "group": "august",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "security-august-3",
+          "feedId": 903,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-3.example.test/articles/security-august-3",
+          "title": "Acme patches kernel flaws in its August update",
+          "description": "Acme published its scheduled August 2026 security bulletin on 2026-08-11. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. The bulletin recommends restarting after installation.",
+          "contentOriginal": "Acme published its scheduled August 2026 security bulletin on 2026-08-11. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. The bulletin recommends restarting after installation.",
+          "contentHtml": "<p>Acme published its scheduled August 2026 security bulletin on 2026-08-11. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. The bulletin recommends restarting after installation.</p>",
+          "publishedAt": "2026-08-11T10:30:00Z",
+          "firstSeen": "2026-08-11T10:30:00Z",
+          "regression": {
+            "scenario": "monthly",
+            "group": "august",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "security-september-1",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/security-september-1",
+          "title": "Acme issues September 2026 security update",
+          "description": "Acme published its scheduled September 2026 security bulletin on 2026-09-08. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. The vendor lists enterprise rollout guidance.",
+          "contentOriginal": "Acme published its scheduled September 2026 security bulletin on 2026-09-08. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. The vendor lists enterprise rollout guidance.",
+          "contentHtml": "<p>Acme published its scheduled September 2026 security bulletin on 2026-09-08. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. The vendor lists enterprise rollout guidance.</p>",
+          "publishedAt": "2026-09-08T10:10:00Z",
+          "firstSeen": "2026-09-08T10:10:00Z",
+          "regression": {
+            "scenario": "monthly",
+            "group": "september",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "security-september-2",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/security-september-2",
+          "title": "September security fixes arrive for Acme devices",
+          "description": "Acme published its scheduled September 2026 security bulletin on 2026-09-08. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. Support teams are checking compatibility before deployment.",
+          "contentOriginal": "Acme published its scheduled September 2026 security bulletin on 2026-09-08. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. Support teams are checking compatibility before deployment.",
+          "contentHtml": "<p>Acme published its scheduled September 2026 security bulletin on 2026-09-08. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. Support teams are checking compatibility before deployment.</p>",
+          "publishedAt": "2026-09-08T10:20:00Z",
+          "firstSeen": "2026-09-08T10:20:00Z",
+          "regression": {
+            "scenario": "monthly",
+            "group": "september",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "security-september-3",
+          "feedId": 903,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-3.example.test/articles/security-september-3",
+          "title": "Acme patches kernel flaws in its September update",
+          "description": "Acme published its scheduled September 2026 security bulletin on 2026-09-08. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. The bulletin recommends restarting after installation.",
+          "contentOriginal": "Acme published its scheduled September 2026 security bulletin on 2026-09-08. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. The bulletin recommends restarting after installation.",
+          "contentHtml": "<p>Acme published its scheduled September 2026 security bulletin on 2026-09-08. The monthly package fixes kernel privilege flaws and browser memory errors across supported Orion devices. Administrators should deploy this month’s package after testing; it has a separate bulletin and download from previous monthly releases. The bulletin recommends restarting after installation.</p>",
+          "publishedAt": "2026-09-08T10:30:00Z",
+          "firstSeen": "2026-09-08T10:30:00Z",
+          "regression": {
+            "scenario": "monthly",
+            "group": "september",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "nova-launch-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/nova-launch-a",
+          "title": "Contoso announces Project Nova",
+          "description": "Contoso announced Project Nova at its London studio on August 20. The cloud gaming service will stream games to televisions and phones, with a public launch scheduled for October. Contoso is opening developer registrations for the new platform.",
+          "contentOriginal": "Contoso announced Project Nova at its London studio on August 20. The cloud gaming service will stream games to televisions and phones, with a public launch scheduled for October. Contoso is opening developer registrations for the new platform.",
+          "contentHtml": "<p>Contoso announced Project Nova at its London studio on August 20. The cloud gaming service will stream games to televisions and phones, with a public launch scheduled for October. Contoso is opening developer registrations for the new platform.</p>",
+          "publishedAt": "2026-08-20T09:00:00Z",
+          "firstSeen": "2026-08-20T09:00:00Z",
+          "regression": {
+            "scenario": "actions",
+            "group": "launch",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "nova-launch-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/nova-launch-b",
+          "title": "Contoso launches Project Nova initiative",
+          "description": "At an August 20 presentation in London, Contoso introduced its Project Nova cloud gaming initiative. The platform will stream games to phones and televisions from October. Developers can register now to prepare titles for the service.",
+          "contentOriginal": "At an August 20 presentation in London, Contoso introduced its Project Nova cloud gaming initiative. The platform will stream games to phones and televisions from October. Developers can register now to prepare titles for the service.",
+          "contentHtml": "<p>At an August 20 presentation in London, Contoso introduced its Project Nova cloud gaming initiative. The platform will stream games to phones and televisions from October. Developers can register now to prepare titles for the service.</p>",
+          "publishedAt": "2026-08-20T09:20:00Z",
+          "firstSeen": "2026-08-20T09:20:00Z",
+          "regression": {
+            "scenario": "actions",
+            "group": "launch",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "nova-cancel-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/nova-cancel-a",
+          "title": "Contoso cancels Project Nova",
+          "description": "Contoso cancelled Project Nova on September 15 following a review of operating costs. The cloud gaming service announced in August will no longer launch in October. Developer registrations are closed and the London team is being reassigned.",
+          "contentOriginal": "Contoso cancelled Project Nova on September 15 following a review of operating costs. The cloud gaming service announced in August will no longer launch in October. Developer registrations are closed and the London team is being reassigned.",
+          "contentHtml": "<p>Contoso cancelled Project Nova on September 15 following a review of operating costs. The cloud gaming service announced in August will no longer launch in October. Developer registrations are closed and the London team is being reassigned.</p>",
+          "publishedAt": "2026-09-15T09:00:00Z",
+          "firstSeen": "2026-09-15T09:00:00Z",
+          "regression": {
+            "scenario": "actions",
+            "group": "cancel",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "nova-cancel-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/nova-cancel-b",
+          "title": "Project Nova discontinued by Contoso",
+          "description": "Project Nova has been discontinued, Contoso confirmed on September 15. The planned cloud gaming platform for phones and televisions will not reach its October launch. The decision follows a cost review, with developers notified and the London staff moving to other projects.",
+          "contentOriginal": "Project Nova has been discontinued, Contoso confirmed on September 15. The planned cloud gaming platform for phones and televisions will not reach its October launch. The decision follows a cost review, with developers notified and the London staff moving to other projects.",
+          "contentHtml": "<p>Project Nova has been discontinued, Contoso confirmed on September 15. The planned cloud gaming platform for phones and televisions will not reach its October launch. The decision follows a cost review, with developers notified and the London staff moving to other projects.</p>",
+          "publishedAt": "2026-09-15T09:20:00Z",
+          "firstSeen": "2026-09-15T09:20:00Z",
+          "regression": {
+            "scenario": "actions",
+            "group": "cancel",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "collision-rotterdam-1",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/collision-rotterdam-1",
+          "title": "Train collision in Rotterdam injures 12",
+          "description": "Two passenger trains collided outside Rotterdam central station on September 16, injuring 12 people. Local emergency services treated passengers beside the tracks and rail operators suspended services through the station. Investigators in Rotterdam are examining the signals before the collision. The city’s ambulance service confirmed the injury count.",
+          "contentOriginal": "Two passenger trains collided outside Rotterdam central station on September 16, injuring 12 people. Local emergency services treated passengers beside the tracks and rail operators suspended services through the station. Investigators in Rotterdam are examining the signals before the collision. The city’s ambulance service confirmed the injury count.",
+          "contentHtml": "<p>Two passenger trains collided outside Rotterdam central station on September 16, injuring 12 people. Local emergency services treated passengers beside the tracks and rail operators suspended services through the station. Investigators in Rotterdam are examining the signals before the collision. The city’s ambulance service confirmed the injury count.</p>",
+          "publishedAt": "2026-09-16T10:01:00Z",
+          "firstSeen": "2026-09-16T10:01:00Z",
+          "regression": {
+            "scenario": "locations",
+            "group": "rotterdam",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "collision-rotterdam-2",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/collision-rotterdam-2",
+          "title": "Rotterdam rail crash leaves 12 passengers injured",
+          "description": "Two passenger trains collided outside Rotterdam central station on September 16, injuring 12 people. Local emergency services treated passengers beside the tracks and rail operators suspended services through the station. Investigators in Rotterdam are examining the signals before the collision. The local fire service said all passengers had left the carriages.",
+          "contentOriginal": "Two passenger trains collided outside Rotterdam central station on September 16, injuring 12 people. Local emergency services treated passengers beside the tracks and rail operators suspended services through the station. Investigators in Rotterdam are examining the signals before the collision. The local fire service said all passengers had left the carriages.",
+          "contentHtml": "<p>Two passenger trains collided outside Rotterdam central station on September 16, injuring 12 people. Local emergency services treated passengers beside the tracks and rail operators suspended services through the station. Investigators in Rotterdam are examining the signals before the collision. The local fire service said all passengers had left the carriages.</p>",
+          "publishedAt": "2026-09-16T10:02:00Z",
+          "firstSeen": "2026-09-16T10:02:00Z",
+          "regression": {
+            "scenario": "locations",
+            "group": "rotterdam",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "collision-antwerp-1",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/collision-antwerp-1",
+          "title": "Train collision in Antwerp injures 9",
+          "description": "Two passenger trains collided outside Antwerp central station on September 16, injuring 9 people. Local emergency services treated passengers beside the tracks and rail operators suspended services through the station. Investigators in Antwerp are examining the signals before the collision. The city’s ambulance service confirmed the injury count.",
+          "contentOriginal": "Two passenger trains collided outside Antwerp central station on September 16, injuring 9 people. Local emergency services treated passengers beside the tracks and rail operators suspended services through the station. Investigators in Antwerp are examining the signals before the collision. The city’s ambulance service confirmed the injury count.",
+          "contentHtml": "<p>Two passenger trains collided outside Antwerp central station on September 16, injuring 9 people. Local emergency services treated passengers beside the tracks and rail operators suspended services through the station. Investigators in Antwerp are examining the signals before the collision. The city’s ambulance service confirmed the injury count.</p>",
+          "publishedAt": "2026-09-16T10:31:00Z",
+          "firstSeen": "2026-09-16T10:31:00Z",
+          "regression": {
+            "scenario": "locations",
+            "group": "antwerp",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "collision-antwerp-2",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/collision-antwerp-2",
+          "title": "Antwerp rail crash leaves 9 passengers injured",
+          "description": "Two passenger trains collided outside Antwerp central station on September 16, injuring 9 people. Local emergency services treated passengers beside the tracks and rail operators suspended services through the station. Investigators in Antwerp are examining the signals before the collision. The local fire service said all passengers had left the carriages.",
+          "contentOriginal": "Two passenger trains collided outside Antwerp central station on September 16, injuring 9 people. Local emergency services treated passengers beside the tracks and rail operators suspended services through the station. Investigators in Antwerp are examining the signals before the collision. The local fire service said all passengers had left the carriages.",
+          "contentHtml": "<p>Two passenger trains collided outside Antwerp central station on September 16, injuring 9 people. Local emergency services treated passengers beside the tracks and rail operators suspended services through the station. Investigators in Antwerp are examining the signals before the collision. The local fire service said all passengers had left the carriages.</p>",
+          "publishedAt": "2026-09-16T10:32:00Z",
+          "firstSeen": "2026-09-16T10:32:00Z",
+          "regression": {
+            "scenario": "locations",
+            "group": "antwerp",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "harbour-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/harbour-a",
+          "title": "Westerhaven ferry terminal closes as flood barrier fails",
+          "description": "Westerhaven ferry terminal remains closed after a flood barrier failed beside the passenger pier. Engineers are draining the access road and checking electrical equipment. Ferries are using the eastern quay while repairs continue. The harbour authority first suspended sailings at six this morning.",
+          "contentOriginal": "Westerhaven ferry terminal remains closed after a flood barrier failed beside the passenger pier. Engineers are draining the access road and checking electrical equipment. Ferries are using the eastern quay while repairs continue. The harbour authority first suspended sailings at six this morning.",
+          "contentHtml": "<p>Westerhaven ferry terminal remains closed after a flood barrier failed beside the passenger pier. Engineers are draining the access road and checking electrical equipment. Ferries are using the eastern quay while repairs continue. The harbour authority first suspended sailings at six this morning.</p>",
+          "publishedAt": "2026-09-17T06:00:00Z",
+          "firstSeen": "2026-09-17T06:00:00Z",
+          "regression": {
+            "scenario": "chain",
+            "group": "chain",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "harbour-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/harbour-b",
+          "title": "Westerhaven ferry closure continues after barrier failure",
+          "description": "Westerhaven ferry terminal remains closed after a flood barrier failed beside the passenger pier. Engineers are draining the access road and checking electrical equipment. Ferries are using the eastern quay while repairs continue. At eight this evening, crews reported that the terminal was still inaccessible.",
+          "contentOriginal": "Westerhaven ferry terminal remains closed after a flood barrier failed beside the passenger pier. Engineers are draining the access road and checking electrical equipment. Ferries are using the eastern quay while repairs continue. At eight this evening, crews reported that the terminal was still inaccessible.",
+          "contentHtml": "<p>Westerhaven ferry terminal remains closed after a flood barrier failed beside the passenger pier. Engineers are draining the access road and checking electrical equipment. Ferries are using the eastern quay while repairs continue. At eight this evening, crews reported that the terminal was still inaccessible.</p>",
+          "publishedAt": "2026-09-17T20:00:00Z",
+          "firstSeen": "2026-09-17T20:00:00Z",
+          "regression": {
+            "scenario": "chain",
+            "group": "chain",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "harbour-c",
+          "feedId": 903,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-3.example.test/articles/harbour-c",
+          "title": "Westerhaven terminal remains closed by failed flood barrier",
+          "description": "Westerhaven ferry terminal remains closed after a flood barrier failed beside the passenger pier. Engineers are draining the access road and checking electrical equipment. Ferries are using the eastern quay while repairs continue. At ten the following morning, the harbour authority issued a fresh closure notice.",
+          "contentOriginal": "Westerhaven ferry terminal remains closed after a flood barrier failed beside the passenger pier. Engineers are draining the access road and checking electrical equipment. Ferries are using the eastern quay while repairs continue. At ten the following morning, the harbour authority issued a fresh closure notice.",
+          "contentHtml": "<p>Westerhaven ferry terminal remains closed after a flood barrier failed beside the passenger pier. Engineers are draining the access road and checking electrical equipment. Ferries are using the eastern quay while repairs continue. At ten the following morning, the harbour authority issued a fresh closure notice.</p>",
+          "publishedAt": "2026-09-18T10:00:00Z",
+          "firstSeen": "2026-09-18T10:00:00Z",
+          "regression": {
+            "scenario": "chain",
+            "group": "chain",
+            "wave": 3
+          }
+        },
+        {
+          "sourceId": "products-tablet-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/products-tablet-a",
+          "title": "Contoso announces Nova Slate for creators",
+          "description": "Contoso announced the Nova Slate on September 19. The 11-inch drawing tablet with pressure-sensitive pen will ship to creative professionals in October. At its product briefing Contoso demonstrated the hardware and confirmed retail availability through specialist stores.",
+          "contentOriginal": "Contoso announced the Nova Slate on September 19. The 11-inch drawing tablet with pressure-sensitive pen will ship to creative professionals in October. At its product briefing Contoso demonstrated the hardware and confirmed retail availability through specialist stores.",
+          "contentHtml": "<p>Contoso announced the Nova Slate on September 19. The 11-inch drawing tablet with pressure-sensitive pen will ship to creative professionals in October. At its product briefing Contoso demonstrated the hardware and confirmed retail availability through specialist stores.</p>",
+          "publishedAt": "2026-09-19T09:00:00Z",
+          "firstSeen": "2026-09-19T09:00:00Z",
+          "regression": {
+            "scenario": "ambiguous",
+            "group": "tablet",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "products-tablet-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/products-tablet-b",
+          "title": "Nova Slate unveiled at Contoso product briefing",
+          "description": "The Nova Slate was unveiled by Contoso on September 19 for creative professionals. This 11-inch drawing tablet with pressure-sensitive pen reaches specialist retailers in October. Reporters at the product briefing saw demonstrations of the new hardware and received the availability details.",
+          "contentOriginal": "The Nova Slate was unveiled by Contoso on September 19 for creative professionals. This 11-inch drawing tablet with pressure-sensitive pen reaches specialist retailers in October. Reporters at the product briefing saw demonstrations of the new hardware and received the availability details.",
+          "contentHtml": "<p>The Nova Slate was unveiled by Contoso on September 19 for creative professionals. This 11-inch drawing tablet with pressure-sensitive pen reaches specialist retailers in October. Reporters at the product briefing saw demonstrations of the new hardware and received the availability details.</p>",
+          "publishedAt": "2026-09-19T09:15:00Z",
+          "firstSeen": "2026-09-19T09:15:00Z",
+          "regression": {
+            "scenario": "ambiguous",
+            "group": "tablet",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "products-camera-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/products-camera-a",
+          "title": "Contoso announces Nova Lens for creators",
+          "description": "Contoso announced the Nova Lens on September 19. The mirrorless camera with a full-frame sensor will ship to creative professionals in October. At its product briefing Contoso demonstrated the hardware and confirmed retail availability through specialist stores.",
+          "contentOriginal": "Contoso announced the Nova Lens on September 19. The mirrorless camera with a full-frame sensor will ship to creative professionals in October. At its product briefing Contoso demonstrated the hardware and confirmed retail availability through specialist stores.",
+          "contentHtml": "<p>Contoso announced the Nova Lens on September 19. The mirrorless camera with a full-frame sensor will ship to creative professionals in October. At its product briefing Contoso demonstrated the hardware and confirmed retail availability through specialist stores.</p>",
+          "publishedAt": "2026-09-19T11:00:00Z",
+          "firstSeen": "2026-09-19T11:00:00Z",
+          "regression": {
+            "scenario": "ambiguous",
+            "group": "camera",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "products-camera-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/products-camera-b",
+          "title": "Nova Lens unveiled at Contoso product briefing",
+          "description": "The Nova Lens was unveiled by Contoso on September 19 for creative professionals. This mirrorless camera with a full-frame sensor reaches specialist retailers in October. Reporters at the product briefing saw demonstrations of the new hardware and received the availability details.",
+          "contentOriginal": "The Nova Lens was unveiled by Contoso on September 19 for creative professionals. This mirrorless camera with a full-frame sensor reaches specialist retailers in October. Reporters at the product briefing saw demonstrations of the new hardware and received the availability details.",
+          "contentHtml": "<p>The Nova Lens was unveiled by Contoso on September 19 for creative professionals. This mirrorless camera with a full-frame sensor reaches specialist retailers in October. Reporters at the product briefing saw demonstrations of the new hardware and received the availability details.</p>",
+          "publishedAt": "2026-09-19T11:15:00Z",
+          "firstSeen": "2026-09-19T11:15:00Z",
+          "regression": {
+            "scenario": "ambiguous",
+            "group": "camera",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "products-vague",
+          "feedId": 903,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-3.example.test/articles/products-vague",
+          "title": "Contoso provides another update on its Nova products",
+          "description": "Contoso provided another update on its Nova products for creative professionals on September 19. The company repeated that new hardware will reach specialist retailers in October and that demonstrations are continuing. The statement did not identify a device, give specifications or explain which of the day’s product briefings it concerned.",
+          "contentOriginal": "Contoso provided another update on its Nova products for creative professionals on September 19. The company repeated that new hardware will reach specialist retailers in October and that demonstrations are continuing. The statement did not identify a device, give specifications or explain which of the day’s product briefings it concerned.",
+          "contentHtml": "<p>Contoso provided another update on its Nova products for creative professionals on September 19. The company repeated that new hardware will reach specialist retailers in October and that demonstrations are continuing. The statement did not identify a device, give specifications or explain which of the day’s product briefings it concerned.</p>",
+          "publishedAt": "2026-09-19T13:00:00Z",
+          "firstSeen": "2026-09-19T13:00:00Z",
+          "regression": {
+            "scenario": "ambiguous",
+            "group": "vague",
+            "wave": 3
+          }
+        },
+        {
+          "sourceId": "lyra-price-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/lyra-price-a",
+          "title": "Fabrikam cuts the price of its existing Lyra Air notebook",
+          "description": "Fabrikam made a Lyra Air notebook announcement on September 20. The existing model now costs 799 euros instead of 999 euros; its processor, display and battery are unchanged. The company confirmed the retail details in a statement to dealers. The lightweight computer remains aimed at students and travelling workers.",
+          "contentOriginal": "Fabrikam made a Lyra Air notebook announcement on September 20. The existing model now costs 799 euros instead of 999 euros; its processor, display and battery are unchanged. The company confirmed the retail details in a statement to dealers. The lightweight computer remains aimed at students and travelling workers.",
+          "contentHtml": "<p>Fabrikam made a Lyra Air notebook announcement on September 20. The existing model now costs 799 euros instead of 999 euros; its processor, display and battery are unchanged. The company confirmed the retail details in a statement to dealers. The lightweight computer remains aimed at students and travelling workers.</p>",
+          "publishedAt": "2026-09-20T09:00:00Z",
+          "firstSeen": "2026-09-20T09:00:00Z",
+          "regression": {
+            "scenario": "overlap",
+            "group": "price",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "lyra-price-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/lyra-price-b",
+          "title": "Lyra Air becomes cheaper as Fabrikam reduces retail price",
+          "description": "Dealers received Fabrikam’s September 20 announcement about the Lyra Air notebook. The existing model now costs 799 euros instead of 999 euros; its processor, display and battery are unchanged. The lightweight computer is marketed to students and mobile workers, with the announced configuration available through retail partners.",
+          "contentOriginal": "Dealers received Fabrikam’s September 20 announcement about the Lyra Air notebook. The existing model now costs 799 euros instead of 999 euros; its processor, display and battery are unchanged. The lightweight computer is marketed to students and mobile workers, with the announced configuration available through retail partners.",
+          "contentHtml": "<p>Dealers received Fabrikam’s September 20 announcement about the Lyra Air notebook. The existing model now costs 799 euros instead of 999 euros; its processor, display and battery are unchanged. The lightweight computer is marketed to students and mobile workers, with the announced configuration available through retail partners.</p>",
+          "publishedAt": "2026-09-20T09:20:00Z",
+          "firstSeen": "2026-09-20T09:20:00Z",
+          "regression": {
+            "scenario": "overlap",
+            "group": "price",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "lyra-launch-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/lyra-launch-a",
+          "title": "Fabrikam launches a new generation of Lyra Air notebook",
+          "description": "Fabrikam made a Lyra Air notebook announcement on September 20. The new generation has a faster processor, brighter display and larger battery, and starts at 1199 euros. The company confirmed the retail details in a statement to dealers. The lightweight computer remains aimed at students and travelling workers.",
+          "contentOriginal": "Fabrikam made a Lyra Air notebook announcement on September 20. The new generation has a faster processor, brighter display and larger battery, and starts at 1199 euros. The company confirmed the retail details in a statement to dealers. The lightweight computer remains aimed at students and travelling workers.",
+          "contentHtml": "<p>Fabrikam made a Lyra Air notebook announcement on September 20. The new generation has a faster processor, brighter display and larger battery, and starts at 1199 euros. The company confirmed the retail details in a statement to dealers. The lightweight computer remains aimed at students and travelling workers.</p>",
+          "publishedAt": "2026-09-20T14:00:00Z",
+          "firstSeen": "2026-09-20T14:00:00Z",
+          "regression": {
+            "scenario": "overlap",
+            "group": "launch",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "lyra-launch-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/lyra-launch-b",
+          "title": "New Lyra Air notebook unveiled with upgraded processor",
+          "description": "Dealers received Fabrikam’s September 20 announcement about the Lyra Air notebook. The new generation has a faster processor, brighter display and larger battery, and starts at 1199 euros. The lightweight computer is marketed to students and mobile workers, with the announced configuration available through retail partners.",
+          "contentOriginal": "Dealers received Fabrikam’s September 20 announcement about the Lyra Air notebook. The new generation has a faster processor, brighter display and larger battery, and starts at 1199 euros. The lightweight computer is marketed to students and mobile workers, with the announced configuration available through retail partners.",
+          "contentHtml": "<p>Dealers received Fabrikam’s September 20 announcement about the Lyra Air notebook. The new generation has a faster processor, brighter display and larger battery, and starts at 1199 euros. The lightweight computer is marketed to students and mobile workers, with the announced configuration available through retail partners.</p>",
+          "publishedAt": "2026-09-20T14:20:00Z",
+          "firstSeen": "2026-09-20T14:20:00Z",
+          "regression": {
+            "scenario": "overlap",
+            "group": "launch",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "research-en",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/research-en",
+          "title": "Acme opens new Amsterdam research center",
+          "description": "Acme opened its new research center at Amsterdam Science Park on September 21. Mayor Eva de Wit joined company scientists to cut the ribbon on a laboratory for battery chemistry. The facility will employ 120 researchers and collaborate with the city’s universities.",
+          "contentOriginal": "Acme opened its new research center at Amsterdam Science Park on September 21. Mayor Eva de Wit joined company scientists to cut the ribbon on a laboratory for battery chemistry. The facility will employ 120 researchers and collaborate with the city’s universities.",
+          "contentHtml": "<p>Acme opened its new research center at Amsterdam Science Park on September 21. Mayor Eva de Wit joined company scientists to cut the ribbon on a laboratory for battery chemistry. The facility will employ 120 researchers and collaborate with the city’s universities.</p>",
+          "publishedAt": "2026-09-21T10:00:00Z",
+          "firstSeen": "2026-09-21T10:00:00Z",
+          "regression": {
+            "scenario": "multilingual",
+            "group": "opening",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "research-nl",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/research-nl",
+          "title": "Acme opent nieuw onderzoekscentrum in Amsterdam",
+          "description": "Acme heeft op 21 september het nieuwe onderzoekscentrum op Amsterdam Science Park geopend. Burgemeester Eva de Wit knipte samen met wetenschappers het lint door van het laboratorium voor batterijchemie. Er gaan 120 onderzoekers werken en het centrum werkt samen met de universiteiten in de stad.",
+          "contentOriginal": "Acme heeft op 21 september het nieuwe onderzoekscentrum op Amsterdam Science Park geopend. Burgemeester Eva de Wit knipte samen met wetenschappers het lint door van het laboratorium voor batterijchemie. Er gaan 120 onderzoekers werken en het centrum werkt samen met de universiteiten in de stad.",
+          "contentHtml": "<p>Acme heeft op 21 september het nieuwe onderzoekscentrum op Amsterdam Science Park geopend. Burgemeester Eva de Wit knipte samen met wetenschappers het lint door van het laboratorium voor batterijchemie. Er gaan 120 onderzoekers werken en het centrum werkt samen met de universiteiten in de stad.</p>",
+          "publishedAt": "2026-09-21T10:15:00Z",
+          "firstSeen": "2026-09-21T10:15:00Z",
+          "regression": {
+            "scenario": "multilingual",
+            "group": "opening",
+            "wave": 1
+          }
+        }
+    ]
 }

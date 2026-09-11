@@ -121,7 +121,7 @@ describe('repairRecentEventsForUser', () => {
       lastActivityAt: representativeArticle.publishedAt
     });
     const runContext = { records: [], stats: {} };
-    const articleCandidateCache = { updateEventId: vi.fn() };
+    const articleCandidateCache = { findNearby: vi.fn().mockReturnValue([]), updateEventId: vi.fn() };
 
     await representativeArticle.update({ eventId: event.id });
 

@@ -2,10 +2,13 @@
 // This service updates an existing event when a new article joins it.
 // It preserves the stable representative while refreshing event metadata and topic links.
 import db from '../../models/index.js';
-import { EVENT_LIFECYCLE } from '../config/semanticConfig.js';
+import { EVENT_LIFECYCLE, MAX_CANDIDATES } from '../config/semanticConfig.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { resolveDevelopingArticleIdForAssignment } from './developingArticlePointer.js';
 import { buildCanonicalEventProjection } from './eventProjection.js';
+import { evaluateArticleAgainstEvent, evaluateCandidateSignal, normalizeVector, tokenSet, extractEntitySet, MAX_OCCURRENCE_MEMBERS } from './eventOccurrencePolicy.js';
+import { extractOccurrenceFeatures, aggregateOccurrenceFeatures } from './occurrenceFeatures.js';
+import { articleEventTimestamp } from './articleEventTime.js';
 
 // Provides the shared dependencies used by this service.
 const { Article, Event } = db;
@@ -102,6 +105,10 @@ export async function assignArticleToExistingEvent({
     },
     attributes: [
       'id',
+      'userId',
+      'title',
+      'description',
+      'articleVector',
       'eventId',
       'feedId',
       'status',
@@ -132,11 +139,6 @@ export async function assignArticleToExistingEvent({
       : null;
   }
 
-  await lockedArticle.update({
-    eventId: lockedEvent.id
-  }, {
-    transaction
-  });
   // Loads the event articles needed while assigning article to existing event.
   const eventArticles = await Article.findAll({
     where: {
@@ -144,11 +146,40 @@ export async function assignArticleToExistingEvent({
       userId: article.userId,
       ...canonicalArticleWhere()
     },
-    attributes: ['id', 'feedId', 'publishedAt', 'createdAt', 'articleVector'],
+    attributes: ['id', 'userId', 'feedId', 'title', 'description', 'publishedAt', 'createdAt', 'articleVector'],
     order: [['id', 'ASC']],
     transaction,
     lock: transaction.LOCK.UPDATE
   });
+  // Recheck against committed membership while holding the Event lock. Another
+  // assignment may have changed the span or evidence since candidate discovery.
+  const currentProjection = buildCanonicalEventProjection(eventArticles, lockedEvent.eventVector);
+  const articleEventVector = _articleEventVector ?? lockedArticle.articleVector;
+  const normalizedArticleEventVector = normalizeVector(articleEventVector);
+  lockedArticle.tokenSet = tokenSet(lockedArticle.title);
+  lockedArticle.entitySet = extractEntitySet(lockedArticle);
+  const incomingTime = articleEventTimestamp(lockedArticle);
+  const memberSignals = eventArticles.slice().sort((left, right) =>
+    Math.abs(articleEventTimestamp(left) - incomingTime) - Math.abs(articleEventTimestamp(right) - incomingTime) ||
+    Number(left.id) - Number(right.id)
+  ).slice(0, MAX_CANDIDATES).map(candidate => evaluateCandidateSignal({
+    article: lockedArticle, candidate, articleEventVector, normalizedArticleEventVector
+  }));
+  const decision = evaluateArticleAgainstEvent(lockedArticle, {
+    userId: lockedEvent.userId, name: lockedEvent.name,
+    ...currentProjection
+  }, {
+    articleEventVector, normalizedArticleEventVector, memberSignals,
+    eventOccurrenceFeatures: aggregateOccurrenceFeatures(eventArticles.slice(0, MAX_OCCURRENCE_MEMBERS).map(extractOccurrenceFeatures))
+  });
+  if (!decision.eligible) return null;
+
+  await lockedArticle.update({
+    eventId: lockedEvent.id
+  }, {
+    transaction
+  });
+  eventArticles.push(lockedArticle);
   // Builds the canonical event projection while assigning article to existing event.
   const projection = buildCanonicalEventProjection(eventArticles, lockedEvent.eventVector);
   // Resolves the event status while assigning article to existing event.

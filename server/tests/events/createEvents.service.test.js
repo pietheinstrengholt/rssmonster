@@ -58,7 +58,7 @@ describe('createAndAssignEvent', () => {
     const { user, feed } = await createUserGraph('event-creation');
     const candidateArticle = await createArticle(user, feed, 'candidate');
     const seedArticle = await createArticle(user, feed, 'seed', 'read');
-    await candidateArticle.update({ articleVector: [0, 1, 0] });
+    await candidateArticle.update({ articleVector: [0.9, 0.1, 0] });
     const transaction = await sequelize.transaction();
 
     try {
@@ -75,7 +75,7 @@ describe('createAndAssignEvent', () => {
 
       expect(event.representativeArticleId).toBe(seedArticle.id);
       expect(event.developingArticleId).toBe(seedArticle.id);
-      expect(event.eventVector).toEqual([0.5, 0.5, 0]);
+      expect(event.eventVector).toEqual([0.95, 0.05, 0]);
       expect(linkedSeedArticle.eventId).toBe(event.id);
       expect(linkedSeedArticle.status).toBe('read');
 

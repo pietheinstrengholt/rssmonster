@@ -186,7 +186,8 @@ describe('reconcileTouchedEvents', () => {
     });
     const incomingArticle = await createArticle(user, feed, 2, {
       status: 'unread',
-      articleVector: [0.9, 0.1, 0]
+      articleVector: [0.9, 0.1, 0],
+      publishedAt: new Date(representativeArticle.publishedAt.getTime() + 3600000)
     });
     const event = await createEvent(user, representativeArticle, {
       developingArticleId: representativeArticle.id,
@@ -271,7 +272,9 @@ describe('reconcileTouchedEvents', () => {
   it('runs topic assignment and updates the cache only after commit', async () => {
     const { user, feed } = await createUserGraph('topic-assignment-cache');
     const representativeArticle = await createArticle(user, feed, 1);
-    const incomingArticle = await createArticle(user, feed, 2);
+    const incomingArticle = await createArticle(user, feed, 2, {
+      publishedAt: new Date(representativeArticle.publishedAt.getTime() + 3600000)
+    });
     const event = await createEvent(user, representativeArticle, {
       developingArticleId: representativeArticle.id
     });

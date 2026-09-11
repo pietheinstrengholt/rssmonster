@@ -306,6 +306,46 @@
       "feedType": "rss",
       "url": "https://feeds.skynews.com/feeds/rss/world.xml",
       "status": "active"
+    },
+    {
+      "id": 901,
+      "categoryId": 1,
+      "feedName": "Northline Dispatch",
+      "description": "Fictional independent newsroom for semantic regression coverage.",
+      "feedDesc": "Fictional independent newsroom",
+      "feedType": "rss",
+      "url": "https://newsroom-1.example.test/rss",
+      "status": "active"
+    },
+    {
+      "id": 902,
+      "categoryId": 1,
+      "feedName": "Signal Ledger",
+      "description": "Fictional independent newsroom for semantic regression coverage.",
+      "feedDesc": "Fictional independent newsroom",
+      "feedType": "rss",
+      "url": "https://newsroom-2.example.test/rss",
+      "status": "active"
+    },
+    {
+      "id": 903,
+      "categoryId": 1,
+      "feedName": "Harbour Chronicle",
+      "description": "Fictional independent newsroom for semantic regression coverage.",
+      "feedDesc": "Fictional independent newsroom",
+      "feedType": "rss",
+      "url": "https://newsroom-3.example.test/rss",
+      "status": "active"
+    },
+    {
+      "id": 904,
+      "categoryId": 1,
+      "feedName": "Continental Wire",
+      "description": "Fictional independent newsroom for semantic regression coverage.",
+      "feedDesc": "Fictional independent newsroom",
+      "feedType": "rss",
+      "url": "https://newsroom-4.example.test/rss",
+      "status": "active"
     }
   ],
   "articles": [
@@ -7854,6 +7894,46 @@
       "favoriteInd": 0,
       "negativeInd": 0,
       "clickedAmount": 0
+    },
+    {
+      "sourceId": "orion-launch-a",
+      "feedId": 901,
+      "status": "unread",
+      "favoriteInd": 0,
+      "negativeInd": 0,
+      "clickedAmount": 0,
+      "url": "https://newsroom-1.example.test/articles/orion-launch-a",
+      "title": "Acme unveils Orion X1 laptop with new ARM processor",
+      "description": "Acme unveiled its Orion X1 laptop at a Berlin press conference on September 10. The notebook uses the new Aster ARM processor and promises 20 hours of battery life. The company demonstrated its 14-inch display and said European deliveries would begin in October.",
+      "contentOriginal": "Acme unveiled its Orion X1 laptop at a Berlin press conference on September 10. The notebook uses the new Aster ARM processor and promises 20 hours of battery life. The company demonstrated its 14-inch display and said European deliveries would begin in October.",
+      "contentHtml": "<p>Acme unveiled its Orion X1 laptop at a Berlin press conference on September 10. The notebook uses the new Aster ARM processor and promises 20 hours of battery life. The company demonstrated its 14-inch display and said European deliveries would begin in October.</p>",
+      "publishedAt": "2026-09-10T09:00:00Z",
+      "firstSeen": "2026-09-10T09:00:00Z",
+      "regression": {
+        "scenario": "orion",
+        "group": "launch",
+        "wave": 0
+      }
+    },
+    {
+      "sourceId": "orion-launch-b",
+      "feedId": 902,
+      "status": "unread",
+      "favoriteInd": 0,
+      "negativeInd": 0,
+      "clickedAmount": 0,
+      "url": "https://newsroom-2.example.test/articles/orion-launch-b",
+      "title": "New Orion X1 announced by Acme at Berlin event",
+      "description": "At its September 10 Berlin event, Acme introduced the Orion X1 notebook. The 14-inch laptop runs on an Aster ARM chip and is rated for 20 hours away from a charger. Acme plans to ship the machine in Europe in October.",
+      "contentOriginal": "At its September 10 Berlin event, Acme introduced the Orion X1 notebook. The 14-inch laptop runs on an Aster ARM chip and is rated for 20 hours away from a charger. Acme plans to ship the machine in Europe in October.",
+      "contentHtml": "<p>At its September 10 Berlin event, Acme introduced the Orion X1 notebook. The 14-inch laptop runs on an Aster ARM chip and is rated for 20 hours away from a charger. Acme plans to ship the machine in Europe in October.</p>",
+      "publishedAt": "2026-09-10T09:20:00Z",
+      "firstSeen": "2026-09-10T09:20:00Z",
+      "regression": {
+        "scenario": "orion",
+        "group": "launch",
+        "wave": 0
+      }
     }
   ]
 }

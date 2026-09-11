@@ -72,6 +72,27 @@ When no existing Event qualifies, RSSMonster also searches nearby articles.
 It considers both articles that already belong to an Event and standalone
 articles. Consistent evidence pointing toward an existing Event is preferred;
 otherwise, enough corroborating standalone articles can establish a new one.
+Both discovery paths use the same Event-level policy before assignment. The
+proposed complete Event span must satisfy the time window; a close match to one
+member cannot extend an Event indefinitely through a chain of articles.
+
+When multiple Events qualify without a clear evidence-score winner, the Article
+remains unassigned and can be reconsidered during a later assignment pass.
+`EVENT_MIN_WINNER_MARGIN` controls this conservative ambiguity rule (default
+`0.03` before recency decay). Supporting-member count does not override stronger
+occurrence evidence. New Event proposals also validate their entire seed group
+before membership is written.
+
+The shared policy also checks deterministic occurrence hints from titles and
+descriptions. Explicit versions for the same product and incompatible incident
+locations can reject an otherwise strong semantic match. An existing-product
+price cut conflicts with a new-generation launch; ordinary launch pricing and
+pre-order coverage remain compatible. Missing hints are neutral, and differing
+action words alone only reduce the match score slightly.
+
+Event hints require agreement among supporting members rather than relying on
+the Event name. Assignment rechecks these hints against committed members under
+the membership lock. Extraction uses no inference calls or persistent fields.
 
 Candidate searches are bounded. RSSMonster orders nearby articles by their
 publication-time distance and compares at most the best 300 candidates. This

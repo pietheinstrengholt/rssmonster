@@ -3,10 +3,14 @@
 // It assigns the stable representative and initializes event metadata and optional topic assignment.
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
-import { EVENT_LIFECYCLE, EVENT_STRENGTH_CONFIG } from '../config/semanticConfig.js';
+import {
+  EVENT_LIFECYCLE, EVENT_STRENGTH_CONFIG,
+  MIN_EVENT_ARTICLES, MIN_EVENT_SOURCES, REQUIRE_MULTI_SOURCE_FOR_EVENT
+} from '../config/semanticConfig.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { eventDateFromArticle } from './articleEventTime.js';
 import { buildCanonicalEventProjection } from './eventProjection.js';
+import { evaluateEventCreation } from './eventOccurrencePolicy.js';
 import { wasReadBeforeArticleArrived } from './developingArticlePointer.js';
 
 // Provides the shared dependencies used by this service.
@@ -198,6 +202,14 @@ export async function createAndAssignEvent({
   );
   // Derives the name through generate event name while creating and assign event.
   const name = generateEventName(representativeArticle);
+  // Creation obeys the same occurrence policy as joining, including the complete
+  // proposed span. Validate locked persisted evidence before any membership writes.
+  const decision = evaluateEventCreation(lockedArticles, {
+    ...projection, name, userId: lockedSeedArticle.userId
+  });
+  if (decision.decision !== 'join' || projection.articleCount < MIN_EVENT_ARTICLES ||
+      (REQUIRE_MULTI_SOURCE_FOR_EVENT && projection.sourceCount < MIN_EVENT_SOURCES)) return null;
+
   // Computes the initial event strength while creating and assign event.
   const eventStrength = computeInitialEventStrength(projection.articleCount);
 

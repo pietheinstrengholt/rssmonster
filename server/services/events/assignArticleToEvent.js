@@ -13,251 +13,26 @@ import {
 } from '../topics/event/eventTopicAssignment.js';
 import { assignArticleToExistingEvent as updateExistingEvent } from './updateEvents.js';
 import {
-  EVENT_SIM_THRESHOLD,
   MAX_CANDIDATES,
-  EVENT_MAX_GAP_HOURS,
-  EVENT_RECENCY_HALF_LIFE_HOURS,
-  EVENT_MIN_HEADLINE_SIM,
-  EVENT_MIN_SHARED_ENTITY_OVERLAP
+  MIN_EVENT_ARTICLES, MIN_EVENT_SOURCES, REQUIRE_MULTI_SOURCE_FOR_EVENT,
+  EVENT_MAX_GAP_HOURS
 } from '../config/semanticConfig.js';
 import {
   HOUR_MS,
-  articleEventTimestamp,
-  articleWindowScore,
-  eventTimestamp,
-  eventWindowScore
+  articleEventTimestamp
 } from './articleEventTime.js';
+
+import {
+  tokenSet, extractEntitySet, normalizeVector, evaluateCandidateSignal,
+  evaluateArticleAgainstEvent, selectEventDecision
+} from './eventOccurrencePolicy.js';
 
 // Provides the shared dependencies used by this service.
 const { Article, Event, ArticleTopic, EventTopic } = db;
-// Defines the duplicate headline sim enforced by this service.
-const DUPLICATE_HEADLINE_SIM = 0.92;
-// Defines the duplicate headline min semantic enforced by this service.
-const DUPLICATE_HEADLINE_MIN_SEMANTIC = 0.75;
-// Defines the min event articles enforced by this service.
-const MIN_EVENT_ARTICLES = Number.parseInt(process.env.MIN_EVENT_ARTICLES || '2', 10);
-// Defines the min event sources enforced by this service.
-const MIN_EVENT_SOURCES = Number.parseInt(process.env.MIN_EVENT_SOURCES || '2', 10);
-// Defines the require multi source for event enforced by this service.
-const REQUIRE_MULTI_SOURCE_FOR_EVENT = ['1', 'true', 'yes'].includes(
-  String(process.env.REQUIRE_MULTI_SOURCE_FOR_EVENT || 'false').toLowerCase()
-);
 // Defines the event debug enforced by this service.
 const EVENT_DEBUG = ['1', 'true', 'yes'].includes(
   String(process.env.EVENT_DEBUG || process.env.EVENT_RECLUSTER_DEBUG || '').toLowerCase()
 ) || process.env.NODE_ENV === 'development';
-
-// Defines the stopwords enforced by this service.
-const STOPWORDS = new Set([
-  'a', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'for',
-  'from', 'has', 'have', 'in', 'is', 'it', 'its', 'of', 'on', 'or',
-  'that', 'the', 'their', 'this', 'to', 'was', 'were', 'will', 'with'
-]);
-
-// This function normalizes a headline into lowercase searchable tokens.
-function normalizeHeadline(title = '') {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-// This function builds a meaningful token set while removing small words and stopwords.
-function tokenSet(text = '') {
-  // Maps source values into the result produced while performing token set.
-  return new Set(
-    normalizeHeadline(text)
-      .split(' ')
-      .map(token => token.trim())
-      .filter(token => token.length > 2 && !STOPWORDS.has(token))
-  );
-}
-
-// This function returns a precomputed token set when the candidate cache already has one.
-function resolveTokenSet(record = {}) {
-  // Selects the result based on whether record is available.
-  return record.tokenSet instanceof Set
-    ? record.tokenSet
-    : tokenSet(record.title || '');
-}
-
-// This function estimates lexical overlap between two headlines.
-function headlineSimilarity(titleA = '', titleB = '') {
-  // Derives the a through token set while performing headline similarity.
-  const a = tokenSet(titleA);
-  // Derives the b through token set while performing headline similarity.
-  const b = tokenSet(titleB);
-  return headlineSimilarityFromSets(a, b);
-}
-
-// This function estimates lexical overlap between two precomputed headline token sets.
-function headlineSimilarityFromSets(a = new Set(), b = new Set()) {
-  // Returns early when a size is unavailable or b size is unavailable.
-  if (!a.size || !b.size) return 0;
-
-  let intersection = 0;
-  // Processes each a entry in turn.
-  for (const token of a) {
-    // Handles the case where b contains token.
-    if (b.has(token)) intersection++;
-  }
-
-  // Derives the union required while performing headline similarity from sets.
-  const union = a.size + b.size - intersection;
-  // Returns early when union is unavailable.
-  if (!union) return 0;
-
-  return intersection / union;
-}
-
-// This function extracts lightweight entity hints from title and description text.
-function extractEntitySet(article = {}) {
-  // Derives the text required while extracting entity set.
-  const text = `${article.title || ''} ${article.description || ''}`;
-  // Collects matches for the selection made while extracting entity set.
-  const matches = text.match(/\b([A-Z][a-z]{2,}|[A-Z]{2,})\b/g) || [];
-  // Maps source values into the result produced while extracting entity set.
-  return new Set(matches.map(value => value.toLowerCase()));
-}
-
-// This function counts shared entity hints between two extracted entity sets.
-function entityOverlapCount(a = new Set(), b = new Set()) {
-  // Returns early when a size is unavailable or b size is unavailable.
-  if (!a.size || !b.size) return 0;
-  let overlap = 0;
-  // Processes each a entry in turn.
-  for (const value of a) {
-    // Handles the case where b contains value.
-    if (b.has(value)) overlap++;
-  }
-  return overlap;
-}
-
-// This function returns a precomputed entity set when the candidate cache already has one.
-function resolveEntitySet(record = {}) {
-  // Selects the result based on whether record is available.
-  return record.entitySet instanceof Set
-    ? record.entitySet
-    : extractEntitySet(record);
-}
-
-// This function gradually discounts older events during candidate matching.
-function recencyDecayMultiplier(lastSeenAt) {
-  // Derives the now through now while performing recency decay multiplier.
-  const now = Date.now();
-  // Derives the last seen ts through event timestamp while performing recency decay multiplier.
-  const lastSeenTs = eventTimestamp(lastSeenAt);
-  // Returns early when last seen ts is not finite.
-  if (!Number.isFinite(lastSeenTs)) return 0.2;
-
-  // Derives the age hours through max while performing recency decay multiplier.
-  const ageHours = Math.max(0, (now - lastSeenTs) / HOUR_MS);
-  // Derives the half life through max while performing recency decay multiplier.
-  const halfLife = Math.max(EVENT_RECENCY_HALF_LIFE_HOURS, 1);
-  return Math.pow(0.5, ageHours / halfLife);
-}
-
-// This function combines semantic, headline, temporal, and entity evidence for article-event matching.
-function buildMatchSignal({ article, event, articleEventVector }) {
-  // Derives the semantic through cosine similarity while building match signal.
-  const semantic = cosineSimilarity(articleEventVector, event.eventVector);
-  // Derives the headline through headline similarity while building match signal.
-  const headline = headlineSimilarity(article.title, event.name || '');
-  // Derives the temporal through event window score while building match signal.
-  const temporal = eventWindowScore(article, event);
-
-  // Derives the overlap through entity overlap count while building match signal.
-  const overlap = entityOverlapCount(
-    extractEntitySet(article),
-    extractEntitySet({ title: event.name || '' })
-  );
-
-  // Derives the near duplicate required while building match signal.
-  const nearDuplicate =
-    headline >= DUPLICATE_HEADLINE_SIM &&
-    semantic >= DUPLICATE_HEADLINE_MIN_SEMANTIC;
-
-  // Derives the recency decay through recency decay multiplier while building match signal.
-  const recencyDecay = recencyDecayMultiplier(event.eventWindowEndAt || event.updatedAt);
-  // Selects the composite based on whether overlap reaches event min shared entity overlap.
-  const composite =
-    (semantic * 0.75 + headline * 0.15 + temporal * 0.1) * recencyDecay +
-    (overlap >= EVENT_MIN_SHARED_ENTITY_OVERLAP ? 0.03 : 0);
-
-  return {
-    semantic,
-    headline,
-    temporal,
-    overlap,
-    nearDuplicate,
-    composite
-  };
-}
-
-// This function compares two embedding vectors with cosine similarity.
-function cosineSimilarity(a, b) {
-  // Returns early when a is not an array or b is not an array.
-  if (!Array.isArray(a) || !Array.isArray(b)) return 0;
-  // Returns early when a is empty or b is empty.
-  if (!a.length || !b.length) return 0;
-  // Returns early when a count is not b count.
-  if (a.length !== b.length) return 0;
-
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-
-  // Repeats this processing step while eligible work remains.
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-
-  // Returns early when norm a is unavailable or norm b is unavailable.
-  if (!normA || !normB) return 0;
-
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-}
-
-// This function compares normalized vectors with a fast dot product.
-function dotProductSimilarity(a, b) {
-  // Returns early when a is not an array or b is not an array.
-  if (!Array.isArray(a) || !Array.isArray(b)) return 0;
-  // Returns early when a is empty or b is empty.
-  if (!a.length || !b.length) return 0;
-  // Returns early when a count is not b count.
-  if (a.length !== b.length) return 0;
-
-  let dot = 0;
-  // Repeats this processing step while eligible work remains.
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-  }
-
-  return dot;
-}
-
-// This function normalizes the incoming vector once when a cache lookup can reuse it.
-function normalizeVector(vector) {
-  // Returns no result when vector is not an array or vector is empty.
-  if (!Array.isArray(vector) || !vector.length) return null;
-
-  let norm = 0;
-  // Processes each vector entry in turn.
-  for (const value of vector) {
-    norm += value * value;
-  }
-
-  // Returns no result when norm is unavailable.
-  if (!norm) return null;
-
-  // Derives the divisor through sqrt while normalizing vector.
-  const divisor = Math.sqrt(norm);
-  // Maps source values into the result produced while normalizing vector.
-  return vector.map(value => value / divisor);
-}
 
 // This function writes debug output only when event debug logging is enabled.
 function debugEventLog(message, payload = null) {
@@ -298,15 +73,6 @@ function averageAcceptedSemantic(signals = []) {
   // Aggregates source values into the total used while performing average accepted semantic.
   const total = acceptedSignals.reduce((sum, signal) => sum + Number(signal.semantic || 0), 0);
   return total / acceptedSignals.length;
-}
-
-// This function finds the strongest accepted signal for concise candidate-event logging.
-function strongestAcceptedCandidateSignal(signals = [], eventId = null) {
-  // Filters source values to the entries eligible while performing strongest accepted candidate signal.
-  return signals
-    .filter(signal => signal.accepted)
-    .filter(signal => eventId == null || Number(signal.eventId) === Number(eventId))
-    .sort((left, right) => Number(right.semantic || 0) - Number(left.semantic || 0))[0] || null;
 }
 
 // This function loads topic assignments already stored for an event.
@@ -549,164 +315,6 @@ function resolveArticleVector(record) {
   return null;
 }
 
-// This function scores whether a candidate article can corroborate a new event.
-function evaluateCandidateSignal({ article, candidate, articleEventVector, normalizedArticleEventVector = null }) {
-  // Resolves the article vector while performing evaluate candidate signal.
-  const candidateVector = resolveArticleVector(candidate);
-  // Collects normalized candidate vector for the selection made while performing evaluate candidate signal.
-  const normalizedCandidateVector = candidate.normalizedEventVector || null;
-
-  // Returns early when candidate vector is not an array and normalized candidate vector is not an array.
-  if (!Array.isArray(candidateVector) && !Array.isArray(normalizedCandidateVector)) {
-    return {
-      candidateId: candidate.id,
-      semantic: 0,
-      temporal: 0,
-      headline: 0,
-      overlap: 0,
-      meetsSemantic: false,
-      meetsTemporal: false,
-      meetsAuxiliary: false,
-      eventId: candidate.eventId ?? null,
-      accepted: false
-    };
-  }
-
-  // Selects the semantic based on whether normalized article event vector is available and normalized candidate vector is available.
-  const semantic = normalizedArticleEventVector && normalizedCandidateVector
-    ? dotProductSimilarity(normalizedArticleEventVector, normalizedCandidateVector)
-    : cosineSimilarity(articleEventVector, candidateVector);
-  // Derives the meets semantic required while performing evaluate candidate signal.
-  const meetsSemantic = semantic >= EVENT_SIM_THRESHOLD;
-
-  // Derives the temporal through article window score while performing evaluate candidate signal.
-  const temporal = articleWindowScore(article, candidate);
-  // Derives the meets temporal required while performing evaluate candidate signal.
-  const meetsTemporal = temporal > 0;
-
-  // Resolves the token set while performing evaluate candidate signal.
-  const articleTokens = resolveTokenSet(article);
-  // Resolves the token set while performing evaluate candidate signal.
-  const candidateTokens = resolveTokenSet(candidate);
-  // Derives the headline through headline similarity from sets while performing evaluate candidate signal.
-  const headline = headlineSimilarityFromSets(articleTokens, candidateTokens);
-  // Derives the overlap through entity overlap count while performing evaluate candidate signal.
-  const overlap = entityOverlapCount(
-    resolveEntitySet(article),
-    resolveEntitySet(candidate)
-  );
-
-  // Derives the meets auxiliary required while performing evaluate candidate signal.
-  const meetsAuxiliary = (
-    headline >= EVENT_MIN_HEADLINE_SIM ||
-    overlap >= EVENT_MIN_SHARED_ENTITY_OVERLAP ||
-    semantic >= Math.max(EVENT_SIM_THRESHOLD, DUPLICATE_HEADLINE_SIM)
-  );
-  // Derives the near duplicate required while performing evaluate candidate signal.
-  const nearDuplicate =
-    headline >= DUPLICATE_HEADLINE_SIM &&
-    semantic >= DUPLICATE_HEADLINE_MIN_SEMANTIC;
-
-  // Derives the accepted required while performing evaluate candidate signal.
-  const accepted = meetsTemporal && (
-    (meetsSemantic && meetsAuxiliary) ||
-    nearDuplicate
-  );
-
-  return {
-    candidateId: candidate.id,
-    semantic,
-    temporal,
-    headline,
-    overlap,
-    meetsSemantic,
-    meetsTemporal,
-    meetsAuxiliary,
-    nearDuplicate,
-    eventId: candidate.eventId ?? null,
-    accepted
-  };
-}
-
-// This function chooses the strongest existing event represented by accepted candidate articles.
-function resolveBestCandidateEvent(candidateSignals, acceptedCandidates) {
-  // Derives the accepted by id required while resolving best candidate event.
-  const acceptedById = new Map(
-    acceptedCandidates.map(candidate => [candidate.id, candidate])
-  );
-  // Derives the event groups required while resolving best candidate event.
-  const eventGroups = new Map();
-
-  // Processes each candidate signals entry in turn.
-  for (const signal of candidateSignals) {
-    // Skips the current entry when signal accepted is unavailable.
-    if (!signal.accepted) continue;
-
-    // Derives the candidate through get while resolving best candidate event.
-    const candidate = acceptedById.get(signal.candidateId);
-    const eventId = candidate?.eventId;
-
-    // Skips the current entry when event id is value.
-    if (eventId == null) continue;
-
-    // Coerces the key into the representation required while resolving best candidate event.
-    const key = Number(eventId);
-    // Derives the group required while resolving best candidate event.
-    const group = eventGroups.get(key) || {
-      eventId: key,
-      acceptedCandidateCount: 0,
-      semanticTotal: 0,
-      maxSemantic: 0
-    };
-
-    group.acceptedCandidateCount++;
-    group.semanticTotal += signal.semantic;
-    group.maxSemantic = Math.max(group.maxSemantic, signal.semantic);
-    eventGroups.set(key, group);
-  }
-
-  // Derives the candidates through sort while resolving best candidate event.
-  const candidates = [...eventGroups.values()]
-    .map(group => ({
-      ...group,
-      averageSemantic: group.semanticTotal / group.acceptedCandidateCount
-    }))
-    .sort((left, right) => (
-      right.acceptedCandidateCount - left.acceptedCandidateCount ||
-      right.averageSemantic - left.averageSemantic ||
-      right.maxSemantic - left.maxSemantic ||
-      left.eventId - right.eventId
-    ));
-
-  return candidates[0] || null;
-}
-
-// This function loads a candidate-backed event and makes sure the cache can see later updates.
-async function loadCandidateEvent({ userId, eventId, cache }) {
-  // Returns no result when event id is unavailable.
-  if (!eventId) return null;
-
-  // Derives the cached event required while loading candidate event.
-  const cachedEvent = cache?.events?.find(event => Number(event.id) === Number(eventId));
-  // Returns early when cached event is available.
-  if (cachedEvent) return cachedEvent;
-
-  // Loads the event needed while loading candidate event.
-  const event = await Event.findOne({
-    where: {
-      id: eventId,
-      userId
-    }
-  });
-
-  // Handles the case where event is available and cache is available.
-  if (event && cache) {
-    cache.add(event);
-  }
-
-  return event;
-}
-
 // This function finds persisted recent articles that can corroborate the current article.
 async function findCandidateArticles({ article, articleEventVector }) {
   // Derives the article ts required while finding candidate articles.
@@ -854,6 +462,7 @@ function findCandidateArticlesFromContext({ article, articleEventVector, runCont
 
   // Keeps the candidate pool entries eligible while finding candidate articles from context.
   const candidatePool = (runContext?.records || []).filter(candidate => {
+    if (candidate.userId != null && Number(candidate.userId) !== Number(article.userId)) return false;
     // Rejects the value when candidate id is article id.
     if (candidate.id === article.id) return false;
     // Rejects the value when resolve article vector is not an array.
@@ -865,7 +474,10 @@ function findCandidateArticlesFromContext({ article, articleEventVector, runCont
     if (!Number.isFinite(candidateTs)) return false;
 
     return Math.abs(articleTs - candidateTs) <= maxGapMs;
-  });
+  }).sort((left, right) =>
+    Math.abs(articleTs - articleEventTimestamp(left)) - Math.abs(articleTs - articleEventTimestamp(right)) ||
+    Number(right.id) - Number(left.id)
+  ).slice(0, MAX_CANDIDATES);
 
   // Transforms source values into the evaluated signals required while finding candidate articles from context.
   const evaluatedSignals = candidatePool.map(candidate => evaluateCandidateSignal({
@@ -908,8 +520,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
 
   // Returns no result when article is unavailable.
   if (!article) return null;
-  // Returns no result when article status is duplicate article status or article duplicate of article id is not value.
-  if (article.status === DUPLICATE_ARTICLE_STATUS || article.duplicateOfArticleId != null) return null;
+  // Existing ownership and canonical filtering apply before candidate discovery.
+  if (article.status === DUPLICATE_ARTICLE_STATUS || article.duplicateOfArticleId != null || article.filteredInd) return null;
 
   // Derives the article event vector required while assigning article to event.
   const articleEventVector = vectors?.eventVector ?? resolveArticleVector(article);
@@ -940,104 +552,109 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     return null;
   }
 
-  // Selects the events based on whether cache is available.
+  // Discover both paths before deciding; an early centroid winner could hide ambiguity.
+  // Selects the candidate result based on whether article candidate cache is available.
+  const candidateResult = articleCandidateCache
+    ? findCandidateArticlesFromCache({
+      article,
+      articleEventVector,
+      normalizedArticleEventVector,
+      articleCandidateCache
+    })
+    : runContext
+    ? findCandidateArticlesFromContext({
+      article,
+      articleEventVector,
+      runContext
+    })
+    : await findCandidateArticles({
+      article,
+      articleEventVector
+    });
+  const candidateArticles = candidateResult.acceptedCandidates;
+  // Keeps the assigned candidates entries eligible while assigning article to event.
+  const assignedCandidates = candidateArticles.filter(candidate => candidate.eventId != null);
+  // Keeps the unassigned candidates entries eligible while assigning article to event.
+  // Discovery stays semantic/time based. Apply occurrence identity only when
+  // selecting a proposed new Event's members, using the shared decision policy.
+  const unassignedCandidates = candidateArticles.filter(candidate => candidate.eventId == null &&
+    evaluateCandidateSignal({
+      article, candidate, articleEventVector, normalizedArticleEventVector, enforceOccurrence: true
+    }).accepted);
+
   const events = cache
-    ? cache.events
+    ? [...cache.events]
     : await Event.findAll({
       where: { userId: article.userId },
       order: [['updatedAt', 'DESC']],
       limit: MAX_CANDIDATES
     });
-
-  let bestEvent = null;
-  let bestScore = 0;
-  let bestSignal = null;
-  // Collects the match diagnostics while assigning article to event.
-  const matchDiagnostics = [];
-
-  // Processes each events entry in turn.
-  for (const event of events) {
-    // Skips the current entry when event event vector is unavailable.
-    if (!event.eventVector) continue;
-
-    // Builds the match signal while assigning article to event.
-    const signal = buildMatchSignal({
-      article,
+  const eventsById = new Map(events.map(event => [Number(event.id), event]));
+  const candidateEventIds = [...new Set(assignedCandidates.map(candidate => Number(candidate.eventId)))];
+  const missingIds = candidateEventIds.filter(id => !eventsById.has(id));
+  // Load member-discovered Events in one bounded query, not one query per candidate.
+  if (missingIds.length) {
+    const missingEvents = await Event.findAll({
+      where: { userId: article.userId, id: { [Op.in]: missingIds } },
+      limit: MAX_CANDIDATES
+    });
+    for (const event of missingEvents) {
+      eventsById.set(Number(event.id), event);
+      cache?.add(event);
+    }
+  }
+  const memberSignalsByEvent = new Map();
+  for (const signal of candidateResult.evaluatedSignals) {
+    if (signal.eventId == null) continue;
+    const id = Number(signal.eventId);
+    const signals = memberSignalsByEvent.get(id) || [];
+    signals.push(signal);
+    memberSignalsByEvent.set(id, signals);
+  }
+  const now = Date.now();
+  const decisions = [...eventsById.values()].map(event => {
+    const memberSignals = memberSignalsByEvent.get(Number(event.id)) || [];
+    return {
       event,
-      articleEventVector
-    });
-
-    // Derives the satisfies strict semantic required while assigning article to event.
-    const satisfiesStrictSemantic = signal.semantic >= EVENT_SIM_THRESHOLD;
-    const satisfiesNearDuplicate = signal.nearDuplicate;
-    // Derives the satisfies auxiliary signal required while assigning article to event.
-    const satisfiesAuxiliarySignal =
-      signal.temporal > 0 &&
-      (
-        signal.headline >= EVENT_MIN_HEADLINE_SIM ||
-        signal.overlap >= EVENT_MIN_SHARED_ENTITY_OVERLAP ||
-        signal.nearDuplicate
-      );
-
-    // Handles the case where satisfies strict semantic is unavailable and satisfies near duplicate is unavailable or satisfies auxiliary signal is unavailable.
-    if ((!satisfiesStrictSemantic && !satisfiesNearDuplicate) || !satisfiesAuxiliarySignal) {
-      // Handles the case where event debug is available.
-      if (EVENT_DEBUG) {
-        matchDiagnostics.push({
-          eventId: event.id,
-          semantic: Number(signal.semantic.toFixed(4)),
-          headline: Number(signal.headline.toFixed(4)),
-          temporal: Number(signal.temporal.toFixed(4)),
-          overlap: signal.overlap,
-          meetsSemantic: satisfiesStrictSemantic,
-          nearDuplicate: satisfiesNearDuplicate,
-          meetsAuxiliary: satisfiesAuxiliarySignal,
-          accepted: false
-        });
-      }
-      continue;
-    }
-
-    // Handles the case where event debug is available.
-    if (EVENT_DEBUG) {
-      matchDiagnostics.push({
-        eventId: event.id,
-        semantic: Number(signal.semantic.toFixed(4)),
-        headline: Number(signal.headline.toFixed(4)),
-        temporal: Number(signal.temporal.toFixed(4)),
-        overlap: signal.overlap,
-        composite: Number(signal.composite.toFixed(4)),
-        meetsSemantic: satisfiesStrictSemantic,
-        nearDuplicate: satisfiesNearDuplicate,
-        meetsAuxiliary: true,
-        accepted: true
-      });
-    }
-
-    // Handles the case where signal composite exceeds best score.
-    if (signal.composite > bestScore) {
-      bestScore = signal.composite;
-      bestEvent = event;
-      bestSignal = signal;
-    }
-  }
-
-  // Handles the case where event debug is available.
-  if (EVENT_DEBUG) {
-    // Orders values deterministically while assigning article to event.
-    debugEventLog(`article=${article.id} existing-event-eval`, {
-      title: (article.title || '').slice(0, 90),
-      thresholds: {
-        eventSimilarity: EVENT_SIM_THRESHOLD,
-        minHeadline: EVENT_MIN_HEADLINE_SIM,
-        minEntityOverlap: EVENT_MIN_SHARED_ENTITY_OVERLAP
-      },
-      topMatches: matchDiagnostics
-        .sort((a, b) => (b.composite || b.semantic) - (a.composite || a.semantic))
-        .slice(0, 5)
+      ...evaluateArticleAgainstEvent(article, event, {
+        articleEventVector, normalizedArticleEventVector, memberSignals, now,
+        candidateSources: [
+          ...(events.includes(event) ? [cache ? 'event_cache' : 'event_database'] : []),
+          ...(memberSignals.length ? ['member_articles'] : [])
+        ]
+      })
+    };
+  });
+  const selection = selectEventDecision(decisions);
+  const bestEvent = selection.candidate?.event || null;
+  const bestSignal = selection.candidate?.evidence || null;
+  const bestScore = selection.candidate?.score || 0;
+  const diagnostics = {
+    decision: selection.decision,
+    reasons: selection.reasons,
+    margin: selection.margin ?? null,
+    topMatches: decisions
+      .sort((a, b) => b.score - a.score || Number(a.event.id) - Number(b.event.id))
+      .slice(0, 5)
+      .map(result => ({
+        eventId: result.event.id, score: result.score, evidenceScore: result.evidenceScore,
+        accepted: result.eligible, decision: result.decision, reasons: result.reasons,
+        spanHours: result.evidence.spanHours, candidateSources: result.evidence.candidateSources
+      }))
+  };
+  if (runContext) runContext.lastDecision = diagnostics;
+  debugEventLog(`article=${article.id} existing-event-eval`, diagnostics);
+  debugEventLog(`article=${article.id} candidate-eval`, {
+    assignedCandidateCount: assignedCandidates.length,
+    unassignedCandidateCount: unassignedCandidates.length,
+    selectedCandidateEventId: bestEvent?.id ?? null,
+    decision: selection.decision, reasons: selection.reasons
+  });
+  if (bestEvent && memberSignalsByEvent.has(Number(bestEvent.id))) {
+    debugEventLog(`article=${article.id} candidate-event-selected`, {
+      selectedCandidateEventId: bestEvent.id, decision: selection.decision, reasons: selection.reasons
     });
   }
-
   // Handles the case where best event is available and best signal is available.
   if (bestEvent && bestSignal) {
     // Derives the updated event id through update existing event while assigning article to event.
@@ -1070,8 +687,13 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       }
     });
 
-    // Returns no result when updated event id is unavailable.
-    if (!updatedEventId) return null;
+    // A concurrent membership change can invalidate a previously eligible candidate.
+    if (!updatedEventId) {
+      if (runContext) runContext.lastDecision = {
+        ...diagnostics, decision: 'reject', reasons: ['membership_changed']
+      };
+      return null;
+    }
 
     // Selects the event topic assignments based on whether skip topic assignment is available.
     const eventTopicAssignments = skipTopicAssignment
@@ -1105,181 +727,21 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   }
 
   await assignTopicOnly({ article });
-
-  // Selects the candidate result based on whether article candidate cache is available.
-  const candidateResult = articleCandidateCache
-    ? findCandidateArticlesFromCache({
-      article,
-      articleEventVector,
-      normalizedArticleEventVector,
-      articleCandidateCache
-    })
-    : runContext
-    ? findCandidateArticlesFromContext({
-      article,
-      articleEventVector,
-      runContext
-    })
-    : await findCandidateArticles({
-      article,
-      articleEventVector
+  if (selection.decision === 'ambiguous') {
+    incrementRunStat(runContext, 'ambiguousArticleCount');
+    upsertRunContextRecord(runContext, {
+      id: article.id, feedId: article.feedId, title: article.title,
+      description: article.description, publishedAt: article.publishedAt, createdAt: article.createdAt,
+      eventId: null, topicId: article.topicId, topicAssignments: [], eventVector: articleEventVector
     });
-  const candidateArticles = candidateResult.acceptedCandidates;
-  // Keeps the assigned candidates entries eligible while assigning article to event.
-  const assignedCandidates = candidateArticles.filter(candidate => candidate.eventId != null);
-  // Keeps the unassigned candidates entries eligible while assigning article to event.
-  const unassignedCandidates = candidateArticles.filter(candidate => candidate.eventId == null);
-  // Resolves the best candidate event while assigning article to event.
-  const selectedCandidateEvent = resolveBestCandidateEvent(
-    candidateResult.evaluatedSignals,
-    assignedCandidates
-  );
-  // Collects selected candidate event id for the selection made while assigning article to event.
-  const selectedCandidateEventId = selectedCandidateEvent?.eventId ?? null;
-  // Collects the candidate event id while assigning article to event.
-  const candidateEventIds = [
-    ...new Set(assignedCandidates.map(candidate => Number(candidate.eventId)).filter(Boolean))
-  ];
-  // Tracks corroborated article count for the processing summary.
+    articleCandidateCache?.updateEventId?.([article.id], null);
+    return null;
+  }
+
   const corroboratedArticleCount = unassignedCandidates.length + 1;
-  // Maps source values into the result produced while assigning article to event.
   const corroboratedSourceCount = new Set([
-    article.feedId,
-    ...unassignedCandidates.map(candidate => candidate.feedId)
+    article.feedId, ...unassignedCandidates.map(candidate => candidate.feedId)
   ].filter(feedId => feedId != null)).size;
-
-  // Handles the case where event debug is available.
-  if (EVENT_DEBUG) {
-    // Orders values deterministically while assigning article to event.
-    debugEventLog(`article=${article.id} candidate-eval`, {
-      topicId: null,
-      totalCandidatePool: candidateResult.evaluatedSignals.length,
-      acceptedCandidates: candidateArticles.length,
-      assignedCandidateCount: assignedCandidates.length,
-      unassignedCandidateCount: unassignedCandidates.length,
-      candidateEventIds,
-      selectedCandidateEventId,
-      corroboratedArticleCount,
-      corroboratedSourceCount,
-      required: {
-        minArticles: MIN_EVENT_ARTICLES,
-        minSources: MIN_EVENT_SOURCES,
-        requireMultiSource: REQUIRE_MULTI_SOURCE_FOR_EVENT
-      },
-      topCandidates: candidateResult.evaluatedSignals
-        .sort((a, b) => b.semantic - a.semantic)
-        .slice(0, 8)
-        .map(signal => ({
-          candidateId: signal.candidateId,
-          eventId: signal.eventId,
-          semantic: Number(signal.semantic.toFixed(4)),
-          temporal: Number(signal.temporal.toFixed(4)),
-          headline: Number(signal.headline.toFixed(4)),
-          overlap: signal.overlap,
-          nearDuplicate: signal.nearDuplicate,
-          accepted: signal.accepted,
-          meetsSemantic: signal.meetsSemantic,
-          meetsTemporal: signal.meetsTemporal,
-          meetsAuxiliary: signal.meetsAuxiliary
-        }))
-    });
-  }
-
-  // Handles the case where selected candidate event id is available.
-  if (selectedCandidateEventId) {
-    // Loads the candidate event while assigning article to event.
-    const candidateEvent = await loadCandidateEvent({
-      userId: article.userId,
-      eventId: selectedCandidateEventId,
-      cache
-    });
-
-    // Handles the case where candidate event is available.
-    if (candidateEvent) {
-      // Derives the updated event id through update existing event while assigning article to event.
-      const updatedEventId = await updateExistingEvent({
-        article,
-        articleEventVector,
-        bestEvent: candidateEvent,
-        cache,
-        bestScore: selectedCandidateEvent.averageSemantic,
-        matchSignal: {
-          semantic: selectedCandidateEvent.averageSemantic,
-          maxSemantic: selectedCandidateEvent.maxSemantic,
-          acceptedCandidateCount: selectedCandidateEvent.acceptedCandidateCount
-        },
-        skipTopicAssignment,
-        assignTopicsForEvent: async ({ event, eventTopicVector, transaction }) => {
-          // Derives the event topic assignments through derive event topic assignments while assigning article to event.
-          const eventTopicAssignments = await deriveEventTopicAssignments({
-            event,
-            eventTopicVector,
-            topicsCache,
-            assignmentContext
-          });
-
-          // Derives the persisted event topics through persist event topic assignments while assigning article to event.
-          const persistedEventTopics = await persistEventTopicAssignments(
-            event,
-            eventTopicAssignments,
-            { transaction, updateEvent: false }
-          );
-          await syncEventTopicsToArticles(event.id, persistedEventTopics, transaction);
-
-          return primaryTopicId(persistedEventTopics);
-        }
-      });
-
-      // Returns no result when updated event id is unavailable.
-      if (!updatedEventId) return null;
-
-      // Selects the event topic assignments based on whether skip topic assignment is available.
-      const eventTopicAssignments = skipTopicAssignment
-        ? []
-        : await loadEventTopicAssignments(updatedEventId);
-
-      upsertRunContextRecord(runContext, {
-        id: article.id,
-        feedId: article.feedId,
-        title: article.title,
-        description: article.description,
-        publishedAt: article.publishedAt,
-        createdAt: article.createdAt,
-        topicId: primaryTopicId(eventTopicAssignments),
-        topicAssignments: eventTopicAssignments,
-        eventId: updatedEventId,
-        eventVector: articleEventVector
-      });
-
-      incrementExistingEventAssignment(runContext, updatedEventId);
-      articleCandidateCache?.updateEventId?.([article.id], updatedEventId);
-      // Derives the selected candidate signal through strongest accepted candidate signal while assigning article to event.
-      const selectedCandidateSignal = strongestAcceptedCandidateSignal(
-        candidateResult.evaluatedSignals,
-        updatedEventId
-      );
-      conciseEventLog(
-        `article=${article.id} → event=${updatedEventId} ` +
-        `sim=${formatEventMetric(selectedCandidateEvent.averageSemantic)} ` +
-        `head=${formatEventMetric(selectedCandidateSignal?.headline, 2)} ` +
-        `temp=${formatEventMetric(selectedCandidateSignal?.temporal, 2)} ` +
-        `overlap=${selectedCandidateSignal?.overlap ?? 0} decision=existing-event`
-      );
-
-      // Handles the case where event debug is available.
-      if (EVENT_DEBUG) {
-        debugEventLog(`article=${article.id} candidate-event-selected`, {
-          selectedCandidateEventId,
-          assignedCandidateCount: assignedCandidates.length,
-          unassignedCandidateCount: unassignedCandidates.length,
-          candidateEventIds,
-          selectedCandidateEvent
-        });
-      }
-
-      return updatedEventId;
-    }
-  }
 
   // Handles the case where corroborated article count is below min event articles or require multi source for event is available and corroborated source count is below min event sources.
   if (
@@ -1316,6 +778,13 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     skipTopicAssignment
   });
 
+  if (runContext) {
+    runContext.lastDecision = {
+      ...diagnostics,
+      decision: newEventId ? 'new_event' : 'reject',
+      reasons: [newEventId ? 'compatible_seed_group' : 'seed_group_not_assigned']
+    };
+  }
   // Handles the case where new event id is available.
   if (newEventId) {
     incrementRunStat(runContext, 'newEventsCreatedCount');
@@ -1335,8 +804,9 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     ? await loadEventTopicAssignments(newEventId)
     : [];
 
-  // Processes each unassigned candidates entry in turn.
-  for (const candidate of unassignedCandidates) {
+  // Only committed creation may change neighboring candidate-cache membership.
+  const createdMembers = newEventId ? unassignedCandidates : [];
+  for (const candidate of createdMembers) {
     upsertRunContextRecord(runContext, {
       id: candidate.id,
       eventId: newEventId,
@@ -1345,7 +815,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   }
   // Maps source values into the result produced while assigning article to event.
   articleCandidateCache?.updateEventId?.(
-    [article.id, ...unassignedCandidates.map(candidate => candidate.id)],
+    [article.id, ...createdMembers.map(candidate => candidate.id)],
     newEventId
   );
 

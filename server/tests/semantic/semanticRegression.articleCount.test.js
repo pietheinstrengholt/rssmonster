@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 import db from '../../models/index.js';
+import { selectLegacyFixture } from '../helpers/semanticRegressionIncremental.js';
 import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
 
 const { User, Article } = db;
@@ -51,7 +52,7 @@ semanticRegressionDescribe('semantic regression article count', () => {
   it('stores every article from all semantic regression fixture waves', async () => {
     const fixtures = await Promise.all(FIXTURE_NAMES.map(loadFixture));
     const expectedArticleCount = fixtures.reduce(
-      (total, fixture) => total + fixture.articles.length,
+      (total, fixture) => total + selectLegacyFixture(fixture).articles.length,
       0
     );
     const user = await User.findOne({
