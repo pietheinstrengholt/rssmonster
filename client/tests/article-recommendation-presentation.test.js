@@ -1,7 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { buildArticleRecommendationExplanation } from '../src/services/articleRecommendationPresentation.js';
+import { bootstrapIconNames } from '../bootstrap-icons.js';
 
 describe('article recommendation presentation', () => {
+  it.each([
+    'interest_match',
+    'event_coverage',
+    'source_diversity',
+    'rule_match',
+    'freshness',
+    'quality',
+    'feed_trust'
+  ])('bundles the icon used for %s', code => {
+    const explanation = buildArticleRecommendationExplanation({
+      reasons: [{ code, value: 1 }]
+    });
+
+    expect(explanation.items).toHaveLength(1);
+    expect(bootstrapIconNames).toContain(explanation.items[0].icon);
+  });
+
   it('combines event coverage and source diversity into one readable reason', () => {
     const explanation = buildArticleRecommendationExplanation({
       score: 0.7591,
