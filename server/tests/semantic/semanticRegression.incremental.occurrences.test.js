@@ -1,7 +1,9 @@
+import { installEventDiagnosticReport } from '../helpers/semanticEventDiagnosticReport.js';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { mkdir, writeFile } from 'node:fs/promises';
 import db from '../../models/index.js';
 import { buildArticleEventEmbeddingText } from '../../services/articles/embedArticle.js';
+import { extractOccurrenceFeatures } from '../../services/events/occurrenceFeatures.js';
 import { EVENT_MAX_GAP_HOURS } from '../../services/config/semanticConfig.js';
 import { runIncrementalEventsForUser } from '../../services/reconcile/semanticPipelineScopes.js';
 import {
@@ -56,7 +58,7 @@ async function processScenario(scenario) {
   const events = await Event.findAll({ where: { userId: user.id }, raw: true });
   expect(rows).toHaveLength(articles.length);
   expectEventCounts(rows, events);
-  return { rows, events, snapshots, results };
+  return { rows, events, snapshots, results, diagnostics: eventDiagnostics().filter(row => row.userId === user.id) };
 }
 
 function report(scenario, expected, result) {
@@ -80,7 +82,7 @@ describe('semantic regression incremental occurrence identity', () => {
     vectors = buildVectorMap(frozen);
     const articles = [...baseline.articles, ...incremental.articles];
     expect(baseline.articles).toHaveLength(2);
-    expect(incremental.articles).toHaveLength(36);
+    expect(incremental.articles).toHaveLength(67);
     expect(new Set(articles.map(article => article.sourceId)).size).toBe(articles.length);
     expect(new Set(articles.map(article => article.url)).size).toBe(articles.length);
     expect(frozen.articles).toHaveLength(articles.length);
@@ -103,6 +105,7 @@ describe('semantic regression incremental occurrence identity', () => {
     await mkdir(reportDirectory, { recursive: true });
     const lines = [
       '# Incremental Event identity regression',
+      '[Candidate evidence and assignment outcomes](occurrences-decisions.md)',
       '',
       `Frozen model: ${embeddingModel}. Event IDs below are diagnostic, never hardcoded expectations.`,
       '',
@@ -139,6 +142,94 @@ describe('semantic regression incremental occurrence identity', () => {
     report(label, 'two Events; each source group internally together', result);
     expectDifferentEvents(result.rows, group(result.rows, left), group(result.rows, right));
     expect.soft(result.events).toHaveLength(2);
+  }, 60000);
+
+  it.each([
+    ['minimal-version', '4.2', '4.3', ['version_conflict']],
+    ['minimal-location', 'Rotterdam', 'Antwerp', ['location_conflict']],
+    ['minimal-state', 'cuts the price of its existing Lyra Air notebook',
+      'launches a new generation of Lyra Air notebook', ['action_conflict', 'object_conflict']]
+  ])('%s: separates minimal pairs specifically on occurrence evidence', async (scenario, leftFeature, rightFeature, reasons) => {
+    const fixture = incremental.articles.filter(article => article.regression.scenario === scenario);
+    const left = fixture.filter(article => article.regression.group === '1');
+    const right = fixture.filter(article => article.regression.group === '2');
+    expect(left).toHaveLength(2);
+    expect(right).toHaveLength(2);
+    // Each publisher's text differs only in the defining feature; no lexical test markers.
+    for (let index = 0; index < left.length; index++) {
+      expect(left[index].feedId).toBe(right[index].feedId);
+      for (const field of ['title', 'description', 'contentOriginal', 'contentHtml']) {
+        expect(left[index][field].replaceAll(leftFeature, rightFeature)).toBe(right[index][field]);
+      }
+    }
+    const times = fixture.map(article => Date.parse(article.publishedAt));
+    expect(Math.max(...times) - Math.min(...times)).toBe(3 * 60000);
+    const result = await processScenario(scenario);
+    const leftIds = left.map(article => article.sourceId);
+    const rightIds = right.map(article => article.sourceId);
+    expectDifferentEvents(result.rows, leftIds, rightIds);
+    expect(result.events).toHaveLength(2);
+    const existingId = expectSameEvent(result.snapshots.get(1), leftIds);
+    expect(expectSameEvent(result.rows, leftIds)).toBe(existingId);
+    for (const sourceId of rightIds) {
+      const incoming = result.rows.find(row => row.sourceId === sourceId);
+      const candidate = result.diagnostics
+        .filter(row => row.articleId === incoming.id && row.stage === 'event_candidates')
+        .flatMap(row => row.topMatches).find(row => row.eventId === existingId);
+      expect(candidate, `${sourceId}: missing comparison with the first occurrence`).toBeTruthy();
+      expect(candidate.decision).toBe('reject');
+      expect(candidate.temporalCompatibility).toBe(true);
+      expect(candidate.eventSpanCompatibility).toBe(true);
+      expect(candidate.reasons).toContain('semantic_match');
+      expect(candidate.reasons.filter(reason => reason.endsWith('_conflict')).sort()).toEqual([...reasons].sort());
+      expect(candidate.reasons).not.toContain('insufficient_semantic_match');
+      expect(candidate.reasons).not.toContain('insufficient_support');
+    }
+    report(scenario, `two Events; reject only on ${reasons.join(', ')}`, result);
+  }, 60000);
+
+  it.each([
+    'evolution-injuries', 'evolution-pricing', 'evolution-launch',
+    'evolution-correction', 'evolution-missing-location', 'evolution-missing-version'
+  ])('%s: preserves the existing Event through legitimate follow-ups', async scenario => {
+    const fixture = incremental.articles.filter(article => article.regression.scenario === scenario);
+    const seeds = fixture.filter(article => article.regression.wave === 1);
+    const followUps = fixture.filter(article => article.regression.wave > 1);
+    expect(seeds).toHaveLength(2);
+    expect(followUps.length).toBeGreaterThan(0);
+    if (scenario === 'evolution-injuries') {
+      for (const article of fixture) expect(extractOccurrenceFeatures(article).versions).toEqual([]);
+    }
+    for (const [name, feature] of [['location', 'locations'], ['version', 'versions']]) {
+      if (scenario !== `evolution-missing-${name}`) continue;
+      for (const seed of seeds) expect(extractOccurrenceFeatures(seed)[feature].length).toBeGreaterThan(0);
+      for (const followUp of followUps) expect(extractOccurrenceFeatures(followUp)[feature]).toEqual([]);
+    }
+    if (['evolution-pricing', 'evolution-launch'].includes(scenario)) {
+      expect(extractOccurrenceFeatures(followUps.at(-1)).actions)
+        .not.toEqual(extractOccurrenceFeatures(seeds[0]).actions);
+    }
+    const result = await processScenario(scenario);
+    report(scenario, 'one Event; every later wave reuses it without occurrence conflicts', result);
+    const existingId = expectSameEvent(result.snapshots.get(1), seeds.map(article => article.sourceId));
+    expect(result.events).toHaveLength(1);
+    for (const rows of result.snapshots.values()) {
+      expect(expectSameEvent(rows, rows.map(row => row.sourceId))).toBe(existingId);
+    }
+    for (const followUp of followUps) {
+      const article = result.rows.find(row => row.sourceId === followUp.sourceId);
+      const checks = result.diagnostics.filter(row => row.articleId === article.id);
+      const candidate = checks.filter(row => row.stage === 'event_candidates')
+        .flatMap(row => row.topMatches).find(row => row.eventId === existingId);
+      expect(candidate, `${followUp.sourceId}: missing existing Event evaluation`).toBeTruthy();
+      expect(candidate.decision).toBe('join');
+      expect(candidate.reasons.filter(reason => reason.endsWith('_conflict'))).toEqual([]);
+      expect(candidate).toMatchObject({ versionConflict: false, locationConflict: false, actionConflict: false, objectConflict: false });
+      expect(checks.find(row => row.stage === 'assignment')).toMatchObject({
+        eventId: existingId, decision: 'join', outcome: 'reused'
+      });
+      expect(result.results.get(followUp.regression.wave).linkedToExistingEventCount).toBe(1);
+    }
   }, 60000);
 
   it('prevents a 28-hour Event from forming through two 14-hour links', async () => {
@@ -182,3 +273,5 @@ describe('semantic regression incremental occurrence identity', () => {
     expect.soft(Number(result.events[0]?.sourceCount)).toBe(2);
   }, 60000);
 });
+
+const eventDiagnostics = installEventDiagnosticReport('occurrences');

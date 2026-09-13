@@ -1,3 +1,4 @@
+import { installEventDiagnosticReport } from '../helpers/semanticEventDiagnosticReport.js';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Op } from 'sequelize';
 
@@ -242,3 +243,5 @@ semanticRegressionDescribe('semantic regression incremental event pipeline', () 
     });
   }, 180000);
 });
+
+installEventDiagnosticReport('incremental');

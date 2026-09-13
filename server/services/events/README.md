@@ -663,3 +663,20 @@ Results expose `versionAgreement`/`versionConflict`,
 `action_match`, `action_conflict`, `object_match`, and `object_conflict` names.
 No body content is added to diagnostics. No schema, inference call, or global
 similarity threshold is changed.
+
+### Event decision diagnostics
+
+Explicit `EVENT_DEBUG`, `EVENT_RECLUSTER_DEBUG`, or
+`SEMANTIC_REPORT_LEVEL=trace|report` enables structured `[EVENT TRACE]` lines.
+Regression report subscribers can collect the same whitelisted payload without
+console output. No inference, queries, scoring or thresholds change.
+
+Seed candidates and existing Event candidates show the already-computed semantic,
+headline, time/span, entity-overlap and occurrence match/conflict evidence, scores
+and reason codes. At most five candidates per Article/stage are retained. Missing
+identity evidence has both match and conflict false. Shared entities is a count
+from the scoring witness, not a list copied from article text. Candidate eligibility
+is distinct from selection ambiguity and the final committed new/reused/Eventless
+outcome. `commit_check` records the locked membership recheck. Descriptions, bodies
+and vectors are excluded. Semantic reports link companion `*-decisions.md` and
+`*-decisions.json` files containing these diagnostics.

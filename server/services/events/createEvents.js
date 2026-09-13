@@ -1,3 +1,4 @@
+import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } from './eventDecisionDiagnostics.js';
 // services/events/createEvents.js
 // This service creates a new event from a set of corroborating articles.
 // It assigns the stable representative and initializes event metadata and optional topic assignment.
@@ -206,6 +207,10 @@ export async function createAndAssignEvent({
   // proposed span. Validate locked persisted evidence before any membership writes.
   const decision = evaluateEventCreation(lockedArticles, {
     ...projection, name, userId: lockedSeedArticle.userId
+  });
+  if (eventDiagnosticsEnabled()) emitEventDiagnostic(lockedSeedArticle, 'seed_check', {
+    decision: decision.decision, reasons: decision.reasons,
+    ...(decision.evidence ? { rejectedMember: candidateDiagnostic(decision) } : {})
   });
   if (decision.decision !== 'join' || projection.articleCount < MIN_EVENT_ARTICLES ||
       (REQUIRE_MULTI_SOURCE_FOR_EVENT && projection.sourceCount < MIN_EVENT_SOURCES)) return null;

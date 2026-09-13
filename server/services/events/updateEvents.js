@@ -1,3 +1,4 @@
+import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } from './eventDecisionDiagnostics.js';
 // services/events/updateEvents.js
 // This service updates an existing event when a new article joins it.
 // It preserves the stable representative while refreshing event metadata and topic links.
@@ -171,6 +172,9 @@ export async function assignArticleToExistingEvent({
   }, {
     articleEventVector, normalizedArticleEventVector, memberSignals,
     eventOccurrenceFeatures: aggregateOccurrenceFeatures(eventArticles.slice(0, MAX_OCCURRENCE_MEMBERS).map(extractOccurrenceFeatures))
+  });
+  if (eventDiagnosticsEnabled()) emitEventDiagnostic(lockedArticle, 'commit_check', {
+    candidates: [candidateDiagnostic({ ...decision, event: lockedEvent })]
   });
   if (!decision.eligible) return null;
 

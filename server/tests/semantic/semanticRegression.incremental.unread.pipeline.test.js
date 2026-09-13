@@ -1,3 +1,4 @@
+import { installEventDiagnosticReport } from '../helpers/semanticEventDiagnosticReport.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -472,3 +473,5 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
   }, 60000);
 });
 
+
+installEventDiagnosticReport('unread');

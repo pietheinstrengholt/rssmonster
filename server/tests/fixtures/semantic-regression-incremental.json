@@ -2367,6 +2367,626 @@
             "group": "opening",
             "wave": 1
           }
+        },
+        {
+          "sourceId": "minimal-version-1-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/minimal-version-1-a",
+          "title": "Acme releases Orion OS 4.2 with maintenance improvements",
+          "description": "Acme released Orion OS 4.2 on September 22. The update improves reliability and includes maintenance fixes. Users can install it from the system settings menu after restarting their device. The company said the rollout would reach supported devices throughout the day.",
+          "contentOriginal": "Acme released Orion OS 4.2 on September 22. The update improves reliability and includes maintenance fixes. Users can install it from the system settings menu after restarting their device. The company said the rollout would reach supported devices throughout the day.",
+          "contentHtml": "<p>Acme released Orion OS 4.2 on September 22. The update improves reliability and includes maintenance fixes. Users can install it from the system settings menu after restarting their device. The company said the rollout would reach supported devices throughout the day.</p>",
+          "publishedAt": "2026-09-22T09:00:00Z",
+          "firstSeen": "2026-09-22T09:00:00Z",
+          "regression": {
+            "scenario": "minimal-version",
+            "group": "1",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "minimal-version-1-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/minimal-version-1-b",
+          "title": "Orion OS 4.2 released with maintenance improvements",
+          "description": "Orion OS 4.2 became available on September 22. Acme said the update improves reliability and includes maintenance fixes. Installation is available through the system settings menu and requires a restart. Supported devices will receive the rollout throughout the day.",
+          "contentOriginal": "Orion OS 4.2 became available on September 22. Acme said the update improves reliability and includes maintenance fixes. Installation is available through the system settings menu and requires a restart. Supported devices will receive the rollout throughout the day.",
+          "contentHtml": "<p>Orion OS 4.2 became available on September 22. Acme said the update improves reliability and includes maintenance fixes. Installation is available through the system settings menu and requires a restart. Supported devices will receive the rollout throughout the day.</p>",
+          "publishedAt": "2026-09-22T09:01:00Z",
+          "firstSeen": "2026-09-22T09:01:00Z",
+          "regression": {
+            "scenario": "minimal-version",
+            "group": "1",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "minimal-version-2-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/minimal-version-2-a",
+          "title": "Acme releases Orion OS 4.3 with maintenance improvements",
+          "description": "Acme released Orion OS 4.3 on September 22. The update improves reliability and includes maintenance fixes. Users can install it from the system settings menu after restarting their device. The company said the rollout would reach supported devices throughout the day.",
+          "contentOriginal": "Acme released Orion OS 4.3 on September 22. The update improves reliability and includes maintenance fixes. Users can install it from the system settings menu after restarting their device. The company said the rollout would reach supported devices throughout the day.",
+          "contentHtml": "<p>Acme released Orion OS 4.3 on September 22. The update improves reliability and includes maintenance fixes. Users can install it from the system settings menu after restarting their device. The company said the rollout would reach supported devices throughout the day.</p>",
+          "publishedAt": "2026-09-22T09:02:00Z",
+          "firstSeen": "2026-09-22T09:02:00Z",
+          "regression": {
+            "scenario": "minimal-version",
+            "group": "2",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "minimal-version-2-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/minimal-version-2-b",
+          "title": "Orion OS 4.3 released with maintenance improvements",
+          "description": "Orion OS 4.3 became available on September 22. Acme said the update improves reliability and includes maintenance fixes. Installation is available through the system settings menu and requires a restart. Supported devices will receive the rollout throughout the day.",
+          "contentOriginal": "Orion OS 4.3 became available on September 22. Acme said the update improves reliability and includes maintenance fixes. Installation is available through the system settings menu and requires a restart. Supported devices will receive the rollout throughout the day.",
+          "contentHtml": "<p>Orion OS 4.3 became available on September 22. Acme said the update improves reliability and includes maintenance fixes. Installation is available through the system settings menu and requires a restart. Supported devices will receive the rollout throughout the day.</p>",
+          "publishedAt": "2026-09-22T09:03:00Z",
+          "firstSeen": "2026-09-22T09:03:00Z",
+          "regression": {
+            "scenario": "minimal-version",
+            "group": "2",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "minimal-location-1-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/minimal-location-1-a",
+          "title": "Train collision in Rotterdam injures 12 people",
+          "description": "A train collision in Rotterdam injured 12 people on September 22. Emergency crews helped passengers leave the carriages while rail staff closed the affected track. Investigators are examining the signalling equipment. Replacement buses are carrying passengers until train services resume.",
+          "contentOriginal": "A train collision in Rotterdam injured 12 people on September 22. Emergency crews helped passengers leave the carriages while rail staff closed the affected track. Investigators are examining the signalling equipment. Replacement buses are carrying passengers until train services resume.",
+          "contentHtml": "<p>A train collision in Rotterdam injured 12 people on September 22. Emergency crews helped passengers leave the carriages while rail staff closed the affected track. Investigators are examining the signalling equipment. Replacement buses are carrying passengers until train services resume.</p>",
+          "publishedAt": "2026-09-22T09:00:00Z",
+          "firstSeen": "2026-09-22T09:00:00Z",
+          "regression": {
+            "scenario": "minimal-location",
+            "group": "1",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "minimal-location-1-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/minimal-location-1-b",
+          "title": "Train collision in Rotterdam leaves 12 injured",
+          "description": "Twelve people were injured in a train collision in Rotterdam on September 22. Rail staff closed the affected track as emergency crews helped passengers leave the carriages. Investigators are examining the signalling equipment, and replacement buses are carrying passengers until services resume.",
+          "contentOriginal": "Twelve people were injured in a train collision in Rotterdam on September 22. Rail staff closed the affected track as emergency crews helped passengers leave the carriages. Investigators are examining the signalling equipment, and replacement buses are carrying passengers until services resume.",
+          "contentHtml": "<p>Twelve people were injured in a train collision in Rotterdam on September 22. Rail staff closed the affected track as emergency crews helped passengers leave the carriages. Investigators are examining the signalling equipment, and replacement buses are carrying passengers until services resume.</p>",
+          "publishedAt": "2026-09-22T09:01:00Z",
+          "firstSeen": "2026-09-22T09:01:00Z",
+          "regression": {
+            "scenario": "minimal-location",
+            "group": "1",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "minimal-location-2-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/minimal-location-2-a",
+          "title": "Train collision in Antwerp injures 12 people",
+          "description": "A train collision in Antwerp injured 12 people on September 22. Emergency crews helped passengers leave the carriages while rail staff closed the affected track. Investigators are examining the signalling equipment. Replacement buses are carrying passengers until train services resume.",
+          "contentOriginal": "A train collision in Antwerp injured 12 people on September 22. Emergency crews helped passengers leave the carriages while rail staff closed the affected track. Investigators are examining the signalling equipment. Replacement buses are carrying passengers until train services resume.",
+          "contentHtml": "<p>A train collision in Antwerp injured 12 people on September 22. Emergency crews helped passengers leave the carriages while rail staff closed the affected track. Investigators are examining the signalling equipment. Replacement buses are carrying passengers until train services resume.</p>",
+          "publishedAt": "2026-09-22T09:02:00Z",
+          "firstSeen": "2026-09-22T09:02:00Z",
+          "regression": {
+            "scenario": "minimal-location",
+            "group": "2",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "minimal-location-2-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/minimal-location-2-b",
+          "title": "Train collision in Antwerp leaves 12 injured",
+          "description": "Twelve people were injured in a train collision in Antwerp on September 22. Rail staff closed the affected track as emergency crews helped passengers leave the carriages. Investigators are examining the signalling equipment, and replacement buses are carrying passengers until services resume.",
+          "contentOriginal": "Twelve people were injured in a train collision in Antwerp on September 22. Rail staff closed the affected track as emergency crews helped passengers leave the carriages. Investigators are examining the signalling equipment, and replacement buses are carrying passengers until services resume.",
+          "contentHtml": "<p>Twelve people were injured in a train collision in Antwerp on September 22. Rail staff closed the affected track as emergency crews helped passengers leave the carriages. Investigators are examining the signalling equipment, and replacement buses are carrying passengers until services resume.</p>",
+          "publishedAt": "2026-09-22T09:03:00Z",
+          "firstSeen": "2026-09-22T09:03:00Z",
+          "regression": {
+            "scenario": "minimal-location",
+            "group": "2",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "minimal-state-1-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/minimal-state-1-a",
+          "title": "Fabrikam cuts the price of its existing Lyra Air notebook",
+          "description": "Fabrikam cuts the price of its existing Lyra Air notebook on September 22. The company confirmed the announcement in a statement to retail partners. The lightweight computer is aimed at students and mobile workers. Dealers will publish availability details on their websites throughout the day.",
+          "contentOriginal": "Fabrikam cuts the price of its existing Lyra Air notebook on September 22. The company confirmed the announcement in a statement to retail partners. The lightweight computer is aimed at students and mobile workers. Dealers will publish availability details on their websites throughout the day.",
+          "contentHtml": "<p>Fabrikam cuts the price of its existing Lyra Air notebook on September 22. The company confirmed the announcement in a statement to retail partners. The lightweight computer is aimed at students and mobile workers. Dealers will publish availability details on their websites throughout the day.</p>",
+          "publishedAt": "2026-09-22T09:00:00Z",
+          "firstSeen": "2026-09-22T09:00:00Z",
+          "regression": {
+            "scenario": "minimal-state",
+            "group": "1",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "minimal-state-1-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/minimal-state-1-b",
+          "title": "Fabrikam confirms it cuts the price of its existing Lyra Air notebook",
+          "description": "In a statement on September 22, Fabrikam confirmed it cuts the price of its existing Lyra Air notebook. Retail partners received the announcement this morning. The lightweight computer is aimed at students and mobile workers. Dealers will publish availability details on their websites throughout the day.",
+          "contentOriginal": "In a statement on September 22, Fabrikam confirmed it cuts the price of its existing Lyra Air notebook. Retail partners received the announcement this morning. The lightweight computer is aimed at students and mobile workers. Dealers will publish availability details on their websites throughout the day.",
+          "contentHtml": "<p>In a statement on September 22, Fabrikam confirmed it cuts the price of its existing Lyra Air notebook. Retail partners received the announcement this morning. The lightweight computer is aimed at students and mobile workers. Dealers will publish availability details on their websites throughout the day.</p>",
+          "publishedAt": "2026-09-22T09:01:00Z",
+          "firstSeen": "2026-09-22T09:01:00Z",
+          "regression": {
+            "scenario": "minimal-state",
+            "group": "1",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "minimal-state-2-a",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/minimal-state-2-a",
+          "title": "Fabrikam launches a new generation of Lyra Air notebook",
+          "description": "Fabrikam launches a new generation of Lyra Air notebook on September 22. The company confirmed the announcement in a statement to retail partners. The lightweight computer is aimed at students and mobile workers. Dealers will publish availability details on their websites throughout the day.",
+          "contentOriginal": "Fabrikam launches a new generation of Lyra Air notebook on September 22. The company confirmed the announcement in a statement to retail partners. The lightweight computer is aimed at students and mobile workers. Dealers will publish availability details on their websites throughout the day.",
+          "contentHtml": "<p>Fabrikam launches a new generation of Lyra Air notebook on September 22. The company confirmed the announcement in a statement to retail partners. The lightweight computer is aimed at students and mobile workers. Dealers will publish availability details on their websites throughout the day.</p>",
+          "publishedAt": "2026-09-22T09:02:00Z",
+          "firstSeen": "2026-09-22T09:02:00Z",
+          "regression": {
+            "scenario": "minimal-state",
+            "group": "2",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "minimal-state-2-b",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/minimal-state-2-b",
+          "title": "Fabrikam confirms it launches a new generation of Lyra Air notebook",
+          "description": "In a statement on September 22, Fabrikam confirmed it launches a new generation of Lyra Air notebook. Retail partners received the announcement this morning. The lightweight computer is aimed at students and mobile workers. Dealers will publish availability details on their websites throughout the day.",
+          "contentOriginal": "In a statement on September 22, Fabrikam confirmed it launches a new generation of Lyra Air notebook. Retail partners received the announcement this morning. The lightweight computer is aimed at students and mobile workers. Dealers will publish availability details on their websites throughout the day.",
+          "contentHtml": "<p>In a statement on September 22, Fabrikam confirmed it launches a new generation of Lyra Air notebook. Retail partners received the announcement this morning. The lightweight computer is aimed at students and mobile workers. Dealers will publish availability details on their websites throughout the day.</p>",
+          "publishedAt": "2026-09-22T09:03:00Z",
+          "firstSeen": "2026-09-22T09:03:00Z",
+          "regression": {
+            "scenario": "minimal-state",
+            "group": "2",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "evolution-injuries-1",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/evolution-injuries-1",
+          "title": "Rotterdam train collision injures 12",
+          "description": "A train collision in Rotterdam injured 12 people on September 23. Two commuter trains collided on the western approach during the morning rush hour. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.",
+          "contentOriginal": "A train collision in Rotterdam injured 12 people on September 23. Two commuter trains collided on the western approach during the morning rush hour. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.",
+          "contentHtml": "<p>A train collision in Rotterdam injured 12 people on September 23. Two commuter trains collided on the western approach during the morning rush hour. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.</p>",
+          "publishedAt": "2026-09-23T09:00:00Z",
+          "firstSeen": "2026-09-23T09:00:00Z",
+          "regression": {
+            "scenario": "evolution-injuries",
+            "group": "same",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "evolution-injuries-2",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/evolution-injuries-2",
+          "title": "Rotterdam train collision leaves 12 injured",
+          "description": "Twelve people were injured when two commuter trains collided on the western approach in Rotterdam on September 23. Emergency crews evacuated the carriages during the morning rush hour. Replacement buses carried stranded passengers.",
+          "contentOriginal": "Twelve people were injured when two commuter trains collided on the western approach in Rotterdam on September 23. Emergency crews evacuated the carriages during the morning rush hour. Replacement buses carried stranded passengers.",
+          "contentHtml": "<p>Twelve people were injured when two commuter trains collided on the western approach in Rotterdam on September 23. Emergency crews evacuated the carriages during the morning rush hour. Replacement buses carried stranded passengers.</p>",
+          "publishedAt": "2026-09-23T09:01:00Z",
+          "firstSeen": "2026-09-23T09:01:00Z",
+          "regression": {
+            "scenario": "evolution-injuries",
+            "group": "same",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "evolution-injuries-3",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/evolution-injuries-3",
+          "title": "Rotterdam train collision injures 13",
+          "description": "The injury count from the September 23 train collision in Rotterdam has risen to 13. Two commuter trains collided on the western approach during the morning rush hour. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.",
+          "contentOriginal": "The injury count from the September 23 train collision in Rotterdam has risen to 13. Two commuter trains collided on the western approach during the morning rush hour. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.",
+          "contentHtml": "<p>The injury count from the September 23 train collision in Rotterdam has risen to 13. Two commuter trains collided on the western approach during the morning rush hour. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.</p>",
+          "publishedAt": "2026-09-23T10:00:00Z",
+          "firstSeen": "2026-09-23T10:00:00Z",
+          "regression": {
+            "scenario": "evolution-injuries",
+            "group": "same",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "evolution-pricing-1",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/evolution-pricing-1",
+          "title": "Acme announces Orion X1",
+          "description": "Acme announced the Orion X1 notebook at its Berlin product briefing on September 23. The ARM-powered computer offers a lightweight chassis and a battery designed for all-day use. Retail partners will carry the notebook following the briefing.",
+          "contentOriginal": "Acme announced the Orion X1 notebook at its Berlin product briefing on September 23. The ARM-powered computer offers a lightweight chassis and a battery designed for all-day use. Retail partners will carry the notebook following the briefing.",
+          "contentHtml": "<p>Acme announced the Orion X1 notebook at its Berlin product briefing on September 23. The ARM-powered computer offers a lightweight chassis and a battery designed for all-day use. Retail partners will carry the notebook following the briefing.</p>",
+          "publishedAt": "2026-09-23T09:00:00Z",
+          "firstSeen": "2026-09-23T09:00:00Z",
+          "regression": {
+            "scenario": "evolution-pricing",
+            "group": "same",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "evolution-pricing-2",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/evolution-pricing-2",
+          "title": "Orion X1 notebook announced by Acme",
+          "description": "Acme introduced the Orion X1 notebook during its September 23 product briefing in Berlin. The ARM-powered computer combines a lightweight chassis with a battery designed for all-day use. Retail partners will carry the notebook following the briefing.",
+          "contentOriginal": "Acme introduced the Orion X1 notebook during its September 23 product briefing in Berlin. The ARM-powered computer combines a lightweight chassis with a battery designed for all-day use. Retail partners will carry the notebook following the briefing.",
+          "contentHtml": "<p>Acme introduced the Orion X1 notebook during its September 23 product briefing in Berlin. The ARM-powered computer combines a lightweight chassis with a battery designed for all-day use. Retail partners will carry the notebook following the briefing.</p>",
+          "publishedAt": "2026-09-23T09:01:00Z",
+          "firstSeen": "2026-09-23T09:01:00Z",
+          "regression": {
+            "scenario": "evolution-pricing",
+            "group": "same",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "evolution-pricing-3",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/evolution-pricing-3",
+          "title": "Acme reveals Orion X1 pricing",
+          "description": "Acme revealed pricing for the Orion X1 notebook announced at its Berlin product briefing on September 23. The ARM-powered computer will cost 999 euros through retail partners. It combines a lightweight chassis with a battery designed for all-day use.",
+          "contentOriginal": "Acme revealed pricing for the Orion X1 notebook announced at its Berlin product briefing on September 23. The ARM-powered computer will cost 999 euros through retail partners. It combines a lightweight chassis with a battery designed for all-day use.",
+          "contentHtml": "<p>Acme revealed pricing for the Orion X1 notebook announced at its Berlin product briefing on September 23. The ARM-powered computer will cost 999 euros through retail partners. It combines a lightweight chassis with a battery designed for all-day use.</p>",
+          "publishedAt": "2026-09-23T10:00:00Z",
+          "firstSeen": "2026-09-23T10:00:00Z",
+          "regression": {
+            "scenario": "evolution-pricing",
+            "group": "same",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "evolution-pricing-4",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/evolution-pricing-4",
+          "title": "Orion X1 pre-orders open",
+          "description": "Pre-orders opened for the Orion X1 notebook announced by Acme at its Berlin product briefing on September 23. Retail partners are accepting orders for the ARM-powered computer at 999 euros. It combines a lightweight chassis with a battery designed for all-day use.",
+          "contentOriginal": "Pre-orders opened for the Orion X1 notebook announced by Acme at its Berlin product briefing on September 23. Retail partners are accepting orders for the ARM-powered computer at 999 euros. It combines a lightweight chassis with a battery designed for all-day use.",
+          "contentHtml": "<p>Pre-orders opened for the Orion X1 notebook announced by Acme at its Berlin product briefing on September 23. Retail partners are accepting orders for the ARM-powered computer at 999 euros. It combines a lightweight chassis with a battery designed for all-day use.</p>",
+          "publishedAt": "2026-09-23T11:01:00Z",
+          "firstSeen": "2026-09-23T11:01:00Z",
+          "regression": {
+            "scenario": "evolution-pricing",
+            "group": "same",
+            "wave": 3
+          }
+        },
+        {
+          "sourceId": "evolution-launch-1",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/evolution-launch-1",
+          "title": "Acme announces Orion X1 at Berlin briefing",
+          "description": "Acme announced the Orion X1 notebook at its Berlin briefing on September 23, with the launch scheduled for later that day. The ARM-powered computer combines a lightweight chassis with a battery designed for all-day use. Retail partners will carry the notebook.",
+          "contentOriginal": "Acme announced the Orion X1 notebook at its Berlin briefing on September 23, with the launch scheduled for later that day. The ARM-powered computer combines a lightweight chassis with a battery designed for all-day use. Retail partners will carry the notebook.",
+          "contentHtml": "<p>Acme announced the Orion X1 notebook at its Berlin briefing on September 23, with the launch scheduled for later that day. The ARM-powered computer combines a lightweight chassis with a battery designed for all-day use. Retail partners will carry the notebook.</p>",
+          "publishedAt": "2026-09-23T09:00:00Z",
+          "firstSeen": "2026-09-23T09:00:00Z",
+          "regression": {
+            "scenario": "evolution-launch",
+            "group": "same",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "evolution-launch-2",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/evolution-launch-2",
+          "title": "Acme announces Orion X1 notebook in Berlin",
+          "description": "At its September 23 briefing in Berlin, Acme announced the Orion X1 notebook for launch later that day. The ARM-powered computer has a lightweight chassis and a battery designed for all-day use. Retail partners will carry the notebook.",
+          "contentOriginal": "At its September 23 briefing in Berlin, Acme announced the Orion X1 notebook for launch later that day. The ARM-powered computer has a lightweight chassis and a battery designed for all-day use. Retail partners will carry the notebook.",
+          "contentHtml": "<p>At its September 23 briefing in Berlin, Acme announced the Orion X1 notebook for launch later that day. The ARM-powered computer has a lightweight chassis and a battery designed for all-day use. Retail partners will carry the notebook.</p>",
+          "publishedAt": "2026-09-23T09:01:00Z",
+          "firstSeen": "2026-09-23T09:01:00Z",
+          "regression": {
+            "scenario": "evolution-launch",
+            "group": "same",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "evolution-launch-3",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/evolution-launch-3",
+          "title": "Acme launches Orion X1 in Berlin",
+          "description": "Acme launched the Orion X1 notebook in Berlin later on September 23, following its announcement at the morning briefing. The ARM-powered computer combines a lightweight chassis with a battery designed for all-day use. The notebook is now available through retail partners.",
+          "contentOriginal": "Acme launched the Orion X1 notebook in Berlin later on September 23, following its announcement at the morning briefing. The ARM-powered computer combines a lightweight chassis with a battery designed for all-day use. The notebook is now available through retail partners.",
+          "contentHtml": "<p>Acme launched the Orion X1 notebook in Berlin later on September 23, following its announcement at the morning briefing. The ARM-powered computer combines a lightweight chassis with a battery designed for all-day use. The notebook is now available through retail partners.</p>",
+          "publishedAt": "2026-09-23T10:00:00Z",
+          "firstSeen": "2026-09-23T10:00:00Z",
+          "regression": {
+            "scenario": "evolution-launch",
+            "group": "same",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "evolution-correction-1",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/evolution-correction-1",
+          "title": "Rotterdam train collision closes platform 3",
+          "description": "A train collision in Rotterdam closed platform 3 on September 23, according to the initial rail operator bulletin. Two commuter trains collided during the morning rush hour. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.",
+          "contentOriginal": "A train collision in Rotterdam closed platform 3 on September 23, according to the initial rail operator bulletin. Two commuter trains collided during the morning rush hour. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.",
+          "contentHtml": "<p>A train collision in Rotterdam closed platform 3 on September 23, according to the initial rail operator bulletin. Two commuter trains collided during the morning rush hour. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.</p>",
+          "publishedAt": "2026-09-23T09:00:00Z",
+          "firstSeen": "2026-09-23T09:00:00Z",
+          "regression": {
+            "scenario": "evolution-correction",
+            "group": "same",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "evolution-correction-2",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/evolution-correction-2",
+          "title": "Platform 3 closed after Rotterdam train collision",
+          "description": "The rail operator initially reported that platform 3 was closed after two commuter trains collided in Rotterdam on September 23. Emergency crews evacuated the carriages during the morning rush hour. Replacement buses carried stranded passengers.",
+          "contentOriginal": "The rail operator initially reported that platform 3 was closed after two commuter trains collided in Rotterdam on September 23. Emergency crews evacuated the carriages during the morning rush hour. Replacement buses carried stranded passengers.",
+          "contentHtml": "<p>The rail operator initially reported that platform 3 was closed after two commuter trains collided in Rotterdam on September 23. Emergency crews evacuated the carriages during the morning rush hour. Replacement buses carried stranded passengers.</p>",
+          "publishedAt": "2026-09-23T09:01:00Z",
+          "firstSeen": "2026-09-23T09:01:00Z",
+          "regression": {
+            "scenario": "evolution-correction",
+            "group": "same",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "evolution-correction-3",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/evolution-correction-3",
+          "title": "Rotterdam train collision: operator corrects platform closure",
+          "description": "The rail operator corrected its bulletin about the September 23 train collision in Rotterdam: platform 5, rather than platform 3, was closed. The correction concerns the same morning collision between two commuter trains. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.",
+          "contentOriginal": "The rail operator corrected its bulletin about the September 23 train collision in Rotterdam: platform 5, rather than platform 3, was closed. The correction concerns the same morning collision between two commuter trains. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.",
+          "contentHtml": "<p>The rail operator corrected its bulletin about the September 23 train collision in Rotterdam: platform 5, rather than platform 3, was closed. The correction concerns the same morning collision between two commuter trains. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.</p>",
+          "publishedAt": "2026-09-23T10:00:00Z",
+          "firstSeen": "2026-09-23T10:00:00Z",
+          "regression": {
+            "scenario": "evolution-correction",
+            "group": "same",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "evolution-missing-location-1",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/evolution-missing-location-1",
+          "title": "Rotterdam train collision disrupts western approach",
+          "description": "Two commuter trains collided on the western approach in Rotterdam on September 23. Emergency crews evacuated the carriages during the morning rush hour. Rail staff suspended services and replacement buses carried stranded passengers.",
+          "contentOriginal": "Two commuter trains collided on the western approach in Rotterdam on September 23. Emergency crews evacuated the carriages during the morning rush hour. Rail staff suspended services and replacement buses carried stranded passengers.",
+          "contentHtml": "<p>Two commuter trains collided on the western approach in Rotterdam on September 23. Emergency crews evacuated the carriages during the morning rush hour. Rail staff suspended services and replacement buses carried stranded passengers.</p>",
+          "publishedAt": "2026-09-23T09:00:00Z",
+          "firstSeen": "2026-09-23T09:00:00Z",
+          "regression": {
+            "scenario": "evolution-missing-location",
+            "group": "same",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "evolution-missing-location-2",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/evolution-missing-location-2",
+          "title": "Rotterdam train collision halts commuter services",
+          "description": "The September 23 collision between two commuter trains on the western approach in Rotterdam halted services during the morning rush hour. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.",
+          "contentOriginal": "The September 23 collision between two commuter trains on the western approach in Rotterdam halted services during the morning rush hour. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.",
+          "contentHtml": "<p>The September 23 collision between two commuter trains on the western approach in Rotterdam halted services during the morning rush hour. Emergency crews evacuated the carriages and replacement buses carried stranded passengers.</p>",
+          "publishedAt": "2026-09-23T09:01:00Z",
+          "firstSeen": "2026-09-23T09:01:00Z",
+          "regression": {
+            "scenario": "evolution-missing-location",
+            "group": "same",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "evolution-missing-location-3",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/evolution-missing-location-3",
+          "title": "Train collision disrupts western approach",
+          "description": "Services remain suspended after the September 23 collision between two commuter trains on the western approach. Emergency crews evacuated the carriages during the morning rush hour. Replacement buses continue to carry stranded passengers.",
+          "contentOriginal": "Services remain suspended after the September 23 collision between two commuter trains on the western approach. Emergency crews evacuated the carriages during the morning rush hour. Replacement buses continue to carry stranded passengers.",
+          "contentHtml": "<p>Services remain suspended after the September 23 collision between two commuter trains on the western approach. Emergency crews evacuated the carriages during the morning rush hour. Replacement buses continue to carry stranded passengers.</p>",
+          "publishedAt": "2026-09-23T10:00:00Z",
+          "firstSeen": "2026-09-23T10:00:00Z",
+          "regression": {
+            "scenario": "evolution-missing-location",
+            "group": "same",
+            "wave": 2
+          }
+        },
+        {
+          "sourceId": "evolution-missing-version-1",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/evolution-missing-version-1",
+          "title": "Acme releases Orion OS 4.2 maintenance update",
+          "description": "Acme released Orion OS 4.2 on September 23 to fix a battery drain problem affecting notebooks in standby. The maintenance update is available through system settings and requires a restart. The rollout will reach supported devices throughout the day.",
+          "contentOriginal": "Acme released Orion OS 4.2 on September 23 to fix a battery drain problem affecting notebooks in standby. The maintenance update is available through system settings and requires a restart. The rollout will reach supported devices throughout the day.",
+          "contentHtml": "<p>Acme released Orion OS 4.2 on September 23 to fix a battery drain problem affecting notebooks in standby. The maintenance update is available through system settings and requires a restart. The rollout will reach supported devices throughout the day.</p>",
+          "publishedAt": "2026-09-23T09:00:00Z",
+          "firstSeen": "2026-09-23T09:00:00Z",
+          "regression": {
+            "scenario": "evolution-missing-version",
+            "group": "same",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "evolution-missing-version-2",
+          "feedId": 902,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-2.example.test/articles/evolution-missing-version-2",
+          "title": "Orion OS 4.2 update fixes standby battery drain",
+          "description": "Acme made Orion OS 4.2 available on September 23, fixing a battery drain problem affecting notebooks in standby. Users can install the maintenance update through system settings after restarting their device. Supported devices will receive the rollout throughout the day.",
+          "contentOriginal": "Acme made Orion OS 4.2 available on September 23, fixing a battery drain problem affecting notebooks in standby. Users can install the maintenance update through system settings after restarting their device. Supported devices will receive the rollout throughout the day.",
+          "contentHtml": "<p>Acme made Orion OS 4.2 available on September 23, fixing a battery drain problem affecting notebooks in standby. Users can install the maintenance update through system settings after restarting their device. Supported devices will receive the rollout throughout the day.</p>",
+          "publishedAt": "2026-09-23T09:01:00Z",
+          "firstSeen": "2026-09-23T09:01:00Z",
+          "regression": {
+            "scenario": "evolution-missing-version",
+            "group": "same",
+            "wave": 1
+          }
+        },
+        {
+          "sourceId": "evolution-missing-version-3",
+          "feedId": 901,
+          "status": "unread",
+          "favoriteInd": 0,
+          "negativeInd": 0,
+          "clickedAmount": 0,
+          "url": "https://newsroom-1.example.test/articles/evolution-missing-version-3",
+          "title": "Orion OS maintenance update fixes standby battery drain",
+          "description": "The Orion OS maintenance update released by Acme on September 23 fixes a battery drain problem affecting notebooks in standby. Users can install the update through system settings after restarting their device. Supported devices will receive the rollout throughout the day.",
+          "contentOriginal": "The Orion OS maintenance update released by Acme on September 23 fixes a battery drain problem affecting notebooks in standby. Users can install the update through system settings after restarting their device. Supported devices will receive the rollout throughout the day.",
+          "contentHtml": "<p>The Orion OS maintenance update released by Acme on September 23 fixes a battery drain problem affecting notebooks in standby. Users can install the update through system settings after restarting their device. Supported devices will receive the rollout throughout the day.</p>",
+          "publishedAt": "2026-09-23T10:00:00Z",
+          "firstSeen": "2026-09-23T10:00:00Z",
+          "regression": {
+            "scenario": "evolution-missing-version",
+            "group": "same",
+            "wave": 2
+          }
         }
     ]
 }

@@ -171,6 +171,12 @@ export function renderSemanticRegressionMarkdown({ trace, metadata, duplicateGro
     '',
     markdownTable(['Metric', 'Value'], summary),
     '',
+    '## Event decision diagnostics',
+    '',
+    '[Baseline](baseline-decisions.md) · [Incremental](incremental-decisions.md) · [Unread](unread-decisions.md) · [Occurrence scenarios](occurrences-decisions.md)',
+    '',
+    'Companion JSON files contain machine-readable evidence and reasons. Candidate checks are separate from committed assignment outcomes; at most five candidates are shown per Article and stage.',
+    '',
     '## Events',
     '',
     markdownTable(

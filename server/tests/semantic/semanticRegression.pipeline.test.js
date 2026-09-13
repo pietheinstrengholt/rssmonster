@@ -1,3 +1,4 @@
+import { installEventDiagnosticReport } from '../helpers/semanticEventDiagnosticReport.js';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -365,3 +366,5 @@ semanticRegressionDescribe('semantic regression fixture pipeline', () => {
   }, 60000);
 
 });
+
+installEventDiagnosticReport('baseline');

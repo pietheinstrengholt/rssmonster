@@ -1,6 +1,7 @@
 // services/events/assignArticleToEvent.js
 // This service assigns one article to an existing event, creates a new event, or leaves it eventless.
 // It maintains event-owned topic links while preserving behavioral topic evidence owned by ArticleTopic.
+import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } from './eventDecisionDiagnostics.js';
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { assignSemanticUnitToTopic } from '../topics/event/assignEventToTopic.js';
@@ -577,10 +578,21 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   // Keeps the unassigned candidates entries eligible while assigning article to event.
   // Discovery stays semantic/time based. Apply occurrence identity only when
   // selecting a proposed new Event's members, using the shared decision policy.
-  const unassignedCandidates = candidateArticles.filter(candidate => candidate.eventId == null &&
-    evaluateCandidateSignal({
-      article, candidate, articleEventVector, normalizedArticleEventVector, enforceOccurrence: true
-    }).accepted);
+  const seedDiagnostics = [];
+  let seedCandidateCount = 0;
+  const unassignedCandidates = candidateArticles.filter(candidate => {
+    if (candidate.eventId != null) return false;
+    seedCandidateCount++;
+    const signal = evaluateCandidateSignal({ article, candidate, articleEventVector, normalizedArticleEventVector, enforceOccurrence: true });
+    if (eventDiagnosticsEnabled() && seedDiagnostics.length < 5) {
+      seedDiagnostics.push({ candidateArticleId: candidate.id, ...candidateDiagnostic({
+        evidence: signal, score: signal.score, evidenceScore: signal.evidenceScore,
+        eligible: signal.accepted, decision: signal.accepted ? 'join' : 'reject', reasons: signal.reasons
+      }) });
+    }
+    return signal.accepted;
+  });
+  if (seedDiagnostics.length) emitEventDiagnostic(article, 'seed_candidates', { candidates: seedDiagnostics, omittedCandidates: Math.max(0, seedCandidateCount - 5) });
 
   const events = cache
     ? [...cache.events]
@@ -642,6 +654,15 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
         spanHours: result.evidence.spanHours, candidateSources: result.evidence.candidateSources
       }))
   };
+  if (eventDiagnosticsEnabled()) {
+    diagnostics.topMatches = [...decisions]
+      .sort((a, b) => b.score - a.score || Number(a.event.id) - Number(b.event.id))
+      .slice(0, 5).map(result => candidateDiagnostic(result, selection));
+    emitEventDiagnostic(article, 'event_candidates', { ...diagnostics, candidateCount: decisions.length, omittedCandidates: Math.max(0, decisions.length - 5) });
+  }
+  const traceOutcome = (eventId, decision, reasons, outcome) => emitEventDiagnostic(article, 'assignment', {
+    eventId, decision, reasons, outcome
+  });
   if (runContext) runContext.lastDecision = diagnostics;
   debugEventLog(`article=${article.id} existing-event-eval`, diagnostics);
   debugEventLog(`article=${article.id} candidate-eval`, {
@@ -692,6 +713,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       if (runContext) runContext.lastDecision = {
         ...diagnostics, decision: 'reject', reasons: ['membership_changed']
       };
+      traceOutcome(null, 'reject', ['membership_changed'], 'eventless');
       return null;
     }
 
@@ -723,6 +745,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       `overlap=${bestSignal.overlap ?? 0} decision=existing-event`
     );
 
+    traceOutcome(updatedEventId, 'join', selection.reasons, 'reused');
     return updatedEventId;
   }
 
@@ -735,6 +758,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       eventId: null, topicId: article.topicId, topicAssignments: [], eventVector: articleEventVector
     });
     articleCandidateCache?.updateEventId?.([article.id], null);
+    traceOutcome(null, 'ambiguous', selection.reasons, 'eventless');
     return null;
   }
 
@@ -764,6 +788,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       eventVector: articleEventVector
     });
     articleCandidateCache?.updateEventId?.([article.id], null);
+    traceOutcome(null, 'reject', ['insufficient_creation_support'], 'eventless');
 
     return null;
   }
@@ -832,6 +857,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     eventVector: articleEventVector
   });
 
+  traceOutcome(newEventId, newEventId ? 'join' : 'reject',
+    [newEventId ? 'compatible_seed_group' : 'seed_group_not_assigned'], newEventId ? 'new' : 'eventless');
   return newEventId;
 }
 
