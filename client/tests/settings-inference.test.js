@@ -22,6 +22,25 @@ describe('Inference Settings', () => {
     expect(wrapper.text()).toContain('1024 dimensions'); expect(wrapper.text()).not.toContain('Remove connection');
     await wrapper.get('button').trigger('click'); await flushPromises(); expect(testInferenceSettings).toHaveBeenCalled();
   });
+  it.each([
+    [false, true, true, 'Disabled'],
+    [true, true, true, 'Available'],
+    [true, false, true, 'Unavailable'],
+    [true, true, false, 'Unavailable']
+  ])('applies assistant permission %s with availability %s and readiness %s', async (permitted, available, ready, expected) => {
+    const assistantStatus = { ...status, ready, permissions: { assistant: permitted }, capabilities: {
+      ...status.capabilities, assistant: { configured: true, available, model: 'gpt-4o-mini', provider: 'openai-compatible' }
+    } };
+    fetchInferenceSettings.mockResolvedValue({ data: { ...configuration('environment'), status: assistantStatus } });
+    testInferenceSettings.mockResolvedValue({ data: assistantStatus });
+    const wrapper = await render();
+    const assistant = () => wrapper.findAll('.inference-capabilities article').find(card => card.get('h5').text() === 'Assistant');
+    expect(assistant().get('.app-status-badge').text()).toContain(expected);
+    expect(assistant().text()).toContain('gpt-4o-mini');
+    expect(assistant().get('.app-status-badge').classes()).toContain(expected === 'Available' ? 'app-status-badge--success' : 'app-status-badge--neutral');
+    await wrapper.get('button').trigger('click'); await flushPromises();
+    expect(assistant().get('.app-status-badge').text()).toContain(expected);
+  });
   it('shows the empty state and editable controls without a secret value', async () => {
     fetchInferenceSettings.mockResolvedValue({ data: { ...configuration('none'), status: { state: 'not_configured' } } });
     const wrapper = await render(); expect(wrapper.text()).toContain('No inference service configured.');

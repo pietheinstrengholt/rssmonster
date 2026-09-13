@@ -65,7 +65,7 @@
         <header class="inference-card-heading">
           <div>
             <h4 id="inference-capabilities-title">Capabilities</h4>
-            <p class="inference-muted">Detected features provided by the inference service.</p>
+            <p class="inference-muted">Feature availability in RSSMonster, including deployment settings.</p>
           </div>
           <button type="button" class="app-button app-button--outline-secondary" :disabled="busy || configuration.configurationSource === 'none'" @click="check">
             {{ checking ? 'Checking…' : 'Refresh' }}
@@ -74,9 +74,9 @@
         <div class="inference-capabilities">
           <article v-for="name in capabilityNames" :key="name" class="settings-panel inference-capability">
             <h5>{{ name.charAt(0).toUpperCase() + name.slice(1) }}</h5>
-            <span class="app-status-badge" :class="status?.ready && status?.capabilities?.[name]?.available ? 'app-status-badge--success' : 'app-status-badge--neutral'">
-              <span aria-hidden="true">{{ status?.ready && status?.capabilities?.[name]?.available ? '●' : '○' }}</span>
-              {{ status?.ready && status?.capabilities?.[name]?.available ? 'Available' : 'Unavailable' }}
+            <span class="app-status-badge" :class="capabilityStatus(name) === 'Available' ? 'app-status-badge--success' : 'app-status-badge--neutral'">
+              <span aria-hidden="true">{{ capabilityStatus(name) === 'Available' ? '●' : '○' }}</span>
+              {{ capabilityStatus(name) }}
             </span>
             <template v-if="status?.capabilities?.[name]?.configured">
               <p class="inference-model">{{ status.capabilities[name].model }}</p>
@@ -117,6 +117,10 @@ export default {
   mounted() { this.load(); },
   beforeUnmount() { this.apiKey = ''; },
   methods: {
+    capabilityStatus(name) {
+      if (this.status?.permissions?.[name] === false) return 'Disabled';
+      return this.status?.ready && this.status?.capabilities?.[name]?.available ? 'Available' : 'Unavailable';
+    },
     applyConfiguration(data) {
       this.configuration = data; this.baseUrl = data.baseUrl || '';
       this.apiKey = ''; this.apiKeyAction = 'keep'; this.confirmRemove = false;

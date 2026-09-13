@@ -1,4 +1,5 @@
 import db from '../models/index.js';
+import { getAIPermissions } from '../services/ai/capabilities.js';
 import { getInferenceConfigurationMetadata, saveInferenceConfiguration,
   clearInferenceConfiguration, InferenceConfigurationError } from '../services/inference/configuration.js';
 import { clearInferenceStatus, getInferenceStatus, testInferenceConfiguration } from '../services/inference/status.js';
@@ -14,9 +15,10 @@ const action = operation => async (req, res) => {
       .json({ error: error instanceof InferenceConfigurationError ? error.message : 'Inference settings could not be loaded' });
   }
 };
+const withPermissions = status => ({ ...status, permissions: getAIPermissions() });
 export const getInferenceSettings = action(async () => ({
   ...await getInferenceConfigurationMetadata(),
-  status: await getInferenceStatus().catch(() => ({ state: 'configuration_error', ready: false, capabilities: null }))
+  status: withPermissions(await getInferenceStatus().catch(() => ({ state: 'configuration_error', ready: false, capabilities: null })))
 }));
 export const putInferenceSettings = action(async req => {
   const result = await saveInferenceConfiguration(req.body);
@@ -29,5 +31,5 @@ export const deleteInferenceSettings = action(async () => {
   return result;
 });
 // An optional draft is tested without saving; an empty request tests the effective connection.
-export const testInferenceSettings = action(async req => req.body && Object.keys(req.body).length
-  ? testInferenceConfiguration(req.body) : getInferenceStatus({ refresh: true }));
+export const testInferenceSettings = action(async req => withPermissions(await (req.body && Object.keys(req.body).length
+  ? testInferenceConfiguration(req.body) : getInferenceStatus({ refresh: true }))));

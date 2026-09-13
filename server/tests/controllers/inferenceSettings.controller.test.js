@@ -2,7 +2,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
-import { testInferenceConfiguration } from '../../services/inference/status.js';
+import { getInferenceStatus, testInferenceConfiguration } from '../../services/inference/status.js';
 import { getJwtSecret } from '../../config/auth.js';
 vi.mock('../../services/inference/status.js', () => ({ clearInferenceStatus: vi.fn(), testInferenceConfiguration: vi.fn(async () => ({ state: 'ready', ready: true })), getInferenceStatus: vi.fn(async () => ({ state: 'not_configured', ready: false })), getAvailableInferenceCapabilities: vi.fn(async () => ({})) }));
 let app;
@@ -45,6 +45,25 @@ describe('administrator inference settings API', () => {
     expect(response.body.ready).toBe(true);
     expect(testInferenceConfiguration).toHaveBeenCalledWith(draft);
     expect(await db.InferenceSetting.count()).toBe(0);
+  });
+  it.each(['false', 'true'])('includes assistant permission %s in loaded and tested status', async enabled => {
+    vi.stubEnv('INFERENCE_AI_ENABLED', 'true');
+    vi.stubEnv('INFERENCE_ASSISTANT_ENABLED', enabled);
+    const status = { state: 'ready', ready: true, capabilities: {
+      assistant: { configured: true, available: true, provider: 'openai-compatible', model: 'gpt-4o-mini' }
+    } };
+    getInferenceStatus.mockResolvedValue(status);
+    testInferenceConfiguration.mockResolvedValue(status);
+    const auth = authorization(admin);
+    const read = await request(app).get('/api/setting/inference').set('Authorization', auth);
+    expect(read.status).toBe(200);
+    expect(read.body.status.permissions.assistant).toBe(enabled === 'true');
+    expect(read.body.status.capabilities.assistant).toEqual(status.capabilities.assistant);
+    for (const input of [{}, { baseUrl: 'http://inference', apiKeyAction: 'remove' }]) {
+      const probe = await request(app).post('/api/setting/inference/test').set('Authorization', auth).send(input);
+      expect(probe.status).toBe(200);
+      expect(probe.body.permissions.assistant).toBe(enabled === 'true');
+    }
   });
   it('rejects writes and clears when the environment owns the connection', async () => {
     vi.stubEnv('INFERENCE_BASE_URL', 'http://deployment');
