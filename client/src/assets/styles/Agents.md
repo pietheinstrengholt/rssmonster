@@ -2,7 +2,7 @@
 
 ## Scope
 
-Applies to `client/src/styles/`.
+Applies to `client/src/assets/styles/`.
 
 Follow the root `AGENTS.md` and `client/AGENTS.md` first.
 

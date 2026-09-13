@@ -31,6 +31,16 @@ const strongEvent = {
 };
 
 describe('computeRecommended', () => {
+  it('scores articles with no optional semantic evidence using the unchanged defaults', () => {
+    const noSemanticEvidence = articleWith();
+    expect(computeRecommendedBreakdown(noSemanticEvidence)).toMatchObject({ interestScore: 0, corroboration: 0 });
+    expect(computeRecommended(noSemanticEvidence)).toBeCloseTo(0.25 * 0.5 + 0.20 * 0.5);
+    expect(Number.isFinite(computeRecommended({}))).toBe(true);
+    for (const interestScore of [0, 0.8, -0.8]) {
+      expect(Number.isFinite(computeRecommended(articleWith({ interestScore })))).toBe(true);
+    }
+  });
+
   it('materially raises ranking for strong positive interest', () => {
     const neutral = computeRecommended(articleWith({ interestScore: 0 }));
     const interested = computeRecommended(articleWith({ interestScore: 1 }));

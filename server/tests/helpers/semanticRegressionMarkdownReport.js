@@ -1,3 +1,4 @@
+import { collectIslandDiagnostics, recommendationCoverage, interestPathMetrics, collectTopicQuality } from './semanticRecommendationDiagnostics.js';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -120,6 +121,8 @@ function summaryRows(rows, events, topics, islands, duplicates) {
 
   return [
     ['Articles evaluated', rows.length],
+    ...Object.entries(recommendationCoverage(rows)),
+    ...Object.entries(interestPathMetrics(rows)),
     ['Baseline articles', rows.filter(row => row.source === 'baseline').length],
     ['Incremental articles', incrementalRows.length],
     ['Articles assigned to events', rows.filter(row => row.eventId).length],
@@ -138,7 +141,7 @@ function summaryRows(rows, events, topics, islands, duplicates) {
 }
 
 // This function renders the reusable Markdown artifact without model-specific assumptions.
-export function renderSemanticRegressionMarkdown({ trace, metadata, duplicateGroups = [], generatedAt = new Date() }) {
+export function renderSemanticRegressionMarkdown({ trace, metadata, duplicateGroups = [], generatedAt = new Date(), expansion = null }) {
   const rows = Object.values(trace.articles || {});
   const events = eventRows(rows);
   const topics = topicRows(rows);
@@ -170,6 +173,50 @@ export function renderSemanticRegressionMarkdown({ trace, metadata, duplicateGro
     '## Management summary',
     '',
     markdownTable(['Metric', 'Value'], summary),
+    '',
+    ...(expansion ? [
+      '## Expanded scenario corpus', '',
+      'The legacy user keeps its own metrics above. Isolated expansion users preserve real calendar gaps and behavioral training/held-out boundaries. Controlled-vector checks reuse those Articles and are reported separately from frozen Qwen outcomes.', '',
+      markdownTable(['Corpus', 'Articles'], [['Legacy main user', rows.length], ['Dedicated expansion', expansion.expansionCorpusCount], ['Combined', rows.length + expansion.expansionCorpusCount]]), '',
+      markdownTable(['Expansion metric', 'Value'], Object.entries(expansion.metrics)), '',
+      `Gold assertions: ${expansion.checks.filter(c => c.pass).length} passed; ${expansion.checks.filter(c => !c.pass).length} failed.`, '',
+      '[Scenario PASS/FAIL and held-out outcomes](expansion-report.md) · [Structured outcomes](expansion-report.json) · [Event decisions](expansion-decisions.md) · [Topic decisions](expansion-topic-decisions.json)', ''
+    ] : []),
+    '## Island formation diagnostics',
+    '',
+    'Derived from current bounded behavioral support (nearest qualifying Island, not audit history). Publication-day breadth is a proxy, not measured interaction-day breadth. These classifications do not affect ranking.',
+    '',
+    markdownTable(['Metric', 'Value'], [
+      ['Active Islands', trace.islandDiagnostics?.activeIslands ?? '-'],
+      ['Singleton Islands', trace.islandDiagnostics?.islands.filter(row => row.singleton).length ?? '-'],
+      ['Low-cohesion Islands', trace.islandDiagnostics?.islands.filter(row => row.lowCohesion).length ?? '-'],
+      ['Unassigned behavioral profiles', trace.islandDiagnostics?.unassignedBehavioralProfiles ?? '-']
+    ]),
+    '',
+    markdownTable(['Island', 'Preference', 'Confidence', 'Members', 'Distinct articles', 'Sources', 'Publication days', 'Median similarity', 'Minimum similarity', 'Positive', 'Negative', 'Classification'],
+      (trace.islandDiagnostics?.islands || []).map(row => [row.label, row.preferenceStrength?.toFixed(3), row.islandConfidence?.toFixed(3), row.memberCount, row.distinctBehavioralArticles,
+        row.distinctSources, row.distinctPublicationDays, row.medianSimilarity?.toFixed(3), row.minimumSimilarity?.toFixed(3),
+        row.positiveEvidenceCount, row.negativeEvidenceCount, row.classifications.join(', ')])),
+    '',
+    '## Topic decision diagnostics',
+    '',
+    '[Topic gold cases](topic-gold.md). Candidate details are also recorded in trace.json and the console trace; IDs are diagnostic only.',
+    '',
+    markdownTable(['Metric', 'Value'], Object.entries(trace.topicQuality || {})),
+    '',
+    markdownTable(['Event', 'Outcome', 'Margin', 'Candidate Topic', 'Similarity', 'Relationship', 'Confidence', 'Reasons'],
+      (trace.topicDecisions || []).flatMap(d => d.candidates.length ? d.candidates.map(c => [d.eventName, d.outcome, d.winnerMargin?.toFixed(3), c.topicName, c.semanticSimilarity?.toFixed(3), c.relationshipType, c.confidence, c.reasons.join(', ')]) : [[d.eventName, d.outcome, '-', '-', '-', '-', '-', '-']])),
+    '',
+    '## Interest contribution diagnostics',
+    '',
+    'Paths are deduplicated per Island and per sign. Seed/self evidence is not held-out generalization. Topic similarity below is IslandTopic similarity; ArticleTopic stores confidence only.',
+    '',
+    markdownTable(['Article', 'Evidence', 'Path', 'Island / behavior source', 'Similarity', 'Relationship confidence', 'ArticleTopic confidence', 'IslandTopic confidence', 'Recency', 'Intent', 'Intent compatibility', 'Contribution'],
+      rows.flatMap(row => (row.interestDiagnostics?.paths || []).map(path => [row.title,
+        row.interestDiagnostics.seedSelf ? 'seed/self' : 'held-out', path.matchType,
+        path.islandId ?? `article ${path.sourceArticleId} (${path.explicitType})`, path.semanticSimilarity?.toFixed(3),
+        path.relationshipConfidence?.toFixed(3), path.articleTopicConfidence?.toFixed(3), path.islandTopicConfidence?.toFixed(3),
+        path.recencyFactor?.toFixed(3), path.intentMatchType, path.intentCompatibility, path.contribution?.toFixed(4)]))),
     '',
     '## Event decision diagnostics',
     '',
@@ -270,6 +317,19 @@ export async function writeSemanticRegressionMarkdownReport({
     readFile(vectorFixturePath, 'utf8').then(JSON.parse),
     loadDuplicateGroups([...new Set([userId, ...duplicateEvaluationUserIds].filter(Boolean))])
   ]);
+  trace.islandDiagnostics = await collectIslandDiagnostics(userId);
+  trace.topicQuality = await collectTopicQuality(userId, trace.topicDecisions);
+  console.table(trace.topicQuality);
+  await writeFile(TRACE_PATH, JSON.stringify(trace, null, 2));
+  console.table(recommendationCoverage(Object.values(trace.articles || {})));
+  console.table(interestPathMetrics(Object.values(trace.articles || {})));
+  console.table({
+    'Active Islands': trace.islandDiagnostics.activeIslands,
+    'Singleton Islands': trace.islandDiagnostics.islands.filter(row => row.singleton).length,
+    'Low-cohesion Islands': trace.islandDiagnostics.islands.filter(row => row.lowCohesion).length,
+    'Unassigned behavioral profiles': trace.islandDiagnostics.unassignedBehavioralProfiles
+  });
+  console.table(trace.islandDiagnostics.islands.map(({ basis: _basis, ...row }) => row));
   const metadata = {
     provider: vectorFixture.embeddingProvider,
     model: vectorFixture.embeddingModel,
@@ -278,7 +338,14 @@ export async function writeSemanticRegressionMarkdownReport({
   };
   const filename = `${reportModelSlug(metadata.model)}-${reportTimestamp(generatedAt)}.md`;
   const reportPath = join(REPORT_DIR, filename);
-  const markdown = renderSemanticRegressionMarkdown({ trace, metadata, duplicateGroups, generatedAt });
+  let expansion = null;
+  try {
+    const candidate = JSON.parse(await readFile(join(REPORT_DIR, 'expansion-report.json'), 'utf8'));
+    const users = await db.User.findAll({ where: { username: { [Op.like]: 'semantic-expansion-%' } }, attributes: ['id'], raw: true });
+    const count = users.length ? await Article.count({ where: { userId: users.map(u => u.id) } }) : 0;
+    if (count > 0 && count === candidate.expansionCorpusCount) expansion = candidate;
+  } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  const markdown = renderSemanticRegressionMarkdown({ trace, metadata, duplicateGroups, generatedAt, expansion });
 
   await mkdir(REPORT_DIR, { recursive: true });
   await writeFile(reportPath, markdown);

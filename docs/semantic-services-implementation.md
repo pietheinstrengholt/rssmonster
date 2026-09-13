@@ -121,3 +121,27 @@ incremental-unread, and taxonomy vectors. Do not regenerate fixtures merely to
 make a failing regression pass. See [npm Commands]({% link npm-commands.md %}#semantic-regression-fixtures)
 for generation and selection commands and `server/tests/semantic/README.md` for
 report and cache conventions.
+
+## Current decision and scoring contracts
+
+The subsystem READMEs are the authoritative technical references:
+
+- [Events](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/events/README.md): `eventOccurrencePolicy.js` and
+  `occurrenceFeatures.js` share occurrence decisions across retrieval paths,
+  including temporal span, feature conflicts and ambiguity.
+- [Topics](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/topics/README.md): `topicDecisionPolicy.js` and
+  `topicSubjectEvidence.js` require durable subjects, attenuate identity fallback
+  and avoid ambiguous forced primaries. Labels do not establish identity.
+- [Islands and interest](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/islands/README.md):
+  `islandInterestConfidence.js` separates preference/support/relationship confidence;
+  `behavioralIntent.js` attenuates cross-intent explicit feedback without new inference.
+- [Semantic regression testing](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/tests/semantic/README.md): model-backed
+  occurrence fixtures, controlled Topic gold and held-out interest tests, diagnostic
+  artifacts and coverage assertions.
+
+Island capacity leaves unmatched profiles unassigned rather than contaminating
+communities. Calibration replaces current signal snapshots without replay inflation.
+Scoring considers Topic, direct Island and bounded explicit behavioral paths;
+strongest paths are aggregated with signed bounds. No match means neutral interest,
+not an absent Recommended score. The unchanged final weights and optional input
+defaults are documented in [Scoring]({% link scoring.md %}).

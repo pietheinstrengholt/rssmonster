@@ -1,3 +1,4 @@
+import { scoreArticlesFromIslandsForUser } from '../../services/score/scoreArticlesFromIslands.js';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
@@ -289,6 +290,8 @@ describe('article ownership authorization', () => {
         confidence: 1
       })
     ]);
+
+    await scoreArticlesFromIslandsForUser(owner.id);
 
     const response = await request(app)
       .post('/api/articles/details')

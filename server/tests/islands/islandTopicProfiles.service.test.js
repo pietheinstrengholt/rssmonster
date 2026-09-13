@@ -139,7 +139,7 @@ describe('buildTopicInterestIslandProfilesForUser', () => {
     ]);
     const articles = await Promise.all([
       Article.create(articlePayload(graph.user, graph.feed, 1, { clickedAmount: 2 })),
-      Article.create(articlePayload(graph.user, graph.feed, 2, { favoriteInd: 1 })),
+      Article.create(articlePayload(graph.user, graph.feed, 2, { favoriteInd: 1, publishedAt: new Date('2026-05-21T10:00:00.000Z') })),
       Article.create(articlePayload(graph.user, graph.feed, 3, {
         clickedAmount: 1,
         publishedAt: new Date('2026-05-28T10:00:00.000Z')
@@ -156,8 +156,8 @@ describe('buildTopicInterestIslandProfilesForUser', () => {
     const profiles = await buildTopicInterestIslandProfilesForUser(graph.user.id, { maxIslands: 1 });
 
     expect(profiles).toHaveLength(1);
-    expect(profiles[0].topics).toHaveLength(3);
-    expect(profiles[0].positiveSignals.clicks).toBe(3);
+    expect(profiles[0].topics.map(topic => topic.topicId).sort()).toEqual([topics[0].id, topics[1].id].sort());
+    expect(profiles[0].positiveSignals.clicks).toBe(2);
     expect(profiles[0].positiveSignals.stars).toBe(1);
     expect(profiles[0].vector).toHaveLength(3);
   });

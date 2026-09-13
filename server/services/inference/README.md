@@ -12,3 +12,8 @@ only the resolver reads it. API projections never expose either form of the key.
 Each transport request resolves current configuration. Circuits and status snapshots
 are scoped by a hash of endpoint and credentials, with no secrets in cache metadata.
 Administrative probes use the same transport and contract validators as runtime.
+
+Semantic membership and recommendation confidence belong to the
+[domain services](../README.md), not connection resolution. Missing optional
+classification/labels must not become invented semantic evidence; unmatched
+personalization remains neutral in Recommended scoring.

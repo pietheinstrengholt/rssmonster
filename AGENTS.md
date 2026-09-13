@@ -71,7 +71,14 @@ Deterministic identity takes precedence over semantic similarity. Similar conten
 
 A repeated feed item may be a revision rather than a new article. Preserve identity and user state according to existing revision semantics.
 
-Semantic features are probabilistic. Use deterministic eligibility rules, bounded candidate sets, ownership/visibility filtering, and meaningful thresholds. Zero recommendations is valid.
+Semantic features are probabilistic. Use deterministic eligibility rules, bounded candidate sets, ownership/visibility filtering, and meaningful thresholds. Zero semantic matches or an empty eligible result set is valid; every eligible Article must still receive a finite Recommended score with neutral interest when unmatched.
+
+For semantic changes, follow [the service invariants](server/services/AGENTS.md) and
+run `npm run test:semantic-trace` from `server/`. Do not weaken regression
+expectations or semantic thresholds to make coverage or tests look better. Event
+occurrence identity and Topic durable-subject identity are different problems.
+Keep final Recommended weights unchanged when improving semantic evidence unless
+weight changes are explicitly requested.
 
 For crawl changes, preserve useful failure, timing, retry, and recovery information. Avoid retry storms and parallel crawler implementations when existing fetch/crawl logic can be reused.
 

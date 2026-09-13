@@ -541,3 +541,14 @@ The reader should experience article search as a calm, precise command surface o
 A simple query should feel obvious. A structured query should feel powerful. A saved smart folder should feel like the same search contract running consistently over time.
 
 The architecture succeeds when an agent can infer the correct behavior from the user's intent and these principles, without needing to memorize the current implementation shape.
+
+## Recommended coverage versus Island filtering
+
+Every authorized Article that passes the current view's filters can receive a
+runtime Recommended score. No Event, Topic, Island or embedding is required;
+unmatched personal evidence means zero interest. The existing `island:true`
+filter specifically tests EventTopic → IslandTopic relationships, so it is neither
+a nonzero-interest filter nor a prerequisite for scoring. Direct Island and explicit
+behavioral paths may personalize Articles outside that filter. See the
+[interest evaluator](../islands/README.md#confidence-aware-interest) and
+[final ranking formula](../../../docs/scoring.md).

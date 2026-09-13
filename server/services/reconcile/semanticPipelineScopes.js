@@ -1,3 +1,4 @@
+import { loadTopicSubjectEvidence } from '../topics/shared/topicSubjectEvidence.js';
 // services/reconcile/semanticPipelineScopes.js
 // This service exposes explicit semantic pipeline scopes for events and event-topic assignment.
 // It treats Article.topicId as event-owned denormalization, so behavioral topic evidence stays in ArticleTopic.
@@ -1067,6 +1068,9 @@ export async function rebuildAllTopicsForUser(userId, options = {}) {
     ]
   });
 
+  // Preserve source anchors before the explicit rebuild clears relationship rows.
+  const subjectEvidence = await loadTopicSubjectEvidence(userTopics, userId);
+
   // Maps source values into the result produced while performing rebuild all topics for user.
   await EventTopic.destroy({
     where: {
@@ -1107,7 +1111,8 @@ export async function rebuildAllTopicsForUser(userId, options = {}) {
     createdTopicIds = [],
     stats
   } = await assignTopicsForEvents(userId, events, {
-    assignmentContext
+    assignmentContext,
+    subjectEvidence
   });
 
   await recomputeTopicStatsForUser(

@@ -212,3 +212,12 @@ key, authentication is disabled. `/health` remains public; `/ready` and all API
 routes are protected when enabled. HTTP 401 maps to `INFERENCE_UNAUTHORIZED` and
 does not open transient failure circuits. Keys stay out of metadata and logs.
 See the inference documentation for generation, HTTPS, and deployment examples.
+
+## Server semantic decision boundary
+
+Inference produces embeddings, classification and optional labels. The server
+owns occurrence-based Event membership, durable-subject Topic relationships,
+behavioral Island formation and confidence-aware interest scoring. These recent
+policies add no model calls, and generated labels are not independent identity or
+ranking evidence. See the [semantic architecture](../server/services/README.md)
+and [regression guide](../server/tests/semantic/README.md) for current contracts.

@@ -36,7 +36,7 @@ describe('behavioral article island profiles', () => {
     });
   });
 
-  it('filters unusable evidence and clusters similar articles with deterministic labels', async () => {
+  it('leaves below-threshold evidence unassigned when the community cap is reached', async () => {
     mocks.findAll.mockResolvedValue([
       { id: 1, title: 'Primary', articleVector: [1, 0], positiveInd: 1, publishedAt: new Date(Date.now() + 60_000) },
       { id: 2, title: 'Related', articleVector: [0.99, 0.01], favoriteInd: 1, publishedAt: new Date(Date.now() + 60_000) },
@@ -49,8 +49,12 @@ describe('behavioral article island profiles', () => {
 
     expect(mocks.findAll).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ userId: 12 }) }));
     expect(profiles).toHaveLength(1);
-    expect(profiles[0].articles.map(article => article.articleId)).toEqual([1, 2, 3]);
+    expect(profiles[0].articles.map(article => article.articleId)).toEqual([1, 2]);
     expect(profiles[0].label).toBe('Primary');
-    expect(profiles[0].positiveSignals).toEqual({ positives: 1, stars: 1, clicks: 1, deepReads: 0, negatives: 0 });
+    expect(profiles.summary).toMatchObject({ eligibleBehavioralProfiles: 3, assignedBehavioralProfiles: 2, unassignedBehavioralProfiles: 1 });
+    const uncapped = await buildInterestIslandProfilesForUser(12, { maxIslands: 2 });
+    expect(uncapped.map(profile => profile.articles.map(article => article.articleId))).toEqual([[1, 2], [3]]);
+    expect(uncapped.summary.unassignedBehavioralProfiles).toBe(0);
+    expect(profiles[0].positiveSignals).toEqual({ positives: 1, stars: 1, clicks: 0, deepReads: 0, negatives: 0 });
   });
 });

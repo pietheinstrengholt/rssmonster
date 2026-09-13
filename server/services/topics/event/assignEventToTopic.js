@@ -1,10 +1,11 @@
+import { emitTopicDecision } from './topicDecisionDiagnostics.js';
+import { loadTopicSubjectEvidence } from '../shared/topicSubjectEvidence.js';
+import { evaluateTopicCandidates, topicDecisionDiagnostic } from './topicDecisionPolicy.js';
 import db from '../../../models/index.js';
 import {
   MAX_CANDIDATES,
-  TOPIC_IDENTITY_THRESHOLD,
   PRIMARY_TOPIC_THRESHOLD,
-  SECONDARY_TOPIC_THRESHOLD,
-  MAX_TOPICS_PER_ARTICLE
+  SECONDARY_TOPIC_THRESHOLD
 } from '../../config/semanticConfig.js';
 import {
   cosineSimilarity,
@@ -13,8 +14,7 @@ import {
 import { debugSemanticLog } from '../../observability/semanticLogging.js';
 import {
   updateMatchedTopics,
-  updateIdentityTopic,
-  updateTopicByKey
+  updateIdentityTopic
 } from './updateTopic.js';
 import { createTopic } from './createTopics.js';
 
@@ -24,8 +24,6 @@ const { Topic } = db;
 // This service assigns event-shaped semantic units to event or hybrid topics.
 // Pure behavioral topics are excluded here so preference clusters do not steal event ownership.
 
-// Defines the max topic candidates enforced by this service.
-const MAX_TOPIC_CANDIDATES = MAX_TOPICS_PER_ARTICLE;
 // Defines the non incremental primary hysteresis enforced by this service.
 const NON_INCREMENTAL_PRIMARY_HYSTERESIS = 0.01;
 // Defines the non incremental secondary hysteresis enforced by this service.
@@ -80,7 +78,9 @@ export async function assignSemanticUnitToTopic({
   semanticUnit,
   semanticVector,
   topicsCache = null,
-  assignmentContext = 'incremental'
+  assignmentContext = 'incremental',
+  onDecision = null,
+  subjectEvidence = null
 }) {
   // This function finds matching event/hybrid topics for a semantic vector, or creates a gated event topic.
   // It updates matched topic activity and returns ranked assignments for EventTopic and ArticleTopic rows.
@@ -97,149 +97,42 @@ export async function assignSemanticUnitToTopic({
     ? Math.min(SECONDARY_TOPIC_THRESHOLD + NON_INCREMENTAL_SECONDARY_HYSTERESIS, 0.999)
     : SECONDARY_TOPIC_THRESHOLD;
 
-  // Collects the matched candidates while assigning semantic unit to topic.
-  const matchedCandidates = [];
-  let bestTopic = null;
-  let bestTopicSim = 0;
-
-  // Selects the topics based on whether topics cache is available.
   const topics = topicsCache
-    ? topicsCache.filter(topic => topic.topicType !== 'behavioral')
-    : await Topic.findAll({
-      where: {
-        userId: semanticUnit.userId,
-        topicType: { [db.Sequelize.Op.in]: ['event', 'hybrid'] }
-      },
-      order: [['updatedAt', 'DESC']],
-      limit: MAX_CANDIDATES
-    });
-
-  // Processes each topics entry in turn.
-  for (const topic of topics) {
-    // Skips the current entry when topic topic vector is unavailable.
-    if (!topic.topicVector) continue;
-
-    // Derives the sim through cosine similarity while assigning semantic unit to topic.
-    const sim = cosineSimilarity(
-      semanticVector,
-      topic.topicVector
-    );
-
-    // Handles the case where sim exceeds best topic sim.
-    if (sim > bestTopicSim) {
-      bestTopicSim = sim;
-      bestTopic = topic;
-    }
-
-    // Handles the case where sim reaches secondary threshold.
-    if (sim >= secondaryThreshold) {
-      matchedCandidates.push({ topic, sim });
-    }
-  }
-
-  // Derives the now required while assigning semantic unit to topic.
+    ? topicsCache.filter(topic => topic.topicType !== 'behavioral' && (topic.userId == null || Number(topic.userId) === Number(semanticUnit.userId))).slice(0, MAX_CANDIDATES)
+    : await Topic.findAll({ where: { userId: semanticUnit.userId, topicType: { [db.Sequelize.Op.in]: ['event', 'hybrid'] } },
+      order: [['updatedAt', 'DESC'], ['id', 'ASC']], limit: MAX_CANDIDATES });
+  const subjects = await loadTopicSubjectEvidence(topics, semanticUnit.userId);
+  for (const [id, evidence] of subjectEvidence || []) subjects.set(id, evidence);
+  const decision = evaluateTopicCandidates({ semanticUnit, subjects, primaryThreshold, secondaryThreshold,
+    candidates: topics.filter(topic => topic.topicVector).map(topic => ({ topic, sim: cosineSimilarity(semanticVector, topic.topicVector) })) });
+  const emit = outcome => {
+    const diagnostic = topicDecisionDiagnostic(semanticUnit, decision, outcome);
+    onDecision?.(diagnostic);
+    emitTopicDecision({ userId: semanticUnit.userId, ...diagnostic });
+  };
   const now = semanticUnit.publishedAt || new Date();
-
-  // Handles the case where matched candidates is non-empty.
-  if (matchedCandidates.length) {
-    // Derives the ranked candidates through slice while assigning semantic unit to topic.
-    const rankedCandidates = matchedCandidates
-      .sort((a, b) => (b.sim - a.sim) || (a.topic.id - b.topic.id))
-      .slice(0, MAX_TOPIC_CANDIDATES);
-
-    // Collects primary candidate for the selection made while assigning semantic unit to topic.
-    const primaryCandidate = rankedCandidates.find(candidate =>
-      candidate.sim >= primaryThreshold
-    ) ?? null;
-
-    await updateMatchedTopics({
-      rankedCandidates,
-      primaryCandidate,
-      semanticVector,
-      semanticUnit,
-      assignmentContext,
-      now,
-      topicsCache
-    });
-
-    // Transforms source values into the assignments required while assigning semantic unit to topic.
-    const assignments = rankedCandidates.map((candidate, index) => ({
-      topicId: candidate.topic.id,
-      confidence: Number(candidate.sim.toFixed(4)),
-      rank: index + 1,
-      primaryInd: Boolean(primaryCandidate && candidate.topic.id === primaryCandidate.topic.id)
-    }));
-
-    // Processes each assignments entry in turn.
-    for (const assignment of assignments) {
-      logTopicAssignment(semanticUnit, assignment);
+  if (decision.ambiguous) { emit('ambiguous'); return []; }
+  if (decision.selected.length) {
+    const strong = decision.selected.filter(c => !c.identityFallback);
+    if (strong.length) await updateMatchedTopics({ rankedCandidates: strong,
+      primaryCandidate: strong.find(c => c.relationshipType === 'primary') || null,
+      semanticVector, semanticUnit, assignmentContext, now, topicsCache });
+    for (const candidate of decision.selected.filter(c => c.identityFallback)) {
+      // Weak fallback preserves continuity but cannot move the anchor centroid.
+      await updateIdentityTopic({ bestTopic: candidate.topic, bestTopicSim: candidate.sim,
+        semanticVector, semanticUnit, assignmentContext: 'identity-fallback', now, topicsCache });
     }
+    const assignments = decision.selected.map((c, index) => ({ topicId: c.topic.id, confidence: c.confidence,
+      rank: index + 1, primaryInd: c.relationshipType === 'primary' }));
+    assignments.forEach(a => logTopicAssignment(semanticUnit, a));
     logMultiTopicAssignment(semanticUnit, assignments);
-
+    emit(decision.selected.some(c => c.identityFallback) ? 'weak-fallback-reuse' : assignments.some(a => a.primaryInd) ? 'strong-reuse' : 'secondary-reuse');
     return assignments;
   }
-
-  // Derives the topic key through generate topic key while assigning semantic unit to topic.
+  // A vector-prefix hash is not proof of subject identity; it cannot bypass this policy.
   const topicKey = generateTopicKey(semanticVector);
-  // Derives the current event id required while assigning semantic unit to topic.
   const currentEventId = Number(semanticUnit.id) || null;
-
-  // Returns early when best topic is available and best topic sim reaches topic identity threshold.
-  if (bestTopic && bestTopicSim >= TOPIC_IDENTITY_THRESHOLD) {
-    // Maps source values into the result produced while assigning semantic unit to topic.
-    return [await updateIdentityTopic({
-      bestTopic,
-      bestTopicSim,
-      semanticVector,
-      semanticUnit,
-      assignmentContext,
-      now,
-      topicsCache
-    })].map(assignment => {
-      logTopicAssignment(semanticUnit, assignment);
-      return assignment;
-    });
-  }
-
-  // Handles the case where topic key is available.
-  if (topicKey) {
-    // Derives the cached key match required while assigning semantic unit to topic.
-    const cachedKeyMatch = topicsCache?.find(topic => topic.topicKey === topicKey) ?? null;
-    // Returns early when cached key match is available.
-    if (cachedKeyMatch) {
-      // Maps source values into the result produced while assigning semantic unit to topic.
-      return [await updateTopicByKey({
-        topic: cachedKeyMatch,
-        now,
-        topicsCache
-      })].map(assignment => {
-        logTopicAssignment(semanticUnit, assignment);
-        return assignment;
-      });
-    }
-
-    // Loads the persisted key match needed while assigning semantic unit to topic.
-    const persistedKeyMatch = await Topic.findOne({
-      where: {
-        userId: semanticUnit.userId,
-        topicKey,
-        topicType: { [db.Sequelize.Op.in]: ['event', 'hybrid'] }
-      }
-    });
-
-    // Returns early when persisted key match is available.
-    if (persistedKeyMatch) {
-      // Maps source values into the result produced while assigning semantic unit to topic.
-      return [await updateTopicByKey({
-        topic: persistedKeyMatch,
-        now,
-        topicsCache
-      })].map(assignment => {
-        logTopicAssignment(semanticUnit, assignment);
-        return assignment;
-      });
-    }
-  }
+  const bestTopicSim = decision.ranked[0]?.sim || 0;
 
   // Creates the topic while assigning semantic unit to topic.
   const createdAssignments = await createTopic({
@@ -253,6 +146,7 @@ export async function assignSemanticUnitToTopic({
 
   // Handles the case where created assignments is empty.
   if (!createdAssignments.length) {
+    emit('unassigned');
     logNoTopic(semanticUnit, bestTopicSim);
     return [];
   }
@@ -262,6 +156,7 @@ export async function assignSemanticUnitToTopic({
     logTopicAssignment(semanticUnit, assignment);
   }
 
+  emit('new-topic');
   return createdAssignments;
 }
 

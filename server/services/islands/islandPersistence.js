@@ -18,7 +18,6 @@ import {
   cosineSimilarity,
   debugIsland,
   isStaleIsland,
-  mergePositiveSignals,
   normalizePositiveSignals,
   resolveTaxonomyDisplayName,
   resolveTopicFallbackLabel,
@@ -181,7 +180,8 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
         label: resolvedLabel,
         weight: profile.weight,
         islandVector: blendIslandVector(bestMatch.islandVector, profile.vector),
-        positiveSignals: mergePositiveSignals(bestMatch.positiveSignals, profile.positiveSignals),
+        // Profiles are complete snapshots, not interaction deltas. Replays must not add evidence.
+        positiveSignals: normalizePositiveSignals(profile.positiveSignals),
         populationAudit: appendPopulationAudit(bestMatch.populationAudit, auditEntry),
         archivedInd: false,
         archivedAt: null

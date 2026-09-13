@@ -73,7 +73,8 @@ The available article-selection controls are:
 - **Only unread articles** excludes articles already marked as read.
 - **Mark as read while scrolling** automatically marks briefing articles as read after they pass the viewport. It is available only when the unread-only filter is enabled.
 - **Developing events** includes new coverage for events the user has already seen.
-- **Show only interest-matched articles** restricts eligibility to positive interest matches.
+- **Show only interest-matched articles** restricts eligibility to nonzero stored interest, including negative interest.
+  This is the existing eligibility contract, separate from signed Recommended ranking.
 - **Show only developing stories** restricts eligibility to unread articles selected as an event's developing article when that differs from its representative.
 
 The two “show only” choices are mutually exclusive. Enabling one disables the other in the draft, and the server rejects any payload that enables both. This exclusivity is a business rule and must remain enforced in both the interface and persistence layer.

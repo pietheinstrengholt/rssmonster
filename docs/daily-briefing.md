@@ -53,7 +53,7 @@ load, you can still read the article list.
 | Only unread articles | Excludes articles you have already read. |
 | Mark as read while scrolling | Marks briefing articles as read after they pass the viewport. Available only when **Only unread articles** is enabled; separate from the Unread view's scrolling setting. |
 | Developing events | Uses new coverage of continuing events in the morning story overview without restricting the article list to developing stories. |
-| Show only interest-matched articles | Limits the briefing to articles with a positive match to your interests. |
+| Show only interest-matched articles | Limits the briefing to articles with nonzero stored interest, including negative values; Recommended still applies negative interest as a penalty. |
 | Show only developing stories | Limits the article collection to qualifying unread articles selected as new event coverage. |
 
 The two **Show only** options are mutually exclusive. Switching one on switches

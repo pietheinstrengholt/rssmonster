@@ -110,7 +110,7 @@ Prefer fixing canonical article data once instead of adding caller-specific tran
 * Enforce ownership and visibility.
 * Exclude duplicates where appropriate.
 * Use meaningful thresholds.
-* Zero results is valid.
+* Zero semantic matches is valid. No Island/Topic match means neutral interest, not missing Recommended. Preserve finite scores for all eligible Articles.
 * Avoid full-table vector comparisons when a bounded relevant window is sufficient.
 * Do not recompute semantic state unnecessarily.
 
@@ -127,3 +127,12 @@ Prefer:
 `query narrowly · preserve ownership · preserve identity · reuse existing logic · deterministic before probabilistic`
 
 Protect RSSMonster's data invariants before optimizing for implementation convenience.
+
+## Semantic validation
+
+Read the [semantic architecture](services/README.md) and affected subsystem README.
+For semantic changes run `npm run test:semantic-trace` from `server/`, inspect
+reason codes and held-out outcomes, and preserve coverage assertions. Follow the
+[test guide](tests/semantic/README.md); model-backed skips are not full validation.
+Run database-resetting suites sequentially against the isolated test database.
+Generated presentation labels must not become independent semantic evidence.

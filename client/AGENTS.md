@@ -99,7 +99,7 @@ RSSMonster should remain clean, calm, professional, reading-focused, and low-noi
 
 ## Theme and colors
 
-Theme is a first-class concern in RSSMonster. All UI changes must consider both light and dark mode. There is an an `AGENTS.md` file in styles/ that describes theme tokens and variables. Reuse existing semantic tokens before introducing new colors.
+Theme is a first-class concern in RSSMonster. All UI changes must consider both light and dark mode. The [style guidance](src/assets/styles/Agents.md) and [styles README](src/assets/styles/README.md) describe theme tokens and variables. Reuse existing semantic tokens before introducing new colors.
 Consider both light and dark mode for themed UI changes.
 Don't use hardcoded colors in components. Reuse existing semantic tokens before introducing new colors.
 Do not duplicate theme values inside components when shared variables already exist.
@@ -157,3 +157,12 @@ Prefer:
 `reuse existing patterns · preserve layout boundaries · CSS before JS for layout · local state before global state · accessibility by default`
 
 Frontend changes should feel native to RSSMonster, not like generic Vue code added in isolation.
+
+## Semantic presentation
+
+Preserve the distinction between Recommended score and personal-interest evidence.
+An Article without an Event, Topic or Island can still have a valid Recommended
+score; zero interest must not hide it or invent an Island attribution. Consume
+server attribution rather than recomputing semantic confidence in components.
+Generated Event/Topic/Island labels explain presentation, not independent evidence
+of identity or ranking quality. See [semantic architecture](../server/services/README.md).

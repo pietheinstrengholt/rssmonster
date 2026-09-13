@@ -58,10 +58,18 @@ an out-of-range contribution.
 
 ### Personal interest
 
-Interest is the signed affinity between an article and the user's Interest
-Islands. Positive affinity promotes relevant material; negative affinity can
-penalize it. This is the primary personalization concept, rather than
-FeedTrust.
+Interest is a bounded signed contribution from trusted personal evidence.
+Island paths separate preference strength, Island confidence and relationship
+confidence. Direct vector and Topic paths compete per Island; explicit behavioral
+fallback preserves unrepresented likes/favorites/dislikes with recency and intent
+attenuation. The strongest positive and strongest negative contributions are
+combined without blindly summing correlated paths. Positive interest promotes
+relevant material; negative interest penalizes it. FeedTrust is separate.
+
+The [internal interest-scoring reference](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/islands/README.md#confidence-aware-interest)
+is authoritative for those formulas. Weak relationships and singleton support
+have less authority; missing evidence means exactly neutral interest. Unread or
+missing engagement is not automatically a negative signal.
 
 ### Event evidence
 
@@ -70,14 +78,16 @@ These describe how strongly a current occurrence is supported across articles
 and sources. Event co-coverage is not FeedTrust duplication evidence.
 
 ```text
-coverage        = min(log2(eventArticleCount) / 6, 1)
-sourceDiversity = min(ln(sourceCount + 1) / 2.56, 1)
-sourceSpread    = min(log2(sourceCount) / log2(8), 1)
+coverage        = clamp01(log2(max(eventArticleCount, 1)) / 6)
+sourceDiversity = clamp01(ln(sourceCount + 1) / 2.56)
+sourceSpread    = clamp01(log2(max(sourceCount, 1)) / log2(8))
 crossSource     = max(sourceDiversity, sourceSpread)
 corroboration   = coverage × crossSource
 ```
 
-These primitives are shared by Recommended and Top Stories. An article without
+Counts are normalized to nonnegative finite values; `clamp01` maps nonfinite
+values to zero and bounds finite values to [0,1]. These primitives are shared by
+Recommended and Top Stories. An article without
 an Event receives zero for every Event-derived value.
 
 ## Ranking Modes
@@ -115,10 +125,36 @@ Recommended =
   + ruleMatchBoost
 ```
 
-`positiveInterest = max(interestScore, 0)`,
+First normalize finite `interestScore` to `[-1, 1]`, or use zero when missing or
+nonfinite. Then `positiveInterest = max(interestScore, 0)`,
 `negativeInterest = max(-interestScore, 0)`, and a matching rule contributes
 `0.08` once regardless of how many rule tags match. The final result is clamped
 to `0`–`1`.
+
+The authoritative implementation is
+[`recommendedScore.js`](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/recommendations/recommendedScore.js).
+Phases A–C improved the quality of the interest input and preserved these final
+weights. Semantic confidence modifies interest; it is not another final weight.
+
+Every Article eligible under the caller's ownership, visibility and explicit
+filters receives a finite Recommended score. No Event, Topic, Island, vector or
+nonzero interest is required. The regression target is **100% Recommended
+coverage**, while personalization coverage may legitimately be sparse.
+
+| Input | Absent-value behavior |
+| --- | --- |
+| Authorized identity and view eligibility | Required by caller; never synthesized by ranking. |
+| Interest | Optional; zero when missing or nonfinite. |
+| Event/corroboration | Optional; zero without an Event. |
+| Topic, Island, embedding | Optional; not Recommended prerequisites. |
+| Quality components | Unavailable/nonfinite article components default to 70. |
+| FeedTrust | Missing/nonfinite trust defaults to 0.5; finite stored values remain meaningful. |
+| Freshness | Article model uses zero for missing publication time; a plain object without freshness uses 0.5. |
+| Matching rule tags | Optional; no boost without a match. |
+
+Recommended is computed at runtime. The separate interest updater processes
+canonical, unfiltered, unread Articles; that update scope does not restrict runtime
+Recommended ranking to unread or Island-matched Articles.
 
 Because Quality already contains a bounded FeedTrust contribution, Recommended
 does not add FeedTrust again as an independent raw boost. Event coverage,

@@ -127,3 +127,13 @@ Connection persistence and precedence now live in `../inference/configuration.js
 Transport reads current settings per request. Discovery/status UI uses the 15-second
 connection-scoped cache in `../inference/status.js`; domain skip flags remain permission
 overrides, and missing connections stop scheduling and dispatch.
+
+## Deterministic semantic decisions
+
+Embedding output supports candidate retrieval; the server's shared
+[Event](../events/README.md), [Topic](../topics/README.md), and
+[Island/interest](../islands/README.md) policies decide membership and confidence.
+Occurrence features, durable-subject checks and behavioral intent compatibility
+make no additional AI calls. Optional generated labels remain presentation metadata;
+existing classification output can inform behavioral intent only with valid
+classification/action-override provenance.

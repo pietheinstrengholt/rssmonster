@@ -185,7 +185,7 @@ describe('scoreArticlesFromIslandsForUser', () => {
       IslandTopic.create({
         islandId: island.id,
         topicId: topic.id,
-        confidence: 1
+        confidence: 1, similarity: 1
       })
     ]);
 
@@ -195,12 +195,12 @@ describe('scoreArticlesFromIslandsForUser', () => {
     await readArticle.reload();
     await filteredArticle.reload();
 
-    expect(unreadArticle.interestScore).toBe(0.42);
+    expect(unreadArticle.interestScore).toBe(0.042);
     expect(readArticle.interestScore).toBe(0.9);
     expect(filteredArticle.interestScore).toBe(0.95);
   });
 
-  it('uses the strongest absolute active island weight and excludes duplicates', async () => {
+  it('combines the strongest confidence-adjusted preference of each sign and excludes duplicates', async () => {
     const { user, feed } = await createUserGraph();
     const suffix = randomUUID();
     const topic = await Topic.create({
@@ -265,7 +265,7 @@ describe('scoreArticlesFromIslandsForUser', () => {
       ...islands.map(island => IslandTopic.create({
         islandId: island.id,
         topicId: topic.id,
-        confidence: 1
+        confidence: 1, similarity: 1
       }))
     ]);
 
@@ -273,7 +273,7 @@ describe('scoreArticlesFromIslandsForUser', () => {
     await Promise.all([canonicalArticle.reload(), duplicateArticle.reload()]);
 
     expect(result.topicScoredCount).toBe(1);
-    expect(canonicalArticle.interestScore).toBe(-0.8);
+    expect(canonicalArticle.interestScore).toBe(-0.02);
     expect(duplicateArticle.interestScore).toBe(0.9);
   });
 
@@ -303,7 +303,29 @@ describe('scoreArticlesFromIslandsForUser', () => {
     await Promise.all([matchingArticle.reload(), unrelatedArticle.reload()]);
 
     expect(result).toMatchObject({ topicScoredCount: 0, fallbackScoredCount: 1, updatedCount: 1 });
-    expect(matchingArticle.interestScore).toBe(0.6);
+    expect(matchingArticle.interestScore).toBe(0.06);
     expect(unrelatedArticle.interestScore).toBe(0);
   });
+
+  it('does not transfer explicit evidence across users, filtered/duplicate records, or expired publication windows', async () => {
+    const { user, feed } = await createUserGraph();
+    const foreign = await createUserGraph();
+    const suffix = randomUUID();
+    const target = await Article.create(articlePayload(user.id, feed.id, 1, suffix, {
+      articleVector: [0, 1, 0], publishedAt: new Date()
+    }));
+    const ownNegative = await Article.create(articlePayload(user.id, feed.id, 2, suffix, {
+      status: 'read', negativeInd: 1, publishedAt: new Date()
+    }));
+    await Article.bulkCreate([
+      articlePayload(foreign.user.id, foreign.feed.id, 3, suffix, { negativeInd: 1, articleVector: [0, 1, 0], publishedAt: new Date() }),
+      articlePayload(user.id, feed.id, 4, suffix, { negativeInd: 1, articleVector: [0, 1, 0], filteredInd: true, publishedAt: new Date() }),
+      articlePayload(user.id, feed.id, 5, suffix, { negativeInd: 1, articleVector: [0, 1, 0], duplicateOfArticleId: ownNegative.id, publishedAt: new Date() }),
+      articlePayload(user.id, feed.id, 6, suffix, { negativeInd: 1, articleVector: [0, 1, 0], status: 'read', publishedAt: new Date(Date.now() - 91 * 86400000) })
+    ]);
+    await scoreArticlesFromIslandsForUser(user.id);
+    await target.reload();
+    expect(target.interestScore).toBe(0);
+  });
+
 });

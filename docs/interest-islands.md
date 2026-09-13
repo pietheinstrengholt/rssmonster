@@ -75,9 +75,10 @@ decision to retain an article. See [Bookmarks]({% link bookmarks.md %}).
 RSSMonster groups behavioral article profiles by cosine similarity. The
 strongest positive or negative evidence is processed first. An article joins
 the closest existing candidate when similarity is at least `0.64` by default.
-Otherwise, it starts another candidate until the per-user maximum—ten Islands
-by default—is reached. After that, remaining evidence is assigned to its
-nearest candidate.
+Otherwise, it starts another candidate until the calibration community limit—ten
+by default—is reached. If no candidate qualifies after that, the profile remains
+unassigned. Capacity never forces unrelated evidence into a nearby Island. The
+community limit is not a hard count of all stored Islands.
 
 Each candidate receives:
 
@@ -99,7 +100,9 @@ and more stable over subsequent calibrations.
 Candidate profiles are compared with the user's stored Islands. A similarity
 of at least `0.78` reuses an existing Island. Its vector is blended with the
 new profile using a default new-evidence weight of `0.35`; it is not replaced
-abruptly.
+abruptly. Stored behavioral counters are replaced by the current evidence
+snapshot, so recalibrating unchanged favorites/clicks does not count them again.
+Audit entries may record each run but are not new behavioral evidence.
 
 If no Island qualifies, RSSMonster creates a new one. This preference for
 updating existing Islands gives them continuity as reading habits evolve.
@@ -179,27 +182,36 @@ it is never fed back into clustering as new semantic evidence.
 After calibration, RSSMonster recalculates interest scores for canonical,
 unfiltered, unread articles.
 
-The preferred scoring path is:
+Personalization separates signed preference strength, confidence in the Island's
+behavioral support/cohesion, and confidence in the Article's relationship to it.
+A coherent singleton remains useful but has lower confidence (0.35) than a coherent
+interest supported across multiple articles, sources and publication days. These
+confidence measurements are derived from current bounded evidence, not stored
+audit history; diagnostic classifications do not automatically delete Islands.
 
-```text
-Article -> Topic -> Interest Island weight
-```
+Both Article → Topic → Island and direct Article → Island paths are evaluated.
+The Topic path multiplies ArticleTopic confidence, IslandTopic confidence and
+IslandTopic similarity. Direct matching requires similarity strictly above the
+existing scoring threshold (0.62 by default) and normalizes confidence within the
+trusted range. Weak relationships cannot forward full Island preference.
 
-If an article belongs to several active Islands through its Topics, RSSMonster
-uses the Island weight with the greatest absolute magnitude. This preserves a
-strong negative preference as well as a strong positive one.
+Explicit likes/favorites/dislikes without a qualifying same-sign Island can also
+transfer through a bounded behavioral fallback. It uses recent source articles,
+semantic confidence and content-intent compatibility. A promotional dislike
+transfers much less to a review than to another promotion, even for the same
+product. Missing intent conservatively attenuates; unread/no-click/missing engagement
+is not negative feedback. Publication time is a recency proxy because feedback
+interaction timestamps are unavailable for this path.
 
-When an article has no applicable Topic path, RSSMonster can compare its vector
-directly with active Island vectors. The fallback requires similarity of at
-least `0.62` by default and calculates:
+The strongest adjusted path wins per Island. Across Islands and explicit evidence,
+the strongest positive and strongest negative contributions are added and bounded;
+correlated Topic/direct paths do not stack. The internal
+[Island scoring reference](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/islands/README.md#confidence-aware-interest)
+owns the exact confidence, fallback and aggregation formulas.
 
-```text
-interest score = Island weight x vector similarity
-```
-
-The vector fallback replaces an existing score only when its absolute strength
-is greater. Topic-based scoring is preferred because it is more stable and
-easier to explain.
+No trustworthy path means `interestScore = 0`. Every eligible article still receives
+a runtime Recommended score from its other signals; personalization coverage may
+be much lower than Recommended coverage. See [Scoring]({% link scoring.md %}).
 
 Interest scores influence `sort:recommended`, where positive scores boost and
 negative scores penalize an article. They also support Daily Briefing
@@ -245,8 +257,8 @@ scores, run from the `server` directory:
 npm run islands
 ```
 
-The historical semantic pipeline also recalibrates Islands after rebuilding
-Events and Topics:
+The historical semantic pipeline also recalibrates Islands after historical Event
+backfill and Topic relationship rebuilding:
 
 ```bash
 npm run semantic:all
@@ -273,7 +285,7 @@ Most installations should use the defaults. The main controls are:
 | `ISLAND_MEMBERSHIP_BLEND` | `0.65` | New-evidence share when refreshing Topic memberships. |
 | `ISLAND_MEMBERSHIP_DECAY` | `0.82` | Confidence retained for an unobserved membership. |
 | `ISLAND_MEMBERSHIP_MIN_CONFIDENCE` | `0.05` | Membership confidence below which a link is removed. |
-| `ISLAND_ARTICLE_SCORE_THRESHOLD` | `0.62` | Similarity required by direct article-vector fallback scoring. |
+| `ISLAND_ARTICLE_SCORE_THRESHOLD` | `0.62` | Direct scoring requires similarity strictly above this threshold; confidence is normalized above it. |
 | `ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD` | `0.12` | Low-confidence condition for archiving an inactive Island. |
 | `ISLAND_ARCHIVE_STALE_DAYS` | `45` | Minimum inactive age before low-confidence archival. |
 | `ISLAND_DUPLICATE_NAME_SIMILARITY_THRESHOLD` | `0.92` | Similarity at which same-name Islands are treated as duplicates. |

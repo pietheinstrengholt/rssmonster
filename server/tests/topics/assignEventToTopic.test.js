@@ -23,6 +23,11 @@ vi.mock('../../services/topics/shared/topicHelpers.js', () => ({
   generateTopicKey: mocks.generateTopicKey
 }));
 
+vi.mock('../../services/topics/shared/topicSubjectEvidence.js', async importOriginal => ({
+  ...await importOriginal(),
+  loadTopicSubjectEvidence: async topics => new Map(topics.map(t => [t.id, { title: t.sourceEventTitle || '', memberEventCount: 1 }]))
+}));
+
 vi.mock('../../services/topics/event/updateTopic.js', () => ({
   updateMatchedTopics: mocks.updateMatchedTopics,
   updateIdentityTopic: mocks.updateIdentityTopic,
@@ -53,9 +58,9 @@ describe('event topic assignment matching', () => {
     expect(mocks.topicFindAll).not.toHaveBeenCalled();
   });
 
-  it('ranks cache matches, excludes behavioral topics, and records one primary topic', async () => {
-    const first = { id: 8, topicType: 'event', topicVector: [1, 0] };
-    const second = { id: 4, topicType: 'hybrid', topicVector: [0, 1] };
+  it('does not break ambiguous ties by Topic ID, and excludes behavioral topics', async () => {
+    const first = { sourceEventTitle: 'Project Nova begins', id: 8, topicType: 'event', topicVector: [1, 0] };
+    const second = { sourceEventTitle: 'Project Nova expands', id: 4, topicType: 'hybrid', topicVector: [0, 1] };
     const topicsCache = [
       { id: 1, topicType: 'behavioral', topicVector: [1, 0] },
       { id: 2, topicType: 'event', topicVector: null },
@@ -65,25 +70,19 @@ describe('event topic assignment matching', () => {
     mocks.cosineSimilarity.mockReturnValueOnce(0.8).mockReturnValueOnce(0.8);
 
     const result = await assignSemanticUnitToTopic({
-      semanticUnit: { id: 12, userId: 3, publishedAt: new Date('2026-08-01T10:00:00Z') },
+      semanticUnit: { id: 12, userId: 3, title: 'Project Nova changes', publishedAt: new Date('2026-08-01T10:00:00Z') },
       semanticVector: [1, 0],
       topicsCache,
       assignmentContext: 'recent-repair'
     });
 
-    expect(result).toEqual([
-      { topicId: 4, confidence: 0.8, rank: 1, primaryInd: true },
-      { topicId: 8, confidence: 0.8, rank: 2, primaryInd: false }
-    ]);
-    expect(mocks.updateMatchedTopics).toHaveBeenCalledWith(expect.objectContaining({
-      primaryCandidate: expect.objectContaining({ topic: second }),
-      assignmentContext: 'recent-repair'
-    }));
+    expect(result).toEqual([]);
+    expect(mocks.updateMatchedTopics).not.toHaveBeenCalled();
     expect(mocks.topicFindAll).not.toHaveBeenCalled();
   });
 
   it('uses an identity match when similarity is below assignment thresholds', async () => {
-    const bestTopic = { id: 5, topicVector: [1, 0] };
+    const bestTopic = { sourceEventTitle: 'Orion OS 4.2 release', id: 5, topicVector: [1, 0] };
     mocks.topicFindAll.mockResolvedValue([bestTopic]);
     mocks.cosineSimilarity.mockReturnValue(0.55);
     mocks.updateIdentityTopic.mockResolvedValue({
@@ -94,14 +93,14 @@ describe('event topic assignment matching', () => {
     });
 
     await expect(assignSemanticUnitToTopic({
-      semanticUnit: { id: 13, userId: 3 },
+      semanticUnit: { id: 13, userId: 3, title: 'Orion OS 4.3 release' },
       semanticVector: [1, 0]
-    })).resolves.toEqual([{ topicId: 5, confidence: 0.55, rank: 1, primaryInd: true }]);
+    })).resolves.toEqual([{ topicId: 5, confidence: 0.275, rank: 1, primaryInd: false }]);
 
     expect(mocks.updateIdentityTopic).toHaveBeenCalledWith(expect.objectContaining({ bestTopic }));
   });
 
-  it('refreshes a cached stable-key match before querying persistence', async () => {
+  it('does not let a cached vector key bypass missing subject evidence', async () => {
     const topic = { id: 6, topicType: 'event', topicKey: 'topic-key', topicVector: null };
     mocks.updateTopicByKey.mockResolvedValue({ topicId: 6, confidence: 1, rank: 1, primaryInd: true });
 
@@ -111,12 +110,12 @@ describe('event topic assignment matching', () => {
       topicsCache: [topic]
     });
 
-    expect(result[0].topicId).toBe(6);
-    expect(mocks.updateTopicByKey).toHaveBeenCalledWith(expect.objectContaining({ topic }));
+    expect(result).toEqual([]);
+    expect(mocks.updateTopicByKey).not.toHaveBeenCalled();
     expect(mocks.topicFindOne).not.toHaveBeenCalled();
   });
 
-  it('refreshes a persisted stable-key match when the cache misses', async () => {
+  it('does not let a persisted vector key bypass subject policy', async () => {
     const topic = { id: 7 };
     mocks.topicFindOne.mockResolvedValue(topic);
     mocks.updateTopicByKey.mockResolvedValue({ topicId: 7, confidence: 1, rank: 1, primaryInd: true });
@@ -126,10 +125,8 @@ describe('event topic assignment matching', () => {
       semanticVector: [1, 0]
     });
 
-    expect(result[0].topicId).toBe(7);
-    expect(mocks.topicFindOne).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({ userId: 3, topicKey: 'topic-key' })
-    }));
+    expect(result).toEqual([]);
+    expect(mocks.topicFindOne).not.toHaveBeenCalled();
   });
 
   it('delegates creation and preserves the article-style adapter contract', async () => {
@@ -157,4 +154,19 @@ describe('event topic assignment matching', () => {
 
     expect(mocks.createTopic).toHaveBeenCalled();
   });
+
+  it('does not update or report weak fallback relationships that persistence would discard', async () => {
+    const topicsCache = [
+      { id: 10, userId: 3, topicType: 'event', sourceEventTitle: 'Project Nova launches', topicVector: [1, 0] },
+      { id: 11, userId: 3, topicType: 'event', sourceEventTitle: 'Project Nova expands', topicVector: [0, 1] }
+    ];
+    mocks.cosineSimilarity.mockReturnValueOnce(0.7).mockReturnValueOnce(0.55);
+    const onDecision = vi.fn();
+    const assignments = await assignSemanticUnitToTopic({ semanticUnit: { id: 100, userId: 3, title: 'Project Nova research update' },
+      semanticVector: [1, 0], topicsCache, onDecision });
+    expect(assignments).toEqual([{ topicId: 10, confidence: 0.7, rank: 1, primaryInd: false }]);
+    expect(mocks.updateIdentityTopic).not.toHaveBeenCalled();
+    expect(onDecision.mock.calls[0][0].candidates[1]).toMatchObject({ topicId: 11, identityFallback: false, relationshipType: 'rejected', confidence: 0 });
+  });
+
 });

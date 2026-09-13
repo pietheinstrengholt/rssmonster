@@ -1,3 +1,4 @@
+import { compareTopicSubjects } from '../shared/topicSubjectEvidence.js';
 import db from '../../../models/index.js';
 import {
   MIN_ARTICLES_FOR_TOPIC_CREATION,
@@ -28,7 +29,9 @@ export async function createTopic({
 }) {
   // This function creates a new event topic when seed events and article evidence pass the topic gate.
   // It chooses a name, stores the averaged topic vector, and returns the primary assignment shape.
-  const topicSeedEvents = await collectTopicSeedEvents(semanticUnit.userId, semanticVector, currentEventId);
+  const topicSeedEvents = (await collectTopicSeedEvents(semanticUnit.userId, semanticVector, currentEventId))
+    .filter(item => Number(item.event.id) === Number(currentEventId)
+      || compareTopicSubjects(semanticUnit.title || semanticUnit.name, item.event.name).durableMatch);
   // Coerces the top seed similarity into the representation required while creating topic.
   const topSeedSimilarity = Number((topicSeedEvents[0]?.similarity || 0).toFixed(4));
   // Aggregates source values into the seed article count used while creating topic.
@@ -106,6 +109,8 @@ export async function createTopic({
     lastActivityAt: now
   });
 
+  createdTopic.sourceEventId = currentEventId;
+  createdTopic.sourceEventTitle = semanticUnit.title || semanticUnit.name;
   upsertTopicInCache(topicsCache, createdTopic);
 
   debugTopicGate(`topic-creation-gate-passed: ${creationGate.reason}`, {

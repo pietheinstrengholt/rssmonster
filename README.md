@@ -112,6 +112,11 @@ recommendations use semantic evidence, while expandable story sources keep
 alternative coverage accessible. Sparse evidence can legitimately produce no
 recommendations.
 
+Recommended remains available for every eligible article even without a Topic or
+Island match: missing personal evidence is neutral. Interest uses confidence-aware
+Topic/direct Island paths and bounded explicit feedback; semantic labels explain
+results rather than establishing identity.
+
 [Scoring and Ranking](docs/scoring.md) documents Recommended, Top Stories, and
 Quality ordering. Article quality describes writing, tone, and promotional
 content; [FeedTrust](docs/feedtrust.md) describes a subscribed source's recent

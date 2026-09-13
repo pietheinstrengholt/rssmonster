@@ -1,10 +1,12 @@
+import { topicDiagnosticChannel } from '../../services/topics/event/topicDecisionDiagnostics.js';
+import { recommendationCoverage } from './semanticRecommendationDiagnostics.js';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Op } from 'sequelize';
 
 import db from '../../models/index.js';
-import { cosineSimilarity } from '../../services/vectors/index.js';
+import { explainArticleInterests } from '../../services/score/scoreArticlesFromIslands.js';
 import { computeRecommended, computeRecommendedBreakdown } from '../../services/recommendations/recommendedScore.js';
 import { normalizeIslandName } from '../../services/islands/islandNameDisambiguation.js';
 
@@ -24,10 +26,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const TRACE_DIR = join(__dirname, '..', '.semantic-regression');
 const TRACE_PATH = join(TRACE_DIR, 'trace.json');
 const DEFAULT_LIMIT = 140;
-const DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
-  process.env.ISLAND_ARTICLE_SCORE_THRESHOLD || '0.62'
-);
-
+// This subscriber is report-only and cannot influence assignment decisions.
+const pendingTopicDecisions = [];
+topicDiagnosticChannel.subscribe(row => {
+  pendingTopicDecisions.push(row);
+  if (pendingTopicDecisions.length > 2000) pendingTopicDecisions.shift();
+});
 // This function creates a stable compact name for trace tables.
 function compactLabel(name, maxWords = 3) {
   if (!name || typeof name !== 'string') return '-';
@@ -64,6 +68,7 @@ async function readTrace() {
 
 // This function writes the persisted semantic trace to disk.
 async function writeTrace(trace) {
+  trace.topicDecisions = [...(trace.topicDecisions || []), ...pendingTopicDecisions.splice(0).filter(row => Number(row.userId) === Number(trace.userId))].slice(-2000);
   await mkdir(TRACE_DIR, { recursive: true });
   await writeFile(TRACE_PATH, `${JSON.stringify(trace, null, 2)}\n`);
 }
@@ -163,84 +168,6 @@ function resolveTopicForArticle(article, eventTopicByEventId, articleTopicByArti
   return {
     topic: topicById.get(topicId) || null,
     topicSource: eventTopic ? 'event-topic' : articleTopic ? 'article-topic' : 'denormalized'
-  };
-}
-
-// This function resolves the strongest island reached through an article topic.
-function resolveTopicIsland(topicId, islandTopicByTopicId, islandById) {
-  if (!topicId) return null;
-
-  const islandTopic = islandTopicByTopicId.get(Number(topicId));
-  if (!islandTopic) return null;
-
-  const island = islandById.get(Number(islandTopic.islandId));
-  if (!island) return null;
-
-  return {
-    island,
-    similarity: Number.isFinite(Number(islandTopic.similarity))
-      ? Number(islandTopic.similarity)
-      : Number(islandTopic.confidence || 0)
-  };
-}
-
-// This function resolves a direct vector fallback island for scored articles.
-function resolveVectorFallbackIsland(article, islands) {
-  if (!Number(article.interestScore || 0) || !article.articleVector) return null;
-
-  let strongestIsland = null;
-  let strongestScore = null;
-  let strongestSimilarity = null;
-
-  for (const island of islands) {
-    const similarity = cosineSimilarity(article.articleVector, island.islandVector, {
-      parseStrings: true,
-      coerceNumbers: true
-    });
-    if (similarity < DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD) continue;
-
-    const score = Number(island.weight || 0) * similarity;
-    if (strongestScore === null || Math.abs(score) > Math.abs(strongestScore)) {
-      strongestScore = score;
-      strongestSimilarity = similarity;
-      strongestIsland = island;
-    }
-  }
-
-  return strongestIsland
-    ? {
-      island: strongestIsland,
-      similarity: strongestSimilarity
-    }
-    : null;
-}
-
-// This function resolves the semantic island and how the article reached it.
-function resolveIslandForArticle(article, topic, islandTopicByTopicId, islandById, islands) {
-  const topicMatch = resolveTopicIsland(topic?.id, islandTopicByTopicId, islandById);
-  if (topicMatch) {
-    return {
-      island: topicMatch.island,
-      islandDecision: 'topic-island',
-      islandDecisionDetail: `topic=${compactLabel(topic?.name)} sim=${Number(topicMatch.similarity || 0).toFixed(2)}`,
-      islandSimilarity: topicMatch.similarity
-    };
-  }
-
-  const fallbackMatch = resolveVectorFallbackIsland(article, islands);
-  if (fallbackMatch) {
-    return {
-      island: fallbackMatch.island,
-      islandDecision: 'vector-fallback',
-      islandDecisionDetail: `sim=${Number(fallbackMatch.similarity || 0).toFixed(2)}`,
-      islandSimilarity: fallbackMatch.similarity
-    };
-  }
-
-  return {
-    island: null,
-    islandDecision: 'no-island',
-    islandDecisionDetail: null
   };
 }
 
@@ -379,7 +306,8 @@ function buildTraceRow({
   islandDecision,
   islandDecisionDetail,
   islandSimilarity,
-  topicSource
+  topicSource,
+  interestDiagnostics
 }) {
   article.Tags = article.get?.('tags') ?? article.tags ?? article.Tags ?? [];
 
@@ -416,6 +344,7 @@ function buildTraceRow({
     }),
     islandId: island?.id ? Number(island.id) : null,
     islandName: island?.label || null,
+    interestDiagnostics,
     islandDecision,
     islandDecisionDetail,
     islandSimilarity: Number.isFinite(islandSimilarity) ? Number(islandSimilarity) : null,
@@ -427,7 +356,8 @@ function buildTraceRow({
     corroboration: Number(breakdown.corroboration || 0),
     eventArticleCount: Number(breakdown.eventArticleCount || 1),
     sourceCount: Number(breakdown.sourceCount || 1),
-    recommended: Number(recommended || 0)
+    recommendedEligible: !article.filteredInd && article.duplicateOfArticleId == null && article.status !== 'duplicate',
+    recommended: Number.isFinite(recommended) ? recommended : null
   };
 }
 
@@ -463,6 +393,7 @@ export async function refreshSemanticRegressionTrace({ userId, phase, incrementa
     order: [['id', 'ASC']]
   });
   const lookups = await loadTraceLookups(userId, articles);
+  const { results: interestResults } = await explainArticleInterests(userId, articles);
 
   for (const article of articles) {
     const event = article.get?.('event') ?? article.event ?? null;
@@ -472,18 +403,12 @@ export async function refreshSemanticRegressionTrace({ userId, phase, incrementa
       lookups.articleTopicByArticleId,
       lookups.topicById
     );
-    const {
-      island,
-      islandDecision,
-      islandDecisionDetail,
-      islandSimilarity
-    } = resolveIslandForArticle(
-      article,
-      topic,
-      lookups.islandTopicByTopicId,
-      lookups.islandById,
-      lookups.islands
-    );
+    const interestDiagnostics = interestResults.get(String(article.id));
+    const path = interestDiagnostics.paths[0];
+    const island = lookups.islandById.get(Number(path?.islandId));
+    const islandDecision = path?.matchType || 'no-island';
+    const islandSimilarity = path?.semanticSimilarity;
+    const islandDecisionDetail = path ? `confidence=${path.relationshipConfidence.toFixed(3)} contribution=${path.contribution.toFixed(4)}` : null;
 
     trace.articles[String(article.id)] = buildTraceRow({
       article,
@@ -497,7 +422,8 @@ export async function refreshSemanticRegressionTrace({ userId, phase, incrementa
       islandDecision,
       islandDecisionDetail,
       islandSimilarity,
-      topicSource
+      topicSource,
+      interestDiagnostics
     });
   }
 
@@ -560,6 +486,7 @@ async function buildArchitectureHealth(trace, userId) {
 
   return {
     Articles: rows.length,
+    ...recommendationCoverage(rows),
     'Baseline articles': rows.filter(row => row.source === 'baseline').length,
     'Incremental articles': rows.filter(row => row.source === 'incremental').length,
     'Articles with events': rows.filter(row => row.eventId).length,

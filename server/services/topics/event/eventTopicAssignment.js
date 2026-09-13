@@ -107,7 +107,7 @@ export async function persistEventTopicAssignments(event, topicAssignments) {
 }
 
 // This function assigns topics to a set of existing events for an explicit pipeline scope.
-export async function assignTopicsForEvents(userId, events, { assignmentContext = 'recent-repair' } = {}) {
+export async function assignTopicsForEvents(userId, events, { assignmentContext = 'recent-repair', subjectEvidence = null } = {}) {
   // Returns early when events is empty.
   if (!events.length) {
     return {
@@ -161,7 +161,8 @@ export async function assignTopicsForEvents(userId, events, { assignmentContext 
       },
       semanticVector: event.eventVector,
       topicsCache,
-      assignmentContext
+      assignmentContext,
+      subjectEvidence
     });
 
     // Derives the persisted assignments through persist event topic assignments while assigning topics for events.

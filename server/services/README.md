@@ -7,16 +7,23 @@ This document defines the semantic architecture of RSSMonster.
 The semantic system transforms raw RSS articles into increasingly stable and meaningful representations.
 
 ```
-Article
-    ↓
-Event
-    ↓
-Topic
-    ↓
-Interest Island
+Article embedding
+  ├─→ Event → Topic relationships → Island
+  ├─→ direct Article/Island similarity
+  └─→ explicit behavioral fallback
+                    ↓
+         confidence-aware interestScore
+                    ↓
+Recommended ← freshness, Quality, Event corroboration, rule boost
 ```
 
-Each layer has a single responsibility.
+Each layer has a single responsibility. The graph shows scoring relationships,
+not Island creation from arbitrary news. Islands form from behavior; Topics
+enrich them. A Topic or Island match is optional for Recommended ranking.
+
+Authoritative details: [Events](events/README.md), [Topics](topics/README.md),
+[Islands and interest scoring](islands/README.md), [final ranking formula](../../docs/scoring.md),
+and [semantic regression testing](../tests/semantic/README.md).
 
 Lower layers represent individual observations.
 
@@ -44,14 +51,16 @@ Articles are the most numerous and most volatile layer.
 
 > What happened?
 
-Events group multiple genuinely similar Articles into a single real-world news story.
+Events group multiple Articles describing the same occurrence. Embeddings retrieve
+candidates; shared occurrence decisions also check lexical/entity evidence, time,
+whole-Event span, and version/location/action/object-state compatibility.
 
 Events are:
 
 - time-aware
 - short-lived
 - evidence-based
-- order-independent
+- tested for stable incremental membership, without claiming perfect order independence
 
 Not every Article belongs to an Event.
 
@@ -115,12 +124,9 @@ Interest Islands are the highest semantic layer.
 
 They represent durable user interests.
 
-Unlike Events and Topics:
-
-- completely user-specific
-- highly stable
-- evolve slowly
-- drive personalization
+All layers are user-scoped. Islands specifically encode signed behavioral
+preference. Their confidence depends on observed support and cohesion; a singleton
+can be useful without having the authority of a repeatedly supported interest.
 
 Interest Islands consume:
 
@@ -132,7 +138,8 @@ Interest Islands consume:
 
 # Semantic Compression
 
-Every layer summarizes the layer below.
+The hierarchy summarizes semantic evidence; it is not a mandatory path for every
+Article or a guarantee that each layer contains fewer records.
 
 ```
 Many Articles
@@ -177,20 +184,14 @@ rssmonster-ai-worker
 The semantic pipeline always flows in one direction.
 
 ```
-Articles
-    ↓
-Event creation and assignment
-    ↓
-Topic assignment
-    ↓
-Behavioral topic generation
-    ↓
-Interest Island generation
-    ↓
-Article interest scoring
+Normal crawl: new Articles → Events → Topics → interest scoring
+Calibration: behavioral Articles → Island profiles → persistence → Topic enrichment → interest scoring
+Separate service: engaged Articles → behavioral Topics
 ```
 
-Downstream systems consume upstream results.
+Normal crawling scores against existing Islands; it does not recalibrate them.
+Behavioral Topic calibration is a separate service, not a normal crawl or
+historical semantic pipeline stage. Downstream systems consume upstream results.
 
 Higher layers must never redefine lower layers.
 
@@ -323,7 +324,9 @@ Events require corroborating Articles.
 
 Topics require recurring semantic evidence.
 
-Interest Islands require repeated behavioral evidence.
+Interest Islands require qualifying behavioral evidence. Singletons are allowed
+with reduced confidence. Capacity never authorizes below-threshold assignment;
+unmatched profiles may remain unassigned.
 
 ---
 
@@ -369,14 +372,9 @@ Every query touching user-owned semantic data must filter by `userId`.
 
 ## Deterministic Processing
 
-Semantic processing should produce the same result regardless of:
-
-- crawl order
-- publication order
-- processing batches
-- repair runs
-
-Incremental processing and rebuilds should converge toward the same semantic state.
+Use stable tie-breaking and shared decision policies across scopes. Convergence
+is a goal tested with fixtures, not a guarantee under every processing order:
+bounded retrieval, available evidence and embeddings can change candidate sets.
 
 ---
 
@@ -449,3 +447,27 @@ assistant requests. The server has no model-provider configuration.
 
 See [AI capabilities](ai/README.md) for contracts, dependency injection,
 configuration versus readiness, and the migration map.
+
+# Recommendation coverage and evidence quality
+
+Every eligible Article receives a finite runtime Recommended score. Eligibility
+still belongs to the caller's ownership, visibility and explicit filters. No
+trustworthy interest path means `interestScore = 0`, not a missing Recommended
+score. Personalization coverage may therefore be sparse while Recommended coverage
+is 100%. Missing Event evidence contributes zero corroboration; quality/freshness
+retain their existing defaults. Final ranking weights were not retuned in Phases
+A–C; the [scoring guide](../../docs/scoring.md) owns the exact formula.
+
+Preference strength, Island confidence and relationship confidence are separate.
+Topic and direct paths compete per Island; the strongest positive and strongest
+negative contributions are combined with bounds. Explicit likes/favorites/dislikes
+without a same-sign Island can transfer through a bounded, recent, intent-aware
+behavioral path. Passive non-engagement is not negative evidence. See the
+[Island README](islands/README.md#confidence-aware-interest) for formulas and limits.
+
+Topic identity concerns durable subjects, not occurrences. Relationship confidence
+must survive downstream; weak fallback is secondary and attenuated. Generated
+labels are presentation metadata, not independent matching or ranking evidence.
+Calibration replaces unchanged behavioral signal snapshots rather than accumulating
+replayed counters. Diagnostics distinguish seed/self evidence from held-out matches;
+passing semantic fixtures does not establish recommendation ranking quality.

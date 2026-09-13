@@ -71,4 +71,14 @@ describe('semantic regression Markdown report', () => {
     expect(markdown).toContain('Second \\| article');
     expect(markdown).not.toContain('\n| 1 | First article | Shared event |');
   });
+  it('keeps isolated corpus counts and failing gold assertions visible', () => {
+    const markdown = renderSemanticRegressionMarkdown({ trace: { articles: { 1: { title: 'Legacy article' } } }, metadata: {},
+      expansion: { expansionCorpusCount: 226, metrics: { 'Explicit held-out articles': 40 }, checks: [{ pass: true }, { pass: false }] } });
+    expect(markdown).toContain('| Legacy main user | 1 |');
+    expect(markdown).toContain('| Dedicated expansion | 226 |');
+    expect(markdown).toContain('| Combined | 227 |');
+    expect(markdown).toContain('Gold assertions: 1 passed; 1 failed.');
+    expect(markdown).toContain('expansion-report.md');
+  });
+
 });

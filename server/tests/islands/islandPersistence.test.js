@@ -74,7 +74,7 @@ describe('island profile persistence', () => {
     mocks.disambiguate.mockResolvedValue({ renamed: [], archived: [] });
   });
 
-  it('updates a semantic match, merges signals, and evolves topic memberships', async () => {
+  it('updates a semantic match with snapshot signals and evolves topic memberships', async () => {
     const island = existingIsland({ positiveSignals: { stars: 1 } });
     mocks.islandFindAll.mockResolvedValue([island]);
     mocks.islandTopicFindAll.mockResolvedValue([]);
@@ -92,7 +92,7 @@ describe('island profile persistence', () => {
     expect(island.update).toHaveBeenCalledWith(expect.objectContaining({
       label: 'AI',
       weight: 0.8,
-      positiveSignals: expect.objectContaining({ positives: 1, stars: 3, clicks: 1, negatives: 1 })
+      positiveSignals: expect.objectContaining({ positives: 1, stars: 2, clicks: 1, negatives: 1 })
     }), { transaction: 'tx' });
     expect(mocks.evolveMemberships).toHaveBeenCalledWith(9, [
       { topicId: 4, similarity: 1, confidence: 0.9 }
@@ -103,6 +103,22 @@ describe('island profile persistence', () => {
       createdIslandIds: [],
       totalMembershipCount: 1
     });
+  });
+
+  it('replaying full profiles preserves counters while genuine new clicks are reflected', async () => {
+    const island = existingIsland();
+    mocks.islandFindAll.mockResolvedValue([island]);
+    mocks.islandTopicFindAll.mockResolvedValue([]);
+    const profile = { vector: [1, 0], weight: 0.6, label: 'Local AI', topics: [],
+      articles: [{ articleId: 8, score: 6 }], positiveSignals: { stars: 1, clicks: 1 } };
+    await persistInterestIslandProfiles(3, [profile], 'tx');
+    const first = structuredClone(island.positiveSignals);
+    await persistInterestIslandProfiles(3, [profile], 'tx');
+    await persistInterestIslandProfiles(3, [profile], 'tx');
+    expect(island.positiveSignals).toEqual(first);
+    expect(island.positiveSignals).toMatchObject({ stars: 1, clicks: 1 });
+    await persistInterestIslandProfiles(3, [{ ...profile, positiveSignals: { stars: 1, clicks: 2 } }], 'tx');
+    expect(island.positiveSignals).toMatchObject({ stars: 1, clicks: 2 });
   });
 
   it('creates a unique island and archives an unmatched stale low-confidence island', async () => {

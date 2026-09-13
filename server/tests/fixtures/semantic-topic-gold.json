@@ -1,0 +1,205 @@
+{
+  "scenarios": [
+    {
+      "name": "product version continuity",
+      "sameTopic": true,
+      "events": [
+        {
+          "title": "Orion OS 4.2 release improves device security",
+          "date": "2026-02-10",
+          "vector": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "title": "Orion OS 4.3 release adds account recovery",
+          "date": "2026-04-14",
+          "vector": [
+            0.55,
+            0.8351646544,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "project lifecycle continuity",
+      "sameTopic": true,
+      "events": [
+        {
+          "title": "Project Nova launches its research platform",
+          "date": "2025-01-10",
+          "vector": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "title": "Project Nova cancelled after funding review",
+          "date": "2026-07-15",
+          "vector": [
+            0.85,
+            0.5267826876,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "product evolution",
+      "sameTopic": true,
+      "events": [
+        {
+          "title": "Existing Lyra Air gets a price cut",
+          "date": "2026-03-10",
+          "vector": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "title": "New generation Lyra Air launches",
+          "date": "2026-06-12",
+          "vector": [
+            0.85,
+            0.5267826876,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "recurring security series",
+      "sameTopic": true,
+      "events": [
+        {
+          "title": "Aster OS August security update fixes vulnerabilities",
+          "date": "2026-08-11",
+          "vector": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "title": "Aster OS September security update fixes vulnerabilities",
+          "date": "2026-09-08",
+          "vector": [
+            0.9,
+            0.4358898944,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "unrelated similar incidents",
+      "sameTopic": false,
+      "events": [
+        {
+          "title": "Rotterdam train collision injures twelve passengers",
+          "date": "2026-08-11",
+          "vector": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "title": "Antwerp train collision injures twelve passengers",
+          "date": "2026-08-11",
+          "vector": [
+            0.99,
+            0.1410673598,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "weak generic vocabulary",
+      "sameTopic": false,
+      "events": [
+        {
+          "title": "Local officials announce plans to improve public services",
+          "date": "2026-03-10",
+          "vector": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "title": "Local officials announce plans to improve transport services",
+          "date": "2026-06-12",
+          "vector": [
+            0.58,
+            0.8146164742,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "long-running durable subject",
+      "sameTopic": true,
+      "events": [
+        {
+          "title": "Project Meridian begins ocean research",
+          "date": "2024-01-10",
+          "vector": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "title": "Project Meridian publishes first ocean findings",
+          "date": "2025-06-12",
+          "vector": [
+            0.85,
+            0.5267826876,
+            0
+          ]
+        },
+        {
+          "title": "Project Meridian expands ocean research",
+          "date": "2026-09-10",
+          "vector": [
+            0.82,
+            0.5723635209,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "mixed-case provider continuity",
+      "sameTopic": true,
+      "events": [
+        {
+          "title": "OpenAI launches a new model",
+          "date": "2025-01-01",
+          "vector": [
+            1,
+            0,
+            0
+          ]
+        },
+        {
+          "title": "OpenAI retires an earlier model",
+          "date": "2026-08-01",
+          "vector": [
+            0.85,
+            0.5267826876,
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}

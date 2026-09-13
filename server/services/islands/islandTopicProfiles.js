@@ -317,14 +317,8 @@ function buildBehavioralTopicCommunities(topicProfiles, maxIslands = DEFAULT_MAX
       continue;
     }
 
-    // Derives the best community required while building behavioral topic communities.
-    const bestCommunity = rankedCommunities[0]?.community || null;
-
-    // Handles the case where communities count reaches max islands and best community is available.
-    if (communities.length >= maxIslands && bestCommunity) {
-      addTopicToCommunity(bestCommunity, topic);
-      continue;
-    }
+    // Capacity never substitutes for the existing behavioral-affinity gate.
+    if (communities.length >= maxIslands) continue;
 
     // Selects the result based on whether topic vector is an array and topic vector is non-empty.
     communities.push({

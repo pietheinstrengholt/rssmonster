@@ -265,3 +265,19 @@ Historical Event processing preserves valid existing assignments and reuses
 stored vectors. It does not generate embeddings for articles that do not
 already have one. Run repair or rebuild commands deliberately, especially on
 large libraries, because they perform substantial database and semantic work.
+
+## Decision diagnostics and regression limits
+
+The [Event service README](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/events/README.md) is the technical
+reference for occurrence decisions and diagnostic fields. Debug/semantic reports
+include candidate similarities, temporal/span checks, feature match/conflict flags,
+scores, decisions and machine-readable reasons without article bodies or vectors.
+IDs are diagnostic; tests assert membership relationships rather than fixed IDs.
+
+The [semantic regression suite](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/tests/semantic/README.md) protects
+incremental reuse, adversarial version/location/action pairs, ambiguous/Eventless
+coverage, multilingual matching, and legitimate updates such as changed casualty
+counts, corrections and announcement → pricing → preorder. Missing occurrence
+features are neutral. These cases do not establish perfect clustering across
+languages or processing order. Topic continuity is tested separately because
+different Events can correctly share a durable subject.

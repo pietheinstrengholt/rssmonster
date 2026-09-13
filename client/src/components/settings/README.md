@@ -99,17 +99,22 @@ All thresholds use a range from 0 to 100 and can be adjusted with either a slide
 
 The three score meanings are:
 
-- **Advertisement** ranges from editorial content at the low end to heavy promotion or spam at the high end.
-- **Sentiment** ranges from positive through neutral to negative or alarmist.
-- **Quality** ranges from engaging and relevant to shallow or clickbait-oriented.
+- **Advertisement** measures absence of promotion: low values indicate promotion/spam; high values indicate less promotional content.
+- **Sentiment** uses higher values for more positive sentiment and lower values for negative/alarmist content.
+- **Quality** uses higher values for stronger article quality and lower values for shallow or clickbait-oriented content.
 
 Reset to Defaults changes the local controls to their default values. It does not persist until Save Changes is selected. Saving updates the current selection state, reloads visible content and overview data, and returns the Settings content to Welcome.
 
-AI scoring depends on backend OpenAI configuration. When scoring is unavailable, new articles receive the documented default score behavior.
+Classification uses the configured inference service; OpenAI is not required. Missing
+article quality components retain the defaults documented in the
+[scoring guide](../../../../docs/scoring.md). Some existing UI help text still
+describes the older OpenAI-only setup; that copy is not the backend contract.
 
 ### Topics
 
-Topics is a read-only operational view of semantic event and topic processing. Events represent groups of related articles around a current story; topics connect events and articles into longer-running themes.
+Topics is a read-only operational view of semantic event and topic processing. Events represent coverage of one occurrence; Topics connect durable subjects
+across separate Events using semantic and subject evidence. Generated labels
+explain the records, rather than proving identity.
 
 The section reports:
 
@@ -129,6 +134,14 @@ recalculation action that rebuilds the signed-in user's Islands and article
 interest scores from existing evidence.
 
 The overview shows how many islands exist, how many articles are inside and outside them, and the resulting library coverage. Each island can show its activity state, effective interest weight, behavioral evidence, connected topics, source articles, and topic-related articles. Linked articles open in a separate browser context.
+
+Library relationship coverage is distinct from Recommended coverage. Articles
+outside Islands may have neutral or explicit-fallback interest and still receive
+Recommended. Island weight is signed preference, not its full scoring authority;
+derived support and relationship confidence attenuate it, including singletons.
+Recalibration replaces unchanged behavioral counters without inflating them. The
+[Island README](../../../../server/services/islands/README.md) documents derived
+trace diagnostics; the Settings API need not expose all of those fields.
 
 The section explains why an island exists rather than providing controls to edit the learned model. Users grow or reinforce islands through normal reading behavior. If no islands exist, the empty state directs users toward reading, favoriting, and clicking relevant articles.
 

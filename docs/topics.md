@@ -93,7 +93,9 @@ crawl pipeline today.
 ## Matching an Event to Topics
 
 When an Event has a usable vector, RSSMonster compares it with the vectors of
-the user's existing Event and hybrid Topics using cosine similarity.
+a bounded set of the user's existing Event and hybrid Topics using cosine similarity
+and durable-subject evidence anchored in the earliest linked source Event.
+Generated Topic labels do not establish subject identity.
 
 The matches are ranked by confidence:
 
@@ -106,10 +108,22 @@ primary Topic for efficient grouping. During non-incremental repair or rebuild
 processing, RSSMonster adds a small amount of threshold hysteresis to reduce
 unstable assignments near a boundary.
 
-A lower identity threshold of `0.50` lets RSSMonster recognize and reuse an
-existing semantic region even when it does not qualify as a normal secondary
-match. This favors durable Topic identity over repeatedly creating similar
-Topics.
+The `0.50` identity fallback requires durable-subject overlap; it cannot reuse a
+Topic solely because the vectors resemble each other. Its confidence is half the
+cosine similarity, it remains secondary, and it cannot drift the Topic vector.
+Ordinary primary/secondary matches use cosine as relationship confidence. If
+ordinary matches exist, weak fallback relationships are not additionally retained.
+
+Different product versions, project launch/cancellation and recurring updates can
+share a Topic while remaining different Events. Unrelated incidents at different
+explicit locations do not become one subject merely because they describe the
+same type of accident. The policy uses source-title hints, not Event conflict rules.
+
+Two eligible candidates with a similarity margin below `0.04` remain ambiguous:
+no misleading primary or new Topic is forced. A close semantic pair also remains
+unassigned when the incoming Event lacks informative subject evidence. Exact
+rules, confidence propagation and diagnostics are documented in the
+[Topic implementation README](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/topics/README.md).
 
 Pure Behavioral Topics are intentionally excluded from these comparisons, so
 personal engagement clusters cannot take ownership of news Events.
@@ -118,7 +132,8 @@ personal engagement clusters cannot take ownership of news Events.
 
 If no existing Topic can be reused, RSSMonster gathers up to 300 recent,
 unassigned Events whose vectors resemble the current Event. A new Topic is
-created only when a conservative evidence gate passes.
+created only when a conservative evidence gate passes. Seed Events must also
+pass the shared durable-subject check before their vectors are averaged.
 
 The default gate accepts one of these kinds of evidence:
 
@@ -139,14 +154,17 @@ article titles. The naming service looks for useful repeated phrases and named
 terms, removes generic news wording and duplicate ideas, and produces a compact
 label.
 
-Names are derived from stored content rather than generated through a separate
-chat-model request. A safe fallback is used when no meaningful label can be
-found.
+Deterministic names remain usable without inference. Optional label jobs can
+write `generatedName` for presentation. Neither generated labels nor Topic names
+are candidate identity or ranking evidence; existing creation gates may inspect
+deterministic names for meaningful or repeated terms. A safe fallback is used
+when no meaningful label can be found.
 
 ## Stable Identity and Vector Evolution
 
 Each Topic stores an aggregate vector and a stable key derived from that
-vector. Existing Topics are preferred over creating replacements, preserving
+vector. The key cannot bypass durable-subject checks. Existing Topics are
+preferred over creating replacements, preserving
 semantic memory as new Events arrive.
 
 Event-topic vector drift is disabled by default. When explicitly enabled,
@@ -212,7 +230,7 @@ Event-topic matching and creation:
 
 | Variable | Default | Effect |
 | --- | ---: | --- |
-| `TOPIC_IDENTITY_THRESHOLD` | `0.50` | Similarity at which an existing Topic identity can be reused. |
+| `TOPIC_IDENTITY_THRESHOLD` | `0.50` | Minimum similarity for subject-supported, attenuated secondary fallback. |
 | `PRIMARY_TOPIC_THRESHOLD` | `0.76` | Similarity required for primary membership. |
 | `SECONDARY_TOPIC_THRESHOLD` | `0.62` | Similarity required for secondary membership. |
 | `MAX_TOPICS_PER_ARTICLE` | `5` | Maximum ranked Topic memberships retained for an Event and its articles. |

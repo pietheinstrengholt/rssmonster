@@ -18,7 +18,9 @@ Events represent **one real-world news story**.
 
 They are the first semantic layer built from individual Articles.
 
-Their purpose is to consolidate duplicate reporting while leaving genuinely unique stories untouched.
+Their purpose is to group independent coverage of the same occurrence while leaving
+unique or ambiguous stories eventless. This is separate from canonical duplicate
+handling; similar reporting is not necessarily duplicate content.
 
 ---
 
@@ -58,7 +60,7 @@ Events are intentionally:
 - short-lived
 - time-aware
 - deterministic
-- order-independent
+- designed for stable assignment across processing scopes
 
 Events should only exist when multiple Articles genuinely describe the same story.
 
@@ -94,16 +96,13 @@ This is expected behavior.
 
 ---
 
-## Event assignment must be order-independent
+## Assignment stability
 
-The final clustering result should not depend on:
-
-- crawl order
-- publication order
-- processing batches
-- incremental execution
-
-Incremental assignment and full rebuilds should converge toward the same Event structure.
+Incremental assignment and repair share occurrence decisions and aim for stable
+membership across processing order and batches. This is a design goal, not a
+proof of order independence: bounded retrieval, available evidence, and embeddings
+can still affect results. Regression fixtures test specific incremental and
+ambiguous cases rather than establishing perfect clustering.
 
 ---
 
@@ -349,9 +348,10 @@ Creation validates the complete locked seed group using the same policy. Each
 Article is compared with a leave-one-out centroid and one stable other-member
 witness, avoiding self-corroboration and all-pairs work. An incompatible proposal
 is left unassigned rather than partially written. Minimum article/source settings
-still apply. This does not add action, version, or entity extraction: recurring
-occurrences beyond the time window are separated, while difficult same-window
-occurrences still depend on the existing semantic and lexical evidence.
+still apply. Deterministic occurrence features also separate conflicting
+same-window versions, incident locations, and incompatible product states. See
+[Deterministic occurrence evidence](#deterministic-occurrence-evidence) below for
+consensus, neutral missing evidence, and the limits of these extractors.
 
 ---
 
@@ -365,8 +365,13 @@ Additional supporting evidence may include:
 
 - headline similarity
 - entity overlap
-- temporal proximity
-- source diversity
+- temporal proximity and proposed whole-Event span
+- product-scoped version identity/conflict
+- incident location identity/conflict
+- action and object/state compatibility/conflict
+
+Source diversity contributes to creation gates and Event summaries; it is not an
+extra term in the candidate membership score.
 
 Semantic similarity alone should not automatically create an Event.
 
@@ -618,13 +623,13 @@ Avoid introducing changes that:
 
 An Event change is complete when:
 
-1. Similar Articles consistently cluster together.
+1. Same-occurrence Articles join while incompatible occurrences remain separate.
 2. Standalone Articles remain eventless.
 3. Event assignment is deterministic.
 4. Incremental processing and rebuilds converge toward the same result.
 5. Event metadata remains synchronized with member Articles.
 6. Cache and persisted state remain consistent.
-7. Relevant tests continue to pass or are updated accordingly.
+7. Relevant occurrence regressions and `npm run test:semantic-trace` (from `server/`) pass without weakening expectations.
 
 ## Deterministic occurrence evidence
 
@@ -680,3 +685,18 @@ is distinct from selection ambiguity and the final committed new/reused/Eventles
 outcome. `commit_check` records the locked membership recheck. Descriptions, bodies
 and vectors are excluded. Semantic reports link companion `*-decisions.md` and
 `*-decisions.json` files containing these diagnostics.
+
+### Regression coverage and limits
+
+The [semantic regression guide](../../tests/semantic/README.md) covers baseline
+creation, incremental reuse, versions, locations, action/object minimal pairs,
+monthly occurrences, temporal chaining, ambiguity/Eventless behavior, and a
+multilingual same-occurrence assertion. Follow-up groups protect casualty-count
+updates, corrections, announcement → pricing → preorder, same-day launch, and
+omitted location/version evidence from false splits. Injury counts are not
+product versions. These are tested cases, not a guarantee for every language or
+news domain. Event IDs in output are diagnostic, never fixture expectations.
+
+Different versions or lifecycle Events may still share a durable
+[Topic](../topics/README.md); Event conflict rules must not be copied wholesale
+into Topic identity.

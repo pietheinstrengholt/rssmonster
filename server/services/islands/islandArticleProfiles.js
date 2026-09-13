@@ -174,11 +174,8 @@ function buildBehavioralArticleCommunities(articleProfiles, maxIslands = DEFAULT
       continue;
     }
 
-    // Handles the case where communities count reaches max islands and best is available.
-    if (communities.length >= maxIslands && best) {
-      addArticleToCommunity(best.community, article);
-      continue;
-    }
+    // A capacity limit cannot authorize a below-threshold semantic membership.
+    if (communities.length >= maxIslands) continue;
 
     communities.push({
       articles: [article],
@@ -248,6 +245,13 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
 
   // Builds the behavioral article communities while building interest island profiles for user.
   const communities = buildBehavioralArticleCommunities(articleProfiles, maxIslands);
+
+  const assignedCount = communities.reduce((sum, community) => sum + community.articles.length, 0);
+  communities.summary = {
+    eligibleBehavioralProfiles: articleProfiles.length,
+    assignedBehavioralProfiles: assignedCount,
+    unassignedBehavioralProfiles: articleProfiles.length - assignedCount
+  };
 
   // Handles the case where island debug is available.
   if (ISLAND_DEBUG) {

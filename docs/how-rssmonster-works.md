@@ -14,15 +14,20 @@ source-level signals, semantic relationships, and each user's reading behavior.
 The major concepts build on one another:
 
 ```text
-Feeds and articles
-        |
-        +--> FeedTrust
-        |
-        +--> Article embeddings --> Events --> Topics
-                                      |          |
-                                      +----------+--> Interest Islands
-
+Article embedding ─→ Event ─→ Topic ─→ Island relationship
+       ├───────────────────────────→ direct Island match
+       └───────────────────────────→ explicit behavioral fallback
+                                           ↓
+                                confidence-aware interest
+                                           ↓
+Recommended ← freshness, Quality (including FeedTrust), corroboration, rule boost
 ```
+
+Islands form from user behavior and are enriched by Topics. The arrows above show
+scoring paths; an Article need not traverse every layer. Unmatched personal evidence
+is neutral, and every eligible Article still receives Recommended. See
+[Interest Islands]({% link interest-islands.md %}) and [Scoring]({% link scoring.md %})
+for confidence and coverage distinctions.
 
 ## Worker and Pipeline Architecture
 
