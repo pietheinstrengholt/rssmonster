@@ -64,7 +64,9 @@ describe('generateSemanticLabels', () => {
       prompt: expect.stringContaining('event: one concrete occurrence')
     }));
     const prompt = mocked.qwenGenerate.mock.calls[0][0].prompt;
-    expect(prompt).toContain('island: durable user interest');
+    expect(prompt).toContain('name the specific subject shared by the supplied article titles');
+    expect(prompt).toContain('OpenAI releases a new model');
+    expect(prompt).not.toContain('durable user interest');
   });
 
   it('returns null for missing or unusable requested labels', async () => {
@@ -83,6 +85,38 @@ describe('generateSemanticLabels', () => {
       event: 'A concise event',
       island: null
     });
+  });
+
+  it.each(['durable user interest', ' Durable USER Interest. ', 'user interests',
+    'general interests', 'broad stable noun phrase', 'label', 'island'])
+  ('rejects generic Island prompt echoes: %s', async label => {
+    mocked.qwenGenerate.mockResolvedValue(JSON.stringify({ island: label, event: 'A concrete event' }));
+    const { generateSemanticLabels } = await import('../src/semanticLabels/semanticLabelService.js');
+    await expect(generateSemanticLabels({ context: ['OLED gaming monitor review'], island: true, event: true }))
+      .resolves.toEqual({ island: null, event: 'A concrete event' });
+  });
+
+  it.each(['Tennis', 'Gaming Monitors', 'Huidverzorging', 'Model Fine Tuning'])
+  ('preserves a specific subject label: %s', async label => {
+    mocked.qwenGenerate.mockResolvedValue(JSON.stringify({ island: label }));
+    const { generateSemanticLabels } = await import('../src/semanticLabels/semanticLabelService.js');
+    await expect(generateSemanticLabels({ context: ['Subject evidence'], island: true }))
+      .resolves.toEqual({ island: label });
+  });
+
+  it('applies the same prompt and prompt-echo rejection to compatible providers', async () => {
+    vi.stubEnv('GENERATION_PROVIDER', 'openai');
+    vi.stubEnv('OPENAI_API_KEY', 'test-key');
+    mocked.createCompletion.mockResolvedValue({
+      choices: [{ message: { content: '{"island":"durable user interest"}' } }]
+    });
+    const { generateSemanticLabels } = await import('../src/semanticLabels/semanticLabelService.js');
+    await expect(generateSemanticLabels({ context: ['OLED gaming monitor review'], island: true }))
+      .resolves.toEqual({ island: null });
+    const prompt = mocked.createCompletion.mock.calls[0][0].messages[1].content;
+    expect(prompt).toContain('OLED gaming monitor review');
+    expect(prompt).toContain('return null for island');
+    expect(prompt).not.toContain('durable user interest');
   });
 
   it.each([

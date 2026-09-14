@@ -69,6 +69,22 @@ OpenAI URL. Startup validates configuration before loading any selected models;
 external endpoints are not probed. Leave assistant settings and legacy global
 credentials unset for local inference without chat.
 
+## Island display labels
+
+Island label requests contain up to 12 supporting article titles from the server's
+latest population audit. The prompt asks for their concrete shared subject, using
+the evidence language, rather than a description of the user or the system.
+Precise one-word subjects are allowed. Unsupported subjects return `null`.
+Known generic prompt echoes, including the former instruction text “durable user
+interest”, are rejected for both local and compatible generation providers. This
+is a narrow output guard, not a semantic guarantee for every generated label.
+
+Existing non-null `generatedLabel` values are skipped by the server's label jobs;
+deploying a prompt change does not rename those rows. Correcting existing labels
+requires a separately scoped reset and regeneration of the affected presentation
+metadata, including explicit requeue of any completed label jobs. Labels are
+presentation-only and do not change Island scoring or matching.
+
 ## Local models
 
 ```env

@@ -22,6 +22,29 @@ Thresholds, community limits, models and Recommended weights are unchanged.
 
 ## Runner and test database
 
+### CI boundary and vector contract
+
+Never commit generated vectors, model binaries or semantic report artifacts in any
+format, including compressed snapshots, renamed archives or Git LFS. Keep them local
+and ignored. The root `AGENTS.md` defines this contract; `npm run check:vector-artifacts`
+checks tracked/staged artifact paths, including force-added files. Filename checks
+cannot replace diff review for renamed or embedded data.
+
+`.github/workflows/ci.yml` runs `npm run test:ci`, which uses `vitest.ci.config.js`.
+It excludes `tests/semantic/**` and the three local semantic fixture suites:
+`tests/helpers/semanticExpansion.test.js`, `tests/scripts/realIncrementalFixture.test.js`,
+and `tests/scripts/semanticLongitudinalFixture.test.js`. These files include both
+corpus and frozen-vector checks and remain available in the full local suite.
+Ordinary Event, Island, recommendation, embedding and other service tests stay in CI.
+CI must not generate, download, restore or upload semantic evaluation vectors.
+Put new vector-dependent evaluation tests under `tests/semantic/` so they inherit
+the CI exclusion; do not add more implicit cache dependencies to ordinary suites.
+
+`npm test` and `npm run test:coverage` still run the complete local suite, including
+semantic evaluations, and require the local caches described below. The dedicated
+trace/report commands also remain local-only. Missing vectors must fail clearly;
+CI exclusion is explicit and does not silently skip missing files in local evaluation.
+
 Both commands above select only
 [`semanticRegression.batches.test.js`](semanticRegression.batches.test.js).
 They do not run every test under `tests/`.
