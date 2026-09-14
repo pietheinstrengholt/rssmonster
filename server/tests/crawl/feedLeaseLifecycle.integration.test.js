@@ -351,10 +351,13 @@ describe('crawl feed-lease lifecycle integration', () => {
     const second = await createFixture(3);
     let activeFeeds = 0;
     let maximumActiveFeeds = 0;
+    let releaseAcquisitions;
+    const acquisitionsReleased = new Promise(resolve => { releaseAcquisitions = resolve; });
     mocked.acquireFeed.mockImplementation(async ({ feed }) => {
       activeFeeds += 1;
       maximumActiveFeeds = Math.max(maximumActiveFeeds, activeFeeds);
-      await delay(40);
+      // Hold fetches until both slots are occupied, regardless of database latency.
+      await acquisitionsReleased;
       activeFeeds -= 1;
       return successfulOutcome(feed);
     });
@@ -364,7 +367,7 @@ describe('crawl feed-lease lifecycle integration', () => {
       errors: 0
     });
 
-    const results = await Promise.all([
+    const crawls = Promise.all([
       crawlController.performCrawl(first.user.id, {
         parallel: true,
         parallelConcurrency: 2,
@@ -376,6 +379,14 @@ describe('crawl feed-lease lifecycle integration', () => {
         crawlTimeoutMs: 5000
       })
     ]);
+
+    let results;
+    try {
+      await vi.waitFor(() => expect(activeFeeds).toBe(2), { timeout: 4000 });
+    } finally {
+      releaseAcquisitions();
+      results = await crawls;
+    }
 
     expect(results).toEqual([
       expect.objectContaining({ total: 3, processed: 3 }),
