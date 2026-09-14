@@ -9,6 +9,17 @@ import buildArticlePersistenceValues, {
 const hashValue = value => createHash('sha256').update(value).digest('hex');
 
 describe('buildArticlePersistenceValues', () => {
+  it('stores initial rule clocks but excludes interaction clocks from source revisions', () => {
+    const time = new Date('2026-09-14T12:00:00Z');
+    const values = buildArticlePersistenceValues({ id: 7, userId: 42 }, {
+      title: 'Initial state', favoriteInd: 1, favoritedAt: time, clickedAmount: 1, lastClickedAt: time
+    });
+    expect(values).toMatchObject({ favoritedAt: time, lastClickedAt: time });
+    const revision = selectMutableArticleSourceValues(values);
+    expect(revision).not.toHaveProperty('favoritedAt');
+    expect(revision).not.toHaveProperty('lastClickedAt');
+  });
+
   it('maps shared create and update fields with explicit identities', () => {
     const values = buildArticlePersistenceValues(
       { id: 7, userId: 42 },

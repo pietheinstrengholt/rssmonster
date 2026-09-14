@@ -126,11 +126,9 @@ favorite, and click behavior. The overview is read-only, with one explicit
 recalculation action that rebuilds the signed-in user's Islands and article
 interest scores from existing evidence.
 
-The overview shows how many islands exist, how many articles are inside and outside them, and the resulting library coverage. Each island can show its activity state, effective interest weight, behavioral evidence, source articles, and directly matching articles. Linked articles open in a separate browser context.
+The overview shows the active Island count, each Island's activity state, effective interest weight, behavioral evidence, and source articles. Linked source articles open in a separate browser context.
 
-Library relationship coverage is distinct from Recommended coverage. Articles
-outside Islands may have neutral or explicit-fallback interest and still receive
-Recommended. Island weight is signed preference, not its full scoring authority;
+Island weight is signed preference, not its full scoring authority;
 derived support and relationship confidence attenuate it, including singletons.
 Recalibration replaces unchanged behavioral counters without inflating them. The
 [Island README](../../../../server/services/islands/README.md) documents derived

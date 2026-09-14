@@ -10,7 +10,6 @@ const {
   Feed,
   Article,
   Event,
-  Island,
   Tag,
   Setting,
   BriefingPreference
@@ -471,83 +470,6 @@ describe('articleSearch.service', () => {
   });
 
   describe('island filtering', () => {
-    it('filters articles by direct affinity independent of signed interest', async () => {
-      let linkedArticle;
-      let unlinkedArticle;
-      let linkedEvent;
-      let unlinkedEvent;
-      let island;
-
-      try {
-        linkedArticle = await Article.create({
-          userId: user.id,
-          feedId: feed.id,
-          url: 'https://example.com/article-island-linked',
-          title: 'Island-linked article',
-          contentOriginal: '<p>Directly similar to an interest island.</p>',
-          contentHtml: 'Directly similar to an interest island.',
-          status: 'unread',
-          publishedAt: new Date(),
-          advertisementScore: 80,
-          sentimentScore: 80,
-          qualityScore: 80
-        });
-        unlinkedArticle = await Article.create({
-          userId: user.id,
-          feedId: feed.id,
-          url: 'https://example.com/article-island-unlinked',
-          title: 'Article without an island',
-          contentOriginal: '<p>This event has no applicable interest island.</p>',
-          contentHtml: 'This event has no applicable interest island.',
-          status: 'unread',
-          publishedAt: new Date(),
-          advertisementScore: 80,
-          sentimentScore: 80,
-          qualityScore: 80
-        });
-        linkedEvent = await Event.create({
-          userId: user.id,
-          representativeArticleId: linkedArticle.id
-        });
-        unlinkedEvent = await Event.create({
-          userId: user.id,
-          representativeArticleId: unlinkedArticle.id
-        });
-        await linkedArticle.update({ eventId: linkedEvent.id, articleVector: [1, 0], interestScore: 0 });
-        await unlinkedArticle.update({ eventId: unlinkedEvent.id, articleVector: [0, 1] });
-
-        island = await Island.create({
-          userId: user.id,
-          label: 'Search interest island',
-          islandVector: [1, 0],
-          weight: 0
-        });
-        const included = await searchArticles({ userId: user.id, search: 'island:true', status: '%' });
-        const excluded = await searchArticles({ userId: user.id, search: 'island:false', status: '%' });
-
-        expect(included.itemIds).toContain(linkedArticle.id);
-        expect(included.itemIds).not.toContain(unlinkedArticle.id);
-        expect(excluded.itemIds).toContain(unlinkedArticle.id);
-        expect(excluded.itemIds).not.toContain(linkedArticle.id);
-        expect(excluded.itemIds).toContain(articles.recent.id);
-
-        await island.update({ archivedInd: true, archivedAt: new Date() });
-        const archivedIncluded = await searchArticles({ userId: user.id, search: 'island:true', status: '%' });
-        const archivedExcluded = await searchArticles({ userId: user.id, search: 'island:false', status: '%' });
-
-        expect(archivedIncluded.itemIds).not.toContain(linkedArticle.id);
-        expect(archivedExcluded.itemIds).toContain(linkedArticle.id);
-      } finally {
-        if (linkedEvent) await Event.destroy({ where: { id: linkedEvent.id } });
-        if (unlinkedEvent) await Event.destroy({ where: { id: unlinkedEvent.id } });
-        if (island) await Island.destroy({ where: { id: island.id } });
-        if (linkedArticle) await Article.destroy({ where: { id: linkedArticle.id } });
-        if (unlinkedArticle) await Article.destroy({ where: { id: unlinkedArticle.id } });
-      }
-    });
-  });
-
-  describe('developing story filtering', () => {
     it('returns only the unread non-representative article selected by its event', async () => {
       const createdArticles = [];
       let developingEvent;

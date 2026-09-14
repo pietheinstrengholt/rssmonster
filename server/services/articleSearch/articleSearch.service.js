@@ -1,4 +1,3 @@
-import { collectArticleIslandMatches } from '../islands/islandArticleMatches.js';
 // Coordinates article search across query parsing, settings thresholds, tag/feed lookups, and sorting.
 // The service returns article ids while keeping database filtering and in-memory ranking behind helper modules.
 import db from '../../models/index.js';
@@ -98,7 +97,7 @@ const applyCursorPosition = (articleQuery, sort, position) => {
 /**
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: favorite:true/false, unread:true/false, clicked:true/false,
- * event:true/false, island:true/false, briefing:true/false, developing:true/false, eventCount:>=2, tag:name, title:text, author:text, language:en,
+ * event:true/false, briefing:true/false, developing:true/false, eventCount:>=2, tag:name, title:text, author:text, language:en,
  * sort:desc/asc/topStories/recommended/quality, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
 // Searches article ids for a user using query-string filters, score thresholds, feed/category scope, and optional ranking.
@@ -243,7 +242,6 @@ export const searchArticles = async ({
       freshness: freshnessFilter = null,
       event = null,
       hot: hotFilter = null,
-      island: islandFilter = null,
       developing: developingFilter = null,
       briefing: parsedBriefingFilter = null
     } = filters;
@@ -408,12 +406,6 @@ export const searchArticles = async ({
       authorFilter,
       languageFilter
     });
-
-    if (islandFilter !== null) {
-      const islandArticleIds = await collectArticleIslandMatches(userId, { where: articleQuery.where });
-      articleQuery.where[Op.and] ??= [];
-      articleQuery.where[Op.and].push({ id: { [islandFilter ? Op.in : Op.notIn]: islandArticleIds } });
-    }
 
     debugLog(`\x1b[36mQuery attributes: ${articleQuery.attributes.join(", ")} (smartFolder: ${smartFolderSearch})\x1b[0m`);
     // Handles the case where first seen age filter is available.

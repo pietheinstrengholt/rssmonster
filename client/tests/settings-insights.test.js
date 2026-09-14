@@ -36,25 +36,19 @@ afterEach(() => {
 });
 
 describe('SettingsIslands', () => {
-  // Verifies island totals, evidence, source articles, and direct matches are rendered.
+  // Verifies island counts, evidence, and source articles are rendered.
   it('loads and renders populated island insights', async () => {
     fetchIslandsOverview.mockResolvedValue({
       data: {
         userId: 12,
         totals: {
           islandCount: 1,
-          islandArticles: 4,
-          nonIslandArticles: 6,
-          totalArticles: 10,
-          islandCoveragePercent: 40,
-          nonIslandCoveragePercent: 60
         },
         islands: [{
           id: 2,
           label: 'Deterministic island',
           generatedLabel: 'Generated island',
           sourceArticleCount: 2,
-          relatedArticleCount: 2,
           effectiveWeight: 0.75,
           evidenceSignalCount: 3,
           archivedInd: false,
@@ -71,17 +65,6 @@ describe('SettingsIslands', () => {
               { type: 'other', label: 'Other' }
             ]
           }],
-          relatedArticles: [
-            { id: 20, isPopulationSource: true },
-            {
-              id: 21,
-              title: 'Related story',
-              url: 'https://example.com/related',
-              feedName: 'Daily',
-              publishedAt: 'invalid',
-              isPopulationSource: false
-            }
-          ]
         }]
       }
     });
@@ -95,10 +78,10 @@ describe('SettingsIslands', () => {
     expect(wrapper.text()).toContain('Showing 1 of 2');
     expect(wrapper.text()).toContain('0.75');
     expect(wrapper.text()).toContain('Favorite');
-    expect(wrapper.text()).toContain('Related story');
     expect(wrapper.text()).toContain('Unknown feed');
-    expect(wrapper.text()).toContain('Unknown date');
-    expect(wrapper.get('[role="progressbar"]').attributes('aria-valuenow')).toBe('40');
+    expect(wrapper.find('[role="progressbar"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Island coverage');
+    expect(wrapper.text()).not.toContain('Matches this interest');
   });
 
   // Verifies formatter branches and refresh replacement behavior.
@@ -109,7 +92,6 @@ describe('SettingsIslands', () => {
     mountInsights(SettingsIslands);
     await flushPromises();
 
-    expect(wrapper.vm.formatPercent(null)).toBe('0.0%');
     expect(wrapper.vm.formatNormalizedAffinity(undefined)).toBe('0.00');
     expect(wrapper.vm.formatCountLabel(1, 'event')).toBe('1 event');
     expect(wrapper.vm.formatCountLabel(2, 'event')).toBe('2 events');

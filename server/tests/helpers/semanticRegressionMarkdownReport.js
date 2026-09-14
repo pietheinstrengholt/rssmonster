@@ -167,9 +167,9 @@ export function renderSemanticRegressionMarkdown({ trace, metadata, duplicateGro
       ['Unassigned behavioral profiles', trace.islandDiagnostics?.unassignedBehavioralProfiles ?? '-']
     ]),
     '',
-    markdownTable(['Island', 'Preference', 'Confidence', 'Members', 'Distinct articles', 'Sources', 'Publication days', 'Median similarity', 'Minimum similarity', 'Positive', 'Negative', 'Classification'],
+    markdownTable(['Island', 'Preference', 'Confidence', 'Members', 'Distinct articles', 'Sources', 'Interaction days', 'Median similarity', 'Minimum similarity', 'Positive', 'Negative', 'Classification'],
       (trace.islandDiagnostics?.islands || []).map(row => [row.label, row.preferenceStrength?.toFixed(3), row.islandConfidence?.toFixed(3), row.memberCount, row.distinctBehavioralArticles,
-        row.distinctSources, row.distinctPublicationDays, row.medianSimilarity?.toFixed(3), row.minimumSimilarity?.toFixed(3),
+        row.distinctSources, row.distinctInteractionDays, row.medianSimilarity?.toFixed(3), row.minimumSimilarity?.toFixed(3),
         row.positiveEvidenceCount, row.negativeEvidenceCount, row.classifications.join(', ')])),
     '',
     '## Interest contribution diagnostics',

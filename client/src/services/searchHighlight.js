@@ -1,4 +1,4 @@
-const FILTER_TOKEN_PATTERN = /^(?:favorite|star|unread|read|clicked|seen|event|island|briefing|developing|eventCount|hot|tag|author|language|sort|limit|quality|freshness|firstSeen):/i;
+const FILTER_TOKEN_PATTERN = /^(?:favorite|star|unread|read|clicked|seen|event|briefing|developing|eventCount|hot|tag|author|language|sort|limit|quality|freshness|firstSeen):/i;
 const DATE_TOKEN_PATTERN = /^@/;
 
 // Extracts only user-visible text intent from the shared article-search expression.

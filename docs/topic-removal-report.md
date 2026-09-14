@@ -92,6 +92,11 @@ membership confidence, retaining the .12 confidence / 45-day stale gates. Existi
 Islands and audits survive the migration. Naming uses taxonomy or source articles;
 disambiguation uses source-article support, weight and stable IDs.
 
+**Subsequent removal:** Settings coverage, directly related article lists, and the
+`island:true/false` search operator have since been removed, together with their
+shared vector scanner. Settings retains Island weights and behavioral source
+evidence. The implementation inventory below describes the original Topic removal.
+
 Settings coverage and `island:true/false` now compare candidate vectors directly
 with active owned Islands. Structural affinity is independent of signed weight,
 nonzero interest and Event membership. This is an intentional filter-contract

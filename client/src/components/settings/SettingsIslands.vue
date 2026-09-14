@@ -6,8 +6,8 @@
       title="Your evolving interests"
       title-id="islands-title"
     >
-      Interest islands capture the interests your reading, favorites, and clicks keep reinforcing. Review what is growing,
-      what it is connected to, and how much of your library is covered.
+      Interest islands capture the interests your reading, favorites, and clicks keep reinforcing. Review the interests you have developed
+      and the behavioral evidence behind them.
     </SettingsPageIntro>
 
     <div v-if="loading" class="settings-islands-loading settings-state">
@@ -22,33 +22,7 @@
     <div v-else>
       <div class="settings-metric-grid">
         <SettingsMetric label="Interest islands" :value="totals.islandCount" />
-        <SettingsMetric label="Island articles" :value="totals.islandArticles" />
-        <SettingsMetric label="Outside islands" :value="totals.nonIslandArticles" />
-        <SettingsMetric label="Coverage" :value="formatPercent(totals.islandCoveragePercent)" />
       </div>
-
-      <section class="settings-data-panel settings-coverage-panel" aria-labelledby="island-coverage-title">
-        <div class="settings-section-heading">
-          <div>
-            <h4 id="island-coverage-title">Island coverage</h4>
-            <p>How much of your article library is currently connected to interest islands.</p>
-          </div>
-          <strong>{{ formatPercent(totals.islandCoveragePercent) }}</strong>
-        </div>
-        <div class="settings-coverage-track">
-          <div
-            class="settings-coverage-fill"
-            role="progressbar"
-            :style="{ width: `${totals.islandCoveragePercent}%` }"
-            :aria-valuenow="totals.islandCoveragePercent"
-            aria-valuemin="0"
-            aria-valuemax="100"
-          ></div>
-        </div>
-        <p class="settings-coverage-note">
-          {{ formatPercent(totals.nonIslandCoveragePercent) }} of articles are still outside islands.
-        </p>
-      </section>
 
       <div v-if="!islands.length" class="settings-islands-empty app-notice app-notice--info" role="status">
         You do not have any interest islands yet. Favorite articles, click through articles, or keep reading about an interest to grow one.
@@ -71,8 +45,7 @@
               <div>
                 <h5>{{ island.generatedLabel || island.label || `Island #${island.id}` }}</h5>
                 <p>
-                  {{ formatCountLabel(island.sourceArticleCount, 'source article') }} &middot;
-                  {{ formatCountLabel(island.relatedArticleCount, 'related article') }}
+                  {{ formatCountLabel(island.sourceArticleCount, 'source article') }}
                 </p>
               </div>
             </div>
@@ -121,27 +94,6 @@
                     {{ signal.label }}
                   </span>
                   <small v-if="!article.evidence?.length">Behavioral source</small>
-                </div>
-              </component>
-            </div>
-
-            <div v-if="relatedArticles(island).length" class="interest-article-list">
-              <div class="interest-article-heading">Matches this interest</div>
-              <component
-                :is="article.url ? 'a' : 'div'"
-                v-for="article in relatedArticles(island)"
-                :key="article.id"
-                class="interest-article-row"
-                :href="article.url || undefined"
-                :target="article.url ? '_blank' : undefined"
-                :rel="article.url ? 'noopener noreferrer' : undefined"
-              >
-                <div>
-                  <strong>{{ article.title }}</strong>
-                  <p>{{ article.feedName || 'Unknown feed' }} &middot; {{ formatDate(article.publishedAt) }}</p>
-                </div>
-                <div class="interest-article-meta">
-                  <span v-if="article.isPopulationSource" class="app-status-badge app-status-badge--primary">Source article</span>
                 </div>
               </component>
             </div>
@@ -216,7 +168,7 @@
 
 .settings-metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -238,7 +190,6 @@
 }
 
 .settings-section-heading p,
-.settings-coverage-note,
 .interest-island-summary p,
 .interest-article-row p,
 .interest-island-affinity span,
@@ -248,7 +199,6 @@
 }
 
 .settings-section-heading p,
-.settings-coverage-note,
 .interest-island-summary p,
 .interest-article-row p {
   margin: 4px 0 0;
@@ -259,20 +209,6 @@
 .settings-section-heading > strong {
   color: var(--text-primary);
   font-size: 20px;
-}
-
-.settings-coverage-track {
-  height: 10px;
-  margin-top: 16px;
-  overflow: hidden;
-  background: var(--settings-neutral-bg);
-  border-radius: var(--radius-pill);
-}
-
-.settings-coverage-fill {
-  height: 100%;
-  background: var(--settings-success-text);
-  border-radius: inherit;
 }
 
 .interest-islands-list {
@@ -387,7 +323,6 @@
   color: var(--settings-info-text);
 }
 
-:global(:root[data-theme='dark']) .settings-coverage-track,
 :global(:root[data-theme='dark']) .interest-article-row {
   background: var(--surface-control);
   border-color: var(--border-default);
@@ -398,10 +333,6 @@
 }
 
 @media (max-width: 900px) {
-  .settings-metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .interest-island-row,
   .interest-article-row {
     grid-template-columns: 1fr;
@@ -415,10 +346,6 @@
 }
 
 @media (max-width: 879px) {
-  .settings-metric-grid {
-    grid-template-columns: 1fr;
-  }
-
   .settings-section-heading {
     flex-direction: column;
   }
@@ -447,12 +374,7 @@ export default {
       islands: [],
       userId: null,
       totals: {
-        islandCount: 0,
-        islandArticles: 0,
-        nonIslandArticles: 0,
-        totalArticles: 0,
-        islandCoveragePercent: 0,
-        nonIslandCoveragePercent: 0
+        islandCount: 0
       }
     };
   },
@@ -460,9 +382,6 @@ export default {
     this.reload();
   },
   methods: {
-    formatPercent(value) {
-      return `${Number(value || 0).toFixed(1)}%`;
-    },
     formatNormalizedAffinity(value) {
       return Number(value || 0).toFixed(2);
     },
@@ -477,10 +396,6 @@ export default {
       if (type === 'click' || type === 'deepRead') return 'app-status-badge--info';
       if (type === 'negative') return 'app-status-badge--dark';
       return 'app-status-badge--neutral';
-    },
-    // This function avoids repeating source articles in the related article list.
-    relatedArticles(island) {
-      return (island.relatedArticles || []).filter(article => !article.isPopulationSource);
     },
     formatDate(value) {
       if (!value) return 'Unknown date';

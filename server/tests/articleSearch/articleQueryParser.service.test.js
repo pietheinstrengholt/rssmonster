@@ -151,16 +151,6 @@ describe('articleQueryParser.service', () => {
     expect(result.textMode).toBe('none');
   });
 
-  it('parses island boolean filters', () => {
-    const included = parseArticleQuery({ search: 'island:true' });
-    const excluded = parseArticleQuery({ search: 'island:false' });
-
-    expect(included.filters.island).toBe(true);
-    expect(excluded.filters.island).toBe(false);
-    expect(included.textMode).toBe('none');
-    expect(excluded.textMode).toBe('none');
-  });
-
   it('parses briefing boolean filters', () => {
     const included = parseArticleQuery({ search: 'briefing:true' });
     const excluded = parseArticleQuery({ search: 'briefing:false' });

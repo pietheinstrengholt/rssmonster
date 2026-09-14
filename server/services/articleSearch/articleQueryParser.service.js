@@ -17,7 +17,6 @@ const BOOLEAN_FILTER_KEYS = [
   'clicked',
   'seen',
   'hot',
-  'island',
   'briefing',
   'developing'
 ];

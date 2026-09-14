@@ -765,6 +765,9 @@ describe('updateArticle', () => {
     expect(persistedValues).not.toHaveProperty('favoriteInd');
     expect(persistedValues).not.toHaveProperty('clickedAmount');
     expect(persistedValues).not.toHaveProperty('attentionBucket');
+    for (const field of ['lastClickedAt', 'favoritedAt', 'positiveFeedbackAt', 'negativeFeedbackAt', 'lastMeaningfulReadAt']) {
+      expect(persistedValues).not.toHaveProperty(field);
+    }
     expect(persistedValues).not.toHaveProperty('articleVector');
     expect(persistedValues).not.toHaveProperty('embedding_model');
     expect(persistedValues).not.toHaveProperty('eventId');

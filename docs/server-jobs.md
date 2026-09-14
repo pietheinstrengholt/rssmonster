@@ -47,7 +47,6 @@ commands in separate shell sessions.
 | `npm test` | Run the complete server Vitest suite once. |
 | `npm run test:coverage` | Run the suite once and produce V8 coverage output. |
 | `npm run test:watch` | Run Vitest interactively in watch mode. |
-| `npm run test:semantic-ad-event` | Run only the incremental semantic regression test for advertisement/event behavior. |
 | `npm run lint` | Check the server tree with ESLint. |
 
 These commands are verification tools. Tests use the test environment; they

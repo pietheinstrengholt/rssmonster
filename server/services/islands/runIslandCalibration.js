@@ -55,9 +55,14 @@ async function logIslandRunSummary(userId, result, startedAt) {
 // This function persists calibrated island profiles for one user.
 export async function persistIslandProfilesForUser(userId, profiles, options = {}) {
   // Derives the islands through transaction while performing persist island profiles for user.
-  const islands = await sequelize.transaction((transaction) =>
-    persistInterestIslandProfiles(userId, profiles, transaction, options)
-  );
+  const islands = await sequelize.transaction(async transaction => {
+    const persisted = await persistInterestIslandProfiles(userId, profiles, transaction, options);
+    await options.afterPersist?.(transaction, {
+      userId, islandCount: persisted.length,
+      articleCount: profiles.reduce((sum, profile) => sum + (profile.articles || []).length, 0)
+    });
+    return persisted;
+  });
 
   // Aggregates source values into the result produced while performing persist island profiles for user.
   return {
@@ -147,8 +152,9 @@ export async function runIslandCalibrationForUser(userId, options = {}) {
   logIslandRunStart(userId);
   // Derives the behavior result through calibrate islands from behavior for user while performing run island calibration for user.
   let behaviorResult;
+  const calibrationStarted = performance.now();
   try {
-    behaviorResult = await calibrateIslandsFromBehaviorForUser(userId, options);
+    behaviorResult = options.persistedCalibration || await calibrateIslandsFromBehaviorForUser(userId, options);
   } catch (error) {
     await recordProcessingFailure({
       ...processingContext,
@@ -160,10 +166,11 @@ export async function runIslandCalibrationForUser(userId, options = {}) {
     });
     throw error;
   }
+  const calibrationDurationMs = options.persistedCalibration ? 0 : Math.round(performance.now() - calibrationStarted);
   // Derives the scoring result through score articles from islands for user while performing run island calibration for user.
   let scoringResult;
   try {
-    scoringResult = await scoreArticlesFromIslandsForUser(userId);
+    scoringResult = await scoreArticlesFromIslandsForUser(userId, { assertLease: options.assertLease });
   } catch (error) {
     await recordProcessingFailure({
       ...processingContext,
@@ -179,6 +186,9 @@ export async function runIslandCalibrationForUser(userId, options = {}) {
   // Builds the result assembled while performing run island calibration for user.
   const result = {
     userId,
+    calibrationDurationMs,
+    candidatesRescored: Number(scoringResult?.candidatesRescored || 0),
+    interestScoresChanged: Number(scoringResult?.interestScoresChanged || 0),
     islandCount: behaviorResult.islandCount,
     articleCount: behaviorResult.articleCount,
     fallbackScoredCount: Number(scoringResult?.fallbackScoredCount || 0),
@@ -188,7 +198,7 @@ export async function runIslandCalibrationForUser(userId, options = {}) {
   };
 
   const createdIslandIds = behaviorResult.persistenceSummary?.createdIslandIds || [];
-  if (createdIslandIds.length) {
+  if (createdIslandIds.length && options.generateLabels !== false) {
     await tryEnqueueGeneratedSemanticLabelJobsForUser(userId, { islandIds: createdIslandIds });
   }
 

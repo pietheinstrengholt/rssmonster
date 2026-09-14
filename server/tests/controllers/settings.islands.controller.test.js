@@ -143,7 +143,7 @@ describe('settings islands overview', () => {
     await sequelize.authenticate();
   }, 50_000);
 
-  it('returns island counts and related articles without duplicate article matches', async () => {
+  it('returns learned islands and their behavioral sources without coverage fields', async () => {
     const user = await User.create({
       username: uniqueName('islands-user'),
       password: 'hashed-password',
@@ -169,22 +169,16 @@ describe('settings islands overview', () => {
       .set('Authorization', authHeaderFor(user));
 
     expect(res.status).toBe(200);
-    expect(res.body.totals).toMatchObject({
-      islandCount: 1,
-      islandArticles: 1,
-      totalArticles: 1
-    });
+    expect(res.body.totals).toEqual({ islandCount: 1 });
+    expect(res.body.islands[0]).not.toHaveProperty('relatedArticles');
+    expect(res.body.islands[0]).not.toHaveProperty('relatedArticleCount');
     expect(res.body.islands).toHaveLength(1);
     expect(res.body.islands[0]).toMatchObject({
       id: island.id,
       label: 'Readable island',
       generatedLabel: 'Generated readable island',
-      relatedArticleCount: 1,
       sourceArticleCount: 1,
       evidenceSignalCount: 2,
-      favoriteCount: 1,
-      clickCount: 1,
-      interactionCount: 2
     });
     expect(res.body.islands[0].sourceArticles).toHaveLength(1);
     expect(res.body.islands[0].sourceArticles[0]).toMatchObject({
@@ -195,14 +189,6 @@ describe('settings islands overview', () => {
         { type: 'click', label: '2 clicks' }
       ]
     });
-    expect(res.body.islands[0].relatedArticles).toHaveLength(1);
-    expect(res.body.islands[0].relatedArticles[0]).toMatchObject({
-      id: article.id,
-      title: 'Island overview article',
-      isPopulationSource: true,
-      isNewArticle: false
-    });
-
   });
 
   it('explains an article-seeded island from its behavioral source', async () => {
@@ -232,7 +218,6 @@ describe('settings islands overview', () => {
     expect(res.status).toBe(200);
     expect(res.body.islands[0]).toMatchObject({
       id: island.id,
-      relatedArticleCount: 1,
       sourceArticleCount: 1,
       evidenceSignalCount: 1
     });
@@ -242,7 +227,7 @@ describe('settings islands overview', () => {
     });
   });
 
-  it('batches statistics and related-article queries across islands', async () => {
+  it('does not scan article vectors for Settings coverage', async () => {
     const user = await User.create({
       username: uniqueName('batched-islands-user'),
       password: 'hashed-password',
@@ -263,7 +248,7 @@ describe('settings islands overview', () => {
       expect(res.status).toBe(200);
       expect(res.body.islands).toHaveLength(2);
       const executedSql = querySpy.mock.calls.map(([sql]) => String(sql));
-      expect(executedSql.filter(sql => sql.includes('`articleVector`') && sql.includes('LIMIT 200'))).toHaveLength(1);
+      expect(executedSql.filter(sql => sql.includes('`articleVector`'))).toHaveLength(0);
       expect(executedSql.length).toBeLessThan(12);
     } finally {
       querySpy.mockRestore();

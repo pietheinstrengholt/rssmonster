@@ -6,7 +6,7 @@ import {
 } from '../vectors/index.js';
 
 // Defines the default max islands per user enforced by this service.
-export const DEFAULT_MAX_ISLANDS_PER_USER = Number.parseInt(process.env.MAX_INTEREST_ISLANDS, 10) || 10;
+export const DEFAULT_MAX_ISLANDS_PER_USER = Number.parseInt(process.env.MAX_INTEREST_ISLANDS, 20) || 20;
 // Defines the default article affinity threshold enforced by this service.
 export const DEFAULT_ARTICLE_AFFINITY_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARTICLE_AFFINITY_THRESHOLD || '0.64');
 // Defines the default article signal threshold enforced by this service.

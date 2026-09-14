@@ -157,12 +157,15 @@ describe('duplicate feed reconciliation integration', () => {
       url: overlapUrl,
       normalizedUrl: overlapUrl,
       status: 'read',
-      favoriteInd: 1
+      favoriteInd: 1,
+      favoritedAt: new Date('2026-08-01T00:00:00Z'),
+      lastClickedAt: new Date('2026-08-01T00:00:00Z')
     });
     const removedOverlap = await createArticle(duplicate, unique('duplicate-overlap'), {
       url: `${overlapUrl}#publisher-fragment`,
       normalizedUrl: overlapUrl,
-      clickedAmount: 4
+      clickedAmount: 4,
+      lastClickedAt: new Date('2026-09-01T00:00:00Z')
     });
     const uniqueArticle = await createArticle(duplicate, unique('unique'));
 
@@ -212,7 +215,9 @@ describe('duplicate feed reconciliation integration', () => {
     expect(await Article.findByPk(retainedOverlap.id)).toMatchObject({
       status: 'read',
       favoriteInd: 1,
-      clickedAmount: 4
+      clickedAmount: 4,
+      favoritedAt: new Date('2026-08-01T00:00:00Z'),
+      lastClickedAt: new Date('2026-09-01T00:00:00Z')
     });
     expect(await Tag.findOne({ where: { name: 'transferred' } })).toMatchObject({
       articleId: retainedOverlap.id

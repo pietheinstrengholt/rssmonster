@@ -15,7 +15,6 @@ export const expressionPatterns = [
     { name: 'clicked', regex: /^clicked:(true|false)$/i },
     { name: 'seen', regex: /^seen:(true|false)$/i },
     { name: 'event', regex: /^event:(true|false)$/i },
-    { name: 'island', regex: /^island:(true|false)$/i },
     { name: 'briefing', regex: /^briefing:(true|false)$/i },
     { name: 'developing', regex: /^developing:(true|false)$/i },
     { name: 'eventCount', regex: /^eventCount:\s*(?:>=\s*)?(\d+)$/i },
@@ -41,7 +40,7 @@ export const expressionPatterns = [
 /**
  * Known keywords for filter expressions.
  */
-export const knownKeywords = ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'event', 'island', 'briefing', 'developing', 'eventCount', 'hot', 'tag', 'title', 'author', 'language', 'sort', 'grouping', 'limit', 'quality', 'freshness', 'firstSeen'];
+export const knownKeywords = ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'event', 'briefing', 'developing', 'eventCount', 'hot', 'tag', 'title', 'author', 'language', 'sort', 'grouping', 'limit', 'quality', 'freshness', 'firstSeen'];
 
 export const normalizeSortValueForApi = sort => {
     const normalized = String(sort).toLowerCase();
@@ -52,12 +51,12 @@ export const normalizeSortValueForApi = sort => {
 /**
  * Pattern to detect wrong syntax (using = instead of :)
  */
-const wrongSyntaxPattern = /\b(favorite|star|unread|read|clicked|seen|event|island|briefing|developing|eventCount|hot|tag|title|author|language|sort|grouping|limit|quality|freshness|firstSeen)=/i;
+const wrongSyntaxPattern = /\b(favorite|star|unread|read|clicked|seen|event|briefing|developing|eventCount|hot|tag|title|author|language|sort|grouping|limit|quality|freshness|firstSeen)=/i;
 
 /**
  * Pattern to detect merged tokens (no space between expressions)
  */
-const mergedTokenPattern = /(\d+\.?\d*|true|false)(favorite|star|unread|read|clicked|seen|event|island|briefing|developing|eventCount|hot|tag|title|author|language|sort|grouping|limit|quality|freshness|firstSeen|@)/i;
+const mergedTokenPattern = /(\d+\.?\d*|true|false)(favorite|star|unread|read|clicked|seen|event|briefing|developing|eventCount|hot|tag|title|author|language|sort|grouping|limit|quality|freshness|firstSeen|@)/i;
 
 // Checks that an ISO-shaped date names the same real UTC calendar day.
 const isValidCalendarDate = value => {

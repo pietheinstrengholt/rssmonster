@@ -54,7 +54,6 @@ const buildQuery = overrides => buildArticleSearchQuery({
   status: '%',
   hasSearchIntent: false,
   event: null,
-  islandFilter: null,
   developingFilter: null,
   briefingFilter: null,
   grouping: 'none',

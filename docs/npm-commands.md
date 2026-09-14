@@ -97,7 +97,6 @@ up production data and inspect the scope before using them.
 | `npm run test:watch` | Vitest filters and CLI options | Starts server Vitest in interactive watch mode. Use it during local development. |
 | `npm run test:semantic-report` | Vitest filters and CLI options | Runs `server/tests/semantic` and writes a concise timestamped Markdown report under `server/tests/.semantic-regression`. Use it when comparing semantic behavior or updating semantic logic. |
 | `npm run test:semantic-trace` | Vitest filters and CLI options | Runs the semantic suite with `RSSMONSTER_TEST_DEBUG=true` and article-level trace reporting. Use it to diagnose why a semantic regression changed; output is intentionally verbose. |
-| `npm run test:semantic-ad-event` | Vitest CLI options | Runs only the incremental advertisement/Event semantic regression test. Use it for a focused check of that scenario. |
 | `npm run lint` | ESLint CLI options | Lints the server tree with the repository ESLint configuration. Run it before submitting server changes. |
 
 ### Application Processes

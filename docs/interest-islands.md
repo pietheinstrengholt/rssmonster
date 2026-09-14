@@ -143,7 +143,7 @@ unfiltered, unread articles.
 Personalization separates signed preference strength, confidence in the Island's
 behavioral support/cohesion, and confidence in the Article's relationship to it.
 A coherent singleton remains useful but has lower confidence (0.35) than a coherent
-interest supported across multiple articles, sources and publication days. These
+interest supported across multiple articles, sources and interaction days. These
 confidence measurements are derived from current bounded evidence, not stored
 audit history; diagnostic classifications do not automatically delete Islands.
 
@@ -156,8 +156,8 @@ transfer through a bounded behavioral fallback. It uses recent source articles,
 semantic confidence and content-intent compatibility. A promotional dislike
 transfers much less to a review than to another promotion, even for the same
 product. Missing intent conservatively attenuates; unread/no-click/missing engagement
-is not negative feedback. Publication time is a recency proxy because feedback
-interaction timestamps are unavailable for this path.
+is not negative feedback. Recency uses the corresponding Article interaction timestamp. Publication time
+is only a fallback for legacy state with a null interaction timestamp.
 
 The strongest adjusted path wins per Island. Across Islands and explicit evidence,
 the strongest positive and strongest negative contributions are added and bounded;
@@ -174,31 +174,46 @@ negative scores penalize an article. They also support Daily Briefing
 eligibility and semantic filtering. The score is derived output: it does not
 become new behavioral evidence and does not itself change an Island.
 
-Use `island:true` in Search or a Smart Folder to select articles whose vectors match an active Island, independently
-of Event membership or signed preference. `island:false`
-selects articles without such a relationship. See [Search]({% link search.md %}) and
-[Smart Folders]({% link smart-folders.md %}).
-
 ## Inspecting Your Islands
 
 Open **Settings > Islands** for an explanation of what RSSMonster has learned.
 The overview itself is read-only and shows:
 
 - the number of active Interest Islands;
-- articles directly matching active Islands;
-- articles outside Islands and overall library coverage;
 - each Island's signed interest weight and active or archived state;
-- the behavioral source articles explaining why it exists; and
-- recently related articles.
+- the behavioral source articles explaining why it exists.
 
 ![Interest Island insights in the Settings menu](assets/interestislands.png)
 
 The overview is a snapshot. Use **Refresh** to fetch the latest state without
 changing it. **Recalculate Islands** deliberately rebuilds the signed-in user's
 Islands from existing evidence and refreshes article interest scores before
-reloading the overview. Low coverage is not automatically a problem: Islands
-are based on explicit behavior and conservative semantic relationships, so
-most of a large library may remain outside them.
+reloading the overview.
+
+## Refreshing after behavior
+
+Favorites and unfavorites, more-like-this, not-interested, clicks, and meaningful
+reads request a background personalization refresh. A short two-second batching
+window combines rapid actions into one job per user. Activity during calibration
+requests one follow-up pass. The existing worker recalibrates your Islands and
+refreshes scores for your eligible unread articles without waiting for a crawl.
+
+Recommended uses these scores on the next refresh after the job finishes. An
+immediate refresh can still show earlier scores. The AI worker must be running;
+the SQLite Compose profile does not start it automatically.
+
+### Fast explicit feedback
+
+**More like this** and **Not interested** also request an immediately eligible,
+higher-priority scoring job. It uses the article's vector and existing explicit
+feedback/Island evidence to refresh related unread recommendations without first
+rebuilding Islands. Unrelated candidates retain their scores. The worker must
+finish this job before a refresh can show the new results; the HTTP action itself
+does not wait for scoring.
+
+The separate, coalesced calibration job still updates durable Island memory.
+Favorites remain explicit preference evidence, but favorite/unfavorite, clicks and
+deep reads continue using that durable refresh path without the extra fast job.
 
 ## Calibration and Normal Crawls
 
@@ -246,3 +261,18 @@ Island thresholds interact: permissive settings can combine unrelated
 interests, while strict settings can create fragmented or sparsely connected
 Islands. `ISLAND_DEBUG=true` enables detailed calibration, membership, and
 scoring diagnostics. `EVENT_DEBUG=true` also enables Island debug output.
+
+### Interaction time
+
+Favoriting an article published in 2022 today is fresh favorite evidence. Clicks,
+favorites, explicit positive/negative feedback and meaningful reads have separate
+Article clocks. Positive signals decay separately before combining; repeated clicks
+and deep reads refresh their respective clocks, and unfavorite clears its clock.
+Fever/GReader starring uses the same timing semantics. Marking an article read
+without a meaningful visible-duration report does not imply a deep read.
+
+The migration does not backfill unknown times with today. Existing null timestamps
+fall back to publication time until that signal is recorded again. Signal weights,
+formation decay settings, explicit fallback windows and final Recommended weights
+are unchanged; the existing undecayed negative formation penalty is retained.
+See [the service contract](../server/services/islands/README.md#interaction-timestamps-and-legacy-behavior).

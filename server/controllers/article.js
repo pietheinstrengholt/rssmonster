@@ -1,3 +1,4 @@
+import { updateArticleBehavior } from '../services/articles/updateArticleBehavior.js';
 import db from '../models/index.js';
 const { Article, BriefingPreference, Feed, Tag, Event } = db;
 import { Op } from 'sequelize';
@@ -885,7 +886,9 @@ const markAsRead = async (req, res, _next) => {
 
 // Mark article as clicked
 const incrementArticleClickCount = async article => {
-  await article.increment('clickedAmount', { by: 1 });
+  await updateArticleBehavior(Article, { clickedAmount: db.sequelize.literal('clickedAmount + 1'), lastClickedAt: new Date() }, {
+    where: { id: article.id, userId: article.userId, ...canonicalArticleWhere() }
+  });
   return article.reload();
 };
 
@@ -953,7 +956,7 @@ const markClicked = async (req, res, _next) => {
       const clickedAmount = update === 'mark'
         ? Math.max(Number(article.clickedAmount) || 0, 1)
         : 0;
-      await article.update({ clickedAmount });
+      await updateArticleBehavior(article, { clickedAmount, lastClickedAt: update === 'mark' ? new Date() : null });
     } else {
       await incrementArticleClickCount(article);
     }
@@ -996,7 +999,7 @@ const markNotInterested = async (req, res, _next) => {
     }
 
     // Write both flags atomically, including unchanged values, so concurrent feedback cannot conflict.
-    await Article.update({ negativeInd: 1, positiveInd: 0 }, {
+    await updateArticleBehavior(Article, { negativeInd: 1, positiveInd: 0, negativeFeedbackAt: new Date(), positiveFeedbackAt: null }, {
       where: { id: article.id, userId, ...canonicalArticleWhere() }
     });
 
@@ -1037,9 +1040,11 @@ const markMoreLikeThis = async (req, res, _next) => {
     }
 
     // Write both flags atomically, including unchanged values, so concurrent feedback cannot conflict.
-    await Article.update({
+    await updateArticleBehavior(Article, {
       positiveInd: 1,
-      negativeInd: 0
+      negativeInd: 0,
+      positiveFeedbackAt: new Date(),
+      negativeFeedbackAt: null
     }, {
       where: { id: article.id, userId, ...canonicalArticleWhere() }
     });
@@ -1213,6 +1218,9 @@ const articleMarkAsSeen = async (req, res, _next) => {
       payload.attentionBucket = attentionBucket;
     }
 
+    // Only an observed deep read refreshes behavioral time; a read-state toggle does not.
+    if (attentionBucket >= 3) payload.lastMeaningfulReadAt = new Date();
+
     // Mark article as read only when it was unread before.
     let shouldMarkRead = false;
     const readArticles = [];
@@ -1232,7 +1240,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
     // Only update if payload has any changes; return updated instance
     let updatedArticle = article;
     if (Object.keys(payload).length > 0) {
-      updatedArticle = await retryDatabaseWrite(() => article.update(payload));
+      updatedArticle = await retryDatabaseWrite(() => updateArticleBehavior(article, payload));
     }
 
     // Prepare response object
@@ -1259,6 +1267,8 @@ const articleMarkAsSeen = async (req, res, _next) => {
       // Exclude firstSeen and overwrite it for the whole event. The representative article is leading.
       // If status should be marked as read, ensure it is set for the event update as well.
       const eventPayload = { ...payload };
+      // Related occurrences were not themselves read by this interaction.
+      delete eventPayload.lastMeaningfulReadAt;
       if (shouldMarkRead) {
         eventPayload.status = 'read';
       } else {
@@ -1385,7 +1395,7 @@ const articleMarkAsFavorite = async (req, res, _next) => {
         });
       }
 
-      await Promise.all(articles.map(article => article.update({ favoriteInd })));
+      await Promise.all(articles.map(article => updateArticleBehavior(article, { favoriteInd, favoritedAt: favoriteInd ? new Date() : null })));
       return res.status(200).json({ articles });
     }
 
@@ -1412,7 +1422,7 @@ const articleMarkAsFavorite = async (req, res, _next) => {
         message: "Article not found"
       });
     }
-    await article.update({ favoriteInd });
+    await updateArticleBehavior(article, { favoriteInd, favoritedAt: favoriteInd ? new Date() : null });
     return res.status(200).json(article);
   } catch (err) {
     console.error('Error in articleMarkAsFavorite:', err);

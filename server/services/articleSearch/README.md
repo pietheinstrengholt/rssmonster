@@ -13,7 +13,7 @@ This README documents the search language implemented by the parser and executor
 ```text
 AI agents unread:true @today sort:recommended
 "climate policy" language:en quality:>=0.7
-title:"OpenAI model" author:"Jane Smith" event:true island:true eventCount:>=3
+title:"OpenAI model" author:"Jane Smith" event:true eventCount:>=3
 tag:security favorite:true firstSeen:24h sort:desc limit:50
 event:false freshness:>0.5
 ```
@@ -92,8 +92,6 @@ Boolean filters accept `true` or `false`, case-insensitively.
 | `hot:false` | Articles not marked hot. |
 | `event:true` | Articles assigned to an event. |
 | `event:false` | Articles not assigned to an event. |
-| `island:true` | Articles whose vectors directly match an active Interest Island owned by the user. |
-| `island:false` | Articles without an applicable active interest island, including articles without an event. |
 | `briefing:true` | Articles with a nonzero interest score or belonging to an event containing more than one article. |
 | `briefing:false` | Articles with a zero interest score that do not belong to a multi-article event. |
 | `developing:true` | Unread articles selected as their event's developing article, when that differs from its representative article. |
@@ -129,11 +127,6 @@ firstSeen IS NULL OR firstSeen >= now - interval
 
 `eventCount` currently supports only a minimum event article count. Operators
 such as `>`, `<`, and `=` are not supported for this filter.
-
-Island filtering compares canonical, visible Article vectors directly with active
-Islands belonging to the same user. It is independent of Event membership and
-signed Island weight. All database predicates are applied before vector batches;
-matching IDs restrict the result before ranking, counts and pagination.
 
 Briefing eligibility combines two independent signals as a union. An article
 matches `briefing:true` when its stored `interestScore` is nonzero, including a
@@ -283,7 +276,7 @@ an override.
 For example:
 
 ```text
-"battery storage" unread:true language:en @lastweek quality:>=0.75 event:true island:true eventCount:>=4 sort:recommended limit:25
+"battery storage" unread:true language:en @lastweek quality:>=0.75 event:true eventCount:>=4 sort:recommended limit:25
 ```
 
 This returns at most 25 canonical English unread articles that:
@@ -292,9 +285,8 @@ This returns at most 25 canonical English unread articles that:
 2. were published during the rolling previous seven days;
 3. have computed quality of at least `0.75`;
 4. belong to an event containing at least four articles;
-5. directly match one of the user's active Interest Islands;
-6. pass the request/user minimum score thresholds;
-7. are ordered by recommendation score.
+5. pass the request/user minimum score thresholds;
+6. are ordered by recommendation score.
 
 Another example combines a narrow title with broader content terms:
 
@@ -438,7 +430,7 @@ The fundamental eligibility dimensions are:
 - Canonical visibility: duplicate or non-canonical articles are excluded according to the product's canonical article rules.
 - Reading state: unread, read, favorite, clicked, seen, hot, or all.
 - Text relevance: title and article text match the requested term or phrase intent.
-- Metadata: tag, title, author, language, date, first-seen age, event state, event size, interest-island applicability, or grouping concept.
+- Metadata: tag, title, author, language, date, first-seen age, event state, event size, or grouping concept.
 - Quality gates: advertisement, sentiment, and quality thresholds are all satisfied.
 
 Eligibility is binary. Ranking must not resurrect articles that failed eligibility.
@@ -540,13 +532,10 @@ A simple query should feel obvious. A structured query should feel powerful. A s
 
 The architecture succeeds when an agent can infer the correct behavior from the user's intent and these principles, without needing to memorize the current implementation shape.
 
-## Recommended coverage versus Island filtering
+## Recommended eligibility
 
 Every authorized Article that passes the current view's filters can receive a
 runtime Recommended score. No Event, Island or embedding is required;
-unmatched personal evidence means zero interest. The existing `island:true`
-filter tests direct vector affinity, so it is neither a nonzero-interest filter
-nor a prerequisite for scoring. Explicit behavioral fallback may personalize
-Articles outside that filter. See the
+unmatched personal evidence means zero interest. See the
 [interest evaluator](../islands/README.md#confidence-aware-interest) and
 [final ranking formula](../../../docs/scoring.md).

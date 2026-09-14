@@ -29,7 +29,7 @@ They update automatically as new articles arrive.
 3. (Optional) Set `limitCount` to cap results (50 by default).
 4. Save. The folder updates itself as content changes.
 
-Use the same tokens as the search bar: status (`unread:true`, `favorite:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), quality (`quality:>0.7`), freshness (`freshness:>=0.5`), event grouping (`event:true`, `eventCount:>=3`), interest-island applicability (`island:true`, `island:false`), hot items (`hot:true`), and sorts.
+Use the same tokens as the search bar: status (`unread:true`, `favorite:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), quality (`quality:>0.7`), freshness (`freshness:>=0.5`), event grouping (`event:true`, `eventCount:>=3`), hot items (`hot:true`), and sorts.
 
 ---
 
@@ -39,8 +39,6 @@ Use the same tokens as the search bar: status (`unread:true`, `favorite:true`), 
 - Consistently valuable articles and sources: `sort:quality unread:true limit:80`
 - Hot right now: `hot:true sort:desc`
 - Events with broad coverage: `event:true eventCount:>=3 sort:topStories`
-- Interest-aligned events: `event:true island:true sort:recommended`
-- Articles outside active interests: `island:false sort:desc`
 - Subject by tag: `tag:ai unread:true sort:recommended`
 - Yesterday's highlights: `@yesterday unread:true sort:recommended`
 
@@ -50,7 +48,6 @@ Use the same tokens as the search bar: status (`unread:true`, `favorite:true`), 
 - Combine status with time to keep the list focused: `unread:true @today`.
 - Use `quality:>=0.7` to filter after fetch; it can shrink the result set even if the limit is higher.
 - Use `event:true` for a low-noise event view. Add `eventCount:>=3` when you only want events with broad coverage.
-- Use `island:true` to select articles whose vectors directly match an active Interest Island. Archived islands do not count.
 - If you omit status but include text, all statuses are searched; add `unread:true` or `read:true` if you want to constrain.
 
 ---

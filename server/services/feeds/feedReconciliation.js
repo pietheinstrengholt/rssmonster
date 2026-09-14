@@ -189,7 +189,8 @@ const buildMergedArticleValues = (survivor, losers, survivorFeedId) => {
     'id', 'userId', 'feedId', 'urlHash', 'normalizedUrlHash', 'createdAt', 'updatedAt',
     'eventId', 'duplicateOfArticleId', 'duplicateCount', 'status', 'filteredInd',
     'favoriteInd', 'negativeInd', 'positiveInd', 'clickedAmount', 'hotInd', 'hotlinks',
-    'firstSeen', 'readAt', 'publishedAt', 'modifiedAt'
+    'firstSeen', 'readAt', 'publishedAt', 'modifiedAt',
+    'lastClickedAt', 'favoritedAt', 'positiveFeedbackAt', 'negativeFeedbackAt', 'lastMeaningfulReadAt'
   ]);
   for (const attribute of Object.keys(Article.rawAttributes)) {
     if (excluded.has(attribute) || Article.rawAttributes[attribute].type?.key === 'VIRTUAL') continue;
@@ -204,6 +205,9 @@ const buildMergedArticleValues = (survivor, losers, survivorFeedId) => {
   values.negativeInd = Math.max(...articles.map(article => Number(article.negativeInd || 0)));
   values.positiveInd = Math.max(...articles.map(article => Number(article.positiveInd || 0)));
   values.clickedAmount = Math.max(...articles.map(article => Number(article.clickedAmount || 0)));
+  for (const field of ['lastClickedAt', 'favoritedAt', 'positiveFeedbackAt', 'negativeFeedbackAt', 'lastMeaningfulReadAt']) {
+    values[field] = articles.reduce((value, article) => latestDate(value, article[field]), null);
+  }
   values.hotInd = Math.max(...articles.map(article => Number(article.hotInd || 0)));
   values.hotlinks = articles.reduce((count, article) => count + Number(article.hotlinks || 0), 0);
   values.firstSeen = articles.reduce((value, article) => earliestDate(value, article.firstSeen), null);

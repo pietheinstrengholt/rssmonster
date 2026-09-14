@@ -19,6 +19,17 @@ const article = {
 };
 
 describe('applyActions searchable article fields', () => {
+  it('timestamps favorite and clicked rule state when applied, not when published', () => {
+    const result = applyActions(['favorite', 'clicked'].map(actionType => ({ actionType, regularExpression: 'release' })),
+      { ...article, publishedAt: new Date('2022-01-01') });
+    expect(result.favoriteInd).toBe(1);
+    expect(result.clickedAmount).toBe(1);
+    for (const field of ['favoritedAt', 'lastClickedAt']) {
+      expect(result[field]).toBeInstanceOf(Date);
+      expect(Math.abs(Date.now() - result[field].getTime())).toBeLessThan(1000);
+    }
+  });
+
   it.each([
     '/release announcement/i',
     '/RELEASE|PHRASE/i',

@@ -1,5 +1,6 @@
 import { behavioralIntentCompatibility } from './behavioralIntent.js';
 import { Op } from 'sequelize';
+import { BEHAVIOR_TIMESTAMP_FIELDS, activeSignal, signalTimestamp, latestBehaviorTimestamp, behaviorTimestampExpression } from '../articles/articleBehaviorTime.js';
 import db from '../../models/index.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { cosineSimilarity } from '../vectors/index.js';
@@ -32,7 +33,7 @@ export function islandCohesion(members, vector) {
   return {
     memberCount: members.length, distinctBehavioralArticles: unique.length,
     distinctSources: new Set(unique.map(a => a.feedId).filter(id => id != null)).size,
-    distinctPublicationDays: new Set(unique.map(a => a.publishedAt ? new Date(a.publishedAt).toISOString().slice(0, 10) : null).filter(Boolean)).size,
+    distinctInteractionDays: new Set(unique.map(a => latestBehaviorTimestamp(a)?.toISOString().slice(0, 10)).filter(Boolean)).size,
     medianSimilarity: median, minimumSimilarity: n ? similarities[0] : null,
     positiveEvidenceCount: positive, negativeEvidenceCount: negative, singleton, lowCohesion, classifications
   };
@@ -41,7 +42,7 @@ export function islandCohesion(members, vector) {
 export function deriveIslandConfidence(d) {
   if (!d.distinctBehavioralArticles) return 0.1; // Existing preference with unknown support has little authority.
   const support = 0.35 + 0.35 * clamp((d.distinctBehavioralArticles - 1) / 4)
-    + 0.15 * clamp((d.distinctSources - 1) / 2) + 0.15 * clamp((d.distinctPublicationDays - 1) / 3);
+    + 0.15 * clamp((d.distinctSources - 1) / 2) + 0.15 * clamp((d.distinctInteractionDays - 1) / 3);
   const cohesion = (clamp(d.medianSimilarity ?? 0) + clamp(d.minimumSimilarity ?? 0)) / 2;
   const total = d.positiveEvidenceCount + d.negativeEvidenceCount;
   const consistency = total ? 0.5 + 0.5 * Math.max(d.positiveEvidenceCount, d.negativeEvidenceCount) / total : 0.5;
@@ -71,18 +72,23 @@ export function prepareIslandEvidence(islands, evidence, explicitEvidence = evid
   return { islands: prepared, fallbackEvidence };
 }
 
-// Fixed bounds and user/visibility filters apply before vector comparisons. Publication age is a proxy.
+// Apply interaction windows and stable interaction ordering before the existing evidence bounds.
 export async function loadIslandEvidence(userId, { transaction, now = Date.now() } = {}) {
   const where = { userId, ...canonicalArticleWhere(), filteredInd: false, articleVector: { [Op.ne]: null } };
-  const attributes = ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'feedId', 'publishedAt', 'articleVector', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket'];
-  const query = (extra, limit) => db.Article.findAll({ where: { ...where, ...extra }, attributes,
-    order: [['publishedAt', 'DESC'], ['id', 'ASC']], limit, raw: true, transaction });
-  const recent = { publishedAt: { [Op.gte]: new Date(now - EXPLICIT_WINDOW_DAYS * DAY_MS), [Op.lte]: new Date(now) } };
+  const attributes = ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'feedId', 'publishedAt', 'articleVector', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', ...BEHAVIOR_TIMESTAMP_FIELDS];
+  const query = (extra, limit, fields = BEHAVIOR_TIMESTAMP_FIELDS) => db.Article.findAll({ where: { ...where, ...extra }, attributes,
+    order: [[behaviorTimestampExpression(db.sequelize, fields), 'DESC'], ['id', 'ASC']], limit, raw: true, transaction });
+  const recent = field => db.Sequelize.where(behaviorTimestampExpression(db.sequelize, [field]), {
+    [Op.gte]: new Date(now - EXPLICIT_WINDOW_DAYS * DAY_MS), [Op.lte]: new Date(now)
+  });
   const [islands, evidence, negative, positive] = await Promise.all([
     db.Island.findAll({ where: { userId, archivedInd: false }, attributes: ['id', 'label', 'generatedLabel', 'weight', 'islandVector'], order: [['id', 'ASC']], raw: true, transaction }),
     query({ [Op.or]: [{ positiveInd: 1 }, { favoriteInd: 1 }, { negativeInd: 1 }, { clickedAmount: { [Op.gt]: 0 } }, { attentionBucket: { [Op.gte]: 3 } }] }, EVIDENCE_LIMIT),
-    query({ ...recent, negativeInd: 1 }, EXPLICIT_EVIDENCE_LIMIT),
-    query({ ...recent, negativeInd: 0, [Op.or]: [{ positiveInd: 1 }, { favoriteInd: 1 }] }, EXPLICIT_EVIDENCE_LIMIT)
+    query({ negativeInd: 1, [Op.and]: [recent('negativeFeedbackAt')] }, EXPLICIT_EVIDENCE_LIMIT, ['negativeFeedbackAt']),
+    query({ negativeInd: 0, [Op.or]: [
+      { positiveInd: 1, [Op.and]: [recent('positiveFeedbackAt')] },
+      { favoriteInd: 1, [Op.and]: [recent('favoritedAt')] }
+    ] }, EXPLICIT_EVIDENCE_LIMIT, ['positiveFeedbackAt', 'favoritedAt'])
   ]);
   return { ...prepareIslandEvidence(islands, evidence, [...negative, ...positive]), now };
 }
@@ -106,17 +112,21 @@ export function evaluateArticleInterest(article, context, threshold = 0.62) {
     if (candidates[0]?.contribution) paths.push(candidates[0]);
   }
   for (const source of context.fallbackEvidence) {
-    const age = (context.now - new Date(source.publishedAt).getTime()) / DAY_MS;
-    if (!Number.isFinite(age) || age < 0 || age > EXPLICIT_WINDOW_DAYS) continue;
-    const sim = similarity(article.articleVector, source.articleVector);
-    const relationshipConfidence = normalizedRelationship(sim, threshold);
-    if (!relationshipConfidence) continue;
-    const recencyFactor = Math.pow(2, -age / 30);
-    const sign = source.negativeInd ? -1 : 1;
-    const intent = behavioralIntentCompatibility(source, article);
-    paths.push({ ...intent, matchType: 'behavioral-fallback', sourceArticleId: source.id, explicitType: sign < 0 ? 'negative' : 'positive',
-      semanticSimilarity: sim, relationshipConfidence, recencyFactor, seedSelf: source.id === article.id,
-      contribution: sign * 0.25 * recencyFactor * relationshipConfidence * intent.intentCompatibility });
+    const fields = source.negativeInd ? ['negativeFeedbackAt'] : ['positiveFeedbackAt', 'favoritedAt'];
+    for (const field of fields.filter(field => activeSignal(source, field))) {
+      const timestamp = signalTimestamp(source, field);
+      const age = timestamp == null ? NaN : (context.now - new Date(timestamp).getTime()) / DAY_MS;
+      if (!Number.isFinite(age) || age < 0 || age > EXPLICIT_WINDOW_DAYS) continue;
+      const sim = similarity(article.articleVector, source.articleVector);
+      const relationshipConfidence = normalizedRelationship(sim, threshold);
+      if (!relationshipConfidence) continue;
+      const recencyFactor = Math.pow(2, -age / 30);
+      const sign = source.negativeInd ? -1 : 1;
+      const intent = behavioralIntentCompatibility(source, article);
+      paths.push({ ...intent, matchType: 'behavioral-fallback', sourceArticleId: source.id, explicitType: sign < 0 ? 'negative' : 'positive',
+        semanticSimilarity: sim, relationshipConfidence, recencyFactor, seedSelf: source.id === article.id,
+        contribution: sign * 0.25 * recencyFactor * relationshipConfidence * intent.intentCompatibility });
+    }
   }
   paths.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution)
     || String(a.islandId ?? `e${a.sourceArticleId}`).localeCompare(String(b.islandId ?? `e${b.sourceArticleId}`)));

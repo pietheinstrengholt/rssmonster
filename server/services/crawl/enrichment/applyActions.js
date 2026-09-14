@@ -94,11 +94,13 @@ function applyActions(actions, article = {}) {
       // Applies the star-specific behavior.
       case 'star':
         result.favoriteInd = 1;
+        result.favoritedAt = new Date();
         break;
 
       // Clicked action: read-later indicator
       case 'clicked':
         result.clickedAmount = 1;
+        result.lastClickedAt = new Date();
         break;
 
       // Tag action: assign a tag to the article

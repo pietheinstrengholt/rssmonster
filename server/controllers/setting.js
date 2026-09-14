@@ -1,5 +1,3 @@
-import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
-import { collectArticleIslandMatches } from '../services/islands/islandArticleMatches.js';
 import db from '../models/index.js';
 import { getAvailableInferenceCapabilities } from '../services/inference/status.js';
 import { isAssistantEnabled } from '../config/intelligentFeatures.js';
@@ -617,33 +615,6 @@ export const getIslandsOverview = async (req, res, _next) => {
       }
     }
 
-    const statsByIslandId = new Map();
-    const relatedArticlesByIslandId = new Map();
-    const matchedArticleIds = await collectArticleIslandMatches(userId, {
-      onBatch: async matches => {
-        const articles = await db.Article.findAll({
-          where: { userId, id: matches.map(match => match.articleId) },
-          attributes: ['id', 'title', 'url', 'publishedAt', 'favoriteInd', 'clickedAmount'], raw: true
-        });
-        const byId = new Map(articles.map(article => [Number(article.id), article]));
-        for (const match of matches) {
-          const article = byId.get(Number(match.articleId));
-          if (!article) continue;
-          for (const island of match.islands) {
-            const id = String(island.id);
-            const stats = statsByIslandId.get(id) || { starredArticles: 0, clickedArticles: 0, relatedArticleCount: 0 };
-            stats.starredArticles += Number(article.favoriteInd) === 1 ? 1 : 0;
-            stats.clickedArticles += Number(article.clickedAmount) > 0 ? 1 : 0;
-            stats.relatedArticleCount++;
-            statsByIslandId.set(id, stats);
-            const recent = [...(relatedArticlesByIslandId.get(id) || []), article]
-              .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt) || b.id - a.id).slice(0, 3);
-            relatedArticlesByIslandId.set(id, recent);
-          }
-        }
-      }
-    });
-
     const sourceArticlesRaw = allSourceArticleIds.length
       ? await db.sequelize.query(
         `
@@ -684,8 +655,6 @@ export const getIslandsOverview = async (req, res, _next) => {
     const islands = [];
     for (const island of islandsRaw) {
       const islandId = String(island.id);
-      const islandStats = statsByIslandId.get(islandId);
-      const relatedArticles = relatedArticlesByIslandId.get(islandId) || [];
       const { populationAudit, populationSourceArticleIds } = auditByIslandId.get(islandId);
 
       const sourceArticleSnapshots = new Map();
@@ -720,10 +689,7 @@ export const getIslandsOverview = async (req, res, _next) => {
         }
       }
 
-      const populationSourceSet = new Set(populationSourceArticleIds);
       const islandSourceArticlesRaw = sourceArticlesByIslandId.get(islandId) || [];
-      const favoriteCount = Number(islandStats?.starredArticles || 0);
-      const clickCount = Number(islandStats?.clickedArticles || 0);
       const allSourceArticles = islandSourceArticlesRaw.map(article => {
         const articleId = Number(article.id);
         const snapshot = sourceArticleSnapshots.get(articleId) || {};
@@ -754,50 +720,21 @@ export const getIslandsOverview = async (req, res, _next) => {
 
       islands.push({
         ...island,
-        starredArticles: favoriteCount,
-        clickedArticles: clickCount,
-        relatedArticleCount: Number(islandStats?.relatedArticleCount || 0),
         populationAudit,
         populationSourceArticleIds,
         sourceArticleCount: populationSourceArticleIds.length,
         sourceArticles,
         evidenceSignalCount: allSourceArticles.reduce((sum, article) => sum + article.evidence.length, 0),
         effectiveWeight: Number(island.weight || 0),
-        favoriteCount,
-        clickCount,
-        interactionCount: favoriteCount + clickCount,
-        relatedArticles: relatedArticles.map(article => {
-          const articleId = Number(article.id);
-          const isPopulationSource = populationSourceSet.has(articleId);
-
-          return {
-            ...article,
-            isPopulationSource,
-            isNewArticle: !isPopulationSource,
-          };
-        })
       });
     }
 
     const islandCount = islandsRaw.filter(island => !island.archivedInd).length;
-    const islandArticles = matchedArticleIds.length;
-    const totalArticles = await db.Article.count({ where: { userId, ...canonicalArticleWhere(), filteredInd: false } });
-    const nonIslandArticles = Math.max(0, totalArticles - islandArticles);
-    const islandCoveragePercent = totalArticles
-      ? Number(((islandArticles / totalArticles) * 100).toFixed(1))
-      : 0;
-    const nonIslandCoveragePercent = Number((100 - islandCoveragePercent).toFixed(1));
-
     return res.status(200).json({
       userId,
       count: islands.length,
       totals: {
-        islandCount,
-        islandArticles,
-        nonIslandArticles,
-        totalArticles,
-        islandCoveragePercent,
-        nonIslandCoveragePercent
+        islandCount
       },
       islands
     });

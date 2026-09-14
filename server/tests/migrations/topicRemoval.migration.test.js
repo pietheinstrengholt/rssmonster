@@ -4,6 +4,7 @@ import db from '../../models/index.js';
 import { scoreArticlesFromIslandsForUser } from '../../services/score/scoreArticlesFromIslands.js';
 import { computeRecommended } from '../../services/recommendations/recommendedScore.js';
 import { up, down } from '../../migrations/20260914000000-remove-topics.mjs';
+import { up as addInteractionClocks } from '../../migrations/20260914001000-add-article-interaction-timestamps.mjs';
 
 import { resetDatabase } from '../helpers/resetDb.js';
 
@@ -35,6 +36,8 @@ async function installHistoricalSchema() {
     const imported = await import(new URL(name, directory));
     await (imported.default || imported).up(qi, db.Sequelize);
   }
+  // Keep the current Article model usable while isolating the historical relationship upgrade.
+  await addInteractionClocks(qi, db.Sequelize);
 }
 
 const assertRemoved = async () => {

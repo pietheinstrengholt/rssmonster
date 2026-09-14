@@ -4,9 +4,10 @@ const mocks = vi.hoisted(() => ({
   findAll: vi.fn()
 }));
 
-vi.mock('../../models/index.js', () => ({
-  default: { Article: { findAll: mocks.findAll } }
-}));
+vi.mock('../../models/index.js', async () => {
+  const { Sequelize } = await import('sequelize');
+  return { default: { Article: { findAll: mocks.findAll }, sequelize: new Sequelize({ dialect: 'sqlite', storage: ':memory:', logging: false }) } };
+});
 
 import {
   buildInterestIslandProfilesForUser,

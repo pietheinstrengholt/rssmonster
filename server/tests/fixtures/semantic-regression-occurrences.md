@@ -1,3 +1,5 @@
+> Historical fixture notes: the independent semanticGold tests described below have been removed. Occurrence articles remain in the two-batch semantic regression corpus.
+
 > Occurrence articles now live in `semantic-regression-batch001.json` and `semantic-regression-batch002.json`. Focused gold tests derive the original dated subsets from their provenance metadata. Vector caches are generated and ignored.
 
 # Incremental Event occurrence fixtures
@@ -51,7 +53,6 @@ coverage. Production matching logic is unchanged by this fixture task.
 Run from `server/`:
 
 ```sh
-npm test -- tests/semanticGold/semanticRegression.incremental.occurrences.test.js
 npm test -- tests/semantic tests/helpers/semanticRegressionHelpers.test.js
 npm run lint
 ```

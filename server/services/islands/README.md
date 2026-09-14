@@ -27,13 +27,6 @@ Unmatched stale Islands can be archived after 45 days when current behavioral
 support confidence is below .12. Matching behavioral profiles may reactivate
 archived Islands. Archival retains the record and its audit history.
 
-`islandArticleMatches.js` implements structural `island:true/false` filtering and
-Settings coverage using direct vectors. Affinity does not require a nonzero or
-positive preference, or an Event. Ownership, canonical and visibility filters
-apply before comparisons; article vectors are loaded in ID-ordered batches of
-200. All eligible batches are scanned so count, ranking and pagination apply to
-the matched set. Settings fetches display metadata per batch, not per Island.
-
 ## Boundaries
 
 No arbitrary news clustering creates behavioral preferences. Capacity cannot
@@ -76,12 +69,12 @@ behavioral preference. It is separate from Island confidence and relationship
 confidence. No new evidence or confidence fields are persisted.
 
 Confidence uses at most 500 current canonical, unfiltered behavioral articles per
-user, ordered by `publishedAt DESC`, then `id ASC`. Each article supports only its nearest
+user, ordered by latest active interaction time descending, then `id ASC`. Each article supports only its nearest
 active Island at the existing Article membership threshold. This is a read-time
 support estimate, not a membership mutation. Audit history is never ranking input.
 Reports describe this current support estimate, not historical audit snapshots.
 
-For independent article count `n`, distinct sources `s`, and publication days `d`:
+For independent article count `n`, distinct sources `s`, and interaction days `d`:
 
 ```
 support = .35 + .35*clamp((n-1)/4) + .15*clamp((s-1)/2) + .15*clamp((d-1)/3)
@@ -97,7 +90,7 @@ Here clamp without explicit bounds means [0,1]. Missing similarity uses zero.
 signs counts in each sign tally. Distinct canonical articles count
 once regardless of replayed calibration, click quantity or favorite strength.
 Sources and days provide capped breadth, not claims of editorial independence.
-Publication days are a proxy because likes/dislikes lack interaction timestamps.
+Interaction days use each article’s latest active signal; null legacy clocks fall back to publication.
 No observed current support gives legacy Islands confidence .1; a fully coherent
 same-sign singleton has confidence .35, not 1 or 0. Five coherent same-sign articles across
 three sources/four days can reach 1. Mixed signs reduce confidence. Low cohesion
@@ -116,21 +109,20 @@ means neutral interest and never prevents Recommended calculation.
 
 Explicit likes/favorites and dislikes can outlive community capacity via a bounded
 direct evidence fallback. Per sign, at most 100 canonical/unfiltered explicit
-articles published within the last 90 days are considered, with stable date/ID
+articles with the corresponding interaction within the last 90 days are considered, with stable date/ID
 ordering. No absence of engagement, short read, or unread state counts as negative.
 Only evidence without a qualifying same-sign Island uses fallback. This includes
 negative evidence near a net-positive Island. Explicit negative overrides positive
 flags for this fallback; clicks/deep reads alone do not trigger positive fallback.
 
 ```
-recency = 2^(-publicationAgeDays/30)
+recency = 2^(-interactionAgeDays/30)
 behavioralContribution = sign * .25 * recency * directRelationship * intentCompatibility
 ```
 
-Unknown/future publication times and age over 90 days do not qualify. These limits
+Unknown/future interaction times and age over 90 days do not qualify. These limits
 bound work and influence; they are not a new Island cap or relaxed similarity gate.
-Publication age may miss a new dislike on an old article; an accurate interaction
-timestamp is a future schema decision. Replaying unchanged evidence cannot stack
+A fresh dislike on an old article qualifies through `negativeFeedbackAt`. Replaying unchanged evidence cannot stack
 penalties. Positive fallback follows the same small evidence path only when no
 positive Island represents the explicit preference, so capacity does not erase
 likes/favorites either.
@@ -171,8 +163,8 @@ commercial/editorial mismatch. Only explicit negative flags cause negative trans
 
 Diagnostics report source/target intent, compatibility and same-intent,
 cross-intent-attenuated or missing-intent paths, alongside the interest confidence factors.
-The title heuristics are not a universal classifier, and publication age remains a
-proxy for feedback recency. Held-out ranking evaluation should measure these limits.
+The title heuristics are not a universal classifier. Held-out ranking evaluation
+should measure these limits.
 
 ## Preference strength, relationship storage, and diagnostics
 
@@ -183,7 +175,8 @@ and clear the opposite flag, so the last write wins even for concurrent requests
 For legacy rows with both explicit flags set, negative feedback suppresses the
 explicit positive signal in formation, confidence and fallback. Favorites, clicks
 and deep reads remain independent signals; no historical rows are rewritten.
-Positive formation evidence uses existing publication recency decay. The candidate
+Positive formation evidence applies the existing recency curve separately to each
+signal’s interaction clock before summing. The candidate
 weight is `clamp(averageProfileScore / 7 + sign(averageProfileScore) *
 min(.2, memberCount * .03), -1, 1)`, rounded to four decimals. This signed
 preference strength is distinct from confidence in its semantic generalization.
@@ -199,7 +192,7 @@ capacity is exhausted.
 | --- | --- |
 | Island vector, weight, signal snapshot | Persisted calibration state; weight supplies signed preference. |
 | Bounded population audit | Persisted explanation history; never ranking evidence. |
-| Member count, distinct behavioral articles/sources/publication days, median/minimum similarity, positive/negative article counts | Derived from current bounded support; numerical inputs to Island confidence. |
+| Member count, distinct behavioral articles/sources/interaction days, median/minimum similarity, positive/negative article counts | Derived from current bounded support; numerical inputs to Island confidence. |
 | Singleton, weak support (<3 articles), low cohesion (median below formation threshold), mixed sign, no current support, strong/coherent | Derived diagnostic classifications; never deletion rules or separate score terms. Strong/coherent requires ≥3 measured members, all above threshold, without mixed signs. |
 | Island confidence, path confidence, intent compatibility | Derived at evaluation time; not separately persisted. |
 | Article interestScore | Persisted derived signed score; never reused as behavioral evidence. |
@@ -234,3 +227,32 @@ intent categories. No product/entity override defeats an intent mismatch.
 Missing support, broad taxonomy labels, and limited multilingual subject/intent
 recognition remain limitations. Low observed contamination and passing held-out
 cases do not prove optimal ranking or justify raising personalization weights.
+
+## Interaction timestamps and legacy behavior
+
+Article stores nullable `lastClickedAt`, `favoritedAt`, `positiveFeedbackAt`,
+`negativeFeedbackAt`, and `lastMeaningfulReadAt`. The authenticated mutation sets
+server time; unfavorite clears its clock, and explicit feedback clears the
+opposite flag and clock atomically. Repeated clicks/deep-read reports refresh
+their clocks. Read/unread toggles do not invent deep-read evidence. Existing
+firstSeen/attention-bucket and Event read-cascade semantics are retained, but the
+deep-read timestamp belongs only to the article actually viewed.
+
+Formation retains +8 positive, +4 favorite, +2 per click (capped at three), +1 deep
+read, and −8 negative weights. Each positive term uses its own timestamp with the
+existing `exp(-ageDays / 1460)` curve and .2 floor. The existing formation negative
+penalty stays undecayed; no new decay rule was added. Explicit negative fallback
+uses `negativeFeedbackAt`, the existing 90-day window and 30-day half-life.
+Positive fallback evaluates positive feedback and favorites on their own clocks
+and keeps the strongest positive path; it does not add correlated fallback scores.
+Confidence uses interaction-day breadth with the same count, source and day weights.
+
+For a signal whose timestamp is null (legacy/imported behavioral state without a
+known interaction time), publication time remains the documented approximation.
+The migration leaves nulls intact rather than manufacturing interaction times.
+Known clocks always override publication; rereading or favoriting a 2022 article
+today produces fresh timing evidence. Publisher revisions preserve these clocks.
+Automated favorite/click rules stamp when their state is first applied on ingestion;
+re-crawling an existing article does not refresh user behavior. Feed reconciliation
+retains the latest stored clock for each signal without treating merging as an
+interaction. No event-history table, signal weight or semantic threshold is added.

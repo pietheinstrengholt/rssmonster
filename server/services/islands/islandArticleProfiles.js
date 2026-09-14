@@ -1,4 +1,5 @@
 import { Op } from 'sequelize';
+import { BEHAVIOR_TIMESTAMP_FIELDS, signalTimestamp } from '../articles/articleBehaviorTime.js';
 import db from '../../models/index.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import {
@@ -33,16 +34,16 @@ export function computeArticleSignals(article) {
   const deepReads = (article.attentionBucket || 0) >= 3 ? 1 : 0;
   // Selects the negative based on whether article negative status is 1.
   const negative = article.negativeInd === 1 ? 1 : 0;
-  // Derives the recency through behavior recency weight while computing article signals.
-  const recency = behaviorRecencyWeight(article.publishedAt);
+  // Each signal decays from its own interaction, before signals are combined.
+  const recency = field => behaviorRecencyWeight(signalTimestamp(article, field));
 
   // Derives the positive score required while computing article signals.
   const positiveScore = (
-    positives * SIGNAL_WEIGHTS.positive +
-    stars * SIGNAL_WEIGHTS.star +
-    clicks * SIGNAL_WEIGHTS.click +
-    deepReads * SIGNAL_WEIGHTS.deepRead
-  ) * recency;
+    positives * SIGNAL_WEIGHTS.positive * recency('positiveFeedbackAt') +
+    stars * SIGNAL_WEIGHTS.star * recency('favoritedAt') +
+    clicks * SIGNAL_WEIGHTS.click * recency('lastClickedAt') +
+    deepReads * SIGNAL_WEIGHTS.deepRead * recency('lastMeaningfulReadAt')
+  );
 
   // Derives the negative score required while computing article signals.
   const negativeScore = negative * SIGNAL_WEIGHTS.negative;
@@ -201,7 +202,7 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
   // Derives the max islands required while building interest island profiles for user.
   const maxIslands = options.maxIslands || DEFAULT_MAX_ISLANDS_PER_USER;
 
-  // Loads the articles needed while building interest island profiles for user.
+  // Formation applies the complete magnitude/id order below; avoid a redundant SQL sort.
   const articles = await Article.findAll({
     where: {
       userId,
@@ -224,15 +225,8 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
       'clickedAmount',
       'attentionBucket',
       'negativeInd',
-      'publishedAt'
-    ],
-    order: [
-      ['positiveInd', 'DESC'],
-      ['favoriteInd', 'DESC'],
-      ['clickedAmount', 'DESC'],
-      ['attentionBucket', 'DESC'],
-      ['publishedAt', 'DESC'],
-      ['id', 'ASC']
+      'publishedAt',
+      ...BEHAVIOR_TIMESTAMP_FIELDS
     ]
   });
 

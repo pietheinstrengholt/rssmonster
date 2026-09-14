@@ -147,8 +147,8 @@ Inspect reason codes and held-out outcomes, preserve coverage assertions and kee
 models/inputs fixed unless their change is authorized. Model-backed skips are not
 full validation.
 The trace command runs only the two 1,000-article batches. Also run
-`npm run test:semantic-gold` when changing Event identity, Island formation,
+the relevant focused service tests when changing Event identity, Island formation,
 confidence or behavioral scoring; passing score coverage alone does not validate
-those isolated gold contracts.
+those contracts.
 Run database-resetting suites sequentially against the isolated test database.
 Generated presentation labels must not become independent semantic evidence.

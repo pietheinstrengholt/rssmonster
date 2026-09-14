@@ -94,6 +94,12 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
+      // Latest signal times; null retains unknown interaction time for legacy state.
+      lastClickedAt: { type: DataTypes.DATE, allowNull: true },
+      favoritedAt: { type: DataTypes.DATE, allowNull: true },
+      positiveFeedbackAt: { type: DataTypes.DATE, allowNull: true },
+      negativeFeedbackAt: { type: DataTypes.DATE, allowNull: true },
+      lastMeaningfulReadAt: { type: DataTypes.DATE, allowNull: true },
       // Marks whether the user has saved the article as a favorite.
       favoriteInd: {
         type: DataTypes.INTEGER,

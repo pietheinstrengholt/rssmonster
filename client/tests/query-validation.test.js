@@ -121,25 +121,6 @@ describe('query validation diagnostics', () => {
   );
 });
 
-describe('query validation island filters', () => {
-  it('accepts island:true and island:false in searches and smart folders', () => {
-    expect(validateSearchQuery('island:true')).toEqual({ valid: true, error: '' });
-    expect(validateSmartFolderQuery('unread:true island:false')).toEqual({ valid: true, error: '' });
-    expect(knownKeywords).toContain('island');
-  });
-
-  it('reports invalid island filter syntax', () => {
-    expect(validateSearchQuery('island=yes')).toEqual({
-      valid: false,
-      error: 'Use colon (:) not equals (=). Example: quality:0.6'
-    });
-    expect(validateSearchQuery('island:maybe')).toEqual({
-      valid: false,
-      error: 'Invalid expression: "island:maybe"'
-    });
-  });
-});
-
 describe('query validation briefing filters', () => {
   it('accepts briefing:true and briefing:false in searches and smart folders', () => {
     expect(validateSearchQuery('briefing:true')).toEqual({ valid: true, error: '' });
@@ -217,4 +198,11 @@ describe('query validation calendar dates', () => {
       });
     }
   );
+});
+
+// Removed operators follow the ordinary unsupported-filter validation path.
+it.each(['island:true', 'island:false'])('rejects removed Island operator %s', query => {
+  expect(knownKeywords).not.toContain('island');
+  expect(validateSearchQuery(query).valid).toBe(false);
+  expect(validateSmartFolderQuery(query).valid).toBe(false);
 });
