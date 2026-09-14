@@ -86,6 +86,13 @@ independent identity evidence. See [semantic architecture](../../services/README
 
 ## Reports
 
+Frozen caches track both the selected source-content hash (`contentSourceHash`) and the
+normalized/truncated `embeddingInputHash`. `npm run fixture:semantic-vectors`
+refreshes stale content-hash metadata on an unchanged embedding-input cache hit,
+reusing the vector. Vector JSON files are ignored by Git, so existing local caches
+need that maintenance command after a metadata-only content change. The canonical
+fixture integrity test validates both hashes for all 2,000 Articles.
+
 Generated, ignored artifacts in `tests/.semantic-regression/`:
 
 - `batch-report.md`: initial/final metrics and runtime.

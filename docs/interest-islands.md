@@ -136,10 +136,20 @@ otherwise old preference look recent.
 Lifecycle confidence is separate from scoring confidence:
 
 ```
-remainingSupport = max(clamp(abs(decayedPositive - decayedNegative)
-                            / (rawPositive + rawNegative), 0, 1))
+signalRetention = max(decayedSignal / rawSignal)
+agreement = abs(decayedPositive - decayedNegative)
+            / (decayedPositive + decayedNegative)
+remainingSupport = max(signalRetention * agreement)
 lifecycleConfidence = existingSupportConfidence * remainingSupport
 ```
+
+`signalRetention` takes the strongest independently normalized signal whose
+decayed contribution reaches the existing `.05` signal threshold. This is its
+existing recency multiplier; raw weights and decay are unchanged. An aging click
+cannot dilute a surviving favorite, including before that click becomes exhausted.
+`agreement` preserves signed cancellation using the full decayed positive and
+negative evidence. It is 1 for same-direction evidence and 0 for exact cancellation;
+a zero total gives zero agreement. No meaningful signals gives zero retention.
 
 The maximum is over currently qualifying supporting Articles. Empty support gives
 zero lifecycle confidence; exhausted Articles do not contribute to support confidence.

@@ -152,4 +152,54 @@ describe('behavior-driven Island lifecycle', () => {
     expect(support.confidence).toBeGreaterThan(0.12);
     expect(islandArchiveState(null, support).archivedInd).toBe(false);
   });
+
+  it.each([1, 3, 20])('does not dilute a surviving favorite with %i exhausted clicks on the same Article', clickedAmount => {
+    const favorite = { id: 1, articleVector: [1, 0], favoriteInd: 1, favoritedAt: at(-365), publishedAt: at(-2000) };
+    const alone = summarizeIslandLifecycle([favorite], [1, 0]);
+    const mixed = summarizeIslandLifecycle([{ ...favorite, clickedAmount, lastClickedAt: at(-365) }], [1, 0]);
+    expect(mixed.confidence).toBeGreaterThanOrEqual(alone.confidence);
+    expect(mixed.lastBehaviorAt).toEqual(alone.lastBehaviorAt);
+    expect(islandArchiveState(null, mixed).archivedInd).toBe(false);
+  });
+
+  it('does not archive capped-click favorite history before the clicks cross the exhausted cutoff', async () => {
+    const data = await fixture({ favoriteInd: 1, favoritedAt: at(0), clickedAmount: 3, lastClickedAt: at(0) });
+    await calibrate(data.user.id);
+    const island = await ownedIsland(data.user.id);
+    for (const day of [90, 130, 180, 210, 365]) {
+      advance(day);
+      await calibrate(data.user.id); await island.reload();
+      const alone = summarizeIslandLifecycle([{ ...data.source.get({ plain: true }), clickedAmount: 0 }], island.islandVector);
+      expect(islandArchiveState(null, alone).archivedInd).toBe(false);
+      expect(island.archivedInd).toBe(false);
+    }
+  });
+
+  it('keeps mixed favorite history active at one year, replays safely, and still forgets it eventually', async () => {
+    const data = await fixture({ favoriteInd: 1, favoritedAt: at(0), clickedAmount: 1, lastClickedAt: at(0) });
+    await calibrate(data.user.id);
+    const island = await ownedIsland(data.user.id);
+    advance(365);
+    for (let replay = 0; replay < 2; replay++) {
+      await calibrate(data.user.id); await island.reload(); await data.candidate.reload();
+      expect(island.archivedInd).toBe(false);
+      expect(Number(data.candidate.interestScore)).toBeGreaterThan(0);
+      expect(summarizeIslandLifecycle([data.source], island.islandVector).lastBehaviorAt).toEqual(at(0));
+    }
+    advance(365 * 4);
+    await calibrate(data.user.id); await island.reload(); await data.candidate.reload();
+    expect(island.archivedInd).toBe(true);
+    expect(Number(data.candidate.interestScore)).toBe(0);
+    expect(await db.Island.count({ where: { userId: data.user.id } })).toBe(1);
+  });
+
+  it('continues to account for meaningful negative evidence when normalizing mixed support', () => {
+    const favorite = { id: 1, articleVector: [1, 0], favoriteInd: 1, favoritedAt: at(-365) };
+    const opposed = { ...favorite, negativeInd: 1, negativeFeedbackAt: at(-365) };
+    expect(summarizeIslandLifecycle([opposed], [1, 0]).retainedSupport).toBeCloseTo(2 / 12, 10);
+    expect(summarizeIslandLifecycle([opposed], [1, 0]).confidence)
+      .toBeLessThan(summarizeIslandLifecycle([favorite], [1, 0]).confidence);
+    const cancelled = { ...favorite, negativeInd: 1, negativeFeedbackAt: at(-730) };
+    expect(summarizeIslandLifecycle([cancelled], [1, 0]).confidence).toBe(0);
+  });
 });

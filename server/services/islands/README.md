@@ -322,13 +322,17 @@ unmatched archives are neither scanned for lifecycle support nor deleted. The
 scoring evidence bound of 500 remains unchanged and is not used as an absence
 test for lifecycle support.
 
-For each supporting Article, reuse `computeArticleSignals`: remaining signed
-magnitude is `abs(positiveScore - negativeScore)`; raw magnitude is the sum of
-the unchanged positive/negative signal weights, with the same click cap and
-contradictory-feedback handling. Lifecycle confidence is existing cohesion/support
-confidence over currently qualifying Articles multiplied by the strongest
-`clamp(remainingMagnitude / rawMagnitude)` among those Articles. No support gives
-zero. Taking the strongest remaining fraction avoids diluting a surviving strong
+For each supporting Article, reuse `computeArticleSignals`. Normalize each
+currently meaningful signal independently: its retained fraction is its existing
+recency multiplier, provided its weighted decayed contribution reaches the Article
+signal cutoff. Take the strongest fraction, then multiply by signed agreement:
+`abs(positiveScore - negativeScore) / (positiveScore + negativeScore)`, clamped to
+0–1 (zero total gives zero). Thus aging clicks cannot dilute a surviving favorite,
+even before they become exhausted, while opposing evidence still reduces support.
+Raw weights, click caps, decay and contradictory-feedback handling are unchanged.
+Lifecycle confidence is existing cohesion/support confidence over currently
+qualifying Articles multiplied by the strongest remaining fraction among those
+Articles. No support gives zero. Taking the strongest remaining fraction avoids diluting a surviving strong
 preference with arbitrarily much weak history. This factor is used only for lifecycle decisions, never
 as a new recommendation multiplier.
 

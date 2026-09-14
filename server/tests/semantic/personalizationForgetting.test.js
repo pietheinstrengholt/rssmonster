@@ -157,6 +157,10 @@ describe('controlled Interest Island forgetting evaluation', () => {
       expect(last.pool[0].interestScore).toBe(0);
     }
     if (['favorite', 'more-like-this', 'not-interested'].includes(spec.name)) expect(last.islands[0].archived).toBe(false);
+    if (spec.name === 'mixed-click-favorite') {
+      expect(last.islands[0].archived).toBe(false);
+      expect(last.pool[0].interestScore).toBeGreaterThan(0);
+    }
     if (spec.name === 'not-interested') expect(last.pool[0].interestScore).toBeLessThan(0);
     if (spec.groups.length > 1) {
       expect(last.pool[0].interestScore).toBeGreaterThan(last.pool[1].interestScore);

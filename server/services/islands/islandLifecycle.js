@@ -19,18 +19,25 @@ export function summarizeIslandLifecycle(articles, vector) {
       positiveFeedbackAt: counts.positives * SIGNAL_WEIGHTS.positive,
       negativeFeedbackAt: counts.negatives * SIGNAL_WEIGHTS.negative
     };
-    const rawMagnitude = Object.values(raw).reduce((sum, value) => sum + value, 0);
     const magnitude = Math.abs(signals.positiveScore - signals.negativeScore);
     if (magnitude < DEFAULT_ARTICLE_SIGNAL_THRESHOLD) continue;
     meaningfulSupport.push(article);
-    // A strong surviving preference must not be diluted by a large volume of old weak history.
-    retainedSupport = Math.max(retainedSupport, rawMagnitude ? clamp(magnitude / rawMagnitude) : 0);
+    let signalRetention = 0;
     for (const [field, strength] of Object.entries(raw)) {
       const time = signalTimestamp(article, field);
-      if (time == null || strength * behaviorRecencyWeight(time, SIGNAL_HALF_LIFE_DAYS[field]) < DEFAULT_ARTICLE_SIGNAL_THRESHOLD) continue;
+      const recency = behaviorRecencyWeight(time, SIGNAL_HALF_LIFE_DAYS[field]);
+      if (strength * recency < DEFAULT_ARTICLE_SIGNAL_THRESHOLD) continue;
+      // Normalize each signal independently so aging clicks cannot dilute a surviving favorite.
+      signalRetention = Math.max(signalRetention, recency);
+      if (time == null) continue;
       const timestamp = new Date(time).getTime();
       if (Number.isFinite(timestamp) && timestamp <= Date.now() && (lastBehaviorAt == null || timestamp > lastBehaviorAt)) lastBehaviorAt = timestamp;
     }
+    // A strong surviving preference must not be diluted by a large volume of old weak history.
+    // Preserve signed cancellation after independent normalization; never hide opposing evidence.
+    const totalMagnitude = signals.positiveScore + signals.negativeScore;
+    const agreement = totalMagnitude > 0 ? clamp(magnitude / totalMagnitude) : 0;
+    retainedSupport = Math.max(retainedSupport, signalRetention * agreement);
   }
   return {
     lastBehaviorAt: lastBehaviorAt == null ? null : new Date(lastBehaviorAt),

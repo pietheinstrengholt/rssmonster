@@ -1,5 +1,8 @@
 # Interest Island forgetting validation
 
+The tables below preserve the original evaluation. The mixed-signal lifecycle
+defect observed there is now fixed; see [the follow-up](#mixed-signal-normalization-follow-up).
+
 Controlled evaluation of the current `topic-removal` implementation. This task adds tests and documentation only; production algorithms, configuration, thresholds and recommendation weights are unchanged.
 
 ## Reproduce and inspect
@@ -202,7 +205,7 @@ Day-0 raw counts C/D/F/P/N: `0/0/0/1/0`. The positive-feedback clock refreshes a
 
 - Recent evidence outweighs old evidence for every signal. Equal-age retention orders click < deep read < favorite < more-like-this. A single favorite remains active through day 365; click-only history becomes neutral by day 90. Three deep reads survive day 180 and archive by day 365. Continued strong behavior stays active throughout.
 - The returning Kubernetes interest archives at day 90 and reactivates its existing ID at day 180. Its held-out interest rises from 0 to 0.2121; Recommended rises from 0.2530 to 0.3484. Replaying calibration does not move activity or archive timestamps forward.
-- **Unexpected premature forgetting:** mixed click + favorite archives at day 365, while favorite alone remains active. Its surviving favorite contributes 2, but lifecycle retention divides by the Article's original combined raw magnitude 6, giving lifecycle confidence ≈0.1167, below 0.12. Favorite alone has confidence 0.175. The suite records this limitation; it does not declare earlier mixed-signal archival desirable or change the algorithm.
+- **Historical premature forgetting (now fixed):** mixed click + favorite archived at day 365, while favorite alone remained active. Its surviving favorite contributed 2, but lifecycle retention divided by the Article's original combined raw magnitude 6, giving lifecycle confidence ≈0.1167, below 0.12. Favorite alone had confidence 0.175. See the follow-up below for the corrected normalization.
 - **Persistence plateau:** more-like-this held-out interest stays 0.35 through day 90; negative interest stays −0.35 through day 30 despite continuously decaying evidence. Existing weight clamping at ±1 and separate scoring confidence explain this. Negative interest weakens to −0.2105 by day 365, rather than remaining permanently full-strength. The one-year simulation does not establish eventual archival for every explicit preference.
 - Archived unmatched Islands can retain their last persisted nonzero weight. They are excluded from active scoring: the abandoned candidate is neutral. This is historical storage, not fresh behavioral support. Staleness alone does not archive a strong Island; archival requires stale and weak support at calibration time, not an automatic daily timer.
 - Stable favorite interest outlasts the Event-click burst in the same user. The burst is neutral by day 90 while the favorite remains positive through day 365. Unrelated held-outs remain neutral in every scenario. Rank is intentionally a small controlled-pool diagnostic, not a claim about a live library.
@@ -225,3 +228,59 @@ Day-0 raw counts C/D/F/P/N: `0/0/0/1/0`. The positive-feedback clock refreshes a
 Trace processing runtime was **113.78 → 141.51 s**; Vitest wall duration **138.78 → 168.05 s**. This is an observed slower final run, not a controlled performance benchmark; the trace does not execute the added forgetting suite, and production code was unchanged between captures. Logs, exit statuses, fingerprints, reports, focused-test logs and the normalization/comparison script are preserved under ignored `server/tests/.semantic-regression/comparisons/forgetting-evaluation/` (`before/`, `after/`, `comparison.json`).
 
 Files added: this report and `server/tests/semantic/personalizationForgetting.test.js`.
+
+## Mixed-signal normalization follow-up
+
+The premature mixed-signal archival above is corrected in `islandLifecycle.js`.
+For each qualifying Article, lifecycle retention now takes the strongest retained
+fraction among individually meaningful signals, then multiplies by signed
+agreement `abs(P - N) / (P + N)` using the full decayed evidence. A zero total
+produces zero agreement. This preserves opposition/cancellation and existing
+single-signal decay without letting slower-decaying favorite support be diluted
+by aging clicks. The maximum across supporting Articles and the existing
+cohesion/confidence calculation remain intact.
+
+Raw behavioral weights, per-signal half-lives, meaningful-signal cutoff,
+recommendation confidence/weights, matching thresholds and Events are unchanged.
+Lifecycle confidence continues to feed the existing capacity tie-break; capacity
+selection itself is not changed. Activity timestamps still reflect interactions,
+not calibration. Previously archived Islands retain the existing new-behavior
+requirement for reactivation; no historical backfill is performed.
+
+| Mixed click + favorite, day 365 | Original evaluation | Corrected |
+| --- | ---: | ---: |
+| Lifecycle confidence | 0.1167 | 0.1750 |
+| State | Archived | Active, behaviorally stale |
+| Held-out interest | 0 | 0.1105 |
+| Recommended (fixed comparison inputs) | 0.2530 | 0.3027 |
+
+Favorite-only lifecycle confidence is also 0.1750. The persisted mixed Island
+weight remains 0.3158; its raw evidence and decay have not changed. Tests also
+cover capped repeated clicks with calibration at days 90, 130, 180, 210 and 365,
+ensuring the Island does not archive prematurely before those clicks expire.
+Repeated calibration preserves behavioral age; four-year-old favorite support
+still weakens enough to archive. Meaningful negative evidence still reduces
+support, and exact positive/negative cancellation yields zero confidence.
+
+Validation: 200 server tests across 26 files passed (51.85 s); 37 SQLite tests
+across four files passed (8.66 s); server lint and `git diff --check` passed.
+The original regression cases were observed failing before the fix. Existing
+forgetting evaluation now explicitly asserts mixed-signal survival at one year.
+
+Both required semantic traces passed with identical corpus/vector fingerprints
+and selected model. Complete normalized reports match: both phases' Article
+scores/ranks/paths, Event and Island memberships, confidence diagnostics,
+persistence outcomes and all 160 held-out results. Batch001 remains 1,000 Articles,
+20 active Islands, 74 unassigned profiles, 43 positive / 6 negative / 951 neutral;
+Batch002 remains 2,000 Articles, 20 active Islands, 114 unassigned profiles,
+167 positive / 45 negative / 1,788 neutral. Recommended coverage remains 100%.
+No baseline or final trace assertion failed. These week-long batches do not
+contain the year-old mixed-signal case; the focused evaluation proves that fix.
+
+Processing runtime was 118.82→105.79 s; Vitest wall duration 144.38→129.75 s.
+These single runs are not a performance benchmark. Full MySQL and SQLite forgetting
+snapshots match after excluding generated IDs. Logs, reports, fingerprints,
+red-regression evidence and the reproducible comparison script are preserved in
+ignored `server/tests/.semantic-regression/comparisons/mixed-signal-forgetting/`.
+The final comparison uses `before/` and `after/`; an intermediate threshold-only
+attempt is retained separately and is not the shipped fix.
