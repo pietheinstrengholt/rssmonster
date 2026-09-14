@@ -18,12 +18,13 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../../models/index.js', () => ({
   default: {
-    User: { findAll: mocks.userFindAll },
+    User: { findAll: mocks.userFindAll, findByPk: vi.fn(async () => ({ id: 7 })) },
     Island: { findAll: mocks.islandFindAll, count: mocks.islandCount },
     IslandTaxonomy: { findAll: mocks.taxonomyFindAll },
     Sequelize: { QueryTypes: { SELECT: 'SELECT' } },
     sequelize: {
       transaction: mocks.transaction,
+      getDialect: () => 'mysql',
       query: mocks.query
     }
   }
@@ -59,7 +60,7 @@ import {
 describe('island calibration orchestration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.transaction.mockImplementation(async callback => callback('tx'));
+    mocks.transaction.mockImplementation(async (_options, callback) => callback('tx'));
     mocks.userFindAll.mockResolvedValue([{ id: 1 }, { id: 2 }]);
     mocks.islandFindAll.mockResolvedValue([]);
     mocks.islandCount.mockResolvedValue(1);

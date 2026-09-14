@@ -2,22 +2,23 @@ import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { formatLogString } from '../../utils/logging.js';
 import { buildPopulationAuditEntry, appendPopulationAudit } from './islandAudit.js';
-import { loadIslandEvidence } from './islandInterestConfidence.js';
+import { loadIslandBehavioralArticles } from './islandArticleProfiles.js';
+import { islandArchiveState, reconstructIslandLifecycles, summarizeIslandLifecycle } from './islandLifecycle.js';
+import { rankIslandCapacityCandidates } from './islandCapacity.js';
 import {
   buildUniqueIslandName,
   disambiguateDuplicateIslandNamesForUser,
   normalizeIslandName
 } from './islandNameDisambiguation.js';
 import {
-  DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD,
   DEFAULT_ISLAND_MATCH_THRESHOLD,
   ISLAND_DEBUG,
   blendIslandVector,
   cosineSimilarity,
   debugIsland,
-  isStaleIsland,
   normalizePositiveSignals,
   resolveTaxonomyDisplayName,
+  resolveIslandCapacity,
   sortIslandsByWeight
 } from './islandVectorUtils.js';
 
@@ -57,7 +58,8 @@ function strongestArticleEngagement(article = {}) {
 }
 
 // This function creates, updates, archives, and links islands from computed profiles.
-export async function persistInterestIslandProfiles(userId, profiles, transaction) {
+export async function persistInterestIslandProfiles(userId, profiles, transaction, options = {}) {
+  const maxIslands = resolveIslandCapacity(options.maxIslands);
   const persistableProfiles = profiles
     .filter(profile => Array.isArray(profile.vector) && profile.vector.length)
     .filter(profile => (profile.articles || []).length > 0);
@@ -67,6 +69,8 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     where: { userId },
     transaction
   }));
+  const behavioralEvidence = profiles.behavioralEvidence ?? await loadIslandBehavioralArticles(userId, { transaction });
+  const evidenceById = new Map(behavioralEvidence.map(article => [String(article.id), article]));
   // Tracks distinct used island names while performing persist interest island profiles.
   const usedIslandNames = new Set(
     existingIslands.map(island => normalizeIslandName(island.label))
@@ -84,6 +88,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
 
   // Tracks distinct matched island id while performing persist interest island profiles.
   const matchedIslandIds = new Set();
+  const profilesByIslandId = new Map();
 
   // Collects the created islands while performing persist interest island profiles.
   const createdIslands = [];
@@ -124,6 +129,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     const articleIds = (profile.articles || [])
       .map(article => Number(article.articleId))
       .filter(Number.isFinite);
+    const lifecycle = summarizeIslandLifecycle(articleIds.map(id => evidenceById.get(String(id))).filter(Boolean), profile.vector);
     // Builds the population audit entry while performing persist interest island profiles.
     const auditEntry = await buildPopulationAuditEntry({
       userId,
@@ -133,6 +139,8 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
 
     // Handles the case where best match is available and best similarity reaches default island match threshold.
     if (bestMatch && bestSimilarity >= DEFAULT_ISLAND_MATCH_THRESHOLD) {
+      const archiveState = islandArchiveState(bestMatch, lifecycle);
+      if (archiveState.archivedInd && !bestMatch.archivedInd) archivedIslandCount++;
       // Derives the updated island through update while performing persist interest island profiles.
       const updatedIsland = await bestMatch.update({
         label: resolvedLabel,
@@ -141,12 +149,12 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
         // Profiles are complete snapshots, not interaction deltas. Replays must not add evidence.
         positiveSignals: normalizePositiveSignals(profile.positiveSignals),
         populationAudit: appendPopulationAudit(bestMatch.populationAudit, auditEntry),
-        archivedInd: false,
-        archivedAt: null
+        ...archiveState
       }, { transaction });
       usedIslandNames.add(normalizeIslandName(updatedIsland.label));
 
       matchedIslandIds.add(updatedIsland.id);
+      profilesByIslandId.set(updatedIsland.id, profile);
       updatedIslandCount += 1;
 
       // Derives the strongest article required while performing persist interest island profiles.
@@ -185,6 +193,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
 
     // Builds the unique island name while performing persist interest island profiles.
     const uniqueLabel = buildUniqueIslandName(resolvedLabel, usedIslandNames);
+    const archiveState = islandArchiveState(null, lifecycle);
     // Performs the create operation while performing persist interest island profiles.
     const island = await Island.create({
       label: uniqueLabel,
@@ -193,11 +202,11 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       islandVector: profile.vector,
       positiveSignals: normalizePositiveSignals(profile.positiveSignals),
       populationAudit: appendPopulationAudit([], auditEntry),
-      archivedInd: false,
-      archivedAt: null
+      ...archiveState
     }, { transaction });
     usedIslandNames.add(normalizeIslandName(uniqueLabel));
     createdIslandCount += 1;
+    if (archiveState.archivedInd) archivedIslandCount++;
     createdIslandIds.push(Number(island.id));
 
     console.log(
@@ -207,45 +216,38 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     );
 
     createdIslands.push(island);
+    profilesByIslandId.set(island.id, profile);
   }
 
   // Keeps the inactive islands entries eligible while performing persist interest island profiles.
-  const inactiveIslands = existingIslands.filter(island => !matchedIslandIds.has(island.id));
-  // Transforms source values into the inactive id required while performing persist interest island profiles.
-  const inactiveIds = inactiveIslands.map(island => island.id);
-
-  // Handles the case where inactive id is non-empty.
-  if (inactiveIds.length) {
-    const evidence = await loadIslandEvidence(userId, { transaction });
-    const confidenceByIslandId = new Map(evidence.islands.map(island => [Number(island.id), island.islandConfidence]));
-
-    // Normalizes the now used while performing persist interest island profiles.
-    const now = new Date();
-
-    // Processes each inactive islands entry in turn.
-    for (const island of inactiveIslands) {
-      const noActivity = true;
-      // Derives the low confidence required while performing persist interest island profiles.
-      const lowConfidence = (confidenceByIslandId.get(Number(island.id)) || 0) < DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD;
-      // Derives the stale age through is stale island while performing persist interest island profiles.
-      const staleAge = isStaleIsland(island);
-
-      // Handles the case where no activity is available and low confidence is available and stale age is available.
-      if (noActivity && lowConfidence && staleAge) {
-        await island.update(
-          {
-            archivedInd: true,
-            archivedAt: now
-          },
-          { transaction }
-        );
-        archivedIslandCount += 1;
-      }
+  const inactiveIslands = existingIslands.filter(island => !matchedIslandIds.has(island.id) && !island.archivedInd);
+  const activeCandidates = [...new Map([...existingIslands, ...createdIslands]
+    .filter(island => !island.archivedInd).map(island => [island.id, island])).values()];
+  const existingLifecycles = inactiveIslands.length ? reconstructIslandLifecycles(activeCandidates, behavioralEvidence) : new Map();
+  for (const island of inactiveIslands) {
+    // Only a matched profile can reactivate; replay must preserve the original archive boundary.
+    const archiveState = islandArchiveState(island, existingLifecycles.get(island.id));
+    if (archiveState.archivedInd) {
+      await island.update(archiveState, { transaction });
+      archivedIslandCount++;
     }
   }
 
   // Derives the name disambiguation summary through disambiguate duplicate island names for user while performing persist interest island profiles.
   const nameDisambiguationSummary = await disambiguateDuplicateIslandNamesForUser(userId, { transaction });
+  const duplicateArchives = new Set(nameDisambiguationSummary.archived);
+  const finalCandidates = [...new Map([...existingIslands, ...createdIslands].map(island => [island.id, island])).values()]
+    .filter(island => !island.archivedInd && !duplicateArchives.has(Number(island.id)));
+  const capacityArchivedIslandIds = [];
+  if (finalCandidates.length > maxIslands) {
+    const ranked = rankIslandCapacityCandidates(finalCandidates, behavioralEvidence, profilesByIslandId);
+    const overflowIds = new Set(ranked.slice(maxIslands).map(island => island.id));
+    for (const island of finalCandidates.filter(island => overflowIds.has(island.id))) {
+      await island.update({ archivedInd: true, archivedAt: new Date() }, { transaction });
+      capacityArchivedIslandIds.push(Number(island.id));
+      archivedIslandCount++;
+    }
+  }
 
   // Filters source values to the entries eligible while performing persist interest island profiles.
   createdIslands.summary = {
@@ -254,7 +256,8 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     createdIslandIds,
     updatedIslandCount,
     archivedIslandCount,
-    activeIslandCount: createdIslands.filter(island => !island.archivedInd).length,
+    activeIslandCount: finalCandidates.length - capacityArchivedIslandIds.length,
+    capacityArchivedIslandIds,
     renamedDuplicateIslandCount: nameDisambiguationSummary.renamed.length,
     archivedDuplicateIslandCount: nameDisambiguationSummary.archived.length
   };

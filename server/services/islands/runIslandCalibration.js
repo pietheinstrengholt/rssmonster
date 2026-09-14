@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { Transaction } from 'sequelize';
 import db from '../../models/index.js';
 import scoreArticlesFromIslandsForUser from '../score/scoreArticlesFromIslands.js';
 import { buildInterestIslandProfilesForUser as buildIslandProfilesForUser } from './islandArticleProfiles.js';
@@ -55,14 +56,18 @@ async function logIslandRunSummary(userId, result, startedAt) {
 // This function persists calibrated island profiles for one user.
 export async function persistIslandProfilesForUser(userId, profiles, options = {}) {
   // Derives the islands through transaction while performing persist island profiles for user.
-  const islands = await sequelize.transaction(async transaction => {
-    const persisted = await persistInterestIslandProfiles(userId, profiles, transaction, options);
-    await options.afterPersist?.(transaction, {
-      userId, islandCount: persisted.length,
-      articleCount: profiles.reduce((sum, profile) => sum + (profile.articles || []).length, 0)
+  const islands = await sequelize.transaction(
+    sequelize.getDialect() === 'sqlite' ? { type: Transaction.TYPES.IMMEDIATE } : {}, async transaction => {
+      // Serialize the read/selection/write sequence, including concurrent manual and worker calibrations.
+      const user = await User.findByPk(userId, { transaction, lock: Transaction.LOCK.UPDATE });
+      if (!user) throw new Error('Island user no longer exists');
+      const persisted = await persistInterestIslandProfiles(userId, profiles, transaction, options);
+      await options.afterPersist?.(transaction, {
+        userId, islandCount: persisted.length,
+        articleCount: profiles.reduce((sum, profile) => sum + (profile.articles || []).length, 0)
+      });
+      return persisted;
     });
-    return persisted;
-  });
 
   // Aggregates source values into the result produced while performing persist island profiles for user.
   return {

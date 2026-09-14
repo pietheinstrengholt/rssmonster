@@ -54,9 +54,13 @@ explicit behavioral signal. The current signal weights are:
 | Deep read | `+1` when attention bucket is at least three |
 | Negative feedback | `-8` |
 
-Positive signals are reduced gradually as articles age. The default half-life
-is 1,460 days, with a minimum recency multiplier of `0.2`, so older explicit
-behavior remains useful without carrying its original strength forever.
+Each signal ages from its own interaction timestamp with a true half-life:
+`weight(age) = 2^(-max(0, ageDays) / halfLifeDays)`. Clicks halve after 30 days,
+deep reads after 90, favorites after 365, more-like-this after 730, and
+not-interested after 365. There is no permanent minimum multiplier. These are
+initial product defaults: incidental clicks fade quickly, reading lasts longer,
+and deliberate preferences persist for one or two years before halving.
+The raw weights above and capped click count are unchanged.
 
 An article can contain several signals. For example, bookmarking and deeply
 reading an article provides stronger evidence than opening it once. Negative
@@ -103,14 +107,72 @@ Audit entries may record each run but are not new behavioral evidence.
 If no Island qualifies, RSSMonster creates a new one. This preference for
 updating existing Islands gives them continuity as reading habits evolve.
 
-An unmatched Island can be archived when both conditions hold:
+An Island, including one that still matches an old behavioral profile, can be
+archived when both conditions hold:
 
-- its confidence derived from current behavioral support is below `0.12`; and
-- it has not been updated for at least 45 days.
+- its lifecycle confidence from current decayed support is below `0.12`; and
+- its latest meaningful supporting interaction is at least 45 days old, or no
+  qualifying interaction time remains.
 
-Archived Islands remain available for inspection but are excluded from active
-article matching and interest scoring. A later matching profile can reactivate
-an archived Island.
+Archived Islands remain available for inspection but are excluded from direct
+Island scoring; explicit Article fallback retains its separate existing rules.
+They remain candidates for profile matching at the existing
+threshold. A strongly supported matching profile with an interaction newer than
+`archivedAt` reactivates the same Island ID; recalibrating the same old evidence
+does not. For legacy archives without `archivedAt`, support must be strong and
+recent (not stale). No historical Island is automatically deleted.
+
+### Behavioral lifecycle
+
+`updatedAt` records technical persistence only. Calibration, vector blending,
+renaming and audit writes never supply behavioral activity. `lastBehaviorAt` is
+derived during lifecycle evaluation rather than stored as another timestamp.
+It is the latest valid, non-future interaction clock on currently meaningful
+support, with the existing publication fallback for null legacy clocks. Each
+contributing signal and its Article's absolute net evidence must reach the
+existing `.05` signal threshold; an exhausted incidental click cannot make an
+otherwise old preference look recent.
+
+Lifecycle confidence is separate from scoring confidence:
+
+```
+remainingSupport = max(clamp(abs(decayedPositive - decayedNegative)
+                            / (rawPositive + rawNegative), 0, 1))
+lifecycleConfidence = existingSupportConfidence * remainingSupport
+```
+
+The maximum is over currently qualifying supporting Articles. Empty support gives
+zero lifecycle confidence; exhausted Articles do not contribute to support confidence.
+Using the strongest remaining fraction prevents a large volume of old weak history
+from diluting a surviving deliberate preference. Conflicting evidence can lower
+an Article's remaining signed support. The existing recommendation confidence formula is not
+changed or multiplied again during scoring.
+
+- **Active:** not archived; recent activity or sufficient decayed support keeps
+  the Island eligible for scoring, subject to [active capacity](#active-capacity).
+  An old but strongly supported preference can remain active.
+- **Stale:** no meaningful interaction within `ISLAND_ARCHIVE_STALE_DAYS`
+  (default 45). Staleness alone does not archive a strong preference.
+- **Archived:** stale and below `ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD` (default
+  `.12`) at calibration, or displaced by the active-capacity policy (duplicate
+  archival also remains separate). Matched and unmatched Islands are evaluated;
+  the original archive timestamp survives repeated calibration.
+- **Reactivated:** an archived Island wins normal profile matching and has
+  lifecycle confidence at least `.12` plus a newer meaningful interaction,
+  and wins an active-capacity slot.
+
+Matched profiles use their actual supporting Articles. Unmatched active Islands
+use the existing nearest-support rule among active Islands. Both reuse the full
+owned, canonical, unfiltered Article snapshot already loaded for formation,
+including evidence that has decayed below profile eligibility. This avoids a
+second history query and avoids mistaking the scoring helper's 500-row evidence
+limit for absence of lifecycle support. Archived unmatched Islands need no
+support scan. Duplicate-name archival remains a separate existing rule.
+
+Lifecycle updates occur in the existing calibration transaction and replay
+checkpoint. A scoring retry reuses the committed lifecycle decision; it neither
+rewrites interaction clocks nor resets archival. A new behavior request causes
+the existing refresh flow to recalibrate. No new scheduler or deletion task is added.
 
 ## Island Names
 
@@ -243,16 +305,19 @@ Most installations should use the defaults. The main controls are:
 
 | Variable | Default | Effect |
 | --- | ---: | --- |
-| `MAX_INTEREST_ISLANDS` | `10` | Maximum behavioral communities formed for each user. |
+| `MAX_INTEREST_ISLANDS` | `20` | Maximum ACTIVE persisted Islands per user; archived history is excluded. Decimal integer 1–1000, otherwise default 20. |
 | `ISLAND_ARTICLE_AFFINITY_THRESHOLD` | `0.64` | Similarity needed to group behavioral articles into one candidate. |
 | `ISLAND_ARTICLE_SIGNAL_THRESHOLD` | `0.05` | Minimum absolute behavioral score admitted to article clustering. |
 | `ISLAND_PROFILE_MATCH_THRESHOLD` | `0.78` | Similarity needed to update an existing Island instead of creating one. |
 | `ISLAND_VECTOR_ALPHA` | `0.35` | Weight of new profile evidence when updating an Island vector. |
-| `ISLAND_RECENCY_HALF_LIFE_DAYS` | `1460` | Half-life for positive behavioral evidence. |
-| `ISLAND_RECENCY_MIN_WEIGHT` | `0.2` | Minimum retained multiplier for old positive behavior. |
+| `ISLAND_CLICK_HALF_LIFE_DAYS` | `30` | Click half-life, using `lastClickedAt`. |
+| `ISLAND_DEEP_READ_HALF_LIFE_DAYS` | `90` | Meaningful-read half-life, using `lastMeaningfulReadAt`. |
+| `ISLAND_FAVORITE_HALF_LIFE_DAYS` | `365` | Favorite half-life, using `favoritedAt`. |
+| `ISLAND_POSITIVE_FEEDBACK_HALF_LIFE_DAYS` | `730` | More-like-this half-life, using `positiveFeedbackAt`. |
+| `ISLAND_NEGATIVE_FEEDBACK_HALF_LIFE_DAYS` | `365` | Not-interested half-life, using `negativeFeedbackAt`. |
 | `ISLAND_ARTICLE_SCORE_THRESHOLD` | `0.62` | Direct scoring requires similarity strictly above this threshold; confidence is normalized above it. |
-| `ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD` | `0.12` | Low-confidence condition for archiving an inactive Island. |
-| `ISLAND_ARCHIVE_STALE_DAYS` | `45` | Minimum inactive age before low-confidence archival. |
+| `ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD` | `0.12` | Minimum decayed lifecycle confidence for stale support to remain active or new support to reactivate an archive. |
+| `ISLAND_ARCHIVE_STALE_DAYS` | `45` | Age of the latest meaningful supporting interaction before weak support is eligible for archival. |
 | `ISLAND_DUPLICATE_NAME_SIMILARITY_THRESHOLD` | `0.92` | Similarity at which same-name Islands are treated as duplicates. |
 | `ISLAND_AUDIT_MAX_RUNS` | `30` | Maximum retained population-audit entries. |
 | `ISLAND_AUDIT_MAX_ARTICLE_IDS` | `300` | Maximum stored article IDs per audit entry. |
@@ -266,13 +331,100 @@ scoring diagnostics. `EVENT_DEBUG=true` also enables Island debug output.
 
 Favoriting an article published in 2022 today is fresh favorite evidence. Clicks,
 favorites, explicit positive/negative feedback and meaningful reads have separate
-Article clocks. Positive signals decay separately before combining; repeated clicks
+Article clocks. All signals decay separately before combining; repeated clicks
 and deep reads refresh their respective clocks, and unfavorite clears its clock.
 Fever/GReader starring uses the same timing semantics. Marking an article read
 without a meaningful visible-duration report does not imply a deep read.
 
 The migration does not backfill unknown times with today. Existing null timestamps
-fall back to publication time until that signal is recorded again. Signal weights,
-formation decay settings, explicit fallback windows and final Recommended weights
-are unchanged; the existing undecayed negative formation penalty is retained.
+fall back to publication time until that signal is recorded again. If neither date
+is usable, the existing unknown-age behavior retains multiplier 1; future dates
+are capped at age zero. Raw signal weights, explicit fallback windows, intent
+handling and final Recommended weights are unchanged.
 See [the service contract](../server/services/islands/README.md#interaction-timestamps-and-legacy-behavior).
+
+### Decay examples and configuration migration
+
+The old positive multiplier was `max(.2, exp(-ageDays / 1460))`, making 1460 an
+exponential time constant (a true half-life of about 1012 days). Negative evidence
+retained 100%. The new percentages below apply to each signal's raw weight:
+
+| Age in days | Old positive | Old negative | Click | Deep read | Favorite | More-like-this | Not-interested |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 7 | 99.5% | 100% | 85.1% | 94.8% | 98.7% | 99.3% | 98.7% |
+| 30 | 98.0% | 100% | 50.0% | 79.4% | 94.5% | 97.2% | 94.5% |
+| 90 | 94.0% | 100% | 12.5% | 50.0% | 84.3% | 91.8% | 84.3% |
+| 180 | 88.4% | 100% | 1.6% | 25.0% | 71.0% | 84.3% | 71.0% |
+| 365 | 77.9% | 100% | 0.022% | 6.0% | 50.0% | 70.7% | 50.0% |
+
+Percentages are rounded; decay has no hard cutoff.
+For example, one 90-day-old click contributes `2 × .125 = .25`, while a
+90-day-old favorite contributes about `4 × .843 = 3.37`. A one-year-old dislike
+contributes `-8 × .5 = -4` before the existing formation and confidence formulas.
+
+The five settings accept positive finite days, including fractions; invalid or
+missing values use their individual defaults. Restart the server/workers after
+changing environment configuration. `ISLAND_RECENCY_HALF_LIFE_DAYS` and
+`ISLAND_RECENCY_MIN_WEIGHT` are retired and ignored; replace existing overrides
+with the per-signal values in [server/.env.example](../server/.env.example).
+
+Decay is evaluated during existing Island calibration, followed by unread scoring.
+It is not a new periodic scheduler or a per-request recalculation of persisted
+scores. Archival uses the behavioral lifecycle described above. The immediate
+explicit fallback intentionally keeps its separate 30-day half-life and 90-day
+window; durable Island memory is not forced into that shorter response window.
+
+
+## Active capacity
+
+`MAX_INTEREST_ISLANDS` means the maximum simultaneously **active persisted**
+Interest Islands for one user, default **20**. Unset, invalid, non-integer, zero,
+negative, non-finite, partial numeric strings and values above the operational
+ceiling of 1000 fall back to 20. Parsing is decimal: `20` means 20, `30` means 30.
+The previous `parseInt(value, 20)` treated 20 as a radix, not a fallback.
+
+After profile matching, creation, normal lifecycle archival and duplicate-name
+handling, persistence selects at most this many active Islands in the same
+transaction. It includes retained unmatched active Islands, not just this run's
+profiles. The user row is locked before the persistence read/write sequence;
+SQLite uses an immediate transaction. Concurrent calibrations cannot each claim
+a separate last active slot. Enforcement occurs on calibration, not by a schema
+constraint or a background migration of every existing user.
+
+Selection is lexicographic, in this exact order:
+
+1. Absolute **current reconstructed profile weight**, descending, using the existing
+   `clamp(meanSignedEvidence / 7 + signedBreadthBonus, -1, 1)` and its four-decimal rounding.
+2. Current lifecycle confidence, descending, rounded to four decimals to avoid
+   floating-point noise deciding the active set.
+3. Number of currently qualifying supporting Articles, descending.
+4. Latest meaningful supporting interaction, descending; unknown age sorts last.
+5. Stable Island ID, ascending.
+
+Matched candidates use their profile's owned Article IDs. Unmatched retained
+Islands use the existing nearest-support assignment and affinity threshold.
+Both reconstruct decayed signals from the same complete behavioral snapshot,
+applying the existing Article signal cutoff; an obsolete stored weight cannot
+win a slot without current support. Absolute weight treats strong negative and
+positive preferences equally. No scoring multiplier, decay or similarity
+threshold changes. Stable ties and existing archive/reactivation rules prevent
+replay from arbitrarily exchanging equally supported Islands.
+
+Overflow becomes archived/dormant; nothing is deleted and IDs, vectors and audit
+history are preserved. A new strong profile or a qualifying archived match can
+win a slot, displacing weaker support. Reactivation still requires sufficient
+lifecycle confidence and new meaningful behavior after archival, and must win
+capacity under the same ordering. A weaker returning profile stays dormant.
+Matching archived Islands precedes creation, so a returning match reuses its ID.
+An archived Island never consumes an active slot.
+
+Formation retains the existing bounded pass: at most the same configured number
+of candidate communities are formed, in the existing magnitude/ID order. This is
+an additional processing bound, **not** the enforcement of active capacity. It
+keeps the existing clustering cost bounded and avoids changing memberships or
+forcing below-threshold matches. Unassigned behavior can therefore remain even
+when historical Islands exist; this change does not attempt globally optimal
+selection across every possible community. Persistence separately reconciles
+those candidates with retained active history and enforces the actual cap.
+Internal `maxIslands` options may lower both bounds but cannot exceed the configured
+maximum. No second environment option is needed for this conservative policy.

@@ -18,13 +18,16 @@ export function behavioralIntent(article = {}) {
 }
 
 export function behavioralIntentCompatibility(source, target) {
-  const sourceIntent = behavioralIntent(source);
-  const targetIntent = behavioralIntent(target);
-  const missing = sourceIntent.type === 'unknown' || targetIntent.type === 'unknown';
-  const same = !missing && sourceIntent.type === targetIntent.type;
+  return behavioralIntentTypeCompatibility(behavioralIntent(source).type, behavioralIntent(target).type);
+}
+
+// Explicit Articles and reconstructed negative Island intent share exactly the same policy.
+export function behavioralIntentTypeCompatibility(sourceIntent, targetIntent) {
+  const missing = sourceIntent === 'unknown' || targetIntent === 'unknown';
+  const same = !missing && sourceIntent === targetIntent;
   // Product/entity similarity never overrides the commercial/editorial distinction.
-  const commercialMismatch = !missing && (sourceIntent.type === 'promotion' || targetIntent.type === 'promotion') && !same;
-  return { sourceIntent: sourceIntent.type, targetIntent: targetIntent.type,
+  const commercialMismatch = !missing && (sourceIntent === 'promotion' || targetIntent === 'promotion') && !same;
+  return { sourceIntent, targetIntent,
     intentCompatibility: missing ? 0.5 : same ? 1 : commercialMismatch ? 0.05 : 0.75,
     intentMatchType: missing ? 'missing-intent' : same ? 'same-intent' : 'cross-intent-attenuated' };
 }

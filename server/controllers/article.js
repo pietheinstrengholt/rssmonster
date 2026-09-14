@@ -1212,10 +1212,15 @@ const articleMarkAsSeen = async (req, res, _next) => {
     // Start with empty payload
     const payload = {};
 
-    // Only set firstSeen and attentionBucket if the article does not have firstSeen yet
+    // Preserve the first observation while allowing later, stronger attention evidence.
     if (!article.firstSeen) {
       payload.firstSeen = new Date();
-      payload.attentionBucket = attentionBucket;
+    }
+    if (attentionBucket > article.attentionBucket) {
+      // Compare in SQL too so an overlapping weaker observation cannot undo an upgrade.
+      payload.attentionBucket = db.sequelize.literal(
+        `CASE WHEN attentionBucket < ${attentionBucket} THEN ${attentionBucket} ELSE attentionBucket END`
+      );
     }
 
     // Only an observed deep read refreshes behavioral time; a read-state toggle does not.
@@ -1241,6 +1246,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
     let updatedArticle = article;
     if (Object.keys(payload).length > 0) {
       updatedArticle = await retryDatabaseWrite(() => updateArticleBehavior(article, payload));
+      if (payload.attentionBucket) await updatedArticle.reload();
     }
 
     // Prepare response object
@@ -1258,23 +1264,13 @@ const articleMarkAsSeen = async (req, res, _next) => {
       response.eventArticleCount = response.event.articleCount;
     }
 
-    // If event grouping is enabled and article has an eventId, update all articles in the same event using the same payload.
+    // Group navigation may mark siblings read, but attention belongs only to the viewed article.
     const grouping = normalizeGrouping(req.body?.grouping);
 
-    if (grouping === 'event' && article.eventId) {
+    if (grouping === 'event' && article.eventId && shouldMarkRead) {
       console.log(`${grouping} grouping enabled: marking related articles for event ${article.eventId} as seen`);
 
-      // Exclude firstSeen and overwrite it for the whole event. The representative article is leading.
-      // If status should be marked as read, ensure it is set for the event update as well.
-      const eventPayload = { ...payload };
-      // Related occurrences were not themselves read by this interaction.
-      delete eventPayload.lastMeaningfulReadAt;
-      if (shouldMarkRead) {
-        eventPayload.status = 'read';
-      } else {
-        // Remove status if not updating
-        delete eventPayload.status;
-      }
+      const eventPayload = { status: 'read', readAt: payload.readAt };
       const relatedEventIds = [article.eventId];
 
       const eventWhere = {

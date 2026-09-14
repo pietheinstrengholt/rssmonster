@@ -23,9 +23,10 @@ membership table. Audit history explains formation; it is not new evidence.
 Names use the nearest taxonomy label or the profile's source-article label.
 Duplicate names are disambiguated using semantic and source-article evidence.
 
-Unmatched stale Islands can be archived after 45 days when current behavioral
-support confidence is below .12. Matching behavioral profiles may reactivate
-archived Islands. Archival retains the record and its audit history.
+Matched or unmatched Islands can archive when meaningful behavioral activity is
+at least 45 days old and decayed lifecycle confidence is below .12. Technical
+`updatedAt` is never activity. Strong matching behavior newer than `archivedAt`
+can reactivate an archived Island with its existing ID. Archival retains its history.
 
 ## Boundaries
 
@@ -102,6 +103,7 @@ Direct matches retain the configured `ISLAND_ARTICLE_SCORE_THRESHOLD` (default .
 directRelationship = finite(similarity) && similarity > threshold && threshold < 1
   ? clamp((similarity-threshold)/(1-threshold)) : 0
 islandContribution = preferenceStrength * islandConfidence * relationshipConfidence
+negativeIslandContribution = islandContribution * intentCompatibility
 ```
 
 A missing or invalid Article vector produces no semantic match. Missing all paths
@@ -143,8 +145,27 @@ regressions additionally prove they were absent from formation evidence.
 ## Behavioral intent specificity
 
 `behavioralIntent.js` supplies the bounded `intentCompatibility` factor in the
-fallback formula above. It changes neither Island matching nor final Recommended
+explicit fallback and negative Island formulas above. It changes neither Island matching nor final Recommended
 weights and does not create another aggregation channel.
+
+Negative Island intent is reconstructed from the existing bounded current Article
+support used for confidence. Only Articles with `negativeInd` set contribute to
+this intent, including those that also have favorites, clicks or deep reads;
+positive-only support never determines a negative contribution's intent. A single
+recognizable intent must be unanimous across that negative support. Mixed intents,
+unknown members, or no negative support resolve to unknown and use the existing
+.5 missing-intent factor, never a confident exact match. This estimate is limited
+to the current 500-Article support bound, not a reconstruction of every historical
+formation member. Aggregate signal snapshots and population audits are not used
+as intent evidence, and no new schema or inference is required.
+
+The fast `explicit_feedback_refresh` retains Article-to-Article compatibility.
+After `personalization_refresh` calibrates Islands, the same classifier and
+compatibility policy apply to negative direct Island paths during normal unread
+rescoring. Thus a coherent promotion dislike retains strong promotion suppression
+and .05 transfer to reviews; Island weight/confidence can change its magnitude.
+Positive direct Island contributions remain unattenuated across intents. Sign
+handling, confidence, semantic thresholds and both existing refresh jobs are unchanged.
 
 A small deterministic vocabulary distinguishes promotion, review, technical,
 product-report, editorial, and unknown. Explicit title sales/review/technical
@@ -175,15 +196,19 @@ and clear the opposite flag, so the last write wins even for concurrent requests
 For legacy rows with both explicit flags set, negative feedback suppresses the
 explicit positive signal in formation, confidence and fallback. Favorites, clicks
 and deep reads remain independent signals; no historical rows are rewritten.
-Positive formation evidence applies the existing recency curve separately to each
-signal’s interaction clock before summing. The candidate
+Formation evidence applies each signal's half-life separately to its
+interaction clock before summing. The candidate
 weight is `clamp(averageProfileScore / 7 + sign(averageProfileScore) *
 min(.2, memberCount * .03), -1, 1)`, rounded to four decimals. This signed
 preference strength is distinct from confidence in its semantic generalization.
 
 Formation obeys `ISLAND_ARTICLE_AFFINITY_THRESHOLD` (default .64),
-`ISLAND_ARTICLE_SIGNAL_THRESHOLD` (.05), and `MAX_INTEREST_ISLANDS` (10 candidate
-communities per calibration, not a guarantee that only ten stored Islands exist).
+`ISLAND_ARTICLE_SIGNAL_THRESHOLD` (.05), and the bounded formation pass described
+in [active capacity](../../../docs/interest-islands.md#active-capacity).
+`MAX_INTEREST_ISLANDS` defaults to 20 and now caps ACTIVE persisted Islands per
+user. Archived history does not count. Decimal integers 1–1000 are accepted;
+invalid values fall back to 20. Formation retains the same numerical bound, but
+persistence independently enforces it over retained, new and reactivated Islands.
 Persistence uses `ISLAND_PROFILE_MATCH_THRESHOLD` (.78) to reuse an Island and
 `ISLAND_VECTOR_ALPHA` (.35) to blend its vector. Thresholds are not relaxed when
 capacity is exhausted.
@@ -239,9 +264,31 @@ firstSeen/attention-bucket and Event read-cascade semantics are retained, but th
 deep-read timestamp belongs only to the article actually viewed.
 
 Formation retains +8 positive, +4 favorite, +2 per click (capped at three), +1 deep
-read, and −8 negative weights. Each positive term uses its own timestamp with the
-existing `exp(-ageDays / 1460)` curve and .2 floor. The existing formation negative
-penalty stays undecayed; no new decay rule was added. Explicit negative fallback
+read, and −8 negative weights. Each term, including negative feedback, uses its
+own timestamp and `2^(-max(0, ageDays) / halfLifeDays)`, with no permanent floor.
+`SIGNAL_HALF_LIFE_DAYS` maps interaction fields to positive finite environment
+configuration (invalid/missing values use the defaults):
+
+| Signal / clock | Environment variable | Half-life in days |
+| --- | --- | ---: |
+| Click / `lastClickedAt` | `ISLAND_CLICK_HALF_LIFE_DAYS` | 30 |
+| Deep read / `lastMeaningfulReadAt` | `ISLAND_DEEP_READ_HALF_LIFE_DAYS` | 90 |
+| Favorite / `favoritedAt` | `ISLAND_FAVORITE_HALF_LIFE_DAYS` | 365 |
+| More-like-this / `positiveFeedbackAt` | `ISLAND_POSITIVE_FEEDBACK_HALF_LIFE_DAYS` | 730 |
+| Not-interested / `negativeFeedbackAt` | `ISLAND_NEGATIVE_FEEDBACK_HALF_LIFE_DAYS` | 365 |
+
+These initial defaults let incidental clicks fade within weeks, meaningful reads
+within months, and deliberate preferences persist across years. They are not
+fitted to regression fixtures. The old 1460-day exponential time constant and .2
+floor are removed; `ISLAND_RECENCY_HALF_LIFE_DAYS` and `ISLAND_RECENCY_MIN_WEIGHT`
+are no longer read. Raw signal counters, click cap, signed profile aggregation,
+intent compatibility, confidence equations and similarity thresholds are unchanged.
+See [the behavioral examples](../../../docs/interest-islands.md#decay-examples-and-configuration-migration)
+for retained influence at 7, 30, 90, 180 and 365 days.
+
+The existing calibration/refresh lifecycle evaluates decay and updates persisted
+scores; elapsed time alone does not enqueue a new job. Island archival uses
+current decayed support as described below. Explicit negative fallback
 uses `negativeFeedbackAt`, the existing 90-day window and 30-day half-life.
 Positive fallback evaluates positive feedback and favorites on their own clocks
 and keeps the strongest positive path; it does not add correlated fallback scores.
@@ -249,6 +296,8 @@ Confidence uses interaction-day breadth with the same count, source and day weig
 
 For a signal whose timestamp is null (legacy/imported behavioral state without a
 known interaction time), publication time remains the documented approximation.
+No usable date retains the existing unknown-age multiplier of 1; future dates
+are clamped to zero age. Neither case produces non-finite profile evidence.
 The migration leaves nulls intact rather than manufacturing interaction times.
 Known clocks always override publication; rereading or favoriting a 2022 article
 today produces fresh timing evidence. Publisher revisions preserve these clocks.
@@ -256,3 +305,70 @@ Automated favorite/click rules stamp when their state is first applied on ingest
 re-crawling an existing article does not refresh user behavior. Feed reconciliation
 retains the latest stored clock for each signal without treating merging as an
 interaction. No event-history table, signal weight or semantic threshold is added.
+
+## Behavioral lifecycle and replay
+
+`islandLifecycle.js` derives `lastBehaviorAt` and lifecycle confidence from the
+same Article evidence used for profile formation. No schema or persisted activity
+clock is added. `buildInterestIslandProfilesForUser` passes its complete owned,
+canonical/unfiltered behavioral snapshot as a transient array property to
+persistence, including Articles below the formation score cutoff. Standalone
+profile persistence reconstructs that snapshot once when it is not supplied.
+
+Matched profiles use their actual Article IDs. Only unmatched active Islands
+need nearest-support reconstruction among the current active Islands, using the
+existing affinity threshold. Archived Islands remain in normal profile matching;
+unmatched archives are neither scanned for lifecycle support nor deleted. The
+scoring evidence bound of 500 remains unchanged and is not used as an absence
+test for lifecycle support.
+
+For each supporting Article, reuse `computeArticleSignals`: remaining signed
+magnitude is `abs(positiveScore - negativeScore)`; raw magnitude is the sum of
+the unchanged positive/negative signal weights, with the same click cap and
+contradictory-feedback handling. Lifecycle confidence is existing cohesion/support
+confidence over currently qualifying Articles multiplied by the strongest
+`clamp(remainingMagnitude / rawMagnitude)` among those Articles. No support gives
+zero. Taking the strongest remaining fraction avoids diluting a surviving strong
+preference with arbitrarily much weak history. This factor is used only for lifecycle decisions, never
+as a new recommendation multiplier.
+
+An interaction contributes behavioral age only when both its individual decayed
+signal magnitude and its Article's absolute net evidence reach the existing
+article signal threshold. The latest usable, non-future interaction wins; null
+clocks use publication as the legacy fallback. Missing age is stale, never
+replaced with Island `createdAt`, `updatedAt`, audit time or calibration time.
+
+Outside capacity enforcement, an active Island is archived only when stale (`ISLAND_ARCHIVE_STALE_DAYS`, 45)
+and weak (lifecycle confidence below `ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD`, .12).
+This applies even if old evidence still forms a matching profile. An archived
+match reactivates only at sufficient confidence and with a meaningful interaction
+strictly newer than its archive time; a legacy null archive time instead requires
+non-stale support. Otherwise preserve its archive time, flags and ID. Strong but
+old evidence can sustain an active Island, but cannot resurrect an archive merely
+by being recalibrated. Newly formed weak/stale profiles may be stored archived.
+
+All changes participate in the existing persistence transaction and calibration
+checkpoint. Scoring retries skip committed calibration, preserving lifecycle and
+behavioral clocks. New behavior already requests another refresh through the
+existing jobs. Duplicate-name handling, vector match thresholds, scoring queries
+excluding archived Islands, Events and automatic-deletion behavior are unchanged.
+
+
+## Capacity selection
+
+`islandCapacity.js` reconstructs current support from the owned behavioral
+snapshot. Matched Islands use profile Article IDs; unmatched candidates reuse
+nearest-support assignment. Rank by absolute existing profile-weight formula,
+then lifecycle confidence (four-decimal precision), qualifying support count,
+latest meaningful interaction and ascending stable ID. This is a lexicographic
+storage policy, not a recommendation formula; signed preferences compete equally.
+Capacity is applied after normal lifecycle/name archival, before the checkpoint
+commits. Overflow is archived with history intact. Reactivation must satisfy the
+normal behavioral gate **and** compete for a slot; matching still reuses existing
+archived IDs before creation. User-row locking (SQLite immediate transactions)
+serializes persistence. Summaries report the complete final active count and
+`capacityArchivedIslandIds`, including unmatched historical rows that lose slots.
+
+The existing formation bound remains to preserve clustering and bounded work;
+it does not promise that every unassigned behavioral profile competes globally.
+See [the exact contract and ordering](../../../docs/interest-islands.md#active-capacity).

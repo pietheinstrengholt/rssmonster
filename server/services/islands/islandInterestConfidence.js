@@ -1,4 +1,4 @@
-import { behavioralIntentCompatibility } from './behavioralIntent.js';
+import { behavioralIntent, behavioralIntentCompatibility, behavioralIntentTypeCompatibility } from './behavioralIntent.js';
 import { Op } from 'sequelize';
 import { BEHAVIOR_TIMESTAMP_FIELDS, activeSignal, signalTimestamp, latestBehaviorTimestamp, behaviorTimestampExpression } from '../articles/articleBehaviorTime.js';
 import db from '../../models/index.js';
@@ -49,6 +49,12 @@ export function deriveIslandConfidence(d) {
   return clamp(support * cohesion * consistency);
 }
 
+// Only unanimous negative support establishes intent; positive-only support never supplies it.
+const negativeSupportIntent = support => {
+  const intents = new Set(support.filter(article => article.negativeInd).map(article => behavioralIntent(article).type));
+  return intents.size === 1 ? [...intents][0] : 'unknown';
+};
+
 // This is a read-time support estimate, not a new Article/Island assignment or a persisted audit.
 export function prepareIslandEvidence(islands, evidence, explicitEvidence = evidence) {
   const members = new Map(islands.map(i => [String(i.id), []]));
@@ -61,7 +67,9 @@ export function prepareIslandEvidence(islands, evidence, explicitEvidence = evid
   const prepared = islands.map(island => {
     const support = members.get(String(island.id));
     const diagnostics = islandCohesion(support, island.islandVector);
-    return { ...island, preferenceStrength: clamp(Number(island.weight || 0), -1, 1),
+    const preferenceStrength = clamp(Number(island.weight || 0), -1, 1);
+    return { ...island, preferenceStrength,
+      ...(preferenceStrength < 0 ? { negativeIntent: negativeSupportIntent(support) } : {}),
       islandConfidence: deriveIslandConfidence(diagnostics), diagnostics, seedArticleIds: support.map(a => a.id) };
   });
   const fallbackEvidence = explicitEvidence.filter(article => {
@@ -107,7 +115,12 @@ export function evaluateArticleInterest(article, context, threshold = 0.62) {
       singleton: island.diagnostics.singleton, seedSelf: island.seedArticleIds.includes(article.id) };
     const candidates = [];
     if (direct > 0) candidates.push({ ...base, matchType: 'vector-fallback', semanticSimilarity: sim, relationshipConfidence: direct });
-    for (const path of candidates) path.contribution = path.preferenceStrength * path.islandConfidence * path.relationshipConfidence;
+    for (const path of candidates) {
+      if (path.preferenceStrength < 0) {
+        Object.assign(path, behavioralIntentTypeCompatibility(island.negativeIntent ?? 'unknown', behavioralIntent(article).type));
+      }
+      path.contribution = path.preferenceStrength * path.islandConfidence * path.relationshipConfidence * (path.intentCompatibility ?? 1);
+    }
     candidates.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution) || a.matchType.localeCompare(b.matchType));
     if (candidates[0]?.contribution) paths.push(candidates[0]);
   }

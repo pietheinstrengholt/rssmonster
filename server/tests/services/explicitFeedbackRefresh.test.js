@@ -9,6 +9,7 @@ import { claimProcessingJobs } from '../../services/jobs/processingJobQueue.js';
 import { executeClaimedProcessingJob } from '../../services/jobs/processingJobHandlers.js';
 import { EXPLICIT_FEEDBACK_REFRESH_TYPE, handleExplicitFeedbackRefresh } from '../../services/jobs/personalizationRefresh.js';
 import { computeRecommended } from '../../services/recommendations/recommendedScore.js';
+import { explainArticleInterests } from '../../services/score/scoreArticlesFromIslands.js';
 
 let app;
 async function fixture() {
@@ -69,6 +70,36 @@ describe('fast explicit feedback scoring', () => {
     await candidate.reload(); expect(candidate.interestScore).toBeLessThan(0);
     expect((await executeClaimedProcessingJob(await claimFast(user.id))).status).toBe('succeeded');
     expect(await db.ProcessingJob.count({ where: { userId: user.id, type: EXPLICIT_FEEDBACK_REFRESH_TYPE } })).toBe(1);
+  });
+
+  it('preserves promotion dislike scope from HTTP feedback through fast and durable refresh', async () => {
+    const { user, source, candidate, values, post } = await fixture();
+    await source.update({ title: 'Save €500 on a gaming laptop deal' });
+    await candidate.update({ title: 'Another gaming laptop promotion' });
+    const review = await db.Article.create({ ...values, title: 'Gaming laptop technical review', status: 'unread' });
+    const unrelated = await db.Article.create({ ...values, title: 'Kernel debugging guide', articleVector: [0, 1], status: 'unread' });
+    expect((await post('marknotinterested')).status).toBe(200);
+    expect((await executeClaimedProcessingJob(await claimFast(user.id))).status).toBe('succeeded');
+    expect(await db.Island.count({ where: { userId: user.id } })).toBe(0);
+
+    const assertScope = async matchType => {
+      await Promise.all([candidate.reload(), review.reload(), unrelated.reload()]);
+      expect(candidate.interestScore).toBeLessThan(0);
+      expect(review.interestScore).toBeLessThan(0);
+      expect(Math.abs(candidate.interestScore)).toBeGreaterThan(Math.abs(review.interestScore) * 10);
+      expect(Number(unrelated.interestScore)).toBe(0);
+      const { results } = await explainArticleInterests(user.id, [candidate, review]);
+      expect(results.get(String(candidate.id)).paths[0]).toMatchObject({ matchType, intentCompatibility: 1 });
+      expect(results.get(String(review.id)).paths[0]).toMatchObject({ matchType, intentCompatibility: 0.05 });
+    };
+    await assertScope('behavioral-fallback');
+    const [durable] = await claimProcessingJobs({ userId: user.id, limit: 1, now: new Date(Date.now() + 3000) });
+    expect(durable.type).toBe('personalization_refresh');
+    expect((await executeClaimedProcessingJob(durable)).status).toBe('succeeded');
+    expect(await db.Island.count({ where: { userId: user.id, weight: { [db.Sequelize.Op.lt]: 0 } } })).toBe(1);
+    await assertScope('vector-fallback');
+    expect(await db.Event.count({ where: { userId: user.id } })).toBe(0);
+    expect(await db.ProcessingJob.count({ where: { userId: user.id } })).toBe(2);
   });
 
   it('includes the source’s matching Island scope and preserves existing positive/negative aggregation', async () => {

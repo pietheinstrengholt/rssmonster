@@ -78,6 +78,28 @@ describe('durable personalization refresh', () => {
     await candidate.reload(); expect(candidate.interestScore).toBeLessThan(0);
   });
 
+  it('weakens aged negative evidence when the existing refresh recalibrates and rescores', async () => {
+    const { user, source, candidate } = await fixture();
+    await updateArticleBehavior(source, { negativeInd: 1, negativeFeedbackAt: new Date() });
+    expect((await executeClaimedProcessingJob(await claim(user.id))).status).toBe('succeeded');
+    await candidate.reload();
+    const freshScore = Number(candidate.interestScore);
+    expect(freshScore).toBeLessThan(0);
+    const island = await db.Island.findOne({ where: { userId: user.id } });
+    const freshWeight = Number(island.weight);
+
+    // Reconstruct a year-old interaction; HTTP actions still always stamp the actual interaction time.
+    await updateArticleBehavior(source, { negativeInd: 1, negativeFeedbackAt: new Date(Date.now() - 365 * 86400000) });
+    expect((await executeClaimedProcessingJob(await claim(user.id))).status).toBe('succeeded');
+    await candidate.reload();
+    await island.reload();
+    expect(Number(island.weight)).toBeGreaterThan(freshWeight);
+    expect(Number(island.weight)).toBeLessThan(0);
+    expect(Number(candidate.interestScore)).toBeGreaterThan(freshScore);
+    expect(Number(candidate.interestScore)).toBeLessThan(0);
+    expect(island.positiveSignals.negatives).toBe(1);
+  });
+
   it('retains actions arriving during a run as one follow-up and reactivates completed work', async () => {
     const { user, source } = await fixture();
     await updateArticleBehavior(source, { favoriteInd: 1, favoritedAt: new Date() });

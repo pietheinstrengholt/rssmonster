@@ -78,6 +78,26 @@ describe('conservative refresh scoping and replay', () => {
     expect(await scores(graph)).toEqual(await scores(reference));
   });
 
+  it('replays scoring after archival without reactivating or refreshing behavioral activity', async () => {
+    const now = Date.now(); vi.spyOn(Date, 'now').mockReturnValue(now);
+    const graph = await fixture(now);
+    const lastClickedAt = new Date(Math.floor(now / 1000) * 1000 - 90 * 86400000);
+    await updateArticleBehavior(graph.source, { clickedAmount: 1, lastClickedAt });
+    vi.spyOn(scoring, 'default').mockRejectedValueOnce(new Error('scoring interrupted after archive'));
+    expect((await executeClaimedProcessingJob(await claim(graph.user.id, now))).status).toBe('pending');
+    await graph.island.reload();
+    expect(graph.island.archivedInd).toBe(true);
+    const archivedAt = graph.island.archivedAt;
+    const build = vi.spyOn(profiles, 'buildInterestIslandProfilesForUser');
+    expect((await executeClaimedProcessingJob(await claim(graph.user.id, now))).status).toBe('succeeded');
+    expect(build).not.toHaveBeenCalled();
+    await graph.island.reload(); await graph.source.reload(); await graph.related.reload();
+    expect(graph.island.archivedInd).toBe(true);
+    expect(graph.island.archivedAt).toEqual(archivedAt);
+    expect(graph.source.lastClickedAt).toEqual(lastClickedAt);
+    expect(Number(graph.related.interestScore)).toBe(0);
+  });
+
   it('rolls back Islands if the replay checkpoint cannot be committed', async () => {
     const now = Date.now(); vi.spyOn(Date, 'now').mockReturnValue(now);
     const graph = await fixture(now);

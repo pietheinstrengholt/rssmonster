@@ -2,7 +2,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import db from '../../models/index.js';
 import { computeArticleSignals, buildInterestIslandProfilesForUser } from '../../services/islands/islandArticleProfiles.js';
-import { behaviorRecencyWeight } from '../../services/islands/islandVectorUtils.js';
+import { behaviorRecencyWeight, SIGNAL_HALF_LIFE_DAYS } from '../../services/islands/islandVectorUtils.js';
 import { evaluateArticleInterest, prepareIslandEvidence, loadIslandEvidence, islandCohesion } from '../../services/islands/islandInterestConfidence.js';
 
 const now = Date.parse('2026-09-14T12:00:00Z');
@@ -20,7 +20,7 @@ describe('interaction-based Island recency', () => {
     vi.spyOn(Date, 'now').mockReturnValue(now);
     expect(computeArticleSignals(source({ favoriteInd: 1, favoritedAt: today })).positiveScore).toBe(4);
     expect(computeArticleSignals(source({ publishedAt: today, favoriteInd: 1, favoritedAt: old })).positiveScore)
-      .toBeCloseTo(4 * behaviorRecencyWeight(old));
+      .toBeCloseTo(4 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.favoritedAt));
     expect(computeArticleSignals(source({ favoriteInd: 1, favoritedAt: today })).positiveScore)
       .toBeGreaterThan(computeArticleSignals(source({ publishedAt: today, favoriteInd: 1, favoritedAt: old })).positiveScore);
   });
@@ -29,13 +29,15 @@ describe('interaction-based Island recency', () => {
     vi.spyOn(Date, 'now').mockReturnValue(now);
     const article = source({ positiveInd: 1, positiveFeedbackAt: old, favoriteInd: 1, favoritedAt: today,
       clickedAmount: 8, lastClickedAt: old, attentionBucket: 3, lastMeaningfulReadAt: today });
-    expect(computeArticleSignals(article).positiveScore).toBeCloseTo(8 * behaviorRecencyWeight(old) + 4 + 6 * behaviorRecencyWeight(old) + 1);
+    expect(computeArticleSignals(article).positiveScore).toBeCloseTo(8 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.positiveFeedbackAt)
+      + 4 + 6 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.lastClickedAt) + 1);
     expect(computeArticleSignals({ ...article, favoritedAt: old }).positiveScore).toBeLessThan(computeArticleSignals(article).positiveScore);
   });
 
   it('keeps publication as the null-clock legacy fallback, without overriding known clocks', () => {
     vi.spyOn(Date, 'now').mockReturnValue(now);
-    expect(computeArticleSignals(source({ favoriteInd: 1, favoritedAt: null })).positiveScore).toBeCloseTo(4 * behaviorRecencyWeight(old));
+    expect(computeArticleSignals(source({ favoriteInd: 1, favoritedAt: null })).positiveScore)
+      .toBeCloseTo(4 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.favoritedAt));
     expect(evaluate(source({ positiveInd: 1, publishedAt: today, positiveFeedbackAt: old })).score).toBe(0);
     expect(evaluate(source({ positiveInd: 1, publishedAt: today, positiveFeedbackAt: null })).score).toBeGreaterThan(0);
   });

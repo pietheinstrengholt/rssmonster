@@ -6,8 +6,10 @@ import {
   DEFAULT_ARTICLE_AFFINITY_THRESHOLD,
   DEFAULT_ARTICLE_SIGNAL_THRESHOLD,
   DEFAULT_MAX_ISLANDS_PER_USER,
+  resolveIslandCapacity,
   ISLAND_DEBUG,
   SIGNAL_WEIGHTS,
+  SIGNAL_HALF_LIFE_DAYS,
   addPositiveSignals,
   articleMagnitude,
   buildPositiveSignalsAccumulator,
@@ -35,7 +37,7 @@ export function computeArticleSignals(article) {
   // Selects the negative based on whether article negative status is 1.
   const negative = article.negativeInd === 1 ? 1 : 0;
   // Each signal decays from its own interaction, before signals are combined.
-  const recency = field => behaviorRecencyWeight(signalTimestamp(article, field));
+  const recency = field => behaviorRecencyWeight(signalTimestamp(article, field), SIGNAL_HALF_LIFE_DAYS[field]);
 
   // Derives the positive score required while computing article signals.
   const positiveScore = (
@@ -46,7 +48,7 @@ export function computeArticleSignals(article) {
   );
 
   // Derives the negative score required while computing article signals.
-  const negativeScore = negative * SIGNAL_WEIGHTS.negative;
+  const negativeScore = negative * SIGNAL_WEIGHTS.negative * recency('negativeFeedbackAt');
 
   return {
     positiveScore,
@@ -95,7 +97,7 @@ function buildArticleIslandLabel(articleProfiles) {
 }
 
 // This function computes an island weight from average behavioral article scores.
-function buildArticleIslandWeight(articleProfiles) {
+export function buildArticleIslandWeight(articleProfiles) {
   // Returns early when article profiles is empty.
   if (!articleProfiles.length) return 0;
 
@@ -197,13 +199,9 @@ function buildBehavioralArticleCommunities(articleProfiles, maxIslands = DEFAULT
     .sort((a, b) => (Math.abs(b.weight) - Math.abs(a.weight)) || (b.articles.length - a.articles.length));
 }
 
-// This function builds article-based island profiles from direct user behavior.
-export async function buildInterestIslandProfilesForUser(userId, options = {}) {
-  // Derives the max islands required while building interest island profiles for user.
-  const maxIslands = options.maxIslands || DEFAULT_MAX_ISLANDS_PER_USER;
-
+export async function loadIslandBehavioralArticles(userId, { transaction } = {}) {
   // Formation applies the complete magnitude/id order below; avoid a redundant SQL sort.
-  const articles = await Article.findAll({
+  return Article.findAll({
     where: {
       userId,
       ...canonicalArticleWhere(),
@@ -218,6 +216,7 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
     },
     attributes: [
       'id',
+      'feedId',
       'title',
       'articleVector',
       'positiveInd',
@@ -227,8 +226,15 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
       'negativeInd',
       'publishedAt',
       ...BEHAVIOR_TIMESTAMP_FIELDS
-    ]
+    ],
+    transaction
   });
+}
+
+// This function builds article-based island profiles from direct user behavior.
+export async function buildInterestIslandProfilesForUser(userId, options = {}) {
+  const maxIslands = resolveIslandCapacity(options.maxIslands);
+  const articles = await loadIslandBehavioralArticles(userId, options);
 
   // Keeps the article profiles entries eligible while building interest island profiles for user.
   const articleProfiles = articles
@@ -238,6 +244,8 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
 
   // Builds the behavioral article communities while building interest island profiles for user.
   const communities = buildBehavioralArticleCommunities(articleProfiles, maxIslands);
+  // Reuse this complete owned snapshot for lifecycle decisions, even below formation's score cutoff.
+  communities.behavioralEvidence = articles;
 
   const assignedCount = communities.reduce((sum, community) => sum + community.articles.length, 0);
   communities.summary = {

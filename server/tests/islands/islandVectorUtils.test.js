@@ -32,9 +32,11 @@ describe('island vector utilities', () => {
   });
 
   it('keeps recency weights bounded and treats missing dates as current evidence', () => {
-    expect(behaviorRecencyWeight(null)).toBe(1);
-    expect(behaviorRecencyWeight(new Date(Date.now() + 86_400_000))).toBe(1);
-    expect(behaviorRecencyWeight(new Date('2000-01-01T00:00:00.000Z'))).toBeGreaterThanOrEqual(0.2);
+    expect(behaviorRecencyWeight(null, 30)).toBe(1);
+    expect(behaviorRecencyWeight('invalid', 30)).toBe(1);
+    expect(behaviorRecencyWeight(new Date(Date.now() + 86_400_000), 30)).toBe(1);
+    expect(behaviorRecencyWeight(new Date('2000-01-01T00:00:00.000Z'), 30)).toBeLessThan(0.00001);
+    for (const invalid of [0, -1, Infinity, NaN]) expect(() => behaviorRecencyWeight(new Date(), invalid)).toThrow(RangeError);
   });
 
   it('normalizes, adds, and merges positive signal counters', () => {
@@ -57,7 +59,8 @@ describe('island vector utilities', () => {
 
   it('detects stale islands and resolves taxonomy labels', () => {
     expect(isStaleIsland({})).toBe(true);
-    expect(isStaleIsland({ updatedAt: new Date() })).toBe(false);
+    expect(isStaleIsland({ lastBehaviorAt: new Date() })).toBe(false);
+    expect(isStaleIsland({ updatedAt: new Date() })).toBe(true);
     expect(resolveTaxonomyDisplayName([], [{ displayName: 'AI', vector: [1, 0] }])).toBeNull();
     expect(resolveTaxonomyDisplayName([1, 0], [
       { displayName: 'Climate', vector: [0, 1] },

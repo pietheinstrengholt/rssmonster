@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import db from '../../models/index.js';
-import { scoreArticlesFromIslandsForUser } from '../../services/score/scoreArticlesFromIslands.js';
+import { scoreArticlesFromIslandsForUser, explainArticleInterests } from '../../services/score/scoreArticlesFromIslands.js';
 
 const { sequelize, Article, Category, Feed, Island, User } = db;
 
@@ -223,7 +223,14 @@ describe('scoreArticlesFromIslandsForUser', () => {
     await Promise.all([canonicalArticle.reload(), duplicateArticle.reload()]);
 
     expect(result.fallbackScoredCount).toBe(1);
-    expect(canonicalArticle.interestScore).toBe(-0.02);
+    // Unsupported negative intent uses .5 compatibility: .06 positive minus .04 negative.
+    expect(canonicalArticle.interestScore).toBe(0.02);
+    const { results } = await explainArticleInterests(user.id, [canonicalArticle]);
+    const paths = results.get(String(canonicalArticle.id)).paths;
+    expect(paths).toHaveLength(2);
+    expect(paths.find(path => path.contribution > 0).contribution).toBeCloseTo(0.06);
+    expect(paths.find(path => path.contribution < 0)).toMatchObject({ sourceIntent: 'unknown', intentCompatibility: 0.5 });
+    expect(paths.find(path => path.contribution < 0).contribution).toBeCloseTo(-0.04);
     expect(duplicateArticle.interestScore).toBe(0.9);
   });
 

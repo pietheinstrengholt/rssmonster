@@ -7,6 +7,7 @@ import { computeRecommended } from '../../services/recommendations/recommendedSc
 import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
 import { runIncrementalEventsForUser } from '../../services/reconcile/semanticPipelineScopes.js';
 import { runIslandCalibrationForUser } from '../../services/islands/runIslandCalibration.js';
+import { DEFAULT_MAX_ISLANDS_PER_USER } from '../../services/islands/islandVectorUtils.js';
 import scoreArticlesFromIslandsForUser, { explainArticleInterests } from '../../services/score/scoreArticlesFromIslands.js';
 import { loadSemanticBatch } from '../helpers/semanticBatchFixtures.js';
 import { buildVectorMap, insertMissingFixtureArticles } from '../helpers/semanticRegressionIncremental.js';
@@ -93,6 +94,7 @@ describe('two-batch semantic simulation', () => {
       expect(snapshot.rows.every(a => Number.isFinite(a.recommended))).toBe(true);
       expect(snapshot.metrics['Recommended coverage (%)']).toBe(100);
       expect(snapshot.islands.activeIslands).toBeGreaterThan(0);
+      expect(snapshot.islands.activeIslands).toBeLessThanOrEqual(DEFAULT_MAX_ISLANDS_PER_USER);
       expect(snapshot.rows.some(a => a.interestScore > 0)).toBe(true);
       expect(snapshot.rows.some(a => !a.eventId && a.interestScore === 0)).toBe(true);
       for (const row of snapshot.rows) {

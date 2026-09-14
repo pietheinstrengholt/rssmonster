@@ -5,8 +5,16 @@ import {
   weightedAverageVector as sharedWeightedAverageVector
 } from '../vectors/index.js';
 
-// Defines the default max islands per user enforced by this service.
-export const DEFAULT_MAX_ISLANDS_PER_USER = Number.parseInt(process.env.MAX_INTEREST_ISLANDS, 20) || 20;
+// Reject partial numbers and bound accidental configurations; invalid values use the product default.
+const parseIslandCapacity = (value, fallback) => {
+  const text = String(value ?? '').trim();
+  const capacity = /^\d+$/.test(text) ? Number.parseInt(text, 10) : NaN;
+  return Number.isSafeInteger(capacity) && capacity > 0 && capacity <= 1000 ? capacity : fallback;
+};
+// Maximum simultaneously active persisted Islands, excluding archived history.
+export const DEFAULT_MAX_ISLANDS_PER_USER = parseIslandCapacity(process.env.MAX_INTEREST_ISLANDS, 20);
+// Internal callers may request a smaller working set, never bypass the configured active cap.
+export const resolveIslandCapacity = value => Math.min(DEFAULT_MAX_ISLANDS_PER_USER, parseIslandCapacity(value, DEFAULT_MAX_ISLANDS_PER_USER));
 // Defines the default article affinity threshold enforced by this service.
 export const DEFAULT_ARTICLE_AFFINITY_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARTICLE_AFFINITY_THRESHOLD || '0.64');
 // Defines the default article signal threshold enforced by this service.
@@ -15,10 +23,18 @@ export const DEFAULT_ARTICLE_SIGNAL_THRESHOLD = Number.parseFloat(process.env.IS
 export const DEFAULT_ISLAND_MATCH_THRESHOLD = Number.parseFloat(process.env.ISLAND_PROFILE_MATCH_THRESHOLD || '0.78');
 // Defines the default island vector alpha enforced by this service.
 export const DEFAULT_ISLAND_VECTOR_ALPHA = Number.parseFloat(process.env.ISLAND_VECTOR_ALPHA || '0.35');
-// Defines the default recency half life days enforced by this service.
-export const DEFAULT_RECENCY_HALF_LIFE_DAYS = Number.parseFloat(process.env.ISLAND_RECENCY_HALF_LIFE_DAYS || '1460');
-// Defines the default recency min weight enforced by this service.
-export const DEFAULT_RECENCY_MIN_WEIGHT = Number.parseFloat(process.env.ISLAND_RECENCY_MIN_WEIGHT || '0.2');
+const configuredHalfLife = (name, fallback) => {
+  const days = Number(process.env[name]);
+  return Number.isFinite(days) && days > 0 ? days : fallback;
+};
+// True half-lives for durable Article evidence, keyed by the signal's interaction clock.
+export const SIGNAL_HALF_LIFE_DAYS = Object.freeze({
+  lastClickedAt: configuredHalfLife('ISLAND_CLICK_HALF_LIFE_DAYS', 30),
+  lastMeaningfulReadAt: configuredHalfLife('ISLAND_DEEP_READ_HALF_LIFE_DAYS', 90),
+  favoritedAt: configuredHalfLife('ISLAND_FAVORITE_HALF_LIFE_DAYS', 365),
+  positiveFeedbackAt: configuredHalfLife('ISLAND_POSITIVE_FEEDBACK_HALF_LIFE_DAYS', 730),
+  negativeFeedbackAt: configuredHalfLife('ISLAND_NEGATIVE_FEEDBACK_HALF_LIFE_DAYS', 365)
+});
 // Defines the default archive confidence threshold enforced by this service.
 export const DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD || '0.12');
 // Defines the default archive stale days enforced by this service.
@@ -89,26 +105,14 @@ export function blendIslandVector(existingVector, incomingVector, alpha = DEFAUL
 }
 
 // This function returns a recency multiplier for behavioral signals.
-export function behaviorRecencyWeight(publishedAt) {
-  // Returns early when published at is unavailable.
-  if (!publishedAt) return 1;
-
-  // Derives the age days through max while performing behavior recency weight.
-  const ageDays = Math.max(0, (Date.now() - new Date(publishedAt).getTime()) / (1000 * 60 * 60 * 24));
-  // Selects the half life days based on whether default recency half life days is finite and default recency half life days exceeds value.
-  const halfLifeDays = Number.isFinite(DEFAULT_RECENCY_HALF_LIFE_DAYS) && DEFAULT_RECENCY_HALF_LIFE_DAYS > 0
-    ? DEFAULT_RECENCY_HALF_LIFE_DAYS
-    : 1460;
-  // Selects the min weight based on whether default recency min weight is finite.
-  const minWeight = clamp(
-    Number.isFinite(DEFAULT_RECENCY_MIN_WEIGHT) ? DEFAULT_RECENCY_MIN_WEIGHT : 0.2,
-    0,
-    1
-  );
-  // Derives the decay weight through exp while performing behavior recency weight.
-  const decayWeight = Math.exp(-ageDays / halfLifeDays);
-
-  return clamp(Math.max(minWeight, decayWeight), 0, 1);
+export function behaviorRecencyWeight(interactedAt, halfLifeDays) {
+  if (!Number.isFinite(halfLifeDays) || halfLifeDays <= 0) throw new RangeError('Behavior half-life must be positive and finite');
+  // Preserve unknown-age behavior when neither a usable interaction nor legacy date exists.
+  if (!interactedAt) return 1;
+  const timestamp = new Date(interactedAt).getTime();
+  if (!Number.isFinite(timestamp)) return 1;
+  const ageDays = Math.max(0, (Date.now() - timestamp) / 86400000);
+  return 2 ** (-ageDays / halfLifeDays);
 }
 
 // This function creates an empty positive-signal counter object.
@@ -160,14 +164,13 @@ export function mergePositiveSignals(existingSignals = {}, incomingSignals = {})
 
 // This function decides whether an island has gone stale enough for archival handling.
 export function isStaleIsland(island) {
-  // Selects the updated at based on whether updated at is available.
-  const updatedAt = island?.updatedAt ? new Date(island.updatedAt).getTime() : null;
-  // Returns early when updated at is not finite.
-  if (!Number.isFinite(updatedAt)) return true;
+  // Database writes and audit timestamps are not behavioral activity.
+  const lastBehaviorAt = island?.lastBehaviorAt ? new Date(island.lastBehaviorAt).getTime() : null;
+  if (!Number.isFinite(lastBehaviorAt)) return true;
 
   // Derives the stale ms required while checking stale island.
   const staleMs = DEFAULT_ARCHIVE_STALE_DAYS * 24 * 60 * 60 * 1000;
-  return (Date.now() - updatedAt) >= staleMs;
+  return (Date.now() - lastBehaviorAt) >= staleMs;
 }
 
 // This function picks the nearest active taxonomy display name for an island vector.

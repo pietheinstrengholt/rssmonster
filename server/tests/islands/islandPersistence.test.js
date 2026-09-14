@@ -5,7 +5,6 @@ const mocks = vi.hoisted(() => ({
   islandCreate: vi.fn(),
   taxonomyFindAll: vi.fn(),
   buildAudit: vi.fn(),
-  loadEvidence: vi.fn(),
   disambiguate: vi.fn(),
   debugIsland: vi.fn()
 }));
@@ -18,7 +17,13 @@ vi.mock('../../models/index.js', () => ({
   }
 }));
 
-vi.mock('../../services/islands/islandInterestConfidence.js', () => ({ loadIslandEvidence: mocks.loadEvidence }));
+vi.mock('../../services/islands/islandArticleProfiles.js', () => ({ loadIslandBehavioralArticles: async () => [] }));
+vi.mock('../../services/islands/islandLifecycle.js', () => ({
+  summarizeIslandLifecycle: () => ({ lastBehaviorAt: new Date(), confidence: 1 }),
+  reconstructIslandLifecycles: () => new Map([[2, { lastBehaviorAt: new Date('2000-01-01'), confidence: 0.01 }]]),
+  islandArchiveState: (island, support) => ({ archivedInd: support.confidence < 0.12,
+    archivedAt: support.confidence < 0.12 ? new Date() : null })
+}));
 
 vi.mock('../../services/islands/islandAudit.js', () => ({
   buildPopulationAuditEntry: mocks.buildAudit,
@@ -64,7 +69,6 @@ function existingIsland(overrides = {}) {
 describe('island profile persistence', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.loadEvidence.mockResolvedValue({ islands: [{ id: 2, islandConfidence: 0.01 }] });
     mocks.taxonomyFindAll.mockResolvedValue([]);
     mocks.buildAudit.mockResolvedValue({ audit: true });
     mocks.disambiguate.mockResolvedValue({ renamed: [], archived: [] });
