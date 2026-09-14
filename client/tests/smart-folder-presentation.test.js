@@ -13,14 +13,14 @@ beforeEach(() => {
   store.setCurrentSelection({ sort: 'recommended', grouping: 'event', includeDevelopingEvents: true });
 });
 
-const folder = { id: 1, query: 'tag:science sort:asc grouping:topic limit:12', limitCount: 50 };
+const folder = { id: 1, query: 'tag:science sort:asc grouping:event limit:12', limitCount: 50 };
 
 describe('Smart Folder presentation ownership', () => {
   it('uses the expression and locks direct presentation actions while active', () => {
     store.setSmartFolder(folder);
     store.setSelectedSort('quality');
     store.setGrouping('none');
-    expect(store.currentSelection).toMatchObject({ sort: 'asc', grouping: 'topic', search: folder.query, smartFolderId: 1 });
+    expect(store.currentSelection).toMatchObject({ sort: 'asc', grouping: 'event', search: folder.query, smartFolderId: 1 });
   });
 
   it.each(['status', 'category', 'feed', 'tag', 'clear', 'filters', 'search'])('restores ordinary preferences when leaving via %s', exit => {
@@ -45,12 +45,12 @@ describe('Smart Folder presentation ownership', () => {
     store.setSmartFolder(folder);
     fetchSettings.mockResolvedValue({ data: { sort: 'desc', grouping: 'none', search: null, AIEnabled: true } });
     await store.fetchSettings();
-    expect(store.currentSelection).toMatchObject({ sort: 'asc', grouping: 'topic', search: folder.query });
+    expect(store.currentSelection).toMatchObject({ sort: 'asc', grouping: 'event', search: folder.query });
   });
 
   it('removes inherited sort and grouping tokens when editing folder search text', () => {
     store.setSmartFolder(folder);
-    store.setSelectedSearch('tag:news sort:asc grouping:topic limit:12');
+    store.setSelectedSearch('tag:news sort:asc grouping:event limit:12');
     expect(store.currentSelection).toMatchObject({ smartFolderId: null, search: 'tag:news limit:12', sort: 'recommended', grouping: 'event' });
   });
 
@@ -65,10 +65,10 @@ describe('Smart Folder presentation ownership', () => {
   });
 
   it('completes legacy expressions without treating quoted text as presentation', () => {
-    const query = completeSmartFolderQuery('title:"sort:asc grouping:topic"', 50);
-    expect(query).toBe('title:"sort:asc grouping:topic" sort:desc grouping:none limit:50');
+    const query = completeSmartFolderQuery('title:"sort:asc grouping:event"', 50);
+    expect(query).toBe('title:"sort:asc grouping:event" sort:desc grouping:none limit:50');
     expect(completeSmartFolderQuery(query, 50)).toBe(query);
-    expect(smartFolderPresentation('sort:desc sort:TOPSTORIES grouping:topic developing:true'))
+    expect(smartFolderPresentation('sort:desc sort:TOPSTORIES grouping:event developing:true'))
       .toEqual({ sort: 'topStories', grouping: 'event', includeDevelopingEvents: true });
   });
 });

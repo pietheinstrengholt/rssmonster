@@ -388,7 +388,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc', strict = 
       continue;
     }
 
-    const groupingMatch = cleaned.match(/^grouping:(none|event|topic)$/i);
+    const groupingMatch = cleaned.match(/^grouping:(none|event)$/i);
     if (groupingMatch) {
       filters.grouping = groupingMatch[1].toLowerCase();
       continue;

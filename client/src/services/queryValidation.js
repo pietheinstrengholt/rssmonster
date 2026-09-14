@@ -25,7 +25,7 @@ export const expressionPatterns = [
     { name: 'author', regex: /^author:(.+)$/i },
     { name: 'language', regex: /^language:[a-z]{2,3}$/i },
     { name: 'sort', regex: /^sort:(desc|asc|topStories|recommended|quality)$/i },
-    { name: 'grouping', regex: /^grouping:(none|event|topic)$/i },
+    { name: 'grouping', regex: /^grouping:(none|event)$/i },
     { name: 'limit', regex: /^limit:\s*(\d+)$/i },
     { name: 'quality', regex: /^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
     { name: 'freshness', regex: /^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
@@ -113,7 +113,7 @@ export function validateQuery(query, options = { allowEmpty: true }) {
     }
 
     const trimmedQuery = query.trim();
-    
+
     // Rule 2: Check for common syntax errors (using = instead of :)
     if (wrongSyntaxPattern.test(trimmedQuery)) {
         return { valid: false, error: 'Use colon (:) not equals (=). Example: quality:0.6' };
@@ -138,7 +138,7 @@ export function validateQuery(query, options = { allowEmpty: true }) {
 
     // Split on whitespace/commas while preserving field:"quoted phrase" tokens.
     const tokens = workingQuery.match(/(?:[A-Za-z]+:)?"[^"]*"|[^\s,]+/g) || [];
-    
+
     for (const token of tokens) {
         // Skip placeholders
         if (token === '__DAYSAGO_PLACEHOLDER__' || token === '__LASTDAY_PLACEHOLDER__') {
@@ -151,10 +151,10 @@ export function validateQuery(query, options = { allowEmpty: true }) {
         if (specificDateMatch && !isValidCalendarDate(specificDateMatch[1])) {
             return { valid: false, error: `Invalid calendar date: "${specificDateMatch[1]}"` };
         }
-        
+
         // Check if token matches any known pattern
         const isValidToken = expressionPatterns.some(p => p.regex.test(cleaned));
-        
+
         if (!isValidToken) {
             // Check for typos in known keywords
             const colonIndex = cleaned.indexOf(':');
@@ -169,7 +169,7 @@ export function validateQuery(query, options = { allowEmpty: true }) {
                     return { valid: false, error: `Unknown filter: "${keyword}". Valid filters: ${knownKeywords.join(', ')}` };
                 }
             }
-            
+
             // Token doesn't match any pattern - could be plain text search which is allowed
             // But if it looks like an expression attempt, flag it
             if (cleaned.includes(':') || cleaned.startsWith('@')) {

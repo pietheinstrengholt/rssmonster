@@ -15,11 +15,6 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false
       },
-      // Links to the event's primary topic for efficient grouping; null before topic assignment.
-      topicId: {
-        type: DataTypes.INTEGER,
-        allowNull: true
-      },
       // Identifies the event's representative article used for display and summarization.
       representativeArticleId: {
         type: DataTypes.INTEGER,
@@ -86,7 +81,6 @@ export default (sequelize) => {
     {
       indexes: [
         { fields: ['userId'] },
-        { fields: ['topicId'] },
         { fields: ['status'] }
       ],
       charset: 'utf8mb4',

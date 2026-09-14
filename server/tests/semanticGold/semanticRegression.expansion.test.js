@@ -1,50 +1,39 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { writeFile } from 'node:fs/promises';
 import { readSemanticFixtureFile as readFile } from '../helpers/semanticBatchFixtures.js';
 import db from '../../models/index.js';
 import { cosineSimilarity } from '../../services/vectors/index.js';
 import { EVENT_MAX_GAP_HOURS, EVENT_SIM_THRESHOLD } from '../../services/config/semanticConfig.js';
 import { extractOccurrenceFeatures } from '../../services/events/occurrenceFeatures.js';
-import { topicDiagnosticChannel } from '../../services/topics/event/topicDecisionDiagnostics.js';
-import { evaluateTopicCandidates } from '../../services/topics/event/topicDecisionPolicy.js';
+
 import { buildInterestIslandProfilesForUser } from '../../services/islands/islandArticleProfiles.js';
 import { persistIslandProfilesForUser } from '../../services/islands/runIslandCalibration.js';
 import { evaluateArticleInterest, prepareIslandEvidence, islandCohesion, deriveIslandConfidence } from '../../services/islands/islandInterestConfidence.js';
 import { computeRecommended } from '../../services/recommendations/recommendedScore.js';
 import { installEventDiagnosticReport } from '../helpers/semanticEventDiagnosticReport.js';
 import { expansionFixture, scenarioArticles, loadExpansionVectors, processExpansionScenario,
-  writeExpansionReport, expansionDirectory, requiredBehavioralTransfers } from '../helpers/semanticExpansion.js';
+  writeExpansionReport, requiredBehavioralTransfers } from '../helpers/semanticExpansion.js';
 
 const eventDiagnostics = installEventDiagnosticReport('expansion');
 const results = [];
 const checks = [];
 const controlled = [];
 const naturalTransfers = [];
-const topicDiagnostics = [];
-const topicListener = row => topicDiagnostics.push(row);
 let vectors;
 const check = (scenario, label, pass, classification, details = '') => {
   checks.push({ scenario: scenario.id, label, pass: Boolean(pass), classification, details });
   expect.soft(Boolean(pass), `${scenario.id}: ${label}; ${details}`).toBe(true);
 };
 const sameEvent = rows => rows.length > 0 && rows.every(r => r.eventId != null && r.eventId === rows[0].eventId);
-const topicsFor = (result, group) => {
-  const eventIds = new Set(result.rows.filter(r => r.regression.eventGroup === group).map(r => r.eventId));
-  return new Set(result.links.filter(l => eventIds.has(l.eventId)).map(l => l.topicId));
-};
-const diagnosticSummary = result => JSON.stringify(result.rows.map(r => ({ source: r.sourceId, event: r.eventId, topic: r.topicId })));
+const diagnosticSummary = result => JSON.stringify(result.rows.map(r => ({ source: r.sourceId, event: r.eventId })));
 const matchingReasons = result => eventDiagnostics().filter(d => d.userId === result.userId)
   .flatMap(d => [...(d.topMatches || []), ...(d.candidates || [])]).flatMap(c => c.reasons || []);
 
 beforeAll(async () => {
   ({ vectors } = await loadExpansionVectors());
-  topicDiagnosticChannel.subscribe(topicListener);
 });
 afterEach(() => vi.useRealTimers());
 afterAll(async () => {
-  topicDiagnosticChannel.unsubscribe(topicListener);
   await writeExpansionReport(results, checks, controlled, naturalTransfers);
-  await writeFile(new URL('expansion-topic-decisions.json', expansionDirectory), JSON.stringify(topicDiagnostics, null, 2));
 });
 
 function validateCommon(scenario, result) {
@@ -81,24 +70,6 @@ function validateEvents(scenario, result) {
   }
 }
 
-function validateTopics(scenario, result) {
-  const groups = [...new Set(result.rows.map(r => r.regression.eventGroup))];
-  const memberships = groups.map(g => topicsFor(result, g));
-  const shared = [...memberships[0]].filter(id => memberships.every(set => set.has(id)));
-  check(scenario, 'each occurrence has Topic membership', memberships.every(set => set.size > 0), scenario.kind === 'multilingual' && result.rows.some(r => !r.eventId) ? 'embedding instability' : 'Topic defect', diagnosticSummary(result));
-  check(scenario, scenario.sameTopic ? 'durable subject reuses one Topic' : 'unrelated subjects do not share Topics',
-    scenario.sameTopic ? shared.length > 0 : memberships.every((set, i) => memberships.slice(i + 1).every(other => [...set].every(id => !other.has(id)))), 'Topic defect', JSON.stringify(memberships.map(set => [...set])));
-}
-
-function controlledTopicAmbiguity(scenario, result) {
-  const titles = [...new Set(result.source.map(a => a.regression.eventGroup))].map(g => result.source.find(a => a.regression.eventGroup === g).title);
-  const candidates = titles.slice(0, 2).map((name, i) => ({ topic: { id: i + 1, name }, sim: 0.9 }));
-  const subjects = new Map(titles.slice(0, 2).map((title, i) => [i + 1, { title, anchorEventId: i + 1, memberEventCount: 1 }]));
-  const decision = evaluateTopicCandidates({ semanticUnit: { id: 3, title: titles[2] }, candidates, subjects,
-    primaryThreshold: 0.76, secondaryThreshold: 0.62 });
-  check(scenario, 'equal-confidence subject candidates remain ambiguous', decision.ambiguous && decision.selected.length === 0, 'Topic defect');
-}
-
 // Use explicit geometry to isolate support and intent, never present these vectors as Qwen output.
 const axis = (index, dimensions = 14) => Array.from({ length: dimensions }, (_, i) => Number(i === index));
 const nearby = (index, similarity = 0.95) => axis(index).map((v, i) => i === 13 ? Math.sqrt(1 - similarity ** 2) : v * similarity);
@@ -115,17 +86,11 @@ function evaluateControlledBehavior(scenario, result) {
     const unrelated = article.regression.intentRelation === 'unrelated';
     const incoming = { ...article, articleVector: unrelated ? axis(12) : nearby(group) };
     let context = supported;
-    let articleTopics = [];
-    let islandTopics = [];
     if (scenario.mode === 'capacity') {
       // A full, unrelated memory cannot represent this explicit source. No forced Island membership.
       context = { ...prepareIslandEvidence([{ id: 1, islandVector: axis(11), weight: 0.8 }], [], [source]), now };
-    } else if (index === 2) {
-      incoming.articleVector = axis(12);
-      articleTopics = [{ topicId: 1, confidence: 0.9 }];
-      islandTopics = [{ islandId: 1, topicId: 1, confidence: 0.9, similarity: 0.9 }];
     } else if (index === 3) incoming.articleVector = nearby(0, 0.63);
-    const evaluation = evaluateArticleInterest(incoming, context, articleTopics, islandTopics);
+    const evaluation = evaluateArticleInterest(incoming, context);
     const expected = article.regression.expectedInterest || 'positive';
     const sign = source.negativeInd ? -1 : 1;
     const pass = expected === 'neutral' ? evaluation.score === 0 : expected === 'attenuated'
@@ -133,9 +98,8 @@ function evaluateControlledBehavior(scenario, result) {
       : expected === 'negative' ? evaluation.score < -0.1 : evaluation.score > 0;
     check(scenario, `${article.sourceId} controlled held-out ${expected}`, pass, 'recommendation-scoring defect', JSON.stringify(evaluation));
     check(scenario, `${article.sourceId} is held-out, never seed/self`, !evaluation.seedSelf && evaluation.paths.every(p => !p.seedSelf), 'fixture issue');
-    check(scenario, `${article.sourceId} replay does not strengthen preference`, evaluation.score === evaluateArticleInterest(incoming, context, articleTopics, islandTopics).score, 'recommendation-scoring defect');
+    check(scenario, `${article.sourceId} replay does not strengthen preference`, evaluation.score === evaluateArticleInterest(incoming, context).score, 'recommendation-scoring defect');
     if (scenario.mode === 'capacity' && expected !== 'neutral') check(scenario, `${article.sourceId} explicit fallback path`, evaluation.paths.some(p => p.matchType === 'behavioral-fallback'), 'recommendation-scoring defect');
-    if (index === 2 && scenario.mode !== 'capacity') check(scenario, `${article.sourceId} uses complete Topic path`, evaluation.paths[0]?.matchType === 'topic-island', 'recommendation-scoring defect');
     controlled.push({ scenario: scenario.id, sourceId: article.sourceId, title: article.title, expected, score: evaluation.score, paths: evaluation.paths });
   }
   if (scenario.mode !== 'capacity') {
@@ -196,26 +160,7 @@ describe('expanded semantic diversity and recommendation gold', () => {
     const result = await processExpansionScenario(scenario, vectors, time => vi.setSystemTime(time));
     results.push({ ...result, scenario });
     validateCommon(scenario, result);
-    if (['topic', 'ambiguity'].includes(scenario.kind)) {
-      let arrived = 0;
-      for (const snapshot of result.snapshots) {
-        const incoming = result.source.filter(a => a.regression.eventGroup === snapshot.phase);
-        arrived += incoming.length;
-        check(scenario, `Topic wave ${snapshot.phase} excludes future Articles`, snapshot.articleCount === arrived, 'fixture issue');
-        const members = result.rows.filter(a => a.regression.eventGroup === snapshot.phase);
-        check(scenario, `Topic wave ${snapshot.phase} uses its publication clock`, members.every(a => +new Date(a.createdAt) === snapshot.time)
-          && result.links.filter(l => members.some(a => a.eventId === l.eventId)).every(l => +new Date(l.createdAt) === snapshot.time), 'fixture issue');
-      }
-    }
     if (['event', 'multilingual'].includes(scenario.kind)) validateEvents(scenario, result);
-    if (['topic', 'multilingual'].includes(scenario.kind)) validateTopics(scenario, result);
-    if (scenario.kind === 'ambiguity') {
-      const incoming = result.events.at(-1);
-      const diagnostics = topicDiagnostics.filter(d => d.eventId === incoming.id).at(-1);
-      check(scenario, 'natural bridge has no forced primary', !result.links.some(l => l.eventId === incoming.id && l.primaryInd),
-        diagnostics?.winnerMargin >= 0.04 ? 'fixture issue' : 'Topic defect', JSON.stringify(diagnostics));
-      controlledTopicAmbiguity(scenario, result);
-    }
     if (scenario.kind === 'behavior') await validateBehavior(scenario, result);
     if (scenario.kind === 'duplicate') {
       check(scenario, 'exact syndication points to the canonical record', result.rows[1].duplicateOfArticleId === result.rows[0].id, 'Event defect');
@@ -249,8 +194,7 @@ describe('expanded semantic diversity and recommendation gold', () => {
     const behavior = [{ id: 1, articleVector: [1, 0], favoriteInd: 1, feedId: 1, publishedAt: new Date() }];
     const prepared = prepareIslandEvidence([positive, negative], behavior);
     const incoming = { id: 99, articleVector: [1, 0] };
-    const evaluation = evaluateArticleInterest(incoming, prepared, [{ topicId: 1, confidence: 1 }],
-      [{ topicId: 1, islandId: 1, confidence: 1, similarity: 1 }]);
+    const evaluation = evaluateArticleInterest(incoming, prepared, );
     check(scenario, 'opposite Island signs survive bounded deduplicated aggregation', evaluation.paths.length === 2
       && evaluation.paths.some(p => p.contribution < 0) && evaluation.paths.some(p => p.contribution > 0)
       && Math.abs(evaluation.score) <= 1, 'recommendation-scoring defect');

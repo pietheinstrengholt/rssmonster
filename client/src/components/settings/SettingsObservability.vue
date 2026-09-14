@@ -6,7 +6,7 @@
       title="Service health & processing failures"
       title-id="processing-failures-title"
     >
-      Inspect abnormal crawl, article, embedding, event, topic, and island processing outcomes.
+      Inspect abnormal crawl, article, embedding, event and island processing outcomes.
       Similar failures are grouped so recurring problems remain easy to spot.
     </SettingsPageIntro>
 

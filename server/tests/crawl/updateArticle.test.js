@@ -768,7 +768,7 @@ describe('updateArticle', () => {
     expect(persistedValues).not.toHaveProperty('articleVector');
     expect(persistedValues).not.toHaveProperty('embedding_model');
     expect(persistedValues).not.toHaveProperty('eventId');
-    expect(persistedValues).not.toHaveProperty('topicId');
+
     expect(mocked.replaceArticleDerivedTags).toHaveBeenCalledWith({
       articleId: article.id,
       userId: 42,

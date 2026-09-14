@@ -150,7 +150,6 @@ describe('embedArticle token limit guard', () => {
 
     await expect(embedArticle(article)).resolves.toEqual({
       eventVector: [0.8, 0.9],
-      topicVector: null,
       embedding_model: EMBEDDING_MODEL,
       reused: true
     });

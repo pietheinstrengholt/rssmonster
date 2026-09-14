@@ -80,7 +80,7 @@ it is an explicit decision to retain an article.
 
 RSSMonster combines that signal with other interactions rather than assuming
 that one bookmark defines an entire interest. Repeated, related engagement can
-strengthen a behavioral topic and help form or update an interest island. Those
+help form or update an interest island. Those
 islands can then support personalized relevance and recommendations.
 
 Bookmark articles you genuinely value: doing so improves both your saved

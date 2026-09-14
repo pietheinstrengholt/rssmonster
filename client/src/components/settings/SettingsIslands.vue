@@ -6,7 +6,7 @@
       title="Your evolving interests"
       title-id="islands-title"
     >
-      Interest islands capture the topics your reading, favorites, and clicks keep reinforcing. Review what is growing,
+      Interest islands capture the interests your reading, favorites, and clicks keep reinforcing. Review what is growing,
       what it is connected to, and how much of your library is covered.
     </SettingsPageIntro>
 
@@ -51,7 +51,7 @@
       </section>
 
       <div v-if="!islands.length" class="settings-islands-empty app-notice app-notice--info" role="status">
-        You do not have any interest islands yet. Favorite articles, click through articles, or keep reading in a topic to grow one.
+        You do not have any interest islands yet. Favorite articles, click through articles, or keep reading about an interest to grow one.
       </div>
 
       <section v-else class="settings-data-panel" aria-labelledby="interest-islands-title">
@@ -72,8 +72,7 @@
                 <h5>{{ island.generatedLabel || island.label || `Island #${island.id}` }}</h5>
                 <p>
                   {{ formatCountLabel(island.sourceArticleCount, 'source article') }} &middot;
-                  {{ formatCountLabel(island.topicCount, 'topic') }} linked &middot;
-                  {{ formatCountLabel(island.relatedArticleCount, 'topic-related article') }}
+                  {{ formatCountLabel(island.relatedArticleCount, 'related article') }}
                 </p>
               </div>
             </div>
@@ -122,18 +121,15 @@
                     {{ signal.label }}
                   </span>
                   <small v-if="!article.evidence?.length">Behavioral source</small>
-                  <small v-for="topic in article.connectionTopics" :key="`${article.id}-topic-${topic.id}`">
-                    Also connected through {{ topic.generatedName || topic.name }}
-                  </small>
                 </div>
               </component>
             </div>
 
-            <div v-if="topicRelatedArticles(island).length" class="interest-article-list">
-              <div class="interest-article-heading">Connected through topics</div>
+            <div v-if="relatedArticles(island).length" class="interest-article-list">
+              <div class="interest-article-heading">Matches this interest</div>
               <component
                 :is="article.url ? 'a' : 'div'"
-                v-for="article in topicRelatedArticles(island)"
+                v-for="article in relatedArticles(island)"
                 :key="article.id"
                 class="interest-article-row"
                 :href="article.url || undefined"
@@ -146,9 +142,6 @@
                 </div>
                 <div class="interest-article-meta">
                   <span v-if="article.isPopulationSource" class="app-status-badge app-status-badge--primary">Source article</span>
-                  <small v-for="topic in article.connectionTopics" :key="`${article.id}-topic-${topic.id}`">
-                    Via {{ topic.generatedName || topic.name }}
-                  </small>
                 </div>
               </component>
             </div>
@@ -485,8 +478,8 @@ export default {
       if (type === 'negative') return 'app-status-badge--dark';
       return 'app-status-badge--neutral';
     },
-    // This function avoids repeating source articles in the topic-connected list.
-    topicRelatedArticles(island) {
+    // This function avoids repeating source articles in the related article list.
+    relatedArticles(island) {
       return (island.relatedArticles || []).filter(article => !article.isPopulationSource);
     },
     formatDate(value) {

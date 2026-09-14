@@ -63,7 +63,7 @@ Embeddings
 Semantic duplicate detection
         │
         ▼
-Events & Topics
+Events
         │
         ▼
 Island scoring
@@ -77,7 +77,7 @@ calculate URL hashes directly;
 implement tag persistence;
 implement duplicate matching algorithms;
 contain provider-specific transformations;
-mutate vectors, clusters, events, topics, or islands during publisher revisions;
+mutate vectors, clusters, events or islands during publisher revisions;
 become a general-purpose utility directory.
 
 Orchestrators should call lower-level services rather than reimplementing them.
@@ -87,6 +87,5 @@ Orchestrators should call lower-level services rather than reimplementing them.
 Normal post-crawl scoring compares newly eligible unread Articles with existing
 Islands and bounded explicit behavior; it does not recalibrate Islands. No trusted
 personal match means zero interest, while runtime Recommended still scores all
-eligible Articles. Topic/direct Island paths and intent-aware explicit fallback
+eligible Articles. Direct Island paths and intent-aware explicit fallback
 are described in the [Island scoring reference](../../islands/README.md).
-Behavioral Topic calibration is a separate service, not a normal crawl stage.

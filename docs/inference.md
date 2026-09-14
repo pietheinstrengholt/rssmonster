@@ -510,7 +510,7 @@ models in this configuration.
 ### Generation models and workload overrides
 
 `GENERATION_MODEL` is the default for bullet summaries, generated tags, Smart
-Folder recommendations, feed rediscovery, and event/topic/island labels.
+Folder recommendations, feed rediscovery, and event/island labels.
 Optional remote overrides are `GENERATION_ARTICLE_MODEL` (bullets, tags, labels),
 `GENERATION_SMART_FOLDER_MODEL`, and `GENERATION_FEED_REDISCOVERY_MODEL`.
 They use the generation endpoint and credentials. Local generation uses its one

@@ -14,7 +14,7 @@ import {
   cosineSimilarity,
   debugIsland,
   normalizeVector,
-  topicRecencyWeight,
+  behaviorRecencyWeight,
   weightedAverageVector
 } from './islandVectorUtils.js';
 
@@ -33,8 +33,8 @@ export function computeArticleSignals(article) {
   const deepReads = (article.attentionBucket || 0) >= 3 ? 1 : 0;
   // Selects the negative based on whether article negative status is 1.
   const negative = article.negativeInd === 1 ? 1 : 0;
-  // Derives the recency through topic recency weight while computing article signals.
-  const recency = topicRecencyWeight(article.publishedAt);
+  // Derives the recency through behavior recency weight while computing article signals.
+  const recency = behaviorRecencyWeight(article.publishedAt);
 
   // Derives the positive score required while computing article signals.
   const positiveScore = (
@@ -188,7 +188,6 @@ function buildBehavioralArticleCommunities(articleProfiles, maxIslands = DEFAULT
   return communities
     .map(bucket => ({
       articles: bucket.articles,
-      topics: [],
       vector: weightedAverageVector(bucket.samples) || bucket.vector,
       weight: buildArticleIslandWeight(bucket.articles),
       positiveSignals: buildArticleIslandPositiveSignals(bucket.articles),

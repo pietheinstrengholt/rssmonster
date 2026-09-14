@@ -16,14 +16,14 @@ The score summarizes recent source value. It is not:
 - factual-accuracy verification;
 - crawl-health or delivery-reliability scoring;
 - a measure of how often the source publishes;
-- a personal topic-interest score;
+- a personal interest score;
 - a penalty for covering events that other publishers also cover; or
 - a reflection of whether the feed is muted.
 
 [Article quality]({% link scoring.md %}#article-quality) asks how good one particular
 article is. FeedTrust asks whether the source has produced consistently
 valuable articles across its recent history. Interest Islands and Recommended
-ranking remain responsible for personal topic relevance.
+ranking remain responsible for personal relevance.
 
 ## Recent Evidence Window
 

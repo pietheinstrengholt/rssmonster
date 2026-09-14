@@ -35,9 +35,9 @@ and future releases; it does not mean that a workflow is impossible.
 | **Self-hosted** | Yes; Docker Compose quick start and a more comprehensive deployment are documented | Yes; Docker and conventional web-server installations are documented |
 | **Chronological reading** | Always available alongside Quality, Recommended, and Top Stories ordering | Central to the reading workflow, with newest/oldest ordering and filters |
 | **Reading interface** | Responsive modes including a three-pane desktop Reader view | Responsive web interface with configurable views and themes |
-| **Feed organization** | Feeds, categories, tags, favorites, Smart Folders, Events, Topics, and Interest Islands | Feeds, categories, labels, favorites, and saved user queries |
+| **Feed organization** | Feeds, categories, tags, favorites, Smart Folders, Events and Interest Islands | Feeds, categories, labels, favorites, and saved user queries |
 | **Reusable filtered views** | Smart Folders use the same composable expressions as search, including state, date, score, and semantic filters | User queries save search and filter combinations for quick access |
-| **Related coverage** | Semantic similarity, related articles, Events, and Topics are built in when semantic processing is enabled | Semantic related-article and Event grouping are not documented as built-in features |
+| **Related coverage** | Semantic similarity, related articles, Events are built in when semantic processing is enabled | Semantic related-article and Event grouping are not documented as built-in features |
 | **Duplicates and revisions** | Deterministic identity and revision handling plus duplicate analysis are built into article processing | Comparable cross-source semantic duplicate/revision analysis is not documented as built in |
 | **Discovery and ranking** | Personalized Recommended, non-personalized Top Stories, Quality, and FeedTrust signals are inspectable | Advanced filtering and saved queries; a comparable built-in semantic ranking layer is not documented |
 | **Local semantic processing** | Optional small local models through ONNX and Transformers.js; the documented comprehensive profile uses MySQL | Not part of the documented core approach; extensions can add other forms of processing |
@@ -66,10 +66,10 @@ advantages, not omissions for RSSMonster to explain away.
 RSSMonster focuses on what happens after an article arrives. It preserves
 article identity and revisions, detects duplicate coverage, and uses semantic
 relationships to connect articles to [Events]({{ '/events.html' | relative_url }}),
-[Topics]({{ '/topics.html' | relative_url }}), and personal
+and personal
 [Interest Islands]({{ '/interest-islands.html' | relative_url }}).
 The aim is to let a reader move between one report, the other coverage of the
-same occurrence, and the longer-running subject behind it.
+same occurrence, and their personal interests.
 
 [Smart Folders]({{ '/smart-folders.html' | relative_url }}) provide deterministic,
 reusable views. [Recommended and Top Stories]({{ '/scoring.html' | relative_url }})
@@ -97,7 +97,7 @@ that feed aggregation is a lesser goal.
 
 - You subscribe to overlapping sources and want duplicate reports grouped
   without losing access to the underlying articles.
-- You want related coverage connected into Events and longer-running Topics.
+- You want related coverage connected into Events.
 - You need advanced search expressions and Smart Folders for high-volume
   reading.
 - You want optional Recommended and Top Stories views with visible ranking

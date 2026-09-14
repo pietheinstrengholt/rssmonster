@@ -6,7 +6,7 @@ import {
   getIslandsOverview,
   getOfficialSources,
   getSettings,
-  getTopicsOverview,
+  getEventsOverview,
   setIncludeDevelopingEvents,
   setMarkAsReadOnScroll,
   setPrioritizeHighTrust,
@@ -48,7 +48,7 @@ describe('settings controller branch behavior', () => {
     [setThemeMode, { body: {} }],
     [setStartupViewMode, { body: {} }],
     [getIslandsOverview, {}],
-    [getTopicsOverview, {}]
+    [getEventsOverview, {}]
   ])('rejects missing user ownership for handler %#', async (handler, request) => {
     const res = responseRecorder();
 

@@ -72,7 +72,7 @@ describe('SettingsSmartFolders coordinator', () => {
     const context = createContext();
     vi.spyOn(context.overviewStore, 'fetchTopTags').mockResolvedValue();
     context.loaded = true;
-    context.smartFolders = [{ id: 1, name: 'Science', query: 'sort:asc grouping:topic' }];
+    context.smartFolders = [{ id: 1, name: 'Science', query: 'sort:asc grouping:event' }];
     context.selectionStore.setCurrentSelection({ sort: 'recommended', grouping: 'event' });
     context.selectionStore.setSmartFolder(context.smartFolders[0]);
     const saved = { id: 9, name: 'Science', query: 'sort:quality grouping:none' };

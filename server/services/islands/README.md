@@ -1,396 +1,50 @@
-# README.md
-
 # Interest Island System
 
-This document defines how RSSMonster builds and maintains Interest Islands.
-
-```
-Article
-    ↓
-Event
-    ↓
-Topic
-    ↓
-▶ Interest Island
-```
-
-Interest Islands are the highest semantic layer in RSSMonster.
-
-They represent long-term user interests rather than the news itself.
-
-All semantic data is user-scoped. Islands specifically represent behavioral
-preference; Event and Topic membership does not by itself establish preference.
-
----
-
-# Purpose
-
-Interest Islands answer a single question:
-
-> **What does this user consistently care about?**
-
-Examples:
-
-```
-Artificial Intelligence
-
-Linux & Self-hosting
-
-Photography
-
-Climate & Sustainability
-
-Electric Vehicles
-```
-
-An Interest Island is **not**:
-
-- a news story
-- a Topic
-- a feed category
-- a semantic cluster of Articles
-
-It represents a durable area of user interest.
-
----
-
-# Design Principles
-
-Interest Islands are intentionally:
-
-- personal
-- long-lived
-- stable
-- behavior-driven
-- slowly evolving
-
-Interest Islands should survive individual reading sessions and short-term news cycles.
-
-Repeated evidence can establish durable interests. A single sufficiently strong
-behavioral article can also create an Island; its authority is attenuated below.
-
----
-
-# Sources of Evidence
-
-Interest Islands consume two complementary evidence layers.
-
-## Behavioral Articles
-
-Direct user engagement.
-
-Signals may include:
-
-- starred articles
-- clicked articles
-- deep reading
-- positive feedback
-- negative feedback
-
-These signals provide the strongest evidence of user interest.
-
----
-
-## Topics
-
-Interest Islands also consume persisted Topics.
-
-These Topics summarize recurring semantic subjects discovered earlier in the pipeline.
-
-Using Topics allows Islands to become broader and more stable than individual Articles.
-
-Topics enrich Interest Islands.
-
-They do not create them independently.
-
----
-
-# Processing Pipeline
-
-Interest Island generation follows a deterministic pipeline.
-
-```
-User Behavior
-        ↓
-Behavioral Article Profiles
-        ↓
-Candidate Islands
-        ↓
-Persist Islands
-        ↓
-Topic Enrichment
-        ↓
-Island ↔ Topic Relationships
-        ↓
-Article Interest Scores
-```
-
-Each stage builds upon the previous one.
-
-Higher stages should never redefine lower semantic layers.
-
----
-
-# Phase 1 — Behavioral Article Profiles
-
-User engagement is converted into behavioral profiles.
-
-Each profile typically contains:
-
-- engagement score
-- normalized vector
-- publication time
-- behavioral signals
-
-Profiles are temporary processing artifacts.
-
-They are not persisted.
-
----
-
-# Phase 2 — Candidate Islands
-
-Semantically similar behavioral profiles are clustered.
-
-Each cluster becomes a candidate Interest Island.
-
-Candidate Islands exist only during processing.
-
-They become durable only after persistence.
-
----
-
-# Phase 3 — Island Persistence
-
-Each candidate Island is compared against existing Islands.
-
-If a sufficiently similar Island already exists:
-
-- update the vector
-- update behavioral evidence
-- update memberships
-- update audit history
-
-Otherwise:
-
-- create a new Interest Island
-
-Existing Islands should almost always evolve rather than be recreated.
-
-When duplicate normalized island names exist:
-
-1. Compare semantic similarity.
-2. If similarity is high:
-   - treat as duplicate and update/merge/prevent creation.
-3. If similarity is low:
-   - allow both.
-   - keep the broader name for the stronger island.
-   - rename the smaller or newer island with a distinguishing keyword phrase.
-
----
-
-# Phase 4 — Topic Enrichment
-
-Once Islands exist, persisted Topics are evaluated.
-
-Topics that consistently relate to an Island become members of that Island.
-
-Typical evidence includes:
-
-- semantic similarity
-- behavioral affinity
-- user engagement
-- temporal consistency
-
-Island ↔ Topic memberships evolve gradually over time.
-
----
-
-# Phase 5 — Article Interest Scoring
-
-Finally unread Articles receive an Interest Score.
-
-Three confidence-adjusted paths compete:
+Interest Islands are the authoritative user-specific personalization representation.
+Events identify occurrences; Islands represent signed behavioral preferences.
 
 ```text
-Article → ArticleTopic → IslandTopic → Island
-Article → direct vector similarity → Island
-Article → explicit behavioral evidence without a same-sign Island
+canonical Articles + behavior → behavioral profiles → persisted Interest Islands
+candidate Article vector → direct Island comparison → interestScore → Recommended
 ```
 
-Topic and direct paths are both evaluated, retaining the strongest contribution
-per Island. Explicit fallback does not create or contaminate Island membership.
-See [Confidence-aware interest](#confidence-aware-interest) for the shared evaluator.
+## Services and persistence
 
----
+`islandArticleProfiles.js` builds bounded communities from favorites, clicks,
+attention and explicit positive/negative feedback. `islandPersistence.js` matches
+profiles to existing Islands, blends vectors, replaces signal snapshots, and
+records bounded source-article audits. `runIslandCalibration.js` orchestrates
+profile creation, persistence and scoring. Normal crawl processing scores new
+articles against existing Islands; it does not recalibrate behavioral memory.
 
-# Membership Evolution
+An Island stores its vector, signed weight, signal snapshot, display labels,
+archive state and population audit. There is no persisted candidate-Article
+membership table. Audit history explains formation; it is not new evidence.
+Names use the nearest taxonomy label or the profile's source-article label.
+Duplicate names are disambiguated using semantic and source-article evidence.
 
-Interest Island memberships should evolve slowly.
+Unmatched stale Islands can be archived after 45 days when current behavioral
+support confidence is below .12. Matching behavioral profiles may reactivate
+archived Islands. Archival retains the record and its audit history.
 
-Prefer:
+`islandArticleMatches.js` implements structural `island:true/false` filtering and
+Settings coverage using direct vectors. Affinity does not require a nonzero or
+positive preference, or an Event. Ownership, canonical and visibility filters
+apply before comparisons; article vectors are loaded in ID-ordered batches of
+200. All eligible batches are scanned so count, ranking and pagination apply to
+the matched set. Settings fetches display metadata per batch, not per Island.
 
-- confidence blending
-- gradual decay
-- incremental updates
+## Boundaries
 
-Avoid:
-
-- replacing memberships
-- rebuilding Islands every run
-- abrupt changes
-
-Small behavioral changes should not significantly alter long-term interests.
-
----
-
-# Population Audit
-
-Every Interest Island maintains a compact audit history.
-
-Typical information includes:
-
-- contributing Topics
-- contributing Articles
-- behavioral evidence
-- population metrics
-
-The audit exists solely for explainability.
-
-It should never become semantic evidence itself.
-
-The system should be able to answer questions such as:
-
-- Why does this Interest Island exist?
-- Which Topics contributed?
-- Which Articles strengthened it?
-
----
-
-# Interest Scores
-
-Interest Scores represent how strongly an Article aligns with a user's long-term interests.
-
-Interest Scores are derived.
-
-They should never become semantic evidence themselves.
-
-They are intended for:
-
-- ranking
-- Smart Folders
-- recommendations
-- personalized discovery
-
----
-
-# Source of Truth
-
-Island relationships are stored in relationship tables.
-
-```
-IslandTopic
-```
-
-is the durable relationship between Islands and Topics.
-
-Relationship tables remain the source of truth.
-
-Derived scores, audits and statistics should never replace them.
-
----
-
-# Architectural Boundaries
-
-Interest Islands consume semantic knowledge.
-
-They do **not**:
-
-- group news Articles into Events
-- create Events
-- create Topics
-- redefine semantic relationships
-
-Events determine:
-
-- what happened
-
-Topics determine:
-
-- what recurring subject it belongs to
-
-Interest Islands determine:
-
-- what consistently interests this user
-
-These responsibilities should remain clearly separated.
-
----
-
-# Explainability
-
-Every Interest Island decision should be explainable.
-
-The system should be able to answer:
-
-- Why was this Topic added to this Island?
-- Why did this Island evolve?
-- Why did this Article receive a high Interest Score?
-- Why does this Island represent this user's interests?
-
-Explainability is a core architectural goal.
-
----
-
-# Coding Principles
-
-- Keep Island algorithms inside semantic services.
-- Consume existing semantic layers rather than rebuilding them.
-- Compare complete Topic-path confidence with direct-vector confidence.
-- Reuse shared vector helpers.
-- Blend vectors gradually.
-- Preserve deterministic processing.
-- Keep thresholds configurable.
-- Preserve concise debug logging.
-
----
-
-# Common Regression Traps
-
-Avoid introducing changes that:
-
-- give singleton Islands maximum confidence
-- recreate Islands every processing run
-- replace memberships instead of blending them
-- use audit history as semantic evidence
-- ignore IslandTopic relationship confidence
-- ignore Topic enrichment
-- force matches to improve personalization coverage
-- make incremental processing behave differently from rebuilds
-- Lower layers never depend on higher layers
-- Higher layers consume lower layers
-- No semantic layer may redefine the responsibility of another layer
-- Incremental processing and rebuilds should converge to the same semantic state
-
----
-
-# Definition of Done
-
-An Interest Island change is complete when:
-
-1. Islands represent durable user interests.
-2. Island creation requires sufficient behavioral evidence.
-3. Existing Islands evolve gradually rather than being recreated.
-4. Topic enrichment strengthens Island semantics.
-5. Article Interest Scores remain stable and explainable.
-6. Relationship tables remain the source of truth.
-7. Incremental processing and rebuilds converge toward the same semantic state.
-8. Relevant tests and the [semantic trace](../../tests/semantic/README.md) pass without weakening expectations.
+No arbitrary news clustering creates behavioral preferences. Capacity cannot
+force unrelated evidence into an Island. Generated labels are presentation only.
+All sources and candidates belong to the same user. Changes to formation or
+scoring require the frozen before/after workflow in the semantic test README.
 
 ## Formation and replay safety
 
 Community capacity never authorizes a below-threshold membership. Behavioral
-Articles and Topic profiles may remain unassigned when no community qualifies
+Articles may remain unassigned when no community qualifies
 and the creation limit is reached. All similarity/affinity thresholds are retained.
 Article profile arrays expose a transient `summary` with eligible, assigned and
 unassigned behavioral profile counts.
@@ -402,7 +56,7 @@ current article behavior remain reflected in the next snapshot. Audit history
 continues to record calibration runs and is not used as ranking evidence.
 
 Recommended coverage is separate from interest coverage. The caller must supply
-an authorized, visible article eligible for the requested view. No Event, Topic,
+an authorized, visible article eligible for the requested view. No Event,
 Island, embedding, or nonzero interest is required by Recommended calculation.
 Missing interest means zero; missing Event means zero corroboration. Existing
 quality defaults remain 70 for unavailable article quality components and 0.5 for
@@ -454,14 +108,11 @@ Direct matches retain the configured `ISLAND_ARTICLE_SCORE_THRESHOLD` (default .
 ```
 directRelationship = finite(similarity) && similarity > threshold && threshold < 1
   ? clamp((similarity-threshold)/(1-threshold)) : 0
-topicRelationship = clamp(ArticleTopic.confidence)
-                  * clamp(IslandTopic.confidence) * clamp(IslandTopic.similarity)
 islandContribution = preferenceStrength * islandConfidence * relationshipConfidence
 ```
 
-ArticleTopic has no separate similarity field. Missing relationship confidence is
-zero. A missing Article vector does not prevent a trustworthy Topic path. Missing
-all paths is exactly neutral interest and never prevents Recommended calculation.
+A missing or invalid Article vector produces no semantic match. Missing all paths
+means neutral interest and never prevents Recommended calculation.
 
 Explicit likes/favorites and dislikes can outlive community capacity via a bounded
 direct evidence fallback. Per sign, at most 100 canonical/unfiltered explicit
@@ -484,7 +135,7 @@ penalties. Positive fallback follows the same small evidence path only when no
 positive Island represents the explicit preference, so capacity does not erase
 likes/favorites either.
 
-For each Island take the path with largest absolute contribution (direct or Topic).
+Each Island contributes through the direct Article-to-Island comparison.
 Across distinct Islands and behavioral profiles, retain only the strongest positive
 and strongest negative contribution; add these two and clamp to [-1,1], rounding
 the persisted interest score to four decimals. This conservative max-per-sign
@@ -544,16 +195,9 @@ Persistence uses `ISLAND_PROFILE_MATCH_THRESHOLD` (.78) to reuse an Island and
 `ISLAND_VECTOR_ALPHA` (.35) to blend its vector. Thresholds are not relaxed when
 capacity is exhausted.
 
-IslandTopic persists both similarity and confidence. Initial profile links use
-`clamp(abs(topic.strength) * similarity)`. Topic enrichment additionally uses
-`similarity * clamp(abs(topic.strength) + min(evidenceCount, 5) * .04, .25, 1)`;
-its similarity/confidence gates and existing membership blending/decay still apply.
-Weak links cannot transmit full preference through the scoring formula above.
-
 | Value | Storage and use |
 | --- | --- |
 | Island vector, weight, signal snapshot | Persisted calibration state; weight supplies signed preference. |
-| IslandTopic similarity/confidence | Persisted relationship evidence; used in Topic scoring paths. |
 | Bounded population audit | Persisted explanation history; never ranking evidence. |
 | Member count, distinct behavioral articles/sources/publication days, median/minimum similarity, positive/negative article counts | Derived from current bounded support; numerical inputs to Island confidence. |
 | Singleton, weak support (<3 articles), low cohesion (median below formation threshold), mixed sign, no current support, strong/coherent | Derived diagnostic classifications; never deletion rules or separate score terms. Strong/coherent requires ≥3 measured members, all above threshold, without mixed signs. |
@@ -564,7 +208,7 @@ Weak links cannot transmit full preference through the scoring formula above.
 Scoring updates canonical, unfiltered, unread Articles (optionally restricted by
 creation time) in batches of 200. This update scope is separate from runtime
 Recommended eligibility. An authorized eligible Article needs no vector, Event,
-Topic or Island to receive Recommended; unmatched interest is zero. See the
+or Island to receive Recommended; unmatched interest is zero. See the
 [authoritative final scoring formula](../../../docs/scoring.md) for weights and
 optional input defaults.
 
@@ -573,8 +217,7 @@ optional input defaults.
 The [semantic reports](../../tests/semantic/README.md) expose Island preference,
 confidence, source/day breadth, member similarity, signs and classifications.
 Selected article paths include match type, semantic similarity, relationship
-confidence and signed contribution. Topic paths additionally include ArticleTopic
-and IslandTopic confidence. Explicit fallback includes source article ID, explicit
+confidence and signed contribution. Explicit fallback includes source article ID, explicit
 sign, recency, source/target intent, compatibility and intent-match type. Seed/self
 and held-out totals are distinct; self-similarity is not generalization evidence.
 These confidence diagnostics are report data, not a promise that every field is

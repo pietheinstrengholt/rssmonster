@@ -9,7 +9,7 @@ import {
   markNotInterested
 } from '../src/api/articles.js';
 import { fetchEventArticles } from '../src/api/events.js';
-import { fetchTopicArticles } from '../src/api/topics.js';
+
 import { articleActionMethods } from '../src/components/articles/helpers/articleActions.js';
 import {
   createArticleExpansionState,
@@ -43,10 +43,6 @@ vi.mock('../src/api/events.js', () => ({
 
 vi.mock('../src/api/feeds.js', () => ({
   muteFeed: vi.fn()
-}));
-
-vi.mock('../src/api/topics.js', () => ({
-  fetchTopicArticles: vi.fn()
 }));
 
 // Creates swipe state with the component methods bound as Vue would expose them.
@@ -194,17 +190,16 @@ describe('Article mobile swipe behavior', () => {
 });
 
 describe('Article related-article expansion', () => {
-  it('uses the topic endpoint and emits server-ordered related articles', async () => {
-    fetchTopicArticles.mockResolvedValue({
+  it('uses the event endpoint and emits server-ordered related articles', async () => {
+    fetchEventArticles.mockResolvedValue({
       data: { articles: [{ id: 43 }, { id: 44 }] }
     });
-    const context = createExpansionContext('topic');
+    const context = createExpansionContext('event');
 
     articleExpansionMethods.viewEventArticles.call(context, 9);
     await flushPromises();
 
-    expect(fetchTopicArticles).toHaveBeenCalledWith(9, 42);
-    expect(fetchEventArticles).not.toHaveBeenCalled();
+    expect(fetchEventArticles).toHaveBeenCalledWith(9, 42);
     expect(context.$emit).toHaveBeenCalledWith('event-articles-loaded', {
       articleId: 42,
       eventId: 9,

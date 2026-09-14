@@ -1,3 +1,4 @@
+import { collectArticleIslandMatches } from '../islands/islandArticleMatches.js';
 // Coordinates article search across query parsing, settings thresholds, tag/feed lookups, and sorting.
 // The service returns article ids while keeping database filtering and in-memory ranking behind helper modules.
 import db from '../../models/index.js';
@@ -394,7 +395,6 @@ export const searchArticles = async ({
       status,
       hasSearchIntent,
       event,
-      islandFilter,
       developingFilter,
       briefingFilter,
       briefingMinDistinctSources,
@@ -408,6 +408,12 @@ export const searchArticles = async ({
       authorFilter,
       languageFilter
     });
+
+    if (islandFilter !== null) {
+      const islandArticleIds = await collectArticleIslandMatches(userId, { where: articleQuery.where });
+      articleQuery.where[Op.and] ??= [];
+      articleQuery.where[Op.and].push({ id: { [islandFilter ? Op.in : Op.notIn]: islandArticleIds } });
+    }
 
     debugLog(`\x1b[36mQuery attributes: ${articleQuery.attributes.join(", ")} (smartFolder: ${smartFolderSearch})\x1b[0m`);
     // Handles the case where first seen age filter is available.
@@ -620,7 +626,7 @@ export const searchArticles = async ({
       ...articleQuery,
       ...(executionLimit ? { limit: executionLimit } : {})
     });
-    
+
     debugLog(`\x1b[33mFetched ${articles.length} articles from database (before in-memory filters)\x1b[0m`);
 
     // Delegate all in-memory sorting and filtering to sortArticles
@@ -649,7 +655,7 @@ export const searchArticles = async ({
     let itemIds;
     // Maps source values into the result produced while performing search articles.
     itemIds = articles.map(article => article.id);
-    
+
     // Applies the expression, saved-view, or trusted internal result ceiling.
     if (resultLimit && itemIds.length > resultLimit) {
       itemIds = itemIds.slice(0, resultLimit);
@@ -664,7 +670,7 @@ export const searchArticles = async ({
         debugLog(`\x1b[31mLimited results to 500 articles due to search expression usage\x1b[0m`);
       }
     }
-    
+
     debugLog(`\x1b[31mFound ${itemIds.length} articles matching query for user ${userId}\x1b[0m`);
 
     // Returns early when count only is available.

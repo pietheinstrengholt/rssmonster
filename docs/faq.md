@@ -69,8 +69,8 @@ controls to compare coverage. See [Events]({% link events.md %}).
 ## What is a cluster, exactly?
 
 Older descriptions use “cluster” loosely. RSSMonster distinguishes duplicates,
-Events, Topics, and Interest Islands. An event describes a specific occurrence,
-a topic connects broader themes, and an island represents personal interests.
+Events and Interest Islands. An event describes a specific occurrence,
+and an Island represents personal interests.
 See [Concepts]({% link concepts.md %}) for examples and read-state implications.
 
 ---
@@ -114,7 +114,7 @@ It is based on:
 - Originality based on actual duplicate links
 - Explicit negative feedback
 
-It is not factual verification, crawl health, topic interest, or a reward for
+It is not factual verification, crawl health, personal interest, or a reward for
 publishing frequently. Trust improves ranking reliability but never fully hides
 content.
 

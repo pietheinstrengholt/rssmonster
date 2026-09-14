@@ -42,16 +42,14 @@ describe('confidence-aware held-out personalization', () => {
       { case: 'held-out durable', score: durableResult.score, confidence: durable.islands[0].islandConfidence }]);
   });
 
-  it('uses both Topic confidences and similarity; weak links cannot transmit full strength', () => {
+  it('attenuates direct affinity independently of preference and Island confidence', () => {
     const ctx = context([1, 2, 3, 4, 5].map(id => seed(id)));
-    const score = (ac, ic, sim = 1) => evaluateArticleInterest({ id: 99 }, ctx,
-      [{ topicId: 1, confidence: ac }], [{ islandId: 1, topicId: 1, confidence: ic, similarity: sim }]).score;
-    expect(score(1, 1)).toBeCloseTo(0.8);
-    expect(score(1, 0.2)).toBeCloseTo(0.16);
-    expect(score(0.2, 1)).toBeCloseTo(0.16);
-    expect(score(0.2, 0.2)).toBeCloseTo(0.032);
-    expect(score(1, 0.38, 0.38)).toBeLessThan(0.12);
-    expect(score(0, 1)).toBe(0);
+    const score = sim => evaluateArticleInterest({ id: 99, articleVector: [sim, Math.sqrt(1 - sim ** 2), 0] }, ctx).score;
+    expect(score(1)).toBeCloseTo(0.8);
+    expect(score(0.81)).toBeCloseTo(0.4);
+    expect(score(0.658)).toBeCloseTo(0.08);
+    expect(score(0.62)).toBe(0);
+    expect(evaluateArticleInterest({ id: 99 }, ctx).score).toBe(0);
   });
 
   it('normalizes the trusted direct range and does not double-count paths or repeated evidence', () => {
@@ -60,10 +58,7 @@ describe('confidence-aware held-out personalization', () => {
     expect(evaluateArticleInterest(atThreshold, ctx).score).toBe(0);
     expect(evaluateArticleInterest({ id: 99, articleVector: [0, 1, 0] }, ctx).score).toBe(0);
     const direct = evaluateArticleInterest(held, ctx);
-    const combined = evaluateArticleInterest(held, ctx, [{ topicId: 1, confidence: 0.1 }],
-      [{ islandId: 1, topicId: 1, confidence: 0.1, similarity: 1 }]);
-    expect(combined.score).toBe(direct.score);
-    expect(combined.paths).toHaveLength(1);
+    expect(direct.paths).toHaveLength(1);
     const duplicated = { ...ctx, islands: [...ctx.islands, { ...ctx.islands[0], id: 2 }] };
     expect(evaluateArticleInterest(held, duplicated).score).toBe(direct.score);
     const negative = { ...seed(12), negativeInd: 1, favoriteInd: 0 };

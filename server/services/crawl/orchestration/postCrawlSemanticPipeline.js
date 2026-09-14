@@ -128,7 +128,6 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
       processingContext,
       () => runIncrementalEventsForUser(userId, {
         createdAtFrom: result?.crawlStartedAt || null,
-        skipTopicAssignment: false,
         processingContext
       })
     );
@@ -149,19 +148,6 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
       );
     }
 
-    // Tracks topic stats for the processing summary.
-    const topicStats = eventResult.topicAssignment?.stats || {};
-    if (Number(eventResult.topicAssignment?.eventCount || 0) > 0) {
-      console.log(
-        `[TOPICS] events=${eventResult.topicAssignment.eventCount || 0} ` +
-        `matched=${topicStats.eventsMatched || 0} ` +
-        `created=${topicStats.newTopicsCreated || 0} ` +
-        `unmatched=${topicStats.eventsUnmatched || 0} ` +
-        `user=${userId} ` +
-        `duration=${formatDuration(eventResult.durations?.topicsMs || 0)}`
-      );
-    }
-
     // Derives the scoring result through score articles from islands for user while performing run post crawl semantic pipeline.
     const scoringStartedAt = Date.now();
     const scoringResult = await runSemanticStage(
@@ -175,7 +161,6 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
     if (Number(eventResult.articleCount || 0) > 0 || Number(scoringResult.updatedCount || 0) > 0) {
       console.log(
         `[ISLANDS] interestScoresUpdated=${scoringResult.updatedCount || 0} ` +
-        `topicScored=${scoringResult.topicScoredCount || 0} ` +
         `fallbackScored=${scoringResult.fallbackScoredCount || 0} ` +
         `user=${userId} ` +
         `duration=${formatDuration(Date.now() - scoringStartedAt)}`

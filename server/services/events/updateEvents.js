@@ -1,7 +1,7 @@
 import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } from './eventDecisionDiagnostics.js';
 // services/events/updateEvents.js
 // This service updates an existing event when a new article joins it.
-// It preserves the stable representative while refreshing event metadata and topic links.
+// It preserves the stable representative while refreshing event metadata.
 import db from '../../models/index.js';
 import { EVENT_LIFECYCLE, MAX_CANDIDATES } from '../config/semanticConfig.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
@@ -54,7 +54,7 @@ function resolveEventStatus(articleCount, lastSeenAt) {
   return 'active';
 }
 
-// This function attaches an article to an existing event and refreshes event/topic denormalization.
+// This function attaches an article to an existing event and refreshes event metadata.
 export async function assignArticleToExistingEvent({
   article,
   articleEventVector: _articleEventVector,
@@ -62,8 +62,6 @@ export async function assignArticleToExistingEvent({
   cache,
   bestScore: _bestScore,
   matchSignal: _matchSignal,
-  skipTopicAssignment = false,
-  assignTopicsForEvent = null,
   transaction = null
 }) {
   // Returns early when transaction is unavailable.
@@ -76,8 +74,6 @@ export async function assignArticleToExistingEvent({
       cache,
       bestScore: _bestScore,
       matchSignal: _matchSignal,
-      skipTopicAssignment,
-      assignTopicsForEvent,
       transaction: managedTransaction
     }));
   }
@@ -195,27 +191,8 @@ export async function assignArticleToExistingEvent({
     transaction
   });
 
-  let eventPrimaryTopicId = lockedEvent.topicId;
-
-  // Handles the case where skip topic assignment is unavailable and assign topics for event is function.
-  if (!skipTopicAssignment && typeof assignTopicsForEvent === 'function') {
-    lockedEvent.set({
-      developingArticleId,
-      ...projection,
-      status
-    });
-    eventPrimaryTopicId = await assignTopicsForEvent({
-      event: lockedEvent,
-      eventTopicVector: projection.eventVector,
-      transaction
-    });
-
-    article.topicId = eventPrimaryTopicId;
-  }
-
   // Builds the event updates assembled while assigning article to existing event.
   const eventUpdates = {
-    topicId: eventPrimaryTopicId,
     developingArticleId,
     ...projection,
     status

@@ -174,7 +174,7 @@ export const articleFeedVisibilityMethods = {
     this.pendingSeenArticleIds.add(articleId);
 
     // Automatic viewport callbacks can arrive in one observer batch. Persist them in order so
-    // grouped event/topic updates cannot contend with each other for the same article rows.
+    // grouped event updates cannot contend with each other for the same article rows.
     const persist = async () => {
       while (attempt < MAX_SEEN_PERSISTENCE_ATTEMPTS) {
         attempt += 1;

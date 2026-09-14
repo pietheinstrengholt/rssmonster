@@ -55,7 +55,7 @@ The tags section shows up to five of the most frequent tags in the active articl
 
 Selecting a tag scopes articles across all categories and feeds. Selecting the active tag again clears that tag selection.
 
-Each tag count represents matching canonical articles in the active Daily Briefing, Unread, Read, Favorites, Hot, or Clicked collection. Event and topic grouping may collapse those articles visually, but does not change the article count. Switching status requests a new ranked tag snapshot, and tags without matches in that status do not appear. Daily Briefing tag membership follows its saved period, unread-only, score-threshold, source-diversity, interest-match, and developing-event preferences.
+Each tag count represents matching canonical articles in the active Daily Briefing, Unread, Read, Favorites, Hot, or Clicked collection. Event grouping may collapse those articles visually, but does not change the article count. Switching status requests a new ranked tag snapshot, and tags without matches in that status do not appear. Daily Briefing tag membership follows its saved period, unread-only, score-threshold, source-diversity, interest-match, and developing-event preferences.
 
 Tag counts are fetched snapshots. They do not change merely because the user scrolls or opens articles; they change when tag data is explicitly fetched again.
 

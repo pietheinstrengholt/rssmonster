@@ -30,7 +30,7 @@ This table reflects current official documentation as of **2 September 2026**.
 | **Interface** | Responsive modes including a three-pane desktop Reader view | Four layouts, light/dark themes, responsive design, and extensive keyboard shortcuts |
 | **Feed workflow** | Categories, tags, favorites, search, Smart Folders, and chronological views | Feed/category tree, unread state, stars, and rules that mark matching articles read |
 | **Customization** | Application settings and query-driven views | Custom CSS and JavaScript plus extensive server configuration |
-| **Story organization** | Related articles, duplicates/revisions, Events, Topics, and Interest Islands | Traditional feed/category organization; comparable semantic story grouping is not documented |
+| **Story organization** | Related articles, duplicates/revisions, Events and Interest Islands | Traditional feed/category organization; comparable semantic story grouping is not documented |
 | **Ranking** | Optional Quality, Recommended, and Top Stories modes with inspectable signals | Conventional feed ordering; user rules automate read state rather than semantic ranking |
 | **Databases** | SQLite or MySQL | Embedded H2, PostgreSQL, MySQL, or MariaDB |
 | **Distribution** | Container images | Container images plus native executables and JVM packages for supported database targets |
@@ -60,8 +60,7 @@ who want a familiar workflow adjusted to their own screen and habits.
 RSSMonster begins with the same feeds and chronological article stream, then
 adds structure across sources. Deterministic identity and revision handling
 comes before duplicate detection. Semantic relationships can group reports into
-[Events]({{ '/events.html' | relative_url }}), connect them through
-[Topics]({{ '/topics.html' | relative_url }}), and relate them to personal
+[Events]({{ '/events.html' | relative_url }}); behavioral evidence forms personal
 [Interest Islands]({{ '/interest-islands.html' | relative_url }}).
 
 [Smart Folders]({{ '/smart-folders.html' | relative_url }}) provide reusable,
@@ -81,7 +80,7 @@ Feeds -> categories -> articles -> unread / read / starred
 RSSMonster can preserve that path or continue into another layer:
 
 ```text
-Feeds -> Articles -> duplicates / related coverage -> Events -> Topics
+Feeds -> Articles -> duplicates / related coverage -> Events
                   \-> Smart Folders / Recommended / Top Stories
 ```
 
@@ -103,7 +102,7 @@ organization materially reduces overload.
 ## Choose RSSMonster if...
 
 - Duplicate and revised coverage across sources is a recurring problem.
-- You want related articles grouped into Events and Topics.
+- You want related articles grouped into Events.
 - Smart Folders and advanced filtering should shape reusable reading views.
 - You want optional Recommended and Top Stories ranking with visible signals.
 - Interest modeling and small local semantic models justify additional

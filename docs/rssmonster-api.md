@@ -178,7 +178,6 @@ for all expressions, including expressions shared with Smart Folders.
 | `GET` | `/api/smartfolders/counts` | Get Smart Folder article counts |
 | `GET` | `/api/smartfolders/insights` | Get Smart Folder insights |
 | `POST` | `/api/events/articles` | Get articles associated with an event |
-| `POST` | `/api/topics/articles` | Get articles associated with a topic |
 | `GET` | `/api/briefing/preferences` | Get briefing preferences |
 | `PUT` | `/api/briefing/preferences` | Update briefing preferences |
 
@@ -247,7 +246,7 @@ Maintenance routes can be expensive and should not be polled unnecessarily.
 | `DELETE` | `/api/setting/observability` | Clear the current user's recorded processing failures |
 | `POST` | `/api/setting/islands/recalculate` | Recalculate the current user's interest islands |
 | `GET` | `/api/setting/islands` | Get Interest Island insights |
-| `GET` | `/api/setting/topics` | Get topic insights |
+| `GET` | `/api/setting/events` | Get Event insights |
 | `GET`, `POST` | `/api/setting/official-sources` | Get or update official-source settings |
 | `PATCH` | `/api/setting/developing-events` | Update developing-event settings |
 | `PATCH` | `/api/setting/theme` | Update the theme |

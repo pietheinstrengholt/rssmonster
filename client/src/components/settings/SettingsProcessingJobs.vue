@@ -651,8 +651,8 @@ const JOB_TYPE_LABELS = Object.freeze({
 const AI_FEATURES = Object.freeze([
   { key: 'assistant', capabilities: ['assistant'], label: 'Conversation + MCP', description: 'Agentic chat and MCP tools.' },
   { key: 'classification', capabilities: ['classification', 'generation'], label: 'Article analysis', description: 'Generated tags, summaries, and quality scores.' },
-  { key: 'embeddings', capabilities: ['embeddings'], label: 'Embeddings', description: 'Article recommendations and event, topic, and island generation.' },
-  { key: 'semanticLabeling', capabilities: ['generation'], label: 'Semantic labeling', description: 'Generated labels for events, topics, and islands.' }
+  { key: 'embeddings', capabilities: ['embeddings'], label: 'Embeddings', description: 'Article recommendations and event and island generation.' },
+  { key: 'semanticLabeling', capabilities: ['generation'], label: 'Semantic labeling', description: 'Generated labels for events and islands.' }
 ]);
 const HEALTH_PRESENTATION = Object.freeze({
   disabled: {

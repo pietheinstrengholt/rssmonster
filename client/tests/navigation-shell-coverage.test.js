@@ -289,13 +289,13 @@ describe('mobile toolbar interactions', () => {
     await wrapper.get('.mobile-settings-button').trigger('click');
     expect(wrapper.vm.getCategoryCount({ unreadCount: 4 })).toBe(4);
     wrapper.vm.setGrouping('none');
-    wrapper.vm.setGrouping('topic');
+    wrapper.vm.setGrouping('event');
     window.dispatchEvent(new Event('rssmonster:focus-search'));
     await wrapper.vm.$nextTick();
 
     expect(wrapper.emitted('mobile')).toEqual([['mobile']]);
     expect(store.selectionStore.setGrouping).toHaveBeenCalledOnce();
-    expect(store.selectionStore.setGrouping).toHaveBeenCalledWith('topic');
+    expect(store.selectionStore.setGrouping).toHaveBeenCalledWith('event');
     expect(wrapper.find('.mobile-search-panel').exists()).toBe(true);
     expect(wrapper.vm.getStatusCount()).toBe(12);
     expect(wrapper.vm.getCategoryCount({})).toBe(0);

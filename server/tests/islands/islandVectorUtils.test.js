@@ -6,9 +6,8 @@ import {
   mergePositiveSignals,
   normalizePositiveSignals,
   resolveTaxonomyDisplayName,
-  resolveTopicFallbackLabel,
   sortIslandsByWeight,
-  topicRecencyWeight
+  behaviorRecencyWeight
 } from '../../services/islands/islandVectorUtils.js';
 
 describe('island vector utilities', () => {
@@ -33,9 +32,9 @@ describe('island vector utilities', () => {
   });
 
   it('keeps recency weights bounded and treats missing dates as current evidence', () => {
-    expect(topicRecencyWeight(null)).toBe(1);
-    expect(topicRecencyWeight(new Date(Date.now() + 86_400_000))).toBe(1);
-    expect(topicRecencyWeight(new Date('2000-01-01T00:00:00.000Z'))).toBeGreaterThanOrEqual(0.2);
+    expect(behaviorRecencyWeight(null)).toBe(1);
+    expect(behaviorRecencyWeight(new Date(Date.now() + 86_400_000))).toBe(1);
+    expect(behaviorRecencyWeight(new Date('2000-01-01T00:00:00.000Z'))).toBeGreaterThanOrEqual(0.2);
   });
 
   it('normalizes, adds, and merges positive signal counters', () => {
@@ -56,7 +55,7 @@ describe('island vector utilities', () => {
     });
   });
 
-  it('detects stale islands and resolves taxonomy and topic labels', () => {
+  it('detects stale islands and resolves taxonomy labels', () => {
     expect(isStaleIsland({})).toBe(true);
     expect(isStaleIsland({ updatedAt: new Date() })).toBe(false);
     expect(resolveTaxonomyDisplayName([], [{ displayName: 'AI', vector: [1, 0] }])).toBeNull();
@@ -64,11 +63,5 @@ describe('island vector utilities', () => {
       { displayName: 'Climate', vector: [0, 1] },
       { displayName: 'AI', vector: [1, 0] }
     ])).toBe('AI');
-    expect(resolveTopicFallbackLabel({ topics: [] })).toBeNull();
-    expect(resolveTopicFallbackLabel({ topics: [{ topicId: 1, name: 'AI', strength: 0.8 }] })).toBe('AI');
-    expect(resolveTopicFallbackLabel({ topics: [
-      { topicId: 2, name: 'Linux', strength: 0.4 },
-      { topicId: 1, name: 'AI', strength: 0.8 }
-    ] })).toBe('AI / Linux');
   });
 });

@@ -92,7 +92,7 @@ export function normalizedRelationship(sim, threshold) {
 }
 
 // One path per Island; strongest positive and strongest negative survive without correlated summation.
-export function evaluateArticleInterest(article, context, articleTopics = [], islandTopics = [], threshold = 0.62) {
+export function evaluateArticleInterest(article, context, threshold = 0.62) {
   const paths = [];
   for (const island of context.islands) {
     const sim = similarity(article.articleVector, island.islandVector);
@@ -101,16 +101,6 @@ export function evaluateArticleInterest(article, context, articleTopics = [], is
       singleton: island.diagnostics.singleton, seedSelf: island.seedArticleIds.includes(article.id) };
     const candidates = [];
     if (direct > 0) candidates.push({ ...base, matchType: 'vector-fallback', semanticSimilarity: sim, relationshipConfidence: direct });
-    for (const at of articleTopics) {
-      for (const it of islandTopics.filter(row => String(row.islandId) === String(island.id) && row.topicId === at.topicId)) {
-        const ac = clamp(Number(at.confidence || 0));
-        const ic = clamp(Number(it.confidence || 0));
-        const is = clamp(Number(it.similarity || 0));
-        const relationshipConfidence = ac * ic * is;
-        if (relationshipConfidence > 0) candidates.push({ ...base, matchType: 'topic-island', topicId: at.topicId,
-          articleTopicConfidence: ac, islandTopicConfidence: ic, semanticSimilarity: is, relationshipConfidence });
-      }
-    }
     for (const path of candidates) path.contribution = path.preferenceStrength * path.islandConfidence * path.relationshipConfidence;
     candidates.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution) || a.matchType.localeCompare(b.matchType));
     if (candidates[0]?.contribution) paths.push(candidates[0]);

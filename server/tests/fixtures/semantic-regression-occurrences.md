@@ -13,8 +13,7 @@ Both batches use frozen Qwen vectors (1024 dimensions). The focused occurrence
 view derives vectors from the batch caches; no standalone occurrence cache is
 required. `loadIncrementalFixture({ occurrences: true })` selects this view. Each
 scenario has its own test user, preventing comparisons between vector models or
-unrelated scenario data. No Topic identity is required: separate occurrences may
-share a Topic, but these tests exercise Event assignment only.
+unrelated scenario data. These tests exercise Event assignment independently of personal-interest affinity.
 
 The test freezes **Date only**, advancing to each wave's publication time; real
 I/O timers keep running. It inserts unchanged publication times using the

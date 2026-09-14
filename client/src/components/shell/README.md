@@ -87,7 +87,7 @@ Both toolbar variants control the same article-selection dimensions:
 
 - **Status** chooses Daily briefing, Unread, Favorites, Hot, Clicked, or Read.
 - **Sort** chooses Oldest or Newest, with additional AI ordering when available.
-- **Grouping** chooses ungrouped articles, event clusters, or topic clusters when AI is available.
+- **Grouping** chooses ungrouped articles or Event clusters when AI is available.
 - **Search** updates the shared article query.
 
 Selecting a different status changes the active collection. Selecting the already active status with no smart folder selected requests a full reload instead of performing a no-op. Selecting that same status while a smart folder is active exits the smart-folder context.
@@ -120,7 +120,7 @@ Desktop presents separate dropdowns for:
 - **View:** Reader, Expanded, Summarized, Summary Bullets when AI is enabled, and Headlines.
 - **Show:** Daily briefing when AI is enabled, Unread, Favorite, Hot, Clicked, and Read.
 - **Sort:** Newest and Oldest, plus Top Stories, Recommended, and Quality when AI is enabled.
-- **Grouping:** None, Events, and Topics when AI is enabled.
+- **Grouping:** None, Events when AI is enabled.
 
 Each dropdown shows its active value directly in the toolbar and marks the selected option in its menu. Grouping is omitted entirely when AI is unavailable rather than showing nonfunctional choices.
 

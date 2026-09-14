@@ -55,7 +55,7 @@ const processArticleRevision = async ({
   const { articleData, actionArticle, hotlinkUrls } = candidate;
 
   // Publisher revisions preserve creation-time semantic state by design.
-  // Vector, cluster, event, topic, island, and representative state are rebuilt only explicitly.
+  // Vector, cluster, event, island, and representative state are rebuilt only explicitly.
   const { changes } = updatePlan;
   // Builds the duplicate cache article state while processing article revision.
   const previousArticleState = buildDuplicateCacheArticleState(updatePlan.article);

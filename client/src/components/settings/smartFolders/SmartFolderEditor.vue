@@ -299,7 +299,6 @@
                     <select v-model="draftConfig.grouping" class="app-form-select" :disabled="draftConfig.events.isDeveloping">
                         <option value="none">All articles</option>
                         <option value="event">Events</option>
-                        <option value="topic">Topics</option>
                     </select>
                 </label>
 

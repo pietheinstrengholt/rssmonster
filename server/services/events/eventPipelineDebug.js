@@ -92,7 +92,7 @@ export async function logEventProcessingSummary(userId, articles, runContext) {
   // Coerces the new events created into the representation required while performing log event processing summary.
   const newEventsCreated = Number(runContext.stats.newEventsCreatedCount || 0);
   // Derives the skipped event vector required while performing log event processing summary.
-  const skippedEventVector = Number(runContext.stats.topicOnlyNoVectorCount || 0) +
+  const skippedEventVector = Number(runContext.stats.eventlessNoVectorCount || 0) +
     Number(runContext.stats.eventVectorSkippedCount || 0);
   // Derives the left standalone through max while performing log event processing summary.
   const leftStandalone = Math.max(totalArticles - totalAssignedToEvents - skippedEventVector, 0);

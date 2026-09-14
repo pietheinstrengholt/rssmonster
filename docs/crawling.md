@@ -16,7 +16,7 @@ articles into the semantic processing pipeline. A normal crawl iteration:
 4. resolves article identity and revisions before duplicate detection;
 5. normalizes and sanitizes content, applies rules, and persists articles;
 6. records the feed outcome and calculates its next fetch time; and
-7. embeds touched articles, updates Events and Topics, and refreshes Interest
+7. embeds touched articles, updates Events, and refreshes Interest
    Island scores for affected users.
 
 Repeated runs are expected. Stable publisher IDs, normalized URLs, duplicate
@@ -262,7 +262,7 @@ noisier and should normally remain disabled.
 
 ## Durable Optional Processing Queue
 
-Article enrichment and generated Event, Topic, and Island presentation labels
+Article enrichment and generated Event and Island presentation labels
 are optional database-backed jobs. Article rows and their enrichment jobs are
 committed atomically. Job payloads contain identifiers and version guards, not
 article content. Handlers reload the current owned target before inference and
@@ -304,7 +304,7 @@ Increase `PROCESSING_JOB_CONCURRENCY` gradually while watching database, CPU,
 memory, and inference capacity. Optional claims pause while any scheduled,
 manual, or API-triggered critical pipeline has an active holder row in
 `worker_leases`; concurrent crawls do not exclude one another.
-Embeddings still complete before Event creation, Topic assignment, and Island
+Embeddings still complete before Event creation and Island
 scoring, and optional inference failures cannot fail that deterministic path.
 
 Deploy the schema migration that creates `worker_leases` before starting the

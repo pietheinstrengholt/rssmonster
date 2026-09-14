@@ -8,7 +8,7 @@ nav_order: 9
 # Semantic Services Implementation
 
 This guide maps the semantic workflow to the server services that implement it.
-For the reader-facing concepts, start with [Events]({% link events.md %}), [Topics]({% link topics.md %}),
+For the reader-facing concepts, start with [Events]({% link events.md %}),
 and [Interest Islands]({% link interest-islands.md %}). Those pages also document their
 configuration thresholds; this page focuses on service boundaries and debugging.
 
@@ -21,7 +21,6 @@ entry extraction and normalization
   → publisher identity, revisions, duplicate/filter handling, persistence
   → article embeddings
   → event assignment and reconciliation
-  → topic assignment
   → island scoring
 ```
 
@@ -33,7 +32,7 @@ turn unrelated articles into duplicates.
 Optional article analysis and generated labels use the durable `processing_jobs`
 queue. The AI worker can finish summaries, inferred tags, scores, and display
 labels after the article or semantic target exists. It does not own the critical
-embedding → event → topic sequence. See [How RSSMonster Works]({% link how-rssmonster-works.md %})
+embedding → event sequence. See [How RSSMonster Works]({% link how-rssmonster-works.md %})
 for the full worker topology and article-analysis states.
 
 ## Service map
@@ -46,13 +45,9 @@ Paths below are relative to `server/services/`.
 | Event assignment | `events/assignArticleToEvent.js`, `events/ArticleEventCandidateCache.js` | Evaluate bounded article/event candidates with semantic and supporting evidence. |
 | Event maintenance | `events/createEvents.js`, `events/updateEvents.js`, `events/eventReconciliation.js` | Coordinate event processing and reconcile existing groups. |
 | Event presentation | `events/eventProjection.js`, `events/developingArticlePointer.js` | Maintain event projections and developing-article selection. |
-| Event/topic links | `events/eventArticleTopicSync.js`, `topics/event/eventTopicAssignment.js` | Keep article and event topic memberships consistent. |
-| Topic matching | `topics/event/assignEventToTopic.js`, `createTopics.js`, `updateTopic.js` in the same directory | Assign event-shaped semantic units to event/hybrid topics and update topic memory. |
-| Behavioral topics | `topics/behavioral/calibrateBehavioralTopics.js` | Calibrate themes from engagement evidence. |
-| Topic helpers | `topics/shared/topicHelpers.js`, `topicName.service.js`, `topicStats.service.js` in the same directory | Shared identity, naming, and aggregate calculations. |
-| Island calibration | `islands/runIslandCalibration.js` | Coordinate behavioral profiles, persistence, membership evolution, audit, and article scoring. |
-| Island profiles | `islands/islandArticleProfiles.js`, `islandTopicProfiles.js` in the same directory | Build article-driven interests and topic enrichment profiles. |
-| Island state | `islands/islandPersistence.js`, `islandMemberships.js`, `islandAudit.js` | Preserve identity, evolve memberships, and record bounded population audits. |
+| Island calibration | `islands/runIslandCalibration.js` | Coordinate behavioral profiles, persistence, audit, and article scoring. |
+| Island profiles | `islands/islandArticleProfiles.js` | Build interests from behavioral article evidence. |
+| Island state | `islands/islandPersistence.js`, `islands/islandAudit.js` | Preserve identity, blend vectors, and record bounded population audits. |
 | Personal scoring | `score/scoreArticlesFromIslands.js` | Project island evidence into article interest scores. |
 | Generated labels | `semanticLabels/semanticLabelJobs.js`, `semanticLabels/semanticLabeling.js` | Queue and produce optional semantic display labels. |
 | Optional jobs | `jobs/processingJobQueue.js`, `jobs/handlers/`, `jobs/crawlPriorityLease.js` | Claim, execute, retry, and guard background work. |
@@ -64,17 +59,15 @@ the feature-specific tuning tables before changing them.
 ## Stored relationships
 
 Articles can be eventless; `eventId` is not a promise that every article belongs
-to a story. An event groups a specific occurrence, while topic membership can
-connect broader themes. Ranked `article_topics` and `event_topics` links preserve
-multiple memberships alongside denormalized primary-topic fields.
+to a story. An Event groups a specific occurrence. Its canonical Article members
+and representative/developing pointers are preserved transactionally.
 
-Interest Islands are user-specific preference profiles. Their `island_topics`
-links enrich those profiles, but interests are not built exclusively from topic
-clusters: article engagement is a direct input. Strong personal interest does
-not prove event identity or duplicate content.
+Interest Islands store user-specific signed preferences learned from Article
+behavior. Candidate vectors are compared directly to active Islands. Strong
+personal interest does not prove Event identity or duplicate content.
 
 Vector generation records the model used. [Article Embedding]({% link article-embedding.md %})
-explains event versus topic representations. Changing provider, dimensions, or
+explains the shared article representation. Changing provider, dimensions, or
 embedding task requires checking compatibility and following the documented
 [model rebuild procedure]({% link model-usage.md %}#switching-embedding-models); matching
 vector length alone is not sufficient evidence of compatibility.
@@ -129,19 +122,16 @@ The subsystem READMEs are the authoritative technical references:
 - [Events](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/events/README.md): `eventOccurrencePolicy.js` and
   `occurrenceFeatures.js` share occurrence decisions across retrieval paths,
   including temporal span, feature conflicts and ambiguity.
-- [Topics](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/topics/README.md): `topicDecisionPolicy.js` and
-  `topicSubjectEvidence.js` require durable subjects, attenuate identity fallback
-  and avoid ambiguous forced primaries. Labels do not establish identity.
 - [Islands and interest](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/islands/README.md):
   `islandInterestConfidence.js` separates preference/support/relationship confidence;
   `behavioralIntent.js` attenuates cross-intent explicit feedback without new inference.
 - [Semantic regression testing](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/tests/semantic/README.md): model-backed
-  occurrence fixtures, controlled Topic gold and held-out interest tests, diagnostic
+  occurrence fixtures, direct-affinity and held-out interest tests, diagnostic
   artifacts and coverage assertions.
 
 Island capacity leaves unmatched profiles unassigned rather than contaminating
 communities. Calibration replaces current signal snapshots without replay inflation.
-Scoring considers Topic, direct Island and bounded explicit behavioral paths;
+Scoring considers direct Island and bounded explicit behavioral paths;
 strongest paths are aggregated with signed bounds. No match means neutral interest,
 not an absent Recommended score. The unchanged final weights and optional input
 defaults are documented in [Scoring]({% link scoring.md %}).

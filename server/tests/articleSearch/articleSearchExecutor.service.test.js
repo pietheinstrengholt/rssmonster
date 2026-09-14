@@ -210,14 +210,6 @@ describe('articleSearchExecutor.service', () => {
     expect(predicate).toContain('developing_story_event.userId = articles.userId');
   });
 
-  // Builds topic grouping around one strongest representative per user-owned topic.
-  it('groups topics by strongest event representative', () => {
-    const query = buildQuery({ grouping: 'topic' });
-
-    expect(query.where[Op.and][0].id[Op.in].sql).toContain('MAX(eventStrength)');
-    expect(query.where[Op.and][0].id[Op.in].sql).toContain('e.userId = t.userId');
-  });
-
   // Delegates prepared ID searches to the Article model unchanged.
   it('executes a prepared article query', async () => {
     mocked.articleFindAll.mockResolvedValue([{ id: 2 }]);

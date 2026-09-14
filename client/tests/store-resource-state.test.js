@@ -90,7 +90,7 @@ describe('focused store resource state', () => {
     const older = deferred();
     fetchSettings
       .mockReturnValueOnce(older.promise)
-      .mockResolvedValueOnce({ data: { grouping: 'topic' } });
+      .mockResolvedValueOnce({ data: { grouping: 'event' } });
     const store = useSelectionStore();
 
     const olderRequest = store.fetchSettings();
@@ -100,7 +100,7 @@ describe('focused store resource state', () => {
 
     expect(store.settingsStatus).toBe('success');
     expect(store.settingsError).toBeNull();
-    expect(store.currentSelection.grouping).toBe('topic');
+    expect(store.currentSelection.grouping).toBe('event');
   });
 
   // Verifies overview structure retries retain cached categories and reject stale failures.

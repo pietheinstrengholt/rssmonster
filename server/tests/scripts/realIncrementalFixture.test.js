@@ -25,14 +25,14 @@ describe('real incremental fixture export', () => {
     expect(publicArticleUrl('https://news.example.org/story?access_token=private')).toBeNull();
     expect(publicArticleUrl('http://192.168.1.1/story')).toBeNull();
     expect(containsSecret('-----BEGIN PRIVATE KEY-----')).toBe(true);
-    const row = { id: 987, userId: 123, eventId: 456, topicId: 789, url: 'https://news.example.org/story',
+    const row = { id: 987, userId: 123, eventId: 456, url: 'https://news.example.org/story',
       title: 'An original headline', description: 'An original description', publishedAt: '2026-09-01T00:00:00Z',
       favoriteInd: 1, negativeInd: 1, clickedAmount: 20, password: 'private', contentOriginal: null };
     const exported = sanitizeArticle(row, 'real-incremental-001', 301);
     expect(exported).toMatchObject({ sourceId: 'real-incremental-001', feedId: 301, contentOriginal: null,
       title: row.title, description: row.description, favoriteInd: 0, negativeInd: 0, clickedAmount: 0 });
-    for (const field of ['id', 'userId', 'eventId', 'topicId', 'password']) expect(exported).not.toHaveProperty(field);
-    expect(exported.regression).toMatchObject({ originallyEventLinked: true, originallyTopicLinked: true });
+    for (const field of ['id', 'userId', 'eventId', 'password']) expect(exported).not.toHaveProperty(field);
+    expect(exported.regression).toMatchObject({ originallyEventLinked: true });
   });
 
   it('freezes exactly 250 real backgrounds alongside the 158 existing inputs', async () => {

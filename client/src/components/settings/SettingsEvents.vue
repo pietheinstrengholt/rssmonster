@@ -1,17 +1,17 @@
 <template>
-  <div class="settings-topics settings-page">
+  <div class="settings-events settings-page">
     <SettingsPageIntro
-      eyebrow="Settings — Topic Insights"
+      eyebrow="Settings — Event Insights"
       icon="diagram-3-fill"
-      title="Events and topics"
-      title-id="topics-title"
+      title="Events"
+      title-id="events-title"
     >
-      Events group related articles into current stories. Topics connect those events and articles into longer-running themes.
+      Events group articles that describe the same real-world occurrence.
     </SettingsPageIntro>
 
-    <div v-if="loading" class="settings-topics-loading settings-state">
+    <div v-if="loading" class="settings-events-loading settings-state">
       <span class="app-loading-indicator app-loading-indicator--small" role="status" aria-hidden="true"></span>
-      <span>Loading events and topics...</span>
+      <span>Loading events...</span>
     </div>
 
     <div v-else-if="error" class="app-notice app-notice--danger" role="alert">
@@ -21,9 +21,7 @@
     <div v-else>
       <div class="settings-metric-grid">
         <SettingsMetric label="Active events" :value="totals.activeEventCount" />
-        <SettingsMetric label="Topics" :value="totals.topicCount" />
         <SettingsMetric label="Event articles" :value="totals.eventLinkedArticles" />
-        <SettingsMetric label="Topic coverage" :value="formatPercent(totals.topicCoveragePercent)" />
       </div>
 
       <div class="settings-panel-grid">
@@ -41,17 +39,6 @@
           </dl>
         </section>
 
-        <section class="settings-data-panel" aria-labelledby="topic-health-title">
-          <h4 id="topic-health-title">Topic health</h4>
-          <dl class="settings-definition-list">
-            <div><dt>Topics</dt><dd>{{ totals.topicCount }}</dd></div>
-            <div><dt>Topics with events</dt><dd>{{ totals.topicsWithEvents }}</dd></div>
-            <div><dt>Events linked to topics</dt><dd>{{ totals.eventsLinkedToTopics }}</dd></div>
-            <div><dt>Events without topics</dt><dd>{{ totals.eventsWithoutTopics }}</dd></div>
-            <div><dt>Articles linked to topics</dt><dd>{{ totals.articlesLinkedToTopics }}</dd></div>
-            <div><dt>Average events per topic</dt><dd>{{ formatNumber(totals.averageEventsPerTopic) }}</dd></div>
-          </dl>
-        </section>
       </div>
 
       <div class="settings-compact-grid">
@@ -75,20 +62,10 @@
           </div>
           <p v-else class="settings-empty-text">No events yet.</p>
         </section>
-        <section class="settings-data-panel" aria-labelledby="topic-types-title">
-          <h4 id="topic-types-title">Topic types</h4>
-          <div v-if="topicTypes.length" class="settings-compact-list">
-            <div v-for="type in topicTypes" :key="type.topicType">
-              <span class="settings-compact-label">{{ type.topicType }}</span>
-              <strong>{{ type.count }}</strong>
-            </div>
-          </div>
-          <p v-else class="settings-empty-text">No topics yet.</p>
-        </section>
       </div>
 
-      <div v-if="!events.length && !topics.length" class="app-notice app-notice--info" role="status">
-        Events and topics will appear here after articles have been clustered.
+      <div v-if="!events.length" class="app-notice app-notice--info" role="status">
+        Events will appear here after articles have been clustered.
       </div>
 
       <div v-else class="settings-panel-grid">
@@ -99,7 +76,7 @@
               <div>
                 <strong>{{ event.generatedName || event.name || `Event #${event.id}` }}</strong>
                 <p>
-                  {{ event.articleCount }} articles &middot; {{ event.topicCount }} topics &middot; {{ formatDate(event.updatedAt) }}
+                  {{ event.articleCount }} articles &middot; {{ formatDate(event.updatedAt) }}
                 </p>
               </div>
               <span class="app-status-badge" :class="statusClass(event.status)">
@@ -109,22 +86,6 @@
           </div>
         </section>
 
-        <section class="settings-data-panel" aria-labelledby="recent-topics-title">
-          <h4 id="recent-topics-title">Recent topics</h4>
-          <div class="settings-object-list">
-            <article v-for="topic in topics" :key="topic.id" class="settings-object-row">
-              <div>
-                <strong>{{ topic.generatedName || topic.name }}</strong>
-                <p>
-                  {{ topic.linkedEventCount }} events &middot; {{ topic.linkedArticleCount }} articles &middot; {{ formatDate(topic.lastActivityAt) }}
-                </p>
-              </div>
-              <span class="app-status-badge" :class="topicTypeClass(topic.topicType)">
-                {{ topic.topicType }}
-              </span>
-            </article>
-          </div>
-        </section>
       </div>
     </div>
 
@@ -138,7 +99,7 @@
 </template>
 
 <style scoped>
-.settings-topics-loading {
+.settings-events-loading {
   margin-bottom: 1rem;
   font-family: var(--font-family);
   font-weight: 500;
@@ -285,7 +246,7 @@
 </style>
 
 <script>
-import { fetchTopicsOverview } from '../../api/settings';
+import { fetchEventsOverview } from '../../api/settings';
 import SettingsMetric from './SettingsMetric.vue';
 import SettingsPageIntro from './SettingsPageIntro.vue';
 
@@ -300,17 +261,10 @@ const defaultTotals = () => ({
   newEventRatio: 0,
   averageArticlesPerEvent: 0,
   largestEventSize: 0,
-  topicCount: 0,
-  eventsLinkedToTopics: 0,
-  topicsWithEvents: 0,
-  eventsWithoutTopics: 0,
-  articlesLinkedToTopics: 0,
-  topicCoveragePercent: 0,
-  averageEventsPerTopic: 0
 });
 
 export default {
-  name: 'SettingsTopics',
+  name: 'SettingsEvents',
   components: {
     SettingsMetric,
     SettingsPageIntro
@@ -323,9 +277,7 @@ export default {
       totals: defaultTotals(),
       eventSizeBuckets: [],
       eventStatuses: [],
-      topicTypes: [],
       events: [],
-      topics: []
     };
   },
   created() {
@@ -347,28 +299,19 @@ export default {
     statusClass(status) {
       return status === 'archived' ? 'app-status-badge--neutral' : 'app-status-badge--success';
     },
-    topicTypeClass(topicType) {
-      return {
-        event: 'app-status-badge--primary',
-        behavioral: 'app-status-badge--info',
-        hybrid: 'app-status-badge--success'
-      }[topicType] || 'app-status-badge--neutral';
-    },
     async reload() {
       this.loading = true;
       this.error = null;
 
       try {
-        const response = await fetchTopicsOverview();
+        const response = await fetchEventsOverview();
         this.totals = response.data?.totals || defaultTotals();
         this.eventSizeBuckets = response.data?.eventSizeBuckets || [];
         this.eventStatuses = response.data?.eventStatuses || [];
-        this.topicTypes = response.data?.topicTypes || [];
         this.events = response.data?.events || [];
-        this.topics = response.data?.topics || [];
       } catch (err) {
-        console.error('Failed loading events and topics overview:', err);
-        this.error = 'Failed to load events and topics overview.';
+        console.error('Failed loading events overview:', err);
+        this.error = 'Failed to load events overview.';
       }
 
       this.loading = false;

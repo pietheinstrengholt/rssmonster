@@ -10,10 +10,7 @@ const {
   Feed,
   Article,
   Event,
-  Topic,
-  EventTopic,
   Island,
-  IslandTopic,
   Tag,
   Setting,
   BriefingPreference
@@ -474,12 +471,11 @@ describe('articleSearch.service', () => {
   });
 
   describe('island filtering', () => {
-    it('filters articles through active island memberships on any event topic', async () => {
+    it('filters articles by direct affinity independent of signed interest', async () => {
       let linkedArticle;
       let unlinkedArticle;
       let linkedEvent;
       let unlinkedEvent;
-      let topic;
       let island;
 
       try {
@@ -488,8 +484,8 @@ describe('articleSearch.service', () => {
           feedId: feed.id,
           url: 'https://example.com/article-island-linked',
           title: 'Island-linked article',
-          contentOriginal: '<p>Linked through an event topic to an interest island.</p>',
-          contentHtml: 'Linked through an event topic to an interest island.',
+          contentOriginal: '<p>Directly similar to an interest island.</p>',
+          contentHtml: 'Directly similar to an interest island.',
           status: 'unread',
           publishedAt: new Date(),
           advertisementScore: 80,
@@ -511,41 +507,21 @@ describe('articleSearch.service', () => {
         });
         linkedEvent = await Event.create({
           userId: user.id,
-          representativeArticleId: linkedArticle.id,
-          topicId: null
+          representativeArticleId: linkedArticle.id
         });
         unlinkedEvent = await Event.create({
           userId: user.id,
-          representativeArticleId: unlinkedArticle.id,
-          topicId: null
+          representativeArticleId: unlinkedArticle.id
         });
-        await linkedArticle.update({ eventId: linkedEvent.id });
-        await unlinkedArticle.update({ eventId: unlinkedEvent.id });
+        await linkedArticle.update({ eventId: linkedEvent.id, articleVector: [1, 0], interestScore: 0 });
+        await unlinkedArticle.update({ eventId: unlinkedEvent.id, articleVector: [0, 1] });
 
-        topic = await Topic.create({
-          userId: user.id,
-          name: 'Search island topic',
-          topicKey: 'search-island-topic'
-        });
         island = await Island.create({
           userId: user.id,
           label: 'Search interest island',
-          weight: 0.8
+          islandVector: [1, 0],
+          weight: 0
         });
-        await EventTopic.create({
-          eventId: linkedEvent.id,
-          topicId: topic.id,
-          confidence: 0.9,
-          rank: 1,
-          primaryInd: false
-        });
-        await IslandTopic.create({
-          islandId: island.id,
-          topicId: topic.id,
-          similarity: 0.9,
-          confidence: 0.9
-        });
-
         const included = await searchArticles({ userId: user.id, search: 'island:true', status: '%' });
         const excluded = await searchArticles({ userId: user.id, search: 'island:false', status: '%' });
 
@@ -562,12 +538,9 @@ describe('articleSearch.service', () => {
         expect(archivedIncluded.itemIds).not.toContain(linkedArticle.id);
         expect(archivedExcluded.itemIds).toContain(linkedArticle.id);
       } finally {
-        if (linkedEvent) await EventTopic.destroy({ where: { eventId: linkedEvent.id } });
-        if (island) await IslandTopic.destroy({ where: { islandId: island.id } });
         if (linkedEvent) await Event.destroy({ where: { id: linkedEvent.id } });
         if (unlinkedEvent) await Event.destroy({ where: { id: unlinkedEvent.id } });
         if (island) await Island.destroy({ where: { id: island.id } });
-        if (topic) await Topic.destroy({ where: { id: topic.id } });
         if (linkedArticle) await Article.destroy({ where: { id: linkedArticle.id } });
         if (unlinkedArticle) await Article.destroy({ where: { id: unlinkedArticle.id } });
       }
@@ -1140,7 +1113,6 @@ describe('articleSearch.service', () => {
         lowCluster = await Event.create({
           userId: user.id,
           representativeArticleId: lowCoverageArticle.id,
-          topicId: null,
           articleCount: 2,
           sourceCount: 1,
           sourceDiversityScore: 0.69,
@@ -1150,7 +1122,6 @@ describe('articleSearch.service', () => {
         highCluster = await Event.create({
           userId: user.id,
           representativeArticleId: highCoverageArticle.id,
-          topicId: null,
           articleCount: 30,
           sourceCount: 8,
           sourceDiversityScore: 2.4,

@@ -196,7 +196,7 @@ semanticRegressionDescribe('semantic regression AD heatwave semantic processing'
     const duplicateResult = await markDuplicateArticlesForUser(userId, {
       threshold: AD_DUPLICATE_TEST_THRESHOLD
     });
-    await runIncrementalEventsForUser(userId, { skipTopicAssignment: true });
+    await runIncrementalEventsForUser(userId, {  });
 
     const articles = await Article.findAll({
       where: {
@@ -231,4 +231,3 @@ semanticRegressionDescribe('semantic regression AD heatwave semantic processing'
     expect(eventCount).toBe(0);
   }, 60000);
 });
-

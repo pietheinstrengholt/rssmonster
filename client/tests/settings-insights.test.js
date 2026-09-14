@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
+import SettingsEvents from '../src/components/settings/SettingsEvents.vue';
 import SettingsIslands from '../src/components/settings/SettingsIslands.vue';
-import SettingsTopics from '../src/components/settings/SettingsTopics.vue';
-import { fetchIslandsOverview, fetchTopicsOverview, recalculateIslands } from '../src/api/settings';
+
+import { fetchIslandsOverview, fetchEventsOverview, recalculateIslands } from '../src/api/settings';
 
 vi.mock('../src/api/settings', () => ({
   fetchIslandsOverview: vi.fn(),
-  fetchTopicsOverview: vi.fn(),
+  fetchEventsOverview: vi.fn(),
   recalculateIslands: vi.fn()
 }));
 
@@ -35,7 +36,7 @@ afterEach(() => {
 });
 
 describe('SettingsIslands', () => {
-  // Verifies island totals, evidence, source articles, and topic connections are rendered.
+  // Verifies island totals, evidence, source articles, and direct matches are rendered.
   it('loads and renders populated island insights', async () => {
     fetchIslandsOverview.mockResolvedValue({
       data: {
@@ -53,7 +54,6 @@ describe('SettingsIslands', () => {
           label: 'Deterministic island',
           generatedLabel: 'Generated island',
           sourceArticleCount: 2,
-          topicCount: 1,
           relatedArticleCount: 2,
           effectiveWeight: 0.75,
           evidenceSignalCount: 3,
@@ -69,8 +69,7 @@ describe('SettingsIslands', () => {
               { type: 'click', label: 'Clicked' },
               { type: 'negative', label: 'Dismissed' },
               { type: 'other', label: 'Other' }
-            ],
-            connectionTopics: [{ id: 5, name: 'AI', generatedName: 'Applied AI' }]
+            ]
           }],
           relatedArticles: [
             { id: 20, isPopulationSource: true },
@@ -80,8 +79,7 @@ describe('SettingsIslands', () => {
               url: 'https://example.com/related',
               feedName: 'Daily',
               publishedAt: 'invalid',
-              isPopulationSource: false,
-              connectionTopics: [{ id: 5, name: 'AI', generatedName: 'Applied AI' }]
+              isPopulationSource: false
             }
           ]
         }]
@@ -93,7 +91,6 @@ describe('SettingsIslands', () => {
 
     expect(fetchIslandsOverview).toHaveBeenCalledOnce();
     expect(wrapper.text()).toContain('Generated island');
-    expect(wrapper.text()).toContain('Applied AI');
     expect(wrapper.text()).not.toContain('Deterministic island');
     expect(wrapper.text()).toContain('Showing 1 of 2');
     expect(wrapper.text()).toContain('0.75');
@@ -114,8 +111,8 @@ describe('SettingsIslands', () => {
 
     expect(wrapper.vm.formatPercent(null)).toBe('0.0%');
     expect(wrapper.vm.formatNormalizedAffinity(undefined)).toBe('0.00');
-    expect(wrapper.vm.formatCountLabel(1, 'topic')).toBe('1 topic');
-    expect(wrapper.vm.formatCountLabel(2, 'topic')).toBe('2 topics');
+    expect(wrapper.vm.formatCountLabel(1, 'event')).toBe('1 event');
+    expect(wrapper.vm.formatCountLabel(2, 'event')).toBe('2 events');
     expect(wrapper.vm.evidenceBadgeClass('deepRead')).toBe('app-status-badge--info');
     expect(wrapper.vm.formatDate(null)).toBe('Unknown date');
     expect(wrapper.text()).toContain('do not have any interest islands');
@@ -188,16 +185,14 @@ describe('SettingsIslands', () => {
   });
 });
 
-describe('SettingsTopics', () => {
-  // Verifies topic metrics, buckets, statuses, events, and recent topics are rendered.
-  it('loads and renders populated topic insights', async () => {
-    fetchTopicsOverview.mockResolvedValue({
+describe('SettingsEvents', () => {
+  // Verifies Event metrics, buckets, statuses, and recent Events are rendered.
+  it('loads and renders populated event insights', async () => {
+    fetchEventsOverview.mockResolvedValue({
       data: {
         totals: {
           activeEventCount: 2,
-          topicCount: 1,
           eventLinkedArticles: 5,
-          topicCoveragePercent: 62.5,
           unclusteredArticles: 3,
           eventCount: 2,
           unassignedArticles: 1,
@@ -205,86 +200,63 @@ describe('SettingsTopics', () => {
           newEventRatio: 50,
           averageArticlesPerEvent: 2.5,
           largestEventSize: 4,
-          topicsWithEvents: 1,
-          eventsLinkedToTopics: 2,
-          eventsWithoutTopics: 0,
-          articlesLinkedToTopics: 5,
-          averageEventsPerTopic: 2
+
         },
         eventSizeBuckets: [
           { bucket: '1', count: 1 },
           { bucket: '2-5', count: 2 }
         ],
         eventStatuses: [{ status: 'active', count: 2 }],
-        topicTypes: [{ topicType: 'behavioral', count: 1 }],
         events: [
           {
             id: 3,
             name: 'Deterministic event',
             generatedName: 'Generated event',
             articleCount: 4,
-            topicCount: 1,
             status: 'archived',
             updatedAt: '2026-07-01T00:00:00.000Z'
           }
-        ],
-        topics: [{
-          id: 6,
-          name: 'Artificial intelligence',
-          generatedName: 'Generated AI topic',
-          linkedEventCount: 2,
-          linkedArticleCount: 5,
-          topicType: 'hybrid',
-          lastActivityAt: null
-        }]
+        ]
       }
     });
 
-    mountInsights(SettingsTopics);
+    mountInsights(SettingsEvents);
     await flushPromises();
 
-    expect(fetchTopicsOverview).toHaveBeenCalledOnce();
-    expect(wrapper.text()).toContain('62.5%');
+    expect(fetchEventsOverview).toHaveBeenCalledOnce();
     expect(wrapper.text()).toContain('Events with 1 article');
     expect(wrapper.text()).toContain('Events with 2-5 articles');
     expect(wrapper.text()).toContain('Generated event');
-    expect(wrapper.text()).toContain('Generated AI topic');
     expect(wrapper.text()).not.toContain('Deterministic event');
-    expect(wrapper.text()).toContain('No activity yet');
     expect(wrapper.get('.app-status-badge--neutral').text()).toContain('archived');
   });
 
   // Verifies empty defaults and all classification formatter branches.
-  it('renders empty topic insights and formats classifications', async () => {
-    fetchTopicsOverview.mockResolvedValue({ data: {} });
-    mountInsights(SettingsTopics);
+  it('renders empty event insights and formats classifications', async () => {
+    fetchEventsOverview.mockResolvedValue({ data: {} });
+    mountInsights(SettingsEvents);
     await flushPromises();
 
     expect(wrapper.text()).toContain('No event sizes yet.');
     expect(wrapper.text()).toContain('No events yet.');
-    expect(wrapper.text()).toContain('No topics yet.');
     expect(wrapper.text()).toContain('will appear here');
     expect(wrapper.vm.formatPercent(undefined)).toBe('0.0%');
     expect(wrapper.vm.formatNumber(null)).toBe('0.0');
     expect(wrapper.vm.formatDate('invalid')).toBe('No activity yet');
     expect(wrapper.vm.statusClass('active')).toBe('app-status-badge--success');
-    expect(wrapper.vm.topicTypeClass('event')).toBe('app-status-badge--primary');
-    expect(wrapper.vm.topicTypeClass('behavioral')).toBe('app-status-badge--info');
-    expect(wrapper.vm.topicTypeClass('hybrid')).toBe('app-status-badge--success');
-    expect(wrapper.vm.topicTypeClass('unknown')).toBe('app-status-badge--neutral');
   });
 
   // Verifies overview failures clear loading state and display the error.
-  it('renders a topic loading failure and can retry', async () => {
-    fetchTopicsOverview.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ data: {} });
-    mountInsights(SettingsTopics);
+  it('renders a event loading failure and can retry', async () => {
+    fetchEventsOverview.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ data: {} });
+    mountInsights(SettingsEvents);
     await flushPromises();
 
     expect(wrapper.vm.loading).toBe(false);
-    expect(wrapper.text()).toContain('Failed to load events and topics overview.');
+    expect(wrapper.text()).toContain('Failed to load events overview.');
 
     await wrapper.get('.settings-refresh-button').trigger('click');
     await flushPromises();
-    expect(fetchTopicsOverview).toHaveBeenCalledTimes(2);
+    expect(fetchEventsOverview).toHaveBeenCalledTimes(2);
   });
 });

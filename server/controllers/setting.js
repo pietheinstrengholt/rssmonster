@@ -1,3 +1,5 @@
+import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { collectArticleIslandMatches } from '../services/islands/islandArticleMatches.js';
 import db from '../models/index.js';
 import { getAvailableInferenceCapabilities } from '../services/inference/status.js';
 import { isAssistantEnabled } from '../config/intelligentFeatures.js';
@@ -23,7 +25,6 @@ export const recalculateIslands = async (req, res, _next) => {
       islandCount: Number(result?.islandCount || 0),
       articleCount: Number(result?.articleCount || 0),
       enrichedIslandCount: Number(result?.enrichedIslandCount || 0),
-      islandTopicLinkCount: Number(result?.islandTopicLinkCount || 0),
       rescoredArticleCount: Number(result?.rescoredArticleCount || 0)
     });
   } catch (err) {
@@ -575,7 +576,6 @@ export const getIslandsOverview = async (req, res, _next) => {
       raw: true
     });
 
-    const islandIds = islandsRaw.map(island => island.id);
     const auditByIslandId = new Map(islandsRaw.map(island => {
       const populationAudit = Array.isArray(island.populationAudit)
         ? island.populationAudit
@@ -617,91 +617,32 @@ export const getIslandsOverview = async (req, res, _next) => {
       }
     }
 
-    const [islandStatsRows, relatedArticleRows] = islandIds.length
-      ? await Promise.all([
-        db.sequelize.query(
-          `
-          SELECT
-            i.id AS islandId,
-            COUNT(DISTINCT it.topicId) AS topicCount,
-            COUNT(DISTINCT CASE WHEN a.favoriteInd = 1 THEN a.id END) AS starredArticles,
-            COUNT(DISTINCT CASE WHEN a.clickedAmount > 0 THEN a.id END) AS clickedArticles,
-            COUNT(DISTINCT a.id) AS relatedArticleCount
-          FROM islands i
-          LEFT JOIN island_topics it
-            ON it.islandId = i.id
-          LEFT JOIN article_topics atp
-            ON atp.topicId = it.topicId
-          LEFT JOIN articles a
-            ON a.id = atp.articleId
-           AND a.userId = :userId
-           AND a.duplicateOfArticleId IS NULL
-          WHERE i.userId = :userId
-            AND i.id IN (:islandIds)
-          GROUP BY i.id
-          `,
-          {
-            replacements: { userId, islandIds },
-            type: db.Sequelize.QueryTypes.SELECT
-          }
-        ),
-        db.sequelize.query(
-          `
-          WITH related_articles AS (
-            SELECT DISTINCT
-              it.islandId,
-              a.id,
-              a.title,
-              a.url,
-              a.publishedAt,
-              a.favoriteInd,
-              a.clickedAmount,
-              f.feedName
-            FROM island_topics it
-            INNER JOIN article_topics atp
-              ON atp.topicId = it.topicId
-            INNER JOIN articles a
-              ON a.id = atp.articleId
-             AND a.userId = :userId
-             AND a.duplicateOfArticleId IS NULL
-            LEFT JOIN feeds f
-              ON f.id = a.feedId
-             AND f.userId = :userId
-            WHERE it.islandId IN (:islandIds)
-          ), ranked_articles AS (
-            SELECT
-              related_articles.*,
-              ROW_NUMBER() OVER (
-                PARTITION BY islandId
-                ORDER BY publishedAt DESC
-              ) AS articleRank
-            FROM related_articles
-          )
-          SELECT *
-          FROM ranked_articles
-          WHERE articleRank <= 3
-          ORDER BY islandId, publishedAt DESC
-          `,
-          {
-            replacements: { userId, islandIds },
-            type: db.Sequelize.QueryTypes.SELECT
-          }
-        )
-      ])
-      : [[], []];
-    const statsByIslandId = new Map(
-      islandStatsRows.map(row => [String(row.islandId), row])
-    );
+    const statsByIslandId = new Map();
     const relatedArticlesByIslandId = new Map();
-    for (const article of relatedArticleRows) {
-      const islandId = String(article.islandId);
-      const articles = relatedArticlesByIslandId.get(islandId) || [];
-      const articleData = { ...article };
-      delete articleData.islandId;
-      delete articleData.articleRank;
-      articles.push(articleData);
-      relatedArticlesByIslandId.set(islandId, articles);
-    }
+    const matchedArticleIds = await collectArticleIslandMatches(userId, {
+      onBatch: async matches => {
+        const articles = await db.Article.findAll({
+          where: { userId, id: matches.map(match => match.articleId) },
+          attributes: ['id', 'title', 'url', 'publishedAt', 'favoriteInd', 'clickedAmount'], raw: true
+        });
+        const byId = new Map(articles.map(article => [Number(article.id), article]));
+        for (const match of matches) {
+          const article = byId.get(Number(match.articleId));
+          if (!article) continue;
+          for (const island of match.islands) {
+            const id = String(island.id);
+            const stats = statsByIslandId.get(id) || { starredArticles: 0, clickedArticles: 0, relatedArticleCount: 0 };
+            stats.starredArticles += Number(article.favoriteInd) === 1 ? 1 : 0;
+            stats.clickedArticles += Number(article.clickedAmount) > 0 ? 1 : 0;
+            stats.relatedArticleCount++;
+            statsByIslandId.set(id, stats);
+            const recent = [...(relatedArticlesByIslandId.get(id) || []), article]
+              .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt) || b.id - a.id).slice(0, 3);
+            relatedArticlesByIslandId.set(id, recent);
+          }
+        }
+      }
+    });
 
     const sourceArticlesRaw = allSourceArticleIds.length
       ? await db.sequelize.query(
@@ -740,51 +681,6 @@ export const getIslandsOverview = async (req, res, _next) => {
         sourceArticlesByIslandId.set(islandId, sourceArticles);
       }
     }
-    const connectedArticleIds = [...new Set([
-      ...relatedArticleRows.map(article => Number(article.id)),
-      ...sourceArticlesRaw.map(article => Number(article.id))
-    ])];
-    const relatedTopicRows = islandIds.length && connectedArticleIds.length
-      ? await db.sequelize.query(
-        `
-        SELECT DISTINCT
-          it.islandId,
-          atp.articleId,
-          t.id AS topicId,
-          t.name AS topicName,
-          t.generatedName AS topicGeneratedName,
-          it.similarity,
-          it.confidence
-        FROM island_topics it
-        INNER JOIN article_topics atp
-          ON atp.topicId = it.topicId
-        INNER JOIN topics t
-          ON t.id = atp.topicId
-         AND t.userId = :userId
-        WHERE it.islandId IN (:islandIds)
-          AND atp.articleId IN (:connectedArticleIds)
-        ORDER BY it.islandId, atp.articleId, it.confidence DESC, t.id
-        `,
-        {
-          replacements: { userId, islandIds, connectedArticleIds },
-          type: db.Sequelize.QueryTypes.SELECT
-        }
-      )
-      : [];
-    const topicsByIslandAndArticleId = new Map();
-    for (const row of relatedTopicRows) {
-      const key = `${row.islandId}:${row.articleId}`;
-      const topics = topicsByIslandAndArticleId.get(key) || [];
-      topics.push({
-        id: Number(row.topicId),
-        name: row.topicName,
-        generatedName: row.topicGeneratedName,
-        similarity: Number(row.similarity || 0),
-        confidence: Number(row.confidence || 0)
-      });
-      topicsByIslandAndArticleId.set(key, topics);
-    }
-
     const islands = [];
     for (const island of islandsRaw) {
       const islandId = String(island.id);
@@ -852,14 +748,12 @@ export const getIslandsOverview = async (req, res, _next) => {
         return {
           ...article,
           evidence,
-          connectionTopics: topicsByIslandAndArticleId.get(`${island.id}:${articleId}`) || []
         };
       });
       const sourceArticles = allSourceArticles.slice(0, 5);
 
       islands.push({
         ...island,
-        topicCount: Number(islandStats?.topicCount || 0),
         starredArticles: favoriteCount,
         clickedArticles: clickCount,
         relatedArticleCount: Number(islandStats?.relatedArticleCount || 0),
@@ -880,49 +774,14 @@ export const getIslandsOverview = async (req, res, _next) => {
             ...article,
             isPopulationSource,
             isNewArticle: !isPopulationSource,
-            connectionTopics: topicsByIslandAndArticleId.get(`${island.id}:${articleId}`) || []
           };
         })
       });
     }
 
-    const [totalsRaw] = await db.sequelize.query(
-      `
-      SELECT
-        COALESCE((
-          SELECT COUNT(*)
-          FROM islands i
-          WHERE i.userId = :userId
-            AND i.archivedInd = 0
-        ), 0) AS islandCount,
-        COALESCE((
-          SELECT COUNT(*)
-          FROM articles a
-          WHERE a.userId = :userId
-            AND a.duplicateOfArticleId IS NULL
-            AND EXISTS (
-              SELECT 1
-              FROM article_topics atp
-              INNER JOIN island_topics it
-                ON it.topicId = atp.topicId
-              INNER JOIN islands i
-                ON i.id = it.islandId
-               AND i.userId = :userId
-               AND i.archivedInd = 0
-              WHERE atp.articleId = a.id
-            )
-        ), 0) AS islandArticles,
-        COALESCE((SELECT COUNT(*) FROM articles a2 WHERE a2.userId = :userId AND a2.duplicateOfArticleId IS NULL), 0) AS totalArticles
-      `,
-      {
-        replacements: { userId },
-        type: db.Sequelize.QueryTypes.SELECT
-      }
-    );
-
-    const islandCount = Number(totalsRaw?.islandCount || 0);
-    const islandArticles = Number(totalsRaw?.islandArticles || 0);
-    const totalArticles = Number(totalsRaw?.totalArticles || 0);
+    const islandCount = islandsRaw.filter(island => !island.archivedInd).length;
+    const islandArticles = matchedArticleIds.length;
+    const totalArticles = await db.Article.count({ where: { userId, ...canonicalArticleWhere(), filteredInd: false } });
     const nonIslandArticles = Math.max(0, totalArticles - islandArticles);
     const islandCoveragePercent = totalArticles
       ? Number(((islandArticles / totalArticles) * 100).toFixed(1))
@@ -948,7 +807,7 @@ export const getIslandsOverview = async (req, res, _next) => {
   }
 };
 
-export const getTopicsOverview = async (req, res, _next) => {
+export const getEventsOverview = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -978,62 +837,7 @@ export const getTopicsOverview = async (req, res, _next) => {
             AND e.status <> 'archived'
         ), 0) AS activeEventCount,
         COALESCE((SELECT AVG(e.articleCount) FROM events e WHERE e.userId = :userId), 0) AS averageArticlesPerEvent,
-        COALESCE((SELECT MAX(e.articleCount) FROM events e WHERE e.userId = :userId), 0) AS largestEventSize,
-        COALESCE((SELECT COUNT(*) FROM topics t WHERE t.userId = :userId), 0) AS topicCount,
-        COALESCE((
-          SELECT COUNT(DISTINCT e.id)
-          FROM events e
-          WHERE e.userId = :userId
-            AND (
-              e.topicId IS NOT NULL
-              OR EXISTS (
-                SELECT 1
-                FROM event_topics et
-                INNER JOIN topics t
-                  ON t.id = et.topicId
-                 AND t.userId = :userId
-                WHERE et.eventId = e.id
-              )
-            )
-        ), 0) AS eventsLinkedToTopics,
-        COALESCE((
-          SELECT COUNT(DISTINCT t.id)
-          FROM topics t
-          WHERE t.userId = :userId
-            AND (
-              EXISTS (
-                SELECT 1
-                FROM events e
-                WHERE e.topicId = t.id
-                  AND e.userId = :userId
-              )
-              OR EXISTS (
-                SELECT 1
-                FROM event_topics et
-                INNER JOIN events e
-                  ON e.id = et.eventId
-                 AND e.userId = :userId
-                WHERE et.topicId = t.id
-              )
-            )
-        ), 0) AS topicsWithEvents,
-        COALESCE((
-          SELECT COUNT(DISTINCT a.id)
-          FROM articles a
-          WHERE a.userId = :userId
-            AND a.duplicateOfArticleId IS NULL
-            AND (
-              a.topicId IS NOT NULL
-              OR EXISTS (
-                SELECT 1
-                FROM article_topics atp
-                INNER JOIN topics t
-                  ON t.id = atp.topicId
-                 AND t.userId = :userId
-                WHERE atp.articleId = a.id
-              )
-            )
-        ), 0) AS articlesLinkedToTopics
+        COALESCE((SELECT MAX(e.articleCount) FROM events e WHERE e.userId = :userId), 0) AS largestEventSize
       `,
       {
         replacements: { userId },
@@ -1074,20 +878,6 @@ export const getTopicsOverview = async (req, res, _next) => {
       }
     );
 
-    const topicTypes = await db.sequelize.query(
-      `
-      SELECT t.topicType, COUNT(*) AS count
-      FROM topics t
-      WHERE t.userId = :userId
-      GROUP BY t.topicType
-      ORDER BY t.topicType
-      `,
-      {
-        replacements: { userId },
-        type: db.Sequelize.QueryTypes.SELECT
-      }
-    );
-
     const events = await db.sequelize.query(
       `
       SELECT
@@ -1107,29 +897,7 @@ export const getTopicsOverview = async (req, res, _next) => {
           WHERE a.userId = :userId
             AND a.duplicateOfArticleId IS NULL
             AND a.eventId = e.id
-        ), 0) AS actualArticleCount,
-        (
-          COALESCE((
-            SELECT COUNT(DISTINCT et.topicId)
-            FROM event_topics et
-            INNER JOIN topics t
-              ON t.id = et.topicId
-             AND t.userId = :userId
-            WHERE et.eventId = e.id
-          ), 0)
-          +
-          CASE
-            WHEN e.topicId IS NOT NULL
-             AND NOT EXISTS (
-               SELECT 1
-               FROM event_topics et2
-               WHERE et2.eventId = e.id
-                 AND et2.topicId = e.topicId
-             )
-            THEN 1
-            ELSE 0
-          END
-        ) AS topicCount
+        ), 0) AS actualArticleCount
       FROM events e
       WHERE e.userId = :userId
       ORDER BY
@@ -1144,70 +912,9 @@ export const getTopicsOverview = async (req, res, _next) => {
       }
     );
 
-    const topics = await db.sequelize.query(
-      `
-      SELECT
-        t.id,
-        t.name,
-        t.generatedName,
-        t.topicType,
-        t.affinityScore,
-        t.evidenceScore,
-        t.articleCount,
-        t.behavioralArticleCount,
-        t.eventCount,
-        t.starredCount,
-        t.lastActivityAt,
-        COALESCE((
-          SELECT COUNT(DISTINCT e.id)
-          FROM events e
-          WHERE e.userId = :userId
-            AND (
-              e.topicId = t.id
-              OR EXISTS (
-                SELECT 1
-                FROM event_topics et
-                WHERE et.eventId = e.id
-                  AND et.topicId = t.id
-              )
-            )
-        ), 0) AS linkedEventCount,
-        COALESCE((
-          SELECT COUNT(DISTINCT a.id)
-          FROM articles a
-          WHERE a.userId = :userId
-            AND a.duplicateOfArticleId IS NULL
-            AND (
-              a.topicId = t.id
-              OR EXISTS (
-                SELECT 1
-                FROM article_topics atp
-                WHERE atp.articleId = a.id
-                  AND atp.topicId = t.id
-              )
-            )
-        ), 0) AS linkedArticleCount
-      FROM topics t
-      WHERE t.userId = :userId
-      ORDER BY
-        t.lastActivityAt DESC,
-        t.eventCount DESC,
-        t.articleCount DESC,
-        t.id DESC
-      LIMIT 25
-      `,
-      {
-        replacements: { userId },
-        type: db.Sequelize.QueryTypes.SELECT
-      }
-    );
-
     const totalArticles = Number(totalsRaw?.totalArticles || 0);
     const eventLinkedArticles = Number(totalsRaw?.eventLinkedArticles || 0);
     const eventCount = Number(totalsRaw?.eventCount || 0);
-    const eventsLinkedToTopics = Number(totalsRaw?.eventsLinkedToTopics || 0);
-    const articlesLinkedToTopics = Number(totalsRaw?.articlesLinkedToTopics || 0);
-    const topicCount = Number(totalsRaw?.topicCount || 0);
 
     return res.status(200).json({
       userId,
@@ -1222,15 +929,6 @@ export const getTopicsOverview = async (req, res, _next) => {
         newEventRatio: percentage(eventCount, totalArticles),
         averageArticlesPerEvent: Number(Number(totalsRaw?.averageArticlesPerEvent || 0).toFixed(1)),
         largestEventSize: Number(totalsRaw?.largestEventSize || 0),
-        topicCount,
-        eventsLinkedToTopics,
-        topicsWithEvents: Number(totalsRaw?.topicsWithEvents || 0),
-        eventsWithoutTopics: Math.max(0, eventCount - eventsLinkedToTopics),
-        articlesLinkedToTopics,
-        topicCoveragePercent: percentage(articlesLinkedToTopics, totalArticles),
-        averageEventsPerTopic: topicCount
-          ? Number((eventsLinkedToTopics / topicCount).toFixed(1))
-          : 0
       },
       eventSizeBuckets: eventSizeBuckets.map(row => ({
         bucket: row.bucket,
@@ -1240,32 +938,16 @@ export const getTopicsOverview = async (req, res, _next) => {
         status: row.status,
         count: Number(row.count || 0)
       })),
-      topicTypes: topicTypes.map(row => ({
-        topicType: row.topicType,
-        count: Number(row.count || 0)
-      })),
       events: events.map(event => ({
         ...event,
         articleCount: Number(event.articleCount || 0),
         sourceCount: Number(event.sourceCount || 0),
         eventStrength: Number(event.eventStrength || 0),
         actualArticleCount: Number(event.actualArticleCount || 0),
-        topicCount: Number(event.topicCount || 0)
       })),
-      topics: topics.map(topic => ({
-        ...topic,
-        affinityScore: Number(topic.affinityScore || 0),
-        evidenceScore: Number(topic.evidenceScore || 0),
-        articleCount: Number(topic.articleCount || 0),
-        behavioralArticleCount: Number(topic.behavioralArticleCount || 0),
-        eventCount: Number(topic.eventCount || 0),
-        starredCount: Number(topic.starredCount || 0),
-        linkedEventCount: Number(topic.linkedEventCount || 0),
-        linkedArticleCount: Number(topic.linkedArticleCount || 0)
-      }))
     });
   } catch (err) {
-    console.error('Error in getTopicsOverview:', err);
+    console.error('Error in getEventsOverview:', err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -1283,5 +965,5 @@ export default {
   setMarkAsReadOnScroll,
   setPrioritizeHighTrust,
   getIslandsOverview,
-  getTopicsOverview
+  getEventsOverview
 }

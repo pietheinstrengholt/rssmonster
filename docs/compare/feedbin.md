@@ -32,7 +32,7 @@ This table reflects current official documentation as of **2 September 2026**.
 | **Sources** | RSS/Atom with full-content extraction | RSS, email newsletters, podcasts, YouTube, and Mastodon are presented as first-class sources |
 | **Search and automation** | Advanced query language, Smart Folders, and incoming-content actions | Expressive search, saved searches, and actions for star/read/push workflows |
 | **Article changes** | Identity and revision handling preserve current article state and user state | Updated Articles can surface changes and display differences from an earlier version |
-| **Story organization** | Related articles, duplicate analysis, Events, Topics, and Interest Islands | Feed-, tag-, and saved-search organization; a comparable semantic story hierarchy is not documented |
+| **Story organization** | Related articles, duplicate analysis, Events and Interest Islands | Feed-, tag-, and saved-search organization; a comparable semantic story hierarchy is not documented |
 | **Ranking philosophy** | Chronological reading plus optional explainable Quality, Recommended, and Top Stories modes | A clean chronological feed without an algorithm deciding the order |
 | **Client ecosystem** | Fever and Google Reader-compatible APIs | Official REST-style API and broad iOS, macOS, and Android app support |
 | **Processing location** | Stored data and optional small-model processing run on user-controlled infrastructure | Production processing is part of the managed Feedbin service |
@@ -65,8 +65,7 @@ profile adds local Qwen embeddings and generation plus ModernBERT
 classification. Operating that stack is the user's responsibility.
 
 RSSMonster also experiments at a different layer. Related reporting becomes
-[Events]({{ '/events.html' | relative_url }}) and
-[Topics]({{ '/topics.html' | relative_url }}), while
+[Events]({{ '/events.html' | relative_url }}), while
 [Interest Islands]({{ '/interest-islands.html' | relative_url }}) help explain
 personal relevance. [Smart Folders]({{ '/smart-folders.html' | relative_url }})
 remain deterministic saved queries, and chronological reading is always
@@ -105,7 +104,7 @@ do not want ranking may find Feedbin's narrower promise more appealing.
 
 - Self-hosting is a requirement rather than an optional possibility.
 - You want stored feeds and local semantic processing on your infrastructure.
-- Duplicate coverage, Events, Topics, and Interest Islands address your reading
+- Duplicate coverage, Events and Interest Islands address your reading
   problem.
 - You want to experiment with explainable Recommended and Top Stories modes.
 - SQLite and MySQL deployment choices fit your environment.

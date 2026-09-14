@@ -65,7 +65,7 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 'full'
       },
-      // Stores article grouping as none, event, or topic.
+      // Stores article grouping as none or event.
       grouping: {
         type: DataTypes.STRING,
         allowNull: false,

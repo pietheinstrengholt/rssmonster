@@ -9,8 +9,6 @@ Article
     ↓
 ▶ Event
     ↓
-Topic
-    ↓
 Interest Island
 ```
 
@@ -44,7 +42,6 @@ Microsoft acquires startup X
 
 An Event is **not**:
 
-- a Topic
 - a user interest
 - a news category
 
@@ -311,7 +308,7 @@ For every Article:
 
 1. Resolve the Article and reject duplicates or filtered input.
 2. Prefer an explicitly supplied Event vector, otherwise use `articleVector`.
-3. Preserve the existing eventless/topic-only behavior when no vector exists.
+3. Preserve the existing eventless behavior when no vector exists.
 4. Retrieve bounded Event candidates and nearby Article candidates before choosing.
 5. Union centroid-discovered and member-discovered Event IDs; load missing Events in one bounded query.
 6. Evaluate every Event through `evaluateArticleAgainstEvent` in `eventOccurrencePolicy.js`.
@@ -340,8 +337,7 @@ This initial margin is conservative and should be evaluated with semantic fixtur
 `selectEventDecision` returns `join`, `reject`, or `ambiguous` with stable reason
 codes. `assignArticleToEvent` retains its Event-ID-or-null caller contract and
 exposes bounded diagnostics through `runContext.lastDecision`. Ambiguous coverage
-remains canonical and unassigned, preserving reading state and behavioral Topic
-evidence. A later assignment pass can reconsider it; this does not add a retry
+remains canonical and unassigned, preserving reading state and behavioral evidence. A later assignment pass can reconsider it; this does not add a retry
 scheduler or change the incremental scope's creation-time boundary.
 
 Creation validates the complete locked seed group using the same policy. Each
@@ -575,7 +571,7 @@ Articles belong to Events through:
 Article.eventId
 ```
 
-Unlike Topics, Event membership does not currently use a relationship table.
+Event membership is stored on Article.eventId.
 
 An Event owns its member Articles.
 
@@ -589,7 +585,6 @@ Events are responsible only for grouping Articles.
 
 Events do **not**:
 
-- discover Topics
 - model user interests
 - personalize ranking
 - score recommendations
@@ -697,6 +692,5 @@ omitted location/version evidence from false splits. Injury counts are not
 product versions. These are tested cases, not a guarantee for every language or
 news domain. Event IDs in output are diagnostic, never fixture expectations.
 
-Different versions or lifecycle Events may still share a durable
-[Topic](../topics/README.md); Event conflict rules must not be copied wholesale
-into Topic identity.
+Different occurrences can still be relevant to the same personal interest;
+interest affinity does not establish occurrence identity.

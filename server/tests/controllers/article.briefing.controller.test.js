@@ -12,9 +12,7 @@ const {
   Event,
   Feed,
   Island,
-  IslandTopic,
   Setting,
-  Topic,
   User,
   sequelize
 } = db;
@@ -45,6 +43,7 @@ const createArticle = ({ user, feed, slug, title, publishedAt, status = 'unread'
     feedId: feed.id,
     status,
     interestScore,
+    articleVector: [1, 0],
     url: `https://example.com/${user.username}/${slug}`,
     title,
     contentOriginal: `<p>${title}. Original article content.</p>`,
@@ -77,21 +76,11 @@ async function createBriefingFixture() {
   });
   await Setting.create({ userId: owner.id });
 
-  const topic = await Topic.create({
-    userId: owner.id,
-    name: 'Artificial Intelligence',
-    topicKey: uniqueName('briefing-topic')
-  });
   const island = await Island.create({
     userId: owner.id,
     label: 'Artificial Intelligence',
+    islandVector: [1, 0],
     weight: 0.9
-  });
-  await IslandTopic.create({
-    islandId: island.id,
-    topicId: topic.id,
-    similarity: 0.9,
-    confidence: 0.95
   });
 
   const eventOneRepresentative = await createArticle({
@@ -137,7 +126,6 @@ async function createBriefingFixture() {
 
   const eventOne = await Event.create({
     userId: owner.id,
-    topicId: topic.id,
     representativeArticleId: eventOneRepresentative.id,
     name: 'First event',
     articleCount: 2,
@@ -145,7 +133,6 @@ async function createBriefingFixture() {
   });
   const eventTwo = await Event.create({
     userId: owner.id,
-    topicId: topic.id,
     representativeArticleId: sharedRepresentative.id,
     name: 'Lower-ranked shared event',
     articleCount: 1,
@@ -153,7 +140,6 @@ async function createBriefingFixture() {
   });
   const eventThree = await Event.create({
     userId: owner.id,
-    topicId: topic.id,
     representativeArticleId: sharedRepresentative.id,
     name: 'Top-ranked shared event',
     articleCount: 1,
@@ -161,7 +147,6 @@ async function createBriefingFixture() {
   });
   const eventFour = await Event.create({
     userId: owner.id,
-    topicId: topic.id,
     representativeArticleId: fourthRepresentative.id,
     name: null,
     articleCount: 1,
@@ -169,7 +154,6 @@ async function createBriefingFixture() {
   });
   const eventFive = await Event.create({
     userId: owner.id,
-    topicId: topic.id,
     representativeArticleId: fifthRepresentative.id,
     name: 'Fifth event',
     articleCount: 1,
@@ -177,7 +161,6 @@ async function createBriefingFixture() {
   });
   const eventSix = await Event.create({
     userId: owner.id,
-    topicId: topic.id,
     representativeArticleId: sixthRepresentative.id,
     name: 'Sixth event',
     articleCount: 1,
@@ -187,11 +170,11 @@ async function createBriefingFixture() {
   });
 
   await Promise.all([
-    eventOneRepresentative.update({ eventId: eventOne.id, topicId: topic.id }),
-    sharedRepresentative.update({ eventId: eventTwo.id, topicId: topic.id }),
-    fourthRepresentative.update({ eventId: eventFour.id, topicId: topic.id }),
-    fifthRepresentative.update({ eventId: eventFive.id, topicId: topic.id }),
-    sixthRepresentative.update({ eventId: eventSix.id, topicId: topic.id })
+    eventOneRepresentative.update({ eventId: eventOne.id }),
+    sharedRepresentative.update({ eventId: eventTwo.id }),
+    fourthRepresentative.update({ eventId: eventFour.id }),
+    fifthRepresentative.update({ eventId: eventFive.id }),
+    sixthRepresentative.update({ eventId: eventSix.id })
   ]);
 
   const eventOneReadMember = await createArticle({
@@ -202,7 +185,7 @@ async function createBriefingFixture() {
     publishedAt: hoursAgo(1),
     status: 'read'
   }).then(async article => {
-    await article.update({ eventId: eventOne.id, topicId: topic.id });
+    await article.update({ eventId: eventOne.id });
     return article;
   });
 
@@ -213,7 +196,7 @@ async function createBriefingFixture() {
     title: 'Recent member of shared event',
     publishedAt: hoursAgo(1),
     interestScore: 0.9
-  }).then(article => article.update({ eventId: eventThree.id, topicId: topic.id }));
+  }).then(article => article.update({ eventId: eventThree.id }));
   await eventThree.update({ developingArticleId: eventThreeDevelopingMember.id });
 
   await Article.create({
@@ -253,7 +236,6 @@ async function createBriefingFixture() {
   return {
     owner,
     island,
-    topic,
     feeds: { firstFeed, secondFeed },
     events: { eventOne, eventTwo, eventThree, eventFour, eventFive, eventSix },
     representatives: {
@@ -368,7 +350,6 @@ describe('GET /api/articles/briefing', () => {
       articleCount: 7,
       eventCount: 6,
       newEventCount: 5,
-      topicCount: 1,
       islandCount: 1,
       sourceCount: 2
     });

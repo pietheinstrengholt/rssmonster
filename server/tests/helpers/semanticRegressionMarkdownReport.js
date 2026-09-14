@@ -1,4 +1,4 @@
-import { collectIslandDiagnostics, recommendationCoverage, interestPathMetrics, collectTopicQuality } from './semanticRecommendationDiagnostics.js';
+import { collectIslandDiagnostics, recommendationCoverage, interestPathMetrics } from './semanticRecommendationDiagnostics.js';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -73,50 +73,28 @@ function eventRows(rows) {
       name: articles.find(row => row.eventName)?.eventName || '-',
       articleCount: articles.length,
       sourceCount: Math.max(...articles.map(row => Number(row.sourceCount || 0))),
-      topic: articles.find(row => row.topicName)?.topicName || '-',
       samples: sampleTitles(articles)
     }))
     .sort((left, right) => right.articleCount - left.articleCount || left.name.localeCompare(right.name));
 }
 
-// This function builds topic-level report rows from the persisted semantic trace.
-function topicRows(rows) {
-  return [...groupedRows(rows, 'topicId').entries()]
-    .map(([topicId, articles]) => ({
-      topicId,
-      name: articles.find(row => row.topicName)?.topicName || '-',
-      eventCount: new Set(articles.map(row => row.eventId).filter(Boolean)).size,
-      articleCount: articles.length,
-      island: articles.find(row => row.islandDecision === 'topic-island')?.islandName || '-',
-      samples: sampleTitles(articles)
-    }))
-    .sort((left, right) => right.articleCount - left.articleCount || left.name.localeCompare(right.name));
-}
-
-// This function builds island-level report rows from topic and vector-fallback assignments.
+// This function builds island-level report rows from direct vector assignments.
 function islandRows(rows) {
   return [...groupedRows(rows, 'islandId').entries()]
     .map(([islandId, articles]) => ({
       islandId,
       name: articles.find(row => row.islandName)?.islandName || '-',
-      topicCount: new Set(
-        articles
-          .filter(row => row.islandDecision === 'topic-island')
-          .map(row => row.topicId)
-          .filter(Boolean)
-      ).size,
-      topicArticles: articles.filter(row => row.islandDecision === 'topic-island').length,
       fallbackArticles: articles.filter(row => row.islandDecision === 'vector-fallback').length,
       samples: sampleTitles(articles)
     }))
     .sort((left, right) => (
-      right.topicArticles + right.fallbackArticles - left.topicArticles - left.fallbackArticles ||
+      right.fallbackArticles - left.fallbackArticles ||
       left.name.localeCompare(right.name)
     ));
 }
 
 // This function builds management-level statistics for one completed semantic run.
-function summaryRows(rows, events, topics, islands, duplicates) {
+function summaryRows(rows, events, islands, duplicates) {
   const incrementalRows = rows.filter(row => row.source === 'incremental');
 
   return [
@@ -126,11 +104,8 @@ function summaryRows(rows, events, topics, islands, duplicates) {
     ['Baseline articles', rows.filter(row => row.source === 'baseline').length],
     ['Incremental articles', incrementalRows.length],
     ['Articles assigned to events', rows.filter(row => row.eventId).length],
-    ['Articles assigned to topics', rows.filter(row => row.topicId).length],
     ['Active events', events.length],
-    ['Active topics', topics.length],
     ['Interest islands used', islands.length],
-    ['Topic-island article paths', rows.filter(row => row.islandDecision === 'topic-island').length],
     ['Vector-fallback island paths', rows.filter(row => row.islandDecision === 'vector-fallback').length],
     ['Standalone articles', rows.filter(row => row.semanticPath === 'A').length],
     ['Incremental joins to existing events', rows.filter(row => row.eventDecision === 'existing-event').length],
@@ -144,9 +119,8 @@ function summaryRows(rows, events, topics, islands, duplicates) {
 export function renderSemanticRegressionMarkdown({ trace, metadata, duplicateGroups = [], generatedAt = new Date(), expansion = null }) {
   const rows = Object.values(trace.articles || {});
   const events = eventRows(rows);
-  const topics = topicRows(rows);
   const islands = islandRows(rows);
-  const summary = summaryRows(rows, events, topics, islands, duplicateGroups);
+  const summary = summaryRows(rows, events, islands, duplicateGroups);
   const duplicateRows = duplicateGroups.map(group => [
     group.canonicalId,
     group.canonicalTitle,
@@ -180,7 +154,7 @@ export function renderSemanticRegressionMarkdown({ trace, metadata, duplicateGro
       markdownTable(['Corpus', 'Articles'], [['Legacy main user', rows.length], ['Dedicated expansion', expansion.expansionCorpusCount], ['Combined', rows.length + expansion.expansionCorpusCount]]), '',
       markdownTable(['Expansion metric', 'Value'], Object.entries(expansion.metrics)), '',
       `Gold assertions: ${expansion.checks.filter(c => c.pass).length} passed; ${expansion.checks.filter(c => !c.pass).length} failed.`, '',
-      '[Scenario PASS/FAIL and held-out outcomes](expansion-report.md) · [Structured outcomes](expansion-report.json) · [Event decisions](expansion-decisions.md) · [Topic decisions](expansion-topic-decisions.json)', ''
+      '[Scenario PASS/FAIL and held-out outcomes](expansion-report.md) · [Structured outcomes](expansion-report.json) · [Event decisions](expansion-decisions.md)', ''
     ] : []),
     '## Island formation diagnostics',
     '',
@@ -198,24 +172,15 @@ export function renderSemanticRegressionMarkdown({ trace, metadata, duplicateGro
         row.distinctSources, row.distinctPublicationDays, row.medianSimilarity?.toFixed(3), row.minimumSimilarity?.toFixed(3),
         row.positiveEvidenceCount, row.negativeEvidenceCount, row.classifications.join(', ')])),
     '',
-    '## Topic decision diagnostics',
-    '',
-    '[Topic gold cases](topic-gold.md). Candidate details are also recorded in trace.json and the console trace; IDs are diagnostic only.',
-    '',
-    markdownTable(['Metric', 'Value'], Object.entries(trace.topicQuality || {})),
-    '',
-    markdownTable(['Event', 'Outcome', 'Margin', 'Candidate Topic', 'Similarity', 'Relationship', 'Confidence', 'Reasons'],
-      (trace.topicDecisions || []).flatMap(d => d.candidates.length ? d.candidates.map(c => [d.eventName, d.outcome, d.winnerMargin?.toFixed(3), c.topicName, c.semanticSimilarity?.toFixed(3), c.relationshipType, c.confidence, c.reasons.join(', ')]) : [[d.eventName, d.outcome, '-', '-', '-', '-', '-', '-']])),
-    '',
     '## Interest contribution diagnostics',
     '',
-    'Paths are deduplicated per Island and per sign. Seed/self evidence is not held-out generalization. Topic similarity below is IslandTopic similarity; ArticleTopic stores confidence only.',
+    'Paths are deduplicated per Island and per sign. Seed/self evidence is not held-out generalization.',
     '',
-    markdownTable(['Article', 'Evidence', 'Path', 'Island / behavior source', 'Similarity', 'Relationship confidence', 'ArticleTopic confidence', 'IslandTopic confidence', 'Recency', 'Intent', 'Intent compatibility', 'Contribution'],
+    markdownTable(['Article', 'Evidence', 'Path', 'Island / behavior source', 'Similarity', 'Relationship confidence', 'Recency', 'Intent', 'Intent compatibility', 'Contribution'],
       rows.flatMap(row => (row.interestDiagnostics?.paths || []).map(path => [row.title,
         row.interestDiagnostics.seedSelf ? 'seed/self' : 'held-out', path.matchType,
         path.islandId ?? `article ${path.sourceArticleId} (${path.explicitType})`, path.semanticSimilarity?.toFixed(3),
-        path.relationshipConfidence?.toFixed(3), path.articleTopicConfidence?.toFixed(3), path.islandTopicConfidence?.toFixed(3),
+        path.relationshipConfidence?.toFixed(3),
         path.recencyFactor?.toFixed(3), path.intentMatchType, path.intentCompatibility, path.contribution?.toFixed(4)]))),
     '',
     '## Event decision diagnostics',
@@ -227,25 +192,16 @@ export function renderSemanticRegressionMarkdown({ trace, metadata, duplicateGro
     '## Events',
     '',
     markdownTable(
-      ['Event', 'Articles', 'Sources', 'Topic', 'Representative articles'],
-      events.map(event => [event.name, event.articleCount, event.sourceCount, event.topic, event.samples])
-    ),
-    '',
-    '## Topics',
-    '',
-    markdownTable(
-      ['Topic', 'Events', 'Articles', 'Interest island', 'Representative articles'],
-      topics.map(topic => [topic.name, topic.eventCount, topic.articleCount, topic.island, topic.samples])
+      ['Event', 'Articles', 'Sources', 'Representative articles'],
+      events.map(event => [event.name, event.articleCount, event.sourceCount, event.samples])
     ),
     '',
     '## Interest islands',
     '',
     markdownTable(
-      ['Island', 'Topics', 'Topic-path articles', 'Fallback articles', 'Representative articles'],
+      ['Island', 'Fallback articles', 'Representative articles'],
       islands.map(island => [
         island.name,
-        island.topicCount,
-        island.topicArticles,
         island.fallbackArticles,
         island.samples
       ])
@@ -267,8 +223,8 @@ export function renderSemanticRegressionMarkdown({ trace, metadata, duplicateGro
     '',
     '## Interpretation notes',
     '',
-    '- Event, topic, and island tables include representative titles rather than every article.',
-    '- Vector-fallback counts show island classification that did not travel through a topic membership.',
+    '- Event and island tables include representative titles rather than every article.',
+    '- Vector-fallback counts show direct Island matching.',
     '- This report records observed pipeline behavior; passing regression assertions does not by itself establish model quality.',
     '- Use the JSON trace in this directory for article-level investigation and cross-run comparison.',
     ''
@@ -318,8 +274,6 @@ export async function writeSemanticRegressionMarkdownReport({
     loadDuplicateGroups([...new Set([userId, ...duplicateEvaluationUserIds].filter(Boolean))])
   ]);
   trace.islandDiagnostics = await collectIslandDiagnostics(userId);
-  trace.topicQuality = await collectTopicQuality(userId, trace.topicDecisions);
-  console.table(trace.topicQuality);
   await writeFile(TRACE_PATH, JSON.stringify(trace, null, 2));
   console.table(recommendationCoverage(Object.values(trace.articles || {})));
   console.table(interestPathMetrics(Object.values(trace.articles || {})));

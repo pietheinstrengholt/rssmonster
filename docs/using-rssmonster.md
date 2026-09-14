@@ -32,5 +32,5 @@ Learn how to use RSSMonster's core reading, feed management, search, and organiz
 - [Progressive Web App and Notifications]({% link web-app-and-notifications.md %}) explains PWA installation, everyday use, offline support, and browser Push.
 
 For the meaning of scores, related stories, and personalization, see
-[Scoring and Ranking]({% link scoring.md %}), [Events]({% link events.md %}), [Topics]({% link topics.md %}), and
+[Scoring and Ranking]({% link scoring.md %}), [Events]({% link events.md %}), and
 [Interest Islands]({% link interest-islands.md %}).

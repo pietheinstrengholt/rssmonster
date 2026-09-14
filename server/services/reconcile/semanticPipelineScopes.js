@@ -1,7 +1,4 @@
-import { loadTopicSubjectEvidence } from '../topics/shared/topicSubjectEvidence.js';
 // services/reconcile/semanticPipelineScopes.js
-// This service exposes explicit semantic pipeline scopes for events and event-topic assignment.
-// It treats Article.topicId as event-owned denormalization, so behavioral topic evidence stays in ArticleTopic.
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { randomUUID } from 'node:crypto';
@@ -15,22 +12,14 @@ import {
 } from '../config/semanticConfig.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { logEventProcessingSummary } from '../events/eventPipelineDebug.js';
-import {
-  computeEventStrength,
-  reconcileTouchedEvents
-} from '../events/eventReconciliation.js';
-import {
-  assignTopicsForEvents,
-  EVENT_TOPIC_TYPES
-} from '../topics/event/eventTopicAssignment.js';
-import { recomputeTopicStatsForUser } from '../topics/shared/topicStats.service.js';
+import { reconcileTouchedEvents } from '../events/eventReconciliation.js';
 import { HOUR_MS } from '../events/articleEventTime.js';
 import { recordProcessingFailure } from '../observability/processingFailures.js';
 import { tryEnqueueGeneratedSemanticLabelJobsForUser } from '../semanticLabels/semanticLabelJobs.js';
 import { debugSemanticLog } from '../observability/semanticLogging.js';
 
 // Provides the shared dependencies used by this service.
-const { Article, Event, Feed, Topic, ArticleTopic, EventTopic } = db;
+const { Article, Event, Feed } = db;
 // Defines the cache buffer hours enforced by this service.
 const CACHE_BUFFER_HOURS = Number.parseInt(process.env.EVENT_CACHE_BUFFER_HOURS || '2', 10);
 
@@ -73,9 +62,7 @@ function buildAssignmentResult({
   mode,
   articles,
   touchedEventIds,
-  touchedTopicIds = [],
   runContext,
-  topicAssignment = null,
   durations = null
 }) {
   // Filters source values to the entries eligible while building assignment result.
@@ -88,29 +75,13 @@ function buildAssignmentResult({
     mode,
     articleCount: articles.length,
     touchedEventIds: [...new Set([...touchedEventIds].map(Number).filter(Boolean))],
-    touchedTopicIds: [...new Set(touchedTopicIds.map(Number).filter(Boolean))],
     createdEventIds: [...new Set([...(runContext.newEventIds || [])]
-      .map(Number)
-      .filter(Boolean))],
-    createdTopicIds: [...new Set((topicAssignment?.createdTopicIds || [])
       .map(Number)
       .filter(Boolean))],
     newEventsCreatedCount: Number(runContext.stats.newEventsCreatedCount || 0),
     linkedToExistingEventCount: Number(runContext.stats.linkedToExistingEventCount || 0),
     unassignedCount,
-    durations: durations || { eventsMs: 0, topicsMs: 0 },
-    topicAssignment: topicAssignment || {
-      skipped: true,
-      eventCount: 0,
-      touchedTopicIds: [],
-      createdTopicIds: [],
-      stats: {
-        eventsSkipped: 0,
-        eventsMatched: 0,
-        eventsUnmatched: 0,
-        newTopicsCreated: 0
-      }
-    }
+    durations: durations || { eventsMs: 0 },
   };
 }
 
@@ -194,17 +165,11 @@ function createEventAssignmentContext() {
     stats: {
       newEventsCreatedCount: 0,
       linkedToExistingEventCount: 0,
-      topicOnlyNoVectorCount: 0,
-      topicOnlyInsufficientCandidatesCount: 0,
+      eventlessNoVectorCount: 0,
+      eventlessInsufficientCandidatesCount: 0,
       eventVectorSkippedCount: 0
     }
   };
-}
-
-// This function resolves the topic assignment context for one pipeline scope.
-function topicAssignmentContextForScope(scope) {
-  // Selects the result based on whether scope is incremental.
-  return scope === 'incremental' ? 'incremental' : scope;
 }
 
 // This function embeds missing article vectors for one event assignment pass.
@@ -261,9 +226,7 @@ async function embedArticlesForEventAssignment(articles, scope, processingContex
 async function assignArticlesToEvents({
   articles,
   vectorsByIndex,
-  topicsCache,
   runContext,
-  scope,
   cache,
   useTemporalEventCandidates,
   articleCandidateCache
@@ -291,12 +254,8 @@ async function assignArticlesToEvents({
       article,
       eventCache,
       vectors,
-      topicsCache,
       runContext,
       {
-        assignmentContext: topicAssignmentContextForScope(scope),
-        // Topic assignment runs once after touched events are reconciled.
-        skipTopicAssignment: true,
         articleCandidateCache
       }
     );
@@ -318,135 +277,16 @@ function formatEventAssignmentSummary(runContext) {
   return [
     `newEvents=${runContext.stats.newEventsCreatedCount}`,
     `linkedToExisting=${runContext.stats.linkedToExistingEventCount}`,
-    `topicOnlyNoVector=${runContext.stats.topicOnlyNoVectorCount}`,
-    `topicOnlyInsufficient=${runContext.stats.topicOnlyInsufficientCandidatesCount}`,
+    `eventlessNoVector=${runContext.stats.eventlessNoVectorCount}`,
+    `eventlessInsufficient=${runContext.stats.eventlessInsufficientCandidatesCount}`,
     `eventVectorSkipped=${runContext.stats.eventVectorSkippedCount}`
   ].join(' ');
-}
-
-// This function assigns topics to reconciled events and refreshes derived topic metadata.
-async function assignTopicsForTouchedEvents({ userId, articles, touchedIds, articlesByEventId, scope }) {
-  // Loads the reconciled events needed while assigning topics for touched events.
-  const reconciledEvents = await Event.findAll({
-    where: { id: { [Op.in]: touchedIds } },
-    order: [
-      ['eventWindowEndAt', 'ASC'],
-      ['id', 'ASC']
-    ]
-  });
-  // Derives the topic assignment result through assign topics for events while assigning topics for touched events.
-  const topicAssignmentResult = await assignTopicsForEvents(userId, reconciledEvents, {
-    assignmentContext: topicAssignmentContextForScope(scope)
-  });
-
-  // Loads the primary event topics needed while assigning topics for touched events.
-  const primaryEventTopics = await EventTopic.findAll({
-    where: {
-      eventId: { [Op.in]: touchedIds },
-      primaryInd: true
-    },
-    attributes: ['eventId', 'topicId'],
-    raw: true
-  });
-  // Derives the topic id by event id through from entries while assigning topics for touched events.
-  const topicIdByEventId = Object.fromEntries(
-    primaryEventTopics.map(row => [Number(row.eventId), Number(row.topicId)])
-  );
-  // Collects the primary topic id while assigning topics for touched events.
-  const primaryTopicIds = [
-    ...new Set(primaryEventTopics.map(row => Number(row.topicId)).filter(Boolean))
-  ];
-  // Selects the topic rows based on whether primary topic id is non-empty.
-  const topicRows = primaryTopicIds.length
-    ? await EventTopic.findAll({
-      where: {
-        topicId: { [Op.in]: primaryTopicIds },
-        primaryInd: true
-      },
-      attributes: [
-        'topicId',
-        [db.sequelize.fn('COUNT', '*'), 'eventCount']
-      ],
-      group: ['topicId'],
-      raw: true
-    })
-    : [];
-  // Derives the topic size map through from entries while assigning topics for touched events.
-  const topicSizeMap = Object.fromEntries(
-    topicRows.map(row => [Number(row.topicId), Number(row.eventCount)])
-  );
-
-  // Maps source values into the result produced while assigning topics for touched events.
-  await Promise.all(
-    reconciledEvents.map(event => {
-      // Tracks article count for the processing summary.
-      const articleCount = articlesByEventId[event.id]?.length || Number(event.articleCount || 0);
-      // Derives the event primary topic id required while assigning topics for touched events.
-      const eventPrimaryTopicId = topicIdByEventId[event.id] ?? null;
-      // Selects the topic event count based on whether event primary topic id is available.
-      const topicEventCount = eventPrimaryTopicId ? (topicSizeMap[eventPrimaryTopicId] ?? 1) : 1;
-      // Computes the event strength while assigning topics for touched events.
-      const strength = computeEventStrength({
-        articleCount,
-        topicEventCount
-      });
-
-      return event.update({
-        topicId: eventPrimaryTopicId,
-        eventStrength: strength
-      });
-    })
-  );
-
-  // Loads the touched event topic rows needed while assigning topics for touched events.
-  const touchedEventTopicRows = await EventTopic.findAll({
-    where: { eventId: { [Op.in]: touchedIds } },
-    attributes: ['topicId'],
-    raw: true
-  });
-
-  // Transforms source values into the touched article id required while assigning topics for touched events.
-  const touchedArticleIds = articles.map(article => article.id);
-  // Selects the touched article topic rows based on whether touched article id is non-empty.
-  const touchedArticleTopicRows = touchedArticleIds.length
-    ? await ArticleTopic.findAll({
-      where: { articleId: { [Op.in]: touchedArticleIds } },
-      attributes: ['topicId'],
-      raw: true
-    })
-    : [];
-
-  // Tracks distinct touched topic id while assigning topics for touched events.
-  const touchedTopicIds = new Set();
-  // Processes each touched event topic rows entry in turn.
-  for (const row of touchedEventTopicRows) {
-    // Handles the case where row topic id is not value.
-    if (row.topicId != null) touchedTopicIds.add(Number(row.topicId));
-  }
-  // Processes each touched article topic rows entry in turn.
-  for (const row of touchedArticleTopicRows) {
-    // Handles the case where row topic id is not value.
-    if (row.topicId != null) touchedTopicIds.add(Number(row.topicId));
-  }
-
-  // Collects the all touched topic id while assigning topics for touched events.
-  const allTouchedTopicIds = [
-    ...new Set([...touchedTopicIds, ...topicAssignmentResult.touchedTopicIds])
-  ];
-
-  await recomputeTopicStatsForUser(userId, allTouchedTopicIds);
-
-  return {
-    ...topicAssignmentResult,
-    touchedTopicIds: allTouchedTopicIds
-  };
 }
 
 // This function orchestrates one scoped event assignment pass.
 async function runEventAssignmentPass(userId, articles, scope, options = {}) {
   const passStartedAt = Date.now();
   const {
-    skipTopicAssignment = false,
     useTemporalEventCandidates = false,
     eventCacheWindowHours = null,
     articleCandidateCache = null,
@@ -460,15 +300,6 @@ async function runEventAssignmentPass(userId, articles, scope, options = {}) {
     ? null
     : await EventCache.forUser(userId, { windowHours: eventCacheWindowHours });
 
-  // Loads the topics cache needed while performing run event assignment pass.
-  const topicsCache = await db.Topic.findAll({
-    where: {
-      userId,
-      topicType: { [Op.in]: EVENT_TOPIC_TYPES }
-    },
-    order: [['updatedAt', 'DESC']]
-  });
-
   // Derives the vectors by index through embed articles for event assignment while performing run event assignment pass.
   const vectorsByIndex = await embedArticlesForEventAssignment(
     articles,
@@ -479,7 +310,6 @@ async function runEventAssignmentPass(userId, articles, scope, options = {}) {
   const touchedEventIds = await assignArticlesToEvents({
     articles,
     vectorsByIndex,
-    topicsCache,
     runContext,
     scope,
     cache,
@@ -502,7 +332,7 @@ async function runEventAssignmentPass(userId, articles, scope, options = {}) {
       articles,
       touchedEventIds,
       runContext,
-      durations: { eventsMs: Date.now() - passStartedAt, topicsMs: 0 }
+      durations: { eventsMs: Date.now() - passStartedAt }
     });
   }
 
@@ -515,63 +345,14 @@ async function runEventAssignmentPass(userId, articles, scope, options = {}) {
   );
 
   // Derives the values through reconcile touched events while performing run event assignment pass.
-  const { articlesByEventId } = await reconcileTouchedEvents(userId, touchedIds);
+  await reconcileTouchedEvents(userId, touchedIds);
   const eventsDurationMs = Date.now() - passStartedAt;
 
   await logEventProcessingSummary(userId, articles, runContext);
 
-  // Returns early when skip topic assignment is available.
-  if (skipTopicAssignment) {
-    return buildAssignmentResult({
-      userId,
-      mode: scope,
-      articles,
-      touchedEventIds,
-      runContext,
-      durations: { eventsMs: eventsDurationMs, topicsMs: 0 }
-    });
-  }
-
-  // Derives the topic assignment through assign topics for touched events while performing run event assignment pass.
-  let topicAssignment;
-  const topicsStartedAt = Date.now();
-  try {
-    topicAssignment = await assignTopicsForTouchedEvents({
-      userId,
-      articles,
-      touchedIds,
-      articlesByEventId,
-      scope
-    });
-  } catch (error) {
-    await recordProcessingFailure({
-      ...processingContext,
-      userId,
-      stage: 'topic_assignment',
-      error,
-      severity: 'FATAL',
-      subjectType: 'user',
-      subjectId: userId,
-      context: { scope }
-    });
-    throw error;
-  }
-
   return buildAssignmentResult({
-    userId,
-    mode: scope,
-    articles,
-    touchedEventIds,
-    touchedTopicIds: topicAssignment.touchedTopicIds,
-    runContext,
-    topicAssignment: {
-      skipped: false,
-      ...topicAssignment
-    },
-    durations: {
-      eventsMs: eventsDurationMs,
-      topicsMs: Date.now() - topicsStartedAt
-    }
+    userId, mode: scope, articles, touchedEventIds, runContext,
+    durations: { eventsMs: eventsDurationMs }
   });
 }
 
@@ -579,7 +360,6 @@ async function runEventAssignmentPass(userId, articles, scope, options = {}) {
 async function runIncrementalEventsForUserInternal(userId, options = {}) {
   const {
     createdAtFrom = null,
-    skipTopicAssignment = false,
     processingContext = null
   } = options;
   debugSemanticLog('event', `[EVENT] Incremental event assignment for user ${userId}`);
@@ -626,25 +406,11 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
       mode: 'incremental',
       articleCount: 0,
       touchedEventIds: [],
-      touchedTopicIds: [],
       createdEventIds: [],
-      createdTopicIds: [],
       newEventsCreatedCount: 0,
       linkedToExistingEventCount: 0,
       unassignedCount: 0,
-      durations: { eventsMs: 0, topicsMs: 0 },
-      topicAssignment: {
-        skipped: skipTopicAssignment,
-        eventCount: 0,
-        touchedTopicIds: [],
-        createdTopicIds: [],
-        stats: {
-          eventsSkipped: 0,
-          eventsMatched: 0,
-          eventsUnmatched: 0,
-          newTopicsCreated: 0
-        }
-      }
+      durations: { eventsMs: 0 },
     };
   }
 
@@ -660,7 +426,6 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
 
   // Derives the result through run event assignment pass while performing run incremental events for user.
   const result = await runEventAssignmentPass(userId, articles, 'incremental', {
-    skipTopicAssignment,
     eventCacheWindowHours: cacheWindowHours,
     articleCandidateCache,
     processingContext
@@ -677,10 +442,9 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
 export async function runIncrementalEventsForUser(userId, options = {}) {
   try {
     const result = await runIncrementalEventsForUserInternal(userId, options);
-    if (result.createdEventIds.length || result.createdTopicIds.length) {
+    if (result.createdEventIds.length) {
       await tryEnqueueGeneratedSemanticLabelJobsForUser(userId, {
         eventIds: result.createdEventIds,
-        topicIds: result.createdTopicIds
       });
     }
     return result;
@@ -701,8 +465,7 @@ export async function runIncrementalEventsForUser(userId, options = {}) {
 }
 
 // This function runs the recent-repair event scope over the configured recency window.
-export async function repairRecentEventsForUser(userId, options = {}) {
-  const { skipTopicAssignment = false } = options;
+export async function repairRecentEventsForUser(userId, _options = {}) {
   debugSemanticLog('event', `[EVENT] Recent-repair event assignment for user ${userId}`);
 
   await clearForeignEventReferencesForUser(userId);
@@ -737,24 +500,10 @@ export async function repairRecentEventsForUser(userId, options = {}) {
       mode: 'recent-repair',
       articleCount: 0,
       touchedEventIds: [],
-      touchedTopicIds: [],
       createdEventIds: [],
-      createdTopicIds: [],
       newEventsCreatedCount: 0,
       linkedToExistingEventCount: 0,
       unassignedCount: 0,
-      topicAssignment: {
-        skipped: skipTopicAssignment,
-        eventCount: 0,
-        touchedTopicIds: [],
-        createdTopicIds: [],
-        stats: {
-          eventsSkipped: 0,
-          eventsMatched: 0,
-          eventsUnmatched: 0,
-          newTopicsCreated: 0
-        }
-      }
     };
   }
 
@@ -794,73 +543,10 @@ export async function repairRecentEventsForUser(userId, options = {}) {
     `(${ownedPreviousEventIds.size}/${previousEventIds.size} events affected)`
   );
 
-  // Loads the previous article topic rows needed while performing repair recent events for user.
-  const previousArticleTopicRows = await ArticleTopic.findAll({
-    where: {
-      articleId: { [Op.in]: windowArticleIds },
-      topicId: {
-        [Op.in]: db.Sequelize.literal(
-          `(SELECT id FROM topics WHERE topicType IN ('event', 'hybrid'))`
-        )
-      }
-    },
-    attributes: ['topicId'],
-    raw: true
-  });
-
-  // Selects the previous event topic rows based on whether owned previous event id size is available.
-  const previousEventTopicRows = ownedPreviousEventIds.size
-    ? await EventTopic.findAll({
-      where: { eventId: { [Op.in]: ownedPreviousEventIdList } },
-      attributes: ['topicId'],
-      raw: true
-    })
-    : [];
-
-  // Collects the stale topic id while performing repair recent events for user.
-  const staleTopicIds = [
-    ...new Set([
-      ...previousArticleTopicRows.map(row => Number(row.topicId)).filter(Boolean),
-      ...previousEventTopicRows.map(row => Number(row.topicId)).filter(Boolean)
-    ])
-  ];
-
   await Article.update(
     { eventId: null },
     { where: { id: { [Op.in]: windowArticleIds }, ...canonicalArticleWhere() } }
   );
-
-  await Article.update(
-    { topicId: null },
-    {
-      where: {
-        id: { [Op.in]: windowArticleIds },
-        topicId: {
-          [Op.in]: db.Sequelize.literal(
-            `(SELECT id FROM topics WHERE topicType IN ('event', 'hybrid'))`
-          )
-        }
-      }
-    }
-  );
-
-  await ArticleTopic.destroy({
-    where: {
-      articleId: { [Op.in]: windowArticleIds },
-      topicId: {
-        [Op.in]: db.Sequelize.literal(
-          `(SELECT id FROM topics WHERE topicType IN ('event', 'hybrid'))`
-        )
-      }
-    }
-  });
-
-  // Handles the case where owned previous event id size is available.
-  if (ownedPreviousEventIds.size) {
-    await EventTopic.destroy({
-      where: { eventId: { [Op.in]: ownedPreviousEventIdList } }
-    });
-  }
 
   let deletedCount = 0;
 
@@ -894,13 +580,7 @@ export async function repairRecentEventsForUser(userId, options = {}) {
 
   // Derives the repair result through run event assignment pass while performing repair recent events for user.
   const repairResult = await runEventAssignmentPass(userId, windowArticles, 'recent-repair', {
-    skipTopicAssignment
   });
-
-  // Handles the case where skip topic assignment is unavailable.
-  if (!skipTopicAssignment) {
-    await recomputeTopicStatsForUser(userId, [...new Set([...staleTopicIds, ...repairResult.touchedTopicIds])]);
-  }
 
   // Derives the summary through summarize article assignments while performing repair recent events for user.
   const summary = await summarizeArticleAssignments(userId, windowArticleIds);
@@ -919,10 +599,9 @@ export async function repairRecentEventsForUser(userId, options = {}) {
     ` pruned=${deletedCount})`
   );
 
-  if (repairResult.createdEventIds.length || repairResult.createdTopicIds.length) {
+  if (repairResult.createdEventIds.length) {
     await tryEnqueueGeneratedSemanticLabelJobsForUser(userId, {
       eventIds: repairResult.createdEventIds,
-      topicIds: repairResult.createdTopicIds
     });
   }
 
@@ -932,7 +611,6 @@ export async function repairRecentEventsForUser(userId, options = {}) {
 // This function backfills missing historical events from all vectorized articles for a user.
 export async function backfillHistoricalEventsForUser(userId, options = {}) {
   const {
-    skipTopicAssignment = false,
     batchSize = 250
   } = options;
 
@@ -942,12 +620,9 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
 
   let lastId = 0;
   let totalProcessed = 0;
-  // Collects the touched topic id while performing backfill historical events for user.
-  let touchedTopicIds = [];
   // Collects the touched event id while performing backfill historical events for user.
   let touchedEventIds = [];
   let createdEventIds = [];
-  let createdTopicIds = [];
   let newEventsCreatedCount = 0;
   let linkedToExistingEventCount = 0;
   let unassignedCount = 0;
@@ -977,15 +652,12 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
       articles,
       'historical-backfill',
       {
-        skipTopicAssignment,
         useTemporalEventCandidates: true
       }
     );
 
-    touchedTopicIds = [...new Set([...touchedTopicIds, ...batchResult.touchedTopicIds])];
     touchedEventIds = [...new Set([...touchedEventIds, ...batchResult.touchedEventIds])];
     createdEventIds = [...new Set([...createdEventIds, ...batchResult.createdEventIds])];
-    createdTopicIds = [...new Set([...createdTopicIds, ...batchResult.createdTopicIds])];
     newEventsCreatedCount += batchResult.newEventsCreatedCount;
     linkedToExistingEventCount += batchResult.linkedToExistingEventCount;
     unassignedCount += batchResult.unassignedCount;
@@ -993,11 +665,6 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
     lastId = articles[articles.length - 1].id;
 
     debugSemanticLog('event', `[EVENT] Historical backfill processed=${totalProcessed}, lastId=${lastId}`);
-  }
-
-  // Handles the case where skip topic assignment is unavailable and touched topic id is non-empty.
-  if (!skipTopicAssignment && touchedTopicIds.length) {
-    await recomputeTopicStatsForUser(userId, touchedTopicIds);
   }
 
   debugSemanticLog('event',
@@ -1010,173 +677,17 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
     mode: 'historical-backfill',
     articleCount: totalProcessed,
     touchedEventIds,
-    touchedTopicIds,
     createdEventIds,
-    createdTopicIds,
     newEventsCreatedCount,
     linkedToExistingEventCount,
     unassignedCount,
-    topicAssignment: {
-      skipped: skipTopicAssignment,
-      eventCount: touchedEventIds.length,
-      touchedTopicIds,
-      createdTopicIds,
-      stats: {
-        eventsSkipped: 0,
-        eventsMatched: 0,
-        eventsUnmatched: 0,
-        newTopicsCreated: 0
-      }
-    }
   };
 
-  if (result.createdEventIds.length || result.createdTopicIds.length) {
+  if (result.createdEventIds.length) {
     await tryEnqueueGeneratedSemanticLabelJobsForUser(userId, {
       eventIds: result.createdEventIds,
-      topicIds: result.createdTopicIds
     });
   }
 
   return result;
 }
-
-// This function runs the full-rebuild topic scope for event and hybrid topic assignments for a user.
-// Behavioral topics are left intact because they are maintained by calibrateBehavioralTopics.js.
-export async function rebuildAllTopicsForUser(userId, options = {}) {
-  const { assignmentContext = 'full-rebuild' } = options;
-
-  debugSemanticLog('event', `[TOPIC] Full-rebuild topics for user ${userId}`);
-
-  // Loads the user topics needed while performing rebuild all topics for user.
-  const userTopics = await Topic.findAll({
-    where: {
-      userId,
-      topicType: { [Op.in]: EVENT_TOPIC_TYPES }
-    },
-    attributes: ['id'],
-    raw: true
-  });
-  // Keeps the existing topic id entries eligible while performing rebuild all topics for user.
-  const existingTopicIds = userTopics.map(topic => Number(topic.id)).filter(Boolean);
-
-  // Loads the events needed while performing rebuild all topics for user.
-  const events = await Event.findAll({
-    where: { userId },
-    order: [
-      ['eventWindowEndAt', 'ASC'],
-      ['id', 'ASC']
-    ]
-  });
-
-  // Preserve source anchors before the explicit rebuild clears relationship rows.
-  const subjectEvidence = await loadTopicSubjectEvidence(userTopics, userId);
-
-  // Maps source values into the result produced while performing rebuild all topics for user.
-  await EventTopic.destroy({
-    where: {
-      eventId: {
-        [Op.in]: events.map(event => event.id)
-      }
-    }
-  });
-
-  // Handles the case where existing topic id is non-empty.
-  if (existingTopicIds.length) {
-    await Article.update(
-      { topicId: null },
-      {
-        where: {
-          userId,
-          topicId: { [Op.in]: existingTopicIds }
-        }
-      }
-    );
-
-    await ArticleTopic.destroy({
-      where: {
-        topicId: { [Op.in]: existingTopicIds }
-      }
-    });
-  }
-
-  await Event.update(
-    { topicId: null },
-    { where: { userId } }
-  );
-
-  // Derives the values through assign topics for events while performing rebuild all topics for user.
-  const {
-    eventCount,
-    touchedTopicIds,
-    createdTopicIds = [],
-    stats
-  } = await assignTopicsForEvents(userId, events, {
-    assignmentContext,
-    subjectEvidence
-  });
-
-  await recomputeTopicStatsForUser(
-    userId,
-    [...new Set([...existingTopicIds, ...touchedTopicIds])]
-  );
-
-  // Loads the all user topics needed while performing rebuild all topics for user.
-  const allUserTopics = await Topic.findAll({
-    where: {
-      userId,
-      topicType: { [Op.in]: EVENT_TOPIC_TYPES }
-    },
-    attributes: ['id', 'eventCount'],
-    raw: true
-  });
-
-  if (createdTopicIds.length) {
-    await tryEnqueueGeneratedSemanticLabelJobsForUser(userId, { topicIds: createdTopicIds });
-  }
-
-  const topicCount = allUserTopics.length;
-  // Aggregates source values into the total event links used while performing rebuild all topics for user.
-  const totalEventLinks = allUserTopics.reduce((sum, t) => sum + (t.eventCount || 0), 0);
-  // Aggregates source values into the largest topic size used while performing rebuild all topics for user.
-  const largestTopicSize = allUserTopics.reduce((max, t) => Math.max(max, t.eventCount || 0), 0);
-  // Selects the avg events per topic based on whether topic count is available.
-  const avgEventsPerTopic = topicCount ? (totalEventLinks / topicCount).toFixed(1) : '0';
-  // Derives the assignable events required while performing rebuild all topics for user.
-  const assignableEvents = eventCount - stats.eventsSkipped;
-  // Selects the reuse ratio based on whether assignable events exceeds value.
-  const reuseRatio = assignableEvents > 0
-    ? ((stats.eventsMatched / assignableEvents) * 100).toFixed(1)
-    : '0';
-  // Selects the creation ratio based on whether assignable events exceeds value.
-  const creationRatio = assignableEvents > 0
-    ? ((stats.newTopicsCreated / assignableEvents) * 100).toFixed(1)
-    : '0';
-
-  debugSemanticLog('event', `[TOPIC] === Topic Rebuild Summary for user ${userId} ===`);
-  debugSemanticLog('event', `[TOPIC] Active topics          ${topicCount}`);
-  debugSemanticLog('event', `[TOPIC] Events processed       ${eventCount}`);
-  debugSemanticLog('event', `[TOPIC] Events matched         ${stats.eventsMatched}`);
-  debugSemanticLog('event', `[TOPIC] Events unmatched       ${stats.eventsUnmatched}`);
-  debugSemanticLog('event', `[TOPIC] Events skipped         ${stats.eventsSkipped} (no vector)`);
-  debugSemanticLog('event', `[TOPIC] New topics created     ${stats.newTopicsCreated}`);
-  debugSemanticLog('event', `[TOPIC] Average events/topic   ${avgEventsPerTopic}`);
-  debugSemanticLog('event', `[TOPIC] Largest topic size     ${largestTopicSize} events`);
-  debugSemanticLog('event', `[TOPIC] Topic reuse ratio      ${reuseRatio}%`);
-  debugSemanticLog('event', `[TOPIC] Topic creation ratio   ${creationRatio}%`);
-
-  return {
-    userId,
-    eventCount,
-    touchedTopicIds,
-    createdTopicIds,
-    stats,
-    topicCount,
-    totalEventLinks,
-    largestTopicSize,
-    avgEventsPerTopic,
-    reuseRatio,
-    creationRatio
-  };
-}
-
-export default repairRecentEventsForUser;

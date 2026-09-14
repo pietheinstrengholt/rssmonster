@@ -6,22 +6,17 @@ import {
 
 const row = values => ({ ...values, update: vi.fn().mockResolvedValue(undefined) });
 
-const createModels = ({ events = [], topics = [], islands = [], eventArticles = {}, topicArticles = {} } = {}) => ({
+const createModels = ({ events = [], islands = [], eventArticles = {} } = {}) => ({
   Article: {
     findAll: vi.fn(({ where }) => Promise.resolve(eventArticles[where.eventId] || []))
   },
-  ArticleTopic: {
-    findAll: vi.fn(({ where }) => Promise.resolve(topicArticles[where.topicId] || []))
-  },
   Event: { findAll: vi.fn().mockResolvedValue(events) },
-  Topic: { findAll: vi.fn().mockResolvedValue(topics) },
   Island: { findAll: vi.fn().mockResolvedValue(islands) }
 });
 
 describe('populateGeneratedSemanticLabelsForUser', () => {
   it('populates generated fields from bounded article-title context only', async () => {
     const event = row({ id: 10 });
-    const topic = row({ id: 20 });
     const island = row({
       id: 30,
       populationAudit: [{
@@ -32,24 +27,18 @@ describe('populateGeneratedSemanticLabelsForUser', () => {
     });
     const models = createModels({
       events: [event],
-      topics: [topic],
       islands: [island],
       eventArticles: {
         10: [{ title: 'Qwen model released' }, { title: 'Qwen model released' }]
-      },
-      topicArticles: {
-        20: [{ Article: { title: 'Qwen model released' } }, { Article: { title: 'Qwen benchmarks' } }]
       }
     });
     const requestLabels = vi.fn(input => Promise.resolve({
       event: input.event ? 'Qwen Releases New Model' : undefined,
-      topic: input.topic ? 'Qwen Models' : undefined,
       island: input.island ? 'Local AI' : undefined
     }));
 
     const result = await populateGeneratedSemanticLabelsForUser(7, {
       eventIds: [10, 10],
-      topicIds: [20],
       islandIds: [30]
     }, {
       environment: { INFERENCE_AI_ENABLED: 'true' },
@@ -59,15 +48,12 @@ describe('populateGeneratedSemanticLabelsForUser', () => {
 
     expect(requestLabels.mock.calls.map(([input]) => input)).toEqual([
       { context: ['Qwen model released'], event: true },
-      { context: ['Qwen model released', 'Qwen benchmarks'], topic: true },
       { context: ['Local Qwen models', 'Private AI infrastructure'], island: true }
     ]);
     expect(event.update).toHaveBeenCalledWith({ generatedName: 'Qwen Releases New Model' });
-    expect(topic.update).toHaveBeenCalledWith({ generatedName: 'Qwen Models' });
     expect(island.update).toHaveBeenCalledWith({ generatedLabel: 'Local AI' });
     expect(result).toEqual({
       eventCount: 1,
-      topicCount: 1,
       islandCount: 1,
       skippedNoContextCount: 0,
       inferenceUnavailable: false
@@ -98,7 +84,6 @@ describe('populateGeneratedSemanticLabelsForUser', () => {
 
     await populateGeneratedSemanticLabelsForUser(7, {
       eventIds: [10],
-      topicIds: [20],
       islandIds: [30]
     }, {
       environment: {
@@ -110,26 +95,21 @@ describe('populateGeneratedSemanticLabelsForUser', () => {
     });
 
     expect(models.Event.findAll).not.toHaveBeenCalled();
-    expect(models.Topic.findAll).not.toHaveBeenCalled();
     expect(models.Island.findAll).not.toHaveBeenCalled();
     expect(requestLabels).not.toHaveBeenCalled();
   });
 
   it('keeps deterministic fields untouched and stops after one inference failure', async () => {
     const event = row({ id: 10, name: 'Deterministic event' });
-    const topic = row({ id: 20, name: 'Deterministic topic' });
     const models = createModels({
       events: [event],
-      topics: [topic],
-      eventArticles: { 10: [{ title: 'Event title' }] },
-      topicArticles: { 20: [{ Article: { title: 'Topic title' } }] }
+      eventArticles: { 10: [{ title: 'Event title' }] }
     });
     const requestLabels = vi.fn().mockRejectedValue(new Error('offline'));
     const logger = { warn: vi.fn() };
 
     const result = await populateGeneratedSemanticLabelsForUser(7, {
-      eventIds: [10],
-      topicIds: [20]
+      eventIds: [10]
     }, {
       environment: { INFERENCE_AI_ENABLED: 'true' },
       models,
@@ -138,11 +118,8 @@ describe('populateGeneratedSemanticLabelsForUser', () => {
     });
 
     expect(requestLabels).toHaveBeenCalledOnce();
-    expect(models.Topic.findAll).not.toHaveBeenCalled();
     expect(event.update).not.toHaveBeenCalled();
-    expect(topic.update).not.toHaveBeenCalled();
     expect(event.name).toBe('Deterministic event');
-    expect(topic.name).toBe('Deterministic topic');
     expect(result.inferenceUnavailable).toBe(true);
     expect(logger.warn).toHaveBeenCalledWith(
       '[SEMANTIC LABEL] user=7 type=event inference unavailable',

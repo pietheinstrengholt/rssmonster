@@ -14,16 +14,12 @@ const mocked = vi.hoisted(() => {
 
   return {
     Article: makeModel(),
-    ArticleTopic: makeModel(),
     Category: makeModel(),
     Event: makeModel(),
-    EventTopic: makeModel(),
     Feed: makeModel(),
     Island: makeModel(),
     IslandTaxonomy: makeModel(),
-    IslandTopic: makeModel(),
     Tag: makeModel(),
-    Topic: makeModel(),
     User: makeModel(),
     cosineSimilarity: vi.fn(),
     mkdir: vi.fn(),
@@ -55,17 +51,13 @@ vi.mock('../../models/index.js', async () => ({
   default: {
     Sequelize: await import('sequelize'),
     Article: mocked.Article,
-    ArticleTopic: mocked.ArticleTopic,
     Category: mocked.Category,
     Event: mocked.Event,
-    EventTopic: mocked.EventTopic,
     Feed: mocked.Feed,
     Island: mocked.Island,
     IslandTaxonomy: mocked.IslandTaxonomy,
-    IslandTopic: mocked.IslandTopic,
     sequelize: mocked.sequelize,
     Tag: mocked.Tag,
-    Topic: mocked.Topic,
     User: mocked.User
   }
 }));
@@ -102,21 +94,10 @@ import {
   selectOccurrenceFixture
 } from './semanticRegressionIncremental.js';
 import {
-  expectSemanticRegressionIslandsBuilt,
-  hasTaxonomyVectorFixture,
-  runSemanticRegressionIslandBuild
-} from './semanticRegressionIslands.js';
-import {
   printSemanticArticleRankingTable,
   printSemanticArticleRankingTableForUser,
   semanticArticleRankingRows
 } from './semanticRegressionReport.js';
-import {
-  markSemanticRegressionArticles,
-  printSemanticRegressionTrace,
-  refreshSemanticRegressionTrace,
-  resetSemanticRegressionTrace
-} from './semanticRegressionTrace.js';
 import { resetDatabase } from './resetDb.js';
 
 // This function creates a filesystem error with the code branches used by the helpers.
@@ -140,16 +121,12 @@ function resetMocks() {
 
   for (const model of [
     mocked.Article,
-    mocked.ArticleTopic,
     mocked.Category,
     mocked.Event,
-    mocked.EventTopic,
     mocked.Feed,
     mocked.Island,
     mocked.IslandTaxonomy,
-    mocked.IslandTopic,
     mocked.Tag,
-    mocked.Topic,
     mocked.User
   ]) {
     model.bulkCreate.mockResolvedValue([]);
@@ -342,80 +319,25 @@ describe('semantic regression incremental helpers', () => {
   });
 });
 
-describe('semantic regression island helpers', () => {
-  it('handles available, missing, and unreadable taxonomy fixtures', async () => {
-    mocked.readFile.mockResolvedValueOnce('{}');
-    await expect(hasTaxonomyVectorFixture()).resolves.toBe(true);
-
-    mocked.readFile.mockRejectedValueOnce(fileError('ENOENT'));
-    await expect(hasTaxonomyVectorFixture()).resolves.toBe(false);
-
-    mocked.readFile.mockRejectedValueOnce(fileError('EACCES'));
-    await expect(hasTaxonomyVectorFixture()).rejects.toMatchObject({ code: 'EACCES' });
-  });
-
-  it('requires the semantic regression user before building islands', async () => {
-    await expect(runSemanticRegressionIslandBuild()).rejects.toThrow(
-      'semantic regression user should exist before island build'
-    );
-  });
-
-  it('loads taxonomy rows, calibrates islands, and returns persisted counts', async () => {
-    mocked.User.findOne.mockResolvedValue({ id: 7 });
-    mocked.readFile.mockResolvedValue(JSON.stringify({
-      embeddingModel: 'taxonomy-model',
-      taxonomy: [{
-        identity: 'technology',
-        categoryName: 'Technology',
-        displayName: 'Technology',
-        vector: [1, 0]
-      }]
-    }));
-    mocked.IslandTaxonomy.count.mockResolvedValue(1);
-    mocked.runIslandCalibrationForUser.mockResolvedValue({
-      islandCount: 2,
-      enrichedIslandCount: 1,
-      islandTopicLinkCount: 3
-    });
-    mocked.Island.count.mockResolvedValue(2);
-    mocked.IslandTopic.count.mockResolvedValue(3);
-    mocked.Article.count.mockResolvedValue(4);
-
-    await expect(runSemanticRegressionIslandBuild()).resolves.toEqual(expect.objectContaining({
-      taxonomyCount: 1,
-      islandCount: 2,
-      islandTopicLinkCount: 3,
-      scoredArticleCount: 4
-    }));
-    expect(mocked.runIslandCalibrationForUser).toHaveBeenCalledWith(7, {
-      topicConfidenceThreshold: 0.02
-    });
-
-    await expectSemanticRegressionIslandsBuilt(expect);
-  });
-});
-
 describe('semantic regression report helpers', () => {
   it('returns ranked semantic rows using direct and vector-fallback islands', async () => {
     mocked.Island.findAll.mockResolvedValue([
       { id: 1, label: 'Direct Island Name', weight: 0.5, islandVector: [1, 0] },
       { id: 2, label: 'Fallback Island Name', weight: 0.8, islandVector: [0, 1] }
     ]);
-    mocked.IslandTopic.findAll.mockResolvedValue([
-      { islandId: 99, topicId: 10 },
-      { islandId: 1, topicId: 10 }
-    ]);
     mocked.cosineSimilarity
+      .mockReturnValueOnce(0.9)
+      .mockReturnValueOnce(0.2)
       .mockReturnValueOnce(0.2)
       .mockReturnValueOnce(0.9);
     mocked.Article.findAll.mockResolvedValue([
       {
         id: 1,
-        topicId: 10,
         interestScore: 1,
         recommended: 0.4,
         breakdown: { freshness: 0.1 },
-        get: vi.fn(field => field === 'topic' ? { id: 10, name: 'Topic Name Long' } : null)
+        articleVector: [1, 0],
+        get: vi.fn()
       },
       {
         id: 2,
@@ -435,7 +357,7 @@ describe('semantic regression report helpers', () => {
     await expect(semanticArticleRankingRows(7, { newArticleIds: ['2'], limit: 2 }))
       .resolves.toEqual([
         expect.objectContaining({ ID: 2, New: '*', Event: 'Event Name', Island: 'Fallback Island' }),
-        expect.objectContaining({ ID: 1, Topic: 'Topic Name', Island: 'Direct Island' })
+        expect.objectContaining({ ID: 1, Island: 'Direct Island' })
       ]);
   });
 
@@ -474,104 +396,6 @@ describe('semantic regression report helpers', () => {
     await expect(printSemanticArticleRankingTableForUser('present')).resolves.toEqual([]);
 
     consoleSpy.mockRestore();
-  });
-});
-
-describe('semantic regression trace helpers', () => {
-  it('persists deduplicated baseline and incremental identities across phases', async () => {
-    const initial = await resetSemanticRegressionTrace({
-      userId: 7,
-      baselineArticleIds: ['2', 1, 2],
-      incrementalArticleIds: [4]
-    });
-    expect(initial.baselineArticleIds).toEqual([1, 2]);
-    expect(initial.articles['4']).toMatchObject({ source: 'incremental', isNew: true });
-
-    const persistedText = mocked.writeFile.mock.calls.at(-1)[1];
-    mocked.readFile.mockResolvedValue(persistedText);
-    const marked = await markSemanticRegressionArticles({
-      userId: 7,
-      baselineArticleIds: [3],
-      incrementalArticleIds: ['4', 5]
-    });
-
-    expect(marked.baselineArticleIds).toEqual([1, 2, 3]);
-    expect(marked.incrementalArticleIds).toEqual([4, 5]);
-  });
-
-  it('creates a new trace for a different user and preserves filesystem failures', async () => {
-    mocked.readFile.mockResolvedValue(JSON.stringify({ userId: 6, articles: {} }));
-    await expect(markSemanticRegressionArticles({
-      userId: 7,
-      baselineArticleIds: [1]
-    })).resolves.toMatchObject({ userId: 7, baselineArticleIds: [1] });
-
-    mocked.readFile.mockRejectedValue(fileError('EACCES'));
-    await expect(markSemanticRegressionArticles({ userId: 7 }))
-      .rejects.toMatchObject({ code: 'EACCES' });
-  });
-
-  it('refreshes topic, fallback, and standalone trace paths from authoritative lookups', async () => {
-    await resetSemanticRegressionTrace({
-      userId: 7,
-      incrementalArticleIds: [1, 2, 3]
-    });
-    mocked.readFile.mockResolvedValue(mocked.writeFile.mock.calls.at(-1)[1]);
-    mocked.Article.findAll.mockResolvedValue([
-      {
-        id: 1,
-        topicId: 10,
-        title: 'Topic island',
-        get: vi.fn()
-      },
-      {
-        id: 2,
-        eventId: 20,
-        title: 'Fallback island',
-        interestScore: 1,
-        articleVector: [0, 1],
-        get: vi.fn(field => field === 'event' ? { id: 20, name: 'Event Twenty' } : null)
-      },
-      {
-        id: 3,
-        topicId: 11,
-        title: 'Topic only',
-        get: vi.fn()
-      }
-    ]);
-    mocked.Event.findAll.mockResolvedValue([{ id: 20, articleCount: 1 }]);
-    mocked.Topic.findAll.mockResolvedValue([
-      { id: 10, name: 'Topic Ten' },
-      { id: 11, name: 'Topic Eleven' }
-    ]);
-    mocked.Island.findAll.mockResolvedValue([
-      { id: 30, label: 'Island Thirty', weight: 1, islandVector: [0, 1] }
-    ]);
-    mocked.ArticleTopic.findAll.mockResolvedValue([
-      { articleId: 1, topicId: 10, confidence: 1 }, { articleId: 3, topicId: 11, confidence: 1 }
-    ]);
-    mocked.IslandTopic.findAll.mockResolvedValue([
-      { id: 1, islandId: 30, topicId: 10, similarity: 0.95, confidence: 1 }
-    ]);
-    mocked.cosineSimilarity.mockImplementation((a, b) => Array.isArray(a) && Array.isArray(b) ? 0.9 : 0);
-
-    const trace = await refreshSemanticRegressionTrace({
-      userId: 7,
-      phase: 'unit-test'
-    });
-
-    expect(trace.articles['1'].semanticPath).toBe('A→T→I');
-    expect(trace.articles['2'].semanticPath).toBe('A→E→I (fallback)');
-    expect(trace.articles['3'].semanticPath).toBe('A→T');
-    expect(trace.articles['2'].eventDecision).toBe('new-event');
-    expect(trace.articles['1'].topicDecision).toBe('new-topic');
-  });
-
-  it('skips invalid refreshes and traces belonging to another user', async () => {
-    await expect(refreshSemanticRegressionTrace({ userId: null })).resolves.toBeNull();
-
-    mocked.readFile.mockResolvedValue(JSON.stringify({ userId: 8, articles: {} }));
-    await expect(printSemanticRegressionTrace({ userId: 7 })).resolves.toEqual([]);
   });
 });
 

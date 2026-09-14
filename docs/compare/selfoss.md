@@ -32,7 +32,7 @@ This table reflects built-in or officially documented behavior as of
 | **Traditional reading** | Chronological feeds remain available alongside alternative rankings | A unified traditional stream with newest, unread, and starred views |
 | **Interface** | Responsive modes including a three-pane desktop Reader view | Adaptive web layout for desktop and mobile |
 | **Filtering and saved views** | Per-feed item filters restrict incoming entries; advanced search expressions power reusable Smart Folders | Source filters can restrict incoming items; streams can be viewed by source or tag |
-| **Story organization** | Related articles, duplicates, Events, Topics, and Interest Islands when semantic processing is enabled | Source and tag organization; a comparable semantic story hierarchy is not documented |
+| **Story organization** | Related articles, duplicates, Events and Interest Islands when semantic processing is enabled | Source and tag organization; a comparable semantic story hierarchy is not documented |
 | **Ranking** | Optional Quality, Recommended, and Top Stories modes with inspectable signals | A traditional stream; comparable built-in semantic rankings are not documented |
 | **Databases** | SQLite or MySQL | SQLite, MySQL, or PostgreSQL |
 | **Local semantic processing** | Optional small Qwen and ModernBERT models through ONNX and Transformers.js | Not part of the documented core approach |
@@ -63,8 +63,7 @@ pace and support expectations.
 RSSMonster invests less in arbitrary input connectors and more in what happens
 after feed entries arrive. Article identity and revisions are resolved before
 semantic processing. Related reports can be grouped into
-[Events]({{ '/events.html' | relative_url }}), connected into
-[Topics]({{ '/topics.html' | relative_url }}), and associated with personal
+[Events]({{ '/events.html' | relative_url }}); behavioral evidence forms personal
 [Interest Islands]({{ '/interest-islands.html' | relative_url }}).
 
 [Smart Folders]({{ '/smart-folders.html' | relative_url }}) save expressive
@@ -85,7 +84,7 @@ RSSMonster keeps the input model more RSS-centered and adds relationships after
 collection:
 
 ```text
-Feeds -> Articles -> related coverage -> Events -> Topics
+Feeds -> Articles -> related coverage -> Events
                   \-> Smart Folders / Recommended / Top Stories
 ```
 
@@ -108,7 +107,7 @@ selfoss installation.
 
 - You mainly consume RSS but follow many overlapping sources.
 - Duplicate/revision analysis and related-story grouping would reduce noise.
-- You want Events, Topics, and optional interest-based discovery.
+- You want Events and optional interest-based discovery.
 - You want per-feed item filters for incoming entries.
 - You want advanced searches preserved as Smart Folders.
 - You want local semantic processing and explainable ranking signals.

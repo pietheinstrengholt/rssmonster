@@ -1,7 +1,7 @@
 import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } from './eventDecisionDiagnostics.js';
 // services/events/createEvents.js
 // This service creates a new event from a set of corroborating articles.
-// It assigns the stable representative and initializes event metadata and optional topic assignment.
+// It assigns the stable representative and initializes event metadata.
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import {
@@ -64,17 +64,12 @@ function computeInitialEventStrength(articleCount) {
     articleCount / EVENT_STRENGTH_CONFIG.maxArticleRedundancyCount,
     1
   );
-  // Derives the topic score through min while computing initial event strength.
-  const topicScore = Math.min(
-    Math.log2(2) / EVENT_STRENGTH_CONFIG.maxTopicEventLogBase,
-    1
-  );
   const cohesionScore = EVENT_STRENGTH_CONFIG.cohesionBaseline;
 
   return Number((
     redundancyScore * EVENT_STRENGTH_CONFIG.weights.redundancy +
     cohesionScore * EVENT_STRENGTH_CONFIG.weights.cohesion +
-    topicScore * EVENT_STRENGTH_CONFIG.weights.topic
+    EVENT_STRENGTH_CONFIG.baseline
   ).toFixed(3));
 }
 
@@ -119,13 +114,11 @@ function selectInitialArticlePointers(lockedArticles, lockedSeedArticle) {
   };
 }
 
-// This function creates an event, assigns all member articles, and optionally links event topics.
+// This function creates an event, assigns all member articles.
 export async function createAndAssignEvent({
   candidateArticles,
   article,
   cache,
-  skipTopicAssignment = false,
-  assignTopicsForEvent = null,
   transaction = null
 }) {
   // Returns early when transaction is unavailable.
@@ -135,8 +128,6 @@ export async function createAndAssignEvent({
       candidateArticles,
       article,
       cache,
-      skipTopicAssignment,
-      assignTopicsForEvent,
       transaction: managedTransaction
     }));
   }
@@ -221,7 +212,6 @@ export async function createAndAssignEvent({
   // Previously consumed coverage remains the stable anchor when an unread seed develops the story.
   const newEvent = await Event.create({
     userId: lockedSeedArticle.userId,
-    topicId: null,
     representativeArticleId: representativeArticle.id,
     developingArticleId,
     name,
@@ -260,22 +250,6 @@ export async function createAndAssignEvent({
   // Rejects processing when assigned article count is not event article id count.
   if (assignedArticleCount !== eventArticleIds.length) {
     throw new Error(`Failed to assign all articles to new event ${newEvent.id}`);
-  }
-
-  let primaryEventTopicId = null;
-
-  // Handles the case where skip topic assignment is unavailable and assign topics for event is function.
-  if (!skipTopicAssignment && typeof assignTopicsForEvent === 'function') {
-    primaryEventTopicId = await assignTopicsForEvent({
-      event: newEvent,
-      eventTopicVector: projection.eventVector,
-      transaction
-    });
-
-    // Handles the case where primary event topic id is available.
-    if (primaryEventTopicId) {
-      newEvent.topicId = primaryEventTopicId;
-    }
   }
 
   // Handles the case where cache is available.

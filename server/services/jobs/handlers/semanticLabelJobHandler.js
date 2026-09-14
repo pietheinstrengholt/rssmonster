@@ -14,10 +14,8 @@ import { getModelValue as rowValue } from '../../../utils/modelValue.js';
 
 const defaultModels = {
   Article: db.Article,
-  ArticleTopic: db.ArticleTopic,
   event: db.Event,
   island: db.Island,
-  topic: db.Topic
 };
 
 const positiveId = (value, field) => {
@@ -118,7 +116,6 @@ export const handleSemanticLabelJob = async (job, options = {}) => {
     target: targetRow,
     models: {
       Article: models.Article,
-      ArticleTopic: models.ArticleTopic
     }
   });
   if (!titles.length) return obsolete('no_current_context');

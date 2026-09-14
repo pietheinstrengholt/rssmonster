@@ -132,7 +132,7 @@ describe('settings controller', () => {
       minSentimentScore: 20,
       minQualityScore: 30,
       viewMode: 'minimal',
-      grouping: 'topic',
+      grouping: 'event',
       includeDevelopingEvents: true,
       prioritizeHighTrust: true,
       themeMode: 'dark',
@@ -184,7 +184,7 @@ describe('settings controller', () => {
       minSentimentScore: 20,
       minQualityScore: 30,
       viewMode: 'minimal',
-      grouping: 'topic',
+      grouping: 'event',
       startupViewMode: 'last-used'
     });
 
@@ -203,7 +203,7 @@ describe('settings controller', () => {
         minSentimentScore: 20,
         minQualityScore: 30,
         viewMode: 'minimal',
-        grouping: 'topic',
+        grouping: 'event',
         startupViewMode: 'last-used',
         AIEnabled: false
       });

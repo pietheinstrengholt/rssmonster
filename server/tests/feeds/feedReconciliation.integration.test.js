@@ -14,7 +14,6 @@ import { reconcileDuplicateFeeds } from '../../services/feeds/feedReconciliation
 
 const {
   Article,
-  ArticleTopic,
   Category,
   Event,
   Feed,
@@ -22,7 +21,6 @@ const {
   Hotlink,
   Setting,
   Tag,
-  Topic,
   User,
   sequelize
 } = db;
@@ -167,27 +165,15 @@ describe('duplicate feed reconciliation integration', () => {
       clickedAmount: 4
     });
     const uniqueArticle = await createArticle(duplicate, unique('unique'));
-    const topic = await Topic.create({
-      userId: fixture.user.id,
-      name: 'Transferred topic',
-      topicKey: unique('topic'),
-      topicType: 'event'
-    });
+
     const event = await Event.create({
       userId: fixture.user.id,
-      topicId: topic.id,
       representativeArticleId: removedOverlap.id,
       developingArticleId: removedOverlap.id,
       name: 'Transferred event'
     });
-    await removedOverlap.update({ eventId: event.id, topicId: topic.id });
-    await ArticleTopic.create({
-      articleId: removedOverlap.id,
-      topicId: topic.id,
-      confidence: 0.8,
-      rank: 1,
-      primaryInd: true
-    });
+    await removedOverlap.update({ eventId: event.id });
+
     await Tag.create({
       articleId: removedOverlap.id,
       userId: fixture.user.id,
@@ -231,9 +217,7 @@ describe('duplicate feed reconciliation integration', () => {
     expect(await Tag.findOne({ where: { name: 'transferred' } })).toMatchObject({
       articleId: retainedOverlap.id
     });
-    expect(await ArticleTopic.findOne({ where: { topicId: topic.id } })).toMatchObject({
-      articleId: retainedOverlap.id
-    });
+
     expect(await Event.findByPk(event.id)).toMatchObject({
       representativeArticleId: retainedOverlap.id,
       developingArticleId: retainedOverlap.id

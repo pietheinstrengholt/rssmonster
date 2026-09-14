@@ -1,0 +1,722 @@
+{
+  "phases": [
+    {
+      "before": {
+        "phase": "BATCH001",
+        "articles": 1000,
+        "Events": 128,
+        "Events without primary Topic": 35,
+        "Eventless": 520,
+        "duplicates": 0,
+        "Topics": 58,
+        "Events linked to Topics": 124,
+        "Single-Event Topics": 35,
+        "Unassigned Event\u2192Topic cases": 4,
+        "Topic decisions: strong-reuse": 35,
+        "Topic decisions: secondary-reuse": 7,
+        "Topic decisions: weak-fallback-reuse": 24,
+        "Topic decisions: new-topic": 58,
+        "Topic decisions: ambiguous": 4,
+        "Topic decisions: unassigned": 0,
+        "Islands": 10,
+        "Singleton Islands": 6,
+        "Unassigned behavioral profiles": 129,
+        "Articles eligible for Recommended": 1000,
+        "Articles with Recommended score": 1000,
+        "Recommended coverage (%)": 100,
+        "Articles with non-zero interest": 54,
+        "Articles with neutral interest": 946,
+        "Articles with negative interest": 6,
+        "Positive-interest articles": 48,
+        "Topic-based matches": 19,
+        "Direct Island matches": 19,
+        "Behavioral fallback matches": 16,
+        "Singleton-derived matches": 11,
+        "Seed/self matches": 28,
+        "Held-out positive matches": 24,
+        "Held-out negative matches": 2,
+        "Neutral held-out articles": 821,
+        "Same-intent fallback paths": 35,
+        "Cross-intent attenuated paths": 0,
+        "Missing-intent fallback paths": 71,
+        "Maximum path contribution": 0.5995851497419815,
+        "Minimum path contribution": -0.35,
+        "Maximum interest": 0.5437,
+        "Minimum interest": -0.35
+      },
+      "after": {
+        "phase": "BATCH001",
+        "articles": 1000,
+        "Events": 128,
+        "Eventless": 520,
+        "duplicates": 0,
+        "Islands": 10,
+        "Singleton Islands": 6,
+        "Unassigned behavioral profiles": 129,
+        "Articles eligible for Recommended": 1000,
+        "Articles with Recommended score": 1000,
+        "Recommended coverage (%)": 100,
+        "Articles with non-zero interest": 50,
+        "Articles with neutral interest": 950,
+        "Articles with negative interest": 6,
+        "Positive-interest articles": 44,
+        "Direct Island matches": 26,
+        "Behavioral fallback matches": 24,
+        "Singleton-derived matches": 11,
+        "Seed/self matches": 28,
+        "Held-out positive matches": 20,
+        "Held-out negative matches": 2,
+        "Neutral held-out articles": 825,
+        "Same-intent fallback paths": 35,
+        "Cross-intent attenuated paths": 0,
+        "Missing-intent fallback paths": 85,
+        "Maximum path contribution": 0.5995851497419815,
+        "Minimum path contribution": -0.35,
+        "Maximum interest": 0.5437,
+        "Minimum interest": -0.35
+      },
+      "beforeMilliseconds": 57683.506319,
+      "afterMilliseconds": 36722.550632,
+      "interestQuantiles": {
+        "before": {
+          "0": -0.35,
+          "0.1": 0.0,
+          "0.25": 0.0,
+          "0.5": 0.0,
+          "0.75": 0.0,
+          "0.9": 0.0,
+          "0.95": 0.0,
+          "0.99": 0.35046799999999956,
+          "1": 0.5437
+        },
+        "after": {
+          "0": -0.35,
+          "0.1": 0.0,
+          "0.25": 0.0,
+          "0.5": 0.0,
+          "0.75": 0.0,
+          "0.9": 0.0,
+          "0.95": 0.0,
+          "0.99": 0.349406,
+          "1": 0.5437
+        }
+      },
+      "recommendedQuantiles": {
+        "before": {
+          "0": 0.02901455389130829,
+          "0.1": 0.11269771064670456,
+          "0.25": 0.1219369368427893,
+          "0.5": 0.1909671320923207,
+          "0.75": 0.3177426651858959,
+          "0.9": 0.3345558051767575,
+          "0.95": 0.33872780327213203,
+          "0.99": 0.4094677602338146,
+          "1": 0.5091252042911132
+        },
+        "after": {
+          "0": 0.02901455389130829,
+          "0.1": 0.11269771064670456,
+          "0.25": 0.1219369368427893,
+          "0.5": 0.1909671320923207,
+          "0.75": 0.3177426651858959,
+          "0.9": 0.3341980474194453,
+          "0.95": 0.3368958211933261,
+          "0.99": 0.3646913069918602,
+          "1": 0.3996410491938842
+        }
+      }
+    },
+    {
+      "before": {
+        "phase": "BATCH002",
+        "articles": 2000,
+        "Events": 315,
+        "Events without primary Topic": 78,
+        "Eventless": 864,
+        "duplicates": 0,
+        "Topics": 146,
+        "Events linked to Topics": 296,
+        "Single-Event Topics": 99,
+        "Unassigned Event\u2192Topic cases": 19,
+        "Topic decisions: strong-reuse": 93,
+        "Topic decisions: secondary-reuse": 24,
+        "Topic decisions: weak-fallback-reuse": 35,
+        "Topic decisions: new-topic": 144,
+        "Topic decisions: ambiguous": 17,
+        "Topic decisions: unassigned": 2,
+        "Islands": 13,
+        "Singleton Islands": 7,
+        "Unassigned behavioral profiles": 144,
+        "Articles eligible for Recommended": 2000,
+        "Articles with Recommended score": 2000,
+        "Recommended coverage (%)": 100,
+        "Articles with non-zero interest": 226,
+        "Articles with neutral interest": 1774,
+        "Articles with negative interest": 48,
+        "Positive-interest articles": 178,
+        "Topic-based matches": 40,
+        "Direct Island matches": 51,
+        "Behavioral fallback matches": 151,
+        "Singleton-derived matches": 14,
+        "Seed/self matches": 41,
+        "Held-out positive matches": 144,
+        "Held-out negative matches": 41,
+        "Neutral held-out articles": 1635,
+        "Same-intent fallback paths": 79,
+        "Cross-intent attenuated paths": 7,
+        "Missing-intent fallback paths": 161,
+        "Maximum path contribution": 0.6546330093067633,
+        "Minimum path contribution": -0.5291911774852243,
+        "Maximum interest": 0.5951,
+        "Minimum interest": -0.3952
+      },
+      "after": {
+        "phase": "BATCH002",
+        "articles": 2000,
+        "Events": 315,
+        "Eventless": 864,
+        "duplicates": 0,
+        "Islands": 13,
+        "Singleton Islands": 7,
+        "Unassigned behavioral profiles": 144,
+        "Articles eligible for Recommended": 2000,
+        "Articles with Recommended score": 2000,
+        "Recommended coverage (%)": 100,
+        "Articles with non-zero interest": 215,
+        "Articles with neutral interest": 1785,
+        "Articles with negative interest": 46,
+        "Positive-interest articles": 169,
+        "Direct Island matches": 63,
+        "Behavioral fallback matches": 168,
+        "Singleton-derived matches": 14,
+        "Seed/self matches": 41,
+        "Held-out positive matches": 135,
+        "Held-out negative matches": 39,
+        "Neutral held-out articles": 1646,
+        "Same-intent fallback paths": 79,
+        "Cross-intent attenuated paths": 7,
+        "Missing-intent fallback paths": 184,
+        "Maximum path contribution": 0.6546330093067633,
+        "Minimum path contribution": -0.5291911774852243,
+        "Maximum interest": 0.5951,
+        "Minimum interest": -0.3952
+      },
+      "beforeMilliseconds": 85135.34221200002,
+      "afterMilliseconds": 63649.222666999995,
+      "interestQuantiles": {
+        "before": {
+          "0": -0.3952,
+          "0.1": 0.0,
+          "0.25": 0.0,
+          "0.5": 0.0,
+          "0.75": 0.0,
+          "0.9": 0.0,
+          "0.95": 0.11767999999999974,
+          "0.99": 0.3534,
+          "1": 0.5951
+        },
+        "after": {
+          "0": -0.3952,
+          "0.1": 0.0,
+          "0.25": 0.0,
+          "0.5": 0.0,
+          "0.75": 0.0,
+          "0.9": 0.0,
+          "0.95": 0.0932,
+          "0.99": 0.35,
+          "1": 0.5951
+        }
+      },
+      "recommendedQuantiles": {
+        "before": {
+          "0": 0.017596061409331357,
+          "0.1": 0.11192993002327946,
+          "0.25": 0.17381013530721423,
+          "0.5": 0.2761095704376154,
+          "0.75": 0.3349465173032526,
+          "0.9": 0.352380502287646,
+          "0.95": 0.36928289837132855,
+          "0.99": 0.42650196797889045,
+          "1": 0.5979506301521043
+        },
+        "after": {
+          "0": 0.017596061409331357,
+          "0.1": 0.11192993002327946,
+          "0.25": 0.17381013530721423,
+          "0.5": 0.2754956946645496,
+          "0.75": 0.33352523257110805,
+          "0.9": 0.35073304642277936,
+          "0.95": 0.36752139169376297,
+          "0.99": 0.4208395813788117,
+          "1": 0.5979506301521043
+        }
+      }
+    }
+  ],
+  "heldOut": {
+    "before": {
+      "unlabelled": {
+        "positive": 16,
+        "zero": 0,
+        "negative": 0
+      },
+      "attenuated": {
+        "positive": 15,
+        "zero": 5,
+        "negative": 5
+      },
+      "positive": {
+        "positive": 60,
+        "zero": 0,
+        "negative": 0
+      },
+      "neutral": {
+        "positive": 0,
+        "zero": 24,
+        "negative": 0
+      },
+      "negative": {
+        "positive": 0,
+        "zero": 0,
+        "negative": 23
+      },
+      "emerging": {
+        "positive": 0,
+        "zero": 12,
+        "negative": 0
+      }
+    },
+    "after": {
+      "unlabelled": {
+        "positive": 16,
+        "zero": 0,
+        "negative": 0
+      },
+      "attenuated": {
+        "positive": 15,
+        "zero": 5,
+        "negative": 5
+      },
+      "positive": {
+        "positive": 60,
+        "zero": 0,
+        "negative": 0
+      },
+      "neutral": {
+        "positive": 0,
+        "zero": 24,
+        "negative": 0
+      },
+      "negative": {
+        "positive": 0,
+        "zero": 0,
+        "negative": 23
+      },
+      "emerging": {
+        "positive": 0,
+        "zero": 12,
+        "negative": 0
+      }
+    }
+  },
+  "ranking": {
+    "before": {
+      "recommended": {
+        "10": {
+          "judged": 107,
+          "positiveLabels": 60,
+          "precision": 1.0,
+          "recall": 0.16666666666666666,
+          "ndcg": 1.0
+        },
+        "20": {
+          "judged": 107,
+          "positiveLabels": 60,
+          "precision": 1.0,
+          "recall": 0.3333333333333333,
+          "ndcg": 1.0
+        },
+        "50": {
+          "judged": 107,
+          "positiveLabels": 60,
+          "precision": 1.0,
+          "recall": 0.8333333333333334,
+          "ndcg": 1.0
+        }
+      },
+      "newest": {
+        "10": {
+          "judged": 107,
+          "positiveLabels": 60,
+          "precision": 0.0,
+          "recall": 0.0,
+          "ndcg": 0.0
+        },
+        "20": {
+          "judged": 107,
+          "positiveLabels": 60,
+          "precision": 0.0,
+          "recall": 0.0,
+          "ndcg": 0.0
+        },
+        "50": {
+          "judged": 107,
+          "positiveLabels": 60,
+          "precision": 0.48,
+          "recall": 0.4,
+          "ndcg": 0.36266281119743476
+        }
+      }
+    },
+    "after": {
+      "recommended": {
+        "10": {
+          "judged": 107,
+          "positiveLabels": 60,
+          "precision": 1.0,
+          "recall": 0.16666666666666666,
+          "ndcg": 1.0
+        },
+        "20": {
+          "judged": 107,
+          "positiveLabels": 60,
+          "precision": 1.0,
+          "recall": 0.3333333333333333,
+          "ndcg": 1.0
+        },
+        "50": {
+          "judged": 107,
+          "positiveLabels": 60,
+          "precision": 1.0,
+          "recall": 0.8333333333333334,
+          "ndcg": 1.0
+        }
+      },
+      "newest": {
+        "10": {
+          "judged": 107,
+          "positiveLabels": 60,
+          "precision": 0.0,
+          "recall": 0.0,
+          "ndcg": 0.0
+        },
+        "20": {
+          "judged": 107,
+          "positiveLabels": 60,
+          "precision": 0.0,
+          "recall": 0.0,
+          "ndcg": 0.0
+        },
+        "50": {
+          "judged": 107,
+          "positiveLabels": 60,
+          "precision": 0.48,
+          "recall": 0.4,
+          "ndcg": 0.36266281119743476
+        }
+      }
+    }
+  },
+  "losses": [
+    {
+      "sourceId": "long-continuity-43-baseline-169",
+      "title": "Formula 1 championship Singapore Grand Prix: first details confirmed",
+      "expected": null,
+      "before": 0.3534,
+      "beforePaths": [
+        {
+          "islandId": 1,
+          "preferenceStrength": 1,
+          "islandConfidence": 0.7574011752615414,
+          "singleton": false,
+          "seedSelf": false,
+          "matchType": "topic-island",
+          "topicId": 10,
+          "articleTopicConfidence": 0.7934,
+          "islandTopicConfidence": 0.6312,
+          "semanticSimilarity": 0.9317,
+          "relationshipConfidence": 0.46658984433600004,
+          "contribution": 0.3533956964651861
+        }
+      ],
+      "after": 0,
+      "afterPaths": []
+    },
+    {
+      "sourceId": "long-continuity-43-baseline-170",
+      "title": "Independent report confirms Formula 1 championship Singapore Grand Prix",
+      "expected": null,
+      "before": 0.3534,
+      "beforePaths": [
+        {
+          "islandId": 1,
+          "preferenceStrength": 1,
+          "islandConfidence": 0.7574011752615414,
+          "singleton": false,
+          "seedSelf": false,
+          "matchType": "topic-island",
+          "topicId": 10,
+          "articleTopicConfidence": 0.7934,
+          "islandTopicConfidence": 0.6312,
+          "semanticSimilarity": 0.9317,
+          "relationshipConfidence": 0.46658984433600004,
+          "contribution": 0.3533956964651861
+        }
+      ],
+      "after": 0,
+      "afterPaths": []
+    },
+    {
+      "sourceId": "long-continuity-43-baseline-171",
+      "title": "Formula 1 championship publishes details of Singapore Grand Prix",
+      "expected": null,
+      "before": 0.3534,
+      "beforePaths": [
+        {
+          "islandId": 1,
+          "preferenceStrength": 1,
+          "islandConfidence": 0.7574011752615414,
+          "singleton": false,
+          "seedSelf": false,
+          "matchType": "topic-island",
+          "topicId": 10,
+          "articleTopicConfidence": 0.7934,
+          "islandTopicConfidence": 0.6312,
+          "semanticSimilarity": 0.9317,
+          "relationshipConfidence": 0.46658984433600004,
+          "contribution": 0.3533956964651861
+        }
+      ],
+      "after": 0,
+      "afterPaths": []
+    },
+    {
+      "sourceId": "long-continuity-43-baseline-172",
+      "title": "What Formula 1 championship Singapore Grand Prix means for participants",
+      "expected": null,
+      "before": 0.3534,
+      "beforePaths": [
+        {
+          "islandId": 1,
+          "preferenceStrength": 1,
+          "islandConfidence": 0.7574011752615414,
+          "singleton": false,
+          "seedSelf": false,
+          "matchType": "topic-island",
+          "topicId": 10,
+          "articleTopicConfidence": 0.7934,
+          "islandTopicConfidence": 0.6312,
+          "semanticSimilarity": 0.9317,
+          "relationshipConfidence": 0.46658984433600004,
+          "contribution": 0.3533956964651861
+        }
+      ],
+      "after": 0,
+      "afterPaths": []
+    },
+    {
+      "sourceId": "long-continuity-09-incremental-033",
+      "title": "Immich 2.1: availability and timetable clarified",
+      "expected": null,
+      "before": 0.1713,
+      "beforePaths": [
+        {
+          "islandId": 3,
+          "preferenceStrength": 1,
+          "islandConfidence": 0.5867698884380027,
+          "singleton": false,
+          "seedSelf": false,
+          "matchType": "topic-island",
+          "topicId": 11,
+          "articleTopicConfidence": 0.8351,
+          "islandTopicConfidence": 0.488,
+          "semanticSimilarity": 0.7165,
+          "relationshipConfidence": 0.2919943852,
+          "contribution": 0.17133351282832718
+        }
+      ],
+      "after": 0,
+      "afterPaths": []
+    },
+    {
+      "sourceId": "long-continuity-10-incremental-037",
+      "title": "Nextcloud 33: availability and timetable clarified",
+      "expected": null,
+      "before": 0.1368,
+      "beforePaths": [
+        {
+          "islandId": 3,
+          "preferenceStrength": 1,
+          "islandConfidence": 0.5867698884380027,
+          "singleton": false,
+          "seedSelf": false,
+          "matchType": "topic-island",
+          "topicId": 28,
+          "articleTopicConfidence": 0.8886,
+          "islandTopicConfidence": 0.4081,
+          "semanticSimilarity": 0.643,
+          "relationshipConfidence": 0.23317601538,
+          "contribution": 0.1368206645309406
+        }
+      ],
+      "after": 0,
+      "afterPaths": []
+    },
+    {
+      "sourceId": "long-continuity-10-incremental-038",
+      "title": "Further details on Nextcloud 33",
+      "expected": null,
+      "before": 0.1368,
+      "beforePaths": [
+        {
+          "islandId": 3,
+          "preferenceStrength": 1,
+          "islandConfidence": 0.5867698884380027,
+          "singleton": false,
+          "seedSelf": false,
+          "matchType": "topic-island",
+          "topicId": 28,
+          "articleTopicConfidence": 0.8886,
+          "islandTopicConfidence": 0.4081,
+          "semanticSimilarity": 0.643,
+          "relationshipConfidence": 0.23317601538,
+          "contribution": 0.1368206645309406
+        }
+      ],
+      "after": 0,
+      "afterPaths": []
+    },
+    {
+      "sourceId": "long-continuity-43-incremental-169",
+      "title": "Formula 1 championship Singapore Grand Prix: availability and timetable clarified",
+      "expected": null,
+      "before": 0.3321,
+      "beforePaths": [
+        {
+          "islandId": 1,
+          "preferenceStrength": 1,
+          "islandConfidence": 0.7574011752615414,
+          "singleton": false,
+          "seedSelf": false,
+          "matchType": "topic-island",
+          "topicId": 10,
+          "articleTopicConfidence": 0.7456,
+          "islandTopicConfidence": 0.6312,
+          "semanticSimilarity": 0.9317,
+          "relationshipConfidence": 0.438479188224,
+          "contribution": 0.33210465248858423
+        }
+      ],
+      "after": 0,
+      "afterPaths": []
+    },
+    {
+      "sourceId": "long-continuity-43-incremental-170",
+      "title": "Further details on Formula 1 championship Singapore Grand Prix",
+      "expected": null,
+      "before": 0.3321,
+      "beforePaths": [
+        {
+          "islandId": 1,
+          "preferenceStrength": 1,
+          "islandConfidence": 0.7574011752615414,
+          "singleton": false,
+          "seedSelf": false,
+          "matchType": "topic-island",
+          "topicId": 10,
+          "articleTopicConfidence": 0.7456,
+          "islandTopicConfidence": 0.6312,
+          "semanticSimilarity": 0.9317,
+          "relationshipConfidence": 0.438479188224,
+          "contribution": 0.33210465248858423
+        }
+      ],
+      "after": 0,
+      "afterPaths": []
+    },
+    {
+      "sourceId": "long-continuity-43-incremental-171",
+      "title": "Formula 1 championship confirms Las Vegas Grand Prix",
+      "expected": null,
+      "before": 0.3056,
+      "beforePaths": [
+        {
+          "islandId": 1,
+          "preferenceStrength": 1,
+          "islandConfidence": 0.7574011752615414,
+          "singleton": false,
+          "seedSelf": false,
+          "matchType": "topic-island",
+          "topicId": 10,
+          "articleTopicConfidence": 0.686,
+          "islandTopicConfidence": 0.6312,
+          "semanticSimilarity": 0.9317,
+          "relationshipConfidence": 0.40342908144,
+          "contribution": 0.3055576604173401
+        }
+      ],
+      "after": 0,
+      "afterPaths": []
+    },
+    {
+      "sourceId": "long-continuity-43-incremental-172",
+      "title": "Las Vegas Grand Prix marks next chapter for Formula 1 championship",
+      "expected": null,
+      "before": 0.3056,
+      "beforePaths": [
+        {
+          "islandId": 1,
+          "preferenceStrength": 1,
+          "islandConfidence": 0.7574011752615414,
+          "singleton": false,
+          "seedSelf": false,
+          "matchType": "topic-island",
+          "topicId": 10,
+          "articleTopicConfidence": 0.686,
+          "islandTopicConfidence": 0.6312,
+          "semanticSimilarity": 0.9317,
+          "relationshipConfidence": 0.40342908144,
+          "contribution": 0.3055576604173401
+        }
+      ],
+      "after": 0,
+      "afterPaths": []
+    }
+  ],
+  "signImprovements": [
+    {
+      "sourceId": "capacity-and-intent-19",
+      "expected": "positive",
+      "before": -0.1802,
+      "after": 0.0646
+    },
+    {
+      "sourceId": "capacity-and-intent-21",
+      "expected": "positive",
+      "before": -0.1244,
+      "after": 0.0656
+    }
+  ],
+  "changedInterestCount": 40,
+  "eventMembershipChanges": 0,
+  "inputFingerprint": {
+    "1": {
+      "before": "4559207cb68cd2ff59894b51ad732510b5d76f23c6e0d82fe16f7e16df744b33",
+      "after": "4559207cb68cd2ff59894b51ad732510b5d76f23c6e0d82fe16f7e16df744b33",
+      "identical": true
+    },
+    "2": {
+      "before": "ee62223d0a90c16eb08d1d90d77bacba441b7a58786964c410a2e06dec3d26df",
+      "after": "ee62223d0a90c16eb08d1d90d77bacba441b7a58786964c410a2e06dec3d26df",
+      "identical": true
+    }
+  },
+  "retrospectiveLongitudinal": {
+    "scenarios": 138,
+    "failedScenariosBefore": 85,
+    "failedScenariosAfter": 85,
+    "failedChecksBefore": 113,
+    "failedChecksAfter": 113,
+    "identicalChecks": true
+  }
+}

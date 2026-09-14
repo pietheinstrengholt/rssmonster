@@ -42,7 +42,7 @@ async function loadUsers(userId = null) {
 // This function runs the recent semantic repair pipeline for one user.
 async function repairUser(userId) {
   console.log(`[SEMANTIC] user=${userId} Stage 1 Events`);
-  const eventResult = await repairRecentEventsForUser(userId, { skipTopicAssignment: false });
+  const eventResult = await repairRecentEventsForUser(userId);
 
   console.log(
     `[SEMANTIC] user=${userId} stage=events ` +
@@ -53,22 +53,11 @@ async function repairUser(userId) {
     `touchedEvents=${eventResult.touchedEventIds.length}`
   );
 
-  const topicStats = eventResult.topicAssignment?.stats || {};
-  console.log(`[SEMANTIC] user=${userId} Stage 2 Topics`);
-  console.log(
-    `[SEMANTIC] user=${userId} stage=topics ` +
-    `touchedTopics=${eventResult.touchedTopicIds.length} ` +
-    `createdTopics=${topicStats.newTopicsCreated || 0} ` +
-    `matchedEvents=${topicStats.eventsMatched || 0} ` +
-    `unmatchedEvents=${topicStats.eventsUnmatched || 0}`
-  );
-
-  console.log(`[SEMANTIC] user=${userId} Stage 3 Interest Scores`);
+  console.log(`[SEMANTIC] user=${userId} Stage 2 Interest Scores`);
   const scoringResult = await scoreArticlesFromIslandsForUser(userId);
   console.log(
     `[SEMANTIC] user=${userId} stage=interest-scores ` +
     `updated=${scoringResult.updatedCount || 0} ` +
-    `topicScored=${scoringResult.topicScoredCount || 0} ` +
     `fallbackScored=${scoringResult.fallbackScoredCount || 0}`
   );
 
@@ -118,7 +107,3 @@ if (process.argv[1]?.includes('repairSemanticPipeline')) {
       process.exit(1);
     });
 }
-
-
-
-

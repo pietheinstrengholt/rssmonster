@@ -145,7 +145,7 @@ describe('data store remaining actions and getters', () => {
   // Verifies filter resets use the store-owned defaults without resetting user preferences.
   it.each([
     ['recommended', 'event'],
-    ['quality', 'topic'],
+    ['quality', 'event'],
     ['asc', 'none']
   ])('resets article filters while preserving %s sorting and %s grouping', (sort, grouping) => {
     const { selectionStore: store } = createStores();
@@ -201,7 +201,7 @@ describe('data store remaining actions and getters', () => {
 
     store.setSelectedCategoryId(4);
     store.setSelectedFeedId(9);
-    store.setCurrentSelection({ grouping: 'topic', includeDevelopingEvents: true });
+    store.setCurrentSelection({ grouping: 'event', includeDevelopingEvents: true });
     expect(store.currentSelection).toMatchObject({
       categoryId: '4',
       feedId: '9'
@@ -283,10 +283,10 @@ describe('data store remaining actions and getters', () => {
       .mockResolvedValueOnce({ data: { tags: ['vue'] } })
       .mockResolvedValueOnce({ data: {} });
     const { overviewStore: store, selectionStore } = createStores();
-    selectionStore.setCurrentSelection({ grouping: 'topic' });
+    selectionStore.setCurrentSelection({ grouping: 'event' });
     await flushPromises();
     expect(fetchTopTags).toHaveBeenCalledWith({
-      grouping: 'topic',
+      grouping: 'event',
       includeDevelopingEvents: false,
       status: 'unread'
     });
@@ -343,7 +343,7 @@ describe('data store remaining actions and getters', () => {
     const initialRequest = store.fetchOverviewSplit({ initial: true });
     await store.fetchOverviewSplit();
     resolveSettings({
-      data: { themeMode: 'dark', grouping: 'topic' }
+      data: { themeMode: 'dark', grouping: 'event' }
     });
     await initialRequest;
 

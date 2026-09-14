@@ -3,7 +3,7 @@ import db from '../../models/index.js';
 import { DEFAULT_AUDIT_MAX_ARTICLE_IDS, DEFAULT_AUDIT_MAX_RUNS } from './islandVectorUtils.js';
 
 // Provides the shared dependencies used by this service.
-const { Article, sequelize } = db;
+const { Article } = db;
 
 // This function appends one bounded population-audit entry to an island's history.
 export function appendPopulationAudit(existingAudit, entry) {
@@ -18,12 +18,10 @@ export function appendPopulationAudit(existingAudit, entry) {
 }
 
 // This function builds a compact audit entry describing which articles populated an island.
-export async function buildPopulationAuditEntry({ userId, topicIds = [], articleIds = [], transaction }) {
-  // Returns early when topic id is empty and article id is empty.
-  if (!topicIds.length && !articleIds.length) {
+export async function buildPopulationAuditEntry({ userId, articleIds = [], transaction }) {
+  if (!articleIds.length) {
     return {
       runAt: new Date().toISOString(),
-      topicIds: [],
       articleIds: [],
       metrics: {
         relatedArticleCount: 0,
@@ -51,29 +49,7 @@ export async function buildPopulationAuditEntry({ userId, topicIds = [], article
       raw: true,
       transaction
     })
-    : await sequelize.query(
-      `
-      SELECT DISTINCT
-        a.id,
-        a.title,
-        a.favoriteInd,
-        a.clickedAmount,
-        a.negativeInd
-      FROM article_topics atp
-      INNER JOIN articles a
-        ON a.id = atp.articleId
-       AND a.userId = :userId
-      WHERE atp.topicId IN (:topicIds)
-      `,
-      {
-        replacements: {
-          userId,
-          topicIds
-        },
-        type: db.Sequelize.QueryTypes.SELECT,
-        transaction
-      }
-    );
+    : [];
 
   // Derives the article rows through sort while building population audit entry.
   const articleRows = rows
@@ -116,7 +92,6 @@ export async function buildPopulationAuditEntry({ userId, topicIds = [], article
 
   return {
     runAt: new Date().toISOString(),
-    topicIds,
     articleIds: articleIds.slice(0, DEFAULT_AUDIT_MAX_ARTICLE_IDS),
     metrics: {
       relatedArticleCount: articleRows.length,

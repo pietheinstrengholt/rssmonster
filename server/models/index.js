@@ -48,12 +48,8 @@ import SettingModel from './setting.js';
 import InferenceSettingModel from './inferenceSetting.js';
 import SmartFolderModel from './smartFolder.js';
 import GeneratedFeedModel from './generatedFeed.js';
-import TopicModel from './topic.js';
 import EventModel from './event.js';
-import ArticleTopicModel from './articleTopic.js';
-import EventTopicModel from './eventTopic.js';
 import IslandModel from './island.js';
-import IslandTopicModel from './islandTopic.js';
 import IslandTaxonomyModel from './islandTaxonomy.js';
 import HotlinkModel from './hotlink.js';
 import OfficialSourceModel from './officialSource.js';
@@ -82,12 +78,8 @@ const Setting = SettingModel(sequelize);
 const InferenceSetting = InferenceSettingModel(sequelize);
 const SmartFolder = SmartFolderModel(sequelize);
 const GeneratedFeed = GeneratedFeedModel(sequelize);
-const Topic = TopicModel(sequelize);
 const Event = EventModel(sequelize);
-const ArticleTopic = ArticleTopicModel(sequelize);
-const EventTopic = EventTopicModel(sequelize);
 const Island = IslandModel(sequelize);
-const IslandTopic = IslandTopicModel(sequelize);
 const IslandTaxonomy = IslandTaxonomyModel(sequelize);
 const Hotlink = HotlinkModel(sequelize);
 const OfficialSource = OfficialSourceModel(sequelize);
@@ -263,10 +255,6 @@ User.hasMany(GeneratedFeed, {
 });
 GeneratedFeed.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
-// User ↔ Topic
-User.hasMany(Topic, { foreignKey: 'userId', onDelete: 'CASCADE' });
-Topic.belongsTo(User, { foreignKey: 'userId' });
-
 // User ↔ Event
 User.hasMany(Event, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Event.belongsTo(User, { foreignKey: 'userId' });
@@ -274,19 +262,6 @@ Event.belongsTo(User, { foreignKey: 'userId' });
 // User ↔ Island
 User.hasMany(Island, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Island.belongsTo(User, { foreignKey: 'userId' });
-
-// ---- Semantic Grouping ----
-//
-// Relationship structure:
-//   Article <-> Topic via article_topics (ranked, confidence-scored, primary flag)
-//   Event   <-> Topic via event_topics   (ranked, confidence-scored, primary flag)
-//
-// Denormalized primary topic links (Article.topicId / Event.topicId) are retained as
-// read-side optimizations while many-to-many joins remain the source of truth.
-
-// Topic ↔ Event (denormalized primary link)
-Topic.hasMany(Event, { foreignKey: 'topicId', as: 'primaryEvents', onDelete: 'SET NULL' });
-Event.belongsTo(Topic, { foreignKey: 'topicId', as: 'primaryTopic' });
 
 // Event ↔ Article
 Event.hasMany(Article, { foreignKey: 'eventId', onDelete: 'SET NULL', as: 'articles' });
@@ -308,68 +283,6 @@ Event.belongsTo(Article, {
 Article.belongsTo(Article, { foreignKey: 'duplicateOfArticleId', as: 'canonicalArticle' });
 Article.hasMany(Article, { foreignKey: 'duplicateOfArticleId', as: 'duplicateArticles' });
 
-// Topic ↔ Article (denormalized primary link)
-Topic.hasMany(Article, { foreignKey: 'topicId', as: 'primaryArticles', onDelete: 'SET NULL' });
-Article.belongsTo(Topic, { foreignKey: 'topicId', as: 'topic' });
-
-// Article ↔ Topic (many-to-many semantic assignments)
-Article.belongsToMany(Topic, {
-  through: ArticleTopic,
-  foreignKey: 'articleId',
-  otherKey: 'topicId',
-  as: 'topics'
-});
-Topic.belongsToMany(Article, {
-  through: ArticleTopic,
-  foreignKey: 'topicId',
-  otherKey: 'articleId',
-  as: 'articles'
-});
-
-ArticleTopic.belongsTo(Article, { foreignKey: 'articleId' });
-Article.hasMany(ArticleTopic, { foreignKey: 'articleId', onDelete: 'CASCADE' });
-ArticleTopic.belongsTo(Topic, { foreignKey: 'topicId' });
-Topic.hasMany(ArticleTopic, { foreignKey: 'topicId', onDelete: 'CASCADE' });
-
-// Event ↔ Topic (many-to-many semantic assignments)
-Event.belongsToMany(Topic, {
-  through: EventTopic,
-  foreignKey: 'eventId',
-  otherKey: 'topicId',
-  as: 'topics'
-});
-Topic.belongsToMany(Event, {
-  through: EventTopic,
-  foreignKey: 'topicId',
-  otherKey: 'eventId',
-  as: 'events'
-});
-
-EventTopic.belongsTo(Event, { foreignKey: 'eventId' });
-Event.hasMany(EventTopic, { foreignKey: 'eventId', onDelete: 'CASCADE' });
-EventTopic.belongsTo(Topic, { foreignKey: 'topicId' });
-Topic.hasMany(EventTopic, { foreignKey: 'topicId', onDelete: 'CASCADE' });
-
-// Island ↔ Topic (many-to-many semantic interest assignments)
-Island.belongsToMany(Topic, {
-  through: IslandTopic,
-  foreignKey: 'islandId',
-  otherKey: 'topicId',
-  as: 'topics'
-});
-Topic.belongsToMany(Island, {
-  through: IslandTopic,
-  foreignKey: 'topicId',
-  otherKey: 'islandId',
-  as: 'islands'
-});
-
-IslandTopic.belongsTo(Island, { foreignKey: 'islandId' });
-Island.hasMany(IslandTopic, { foreignKey: 'islandId', onDelete: 'CASCADE' });
-IslandTopic.belongsTo(Topic, { foreignKey: 'topicId' });
-Topic.hasMany(IslandTopic, { foreignKey: 'topicId', onDelete: 'CASCADE' });
-
-// ---- Export db ----
 export default {
   sequelize,
   Sequelize,
@@ -385,12 +298,8 @@ export default {
   InferenceSetting,
   SmartFolder,
   GeneratedFeed,
-  Topic,
   Event,
-  ArticleTopic,
-  EventTopic,
   Island,
-  IslandTopic,
   IslandTaxonomy,
   Hotlink,
   OfficialSource,

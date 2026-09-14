@@ -17,7 +17,7 @@ private to that account and are learned only from that user's articles and
 behavior.
 
 An Interest Island answers **what does this user consistently care about?** It
-is not an [Event]({% link events.md %}), a [Topic]({% link topics.md %}), a feed category, or simply a
+is not an [Event]({% link events.md %}), a a feed category, or simply a
 folder of similar articles.
 
 ## Where Islands Fit
@@ -35,15 +35,11 @@ Candidate Interest Islands
 Persist or update Islands
         |
         v
-Enrich them with Topics
-        |
-        v
 Score unread articles
 ```
 
-Events describe individual occurrences. Topics connect recurring subjects.
-Interest Islands consume those semantic layers together with direct behavior,
-but never redefine them.
+Events describe individual occurrences. Interest Islands learn from canonical
+article behavior and match candidate article vectors directly.
 
 ## Behavioral Evidence
 
@@ -52,11 +48,11 @@ explicit behavioral signal. The current signal weights are:
 
 | Signal | Contribution |
 | --- | ---: |
-| Positive feedback | `+4` |
+| Positive feedback | `+8` |
 | Bookmark or favorite | `+4` |
 | Outbound click | `+2`, up to three clicks per article (`+6` maximum) |
 | Deep read | `+1` when attention bucket is at least three |
-| Negative feedback | `-4` |
+| Negative feedback | `-8` |
 
 Positive signals are reduced gradually as articles age. The default half-life
 is 1,460 days, with a minimum recency multiplier of `0.2`, so older explicit
@@ -109,55 +105,17 @@ updating existing Islands gives them continuity as reading habits evolve.
 
 An unmatched Island can be archived when both conditions hold:
 
-- its average Topic-membership confidence is below `0.12`; and
+- its confidence derived from current behavioral support is below `0.12`; and
 - it has not been updated for at least 45 days.
 
 Archived Islands remain available for inspection but are excluded from active
 article matching and interest scoring. A later matching profile can reactivate
 an archived Island.
 
-## Topic Enrichment
-
-After behavior-derived Islands are persisted, RSSMonster evaluates stored
-Topics. Topics help an Island expand beyond its original source articles while
-remaining connected to explainable semantic subjects.
-
-Topic profiles combine:
-
-- positive and negative behavior on Topic articles;
-- the Topic's stored affinity;
-- bounded Event-count evidence;
-- overlap in the engaged articles; and
-- similarity in the time periods when engagement occurred.
-
-Behavioral affinity, rather than vector similarity alone, groups Topics into
-candidate communities. Existing Islands are then enriched with Topics whose
-vectors reach a similarity of `0.62` and whose evidence-adjusted confidence
-reaches `0.10` by default.
-
-Topics enrich existing behavior-derived Islands; they do not independently
-create the initial personal-interest layer.
-
-## Evolving Topic Membership
-
-`IslandTopic` is the durable relationship between an Island and a Topic. It
-stores both semantic similarity and evidence-adjusted confidence.
-
-When evidence is observed again, old and new membership values are blended.
-The default blend gives new evidence a weight of `0.65`. Memberships not
-observed in the latest calibration decay to `82%` of their previous confidence
-instead of disappearing immediately. They are removed only after confidence
-falls below `0.05`.
-
-This gradual evolution prevents a small change in reading behavior from
-reorganizing the user's long-term interests all at once.
-
 ## Island Names
 
 RSSMonster first tries to label an Island using the nearest active semantic
-taxonomy name. When no taxonomy label is available, it uses the strongest
-related Topic names or, for article-only evidence, the strongest source
-article title.
+taxonomy name. When no taxonomy label is available, it uses the strongest source article title.
 
 Names are also disambiguated. Semantically near-identical Islands with the same
 normalized name can be archived as duplicates. Distinct Islands that happen to
@@ -169,7 +127,7 @@ than being merged solely because their labels match.
 Each Island keeps a bounded audit history explaining how it was populated.
 An audit entry can include:
 
-- contributing Topic and article IDs;
+- contributing article IDs;
 - counts of related, bookmarked, clicked, and negatively rated articles; and
 - compact snapshots of source-article evidence.
 
@@ -189,9 +147,7 @@ interest supported across multiple articles, sources and publication days. These
 confidence measurements are derived from current bounded evidence, not stored
 audit history; diagnostic classifications do not automatically delete Islands.
 
-Both Article → Topic → Island and direct Article → Island paths are evaluated.
-The Topic path multiplies ArticleTopic confidence, IslandTopic confidence and
-IslandTopic similarity. Direct matching requires similarity strictly above the
+Direct Article → Island matching requires similarity strictly above the
 existing scoring threshold (0.62 by default) and normalizes confidence within the
 trusted range. Weak relationships cannot forward full Island preference.
 
@@ -205,7 +161,7 @@ interaction timestamps are unavailable for this path.
 
 The strongest adjusted path wins per Island. Across Islands and explicit evidence,
 the strongest positive and strongest negative contributions are added and bounded;
-correlated Topic/direct paths do not stack. The internal
+correlated paths do not stack. The internal
 [Island scoring reference](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/islands/README.md#confidence-aware-interest)
 owns the exact confidence, fallback and aggregation formulas.
 
@@ -218,8 +174,8 @@ negative scores penalize an article. They also support Daily Briefing
 eligibility and semantic filtering. The score is derived output: it does not
 become new behavioral evidence and does not itself change an Island.
 
-Use `island:true` in Search or a Smart Folder to select articles whose Event
-has a primary or secondary Topic linked to an active Island. `island:false`
+Use `island:true` in Search or a Smart Folder to select articles whose vectors match an active Island, independently
+of Event membership or signed preference. `island:false`
 selects articles without such a relationship. See [Search]({% link search.md %}) and
 [Smart Folders]({% link smart-folders.md %}).
 
@@ -229,11 +185,11 @@ Open **Settings > Islands** for an explanation of what RSSMonster has learned.
 The overview itself is read-only and shows:
 
 - the number of active Interest Islands;
-- articles connected to active Islands through Topics;
+- articles directly matching active Islands;
 - articles outside Islands and overall library coverage;
 - each Island's signed interest weight and active or archived state;
 - the behavioral source articles explaining why it exists; and
-- linked Topics and recently related articles.
+- recently related articles.
 
 ![Interest Island insights in the Settings menu](assets/interestislands.png)
 
@@ -246,8 +202,7 @@ most of a large library may remain outside them.
 
 ## Calibration and Normal Crawls
 
-A normal crawl does not rebuild the user's Islands. It assigns Events and
-Topics to new articles, then scores those new unread articles against the
+A normal crawl does not rebuild the user's Islands. It assigns Events to new articles, then scores those new unread articles against the
 existing active Islands. This keeps routine crawling bounded.
 
 To recalibrate Islands for every user and then refresh article interest
@@ -258,7 +213,7 @@ npm run islands
 ```
 
 The historical semantic pipeline also recalibrates Islands after historical Event
-backfill and Topic relationship rebuilding:
+backfill:
 
 ```bash
 npm run semantic:all
@@ -280,23 +235,12 @@ Most installations should use the defaults. The main controls are:
 | `ISLAND_VECTOR_ALPHA` | `0.35` | Weight of new profile evidence when updating an Island vector. |
 | `ISLAND_RECENCY_HALF_LIFE_DAYS` | `1460` | Half-life for positive behavioral evidence. |
 | `ISLAND_RECENCY_MIN_WEIGHT` | `0.2` | Minimum retained multiplier for old positive behavior. |
-| `ISLAND_TOPIC_ENRICHMENT_SIMILARITY_THRESHOLD` | `0.62` | Semantic similarity needed for Topic enrichment. |
-| `ISLAND_TOPIC_CONFIDENCE_THRESHOLD` | `0.10` | Minimum evidence-adjusted Topic membership confidence. |
-| `ISLAND_MEMBERSHIP_BLEND` | `0.65` | New-evidence share when refreshing Topic memberships. |
-| `ISLAND_MEMBERSHIP_DECAY` | `0.82` | Confidence retained for an unobserved membership. |
-| `ISLAND_MEMBERSHIP_MIN_CONFIDENCE` | `0.05` | Membership confidence below which a link is removed. |
 | `ISLAND_ARTICLE_SCORE_THRESHOLD` | `0.62` | Direct scoring requires similarity strictly above this threshold; confidence is normalized above it. |
 | `ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD` | `0.12` | Low-confidence condition for archiving an inactive Island. |
 | `ISLAND_ARCHIVE_STALE_DAYS` | `45` | Minimum inactive age before low-confidence archival. |
 | `ISLAND_DUPLICATE_NAME_SIMILARITY_THRESHOLD` | `0.92` | Similarity at which same-name Islands are treated as duplicates. |
 | `ISLAND_AUDIT_MAX_RUNS` | `30` | Maximum retained population-audit entries. |
 | `ISLAND_AUDIT_MAX_ARTICLE_IDS` | `300` | Maximum stored article IDs per audit entry. |
-
-Additional Topic-community controls include
-`ISLAND_TOPIC_AFFINITY_THRESHOLD` (`0.12`),
-`ISLAND_MAX_COMMUNITIES_PER_TOPIC` (`2`),
-`ISLAND_ENGAGEMENT_TIME_BUCKET_HOURS` (`12`), and
-`ISLAND_TEMPORAL_AFFINITY_WEIGHT` (`0.65`).
 
 Island thresholds interact: permissive settings can combine unrelated
 interests, while strict settings can create fragmented or sparsely connected

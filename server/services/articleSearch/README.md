@@ -92,7 +92,7 @@ Boolean filters accept `true` or `false`, case-insensitively.
 | `hot:false` | Articles not marked hot. |
 | `event:true` | Articles assigned to an event. |
 | `event:false` | Articles not assigned to an event. |
-| `island:true` | Articles whose event has at least one topic linked to an active interest island for the user. |
+| `island:true` | Articles whose vectors directly match an active Interest Island owned by the user. |
 | `island:false` | Articles without an applicable active interest island, including articles without an event. |
 | `briefing:true` | Articles with a nonzero interest score or belonging to an event containing more than one article. |
 | `briefing:false` | Articles with a zero interest score that do not belong to a multi-article event. |
@@ -130,15 +130,15 @@ firstSeen IS NULL OR firstSeen >= now - interval
 `eventCount` currently supports only a minimum event article count. Operators
 such as `>`, `<`, and `=` are not supported for this filter.
 
-Island membership follows the semantic relationship tables: an article's event
-must have an `event_topics` assignment whose topic has an `island_topics`
-assignment to a non-archived island owned by the same user. Primary and secondary
-event topics are both considered. Archived islands do not satisfy `island:true`.
+Island filtering compares canonical, visible Article vectors directly with active
+Islands belonging to the same user. It is independent of Event membership and
+signed Island weight. All database predicates are applied before vector batches;
+matching IDs restrict the result before ranking, counts and pagination.
 
 Briefing eligibility combines two independent signals as a union. An article
 matches `briefing:true` when its stored `interestScore` is nonzero, including a
 negative score, or when its associated event has `articleCount > 1`. This filter
-does not require event or topic grouping; grouping only controls which
+does not require event grouping; grouping only controls which
 representative articles are returned after eligibility is established.
 
 ### Daily Briefing composition
@@ -292,7 +292,7 @@ This returns at most 25 canonical English unread articles that:
 2. were published during the rolling previous seven days;
 3. have computed quality of at least `0.75`;
 4. belong to an event containing at least four articles;
-5. have an event topic linked to one of the user's active interest islands;
+5. directly match one of the user's active Interest Islands;
 6. pass the request/user minimum score thresholds;
 7. are ordered by recommendation score.
 
@@ -312,7 +312,7 @@ The search service also receives options from the API/UI:
 - `categoryId` and `feedId` establish source scope.
 - `status` supplies the current view (`unread`, `read`, `favorite`, `hot`,
   `clicked`, or `%` for all).
-- `grouping` is `none`, `event`, or `topic`.
+- `grouping` is `none` or `event`.
 - minimum advertisement, sentiment, and quality scores establish baseline gates.
 - `countOnly` returns a count instead of article IDs.
 - `includeSnapshot` adds a user-scoped arrival boundary to non-cursor article results.
@@ -335,7 +335,7 @@ statuses unless an explicit state filter is present. Special status views such a
 favorite, hot, and clicked remain active unless explicitly overridden by their
 corresponding filter.
 
-The expression token `grouping:none|event|topic` overrides the API grouping
+The expression token `grouping:none|event` overrides the API grouping
 parameter. Smart Folder expressions contain explicit sort and grouping tokens;
 legacy folders acquire Newest/None defaults when loaded or saved, with developing
 stories retaining required event grouping. Folder list requests use
@@ -345,8 +345,6 @@ Grouping changes which representative articles are eligible:
 
 - `grouping=event` returns each event's representative article plus articles not
   assigned to an event.
-- `grouping=topic` returns the representative article of the strongest event for
-  each topic.
 - An explicit `event:` filter disables implicit API grouping predicates, but an
   explicit `grouping:` token applies representative grouping alongside event
   eligibility filters.
@@ -496,7 +494,7 @@ Search can operate over individual articles or representative articles.
 
 Event grouping means that clustered coverage should not flood the result list with many articles about the same event. The representative article stands in for the cluster, while unclustered articles remain eligible as themselves.
 
-Topic grouping means that broad topics should be represented by their strongest current event rather than every article or every event in that topic.
+Event grouping represents an occurrence with its selected representative.
 
 Grouping changes the shape of the eligible set. It does not change what an individual article means.
 
@@ -545,10 +543,10 @@ The architecture succeeds when an agent can infer the correct behavior from the 
 ## Recommended coverage versus Island filtering
 
 Every authorized Article that passes the current view's filters can receive a
-runtime Recommended score. No Event, Topic, Island or embedding is required;
+runtime Recommended score. No Event, Island or embedding is required;
 unmatched personal evidence means zero interest. The existing `island:true`
-filter specifically tests EventTopic → IslandTopic relationships, so it is neither
-a nonzero-interest filter nor a prerequisite for scoring. Direct Island and explicit
-behavioral paths may personalize Articles outside that filter. See the
+filter tests direct vector affinity, so it is neither a nonzero-interest filter
+nor a prerequisite for scoring. Explicit behavioral fallback may personalize
+Articles outside that filter. See the
 [interest evaluator](../islands/README.md#confidence-aware-interest) and
 [final ranking formula](../../../docs/scoring.md).

@@ -117,17 +117,17 @@ describe('store response ordering', () => {
   // Verifies grouping transitions refresh tags and retain only the newest grouping response.
   it('refreshes Top Tags for grouping changes and ignores the older grouping response', async () => {
     const eventTags = deferred();
-    const topicTags = deferred();
+    const ungroupedTags = deferred();
     fetchTopTags
       .mockReturnValueOnce(eventTags.promise)
-      .mockReturnValueOnce(topicTags.promise);
+      .mockReturnValueOnce(ungroupedTags.promise);
     const store = useOverviewStore();
     const selectionStore = useSelectionStore();
     vi.spyOn(store, 'fetchOverviewSplit').mockResolvedValue(true);
 
     selectionStore.setGrouping('event');
-    selectionStore.setGrouping('topic');
-    topicTags.resolve({ data: { tags: [{ name: 'topic-tag', count: 4 }] } });
+    selectionStore.setGrouping('none');
+    ungroupedTags.resolve({ data: { tags: [{ name: 'ungrouped-tag', count: 4 }] } });
     await flushPromises();
     eventTags.resolve({ data: { tags: [{ name: 'event-tag', count: 9 }] } });
     await flushPromises();
@@ -138,11 +138,11 @@ describe('store response ordering', () => {
       status: 'unread'
     });
     expect(fetchTopTags).toHaveBeenNthCalledWith(2, {
-      grouping: 'topic',
+      grouping: 'none',
       includeDevelopingEvents: false,
       status: 'unread'
     });
-    expect(store.topTags).toEqual([{ name: 'topic-tag', count: 4 }]);
+    expect(store.topTags).toEqual([{ name: 'ungrouped-tag', count: 4 }]);
     expect(store.topTagsStatus).toBe('success');
   });
 

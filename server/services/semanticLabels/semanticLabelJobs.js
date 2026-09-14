@@ -12,13 +12,11 @@ const MAX_RECONCILE_LIMIT = 500;
 
 const defaultModels = {
   event: db.Event,
-  topic: db.Topic,
   island: db.Island
 };
 
 export const SEMANTIC_LABEL_TARGET_CONFIG = Object.freeze({
   event: Object.freeze({ field: 'generatedName' }),
-  topic: Object.freeze({ field: 'generatedName' }),
   island: Object.freeze({ field: 'generatedLabel' })
 });
 
@@ -80,7 +78,7 @@ export const enqueueSemanticLabelJob = async ({
   const normalizedUserId = positiveId(userId, 'userId');
   const normalizedTargetId = positiveId(targetId, 'targetId');
   const config = SEMANTIC_LABEL_TARGET_CONFIG[targetType];
-  if (!config) throw new TypeError('targetType must be event, topic, or island');
+  if (!config) throw new TypeError('targetType must be event or island');
   if (shouldSkipSemanticLabeling(options.environment || process.env) || !await isInferenceConfigured()) {
     return { created: false, skipped: 'disabled' };
   }
@@ -113,7 +111,7 @@ export const enqueueGeneratedSemanticLabelJobsForUser = async (
   options = {}
 ) => {
   const normalizedUserId = positiveId(userId, 'userId');
-  const summary = { eventCount: 0, topicCount: 0, islandCount: 0 };
+  const summary = { eventCount: 0, islandCount: 0 };
   if (shouldSkipSemanticLabeling(options.environment || process.env) || !await isInferenceConfigured()) return summary;
 
   const models = options.models || defaultModels;
@@ -156,7 +154,6 @@ export const tryEnqueueGeneratedSemanticLabelJobsForUser = async (
     );
     return {
       eventCount: 0,
-      topicCount: 0,
       islandCount: 0,
       enqueueFailed: true
     };
@@ -173,7 +170,7 @@ export const reconcileSemanticLabelJobsForUser = async (userId, options = {}) =>
   const limit = Number.isInteger(requestedLimit) && requestedLimit > 0
     ? Math.min(requestedLimit, MAX_RECONCILE_LIMIT)
     : DEFAULT_SEMANTIC_LABEL_RECONCILE_LIMIT;
-  const summary = { eventCount: 0, topicCount: 0, islandCount: 0, scannedCount: 0 };
+  const summary = { eventCount: 0, islandCount: 0, scannedCount: 0 };
   if (shouldSkipSemanticLabeling(options.environment || process.env) || !await isInferenceConfigured()) return summary;
 
   const models = options.models || defaultModels;
@@ -214,7 +211,6 @@ export const tryReconcileSemanticLabelJobsForUser = async (userId, options = {})
     );
     return {
       eventCount: 0,
-      topicCount: 0,
       islandCount: 0,
       scannedCount: 0,
       reconciliationFailed: true

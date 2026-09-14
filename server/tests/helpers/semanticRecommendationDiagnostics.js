@@ -1,4 +1,3 @@
-import db from '../../models/index.js';
 import { loadIslandEvidence } from '../../services/islands/islandInterestConfidence.js';
 import { buildInterestIslandProfilesForUser } from '../../services/islands/islandArticleProfiles.js';
 export { islandCohesion } from '../../services/islands/islandInterestConfidence.js';
@@ -29,7 +28,7 @@ export function interestPathMetrics(rows) {
   const held = rows.filter(r => r.interestDiagnostics && !r.interestDiagnostics.seedSelf);
   return {
     'Positive-interest articles': rows.filter(r => r.interestScore > 0).length,
-    'Topic-based matches': has('topic-island'), 'Direct Island matches': has('vector-fallback'),
+    'Direct Island matches': has('vector-fallback'),
     'Behavioral fallback matches': has('behavioral-fallback'),
     'Singleton-derived matches': matched.filter(r => r.interestDiagnostics?.paths.some(p => p.singleton)).length,
     'Seed/self matches': matched.filter(r => r.interestDiagnostics?.seedSelf).length,
@@ -44,18 +43,4 @@ export function interestPathMetrics(rows) {
     'Maximum interest': Math.max(0, ...rows.map(r => r.interestScore)),
     'Minimum interest': Math.min(0, ...rows.map(r => r.interestScore))
   };
-}
-
-export async function collectTopicQuality(userId, decisions = []) {
-  const [topics, events] = await Promise.all([
-    db.Topic.findAll({ where: { userId }, attributes: ['id'], raw: true }),
-    db.Event.findAll({ where: { userId }, attributes: ['id'], raw: true })
-  ]);
-  const links = events.length ? await db.EventTopic.findAll({ where: { eventId: events.map(e => e.id) }, raw: true }) : [];
-  const latest = [...new Map(decisions.map(d => [d.eventId, d])).values()];
-  return { Topics: topics.length, 'Events linked to Topics': new Set(links.map(l => l.eventId)).size,
-    'Single-Event Topics': topics.filter(t => new Set(links.filter(l => l.topicId === t.id).map(l => l.eventId)).size === 1).length,
-    'Unassigned Event→Topic cases': events.filter(e => !links.some(l => l.eventId === e.id)).length,
-    ...Object.fromEntries(['strong-reuse', 'secondary-reuse', 'weak-fallback-reuse', 'new-topic', 'ambiguous', 'unassigned']
-      .map(outcome => [`Topic decisions: ${outcome}`, latest.filter(d => d.outcome === outcome).length])) };
 }

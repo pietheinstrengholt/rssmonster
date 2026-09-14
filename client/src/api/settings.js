@@ -34,8 +34,8 @@ export const fetchIslandsOverview = () =>
 export const recalculateIslands = () =>
   api.post('/setting/islands/recalculate', null, { timeout: 120000 });
 
-export const fetchTopicsOverview = () =>
-  api.get('/setting/topics');
+export const fetchEventsOverview = () =>
+  api.get('/setting/events');
 
 export const fetchCrawlStatistics = (params = {}) =>
   api.get('/setting/crawl-statistics', { params });

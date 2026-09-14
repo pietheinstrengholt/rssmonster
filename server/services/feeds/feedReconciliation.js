@@ -9,7 +9,6 @@ import { retryDatabaseTransaction } from '../../utils/databaseRetry.js';
 
 const {
   Article,
-  ArticleTopic,
   Event,
   Feed,
   FeedUrlAlias,
@@ -188,7 +187,7 @@ const buildMergedArticleValues = (survivor, losers, survivorFeedId) => {
   const values = { feedId: survivorFeedId };
   const excluded = new Set([
     'id', 'userId', 'feedId', 'urlHash', 'normalizedUrlHash', 'createdAt', 'updatedAt',
-    'eventId', 'topicId', 'duplicateOfArticleId', 'duplicateCount', 'status', 'filteredInd',
+    'eventId', 'duplicateOfArticleId', 'duplicateCount', 'status', 'filteredInd',
     'favoriteInd', 'negativeInd', 'positiveInd', 'clickedAmount', 'hotInd', 'hotlinks',
     'firstSeen', 'readAt', 'publishedAt', 'modifiedAt'
   ]);
@@ -236,40 +235,6 @@ const transferArticleTags = async (
     else {
       names.add(tag.name);
       await tag.update({ articleId: survivorId }, { transaction });
-    }
-  }
-};
-
-// Moves semantic topic assignments while combining duplicate confidence and rank state.
-const transferArticleTopics = async (
-  survivorId,
-  loserIds,
-  transaction,
-  execution
-) => {
-  throwIfExecutionExpired(execution);
-  const topics = await ArticleTopic.findAll({
-    where: { articleId: { [Op.in]: [survivorId, ...loserIds] } },
-    order: [['id', 'ASC']],
-    transaction,
-    lock: transaction.LOCK.UPDATE
-  });
-  const retained = new Map(topics
-    .filter(topic => topic.articleId === survivorId)
-    .map(topic => [topic.topicId, topic]));
-  for (const topic of topics.filter(topic => loserIds.includes(topic.articleId))) {
-    throwIfExecutionExpired(execution);
-    const existing = retained.get(topic.topicId);
-    if (existing) {
-      await existing.update({
-        confidence: Math.max(Number(existing.confidence), Number(topic.confidence)),
-        rank: Math.min(Number(existing.rank), Number(topic.rank)),
-        primaryInd: Boolean(existing.primaryInd || topic.primaryInd)
-      }, { transaction });
-      await topic.destroy({ transaction });
-    } else {
-      await topic.update({ articleId: survivorId }, { transaction });
-      retained.set(topic.topicId, topic);
     }
   }
 };
@@ -375,12 +340,9 @@ const transferArticles = async ({
     const loserArticles = group.filter(article => article.id !== articleSurvivor.id);
     const loserIds = loserArticles.map(article => article.id);
     // Preserves an overlap's established semantic grouping when the retained row lacks one.
-    const semanticSource = loserArticles.find(article => article.eventId || article.topicId);
+    const semanticSource = loserArticles.find(article => article.eventId);
     if (!articleSurvivor.eventId && semanticSource?.eventId) {
       await articleSurvivor.update({ eventId: semanticSource.eventId }, { transaction });
-    }
-    if (!articleSurvivor.topicId && semanticSource?.topicId) {
-      await articleSurvivor.update({ topicId: semanticSource.topicId }, { transaction });
     }
     await repairArticleEventPointers(
       articleSurvivor,
@@ -389,12 +351,6 @@ const transferArticles = async ({
       execution
     );
     await transferArticleTags(
-      articleSurvivor.id,
-      loserIds,
-      transaction,
-      execution
-    );
-    await transferArticleTopics(
       articleSurvivor.id,
       loserIds,
       transaction,

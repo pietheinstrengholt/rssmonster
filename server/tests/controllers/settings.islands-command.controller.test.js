@@ -31,7 +31,6 @@ describe('settings island recalculation', () => {
       islandCount: 3,
       articleCount: 7,
       enrichedIslandCount: 2,
-      islandTopicLinkCount: 4,
       rescoredArticleCount: 6,
       profiles: [{ omitted: 'from response' }]
     });
@@ -46,7 +45,6 @@ describe('settings island recalculation', () => {
       islandCount: 3,
       articleCount: 7,
       enrichedIslandCount: 2,
-      islandTopicLinkCount: 4,
       rescoredArticleCount: 6
     });
   });

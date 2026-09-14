@@ -66,7 +66,7 @@ describe('semantic labels route', () => {
     }))
       .post('/api/semantic-labels')
       .set('X-Request-ID', 'semantic-overload')
-      .send({ context: 'Evidence', topic: true });
+      .send({ context: 'Evidence', island: true });
 
     expect(response.status).toBe(503);
     expect(response.body).toEqual({ error: 'inference_queue_full' });

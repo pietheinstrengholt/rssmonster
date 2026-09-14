@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import db from '../../models/index.js';
 import { scoreArticlesFromIslandsForUser } from '../../services/score/scoreArticlesFromIslands.js';
 
-const { sequelize, Article, ArticleTopic, Category, Feed, Island, IslandTopic, Topic, User } = db;
+const { sequelize, Article, Category, Feed, Island, User } = db;
 
 async function createUserGraph() {
   const suffix = randomUUID();
@@ -135,16 +135,11 @@ describe('scoreArticlesFromIslandsForUser', () => {
     expect(filteredArticle.interestScore).toBe(0.95);
   });
 
-  it('rescoring from topic islands only updates unread articles', async () => {
+  it('rescoring from direct islands only updates unread articles', async () => {
     const { user, feed } = await createUserGraph();
     const suffix = randomUUID();
-    const topic = await Topic.create({
-      userId: user.id,
-      name: 'Topic',
-      topicKey: `topic-${suffix}`,
-      topicVector: [1, 0, 0]
-    });
-    const island = await Island.create({
+
+    await Island.create({
       userId: user.id,
       label: 'Island',
       weight: 0.42,
@@ -152,41 +147,19 @@ describe('scoreArticlesFromIslandsForUser', () => {
       archivedInd: false
     });
     const unreadArticle = await Article.create(articlePayload(user.id, feed.id, 1, suffix, {
-      topicId: topic.id,
       interestScore: 0.8
     }));
     const readArticle = await Article.create(articlePayload(user.id, feed.id, 2, suffix, {
-      topicId: topic.id,
       status: 'read',
       interestScore: 0.9
     }));
     const filteredArticle = await Article.create(articlePayload(user.id, feed.id, 3, suffix, {
-      topicId: topic.id,
       filteredInd: true,
       interestScore: 0.95
     }));
 
     await Promise.all([
-      ArticleTopic.create({
-        articleId: unreadArticle.id,
-        topicId: topic.id,
-        confidence: 1
-      }),
-      ArticleTopic.create({
-        articleId: readArticle.id,
-        topicId: topic.id,
-        confidence: 1
-      }),
-      ArticleTopic.create({
-        articleId: filteredArticle.id,
-        topicId: topic.id,
-        confidence: 1
-      }),
-      IslandTopic.create({
-        islandId: island.id,
-        topicId: topic.id,
-        confidence: 1, similarity: 1
-      })
+
     ]);
 
     await scoreArticlesFromIslandsForUser(user.id);
@@ -203,32 +176,27 @@ describe('scoreArticlesFromIslandsForUser', () => {
   it('combines the strongest confidence-adjusted preference of each sign and excludes duplicates', async () => {
     const { user, feed } = await createUserGraph();
     const suffix = randomUUID();
-    const topic = await Topic.create({
-      userId: user.id,
-      name: 'Strongest topic',
-      topicKey: `strongest-topic-${suffix}`,
-      topicVector: null
-    });
-    const islands = await Promise.all([
+
+    await Promise.all([
       Island.create({
         userId: user.id,
         label: 'Positive island',
         weight: 0.6,
-        islandVector: null,
+        islandVector: [1, 0, 0],
         archivedInd: false
       }),
       Island.create({
         userId: user.id,
         label: 'Negative island',
         weight: -0.8,
-        islandVector: null,
+        islandVector: [1, 0, 0],
         archivedInd: false
       }),
       Island.create({
         userId: user.id,
         label: 'Archived island',
         weight: 0.95,
-        islandVector: null,
+        islandVector: [1, 0, 0],
         archivedInd: true
       })
     ]);
@@ -237,7 +205,7 @@ describe('scoreArticlesFromIslandsForUser', () => {
       feed.id,
       1,
       suffix,
-      { articleVector: null }
+      { articleVector: [1, 0, 0] }
     ));
     const duplicateArticle = await Article.create(articlePayload(
       user.id,
@@ -245,39 +213,21 @@ describe('scoreArticlesFromIslandsForUser', () => {
       2,
       suffix,
       {
-        articleVector: null,
+        articleVector: [1, 0, 0],
         duplicateOfArticleId: canonicalArticle.id,
         interestScore: 0.9
       }
     ));
 
-    await Promise.all([
-      ArticleTopic.create({
-        articleId: canonicalArticle.id,
-        topicId: topic.id,
-        confidence: 1
-      }),
-      ArticleTopic.create({
-        articleId: duplicateArticle.id,
-        topicId: topic.id,
-        confidence: 1
-      }),
-      ...islands.map(island => IslandTopic.create({
-        islandId: island.id,
-        topicId: topic.id,
-        confidence: 1, similarity: 1
-      }))
-    ]);
-
     const result = await scoreArticlesFromIslandsForUser(user.id);
     await Promise.all([canonicalArticle.reload(), duplicateArticle.reload()]);
 
-    expect(result.topicScoredCount).toBe(1);
+    expect(result.fallbackScoredCount).toBe(1);
     expect(canonicalArticle.interestScore).toBe(-0.02);
     expect(duplicateArticle.interestScore).toBe(0.9);
   });
 
-  it('uses vector similarity when an unread article has no topic island', async () => {
+  it('uses vector similarity for matching and unrelated unread articles', async () => {
     const { user, feed } = await createUserGraph();
     const suffix = randomUUID();
     await Island.create({
@@ -302,7 +252,7 @@ describe('scoreArticlesFromIslandsForUser', () => {
 
     await Promise.all([matchingArticle.reload(), unrelatedArticle.reload()]);
 
-    expect(result).toMatchObject({ topicScoredCount: 0, fallbackScoredCount: 1, updatedCount: 1 });
+    expect(result).toMatchObject({ fallbackScoredCount: 1, updatedCount: 1 });
     expect(matchingArticle.interestScore).toBe(0.06);
     expect(unrelatedArticle.interestScore).toBe(0);
   });

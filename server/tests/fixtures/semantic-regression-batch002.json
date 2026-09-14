@@ -5458,7 +5458,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 210,
@@ -5497,7 +5496,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 211,
@@ -5536,7 +5534,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 212,
@@ -5575,7 +5572,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 213,
@@ -5614,7 +5610,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 214,
@@ -5653,7 +5648,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 215,
@@ -5692,7 +5686,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 216,
@@ -5731,7 +5724,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 217,
@@ -5770,7 +5762,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 218,
@@ -5809,7 +5800,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 219,
@@ -5848,7 +5838,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 220,
@@ -5887,7 +5876,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 221,
@@ -5926,7 +5914,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 222,
@@ -5965,7 +5952,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 223,
@@ -6004,7 +5990,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 224,
@@ -6043,7 +6028,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 225,
@@ -6082,7 +6066,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 226,
@@ -6121,7 +6104,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 227,
@@ -6160,7 +6142,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 228,
@@ -6199,7 +6180,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 229,
@@ -6238,7 +6218,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 230,
@@ -6277,7 +6256,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 231,
@@ -6316,7 +6294,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 232,
@@ -6355,7 +6332,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 233,
@@ -6394,7 +6370,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 234,
@@ -6433,7 +6408,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 235,
@@ -6472,7 +6446,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 236,
@@ -6511,7 +6484,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 237,
@@ -6550,7 +6522,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 238,
@@ -6589,7 +6560,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 239,
@@ -6628,7 +6598,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 240,
@@ -6667,7 +6636,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 241,
@@ -6706,7 +6674,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 242,
@@ -6745,7 +6712,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 243,
@@ -6784,7 +6750,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 244,
@@ -6823,7 +6788,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 245,
@@ -6862,7 +6826,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 246,
@@ -6901,7 +6864,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": true,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 247,
@@ -6940,7 +6902,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": true,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 248,
@@ -6979,7 +6940,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 249,
@@ -7018,7 +6978,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 250,
@@ -7057,7 +7016,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 251,
@@ -7096,7 +7054,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 252,
@@ -7135,7 +7092,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 253,
@@ -7174,7 +7130,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 254,
@@ -7213,7 +7168,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 255,
@@ -7252,7 +7206,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 256,
@@ -7291,7 +7244,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 257,
@@ -7330,7 +7282,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 258,
@@ -7369,7 +7320,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 259,
@@ -7408,7 +7358,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 260,
@@ -7447,7 +7396,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 261,
@@ -7486,7 +7434,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 262,
@@ -7525,7 +7472,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 263,
@@ -7564,7 +7510,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 264,
@@ -7603,7 +7548,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 265,
@@ -7642,7 +7586,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 266,
@@ -7681,7 +7624,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 267,
@@ -7720,7 +7662,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 268,
@@ -7759,7 +7700,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 269,
@@ -7798,7 +7738,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 270,
@@ -7837,7 +7776,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 271,
@@ -7876,7 +7814,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 272,
@@ -7915,7 +7852,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 273,
@@ -7954,7 +7890,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 274,
@@ -7993,7 +7928,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 275,
@@ -8032,7 +7966,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 276,
@@ -8071,7 +8004,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 277,
@@ -8110,7 +8042,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 278,
@@ -8149,7 +8080,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 279,
@@ -8188,7 +8118,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 280,
@@ -8227,7 +8156,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 281,
@@ -8266,7 +8194,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 282,
@@ -8305,7 +8232,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 283,
@@ -8344,7 +8270,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 284,
@@ -8383,7 +8308,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 285,
@@ -8422,7 +8346,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 286,
@@ -8461,7 +8384,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 287,
@@ -8500,7 +8422,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 288,
@@ -8539,7 +8460,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 289,
@@ -8578,7 +8498,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 290,
@@ -8617,7 +8536,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 291,
@@ -8656,7 +8574,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 292,
@@ -8695,7 +8612,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 293,
@@ -8734,7 +8650,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 294,
@@ -8773,7 +8688,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": false,
         "originallySyndicated": true,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 295,
@@ -8812,7 +8726,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 296,
@@ -8851,7 +8764,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 297,
@@ -8890,7 +8802,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 298,
@@ -8929,7 +8840,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 299,
@@ -8968,7 +8878,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 300,
@@ -9007,7 +8916,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 301,
@@ -9046,7 +8954,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 302,
@@ -9085,7 +8992,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 303,
@@ -9124,7 +9030,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 304,
@@ -9163,7 +9068,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 305,
@@ -9202,7 +9106,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 306,
@@ -9241,7 +9144,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 307,
@@ -9280,7 +9182,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 308,
@@ -9319,7 +9220,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 309,
@@ -9358,7 +9258,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 310,
@@ -9397,7 +9296,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 311,
@@ -9436,7 +9334,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 312,
@@ -9475,7 +9372,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 313,
@@ -9514,7 +9410,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 314,
@@ -9553,7 +9448,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 315,
@@ -9592,7 +9486,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 316,
@@ -9631,7 +9524,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 317,
@@ -9670,7 +9562,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": true,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 318,
@@ -9709,7 +9600,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": true,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 319,
@@ -9748,7 +9638,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 320,
@@ -9787,7 +9676,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 321,
@@ -9826,7 +9714,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 322,
@@ -9865,7 +9752,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 323,
@@ -9904,7 +9790,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 324,
@@ -9943,7 +9828,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 325,
@@ -9982,7 +9866,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 326,
@@ -10021,7 +9904,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 327,
@@ -10060,7 +9942,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 328,
@@ -10099,7 +9980,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 329,
@@ -10138,7 +10018,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 330,
@@ -10177,7 +10056,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 331,
@@ -10216,7 +10094,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": true,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 332,
@@ -10255,7 +10132,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 333,
@@ -10294,7 +10170,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 334,
@@ -10333,7 +10208,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 335,
@@ -10372,7 +10246,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 336,
@@ -10411,7 +10284,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 337,
@@ -10450,7 +10322,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 338,
@@ -10489,7 +10360,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 339,
@@ -10528,7 +10398,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 340,
@@ -10567,7 +10436,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 341,
@@ -10606,7 +10474,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 342,
@@ -10645,7 +10512,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 343,
@@ -10684,7 +10550,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": false,
         "originallySyndicated": true,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 344,
@@ -10723,7 +10588,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 345,
@@ -10762,7 +10626,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 346,
@@ -10801,7 +10664,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 347,
@@ -10840,7 +10702,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 348,
@@ -10879,7 +10740,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 349,
@@ -10918,7 +10778,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 350,
@@ -10957,7 +10816,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 351,
@@ -10996,7 +10854,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": true,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 352,
@@ -11035,7 +10892,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": true,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 353,
@@ -11074,7 +10930,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 354,
@@ -11113,7 +10968,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 355,
@@ -11152,7 +11006,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 356,
@@ -11191,7 +11044,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 357,
@@ -11230,7 +11082,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 358,
@@ -11269,7 +11120,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 359,
@@ -11308,7 +11158,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 360,
@@ -11347,7 +11196,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 361,
@@ -11386,7 +11234,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 362,
@@ -11425,7 +11272,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 363,
@@ -11464,7 +11310,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 364,
@@ -11503,7 +11348,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 365,
@@ -11542,7 +11386,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 366,
@@ -11581,7 +11424,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 367,
@@ -11620,7 +11462,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 368,
@@ -11659,7 +11500,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 369,
@@ -11698,7 +11538,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 370,
@@ -11737,7 +11576,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 371,
@@ -11776,7 +11614,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 372,
@@ -11815,7 +11652,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 373,
@@ -11854,7 +11690,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 374,
@@ -11893,7 +11728,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 375,
@@ -11932,7 +11766,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 376,
@@ -11971,7 +11804,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 377,
@@ -12010,7 +11842,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 378,
@@ -12049,7 +11880,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 379,
@@ -12088,7 +11918,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 380,
@@ -12127,7 +11956,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 381,
@@ -12166,7 +11994,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 382,
@@ -12205,7 +12032,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 383,
@@ -12244,7 +12070,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 384,
@@ -12283,7 +12108,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 385,
@@ -12322,7 +12146,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 386,
@@ -12361,7 +12184,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 387,
@@ -12400,7 +12222,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 388,
@@ -12439,7 +12260,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 389,
@@ -12478,7 +12298,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 390,
@@ -12517,7 +12336,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 391,
@@ -12556,7 +12374,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 392,
@@ -12595,7 +12412,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 393,
@@ -12634,7 +12450,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 394,
@@ -12673,7 +12488,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": true,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 395,
@@ -12712,7 +12526,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 396,
@@ -12751,7 +12564,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 397,
@@ -12790,7 +12602,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 398,
@@ -12829,7 +12640,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 399,
@@ -12868,7 +12678,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 400,
@@ -12907,7 +12716,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 401,
@@ -12946,7 +12754,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": true,
-        "originallyTopicLinked": true,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 402,
@@ -12985,7 +12792,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 403,
@@ -13024,7 +12830,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 404,
@@ -13063,7 +12868,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 405,
@@ -13102,7 +12906,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 406,
@@ -13141,7 +12944,6 @@
         "scenario": "real-background",
         "wave": 2,
         "originallyEventLinked": false,
-        "originallyTopicLinked": false,
         "originallySyndicated": false,
         "originFixture": "semantic-regression-incremental",
         "originalIndex": 407,
@@ -37558,7 +37360,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37581,7 +37383,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37604,7 +37406,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37627,7 +37429,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37650,7 +37452,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37673,7 +37475,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37696,7 +37498,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37719,7 +37521,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37742,7 +37544,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37765,7 +37567,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37788,7 +37590,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37811,7 +37613,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37834,7 +37636,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37857,7 +37659,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37880,7 +37682,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37903,7 +37705,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37926,7 +37728,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37949,7 +37751,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37972,7 +37774,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -37995,7 +37797,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38018,7 +37820,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38041,7 +37843,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38064,7 +37866,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38087,7 +37889,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38110,7 +37912,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38133,7 +37935,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38156,7 +37958,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38179,7 +37981,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38202,7 +38004,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38225,7 +38027,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38248,7 +38050,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38271,7 +38073,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38294,7 +38096,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38317,7 +38119,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38340,7 +38142,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38363,7 +38165,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38386,7 +38188,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38409,7 +38211,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38432,7 +38234,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38455,7 +38257,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38478,7 +38280,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38501,7 +38303,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38524,7 +38326,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38547,7 +38349,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38570,7 +38372,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38593,7 +38395,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38616,7 +38418,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -38639,7 +38441,7 @@
       ],
       "expect": [
         "same-event-followup",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39198,7 +39000,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39217,7 +39019,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39236,7 +39038,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39255,7 +39057,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39274,7 +39076,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39293,7 +39095,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39312,7 +39114,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39331,7 +39133,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39350,7 +39152,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39369,7 +39171,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39388,7 +39190,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39407,7 +39209,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39426,7 +39228,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39445,7 +39247,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39464,7 +39266,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39483,7 +39285,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39502,7 +39304,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39521,7 +39323,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39540,7 +39342,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39559,7 +39361,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39578,7 +39380,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39597,7 +39399,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39616,7 +39418,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39635,7 +39437,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39654,7 +39456,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39673,7 +39475,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39692,7 +39494,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39711,7 +39513,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39730,7 +39532,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39749,7 +39551,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39768,7 +39570,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39787,7 +39589,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "new-event-same-topic"
+        "new-event"
       ]
     },
     {
@@ -39939,8 +39741,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "different-events",
-        "different-topics"
+        "different-events"
       ]
     },
     {
@@ -39959,8 +39760,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "different-events",
-        "different-topics"
+        "different-events"
       ]
     },
     {
@@ -39979,8 +39779,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "different-events",
-        "different-topics"
+        "different-events"
       ]
     },
     {
@@ -39999,8 +39798,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "different-events",
-        "different-topics"
+        "different-events"
       ]
     },
     {
@@ -40019,8 +39817,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "different-events",
-        "different-topics"
+        "different-events"
       ]
     },
     {
@@ -40039,8 +39836,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "different-events",
-        "different-topics"
+        "different-events"
       ]
     },
     {
@@ -40059,8 +39855,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "different-events",
-        "different-topics"
+        "different-events"
       ]
     },
     {
@@ -40269,8 +40064,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "different-events",
-        "different-topics"
+        "different-events"
       ]
     },
     {
@@ -40289,8 +40083,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "different-events",
-        "different-topics"
+        "different-events"
       ]
     },
     {
@@ -40309,8 +40102,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "different-events",
-        "different-topics"
+        "different-events"
       ]
     },
     {
@@ -40329,8 +40121,7 @@
       ],
       "expect": [
         "same-event-within-group",
-        "different-events",
-        "different-topics"
+        "different-events"
       ]
     },
     {
@@ -40421,7 +40212,7 @@
         "long-drift-compute-incremental-596"
       ],
       "expect": [
-        "different-topics-endpoints"
+        "independent-event-steps"
       ]
     },
     {
@@ -40438,7 +40229,7 @@
         "long-drift-camera-incremental-600"
       ],
       "expect": [
-        "different-topics-endpoints"
+        "independent-event-steps"
       ]
     },
     {
@@ -40449,7 +40240,7 @@
         "long-ambiguous-platform-incremental-586"
       ],
       "expect": [
-        "ambiguous-topic"
+        "same-event"
       ]
     },
     {
@@ -40599,113 +40390,22 @@
       "eventlessLast": true
     },
     {
-      "id": "monthly-security",
-      "category": "topic-continuity",
-      "kind": "topic",
-      "expected": "Distinct Events reuse one durable subject Topic",
-      "sameTopic": true
-    },
-    {
-      "id": "product-lifecycle",
-      "category": "topic-continuity",
-      "kind": "topic",
-      "expected": "Distinct Events reuse one durable subject Topic",
-      "sameTopic": true
-    },
-    {
-      "id": "project-lifecycle",
-      "category": "topic-continuity",
-      "kind": "topic",
-      "expected": "Distinct Events reuse one durable subject Topic",
-      "sameTopic": true
-    },
-    {
-      "id": "championship-season",
-      "category": "topic-continuity",
-      "kind": "topic",
-      "expected": "Distinct Events reuse one durable subject Topic",
-      "sameTopic": true
-    },
-    {
-      "id": "unrelated-collisions",
-      "category": "topic-separation",
-      "kind": "topic",
-      "expected": "Different Events and Topics despite similar incident vocabulary",
-      "sameTopic": false
-    },
-    {
-      "id": "unrelated-layoffs",
-      "category": "topic-separation",
-      "kind": "topic",
-      "expected": "Different Events and Topics despite similar incident vocabulary",
-      "sameTopic": false
-    },
-    {
-      "id": "unrelated-ransomware",
-      "category": "topic-separation",
-      "kind": "topic",
-      "expected": "Different Events and Topics despite similar incident vocabulary",
-      "sameTopic": false
-    },
-    {
-      "id": "unrelated-recalls",
-      "category": "topic-separation",
-      "kind": "topic",
-      "expected": "Different Events and Topics despite similar incident vocabulary",
-      "sameTopic": false
-    },
-    {
-      "id": "unrelated-elections",
-      "category": "topic-separation",
-      "kind": "topic",
-      "expected": "Different Events and Topics despite similar incident vocabulary",
-      "sameTopic": false
-    },
-    {
-      "id": "unrelated-wildfires",
-      "category": "topic-separation",
-      "kind": "topic",
-      "expected": "Different Events and Topics despite similar incident vocabulary",
-      "sameTopic": false
-    },
-    {
-      "id": "windows-edge",
-      "category": "topic-ambiguity",
-      "kind": "ambiguity",
-      "expected": "Near-tied durable subjects do not force a primary Topic"
-    },
-    {
-      "id": "chip-ecosystems",
-      "category": "topic-ambiguity",
-      "kind": "ambiguity",
-      "expected": "Near-tied durable subjects do not force a primary Topic"
-    },
-    {
-      "id": "home-ecosystems",
-      "category": "topic-ambiguity",
-      "kind": "ambiguity",
-      "expected": "Near-tied durable subjects do not force a primary Topic"
-    },
-    {
       "id": "english-dutch",
       "category": "multilingual",
       "kind": "multilingual",
-      "expected": "Cross-language reports share each occurrence; durable subjects reuse, unrelated cities separate",
-      "sameTopic": true
+      "expected": "Cross-language reports share each occurrence; durable subjects reuse, unrelated cities separate"
     },
     {
       "id": "english-german",
       "category": "multilingual",
       "kind": "multilingual",
-      "expected": "Cross-language reports share each occurrence; durable subjects reuse, unrelated cities separate",
-      "sameTopic": true
+      "expected": "Cross-language reports share each occurrence; durable subjects reuse, unrelated cities separate"
     },
     {
       "id": "english-french-incidents",
       "category": "multilingual",
       "kind": "multilingual",
-      "expected": "Cross-language reports share each occurrence; durable subjects reuse, unrelated cities separate",
-      "sameTopic": false
+      "expected": "Cross-language reports share each occurrence; durable subjects reuse, unrelated cities separate"
     },
     {
       "id": "syndicated-release",
@@ -40753,6 +40453,71 @@
       "kind": "behavior",
       "expected": "Capacity never contaminates Islands; explicit preferences survive with bounded intent-aware transfer",
       "mode": "capacity"
+    },
+    {
+      "id": "monthly-security",
+      "kind": "coverage",
+      "expected": "Every canonical article retains finite Recommended coverage without behavioral evidence."
+    },
+    {
+      "id": "product-lifecycle",
+      "kind": "coverage",
+      "expected": "Every canonical article retains finite Recommended coverage without behavioral evidence."
+    },
+    {
+      "id": "project-lifecycle",
+      "kind": "coverage",
+      "expected": "Every canonical article retains finite Recommended coverage without behavioral evidence."
+    },
+    {
+      "id": "championship-season",
+      "kind": "coverage",
+      "expected": "Every canonical article retains finite Recommended coverage without behavioral evidence."
+    },
+    {
+      "id": "unrelated-collisions",
+      "kind": "coverage",
+      "expected": "Every canonical article retains finite Recommended coverage without behavioral evidence."
+    },
+    {
+      "id": "unrelated-layoffs",
+      "kind": "coverage",
+      "expected": "Every canonical article retains finite Recommended coverage without behavioral evidence."
+    },
+    {
+      "id": "unrelated-ransomware",
+      "kind": "coverage",
+      "expected": "Every canonical article retains finite Recommended coverage without behavioral evidence."
+    },
+    {
+      "id": "unrelated-recalls",
+      "kind": "coverage",
+      "expected": "Every canonical article retains finite Recommended coverage without behavioral evidence."
+    },
+    {
+      "id": "unrelated-elections",
+      "kind": "coverage",
+      "expected": "Every canonical article retains finite Recommended coverage without behavioral evidence."
+    },
+    {
+      "id": "unrelated-wildfires",
+      "kind": "coverage",
+      "expected": "Every canonical article retains finite Recommended coverage without behavioral evidence."
+    },
+    {
+      "id": "windows-edge",
+      "kind": "coverage",
+      "expected": "Every canonical article retains finite Recommended coverage without behavioral evidence."
+    },
+    {
+      "id": "chip-ecosystems",
+      "kind": "coverage",
+      "expected": "Every canonical article retains finite Recommended coverage without behavioral evidence."
+    },
+    {
+      "id": "home-ecosystems",
+      "kind": "coverage",
+      "expected": "Every canonical article retains finite Recommended coverage without behavioral evidence."
     }
   ]
 }

@@ -41,7 +41,7 @@ articles?**
 
 It summarizes 30 days of article quality, supporting engagement, deterministic
 originality, and explicit negative feedback. It is user-specific and remains
-separate from factual verification, crawl health, and topic interest. See
+separate from factual verification, crawl health, and personal interest. See
 [FeedTrust]({% link feedtrust.md %}) for the complete conceptual model.
 
 ### Freshness
@@ -60,7 +60,7 @@ an out-of-range contribution.
 
 Interest is a bounded signed contribution from trusted personal evidence.
 Island paths separate preference strength, Island confidence and relationship
-confidence. Direct vector and Topic paths compete per Island; explicit behavioral
+confidence. Direct vectors determine Island relationships; explicit behavioral
 fallback preserves unrepresented likes/favorites/dislikes with recency and intent
 attenuation. The strongest positive and strongest negative contributions are
 combined without blindly summing correlated paths. Positive interest promotes
@@ -137,7 +137,7 @@ Phases A–C improved the quality of the interest input and preserved these fina
 weights. Semantic confidence modifies interest; it is not another final weight.
 
 Every Article eligible under the caller's ownership, visibility and explicit
-filters receives a finite Recommended score. No Event, Topic, Island, vector or
+filters receives a finite Recommended score. No Event, Island, vector or
 nonzero interest is required. The regression target is **100% Recommended
 coverage**, while personalization coverage may legitimately be sparse.
 
@@ -146,7 +146,7 @@ coverage**, while personalization coverage may legitimately be sparse.
 | Authorized identity and view eligibility | Required by caller; never synthesized by ranking. |
 | Interest | Optional; zero when missing or nonfinite. |
 | Event/corroboration | Optional; zero without an Event. |
-| Topic, Island, embedding | Optional; not Recommended prerequisites. |
+| Island, embedding | Optional; not Recommended prerequisites. |
 | Quality components | Unavailable/nonfinite article components default to 70. |
 | FeedTrust | Missing/nonfinite trust defaults to 0.5; finite stored values remain meaningful. |
 | Freshness | Article model uses zero for missing publication time; a plain object without freshness uses 0.5. |

@@ -22,10 +22,6 @@ export const EMBEDDING_MODEL = LEGACY_EMBEDDING_MODEL;
 
 // Defines the min event length enforced by this service.
 const MIN_EVENT_LENGTH = 60;
-// Defines the min topic length enforced by this service.
-const MIN_TOPIC_LENGTH = 120;
-// Defines the max topic length enforced by this service.
-const MAX_TOPIC_LENGTH = 2200;
 // Defines the max embedding input tokens enforced by this service.
 const MAX_EMBEDDING_INPUT_TOKENS = 512;
 const INFERENCE_REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
@@ -198,31 +194,6 @@ function extractEventText({ title, description, contentText }) {
   return sections.join('\n').trim();
 }
 
-// This function builds longer topic-oriented text from article body content.
-function extractTopicText({ contentText }) {
-  // Returns early when content text is unavailable or content text is likely html.
-  if (!contentText || isLikelyHtml(contentText)) return '';
-
-  // Extracts the paragraphs while extracting topic text.
-  const paragraphs = extractParagraphs(contentText);
-  // Returns early when paragraphs is empty.
-  if (!paragraphs.length) return '';
-
-  return paragraphs
-    .join(' ')
-    .slice(0, MAX_TOPIC_LENGTH)
-    .trim();
-}
-
-// This function estimates token count with a conservative whitespace heuristic.
-function estimateTokenCount(text = '') {
-  // Normalizes the normalized before performing estimate token count.
-  const normalized = String(text || '').trim();
-  // Returns early when normalized is unavailable.
-  if (!normalized) return 0;
-  return normalized.split(/\s+/).length;
-}
-
 // This function clips text to the embedding token budget using the local token estimate.
 function clipToEmbeddingTokenLimit(text = '') {
   // Normalizes the normalized before performing clip to embedding token limit.
@@ -236,11 +207,6 @@ function clipToEmbeddingTokenLimit(text = '') {
   if (tokens.length <= MAX_EMBEDDING_INPUT_TOKENS) return normalized;
 
   return tokens.slice(0, MAX_EMBEDDING_INPUT_TOKENS).join(' ');
-}
-
-// This function enforces a max token budget before calling the embedding API.
-function isWithinEmbeddingTokenLimit(text = '') {
-  return estimateTokenCount(text) <= MAX_EMBEDDING_INPUT_TOKENS;
 }
 
 // This function exposes the event embedding text builder for tests and callers.
@@ -270,7 +236,6 @@ function isArticleInstance(record) {
 }
 
 // This function embeds one article or input object and optionally persists the event vector.
-// It returns both event and topic vectors when enough text is available.
 export async function embedArticle(articleOrInput, options = {}) {
   if (shouldSkipArticleEmbeddings() || !await isInferenceConfigured()) return null;
 
@@ -285,15 +250,12 @@ export async function embedArticle(articleOrInput, options = {}) {
   const description = article ? article.description : articleOrInput?.description;
   // Selects the content text based on whether article is available.
   const contentText = article ? article.contentText : articleOrInput?.contentText;
-  // Derives the topic content text required while performing embed article.
-  const topicContentText = contentText || description || '';
 
   // Returns early when article is available and has article vector succeeds.
   if (article && hasArticleVector(article)) {
     // Fast-path: skip provider call when vector already exists.
     return {
       eventVector: article.articleVector,
-      topicVector: null,
       embedding_model: article.embedding_model || EMBEDDING_MODEL,
       reused: true
     };
@@ -301,8 +263,6 @@ export async function embedArticle(articleOrInput, options = {}) {
 
   // Builds the article event embedding text while performing embed article.
   const eventText = buildArticleEventEmbeddingText({ title, description, contentText });
-  // Extracts the topic text while performing embed article.
-  const topicText = extractTopicText({ contentText: topicContentText });
 
   // Returns no result when event text is unavailable or allow short event text is unavailable and event text count is below min event length.
   if (!eventText || (!allowShortEventText && eventText.length < MIN_EVENT_LENGTH)) {
@@ -310,12 +270,8 @@ export async function embedArticle(articleOrInput, options = {}) {
   }
 
   try {
-    // Selects the values based on whether topic text count reaches min topic length and topic text is within embedding token limit.
-    const includeTopicVector = topicText.length >= MIN_TOPIC_LENGTH
-      && isWithinEmbeddingTokenLimit(topicText);
-    const response = await embedTexts(includeTopicVector ? [eventText, topicText] : [eventText]);
+    const response = await embedTexts([eventText]);
     const eventVector = response.embeddings[0] || null;
-    const topicVector = includeTopicVector ? response.embeddings[1] || null : null;
     const embeddingModel = response.model;
 
     // Handles the case where article is available and persist is available and event vector is available.
@@ -332,7 +288,6 @@ export async function embedArticle(articleOrInput, options = {}) {
 
     return {
       eventVector,
-      topicVector,
       embedding_model: embeddingModel,
       reused: false
     };

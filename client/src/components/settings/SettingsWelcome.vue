@@ -121,7 +121,7 @@ export default {
         { key: 'generated-feeds', title: 'Generated Feeds', icon: 'rss-fill', purpose: 'Expose article expressions as private RSS URLs for other readers.', visible: true },
         { key: 'actions', title: 'Actions', icon: 'lightning-charge-fill', purpose: 'Automate how matching articles are handled during crawl.', visible: true },
         { key: 'scores', title: 'Scores', icon: 'bar-chart-fill', purpose: 'Set AI score thresholds that control article visibility.', capability: 'AI feature', visible: aiEnabled },
-        { key: 'topics', title: 'Topics', icon: 'diagram-3-fill', purpose: 'Review current events and longer-running topic groups.', capability: 'AI feature', visible: aiEnabled },
+        { key: 'events', title: 'Events', icon: 'diagram-3-fill', purpose: 'Review articles grouped into current events.', capability: 'AI feature', visible: aiEnabled },
         { key: 'islands', title: 'Islands', icon: 'compass-fill', purpose: 'Explore the interests learned from your reading behavior.', capability: 'AI feature', visible: aiEnabled },
         { key: 'crawl-statistics', title: 'Crawl Statistics', icon: 'clipboard-data-fill', purpose: 'Review daily crawl outcomes and article activity.', visible: true },
         { key: 'processing-jobs', title: 'AI Processing', icon: 'cpu-fill', purpose: 'Check background AI queue health and processing progress.', capability: 'AI feature', visible: aiEnabled },

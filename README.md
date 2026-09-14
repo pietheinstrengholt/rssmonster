@@ -57,11 +57,11 @@ controls and layout differences.
 
 <table>
   <tr>
-    <td width="50%"><strong>Events and Topics</strong><br><sub>Inspect story coverage and broader themes.</sub></td>
+    <td width="50%"><strong>Events</strong><br><sub>Inspect story coverage and broader themes.</sub></td>
     <td width="50%"><strong>Interest Islands</strong><br><sub>Explore recurring interests shaped by reading feedback.</sub></td>
   </tr>
   <tr>
-    <td><a href="docs/assets/events.png"><img src="docs/assets/events.png" alt="RSSMonster event and topic insights dashboard"></a></td>
+    <td><a href="docs/assets/events.png"><img src="docs/assets/events.png" alt="RSSMonster event insights dashboard"></a></td>
     <td><a href="docs/assets/interestislands.png"><img src="docs/assets/interestislands.png" alt="RSSMonster interest islands insights dashboard"></a></td>
   </tr>
 </table>
@@ -106,15 +106,15 @@ to be enabled and available.
 ### Intelligence
 
 [Events](docs/events.md) connect reports about an occurrence;
-[Topics](docs/topics.md) connect broader themes; [Interest Islands](docs/interest-islands.md)
+[Interest Islands](docs/interest-islands.md)
 learn recurring personal interests from reading feedback. Related-article
 recommendations use semantic evidence, while expandable story sources keep
 alternative coverage accessible. Sparse evidence can legitimately produce no
 recommendations.
 
-Recommended remains available for every eligible article even without a Topic or
+Recommended remains available for every eligible article even without an
 Island match: missing personal evidence is neutral. Interest uses confidence-aware
-Topic/direct Island paths and bounded explicit feedback; semantic labels explain
+direct Island paths and bounded explicit feedback; semantic labels explain
 results rather than establishing identity.
 
 [Scoring and Ranking](docs/scoring.md) documents Recommended, Top Stories, and

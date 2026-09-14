@@ -7,6 +7,9 @@ nav_order: 1
 
 # OpenAI Embeddings
 
+> Historical evaluation of the architecture before Topic removal. The measurements below are retained for comparison and do not describe current processing.
+
+
 OpenAI is the default embedding provider. RSSMonster uses
 `text-embedding-3-small` with 1536 dimensions unless it is configured
 otherwise. Embedding requests still pass through the local inference service;

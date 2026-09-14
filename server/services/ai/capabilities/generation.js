@@ -1,7 +1,7 @@
 import provider from '../providers/inference.js';
 import { AIValidationError, isRecord } from '../errors.js';
 
-const labelTypes = ['event', 'topic', 'island'];
+const labelTypes = ['event', 'island'];
 
 // These workloads have distinct domain contracts; there is no generic prompt endpoint.
 export const createGenerationCapability = (inference = provider) => ({

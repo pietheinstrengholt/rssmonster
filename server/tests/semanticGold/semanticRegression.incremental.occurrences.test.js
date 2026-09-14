@@ -45,8 +45,7 @@ async function processScenario(scenario) {
     }, vectors, 'https://occurrences.example.test', { preservePublishedAt: true });
     expect(inserted).toBe(waveArticles.length);
     results.set(wave, await runIncrementalEventsForUser(user.id, {
-      createdAtFrom: new Date(now - 1000),
-      skipTopicAssignment: true
+      createdAtFrom: new Date(now - 1000)
     }));
     const stored = await Article.findAll({ where: { userId: user.id }, raw: true });
     snapshots.set(wave, stored.map(row => ({

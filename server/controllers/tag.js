@@ -35,31 +35,6 @@ const applyTopTagGrouping = ({ where, grouping, includeDevelopingEvents }) => {
     ];
   }
 
-  if (grouping === 'topic') {
-    where.id = {
-      [Sequelize.Op.in]: Sequelize.literal(`(
-        SELECT e.representativeArticleId
-        FROM events e
-        INNER JOIN (
-          SELECT userId, topicId, MAX(eventStrength) AS maxStrength
-          FROM events
-          WHERE topicId IS NOT NULL
-          GROUP BY userId, topicId
-        ) t
-          ON e.userId = t.userId
-          AND e.topicId = t.topicId
-          AND e.eventStrength = t.maxStrength
-        WHERE e.topicId IS NOT NULL
-          AND e.id = (
-            SELECT MAX(e2.id)
-            FROM events e2
-            WHERE e2.userId = e.userId
-              AND e2.topicId = e.topicId
-              AND e2.eventStrength = e.eventStrength
-          )
-      )`)
-    };
-  }
 };
 
 // Builds the canonical article predicate represented by a Top Tags status collection.
@@ -127,7 +102,7 @@ const getTags = async (req, res) => {
     }
 
     const articleWhere = await topTagArticleWhere({ userId, status });
-    const grouping = ['event', 'topic'].includes(req.query?.grouping)
+    const grouping = ['event'].includes(req.query?.grouping)
       ? req.query.grouping
       : 'none';
     applyTopTagGrouping({

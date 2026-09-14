@@ -9,11 +9,6 @@ const baseline = JSON.parse(await readFile(new URL('../fixtures/semantic-regress
 const all = new Map([...baseline.articles, ...fixture.articles].filter(a => a.sourceId).map(a => [a.sourceId, a]));
 const same = (rows, key) => rows.length > 0 && rows.every(r => r?.[key] && r[key] === rows[0][key]);
 
-const topicIds = row => (row?.topicMemberships || []).map(l => l.topicId);
-const sharedTopics = rows => rows.length ? topicIds(rows[0]).filter(id => rows.every(r => topicIds(r).includes(id))) : [];
-const separatedTopics = groups => groups.every(g => sharedTopics(g).length) && groups.every((g, i) =>
-  groups.slice(i + 1).every(other => !sharedTopics(g).some(id => sharedTopics(other).includes(id))));
-
 // One test per named gold scenario keeps failures visible without preventing later waves.
 describe('longitudinal gold in the shared 1,000 + 1,000 corpus', () => {
   let report;
@@ -27,25 +22,9 @@ describe('longitudinal gold in the shared 1,000 + 1,000 corpus', () => {
     report.waves = [report.phases[1]];
   });
   afterAll(async () => {
-    if (!report) return;
+    if (!report?.checks) return;
     await writeFile(new URL('batch-gold-results.json', longitudinalReportUrl), JSON.stringify(report.checks, null, 2));
   });
-  it('does not turn generic reporting words into shared durable subjects', () => {
-    const byUrl = new Map(report.final.rows.map(a => [a.url, a]));
-    const pairs = [['01', '21'], ['40', '22'], ['25', '32'], ['43', '48'], ['09', '05'], ['39', '20']];
-    for (const [left, right] of pairs) {
-      const groups = [left, right].map(number => {
-        const scenario = fixture.longitudinalScenarios.find(s => s.id === `continuity-${number}`);
-        return scenario.baseline.map(id => byUrl.get(all.get(id).url));
-      });
-      const common = sharedTopics(groups.flat());
-      const check = { scenario: `cross-subject-${left}-${right}`, label: 'unrelated durable subjects have no shared Topic',
-        pass: common.length === 0, classification: 'Topic identity defect', diagnosticTopicIds: common };
-      report.checks.push(check);
-      expect.soft(check.pass, check.scenario).toBe(true);
-    }
-  });
-
   for (const scenario of fixture.longitudinalScenarios) {
     it(`${scenario.id}: ${scenario.expect.join(', ')}`, async () => {
         const finalByUrl = new Map(report.final.rows.map(a => [a.url, a]));
@@ -61,16 +40,12 @@ describe('longitudinal gold in the shared 1,000 + 1,000 corpus', () => {
         const old = rows(scenario.baseline), follow = rows(scenario.follow), later = rows(scenario.later);
         check('follow-ups reuse established Event', same([...old, ...follow], 'eventId'), 'Event identity defect');
         check('later occurrence forms its own Event', same(later, 'eventId') && later[0].eventId !== old[0]?.eventId, 'Event identity defect');
-        check('later occurrence reuses durable Topic', sharedTopics([...old, ...later]).length > 0, 'Topic identity defect');
         const initial = scenario.baseline.map(id => initialByUrl.get(all.get(id)?.url));
         check('initial Event membership remains stable', initial.every((a, i) => !a?.eventId || a.eventId === old[i]?.eventId), 'Event identity defect');
-        check('durable Topic ID survives incremental competition', sharedTopics(initial).some(id => sharedTopics(old).includes(id)), 'Topic identity defect');
       } else if (scenario.groups) {
         const groups = scenario.groups.map(rows);
         check('independent coverage forms Events within groups', groups.every(g => same(g, 'eventId')), 'Event identity defect');
         check('distinct occurrences remain different Events', groups.every(g => g[0]?.eventId) && new Set(groups.map(g => g[0].eventId)).size === groups.length, 'Event identity defect');
-        if (scenario.category === 'new-subject') check('new subject persists into later evaluation', sharedTopics(groups.flat()).length > 0, 'Topic identity defect');
-        else if (scenario.expect.includes('different-topics')) check('unrelated subjects have separate Topics', separatedTopics(groups), 'Topic identity defect');
       } else if (scenario.category === 'held-out') {
         const held = report.heldOut.filter(h => h.scenario === scenario.id);
         for (const h of held) {
@@ -95,11 +70,8 @@ describe('longitudinal gold in the shared 1,000 + 1,000 corpus', () => {
       } else {
         const members = rows(scenario.members);
         if (scenario.expect.includes('same-event')) check('updates and language variation describe one occurrence', same(members, 'eventId'), 'Event identity defect');
-        if (scenario.expect.includes('different-topics-endpoints')) check('gradual semantic chain does not collapse endpoints', separatedTopics([members.slice(0, 2), members.slice(-2)]), 'Topic identity defect');
-        if (scenario.expect.includes('different-topics-endpoints')) check('every drift step has independent Event support',
+        if (scenario.expect.includes('independent-event-steps')) check('every drift step has independent Event support',
           [0, 2, 4, 6].every(i => same(members.slice(i, i + 2), 'eventId')), 'Event identity defect');
-        if (scenario.expect.includes('ambiguous-topic')) check('ambiguous subject reaches Topic evaluation', same(members, 'eventId'), 'Event identity defect');
-        if (scenario.expect.includes('ambiguous-topic')) check('balanced two-subject reports do not force a primary', members.every(a => !a?.topicId), 'Topic identity defect');
         if (scenario.expect.includes('duplicate-distinct-from-event')) {
           check('exact syndication recognized', members.slice(0, 2).some(a => a?.duplicateOfArticleId), 'duplicate handling defect');
           const canonical = members.filter(a => !a?.duplicateOfArticleId);
@@ -111,7 +83,7 @@ describe('longitudinal gold in the shared 1,000 + 1,000 corpus', () => {
       const diagnosticIds = [...new Set([...(scenario.baseline || []), ...(scenario.follow || []), ...(scenario.later || []), ...(scenario.groups || []).flat(), ...(scenario.members || []), ...(scenario.held || [])])];
       console.log('[LONGITUDINAL GOLD]', JSON.stringify({ scenario: scenario.id, expected: scenario.expect,
         result: checks.every(c => c.pass) ? 'PASS' : 'FAIL', checks,
-        articles: diagnosticIds.map(id => { const row = rows([id])[0]; return { sourceId: id, title: all.get(id)?.title, eventId: row?.eventId, topicId: row?.topicId, topicMemberships: row?.topicMemberships }; }) }));
+        articles: diagnosticIds.map(id => { const row = rows([id])[0]; return { sourceId: id, title: all.get(id)?.title, eventId: row?.eventId,  }; }) }));
     });
   }
 });

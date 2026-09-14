@@ -4,22 +4,7 @@ export const SEMANTIC_GRANULARITY = {
   // Higher value = stricter event matching (fewer merges, more fragmentation).
   eventSimilarityThreshold: Number.parseFloat(process.env.EVENT_SIM_THRESHOLD || '0.84'),
 
-  // Minimum cosine similarity for attaching an article/event to an existing topic.
-  // Topics should be broader than events, so this is usually lower than eventSimilarityThreshold.
-  topicSimilarityThreshold: Number.parseFloat(process.env.TOPIC_SIM_THRESHOLD || '0.64'),
-
-  // Topic assignment thresholds for ranked multi-topic membership.
-  topicAssignment: {
-    // Identity threshold is used to preserve/reuse topic memory.
-    // Keep this lower than secondary assignment threshold so recent repair can reattach
-    // to an existing semantic region without creating a new topic.
-    identityThreshold: Number.parseFloat(process.env.TOPIC_IDENTITY_THRESHOLD || '0.50'),
-    primaryThreshold: Number.parseFloat(process.env.PRIMARY_TOPIC_THRESHOLD || '0.76'),
-    secondaryThreshold: Number.parseFloat(process.env.SECONDARY_TOPIC_THRESHOLD || '0.62'),
-    maxTopicsPerArticle: Number.parseInt(process.env.MAX_TOPICS_PER_ARTICLE, 10) || 5
-  },
-
-  // Max in-memory candidates scanned when searching events/topics.
+  // Max in-memory candidates scanned when searching events.
   maxCandidates: 300,
 
   // Replay/incremental clustering window (days of content considered).
@@ -51,45 +36,26 @@ export const SEMANTIC_GRANULARITY = {
     coolingHours: Number.parseInt(process.env.EVENT_COOLING_HOURS, 10) || 96
   },
 
-  // Topic vector blend factor for updates.
-  // Lower alpha = slower topic drift (more stable long-term memory).
-  topicUpdate: {
-    vectorAlpha: Number.parseFloat(process.env.TOPIC_VECTOR_ALPHA || '0.08')
-  },
-
   // Final eventStrength score configuration (0..1).
   // This score is used for ranking/importance, not for initial event existence checks.
   eventStrength: {
     // Article count at/above this reaches full redundancy contribution.
     maxArticleRedundancyCount: 3,
 
-    // Normalization base for topic density contribution (log-scaled event count per topic).
-    maxTopicEventLogBase: 3,
-
     // Baseline semantic cohesion contribution applied to all events.
     cohesionBaseline: 0.85,
 
-    // Weighted blend for eventStrength = redundancy*w1 + cohesion*w2 + topic*w3.
+    // Preserve the existing minimum strength while using occurrence evidence only.
+    baseline: 0.20 / 3,
     weights: {
       redundancy: 0.45,
       cohesion: 0.35,
-      topic: 0.20
     }
   }
 };
 
 // Defines the event sim threshold enforced by this service.
 export const EVENT_SIM_THRESHOLD = SEMANTIC_GRANULARITY.eventSimilarityThreshold;
-// Defines the topic sim threshold enforced by this service.
-export const TOPIC_SIM_THRESHOLD = SEMANTIC_GRANULARITY.topicSimilarityThreshold;
-// Defines the topic identity threshold enforced by this service.
-export const TOPIC_IDENTITY_THRESHOLD = SEMANTIC_GRANULARITY.topicAssignment.identityThreshold;
-// Defines the primary topic threshold enforced by this service.
-export const PRIMARY_TOPIC_THRESHOLD = SEMANTIC_GRANULARITY.topicAssignment.primaryThreshold;
-// Defines the secondary topic threshold enforced by this service.
-export const SECONDARY_TOPIC_THRESHOLD = SEMANTIC_GRANULARITY.topicAssignment.secondaryThreshold;
-// Defines the max topics per article enforced by this service.
-export const MAX_TOPICS_PER_ARTICLE = SEMANTIC_GRANULARITY.topicAssignment.maxTopicsPerArticle;
 // Defines the max candidates enforced by this service.
 export const MAX_CANDIDATES = SEMANTIC_GRANULARITY.maxCandidates;
 // Defines the recency window days enforced by this service.
@@ -104,8 +70,6 @@ export const EVENT_MIN_HEADLINE_SIM = SEMANTIC_GRANULARITY.minHeadlineSimilarity
 export const EVENT_MIN_SHARED_ENTITY_OVERLAP = SEMANTIC_GRANULARITY.minSharedEntityOverlap;
 // Defines the event lifecycle enforced by this service.
 export const EVENT_LIFECYCLE = SEMANTIC_GRANULARITY.eventLifecycle;
-// Defines the topic vector alpha enforced by this service.
-export const TOPIC_VECTOR_ALPHA = SEMANTIC_GRANULARITY.topicUpdate.vectorAlpha;
 // Defines the event strength config enforced by this service.
 export const EVENT_STRENGTH_CONFIG = SEMANTIC_GRANULARITY.eventStrength;
 

@@ -84,7 +84,7 @@ fixture/runner changes. Keep model, vectors and corpus constant unless their
 change is explicitly in scope; disclose differences and unavailable baselines.
 Do not weaken regression
 expectations or semantic thresholds to make coverage or tests look better. Event
-occurrence identity and Topic durable-subject identity are different problems.
+occurrence identity and personal interest are different problems.
 Keep final Recommended weights unchanged when improving semantic evidence unless
 weight changes are explicitly requested.
 

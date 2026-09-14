@@ -6,14 +6,10 @@ import { getJwtSecret } from '../../config/auth.js';
 
 const {
   Article,
-  ArticleTopic,
   Category,
   Event,
-  EventTopic,
   Feed,
   Island,
-  IslandTopic,
-  Topic,
   User,
   sequelize
 } = db;
@@ -35,8 +31,8 @@ const authHeaderFor = user => {
   return `Bearer ${token}`;
 };
 
-// This function creates one user-owned article connected to two topics.
-const createArticleTopicFixture = async user => {
+// This function creates one user-owned article with a semantic vector.
+const createArticleFixture = async user => {
   const category = await Category.create({
     userId: user.id,
     name: uniqueName('islands-category'),
@@ -48,23 +44,7 @@ const createArticleTopicFixture = async user => {
     feedName: uniqueName('islands-feed'),
     url: `https://example.com/${uniqueName('feed')}.xml`
   });
-  const topic = await Topic.create({
-    userId: user.id,
-    name: uniqueName('islands-topic'),
-    generatedName: 'Generated primary topic',
-    topicKey: uniqueName('topic-key'),
-    topicType: 'behavioral',
-    topicVector: [1, 0, 0],
-    affinityScore: 0.8
-  });
-  const secondaryTopic = await Topic.create({
-    userId: user.id,
-    name: uniqueName('islands-secondary-topic'),
-    topicKey: uniqueName('secondary-topic-key'),
-    topicType: 'behavioral',
-    topicVector: [0.9, 0.1, 0],
-    affinityScore: 0.7
-  });
+
   const article = await Article.create({
     userId: user.id,
     feedId: feed.id,
@@ -79,64 +59,23 @@ const createArticleTopicFixture = async user => {
     publishedAt: new Date('2026-05-01T10:00:00Z')
   });
 
-  await ArticleTopic.create({
-    articleId: article.id,
-    topicId: topic.id,
-    confidence: 0.9,
-    rank: 1,
-    primaryInd: true
-  });
-  await ArticleTopic.create({
-    articleId: article.id,
-    topicId: secondaryTopic.id,
-    confidence: 0.8,
-    rank: 2,
-    primaryInd: false
-  });
-
-  return { article, secondaryTopic, topic };
+  return { article,  };
 };
 
-// This function creates event and topic rows for the settings topics overview.
-const createEventTopicFixture = async user => {
+// This function creates Event rows for the settings Event overview.
+const createEventFixture = async user => {
   const category = await Category.create({
     userId: user.id,
-    name: uniqueName('topics-category'),
+    name: uniqueName('events-category'),
     categoryOrder: 1
   });
   const feed = await Feed.create({
     userId: user.id,
     categoryId: category.id,
-    feedName: uniqueName('topics-feed'),
-    url: `https://example.com/${uniqueName('topics-feed')}.xml`
+    feedName: uniqueName('events-feed'),
+    url: `https://example.com/${uniqueName('events-feed')}.xml`
   });
-  const topic = await Topic.create({
-    userId: user.id,
-    name: uniqueName('topics-topic'),
-    generatedName: 'Generated overview topic',
-    topicKey: uniqueName('topics-topic-key'),
-    topicType: 'event',
-    topicVector: [1, 0, 0],
-    affinityScore: 0.4,
-    evidenceScore: 0.7,
-    articleCount: 2,
-    eventCount: 1,
-    starredCount: 1,
-    lastActivityAt: new Date('2026-05-03T10:00:00Z')
-  });
-  const hybridTopic = await Topic.create({
-    userId: user.id,
-    name: uniqueName('topics-hybrid-topic'),
-    topicKey: uniqueName('topics-hybrid-key'),
-    topicType: 'hybrid',
-    topicVector: [0.9, 0.1, 0],
-    affinityScore: 0.6,
-    evidenceScore: 0.8,
-    articleCount: 1,
-    eventCount: 1,
-    starredCount: 0,
-    lastActivityAt: new Date('2026-05-04T10:00:00Z')
-  });
+
   const firstArticle = await Article.create({
     userId: user.id,
     feedId: feed.id,
@@ -148,7 +87,6 @@ const createEventTopicFixture = async user => {
     contentOriginal: '<p>Article body</p>',
     contentHtml: 'Article body',
     articleVector: [1, 0, 0],
-    topicId: topic.id,
     publishedAt: new Date('2026-05-01T10:00:00Z')
   });
   const secondArticle = await Article.create({
@@ -162,7 +100,6 @@ const createEventTopicFixture = async user => {
     contentOriginal: '<p>Article body</p>',
     contentHtml: 'Article body',
     articleVector: [0.9, 0.1, 0],
-    topicId: topic.id,
     publishedAt: new Date('2026-05-01T11:00:00Z')
   });
   const unclusteredArticle = await Article.create({
@@ -178,7 +115,6 @@ const createEventTopicFixture = async user => {
   });
   const event = await Event.create({
     userId: user.id,
-    topicId: topic.id,
     representativeArticleId: firstArticle.id,
     name: 'Readable event',
     generatedName: 'Generated readable event',
@@ -193,43 +129,7 @@ const createEventTopicFixture = async user => {
   await firstArticle.update({ eventId: event.id });
   await secondArticle.update({ eventId: event.id });
 
-  await ArticleTopic.create({
-    articleId: firstArticle.id,
-    topicId: topic.id,
-    confidence: 0.9,
-    rank: 1,
-    primaryInd: true
-  });
-  await ArticleTopic.create({
-    articleId: firstArticle.id,
-    topicId: hybridTopic.id,
-    confidence: 0.7,
-    rank: 2,
-    primaryInd: false
-  });
-  await ArticleTopic.create({
-    articleId: secondArticle.id,
-    topicId: topic.id,
-    confidence: 0.8,
-    rank: 1,
-    primaryInd: true
-  });
-  await EventTopic.create({
-    eventId: event.id,
-    topicId: topic.id,
-    confidence: 0.9,
-    rank: 1,
-    primaryInd: true
-  });
-  await EventTopic.create({
-    eventId: event.id,
-    topicId: hybridTopic.id,
-    confidence: 0.6,
-    rank: 2,
-    primaryInd: false
-  });
-
-  return { event, firstArticle, hybridTopic, secondArticle, topic, unclusteredArticle };
+  return { event, firstArticle, secondArticle, unclusteredArticle };
 };
 
 describe('settings islands overview', () => {
@@ -243,14 +143,14 @@ describe('settings islands overview', () => {
     await sequelize.authenticate();
   }, 50_000);
 
-  it('returns island counts and related articles without duplicate topic matches', async () => {
+  it('returns island counts and related articles without duplicate article matches', async () => {
     const user = await User.create({
       username: uniqueName('islands-user'),
       password: 'hashed-password',
       feverCredentialHash: uniqueName('islands-hash'),
       role: 'user'
     });
-    const { article, secondaryTopic, topic } = await createArticleTopicFixture(user);
+    const { article,  } = await createArticleFixture(user);
     const island = await Island.create({
       userId: user.id,
       label: 'Readable island',
@@ -262,19 +162,6 @@ describe('settings islands overview', () => {
           starredArticleIds: [article.id]
         }
       }]
-    });
-
-    await IslandTopic.create({
-      islandId: island.id,
-      topicId: topic.id,
-      similarity: 0.95,
-      confidence: 0.9
-    });
-    await IslandTopic.create({
-      islandId: island.id,
-      topicId: secondaryTopic.id,
-      similarity: 0.85,
-      confidence: 0.8
     });
 
     const res = await request(app)
@@ -292,7 +179,6 @@ describe('settings islands overview', () => {
       id: island.id,
       label: 'Readable island',
       generatedLabel: 'Generated readable island',
-      topicCount: 2,
       relatedArticleCount: 1,
       sourceArticleCount: 1,
       evidenceSignalCount: 2,
@@ -316,24 +202,17 @@ describe('settings islands overview', () => {
       isPopulationSource: true,
       isNewArticle: false
     });
-    expect(res.body.islands[0].relatedArticles[0].connectionTopics).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        id: topic.id,
-        name: topic.name,
-        generatedName: 'Generated primary topic'
-      }),
-      expect.objectContaining({ id: secondaryTopic.id, name: secondaryTopic.name })
-    ]));
+
   });
 
-  it('explains an article-seeded island that has no topic memberships', async () => {
+  it('explains an article-seeded island from its behavioral source', async () => {
     const user = await User.create({
       username: uniqueName('source-island-user'),
       password: 'hashed-password',
       feverCredentialHash: uniqueName('source-island-hash'),
       role: 'user'
     });
-    const { article } = await createArticleTopicFixture(user);
+    const { article } = await createArticleFixture(user);
     await article.update({ favoriteInd: 0, clickedAmount: 0, attentionBucket: 3 });
     const island = await Island.create({
       userId: user.id,
@@ -353,8 +232,7 @@ describe('settings islands overview', () => {
     expect(res.status).toBe(200);
     expect(res.body.islands[0]).toMatchObject({
       id: island.id,
-      topicCount: 0,
-      relatedArticleCount: 0,
+      relatedArticleCount: 1,
       sourceArticleCount: 1,
       evidenceSignalCount: 1
     });
@@ -385,15 +263,15 @@ describe('settings islands overview', () => {
       expect(res.status).toBe(200);
       expect(res.body.islands).toHaveLength(2);
       const executedSql = querySpy.mock.calls.map(([sql]) => String(sql));
-      expect(executedSql.filter(sql => sql.includes('COUNT(DISTINCT it.topicId)'))).toHaveLength(1);
-      expect(executedSql.filter(sql => sql.includes('ROW_NUMBER() OVER'))).toHaveLength(1);
+      expect(executedSql.filter(sql => sql.includes('`articleVector`') && sql.includes('LIMIT 200'))).toHaveLength(1);
+      expect(executedSql.length).toBeLessThan(12);
     } finally {
       querySpy.mockRestore();
     }
   });
 });
 
-describe('settings topics overview', () => {
+describe('settings events overview', () => {
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
     process.env.DISABLE_LISTENER = 'true';
@@ -404,17 +282,17 @@ describe('settings topics overview', () => {
     await sequelize.authenticate();
   }, 50_000);
 
-  it('returns event and topic counts without duplicate semantic matches', async () => {
+  it('returns Event counts without duplicate semantic matches', async () => {
     const user = await User.create({
-      username: uniqueName('topics-user'),
+      username: uniqueName('events-user'),
       password: 'hashed-password',
-      feverCredentialHash: uniqueName('topics-hash'),
+      feverCredentialHash: uniqueName('events-hash'),
       role: 'user'
     });
-    const { event, hybridTopic, topic } = await createEventTopicFixture(user);
+    const { event,  } = await createEventFixture(user);
 
     const res = await request(app)
-      .get('/api/setting/topics')
+      .get('/api/setting/events')
       .set('Authorization', authHeaderFor(user));
 
     expect(res.status).toBe(200);
@@ -429,39 +307,16 @@ describe('settings topics overview', () => {
       newEventRatio: 33.3,
       averageArticlesPerEvent: 2,
       largestEventSize: 2,
-      topicCount: 2,
-      eventsLinkedToTopics: 1,
-      topicsWithEvents: 2,
-      eventsWithoutTopics: 0,
-      articlesLinkedToTopics: 2,
-      topicCoveragePercent: 66.7,
-      averageEventsPerTopic: 0.5
+
     });
     expect(res.body.eventSizeBuckets).toContainEqual({ bucket: '2', count: 1 });
-    expect(res.body.topicTypes).toEqual(expect.arrayContaining([
-      { topicType: 'event', count: 1 },
-      { topicType: 'hybrid', count: 1 }
-    ]));
     expect(res.body.events[0]).toMatchObject({
       id: event.id,
       name: 'Readable event',
       generatedName: 'Generated readable event',
       articleCount: 2,
-      actualArticleCount: 2,
-      topicCount: 2
+      actualArticleCount: 2
     });
-    expect(res.body.topics).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        id: hybridTopic.id,
-        linkedEventCount: 1,
-        linkedArticleCount: 1
-      }),
-      expect.objectContaining({
-        id: topic.id,
-        generatedName: 'Generated overview topic',
-        linkedEventCount: 1,
-        linkedArticleCount: 2
-      })
-    ]));
+
   });
 });

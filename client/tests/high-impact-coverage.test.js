@@ -35,11 +35,6 @@ vi.mock('../src/api/events.js', async importOriginal => ({
   fetchEventArticles: vi.fn().mockResolvedValue({ data: [] })
 }));
 
-vi.mock('../src/api/topics.js', async importOriginal => ({
-  ...await importOriginal(),
-  fetchTopicArticles: vi.fn().mockResolvedValue({ data: [] })
-}));
-
 vi.mock('../src/api/feeds.js', async importOriginal => ({
   ...await importOriginal(),
   deleteFeed: vi.fn().mockResolvedValue({ data: {} }),
@@ -233,10 +228,6 @@ describe('Article high-impact decision coverage', () => {
       selectionStore: { currentSelection: { viewMode: 'full' } }
     })).toBe(false);
 
-    expect(compute(Article, 'eventArticleCountTotal', {
-      event: { topicArticleCount: 8, articleCount: 3 },
-      selectionStore: { currentSelection: { grouping: 'topic' } }
-    })).toBe(8);
     expect(compute(Article, 'eventArticleCountTotal', {
       event: { articleCount: 3 },
       selectionStore: { currentSelection: { grouping: 'event' } }

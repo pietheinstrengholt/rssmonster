@@ -57,7 +57,6 @@ describe('semantic Island formation and neutral Recommended coverage', () => {
     expect(stored[4].interestScore).toBe(0);
     expect(computeRecommended(stored[3])).toBeLessThan(computeRecommended({ ...stored[3].get({ plain: true }), interestScore: 0 }));
     for (const article of stored) {
-      expect(article.topicId).toBeNull();
       expect(article.eventId).toBeNull();
       expect(Number.isFinite(computeRecommended(article))).toBe(true);
     }

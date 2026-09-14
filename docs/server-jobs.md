@@ -58,7 +58,7 @@ are not production maintenance jobs.
 | Command | Purpose |
 | --- | --- |
 | `npm run db` | Apply pending Sequelize migrations to the configured database. Run this during a controlled deployment and back up production data first. |
-| `npm run crawl` | Perform one complete incremental crawl pipeline: fetch due feeds for all users, persist articles, generate embeddings, update Events and Topics, and refresh Interest Island scores. The command exits when the iteration finishes. |
+| `npm run crawl` | Perform one complete incremental crawl pipeline: fetch due feeds for all users, persist articles, generate embeddings, update Events, and refresh Interest Island scores. The command exits when the iteration finishes. |
 
 `npm run crawl` is useful for a one-off run or external scheduling. It is not
 the same as `npm run start:worker`, which keeps running and invokes that
@@ -69,12 +69,11 @@ feeds will be checked twice.
 
 | Command | Purpose |
 | --- | --- |
-| `npm run semantic:repair` | Repair the recent semantic window for all users, or one user with `--userId=<id>`. It repairs Events and Topics and refreshes interest scores without rebuilding all history. |
+| `npm run semantic:repair` | Repair the recent semantic window for all users, or one user with `--userId=<id>`. It repairs Events and refreshes interest scores without rebuilding all history. |
 | `npm run semantic:all` | Run a full historical semantic rebuild for all users. Supports `--userId=<id>` and `--batchSize=<count>`. This is substantially heavier than a recent repair. |
 | `npm run semantic:model-rebuild` | Clear incompatible vectors and semantic state after changing embedding models, then rebuild vectors only for starred or clicked articles. Requires `--dry-run` or explicit `--confirm`; see [Model Usage]({% link model-usage.md %}#reset-and-rebuild-an-existing-environment). |
-| `npm run events` | Re-evaluate recent Event assignment independently of Topic construction. The default scope is `recent-repair`; pass `--scope=incremental` for only currently unassigned recent articles and optionally `--userId=<id>`. |
-| `npm run events:backfill` | Backfill missing Events from historical vectorized articles and intentionally skip Topic assignment. The package command accepts additional `--userId=<id>` or `--batchSize=<count>` arguments. |
-| `npm run topics` | Rebuild Topic assignments for all users. It defaults to `full-rebuild`; the script also accepts `--scope=recent-repair`, `--scope=incremental`, and `--userId=<id>`. |
+| `npm run events` | Re-evaluate recent Event assignment independently of scoring. The default scope is `recent-repair`; pass `--scope=incremental` for only currently unassigned recent articles and optionally `--userId=<id>`. |
+| `npm run events:backfill` | Backfill missing Events from historical vectorized articles. The package command accepts additional `--userId=<id>` or `--batchSize=<count>` arguments. |
 | `npm run islands` | Recalibrate Interest Islands for users and refresh article interest scores. |
 | `npm run backfill:engaged-vectors` | Generate missing embeddings for engaged articles. Supports `--dry-run`, `--userId=<id>`, `--batchSize=<count>`, and `--limit=<count>`. This can call the embedding provider. |
 | `npm run taxonomy:vectors` | Reload the Interest Island taxonomy from its seed definition and generate taxonomy vectors. `--force` forces regeneration. This changes taxonomy data and requires an embedding provider. |
@@ -98,7 +97,7 @@ npm run semantic:all
 npm run semantic:all -- --userId=3
 ```
 
-This revisits historical Event assignments, Topics, Interest Islands, and
+This revisits historical Event assignments, Interest Islands, and
 interest scores. It preserves valid existing Event assignments and reuses
 stored vectors; it does not embed every old article. Normal post-crawl Event
 processing targets newly created, canonical, unfiltered articles. See

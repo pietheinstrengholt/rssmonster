@@ -206,7 +206,6 @@ describe('reconcileTouchedEvents', () => {
         articleEventVector: incomingArticle.articleVector,
         bestEvent: event,
         cache: null,
-        skipTopicAssignment: true,
         transaction: assignmentTransaction
       });
       const assignedEvent = await Event.findByPk(event.id, {
@@ -250,8 +249,7 @@ describe('reconcileTouchedEvents', () => {
     await expect(assignArticleToExistingEvent({
       article: incomingArticle,
       bestEvent: { id: 999999999 },
-      cache: null,
-      skipTopicAssignment: true
+      cache: null
     })).resolves.toBeNull();
   });
 
@@ -264,13 +262,12 @@ describe('reconcileTouchedEvents', () => {
     await expect(assignArticleToExistingEvent({
       article: { id: 999999999, userId: user.id },
       bestEvent: event,
-      cache: null,
-      skipTopicAssignment: true
+      cache: null
     })).resolves.toBeNull();
   });
 
-  it('runs topic assignment and updates the cache only after commit', async () => {
-    const { user, feed } = await createUserGraph('topic-assignment-cache');
+  it('updates the cache after committed membership changes', async () => {
+    const { user, feed } = await createUserGraph('membership-cache');
     const representativeArticle = await createArticle(user, feed, 1);
     const incomingArticle = await createArticle(user, feed, 2, {
       publishedAt: new Date(representativeArticle.publishedAt.getTime() + 3600000)
@@ -280,16 +277,13 @@ describe('reconcileTouchedEvents', () => {
     });
     await representativeArticle.update({ eventId: event.id });
     const cache = { updateInMemory: vi.fn() };
-    const assignTopicsForEvent = vi.fn().mockResolvedValue(null);
 
     await expect(assignArticleToExistingEvent({
       article: incomingArticle,
       bestEvent: event,
-      cache,
-      assignTopicsForEvent
+      cache
     })).resolves.toBe(event.id);
 
-    expect(assignTopicsForEvent).toHaveBeenCalledOnce();
     expect(cache.updateInMemory).toHaveBeenCalledWith(
       event.id,
       expect.objectContaining({ articleCount: 2 })

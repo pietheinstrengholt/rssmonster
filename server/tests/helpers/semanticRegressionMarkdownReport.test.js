@@ -31,12 +31,10 @@ describe('semantic regression Markdown report', () => {
             title: 'First article',
             eventId: 10,
             eventName: 'Shared event',
-            topicId: 20,
-            topicName: 'Shared topic',
             islandId: 30,
             islandName: 'Shared island',
-            islandDecision: 'topic-island',
-            semanticPath: 'A→E→T→I',
+            islandDecision: 'vector-fallback',
+            semanticPath: 'A→E→I',
             sourceCount: 2
           },
           2: {
@@ -45,8 +43,6 @@ describe('semantic regression Markdown report', () => {
             title: 'Second | article',
             eventId: 10,
             eventName: 'Shared event',
-            topicId: 20,
-            topicName: 'Shared topic',
             islandId: 30,
             islandName: 'Shared island',
             islandDecision: 'vector-fallback',
@@ -65,9 +61,8 @@ describe('semantic regression Markdown report', () => {
 
     expect(markdown).toContain('# Semantic Regression Report');
     expect(markdown).toContain('| Model | organization/model-under-test |');
-    expect(markdown).toContain('| Shared event | 2 | 2 | Shared topic |');
-    expect(markdown).toContain('| Shared topic | 1 | 2 | Shared island |');
-    expect(markdown).toContain('| Shared island | 1 | 1 | 1 |');
+    expect(markdown).toContain('| Shared event | 2 | 2 |');
+    expect(markdown).toContain('| Shared island | 2 |');
     expect(markdown).toContain('Second \\| article');
     expect(markdown).not.toContain('\n| 1 | First article | Shared event |');
   });

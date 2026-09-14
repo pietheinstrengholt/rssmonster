@@ -12,8 +12,7 @@ describe('semantic debug logging', () => {
 
   it('reuses existing component debug switches without logging by default', () => {
     expect(isSemanticDebugEnabled('event', {})).toBe(false);
-    expect(isSemanticDebugEnabled('topic', { TOPIC_DEBUG: 'true' })).toBe(true);
-    expect(isSemanticDebugEnabled('topic', { EVENT_DEBUG: '1' })).toBe(true);
+    expect(isSemanticDebugEnabled('event', { EVENT_DEBUG: '1' })).toBe(true);
     expect(isSemanticDebugEnabled('island', { ISLAND_DEBUG: 'yes' })).toBe(true);
   });
 

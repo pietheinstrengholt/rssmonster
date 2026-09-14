@@ -8,13 +8,12 @@ import qwenGenerationProvider from '../generation/providers/qwenGenerationProvid
 import { logInferenceDebug } from '../debug.js';
 import { getInferenceRequestId } from '../middleware/requestLifecycle.js';
 
-const LABEL_TYPES = Object.freeze(['event', 'topic', 'island']);
+const LABEL_TYPES = Object.freeze(['event', 'island']);
 const MAX_CONTEXT_LENGTH = 6000;
 const MAX_LABEL_LENGTH = 255;
 const MAX_GENERATION_TOKENS = 96;
 const TYPE_RULES = Object.freeze({
   event: 'event: one concrete occurrence; neutral subject and action; 5-12 words.',
-  topic: 'topic: recurring subject; stable noun phrase; 2-6 words.',
   island: 'island: durable user interest; broad stable noun phrase; 2-5 words.'
 });
 
@@ -51,7 +50,7 @@ const normalizeInput = input => {
 
   const requestedTypes = LABEL_TYPES.filter(type => input[type] === true);
   if (!requestedTypes.length) {
-    throw new SemanticLabelInputError('at least one of event, topic, or island must be true');
+    throw new SemanticLabelInputError('at least one of event or island must be true');
   }
 
   const context = serializeContext(input.context);

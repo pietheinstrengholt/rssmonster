@@ -214,7 +214,7 @@ promotion and duplicate reconciliation run transactionally, lock user/feed rows 
 and return the surviving feed identity to the crawl caller. Same-user feeds that converge are
 reconciled atomically; feeds from different users are never merged. The survivor preference is an
 already successful feed, then the feed with more articles, then the older record, then the lower
-stable ID. Aliases, articles, article tags/topics, event pointers, hotlinks, settings, user state,
+stable ID. Aliases, articles, article tags, event pointers, hotlinks, settings, user state,
 feed settings, and useful fetch metadata are transferred before the losing feed is removed.
 Overlapping articles are consolidated through strong publisher or URL identity without losing
 non-overlapping articles.
@@ -327,7 +327,7 @@ Atomically enqueue optional article_enrichment when enabled
         ↓
 Persist accepted hotlink observations
         ↓
-After crawl: embedding → semantic duplicates → Events → Topics → Island scoring
+After crawl: embedding → semantic duplicates → Events → Island scoring
 ```
 
 The order is intentional.
@@ -434,7 +434,7 @@ existing article found
 → update source/read-copy fields
 → set filteredInd to true
 → skip lightweight enrichment
-→ keep vector, cluster, event, topic, and island state unchanged
+→ keep vector, cluster, event and island state unchanged
 → hide article from normal queries
 
 When a later revision reruns actions and no longer matches a discard rule, set `filteredInd` back to
@@ -615,7 +615,7 @@ Advertisement and quality scores use higher-is-better semantics. Advertisement a
 actions therefore override their respective scores to zero.
 
 Filtered (discarded) articles never reach article-level AI analysis. Post-crawl embedding,
-duplicate, event, topic, and interest-score services must also explicitly
+duplicate, event and interest-score services must also explicitly
 exclude filtered articles.
 
 The article row and all generated, feed, and rule tags are persisted in one transaction.
@@ -659,12 +659,12 @@ tags are replaced; provider, feed, rule, manual, and unknown provenance remains 
 Embeddings and clustering remain creation-time semantic enrichment performed by the post-crawl
 pipeline for genuinely new articles. Publisher revisions update the stored reading copy but do
 not automatically re-enter that semantic pipeline. Existing embeddings, clusters, events,
-topics, islands, representative relationships, and semantic comparison state are preserved.
+islands, representative relationships, and semantic comparison state are preserved.
 Semantic state for existing articles is rebuilt only through explicit maintenance or rebuild
 workflows. Motivation is that the semantic pipeline is expensive and complex. It should not be 
 rerun for minor publisher changes.
 
-Generated Event, Topic, and Island presentation labels also use durable `semantic_label` jobs.
+Generated Event and Island presentation labels also use durable `semantic_label` jobs.
 Jobs are enqueued only after the owned target exists, reload current bounded title context, and
 update only the generated label field. Deterministic names remain available while a label is
 pending or failed, and optional label failures never fail semantic persistence.
