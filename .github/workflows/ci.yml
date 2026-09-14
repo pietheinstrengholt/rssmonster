@@ -73,9 +73,13 @@ jobs:
         working-directory: server
         run: npx sequelize db:seed:all
 
+      - name: Enforce no tracked vector artifacts
+        working-directory: server
+        run: npm run check:vector-artifacts
+
       - name: Test server
         working-directory: server
-        run: npm run test:coverage
+        run: npm run test:ci
 
       - name: Upload server coverage reports to Codecov
         uses: codecov/codecov-action@v7

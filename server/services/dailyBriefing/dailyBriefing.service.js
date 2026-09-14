@@ -1,3 +1,4 @@
+import { explainArticleInterests } from '../score/scoreArticlesFromIslands.js';
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { resolveDateFilterToRange } from '../articleSearch/articleDateParser.service.js';
@@ -10,13 +11,9 @@ import { applyArticleScoreEligibility } from '../articles/articleScoreEligibilit
 const {
   Article,
   Event,
-  EventTopic,
   Feed,
-  Island,
-  IslandTopic,
   Setting,
   Tag,
-  Topic
 } = db;
 
 // Defines the briefing period filters enforced by this service.
@@ -236,81 +233,10 @@ export const buildBriefingArticleWhere = async ({
   });
 };
 
-// This function maps each event to its ordered structural topic identifiers.
-const buildEventTopicMap = (events, eventTopicRows, validTopicIds) => {
-  // Tracks distinct valid topic id set while building event topic map.
-  const validTopicIdSet = new Set(validTopicIds.map(String));
-  // Indexes topic entries for efficient lookup.
-  const topicMap = new Map();
-
-  // Processes each event topic rows entry in turn.
-  for (const row of eventTopicRows) {
-    // Skips the current entry when valid topic id set does not contain string.
-    if (!validTopicIdSet.has(String(row.topicId))) continue;
-    // Coerces the event key into the representation required while building event topic map.
-    const eventKey = String(row.eventId);
-    // Derives the topic id required while building event topic map.
-    const topicIds = topicMap.get(eventKey) || [];
-    // Handles the case where some is unavailable.
-    if (!topicIds.some(topicId => String(topicId) === String(row.topicId))) {
-      topicIds.push(row.topicId);
-    }
-    topicMap.set(eventKey, topicIds);
-  }
-
-  // Processes each events entry in turn.
-  for (const event of events) {
-    // Skips the current entry when event topic id is unavailable or valid topic id set does not contain string.
-    if (!event.topicId || !validTopicIdSet.has(String(event.topicId))) continue;
-    // Coerces the event key into the representation required while building event topic map.
-    const eventKey = String(event.id);
-    // Derives the topic id required while building event topic map.
-    const topicIds = topicMap.get(eventKey) || [];
-    // Handles the case where some is unavailable.
-    if (!topicIds.some(topicId => String(topicId) === String(event.topicId))) {
-      topicIds.unshift(event.topicId);
-    }
-    topicMap.set(eventKey, topicIds);
-  }
-
-  return topicMap;
-};
-
-// This function selects the strongest active island linked to an event's topics.
-const resolveEventIsland = ({ eventId, eventTopicMap, islandLinksByTopic, islandMap }) => {
-  // Keeps the candidates entries eligible while resolving event island.
-  const candidates = (eventTopicMap.get(String(eventId)) || [])
-    .flatMap(topicId => islandLinksByTopic.get(String(topicId)) || [])
-    .filter(link => islandMap.has(String(link.islandId)));
-
-  // Orders values deterministically while resolving event island.
-  candidates.sort((left, right) => {
-    // Derives the confidence delta required while resolving event island.
-    const confidenceDelta = Number(right.confidence || 0) - Number(left.confidence || 0);
-    // Returns early when confidence delta is available.
-    if (confidenceDelta) return confidenceDelta;
-
-    // Derives the similarity delta required while resolving event island.
-    const similarityDelta = Number(right.similarity || 0) - Number(left.similarity || 0);
-    // Returns early when similarity delta is available.
-    if (similarityDelta) return similarityDelta;
-
-    // Derives the left island through get while resolving event island.
-    const leftIsland = islandMap.get(String(left.islandId));
-    // Derives the right island through get while resolving event island.
-    const rightIsland = islandMap.get(String(right.islandId));
-    // Derives the weight delta required while resolving event island.
-    const weightDelta = Number(rightIsland?.weight || 0) - Number(leftIsland?.weight || 0);
-    // Returns early when weight delta is available.
-    if (weightDelta) return weightDelta;
-
-    return Number(left.islandId) - Number(right.islandId);
-  });
-
-  // Selects the island based on whether candidates is non-empty.
-  const island = candidates.length
-    ? islandMap.get(String(candidates[0].islandId))
-    : null;
+// Uses the same direct interest evidence as article recommendation explanations.
+const resolveEventIsland = ({ articleId, interests, islandMap }) => {
+  const path = interests.get(String(articleId))?.paths.find(candidate => candidate.islandId != null);
+  const island = path ? islandMap.get(String(path.islandId)) : null;
 
   // Selects the result based on whether island is available.
   return island
@@ -378,8 +304,7 @@ const compareSummaryEvents = (left, right, representativeMap, prioritizeHighTrus
 const buildMorningSummaryItems = ({
   events,
   representativeMap,
-  eventTopicMap,
-  islandLinksByTopic,
+  interests,
   islandMap,
   prioritizeHighTrust
 }) => {
@@ -419,9 +344,8 @@ const buildMorningSummaryItems = ({
         || normalizeWhitespace(representativeArticle.title),
       text: extractBriefingExcerpt(representativeArticle.contentText, representativeArticle.title),
       island: resolveEventIsland({
-        eventId: event.id,
-        eventTopicMap,
-        islandLinksByTopic,
+        articleId: representativeArticle.id,
+        interests,
         islandMap
       })
     });
@@ -465,7 +389,7 @@ export async function getDailyBriefing({
   // Loads the candidate articles needed while performing get daily briefing.
   const candidateArticles = await Article.findAll({
     where: articleWhere,
-    attributes: ['id', 'eventId', 'feedId', 'topicId', 'publishedAt'],
+    attributes: ['id', 'eventId', 'feedId', 'publishedAt'],
     raw: true
   });
 
@@ -479,7 +403,6 @@ export async function getDailyBriefing({
         'id',
         'name',
         'generatedName',
-        'topicId',
         'representativeArticleId',
         'developingArticleId',
         'articleCount',
@@ -493,7 +416,6 @@ export async function getDailyBriefing({
     : [];
 
   // Transforms source values into the owned event id required while performing get daily briefing.
-  const ownedEventIds = events.map(event => event.id);
   // Selects the independently configured article used to represent each morning-summary event.
   const summaryEvents = events.map(event => ({
     ...event,
@@ -503,22 +425,7 @@ export async function getDailyBriefing({
   const representativeArticleIds = uniqueIds(
     summaryEvents.map(event => event.representativeArticleId)
   );
-  // Selects the values based on whether owned event id is non-empty.
-  const [eventTopicRows, representativeArticles] = await Promise.all([
-    ownedEventIds.length
-      ? EventTopic.findAll({
-        where: { eventId: { [Op.in]: ownedEventIds } },
-        attributes: ['eventId', 'topicId', 'primaryInd', 'rank', 'confidence'],
-        order: [
-          ['eventId', 'ASC'],
-          ['primaryInd', 'DESC'],
-          ['rank', 'ASC'],
-          ['confidence', 'DESC'],
-          ['topicId', 'ASC']
-        ],
-        raw: true
-      })
-      : [],
+  const representativeArticles = await (
     representativeArticleIds.length
       ? Article.findAll({
         where: {
@@ -529,7 +436,8 @@ export async function getDailyBriefing({
         attributes: [
           'id',
           'title',
-          'contentText',
+          'contentText', 'description', 'articleVector', 'positiveInd', 'negativeInd',
+          'favoriteInd', 'clickedAmount', 'attentionBucket', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd',
           'publishedAt',
           'interestScore',
           'advertisementScore',
@@ -550,55 +458,12 @@ export async function getDailyBriefing({
         ]
       })
       : []
-  ]);
+  );
 
-  // Derives the candidate topic id through unique id while performing get daily briefing.
-  const candidateTopicIds = uniqueIds([
-    ...candidateArticles.map(article => article.topicId),
-    ...events.map(event => event.topicId),
-    ...eventTopicRows.map(row => row.topicId)
-  ]);
-  // Selects the topics based on whether candidate topic id is non-empty.
-  const topics = candidateTopicIds.length
-    ? await Topic.findAll({
-      where: { id: { [Op.in]: candidateTopicIds }, userId },
-      attributes: ['id'],
-      raw: true
-    })
-    : [];
-  // Transforms source values into the valid topic id required while performing get daily briefing.
-  const validTopicIds = topics.map(topic => topic.id);
-  // Selects the island topic rows based on whether valid topic id is non-empty.
-  const islandTopicRows = validTopicIds.length
-    ? await IslandTopic.findAll({
-      where: { topicId: { [Op.in]: validTopicIds } },
-      attributes: ['islandId', 'topicId', 'similarity', 'confidence'],
-      raw: true
-    })
-    : [];
-  // Derives the island id through unique id while performing get daily briefing.
-  const islandIds = uniqueIds(islandTopicRows.map(row => row.islandId));
-  // Selects the islands based on whether island id is non-empty.
-  const islands = islandIds.length
-    ? await Island.findAll({
-      where: { id: { [Op.in]: islandIds }, userId, archivedInd: false },
-      attributes: ['id', 'label', 'generatedLabel', 'weight'],
-      raw: true
-    })
-    : [];
-
-  // Tracks distinct active island id set while performing get daily briefing.
-  const activeIslandIdSet = new Set(islands.map(island => String(island.id)));
-  // Keeps the active island topic rows entries eligible while performing get daily briefing.
-  const activeIslandTopicRows = islandTopicRows.filter(row => activeIslandIdSet.has(String(row.islandId)));
-  // Derives the island links by topic required while performing get daily briefing.
-  const islandLinksByTopic = new Map();
-  // Processes each active island topic rows entry in turn.
-  for (const row of activeIslandTopicRows) {
-    // Coerces the topic key into the representation required while performing get daily briefing.
-    const topicKey = String(row.topicId);
-    islandLinksByTopic.set(topicKey, [...(islandLinksByTopic.get(topicKey) || []), row]);
-  }
+  const { context, results: interests } = representativeArticles.length
+    ? await explainArticleInterests(userId, representativeArticles, { now: filters.generatedAt.getTime() })
+    : { context: { islands: [] }, results: new Map() };
+  const islands = context.islands;
 
   // Indexes representative entries for efficient lookup.
   const representativeMap = new Map(
@@ -606,8 +471,6 @@ export async function getDailyBriefing({
   );
   // Indexes island entries for efficient lookup.
   const islandMap = new Map(islands.map(island => [String(island.id), island]));
-  // Builds the event topic map while performing get daily briefing.
-  const eventTopicMap = buildEventTopicMap(events, eventTopicRows, validTopicIds);
   // Filters source values to the entries eligible while performing get daily briefing.
   const newEventCount = events.filter(event => {
     // Derives the created at through get time while performing get daily briefing.
@@ -630,16 +493,14 @@ export async function getDailyBriefing({
       articleCount: candidateArticles.length,
       eventCount: events.length,
       newEventCount,
-      topicCount: validTopicIds.length,
-      islandCount: islands.length,
+      islandCount: new Set([...interests.values()].flatMap(result => result.paths.map(path => path.islandId).filter(Boolean))).size,
       sourceCount: uniqueIds(candidateArticles.map(article => article.feedId)).length
     },
     morningSummary: {
       items: buildMorningSummaryItems({
         events: summaryEvents,
         representativeMap,
-        eventTopicMap,
-        islandLinksByTopic,
+        interests,
         islandMap,
         prioritizeHighTrust
       })

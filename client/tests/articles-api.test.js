@@ -16,9 +16,9 @@ vi.mock('../src/api/client', () => ({
 
 describe('articles API', () => {
   it('does not persist a Smart Folder presentation as ordinary reading preferences', () => {
-    fetchArticleIds({ smartFolderId: 4, sort: 'asc', grouping: 'topic' });
+    fetchArticleIds({ smartFolderId: 4, sort: 'asc', grouping: 'event' });
     expect(get).toHaveBeenCalledWith('/articles', { params: {
-      smartFolderId: 4, sort: 'asc', grouping: 'topic', persistSettings: false, includeFirstPage: true
+      smartFolderId: 4, sort: 'asc', grouping: 'event', persistSettings: false, includeFirstPage: true
     } });
   });
   beforeEach(() => {

@@ -20,7 +20,7 @@ Examples of Events include:
 
 An Event answers **what happened?** It is not a feed category, a long-running
 subject, or a model of the user's interests. Those broader responsibilities
-belong to [Topics]({% link topics.md %}) and [Interest Islands]({% link interest-islands.md %}).
+belong to and [Interest Islands]({% link interest-islands.md %}).
 
 ## How Events Are Created
 
@@ -131,8 +131,8 @@ multi-user installation.
 ### Event strength
 
 Event strength is a `0.0`–`1.0` ranking signal. In the current implementation,
-it combines the amount of corroborating coverage with fixed cohesion and Topic
-baseline contributions. Additional articles increase the coverage contribution
+it combines the amount of corroborating coverage with fixed cohesion and baseline
+contributions. Additional articles increase the coverage contribution
 up to its configured cap.
 
 It helps RSSMonster rank meaningful, well-supported stories. It is not used as
@@ -202,7 +202,7 @@ state can be updated.
 
 ## Inspecting Event Health
 
-The read-only **Settings > Topics** page provides an operational overview of
+The read-only **Settings > Events** page provides an operational overview of
 all Events. It shows Event coverage, unclustered articles, reuse and creation
 ratios, average Event size, lifecycle distribution, and recent Event records.
 
@@ -279,5 +279,4 @@ incremental reuse, adversarial version/location/action pairs, ambiguous/Eventles
 coverage, multilingual matching, and legitimate updates such as changed casualty
 counts, corrections and announcement → pricing → preorder. Missing occurrence
 features are neutral. These cases do not establish perfect clustering across
-languages or processing order. Topic continuity is tested separately because
-different Events can correctly share a durable subject.
+languages or processing order. Interest affinity is evaluated separately from occurrence identity.

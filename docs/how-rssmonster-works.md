@@ -14,7 +14,8 @@ source-level signals, semantic relationships, and each user's reading behavior.
 The major concepts build on one another:
 
 ```text
-Article embedding ─→ Event ─→ Topic ─→ Island relationship
+Article embedding ─→ Event
+Candidate Article vector ─→ direct Island comparison
        ├───────────────────────────→ direct Island match
        └───────────────────────────→ explicit behavioral fallback
                                            ↓
@@ -23,7 +24,7 @@ Article embedding ─→ Event ─→ Topic ─→ Island relationship
 Recommended ← freshness, Quality (including FeedTrust), corroboration, rule boost
 ```
 
-Islands form from user behavior and are enriched by Topics. The arrows above show
+Islands form from user behavior and match candidates directly. The arrows above show
 scoring paths; an Article need not traverse every layer. Unmatched personal evidence
 is neutral, and every eligible Article still receives Recommended. See
 [Interest Islands]({% link interest-islands.md %}) and [Scoring]({% link scoring.md %})
@@ -37,7 +38,7 @@ generated enrichment:
 ```text
 rssmonster-worker
  └─ crawl scheduler loop
-      └─ crawl → embedding → events → topics → island scoring
+      └─ crawl → embedding → events → island scoring
 
 rssmonster-ai-worker
  └─ claim processing_jobs
@@ -53,11 +54,11 @@ optional processing jobs.
 
 The crawl scheduler owns the ordered, deterministic semantic path. Article
 identity and revision resolution happen before persistence; embeddings then
-complete before Event creation, Topic assignment, and Interest Island scoring.
+complete before Event creation and Interest Island scoring.
 These stages are never moved into the optional queue.
 
 The AI worker consumes durable database jobs after their article,
-Event, Topic, or Island target exists. New and revised articles are immediately
+Event, or Island target exists. New and revised articles are immediately
 persisted with deterministic provider, feed, rule, and manual tags. When article
 analysis is enabled, the article and its `article_enrichment` job commit in the
 same transaction. Summaries, inferred tags, and inferred scores can therefore
@@ -74,7 +75,7 @@ Jobs contain identifiers and version guards rather than article text. Handlers
 reload the current user-owned target and recheck article content hashes while
 holding the write lock, so an older job cannot overwrite a newer revision.
 Article enrichment replaces only inferred tags. Semantic-label jobs update only
-generated presentation fields; deterministic Event, Topic, and Island fallback
+generated presentation fields; deterministic Event and Island fallback
 names remain usable while labels are pending or failed.
 
 Every scheduled, manual, and API-triggered crawl publishes its own renewable
@@ -111,7 +112,7 @@ organization name, helping you recognize direct announcements and updates.
 [FeedTrust]({% link feedtrust.md %}) estimates how consistently valuable a subscribed
 source has been as a source of articles. It combines recent article quality,
 supporting engagement, deterministic originality, and explicit negative
-feedback. It is separate from crawl reliability, personal topic interest,
+feedback. It is separate from crawl reliability, personal interest,
 article-level quality, and factual verification.
 
 ### Article Embedding
@@ -126,12 +127,6 @@ grouping layers; they do not alter or summarize the source article themselves.
 [Events]({% link events.md %}) group articles that cover the same real-world occurrence.
 This reduces repeated coverage in the reading stream while keeping the
 different sources available. An Event answers: **what happened?**
-
-### Topics
-
-[Topics]({% link topics.md %}) connect related Events into broader, recurring subjects.
-They persist beyond an individual story and answer: **what ongoing subject does
-this belong to?**
 
 ### Interest Islands
 
@@ -159,7 +154,7 @@ are composed by Quality, Recommended, and Top Stories ordering.
 RSSMonster first fetches and normalizes articles while preserving their
 identity and source. Feed and article signals help rank what should be shown.
 When semantic processing is enabled, article embeddings help associate reports
-with Events, connect Events to Topics, and relate that content to a user's
+with Events and relate that content to a user's
 Interest Islands. Optional generated summaries, scores, inferred tags, and
 presentation labels can arrive afterward without changing that semantic order.
 

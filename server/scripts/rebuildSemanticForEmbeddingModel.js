@@ -19,15 +19,13 @@ import { getEmbeddingInfo } from '../services/embeddings/embeddingService.js';
 import { markDuplicateArticlesForUser } from '../services/duplicates/articleDuplicates.js';
 import {
   backfillHistoricalEventsForUser,
-  rebuildAllTopicsForUser
 } from '../services/reconcile/semanticPipelineScopes.js';
-import { calibrateBehavioralTopicsForUser } from '../services/topics/behavioral/calibrateBehavioralTopics.js';
 import { runIslandCalibrationForUser } from '../services/islands/runIslandCalibration.js';
 import { backfillEngagedArticleVectors } from './backfillEngagedArticleVectors.js';
 import { generateIslandTaxonomyVectors } from './generateIslandTaxonomyVectors.js';
 import { resetSemanticStateForUser } from './resetSemanticState.js';
 
-const { Article, Event, Island, IslandTaxonomy, Topic, User, sequelize } = db;
+const { Article, Event, Island, IslandTaxonomy, User, sequelize } = db;
 const DEFAULT_BATCH_SIZE = 100;
 
 export function parseSemanticModelRebuildArgs(argv) {
@@ -73,10 +71,10 @@ async function loadTargetUsers(userId, models = { User }) {
   });
 }
 
-async function inspectScope(users, models = { Article, Event, Island, IslandTaxonomy, Topic }) {
+async function inspectScope(users, models = { Article, Event, Island, IslandTaxonomy }) {
   const userIds = users.map(user => user.id);
   const userWhere = { userId: { [Op.in]: userIds } };
-  const [articles, vectors, rebuildTargets, events, topics, islands, taxonomyVectors] =
+  const [articles, vectors, rebuildTargets, events, islands, taxonomyVectors] =
     await Promise.all([
       models.Article.count({ where: userWhere }),
       models.Article.count({ where: { ...userWhere, articleVector: { [Op.ne]: null } } }),
@@ -90,12 +88,11 @@ async function inspectScope(users, models = { Article, Event, Island, IslandTaxo
         }
       }),
       models.Event.count({ where: userWhere }),
-      models.Topic.count({ where: userWhere }),
       models.Island.count({ where: userWhere }),
       models.IslandTaxonomy.count({ where: { vector: { [Op.ne]: null } } })
     ]);
 
-  return { articles, vectors, rebuildTargets, events, topics, islands, taxonomyVectors };
+  return { articles, vectors, rebuildTargets, events, islands, taxonomyVectors };
 }
 
 async function rebuildDuplicatesForUser(userId, batchSize, markDuplicates) {
@@ -124,8 +121,6 @@ const defaultDependencies = {
   regenerateTaxonomy: generateIslandTaxonomyVectors,
   markDuplicates: markDuplicateArticlesForUser,
   rebuildEvents: backfillHistoricalEventsForUser,
-  rebuildEventTopics: rebuildAllTopicsForUser,
-  rebuildBehavioralTopics: calibrateBehavioralTopicsForUser,
   rebuildIslands: runIslandCalibrationForUser,
   logger: console
 };
@@ -154,7 +149,7 @@ export async function rebuildSemanticForEmbeddingModel(options = {}, dependencie
   deps.logger.log(
     `[SEMANTIC MODEL REBUILD] users=${users.length} articles=${scope.articles} ` +
     `vectorsToClear=${scope.vectors} starredOrClickedTargets=${scope.rebuildTargets} ` +
-    `events=${scope.events} topics=${scope.topics} islands=${scope.islands} ` +
+    `events=${scope.events} islands=${scope.islands} ` +
     `taxonomyVectors=${scope.taxonomyVectors}`
   );
 
@@ -187,27 +182,17 @@ export async function rebuildSemanticForEmbeddingModel(options = {}, dependencie
     );
     const events = await deps.rebuildEvents(user.id, {
       batchSize,
-      skipTopicAssignment: true
     });
-    const eventTopics = await deps.rebuildEventTopics(user.id, {
-      assignmentContext: 'full-rebuild'
-    });
-    const behavioralTopics = await deps.rebuildBehavioralTopics(user.id);
     const islands = await deps.rebuildIslands(user.id, {
       incremental: false,
       touchedEventIds: events.touchedEventIds,
-      touchedTopicIds: [
-        ...(eventTopics.touchedTopicIds || []),
-        ...(behavioralTopics.touchedTopicIds || [])
-      ]
+
     });
 
     results.push({
       userId: user.id,
       duplicates,
       events,
-      eventTopics,
-      behavioralTopics,
       islands
     });
   }

@@ -7,6 +7,9 @@ nav_order: 10
 
 # Taxonomy Embedding Strategy Evaluation
 
+> Historical evaluation of the architecture before Topic removal. The measurements below are retained for comparison and do not describe current processing.
+
+
 Date: 2026-08-21
 
 This is a dated experiment report, not an installation prerequisite. For current

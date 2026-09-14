@@ -13,8 +13,7 @@ const mocked = vi.hoisted(() => ({
   eventFindAll: vi.fn(),
   eventFindOne: vi.fn(),
   tagFindAll: vi.fn(),
-  settingFindOne: vi.fn(),
-  topicFindOne: vi.fn()
+  settingFindOne: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -45,9 +44,6 @@ vi.mock('../../models/index.js', () => ({
     },
     Tag: {
       findAll: mocked.tagFindAll
-    },
-    Topic: {
-      findOne: mocked.topicFindOne
     }
   }
 }));
@@ -56,7 +52,6 @@ const actionController = (await import('../../controllers/action.js')).default;
 const cleanupController = (await import('../../controllers/cleanup.js')).default;
 const eventsController = (await import('../../controllers/events.js')).default;
 const tagController = (await import('../../controllers/tag.js')).default;
-const topicsController = (await import('../../controllers/topics.js')).default;
 
 // Builds the minimal chainable response contract used by controller handlers.
 const createResponse = () => {
@@ -367,20 +362,6 @@ describe('tag and cleanup controllers', () => {
     expect(articleWhere[Op.or][1].val).toContain('grouped_event.userId = articles.userId');
   });
 
-  it('scopes topic-grouped tags to one strongest event representative per topic', async () => {
-    mocked.articleFindAll.mockResolvedValue([]);
-    const res = createResponse();
-
-    await tagController.getTags(createRequest({
-      query: { status: 'unread', grouping: 'topic' }
-    }), res);
-
-    const articleWhere = mocked.articleFindAll.mock.calls[0][0].where;
-    expect(articleWhere.id[Op.in].val).toContain('MAX(eventStrength)');
-    expect(articleWhere.id[Op.in].val).toContain('SELECT MAX(e2.id)');
-    expect(articleWhere.id[Op.in].val).toContain('e2.userId = e.userId');
-  });
-
   it('scopes tags to the configured Daily Briefing population', async () => {
     mocked.briefingPreferenceFindOne.mockResolvedValue({
       selectionPeriod: '24h',
@@ -501,7 +482,7 @@ describe('tag and cleanup controllers', () => {
   });
 });
 
-describe('event and topic article controllers', () => {
+describe('event article controllers', () => {
   beforeEach(() => {
     resetControllerMocks();
   });
@@ -584,103 +565,4 @@ describe('event and topic article controllers', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'event query failed' });
   });
 
-  it('validates topic article authentication and event IDs', async () => {
-    const unauthorizedRes = createResponse();
-    await topicsController.getTopicArticles(
-      createRequest({ userData: {}, body: { eventId: 8 } }),
-      unauthorizedRes
-    );
-    expect(unauthorizedRes.status).toHaveBeenCalledWith(401);
-
-    const invalidRes = createResponse();
-    await topicsController.getTopicArticles(createRequest(), invalidRes);
-    expect(invalidRes.status).toHaveBeenCalledWith(400);
-    expect(mocked.eventFindOne).not.toHaveBeenCalled();
-  });
-
-  it('does not disclose unavailable events or topics', async () => {
-    mocked.eventFindOne.mockResolvedValueOnce(null);
-    const missingEventRes = createResponse();
-    await topicsController.getTopicArticles(
-      createRequest({ body: { eventId: 8 } }),
-      missingEventRes
-    );
-    expect(missingEventRes.status).toHaveBeenCalledWith(404);
-    expect(missingEventRes.json).toHaveBeenCalledWith({ error: 'Event not found' });
-
-    mocked.eventFindOne.mockResolvedValueOnce({ id: 8, topicId: 3 });
-    mocked.topicFindOne.mockResolvedValueOnce(null);
-    const missingTopicRes = createResponse();
-    await topicsController.getTopicArticles(
-      createRequest({ body: { eventId: 8 } }),
-      missingTopicRes
-    );
-    expect(missingTopicRes.status).toHaveBeenCalledWith(404);
-    expect(missingTopicRes.json).toHaveBeenCalledWith({ error: 'Topic not found' });
-  });
-
-  it('requires an event to belong to a topic', async () => {
-    mocked.eventFindOne.mockResolvedValue({ id: 8, topicId: null });
-    const res = createResponse();
-
-    await topicsController.getTopicArticles(
-      createRequest({ body: { eventId: 8 } }),
-      res
-    );
-
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({
-      error: 'Topic not found for event'
-    });
-  });
-
-  it('returns canonical articles from every event in the owned topic', async () => {
-    const event = { id: 8, topicId: 3 };
-    const topic = { id: 3, name: 'Security' };
-    const articles = [{ id: 10 }, { id: 11 }];
-    mocked.eventFindOne.mockResolvedValue(event);
-    mocked.topicFindOne.mockResolvedValue(topic);
-    mocked.eventFindAll.mockResolvedValue([{ id: 8 }, { id: 9 }]);
-    mocked.articleFindAll.mockResolvedValue(articles);
-    const res = createResponse();
-
-    await topicsController.getTopicArticles(
-      createRequest({ body: { eventId: 8, articleId: 7 } }),
-      res
-    );
-
-    expect(mocked.topicFindOne).toHaveBeenCalledWith({
-      where: { id: 3, userId: 42 }
-    });
-    expect(mocked.eventFindAll).toHaveBeenCalledWith({
-      where: { userId: 42, topicId: 3 },
-      attributes: ['id']
-    });
-    expect(mocked.articleFindAll).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({
-        eventId: { [Op.in]: [8, 9] },
-        userId: 42,
-        duplicateOfArticleId: { [Op.is]: null },
-        filteredInd: false,
-        id: { [Op.ne]: 7 }
-      })
-    }));
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ topic, event, articles });
-  });
-
-  it('returns controller errors as server errors', async () => {
-    const error = new Error('query failed');
-    mocked.eventFindOne.mockRejectedValue(error);
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    const res = createResponse();
-
-    await topicsController.getTopicArticles(
-      createRequest({ body: { eventId: 8 } }),
-      res
-    );
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: 'query failed' });
-  });
 });

@@ -12,8 +12,6 @@
  *   node scripts/runEventsCommand.js --scope=incremental
  *   node scripts/runEventsCommand.js --scope=recent-repair --userId=3
  *
- * This script intentionally skips topic assignment so events can be built
- * independently from topic construction.
  */
 
 import db from '../models/index.js';
@@ -47,11 +45,11 @@ function parseArgs(argv) {
 
 async function runForUser(userId, scope) {
   if (scope === 'incremental') {
-    await runIncrementalEventsForUser(userId, { skipTopicAssignment: true });
+    await runIncrementalEventsForUser(userId);
     return;
   }
 
-  await repairRecentEventsForUser(userId, { skipTopicAssignment: true });
+  await repairRecentEventsForUser(userId);
 }
 
 export async function runEventsCommand({ userId = null, scope = 'recent-repair' } = {}) {
@@ -90,4 +88,3 @@ if (process.argv[1]?.includes('runEventsCommand')) {
       process.exit(1);
     });
 }
-

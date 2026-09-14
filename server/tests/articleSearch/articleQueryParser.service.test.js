@@ -10,16 +10,16 @@ import {
 
 describe('articleQueryParser.service', () => {
   it('parses explicit grouping and rejects unsupported grouping in saved expressions', () => {
-    expect(validateArticleExpression('sort:recommended grouping:none grouping:TOPIC').filters.grouping).toBe('topic');
+    expect(validateArticleExpression('sort:recommended grouping:none grouping:EVENT').filters.grouping).toBe('event');
     expect(() => validateArticleExpression('grouping:invalid')).toThrow(ArticleExpressionValidationError);
   });
 
   it('completes legacy Smart Folder expressions without modifying quoted filter values', () => {
-    const query = normalizeSmartFolderExpression('title:"sort:asc grouping:topic"');
-    expect(query).toBe('title:"sort:asc grouping:topic" sort:desc grouping:none');
+    const query = normalizeSmartFolderExpression('title:"sort:asc grouping:event"');
+    expect(query).toBe('title:"sort:asc grouping:event" sort:desc grouping:none');
     expect(normalizeSmartFolderExpression(query)).toBe(query);
-    expect(normalizeSmartFolderExpression('developing:true sort:quality grouping:topic'))
-      .toBe('developing:true sort:quality grouping:topic grouping:event');
+    expect(normalizeSmartFolderExpression('developing:true sort:quality grouping:event'))
+      .toBe('developing:true sort:quality grouping:event');
   });
   it('parses mixed filters and quoted text', () => {
     const result = parseArticleQuery({ search: 'favorite:true quality:>0.7 @today "AI agents"' });
@@ -149,16 +149,6 @@ describe('articleQueryParser.service', () => {
     expect(result.sort).toBe('quality');
     expect(result.text).toBe('');
     expect(result.textMode).toBe('none');
-  });
-
-  it('parses island boolean filters', () => {
-    const included = parseArticleQuery({ search: 'island:true' });
-    const excluded = parseArticleQuery({ search: 'island:false' });
-
-    expect(included.filters.island).toBe(true);
-    expect(excluded.filters.island).toBe(false);
-    expect(included.textMode).toBe('none');
-    expect(excluded.textMode).toBe('none');
   });
 
   it('parses briefing boolean filters', () => {

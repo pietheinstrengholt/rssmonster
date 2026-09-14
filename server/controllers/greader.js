@@ -1,3 +1,4 @@
+import { updateArticleBehavior } from '../services/articles/updateArticleBehavior.js';
 import { isLocalAuthEnabled } from '../config/auth.js';
 import db from '../models/index.js';
 const { Feed, Category, Article, User, sequelize } = db;
@@ -712,20 +713,21 @@ export const editTag = async (req, res) => {
     }
     if (removeSet.has(STARRED_STREAM)) {
       updates.favoriteInd = 0;
+      updates.favoritedAt = null;
     } else if (addSet.has(STARRED_STREAM)) {
       updates.favoriteInd = 1;
+      updates.favoritedAt = mutationTime;
     }
 
     // Unsupported state tags are intentionally ignored for client compatibility.
     if (Object.keys(updates).length > 0) {
-      await sequelize.transaction(transaction => Article.update(updates, {
+      await updateArticleBehavior(Article, updates, {
         where: {
           id: { [Op.in]: numericIds },
           userId: user.id,
           ...canonicalArticleWhere()
-        },
-        transaction
-      }));
+        }
+      });
     }
     
     res.type('text/plain').send('OK');

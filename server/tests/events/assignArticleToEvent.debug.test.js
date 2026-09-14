@@ -94,9 +94,8 @@ describe('assignArticleToEvent debug diagnostics', () => {
       incomingArticle,
       new EventCache([event]),
       null,
-      [],
       runContext,
-      { skipTopicAssignment: true }
+      {  }
     )).resolves.toBe(event.id);
 
     expect(logSpy).toHaveBeenCalledWith(
@@ -146,9 +145,8 @@ describe('assignArticleToEvent debug diagnostics', () => {
       incomingArticle,
       new EventCache([event]),
       null,
-      [],
       { records: [], stats: {} },
-      { skipTopicAssignment: true, articleCandidateCache }
+      { articleCandidateCache }
     )).resolves.toBe(event.id);
 
     expect(logSpy).toHaveBeenCalledWith(

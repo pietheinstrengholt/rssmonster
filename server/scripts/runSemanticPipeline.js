@@ -10,7 +10,6 @@
  * 1) Crawl feeds + persist new articles
  * 2) Generate article vectors for touched users
  * 3) Assign touched articles into Events
- * 4) Assign Topics for touched Events
  * 5) Refresh article interest scores from existing Islands
  */
 

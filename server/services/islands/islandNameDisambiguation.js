@@ -1,10 +1,9 @@
-import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { formatLogString } from '../../utils/logging.js';
 import { cosineSimilarity } from './islandVectorUtils.js';
 
 // Provides the shared dependencies used by this service.
-const { Island, IslandTopic } = db;
+const { Island } = db;
 
 // Defines the island duplicate name similarity threshold enforced by this service.
 export const ISLAND_DUPLICATE_NAME_SIMILARITY_THRESHOLD = Number.parseFloat(
@@ -124,18 +123,13 @@ export function sourceArticleCountForIsland(island) {
 }
 
 // This function orders duplicate-name islands by deterministic semantic strength.
-export function compareIslandStrength(left, right, topicCountByIslandId = new Map()) {
-  // Tracks left topic count for the processing summary.
-  const leftTopicCount = topicCountByIslandId.get(Number(left.id)) || 0;
-  // Tracks right topic count for the processing summary.
-  const rightTopicCount = topicCountByIslandId.get(Number(right.id)) || 0;
+export function compareIslandStrength(left, right) {
   // Derives the left article count through source article count for island while performing compare island strength.
   const leftArticleCount = sourceArticleCountForIsland(left);
   // Derives the right article count through source article count for island while performing compare island strength.
   const rightArticleCount = sourceArticleCountForIsland(right);
 
   return (
-    rightTopicCount - leftTopicCount ||
     rightArticleCount - leftArticleCount ||
     Math.abs(Number(right.weight || 0)) - Math.abs(Number(left.weight || 0)) ||
     Number(left.id || 0) - Number(right.id || 0)
@@ -143,9 +137,9 @@ export function compareIslandStrength(left, right, topicCountByIslandId = new Ma
 }
 
 // This function returns the strongest island from a same-name group.
-export function strongestIslandForDuplicateNameGroup(islands = [], topicCountByIslandId = new Map()) {
+export function strongestIslandForDuplicateNameGroup(islands = []) {
   // Orders values deterministically while performing strongest island for duplicate name group.
-  return islands.slice().sort((a, b) => compareIslandStrength(a, b, topicCountByIslandId))[0] || null;
+  return islands.slice().sort((a, b) => compareIslandStrength(a, b))[0] || null;
 }
 
 // This function checks whether two same-name islands are near-duplicate vectors.
@@ -226,71 +220,8 @@ function sourceArticleTitlesForIsland(island) {
     .filter(Boolean);
 }
 
-// This function collects topic names linked to each island.
-async function topicNamesByIslandId(islandIds, transaction) {
-  // Returns early when island id is empty.
-  if (!islandIds.length) return new Map();
-
-  // Performs the query operation while performing topic names by island id.
-  const rows = await db.sequelize.query(
-    `
-      SELECT islandTopic.islandId, topic.name
-      FROM island_topics AS islandTopic
-      INNER JOIN topics AS topic
-        ON topic.id = islandTopic.topicId
-      WHERE islandTopic.islandId IN (:islandIds)
-      ORDER BY islandTopic.confidence DESC, islandTopic.similarity DESC, islandTopic.topicId ASC
-    `,
-    {
-      replacements: { islandIds },
-      type: db.Sequelize.QueryTypes.SELECT,
-      transaction
-    }
-  );
-
-  // Derives the names by island id required while performing topic names by island id.
-  const namesByIslandId = new Map();
-
-  // Processes each rows entry in turn.
-  for (const row of rows) {
-    // Coerces the island id into the representation required while performing topic names by island id.
-    const islandId = Number(row.islandId);
-    // Derives the names required while performing topic names by island id.
-    const names = namesByIslandId.get(islandId) || [];
-    const name = row.name;
-    // Handles the case where name is available.
-    if (name) names.push(name);
-    namesByIslandId.set(islandId, names);
-  }
-
-  return namesByIslandId;
-}
-
-// This function counts linked topics for each island.
-async function topicCountByIslandId(islandIds, transaction) {
-  // Returns early when island id is empty.
-  if (!islandIds.length) return new Map();
-
-  // Loads the rows needed while performing topic count by island id.
-  const rows = await IslandTopic.findAll({
-    where: { islandId: { [Op.in]: islandIds } },
-    attributes: [
-      'islandId',
-      [db.sequelize.fn('COUNT', db.sequelize.col('topicId')), 'topicCount']
-    ],
-    group: ['islandId'],
-    raw: true,
-    transaction
-  });
-
-  // Maps source values into the result produced while performing topic count by island id.
-  return new Map(
-    rows.map(row => [Number(row.islandId), Number(row.topicCount || 0)])
-  );
-}
-
-// This function builds suffix candidates from article titles, topic names, and entity-like phrases.
-function suffixCandidatesForIsland(island, topicNames = []) {
+// This function builds suffix candidates from article titles and entity-like phrases.
+function suffixCandidatesForIsland(island) {
   // Derives the titles through source article titles for island while performing suffix candidates for island.
   const titles = sourceArticleTitlesForIsland(island);
   // Derives the entities through flat map while performing suffix candidates for island.
@@ -298,16 +229,15 @@ function suffixCandidatesForIsland(island, topicNames = []) {
 
   return [
     ...titles,
-    ...topicNames,
     ...entities,
     'Variant'
   ];
 }
 
 // This function creates a compact disambiguated island name.
-export function buildDisambiguatedIslandName(baseName, island, topicNames = [], usedNames = new Set()) {
+export function buildDisambiguatedIslandName(baseName, island, usedNames = new Set()) {
   // Processes each suffix candidates for island entry in turn.
-  for (const candidate of suffixCandidatesForIsland(island, topicNames)) {
+  for (const candidate of suffixCandidatesForIsland(island)) {
     // Normalizes the suffix before building disambiguated island name.
     const suffix = cleanSuffixCandidate(candidate, baseName);
     // Skips the current entry when suffix is unavailable.
@@ -347,12 +277,6 @@ export async function disambiguateDuplicateIslandNamesForUser(userId, options = 
     order: [['id', 'ASC']],
     transaction
   });
-  // Transforms source values into the island id required while performing disambiguate duplicate island names for user.
-  const islandIds = activeIslands.map(island => Number(island.id));
-  // Derives the topics by island id through topic names by island id while performing disambiguate duplicate island names for user.
-  const topicsByIslandId = await topicNamesByIslandId(islandIds, transaction);
-  // Derives the topic counts through topic count by island id while performing disambiguate duplicate island names for user.
-  const topicCounts = await topicCountByIslandId(islandIds, transaction);
   // Derives the groups through group islands by normalized name while performing disambiguate duplicate island names for user.
   const groups = groupIslandsByNormalizedName(activeIslands);
   // Tracks distinct used names while performing disambiguate duplicate island names for user.
@@ -368,9 +292,9 @@ export async function disambiguateDuplicateIslandNamesForUser(userId, options = 
     if (islands.length <= 1) continue;
 
     // Derives the strongest through strongest island for duplicate name group while performing disambiguate duplicate island names for user.
-    const strongest = strongestIslandForDuplicateNameGroup(islands, topicCounts);
+    const strongest = strongestIslandForDuplicateNameGroup(islands);
     // Derives the ranked through sort while performing disambiguate duplicate island names for user.
-    const ranked = islands.slice().sort((a, b) => compareIslandStrength(a, b, topicCounts));
+    const ranked = islands.slice().sort((a, b) => compareIslandStrength(a, b));
     const baseName = strongest.label;
 
     // Processes each slice entry in turn.
@@ -395,7 +319,6 @@ export async function disambiguateDuplicateIslandNamesForUser(userId, options = 
       const nextName = buildDisambiguatedIslandName(
         baseName,
         island,
-        topicsByIslandId.get(Number(island.id)) || [],
         usedNames
       );
       usedNames.add(normalizeIslandName(nextName));

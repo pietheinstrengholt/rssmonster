@@ -25,25 +25,25 @@ text (`contentText`), and description fields have distinct purposes. Historical
 `contentStripped` data is not interchangeable with all of these representations.
 API JSON omits raw `contentOriginal`; use the returned normalized content fields.
 
-## Duplicates, events, topics, and interests
+## Duplicates, events, and interests
 
 | Concept | What it represents | Example |
 | --- | --- | --- |
 | Duplicate | Another record representing the same content, based on deterministic identity/content evidence | A syndicated copy |
 | [Event]({% link events.md %}) | Coverage of a particular occurrence | Several reports about one product announcement |
-| [Topic]({% link topics.md %}) | A broader semantic theme connecting events or behavior | Developments in battery technology |
+| | A broader semantic theme connecting events or behavior | Developments in battery technology |
 | [Interest Island]({% link interest-islands.md %}) | A recurring personal interest inferred from engagement | The user's sustained interest in electric transport |
 
 Articles about the same event can provide different reporting and remain distinct.
 Semantic similarity alone is not duplicate evidence. Likewise, an event and a
-broad topic are not interchangeable “clusters.” Event grouping can show a
+personal interest are not interchangeable “clusters.” Event grouping can show a
 representative article and continuing developments while keeping coverage
 available through story-source controls.
 
 Read-state behavior depends on the selected view and grouping. See
 [Marking Articles Read]({% link marking-articles-read.md %}) and
 [grouped-event reading]({% link events.md %}#marking-a-grouped-event-read); reading one
-article does not universally mark every related topic article read.
+article does not universally mark every related article read.
 
 ## Quality, originality, and trust
 
@@ -59,7 +59,7 @@ engagement, deterministic originality, and explicit negative feedback. Sparse
 evidence is pulled toward a neutral value of `0.75`.
 
 FeedTrust is user-specific source history. It is separate from crawl health and
-personal topic affinity. A reliable HTTP endpoint is not necessarily a valuable
+personal affinity. A reliable HTTP endpoint is not necessarily a valuable
 source, and a low personal interest match is not necessarily a low-quality article.
 
 ## Ranking and filtering

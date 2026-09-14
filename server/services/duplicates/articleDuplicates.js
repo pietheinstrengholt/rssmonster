@@ -129,7 +129,6 @@ export async function markArticleAsDuplicate(article, canonicalArticleOrId, opti
     duplicateOfArticleId: canonicalArticleId,
     status: DUPLICATE_ARTICLE_STATUS,
     eventId: null,
-    topicId: null,
     interestScore: 0
   };
 

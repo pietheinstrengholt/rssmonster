@@ -1,4 +1,3 @@
-import { Op } from 'sequelize';
 
 import db from '../../models/index.js';
 import { cosineSimilarity } from '../../services/vectors/index.js';
@@ -8,11 +7,9 @@ const {
   User,
   Article,
   Event,
-  Topic,
   Feed,
   Tag,
-  Island,
-  IslandTopic
+  Island
 } = db;
 
 const DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
@@ -51,53 +48,19 @@ function formatScore(value, digits) {
   return numeric.toFixed(digits);
 }
 
-// This function maps topic IDs to the strongest island that contains them.
+// Loads current Island vectors for the compact diagnostic overview.
 async function buildIslandLookups(userId) {
-  let islands = [];
-  let islandTopicRows = [];
-
   try {
-    islands = await Island.findAll({
-      where: { userId, archivedInd: false },
-      attributes: ['id', 'label', 'weight', 'islandVector'],
-      raw: true
-    });
-    islandTopicRows = islands.length
-      ? await IslandTopic.findAll({
-        where: {
-          islandId: { [Op.in]: islands.map(island => island.id) }
-        },
-        attributes: ['islandId', 'topicId'],
-        raw: true
-      })
-      : [];
-  } catch (err) {
-    if (!isMissingTableError(err)) throw err;
+    return { islands: await Island.findAll({ where: { userId, archivedInd: false },
+      attributes: ['id', 'label', 'weight', 'islandVector'], raw: true }) };
+  } catch (error) {
+    if (isMissingTableError(error)) return { islands: [] };
+    throw error;
   }
-
-  const islandById = new Map(islands.map(island => [String(island.id), island]));
-  const islandByTopicId = islandTopicRows.reduce((topicIslands, row) => {
-    const topicKey = String(row.topicId);
-    const island = islandById.get(String(row.islandId));
-    const currentIsland = topicIslands.get(topicKey);
-
-    if (!island) return topicIslands;
-
-    if (!currentIsland || Number(island.weight || 0) > Number(currentIsland.weight || 0)) {
-      topicIslands.set(topicKey, island);
-    }
-
-    return topicIslands;
-  }, new Map());
-
-  return { islands, islandByTopicId };
 }
 
-// This function resolves an island label from direct topic membership or vector fallback scoring.
-function resolveIslandName(article, islands, islandByTopicId) {
-  const directIsland = islandByTopicId.get(String(article.topicId));
-  if (directIsland?.label) return compactLabel(directIsland.label);
-
+// This function resolves an island label from direct vector affinity.
+function resolveIslandName(article, islands) {
   if (!Number(article.interestScore || 0) || !article.articleVector) return '-';
 
   let strongestIsland = null;
@@ -124,9 +87,9 @@ function resolveIslandName(article, islands, islandByTopicId) {
 export async function semanticArticleRankingRows(userId, options = {}) {
   const { newArticleIds = [], limit = null, includeIslands = true } = options;
   const newArticleIdSet = new Set(newArticleIds.map(Number));
-  const { islands, islandByTopicId } = includeIslands
+  const { islands } = includeIslands
     ? await buildIslandLookups(userId)
-    : { islands: [], islandByTopicId: new Map() };
+    : { islands: [] };
   let articles = [];
 
   try {
@@ -138,18 +101,6 @@ export async function semanticArticleRankingRows(userId, options = {}) {
           as: 'event',
           attributes: ['id', 'name', 'articleCount', 'sourceDiversityScore', 'sourceCount'],
           required: false,
-          include: [{
-            model: Topic,
-            as: 'primaryTopic',
-            attributes: ['id', 'name'],
-            required: false
-          }]
-        },
-        {
-          model: Topic,
-          as: 'topic',
-          attributes: ['id', 'name'],
-          required: false
         },
         {
           model: Feed,
@@ -174,11 +125,9 @@ export async function semanticArticleRankingRows(userId, options = {}) {
       article.Tags = article.get?.('tags') ?? article.tags ?? article.Tags ?? [];
 
       const event = article.get?.('event') ?? article.event ?? null;
-      const topic = article.get?.('topic') ?? article.topic ?? event?.primaryTopic ?? null;
       const eventName = compactLabel(event?.name);
-      const topicName = compactLabel(topic?.name);
-      const islandName = resolveIslandName(article, islands, islandByTopicId);
-      const hasSemanticLink = eventName !== '-' || topicName !== '-' || islandName !== '-';
+      const islandName = resolveIslandName(article, islands);
+      const hasSemanticLink = eventName !== '-' || islandName !== '-';
 
       if (!hasSemanticLink) return null;
 
@@ -189,7 +138,6 @@ export async function semanticArticleRankingRows(userId, options = {}) {
         ID: Number(article.id),
         New: newArticleIdSet.has(Number(article.id)) ? '*' : '',
         Event: eventName,
-        Topic: topicName,
         Island: islandName,
         Fresh: Number(breakdown.freshness || 0),
         Int: Number(article.interestScore || 0),
@@ -219,7 +167,6 @@ export async function printSemanticArticleRankingTable(userId, options = {}) {
     ['ID', 5],
     ['New', 4],
     ['Event', 20],
-    ['Topic', 20],
     ['Island', 20],
     ['Fresh', 6],
     ['Int.', 5],
@@ -236,7 +183,6 @@ export async function printSemanticArticleRankingTable(userId, options = {}) {
       formatCell(row.ID, 5),
       formatCell(row.New, 4),
       formatCell(row.Event, 20),
-      formatCell(row.Topic, 20),
       formatCell(row.Island, 20),
       formatCell(formatScore(row.Fresh, 3), 6),
       formatCell(formatScore(row.Int, 0), 5),

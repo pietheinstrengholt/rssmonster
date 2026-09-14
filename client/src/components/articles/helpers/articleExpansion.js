@@ -1,6 +1,5 @@
 import { fetchDuplicateArticles } from '../../../api/articles.js';
 import { fetchEventArticles } from '../../../api/events.js';
-import { fetchTopicArticles } from '../../../api/topics.js';
 import { notifyActionError } from '../../../services/actionNotifications.js';
 
 // Creates expansion state for event and duplicate article groups.
@@ -11,9 +10,9 @@ export function createArticleExpansionState() {
   };
 }
 
-// Groups event, topic, and duplicate expansion requests.
+// Groups event and duplicate expansion requests.
 export const articleExpansionMethods = {
-  // Expands or collapses related articles for the selected event or topic.
+  // Expands or collapses related articles for the selected event.
   viewEventArticles(eventId) {
     if (this.eventExpanded) {
       this.eventExpanded = false;
@@ -22,11 +21,7 @@ export const articleExpansionMethods = {
     }
 
     const grouping = this.selectionStore.currentSelection.grouping;
-    const fetchRelatedArticles = grouping === 'topic'
-      ? fetchTopicArticles
-      : fetchEventArticles;
-
-    fetchRelatedArticles(eventId, this.id)
+    fetchEventArticles(eventId, this.id)
     .then(response => {
       this.eventExpanded = true;
       this.$emit('event-articles-loaded', {

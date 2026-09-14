@@ -155,7 +155,7 @@ export function parseSmartFolderQuery(query, initialConfig = createEmptySmartFol
         else if (lower === 'developing:false') config.events.isNotDeveloping = true;
         else if (/^eventcount:/i.test(cleaned)) applyEventCountToken(config, cleaned);
         else if (/^sort:/i.test(cleaned)) applySortToken(config, cleaned);
-        else if (/^grouping:(none|event|topic)$/i.test(cleaned)) config.grouping = cleaned.split(':')[1].toLowerCase();
+        else if (/^grouping:(none|event)$/i.test(cleaned)) config.grouping = cleaned.split(':')[1].toLowerCase();
         else if (/^limit:/i.test(cleaned)) config.limitCount = Number(cleaned.split(':')[1]) || 50;
         else freeText.push(stripSmartFolderQuotes(cleaned));
     });

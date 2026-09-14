@@ -69,6 +69,22 @@ OpenAI URL. Startup validates configuration before loading any selected models;
 external endpoints are not probed. Leave assistant settings and legacy global
 credentials unset for local inference without chat.
 
+## Island display labels
+
+Island label requests contain up to 12 supporting article titles from the server's
+latest population audit. The prompt asks for their concrete shared subject, using
+the evidence language, rather than a description of the user or the system.
+Precise one-word subjects are allowed. Unsupported subjects return `null`.
+Known generic prompt echoes, including the former instruction text “durable user
+interest”, are rejected for both local and compatible generation providers. This
+is a narrow output guard, not a semantic guarantee for every generated label.
+
+Existing non-null `generatedLabel` values are skipped by the server's label jobs;
+deploying a prompt change does not rename those rows. Correcting existing labels
+requires a separately scoped reset and regeneration of the affected presentation
+metadata, including explicit requeue of any completed label jobs. Labels are
+presentation-only and do not change Island scoring or matching.
+
 ## Local models
 
 ```env
@@ -117,9 +133,9 @@ inference settles. Excess requests receive `503`, `Retry-After: 5`, and
 
 The Qwen provider uses `onnx-community/Qwen3-Embedding-0.6B-ONNX` through Transformers.js. It follows the model card's `feature-extraction` pipeline with last-token pooling and L2 normalization on CPU using `fp32`, returning the model's native 1024-dimensional vectors. Select it with `EMBEDDING_PROVIDER=local`. The provider initializes during service startup and reuses one pipeline instance for the lifetime of the Node process. Embedding requests are processed one at a time to avoid concurrent inference through the same model instance.
 
-Do not switch an RSSMonster database with existing semantic vectors between providers. The current schema does not attach embedding-space metadata to event, topic, or island aggregate vectors, and no vector migration is provided.
+Do not switch an RSSMonster database with existing semantic vectors between providers. The current schema does not attach embedding-space metadata to event or island aggregate vectors, and no vector migration is provided.
 
-RSSMonster article, event, topic, island, and taxonomy inputs are embedded as documents without a query instruction. This matches Qwen3's documented document behavior and keeps one consistent vector representation across the semantic pipeline.
+RSSMonster article, event, island, and taxonomy inputs are embedded as documents without a query instruction. This matches Qwen3's documented document behavior and keeps one consistent vector representation across the semantic pipeline.
 
 ## Model cache
 
@@ -181,9 +197,9 @@ By default the service listens at `http://127.0.0.1:3001`. Configure the listene
 - `POST /api/assistant/model` and `/api/assistant/model/stream` provide the model boundary used by the server-owned agent tools.
 - `POST /api/smart-folder-recommendations` generates personalized folder suggestions.
 - `POST /api/feed-rediscovery` suggests a replacement for a broken feed URL.
-- `POST /api/semantic-labels` generates event, topic, and interest-island labels from
+- `POST /api/semantic-labels` generates event and interest-island labels from
   bounded semantic context. Pass `context` plus one or more boolean selectors named
-  `event`, `topic`, and `island`; the response contains the requested labels.
+  `event` and `island`; the response contains the requested labels.
 
 ```bash
 curl -X POST http://127.0.0.1:3001/api/embeddings \
@@ -216,7 +232,7 @@ See the inference documentation for generation, HTTPS, and deployment examples.
 ## Server semantic decision boundary
 
 Inference produces embeddings, classification and optional labels. The server
-owns occurrence-based Event membership, durable-subject Topic relationships,
+owns occurrence-based Event membership,
 behavioral Island formation and confidence-aware interest scoring. These recent
 policies add no model calls, and generated labels are not independent identity or
 ranking evidence. See the [semantic architecture](../server/services/README.md)

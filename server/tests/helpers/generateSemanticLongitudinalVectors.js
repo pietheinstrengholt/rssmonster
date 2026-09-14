@@ -29,7 +29,16 @@ for (const name of ['semantic-regression-batch001', 'semantic-regression-batch00
     const contentSourceHash = hash((article.contentHtml || article.contentOriginal || article.content || article.title || '').trim());
     const input = semanticBatchEmbeddingText(article);
     const embeddingInputHash = hash(input);
-    if (byId.get(article.sourceId)?.embeddingInputHash === embeddingInputHash) continue;
+    const cached = byId.get(article.sourceId);
+    if (cached?.embeddingInputHash === embeddingInputHash) {
+      // Raw content can change without changing the normalized/truncated embedding input.
+      if (cached.contentSourceHash !== contentSourceHash) {
+        cached.contentSourceHash = contentSourceHash;
+        await writeFile(new URL(`../fixtures/${cacheName}.json`, import.meta.url), JSON.stringify(cache) + '\n');
+        console.log(`[LONGITUDINAL VECTORS] ${name}: refreshed content hash for ${article.sourceId}; reused embedding`);
+      }
+      continue;
+    }
     const articleVector = (await provider.embed([input]))[0];
     if (articleVector.length !== metadata.dimensions || !articleVector.every(Number.isFinite)) throw new Error(`Invalid vector: ${article.sourceId}`);
     const row = { contentSourceHash, fixtureSourceId: article.sourceId, embeddingInputHash,

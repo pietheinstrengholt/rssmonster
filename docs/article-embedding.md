@@ -38,7 +38,7 @@ Generate its embedding
 Semantic duplicate detection
         |
         v
-Events and Topics
+Events
         |
         v
 Interest Island scoring
@@ -52,7 +52,7 @@ treated as duplicates.
 Article summaries, inferred tags, and inferred scores are handled by the
 worker's optional `processing_jobs` loop after persistence. They do not delay
 embedding. The worker pauses new optional claims while the critical post-crawl
-pipeline is active, preserving the ordered embedding → Event → Topic → Island
+pipeline is active, preserving the ordered embedding → Event → Island
 scoring path.
 
 After a normal crawl, RSSMonster limits semantic processing to the users and
@@ -85,18 +85,6 @@ useful semantic signal.
 This vector is saved on the article as `articleVector`, together with the name
 of the embedding model that produced it. It is the vector reused by later
 semantic processing.
-
-### Topic representation
-
-When sufficient plain-text body content is available, RSSMonster also creates
-a longer, topic-oriented representation. It uses substantial body paragraphs,
-up to 2,200 characters, and requires at least 120 characters of usable text.
-Content that still appears to contain raw HTML is rejected.
-
-The topic vector is a processing input rather than a second stored article
-vector. It helps the semantic pipeline consider the article's broader subject
-when the vector is first generated. Durable Topics are subsequently built and
-maintained from Event vectors; see [Topics]({% link topics.md %}).
 
 ## Generation and Storage
 
@@ -147,8 +135,6 @@ The stored article vector contributes to several features:
 - **Events** combine semantic similarity with headline, entity, source, and
   time evidence to group reporting about the same occurrence. An Event vector
   is derived from the vectors of its member articles. See [Events]({% link events.md %}).
-- **Topics** connect recurring subjects across Events rather than treating
-  every article as an isolated item. See [Topics]({% link topics.md %}).
 - **Interest Islands** use semantic evidence alongside explicit user behavior
   to model durable personal interests. See [Interest Islands]({% link interest-islands.md %}).
 - **Related-article recommendations** compare a source article with recent
@@ -156,8 +142,7 @@ The stored article vector contributes to several features:
   Event are excluded from these recommendations.
 
 These comparisons use cosine similarity, but a vector is only one signal in
-the larger system. Event creation is conservative, Topics evolve gradually,
-and Interest Islands depend primarily on user behavior. It is valid for an
+the larger system. Event creation is conservative, and Interest Islands depend primarily on user behavior. It is valid for an
 article to have no vector, for a vectorized article to remain outside an Event,
 or for a similarity search to return no recommendations.
 
@@ -179,5 +164,5 @@ npm run semantic:all -- --userId=3
 
 The Event stage of this command processes articles that already have stored
 vectors; it does not backfill missing article embeddings. It then rebuilds
-Topics, Interest Islands, and interest scores from the available semantic
+Interest Islands, and interest scores from the available semantic
 data.

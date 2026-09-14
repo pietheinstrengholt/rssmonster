@@ -95,7 +95,7 @@ Navigation transitions update all related fields together so watchers never obse
 | Clear a Smart Folder through Smart Folder navigation | Returns to all categories and feeds with Unread and no saved query; restores ordinary sort, grouping, and developing-event preference |
 | Change explicit sort | Normalizes unsupported values to Newest and removes any embedded sort instruction from the query |
 | Change view mode | Changes presentation without changing article membership |
-| Change grouping | Restricts grouping to none, event, or topic; invalidates any older tag request and refreshes overview data |
+| Change grouping | Restricts grouping to none or event; invalidates any older tag request and refreshes overview data |
 
 Leaving a Smart Folder through status, category, feed, tag, filter reset, or manual search restores the ordinary presentation captured before entry. Switching between folders retains that original snapshot. Folder article requests disable settings persistence, and settings reloads preserve the active expression.
 
@@ -154,7 +154,7 @@ Initial and forced refreshes reset the unread-arrival delta to zero. Ordinary ba
 
 Smart Folder definitions and Smart Folder counts are separate resources. Definitions publish first with a safe count fallback, then counts refresh in the background. A count failure retains the loaded folders and their last known counts.
 
-Top Tags are fetched for the active Daily Briefing, Unread, Read, Favorites, Hot, or Clicked collection. Changing article status requests a new ranked snapshot whose counts represent matching articles, independent of event or topic grouping. Daily Briefing preference changes refresh its snapshot so its period and eligibility rules remain aligned with the article collection. If selection context changes again before an older response arrives, only the newest response may update the store.
+Top Tags are fetched for the active Daily Briefing, Unread, Read, Favorites, Hot, or Clicked collection. Changing article status requests a new ranked snapshot whose counts represent matching articles, independent of event grouping. Daily Briefing preference changes refresh its snapshot so its period and eligibility rules remain aligned with the article collection. If selection context changes again before an older response arrives, only the newest response may update the store.
 
 Smart Folder and Top Tag counts are snapshots. They do not reconcile on scrolling, article opening, or every read/favorite transition. Explicit refreshes and relevant management operations replace them.
 

@@ -166,7 +166,7 @@ describe('toolbar Daily Briefing status', () => {
     }
 
     wrapper.vm.sortClicked('quality');
-    wrapper.vm.setGrouping('topic');
+    wrapper.vm.setGrouping('event');
 
     expect(store.selectionStore.setSelectedSort).not.toHaveBeenCalled();
     expect(store.selectionStore.setGrouping).not.toHaveBeenCalled();
@@ -175,12 +175,12 @@ describe('toolbar Daily Briefing status', () => {
   it.each(['briefing', 'folder'])('locks mobile presentation for %s', async owner => {
     const store = createStore(true);
     if (owner === 'briefing') store.selectionStore.currentSelection.status = 'briefing';
-    else store.selectionStore.$patch({ currentSelection: { smartFolderId: 3, sort: 'quality', grouping: 'topic' } });
+    else store.selectionStore.$patch({ currentSelection: { smartFolderId: 3, sort: 'quality', grouping: 'event' } });
     const wrapper = mount(MobileToolbar);
     const sortOption = wrapper.findAll('#readModeDropdown-menu [role="menuitem"]')
       .find(option => option.text() === 'Quality');
     const groupingOption = wrapper.findAll('#readModeDropdown-menu [role="menuitem"]')
-      .find(option => option.text() === 'Cluster per topic');
+      .find(option => option.text() === 'Cluster per event');
 
     expect(sortOption).toBeDefined();
     expect(groupingOption).toBeDefined();
@@ -188,7 +188,7 @@ describe('toolbar Daily Briefing status', () => {
     expect(groupingOption.element.disabled).toBe(true);
 
     wrapper.vm.sortClicked('quality');
-    wrapper.vm.setGrouping('topic');
+    wrapper.vm.setGrouping('event');
 
     expect(store.selectionStore.setSelectedSort).not.toHaveBeenCalled();
     expect(store.selectionStore.setGrouping).not.toHaveBeenCalled();

@@ -27,7 +27,6 @@ const briefingResponse = {
     articleCount: 12,
     eventCount: 7,
     newEventCount: 4,
-    topicCount: 38,
     islandCount: 6,
     sourceCount: 15
   },
@@ -163,7 +162,7 @@ describe('DailyBriefingIntro', () => {
     expect(fetchDailyBriefing).toHaveBeenCalledWith({ period: '7d', status: 'all' });
     expect(wrapper.get('.briefing-context').text()).toContain('12 articles');
     expect(wrapper.get('.briefing-context').text()).toContain('15 sources');
-    expect(wrapper.get('.briefing-context').text()).toContain('across 4 events, and 38 topics.');
+    expect(wrapper.get('.briefing-context').text()).toContain('across 4 events, and 6 interest islands.');
     expect(wrapper.get('.briefing-context').text()).not.toContain('7 events');
     expect(wrapper.get('.briefing-context').text()).not.toContain('new events');
     expect(wrapper.get('.briefing-context').text()).not.toContain('interest areas');

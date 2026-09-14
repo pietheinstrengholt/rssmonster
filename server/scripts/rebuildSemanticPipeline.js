@@ -13,7 +13,6 @@ dotenv.config();
 
 import db from '../models/index.js';
 import {
-  rebuildAllTopicsForUser,
   backfillHistoricalEventsForUser
 } from '../services/reconcile/semanticPipelineScopes.js';
 import { runIslandCalibrationForUser } from '../services/islands/runIslandCalibration.js';
@@ -60,7 +59,6 @@ async function rebuildUser(userId, options = {}) {
   console.log(`[SEMANTIC] user=${userId} Stage 1 Historical Event Backfill`);
   const eventResult = await backfillHistoricalEventsForUser(userId, {
     batchSize: options.batchSize,
-    skipTopicAssignment: true
   });
 
   console.log(
@@ -72,36 +70,20 @@ async function rebuildUser(userId, options = {}) {
     `touchedEvents=${eventResult.touchedEventIds.length}`
   );
 
-  console.log(`[SEMANTIC] user=${userId} Stage 2 Topics`);
-  const topicResult = await rebuildAllTopicsForUser(userId, {
-    assignmentContext: 'full-rebuild'
-  });
-  console.log(
-    `[SEMANTIC] user=${userId} stage=topics ` +
-    `touchedTopics=${topicResult.touchedTopicIds.length} ` +
-    `createdTopics=${topicResult.stats.newTopicsCreated || 0} ` +
-    `matchedEvents=${topicResult.stats.eventsMatched || 0} ` +
-    `unmatchedEvents=${topicResult.stats.eventsUnmatched || 0}`
-  );
-
-  console.log(`[SEMANTIC] user=${userId} Stage 3 Interest Islands`);
+  console.log(`[SEMANTIC] user=${userId} Stage 2 Interest Islands`);
   const islandResult = await runIslandCalibrationForUser(userId, {
     incremental: false,
     touchedEventIds: eventResult.touchedEventIds,
-    touchedTopicIds: topicResult.touchedTopicIds
   });
   console.log(
     `[SEMANTIC] user=${userId} stage=islands ` +
-    `islands=${islandResult.islandCount || 0} ` +
-    `enriched=${islandResult.enrichedIslandCount || 0} ` +
-    `islandTopicLinks=${islandResult.islandTopicLinkCount || 0}`
+    `islands=${islandResult.islandCount || 0}`
   );
 
-  console.log(`[SEMANTIC] user=${userId} Stage 4 Interest Scores`);
+  console.log(`[SEMANTIC] user=${userId} Stage 3 Interest Scores`);
   console.log(
     `[SEMANTIC] user=${userId} stage=interest-scores ` +
     `updated=${islandResult.rescoredArticleCount || 0} ` +
-    `topicScored=${islandResult.topicScoredCount || 0} ` +
     `fallbackScored=${islandResult.fallbackScoredCount || 0}`
   );
 
@@ -110,7 +92,6 @@ async function rebuildUser(userId, options = {}) {
   return {
     userId,
     events: eventResult,
-    topics: topicResult,
     islands: islandResult
   };
 }
@@ -155,5 +136,3 @@ if (process.argv[1]?.includes('rebuildSemanticPipeline')) {
       process.exit(1);
     });
 }
-
-

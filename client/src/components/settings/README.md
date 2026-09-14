@@ -20,7 +20,7 @@ The header subtitle changes with the selected section. Selecting another navigat
 
 `SettingsPageIntro` owns the repeated informational section heading structure used by ordinary Settings overview pages. It accepts the icon, eyebrow, title, and heading identifier while the section supplies its own descriptive text. Its visual treatment remains in the Settings feature stylesheet so light and dark presentation stay consistent at the Settings surface boundary.
 
-`SettingsMetric` owns the compact label-and-value card used by Topics and Islands. Metric grids remain with their sections because responsive grid composition belongs to each page. Icon-led feed statistics, stacked instructional cards, and Smart Folder hero content remain separate because their structure and presentation are intentionally different.
+`SettingsMetric` owns the compact label-and-value card used by Events and Islands. Metric grids remain with their sections because responsive grid composition belongs to each page. Icon-led feed statistics, stacked instructional cards, and Smart Folder hero content remain separate because their structure and presentation are intentionally different.
 
 The feature stylesheet provides a small CSS-only vocabulary for ordinary section composition:
 
@@ -40,7 +40,7 @@ Settings radius values follow four semantic roles: `--radius-dialog` for the mod
 Navigation is tailored to the current installation and user:
 
 - Welcome, Smart Folders, Actions, Crawl Statistics, Observability, Feeds, and Official Sources are available to regular authenticated users.
-- Scores, Topics, Islands, and AI Processing are shown only when AI features are enabled.
+- Scores, Events, Islands, and AI Processing are shown only when AI features are enabled.
 - Manage Users is shown only to administrators. The section also protects its content if it is reached without administrator rights.
 
 Hidden navigation is an access and capability boundary, not merely a visual preference. New settings sections should follow the same role and feature-gating behavior.
@@ -110,21 +110,14 @@ article quality components retain the defaults documented in the
 [scoring guide](../../../../docs/scoring.md). Some existing UI help text still
 describes the older OpenAI-only setup; that copy is not the backend contract.
 
-### Topics
+### Events
 
-Topics is a read-only operational view of semantic event and topic processing. Events represent coverage of one occurrence; Topics connect durable subjects
-across separate Events using semantic and subject evidence. Generated labels
-explain the records, rather than proving identity.
+Events is a read-only operational view of occurrence processing. Generated labels
+explain records without establishing identity. It reports active Events, linked
+and unclustered articles, reuse and creation ratios, size/status distributions,
+and the largest current Events.
 
-The section reports:
-
-- Active events, topic totals, event-linked articles, and topic coverage
-- Unclustered and unassigned articles
-- Event reuse, creation, size, and status distributions
-- Topic linkage, coverage, and type distributions
-- The largest current events and recently active topics
-
-The data is a fetched snapshot. It changes only when the section is loaded or refreshed, not because the user scrolls or opens an item. Empty states explain that events and topics appear after semantic clustering has produced data. Failures are shown without replacing prior server state.
+The data is a fetched snapshot. It changes only when the section is loaded or refreshed, not because the user scrolls or opens an item. Empty states explain that events appear after semantic clustering has produced data. Failures are shown without replacing prior server state.
 
 ### Islands
 
@@ -133,11 +126,9 @@ favorite, and click behavior. The overview is read-only, with one explicit
 recalculation action that rebuilds the signed-in user's Islands and article
 interest scores from existing evidence.
 
-The overview shows how many islands exist, how many articles are inside and outside them, and the resulting library coverage. Each island can show its activity state, effective interest weight, behavioral evidence, connected topics, source articles, and topic-related articles. Linked articles open in a separate browser context.
+The overview shows the active Island count, each Island's activity state, effective interest weight, behavioral evidence, and source articles. Linked source articles open in a separate browser context.
 
-Library relationship coverage is distinct from Recommended coverage. Articles
-outside Islands may have neutral or explicit-fallback interest and still receive
-Recommended. Island weight is signed preference, not its full scoring authority;
+Island weight is signed preference, not its full scoring authority;
 derived support and relationship confidence attenuate it, including singletons.
 Recalibration replaces unchanged behavioral counters without inflating them. The
 [Island README](../../../../server/services/islands/README.md) documents derived
@@ -167,7 +158,7 @@ Clear records opens an explicit confirmation before permanently deleting the sig
 
 ### Observability
 
-Observability is a read-only failure inbox for crawl, article, embedding, event, topic, and island processing. It deliberately excludes successful processing statistics and groups abnormal outcomes by their stable failure fingerprint.
+Observability is a read-only failure inbox for crawl, article, embedding, event and island processing. It deliberately excludes successful processing statistics and groups abnormal outcomes by their stable failure fingerprint.
 
 The overview can be bounded by date range, processing stage, and failure type. Selecting a group opens its individual occurrences without replacing the Settings section. Selecting an occurrence then loads its captured message, identifiers, retry state, stack trace, and structured context. Group and occurrence lists are paginated so older or less common failures remain available without an unbounded request.
 

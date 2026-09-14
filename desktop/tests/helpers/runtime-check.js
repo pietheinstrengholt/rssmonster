@@ -123,7 +123,7 @@ try {
     assert.equal(article.title, 'Desktop persisted article');
     assert.equal(await db.ProcessingJob.count(), 0);
     assert.equal(await db.Event.count(), 0);
-    assert.equal(await db.Topic.count(), 0);
+    assert.equal(await db.Island.count(), 0);
     await api(`/articles/${article.id}`);
     await api('/articles/markasread', { articleIds: [article.id] });
     await article.reload();

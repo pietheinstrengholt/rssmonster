@@ -17,7 +17,6 @@ const BOOLEAN_FILTER_KEYS = [
   'clicked',
   'seen',
   'hot',
-  'island',
   'briefing',
   'developing'
 ];
@@ -388,7 +387,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc', strict = 
       continue;
     }
 
-    const groupingMatch = cleaned.match(/^grouping:(none|event|topic)$/i);
+    const groupingMatch = cleaned.match(/^grouping:(none|event)$/i);
     if (groupingMatch) {
       filters.grouping = groupingMatch[1].toLowerCase();
       continue;

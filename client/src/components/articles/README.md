@@ -83,7 +83,7 @@ Compact icons before the title explain the article type or why it may deserve at
 - Previous clicks.
 - Favorite or hot status.
 - Recommendation relevance.
-- Membership in a larger event or topic.
+- Membership in a larger event.
 
 Source-specific and media-specific icons take precedence where they explain the format more clearly than a generic relevance icon. The intent is to provide fast recognition without turning the header into a crowded badge row.
 
@@ -131,9 +131,9 @@ An article can include a secondary signal bar for stronger relevance evidence. C
 
 Where useful, official and trusted-source labels identify the organization or feed. A major-event signal takes precedence over the weaker trending signal. These signals explain why an article may matter; they should never compete visually with the title or body.
 
-## Similar, event, topic, and duplicate articles
+## Similar, event and duplicate articles
 
-Similar-article labels are interactive when grouping is active. Selecting one reveals the other articles from the same event or topic immediately below the parent article. Selecting it again collapses that group.
+Similar-article labels are interactive when grouping is active. Selecting one reveals the other articles from the same event immediately below the parent article. Selecting it again collapses that group.
 
 If a related article already exists elsewhere in the loaded collection, it is moved into the expanded group instead of being displayed twice. Server ordering is retained, and the parent article itself is not repeated among its children.
 

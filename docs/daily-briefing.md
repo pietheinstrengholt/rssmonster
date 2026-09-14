@@ -21,8 +21,8 @@ are enabled. The briefing uses your saved preferences each time you open it.
 ![Daily Briefing overview with story highlights and the article collection below]({{ '/assets/daily-briefing01.png' | relative_url }})
 
 The overview starts with a context strip showing the eligible article and
-source totals, newly created [Events]({% link events.md %}), and connected
-[Topics]({% link topics.md %}). **The stories shaping your morning** highlights up
+source totals, newly created [Events]({% link events.md %}), and matched
+[Interest Islands]({% link interest-islands.md %}). **The stories shaping your morning** highlights up
 to four event stories, followed by the full collection of matching articles.
 
 Read, bookmark, and navigate these articles with the same controls as other

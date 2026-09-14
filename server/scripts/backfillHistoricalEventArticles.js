@@ -22,7 +22,6 @@ function parseArgs(argv) {
   const args = argv.slice(2);
   let userId = null;
   let batchSize = 250;
-  let skipTopicAssignment = false;
 
   for (const arg of args) {
     if (arg.startsWith('--userId=')) {
@@ -33,15 +32,11 @@ function parseArgs(argv) {
       batchSize = Number(arg.split('=')[1]);
     }
 
-    if (arg === '--skipTopicAssignment') {
-      skipTopicAssignment = true;
-    }
   }
 
   return {
     userId: Number.isFinite(userId) && userId > 0 ? userId : null,
     batchSize: Number.isFinite(batchSize) && batchSize > 0 ? batchSize : 250,
-    skipTopicAssignment
   };
 }
 
@@ -49,10 +44,9 @@ function parseArgs(argv) {
 export async function backfillHistoricalEventArticles({
   userId = null,
   batchSize = 250,
-  skipTopicAssignment = false
 } = {}) {
   if (userId) {
-    await backfillHistoricalEventsForUser(userId, { batchSize, skipTopicAssignment });
+    await backfillHistoricalEventsForUser(userId, { batchSize });
     return;
   }
 
@@ -65,7 +59,7 @@ export async function backfillHistoricalEventArticles({
 
   for (const user of users) {
     try {
-      await backfillHistoricalEventsForUser(user.id, { batchSize, skipTopicAssignment });
+      await backfillHistoricalEventsForUser(user.id, { batchSize });
     } catch (err) {
       console.error(`[EVENT BACKFILL] Failed for user ${user.id}:`, err);
     }
@@ -77,9 +71,9 @@ export async function backfillHistoricalEventArticles({
 export default backfillHistoricalEventArticles;
 
 if (process.argv[1]?.includes('backfillHistoricalEventArticles')) {
-  const { userId, batchSize, skipTopicAssignment } = parseArgs(process.argv);
+  const { userId, batchSize } = parseArgs(process.argv);
 
-  backfillHistoricalEventArticles({ userId, batchSize, skipTopicAssignment })
+  backfillHistoricalEventArticles({ userId, batchSize })
     .then(() => {
       console.log('[SEMANTIC] Historical event backfill done');
       process.exit(0);

@@ -6,7 +6,7 @@ import errorController from '../../controllers/error.js';
 import feedController from '../../controllers/feed.js';
 import greaderController from '../../controllers/greader.js';
 import managerController from '../../controllers/manager.js';
-import settingController, { getTopicsOverview } from '../../controllers/setting.js';
+import settingController, { getEventsOverview } from '../../controllers/setting.js';
 
 // Builds the chainable response surface shared by controller failure paths.
 const createResponse = () => {
@@ -414,7 +414,7 @@ describe('settings controller failure paths', () => {
     ['setStartupViewMode', settingController.setStartupViewMode, 500],
     ['setMarkAsReadOnScroll', settingController.setMarkAsReadOnScroll, 500],
     ['getIslandsOverview', settingController.getIslandsOverview, 500],
-    ['getTopicsOverview', getTopicsOverview, 500]
+    ['getEventsOverview', getEventsOverview, 500]
   ])('%s handles unavailable authentication state', async (_name, handler, status) => {
     const res = createResponse();
 

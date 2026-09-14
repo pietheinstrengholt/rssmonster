@@ -12,12 +12,8 @@ const {
   Action,
   SmartFolder,
   GeneratedFeed,
-  Topic,
   Event,
-  ArticleTopic,
-  EventTopic,
   Island,
-  IslandTopic,
   EmailVerificationToken,
   PasswordResetToken,
   EmailDelivery,
@@ -34,8 +30,6 @@ import {
   EmailVerificationError
 } from '../services/email/emailVerification.js';
 import { EmailConfigurationError } from '../config/email.js';
-
-const { Op } = Sequelize;
 
 const isMissingTableError = (error) => (
   error?.name === 'SequelizeDatabaseError' &&
@@ -64,30 +58,6 @@ const destroySafe = async ({ model, where, transaction, label }) => {
 
 const destroyByUserIdSafe = async ({ model, userId, transaction, label }) => {
   await destroySafe({ model, where: { userId }, transaction, label });
-};
-
-const findIdsByUserIdSafe = async ({ model, userId, transaction, label }) => {
-  if (!model) {
-    console.warn(`[deleteUser] Skipping ${label}: model is not registered`);
-    return [];
-  }
-
-  try {
-    const rows = await model.findAll({
-      where: { userId },
-      attributes: ['id'],
-      raw: true,
-      transaction
-    });
-
-    return rows.map(row => row.id);
-  } catch (error) {
-    if (isMissingTableError(error)) {
-      console.warn(`[deleteUser] Skipping ${label}: backing table does not exist`);
-      return [];
-    }
-    throw error;
-  }
 };
 
 const getUsers = async (req, res, _next) => {
@@ -151,13 +121,13 @@ const getUser = async (req, res, _next) => {
         exclude: ['password', 'feverCredentialHash']
       }
     });
-    
+
     if (!user) {
       return res.status(404).json({
         message: "User not found."
       });
     }
-    
+
     return res.status(200).json({ user });
   } catch (err) {
     console.error('Error in getUser:', err);
@@ -216,7 +186,7 @@ const postUsers = async (req, res, _next) => {
       }
       await user.update(updateValues, { transaction });
     });
-    
+
     return res.status(200).json({ user });
   } catch (err) {
     if (err instanceof EmailConfigurationError) {
@@ -242,7 +212,7 @@ const deleteUser = async (req, res, _next) => {
         message: "Access denied. Only admins can delete users."
       });
     }
-    
+
     if (parseInt(loggedInUser.id) === parseInt(req.params.userId)) {
       return res.status(403).json({
         message: "You cannot delete your own account."
@@ -257,59 +227,6 @@ const deleteUser = async (req, res, _next) => {
     }
 
     await sequelize.transaction(async (transaction) => {
-      const articleIds = await findIdsByUserIdSafe({ model: Article, userId: user.id, transaction, label: 'articles' });
-      const eventIds = await findIdsByUserIdSafe({ model: Event, userId: user.id, transaction, label: 'events' });
-      const topicIds = await findIdsByUserIdSafe({ model: Topic, userId: user.id, transaction, label: 'topics' });
-      const islandIds = await findIdsByUserIdSafe({ model: Island, userId: user.id, transaction, label: 'islands' });
-
-      if (articleIds.length > 0) {
-        await destroySafe({
-          model: ArticleTopic,
-          where: { articleId: { [Op.in]: articleIds } },
-          transaction,
-          label: 'article_topics'
-        });
-      }
-
-      if (eventIds.length > 0) {
-        await destroySafe({
-          model: EventTopic,
-          where: { eventId: { [Op.in]: eventIds } },
-          transaction,
-          label: 'event_topics'
-        });
-      }
-
-      if (topicIds.length > 0) {
-        await destroySafe({
-          model: ArticleTopic,
-          where: { topicId: { [Op.in]: topicIds } },
-          transaction,
-          label: 'article_topics'
-        });
-        await destroySafe({
-          model: EventTopic,
-          where: { topicId: { [Op.in]: topicIds } },
-          transaction,
-          label: 'event_topics'
-        });
-        await destroySafe({
-          model: IslandTopic,
-          where: { topicId: { [Op.in]: topicIds } },
-          transaction,
-          label: 'island_topics'
-        });
-      }
-
-      if (islandIds.length > 0) {
-        await destroySafe({
-          model: IslandTopic,
-          where: { islandId: { [Op.in]: islandIds } },
-          transaction,
-          label: 'island_topics'
-        });
-      }
-
       // Delete direct user-linked rows before deleting the user.
       await destroyByUserIdSafe({ model: OidcIdentity, userId: user.id, transaction, label: 'oidc_identities' });
       await destroyByUserIdSafe({ model: OidcTransaction, userId: user.id, transaction, label: 'oidc_transactions' });
@@ -323,7 +240,6 @@ const deleteUser = async (req, res, _next) => {
       await destroyByUserIdSafe({ model: PasswordResetToken, userId: user.id, transaction, label: 'password_reset_tokens' });
       await destroyByUserIdSafe({ model: Article, userId: user.id, transaction, label: 'articles' });
       await destroyByUserIdSafe({ model: Event, userId: user.id, transaction, label: 'events' });
-      await destroyByUserIdSafe({ model: Topic, userId: user.id, transaction, label: 'topics' });
       await destroyByUserIdSafe({ model: Island, userId: user.id, transaction, label: 'islands' });
       await destroyByUserIdSafe({ model: Feed, userId: user.id, transaction, label: 'feeds' });
       await destroyByUserIdSafe({ model: Category, userId: user.id, transaction, label: 'categories' });
@@ -331,7 +247,7 @@ const deleteUser = async (req, res, _next) => {
       // Finally, delete the user.
       await user.destroy({ transaction });
     });
-    
+
     return res.status(204).send();
   } catch (err) {
     console.error('Error in deleteUser:', err);

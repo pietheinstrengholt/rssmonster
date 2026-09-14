@@ -44,7 +44,6 @@ unless a filter's detailed description below states otherwise.
 | Interaction state | `clicked:true`, `clicked:false`, `seen:true`, `seen:false` |
 | Hot state | `hot:true`, `hot:false` |
 | Event membership | `event:true`, `event:false` |
-| Interest-island membership | `island:true`, `island:false` |
 | Briefing eligibility | `briefing:true`, `briefing:false` |
 | Developing-story eligibility | `developing:true`, `developing:false` |
 | First-seen age | `firstSeen:12h`, `firstSeen:7d` |
@@ -53,7 +52,7 @@ unless a filter's detailed description below states otherwise.
 | Freshness score | `freshness:0.5`, `freshness:=0.5`, `freshness:>0.5`, `freshness:>=0.5`, `freshness:<0.5`, `freshness:<=0.5` |
 | Publication date | `@today`, `@yesterday`, `@lastweek`, `@YYYY-MM-DD`, `@"N days ago"`, `@N days ago`, `@"last Monday"`, `@last Monday` |
 | Sorting | `sort:desc`, `sort:asc`, `sort:topStories`, `sort:recommended`, `sort:quality` |
-| Grouping | `grouping:none`, `grouping:event`, `grouping:topic` |
+| Grouping | `grouping:none`, `grouping:event` |
 | Result limit | `limit:50` |
 
 Use the lowercase expression spellings shown above. Boolean values are
@@ -103,7 +102,6 @@ Both score filters accept `>`, `<`, `>=`, `<=`, or `=`. Omitting the operator us
 
 - `event:true` includes articles assigned to an event; `event:false` includes articles without an event.
 - `eventCount:>=3` includes articles whose event has at least three articles. `eventCount:3` is the equivalent shorthand; other comparison operators are not supported.
-- `island:true` includes articles whose event has a primary or secondary topic linked to one of the user's active interest islands. `island:false` includes articles without such a link, including articles without an event. Archived islands do not qualify.
 - `developing:true` includes only unread articles selected as the developing, non-representative article for an event and forces event grouping with developing-event selection. `developing:false` excludes articles meeting that exact condition.
 - `briefing:true` includes articles with a nonzero interest score or membership in an event containing more than one article. `briefing:false` includes articles with neither signal. Briefing preferences can further narrow results when the Briefing view invokes this filter.
 
@@ -145,7 +143,7 @@ Date filters replace the normal published-date window; they are inclusive of the
 
 ## Combining Tokens
 
-- Mix tokens freely: `title:ai tag:ml island:true @yesterday sort:recommended limit:100`
+- Mix tokens freely: `title:ai tag:ml @yesterday sort:recommended limit:100`
 - Title + content: `title:typescript decorators` -> title matches "typescript", content matches any of `decorators`.
 - Status + date: `unread:true @today` keeps only unread items from the last 24 hours.
 

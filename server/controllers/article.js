@@ -1,6 +1,7 @@
+import { updateArticleBehavior } from '../services/articles/updateArticleBehavior.js';
 import db from '../models/index.js';
 const { Article, BriefingPreference, Feed, Tag, Event } = db;
-import { Op, fn, col } from 'sequelize';
+import { Op } from 'sequelize';
 import { searchArticles } from "../services/articleSearch/articleSearch.service.js";
 import { MAX_ARTICLE_SEARCH_LENGTH } from '../services/articleSearch/articleQueryParser.service.js';
 import { ArticleSearchCursorError } from '../services/articleSearch/articleSearchCursor.service.js';
@@ -38,7 +39,7 @@ const serializeRelatedStoryArticle = articleRow => {
 };
 
 // This function normalizes article grouping values used by API consumers.
-const normalizeGrouping = value => (value === 'event' || value === 'topic' ? value : 'none');
+const normalizeGrouping = value => (value === 'event' ? value : 'none');
 
 const cursorCompatibleScope = ({ sort, search }) => (
   ['asc', 'desc'].includes(String(sort || 'desc').toLowerCase())
@@ -50,32 +51,13 @@ const markScopedArticlePageAsRead = async ({ userId, itemIds, grouping, readAt }
   if (!itemIds.length) return { updatedCount: 0, expandedEventCount: 0 };
 
   let eventIds = [];
-  if (grouping === 'event' || grouping === 'topic') {
+  if (grouping === 'event') {
     const selectedArticles = await Article.findAll({
       where: { id: { [Op.in]: itemIds }, userId, ...canonicalArticleWhere() },
-      attributes: ['id', 'eventId'],
-      include: [{
-        model: Event,
-        as: 'event',
-        required: false,
-        attributes: ['topicId']
-      }]
+      attributes: ['id', 'eventId']
     });
 
-    if (grouping === 'topic') {
-      const topicIds = [...new Set(selectedArticles
-        .map(article => article.event?.topicId)
-        .filter(topicId => topicId !== null && topicId !== undefined))];
-      if (topicIds.length) {
-        const events = await Event.findAll({
-          where: { userId, topicId: { [Op.in]: topicIds } },
-          attributes: ['id']
-        });
-        eventIds = events.map(event => event.id);
-      }
-    } else {
-      eventIds = [...new Set(selectedArticles.map(article => article.eventId).filter(Boolean))];
-    }
+    eventIds = [...new Set(selectedArticles.map(article => article.eventId).filter(Boolean))];
   }
 
   const [updatedCount] = await retryDatabaseWrite(() => Article.update(
@@ -193,7 +175,6 @@ const loadArticleDetails = async (userId, articlesArray) => {
           'articleCount',
           'sourceCount',
           'sourceDiversityScore',
-          'topicId',
           'representativeArticleId',
           'developingArticleId'
         ]
@@ -201,27 +182,6 @@ const loadArticleDetails = async (userId, articlesArray) => {
     ],
     where: { userId, id: articlesArray, ...canonicalArticleWhere() }
   });
-
-  // Compute topic-level article counts in one grouped query for topic grouping badges.
-  const topicIds = [...new Set(articles.map(article => article.event?.topicId).filter(Boolean))];
-  if (topicIds.length > 0) {
-    const topicRows = await Event.findAll({
-      where: { userId, topicId: { [Op.in]: topicIds } },
-      attributes: ['topicId', [fn('SUM', col('articleCount')), 'topicArticleCount']],
-      group: ['topicId'],
-      raw: true
-    });
-    const topicCountMap = new Map(topicRows.map(row => [row.topicId, Number(row.topicArticleCount) || 0]));
-
-    for (const article of articles) {
-      if (article.event?.topicId) {
-        article.event.setDataValue(
-          'topicArticleCount',
-          topicCountMap.get(article.event.topicId) ?? article.event.articleCount ?? 0
-        );
-      }
-    }
-  }
 
   // Preserve incoming ID order
   const idIndexMap = new Map(articlesArray.map((id, i) => [String(id), i]));
@@ -455,9 +415,9 @@ const getArticle = async (req, res, _next) => {
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
-    
+
     const articleId = req.params.articleId;
-    
+
     const article = await Article.findOne({
       where: {
         id: articleId,
@@ -872,51 +832,23 @@ const markAsRead = async (req, res, _next) => {
 
     let eventIds = [];
 
-    if (normalizedGrouping === 'event' || normalizedGrouping === 'topic') {
+    if (normalizedGrouping === 'event') {
       const selectedArticles = await Article.findAll({
         where: {
           id: { [Op.in]: itemIds },
           userId,
           ...canonicalArticleWhere()
         },
-        attributes: ['id', 'eventId'],
-        include: [{
-          model: Event,
-          as: 'event',
-          required: false,
-          attributes: ['topicId']
-        }]
+        attributes: ['id', 'eventId']
       });
 
-      if (normalizedGrouping === 'topic') {
-        const topicIds = [
-          ...new Set(
-            selectedArticles
-              .map(article => article.event?.topicId)
-              .filter(topicId => topicId !== null && topicId !== undefined)
-          )
-        ];
-
-        if (topicIds.length > 0) {
-          const topicEvents = await Event.findAll({
-            where: {
-              userId,
-              topicId: { [Op.in]: topicIds }
-            },
-            attributes: ['id']
-          });
-
-          eventIds = topicEvents.map(event => event.id);
-        }
-      } else {
-        eventIds = [
-          ...new Set(
-            selectedArticles
-              .map(article => article.eventId)
-              .filter(eventId => eventId !== null && eventId !== undefined)
-          )
-        ];
-      }
+      eventIds = [
+        ...new Set(
+          selectedArticles
+            .map(article => article.eventId)
+            .filter(eventId => eventId !== null && eventId !== undefined)
+        )
+      ];
     }
 
     const updateWhere = {
@@ -954,7 +886,9 @@ const markAsRead = async (req, res, _next) => {
 
 // Mark article as clicked
 const incrementArticleClickCount = async article => {
-  await article.increment('clickedAmount', { by: 1 });
+  await updateArticleBehavior(Article, { clickedAmount: db.sequelize.literal('clickedAmount + 1'), lastClickedAt: new Date() }, {
+    where: { id: article.id, userId: article.userId, ...canonicalArticleWhere() }
+  });
   return article.reload();
 };
 
@@ -1022,7 +956,7 @@ const markClicked = async (req, res, _next) => {
       const clickedAmount = update === 'mark'
         ? Math.max(Number(article.clickedAmount) || 0, 1)
         : 0;
-      await article.update({ clickedAmount });
+      await updateArticleBehavior(article, { clickedAmount, lastClickedAt: update === 'mark' ? new Date() : null });
     } else {
       await incrementArticleClickCount(article);
     }
@@ -1065,7 +999,7 @@ const markNotInterested = async (req, res, _next) => {
     }
 
     // Write both flags atomically, including unchanged values, so concurrent feedback cannot conflict.
-    await Article.update({ negativeInd: 1, positiveInd: 0 }, {
+    await updateArticleBehavior(Article, { negativeInd: 1, positiveInd: 0, negativeFeedbackAt: new Date(), positiveFeedbackAt: null }, {
       where: { id: article.id, userId, ...canonicalArticleWhere() }
     });
 
@@ -1106,9 +1040,11 @@ const markMoreLikeThis = async (req, res, _next) => {
     }
 
     // Write both flags atomically, including unchanged values, so concurrent feedback cannot conflict.
-    await Article.update({
+    await updateArticleBehavior(Article, {
       positiveInd: 1,
-      negativeInd: 0
+      negativeInd: 0,
+      positiveFeedbackAt: new Date(),
+      negativeFeedbackAt: null
     }, {
       where: { id: article.id, userId, ...canonicalArticleWhere() }
     });
@@ -1276,11 +1212,19 @@ const articleMarkAsSeen = async (req, res, _next) => {
     // Start with empty payload
     const payload = {};
 
-    // Only set firstSeen and attentionBucket if the article does not have firstSeen yet
+    // Preserve the first observation while allowing later, stronger attention evidence.
     if (!article.firstSeen) {
       payload.firstSeen = new Date();
-      payload.attentionBucket = attentionBucket;
     }
+    if (attentionBucket > article.attentionBucket) {
+      // Compare in SQL too so an overlapping weaker observation cannot undo an upgrade.
+      payload.attentionBucket = db.sequelize.literal(
+        `CASE WHEN attentionBucket < ${attentionBucket} THEN ${attentionBucket} ELSE attentionBucket END`
+      );
+    }
+
+    // Only an observed deep read refreshes behavioral time; a read-state toggle does not.
+    if (attentionBucket >= 3) payload.lastMeaningfulReadAt = new Date();
 
     // Mark article as read only when it was unread before.
     let shouldMarkRead = false;
@@ -1301,7 +1245,8 @@ const articleMarkAsSeen = async (req, res, _next) => {
     // Only update if payload has any changes; return updated instance
     let updatedArticle = article;
     if (Object.keys(payload).length > 0) {
-      updatedArticle = await retryDatabaseWrite(() => article.update(payload));
+      updatedArticle = await retryDatabaseWrite(() => updateArticleBehavior(article, payload));
+      if (payload.attentionBucket) await updatedArticle.reload();
     }
 
     // Prepare response object
@@ -1319,43 +1264,14 @@ const articleMarkAsSeen = async (req, res, _next) => {
       response.eventArticleCount = response.event.articleCount;
     }
 
-    // If event grouping is enabled and article has an eventId, update all articles in the same event using the same payload.
+    // Group navigation may mark siblings read, but attention belongs only to the viewed article.
     const grouping = normalizeGrouping(req.body?.grouping);
 
-    if ((grouping === 'event' || grouping === 'topic') && article.eventId) {
+    if (grouping === 'event' && article.eventId && shouldMarkRead) {
       console.log(`${grouping} grouping enabled: marking related articles for event ${article.eventId} as seen`);
 
-      // Exclude firstSeen and overwrite it for the whole event. The representative article is leading.
-      // If status should be marked as read, ensure it is set for the event update as well.
-      const eventPayload = { ...payload };
-      if (shouldMarkRead) {
-        eventPayload.status = 'read';
-      } else {
-        // Remove status if not updating
-        delete eventPayload.status;
-      }
-      let relatedEventIds = [article.eventId];
-
-      if (grouping === 'topic') {
-        const event = await Event.findOne({
-          where: {
-            id: article.eventId,
-            userId
-          },
-          attributes: ['topicId']
-        });
-
-        if (event?.topicId) {
-          const topicEvents = await Event.findAll({
-            where: {
-              userId,
-              topicId: event.topicId
-            },
-            attributes: ['id']
-          });
-          relatedEventIds = topicEvents.map(event => event.id);
-        }
-      }
+      const eventPayload = { status: 'read', readAt: payload.readAt };
+      const relatedEventIds = [article.eventId];
 
       const eventWhere = {
         id: { [Op.ne]: articleId },
@@ -1418,15 +1334,15 @@ const articleMarkToUnread = async (req, res, _next) => {
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
-   
+
     const result = await updateArticleStatus(userId, articleId, "unread");
-    
+
     if (!result.success) {
       return res.status(result.statusCode).json({
         message: result.message || "Error updating article"
       });
     }
-    
+
     return res.status(result.statusCode).json(result.article);
   } catch (err) {
     console.error('Error in articleMarkToUnread:', err);
@@ -1475,7 +1391,7 @@ const articleMarkAsFavorite = async (req, res, _next) => {
         });
       }
 
-      await Promise.all(articles.map(article => article.update({ favoriteInd })));
+      await Promise.all(articles.map(article => updateArticleBehavior(article, { favoriteInd, favoritedAt: favoriteInd ? new Date() : null })));
       return res.status(200).json({ articles });
     }
 
@@ -1502,7 +1418,7 @@ const articleMarkAsFavorite = async (req, res, _next) => {
         message: "Article not found"
       });
     }
-    await article.update({ favoriteInd });
+    await updateArticleBehavior(article, { favoriteInd, favoritedAt: favoriteInd ? new Date() : null });
     return res.status(200).json(article);
   } catch (err) {
     console.error('Error in articleMarkAsFavorite:', err);

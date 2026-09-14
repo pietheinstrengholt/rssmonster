@@ -5,30 +5,36 @@ import {
   weightedAverageVector as sharedWeightedAverageVector
 } from '../vectors/index.js';
 
-// Defines the default max islands per user enforced by this service.
-export const DEFAULT_MAX_ISLANDS_PER_USER = Number.parseInt(process.env.MAX_INTEREST_ISLANDS, 10) || 10;
-// Defines the default topic affinity threshold enforced by this service.
-export const DEFAULT_TOPIC_AFFINITY_THRESHOLD = Number.parseFloat(process.env.ISLAND_TOPIC_AFFINITY_THRESHOLD || '0.12');
+// Reject partial numbers and bound accidental configurations; invalid values use the product default.
+const parseIslandCapacity = (value, fallback) => {
+  const text = String(value ?? '').trim();
+  const capacity = /^\d+$/.test(text) ? Number.parseInt(text, 10) : NaN;
+  return Number.isSafeInteger(capacity) && capacity > 0 && capacity <= 1000 ? capacity : fallback;
+};
+// Maximum simultaneously active persisted Islands, excluding archived history.
+export const DEFAULT_MAX_ISLANDS_PER_USER = parseIslandCapacity(process.env.MAX_INTEREST_ISLANDS, 20);
+// Internal callers may request a smaller working set, never bypass the configured active cap.
+export const resolveIslandCapacity = value => Math.min(DEFAULT_MAX_ISLANDS_PER_USER, parseIslandCapacity(value, DEFAULT_MAX_ISLANDS_PER_USER));
 // Defines the default article affinity threshold enforced by this service.
 export const DEFAULT_ARTICLE_AFFINITY_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARTICLE_AFFINITY_THRESHOLD || '0.64');
-// Defines the default max communities per topic enforced by this service.
-export const DEFAULT_MAX_COMMUNITIES_PER_TOPIC = Number.parseInt(process.env.ISLAND_MAX_COMMUNITIES_PER_TOPIC, 10) || 2;
-// Defines the default topic confidence threshold enforced by this service.
-export const DEFAULT_TOPIC_CONFIDENCE_THRESHOLD = Number.parseFloat(process.env.ISLAND_TOPIC_CONFIDENCE_THRESHOLD || '0.10');
 // Defines the default article signal threshold enforced by this service.
 export const DEFAULT_ARTICLE_SIGNAL_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARTICLE_SIGNAL_THRESHOLD || '0.05');
-// Defines the default topic enrichment similarity threshold enforced by this service.
-export const DEFAULT_TOPIC_ENRICHMENT_SIMILARITY_THRESHOLD = Number.parseFloat(
-  process.env.ISLAND_TOPIC_ENRICHMENT_SIMILARITY_THRESHOLD || '0.62'
-);
 // Defines the default island match threshold enforced by this service.
 export const DEFAULT_ISLAND_MATCH_THRESHOLD = Number.parseFloat(process.env.ISLAND_PROFILE_MATCH_THRESHOLD || '0.78');
 // Defines the default island vector alpha enforced by this service.
 export const DEFAULT_ISLAND_VECTOR_ALPHA = Number.parseFloat(process.env.ISLAND_VECTOR_ALPHA || '0.35');
-// Defines the default recency half life days enforced by this service.
-export const DEFAULT_RECENCY_HALF_LIFE_DAYS = Number.parseFloat(process.env.ISLAND_RECENCY_HALF_LIFE_DAYS || '1460');
-// Defines the default recency min weight enforced by this service.
-export const DEFAULT_RECENCY_MIN_WEIGHT = Number.parseFloat(process.env.ISLAND_RECENCY_MIN_WEIGHT || '0.2');
+const configuredHalfLife = (name, fallback) => {
+  const days = Number(process.env[name]);
+  return Number.isFinite(days) && days > 0 ? days : fallback;
+};
+// True half-lives for durable Article evidence, keyed by the signal's interaction clock.
+export const SIGNAL_HALF_LIFE_DAYS = Object.freeze({
+  lastClickedAt: configuredHalfLife('ISLAND_CLICK_HALF_LIFE_DAYS', 30),
+  lastMeaningfulReadAt: configuredHalfLife('ISLAND_DEEP_READ_HALF_LIFE_DAYS', 90),
+  favoritedAt: configuredHalfLife('ISLAND_FAVORITE_HALF_LIFE_DAYS', 365),
+  positiveFeedbackAt: configuredHalfLife('ISLAND_POSITIVE_FEEDBACK_HALF_LIFE_DAYS', 730),
+  negativeFeedbackAt: configuredHalfLife('ISLAND_NEGATIVE_FEEDBACK_HALF_LIFE_DAYS', 365)
+});
 // Defines the default archive confidence threshold enforced by this service.
 export const DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD || '0.12');
 // Defines the default archive stale days enforced by this service.
@@ -37,16 +43,6 @@ export const DEFAULT_ARCHIVE_STALE_DAYS = Number.parseInt(process.env.ISLAND_ARC
 export const DEFAULT_AUDIT_MAX_RUNS = Number.parseInt(process.env.ISLAND_AUDIT_MAX_RUNS, 10) || 30;
 // Defines the default audit max article ids enforced by this service.
 export const DEFAULT_AUDIT_MAX_ARTICLE_IDS = Number.parseInt(process.env.ISLAND_AUDIT_MAX_ARTICLE_IDS, 10) || 300;
-// Defines the default island membership decay enforced by this service.
-export const DEFAULT_ISLAND_MEMBERSHIP_DECAY = Number.parseFloat(process.env.ISLAND_MEMBERSHIP_DECAY || '0.82');
-// Defines the default island membership blend enforced by this service.
-export const DEFAULT_ISLAND_MEMBERSHIP_BLEND = Number.parseFloat(process.env.ISLAND_MEMBERSHIP_BLEND || '0.65');
-// Defines the default island membership min confidence enforced by this service.
-export const DEFAULT_ISLAND_MEMBERSHIP_MIN_CONFIDENCE = Number.parseFloat(process.env.ISLAND_MEMBERSHIP_MIN_CONFIDENCE || '0.05');
-// Defines the default engagement time bucket hours enforced by this service.
-export const DEFAULT_ENGAGEMENT_TIME_BUCKET_HOURS = Number.parseInt(process.env.ISLAND_ENGAGEMENT_TIME_BUCKET_HOURS, 10) || 12;
-// Defines the default temporal affinity weight enforced by this service.
-export const DEFAULT_TEMPORAL_AFFINITY_WEIGHT = Number.parseFloat(process.env.ISLAND_TEMPORAL_AFFINITY_WEIGHT || '0.65');
 // Defines the island debug enforced by this service.
 export const ISLAND_DEBUG = ['1', 'true', 'yes'].includes(
   String(process.env.ISLAND_DEBUG || process.env.EVENT_DEBUG || '').toLowerCase()
@@ -59,14 +55,10 @@ export const SIGNAL_WEIGHTS = {
   click: 2,
   deepRead: 1,
   negative: 8,
-  topicAffinity: 2,
-  eventCount: 0.25
 };
 
 // These helpers keep scores bounded and avoid zero weights in weighted averages.
 export const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
-// This helper converts topic strength into a safe positive sample weight.
-export const topicMagnitude = (strength) => Math.max(0.0001, Math.abs(Number(strength || 0)));
 // This helper converts article score into a safe positive sample weight.
 export const articleMagnitude = (score) => Math.max(0.0001, Math.abs(Number(score || 0)));
 
@@ -113,26 +105,14 @@ export function blendIslandVector(existingVector, incomingVector, alpha = DEFAUL
 }
 
 // This function returns a recency multiplier for behavioral signals.
-export function topicRecencyWeight(publishedAt) {
-  // Returns early when published at is unavailable.
-  if (!publishedAt) return 1;
-
-  // Derives the age days through max while performing topic recency weight.
-  const ageDays = Math.max(0, (Date.now() - new Date(publishedAt).getTime()) / (1000 * 60 * 60 * 24));
-  // Selects the half life days based on whether default recency half life days is finite and default recency half life days exceeds value.
-  const halfLifeDays = Number.isFinite(DEFAULT_RECENCY_HALF_LIFE_DAYS) && DEFAULT_RECENCY_HALF_LIFE_DAYS > 0
-    ? DEFAULT_RECENCY_HALF_LIFE_DAYS
-    : 1460;
-  // Selects the min weight based on whether default recency min weight is finite.
-  const minWeight = clamp(
-    Number.isFinite(DEFAULT_RECENCY_MIN_WEIGHT) ? DEFAULT_RECENCY_MIN_WEIGHT : 0.2,
-    0,
-    1
-  );
-  // Derives the decay weight through exp while performing topic recency weight.
-  const decayWeight = Math.exp(-ageDays / halfLifeDays);
-
-  return clamp(Math.max(minWeight, decayWeight), 0, 1);
+export function behaviorRecencyWeight(interactedAt, halfLifeDays) {
+  if (!Number.isFinite(halfLifeDays) || halfLifeDays <= 0) throw new RangeError('Behavior half-life must be positive and finite');
+  // Preserve unknown-age behavior when neither a usable interaction nor legacy date exists.
+  if (!interactedAt) return 1;
+  const timestamp = new Date(interactedAt).getTime();
+  if (!Number.isFinite(timestamp)) return 1;
+  const ageDays = Math.max(0, (Date.now() - timestamp) / 86400000);
+  return 2 ** (-ageDays / halfLifeDays);
 }
 
 // This function creates an empty positive-signal counter object.
@@ -184,14 +164,13 @@ export function mergePositiveSignals(existingSignals = {}, incomingSignals = {})
 
 // This function decides whether an island has gone stale enough for archival handling.
 export function isStaleIsland(island) {
-  // Selects the updated at based on whether updated at is available.
-  const updatedAt = island?.updatedAt ? new Date(island.updatedAt).getTime() : null;
-  // Returns early when updated at is not finite.
-  if (!Number.isFinite(updatedAt)) return true;
+  // Database writes and audit timestamps are not behavioral activity.
+  const lastBehaviorAt = island?.lastBehaviorAt ? new Date(island.lastBehaviorAt).getTime() : null;
+  if (!Number.isFinite(lastBehaviorAt)) return true;
 
   // Derives the stale ms required while checking stale island.
   const staleMs = DEFAULT_ARCHIVE_STALE_DAYS * 24 * 60 * 60 * 1000;
-  return (Date.now() - updatedAt) >= staleMs;
+  return (Date.now() - lastBehaviorAt) >= staleMs;
 }
 
 // This function picks the nearest active taxonomy display name for an island vector.
@@ -214,21 +193,4 @@ export function resolveTaxonomyDisplayName(vector, taxonomyRows = []) {
   }
 
   return bestName || null;
-}
-
-// This function derives a fallback island label from the strongest topic names.
-export function resolveTopicFallbackLabel(profile) {
-  // Keeps the names entries eligible while resolving topic fallback label.
-  const names = (profile?.topics || [])
-    .slice()
-    .sort((a, b) => (Math.abs(b.strength) - Math.abs(a.strength)) || (a.topicId - b.topicId))
-    .map(topic => topic.name)
-    .filter(Boolean);
-
-  // Returns no result when names is empty.
-  if (!names.length) return null;
-  // Returns early when names count is 1.
-  if (names.length === 1) return names[0].slice(0, 255);
-
-  return `${names[0]} / ${names[1]}`.slice(0, 255);
 }

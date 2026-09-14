@@ -8,16 +8,13 @@ import articleController from '../../controllers/article.js';
 
 const {
   Article,
-  ArticleTopic,
   BriefingPreference,
   Category,
   Event,
   Feed,
   Island,
-  IslandTopic,
   Setting,
   Tag,
-  Topic,
   User,
   sequelize
 } = db;
@@ -235,11 +232,7 @@ describe('article ownership authorization', () => {
   it('returns recommendation score, reasons, event name, and interest island with article details', async () => {
     const owner = await createUser(uniqueName('article-recommendation-details-owner'));
     const { article, feed } = await createArticleFor(owner);
-    const topic = await Topic.create({
-      userId: owner.id,
-      name: `${owner.username} topic`,
-      topicKey: uniqueName('recommendation-topic-key').slice(0, 64)
-    });
+
     const island = await Island.create({
       userId: owner.id,
       label: 'Software development',
@@ -250,7 +243,6 @@ describe('article ownership authorization', () => {
     });
     const event = await Event.create({
       userId: owner.id,
-      topicId: topic.id,
       representativeArticleId: article.id,
       name: 'Runtime recommendation contract',
       generatedName: 'Runtime release coverage',
@@ -267,7 +259,6 @@ describe('article ownership authorization', () => {
     await Promise.all([
       article.update({
         eventId: event.id,
-        topicId: topic.id,
         articleVector: [1, 0],
         interestScore: 0.8,
         advertisementScore: 80,
@@ -277,18 +268,7 @@ describe('article ownership authorization', () => {
       }),
       feed.update({ feedTrust: 0.7 }),
       Setting.upsert({ userId: owner.id, prioritizeHighTrust: true }),
-      ArticleTopic.create({
-        articleId: article.id,
-        topicId: topic.id,
-        confidence: 1,
-        primaryInd: true
-      }),
-      IslandTopic.create({
-        islandId: island.id,
-        topicId: topic.id,
-        similarity: 1,
-        confidence: 1
-      })
+
     ]);
 
     await scoreArticlesFromIslandsForUser(owner.id);
@@ -910,57 +890,6 @@ describe('article ownership authorization', () => {
     expect(res.body.readArticleIds.sort()).toEqual([article.id, relatedArticle.id].sort());
   });
 
-  // Verifies a topic acknowledgement reaches articles in every event under that topic.
-  it('mark-as-seen marks related topic articles as read', async () => {
-    const owner = await createUser(uniqueName('topic-seen-owner'));
-    const { article, feed } = await createArticleFor(owner);
-    const topic = await Topic.create({
-      userId: owner.id,
-      name: `${owner.username} topic`,
-      topicKey: uniqueName('topic-seen-key')
-    });
-    const firstEvent = await Event.create({
-      userId: owner.id,
-      topicId: topic.id,
-      representativeArticleId: article.id,
-      name: `${owner.username} first event`,
-      articleCount: 1
-    });
-    const relatedArticle = await Article.create({
-      userId: owner.id,
-      feedId: feed.id,
-      status: 'unread',
-      url: `https://example.com/${owner.username}/topic-related-article`,
-      title: `${owner.username} topic related article`,
-      publishedAt: new Date('2026-05-01T11:00:00Z')
-    });
-    const secondEvent = await Event.create({
-      userId: owner.id,
-      topicId: topic.id,
-      representativeArticleId: relatedArticle.id,
-      name: `${owner.username} second event`,
-      articleCount: 1
-    });
-    await article.update({ eventId: firstEvent.id, topicId: topic.id });
-    await relatedArticle.update({ eventId: secondEvent.id, topicId: topic.id });
-
-    const response = await request(app)
-      .post(`/api/articles/markasseen/${article.id}`)
-      .set('Authorization', authHeaderFor(owner))
-      .send({
-        selectedStatus: 'unread',
-        grouping: 'topic',
-        visibleSeconds: 120
-      });
-
-    await Promise.all([article.reload(), relatedArticle.reload()]);
-
-    expect(response.status).toBe(200);
-    expect(article.status).toBe('read');
-    expect(relatedArticle.status).toBe('read');
-    expect(response.body.readArticleIds.sort()).toEqual([article.id, relatedArticle.id].sort());
-  });
-
   // Verifies first-seen tracking handles no engagement without changing read state.
   it('mark-as-seen records zero attention without marking an event read', async () => {
     const owner = await createUser(uniqueName('zero-attention-owner'));
@@ -1193,71 +1122,6 @@ describe('article ownership authorization', () => {
       matchedCount: 0
     });
     expect(excludedArticle.status).toBe('unread');
-  });
-
-  it('mark-as-read with topic grouping updates every event and reports topic article counts', async () => {
-    const owner = await createUser(uniqueName('topic-read-owner'));
-    const { article, feed } = await createArticleFor(owner);
-    const topic = await Topic.create({
-      userId: owner.id,
-      name: `${owner.username} topic`,
-      topicKey: uniqueName('topic-read-key')
-    });
-    const firstEvent = await Event.create({
-      userId: owner.id,
-      topicId: topic.id,
-      representativeArticleId: article.id,
-      name: `${owner.username} first topic event`,
-      articleCount: 1
-    });
-    const relatedArticle = await Article.create({
-      userId: owner.id,
-      feedId: feed.id,
-      status: 'unread',
-      url: `https://example.com/${owner.username}/topic-read-related`,
-      title: `${owner.username} topic read related`,
-      publishedAt: new Date('2026-05-01T11:00:00Z')
-    });
-    const secondEvent = await Event.create({
-      userId: owner.id,
-      topicId: topic.id,
-      representativeArticleId: relatedArticle.id,
-      name: `${owner.username} second topic event`,
-      articleCount: 1
-    });
-    await article.update({ eventId: firstEvent.id, topicId: topic.id });
-    await relatedArticle.update({ eventId: secondEvent.id, topicId: topic.id });
-
-    const detailsResponse = await request(app)
-      .post('/api/articles/details')
-      .set('Authorization', authHeaderFor(owner))
-      .send({ articleIds: String(article.id) });
-    const readResponse = await request(app)
-      .post('/api/articles/markasread')
-      .set('Authorization', authHeaderFor(owner))
-      .send({ grouping: 'topic' });
-
-    await Promise.all([article.reload(), relatedArticle.reload()]);
-
-    expect(detailsResponse.status).toBe(200);
-    expect(detailsResponse.body[0].event.topicArticleCount).toBe(2);
-    expect(readResponse.status).toBe(200);
-    expect(readResponse.body.matchedCount).toBe(1);
-    expect(readResponse.body.expandedEventCount).toBe(2);
-    expect(article.status).toBe('read');
-    expect(relatedArticle.status).toBe('read');
-
-    await Article.update(
-      { status: 'unread', readAt: null },
-      { where: { id: [article.id, relatedArticle.id] } }
-    );
-    const eventReadResponse = await request(app)
-      .post('/api/articles/markasread')
-      .set('Authorization', authHeaderFor(owner))
-      .send({ grouping: 'event' });
-
-    expect(eventReadResponse.status).toBe(200);
-    expect(eventReadResponse.body.expandedEventCount).toBe(2);
   });
 
   it('clears readAt when an article is marked unread', async () => {

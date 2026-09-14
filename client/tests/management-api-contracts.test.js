@@ -36,7 +36,7 @@ import {
   fetchProcessingFailureGroups,
   fetchProcessingFailureOccurrences,
   fetchSettings,
-  fetchTopicsOverview,
+  fetchEventsOverview,
   saveIncludeDevelopingEvents,
   saveMarkAsReadOnScroll,
   saveOfficialSources,
@@ -120,7 +120,7 @@ describe('manager API contracts', () => {
       status: 'unread',
       search: 'sort:quality tag:ai',
       sort: 'quality',
-      grouping: 'topic',
+      grouping: 'event',
       themeMode: 'dark',
       userId: 42
     };
@@ -133,7 +133,7 @@ describe('manager API contracts', () => {
       1,
       '/manager/overview',
       {
-        grouping: 'topic',
+        grouping: 'event',
         includeDevelopingEvents: true
       }
     );
@@ -141,7 +141,7 @@ describe('manager API contracts', () => {
       2,
       '/manager/overview-counts',
       {
-        grouping: 'topic',
+        grouping: 'event',
         includeDevelopingEvents: true
       }
     );
@@ -226,12 +226,12 @@ describe('settings API contracts', () => {
     const params = { period: '30d', limit: 25 };
 
     fetchIslandsOverview();
-    fetchTopicsOverview();
+    fetchEventsOverview();
     fetchCrawlStatistics(params);
     fetchCrawlStatistics();
 
     expect(get).toHaveBeenNthCalledWith(1, '/setting/islands');
-    expect(get).toHaveBeenNthCalledWith(2, '/setting/topics');
+    expect(get).toHaveBeenNthCalledWith(2, '/setting/events');
     expect(get).toHaveBeenNthCalledWith(
       3,
       '/setting/crawl-statistics',

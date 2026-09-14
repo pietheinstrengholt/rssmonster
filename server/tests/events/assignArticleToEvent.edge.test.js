@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import db from '../../models/index.js';
 import assignArticleToEvent, {
   EventCache
 } from '../../services/events/assignArticleToEvent.js';
@@ -30,7 +29,6 @@ describe('assignArticleToEvent edge behavior', () => {
   });
 
   it('rejects nearby candidates without vectors and records a standalone result', async () => {
-    vi.spyOn(db.ArticleTopic, 'destroy').mockResolvedValue(0);
     const article = {
       id: 10,
       userId: 4,
@@ -43,7 +41,6 @@ describe('assignArticleToEvent edge behavior', () => {
       duplicateOfArticleId: null,
       filteredInd: false,
       articleVector: [1, 0, 0],
-      topicId: null,
       update: vi.fn().mockResolvedValue(undefined)
     };
     const articleCandidateCache = {
@@ -63,20 +60,17 @@ describe('assignArticleToEvent edge behavior', () => {
       article,
       new EventCache([]),
       null,
-      [],
       runContext,
       {
-        skipTopicAssignment: true,
         articleCandidateCache
       }
     );
 
     expect(eventId).toBeNull();
     expect(article.update).toHaveBeenCalledWith({
-      eventId: null,
-      topicId: null
+      eventId: null
     });
-    expect(runContext.stats.topicOnlyInsufficientCandidatesCount).toBe(1);
+    expect(runContext.stats.eventlessInsufficientCandidatesCount).toBe(1);
     expect(runContext.records).toContainEqual(expect.objectContaining({
       id: article.id,
       eventId: null,

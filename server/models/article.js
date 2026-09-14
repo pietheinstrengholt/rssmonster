@@ -94,6 +94,12 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
+      // Latest signal times; null retains unknown interaction time for legacy state.
+      lastClickedAt: { type: DataTypes.DATE, allowNull: true },
+      favoritedAt: { type: DataTypes.DATE, allowNull: true },
+      positiveFeedbackAt: { type: DataTypes.DATE, allowNull: true },
+      negativeFeedbackAt: { type: DataTypes.DATE, allowNull: true },
+      lastMeaningfulReadAt: { type: DataTypes.DATE, allowNull: true },
       // Marks whether the user has saved the article as a favorite.
       favoriteInd: {
         type: DataTypes.INTEGER,
@@ -307,11 +313,6 @@ export default (sequelize) => {
           );
         }
       },
-      // Caches the article's primary event topic for direct queries; null before topic assignment.
-      topicId: {
-        type: DataTypes.INTEGER,
-        allowNull: true
-      },
       // Stores the feed-provided article language; null when unspecified.
       language: DataTypes.TEXT('tiny'),
       // Scores the absence of promotional content from 0 to 100, defaulting to zero.
@@ -462,16 +463,6 @@ export default (sequelize) => {
           const uniqueness = 1 / Math.log2(eventArticleCount + 1);
 
           return Math.max(0, Math.min(1, uniqueness));
-        }
-      },
-      // Exposes the loaded primary topic's semantic key; null when no key is available.
-      topicKey: {
-        type: DataTypes.VIRTUAL(DataTypes.STRING),
-        get() {
-          const topic = this.get('topic');
-          if (topic?.topicKey) return topic.topicKey;
-          const event = this.get('event');
-          return event?.topicKey ?? null;
         }
       },
       // Timestamp when the article was published (from feed data, used for freshness and sorting)

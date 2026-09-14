@@ -20,7 +20,7 @@ router.get('/observability/health', userMiddleware.isLoggedIn, getServicesHealth
 router.get('/crawl-statistics', userMiddleware.isLoggedIn, settingController.getCrawlStatistics);
 router.get('/islands', userMiddleware.isLoggedIn, settingController.getIslandsOverview);
 router.post('/islands/recalculate', userMiddleware.isLoggedIn, settingController.recalculateIslands);
-router.get('/topics', userMiddleware.isLoggedIn, settingController.getTopicsOverview);
+router.get('/events', userMiddleware.isLoggedIn, settingController.getEventsOverview);
 router.get('/official-sources', userMiddleware.isLoggedIn, settingController.getOfficialSources);
 router.get(
   '/processing-jobs',

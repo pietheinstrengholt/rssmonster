@@ -9,7 +9,7 @@ const setup = () => {
     classifyArticle: vi.fn().mockResolvedValue(analysis()),
     generateSmartFolderRecommendations: vi.fn().mockResolvedValue({ smartFolders: [{ name: 'Science', query: 'science', reason: 'Interest' }] }),
     rediscoverFeed: vi.fn().mockResolvedValue({ url: null, confidence: 0, reason: 'No match' }),
-    generateSemanticLabels: vi.fn().mockResolvedValue({ event: 'Event label', topic: null }),
+    generateSemanticLabels: vi.fn().mockResolvedValue({ event: 'Event label' }),
     assistantChat: vi.fn().mockResolvedValue({ output: [], responseId: 'response-1' }),
     assistantStream: vi.fn(async function* () { yield { type: 'done' }; })
   };
@@ -81,8 +81,8 @@ describe('named generation operations', () => {
     expect(inference.rediscoverFeed).toHaveBeenCalledWith(feed, requestOptions);
     inference.rediscoverFeed.mockResolvedValue({ url: null, confidence: 'low', reason: 'No match' });
     await expect(ai.generation.rediscoverFeed(feed)).resolves.toMatchObject({ confidence: 'low' });
-    const labels = { context: ['Article title'], event: true, topic: true };
-    await expect(ai.generation.generateSemanticLabels(labels, requestOptions)).resolves.toEqual({ event: 'Event label', topic: null });
+    const labels = { context: ['Article title'], event: true };
+    await expect(ai.generation.generateSemanticLabels(labels, requestOptions)).resolves.toEqual({ event: 'Event label' });
     expect(inference.generateSemanticLabels).toHaveBeenCalledWith(labels, requestOptions);
   });
   it.each([

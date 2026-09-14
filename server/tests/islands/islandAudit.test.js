@@ -58,16 +58,4 @@ describe('island population audit', () => {
     expect(result.sourceArticles.starredArticleIds).toEqual([1]);
   });
 
-  it('loads topic-related articles through the scoped join query', async () => {
-    mocks.query.mockResolvedValue([{ id: 9, title: 'Topic article', favoriteInd: 0, clickedAmount: 1, negativeInd: 0 }]);
-
-    const result = await buildPopulationAuditEntry({ userId: 4, topicIds: [11], transaction: 'tx' });
-
-    expect(mocks.query).toHaveBeenCalledWith(expect.stringContaining('a.userId = :userId'), expect.objectContaining({
-      replacements: { userId: 4, topicIds: [11] },
-      transaction: 'tx'
-    }));
-    expect(result.metrics.clickedCount).toBe(1);
-    expect(result.articleIds).toEqual([]);
-  });
 });

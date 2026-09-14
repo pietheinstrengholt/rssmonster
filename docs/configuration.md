@@ -397,7 +397,7 @@ worker does not reclaim active work.
 
 PM2 and the MySQL Compose profile run scheduled crawling in `rssmonster-worker`
 and optional jobs in `rssmonster-ai-worker`. A renewable database lease pauses
-new optional claims while the crawl, embedding, event, topic, and island-scoring
+new optional claims while the crawl, embedding, event and island-scoring
 pipeline is active; crawling never waits for the optional queue to drain.
 The lightweight SQLite Compose profile runs only `rssmonster-worker` and has
 no optional-job consumer by default. Remote inference connectivity is configured independently.
@@ -571,7 +571,7 @@ reverse proxy so client addresses are interpreted correctly.
 | `INFERENCE_ASSISTANT_ENABLED` | unset | Optional permission override. Explicit `false` disables assistant use; otherwise readiness and advertised capability determine availability. |
 | `SKIP_ARTICLE_CLASSIFICATION_ANALYSIS` | `false` | When `true`, uses default article scores and feed-category tags without calling inference classification. |
 | `SKIP_ARTICLE_EMBEDDINGS` | `false` | When `true`, disables article vector generation and defaults new feeds to embeddings disabled. |
-| `SKIP_SEMANTIC_LABELING` | `false` | When `true`, skips generated event, topic, and island display labels while preserving deterministic names and labels. |
+| `SKIP_SEMANTIC_LABELING` | `false` | When `true`, skips generated event and island display labels while preserving deterministic names and labels. |
 
 When `INFERENCE_AI_ENABLED` is explicitly `false`, it overrides the
 feature-specific settings: classification and embeddings remain local or disabled,

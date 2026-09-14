@@ -48,7 +48,7 @@ to suit your reading session and screen. [Bookmarks]({% link bookmarks.md %}),
 [Quality, Recommended, and Top Stories]({% link scoring.md %}) provide different ways to
 order your reading. [FeedTrust]({% link feedtrust.md %}) explains how source
 history contributes to those rankings. [Events]({% link events.md %}) collect coverage of a particular story;
-[Topics]({% link topics.md %}) connect related themes; [Interest Islands]({% link interest-islands.md %})
+[Interest Islands]({% link interest-islands.md %})
 use reading feedback to model recurring interests. Similar coverage is not
 necessarily duplicate content, and a ranking score is not a fact check.
 

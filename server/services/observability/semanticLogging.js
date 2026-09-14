@@ -5,9 +5,6 @@ export const isSemanticDebugEnabled = (
   component,
   environment = process.env
 ) => {
-  if (component === 'topic') {
-    return enabled(environment.TOPIC_DEBUG) || enabled(environment.EVENT_DEBUG);
-  }
   if (component === 'island') {
     return enabled(environment.ISLAND_DEBUG) || enabled(environment.EVENT_DEBUG);
   }

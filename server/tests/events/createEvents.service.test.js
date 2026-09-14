@@ -66,7 +66,6 @@ describe('createAndAssignEvent', () => {
         candidateArticles: [candidateArticle],
         article: seedArticle,
         cache: null,
-        skipTopicAssignment: true,
         transaction
       });
 
@@ -107,8 +106,7 @@ describe('createAndAssignEvent', () => {
     const eventId = await createAndAssignEvent({
       candidateArticles: [readCandidateArticle],
       article: incomingArticle,
-      cache: null,
-      skipTopicAssignment: true
+      cache: null
     });
 
     const event = await Event.findByPk(eventId);
@@ -141,8 +139,7 @@ describe('createAndAssignEvent', () => {
     const eventId = await createAndAssignEvent({
       candidateArticles: [candidateArticle],
       article: incomingArticle,
-      cache: null,
-      skipTopicAssignment: true
+      cache: null
     });
 
     const event = await Event.findByPk(eventId);
@@ -160,8 +157,7 @@ describe('createAndAssignEvent', () => {
     const eventId = await createAndAssignEvent({
       candidateArticles: [candidateArticle],
       article: seedArticle,
-      cache,
-      skipTopicAssignment: true
+      cache
     });
 
     const event = await Event.findByPk(eventId);
@@ -181,14 +177,14 @@ describe('createAndAssignEvent', () => {
     const seedArticle = await createArticle(user, feed, 'failed-seed');
     const cache = { add: vi.fn() };
 
+    const update = vi.spyOn(Article, 'update').mockRejectedValueOnce(new Error('article assignment failed'));
+
     await expect(createAndAssignEvent({
       candidateArticles: [candidateArticle],
       article: seedArticle,
-      cache,
-      assignTopicsForEvent: async () => {
-        throw new Error('topic synchronization failed');
-      }
-    })).rejects.toThrow('topic synchronization failed');
+      cache
+    })).rejects.toThrow('article assignment failed');
+    update.mockRestore();
 
     await candidateArticle.reload();
     await seedArticle.reload();
@@ -207,8 +203,7 @@ describe('createAndAssignEvent', () => {
     const creation = () => createAndAssignEvent({
       candidateArticles: [candidateArticle],
       article: seedArticle,
-      cache,
-      skipTopicAssignment: true
+      cache
     });
 
     const eventIds = await Promise.all([creation(), creation()]);
@@ -231,8 +226,7 @@ describe('createAndAssignEvent', () => {
     await expect(createAndAssignEvent({
       candidateArticles: [{ userId: user.id }],
       article: seedArticle,
-      cache: null,
-      skipTopicAssignment: true
+      cache: null
     })).resolves.toBeNull();
   });
 
@@ -248,34 +242,28 @@ describe('createAndAssignEvent', () => {
     await expect(createAndAssignEvent({
       candidateArticles: [candidateArticle],
       article: seedArticle,
-      cache: null,
-      skipTopicAssignment: true
+      cache: null
     })).resolves.toBeNull();
     expect(await Event.count({ where: { userId: user.id } })).toBe(0);
   });
 
-  it('truncates long representative titles and invokes optional topic assignment', async () => {
+  it('truncates long representative titles', async () => {
     const { user, feed } = await createUserGraph('named-event');
     const candidateArticle = await createArticle(user, feed, 'named-candidate');
     const seedArticle = await createArticle(user, feed, 'named-seed', 'unread', {
       title: `${'important coverage '.repeat(10)}ending`
     });
-    const assignTopicsForEvent = vi.fn().mockResolvedValue(73);
 
     const eventId = await createAndAssignEvent({
       candidateArticles: [candidateArticle],
       article: seedArticle,
-      cache: null,
-      assignTopicsForEvent
+      cache: null
     });
 
     const event = await Event.findByPk(eventId);
     expect(event.name).toMatch(/\.\.\.$/);
     expect(event.name.length).toBeLessThanOrEqual(123);
-    expect(assignTopicsForEvent).toHaveBeenCalledWith(expect.objectContaining({
-      event: expect.objectContaining({ id: eventId }),
-      eventTopicVector: expect.any(Array)
-    }));
+
   });
 
   it('marks a fresh event with more than two articles as active', async () => {
@@ -287,8 +275,7 @@ describe('createAndAssignEvent', () => {
     const eventId = await createAndAssignEvent({
       candidateArticles: [firstCandidate, secondCandidate],
       article: seedArticle,
-      cache: null,
-      skipTopicAssignment: true
+      cache: null
     });
 
     expect(await Event.findByPk(eventId)).toMatchObject({
@@ -311,7 +298,6 @@ describe('createAndAssignEvent', () => {
       candidateArticles: [candidateArticle],
       article: seedArticle,
       cache: null,
-      skipTopicAssignment: true,
       transaction
     })).resolves.toBeNull();
   });
@@ -329,7 +315,6 @@ describe('createAndAssignEvent', () => {
         candidateArticles: [candidateArticle],
         article: seedArticle,
         cache: null,
-        skipTopicAssignment: true,
         transaction
       });
 
@@ -354,7 +339,6 @@ describe('createAndAssignEvent', () => {
         candidateArticles: [candidateArticle],
         article: seedArticle,
         cache: null,
-        skipTopicAssignment: true,
         transaction
       })).rejects.toThrow('Failed to assign all articles to new event');
     } finally {

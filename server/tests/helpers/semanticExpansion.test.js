@@ -42,7 +42,7 @@ describe('semantic expansion fixture contracts', () => {
   it('loads complete frozen vectors bound to the actual embedding inputs', async () => {
     const { vectors, metadata } = await loadExpansionVectors();
     expect(vectors.size).toBe(226);
-    expect(metadata).toMatchObject({ embeddingModel: 'onnx-community/Qwen3-Embedding-0.6B-ONNX', embeddingDimensions: 1024, embeddingTask: 'feature-extraction' });
+    expect(metadata).toMatchObject({ embeddingModel: 'onnx-community/Qwen3-Embedding-0.6B-ONNX', embeddingDimensions: 1024 });
   });
 
   it('separates raw corpus count from canonical Recommended coverage', () => {

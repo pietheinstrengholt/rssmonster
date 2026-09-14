@@ -141,7 +141,7 @@ describe('Settings navigation', () => {
     const navigation = getSettingsNavigation(false);
 
     expect(navigation.find(item => item.key === 'scores')?.visible).toBe(false);
-    expect(navigation.find(item => item.key === 'topics')?.visible).toBe(false);
+    expect(navigation.find(item => item.key === 'events')?.visible).toBe(false);
     expect(navigation.find(item => item.key === 'islands')?.visible).toBe(false);
     expect(navigation.find(item => item.key === 'processingJobs')?.visible).toBe(true);
   });

@@ -4,10 +4,7 @@ import { createHash } from 'node:crypto';
 import db from '../../models/index.js';
 import { buildArticleEventEmbeddingText } from '../../services/articles/embedArticle.js';
 import { runIncrementalEventsForUser } from '../../services/reconcile/semanticPipelineScopes.js';
-import { syncEventTopicsToArticles } from '../../services/events/eventArticleTopicSync.js';
-import { persistEventTopicAssignments } from '../../services/topics/event/eventTopicAssignment.js';
-import { generateTopicKey } from '../../services/topics/shared/topicHelpers.js';
-import { assignTopicsForEvents } from '../../services/topics/event/eventTopicAssignment.js';
+
 import { buildInterestIslandProfilesForUser } from '../../services/islands/islandArticleProfiles.js';
 import { persistIslandProfilesForUser } from '../../services/islands/runIslandCalibration.js';
 import { scoreArticlesFromIslandsForUser, explainArticleInterests } from '../../services/score/scoreArticlesFromIslands.js';
@@ -61,24 +58,6 @@ export async function insertExpansionArticles(context, articles, vectors) {
   return stored;
 }
 
-// Topic gold supplies separate Events deliberately; natural Event gold uses the real assignment pipeline.
-export async function seedTopicEvents(context, stored, source, { assign = true } = {}) {
-  const groups = [...new Set(source.map(a => a.regression.eventGroup))];
-  const events = [];
-  for (const group of groups) {
-    const groupUrls = new Set(source.filter(a => a.regression.eventGroup === group).map(a => a.url));
-    const members = stored.filter(a => groupUrls.has(a.url));
-    const event = await db.Event.create({ userId: context.userId, name: members[0].title,
-      representativeArticleId: members[0].id, eventVector: meanVector(members.map(a => a.articleVector)),
-      articleCount: members.length, sourceCount: new Set(members.map(a => a.feedId)).size, eventStrength: 0.7,
-      eventWindowStartAt: members[0].publishedAt, eventWindowEndAt: members.at(-1).publishedAt });
-    await db.Article.update({ eventId: event.id }, { where: { userId: context.userId, id: members.map(a => a.id) } });
-    events.push(event);
-    if (assign) await assignTopicsForEvents(context.userId, [event], { assignmentContext: 'incremental' });
-  }
-  return events;
-}
-
 export async function processExpansionScenario(scenario, vectors, setClock) {
   const context = await createExpansionUser(scenario);
   const source = scenarioArticles(scenario);
@@ -94,25 +73,6 @@ export async function processExpansionScenario(scenario, vectors, setClock) {
     snapshots.push({ phase: 'formation', articleCount: await db.Article.count({ where: { userId: context.userId } }),
       memberIds: profiles.flatMap(p => p.articles.map(a => a.articleId)) });
     await insertExpansionArticles(context, source.filter(a => a.regression.role === 'held-out'), vectors);
-  } else if (scenario.kind === 'topic' || scenario.kind === 'ambiguity') {
-    const groups = [...new Set(source.map(a => a.regression.eventGroup))];
-    for (const [index, group] of groups.entries()) {
-      const incoming = source.filter(a => a.regression.eventGroup === group);
-      const time = Math.max(...incoming.map(a => Date.parse(a.publishedAt))) + 60000;
-      setClock(time);
-      const stored = await insertExpansionArticles(context, incoming, vectors);
-      const [event] = await seedTopicEvents(context, stored, incoming, { assign: scenario.kind === 'topic' });
-      if (scenario.kind === 'ambiguity') {
-        if (index < 2) {
-          // Establish each existing subject before the later bridge arrives.
-          const topic = await db.Topic.create({ userId: context.userId, name: event.name, topicType: 'event',
-            topicVector: event.eventVector, topicKey: generateTopicKey(event.eventVector), strength: 0.7 });
-          const links = await persistEventTopicAssignments(event, [{ topicId: topic.id, confidence: 1, primaryInd: true }]);
-          await syncEventTopicsToArticles(event.id, links);
-        } else await assignTopicsForEvents(context.userId, [event], { assignmentContext: 'incremental' });
-      }
-      snapshots.push({ phase: group, time, articleCount: await db.Article.count({ where: { userId: context.userId } }) });
-    }
   } else {
     for (const wave of [...new Set(source.map(a => a.regression.wave))].sort((a, b) => a - b)) {
       const incoming = source.filter(a => a.regression.wave === wave);
@@ -120,13 +80,10 @@ export async function processExpansionScenario(scenario, vectors, setClock) {
       setClock(time);
       await insertExpansionArticles(context, incoming, vectors);
       if (scenario.kind === 'duplicate') await markDuplicateArticlesForUser(context.userId);
-      const result = await runIncrementalEventsForUser(context.userId, { createdAtFrom: new Date(time - 1000), skipTopicAssignment: true });
+      const result = await runIncrementalEventsForUser(context.userId, { createdAtFrom: new Date(time - 1000) });
       snapshots.push({ phase: wave, ...result });
     }
-    if (scenario.kind === 'multilingual') {
-      const events = await db.Event.findAll({ where: { userId: context.userId }, order: [['id', 'ASC']] });
-      await assignTopicsForEvents(context.userId, events, { assignmentContext: 'incremental' });
-    }
+
   }
   setClock(finalTime);
   await scoreArticlesFromIslandsForUser(context.userId);
@@ -139,9 +96,7 @@ export async function processExpansionScenario(scenario, vectors, setClock) {
     recommendedEligible: a.status !== 'duplicate' && !a.filteredInd,
     interestDiagnostics: results.get(String(a.id)) })).sort((a, b) => sourceOrder.get(a.sourceId) - sourceOrder.get(b.sourceId));
   const events = await db.Event.findAll({ where: { userId: context.userId }, raw: true });
-  const links = events.length ? await db.EventTopic.findAll({ where: { eventId: events.map(e => e.id) }, raw: true }) : [];
-  return { ...context, source, rows, events, links, evidence, profiles, snapshots,
-    topicCount: await db.Topic.count({ where: { userId: context.userId } }) };
+  return { ...context, source, rows, events, evidence, profiles, snapshots };
 }
 
 // Required gold probes must remain visible even when the source unexpectedly joins an Island.
@@ -158,10 +113,8 @@ export function requiredBehavioralTransfers(result) {
 export function expansionMetrics(results) {
   const rows = results.flatMap(r => r.rows || []);
   return { 'Expansion articles': rows.length, Events: results.reduce((n, r) => n + (r.events?.length || 0), 0),
-    Topics: results.reduce((n, r) => n + (r.topicCount || 0), 0),
     Islands: results.reduce((n, r) => n + (r.evidence?.islands.length || 0), 0),
     'Eventless articles': rows.filter(r => !r.eventId).length,
-    'Topicless Events': results.reduce((n, r) => n + (r.events || []).filter(e => !(r.links || []).some(l => l.eventId === e.id)).length, 0),
     'Unassigned behavioral profiles': results.reduce((n, r) => n + (r.profiles?.summary?.unassignedBehavioralProfiles || 0), 0),
     ...recommendationCoverage(rows), ...interestPathMetrics(rows),
     'Explicit held-out articles': rows.filter(r => r.regression.role === 'held-out').length,
@@ -170,8 +123,7 @@ export function expansionMetrics(results) {
     'Explicit held-out neutral': rows.filter(r => r.regression.role === 'held-out' && r.interestScore === 0).length };
 }
 
-const safeRow = row => ({ sourceId: row.sourceId, title: row.title, eventId: row.eventId, topicId: row.topicId,
-  status: row.status, duplicateOfArticleId: row.duplicateOfArticleId, role: row.regression.role,
+const safeRow = row => ({ sourceId: row.sourceId, title: row.title, eventId: row.eventId, status: row.status, duplicateOfArticleId: row.duplicateOfArticleId, role: row.regression.role,
   interestScore: row.interestScore, recommended: row.recommended, interestDiagnostics: row.interestDiagnostics });
 export async function writeExpansionReport(results, checks, controlled, naturalTransfers = []) {
   await mkdir(expansionDirectory, { recursive: true });
@@ -181,13 +133,12 @@ export async function writeExpansionReport(results, checks, controlled, naturalT
   const payload = { mainCorpusCount: mainCount, expansionCorpusCount: metrics['Expansion articles'],
     combinedCorpusCount: mainCount + metrics['Expansion articles'], metrics, checks, controlled, naturalTransfers,
     scenarios: results.map(r => ({ scenario: r.scenario.id, expected: r.scenario.expected,
-      articles: r.rows.map(safeRow), topics: r.links, islands: r.evidence.islands.map(i => ({ id: i.id,
+      articles: r.rows.map(safeRow), islands: r.evidence.islands.map(i => ({ id: i.id,
         preferenceStrength: i.preferenceStrength, islandConfidence: i.islandConfidence, ...i.diagnostics })) })) };
   await writeFile(new URL('expansion-report.json', expansionDirectory), JSON.stringify(payload, null, 2) + '\n');
   const escape = text => String(text).replaceAll('|', '\\|').replaceAll('\n', ' ');
   const lines = ['# Semantic expansion regression', '',
     `Main corpus: ${mainCount}; expansion: ${metrics['Expansion articles']}; combined: ${mainCount + metrics['Expansion articles']}.`, '',
-    'Counts exclude existing isolated occurrence/Topic/control suites. Topic-only gold seeds separate Events; controlled recommendation geometry reuses the same Articles and does not add corpus rows.', '',
     '| Metric | Value |', '| --- | ---: |', ...Object.entries(metrics).map(([k, v]) => `| ${k} | ${v} |`), '',
     '| Scenario | Assertion | Result | Classification | Details |', '| --- | --- | --- | --- | --- |',
     ...checks.map(c => `| ${c.scenario} | ${escape(c.label)} | ${c.pass ? 'PASS' : 'FAIL'} | ${c.pass ? '' : c.classification} | ${escape(c.details || '')} |`), '',

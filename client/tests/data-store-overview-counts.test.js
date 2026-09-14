@@ -83,7 +83,7 @@ beforeEach(() => {
     data: {
       themeMode: 'dark',
       viewMode: 'minimal',
-      grouping: 'topic',
+      grouping: 'event',
       sort: 'quality'
     }
   });
@@ -110,7 +110,7 @@ describe('data store overview and count behavior', () => {
     expect(fetchOverview).toHaveBeenCalledWith(
       expect.objectContaining({
         viewMode: 'minimal',
-        grouping: 'topic',
+        grouping: 'event',
         sort: 'quality'
       })
     );
@@ -323,12 +323,12 @@ describe('data store overview and count behavior', () => {
     const overviewRequest = store.fetchOverviewSplit({ initial: true });
     expect(fetchTopTags).not.toHaveBeenCalled();
 
-    settings.resolve({ data: { grouping: 'topic' } });
+    settings.resolve({ data: { grouping: 'event' } });
     await overviewRequest;
 
     expect(fetchTopTags).toHaveBeenCalledOnce();
     expect(fetchTopTags).toHaveBeenCalledWith({
-      grouping: 'topic',
+      grouping: 'event',
       includeDevelopingEvents: false,
       status: 'unread'
     });
@@ -346,7 +346,7 @@ describe('data store overview and count behavior', () => {
     expect(fetchOverviewLite).toHaveBeenCalledOnce();
     expect(store.categories).toEqual([]);
 
-    settings.resolve({ data: { grouping: 'topic' } });
+    settings.resolve({ data: { grouping: 'event' } });
     await overviewRequest;
 
     expect(store.categories).toHaveLength(1);

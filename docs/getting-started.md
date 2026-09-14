@@ -403,7 +403,7 @@ This analyzes your feeds based on:
 
 ### Maintain semantic organization
 
-Normal enabled crawls run embedding, event, topic, and island processing in
+Normal enabled crawls run embedding, event and island processing in
 order. Historical rebuilds are maintenance operations, not an installation step.
 Back up the database and read [Server Jobs]({% link server-jobs.md %}) before selecting an
 incremental, repair, or full rebuild command. There is no `npm run recluster`

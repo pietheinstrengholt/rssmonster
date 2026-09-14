@@ -321,9 +321,6 @@ export default {
     // Returns the total number of articles in the active event view.
     eventArticleCountTotal() {
       if (!this.event) return 0;
-      if (this.selectionStore.currentSelection.grouping === 'topic') {
-        return Number(this.event.topicArticleCount ?? this.event.articleCount ?? 0);
-      }
       return Number(this.event.articleCount || 0);
     },
     // Resolves the developing article pointer when a partially refreshed card has not retained its id prop.

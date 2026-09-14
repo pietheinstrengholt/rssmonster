@@ -60,7 +60,9 @@ row or locate one by the incoming identity. Before writing it:
 
 Sparse or empty publisher values do not erase meaningful stored content, author, date, URL, media,
 or image metadata. A newly inferred publication date does not replace a known stored publication
-date. User-owned state—read/unread status, favorites, clicks, and manual tags—is preserved.
+date. User-owned state—read/unread status, favorites, clicks, interaction timestamps,
+and manual tags—is preserved. Favorite/click rules timestamp initial ingestion;
+source revisions never refresh those behavioral clocks.
 
 ## Revision and update semantics
 

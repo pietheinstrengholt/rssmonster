@@ -136,6 +136,8 @@ async function saveArticle(
     ...data,
     status: actionResult.status,
     filteredInd: isDiscardMatch,
+    favoritedAt: isDiscardMatch ? undefined : actionResult.favoritedAt,
+    lastClickedAt: isDiscardMatch ? undefined : actionResult.lastClickedAt,
     favoriteInd: isDiscardMatch ? undefined : actionResult.favoriteInd,
     clickedAmount: isDiscardMatch ? undefined : actionResult.clickedAmount,
     hotInd: isDiscardMatch ? undefined : data.hotInd ?? actionResult.hotInd,

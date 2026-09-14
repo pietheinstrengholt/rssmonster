@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { fetchDuplicateArticles } from '../src/api/articles.js';
 import { fetchEventArticles } from '../src/api/events.js';
-import { fetchTopicArticles } from '../src/api/topics.js';
+
 import ArticleActionsMenu from '../src/components/articles/ArticleActionsMenu.vue';
 import ArticleContent from '../src/components/articles/ArticleContent.vue';
 import ArticleHeader from '../src/components/articles/ArticleHeader.vue';
@@ -33,10 +33,6 @@ vi.mock('../src/api/articles.js', () => ({
 
 vi.mock('../src/api/events.js', () => ({
   fetchEventArticles: vi.fn()
-}));
-
-vi.mock('../src/api/topics.js', () => ({
-  fetchTopicArticles: vi.fn()
 }));
 
 vi.mock('../src/services/actionNotifications.js', () => ({
@@ -556,10 +552,10 @@ describe('Article related-article expansion coverage', () => {
   });
 
   // Verifies related-article failures remain visible to the user.
-  it('reports topic expansion failures', async () => {
-    const error = new Error('topic failed');
-    fetchTopicArticles.mockRejectedValue(error);
-    const context = createExpansionContext('topic');
+  it('reports event expansion failures', async () => {
+    const error = new Error('event failed');
+    fetchEventArticles.mockRejectedValue(error);
+    const context = createExpansionContext('event');
 
     articleExpansionMethods.viewEventArticles.call(context, 9);
     await flushPromises();

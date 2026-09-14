@@ -67,7 +67,6 @@ describe('articleDuplicates', () => {
     const article = {
       id: 2,
       eventId: 8,
-      topicId: 7,
       interestScore: 0.8
     };
 
@@ -79,7 +78,6 @@ describe('articleDuplicates', () => {
       duplicateOfArticleId: 1,
       status: DUPLICATE_ARTICLE_STATUS,
       eventId: null,
-      topicId: null,
       interestScore: 0
     }), expect.objectContaining({
       where: { id: 2 }

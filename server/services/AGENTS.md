@@ -47,11 +47,9 @@ Prioritize domain invariants, user isolation, persistence consistency, boundary 
 
 When code and assumptions conflict with the documented subsystem contract, investigate before changing behavior.
 
-## Event, Topic, and recommendation invariants
+## Event and recommendation invariants
 
 * Event identity is occurrence-based; preserve the shared membership policy, whole-Event temporal span checks, ambiguity, and neutral missing feature evidence.
-* Topic identity is durable-subject continuity. Do not copy Event version/action conflicts into Topic rejection rules; preserve subject checks and ambiguity handling.
-* Respect EventTopic/ArticleTopic and IslandTopic confidence downstream. Weak fallback must not silently become a strong primary relationship.
 * Generated labels are presentation/explanation metadata, not independent semantic or ranking evidence unless explicitly designed and tested as such.
 * Do not repair Recommended coverage by lowering similarity thresholds, raising community capacity, or forcing unmatched behavioral profiles into Islands.
 * No trustworthy interest path means `interestScore = 0`; every otherwise eligible Article still receives Recommended.
@@ -60,9 +58,9 @@ When code and assumptions conflict with the documented subsystem contract, inves
 * Preserve replay-safe behavioral snapshots; audit history and derived scores are not new behavioral evidence.
 * Do not retune final Recommended weights while changing semantic evidence unless explicitly requested.
 * Test held-out Articles that did not participate in Island formation. Seed self-similarity is not evidence of generalization.
-* For every semantic-processing change, run `npm run test:semantic-trace` from `server/` before implementation and after the final change. Follow the [required capture/comparison workflow](../tests/semantic/README.md#required-beforeafter-workflow-for-semantic-changes), preserve both reports, and explain metric and article-level differences in the final response. Inspect diagnostics, not only pass/fail; run relevant gold tests too. Never hardcode Event/Topic IDs or weaken expectations to make the suite green.
+* For every semantic-processing change, run `npm run test:semantic-trace` from `server/` before implementation and after the final change. Follow the [required capture/comparison workflow](../tests/semantic/README.md#required-beforeafter-workflow-for-semantic-changes), preserve both reports, and explain metric and article-level differences in the final response. Inspect diagnostics, not only pass/fail; run relevant focused service tests too. Never hardcode Event IDs or weaken expectations to make the suite green.
 
-Authoritative references: [Events](events/README.md), [Topics](topics/README.md),
+Authoritative references: [Events](events/README.md),
 [Islands and interest formulas](islands/README.md),
 [Recommended formula](../../docs/scoring.md), and
 [regression testing](../tests/semantic/README.md).

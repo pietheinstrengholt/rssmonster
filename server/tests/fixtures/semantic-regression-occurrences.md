@@ -1,3 +1,5 @@
+> Historical fixture notes: the independent semanticGold tests described below have been removed. Occurrence articles remain in the two-batch semantic regression corpus.
+
 > Occurrence articles now live in `semantic-regression-batch001.json` and `semantic-regression-batch002.json`. Focused gold tests derive the original dated subsets from their provenance metadata. Vector caches are generated and ignored.
 
 # Incremental Event occurrence fixtures
@@ -13,8 +15,7 @@ Both batches use frozen Qwen vectors (1024 dimensions). The focused occurrence
 view derives vectors from the batch caches; no standalone occurrence cache is
 required. `loadIncrementalFixture({ occurrences: true })` selects this view. Each
 scenario has its own test user, preventing comparisons between vector models or
-unrelated scenario data. No Topic identity is required: separate occurrences may
-share a Topic, but these tests exercise Event assignment only.
+unrelated scenario data. These tests exercise Event assignment independently of personal-interest affinity.
 
 The test freezes **Date only**, advancing to each wave's publication time; real
 I/O timers keep running. It inserts unchanged publication times using the
@@ -52,7 +53,6 @@ coverage. Production matching logic is unchanged by this fixture task.
 Run from `server/`:
 
 ```sh
-npm test -- tests/semanticGold/semanticRegression.incremental.occurrences.test.js
 npm test -- tests/semantic tests/helpers/semanticRegressionHelpers.test.js
 npm run lint
 ```

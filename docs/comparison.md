@@ -24,7 +24,7 @@ and trade-offs.
 
 | Reader | Best for | Design philosophy | Hosting model | Organization and discovery |
 |:--|:--|:--|:--|:--|
-| [RSSMonster](#what-makes-rssmonster-different) | High-volume, overlapping feed collections | RSS with an optional information-management layer | Self-hosted | Smart Folders, related stories, Events, Topics, and explainable rankings |
+| [RSSMonster](#what-makes-rssmonster-different) | High-volume, overlapping feed collections | RSS with an optional information-management layer | Self-hosted | Smart Folders, related stories, Events and explainable rankings |
 | [FreshRSS]({{ '/compare/freshrss/' | relative_url }}) | Mature general-purpose RSS | Traditional feed management plus extensibility | Self-hosted | Advanced filters, saved user queries, labels, themes, and extensions |
 | [Miniflux]({{ '/compare/miniflux/' | relative_url }}) | Minimalism and focused reading | Deliberately simple and opinionated | Self-hosted | Categories, bookmarks, search, and feed filters; no comparable semantic ranking layer is documented |
 | [selfoss]({{ '/compare/selfoss/' | relative_url }}) | Lightweight, extensible aggregation | Bring different source types into one stream | Self-hosted | Source filters, tags, and custom spouts; no comparable story layer is documented |
@@ -98,7 +98,7 @@ processing is enabled, it can add another layer without changing which articles
 are ingested:
 
 ```text
-Articles -> duplicates / revisions -> related coverage -> Events -> Topics
+Articles -> duplicates / revisions -> related coverage -> Events
          -> Interest Islands -> Recommended / Top Stories / Smart Folders
 ```
 

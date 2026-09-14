@@ -34,7 +34,7 @@ The briefing introduction appears above articles in both the standard list and d
 
 The introduction contains two areas:
 
-1. A context strip describing how many eligible articles and distinct feeds contributed to the briefing, plus the number of newly created events and connected topics.
+1. A context strip describing how many eligible articles and distinct feeds contributed to the briefing, plus the number of newly created events and matched Interest Islands.
 2. A morning summary titled “The stories shaping your morning.”
 
 The morning summary contains up to four distinct event stories. Stronger events are presented first, with representative publication time used as a secondary ordering signal. Each item uses the event name when available, otherwise the representative article title, and may include a concise excerpt derived from the representative article.

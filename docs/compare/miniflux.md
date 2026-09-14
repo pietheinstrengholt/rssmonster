@@ -36,7 +36,7 @@ than saying a feature cannot be added or approximated.
 | **Interface** | Responsive modes including a richer three-pane desktop Reader view | Responsive, distraction-free, minimalist interface with keyboard and touch support |
 | **Organization and search** | Categories, tags, favorites, advanced search expressions, and Smart Folders | Categories, bookmarks, full-text PostgreSQL search, and per-feed include/exclude filters |
 | **Reusable article views** | Smart Folders save composable state, date, score, source, and semantic filters | No comparable saved-query view is highlighted in the official feature documentation |
-| **Related coverage** | Semantic related articles, Events, and Topics are built in when semantic processing is enabled | Semantic related-article and Event grouping are not documented as built-in features |
+| **Related coverage** | Semantic related articles, Events are built in when semantic processing is enabled | Semantic related-article and Event grouping are not documented as built-in features |
 | **Duplicates and revisions** | Deterministic identity and revision handling plus duplicate analysis are built into processing | Comparable cross-source semantic duplicate/revision analysis is not documented as built in |
 | **Discovery and ranking** | Personalized Recommended, non-personalized Top Stories, Quality, and FeedTrust signals | Predictable feed reading and search; a comparable semantic ranking layer is not documented |
 | **Local semantic processing** | Optional Qwen and ModernBERT models run locally through ONNX and Transformers.js; the documented comprehensive profile uses MySQL | Not part of the documented core design |
@@ -70,8 +70,7 @@ complexity.
 RSSMonster is designed for collections where a chronological inbox remains
 useful but is no longer sufficient. It can detect duplicate coverage, expose
 semantically related articles, group reports about one occurrence into an
-[Event]({{ '/events.html' | relative_url }}), connect Events into
-[Topics]({{ '/topics.html' | relative_url }}), and model a user's durable
+[Event]({{ '/events.html' | relative_url }}), and model a user's durable
 interests as [Interest Islands]({{ '/interest-islands.html' | relative_url }}).
 
 [Smart Folders]({{ '/smart-folders.html' | relative_url }}) turn advanced search
@@ -103,7 +102,6 @@ Feeds
   -> Articles
       -> duplicates / related articles
       -> Events
-          -> Topics
               -> Interest Islands
 
 Articles -> Recommended / Top Stories / Smart Folders
@@ -133,7 +131,7 @@ subject, interest, or ranking.
 ## Choose RSSMonster if...
 
 - You subscribe to many overlapping feeds and repeated coverage is a problem.
-- You want related articles grouped into Events and connected to Topics.
+- You want related articles grouped into Events.
 - You want advanced searches saved as Smart Folders.
 - Optional Recommended and Top Stories views would help you decide what to read
   without removing chronological access.

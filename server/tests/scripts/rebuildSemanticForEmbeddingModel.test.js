@@ -46,7 +46,6 @@ describe('semantic model rebuild script', () => {
         vectors: 10,
         rebuildTargets: 3,
         events: 2,
-        topics: 1,
         islands: 1,
         taxonomyVectors: 8
       }),
@@ -55,8 +54,6 @@ describe('semantic model rebuild script', () => {
       regenerateTaxonomy: destructive,
       markDuplicates: destructive,
       rebuildEvents: destructive,
-      rebuildEventTopics: destructive,
-      rebuildBehavioralTopics: destructive,
       rebuildIslands: destructive,
       logger: { log: vi.fn() }
     };
@@ -82,7 +79,6 @@ describe('semantic model rebuild script', () => {
         vectors: 4,
         rebuildTargets: 2,
         events: 1,
-        topics: 1,
         islands: 1,
         taxonomyVectors: 2
       })),
@@ -109,17 +105,9 @@ describe('semantic model rebuild script', () => {
         calls.push(`events:${userId}`);
         return { touchedEventIds: [userId * 100] };
       }),
-      rebuildEventTopics: vi.fn(async userId => {
-        calls.push(`event-topics:${userId}`);
-        return { touchedTopicIds: [userId * 1000] };
-      }),
-      rebuildBehavioralTopics: vi.fn(async userId => {
-        calls.push(`behavioral-topics:${userId}`);
-        return { touchedTopicIds: [userId * 2000] };
-      }),
-      rebuildIslands: vi.fn(async (userId, options) => {
+      rebuildIslands: vi.fn(async userId => {
         calls.push(`islands:${userId}`);
-        expect(options.touchedTopicIds).toEqual([userId * 1000, userId * 2000]);
+
         return { islandCount: 1 };
       }),
       logger: { log: vi.fn() }
@@ -141,14 +129,10 @@ describe('semantic model rebuild script', () => {
       'duplicates:1:0',
       'duplicates:1:1',
       'events:1',
-      'event-topics:1',
-      'behavioral-topics:1',
       'islands:1',
       'duplicates:2:0',
       'duplicates:2:1',
       'events:2',
-      'event-topics:2',
-      'behavioral-topics:2',
       'islands:2'
     ]);
   });

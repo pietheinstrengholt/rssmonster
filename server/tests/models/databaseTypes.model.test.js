@@ -23,7 +23,6 @@ describe('dialect-aware unsigned model types', () => {
     expect(db.Article.rawAttributes.imageWidth.type.toString()).toBe(integerType);
     expect(db.Article.rawAttributes.imageHeight.type.toString()).toBe(integerType);
     expect(db.Island.rawAttributes.id.type.toString()).toBe(bigIntType);
-    expect(db.IslandTopic.rawAttributes.islandId.type.toString()).toBe(bigIntType);
     expect(db.IslandTaxonomy.rawAttributes.id.type.toString()).toBe(bigIntType);
   });
 });

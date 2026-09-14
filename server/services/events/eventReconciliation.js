@@ -44,20 +44,13 @@ export function resolveEventStatus(articleCount, lastSeenAt) {
   return 'active';
 }
 
-// This function estimates event strength from article redundancy, cohesion, and topic history.
+// This function estimates event strength from article redundancy and cohesion.
 export function computeEventStrength({
   articleCount,
-  topicEventCount
 }) {
   // Derives the redundancy score through min while computing event strength.
   const redundancyScore = Math.min(
     articleCount / EVENT_STRENGTH_CONFIG.maxArticleRedundancyCount,
-    1
-  );
-
-  // Derives the topic score through min while computing event strength.
-  const topicScore = Math.min(
-    Math.log2((topicEventCount ?? 1) + 1) / EVENT_STRENGTH_CONFIG.maxTopicEventLogBase,
     1
   );
 
@@ -66,7 +59,7 @@ export function computeEventStrength({
   return Number((
     redundancyScore * EVENT_STRENGTH_CONFIG.weights.redundancy +
     cohesionScore * EVENT_STRENGTH_CONFIG.weights.cohesion +
-    topicScore * EVENT_STRENGTH_CONFIG.weights.topic
+    EVENT_STRENGTH_CONFIG.baseline
   ).toFixed(3));
 }
 
@@ -153,7 +146,6 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
     // Computes the event strength while performing reconcile touched events.
     const strength = computeEventStrength({
       articleCount: projection.articleCount,
-      topicEventCount: 1
     });
     // Selects the developing article id while performing reconcile touched events.
     const developingArticleId = selectDevelopingArticleId(event, eventArticles);

@@ -14,7 +14,6 @@ import { reconcileDuplicateFeeds } from '../../services/feeds/feedReconciliation
 
 const {
   Article,
-  ArticleTopic,
   Category,
   Event,
   Feed,
@@ -22,7 +21,6 @@ const {
   Hotlink,
   Setting,
   Tag,
-  Topic,
   User,
   sequelize
 } = db;
@@ -159,35 +157,26 @@ describe('duplicate feed reconciliation integration', () => {
       url: overlapUrl,
       normalizedUrl: overlapUrl,
       status: 'read',
-      favoriteInd: 1
+      favoriteInd: 1,
+      favoritedAt: new Date('2026-08-01T00:00:00Z'),
+      lastClickedAt: new Date('2026-08-01T00:00:00Z')
     });
     const removedOverlap = await createArticle(duplicate, unique('duplicate-overlap'), {
       url: `${overlapUrl}#publisher-fragment`,
       normalizedUrl: overlapUrl,
-      clickedAmount: 4
+      clickedAmount: 4,
+      lastClickedAt: new Date('2026-09-01T00:00:00Z')
     });
     const uniqueArticle = await createArticle(duplicate, unique('unique'));
-    const topic = await Topic.create({
-      userId: fixture.user.id,
-      name: 'Transferred topic',
-      topicKey: unique('topic'),
-      topicType: 'event'
-    });
+
     const event = await Event.create({
       userId: fixture.user.id,
-      topicId: topic.id,
       representativeArticleId: removedOverlap.id,
       developingArticleId: removedOverlap.id,
       name: 'Transferred event'
     });
-    await removedOverlap.update({ eventId: event.id, topicId: topic.id });
-    await ArticleTopic.create({
-      articleId: removedOverlap.id,
-      topicId: topic.id,
-      confidence: 0.8,
-      rank: 1,
-      primaryInd: true
-    });
+    await removedOverlap.update({ eventId: event.id });
+
     await Tag.create({
       articleId: removedOverlap.id,
       userId: fixture.user.id,
@@ -226,14 +215,14 @@ describe('duplicate feed reconciliation integration', () => {
     expect(await Article.findByPk(retainedOverlap.id)).toMatchObject({
       status: 'read',
       favoriteInd: 1,
-      clickedAmount: 4
+      clickedAmount: 4,
+      favoritedAt: new Date('2026-08-01T00:00:00Z'),
+      lastClickedAt: new Date('2026-09-01T00:00:00Z')
     });
     expect(await Tag.findOne({ where: { name: 'transferred' } })).toMatchObject({
       articleId: retainedOverlap.id
     });
-    expect(await ArticleTopic.findOne({ where: { topicId: topic.id } })).toMatchObject({
-      articleId: retainedOverlap.id
-    });
+
     expect(await Event.findByPk(event.id)).toMatchObject({
       representativeArticleId: retainedOverlap.id,
       developingArticleId: retainedOverlap.id

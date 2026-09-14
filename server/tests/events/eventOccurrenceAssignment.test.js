@@ -38,8 +38,8 @@ async function assign(g, incoming, events, members = [], options = {}) {
   const articleCandidateCache = new ArticleEventCandidateCache({ userId: g.user.id });
   for (const member of members) articleCandidateCache.insert(member);
   const context = { records: [], stats: {} };
-  const id = await assignArticleToEvent(incoming, new EventCache(events), null, [], context, {
-    skipTopicAssignment: true, articleCandidateCache, ...options
+  const id = await assignArticleToEvent(incoming, new EventCache(events), null, context, {
+    articleCandidateCache, ...options
   });
   await incoming.reload();
   return { id, context };
@@ -54,7 +54,7 @@ describe('Event occurrence assignment', () => {
     const incoming = await makeArticle(g);
     if (source === 'database') {
       const context = null;
-      expect(await assignArticleToEvent(incoming, null, null, [], context, { skipTopicAssignment: true })).toBe(event.id);
+      expect(await assignArticleToEvent(incoming, null, null, context, {  })).toBe(event.id);
     } else {
       const result = await assign(g, incoming, source === 'centroid-cache' ? [event] : [], [member]);
       expect(result.id).toBe(event.id);
@@ -157,7 +157,7 @@ describe('Event occurrence assignment', () => {
     const stale = { id: event.id, userId: g.user.id, name: title, eventVector: [1, 0], eventWindowStartAt: at(20), eventWindowEndAt: at(20) };
     const incoming = await makeArticle(g, 30);
     const cache = { updateInMemory: vi.fn() };
-    expect(await assignArticleToExistingEvent({ article: incoming, bestEvent: stale, cache, skipTopicAssignment: true })).toBeNull();
+    expect(await assignArticleToExistingEvent({ article: incoming, bestEvent: stale, cache })).toBeNull();
     expect((await incoming.reload()).eventId).toBeNull();
     expect(cache.updateInMemory).not.toHaveBeenCalled();
   });
@@ -170,7 +170,7 @@ describe('Event occurrence assignment', () => {
     await event.update({ articleCount: 2 });
     const incoming = await makeArticle(g, 1, { title: 'Orion OS 4.3 released' });
     const cache = { updateInMemory: vi.fn() };
-    expect(await assignArticleToExistingEvent({ article: incoming, bestEvent: event, cache, skipTopicAssignment: true })).toBeNull();
+    expect(await assignArticleToExistingEvent({ article: incoming, bestEvent: event, cache })).toBeNull();
     expect((await incoming.reload()).eventId).toBeNull();
     expect((await event.reload()).articleCount).toBe(2);
     expect(cache.updateInMemory).not.toHaveBeenCalled();
@@ -182,7 +182,7 @@ describe('Event occurrence assignment', () => {
     const left = await makeArticle(g, 1);
     const right = await makeArticle(g, 39);
     const results = await Promise.all([left, right].map(incoming => assignArticleToExistingEvent({
-      article: incoming, bestEvent: event, cache: null, skipTopicAssignment: true
+      article: incoming, bestEvent: event, cache: null
     })));
     expect(results.filter(Boolean)).toHaveLength(1);
     await event.reload();
@@ -194,7 +194,7 @@ describe('Event occurrence assignment', () => {
     const g = await graph();
     const seed = await makeArticle(g);
     const neighbor = await makeArticle(g, 0, { articleVector: [0, 1] });
-    expect(await createAndAssignEvent({ article: seed, candidateArticles: [{ ...neighbor.toJSON(), articleVector: [1, 0] }], skipTopicAssignment: true })).toBeNull();
+    expect(await createAndAssignEvent({ article: seed, candidateArticles: [{ ...neighbor.toJSON(), articleVector: [1, 0] }] })).toBeNull();
     expect(await Event.count({ where: { userId: g.user.id } })).toBe(0);
   });
 });

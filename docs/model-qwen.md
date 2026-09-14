@@ -7,6 +7,9 @@ nav_order: 2
 
 # Qwen Embeddings
 
+> Historical evaluation of the architecture before Topic removal. The measurements below are retained for comparison and do not describe current processing.
+
+
 RSSMonster can run `onnx-community/Qwen3-Embedding-0.6B-ONNX` locally through
 Transformers.js. It uses CPU inference, last-token pooling, L2 normalization,
 and the model's native 1024-dimensional vectors. One model instance is loaded

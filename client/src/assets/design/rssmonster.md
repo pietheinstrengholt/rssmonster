@@ -147,7 +147,7 @@ The treatment is an intentional interruption before the article list, not a reus
 
 ### Settings and editors
 
-Settings uses a modal shell with stable left navigation and a scrollable content pane. Welcome, Smart Folders, Actions, Scores, Topics, Islands, Feeds, Official Sources, Crawl Statistics, and Manage Users share a consistent heading, description, loading, empty, error, and save-state language.
+Settings uses a modal shell with stable left navigation and a scrollable content pane. Welcome, Smart Folders, Actions, Scores, Events, Islands, Feeds, Official Sources, Crawl Statistics, and Manage Users share a consistent heading, description, loading, empty, error, and save-state language.
 
 Blue indicates active settings navigation and primary saves. Informational panels use pale blue, successful metrics use green, feed-related operations use orange, and destructive actions use red. Editable grids and tables are reserved for data that benefits from comparison; explanatory copy and metrics should stay in normal flow.
 

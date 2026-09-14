@@ -8,15 +8,23 @@ import qwenGenerationProvider from '../generation/providers/qwenGenerationProvid
 import { logInferenceDebug } from '../debug.js';
 import { getInferenceRequestId } from '../middleware/requestLifecycle.js';
 
-const LABEL_TYPES = Object.freeze(['event', 'topic', 'island']);
+const LABEL_TYPES = Object.freeze(['event', 'island']);
 const MAX_CONTEXT_LENGTH = 6000;
 const MAX_LABEL_LENGTH = 255;
 const MAX_GENERATION_TOKENS = 96;
 const TYPE_RULES = Object.freeze({
   event: 'event: one concrete occurrence; neutral subject and action; 5-12 words.',
-  topic: 'topic: recurring subject; stable noun phrase; 2-6 words.',
-  island: 'island: durable user interest; broad stable noun phrase; 2-5 words.'
+  island: [
+    'island: name the specific subject shared by the supplied article titles.',
+    'Describe what the articles are about, not the user or the personalization system.',
+    'Use a concrete noun phrase, usually 2-5 words; one word is enough for a precise subject.',
+    'Prefer the recurring subject over a single news headline, incidental person, or publisher.',
+    'Do not copy instructions or JSON placeholders into the label.',
+    'If the evidence does not support a specific subject, return null for island.'
+  ].join(' ')
 });
+// These describe the labeling task rather than the articles. Never persist prompt echoes.
+const GENERIC_ISLAND_LABEL = /^(?:durable user interests?|user interests?|general interests?|broad stable noun phrase|label|island)$/i;
 
 const generationConfig = getGenerationConfig();
 const hasApiKey = Boolean(getCompatibleApiKey('GENERATION'));
@@ -51,7 +59,7 @@ const normalizeInput = input => {
 
   const requestedTypes = LABEL_TYPES.filter(type => input[type] === true);
   if (!requestedTypes.length) {
-    throw new SemanticLabelInputError('at least one of event, topic, or island must be true');
+    throw new SemanticLabelInputError('at least one of event or island must be true');
   }
 
   const context = serializeContext(input.context);
@@ -94,10 +102,11 @@ const parseJsonObject = raw => {
   }
 };
 
-const normalizeLabel = value => {
+const normalizeLabel = (value, type) => {
   if (typeof value !== 'string') return null;
   const label = value.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
   if (!label || label.length > MAX_LABEL_LENGTH) return null;
+  if (type === 'island' && GENERIC_ISLAND_LABEL.test(label.replace(/[.!?]+$/, '').trim())) return null;
   return label;
 };
 
@@ -140,7 +149,7 @@ export async function generateSemanticLabels(input, requestContext = {}) {
   const raw = await requestGeneration(buildPrompt(normalized), requestContext);
   const parsed = parseJsonObject(raw);
   const result = Object.fromEntries(
-    normalized.requestedTypes.map(type => [type, normalizeLabel(parsed[type])])
+    normalized.requestedTypes.map(type => [type, normalizeLabel(parsed[type], type)])
   );
 
   logInferenceDebug(

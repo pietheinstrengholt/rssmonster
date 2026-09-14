@@ -20,7 +20,6 @@ import {
 } from '../src/api/articles.js';
 import { fetchEventArticles } from '../src/api/events.js';
 import { fetchTopTags } from '../src/api/tags.js';
-import { fetchTopicArticles } from '../src/api/topics.js';
 
 const { get, post } = vi.hoisted(() => ({
   get: vi.fn(),
@@ -99,7 +98,7 @@ describe('article content API contracts', () => {
       visibleSeconds: 8,
       selectedStatus: 'unread'
     };
-    const selection = { status: 'unread', grouping: 'topic' };
+    const selection = { status: 'unread', grouping: 'event' };
 
     markArticleSeen(9, seenPayload);
     markArticleUnread(9);
@@ -175,13 +174,10 @@ describe('article content API contracts', () => {
 });
 
 describe('related content API contracts', () => {
-  // Verifies event and topic expansion retain the optional source article.
-  it('builds event and topic article requests', () => {
+  // Verifies event expansion retain the optional source article.
+  it('builds event article requests', () => {
     fetchEventArticles(7, 11);
     fetchEventArticles(8);
-    fetchTopicArticles(9, 12);
-    fetchTopicArticles(10);
-
     expect(post).toHaveBeenNthCalledWith(1, '/events/articles', {
       eventId: 7,
       articleId: 11
@@ -190,19 +186,11 @@ describe('related content API contracts', () => {
       eventId: 8,
       articleId: null
     });
-    expect(post).toHaveBeenNthCalledWith(3, '/topics/articles', {
-      eventId: 9,
-      articleId: 12
-    });
-    expect(post).toHaveBeenNthCalledWith(4, '/topics/articles', {
-      eventId: 10,
-      articleId: null
-    });
   });
 
   // Verifies top-tag filters pass through as query parameters.
   it('builds the top-tags request', () => {
-    const params = { grouping: 'topic', limit: 20 };
+    const params = { grouping: 'event', limit: 20 };
 
     fetchTopTags(params);
 

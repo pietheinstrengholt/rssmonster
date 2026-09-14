@@ -2,14 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   islandFindAll: vi.fn(),
-  islandTopicFindAll: vi.fn(),
   query: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
   default: {
     Island: { findAll: mocks.islandFindAll },
-    IslandTopic: { findAll: mocks.islandTopicFindAll },
     sequelize: {
       query: mocks.query,
       fn: vi.fn(),
@@ -42,16 +40,10 @@ describe('duplicate island name persistence', () => {
   });
 
   it('archives near duplicates and renames semantically distinct weaker islands', async () => {
-    const strongest = island({ id: 1, islandVector: [1, 0] });
+    const strongest = island({ id: 1, islandVector: [1, 0], weight: 0.8, populationAudit: [{ metrics: { relatedArticleCount: 2 } }] });
     const duplicate = island({ id: 2, islandVector: [0.999, 0.001] });
-    const distinct = island({ id: 3, islandVector: [0, 1] });
+    const distinct = island({ id: 3, islandVector: [0, 1], populationAudit: [{ sourceArticles: { articles: [{ title: 'Quantum Cameras' }] } }] });
     mocks.islandFindAll.mockResolvedValue([strongest, duplicate, distinct]);
-    mocks.query.mockResolvedValue([{ islandId: 3, name: 'Quantum Cameras' }]);
-    mocks.islandTopicFindAll.mockResolvedValue([
-      { islandId: 1, topicCount: 3 },
-      { islandId: 2, topicCount: 1 },
-      { islandId: 3, topicCount: 1 }
-    ]);
 
     const result = await disambiguateDuplicateIslandNamesForUser(8, { transaction: 'tx' });
 
@@ -73,6 +65,6 @@ describe('duplicate island name persistence', () => {
 
     await expect(disambiguateDuplicateIslandNamesForUser(8)).resolves.toEqual({ renamed: [], archived: [] });
     expect(mocks.query).not.toHaveBeenCalled();
-    expect(mocks.islandTopicFindAll).not.toHaveBeenCalled();
+
   });
 });

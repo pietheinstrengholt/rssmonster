@@ -85,7 +85,7 @@ export const OPTIONAL_DYNAMIC_MODULES = Object.freeze([
   'src/components/settings/SettingsOfficialSources.vue',
   'src/components/settings/SettingsScores.vue',
   'src/components/settings/SettingsSmartFolders.vue',
-  'src/components/settings/SettingsTopics.vue',
+  'src/components/settings/SettingsEvents.vue',
   'src/components/settings/shared/ExpressionEditor.vue'
 ]);
 
@@ -117,7 +117,7 @@ export const OPTIONAL_CHUNK_PREFIXES = Object.freeze([
   'assets/SettingsOfficialSources-',
   'assets/SettingsScores-',
   'assets/SettingsSmartFolders-',
-  'assets/SettingsTopics-',
+  'assets/SettingsEvents-',
   'assets/UnreadConfigurationModal-',
   'assets/UpdateFeed-',
   'assets/vuedraggable.'

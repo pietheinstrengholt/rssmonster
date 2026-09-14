@@ -22,7 +22,7 @@ export function strata(row) {
   const length = Number(row.bodyLength || 0);
   return [`feed:${row.feedId}`, `publisher:${new URL(row.url).hostname}`, `week:${Math.floor(Date.parse(row.publishedAt) / 604800000)}`,
     `language:${row.language || 'unknown'}`, `length:${length < 200 ? 'brief' : length < 2000 ? 'short' : length < 10000 ? 'medium' : 'long'}`,
-    `body:${row.missingOriginal ? 'missing' : 'present'}`, `event:${Boolean(row.eventId)}`, `topic:${Boolean(row.topicId)}`,
+    `body:${row.missingOriginal ? 'missing' : 'present'}`, `event:${Boolean(row.eventId)}`,
     `syndication:${Boolean(row.syndication)}`, `quality:${Math.floor(Number(row.qualityScore || 0) / 25)}`,
     `promotion:${Number(row.advertisementScore) < 40}`, `numeric-title:${/\d/.test(row.title)}`,
     `title:${row.title.length < 45 ? 'short' : row.title.length > 110 ? 'long' : 'medium'}`];
@@ -71,7 +71,7 @@ export function sanitizeArticle(row, sourceId, feedId) {
     contentHtml: row.contentHtml ?? null, contentText: row.contentText ?? null, publishedAt, firstSeen: publishedAt,
     language: row.language || 'unknown', qualityScore: row.qualityScore, advertisementScore: row.advertisementScore,
     sentimentScore: row.sentimentScore, regression: { provenance: 'real', scenario: 'real-background', wave: 1,
-      originallyEventLinked: Boolean(row.eventId), originallyTopicLinked: Boolean(row.topicId),
+      originallyEventLinked: Boolean(row.eventId),
       originallySyndicated: Boolean(row.duplicateOfArticleId || row.duplicateCount) } };
 }
 

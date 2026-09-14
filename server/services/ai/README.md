@@ -131,7 +131,7 @@ overrides, and missing connections stop scheduling and dispatch.
 ## Deterministic semantic decisions
 
 Embedding output supports candidate retrieval; the server's shared
-[Event](../events/README.md), [Topic](../topics/README.md), and
+[Event](../events/README.md), and
 [Island/interest](../islands/README.md) policies decide membership and confidence.
 Occurrence features, durable-subject checks and behavioral intent compatibility
 make no additional AI calls. Optional generated labels remain presentation metadata;

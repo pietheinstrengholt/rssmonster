@@ -109,8 +109,8 @@ const SettingsActions = createAsyncSettingsSection(() => import('./SettingsActio
 const SettingsScores = createAsyncSettingsSection(() => import('./SettingsScores.vue'));
 // This component lazily loads interest island settings.
 const SettingsIslands = createAsyncSettingsSection(() => import('./SettingsIslands.vue'));
-// This component lazily loads event and topic settings.
-const SettingsTopics = createAsyncSettingsSection(() => import('./SettingsTopics.vue'));
+// This component lazily loads event settings.
+const SettingsEvents = createAsyncSettingsSection(() => import('./SettingsEvents.vue'));
 // This component lazily loads crawl statistics.
 const SettingsCrawlStatistics = createAsyncSettingsSection(() => import('./SettingsCrawlStatistics.vue'));
 // This component lazily loads optional AI processing health.
@@ -142,7 +142,7 @@ export default {
     SettingsActions,
     SettingsScores,
     SettingsIslands,
-    SettingsTopics,
+    SettingsEvents,
     SettingsCrawlStatistics,
     SettingsProcessingJobs,
     SettingsObservability,
@@ -192,7 +192,7 @@ export default {
         { key: 'generatedFeeds', label: 'Generated Feeds', icon: 'rss-fill', visible: true },
         { key: 'actions', label: 'Actions', icon: 'lightning-charge-fill', visible: true },
         { key: 'scores', label: 'Scores', icon: 'bar-chart-fill', visible: aiEnabled },
-        { key: 'topics', label: 'Topics', icon: 'diagram-3-fill', visible: aiEnabled },
+        { key: 'events', label: 'Events', icon: 'diagram-3-fill', visible: aiEnabled },
         { key: 'islands', label: 'Islands', icon: 'compass-fill', visible: aiEnabled },
         { key: 'crawlStatistics', label: 'Crawl Statistics', icon: 'clipboard-data-fill', visible: true },
         { key: 'processingJobs', label: 'AI Processing', icon: 'cpu-fill', visible: true },
@@ -217,7 +217,7 @@ export default {
         generatedFeeds: 'SettingsGeneratedFeeds',
         actions: 'SettingsActions',
         scores: 'SettingsScores',
-        topics: 'SettingsTopics',
+        events: 'SettingsEvents',
         islands: 'SettingsIslands',
         crawlStatistics: 'SettingsCrawlStatistics',
         processingJobs: 'SettingsProcessingJobs',

@@ -10,7 +10,7 @@ import {
   backfillHistoricalEventsForUser
 } from '../../services/reconcile/semanticPipelineScopes.js';
 
-const { sequelize, Article, ArticleTopic, Category, Event, EventTopic, Feed, Topic, User } = db;
+const { sequelize, Article, Category, Event, Feed, User } = db;
 
 async function createUserGraph(prefix) {
   const hash = await bcrypt.hash('secret', 4);
@@ -76,7 +76,7 @@ describe('repairRecentEventsForUser', () => {
     ]);
 
     const result = await runIncrementalEventsForUser(user.id, {
-      skipTopicAssignment: true
+
     });
 
     await Promise.all(articles.map(article => article.reload()));
@@ -112,14 +112,7 @@ describe('repairRecentEventsForUser', () => {
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0]
     }));
-    const topic = await Topic.create({
-      userId: user.id,
-      name: 'Acme transaction',
-      topicKey: `persisted-assignment-${user.id}`,
-      topicType: 'event',
-      topicVector: [1, 0, 0],
-      lastActivityAt: representativeArticle.publishedAt
-    });
+
     const runContext = { records: [], stats: {} };
     const articleCandidateCache = { findNearby: vi.fn().mockReturnValue([]), updateEventId: vi.fn() };
 
@@ -129,7 +122,6 @@ describe('repairRecentEventsForUser', () => {
       incomingArticle.id,
       new EventCache([event]),
       null,
-      [topic],
       runContext,
       { articleCandidateCache }
     );
@@ -138,15 +130,10 @@ describe('repairRecentEventsForUser', () => {
 
     expect(eventId).toBe(event.id);
     expect(incomingArticle.eventId).toBe(event.id);
-    expect(incomingArticle.topicId).toBe(topic.id);
-    expect(await EventTopic.count({ where: { eventId, topicId: topic.id } })).toBe(1);
-    expect(await ArticleTopic.count({
-      where: { articleId: incomingArticle.id, topicId: topic.id }
-    })).toBe(1);
+
     expect(runContext.records).toContainEqual(expect.objectContaining({
       id: incomingArticle.id,
-      eventId,
-      topicId: topic.id
+      eventId
     }));
     expect(runContext.stats.linkedToExistingEventCount).toBe(1);
     expect(articleCandidateCache.updateEventId).toHaveBeenCalledWith(
@@ -186,9 +173,8 @@ describe('repairRecentEventsForUser', () => {
       incomingArticle,
       new EventCache([event]),
       { eventVector: [0, 1, 0] },
-      [],
       null,
-      { skipTopicAssignment: true }
+      {  }
     );
 
     await incomingArticle.reload();
@@ -197,7 +183,7 @@ describe('repairRecentEventsForUser', () => {
     expect(incomingArticle.eventId).toBe(event.id);
   });
 
-  it('keeps the topic-only no-vector path when no vector is available', async () => {
+  it('keeps the eventless path when no vector is available', async () => {
     const { user, feed } = await createUserGraph('missing-assignment-vector');
     const article = await Article.create(articlePayload(user, feed, 1, {
       articleVector: null
@@ -208,16 +194,15 @@ describe('repairRecentEventsForUser', () => {
       article,
       new EventCache([]),
       null,
-      [],
       runContext,
-      { skipTopicAssignment: true }
+      {  }
     );
 
     await article.reload();
 
     expect(eventId).toBeNull();
     expect(article.eventId).toBeNull();
-    expect(runContext.stats.topicOnlyNoVectorCount).toBe(1);
+    expect(runContext.stats.eventlessNoVectorCount).toBe(1);
   });
 
   it('rejects duplicate articles before event assignment', async () => {
@@ -254,9 +239,8 @@ describe('repairRecentEventsForUser', () => {
       duplicateArticle,
       new EventCache([event]),
       null,
-      [],
       runContext,
-      { skipTopicAssignment: true }
+      {  }
     );
 
     await duplicateArticle.reload();
@@ -296,7 +280,7 @@ describe('repairRecentEventsForUser', () => {
     }));
 
     const result = await runIncrementalEventsForUser(user.id, {
-      skipTopicAssignment: true
+
     });
 
     await filteredArticle.reload();
@@ -332,8 +316,7 @@ describe('repairRecentEventsForUser', () => {
 
     const duplicateResult = await markDuplicateArticlesForUser(user.id, { createdAtFrom });
     const eventResult = await runIncrementalEventsForUser(user.id, {
-      createdAtFrom,
-      skipTopicAssignment: true
+      createdAtFrom
     });
 
     await article.reload();
@@ -349,17 +332,9 @@ describe('repairRecentEventsForUser', () => {
 
     const ownerArticle = await Article.create(articlePayload(owner.user, owner.feed, 1));
     const foreignRepresentative = await Article.create(articlePayload(foreign.user, foreign.feed, 1));
-    const foreignTopic = await Topic.create({
-      userId: foreign.user.id,
-      name: 'Foreign topic',
-      topicKey: `foreign-topic-${foreign.user.id}`,
-      topicType: 'event',
-      topicVector: [0, 1, 0],
-      lastActivityAt: new Date('2026-05-21T10:00:00.000Z')
-    });
+
     const foreignEvent = await Event.create({
       userId: foreign.user.id,
-      topicId: foreignTopic.id,
       representativeArticleId: foreignRepresentative.id,
       name: 'Foreign event',
       articleCount: 1,
@@ -370,31 +345,18 @@ describe('repairRecentEventsForUser', () => {
       eventWindowEndAt: new Date('2026-05-21T10:00:00.000Z'),
       status: 'active'
     });
-    await EventTopic.create({
-      eventId: foreignEvent.id,
-      topicId: foreignTopic.id,
-      confidence: 1,
-      rank: 1,
-      primaryInd: true
-    });
 
     await ownerArticle.update({ eventId: foreignEvent.id });
 
-    await repairRecentEventsForUser(owner.user.id, { skipTopicAssignment: true });
+    await repairRecentEventsForUser(owner.user.id, {  });
 
     const persistedForeignEvent = await Event.findByPk(foreignEvent.id);
-    const persistedForeignEventTopicCount = await EventTopic.count({
-      where: {
-        eventId: foreignEvent.id,
-        topicId: foreignTopic.id
-      }
-    });
 
     await ownerArticle.reload();
 
     expect(ownerArticle.eventId).toBeNull();
     expect(persistedForeignEvent).toBeTruthy();
-    expect(persistedForeignEventTopicCount).toBe(1);
+
   });
 
   it('splits otherwise similar articles into separate events when their event-time window exceeds 24 hours', async () => {
@@ -437,7 +399,7 @@ describe('repairRecentEventsForUser', () => {
       })
     ]);
 
-    await repairRecentEventsForUser(user.id, { skipTopicAssignment: true });
+    await repairRecentEventsForUser(user.id, {  });
 
     const events = await Event.findAll({
       where: { userId: user.id },
@@ -477,7 +439,7 @@ describe('repairRecentEventsForUser', () => {
       })
     ]);
 
-    await repairRecentEventsForUser(user.id, { skipTopicAssignment: true });
+    await repairRecentEventsForUser(user.id, {  });
 
     const events = await Event.findAll({
       where: { userId: user.id },
@@ -555,7 +517,7 @@ describe('repairRecentEventsForUser', () => {
     let summaryOutput = '';
 
     try {
-      await runIncrementalEventsForUser(user.id, { skipTopicAssignment: true });
+      await runIncrementalEventsForUser(user.id, {  });
       summaryOutput = logSpy.mock.calls
         .map(call => call.join(' '))
         .join('\n');
@@ -626,14 +588,7 @@ describe('repairRecentEventsForUser', () => {
       publishedAt: recentDateWithOffset(4 * 60 * 1000),
       articleVector: [1, 0, 0]
     }));
-    const topic = await Topic.create({
-      userId: user.id,
-      name: 'Spanish heatwave',
-      topicKey: `assigned-candidates-${user.id}`,
-      topicType: 'event',
-      topicVector: [1, 0, 0],
-      lastActivityAt: existingArticleA.publishedAt
-    });
+
     const runContext = {
       records: [
         {
@@ -671,7 +626,6 @@ describe('repairRecentEventsForUser', () => {
       incomingArticle,
       new EventCache([event]),
       { eventVector: incomingArticle.articleVector },
-      [topic],
       runContext,
       { assignmentContext: 'incremental' }
     );
@@ -683,12 +637,10 @@ describe('repairRecentEventsForUser', () => {
     expect(incomingArticle.eventId).toBe(event.id);
     expect(event.articleCount).toBe(3);
     expect(event.developingArticleId).toBe(existingArticleA.id);
-    expect(incomingArticle.topicId).toBe(topic.id);
-    expect(await EventTopic.count({ where: { eventId, topicId: topic.id } })).toBe(1);
+
     expect(runContext.records).toContainEqual(expect.objectContaining({
       id: incomingArticle.id,
-      eventId,
-      topicId: topic.id
+      eventId
     }));
     expect(runContext.stats.linkedToExistingEventCount).toBe(1);
   });
@@ -742,8 +694,7 @@ describe('repairRecentEventsForUser', () => {
       article: incomingArticle,
       articleEventVector: incomingArticle.articleVector,
       bestEvent: event,
-      cache,
-      skipTopicAssignment: true
+      cache
     })));
 
     await event.reload();
@@ -792,8 +743,7 @@ describe('repairRecentEventsForUser', () => {
     const assignment = {
       articleEventVector: incomingArticle.articleVector,
       bestEvent: event,
-      cache,
-      skipTopicAssignment: true
+      cache
     };
 
     await assignArticleToExistingEvent({
@@ -857,8 +807,7 @@ describe('repairRecentEventsForUser', () => {
       article: staleIncomingArticle,
       articleEventVector: staleIncomingArticle.articleVector,
       bestEvent: targetEvent,
-      cache,
-      skipTopicAssignment: true
+      cache
     });
 
     await incomingArticle.reload();
@@ -905,7 +854,6 @@ describe('repairRecentEventsForUser', () => {
         articleEventVector: incomingArticle.articleVector,
         bestEvent: event,
         cache,
-        skipTopicAssignment: true,
         transaction
       });
 
@@ -961,9 +909,8 @@ describe('repairRecentEventsForUser', () => {
       incomingArticle,
       new EventCache([event]),
       { eventVector: incomingArticle.articleVector },
-      [],
       null,
-      { skipTopicAssignment: true }
+      {  }
     );
 
     await incomingArticle.reload();
@@ -1014,9 +961,8 @@ describe('repairRecentEventsForUser', () => {
       incomingArticle,
       new EventCache([event]),
       { eventVector: incomingArticle.articleVector },
-      [],
       null,
-      { skipTopicAssignment: true }
+      {  }
     );
 
     await incomingArticle.reload();
@@ -1063,9 +1009,8 @@ describe('repairRecentEventsForUser', () => {
       incomingArticle,
       new EventCache([event]),
       { eventVector: incomingArticle.articleVector },
-      [],
       null,
-      { skipTopicAssignment: true }
+      {  }
     );
 
     await incomingArticle.reload();
@@ -1101,9 +1046,8 @@ describe('repairRecentEventsForUser', () => {
       incomingArticle,
       new EventCache([]),
       { eventVector: incomingArticle.articleVector },
-      [],
       null,
-      { skipTopicAssignment: true }
+      {  }
     );
 
     await existingArticle.reload();
@@ -1158,9 +1102,8 @@ describe('repairRecentEventsForUser', () => {
       incomingArticle,
       new EventCache([event]),
       { eventVector: incomingArticle.articleVector },
-      [],
       null,
-      { skipTopicAssignment: true }
+      {  }
     );
 
     await incomingArticle.reload();
@@ -1214,9 +1157,8 @@ describe('repairRecentEventsForUser', () => {
       incomingArticle,
       new EventCache([event]),
       { eventVector: incomingArticle.articleVector },
-      [],
       null,
-      { skipTopicAssignment: true }
+      {  }
     );
 
     await incomingArticle.reload();
@@ -1254,14 +1196,13 @@ describe('repairRecentEventsForUser', () => {
       })
     ]);
 
-    await repairRecentEventsForUser(user.id, { skipTopicAssignment: true });
+    await repairRecentEventsForUser(user.id, {  });
 
     const recentReplayEventCount = await Event.count({
       where: { userId: user.id }
     });
 
     const backfillResult = await backfillHistoricalEventsForUser(user.id, {
-      skipTopicAssignment: true,
       batchSize: 250
     });
 

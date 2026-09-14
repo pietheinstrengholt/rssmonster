@@ -50,7 +50,6 @@ export const buildArticleSearchQuery = ({
   status,
   hasSearchIntent,
   event,
-  islandFilter,
   developingFilter,
   briefingFilter,
   briefingMinDistinctSources,
@@ -130,7 +129,7 @@ export const buildArticleSearchQuery = ({
       articleQuery.include.unshift({
         model: Event,
         as: 'event',
-        attributes: ['id', 'name', 'generatedName', 'articleCount', 'eventStrength', 'sourceDiversityScore', 'sourceCount', 'topicId'],
+        attributes: ['id', 'name', 'generatedName', 'articleCount', 'eventStrength', 'sourceDiversityScore', 'sourceCount'],
         required: false
       });
     }
@@ -239,31 +238,6 @@ export const buildArticleSearchQuery = ({
     articleQuery.where.eventId = event ? { [Op.not]: null } : { [Op.is]: null };
   }
 
-  // Handles the case where island filter is not value.
-  if (islandFilter !== null) {
-    // Selects the island link predicate based on whether island filter is available.
-    const islandLinkPredicate = islandFilter ? 'EXISTS' : 'NOT EXISTS';
-    appendAndCondition(articleQuery.where, Article.sequelize.literal(`
-      ${islandLinkPredicate} (
-        SELECT 1
-        FROM events island_event
-        INNER JOIN event_topics island_event_topic
-          ON island_event_topic.eventId = island_event.id
-        INNER JOIN topics island_topic
-          ON island_topic.id = island_event_topic.topicId
-          AND island_topic.userId = articles.userId
-        INNER JOIN island_topics island_membership
-          ON island_membership.topicId = island_topic.id
-        INNER JOIN islands interest_island
-          ON interest_island.id = island_membership.islandId
-          AND interest_island.userId = articles.userId
-          AND interest_island.archivedInd = 0
-        WHERE island_event.id = articles.eventId
-          AND island_event.userId = articles.userId
-      )
-    `));
-  }
-
   // Applies the exact persisted conditions exposed by Article.isDevelopingStory.
   if (developingFilter !== null) {
     applyDevelopingStoryEligibility(articleQuery.where, developingFilter);
@@ -313,35 +287,6 @@ export const buildArticleSearchQuery = ({
           )
         `)
       ]
-    });
-  }
-
-  // Handles the case where event is value and grouping is topic.
-  if ((event === null || groupingExplicit) && grouping === 'topic') {
-    appendAndCondition(articleQuery.where, {
-      id: {
-        [Op.in]: Article.sequelize.literal(`(
-          SELECT e.representativeArticleId
-          FROM events e
-          INNER JOIN (
-            SELECT userId, topicId, MAX(eventStrength) AS maxStrength
-            FROM events
-            WHERE topicId IS NOT NULL
-            GROUP BY userId, topicId
-          ) t
-            ON e.userId = t.userId
-            AND e.topicId = t.topicId
-            AND e.eventStrength = t.maxStrength
-          WHERE e.topicId IS NOT NULL
-            AND e.id = (
-              SELECT MAX(e2.id)
-              FROM events e2
-              WHERE e2.userId = e.userId
-                AND e2.topicId = e.topicId
-                AND e2.eventStrength = e.eventStrength
-            )
-        )`)
-      }
     });
   }
 

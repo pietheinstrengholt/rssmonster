@@ -1,3 +1,4 @@
+import { updateArticleBehavior } from '../services/articles/updateArticleBehavior.js';
 import { isLocalAuthEnabled } from '../config/auth.js';
 import db from '../models/index.js';
 const { Feed, Category, Article, User, Hotlink } = db;
@@ -356,7 +357,7 @@ export const postFever = async (req, res, _next) => {
             const itemIds = parseFeverItemIds(markId);
 
             if (itemIds.length > 0) {
-              await Article.update(update, {
+              await updateArticleBehavior(Article, update, {
                 where: {
                   id: { [Op.in]: itemIds },
                   userId: loggedInUser.id,
@@ -369,7 +370,7 @@ export const postFever = async (req, res, _next) => {
 
           //update per feed
           if (mark === "feed" && markId !== undefined) {
-            await Article.update(update, {
+            await updateArticleBehavior(Article, update, {
               where: {
                 feedId: markId,
                 status: 'unread',
@@ -420,7 +421,7 @@ export const postFever = async (req, res, _next) => {
 
               // Note: is_spark filtering would need to be added when that feature is implemented
               if (!mutationHandled) {
-                await Article.update(update, {
+                await updateArticleBehavior(Article, update, {
                   where
                 });
                 mutationHandled = true;
@@ -610,12 +611,14 @@ function genUpdate(req_body_as) {
 
     case "saved":
       return {
-        favoriteInd: 1
+        favoriteInd: 1,
+        favoritedAt: new Date()
       };
 
     case "unsaved":
       return {
-        favoriteInd: 0
+        favoriteInd: 0,
+        favoritedAt: null
       };
   }
 }

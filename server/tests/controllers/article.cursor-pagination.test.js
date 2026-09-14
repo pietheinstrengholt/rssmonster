@@ -317,7 +317,7 @@ describe('article cursor pagination', () => {
     expect(first.status).toBe(200);
     const boundary = first.body.snapshot.snapshotMaxArticleId;
     expect(boundary).toBe(initial.id);
-    await Setting.update({ sort: 'quality', grouping: 'topic' }, { where: { userId: user.id } });
+    await Setting.update({ sort: 'quality', grouping: 'event' }, { where: { userId: user.id } });
 
     await createArticle(user, feed, 'Science grouped member', new Date(), { eventId: event.id });
     await createArticle(user, feed, 'Science read', new Date(), { status: 'read' });
@@ -330,7 +330,7 @@ describe('article cursor pagination', () => {
     await createArticle(user, feed, 'Science matching arrival', new Date());
     expect((await count()).body).toEqual({ newerArticleCount: 1 });
     expect(await Setting.findOne({ where: { userId: user.id }, raw: true }))
-      .toMatchObject({ sort: 'quality', grouping: 'topic' });
+      .toMatchObject({ sort: 'quality', grouping: 'event' });
   });
 
   it('returns a snapshot for an empty ranked query and detects its first matching arrival', async () => {
@@ -393,7 +393,7 @@ describe('article cursor pagination', () => {
 
   it('honors expression grouping with event filters without saving folder presentation', async () => {
     const { user, feed } = await createUserFeed('folder-expression');
-    await Setting.create({ userId: user.id, sort: 'recommended', grouping: 'topic' });
+    await Setting.create({ userId: user.id, sort: 'recommended', grouping: 'event' });
     const representative = await createArticle(user, feed, 'Representative', new Date());
     const event = await Event.create({ userId: user.id, representativeArticleId: representative.id });
     await representative.update({ eventId: event.id });
@@ -404,7 +404,7 @@ describe('article cursor pagination', () => {
     expect(response.status).toBe(200);
     expect(response.body.itemIds).toEqual([representative.id]);
     expect(await Setting.findOne({ where: { userId: user.id }, raw: true }))
-      .toMatchObject({ sort: 'recommended', grouping: 'topic' });
+      .toMatchObject({ sort: 'recommended', grouping: 'event' });
   });
 
   it('counts arrivals only inside the current query limit', async () => {

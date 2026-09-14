@@ -11,7 +11,7 @@ export function smartFolderPresentation(query) {
   for (const token of tokenizeSmartFolderExpression(query)) {
     const cleaned = token.replace(/[.,;]+$/, '');
     const sort = cleaned.match(/^sort:(desc|asc|topStories|recommended|quality)$/i);
-    const grouping = cleaned.match(/^grouping:(none|event|topic)$/i);
+    const grouping = cleaned.match(/^grouping:(none|event)$/i);
     const developing = cleaned.match(/^developing:(true|false)$/i);
     if (sort) presentation.sort = normalizeSortValueForApi(sort[1].toLowerCase());
     if (grouping) presentation.grouping = grouping[1].toLowerCase();
@@ -29,7 +29,7 @@ export function completeSmartFolderQuery(query, limitCount) {
   if (!tokens.some(token => /^sort:(desc|asc|topStories|recommended|quality)$/i.test(token))) {
     parts.push(`sort:${presentation.sort}`);
   }
-  const groupingTokens = tokens.filter(token => /^grouping:(none|event|topic)$/i.test(token));
+  const groupingTokens = tokens.filter(token => /^grouping:(none|event)$/i.test(token));
   if (groupingTokens.at(-1)?.toLowerCase() !== `grouping:${presentation.grouping}`) {
     parts.push(`grouping:${presentation.grouping}`);
   }

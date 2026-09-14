@@ -70,10 +70,9 @@ describe('island name disambiguation', () => {
         sourceArticles: { articles: [] }
       }]
     });
-    const topicCounts = new Map([[1, 0], [2, 1]]);
+    expect(compareIslandStrength(strong, weak)).toBeLessThan(0);
+    expect(strongestIslandForDuplicateNameGroup([weak, strong])).toBe(strong);
 
-    expect(compareIslandStrength(strong, weak, topicCounts)).toBeLessThan(0);
-    expect(strongestIslandForDuplicateNameGroup([weak, strong], topicCounts)).toBe(strong);
   });
 
   it('builds a specific suffix without repeating generic base words', () => {
@@ -118,6 +117,6 @@ describe('island name disambiguation', () => {
     const target = island({ id: 42, populationAudit: [] });
     const usedNames = new Set([normalizeIslandName('AI Companions: Variant')]);
 
-    expect(buildDisambiguatedIslandName('AI Companions', target, [], usedNames)).toBe('AI Companions: Variant 42');
+    expect(buildDisambiguatedIslandName('AI Companions', target, usedNames)).toBe('AI Companions: Variant 42');
   });
 });

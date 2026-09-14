@@ -3,11 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   islandFindAll: vi.fn(),
   islandCreate: vi.fn(),
-  islandTopicFindAll: vi.fn(),
-  islandTopicBulkCreate: vi.fn(),
   taxonomyFindAll: vi.fn(),
   buildAudit: vi.fn(),
-  evolveMemberships: vi.fn(),
   disambiguate: vi.fn(),
   debugIsland: vi.fn()
 }));
@@ -15,19 +12,22 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../models/index.js', () => ({
   default: {
     Island: { findAll: mocks.islandFindAll, create: mocks.islandCreate },
-    IslandTopic: { findAll: mocks.islandTopicFindAll, bulkCreate: mocks.islandTopicBulkCreate },
     IslandTaxonomy: { findAll: mocks.taxonomyFindAll },
     sequelize: { fn: vi.fn(), col: vi.fn() }
   }
 }));
 
+vi.mock('../../services/islands/islandArticleProfiles.js', () => ({ loadIslandBehavioralArticles: async () => [] }));
+vi.mock('../../services/islands/islandLifecycle.js', () => ({
+  summarizeIslandLifecycle: () => ({ lastBehaviorAt: new Date(), confidence: 1 }),
+  reconstructIslandLifecycles: () => new Map([[2, { lastBehaviorAt: new Date('2000-01-01'), confidence: 0.01 }]]),
+  islandArchiveState: (island, support) => ({ archivedInd: support.confidence < 0.12,
+    archivedAt: support.confidence < 0.12 ? new Date() : null })
+}));
+
 vi.mock('../../services/islands/islandAudit.js', () => ({
   buildPopulationAuditEntry: mocks.buildAudit,
   appendPopulationAudit: (existing, entry) => [...(Array.isArray(existing) ? existing : []), entry]
-}));
-
-vi.mock('../../services/islands/islandMemberships.js', () => ({
-  evolveIslandTopicMemberships: mocks.evolveMemberships
 }));
 
 vi.mock('../../services/islands/islandNameDisambiguation.js', async (importOriginal) => {
@@ -74,43 +74,35 @@ describe('island profile persistence', () => {
     mocks.disambiguate.mockResolvedValue({ renamed: [], archived: [] });
   });
 
-  it('updates a semantic match with snapshot signals and evolves topic memberships', async () => {
+  it('updates a semantic match with snapshot signals from behavioral evidence', async () => {
     const island = existingIsland({ positiveSignals: { stars: 1 } });
     mocks.islandFindAll.mockResolvedValue([island]);
-    mocks.islandTopicFindAll.mockResolvedValue([]);
-    mocks.evolveMemberships.mockResolvedValue({ totalMembershipCount: 1, newMembershipCount: 1, removedMembershipCount: 0 });
 
     const result = await persistInterestIslandProfiles(3, [{
       vector: [1, 0],
       weight: 0.8,
       label: 'Updated',
-      topics: [{ topicId: 4, name: 'AI', vector: [1, 0], strength: 0.9 }],
       articles: [{ articleId: 5, score: 4 }],
       positiveSignals: { positives: 1, stars: 2, clicks: 1, negatives: 1 }
     }], 'tx');
 
     expect(island.update).toHaveBeenCalledWith(expect.objectContaining({
-      label: 'AI',
+      label: 'Updated',
       weight: 0.8,
       positiveSignals: expect.objectContaining({ positives: 1, stars: 2, clicks: 1, negatives: 1 })
     }), { transaction: 'tx' });
-    expect(mocks.evolveMemberships).toHaveBeenCalledWith(9, [
-      { topicId: 4, similarity: 1, confidence: 0.9 }
-    ], 'tx');
     expect(result.summary).toMatchObject({
       updatedIslandCount: 1,
       createdIslandCount: 0,
       createdIslandIds: [],
-      totalMembershipCount: 1
     });
   });
 
   it('replaying full profiles preserves counters while genuine new clicks are reflected', async () => {
     const island = existingIsland();
     mocks.islandFindAll.mockResolvedValue([island]);
-    mocks.islandTopicFindAll.mockResolvedValue([]);
-    const profile = { vector: [1, 0], weight: 0.6, label: 'Local AI', topics: [],
-      articles: [{ articleId: 8, score: 6 }], positiveSignals: { stars: 1, clicks: 1 } };
+
+    const profile = { vector: [1, 0], weight: 0.6, label: 'Local AI', articles: [{ articleId: 8, score: 6 }], positiveSignals: { stars: 1, clicks: 1 } };
     await persistInterestIslandProfiles(3, [profile], 'tx');
     const first = structuredClone(island.positiveSignals);
     await persistInterestIslandProfiles(3, [profile], 'tx');
@@ -131,27 +123,22 @@ describe('island profile persistence', () => {
     const created = existingIsland({ id: 10, label: 'AI (2)', islandVector: [1, 0] });
     mocks.islandFindAll.mockResolvedValue([stale]);
     mocks.islandCreate.mockResolvedValue(created);
-    mocks.islandTopicFindAll.mockResolvedValue([{ islandId: 2, avgConfidence: 0.01 }]);
 
     const result = await persistInterestIslandProfiles(3, [{
       vector: [1, 0],
       weight: 0.7,
       label: 'AI',
-      topics: [{ topicId: 7, name: 'AI', vector: [1, 0], strength: 0.8 }],
-      articles: [],
+      articles: [{ articleId: 1, score: 1 }],
       positiveSignals: { stars: 1 }
     }], 'tx');
 
     expect(mocks.islandCreate).toHaveBeenCalledWith(expect.objectContaining({ label: 'AI (2)', userId: 3 }), { transaction: 'tx' });
-    expect(mocks.islandTopicBulkCreate).toHaveBeenCalledWith([
-      { islandId: 10, topicId: 7, similarity: 1, confidence: 0.8 }
-    ], { transaction: 'tx' });
+
     expect(stale.update).toHaveBeenCalledWith(expect.objectContaining({ archivedInd: true }), { transaction: 'tx' });
     expect(result.summary).toMatchObject({
       createdIslandCount: 1,
       createdIslandIds: [created.id],
       archivedIslandCount: 1,
-      newMembershipCount: 1
     });
   });
 
@@ -159,8 +146,8 @@ describe('island profile persistence', () => {
     mocks.islandFindAll.mockResolvedValue([]);
 
     const result = await persistInterestIslandProfiles(3, [
-      { vector: null, topics: [{ strength: 1 }] },
-      { vector: [1, 0], topics: [{ strength: 0.01 }], articles: [] }
+      { vector: null },
+      { vector: [1, 0], articles: [] }
     ], 'tx');
 
     expect(mocks.islandCreate).not.toHaveBeenCalled();
@@ -170,13 +157,11 @@ describe('island profile persistence', () => {
   it('updates a semantic match from article-only behavioral evidence', async () => {
     const island = existingIsland();
     mocks.islandFindAll.mockResolvedValue([island]);
-    mocks.islandTopicFindAll.mockResolvedValue([]);
 
     const result = await persistInterestIslandProfiles(3, [{
       vector: [1, 0],
       weight: 0.6,
       label: 'Behavioral',
-      topics: [],
       articles: [{
         articleId: 8,
         score: 3,
@@ -186,11 +171,10 @@ describe('island profile persistence', () => {
     }], 'tx');
 
     expect(island.update).toHaveBeenCalled();
-    expect(mocks.evolveMemberships).not.toHaveBeenCalled();
     expect(result.summary.updatedIslandCount).toBe(1);
   });
 
-  it('creates an article-only island without topic memberships', async () => {
+  it('creates an article-only island from behavioral evidence', async () => {
     const created = existingIsland({ id: 11, label: 'Behavioral' });
     mocks.islandFindAll.mockResolvedValue([]);
     mocks.islandCreate.mockResolvedValue(created);
@@ -199,15 +183,12 @@ describe('island profile persistence', () => {
       vector: [1, 0],
       weight: 0.5,
       label: 'Behavioral',
-      topics: [],
       articles: [{ articleId: 12, score: 2 }],
       positiveSignals: { clicks: 1 }
     }], 'tx');
 
-    expect(mocks.islandTopicBulkCreate).not.toHaveBeenCalled();
     expect(result.summary).toMatchObject({
       createdIslandCount: 1,
-      totalMembershipCount: 0
     });
   });
 
@@ -225,13 +206,11 @@ describe('island profile persistence', () => {
       islandVector: signals.map((_value, vectorIndex) => vectorIndex === index ? 1 : 0)
     }));
     mocks.islandFindAll.mockResolvedValue(islands);
-    mocks.islandTopicFindAll.mockResolvedValue([]);
 
     const profiles = signals.map((positiveSignals, index) => ({
       vector: signals.map((_value, vectorIndex) => vectorIndex === index ? 1 : 0),
       weight: 0.5,
       label: `Behavior ${index}`,
-      topics: [],
       articles: [{ articleId: 100 + index, score: 1, positiveSignals }],
       positiveSignals
     }));

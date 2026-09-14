@@ -794,8 +794,7 @@ export const registerRssMonsterTools = (server, userId) => {
       Set status to "read" or "unread" only when the user explicitly requests that filter.
       Otherwise use "all" (the default) to return both read and unread favorites.
 
-      RSSMonster does not store when an article was favorited, so this tool does not support
-      filtering by favorite-event time.
+      This tool does not expose filtering by favoritedAt; its date filters use publication time.
       `,
       {
         feedId: positiveId('Optional feed ID. If omitted, articles from all feeds are included.')
@@ -1124,8 +1123,7 @@ export const registerRssMonsterTools = (server, userId) => {
       - If "feedId" is provided, only articles from that feed are returned.
       - If "feedId" is NOT provided, articles from ALL feeds are returned.
 
-      RSSMonster does not store when an article was last clicked, so this tool does not support
-      filtering by click-event time.
+      This tool does not expose filtering by lastClickedAt; its date filters use publication time.
       `,
       {
         feedId: positiveId('Optional feed ID. If omitted, articles from all feeds are included.')

@@ -12,10 +12,8 @@ const GENERATED_LABEL_MAX_LENGTH = 255;
 
 const defaultModels = {
   Article: db.Article,
-  ArticleTopic: db.ArticleTopic,
   Event: db.Event,
   Island: db.Island,
-  Topic: db.Topic
 };
 
 const normalizeIds = values => [...new Set((values || [])
@@ -52,30 +50,6 @@ export const loadEventSemanticLabelTitles = async (eventId, userId, models = def
   return normalizeTitles(articles.map(article => article.title));
 };
 
-export const loadTopicSemanticLabelTitles = async (topicId, userId, models = defaultModels) => {
-  const assignments = await models.ArticleTopic.findAll({
-    where: { topicId },
-    attributes: ['articleId'],
-    include: [{
-      model: models.Article,
-      attributes: ['title'],
-      required: true,
-      where: {
-        userId,
-        ...canonicalArticleWhere()
-      }
-    }],
-    order: [
-      [models.Article, 'publishedAt', 'DESC'],
-      [models.Article, 'id', 'DESC'],
-      ['primaryInd', 'DESC'],
-      ['confidence', 'DESC']
-    ],
-    limit: MAX_SEMANTIC_LABEL_ARTICLE_TITLES
-  });
-  return normalizeTitles(assignments.map(assignment => assignment.Article?.title));
-};
-
 export const loadIslandSemanticLabelTitles = island => {
   const audit = Array.isArray(island.populationAudit) ? island.populationAudit : [];
   const latest = audit[audit.length - 1];
@@ -88,14 +62,12 @@ export const loadIslandSemanticLabelTitles = island => {
 // Reloads bounded, current article-title context for one semantic target type.
 export const loadSemanticLabelTitles = ({ targetType, targetId, userId, target, models }) => {
   if (targetType === 'event') return loadEventSemanticLabelTitles(targetId, userId, models);
-  if (targetType === 'topic') return loadTopicSemanticLabelTitles(targetId, userId, models);
   if (targetType === 'island') return loadIslandSemanticLabelTitles(target);
   return [];
 };
 
 const emptySummary = () => ({
   eventCount: 0,
-  topicCount: 0,
   islandCount: 0,
   skippedNoContextCount: 0,
   inferenceUnavailable: false
@@ -111,7 +83,6 @@ export async function populateGeneratedSemanticLabelsForUser(userId, targets = {
   const requestLabels = options.requestLabels || requestSemanticLabels;
   const logger = options.logger || console;
   const eventIds = normalizeIds(targets.eventIds);
-  const topicIds = normalizeIds(targets.topicIds);
   const islandIds = normalizeIds(targets.islandIds);
   let inferenceAvailable = true;
 
@@ -156,29 +127,6 @@ export async function populateGeneratedSemanticLabelsForUser(userId, targets = {
       type: 'event',
       titles,
       row: event,
-      field: 'generatedName'
-    });
-    if (!inferenceAvailable) break;
-  }
-
-  const topics = inferenceAvailable && topicIds.length
-    ? await models.Topic.findAll({
-      where: {
-        id: { [Op.in]: topicIds },
-        userId,
-        generatedName: null
-      },
-      attributes: ['id', 'generatedName'],
-      order: [['id', 'ASC']]
-    })
-    : [];
-
-  for (const topic of topics) {
-    const titles = await loadTopicSemanticLabelTitles(topic.id, userId, models);
-    inferenceAvailable = await requestAndStore({
-      type: 'topic',
-      titles,
-      row: topic,
       field: 'generatedName'
     });
     if (!inferenceAvailable) break;

@@ -806,7 +806,7 @@ describe('processArticle AI analysis controls', () => {
     expect(derivedValues).not.toHaveProperty('articleVector');
     expect(derivedValues).not.toHaveProperty('embedding_model');
     expect(derivedValues).not.toHaveProperty('eventId');
-    expect(derivedValues).not.toHaveProperty('topicId');
+
   });
 
   it('does not count an unchanged externally identified article as updated', async () => {

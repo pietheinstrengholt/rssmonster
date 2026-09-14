@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Op, literal } from 'sequelize';
+import { literal } from 'sequelize';
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../../config/auth.js';
 
@@ -18,18 +18,14 @@ const mocked = vi.hoisted(() => {
     models: {
       Action: createModel(),
       Article: createModel(),
-      ArticleTopic: createModel(),
       Category: createModel(),
       Event: createModel(),
-      EventTopic: createModel(),
       Feed: createModel(),
       GeneratedFeed: createModel(),
       Hotlink: createModel(),
       Island: createModel(),
-      IslandTopic: createModel(),
       Setting: createModel(),
-      SmartFolder: createModel(),
-      Topic: createModel()
+      SmartFolder: createModel()
     },
     transaction: vi.fn(),
     userFindAll: vi.fn(),
@@ -474,24 +470,11 @@ describe('user controller administration', () => {
     mocked.userFindByPk.mockResolvedValue(user);
     mocked.models.Article.findAll.mockResolvedValue([{ id: 10 }]);
     mocked.models.Event.findAll.mockResolvedValue([{ id: 20 }]);
-    mocked.models.Topic.findAll.mockResolvedValue([{ id: 30 }]);
     mocked.models.Island.findAll.mockResolvedValue([{ id: 40 }]);
     const res = createResponse();
 
     await userController.deleteUser(createRequest(), res);
 
-    expect(mocked.models.ArticleTopic.destroy).toHaveBeenCalledWith({
-      where: { articleId: { [Op.in]: [10] } },
-      transaction: 'transaction'
-    });
-    expect(mocked.models.EventTopic.destroy).toHaveBeenCalledWith({
-      where: { eventId: { [Op.in]: [20] } },
-      transaction: 'transaction'
-    });
-    expect(mocked.models.IslandTopic.destroy).toHaveBeenCalledWith({
-      where: { islandId: { [Op.in]: [40] } },
-      transaction: 'transaction'
-    });
     expect(mocked.models.Setting.destroy).toHaveBeenCalledWith({
       where: { userId: 2 },
       transaction: 'transaction'
@@ -518,7 +501,7 @@ describe('user controller administration', () => {
     const user = createUserRecord();
     mocked.userFindOne.mockResolvedValue({ id: 1, role: 'admin' });
     mocked.userFindByPk.mockResolvedValue(user);
-    mocked.models.Article.findAll.mockRejectedValue(missingTableError);
+    mocked.models.Article.destroy.mockRejectedValue(missingTableError);
     mocked.models.Setting.destroy.mockRejectedValue(missingTableError);
     const res = createResponse();
 

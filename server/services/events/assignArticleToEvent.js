@@ -1,17 +1,10 @@
 // services/events/assignArticleToEvent.js
 // This service assigns one article to an existing event, creates a new event, or leaves it eventless.
-// It maintains event-owned topic links while preserving behavioral topic evidence owned by ArticleTopic.
 import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } from './eventDecisionDiagnostics.js';
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
-import { assignSemanticUnitToTopic } from '../topics/event/assignEventToTopic.js';
 import { canonicalArticleWhere, DUPLICATE_ARTICLE_STATUS } from '../duplicates/articleDuplicates.js';
 import { createAndAssignEvent as createEventFromCandidates } from './createEvents.js';
-import { syncEventTopicsToArticles } from './eventArticleTopicSync.js';
-import {
-  normalizeTopicAssignments,
-  primaryTopicId
-} from '../topics/event/eventTopicAssignment.js';
 import { assignArticleToExistingEvent as updateExistingEvent } from './updateEvents.js';
 import {
   MAX_CANDIDATES,
@@ -29,7 +22,7 @@ import {
 } from './eventOccurrencePolicy.js';
 
 // Provides the shared dependencies used by this service.
-const { Article, Event, ArticleTopic, EventTopic } = db;
+const { Article, Event } = db;
 // Defines the event debug enforced by this service.
 const EVENT_DEBUG = ['1', 'true', 'yes'].includes(
   String(process.env.EVENT_DEBUG || process.env.EVENT_RECLUSTER_DEBUG || '').toLowerCase()
@@ -74,83 +67,6 @@ function averageAcceptedSemantic(signals = []) {
   // Aggregates source values into the total used while performing average accepted semantic.
   const total = acceptedSignals.reduce((sum, signal) => sum + Number(signal.semantic || 0), 0);
   return total / acceptedSignals.length;
-}
-
-// This function loads topic assignments already stored for an event.
-async function loadEventTopicAssignments(eventId) {
-  // Loads the rows needed while loading event topic assignments.
-  const rows = await EventTopic.findAll({
-    where: { eventId },
-    order: [['rank', 'ASC'], ['confidence', 'DESC']],
-    raw: true
-  });
-
-  return normalizeTopicAssignments(rows);
-}
-
-// This function replaces EventTopic rows and optionally persists the denormalized primary topic.
-async function persistEventTopicAssignments(event, topicAssignments, options = {}) {
-  const { transaction = null, updateEvent = true } = options;
-  // Normalizes the assignments before performing persist event topic assignments.
-  const normalizedAssignments = normalizeTopicAssignments(topicAssignments);
-  // Derives the primary id through primary topic id while performing persist event topic assignments.
-  const primaryId = primaryTopicId(normalizedAssignments);
-
-  await EventTopic.destroy({
-    where: { eventId: event.id },
-    transaction
-  });
-
-  // Handles the case where normalized assignments is non-empty.
-  if (normalizedAssignments.length) {
-    // Maps source values into the result produced while performing persist event topic assignments.
-    await EventTopic.bulkCreate(
-      normalizedAssignments.map(assignment => ({
-        eventId: event.id,
-        topicId: assignment.topicId,
-        confidence: assignment.confidence,
-        rank: assignment.rank,
-        primaryInd: assignment.primaryInd
-      })),
-      { transaction }
-    );
-  }
-
-  // Handles the case where update event is available.
-  if (updateEvent) {
-    await event.update({ topicId: primaryId }, { transaction });
-    event.topicId = primaryId;
-  }
-
-  return normalizedAssignments;
-}
-
-// This function derives event topic assignments from an event vector and the event topic cache.
-async function deriveEventTopicAssignments({
-  event,
-  eventTopicVector,
-  topicsCache,
-  assignmentContext
-}) {
-  // Returns an empty result when event topic vector is not an array or event topic vector is empty.
-  if (!Array.isArray(eventTopicVector) || !eventTopicVector.length) return [];
-
-  return assignSemanticUnitToTopic({
-    semanticUnit: {
-      id: event.id,
-      userId: event.userId,
-      title: event.name || `Event ${event.id}`,
-      name: event.name,
-      articleCount: event.articleCount,
-      sourceCount: event.sourceCount,
-      eventStrength: event.eventStrength,
-      status: event.status,
-      publishedAt: event.eventWindowEndAt || event.updatedAt || new Date()
-    },
-    semanticVector: eventTopicVector,
-    topicsCache,
-    assignmentContext
-  });
 }
 
 // This cache keeps a bounded set of candidate events in memory during one assignment pass.
@@ -233,78 +149,6 @@ export class EventCache {
       Object.assign(event.dataValues, updates);
     }
   }
-}
-
-// This function creates a new event from corroborating candidate articles and syncs event topics.
-async function createAndAssignEvent({
-  candidateArticles,
-  article,
-  cache,
-  topicsCache,
-  assignmentContext,
-  skipTopicAssignment
-}) {
-  return createEventFromCandidates({
-    candidateArticles,
-    article,
-    cache,
-    skipTopicAssignment,
-    assignTopicsForEvent: async ({ event, eventTopicVector, transaction }) => {
-      // Derives the event topic assignments through derive event topic assignments while creating and assign event.
-      const eventTopicAssignments = await deriveEventTopicAssignments({
-        event,
-        eventTopicVector,
-        topicsCache,
-        assignmentContext
-      });
-
-      // Derives the persisted event topics through persist event topic assignments while creating and assign event.
-      const persistedEventTopics = await persistEventTopicAssignments(
-        event,
-        eventTopicAssignments,
-        { transaction }
-      );
-      await syncEventTopicsToArticles(event.id, persistedEventTopics, transaction);
-
-      return primaryTopicId(persistedEventTopics);
-    }
-  });
-}
-
-// This function removes event ownership from an article without deleting behavioral topic evidence.
-async function assignTopicOnly({ article }) {
-  // Selects the event owned topic id based on whether article topic id is available.
-  const eventOwnedTopicId = article.topicId
-    ? await db.Topic.findOne({
-      where: {
-        id: article.topicId,
-        topicType: { [Op.in]: ['event', 'hybrid'] }
-      },
-      attributes: ['id']
-    })
-    : null;
-
-  await ArticleTopic.destroy({
-    where: {
-      articleId: article.id,
-      topicId: {
-        [Op.in]: db.Sequelize.literal(
-          `(SELECT id FROM topics WHERE topicType IN ('event', 'hybrid'))`
-        )
-      }
-    }
-  });
-
-  // Selects the next topic id based on whether event owned topic id is available.
-  const nextTopicId = eventOwnedTopicId ? null : article.topicId;
-
-  await article.update({
-    eventId: null,
-    topicId: nextTopicId
-  });
-
-  article.eventId = null;
-  article.topicId = nextTopicId;
 }
 
 // This function resolves the best available vector from an article or run-context record.
@@ -505,12 +349,8 @@ function findCandidateArticlesFromContext({ article, articleEventVector, runCont
 }
 
 // This function assigns one article to an event, creates a new event, or leaves it eventless.
-// It also keeps event-topic denormalization in sync unless topic assignment is explicitly skipped.
-export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors = null, topicsCache = null, runContext = null, options = {}) {
+export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors = null, runContext = null, options = {}) {
   // Derives the assignment context required while assigning article to event.
-  const assignmentContext = options.assignmentContext || 'incremental';
-  // Coerces the skip topic assignment into the representation required while assigning article to event.
-  const skipTopicAssignment = Boolean(options.skipTopicAssignment);
   // Collects article candidate cache for the selection made while assigning article to event.
   const articleCandidateCache = options.articleCandidateCache || null;
 
@@ -534,8 +374,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
 
   // Handles the case where article event vector is unavailable.
   if (!articleEventVector) {
-    await assignTopicOnly({ article });
-    incrementRunStat(runContext, 'topicOnlyNoVectorCount');
+    await article.update({ eventId: null });
+    incrementRunStat(runContext, 'eventlessNoVectorCount');
 
     upsertRunContextRecord(runContext, {
       id: article.id,
@@ -544,8 +384,6 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       description: article.description,
       publishedAt: article.publishedAt,
       createdAt: article.createdAt,
-      topicId: null,
-      topicAssignments: [],
       eventId: null,
       eventVector: null
     });
@@ -686,26 +524,6 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       cache,
       bestScore,
       matchSignal: bestSignal,
-      skipTopicAssignment,
-      assignTopicsForEvent: async ({ event, eventTopicVector, transaction }) => {
-        // Derives the event topic assignments through derive event topic assignments while assigning article to event.
-        const eventTopicAssignments = await deriveEventTopicAssignments({
-          event,
-          eventTopicVector,
-          topicsCache,
-          assignmentContext
-        });
-
-        // Derives the persisted event topics through persist event topic assignments while assigning article to event.
-        const persistedEventTopics = await persistEventTopicAssignments(
-          event,
-          eventTopicAssignments,
-          { transaction, updateEvent: false }
-        );
-        await syncEventTopicsToArticles(event.id, persistedEventTopics, transaction);
-
-        return primaryTopicId(persistedEventTopics);
-      }
     });
 
     // A concurrent membership change can invalidate a previously eligible candidate.
@@ -717,11 +535,6 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       return null;
     }
 
-    // Selects the event topic assignments based on whether skip topic assignment is available.
-    const eventTopicAssignments = skipTopicAssignment
-      ? []
-      : await loadEventTopicAssignments(updatedEventId);
-
     upsertRunContextRecord(runContext, {
       id: article.id,
       feedId: article.feedId,
@@ -729,8 +542,6 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       description: article.description,
       publishedAt: article.publishedAt,
       createdAt: article.createdAt,
-      topicId: primaryTopicId(eventTopicAssignments),
-      topicAssignments: eventTopicAssignments,
       eventId: updatedEventId,
       eventVector: articleEventVector
     });
@@ -749,13 +560,13 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     return updatedEventId;
   }
 
-  await assignTopicOnly({ article });
+  await article.update({ eventId: null });
   if (selection.decision === 'ambiguous') {
     incrementRunStat(runContext, 'ambiguousArticleCount');
     upsertRunContextRecord(runContext, {
       id: article.id, feedId: article.feedId, title: article.title,
       description: article.description, publishedAt: article.publishedAt, createdAt: article.createdAt,
-      eventId: null, topicId: article.topicId, topicAssignments: [], eventVector: articleEventVector
+      eventId: null, eventVector: articleEventVector
     });
     articleCandidateCache?.updateEventId?.([article.id], null);
     traceOutcome(null, 'ambiguous', selection.reasons, 'eventless');
@@ -772,8 +583,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     corroboratedArticleCount < MIN_EVENT_ARTICLES ||
     (REQUIRE_MULTI_SOURCE_FOR_EVENT && corroboratedSourceCount < MIN_EVENT_SOURCES)
   ) {
-    await assignTopicOnly({ article });
-    incrementRunStat(runContext, 'topicOnlyInsufficientCandidatesCount');
+    await article.update({ eventId: null });
+    incrementRunStat(runContext, 'eventlessInsufficientCandidatesCount');
 
     upsertRunContextRecord(runContext, {
       id: article.id,
@@ -782,8 +593,6 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       description: article.description,
       publishedAt: article.publishedAt,
       createdAt: article.createdAt,
-      topicId: null,
-      topicAssignments: [],
       eventId: null,
       eventVector: articleEventVector
     });
@@ -794,13 +603,10 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   }
 
   // Creates the and assign event while assigning article to event.
-  const newEventId = await createAndAssignEvent({
+  const newEventId = await createEventFromCandidates({
     candidateArticles: unassignedCandidates,
     article,
     cache,
-    topicsCache,
-    assignmentContext,
-    skipTopicAssignment
   });
 
   if (runContext) {
@@ -824,18 +630,12 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     );
   }
 
-  // Selects the event topic assignments based on whether new event id is available and skip topic assignment is unavailable.
-  const eventTopicAssignments = (newEventId && !skipTopicAssignment)
-    ? await loadEventTopicAssignments(newEventId)
-    : [];
-
   // Only committed creation may change neighboring candidate-cache membership.
   const createdMembers = newEventId ? unassignedCandidates : [];
   for (const candidate of createdMembers) {
     upsertRunContextRecord(runContext, {
       id: candidate.id,
       eventId: newEventId,
-      topicId: primaryTopicId(eventTopicAssignments)
     });
   }
   // Maps source values into the result produced while assigning article to event.
@@ -851,8 +651,6 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     description: article.description,
     publishedAt: article.publishedAt,
     createdAt: article.createdAt,
-    topicId: primaryTopicId(eventTopicAssignments),
-    topicAssignments: eventTopicAssignments,
     eventId: newEventId,
     eventVector: articleEventVector
   });

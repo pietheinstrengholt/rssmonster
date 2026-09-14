@@ -32,7 +32,7 @@ This table reflects current official documentation as of **2 September 2026**.
 | **Feed automation** | Rules plus reusable Smart Folder queries | Ordered regular-expression filters can delete, mark read, star, tag, label, publish, score, or invoke a plug-in |
 | **Extensibility** | APIs and optional agent/MCP integration; no comparable plug-in ecosystem is documented | First-party and third-party plug-ins, including feed handlers and API extensions |
 | **Duplicates and revisions** | Deterministic identity/revision handling plus cross-source duplicate analysis | Built-in deduplication, including perceptual hashing for images |
-| **Story organization** | Semantic related articles, Events, Topics, and Interest Islands | Traditional feed/folder/tag organization; semantic Event and Topic grouping are not documented |
+| **Story organization** | Semantic related articles, Events and Interest Islands | Traditional feed/folder/tag organization; semantic Event grouping are not documented |
 | **Ranking** | Quality, personalized Recommended, and non-personalized Top Stories with inspectable signals | User-authored filters can modify a visible numeric score used in sorting |
 | **Database topology** | SQLite or MySQL | The recommended multi-container installation uses PostgreSQL |
 | **External clients** | Fever, Google Reader-compatible, and native APIs | Native stateful JSON API; Google Reader and Fever compatibility are available through third-party plug-ins |
@@ -62,8 +62,7 @@ not signs that a long-running project is obsolete.
 RSSMonster retains rules, tags, favorites, search, and chronological sorting,
 but adds a different kind of structure. Semantic similarity connects related
 articles; [Events]({{ '/events.html' | relative_url }}) group reports about one
-occurrence; [Topics]({{ '/topics.html' | relative_url }}) connect recurring
-subjects; and [Interest Islands]({{ '/interest-islands.html' | relative_url }})
+occurrence; and [Interest Islands]({{ '/interest-islands.html' | relative_url }})
 represent personal areas of interest.
 
 Its [ranking modes]({{ '/scoring.html' | relative_url }}) separate user-specific
@@ -85,7 +84,7 @@ RSSMonster can retain deterministic rules while adding relationships:
 
 ```text
 Incoming article -> identity / revision / duplicate analysis
-                 -> Event -> Topic -> Interest Island
+                 -> Event -> Interest Island
                  -> Recommended / Top Stories / Smart Folders
 ```
 
@@ -107,7 +106,7 @@ weight and probabilistic behavior; zero recommendations remains a valid result.
 
 - You want a modern three-pane reader with chronological feeds still available.
 - Cross-source duplicate and revision handling is important.
-- You want related reports grouped into Events and Topics.
+- You want related reports grouped into Events.
 - You prefer Smart Folder queries alongside, or instead of, ingestion rules.
 - You want optional personalized and non-personalized rankings with visible
   signals.

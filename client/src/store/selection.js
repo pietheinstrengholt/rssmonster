@@ -106,11 +106,10 @@ const developingSelection = query => (
     : {}
 );
 
-// This function restricts grouping to the supported event and topic modes.
+// This function restricts grouping to the supported event mode.
 const normalizeGrouping = value => {
   const normalized = String(value ?? 'none');
   if (normalized === 'event') return 'event';
-  if (normalized === 'topic') return 'topic';
   return 'none';
 };
 

@@ -161,8 +161,8 @@ Frontend changes should feel native to RSSMonster, not like generic Vue code add
 ## Semantic presentation
 
 Preserve the distinction between Recommended score and personal-interest evidence.
-An Article without an Event, Topic or Island can still have a valid Recommended
+An Article without an Event or Island can still have a valid Recommended
 score; zero interest must not hide it or invent an Island attribution. Consume
 server attribution rather than recomputing semantic confidence in components.
-Generated Event/Topic/Island labels explain presentation, not independent evidence
+Generated Event/Island labels explain presentation, not independent evidence
 of identity or ranking quality. See [semantic architecture](../server/services/README.md).

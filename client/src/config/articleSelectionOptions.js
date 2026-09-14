@@ -38,7 +38,6 @@ export const ARTICLE_SORT_OPTIONS = createOptions([
 export const ARTICLE_GROUPING_OPTIONS = createOptions([
   { value: 'none', label: 'None', mobileLabel: 'All articles' },
   { value: 'event', label: 'Events', mobileLabel: 'Cluster per event' },
-  { value: 'topic', label: 'Topics', mobileLabel: 'Cluster per topic' }
 ]);
 
 // This lookup keeps status consumers aligned on one metadata record per value.

@@ -84,7 +84,7 @@ fixture/runner changes. Keep model, vectors and corpus constant unless their
 change is explicitly in scope; disclose differences and unavailable baselines.
 Do not weaken regression
 expectations or semantic thresholds to make coverage or tests look better. Event
-occurrence identity and Topic durable-subject identity are different problems.
+occurrence identity and personal interest are different problems.
 Keep final Recommended weights unchanged when improving semantic evidence unless
 weight changes are explicitly requested.
 
@@ -111,6 +111,25 @@ For crawl changes, preserve useful failure, timing, retry, and recovery informat
 * Comment non-obvious domain rules or intentional behavior, not obvious code.
 
 ## Validation
+
+### Vector and CI contract
+
+* Never commit model-generated embedding vectors, vector datasets/caches, or model
+  binaries to this repository. This applies to every encoding and container,
+  including JSON, compressed snapshots, archives, renamed bundles and Git LFS.
+  Do not force-add ignored artifacts or embed generated vectors in source files.
+* Keep generated vectors and semantic reports local and ignored. Small hand-written
+  numeric inputs in unit tests are test code, not exported model embeddings.
+* `.github/workflows/ci.yml` must not run semantic regression/evaluation suites or
+  generate, download, restore or upload their vectors. Use `npm run test:ci` for
+  server coverage; keep ordinary Event, Island and recommendation service tests.
+* Run model-backed semantic evaluation explicitly outside CI with local caches.
+  Missing local caches must be reported, not worked around by committing vectors.
+  Put new vector-dependent evaluation tests under `server/tests/semantic/` so the
+  CI boundary also covers future additions.
+* Run `npm run check:vector-artifacts --prefix server` before committing. It checks
+  tracked/staged artifact paths, including files added with `git add -f`; review
+  diffs as well because renamed or embedded data cannot be recognized by filename alone.
 
 For behavior changes, add focused regression tests when the area has an established testing pattern.
 

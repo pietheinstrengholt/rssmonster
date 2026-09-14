@@ -112,26 +112,13 @@ describe('runPostCrawlSemanticPipeline', () => {
       mode: 'incremental',
       articleCount: 3,
       touchedEventIds: [10, 11],
-      touchedTopicIds: [20],
       newEventsCreatedCount: 1,
       linkedToExistingEventCount: 1,
       unassignedCount: 1,
-      durations: { eventsMs: 1300, topicsMs: 420 },
-      topicAssignment: {
-        skipped: false,
-        eventCount: 2,
-        touchedTopicIds: [20],
-        stats: {
-          eventsSkipped: 0,
-          eventsMatched: 1,
-          eventsUnmatched: 1,
-          newTopicsCreated: 1
-        }
-      }
+      durations: { eventsMs: 1300 }
     });
     mocked.scoreArticlesFromIslandsForUser.mockResolvedValue({
       updatedCount: 5,
-      topicScoredCount: 4,
       fallbackScoredCount: 1
     });
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -151,7 +138,6 @@ describe('runPostCrawlSemanticPipeline', () => {
     });
     expect(mocked.runIncrementalEventsForUser).toHaveBeenCalledWith(42, {
       createdAtFrom: crawlStartedAt,
-      skipTopicAssignment: false,
       processingContext: expect.objectContaining({ userId: 42 })
     });
     expect(mocked.runIslandCalibrationForUser).not.toHaveBeenCalled();
@@ -172,9 +158,8 @@ describe('runPostCrawlSemanticPipeline', () => {
       ),
       '[EVENTS] processed=3 assigned=2 standalone=1 newEvents=1 ' +
         'existingEvents=1 touched=2 user=42 duration=1.3s',
-      '[TOPICS] events=2 matched=1 created=1 unmatched=1 user=42 duration=420ms',
       expect.stringMatching(
-        /^\[ISLANDS\] interestScoresUpdated=5 topicScored=4 fallbackScored=1 user=42 duration=\d+(?:ms|\.\d+s)$/
+        /^\[ISLANDS\] interestScoresUpdated=5 fallbackScored=1 user=42 duration=\d+(?:ms|\.\d+s)$/
       )
     ]);
   });
@@ -225,7 +210,6 @@ describe('runPostCrawlSemanticPipeline', () => {
     expect(mocked.markDuplicateArticlesForUser).toHaveBeenCalledWith(23, { createdAtFrom: null });
     expect(mocked.runIncrementalEventsForUser).toHaveBeenCalledWith(23, {
       createdAtFrom: null,
-      skipTopicAssignment: false,
       processingContext: expect.objectContaining({ userId: 23 })
     });
     expect(mocked.scoreArticlesFromIslandsForUser).toHaveBeenCalledWith(23, { createdAtFrom: null });

@@ -36,14 +36,10 @@ const targetRow = values => ({
   ...values
 });
 
-const createDependencies = ({ event, topic, island, eventTitles = [], topicTitles = [] } = {}) => {
+const createDependencies = ({ event, island, eventTitles = [] } = {}) => {
   const models = {
     Article: { findAll: vi.fn().mockResolvedValue(eventTitles.map(title => ({ title }))) },
-    ArticleTopic: {
-      findAll: vi.fn().mockResolvedValue(topicTitles.map(title => ({ Article: { title } })))
-    },
     event: { findOne: vi.fn().mockResolvedValue(event || null) },
-    topic: { findOne: vi.fn().mockResolvedValue(topic || null) },
     island: { findOne: vi.fn().mockResolvedValue(island || null) }
   };
   const transaction = { LOCK: { UPDATE: 'UPDATE' } };
@@ -89,19 +85,7 @@ describe('semantic_label processing-job handler', () => {
     expect(event.update.mock.calls[0][0]).not.toHaveProperty('name');
   });
 
-  it('updates the appropriate topic and island generated presentation fields', async () => {
-    const topic = targetRow({ id: 20, userId: 7, name: 'Deterministic Topic' });
-    const topicDependencies = createDependencies({ topic, topicTitles: ['Newest topic title'] });
-    await handleSemanticLabelJob(job('topic', 20), {
-      ...topicDependencies,
-      environment: enabledEnvironment,
-      requestLabels: vi.fn().mockResolvedValue({ topic: 'Generated Topic' })
-    });
-    expect(topic.update).toHaveBeenCalledWith(
-      { generatedName: 'Generated Topic' },
-      { transaction: topicDependencies.transaction }
-    );
-
+  it('updates the appropriate island generated presentation fields', async () => {
     const island = targetRow({
       id: 30,
       userId: 7,

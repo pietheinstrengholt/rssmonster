@@ -110,7 +110,7 @@ Prefer fixing canonical article data once instead of adding caller-specific tran
 * Enforce ownership and visibility.
 * Exclude duplicates where appropriate.
 * Use meaningful thresholds.
-* Zero semantic matches is valid. No Island/Topic match means neutral interest, not missing Recommended. Preserve finite scores for all eligible Articles.
+* Zero semantic matches is valid. No Island match means neutral interest, not missing Recommended. Preserve finite scores for all eligible Articles.
 * Avoid full-table vector comparisons when a bounded relevant window is sufficient.
 * Do not recompute semantic state unnecessarily.
 
@@ -135,7 +135,7 @@ Any semantic architecture/behavior change requires `npm run test:semantic-trace`
 from `server/` before implementation and after the final change. Follow the
 [capture and comparison workflow](tests/semantic/README.md#required-beforeafter-workflow-for-semantic-changes):
 archive both logs, exit statuses and reports before they are overwritten; record
-fixture/model/vector fingerprints; compare both phases' coverage, Event/Topic
+fixture/model/vector fingerprints; compare both phases' coverage, Event
 reuse and membership, Island support/confidence, interest paths, designated
 held-out results and runtime. Explain intended and unexpected changes in the
 final response, including pre-existing versus new failures. If a run is blocked,
@@ -147,8 +147,8 @@ Inspect reason codes and held-out outcomes, preserve coverage assertions and kee
 models/inputs fixed unless their change is authorized. Model-backed skips are not
 full validation.
 The trace command runs only the two 1,000-article batches. Also run
-`npm run test:semantic-gold` when changing Event/Topic identity, Island formation,
+the relevant focused service tests when changing Event identity, Island formation,
 confidence or behavioral scoring; passing score coverage alone does not validate
-those isolated gold contracts.
+those contracts.
 Run database-resetting suites sequentially against the isolated test database.
 Generated presentation labels must not become independent semantic evidence.

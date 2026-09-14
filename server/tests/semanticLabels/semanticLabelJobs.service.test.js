@@ -19,14 +19,10 @@ import {
 
 const enabledEnvironment = { INFERENCE_AI_ENABLED: 'true' };
 const row = id => ({ id });
-const createModels = ({ events = [], topics = [], islands = [] } = {}) => ({
+const createModels = ({ events = [], islands = [] } = {}) => ({
   event: {
     findAll: vi.fn(({ limit } = {}) => Promise.resolve(limit ? events.slice(0, limit) : events)),
     findOne: vi.fn().mockResolvedValue(events[0] || null)
-  },
-  topic: {
-    findAll: vi.fn(({ limit } = {}) => Promise.resolve(limit ? topics.slice(0, limit) : topics)),
-    findOne: vi.fn().mockResolvedValue(topics[0] || null)
   },
   island: {
     findAll: vi.fn(({ limit } = {}) => Promise.resolve(limit ? islands.slice(0, limit) : islands)),
@@ -40,11 +36,10 @@ describe('semantic label job producer', () => {
   });
 
   it('enqueues only after owned targets exist, with identifier-only versioned payloads', async () => {
-    const models = createModels({ events: [row(10)], topics: [row(20)], islands: [row(30)] });
+    const models = createModels({ events: [row(10)], islands: [row(30)] });
 
     await enqueueGeneratedSemanticLabelJobsForUser(7, {
       eventIds: [10],
-      topicIds: [20],
       islandIds: [30]
     }, { models, environment: enabledEnvironment });
 
@@ -52,12 +47,10 @@ describe('semantic label job producer', () => {
       .toBeLessThan(mocked.enqueueProcessingJob.mock.invocationCallOrder[0]);
     expect(mocked.enqueueProcessingJob.mock.calls.map(([job]) => job)).toEqual([
       expect.objectContaining({ type: 'semantic_label', userId: 7, articleId: null }),
-      expect.objectContaining({ type: 'semantic_label', userId: 7, articleId: null }),
       expect.objectContaining({ type: 'semantic_label', userId: 7, articleId: null })
     ]);
     expect(mocked.enqueueProcessingJob.mock.calls.map(([job]) => job.payload)).toEqual([
       { userId: 7, targetType: 'event', targetId: 10, labelContractVersion: SEMANTIC_LABEL_CONTRACT_VERSION },
-      { userId: 7, targetType: 'topic', targetId: 20, labelContractVersion: SEMANTIC_LABEL_CONTRACT_VERSION },
       { userId: 7, targetType: 'island', targetId: 30, labelContractVersion: SEMANTIC_LABEL_CONTRACT_VERSION }
     ]);
     expect(JSON.stringify(mocked.enqueueProcessingJob.mock.calls)).not.toContain('title');
@@ -109,7 +102,6 @@ describe('semantic label job producer', () => {
   it('reconciles a bounded total of eligible null-label rows and excludes archived islands', async () => {
     const models = createModels({
       events: [row(1), row(2)],
-      topics: [row(3), row(4)],
       islands: [row(5)]
     });
 
@@ -121,16 +113,12 @@ describe('semantic label job producer', () => {
 
     expect(result).toEqual({
       eventCount: 2,
-      topicCount: 1,
-      islandCount: 0,
+      islandCount: 1,
       scannedCount: 3
     });
     expect(models.event.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 3 }));
-    expect(models.topic.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 1 }));
-    expect(models.island.findAll).not.toHaveBeenCalled();
 
     models.event.findAll.mockResolvedValue([]);
-    models.topic.findAll.mockResolvedValue([]);
     await reconcileSemanticLabelJobsForUser(7, {
       limit: 3,
       models,

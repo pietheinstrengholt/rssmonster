@@ -58,7 +58,7 @@ parse raw feeds;
 sanitize HTML;
 create vectors;
 assign clusters;
-create events or topics;
+create events;
 determine whether an entry is new or revised;
 reset user engagement state on publisher updates.
 

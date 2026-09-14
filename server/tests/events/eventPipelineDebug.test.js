@@ -47,7 +47,6 @@ describe('eventPipelineDebug', () => {
       stats: {
         linkedToExistingEventCount: 1,
         newEventsCreatedCount: 1,
-        topicOnlyNoVectorCount: 1,
         eventVectorSkippedCount: 1
       }
     });

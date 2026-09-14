@@ -4,6 +4,7 @@ import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixt
 import { semanticBatchEmbeddingText } from '../helpers/semanticBatchEmbeddingText.js';
 import { describe, it, expect } from 'vitest';
 import { loadSemanticBatch, loadSemanticFixtureSubset } from '../helpers/semanticBatchFixtures.js';
+import { fixtureContent } from '../../scripts/lib/realIncrementalFixture.js';
 
 describe('two canonical semantic batches', () => {
   it('retains controlled scenarios and real content in exactly 2,000 unique articles', async () => {
@@ -42,6 +43,7 @@ describe('two canonical semantic batches', () => {
         const vector = byId.get(article.sourceId);
         expect(vector, article.sourceId).toBeTruthy();
         expect(vector.embeddingInputHash, article.sourceId).toBe(createHash('sha256').update(semanticBatchEmbeddingText(article)).digest('hex'));
+        expect(vector.contentSourceHash, article.sourceId).toBe(createHash('sha256').update(fixtureContent(article)).digest('hex'));
         expect(vector.articleVector).toHaveLength(cache.embeddingDimensions);
         expect(vector.articleVector.every(Number.isFinite)).toBe(true);
       }

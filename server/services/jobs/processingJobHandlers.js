@@ -1,3 +1,4 @@
+import { EXPLICIT_FEEDBACK_REFRESH_TYPE, isPersonalizationRefreshType, handleExplicitFeedbackRefresh, PERSONALIZATION_REFRESH_TYPE, handlePersonalizationRefresh, completePersonalizationRefresh } from './personalizationRefresh.js';
 import {
   completeProcessingJob,
   deadLetterProcessingJob,
@@ -16,6 +17,7 @@ import { getModelValue as rowValue } from '../../utils/modelValue.js';
 const safeJobTarget = job => {
   const type = rowValue(job, 'type');
   const payload = rowValue(job, 'payload') || {};
+  if (type === PERSONALIZATION_REFRESH_TYPE) return { userId: rowValue(job, 'userId') };
   return type === 'semantic_label'
     ? { targetType: payload.targetType || null, targetId: payload.targetId || null }
     : { articleId: rowValue(job, 'articleId') || payload.articleId || null };
@@ -48,7 +50,9 @@ const logJobEvent = (logger, job, event, details = {}) => {
 
 export const processingJobHandlerRegistry = new Map([
   ['article_enrichment', handleArticleEnrichmentJob],
-  ['semantic_label', handleSemanticLabelJob]
+  ['semantic_label', handleSemanticLabelJob],
+  [PERSONALIZATION_REFRESH_TYPE, handlePersonalizationRefresh],
+  [EXPLICIT_FEEDBACK_REFRESH_TYPE, handleExplicitFeedbackRefresh]
 ]);
 
 export const getProcessingJobHandler = type => processingJobHandlerRegistry.get(type) || null;
@@ -78,6 +82,7 @@ const recordJobFailure = async ({ job, error, status }) => {
   const jobType = rowValue(job, 'type');
   const payload = rowValue(job, 'payload') || {};
   const semanticLabelJob = jobType === 'semantic_label';
+  const personalizationJob = jobType === PERSONALIZATION_REFRESH_TYPE;
   return recordProcessingFailure({
     executionId: rowValue(job, 'id'),
     userId: rowValue(job, 'userId'),
@@ -87,8 +92,8 @@ const recordJobFailure = async ({ job, error, status }) => {
     code: error.code,
     error,
     message: error.message,
-    subjectType: semanticLabelJob ? payload.targetType : 'article',
-    subjectId: semanticLabelJob ? payload.targetId : rowValue(job, 'articleId'),
+    subjectType: personalizationJob ? 'user' : semanticLabelJob ? payload.targetType : 'article',
+    subjectId: personalizationJob ? rowValue(job, 'userId') : semanticLabelJob ? payload.targetId : rowValue(job, 'articleId'),
     feedId: error.processingFeedId,
     articleId: semanticLabelJob ? null : rowValue(job, 'articleId'),
     retryable: error.retryable !== false,
@@ -189,13 +194,18 @@ export const executeClaimedProcessingJob = async (job, {
       signal: inferenceSignal
     });
     await renewLease();
-    const completed = await completeProcessingJob(identity);
+    const refreshStatus = isPersonalizationRefreshType(rowValue(job, 'type'))
+      ? await completePersonalizationRefresh(job, leaseOwner) : null;
+    const completed = isPersonalizationRefreshType(rowValue(job, 'type'))
+      ? Boolean(refreshStatus) : await completeProcessingJob(identity);
+    const status = refreshStatus || 'succeeded';
     if (!completed) throw leaseLostError();
     logJobEvent(logger, job, 'processing_job.completed', {
-      status: 'succeeded',
+      status,
       processingLatencyMs: Date.now() - executionStartedAt
     });
-    return { status: 'succeeded', result };
+    // A requested follow-up is successful work, not a retry/worker health failure.
+    return { status: 'succeeded', ...(refreshStatus === 'pending' ? { refreshPending: true } : {}), result };
   } catch (caughtError) {
     const error = caughtError?.code
       ? caughtError
