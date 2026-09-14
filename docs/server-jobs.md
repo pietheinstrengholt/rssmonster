@@ -137,13 +137,11 @@ service to be running.
 
 | Command | Purpose |
 | --- | --- |
-| `npm run fixture:semantic-export` | Export database content into the main semantic regression fixture. |
-| `npm run fixture:semantic-vectors` | Generate or refresh vectors for the main semantic regression fixture. |
-| `npm run fixture:semantic-incremental-vectors` | Generate vectors for the incremental semantic fixture. |
-| `npm run fixture:semantic-incremental-unread-vectors` | Generate vectors for the incremental unread semantic fixture. |
+| `npm run fixture:semantic-export` | Export database content into an ignored intermediate file for review. |
+| `npm run fixture:semantic-vectors` | Generate local Qwen caches for Batch001 and Batch002. |
 | `npm run fixture:taxonomy-vectors` | Generate the checked test-vector fixture for the Interest Island taxonomy. |
 | `npm run fixture:semantic-select -- --model=<model-id>` | Select an already complete model-specific vector set for semantic regression tests without regenerating other models. |
-| `npm run test:semantic-report` | Run the semantic regression suite and write a concise, timestamped Markdown report under `server/tests/.semantic-regression/`. |
+| `npm run test:semantic-report` | Run the semantic regression suite and write `batch-report.md` under `server/tests/.semantic-regression/`. |
 | `npm run test:semantic-trace` | Run the semantic suite with the detailed article-level console trace enabled. |
 
 Before running any fixture generator, review its command-line options and the

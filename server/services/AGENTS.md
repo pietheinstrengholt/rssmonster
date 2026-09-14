@@ -60,7 +60,7 @@ When code and assumptions conflict with the documented subsystem contract, inves
 * Preserve replay-safe behavioral snapshots; audit history and derived scores are not new behavioral evidence.
 * Do not retune final Recommended weights while changing semantic evidence unless explicitly requested.
 * Test held-out Articles that did not participate in Island formation. Seed self-similarity is not evidence of generalization.
-* Run `npm run test:semantic-trace` from `server/` for semantic-processing changes and inspect diagnostics, not only pass/fail. Never hardcode Event/Topic IDs or weaken expectations to make the suite green.
+* For every semantic-processing change, run `npm run test:semantic-trace` from `server/` before implementation and after the final change. Follow the [required capture/comparison workflow](../tests/semantic/README.md#required-beforeafter-workflow-for-semantic-changes), preserve both reports, and explain metric and article-level differences in the final response. Inspect diagnostics, not only pass/fail; run relevant gold tests too. Never hardcode Event/Topic IDs or weaken expectations to make the suite green.
 
 Authoritative references: [Events](events/README.md), [Topics](topics/README.md),
 [Islands and interest formulas](islands/README.md),

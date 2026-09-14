@@ -11,9 +11,9 @@ package-lock.json
 !inference/package-lock.json
 server/tests/fixtures/*vectors.json
 server/tests/fixtures/**/*.vectors.json
-!server/tests/fixtures/semantic-regression-occurrences.vectors.json
-!server/tests/fixtures/semantic-regression-expansion.vectors.json
 server/tests/.semantic-regression/
 node_modules/
 client/coverage/
 .env
+
+# Frozen real incremental embeddings share the existing model-qualified cache.

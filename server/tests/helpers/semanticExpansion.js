@@ -1,4 +1,5 @@
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { readSemanticFixtureFile as readFile } from './semanticBatchFixtures.js';
 import { createHash } from 'node:crypto';
 import db from '../../models/index.js';
 import { buildArticleEventEmbeddingText } from '../../services/articles/embedArticle.js';
@@ -24,7 +25,7 @@ export const meanVector = vectors => vectors[0].map((_, i) => vectors.reduce((su
 
 export async function loadExpansionVectors() {
   const frozen = JSON.parse(await readFile(new URL('../fixtures/semantic-regression-expansion.vectors.json', import.meta.url), 'utf8'));
-  if (frozen.articles.length !== expansionFixture.articles.length) throw new Error('Incomplete expansion vectors; run node tests/helpers/generateSemanticExpansionVectors.js from server/');
+  if (frozen.articles.length !== expansionFixture.articles.length) throw new Error('Incomplete expansion vectors; run npm run fixture:semantic-vectors from server/');
   const vectors = new Map(frozen.articles.map(row => [row.sourceId, row]));
   for (const article of expansionFixture.articles) {
     const row = vectors.get(article.sourceId);

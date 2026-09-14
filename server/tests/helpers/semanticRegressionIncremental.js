@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readSemanticFixtureFile as readFile } from './semanticBatchFixtures.js';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import crypto from 'node:crypto';
@@ -19,8 +19,11 @@ export const INCREMENTAL_VECTOR_FIXTURE_PATH = await resolveSemanticVectorFixtur
   'semantic-regression-incremental'
 );
 export const FIXTURE_USERNAME = 'semantic-regression-user';
-// The original corpus remains separate from the explicitly selected occurrence cases.
-export const EXPECTED_INCREMENTAL_ARTICLE_COUNT = 91;
+// All canonical incremental rows participate in the main run; isolated old gold tests are additional.
+export const EXPECTED_INCREMENTAL_ARTICLE_COUNT = 1000;
+export const isLongitudinal = article => String(article.sourceId || '').startsWith('long-');
+export const isRealBackground = article => article.regression?.provenance === 'real' && article.regression?.scenario === 'real-background';
+const isOccurrence = article => Boolean(article.regression) && !isRealBackground(article) && !isLongitudinal(article);
 
 // This function loads a JSON fixture from disk.
 export async function loadFixture(path) {
@@ -31,21 +34,21 @@ export async function loadFixture(path) {
 // This function loads the incremental article fixture.
 export async function loadIncrementalFixture({ occurrences = false } = {}) {
   const fixture = await loadFixture(INCREMENTAL_FIXTURE_PATH);
-  return occurrences ? selectOccurrenceFixture(fixture) : selectLegacyFixture(fixture);
+  return occurrences ? selectOccurrenceFixture(fixture) : fixture;
 }
 
 // Keep frozen vector spaces and legacy date normalization isolated from occurrence cases.
 export function selectLegacyFixture(fixture) {
-  const occurrenceFeedIds = new Set(fixture.articles.filter(article => article.regression).map(article => article.feedId));
+  const occurrenceFeedIds = new Set(fixture.articles.filter(isOccurrence).map(article => article.feedId));
   return {
     ...fixture,
     ...(fixture.feeds ? { feeds: fixture.feeds.filter(feed => !occurrenceFeedIds.has(feed.id)) } : {}),
-    articles: fixture.articles.filter(article => !article.regression)
+    articles: fixture.articles.filter(article => !isOccurrence(article))
   };
 }
 
 export function selectOccurrenceFixture(fixture) {
-  const articles = fixture.articles.filter(article => article.regression);
+  const articles = fixture.articles.filter(isOccurrence);
   const feedIds = new Set(articles.map(article => article.feedId));
   return { ...fixture, feeds: fixture.feeds.filter(feed => feedIds.has(feed.id)), articles };
 }
@@ -58,7 +61,7 @@ export async function loadIncrementalVectorFixture() {
     if (err.code === 'ENOENT') {
       throw new Error(
         'Missing semantic incremental vector fixture. ' +
-        'Run `npm run fixture:semantic-incremental-vectors` in server/ before this test.'
+        'Run `npm run fixture:semantic-vectors` in server/ before this test.'
       );
     }
 
@@ -84,15 +87,12 @@ export function hashContent(content) {
 
 // This function maps content hashes to stored embedding vectors.
 export function buildVectorMap(vectorFixture) {
-  return new Map(
-    vectorFixture.articles.map(article => [
-      article.contentSourceHash,
-      {
-        articleVector: article.articleVector,
-        embeddingModel: article.embeddingModel || vectorFixture.embeddingModel
-      }
-    ])
-  );
+  const map = new Map();
+  for (const article of vectorFixture.articles) {
+    const record = { articleVector: article.articleVector, embeddingModel: article.embeddingModel || vectorFixture.embeddingModel };
+    map.set(article.fixtureSourceId || article.contentSourceHash, record);
+  }
+  return map;
 }
 
 // This function picks the content field used by semantic vector fixtures.
@@ -201,11 +201,13 @@ export function fixtureContentHashes(fixture) {
 // This function loads the database IDs for the incremental fixture articles.
 export async function findIncrementalArticleIds(userId, fixture = null) {
   const resolvedFixture = fixture || await loadIncrementalFixture();
-  const contentHashes = fixtureContentHashes(resolvedFixture);
+  const fixtureUrls = resolvedFixture.articles.map(a => a.url).filter(Boolean);
+  const contentHashes = fixtureContentHashes({ articles: resolvedFixture.articles.filter(a => !isRealBackground(a)) });
   const rows = await Article.findAll({
     where: {
       userId,
-      contentSourceHash: { [Op.in]: contentHashes }
+      ...(fixtureUrls.length ? { [Op.or]: [{ contentSourceHash: { [Op.in]: contentHashes } }, { url: { [Op.in]: fixtureUrls } }] }
+        : { contentSourceHash: { [Op.in]: contentHashes } })
     },
     attributes: ['id'],
     raw: true
@@ -214,56 +216,67 @@ export async function findIncrementalArticleIds(userId, fixture = null) {
   return rows.map(row => Number(row.id));
 }
 
-// This function inserts any fixture articles that are not already present by content hash.
+// Fixture URL identity preserves syndicated copies; older URL-less helpers use content hashes.
 export async function insertMissingFixtureArticles(userId, fixture, vectorByContentSourceHash, urlPrefix, {
-  preservePublishedAt = false
+  preservePublishedAt = false, originMs = null
 } = {}) {
   const categoryIdMap = await ensureFixtureCategories(userId, fixture.categories);
   const feedIdMap = await ensureFixtureFeeds(userId, fixture.feeds, categoryIdMap);
   const now = Date.now();
-  const resolvePublished = buildFixturePublishedResolver(fixture.articles, now);
+  const resolvePublished = buildFixturePublishedResolver(fixture.articles.filter(a => !isRealBackground(a) && !isLongitudinal(a)), now);
+  const realTimes = fixture.articles.filter(isRealBackground).map(a => Date.parse(a.publishedAt));
+  // Preserve spacing; newest real background is 30 minutes old, after the legacy one-hour anchor.
+  const realShiftMs = realTimes.length ? now - 30 * 60 * 1000 - Math.max(...realTimes) : 0;
   let insertedCount = 0;
 
   for (const [index, fixtureArticle] of fixture.articles.entries()) {
+    const real = isRealBackground(fixtureArticle);
+    const longitudinal = isLongitudinal(fixtureArticle) || Boolean(fixtureArticle.regression?.batch);
     const content = articleContent(fixtureArticle);
     const contentSourceHash = hashContent(content);
     const existingArticle = await Article.findOne({
       where: {
         userId,
-        contentSourceHash
+        ...(fixtureArticle.sourceId && fixtureArticle.url ? { url: fixtureArticle.url } : { contentSourceHash })
       },
       attributes: ['id']
     });
 
     if (existingArticle) continue;
 
-    const vectorRecord = vectorByContentSourceHash.get(contentSourceHash);
+    const vectorRecord = vectorByContentSourceHash.get(fixtureArticle.sourceId) || vectorByContentSourceHash.get(contentSourceHash);
     if (!vectorRecord?.articleVector?.length) {
       throw new Error(`Missing semantic vector for fixture article ${contentSourceHash}`);
     }
 
     const fallbackPublished = new Date(now - (fixture.articles.length - index) * 5 * 60 * 1000);
-    const publishedAt = preservePublishedAt
+    const publishedAt = longitudinal && originMs != null
+      ? new Date(originMs + (fixtureArticle.regression.dayOffset * 24 + fixtureArticle.regression.hourOffset) * 3600000)
+      : preservePublishedAt
       ? new Date(fixtureArticle.publishedAt)
-      : resolvePublished(fixtureArticle, fallbackPublished);
+      : real ? new Date(Date.parse(fixtureArticle.publishedAt) + realShiftMs) : resolvePublished(fixtureArticle, fallbackPublished);
 
     await Article.create({
       userId,
       feedId: feedIdMap.get(fixtureArticle.feedId),
       status: fixtureArticle.status || 'unread',
       favoriteInd: fixtureArticle.favoriteInd || 0,
+      positiveInd: fixtureArticle.positiveInd || 0,
       negativeInd: fixtureArticle.negativeInd || 0,
       clickedAmount: fixtureArticle.clickedAmount || 0,
       url: fixtureArticle.url || `${urlPrefix}/${index + 1}`,
       title: articleTitle(fixtureArticle, index),
-      description: fixtureArticle.description || content.slice(0, 500),
-      contentOriginal: fixtureArticle.contentOriginal || content,
-      contentHtml: fixtureArticle.contentHtml || content,
-      contentSourceHash,
+      description: real || longitudinal ? fixtureArticle.description : fixtureArticle.description || content.slice(0, 500),
+      contentOriginal: real || longitudinal ? fixtureArticle.contentOriginal : fixtureArticle.contentOriginal || content,
+      contentHtml: real || longitudinal ? fixtureArticle.contentHtml : fixtureArticle.contentHtml || content,
+      ...(real || longitudinal ? { contentText: fixtureArticle.contentText, language: fixtureArticle.language,
+        qualityScore: fixtureArticle.qualityScore, advertisementScore: fixtureArticle.advertisementScore,
+        sentimentScore: fixtureArticle.sentimentScore } : {}),
+      ...(real || longitudinal ? {} : { contentSourceHash }),
       articleVector: vectorRecord.articleVector,
       embedding_model: vectorRecord.embeddingModel,
       publishedAt,
-      firstSeen: fixtureArticle.firstSeen ? new Date(fixtureArticle.firstSeen) : publishedAt
+      firstSeen: real || longitudinal ? publishedAt : fixtureArticle.firstSeen ? new Date(fixtureArticle.firstSeen) : publishedAt
     });
 
     insertedCount++;

@@ -1,4 +1,4 @@
-import { writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,7 +13,7 @@ import {
 const { sequelize, Category, Feed, Article } = db;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_OUTPUT_PATH = join(__dirname, '..', 'tests', 'fixtures', 'semantic-regression.json');
+const DEFAULT_OUTPUT_PATH = join(__dirname, '..', 'tests', '.semantic-regression', 'exported-articles.json');
 const FIXTURE_FEED_URL_PREFIX = 'https://fixtures.rssmonster.test/';
 const PLACEHOLDER_FEED_URLS = new Set(['https://example.com/rss.xml']);
 
@@ -191,6 +191,7 @@ async function main() {
       .filter(article => article.feedId)
   };
 
+  await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(outputPath, `${JSON.stringify(fixture, null, 2)}\n`, 'utf8');
 
   console.log(

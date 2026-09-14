@@ -7,9 +7,8 @@ import {
 } from '../utils/semanticVectorFixtures.js';
 
 const REQUIRED_FIXTURES = [
-  'semantic-regression',
-  'semantic-regression-incremental',
-  'semantic-regression-incremental.unread',
+  'semantic-regression-batch001',
+  'semantic-regression-batch002',
   'island-taxonomy'
 ];
 

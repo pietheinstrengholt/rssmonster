@@ -131,8 +131,24 @@ Protect RSSMonster's data invariants before optimizing for implementation conven
 ## Semantic validation
 
 Read the [semantic architecture](services/README.md) and affected subsystem README.
-For semantic changes run `npm run test:semantic-trace` from `server/`, inspect
-reason codes and held-out outcomes, and preserve coverage assertions. Follow the
-[test guide](tests/semantic/README.md); model-backed skips are not full validation.
+Any semantic architecture/behavior change requires `npm run test:semantic-trace`
+from `server/` before implementation and after the final change. Follow the
+[capture and comparison workflow](tests/semantic/README.md#required-beforeafter-workflow-for-semantic-changes):
+archive both logs, exit statuses and reports before they are overwritten; record
+fixture/model/vector fingerprints; compare both phases' coverage, Event/Topic
+reuse and membership, Island support/confidence, interest paths, designated
+held-out results and runtime. Explain intended and unexpected changes in the
+final response, including pre-existing versus new failures. If a run is blocked,
+report the missing comparison rather than substituting historical metrics.
+This requirement includes semantic configuration, embedding preparation,
+eligibility/scoring and fixture/runner changes. Documentation-only clarification
+requires checking the documented contracts/commands, not claiming tests were run.
+Inspect reason codes and held-out outcomes, preserve coverage assertions and keep
+models/inputs fixed unless their change is authorized. Model-backed skips are not
+full validation.
+The trace command runs only the two 1,000-article batches. Also run
+`npm run test:semantic-gold` when changing Event/Topic identity, Island formation,
+confidence or behavioral scoring; passing score coverage alone does not validate
+those isolated gold contracts.
 Run database-resetting suites sequentially against the isolated test database.
 Generated presentation labels must not become independent semantic evidence.

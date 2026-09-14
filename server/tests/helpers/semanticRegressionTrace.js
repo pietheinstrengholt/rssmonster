@@ -192,7 +192,8 @@ function buildSemanticPath({ article, topic, islandDecision }) {
 // This function derives event decisions from the source and prior trace snapshot.
 function deriveEventDecision({ article, previousRow, previousEventIds, isIncremental }) {
   if (!article.eventId) return 'eventless';
-  if (!isIncremental) return previousRow?.eventDecision || 'baseline-event';
+  if (!isIncremental) return previousRow?.eventDecision && previousRow.eventDecision !== 'eventless'
+    ? previousRow.eventDecision : 'baseline-event';
   if (previousRow?.eventDecision && previousRow.eventDecision !== 'eventless') return previousRow.eventDecision;
 
   return previousEventIds.has(Number(article.eventId)) ? 'existing-event' : 'new-event';
@@ -500,8 +501,10 @@ async function buildArchitectureHealth(trace, userId) {
     'Standalone articles': rows.filter(row => row.semanticPath === 'A').length,
     'One-article events': events.filter(event => Number(event.articleCount || 0) === 1).length,
     'Duplicate island names': [...islandNameCounts.values()].filter(count => count > 1).length,
-    'Incremental joined existing': rows.filter(row => row.eventDecision === 'existing-event').length,
-    'Incremental new events': rows.filter(row => row.eventDecision === 'new-event').length,
+    'Incremental articles joining existing Events': rows.filter(row => row.source === 'incremental' && row.eventDecision === 'existing-event').length,
+    'Incremental articles in new Events': rows.filter(row => row.source === 'incremental' && row.eventDecision === 'new-event').length,
+    'Distinct existing Events reused': new Set(rows.filter(row => row.source === 'incremental' && row.eventDecision === 'existing-event' && row.eventId).map(row => row.eventId)).size,
+    'Distinct new Events': new Set(rows.filter(row => row.source === 'incremental' && row.eventDecision === 'new-event' && row.eventId).map(row => row.eventId)).size,
     'Incremental eventless': rows.filter(row => row.source === 'incremental' && row.eventDecision === 'eventless').length
   };
 }

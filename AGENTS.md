@@ -73,8 +73,16 @@ A repeated feed item may be a revision rather than a new article. Preserve ident
 
 Semantic features are probabilistic. Use deterministic eligibility rules, bounded candidate sets, ownership/visibility filtering, and meaningful thresholds. Zero semantic matches or an empty eligible result set is valid; every eligible Article must still receive a finite Recommended score with neutral interest when unmatched.
 
-For semantic changes, follow [the service invariants](server/services/AGENTS.md) and
-run `npm run test:semantic-trace` from `server/`. Do not weaken regression
+For every semantic architecture/behavior change, follow
+[the service invariants](server/services/AGENTS.md) and the required
+[before/after test workflow](server/tests/semantic/README.md#required-beforeafter-workflow-for-semantic-changes).
+Run `npm run test:semantic-trace` from `server/` before implementation and after
+the final change. Preserve both runs' logs/reports and compare initial/final
+metrics, memberships, held-out results, failures and runtime in the final report.
+This also applies to semantic configuration, embedding inputs, scoring and
+fixture/runner changes. Keep model, vectors and corpus constant unless their
+change is explicitly in scope; disclose differences and unavailable baselines.
+Do not weaken regression
 expectations or semantic thresholds to make coverage or tests look better. Event
 occurrence identity and Topic durable-subject identity are different problems.
 Keep final Recommended weights unchanged when improving semantic evidence unless

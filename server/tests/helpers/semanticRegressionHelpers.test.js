@@ -43,14 +43,17 @@ const mocked = vi.hoisted(() => {
   };
 });
 
+vi.mock('./semanticBatchFixtures.js', () => ({ readSemanticFixtureFile: mocked.readFile }));
+
 vi.mock('node:fs/promises', () => ({
   mkdir: mocked.mkdir,
   readFile: mocked.readFile,
   writeFile: mocked.writeFile
 }));
 
-vi.mock('../../models/index.js', () => ({
+vi.mock('../../models/index.js', async () => ({
   default: {
+    Sequelize: await import('sequelize'),
     Article: mocked.Article,
     ArticleTopic: mocked.ArticleTopic,
     Category: mocked.Category,
@@ -172,6 +175,33 @@ describe('semantic regression incremental helpers', () => {
     expect(fixture.articles).toEqual([legacy, occurrence]);
   });
 
+  it('keeps real metadata in the main wave and preserves sparse bodies and syndicated URLs', async () => {
+    const real = { sourceId: 'real-incremental-001', feedId: 3, url: 'https://news.example.org/one', title: 'Public report',
+      description: 'Description only', contentOriginal: null, contentHtml: null, contentText: null,
+      publishedAt: '2026-08-01T00:00:00Z', regression: { provenance: 'real', scenario: 'real-background' } };
+    const second = { ...real, sourceId: 'real-incremental-002', url: 'https://news.example.org/two', publishedAt: '2026-09-01T00:00:00Z' };
+    const legacy = { feedId: 1, title: 'Legacy', publishedAt: '2020-01-01T00:00:00Z' };
+    const occurrence = { feedId: 2, regression: { scenario: 'monthly' } };
+    const fixture = { feeds: [{ id: 1 }, { id: 2 }, { id: 3 }], articles: [legacy, occurrence, real, second] };
+    expect(selectLegacyFixture(fixture).articles).toEqual([legacy, real, second]);
+    expect(selectOccurrenceFixture(fixture).articles).toEqual([occurrence]);
+    const vectors = buildVectorMap({ articles: [
+      { fixtureSourceId: real.sourceId, contentSourceHash: 'same-content', articleVector: [1, 0] },
+      { fixtureSourceId: second.sourceId, contentSourceHash: 'same-content', articleVector: [0, 1] }
+    ] });
+    await insertMissingFixtureArticles(9, { ...fixture, articles: [real, second] }, vectors, 'https://fixture.test');
+    const inserted = mocked.Article.create.mock.calls.map(([a]) => a);
+    expect(inserted).toHaveLength(2);
+    expect(inserted[1].publishedAt - inserted[0].publishedAt).toBe(31 * 86400000);
+    expect(inserted[0]).toMatchObject({ contentOriginal: null, contentHtml: null, contentText: null,
+      description: 'Description only', articleVector: [1, 0] });
+    expect(inserted[1].articleVector).toEqual([0, 1]);
+    expect(inserted[0]).not.toHaveProperty('contentSourceHash');
+    expect(mocked.Article.findOne.mock.calls.map(([query]) => query.where)).toEqual([
+      { userId: 9, url: real.url }, { userId: 9, url: second.url }
+    ]);
+  });
+
   it('preserves monthly spacing when occurrence insertion opts out of date compression', async () => {
     const fixture = {
       feeds: [{ id: 1, url: 'https://fixture.test/feed' }],
@@ -199,7 +229,7 @@ describe('semantic regression incremental helpers', () => {
 
   it('reports missing vector fixtures and preserves unexpected filesystem errors', async () => {
     await expect(loadIncrementalVectorFixture()).rejects.toThrow(
-      'Run `npm run fixture:semantic-incremental-vectors`'
+      'Run `npm run fixture:semantic-vectors`'
     );
     await expect(hasIncrementalVectorFixture()).resolves.toBe(false);
 
@@ -517,9 +547,13 @@ describe('semantic regression trace helpers', () => {
     mocked.Island.findAll.mockResolvedValue([
       { id: 30, label: 'Island Thirty', weight: 1, islandVector: [0, 1] }
     ]);
-    mocked.IslandTopic.findAll.mockResolvedValue([
-      { id: 1, islandId: 30, topicId: 10, similarity: 0.95 }
+    mocked.ArticleTopic.findAll.mockResolvedValue([
+      { articleId: 1, topicId: 10, confidence: 1 }, { articleId: 3, topicId: 11, confidence: 1 }
     ]);
+    mocked.IslandTopic.findAll.mockResolvedValue([
+      { id: 1, islandId: 30, topicId: 10, similarity: 0.95, confidence: 1 }
+    ]);
+    mocked.cosineSimilarity.mockImplementation((a, b) => Array.isArray(a) && Array.isArray(b) ? 0.9 : 0);
 
     const trace = await refreshSemanticRegressionTrace({
       userId: 7,

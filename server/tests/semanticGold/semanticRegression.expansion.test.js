@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { readFile, writeFile } from 'node:fs/promises';
+import { writeFile } from 'node:fs/promises';
+import { readSemanticFixtureFile as readFile } from '../helpers/semanticBatchFixtures.js';
 import db from '../../models/index.js';
 import { cosineSimilarity } from '../../services/vectors/index.js';
 import { EVENT_MAX_GAP_HOURS, EVENT_SIM_THRESHOLD } from '../../services/config/semanticConfig.js';

@@ -162,16 +162,13 @@ generates vectors.
 
 | Command | Arguments | What it does and when to use it |
 | --- | --- | --- |
-| `npm run fixture:semantic-export` | `--output=<path>`; `--user-id=<integer-id>`; `--limit=<integer-count>` | Exports categories, feeds, and suitable articles from the configured database to the main semantic regression input fixture. The default output is `server/tests/fixtures/semantic-regression.json`. Use `--user-id` to filter source rows and `--limit` to cap queried articles. This can expose source content, so inspect the fixture before committing it. |
-| `npm run fixture:semantic-vectors` | None | Generates or reuses model-specific vectors for the main semantic regression fixture and selects that model's fixture set. Use it after changing the source fixture, embedding input, or embedding model. |
-| `npm run fixture:semantic-incremental-vectors` | None | Generates or reuses vectors for the incremental semantic fixture. Use it after changing that fixture or embedding behavior. |
-| `npm run fixture:semantic-incremental-unread-vectors` | None | Generates or reuses vectors for the incremental-unread semantic fixture. Use it after changing that fixture or embedding behavior. |
+| `npm run fixture:semantic-export` | `--output=<path>`; `--user-id=<integer-id>`; `--limit=<integer-count>` | Exports categories, feeds, and suitable articles from the configured database to an intermediate export. The default output is `server/tests/.semantic-regression/exported-articles.json`. Use `--user-id` to filter source rows and `--limit` to cap queried articles. This can expose source content, so inspect the fixture before committing it. |
+| `npm run fixture:semantic-vectors` | None | Generates or reuses local Qwen vector caches for Batch001 and Batch002. Select the complete set separately with `fixture:semantic-select`. Use it after changing the source fixture, embedding input, or embedding model. |
 | `npm run fixture:taxonomy-vectors` | None | Generates or reuses model-specific vectors for the checked Interest Island taxonomy fixture. Use it after taxonomy, taxonomy embedding text, or embedding-model changes. |
-| `npm run fixture:semantic-select` | Required `--model=<full-model-id>` | Selects a complete, already-generated model-specific vector set for the baseline, incremental, unread, and taxonomy regression fixtures. It does not generate missing vectors and fails if any required set is unavailable. |
+| `npm run fixture:semantic-select` | Required `--model=<full-model-id>` | Selects a complete, already-generated model-specific vector set for the Batch001, Batch002, and taxonomy regression fixtures. It does not generate missing vectors and fails if any required set is unavailable. |
 
-The vector generators have no CLI options. Their batch sizes are controlled by
-`SEMANTIC_REGRESSION_EMBED_BATCH_SIZE` for semantic fixtures and
-`TAXONOMY_FIXTURE_EMBED_BATCH_SIZE` for the taxonomy fixture.
+The vector generators have no CLI options. The batch corpus generator checkpoints each article using the local Qwen provider.
+`TAXONOMY_FIXTURE_EMBED_BATCH_SIZE` controls taxonomy generation.
 
 ## Inference Commands
 
