@@ -1064,7 +1064,10 @@ const markNotInterested = async (req, res, _next) => {
       return res.status(404).json({ error: "Article not found" });
     }
 
-    await article.update({ negativeInd: 1 });
+    // Write both flags atomically, including unchanged values, so concurrent feedback cannot conflict.
+    await Article.update({ negativeInd: 1, positiveInd: 0 }, {
+      where: { id: article.id, userId, ...canonicalArticleWhere() }
+    });
 
     res.status(200).json({ 
       message: "Article marked as not interested",
@@ -1102,9 +1105,12 @@ const markMoreLikeThis = async (req, res, _next) => {
       return res.status(404).json({ error: "Article not found" });
     }
 
-    await article.update({
+    // Write both flags atomically, including unchanged values, so concurrent feedback cannot conflict.
+    await Article.update({
       positiveInd: 1,
       negativeInd: 0
+    }, {
+      where: { id: article.id, userId, ...canonicalArticleWhere() }
     });
 
     res.status(200).json({

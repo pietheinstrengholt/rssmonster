@@ -14,6 +14,18 @@ const held = { id: 99, articleVector: [0.95, Math.sqrt(1 - 0.95 ** 2), 0] };
 const context = evidence => ({ ...prepareIslandEvidence([island], evidence), now });
 
 describe('confidence-aware held-out personalization', () => {
+  it('resolves legacy contradictory explicit feedback as negative in confidence and fallback', () => {
+    const conflict = seed(1, { favoriteInd: 0, positiveInd: 1, negativeInd: 1 });
+    const diagnostics = islandCohesion([conflict], island.islandVector);
+    expect(diagnostics).toMatchObject({ positiveEvidenceCount: 0, negativeEvidenceCount: 1 });
+    expect(deriveIslandConfidence(diagnostics)).toBeCloseTo(0.35);
+    const ctx = { ...prepareIslandEvidence([], [conflict]), now };
+    const result = evaluateArticleInterest(held, ctx);
+    expect(result.score).toBeLessThan(0);
+    expect(result.paths).toHaveLength(1);
+    expect(result.paths[0]).toMatchObject({ explicitType: 'negative', seedSelf: false });
+  });
+
   it('gives coherent independent support more authority than a singleton or noisy evidence', () => {
     const singleton = context([seed(1)]);
     const durable = context([1, 2, 3, 4, 5].map(id => seed(id)));

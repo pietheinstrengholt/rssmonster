@@ -525,8 +525,13 @@ proxy for feedback recency. Held-out ranking evaluation should measure these lim
 
 ## Preference strength, relationship storage, and diagnostics
 
-Article profile formation uses +4 for likes, +4 for favorites, +2 per outbound
-click (at most three), +1 for attention bucket ≥3, and −4 for explicit negatives.
+Article profile formation uses +8 for more-like-this (`positiveInd`), +4 for favorites,
++2 per outbound click (at most three), +1 for attention bucket ≥3, and −8 for
+not-interested (`negativeInd`). Feedback endpoints atomically set the chosen flag
+and clear the opposite flag, so the last write wins even for concurrent requests.
+For legacy rows with both explicit flags set, negative feedback suppresses the
+explicit positive signal in formation, confidence and fallback. Favorites, clicks
+and deep reads remain independent signals; no historical rows are rewritten.
 Positive formation evidence uses existing publication recency decay. The candidate
 weight is `clamp(averageProfileScore / 7 + sign(averageProfileScore) *
 min(.2, memberCount * .03), -1, 1)`, rounded to four decimals. This signed

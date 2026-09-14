@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
@@ -98,5 +98,54 @@ describe('article recommendation feedback', () => {
     expect(res.status).toBe(404);
     expect(article.positiveInd).toBe(0);
     expect(article.negativeInd).toBe(1);
+  });
+
+  it('replaces opposing feedback in either direction and keeps repeated requests idempotent', async () => {
+    const user = await createUser(uniqueName('feedback-switch'));
+    const { article } = await createArticleFor(user);
+    await article.update({ favoriteInd: 1, clickedAmount: 3, attentionBucket: 3 });
+
+    for (const action of ['markmorelikethis', 'marknotinterested', 'marknotinterested', 'markmorelikethis', 'markmorelikethis']) {
+      const res = await request(app)
+        .post(`/api/articles/${action}/${article.id}`)
+        .set('Authorization', authHeaderFor(user));
+      await article.reload();
+
+      expect(res.status).toBe(200);
+      expect(article.positiveInd).toBe(action === 'markmorelikethis' ? 1 : 0);
+      expect(article.negativeInd).toBe(action === 'marknotinterested' ? 1 : 0);
+      expect(article.favoriteInd).toBe(1);
+      expect(article.clickedAmount).toBe(3);
+      expect(article.attentionBucket).toBe(3);
+    }
+  });
+
+  it('keeps concurrent opposing feedback mutually exclusive', async () => {
+    const user = await createUser(uniqueName('feedback-concurrent'));
+    const { article } = await createArticleFor(user);
+    await article.update({ positiveInd: 0, negativeInd: 0 });
+
+    // Force both requests to read the same neutral state before either writes.
+    const findOne = Article.findOne.bind(Article);
+    let reads = 0;
+    let release;
+    const bothRead = new Promise(resolve => { release = resolve; });
+    const lookup = vi.spyOn(Article, 'findOne').mockImplementation(async options => {
+      const row = await findOne(options);
+      if (++reads === 2) release();
+      await bothRead;
+      return row;
+    });
+
+    try {
+      const responses = await Promise.all(['markmorelikethis', 'marknotinterested'].map(action => request(app)
+        .post(`/api/articles/${action}/${article.id}`)
+        .set('Authorization', authHeaderFor(user))));
+      expect(responses.map(res => res.status)).toEqual([200, 200]);
+    } finally {
+      lookup.mockRestore();
+    }
+    await article.reload();
+    expect([[1, 0], [0, 1]]).toContainEqual([article.positiveInd, article.negativeInd]);
   });
 });

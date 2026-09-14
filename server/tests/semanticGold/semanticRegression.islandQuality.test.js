@@ -21,17 +21,29 @@ describe('semantic Island formation and neutral Recommended coverage', () => {
       url: `https://phase-a.example.test/${index}`, status: 'unread', publishedAt: new Date() })));
     const capped = await buildInterestIslandProfilesForUser(user.id, { maxIslands: 1 });
     expect(capped).toHaveLength(1);
-    expect(capped[0].articles.map(article => article.articleId).sort()).toEqual(articles.slice(0, 2).map(article => article.id).sort());
-    expect(capped.summary.unassignedBehavioralProfiles).toBe(2);
+    // Explicit negative magnitude 8 now outranks each favorite plus click (6).
+    expect(capped[0].articles.map(article => article.articleId)).toEqual([articles[3].id]);
+    expect(capped[0].weight).toBeLessThan(0);
+    expect(capped.summary.unassignedBehavioralProfiles).toBe(3);
     await persistIslandProfilesForUser(user.id, capped);
     await persistIslandProfilesForUser(user.id, await buildInterestIslandProfilesForUser(user.id, { maxIslands: 1 }));
     const replayed = await db.Island.findAll({ where: { userId: user.id }, raw: true });
     expect(replayed).toHaveLength(1);
-    expect(replayed[0].positiveSignals.stars).toBe(2);
+    expect(replayed[0].positiveSignals.negatives).toBe(1);
+
+    // A second slot retains the coherent positive pair without admitting unrelated evidence.
+    const paired = await buildInterestIslandProfilesForUser(user.id, { maxIslands: 2 });
+    expect(paired).toHaveLength(2);
+    expect(paired[1].articles.map(article => article.articleId).sort()).toEqual(articles.slice(0, 2).map(article => article.id).sort());
+    expect(paired.summary.unassignedBehavioralProfiles).toBe(1);
+    await persistIslandProfilesForUser(user.id, paired);
+    await persistIslandProfilesForUser(user.id, await buildInterestIslandProfilesForUser(user.id, { maxIslands: 2 }));
+    const positive = await db.Island.findOne({ where: { userId: user.id, weight: { [db.Sequelize.Op.gt]: 0 } } });
+    expect(positive.positiveSignals.stars).toBe(2);
     // Cumulative click counts in a fresh full snapshot represent genuine new evidence.
     await articles[0].update({ clickedAmount: 2 });
-    await persistIslandProfilesForUser(user.id, await buildInterestIslandProfilesForUser(user.id, { maxIslands: 1 }));
-    const updated = await db.Island.findByPk(replayed[0].id);
+    await persistIslandProfilesForUser(user.id, await buildInterestIslandProfilesForUser(user.id, { maxIslands: 2 }));
+    const updated = await db.Island.findByPk(positive.id);
     expect(updated.positiveSignals).toMatchObject({ stars: 2, clicks: 3 });
 
     const separate = await buildInterestIslandProfilesForUser(user.id, { maxIslands: 3 });

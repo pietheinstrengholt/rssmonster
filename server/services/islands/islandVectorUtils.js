@@ -54,11 +54,11 @@ export const ISLAND_DEBUG = ['1', 'true', 'yes'].includes(
 
 // Defines the signal weights enforced by this service.
 export const SIGNAL_WEIGHTS = {
-  positive: 4,
+  positive: 8,
   star: 4,
   click: 2,
   deepRead: 1,
-  negative: 4,
+  negative: 8,
   topicAffinity: 2,
   eventCount: 0.25
 };

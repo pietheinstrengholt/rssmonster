@@ -18,22 +18,39 @@ describe('behavioral article island profiles', () => {
     vi.clearAllMocks();
   });
 
-  it('caps clicks and combines positive, deep-read, and negative signals', () => {
+  it('caps clicks and combines positive and deep-read signals', () => {
     const result = computeArticleSignals({
       positiveInd: 1,
       favoriteInd: 1,
       clickedAmount: 8,
       attentionBucket: 3,
-      negativeInd: 1,
+      negativeInd: 0,
       publishedAt: new Date(Date.now() + 60_000)
     });
 
     expect(result).toEqual({
-      positiveScore: 15,
-      negativeScore: 4,
-      engagementScore: 15,
-      positiveSignals: { positives: 1, stars: 1, clicks: 3, deepReads: 1, negatives: 1 }
+      positiveScore: 19,
+      negativeScore: 0,
+      engagementScore: 19,
+      positiveSignals: { positives: 1, stars: 1, clicks: 3, deepReads: 1, negatives: 0 }
     });
+  });
+
+  it.each([
+    [{ positiveInd: 1 }, 8, 0],
+    [{ negativeInd: 1 }, 0, 8],
+    [{ positiveInd: 1, negativeInd: 1 }, 0, 8],
+    [{}, 0, 0]
+  ])('scores explicit feedback and resolves legacy conflicts: %j', (flags, positiveScore, negativeScore) => {
+    expect(computeArticleSignals({ ...flags, publishedAt: new Date(Date.now() + 60_000) }))
+      .toMatchObject({ positiveScore, negativeScore });
+  });
+
+  it('preserves independent engagement when resolving contradictory explicit feedback', () => {
+    expect(computeArticleSignals({ positiveInd: 1, negativeInd: 1, favoriteInd: 1,
+      clickedAmount: 8, attentionBucket: 3, publishedAt: new Date(Date.now() + 60_000) }))
+      .toEqual({ positiveScore: 11, negativeScore: 8, engagementScore: 11,
+        positiveSignals: { positives: 0, stars: 1, clicks: 3, deepReads: 1, negatives: 1 } });
   });
 
   it('leaves below-threshold evidence unassigned when the community cap is reached', async () => {

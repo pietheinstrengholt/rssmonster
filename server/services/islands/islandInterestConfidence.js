@@ -18,7 +18,7 @@ export function islandCohesion(members, vector) {
   const similarities = unique.map(article => similarity(article.articleVector, vector)).filter(Number.isFinite).sort((a, b) => a - b);
   const n = similarities.length;
   const median = n ? (similarities[Math.floor((n - 1) / 2)] + similarities[Math.floor(n / 2)]) / 2 : null;
-  const positive = unique.filter(a => a.positiveInd || a.favoriteInd || a.clickedAmount > 0 || a.attentionBucket >= 3).length;
+  const positive = unique.filter(a => (a.positiveInd && !a.negativeInd) || a.favoriteInd || a.clickedAmount > 0 || a.attentionBucket >= 3).length;
   const negative = unique.filter(a => a.negativeInd).length;
   const singleton = unique.length === 1;
   const lowCohesion = median != null && median < DEFAULT_ARTICLE_AFFINITY_THRESHOLD;

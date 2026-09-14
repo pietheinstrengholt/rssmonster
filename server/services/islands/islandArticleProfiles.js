@@ -23,8 +23,8 @@ const { Article } = db;
 
 // This function converts article behavior fields into weighted positive and negative signals.
 export function computeArticleSignals(article) {
-  // Selects the positives based on whether article positive status is 1.
-  const positives = article.positiveInd === 1 ? 1 : 0;
+  // Legacy contradictory explicit flags resolve to negative, matching behavioral fallback.
+  const positives = article.positiveInd === 1 && article.negativeInd !== 1 ? 1 : 0;
   // Selects the stars based on whether article favorite status is 1.
   const stars = article.favoriteInd === 1 ? 1 : 0;
   // Derives the clicks through min while computing article signals.
