@@ -15,7 +15,7 @@ function candidateRecord(id, overrides = {}) {
     description: '',
     publishedAt: TARGET_DATE,
     createdAt: TARGET_DATE,
-    articleVector: [1, 0, 0],
+    embedding_model: 'test-model', articleVector: [1, 0, 0],
     ...overrides
   };
 }
@@ -79,4 +79,12 @@ describe('ArticleEventCandidateCache', () => {
 
     expect(cache.findNearby(candidateRecord(2))[0].eventId).toBe(42);
   });
+  it('filters incompatible models before applying the candidate cap', () => {
+    const cache = new ArticleEventCandidateCache({ userId: 1 });
+    cache.insert(candidateRecord(1));
+    for (let id = 2; id <= 350; id++) cache.insert(candidateRecord(id, { embedding_model: 'other-model' }));
+    expect(cache.findNearby(candidateRecord(351)).map(row => row.id)).toEqual([1]);
+    expect(cache.findNearby(candidateRecord(351, { embedding_model: null }))).toEqual([]);
+  });
+
 });

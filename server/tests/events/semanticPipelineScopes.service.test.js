@@ -130,7 +130,7 @@ describe('semantic pipeline scopes orchestration', () => {
     const disabledArticle = {
       id: 2,
       userId: 7,
-      articleVector: null,
+      embedding_model: 'test-model', articleVector: null,
       eventId: null,
       Feed: { generateEmbeddings: false },
       publishedAt: new Date('2026-07-20T10:01:00.000Z')
@@ -138,7 +138,7 @@ describe('semantic pipeline scopes orchestration', () => {
     const missingVectorArticle = {
       id: 3,
       userId: 7,
-      articleVector: null,
+      embedding_model: 'test-model', articleVector: null,
       eventId: null,
       Feed: { generateEmbeddings: true },
       publishedAt: new Date('2026-07-20T10:02:00.000Z')
@@ -146,7 +146,7 @@ describe('semantic pipeline scopes orchestration', () => {
     const generatedArticle = {
       id: 4,
       userId: 7,
-      articleVector: null,
+      embedding_model: 'test-model', articleVector: null,
       eventId: null,
       Feed: { generateEmbeddings: true },
       publishedAt: new Date('2026-07-20T10:03:00.000Z')
@@ -161,7 +161,7 @@ describe('semantic pipeline scopes orchestration', () => {
       generatedArticle
     ]);
     mocked.embedArticle
-      .mockResolvedValueOnce({ eventVector: null })
+      .mockResolvedValueOnce({ embedding_model: 'test-model', eventVector: null })
       .mockResolvedValueOnce({ eventVector: [0, 1], embedding_model: 'generated-model' });
     // This assignment stub records both result counters used by the public summary.
     mocked.assignArticleToEvent.mockImplementation(async (article, cache, vectors, context) => {
@@ -208,7 +208,7 @@ describe('semantic pipeline scopes orchestration', () => {
     const article = {
       id: 8,
       userId: 9,
-      articleVector: null,
+      embedding_model: 'test-model', articleVector: null,
       eventId: null,
       Feed: { generateEmbeddings: false }
     };
@@ -231,7 +231,7 @@ describe('semantic pipeline scopes orchestration', () => {
     const article = {
       id: 31,
       userId: 12,
-      articleVector: [1, 0],
+      embedding_model: 'test-model', articleVector: [1, 0],
       eventId: 50,
       publishedAt: new Date('2026-07-25T10:00:00.000Z')
     };
@@ -283,14 +283,14 @@ describe('semantic pipeline scopes orchestration', () => {
     const firstArticle = {
       id: 101,
       userId: 21,
-      articleVector: [1, 0],
+      embedding_model: 'test-model', articleVector: [1, 0],
       eventId: null,
       publishedAt: new Date('2025-01-01T10:00:00.000Z')
     };
     const secondArticle = {
       id: 102,
       userId: 21,
-      articleVector: [0, 1],
+      embedding_model: 'test-model', articleVector: [0, 1],
       eventId: null,
       publishedAt: new Date('2025-01-02T10:00:00.000Z')
     };

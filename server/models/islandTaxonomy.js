@@ -39,7 +39,7 @@ export default (sequelize) => {
       },
       // Records which embedding model produced the taxonomy vector; null when unavailable.
       embedding_model: {
-        type: DataTypes.STRING(100),
+        type: DataTypes.STRING(64),
         allowNull: true
       },
       // Controls whether the taxonomy entry is active, hidden, or archived.

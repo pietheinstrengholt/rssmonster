@@ -19,6 +19,18 @@ describe('behavioral article island profiles', () => {
     vi.clearAllMocks();
   });
 
+  it.each(['model-a', null, 'model-b'])('derives profile model metadata from article evidence: %s', async model => {
+    mocks.findAll.mockResolvedValue([
+      { id: 1, title: 'Database', articleVector: [1, 0], embedding_model: 'model-a', positiveInd: 1, publishedAt: new Date() },
+      { id: 2, title: 'Database update', articleVector: [1, 0], embedding_model: model, positiveInd: 1, publishedAt: new Date() }
+    ]);
+    const profiles = await buildInterestIslandProfilesForUser(12);
+    expect(profiles).toHaveLength(model === 'model-b' ? 2 : 1);
+    expect(profiles[0].embedding_model).toBe('model-a');
+    expect(profiles[0].articles).toHaveLength(model === 'model-a' ? 2 : 1);
+    expect(mocks.findAll.mock.calls[0][0].attributes).toContain('embedding_model');
+  });
+
   it('caps clicks and combines positive and deep-read signals', () => {
     const result = computeArticleSignals({
       positiveInd: 1,
@@ -56,11 +68,11 @@ describe('behavioral article island profiles', () => {
 
   it('leaves below-threshold evidence unassigned when the community cap is reached', async () => {
     mocks.findAll.mockResolvedValue([
-      { id: 1, title: 'Primary', articleVector: [1, 0], positiveInd: 1, publishedAt: new Date(Date.now() + 60_000) },
-      { id: 2, title: 'Related', articleVector: [0.99, 0.01], favoriteInd: 1, publishedAt: new Date(Date.now() + 60_000) },
-      { id: 3, title: 'Different', articleVector: [0, 1], clickedAmount: 1, publishedAt: new Date(Date.now() + 60_000) },
-      { id: 4, title: 'No vector', articleVector: null, positiveInd: 1 },
-      { id: 5, title: 'No signal', articleVector: [1, 0] }
+      { id: 1, title: 'Primary', embedding_model: 'test-model', articleVector: [1, 0], positiveInd: 1, publishedAt: new Date(Date.now() + 60_000) },
+      { id: 2, title: 'Related', embedding_model: 'test-model', articleVector: [0.99, 0.01], favoriteInd: 1, publishedAt: new Date(Date.now() + 60_000) },
+      { id: 3, title: 'Different', embedding_model: 'test-model', articleVector: [0, 1], clickedAmount: 1, publishedAt: new Date(Date.now() + 60_000) },
+      { id: 4, title: 'No vector', embedding_model: 'test-model', articleVector: null, positiveInd: 1 },
+      { id: 5, title: 'No signal', embedding_model: 'test-model', articleVector: [1, 0] }
     ]);
 
     const profiles = await buildInterestIslandProfilesForUser(12, { maxIslands: 1 });

@@ -1,3 +1,4 @@
+import { embeddingSimilarity } from '../vectors/embeddingModel.js';
 import {
   blendVector,
   cosineSimilarity as sharedCosineSimilarity,
@@ -174,7 +175,7 @@ export function isStaleIsland(island) {
 }
 
 // This function picks the nearest active taxonomy display name for an island vector.
-export function resolveTaxonomyDisplayName(vector, taxonomyRows = []) {
+export function resolveTaxonomyDisplayName(vector, taxonomyRows = [], embeddingModel = null) {
   // Returns no result when vector is not an array or vector is empty.
   if (!Array.isArray(vector) || !vector.length) return null;
 
@@ -184,7 +185,7 @@ export function resolveTaxonomyDisplayName(vector, taxonomyRows = []) {
   // Processes each taxonomy rows entry in turn.
   for (const row of taxonomyRows) {
     // Derives the similarity through cosine similarity while resolving taxonomy display name.
-    const similarity = cosineSimilarity(vector, row.vector);
+    const similarity = embeddingSimilarity(vector, row.vector, embeddingModel, row.embedding_model);
     // Handles the case where similarity exceeds best similarity.
     if (similarity > bestSimilarity) {
       bestSimilarity = similarity;

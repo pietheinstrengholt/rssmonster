@@ -24,7 +24,7 @@ function island(overrides = {}) {
   const instance = {
     id: 1,
     label: 'Technology',
-    islandVector: [1, 0],
+    embedding_model: 'test-model', islandVector: [1, 0],
     weight: 0.5,
     populationAudit: [],
     ...overrides

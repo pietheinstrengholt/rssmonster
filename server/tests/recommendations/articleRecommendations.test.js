@@ -203,4 +203,14 @@ describe('getArticleRecommendations', () => {
       articleId: duplicate.id
     })).resolves.toBeNull();
   });
+  it.each([null, '', 'other-model'])('excludes incompatible recommendation candidates: %s', async model => {
+    const graph = await createUserGraph();
+    const source = await createArticle(graph, 'source', [1, 0], { embedding_model: 'test-model' });
+    await createArticle(graph, 'wrong', [1, 0], { embedding_model: model });
+    const result = await getArticleRecommendations({ userId: graph.user.id, articleId: source.id, minSimilarity: -1 });
+    expect(result.articles).toEqual([]);
+    await source.update({ embedding_model: null });
+    expect((await getArticleRecommendations({ userId: graph.user.id, articleId: source.id, minSimilarity: -1 })).articles).toEqual([]);
+  });
+
 });

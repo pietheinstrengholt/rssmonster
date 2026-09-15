@@ -15,7 +15,7 @@ export function rankIslandCapacityCandidates(islands, evidence, profilesByIsland
       const signals = computeArticleSignals(article);
       return { article, score: signals.positiveScore - signals.negativeScore };
     }).filter(row => Math.abs(row.score) >= DEFAULT_ARTICLE_SIGNAL_THRESHOLD);
-    const lifecycle = summarizeIslandLifecycle(support.map(row => row.article), island.islandVector);
+    const lifecycle = summarizeIslandLifecycle(support.map(row => row.article), island.islandVector, island.embedding_model);
     return { id: island.id, strength: Math.abs(buildArticleIslandWeight(support)),
       confidence: Number(lifecycle.confidence.toFixed(4)), supportCount: support.length,
       lastBehaviorAt: lifecycle.lastBehaviorAt?.getTime() ?? 0 };

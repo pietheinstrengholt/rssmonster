@@ -16,7 +16,7 @@ function island(overrides = {}) {
   return {
     id: 1,
     label: 'AI Companions',
-    islandVector: [1, 0, 0],
+    embedding_model: 'test-model', islandVector: [1, 0, 0],
     weight: 0.5,
     populationAudit: [{
       metrics: { relatedArticleCount: 1 },
@@ -119,4 +119,8 @@ describe('island name disambiguation', () => {
 
     expect(buildDisambiguatedIslandName('AI Companions', target, usedNames)).toBe('AI Companions: Variant 42');
   });
+  it.each([null, '', 'other-model'])('preserves distinct same-name Islands from incompatible spaces: %s', model => {
+    expect(isNearDuplicateIslandName(island(), island({ id: 2, embedding_model: model }), -1)).toBe(false);
+  });
+
 });

@@ -1,3 +1,4 @@
+import { compatibleEmbeddingModels } from '../vectors/embeddingModel.js';
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import {
@@ -120,7 +121,7 @@ export default class ArticleEventCandidateCache {
         'description',
         'publishedAt',
         'createdAt',
-        'articleVector'
+        'articleVector', 'embedding_model'
       ],
       order: [
         ['publishedAt', 'DESC'],
@@ -155,6 +156,7 @@ export default class ArticleEventCandidateCache {
     return {
       id: article.id,
       userId: article.userId,
+      embedding_model: article.embedding_model,
       feedId: article.feedId,
       eventId: article.eventId ?? null,
       title: article.title,
@@ -257,6 +259,7 @@ export default class ArticleEventCandidateCache {
         if (Number(candidate.id) === Number(article.id)) continue;
         // Skips the current entry when number is not number.
         if (Number(candidate.userId) !== Number(article.userId)) continue;
+        if (!compatibleEmbeddingModels(article.embedding_model, candidate.embedding_model)) continue;
 
         // Derives the candidate ts through article event timestamp while finding nearby.
         const candidateTs = articleEventTimestamp(candidate);

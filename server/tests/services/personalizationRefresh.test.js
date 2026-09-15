@@ -12,7 +12,7 @@ async function fixture() {
   const user = await db.User.create({ username: `refresh-${randomUUID()}` });
   const category = await db.Category.create({ userId: user.id, name: 'Refresh' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Refresh', url: `https://${user.id}.example/rss` });
-  const values = { userId: user.id, feedId: feed.id, title: 'PostgreSQL database technical release', articleVector: [1, 0], publishedAt: new Date() };
+  const values = { userId: user.id, feedId: feed.id, title: 'PostgreSQL database technical release', embedding_model: 'test-model', articleVector: [1, 0], publishedAt: new Date() };
   const source = await db.Article.create({ ...values, status: 'read' });
   const candidate = await db.Article.create({ ...values, status: 'unread' });
   return { user, source, candidate, values };

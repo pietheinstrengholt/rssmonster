@@ -1,7 +1,8 @@
+import { embeddingSimilarity, hasEmbeddingModel } from '../vectors/embeddingModel.js';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
-import { cosineSimilarity, hasUsableVector, parseVector } from '../vectors/index.js';
+import { hasUsableVector, parseVector } from '../vectors/index.js';
 
 // Provides the shared dependencies used by this recommendation service.
 const { Article, Feed } = db;
@@ -83,7 +84,7 @@ async function loadRecentCandidates(userId, source, maxCandidates) {
       'publishedAt',
       'eventId',
       'status',
-      'articleVector'
+      'articleVector', 'embedding_model'
     ],
     include: [{
       model: Feed,
@@ -99,7 +100,7 @@ async function loadRecentCandidates(userId, source, maxCandidates) {
 }
 
 // This function scores valid candidates and records threshold diagnostics for tests and tuning.
-function scoreCandidates(sourceVector, candidates, threshold) {
+function scoreCandidates(sourceVector, candidates, threshold, embeddingModel) {
   const scored = [];
   let invalidVectorCount = 0;
   let rejectedByThresholdCount = 0;
@@ -111,7 +112,7 @@ function scoreCandidates(sourceVector, candidates, threshold) {
       continue;
     }
 
-    const similarity = cosineSimilarity(sourceVector, candidateVector, {
+    const similarity = embeddingSimilarity(sourceVector, candidateVector, embeddingModel, candidate.embedding_model, {
       coerceNumbers: true
     });
     if (!Number.isFinite(similarity)) {
@@ -201,7 +202,7 @@ export async function getArticleRecommendations({
   if (!source) return null;
 
   const sourceVector = resolveUsableVector(source.articleVector);
-  if (!sourceVector) {
+  if (!sourceVector || !hasEmbeddingModel(source.embedding_model)) {
     return {
       sourceArticleId: source.id,
       articles: [],
@@ -217,7 +218,7 @@ export async function getArticleRecommendations({
   }
 
   const candidates = await loadRecentCandidates(userId, source, candidateLimit);
-  const scoring = scoreCandidates(sourceVector, candidates, threshold);
+  const scoring = scoreCandidates(sourceVector, candidates, threshold, source.embedding_model);
   const selected = diversifyByEvent(scoring.eligible);
   const articles = selected.map(serializeRecommendation);
 

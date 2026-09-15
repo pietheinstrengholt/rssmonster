@@ -1,6 +1,7 @@
 import { Op } from 'sequelize';
 import { BEHAVIOR_TIMESTAMP_FIELDS, signalTimestamp } from '../articles/articleBehaviorTime.js';
 import db from '../../models/index.js';
+import { aggregateEmbeddingModel, embeddingSimilarity, hasEmbeddingModel } from '../vectors/embeddingModel.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import {
   DEFAULT_ARTICLE_AFFINITY_THRESHOLD,
@@ -14,7 +15,6 @@ import {
   articleMagnitude,
   buildPositiveSignalsAccumulator,
   clamp,
-  cosineSimilarity,
   debugIsland,
   normalizeVector,
   behaviorRecencyWeight,
@@ -76,6 +76,7 @@ function computeBehavioralArticleProfile(article) {
     articleId: article.id,
     title: article.title,
     vector: Array.isArray(article.articleVector) ? article.articleVector : null,
+    embedding_model: article.embedding_model ?? null,
     score,
     positiveSignals: articleSignals.positiveSignals,
     publishedAt: article.publishedAt
@@ -164,7 +165,7 @@ function buildBehavioralArticleCommunities(articleProfiles, maxIslands = DEFAULT
     const rankedCommunities = communities
       .map(community => ({
         community,
-        affinity: cosineSimilarity(article.vector, community.vector)
+        affinity: embeddingSimilarity(article.vector, community.vector, article.embedding_model, community.articles[0].embedding_model)
       }))
       .sort((a, b) => b.affinity - a.affinity);
 
@@ -192,6 +193,7 @@ function buildBehavioralArticleCommunities(articleProfiles, maxIslands = DEFAULT
     .map(bucket => ({
       articles: bucket.articles,
       vector: weightedAverageVector(bucket.samples) || bucket.vector,
+      embedding_model: aggregateEmbeddingModel(bucket.articles),
       weight: buildArticleIslandWeight(bucket.articles),
       positiveSignals: buildArticleIslandPositiveSignals(bucket.articles),
       label: buildArticleIslandLabel(bucket.articles)
@@ -219,6 +221,7 @@ export async function loadIslandBehavioralArticles(userId, { transaction } = {})
       'feedId',
       'title',
       'articleVector',
+      'embedding_model',
       'positiveInd',
       'favoriteInd',
       'clickedAmount',
@@ -239,7 +242,7 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
   // Keeps the article profiles entries eligible while building interest island profiles for user.
   const articleProfiles = articles
     .map(computeBehavioralArticleProfile)
-    .filter(profile => Array.isArray(profile.vector) && profile.vector.length)
+    .filter(profile => hasEmbeddingModel(profile.embedding_model) && Array.isArray(profile.vector) && profile.vector.length)
     .filter(profile => Math.abs(profile.score) >= DEFAULT_ARTICLE_SIGNAL_THRESHOLD);
 
   // Builds the behavioral article communities while building interest island profiles for user.

@@ -19,14 +19,14 @@ async function graph() {
 async function makeArticle(g, hours = 1, overrides = {}) {
   return Article.create({
     userId: g.user.id, feedId: g.feed.id, title, publishedAt: at(hours),
-    articleVector: [1, 0], url: `https://example.com/${randomUUID()}`, ...overrides
+    embedding_model: 'test-model', articleVector: [1, 0], url: `https://example.com/${randomUUID()}`, ...overrides
   });
 }
 async function makeEvent(g, hours = 0, overrides = {}) {
   const member = await makeArticle(g, hours);
   const event = await Event.create({
     userId: g.user.id, name: title, representativeArticleId: member.id,
-    articleCount: 1, sourceCount: 1, eventVector: [1, 0],
+    articleCount: 1, sourceCount: 1, embedding_model: 'test-model', eventVector: [1, 0],
     eventWindowStartAt: member.publishedAt, eventWindowEndAt: member.publishedAt,
     ...overrides
   });
@@ -106,7 +106,7 @@ describe('Event occurrence assignment', () => {
     expect(result.context.stats.ambiguousArticleCount).toBe(1);
     expect(await Event.count({ where: { userId: g.user.id } })).toBe(2);
 
-    await second.event.update({ eventVector: [0, 1], name: 'An unrelated occurrence' });
+    await second.event.update({ embedding_model: 'test-model', eventVector: [0, 1], name: 'An unrelated occurrence' });
     const reconsidered = await assign(g, incoming, [first.event, second.event]);
     expect(reconsidered.id).toBe(first.event.id);
   });
@@ -154,7 +154,7 @@ describe('Event occurrence assignment', () => {
   it('revalidates a stale cached span under the membership lock', async () => {
     const g = await graph();
     const { event } = await makeEvent(g, 0);
-    const stale = { id: event.id, userId: g.user.id, name: title, eventVector: [1, 0], eventWindowStartAt: at(20), eventWindowEndAt: at(20) };
+    const stale = { id: event.id, userId: g.user.id, name: title, embedding_model: 'test-model', eventVector: [1, 0], eventWindowStartAt: at(20), eventWindowEndAt: at(20) };
     const incoming = await makeArticle(g, 30);
     const cache = { updateInMemory: vi.fn() };
     expect(await assignArticleToExistingEvent({ article: incoming, bestEvent: stale, cache })).toBeNull();
@@ -197,4 +197,30 @@ describe('Event occurrence assignment', () => {
     expect(await createAndAssignEvent({ article: seed, candidateArticles: [{ ...neighbor.toJSON(), articleVector: [1, 0] }] })).toBeNull();
     expect(await Event.count({ where: { userId: g.user.id } })).toBe(0);
   });
+  it.each(['database', 'centroid-cache', 'member-cache'])('keeps incompatible Events unchanged through %s', async source => {
+    const g = await graph();
+    const { event, member } = await makeEvent(g);
+    const incoming = await makeArticle(g, 1, { embedding_model: 'other-model' });
+    const result = source === 'database'
+      ? await assignArticleToEvent(incoming)
+      : (await assign(g, incoming, source === 'centroid-cache' ? [event] : [], [member])).id;
+    expect(result).toBeNull();
+    expect(await assignArticleToExistingEvent({ article: incoming, bestEvent: event })).toBeNull();
+    await incoming.reload();
+    await event.reload();
+    expect(incoming.eventId).toBeNull();
+    expect(event.articleCount).toBe(1);
+    expect(event.embedding_model).toBe('test-model');
+  });
+
+  it('rejects an in-flight supplied vector if the stored model changed before commit', async () => {
+    const g = await graph();
+    const { event } = await makeEvent(g, 0, { embedding_model: 'new-model' });
+    const incoming = await makeArticle(g);
+    await Article.update({ embedding_model: 'new-model' }, { where: { id: incoming.id } });
+    expect(await assignArticleToExistingEvent({ article: incoming, articleEventVector: incoming.articleVector, bestEvent: event })).toBeNull();
+    await incoming.reload();
+    expect(incoming.eventId).toBeNull();
+  });
+
 });

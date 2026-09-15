@@ -16,7 +16,7 @@ async function fixture() {
   const user = await db.User.create({ username: `explicit-${randomUUID()}` });
   const category = await db.Category.create({ userId: user.id, name: 'Explicit' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Explicit', url: `https://${user.id}.example/rss` });
-  const values = { userId: user.id, feedId: feed.id, title: 'PostgreSQL technical deployment guide', publishedAt: new Date(), articleVector: [1, 0] };
+  const values = { userId: user.id, feedId: feed.id, title: 'PostgreSQL technical deployment guide', publishedAt: new Date(), embedding_model: 'test-model', articleVector: [1, 0] };
   const source = await db.Article.create({ ...values, status: 'read' });
   const candidate = await db.Article.create({ ...values, status: 'unread' });
   const authorization = `Bearer ${jwt.sign({ userId: user.id, username: user.username }, getJwtSecret())}`;
@@ -104,7 +104,7 @@ describe('fast explicit feedback scoring', () => {
 
   it('includes the source’s matching Island scope and preserves existing positive/negative aggregation', async () => {
     const { user, source, candidate, values } = await fixture();
-    const island = await db.Island.create({ userId: user.id, label: 'Database systems', islandVector: [0.7, Math.sqrt(0.51)], weight: 0.8 });
+    const island = await db.Island.create({ userId: user.id, label: 'Database systems', embedding_model: 'test-model', islandVector: [0.7, Math.sqrt(0.51)], weight: 0.8 });
     const islandCandidate = await db.Article.create({ ...values, status: 'unread', articleVector: [0, 1] });
     await updateArticleBehavior(source, { positiveInd: 1, positiveFeedbackAt: new Date() });
     await executeClaimedProcessingJob(await claimFast(user.id));

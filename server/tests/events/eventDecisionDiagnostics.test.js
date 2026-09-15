@@ -4,8 +4,8 @@ import { evaluateArticleAgainstEvent, selectEventDecision } from '../../services
 
 const now = new Date('2026-09-10T12:00:00Z');
 function evaluate(title, name) {
-  const article = { id: 1, userId: 1, title, articleVector: [1, 0], publishedAt: now };
-  const event = { id: 24, userId: 1, name, eventVector: [1, 0], eventWindowStartAt: now, eventWindowEndAt: now };
+  const article = { id: 1, userId: 1, title, embedding_model: 'test-model', articleVector: [1, 0], publishedAt: now };
+  const event = { id: 24, userId: 1, name, embedding_model: 'test-model', eventVector: [1, 0], eventWindowStartAt: now, eventWindowEndAt: now };
   return { event, ...evaluateArticleAgainstEvent(article, event, { now: now.getTime() }) };
 }
 

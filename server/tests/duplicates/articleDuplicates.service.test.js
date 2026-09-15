@@ -22,22 +22,22 @@ describe('articleDuplicates', () => {
 
   it('returns the strongest candidate at or above the requested threshold', async () => {
     vi.spyOn(db.Article, 'findAll').mockResolvedValue([
-      { id: 1, articleVector: [0.8, 0.2] },
-      { id: 2, articleVector: [1, 0] },
-      { id: 3, articleVector: [0, 1] }
+      { id: 1, embedding_model: 'test-model', articleVector: [0.8, 0.2] },
+      { id: 2, embedding_model: 'test-model', articleVector: [1, 0] },
+      { id: 3, embedding_model: 'test-model', articleVector: [0, 1] }
     ]);
 
     const result = await findCanonicalDuplicateForArticle({
       id: 4,
       userId: 9,
-      articleVector: [1, 0]
+      embedding_model: 'test-model', articleVector: [1, 0]
     }, {
       threshold: 0.9,
       limit: 12
     });
 
     expect(result).toEqual({
-      article: { id: 2, articleVector: [1, 0] },
+      article: { id: 2, articleVector: [1, 0], embedding_model: 'test-model' },
       similarity: 1
     });
     expect(db.Article.findAll).toHaveBeenCalledWith(expect.objectContaining({
@@ -109,4 +109,16 @@ describe('articleDuplicates', () => {
     await expect(repairDuplicateCounts()).resolves.toBe(0);
     expect(query).toHaveBeenCalledTimes(3);
   });
+  it.each([null, '', 'other-model'])('rejects incompatible duplicates at a negative threshold: %s', model => {
+    vi.spyOn(db.Article, 'findAll').mockResolvedValue([{ id: 1, articleVector: [1, 0], embedding_model: model }]);
+    return expect(findCanonicalDuplicateForArticle({ id: 2, userId: 9, articleVector: [1, 0], embedding_model: 'test-model' }, { threshold: -1 }))
+      .resolves.toBeNull();
+  });
+
+  it('does not query semantic duplicates for an unknown source model', async () => {
+    const query = vi.spyOn(db.Article, 'findAll');
+    await expect(findCanonicalDuplicateForArticle({ id: 2, articleVector: [1, 0], embedding_model: null })).resolves.toBeNull();
+    expect(query).not.toHaveBeenCalled();
+  });
+
 });

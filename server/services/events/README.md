@@ -508,6 +508,13 @@ A future full rebuild must be implemented as an explicit replacement workflow.
 
 # Vector Handling
 
+`embedding_model` follows the Article vectors contributing to the Event centroid.
+Comparisons require identical non-empty model identifiers and equal vector dimensions.
+Unknown or mixed contributing models produce no centroid; a reused fallback vector
+requires its existing model. Candidate caches and commit-time checks preserve this
+contract, including member-backed joins. Legacy unknown vectors need an explicit
+re-embedding before they can supply semantic evidence.
+
 Normalize vectors once before entering the cache.
 
 Do not repeatedly normalize vectors during matching.

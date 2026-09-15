@@ -39,6 +39,7 @@ async function createArticle(user, feed, index, overrides = {}) {
     url: `https://example.com/${user.username}/article-${index}`,
     publishedAt: new Date(`2026-05-${20 + index}T10:00:00.000Z`),
     articleVector: [1, index / 10, 0],
+    embedding_model: 'test-model',
     ...overrides
   });
 }
@@ -51,7 +52,7 @@ async function createEvent(user, representativeArticle, overrides = {}) {
     articleCount: 1,
     sourceCount: 1,
     eventStrength: 0.4,
-    eventVector: [0, 1, 0],
+    embedding_model: 'test-model', eventVector: [0, 1, 0],
     eventWindowStartAt: new Date('2026-05-20T10:00:00.000Z'),
     eventWindowEndAt: new Date('2026-05-20T10:00:00.000Z'),
     status: 'active',
@@ -101,6 +102,7 @@ describe('reconcileTouchedEvents', () => {
     expect(result.articlesByEventId[foreignEvent.id]).toBeUndefined();
     expect(ownerEvent.articleCount).toBe(1);
     expect(ownerEvent.sourceCount).toBe(1);
+    expect(ownerEvent.embedding_model).toBe('test-model');
     expect(foreignEvent.articleCount).toBe(7);
     expect(foreignEvent.sourceCount).toBe(7);
     expect(foreignEvent.eventStrength).toBe(0.7);
@@ -182,17 +184,17 @@ describe('reconcileTouchedEvents', () => {
     const { user, feed } = await createUserGraph('concurrent-reconciliation');
     const representativeArticle = await createArticle(user, feed, 1, {
       status: 'unread',
-      articleVector: [1, 0, 0]
+      embedding_model: 'test-model', articleVector: [1, 0, 0]
     });
     const incomingArticle = await createArticle(user, feed, 2, {
       status: 'unread',
-      articleVector: [0.9, 0.1, 0],
+      embedding_model: 'test-model', articleVector: [0.9, 0.1, 0],
       publishedAt: new Date(representativeArticle.publishedAt.getTime() + 3600000)
     });
     const event = await createEvent(user, representativeArticle, {
       developingArticleId: representativeArticle.id,
       articleCount: 1,
-      eventVector: [1, 0, 0]
+      embedding_model: 'test-model', eventVector: [1, 0, 0]
     });
     await representativeArticle.update({ eventId: event.id });
 
@@ -213,6 +215,7 @@ describe('reconcileTouchedEvents', () => {
       });
 
       expect(assignedEvent.eventVector).toEqual([0.95, 0.05, 0]);
+      expect(assignedEvent.embedding_model).toBe('test-model');
 
       reconciliationPromise = reconcileTouchedEvents(user.id, [event.id])
         .then(result => {
@@ -239,6 +242,7 @@ describe('reconcileTouchedEvents', () => {
 
     expect(event.articleCount).toBe(2);
     expect(event.eventVector).toEqual([0.95, 0.05, 0]);
+    expect(event.embedding_model).toBe('test-model');
     expect(event.developingArticleId).toBe(representativeArticle.id);
   });
 

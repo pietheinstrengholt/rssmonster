@@ -8,8 +8,8 @@ import { evaluateArticleInterest, prepareIslandEvidence, loadIslandEvidence, isl
 const now = Date.parse('2026-09-14T12:00:00Z');
 const today = new Date(now);
 const old = new Date('2022-01-01T00:00:00Z');
-const candidate = { id: 9999, title: 'Database release', articleVector: [1, 0] };
-const source = overrides => ({ id: 1, title: 'Database release', publishedAt: old, articleVector: [1, 0], ...overrides });
+const candidate = { id: 9999, title: 'Database release', embedding_model: 'test-model', articleVector: [1, 0] };
+const source = overrides => ({ id: 1, title: 'Database release', publishedAt: old, embedding_model: 'test-model', articleVector: [1, 0], ...overrides });
 const evaluate = article => evaluateArticleInterest(candidate, { ...prepareIslandEvidence([], [article]), now });
 
 describe('interaction-based Island recency', () => {
@@ -55,14 +55,14 @@ describe('interaction-based Island recency', () => {
 
   it('uses interaction days for current support breadth', () => {
     const rows = [source({ id: 1, favoriteInd: 1, favoritedAt: today }), source({ id: 2, favoriteInd: 1, favoritedAt: new Date(now - 86400000) })];
-    expect(islandCohesion(rows, [1, 0]).distinctInteractionDays).toBe(2);
+    expect(islandCohesion(rows, [1, 0], 'test-model').distinctInteractionDays).toBe(2);
   });
 
   it('selects recent interaction on an old article before bounded evidence limits and honors signed windows in SQL', async () => {
     const user = await db.User.create({ username: `recency-${randomUUID()}` });
     const category = await db.Category.create({ userId: user.id, name: 'Recency' });
     const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Recency', url: `https://${user.id}.example/rss` });
-    const values = { userId: user.id, feedId: feed.id, title: 'Database release', articleVector: [1, 0] };
+    const values = { userId: user.id, feedId: feed.id, title: 'Database release', embedding_model: 'test-model', articleVector: [1, 0] };
     await db.Article.bulkCreate(Array.from({ length: 501 }, () => ({ ...values, publishedAt: today, clickedAmount: 1, lastClickedAt: old })));
     const fresh = await db.Article.create({ ...values, publishedAt: old, favoriteInd: 1, favoritedAt: today });
     const negative = await db.Article.create({ ...values, publishedAt: old, negativeInd: 1, negativeFeedbackAt: today });
@@ -70,7 +70,7 @@ describe('interaction-based Island recency', () => {
     const evidence = await loadIslandEvidence(user.id, { now });
     expect(evidence.fallbackEvidence.map(a => a.id)).toEqual(expect.arrayContaining([fresh.id, negative.id]));
     expect(evidence.fallbackEvidence.map(a => a.id)).not.toContain(stale.id);
-    const island = await db.Island.create({ userId: user.id, label: 'Database', weight: 0.5, islandVector: [1, 0] });
+    const island = await db.Island.create({ userId: user.id, label: 'Database', weight: 0.5, embedding_model: 'test-model', islandVector: [1, 0] });
     const supported = await loadIslandEvidence(user.id, { now });
     expect(supported.islands.find(i => i.id === island.id).seedArticleIds).toContain(fresh.id);
     expect(supported.islands[0].diagnostics.distinctBehavioralArticles).toBe(500);

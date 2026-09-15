@@ -1,7 +1,7 @@
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
-import { cosineSimilarity } from '../vectors/index.js';
+import { embeddingSimilarity } from '../vectors/embeddingModel.js';
 import { DEFAULT_ARTICLE_AFFINITY_THRESHOLD, ISLAND_DEBUG } from '../islands/islandVectorUtils.js';
 import { evaluateArticleInterest, loadIslandEvidence, prepareIslandEvidence } from '../islands/islandInterestConfidence.js';
 
@@ -14,9 +14,9 @@ export function resolveIslandArticleScoreThreshold(value = process.env.ISLAND_AR
 }
 
 // Compatibility helper: direct matching uses the same confidence formula as persisted scoring.
-export function strongestIslandScore(articleVector, islands, threshold) {
+export function strongestIslandScore(articleVector, islands, threshold, embeddingModel = null) {
   const prepared = islands.every(i => i.islandConfidence != null) ? islands : prepareIslandEvidence(islands, []).islands;
-  const result = evaluateArticleInterest({ articleVector }, { islands: prepared, fallbackEvidence: [] }, threshold);
+  const result = evaluateArticleInterest({ articleVector, embedding_model: embeddingModel }, { islands: prepared, fallbackEvidence: [] }, threshold);
   const path = result.paths[0];
   return path ? { islandId: path.islandId, score: result.score } : null;
 }
@@ -33,11 +33,11 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
   const { createdAtFrom, transaction } = options;
   const context = await loadIslandEvidence(userId, options);
   const threshold = options.articleScoreThreshold ?? resolveIslandArticleScoreThreshold();
-  const similarity = (a, b) => cosineSimilarity(a, b, { parseStrings: true, coerceNumbers: true });
+  const similarity = (a, b) => embeddingSimilarity(a.articleVector ?? a.islandVector, b.articleVector ?? b.islandVector, a.embedding_model, b.embedding_model, { parseStrings: true, coerceNumbers: true });
   // Feedback can also change support confidence for existing matching Islands.
-  const relatedVectors = options.relatedToArticle ? [options.relatedToArticle.articleVector,
-    ...context.islands.filter(island => similarity(options.relatedToArticle.articleVector, island.islandVector)
-      >= DEFAULT_ARTICLE_AFFINITY_THRESHOLD).map(island => island.islandVector)
+  const relatedVectors = options.relatedToArticle ? [options.relatedToArticle,
+    ...context.islands.filter(island => similarity(options.relatedToArticle, island)
+      >= DEFAULT_ARTICLE_AFFINITY_THRESHOLD)
   ] : null;
   const summary = { userId, fallbackScoredCount: 0, behavioralScoredCount: 0, updatedCount: 0, candidatesRescored: 0, interestScoresChanged: 0 };
   let afterId = 0;
@@ -46,12 +46,12 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
     const batch = await Article.findAll({ where: {
       userId, status: 'unread', ...canonicalArticleWhere(), filteredInd: false, id: { [Op.gt]: afterId },
       ...(createdAtFrom ? { createdAt: { [Op.gte]: createdAtFrom } } : {})
-    }, attributes: ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'articleVector', 'interestScore', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket'],
+    }, attributes: ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'articleVector', 'embedding_model', 'interestScore', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket'],
     order: [['id', 'ASC']], limit: ARTICLE_BATCH_SIZE, transaction });
     if (!batch.length) break;
     afterId = batch.at(-1).id;
     const articles = relatedVectors
-      ? batch.filter(article => relatedVectors.some(vector => similarity(article.articleVector, vector) > threshold))
+      ? batch.filter(article => relatedVectors.some(vector => similarity(article, vector) > threshold))
       : batch;
     const { results } = await explainArticleInterests(userId, articles, { ...options, context });
     for (const article of articles) {

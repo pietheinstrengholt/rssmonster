@@ -218,6 +218,7 @@ export async function createAndAssignEvent({
     articleCount: projection.articleCount,
     eventStrength,
     eventVector: projection.eventVector,
+    embedding_model: projection.embedding_model,
     eventWindowStartAt,
     eventWindowEndAt,
     status: resolveEventStatus(projection.articleCount, eventWindowEndAt),

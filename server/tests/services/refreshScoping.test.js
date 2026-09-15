@@ -13,11 +13,11 @@ async function fixture(now) {
   const user = await db.User.create({ username: `scoping-${randomUUID()}` });
   const category = await db.Category.create({ userId: user.id, name: 'Scope' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Scope', url: `https://${user.id}.example/rss` });
-  const values = { userId: user.id, feedId: feed.id, title: 'PostgreSQL technical deployment', publishedAt: new Date(now), articleVector: [1, 0] };
+  const values = { userId: user.id, feedId: feed.id, title: 'PostgreSQL technical deployment', publishedAt: new Date(now), embedding_model: 'test-model', articleVector: [1, 0] };
   const source = await db.Article.create({ ...values, status: 'read' });
   const related = await db.Article.create({ ...values, status: 'unread' });
   const unrelated = await db.Article.create({ ...values, status: 'unread', articleVector: [0, 1] });
-  const island = await db.Island.create({ userId: user.id, label: 'Database', weight: 0.4, islandVector: [0.8, 0.6] });
+  const island = await db.Island.create({ userId: user.id, label: 'Database', weight: 0.4, embedding_model: 'test-model', islandVector: [0.8, 0.6] });
   return { user, source, related, unrelated, island };
 }
 const claim = async (userId, now) => (await claimProcessingJobs({ userId, now: new Date(now + 60000), limit: 1 }))[0];

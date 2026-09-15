@@ -1,3 +1,4 @@
+import { compatibleEmbeddingModels, hasEmbeddingModel } from '../vectors/embeddingModel.js';
 // services/events/assignArticleToEvent.js
 // This service assigns one article to an existing event, creates a new event, or leaves it eventless.
 import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } from './eventDecisionDiagnostics.js';
@@ -103,6 +104,7 @@ export class EventCache {
 
   // This function loads candidate events that overlap an article's event-time window.
   static async forArticle(article) {
+    if (!hasEmbeddingModel(article?.embedding_model)) return new EventCache([]);
     // Derives the article ts required while performing for article.
     const articleTs = articleEventTimestamp(article) ?? Date.now();
     // Normalizes the cutoff used while performing for article.
@@ -114,6 +116,7 @@ export class EventCache {
     const events = await Event.findAll({
       where: {
         userId: article.userId,
+        embedding_model: article.embedding_model,
         eventWindowStartAt: { [Op.lte]: upperBound },
         eventWindowEndAt: { [Op.gte]: cutoff }
       },
@@ -173,6 +176,7 @@ async function findCandidateArticles({ article, articleEventVector }) {
   const candidates = await Article.findAll({
     where: {
       userId: article.userId,
+      embedding_model: article.embedding_model,
       id: { [Op.ne]: article.id },
       ...canonicalArticleWhere(),
       publishedAt: {
@@ -180,7 +184,7 @@ async function findCandidateArticles({ article, articleEventVector }) {
         [Op.lte]: upperBound
       }
     },
-    attributes: ['id', 'feedId', 'eventId', 'title', 'description', 'publishedAt', 'createdAt', 'articleVector'],
+    attributes: ['id', 'feedId', 'eventId', 'title', 'description', 'publishedAt', 'createdAt', 'articleVector', 'embedding_model'],
     order: [['publishedAt', 'DESC']],
     limit: MAX_CANDIDATES
   });
@@ -310,6 +314,7 @@ function findCandidateArticlesFromContext({ article, articleEventVector, runCont
     if (candidate.userId != null && Number(candidate.userId) !== Number(article.userId)) return false;
     // Rejects the value when candidate id is article id.
     if (candidate.id === article.id) return false;
+    if (!compatibleEmbeddingModels(article.embedding_model, candidate.embedding_model)) return false;
     // Rejects the value when resolve article vector is not an array.
     if (!Array.isArray(resolveArticleVector(candidate))) return false;
 
@@ -363,6 +368,9 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   if (!article) return null;
   // Existing ownership and canonical filtering apply before candidate discovery.
   if (article.status === DUPLICATE_ARTICLE_STATUS || article.duplicateOfArticleId != null || article.filteredInd) return null;
+
+  if (!hasEmbeddingModel(article.embedding_model)) return null;
+  if (vectors?.eventVector && !compatibleEmbeddingModels(article.embedding_model, vectors.embedding_model)) return null;
 
   // Derives the article event vector required while assigning article to event.
   const articleEventVector = vectors?.eventVector ?? resolveArticleVector(article);
@@ -435,7 +443,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   const events = cache
     ? [...cache.events]
     : await Event.findAll({
-      where: { userId: article.userId },
+      where: { userId: article.userId, embedding_model: article.embedding_model },
       order: [['updatedAt', 'DESC']],
       limit: MAX_CANDIDATES
     });
@@ -445,7 +453,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   // Load member-discovered Events in one bounded query, not one query per candidate.
   if (missingIds.length) {
     const missingEvents = await Event.findAll({
-      where: { userId: article.userId, id: { [Op.in]: missingIds } },
+      where: { userId: article.userId, embedding_model: article.embedding_model, id: { [Op.in]: missingIds } },
       limit: MAX_CANDIDATES
     });
     for (const event of missingEvents) {
@@ -543,7 +551,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       publishedAt: article.publishedAt,
       createdAt: article.createdAt,
       eventId: updatedEventId,
-      eventVector: articleEventVector
+      embedding_model: article.embedding_model, eventVector: articleEventVector
     });
 
     incrementExistingEventAssignment(runContext, updatedEventId);
@@ -566,7 +574,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     upsertRunContextRecord(runContext, {
       id: article.id, feedId: article.feedId, title: article.title,
       description: article.description, publishedAt: article.publishedAt, createdAt: article.createdAt,
-      eventId: null, eventVector: articleEventVector
+      eventId: null, embedding_model: article.embedding_model, eventVector: articleEventVector
     });
     articleCandidateCache?.updateEventId?.([article.id], null);
     traceOutcome(null, 'ambiguous', selection.reasons, 'eventless');
@@ -594,7 +602,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       publishedAt: article.publishedAt,
       createdAt: article.createdAt,
       eventId: null,
-      eventVector: articleEventVector
+      embedding_model: article.embedding_model, eventVector: articleEventVector
     });
     articleCandidateCache?.updateEventId?.([article.id], null);
     traceOutcome(null, 'reject', ['insufficient_creation_support'], 'eventless');
@@ -652,7 +660,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     publishedAt: article.publishedAt,
     createdAt: article.createdAt,
     eventId: newEventId,
-    eventVector: articleEventVector
+    embedding_model: article.embedding_model, eventVector: articleEventVector
   });
 
   traceOutcome(newEventId, newEventId ? 'join' : 'reject',

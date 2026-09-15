@@ -9,7 +9,7 @@ function article(id, articleVector, overrides = {}) {
     feedId: id,
     publishedAt: new Date(`2026-07-22T0${id}:00:00.000Z`),
     createdAt: new Date(`2026-07-22T0${id}:05:00.000Z`),
-    articleVector,
+    embedding_model: 'test-model', articleVector,
     ...overrides
   };
 }
@@ -34,7 +34,7 @@ describe('buildCanonicalEventProjection', () => {
   it('uses the existing event vector only when no member vector is persisted', () => {
     const projection = buildCanonicalEventProjection(
       [article(1, null)],
-      [0.25, 0.75, 0]
+      [0.25, 0.75, 0], 'test-model'
     );
 
     expect(projection.eventVector).toEqual([0.25, 0.75, 0]);
@@ -44,10 +44,36 @@ describe('buildCanonicalEventProjection', () => {
     expect(buildCanonicalEventProjection()).toEqual({
       articleCount: 0,
       eventVector: null,
+      embedding_model: null,
       eventWindowStartAt: null,
       eventWindowEndAt: null,
       sourceCount: 0,
       sourceDiversityScore: 0
     });
+  });
+
+  it('rejects a projection with incompatible member dimensions or models', () => {
+    const projection = buildCanonicalEventProjection([
+      article(1, [1, 0], { embedding_model: 'model-a' }),
+      article(2, [0, 1], { embedding_model: 'model-a' }),
+      article(3, [1, 0, 0], { embedding_model: 'model-b' }),
+      article(4, null)
+    ]);
+    expect(projection.embedding_model).toBeNull();
+    expect(projection.eventVector).toBeNull();
+  });
+
+  it.each([null, 'model-b'])('keeps unknown or mixed metadata null: %s', model => {
+    const projection = buildCanonicalEventProjection([
+      article(1, [1, 0], { embedding_model: 'model-a' }),
+      article(2, [0, 1], { embedding_model: model })
+    ]);
+    expect(projection.embedding_model).toBeNull();
+    expect(projection.eventVector).toBeNull();
+  });
+
+  it('preserves metadata when reusing an existing vector', () => {
+    expect(buildCanonicalEventProjection([article(1, null)], [1, 0], 'model-a'))
+      .toMatchObject({ eventVector: [1, 0], embedding_model: 'model-a' });
   });
 });

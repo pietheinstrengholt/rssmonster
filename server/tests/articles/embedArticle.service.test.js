@@ -141,7 +141,7 @@ describe('embedArticle token limit guard', () => {
 
   // Reuses an existing persisted vector without requiring provider access.
   it('reuses an existing article vector', async () => {
-    const { embedArticle, EMBEDDING_MODEL } = await import('../../services/articles/embedArticle.js');
+    const { embedArticle } = await import('../../services/articles/embedArticle.js');
     const article = {
       articleVector: [0.8, 0.9],
       embedding_model: null,
@@ -150,7 +150,7 @@ describe('embedArticle token limit guard', () => {
 
     await expect(embedArticle(article)).resolves.toEqual({
       eventVector: [0.8, 0.9],
-      embedding_model: EMBEDDING_MODEL,
+      embedding_model: null,
       reused: true
     });
     expect(embedTextsMock).not.toHaveBeenCalled();

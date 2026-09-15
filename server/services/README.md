@@ -71,3 +71,12 @@ part of a routine crawl. Model changes require an explicitly requested rebuild;
 matching vector dimensions alone do not establish embedding-space compatibility.
 Before/after semantic comparisons keep model, vectors and corpus constant and
 report memberships, held-out outcomes, finite coverage, failures and runtime.
+
+### Embedding-space compatibility
+
+Semantic comparisons require matching, non-empty `embedding_model` identifiers
+and equal dimensions, including the 0.99 duplicate fallback, Events, Islands,
+taxonomy names and Article recommendations. The shared `vectors/embeddingModel.js`
+helper rejects unknown or incompatible provenance before numerical comparison.
+Unknown vectors are not assigned the configured model on reuse. Model changes
+require explicit re-embedding; this check does not rebuild or backfill data.

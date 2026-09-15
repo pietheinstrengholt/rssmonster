@@ -41,6 +41,7 @@ async function createArticle(user, feed, label, status = 'unread', overrides = {
     url: `https://example.com/${user.id}/${label}-${Date.now()}`,
     status,
     articleVector: [1, 0, 0],
+    embedding_model: 'test-model',
     ...overrides
   });
 }
@@ -58,7 +59,7 @@ describe('createAndAssignEvent', () => {
     const { user, feed } = await createUserGraph('event-creation');
     const candidateArticle = await createArticle(user, feed, 'candidate');
     const seedArticle = await createArticle(user, feed, 'seed', 'read');
-    await candidateArticle.update({ articleVector: [0.9, 0.1, 0] });
+    await candidateArticle.update({ embedding_model: 'test-model', articleVector: [0.9, 0.1, 0] });
     const transaction = await sequelize.transaction();
 
     try {
@@ -75,6 +76,7 @@ describe('createAndAssignEvent', () => {
       expect(event.representativeArticleId).toBe(seedArticle.id);
       expect(event.developingArticleId).toBe(seedArticle.id);
       expect(event.eventVector).toEqual([0.95, 0.05, 0]);
+      expect(event.embedding_model).toBe('test-model');
       expect(linkedSeedArticle.eventId).toBe(event.id);
       expect(linkedSeedArticle.status).toBe('read');
 
@@ -233,10 +235,10 @@ describe('createAndAssignEvent', () => {
   it('does not create an event when persisted members have no vectors', async () => {
     const { user, feed } = await createUserGraph('vectorless-event');
     const candidateArticle = await createArticle(user, feed, 'vectorless-candidate', 'unread', {
-      articleVector: null
+      embedding_model: 'test-model', articleVector: null
     });
     const seedArticle = await createArticle(user, feed, 'vectorless-seed', 'unread', {
-      articleVector: null
+      embedding_model: 'test-model', articleVector: null
     });
 
     await expect(createAndAssignEvent({

@@ -15,15 +15,15 @@ describe('recommendation coverage and Island diagnostics', () => {
   });
 
   it('identifies singleton and weak evidence without treating self-similarity as strength', () => {
-    const row = islandCohesion([{ id: 1, feedId: 2, articleVector: [1, 0], favoriteInd: 1, publishedAt: '2026-09-13' }], [1, 0]);
+    const row = islandCohesion([{ id: 1, feedId: 2, embedding_model: 'test-model', articleVector: [1, 0], favoriteInd: 1, publishedAt: '2026-09-13' }], [1, 0], 'test-model');
     expect(row).toMatchObject({ singleton: true, distinctSources: 1, distinctInteractionDays: 1, medianSimilarity: 1, positiveEvidenceCount: 1 });
     expect(row.classifications).toEqual(['singleton', 'weak-behavioral-support']);
   });
 
   it('deduplicates evidence and reports low cohesion and mixed signs', () => {
-    const a = { id: 1, feedId: 2, articleVector: [0, 1], favoriteInd: 1, publishedAt: '2026-09-12' };
-    const b = { id: 2, feedId: 3, articleVector: [0, 1], negativeInd: 1, publishedAt: '2026-09-13' };
-    const row = islandCohesion([a, a, b], [1, 0]);
+    const a = { id: 1, feedId: 2, embedding_model: 'test-model', articleVector: [0, 1], favoriteInd: 1, publishedAt: '2026-09-12' };
+    const b = { id: 2, feedId: 3, embedding_model: 'test-model', articleVector: [0, 1], negativeInd: 1, publishedAt: '2026-09-13' };
+    const row = islandCohesion([a, a, b], [1, 0], 'test-model');
     expect(row).toMatchObject({ distinctBehavioralArticles: 2, distinctSources: 2, distinctInteractionDays: 2, medianSimilarity: 0, minimumSimilarity: 0, positiveEvidenceCount: 1, negativeEvidenceCount: 1 });
     expect(row.classifications).toEqual(expect.arrayContaining(['low-cohesion', 'mixed-sign-evidence']));
   });

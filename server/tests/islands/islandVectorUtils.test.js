@@ -61,10 +61,20 @@ describe('island vector utilities', () => {
     expect(isStaleIsland({})).toBe(true);
     expect(isStaleIsland({ lastBehaviorAt: new Date() })).toBe(false);
     expect(isStaleIsland({ updatedAt: new Date() })).toBe(true);
-    expect(resolveTaxonomyDisplayName([], [{ displayName: 'AI', vector: [1, 0] }])).toBeNull();
+    expect(resolveTaxonomyDisplayName([], [{ displayName: 'AI', embedding_model: 'test-model', vector: [1, 0] }])).toBeNull();
     expect(resolveTaxonomyDisplayName([1, 0], [
-      { displayName: 'Climate', vector: [0, 1] },
-      { displayName: 'AI', vector: [1, 0] }
-    ])).toBe('AI');
+      { displayName: 'Climate', embedding_model: 'test-model', vector: [0, 1] },
+      { displayName: 'AI', embedding_model: 'test-model', vector: [1, 0] }
+    ], 'test-model')).toBe('AI');
   });
+  it('ignores incompatible taxonomy names even when their vectors are identical', () => {
+    const rows = [
+      { displayName: 'Wrong space', vector: [1, 0], embedding_model: 'other-model' },
+      { displayName: 'Unknown space', vector: [1, 0], embedding_model: null },
+      { displayName: 'Compatible', vector: [0.8, 0.2], embedding_model: 'test-model' }
+    ];
+    expect(resolveTaxonomyDisplayName([1, 0], rows, 'test-model')).toBe('Compatible');
+    expect(resolveTaxonomyDisplayName([1, 0], rows, null)).toBeNull();
+  });
+
 });

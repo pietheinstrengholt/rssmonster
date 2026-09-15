@@ -42,7 +42,7 @@ export async function handleExplicitFeedbackRefresh(job, { assertLease }) {
   if (!job.articleId) { logRefresh(job, { skipReason: 'missing-source' }); return; }
   const source = await db.Article.findOne({ where: {
     id: job.articleId, userId: job.userId, ...canonicalArticleWhere(), filteredInd: false
-  }, attributes: ['id', 'articleVector'] });
+  }, attributes: ['id', 'articleVector', 'embedding_model'] });
   if (!source?.articleVector) { logRefresh(job, { skipReason: 'missing-source-vector' }); return; }
   const result = await scoreArticlesFromIslandsForUser(job.userId, { relatedToArticle: source, assertLease });
   logRefresh(job, { calibrationDurationMs: 0, islandsChanged: 0, ...result });

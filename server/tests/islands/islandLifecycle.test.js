@@ -15,7 +15,7 @@ async function fixture(behavior = { clickedAmount: 1, lastClickedAt: at(0) }) {
   const user = await db.User.create({ username: `lifecycle-${randomUUID()}` });
   const category = await db.Category.create({ userId: user.id, name: 'Lifecycle' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Lifecycle', url: `https://${user.id}.example/rss` });
-  const values = { userId: user.id, feedId: feed.id, title: 'Kubernetes technical deployment', publishedAt: new Date('2022-01-01'), articleVector: [1, 0] };
+  const values = { userId: user.id, feedId: feed.id, title: 'Kubernetes technical deployment', publishedAt: new Date('2022-01-01'), embedding_model: 'test-model', articleVector: [1, 0] };
   const source = await db.Article.create({ ...values, status: 'read', ...behavior });
   const candidate = await db.Article.create({ ...values, status: 'unread' });
   return { user, source, candidate, values };
@@ -37,13 +37,13 @@ describe('behavior-driven Island lifecycle', () => {
       await calibrate(user.id);
       await island.reload();
       expect(island.archivedInd).toBe(false);
-      expect(summarizeIslandLifecycle([source], island.islandVector).lastBehaviorAt).toEqual(at(day));
+      expect(summarizeIslandLifecycle([source], island.islandVector, 'test-model').lastBehaviorAt).toEqual(at(day));
     }
     advance(366);
     await calibrate(user.id);
     await island.reload();
     expect(island.updatedAt).toEqual(at(366));
-    expect(summarizeIslandLifecycle([source], island.islandVector).lastBehaviorAt).toEqual(at(365));
+    expect(summarizeIslandLifecycle([source], island.islandVector, 'test-model').lastBehaviorAt).toEqual(at(365));
   });
 
   it('archives old matched click evidence despite repeated calibration and reactivates the same ID on new Kubernetes behavior', async () => {
@@ -58,7 +58,7 @@ describe('behavior-driven Island lifecycle', () => {
     expect(island.archivedAt).toEqual(at(90));
     expect(Number(candidate.interestScore)).toBe(0);
     expect((await loadIslandEvidence(user.id)).islands).toHaveLength(0);
-    const activity = summarizeIslandLifecycle([source], island.islandVector);
+    const activity = summarizeIslandLifecycle([source], island.islandVector, 'test-model');
     expect(activity.lastBehaviorAt).toEqual(at(0));
     expect(isStaleIsland(activity)).toBe(true);
     expect(activity.confidence).toBeLessThan(0.12);
@@ -126,12 +126,12 @@ describe('behavior-driven Island lifecycle', () => {
   });
 
   it('uses legacy publication as activity and ignores exhausted, contradictory or future clocks', () => {
-    const base = { id: 1, articleVector: [1, 0], publishedAt: at(-10), favoriteInd: 1 };
-    expect(summarizeIslandLifecycle([base], [1, 0]).lastBehaviorAt).toEqual(at(-10));
+    const base = { id: 1, embedding_model: 'test-model', articleVector: [1, 0], publishedAt: at(-10), favoriteInd: 1 };
+    expect(summarizeIslandLifecycle([base], [1, 0], 'test-model').lastBehaviorAt).toEqual(at(-10));
     const mixed = { ...base, favoritedAt: at(-365), clickedAmount: 1, lastClickedAt: at(-180), positiveInd: 1,
       positiveFeedbackAt: at(0), negativeInd: 1, negativeFeedbackAt: at(-365) };
-    expect(summarizeIslandLifecycle([mixed], [1, 0]).lastBehaviorAt).toEqual(at(-365));
-    expect(summarizeIslandLifecycle([{ ...base, favoritedAt: at(1) }], [1, 0]).lastBehaviorAt).toBeNull();
+    expect(summarizeIslandLifecycle([mixed], [1, 0], 'test-model').lastBehaviorAt).toEqual(at(-365));
+    expect(summarizeIslandLifecycle([{ ...base, favoritedAt: at(1) }], [1, 0], 'test-model').lastBehaviorAt).toBeNull();
     expect(isStaleIsland({ updatedAt: at(0) })).toBe(true);
   });
 
@@ -145,18 +145,18 @@ describe('behavior-driven Island lifecycle', () => {
   });
 
   it('does not let many old weak clicks dilute a surviving explicit preference', () => {
-    const oldClicks = Array.from({ length: 50 }, (_, id) => ({ id, articleVector: [1, 0], clickedAmount: 1, lastClickedAt: at(-150) }));
-    expect(islandArchiveState(null, summarizeIslandLifecycle(oldClicks, [1, 0])).archivedInd).toBe(true);
-    const support = summarizeIslandLifecycle([...oldClicks, { id: 51, articleVector: [1, 0], favoriteInd: 1, favoritedAt: at(-60) }], [1, 0]);
+    const oldClicks = Array.from({ length: 50 }, (_, id) => ({ id, embedding_model: 'test-model', articleVector: [1, 0], clickedAmount: 1, lastClickedAt: at(-150) }));
+    expect(islandArchiveState(null, summarizeIslandLifecycle(oldClicks, [1, 0], 'test-model')).archivedInd).toBe(true);
+    const support = summarizeIslandLifecycle([...oldClicks, { id: 51, embedding_model: 'test-model', articleVector: [1, 0], favoriteInd: 1, favoritedAt: at(-60) }], [1, 0], 'test-model');
     expect(isStaleIsland(support)).toBe(true);
     expect(support.confidence).toBeGreaterThan(0.12);
     expect(islandArchiveState(null, support).archivedInd).toBe(false);
   });
 
   it.each([1, 3, 20])('does not dilute a surviving favorite with %i exhausted clicks on the same Article', clickedAmount => {
-    const favorite = { id: 1, articleVector: [1, 0], favoriteInd: 1, favoritedAt: at(-365), publishedAt: at(-2000) };
-    const alone = summarizeIslandLifecycle([favorite], [1, 0]);
-    const mixed = summarizeIslandLifecycle([{ ...favorite, clickedAmount, lastClickedAt: at(-365) }], [1, 0]);
+    const favorite = { id: 1, embedding_model: 'test-model', articleVector: [1, 0], favoriteInd: 1, favoritedAt: at(-365), publishedAt: at(-2000) };
+    const alone = summarizeIslandLifecycle([favorite], [1, 0], 'test-model');
+    const mixed = summarizeIslandLifecycle([{ ...favorite, clickedAmount, lastClickedAt: at(-365) }], [1, 0], 'test-model');
     expect(mixed.confidence).toBeGreaterThanOrEqual(alone.confidence);
     expect(mixed.lastBehaviorAt).toEqual(alone.lastBehaviorAt);
     expect(islandArchiveState(null, mixed).archivedInd).toBe(false);
@@ -169,7 +169,7 @@ describe('behavior-driven Island lifecycle', () => {
     for (const day of [90, 130, 180, 210, 365]) {
       advance(day);
       await calibrate(data.user.id); await island.reload();
-      const alone = summarizeIslandLifecycle([{ ...data.source.get({ plain: true }), clickedAmount: 0 }], island.islandVector);
+      const alone = summarizeIslandLifecycle([{ ...data.source.get({ plain: true }), clickedAmount: 0 }], island.islandVector, 'test-model');
       expect(islandArchiveState(null, alone).archivedInd).toBe(false);
       expect(island.archivedInd).toBe(false);
     }
@@ -184,7 +184,7 @@ describe('behavior-driven Island lifecycle', () => {
       await calibrate(data.user.id); await island.reload(); await data.candidate.reload();
       expect(island.archivedInd).toBe(false);
       expect(Number(data.candidate.interestScore)).toBeGreaterThan(0);
-      expect(summarizeIslandLifecycle([data.source], island.islandVector).lastBehaviorAt).toEqual(at(0));
+      expect(summarizeIslandLifecycle([data.source], island.islandVector, 'test-model').lastBehaviorAt).toEqual(at(0));
     }
     advance(365 * 4);
     await calibrate(data.user.id); await island.reload(); await data.candidate.reload();
@@ -194,12 +194,12 @@ describe('behavior-driven Island lifecycle', () => {
   });
 
   it('continues to account for meaningful negative evidence when normalizing mixed support', () => {
-    const favorite = { id: 1, articleVector: [1, 0], favoriteInd: 1, favoritedAt: at(-365) };
+    const favorite = { id: 1, embedding_model: 'test-model', articleVector: [1, 0], favoriteInd: 1, favoritedAt: at(-365) };
     const opposed = { ...favorite, negativeInd: 1, negativeFeedbackAt: at(-365) };
-    expect(summarizeIslandLifecycle([opposed], [1, 0]).retainedSupport).toBeCloseTo(2 / 12, 10);
-    expect(summarizeIslandLifecycle([opposed], [1, 0]).confidence)
-      .toBeLessThan(summarizeIslandLifecycle([favorite], [1, 0]).confidence);
+    expect(summarizeIslandLifecycle([opposed], [1, 0], 'test-model').retainedSupport).toBeCloseTo(2 / 12, 10);
+    expect(summarizeIslandLifecycle([opposed], [1, 0], 'test-model').confidence)
+      .toBeLessThan(summarizeIslandLifecycle([favorite], [1, 0], 'test-model').confidence);
     const cancelled = { ...favorite, negativeInd: 1, negativeFeedbackAt: at(-730) };
-    expect(summarizeIslandLifecycle([cancelled], [1, 0]).confidence).toBe(0);
+    expect(summarizeIslandLifecycle([cancelled], [1, 0], 'test-model').confidence).toBe(0);
   });
 });

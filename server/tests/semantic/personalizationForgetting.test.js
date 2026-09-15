@@ -49,11 +49,11 @@ async function fixture(spec) {
     const articleVector = [0, 0, 0]; articleVector[group] = 1;
     const title = ['Kubernetes technical deployment', 'Earthquake emergency response', 'Sourdough baking technique'][group];
     // Held-outs share a controlled direction but never contribute behavioral evidence.
-    candidates.push(await db.Article.create({ ...base, title: `${title} held-out`, articleVector, status: 'unread' }));
+    candidates.push(await db.Article.create({ ...base, title: `${title} held-out`, articleVector, embedding_model: 'test-model', status: 'unread' }));
     if (!spec.groups[group]) continue;
     const count = spec.event && group === 1 ? 3 : spec.count || 1;
     for (let n = 0; n < count; n++) {
-      sources.push({ group, row: await db.Article.create({ ...base, title, articleVector, status: 'read', ...behavior(spec.groups[group]) }) });
+      sources.push({ group, row: await db.Article.create({ ...base, title, articleVector, embedding_model: 'test-model', status: 'read', ...behavior(spec.groups[group]) }) });
     }
   }
   let event;
@@ -96,7 +96,7 @@ async function snapshot(fixture, day) {
   return { day, evidence, islands: islands.map(island => {
     const group = island.islandVector.indexOf(Math.max(...island.islandVector));
     const support = fixture.sources.filter(source => source.group === group).map(source => source.row);
-    const lifecycle = summarizeIslandLifecycle(support, island.islandVector);
+    const lifecycle = summarizeIslandLifecycle(support, island.islandVector, island.embedding_model);
     return { id: island.id, group, weight: Number(island.weight), scoringConfidence: context.islands.find(row => row.id === island.id)?.islandConfidence ?? null,
       lifecycleConfidence: lifecycle.confidence, lastBehaviorAt: lifecycle.lastBehaviorAt, stale: isStaleIsland(lifecycle), archived: Boolean(island.archivedInd), archivedAt: island.archivedAt };
   }), pool };

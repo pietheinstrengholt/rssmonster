@@ -39,6 +39,11 @@ export default (sequelize) => {
         type: DataTypes.JSON,
         allowNull: true
       },
+      // Records the shared model of the contributing vectors; null when unknown or mixed.
+      embedding_model: {
+        type: DataTypes.STRING(64),
+        allowNull: true
+      },
       // Marks whether the island is excluded from active interest scoring.
       archivedInd: {
         type: DataTypes.BOOLEAN,

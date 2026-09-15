@@ -6,7 +6,7 @@ export async function loadInterestIslandAttributions(userId, articles) {
   const positive = articles.filter(a => Number(a.interestScore) > 0);
   if (!positive.length) return new Map();
   const rows = await db.Article.findAll({ where: { userId, id: positive.map(a => a.id) }, raw: true,
-    attributes: ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'articleVector', 'interestScore', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket'] });
+    attributes: ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'articleVector', 'embedding_model', 'interestScore', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket'] });
   const { context, results } = await explainArticleInterests(userId, rows);
   const attributions = new Map();
   for (const article of rows) {

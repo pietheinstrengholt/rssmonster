@@ -1,3 +1,4 @@
+import { compatibleEmbeddingModels } from '../vectors/embeddingModel.js';
 import { signalTimestamp } from '../articles/articleBehaviorTime.js';
 import { computeArticleSignals } from './islandArticleProfiles.js';
 import { deriveIslandConfidence, islandCohesion, prepareIslandEvidence } from './islandInterestConfidence.js';
@@ -5,11 +6,12 @@ import { behaviorRecencyWeight, clamp, DEFAULT_ARTICLE_SIGNAL_THRESHOLD,
   DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD, isStaleIsland, SIGNAL_HALF_LIFE_DAYS, SIGNAL_WEIGHTS } from './islandVectorUtils.js';
 
 // Lifecycle confidence measures remaining signed support; it does not change recommendation confidence.
-export function summarizeIslandLifecycle(articles, vector) {
+export function summarizeIslandLifecycle(articles, vector, embeddingModel = null) {
   let retainedSupport = 0;
   let lastBehaviorAt = null;
   const meaningfulSupport = [];
   for (const article of articles) {
+    if (!compatibleEmbeddingModels(article.embedding_model, embeddingModel)) continue;
     const signals = computeArticleSignals(article);
     const counts = signals.positiveSignals;
     const raw = {
@@ -42,7 +44,7 @@ export function summarizeIslandLifecycle(articles, vector) {
   return {
     lastBehaviorAt: lastBehaviorAt == null ? null : new Date(lastBehaviorAt),
     retainedSupport,
-    confidence: deriveIslandConfidence(islandCohesion(meaningfulSupport, vector)) * retainedSupport
+    confidence: deriveIslandConfidence(islandCohesion(meaningfulSupport, vector, embeddingModel)) * retainedSupport
   };
 }
 
@@ -52,7 +54,7 @@ export function reconstructIslandLifecycles(islands, articles) {
   const rows = islands.map(island => typeof island.get === 'function' ? island.get({ plain: true }) : island);
   const { islands: prepared } = prepareIslandEvidence(rows, articles, []);
   return new Map(prepared.map(island => [island.id,
-    summarizeIslandLifecycle(island.seedArticleIds.map(id => byId.get(String(id))), island.islandVector)]));
+    summarizeIslandLifecycle(island.seedArticleIds.map(id => byId.get(String(id))), island.islandVector, island.embedding_model)]));
 }
 
 export function islandArchiveState(island, support, now = new Date()) {

@@ -43,7 +43,7 @@ const createArticle = ({ user, feed, slug, title, publishedAt, status = 'unread'
     feedId: feed.id,
     status,
     interestScore,
-    articleVector: [1, 0],
+    embedding_model: 'test-model', articleVector: [1, 0],
     url: `https://example.com/${user.username}/${slug}`,
     title,
     contentOriginal: `<p>${title}. Original article content.</p>`,
@@ -79,7 +79,7 @@ async function createBriefingFixture() {
   const island = await Island.create({
     userId: owner.id,
     label: 'Artificial Intelligence',
-    islandVector: [1, 0],
+    embedding_model: 'test-model', islandVector: [1, 0],
     weight: 0.9
   });
 

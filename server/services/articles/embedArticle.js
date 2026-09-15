@@ -256,7 +256,7 @@ export async function embedArticle(articleOrInput, options = {}) {
     // Fast-path: skip provider call when vector already exists.
     return {
       eventVector: article.articleVector,
-      embedding_model: article.embedding_model || EMBEDDING_MODEL,
+      embedding_model: article.embedding_model || null,
       reused: true
     };
   }

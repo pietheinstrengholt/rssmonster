@@ -9,10 +9,10 @@ const origin = Date.parse('2026-09-10T00:00:00Z');
 const at = hours => new Date(origin + hours * 3600000);
 const article = (hours = 1, overrides = {}) => ({
   id: 10, userId: 1, feedId: 1, title: 'Acme releases the new compiler',
-  articleVector: [1, 0], publishedAt: at(hours), ...overrides
+  embedding_model: 'test-model', articleVector: [1, 0], publishedAt: at(hours), ...overrides
 });
 const event = (overrides = {}) => ({
-  id: 1, userId: 1, name: 'Acme releases the new compiler', eventVector: [1, 0],
+  id: 1, userId: 1, name: 'Acme releases the new compiler', embedding_model: 'test-model', eventVector: [1, 0],
   eventWindowStartAt: at(0), eventWindowEndAt: at(0), ...overrides
 });
 const evaluate = (a, e, evidence = {}) => evaluateArticleAgainstEvent(a, e, { now: at(4).getTime(), ...evidence });
@@ -171,4 +171,16 @@ describe('shared Event occurrence policy', () => {
       expect(evaluate(article(1, fields), event()).reasons).toContain('noncanonical_article');
     }
   });
+  it.each([null, '', 'model-b'])('rejects incompatible Event centroids despite matching member evidence: %s', model => {
+    const incoming = article();
+    const member = article(0, { id: 1 });
+    const signal = evaluateCandidateSignal({ article: incoming, candidate: member, articleEventVector: incoming.articleVector });
+    expect(signal.accepted).toBe(true);
+    expect(evaluate(incoming, event({ embedding_model: model }), { memberSignals: [signal] }))
+      .toMatchObject({ eligible: false, reasons: expect.arrayContaining(['embedding_model_mismatch']) });
+    expect(evaluateCandidateSignal({ article: incoming, candidate: { ...member, embedding_model: model }, articleEventVector: incoming.articleVector }).accepted).toBe(false);
+    expect(evaluateEventCreation([incoming, { ...member, embedding_model: model }], event()))
+      .toMatchObject({ decision: 'reject', reasons: ['embedding_model_mismatch'] });
+  });
+
 });

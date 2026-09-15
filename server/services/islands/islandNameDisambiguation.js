@@ -1,6 +1,6 @@
 import db from '../../models/index.js';
 import { formatLogString } from '../../utils/logging.js';
-import { cosineSimilarity } from './islandVectorUtils.js';
+import { embeddingSimilarity } from '../vectors/embeddingModel.js';
 
 // Provides the shared dependencies used by this service.
 const { Island } = db;
@@ -148,7 +148,7 @@ export function isNearDuplicateIslandName(left, right, threshold = ISLAND_DUPLIC
   if (normalizeIslandName(left?.label) !== normalizeIslandName(right?.label)) return false;
 
   // Derives the similarity through cosine similarity while checking near duplicate island name.
-  const similarity = cosineSimilarity(left?.islandVector, right?.islandVector, {
+  const similarity = embeddingSimilarity(left?.islandVector, right?.islandVector, left?.embedding_model, right?.embedding_model, {
     coerceNumbers: true
   });
 
@@ -300,7 +300,7 @@ export async function disambiguateDuplicateIslandNamesForUser(userId, options = 
     // Processes each slice entry in turn.
     for (const island of ranked.slice(1)) {
       // Derives the similarity through cosine similarity while performing disambiguate duplicate island names for user.
-      const similarity = cosineSimilarity(island.islandVector, strongest.islandVector, {
+      const similarity = embeddingSimilarity(island.islandVector, strongest.islandVector, island.embedding_model, strongest.embedding_model, {
         coerceNumbers: true
       });
 

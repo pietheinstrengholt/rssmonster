@@ -1,4 +1,5 @@
 import { averageVector } from '../vectors/index.js';
+import { aggregateEmbeddingModel, hasEmbeddingModel } from '../vectors/embeddingModel.js';
 import { eventWindowFromArticles } from './articleEventTime.js';
 
 // This function deterministically derives event metadata from persisted canonical member articles.
@@ -11,7 +12,7 @@ import { eventWindowFromArticles } from './articleEventTime.js';
  * the same projection so Event metadata converges regardless of how
  * the Event was produced.
  */
-export function buildCanonicalEventProjection(eventArticles = [], fallbackVector = null) {
+export function buildCanonicalEventProjection(eventArticles = [], fallbackVector = null, fallbackModel = null) {
   // Derives the ordered articles through sort while building canonical event projection.
   const orderedArticles = eventArticles
     .slice()
@@ -21,7 +22,10 @@ export function buildCanonicalEventProjection(eventArticles = [], fallbackVector
     .map(article => article.articleVector)
     .filter(vector => Array.isArray(vector) && vector.length);
   // Derives the event vector required while building canonical event projection.
-  const eventVector = averageVector(vectors) ?? fallbackVector ?? null;
+  const embedding_model = vectors.length
+    ? aggregateEmbeddingModel(orderedArticles.map(article => ({ vector: article.articleVector, embedding_model: article.embedding_model })))
+    : fallbackVector && hasEmbeddingModel(fallbackModel) ? fallbackModel : null;
+  const eventVector = embedding_model ? (averageVector(vectors) ?? fallbackVector ?? null) : null;
   // Derives the values through event window from articles while building canonical event projection.
   const { eventWindowStartAt, eventWindowEndAt } = eventWindowFromArticles(orderedArticles);
   // Maps source values into the result produced while building canonical event projection.
@@ -34,6 +38,7 @@ export function buildCanonicalEventProjection(eventArticles = [], fallbackVector
   return {
     articleCount: orderedArticles.length,
     eventVector,
+    embedding_model,
     eventWindowStartAt,
     eventWindowEndAt,
     sourceCount,

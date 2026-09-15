@@ -3,20 +3,20 @@ import { Op } from 'sequelize';
 import { BEHAVIOR_TIMESTAMP_FIELDS, activeSignal, signalTimestamp, latestBehaviorTimestamp, behaviorTimestampExpression } from '../articles/articleBehaviorTime.js';
 import db from '../../models/index.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
-import { cosineSimilarity } from '../vectors/index.js';
+import { embeddingSimilarity, compatibleEmbeddingModels } from '../vectors/embeddingModel.js';
 import { DEFAULT_ARTICLE_AFFINITY_THRESHOLD, clamp } from './islandVectorUtils.js';
 
 export const EVIDENCE_LIMIT = 500;
 export const EXPLICIT_EVIDENCE_LIMIT = 100;
 export const EXPLICIT_WINDOW_DAYS = 90;
 const DAY_MS = 86400000;
-const similarity = (a, b) => cosineSimilarity(a, b, { parseStrings: true, coerceNumbers: true });
+const similarity = (a, b, modelA, modelB) => embeddingSimilarity(a, b, modelA, modelB, { parseStrings: true, coerceNumbers: true });
 export const isBehavioralEvidence = a => Boolean(a.positiveInd || a.favoriteInd || a.negativeInd || a.clickedAmount > 0 || a.attentionBucket >= 3);
 
 // Membership diagnostics are derived from independent canonical articles, never interaction counters.
-export function islandCohesion(members, vector) {
-  const unique = [...new Map(members.map(article => [article.id, article])).values()];
-  const similarities = unique.map(article => similarity(article.articleVector, vector)).filter(Number.isFinite).sort((a, b) => a - b);
+export function islandCohesion(members, vector, embeddingModel = null) {
+  const unique = [...new Map(members.filter(article => compatibleEmbeddingModels(article.embedding_model, embeddingModel)).map(article => [article.id, article])).values()];
+  const similarities = unique.map(article => similarity(article.articleVector, vector, article.embedding_model, embeddingModel)).filter(Number.isFinite).sort((a, b) => a - b);
   const n = similarities.length;
   const median = n ? (similarities[Math.floor((n - 1) / 2)] + similarities[Math.floor(n / 2)]) / 2 : null;
   const positive = unique.filter(a => (a.positiveInd && !a.negativeInd) || a.favoriteInd || a.clickedAmount > 0 || a.attentionBucket >= 3).length;
@@ -59,14 +59,14 @@ const negativeSupportIntent = support => {
 export function prepareIslandEvidence(islands, evidence, explicitEvidence = evidence) {
   const members = new Map(islands.map(i => [String(i.id), []]));
   for (const article of evidence) {
-    const best = islands.map(island => ({ island, similarity: similarity(article.articleVector, island.islandVector) }))
+    const best = islands.map(island => ({ island, similarity: similarity(article.articleVector, island.islandVector, article.embedding_model, island.embedding_model) }))
       .filter(row => row.similarity >= DEFAULT_ARTICLE_AFFINITY_THRESHOLD)
       .sort((a, b) => b.similarity - a.similarity || Number(a.island.id) - Number(b.island.id))[0];
     if (best) members.get(String(best.island.id)).push(article);
   }
   const prepared = islands.map(island => {
     const support = members.get(String(island.id));
-    const diagnostics = islandCohesion(support, island.islandVector);
+    const diagnostics = islandCohesion(support, island.islandVector, island.embedding_model);
     const preferenceStrength = clamp(Number(island.weight || 0), -1, 1);
     return { ...island, preferenceStrength,
       ...(preferenceStrength < 0 ? { negativeIntent: negativeSupportIntent(support) } : {}),
@@ -75,7 +75,7 @@ export function prepareIslandEvidence(islands, evidence, explicitEvidence = evid
   const fallbackEvidence = explicitEvidence.filter(article => {
     const sign = article.negativeInd ? -1 : article.positiveInd || article.favoriteInd ? 1 : 0;
     return sign && !prepared.some(island => Math.sign(island.preferenceStrength) === sign
-      && similarity(article.articleVector, island.islandVector) >= DEFAULT_ARTICLE_AFFINITY_THRESHOLD);
+      && similarity(article.articleVector, island.islandVector, article.embedding_model, island.embedding_model) >= DEFAULT_ARTICLE_AFFINITY_THRESHOLD);
   });
   return { islands: prepared, fallbackEvidence };
 }
@@ -83,14 +83,14 @@ export function prepareIslandEvidence(islands, evidence, explicitEvidence = evid
 // Apply interaction windows and stable interaction ordering before the existing evidence bounds.
 export async function loadIslandEvidence(userId, { transaction, now = Date.now() } = {}) {
   const where = { userId, ...canonicalArticleWhere(), filteredInd: false, articleVector: { [Op.ne]: null } };
-  const attributes = ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'feedId', 'publishedAt', 'articleVector', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', ...BEHAVIOR_TIMESTAMP_FIELDS];
+  const attributes = ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'feedId', 'publishedAt', 'articleVector', 'embedding_model', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', ...BEHAVIOR_TIMESTAMP_FIELDS];
   const query = (extra, limit, fields = BEHAVIOR_TIMESTAMP_FIELDS) => db.Article.findAll({ where: { ...where, ...extra }, attributes,
     order: [[behaviorTimestampExpression(db.sequelize, fields), 'DESC'], ['id', 'ASC']], limit, raw: true, transaction });
   const recent = field => db.Sequelize.where(behaviorTimestampExpression(db.sequelize, [field]), {
     [Op.gte]: new Date(now - EXPLICIT_WINDOW_DAYS * DAY_MS), [Op.lte]: new Date(now)
   });
   const [islands, evidence, negative, positive] = await Promise.all([
-    db.Island.findAll({ where: { userId, archivedInd: false }, attributes: ['id', 'label', 'generatedLabel', 'weight', 'islandVector'], order: [['id', 'ASC']], raw: true, transaction }),
+    db.Island.findAll({ where: { userId, archivedInd: false }, attributes: ['id', 'label', 'generatedLabel', 'weight', 'islandVector', 'embedding_model'], order: [['id', 'ASC']], raw: true, transaction }),
     query({ [Op.or]: [{ positiveInd: 1 }, { favoriteInd: 1 }, { negativeInd: 1 }, { clickedAmount: { [Op.gt]: 0 } }, { attentionBucket: { [Op.gte]: 3 } }] }, EVIDENCE_LIMIT),
     query({ negativeInd: 1, [Op.and]: [recent('negativeFeedbackAt')] }, EXPLICIT_EVIDENCE_LIMIT, ['negativeFeedbackAt']),
     query({ negativeInd: 0, [Op.or]: [
@@ -109,7 +109,7 @@ export function normalizedRelationship(sim, threshold) {
 export function evaluateArticleInterest(article, context, threshold = 0.62) {
   const paths = [];
   for (const island of context.islands) {
-    const sim = similarity(article.articleVector, island.islandVector);
+    const sim = similarity(article.articleVector, island.islandVector, article.embedding_model, island.embedding_model);
     const direct = normalizedRelationship(sim, threshold);
     const base = { islandId: island.id, preferenceStrength: island.preferenceStrength, islandConfidence: island.islandConfidence,
       singleton: island.diagnostics.singleton, seedSelf: island.seedArticleIds.includes(article.id) };
@@ -130,7 +130,7 @@ export function evaluateArticleInterest(article, context, threshold = 0.62) {
       const timestamp = signalTimestamp(source, field);
       const age = timestamp == null ? NaN : (context.now - new Date(timestamp).getTime()) / DAY_MS;
       if (!Number.isFinite(age) || age < 0 || age > EXPLICIT_WINDOW_DAYS) continue;
-      const sim = similarity(article.articleVector, source.articleVector);
+      const sim = similarity(article.articleVector, source.articleVector, article.embedding_model, source.embedding_model);
       const relationshipConfidence = normalizedRelationship(sim, threshold);
       if (!relationshipConfidence) continue;
       const recencyFactor = Math.pow(2, -age / 30);

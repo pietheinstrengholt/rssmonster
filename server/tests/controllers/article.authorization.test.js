@@ -238,7 +238,7 @@ describe('article ownership authorization', () => {
       label: 'Software development',
       generatedLabel: 'Developer tooling',
       weight: 0.8,
-      islandVector: [1, 0],
+      embedding_model: 'test-model', islandVector: [1, 0],
       archivedInd: false
     });
     const event = await Event.create({
@@ -259,7 +259,7 @@ describe('article ownership authorization', () => {
     await Promise.all([
       article.update({
         eventId: event.id,
-        articleVector: [1, 0],
+        embedding_model: 'test-model', articleVector: [1, 0],
         interestScore: 0.8,
         advertisementScore: 80,
         sentimentScore: 80,

@@ -14,11 +14,11 @@ async function fixture(count) {
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Capacity', url: `https://${user.id}.example/rss` });
   const sources = []; const islands = [];
   const add = async (index, behavior = { clickedAmount: 1, lastClickedAt: now }) => db.Article.create({
-    userId: user.id, feedId: feed.id, title: `Distinct technical interest ${index}`, status: 'read', publishedAt: new Date('2022-01-01'), articleVector: vector(index), ...behavior
+    userId: user.id, feedId: feed.id, title: `Distinct technical interest ${index}`, status: 'read', publishedAt: new Date('2022-01-01'), embedding_model: 'test-model', articleVector: vector(index), ...behavior
   });
   for (let i = 0; i < count; i++) {
     sources.push(await add(i));
-    islands.push(await db.Island.create({ userId: user.id, label: `Interest ${i}`, weight: 0.3, islandVector: vector(i) }));
+    islands.push(await db.Island.create({ userId: user.id, label: `Interest ${i}`, weight: 0.3, embedding_model: 'test-model', islandVector: vector(i) }));
   }
   return { user, sources, islands, add };
 }
@@ -65,7 +65,7 @@ describe('persisted active Island capacity', () => {
   it('reactivates a strong archived match under the same cap, preserving its ID and audit', async () => {
     const data = await fixture(20);
     await data.add(20, { negativeInd: 1, negativeFeedbackAt: now });
-    const dormant = await db.Island.create({ userId: data.user.id, label: 'Dormant negative', weight: -0.8, islandVector: vector(20), archivedInd: true,
+    const dormant = await db.Island.create({ userId: data.user.id, label: 'Dormant negative', weight: -0.8, embedding_model: 'test-model', islandVector: vector(20), archivedInd: true,
       archivedAt: new Date(now.getTime() - 86400000), populationAudit: [{ historical: true }] });
     await calibrate(data.user.id); await dormant.reload();
     expect(dormant.archivedInd).toBe(false);
@@ -92,7 +92,7 @@ describe('persisted active Island capacity', () => {
     await data.islands[20].update({ archivedInd: true, archivedAt: new Date(now.getTime() - 86400000) });
     // Supply the eligible weak profile explicitly so this tests persistence competition, not formation's bound.
     const all = await buildInterestIslandProfilesForUser(data.user.id);
-    const weak = { label: 'Weak return', vector: vector(20), weight: 0.3157, positiveSignals: { clicks: 1 }, articles: [{ articleId: data.sources[20].id, score: 2 }] };
+    const weak = { label: 'Weak return', embedding_model: 'test-model', vector: vector(20), weight: 0.3157, positiveSignals: { clicks: 1 }, articles: [{ articleId: data.sources[20].id, score: 2 }] };
     all.push(weak);
     await persistIslandProfilesForUser(data.user.id, all);
     await data.islands[20].reload();

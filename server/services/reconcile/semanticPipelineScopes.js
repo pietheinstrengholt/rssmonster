@@ -52,6 +52,7 @@ function cacheRecordForArticle(article, vectors) {
   return {
     ...plainArticle,
     eventId: article.eventId ?? plainArticle.eventId ?? null,
+    embedding_model: vectors?.eventVector ? vectors.embedding_model ?? null : plainArticle.embedding_model ?? null,
     eventVector: vectors?.eventVector || plainArticle.articleVector || null
   };
 }

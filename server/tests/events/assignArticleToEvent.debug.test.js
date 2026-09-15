@@ -47,7 +47,7 @@ async function createArticle(user, feed, label, offsetMinutes = 0) {
     publishedAt,
     createdAt: publishedAt,
     status: 'unread',
-    articleVector: [1, 0, 0]
+    embedding_model: 'test-model', articleVector: [1, 0, 0]
   });
 }
 
@@ -80,7 +80,7 @@ describe('assignArticleToEvent debug diagnostics', () => {
       articleCount: 1,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [1, 0, 0],
+      embedding_model: 'test-model', eventVector: [1, 0, 0],
       eventWindowStartAt: representativeArticle.publishedAt,
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
@@ -123,7 +123,7 @@ describe('assignArticleToEvent debug diagnostics', () => {
       articleCount: 2,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [0, 1, 0],
+      embedding_model: 'test-model', eventVector: [0, 1, 0],
       eventWindowStartAt: firstCandidate.publishedAt,
       eventWindowEndAt: secondCandidate.publishedAt,
       status: 'active'

@@ -116,7 +116,7 @@ describe('Article interaction clocks across APIs', () => {
 describe('observed Article attention evidence', () => {
   it('upgrades a skim to a deep read, preserves firstSeen, and queues fresh Island evidence', async () => {
     const { user, article, post } = await fixture();
-    await article.update({ articleVector: [1, 0] });
+    await article.update({ embedding_model: 'test-model', articleVector: [1, 0] });
     expect((await post('markasseen', { visibleSeconds: 1 })).status).toBe(200);
     await article.reload();
     expect(article.attentionBucket).toBe(1);
@@ -163,9 +163,9 @@ describe('observed Article attention evidence', () => {
   it.each(['read', 'unread'])('keeps Event attention local while preserving navigation from the %s view', async selectedStatus => {
     const { user, article, post } = await fixture();
     const event = await db.Event.create({ userId: user.id, name: 'Occurrence', articleCount: 3, representativeArticleId: article.id });
-    await article.update({ eventId: event.id, articleVector: [1, 0] });
+    await article.update({ eventId: event.id, embedding_model: 'test-model', articleVector: [1, 0] });
     const siblings = await db.Article.bulkCreate(['B', 'C'].map(title => ({
-      userId: user.id, feedId: article.feedId, title, eventId: event.id, articleVector: [1, 0], publishedAt: old
+      userId: user.id, feedId: article.feedId, title, eventId: event.id, embedding_model: 'test-model', articleVector: [1, 0], publishedAt: old
     })));
     const response = await post('markasseen', { visibleSeconds: 30, grouping: 'event', selectedStatus });
     expect(response.status).toBe(200);

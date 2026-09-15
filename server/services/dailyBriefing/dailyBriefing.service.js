@@ -436,7 +436,7 @@ export async function getDailyBriefing({
         attributes: [
           'id',
           'title',
-          'contentText', 'description', 'articleVector', 'positiveInd', 'negativeInd',
+          'contentText', 'description', 'articleVector', 'embedding_model', 'positiveInd', 'negativeInd',
           'favoriteInd', 'clickedAmount', 'attentionBucket', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd',
           'publishedAt',
           'interestScore',

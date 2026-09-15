@@ -1,7 +1,7 @@
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { RECENCY_WINDOW_DAYS } from '../config/semanticConfig.js';
-import { cosineSimilarity } from '../vectors/index.js';
+import { embeddingSimilarity, hasEmbeddingModel } from '../vectors/embeddingModel.js';
 
 // Provides the shared dependencies used by this service.
 const { Article, sequelize } = db;
@@ -42,7 +42,7 @@ export async function findCanonicalDuplicateForArticle(article, options = {}) {
   const threshold = options.threshold ?? DUPLICATE_SIMILARITY_THRESHOLD;
 
   // Returns no result when id is unavailable or article article vector is not an array or article article vector is empty.
-  if (!article?.id || !Array.isArray(article.articleVector) || !article.articleVector.length) {
+  if (!hasEmbeddingModel(article?.embedding_model) || !article?.id || !Array.isArray(article.articleVector) || !article.articleVector.length) {
     return null;
   }
 
@@ -50,13 +50,14 @@ export async function findCanonicalDuplicateForArticle(article, options = {}) {
   const candidates = await Article.findAll({
     where: {
       userId: article.userId,
+      embedding_model: article.embedding_model,
       id: { [Op.lt]: article.id },
       ...canonicalArticleWhere(),
       filteredInd: false,
       articleVector: { [Op.ne]: null },
       publishedAt: duplicateCandidateWindow(article)
     },
-    attributes: ['id', 'articleVector'],
+    attributes: ['id', 'articleVector', 'embedding_model'],
     order: [['publishedAt', 'DESC'], ['id', 'DESC']],
     limit: options.limit || 300
   });
@@ -66,13 +67,13 @@ export async function findCanonicalDuplicateForArticle(article, options = {}) {
   // Processes each candidates entry in turn.
   for (const candidate of candidates) {
     // Derives the similarity through cosine similarity while finding canonical duplicate for article.
-    const similarity = cosineSimilarity(article.articleVector, candidate.articleVector, {
+    const similarity = embeddingSimilarity(article.articleVector, candidate.articleVector, article.embedding_model, candidate.embedding_model, {
       parseStrings: true,
       coerceNumbers: true
     });
 
     // Skips the current entry when similarity is below threshold.
-    if (similarity < threshold) continue;
+    if (!Number.isFinite(similarity) || similarity < threshold) continue;
     // Handles the case where best is unavailable or similarity exceeds best similarity.
     if (!best || similarity > best.similarity) {
       best = { article: candidate, similarity };
@@ -180,7 +181,7 @@ export async function markDuplicateArticlesForUser(userId, options = {}) {
       'id',
       'userId',
       'publishedAt',
-      'articleVector',
+      'articleVector', 'embedding_model',
       'duplicateOfArticleId',
       'status'
     ],

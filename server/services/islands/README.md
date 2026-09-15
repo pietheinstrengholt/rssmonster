@@ -30,6 +30,14 @@ can reactivate an archived Island with its existing ID. Archival retains its his
 
 ## Boundaries
 
+`embedding_model` records the shared model of the contributing Article vectors.
+Formation, matching, blending, taxonomy naming, support confidence, duplicate-name
+similarity and recommendation evidence require identical non-empty model identifiers
+and equal vector dimensions. Unknown vectors supply no semantic evidence; unmatched
+Articles retain neutral interest and remain eligible for Recommended. Models are
+never inferred from the current configuration. Re-embedding legacy vectors is an
+explicit operation; calibration does not silently convert existing spaces.
+
 No arbitrary news clustering creates behavioral preferences. Capacity cannot
 force unrelated evidence into an Island. Generated labels are presentation only.
 All sources and candidates belong to the same user. Changes to formation or

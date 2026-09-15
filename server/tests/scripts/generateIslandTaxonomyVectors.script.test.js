@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   destroy: vi.fn(),
   findAll: vi.fn(),
   getEmbeddingInfo: vi.fn(),
+  embedTexts: vi.fn(),
   transaction: vi.fn()
 }));
 
@@ -27,7 +28,7 @@ vi.mock('../../models/index.js', () => ({
 }));
 
 vi.mock('../../services/embeddings/embeddingService.js', () => ({
-  embedTexts: vi.fn(),
+  embedTexts: mocks.embedTexts,
   getEmbeddingInfo: mocks.getEmbeddingInfo
 }));
 
@@ -68,5 +69,18 @@ describe('taxonomy vector command', () => {
       ([options]) => Object.keys(options.where).length === 0
     );
     expect(clearedWholeTable).toBe(false);
+  });
+
+  it('stores the model returned with the vector rather than the advertised model', async () => {
+    const row = {
+      id: 1, identity: 'test-topic', categoryName: 'Technology', displayName: 'Databases',
+      description: 'Database engines and query processing', vector: null,
+      update: vi.fn().mockResolvedValue(undefined)
+    };
+    mocks.findAll.mockResolvedValue([row]);
+    mocks.embedTexts.mockResolvedValue({ embeddings: [[1, 0]], model: 'actual-model' });
+    const { generateIslandTaxonomyVectors } = await import('../../scripts/generateIslandTaxonomyVectors.js');
+    await generateIslandTaxonomyVectors();
+    expect(row.update).toHaveBeenCalledWith({ vector: [1, 0], embedding_model: 'actual-model' });
   });
 });

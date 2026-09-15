@@ -7,11 +7,11 @@ const review = 'Gaming laptop technical review and benchmarks';
 const technical = 'Gaming laptop kernel debugging guide';
 const now = Date.now();
 const source = (title = promotion, overrides = {}) => ({
-  id: 1, title, articleVector: [1, 0], negativeInd: 1, negativeFeedbackAt: new Date(now), ...overrides
+  id: 1, title, embedding_model: 'test-model', articleVector: [1, 0], negativeInd: 1, negativeFeedbackAt: new Date(now), ...overrides
 });
-const candidate = (title = promotion, overrides = {}) => ({ id: 99, title, articleVector: [1, 0], ...overrides });
+const candidate = (title = promotion, overrides = {}) => ({ id: 99, title, embedding_model: 'test-model', articleVector: [1, 0], ...overrides });
 const context = (support = [source()], weight = -0.8) => ({
-  ...prepareIslandEvidence([{ id: 1, weight, islandVector: [1, 0] }], support), now
+  ...prepareIslandEvidence([{ id: 1, weight, embedding_model: 'test-model', islandVector: [1, 0] }], support), now
 });
 const evaluate = (title, evidence = context(), overrides) => evaluateArticleInterest(candidate(title, overrides), evidence);
 
@@ -84,4 +84,13 @@ describe('negative Island intent scope', () => {
     expect(explicit.score).toBeCloseTo(-0.25 * factor, 4);
     expect(explicit.paths[0].matchType).toBe('behavioral-fallback');
   });
+  it.each([null, '', 'other-model'])('supplies no direct or fallback interest across incompatible models: %s', model => {
+    const evidence = context();
+    expect(evaluate(promotion, evidence, { embedding_model: model })).toMatchObject({ score: 0, paths: [] });
+    const fallback = { ...prepareIslandEvidence([], [source()]), now };
+    expect(evaluate(promotion, fallback, { embedding_model: model })).toMatchObject({ score: 0, paths: [] });
+    const isolated = context([source(promotion, { embedding_model: model })]);
+    expect(isolated.islands[0].diagnostics.distinctBehavioralArticles).toBe(0);
+  });
+
 });

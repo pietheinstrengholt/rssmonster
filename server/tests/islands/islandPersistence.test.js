@@ -55,7 +55,7 @@ function existingIsland(overrides = {}) {
     id: 9,
     label: 'Existing',
     weight: 0.4,
-    islandVector: [1, 0],
+    embedding_model: 'test-model', islandVector: [1, 0],
     positiveSignals: {},
     populationAudit: [],
     archivedInd: false,
@@ -74,12 +74,35 @@ describe('island profile persistence', () => {
     mocks.disambiguate.mockResolvedValue({ renamed: [], archived: [] });
   });
 
+  it('persists model metadata with a newly created Island vector', async () => {
+    mocks.islandFindAll.mockResolvedValue([]);
+    mocks.islandCreate.mockImplementation(async values => ({ id: 10, ...values }));
+    await persistInterestIslandProfiles(3, [{
+      vector: [1, 0], embedding_model: 'model-a', weight: 0.8,
+      articles: [{ articleId: 5, score: 4 }]
+    }], 'tx');
+    expect(mocks.islandCreate).toHaveBeenCalledWith(expect.objectContaining({
+      islandVector: [1, 0], embedding_model: 'model-a'
+    }), { transaction: 'tx' });
+  });
+
+  it('blends a compatible Island without changing its model', async () => {
+    const island = existingIsland({ embedding_model: 'model-a' });
+    mocks.islandFindAll.mockResolvedValue([island]);
+    await persistInterestIslandProfiles(3, [{
+      vector: [1, 0], embedding_model: 'model-a', weight: 0.8,
+      articles: [{ articleId: 5, score: 4 }]
+    }], 'tx');
+    expect(island.embedding_model).toBe('model-a');
+    expect(island.islandVector).toEqual([1, 0]);
+  });
+
   it('updates a semantic match with snapshot signals from behavioral evidence', async () => {
     const island = existingIsland({ positiveSignals: { stars: 1 } });
     mocks.islandFindAll.mockResolvedValue([island]);
 
     const result = await persistInterestIslandProfiles(3, [{
-      vector: [1, 0],
+      embedding_model: 'test-model', vector: [1, 0],
       weight: 0.8,
       label: 'Updated',
       articles: [{ articleId: 5, score: 4 }],
@@ -102,7 +125,7 @@ describe('island profile persistence', () => {
     const island = existingIsland();
     mocks.islandFindAll.mockResolvedValue([island]);
 
-    const profile = { vector: [1, 0], weight: 0.6, label: 'Local AI', articles: [{ articleId: 8, score: 6 }], positiveSignals: { stars: 1, clicks: 1 } };
+    const profile = { embedding_model: 'test-model', vector: [1, 0], weight: 0.6, label: 'Local AI', articles: [{ articleId: 8, score: 6 }], positiveSignals: { stars: 1, clicks: 1 } };
     await persistInterestIslandProfiles(3, [profile], 'tx');
     const first = structuredClone(island.positiveSignals);
     await persistInterestIslandProfiles(3, [profile], 'tx');
@@ -125,7 +148,7 @@ describe('island profile persistence', () => {
     mocks.islandCreate.mockResolvedValue(created);
 
     const result = await persistInterestIslandProfiles(3, [{
-      vector: [1, 0],
+      embedding_model: 'test-model', vector: [1, 0],
       weight: 0.7,
       label: 'AI',
       articles: [{ articleId: 1, score: 1 }],
@@ -146,8 +169,8 @@ describe('island profile persistence', () => {
     mocks.islandFindAll.mockResolvedValue([]);
 
     const result = await persistInterestIslandProfiles(3, [
-      { vector: null },
-      { vector: [1, 0], articles: [] }
+      { embedding_model: 'test-model', vector: null },
+      { embedding_model: 'test-model', vector: [1, 0], articles: [] }
     ], 'tx');
 
     expect(mocks.islandCreate).not.toHaveBeenCalled();
@@ -159,7 +182,7 @@ describe('island profile persistence', () => {
     mocks.islandFindAll.mockResolvedValue([island]);
 
     const result = await persistInterestIslandProfiles(3, [{
-      vector: [1, 0],
+      embedding_model: 'test-model', vector: [1, 0],
       weight: 0.6,
       label: 'Behavioral',
       articles: [{
@@ -180,7 +203,7 @@ describe('island profile persistence', () => {
     mocks.islandCreate.mockResolvedValue(created);
 
     const result = await persistInterestIslandProfiles(3, [{
-      vector: [1, 0],
+      embedding_model: 'test-model', vector: [1, 0],
       weight: 0.5,
       label: 'Behavioral',
       articles: [{ articleId: 12, score: 2 }],
@@ -208,7 +231,7 @@ describe('island profile persistence', () => {
     mocks.islandFindAll.mockResolvedValue(islands);
 
     const profiles = signals.map((positiveSignals, index) => ({
-      vector: signals.map((_value, vectorIndex) => vectorIndex === index ? 1 : 0),
+      embedding_model: 'test-model', vector: signals.map((_value, vectorIndex) => vectorIndex === index ? 1 : 0),
       weight: 0.5,
       label: `Behavior ${index}`,
       articles: [{ articleId: 100 + index, score: 1, positiveSignals }],
@@ -228,4 +251,17 @@ describe('island profile persistence', () => {
       ])
     );
   });
+  it.each([null, 'other-model'])('creates a separate Island instead of blending incompatible vectors: %s', model => {
+    const island = existingIsland({ id: 2, embedding_model: model });
+    mocks.islandFindAll.mockResolvedValue([island]);
+    mocks.islandCreate.mockImplementation(async values => ({ id: 10, ...values }));
+    return persistInterestIslandProfiles(3, [{ vector: [0.99, 0.01], embedding_model: 'model-a', weight: 0.8,
+      articles: [{ articleId: 5, score: 4 }]
+    }], 'tx').then(() => {
+      expect(mocks.islandCreate).toHaveBeenCalledWith(expect.objectContaining({ embedding_model: 'model-a', islandVector: [0.99, 0.01] }), { transaction: 'tx' });
+      expect(island.islandVector).toEqual([1, 0]);
+      expect(island.embedding_model).toBe(model);
+    });
+  });
+
 });

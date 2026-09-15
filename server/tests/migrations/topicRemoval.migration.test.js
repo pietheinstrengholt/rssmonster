@@ -4,6 +4,7 @@ import db from '../../models/index.js';
 import { scoreArticlesFromIslandsForUser } from '../../services/score/scoreArticlesFromIslands.js';
 import { computeRecommended } from '../../services/recommendations/recommendedScore.js';
 import { up, down } from '../../migrations/20260914000000-remove-topics.mjs';
+import { up as addEmbeddingModels } from '../../migrations/20260915000000-add-aggregate-embedding-models.mjs';
 import { up as addInteractionClocks } from '../../migrations/20260914001000-add-article-interaction-timestamps.mjs';
 
 import { resetDatabase } from '../helpers/resetDb.js';
@@ -36,8 +37,9 @@ async function installHistoricalSchema() {
     const imported = await import(new URL(name, directory));
     await (imported.default || imported).up(qi, db.Sequelize);
   }
-  // Keep the current Article model usable while isolating the historical relationship upgrade.
+  // Keep the current models usable while isolating the historical relationship upgrade.
   await addInteractionClocks(qi, db.Sequelize);
+  await addEmbeddingModels(qi, db.Sequelize);
 }
 
 const assertRemoved = async () => {
@@ -64,13 +66,13 @@ describe(`semantic schema upgrade (${db.sequelize.getDialect()})`, () => {
     const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Upgrade feed', url: 'https://upgrade.example/feed' });
     const article = await db.Article.create({ userId: user.id, feedId: feed.id, title: 'Database release',
       url: 'https://upgrade.example/article', publishedAt: new Date(), favoriteInd: 1, clickedAmount: 3,
-      positiveInd: 1, attentionBucket: 4, articleVector: [1, 0], interestScore: 0.2 });
+      positiveInd: 1, attentionBucket: 4, embedding_model: 'test-model', articleVector: [1, 0], interestScore: 0.2 });
     const event = await db.Event.create({ userId: user.id, representativeArticleId: article.id,
-      developingArticleId: article.id, name: 'Database release', eventVector: [1, 0], articleCount: 2 });
+      developingArticleId: article.id, name: 'Database release', embedding_model: 'test-model', eventVector: [1, 0], articleCount: 2 });
     await article.update({ eventId: event.id });
     const audit = [{ topicIds: [1], articleIds: [article.id], sourceArticles: { articles: [{ id: article.id, title: article.title }] } }];
     const island = await db.Island.create({ userId: user.id, label: 'Databases', weight: 0.5,
-      islandVector: [1, 0], populationAudit: audit, positiveSignals: { stars: 1, clicks: 3, deepReads: 1 } });
+      embedding_model: 'test-model', islandVector: [1, 0], populationAudit: audit, positiveSignals: { stars: 1, clicks: 3, deepReads: 1 } });
     const timestamps = { createdAt: new Date(), updatedAt: new Date() };
     await qi.bulkInsert('topics', [{ id: 1, userId: user.id, name: 'Databases', topicKey: 'databases', ...timestamps }]);
     await qi.bulkUpdate('articles', { topicId: 1 }, { id: article.id });

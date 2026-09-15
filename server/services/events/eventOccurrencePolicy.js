@@ -1,3 +1,4 @@
+import { compatibleEmbeddingModels } from '../vectors/embeddingModel.js';
 import {
   EVENT_SIM_THRESHOLD, EVENT_MAX_GAP_HOURS, EVENT_RECENCY_HALF_LIFE_HOURS,
   EVENT_MIN_HEADLINE_SIM, EVENT_MIN_SHARED_ENTITY_OVERLAP, EVENT_MIN_WINNER_MARGIN
@@ -195,7 +196,7 @@ function signalEligibility(signal) {
 
 function witnessSignal(article, target, vector, normalizedArticleVector) {
   return {
-    semantic: normalizedArticleVector && target.normalizedEventVector
+    semantic: !compatibleEmbeddingModels(article.embedding_model, target.embedding_model) ? 0 : normalizedArticleVector && target.normalizedEventVector
       ? dotProductSimilarity(normalizedArticleVector, target.normalizedEventVector)
       : cosineSimilarity(vector, target.eventVector ?? target.articleVector),
     headline: headlineSimilarityFromSets(resolveTokenSet(article), resolveTokenSet(target)),
@@ -216,6 +217,7 @@ export function buildEventEvidence(article, event, {
     title: event.name || '',
     description: event.description || '',
     eventVector: event.eventVector,
+    embedding_model: event.embedding_model,
     normalizedEventVector: event.normalizedEventVector
   }, articleEventVector, normalizedArticleEventVector);
   const temporal = eventWindowScore(article, event);
@@ -238,7 +240,7 @@ export function buildEventEvidence(article, event, {
       score: baseScore * recency + entityBonus
     };
   };
-  const witnesses = [centroid, ...memberSignals.filter(signal => signal.accepted)]
+  const witnesses = [centroid, ...memberSignals.filter(signal => signal.accepted && compatibleEmbeddingModels(article.embedding_model, signal.embedding_model))]
     .map(scoreWitness);
   const supported = witnesses.filter(signal => signal.supported);
   const strongest = (supported.length ? supported : witnesses)
@@ -263,7 +265,7 @@ export function buildEventEvidence(article, event, {
     score: strongest.score - penalty * recency,
     evidenceScore: strongest.evidenceScore - penalty,
     centroidSemantic: centroid.semantic, temporal, spanHours, recency,
-    memberSupport: Math.max(0, ...memberSignals.filter(signal => signal.accepted).map(signal => signal.semantic)),
+    memberSupport: Math.max(0, ...memberSignals.filter(signal => signal.accepted && compatibleEmbeddingModels(article.embedding_model, signal.embedding_model)).map(signal => signal.semantic)),
     candidateSources
   };
 }
@@ -271,6 +273,9 @@ export function buildEventEvidence(article, event, {
 export function evaluateArticleAgainstEvent(article, event, evidenceOptions = {}) {
   const evidence = buildEventEvidence(article, event, evidenceOptions);
   const reasons = [];
+  if (!compatibleEmbeddingModels(article.embedding_model, event.embedding_model)) reasons.push('embedding_model_mismatch');
+  const vector = evidenceOptions.articleEventVector ?? article.eventVector ?? article.articleVector;
+  if (!Array.isArray(vector) || !vector.length || vector.length !== event.eventVector?.length) reasons.push('embedding_dimension_mismatch');
   if (event.userId != null && Number(article.userId) !== Number(event.userId)) reasons.push('ownership_mismatch');
   if (article.filteredInd || article.duplicateOfArticleId != null || article.status === 'duplicate') {
     reasons.push('noncanonical_article');
@@ -308,6 +313,7 @@ export function evaluateCandidateSignal({ article, candidate, articleEventVector
   const at = articleEventTimestamp(candidate);
   const result = evaluateArticleAgainstEvent(article, {
     userId: candidate.userId,
+    embedding_model: candidate.embedding_model,
     name: candidate.title,
     description: candidate.description,
     eventVector: candidate.eventVector ?? candidate.articleVector,
@@ -322,6 +328,7 @@ export function evaluateCandidateSignal({ article, candidate, articleEventVector
   const canonical = !candidate.filteredInd && candidate.duplicateOfArticleId == null && candidate.status !== 'duplicate';
   return {
     ...result.evidence,
+    embedding_model: candidate.embedding_model,
     candidateId: candidate.id, eventId: candidate.eventId ?? null,
     occurrenceFeatures: canonical ? extractOccurrenceFeatures(candidate) : null,
     accepted: canonical && result.eligible, meetsTemporal: result.evidence.temporal > 0,
@@ -348,6 +355,9 @@ export function selectEventDecision(candidates, minimumMargin = EVENT_MIN_WINNER
 // A leave-one-out centroid and one stable member witness keep this O(n * dimensions).
 export function evaluateEventCreation(articles, event) {
   if (articles.length < 2) return { decision: 'reject', reasons: ['insufficient_support'] };
+  if (articles.some(article => !compatibleEmbeddingModels(article.embedding_model, event.embedding_model))) {
+    return { decision: 'reject', reasons: ['embedding_model_mismatch'] };
+  }
   const dimension = event.eventVector?.length;
   if (!dimension || articles.some(article => !Array.isArray(article.articleVector) ||
       article.articleVector.length !== dimension || !article.articleVector.every(Number.isFinite))) {

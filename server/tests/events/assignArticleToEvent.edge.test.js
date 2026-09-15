@@ -40,7 +40,7 @@ describe('assignArticleToEvent edge behavior', () => {
       status: 'unread',
       duplicateOfArticleId: null,
       filteredInd: false,
-      articleVector: [1, 0, 0],
+      embedding_model: 'test-model', articleVector: [1, 0, 0],
       update: vi.fn().mockResolvedValue(undefined)
     };
     const articleCandidateCache = {

@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
+import { aggregateEmbeddingModel, embeddingSimilarity, hasEmbeddingModel } from '../vectors/embeddingModel.js';
 import { formatLogString } from '../../utils/logging.js';
 import { buildPopulationAuditEntry, appendPopulationAudit } from './islandAudit.js';
 import { loadIslandBehavioralArticles } from './islandArticleProfiles.js';
@@ -12,9 +13,9 @@ import {
 } from './islandNameDisambiguation.js';
 import {
   DEFAULT_ISLAND_MATCH_THRESHOLD,
+  DEFAULT_ISLAND_VECTOR_ALPHA,
   ISLAND_DEBUG,
   blendIslandVector,
-  cosineSimilarity,
   debugIsland,
   normalizePositiveSignals,
   resolveTaxonomyDisplayName,
@@ -24,6 +25,18 @@ import {
 
 // Provides the shared dependencies used by this service.
 const { Island, IslandTaxonomy } = db;
+
+// Preserve provenance of both sides when blending; replacement uses only the incoming model.
+function blendedEmbeddingModel(island, profile) {
+  if (!Array.isArray(island.islandVector) || island.islandVector.length !== profile.vector.length || DEFAULT_ISLAND_VECTOR_ALPHA >= 1) {
+    return profile.embedding_model ?? null;
+  }
+  if (DEFAULT_ISLAND_VECTOR_ALPHA <= 0) return island.embedding_model ?? null;
+  return aggregateEmbeddingModel([
+    { vector: island.islandVector, embedding_model: island.embedding_model },
+    profile
+  ]);
+}
 
 // This function formats island metric values for concise logs.
 function formatIslandMetric(value, digits = 3) {
@@ -61,7 +74,7 @@ function strongestArticleEngagement(article = {}) {
 export async function persistInterestIslandProfiles(userId, profiles, transaction, options = {}) {
   const maxIslands = resolveIslandCapacity(options.maxIslands);
   const persistableProfiles = profiles
-    .filter(profile => Array.isArray(profile.vector) && profile.vector.length)
+    .filter(profile => hasEmbeddingModel(profile.embedding_model) && Array.isArray(profile.vector) && profile.vector.length)
     .filter(profile => (profile.articles || []).length > 0);
 
   // Derives the existing islands through sort islands by weight while performing persist interest island profiles.
@@ -82,7 +95,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       status: 'active',
       vector: { [Op.ne]: null }
     },
-    attributes: ['displayName', 'vector'],
+    attributes: ['displayName', 'vector', 'embedding_model'],
     transaction
   });
 
@@ -104,7 +117,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
   // Processes each persistable profiles entry in turn.
   for (const profile of persistableProfiles) {
     // Resolves the taxonomy display name while performing persist interest island profiles.
-    const taxonomyLabel = resolveTaxonomyDisplayName(profile.vector, taxonomyRows);
+    const taxonomyLabel = resolveTaxonomyDisplayName(profile.vector, taxonomyRows, profile.embedding_model);
     // Derives the resolved label required while performing persist interest island profiles.
     const resolvedLabel = taxonomyLabel || profile.label || 'Interest Island';
 
@@ -117,7 +130,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       if (matchedIslandIds.has(island.id)) continue;
 
       // Derives the similarity through cosine similarity while performing persist interest island profiles.
-      const similarity = cosineSimilarity(profile.vector, island.islandVector);
+      const similarity = embeddingSimilarity(profile.vector, island.islandVector, profile.embedding_model, island.embedding_model);
       // Handles the case where similarity exceeds best similarity.
       if (similarity > bestSimilarity) {
         bestSimilarity = similarity;
@@ -129,7 +142,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     const articleIds = (profile.articles || [])
       .map(article => Number(article.articleId))
       .filter(Number.isFinite);
-    const lifecycle = summarizeIslandLifecycle(articleIds.map(id => evidenceById.get(String(id))).filter(Boolean), profile.vector);
+    const lifecycle = summarizeIslandLifecycle(articleIds.map(id => evidenceById.get(String(id))).filter(Boolean), profile.vector, profile.embedding_model);
     // Builds the population audit entry while performing persist interest island profiles.
     const auditEntry = await buildPopulationAuditEntry({
       userId,
@@ -146,6 +159,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
         label: resolvedLabel,
         weight: profile.weight,
         islandVector: blendIslandVector(bestMatch.islandVector, profile.vector),
+        embedding_model: blendedEmbeddingModel(bestMatch, profile),
         // Profiles are complete snapshots, not interaction deltas. Replays must not add evidence.
         positiveSignals: normalizePositiveSignals(profile.positiveSignals),
         populationAudit: appendPopulationAudit(bestMatch.populationAudit, auditEntry),
@@ -200,6 +214,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       weight: profile.weight,
       userId,
       islandVector: profile.vector,
+      embedding_model: profile.embedding_model ?? null,
       positiveSignals: normalizePositiveSignals(profile.positiveSignals),
       populationAudit: appendPopulationAudit([], auditEntry),
       ...archiveState

@@ -105,7 +105,8 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
       'readAt',
       'publishedAt',
       'createdAt',
-      'articleVector'
+      'articleVector',
+      'embedding_model'
     ],
     order: [
       ['eventId', 'ASC'],
@@ -140,7 +141,7 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
     }
 
     // Builds the canonical event projection while performing reconcile touched events.
-    const projection = buildCanonicalEventProjection(eventArticles, event.eventVector);
+    const projection = buildCanonicalEventProjection(eventArticles, event.eventVector, event.embedding_model);
     // Resolves the event status while performing reconcile touched events.
     const status = resolveEventStatus(projection.articleCount, projection.eventWindowEndAt);
     // Computes the event strength while performing reconcile touched events.

@@ -44,7 +44,7 @@ function articlePayload(user, feed, index, overrides = {}) {
     title: `${user.username} article ${index}`,
     url: `https://example.com/${user.username}/article-${index}`,
     publishedAt: new Date(`2026-05-${28 + index}T10:00:00.000Z`),
-    articleVector: [1, index / 10, 0],
+    embedding_model: 'test-model', articleVector: [1, index / 10, 0],
     status: 'unread',
     ...overrides
   };
@@ -102,7 +102,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 1,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [1, 0, 0],
+      embedding_model: 'test-model', eventVector: [1, 0, 0],
       eventWindowStartAt: representativeArticle.publishedAt,
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
@@ -156,7 +156,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 1,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [0, 1, 0],
+      embedding_model: 'test-model', eventVector: [0, 1, 0],
       eventWindowStartAt: representativeArticle.publishedAt,
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
@@ -172,7 +172,7 @@ describe('repairRecentEventsForUser', () => {
     const eventId = await assignArticleToEvent(
       incomingArticle,
       new EventCache([event]),
-      { eventVector: [0, 1, 0] },
+      { embedding_model: 'test-model', eventVector: [0, 1, 0] },
       null,
       {  }
     );
@@ -219,7 +219,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 1,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [1, 0, 0],
+      embedding_model: 'test-model', eventVector: [1, 0, 0],
       eventWindowStartAt: representativeArticle.publishedAt,
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
@@ -340,7 +340,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 1,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [0, 1, 0],
+      embedding_model: 'test-model', eventVector: [0, 1, 0],
       eventWindowStartAt: new Date('2026-05-21T10:00:00.000Z'),
       eventWindowEndAt: new Date('2026-05-21T10:00:00.000Z'),
       status: 'active'
@@ -476,7 +476,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 1,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [0, 1, 0],
+      embedding_model: 'test-model', eventVector: [0, 1, 0],
       eventWindowStartAt: existingArticle.publishedAt,
       eventWindowEndAt: existingArticle.publishedAt,
       status: 'active'
@@ -577,7 +577,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 2,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [0, 1, 0],
+      embedding_model: 'test-model', eventVector: [0, 1, 0],
       eventWindowStartAt: existingArticleA.publishedAt,
       eventWindowEndAt: existingArticleB.publishedAt,
       status: 'active'
@@ -599,7 +599,7 @@ describe('repairRecentEventsForUser', () => {
           publishedAt: existingArticleA.publishedAt,
           createdAt: existingArticleA.createdAt,
           eventId: event.id,
-          eventVector: existingArticleA.articleVector
+          embedding_model: 'test-model', eventVector: existingArticleA.articleVector
         },
         {
           id: existingArticleB.id,
@@ -609,7 +609,7 @@ describe('repairRecentEventsForUser', () => {
           publishedAt: existingArticleB.publishedAt,
           createdAt: existingArticleB.createdAt,
           eventId: event.id,
-          eventVector: existingArticleB.articleVector
+          embedding_model: 'test-model', eventVector: existingArticleB.articleVector
         }
       ],
       indexById: new Map([
@@ -625,7 +625,7 @@ describe('repairRecentEventsForUser', () => {
     const eventId = await assignArticleToEvent(
       incomingArticle,
       new EventCache([event]),
-      { eventVector: incomingArticle.articleVector },
+      { embedding_model: 'test-model', eventVector: incomingArticle.articleVector },
       runContext,
       { assignmentContext: 'incremental' }
     );
@@ -672,7 +672,7 @@ describe('repairRecentEventsForUser', () => {
       sourceCount: 1,
       sourceDiversityScore: Math.log(2),
       eventStrength: 0.7,
-      eventVector: [1, 0, 0],
+      embedding_model: 'test-model', eventVector: [1, 0, 0],
       eventWindowStartAt: representativeArticle.publishedAt,
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
@@ -732,7 +732,7 @@ describe('repairRecentEventsForUser', () => {
       sourceCount: 1,
       sourceDiversityScore: Math.log(2),
       eventStrength: 0.7,
-      eventVector: [1, 0, 0],
+      embedding_model: 'test-model', eventVector: [1, 0, 0],
       eventWindowStartAt: representativeArticle.publishedAt,
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
@@ -777,7 +777,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 1,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [1, 0, 0],
+      embedding_model: 'test-model', eventVector: [1, 0, 0],
       eventWindowStartAt: targetRepresentative.publishedAt,
       eventWindowEndAt: targetRepresentative.publishedAt,
       status: 'active'
@@ -790,7 +790,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 2,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [1, 0, 0],
+      embedding_model: 'test-model', eventVector: [1, 0, 0],
       eventWindowStartAt: sourceRepresentative.publishedAt,
       eventWindowEndAt: incomingArticle.publishedAt,
       status: 'active'
@@ -838,7 +838,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 1,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [1, 0, 0],
+      embedding_model: 'test-model', eventVector: [1, 0, 0],
       eventWindowStartAt: representativeArticle.publishedAt,
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
@@ -889,7 +889,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 1,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [1, 0, 0],
+      embedding_model: 'test-model', eventVector: [1, 0, 0],
       eventWindowStartAt: representativeArticle.publishedAt,
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
@@ -908,7 +908,7 @@ describe('repairRecentEventsForUser', () => {
     const eventId = await assignArticleToEvent(
       incomingArticle,
       new EventCache([event]),
-      { eventVector: incomingArticle.articleVector },
+      { embedding_model: 'test-model', eventVector: incomingArticle.articleVector },
       null,
       {  }
     );
@@ -941,7 +941,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 1,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [1, 0, 0],
+      embedding_model: 'test-model', eventVector: [1, 0, 0],
       eventWindowStartAt: representativeArticle.publishedAt,
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
@@ -960,7 +960,7 @@ describe('repairRecentEventsForUser', () => {
     const eventId = await assignArticleToEvent(
       incomingArticle,
       new EventCache([event]),
-      { eventVector: incomingArticle.articleVector },
+      { embedding_model: 'test-model', eventVector: incomingArticle.articleVector },
       null,
       {  }
     );
@@ -990,7 +990,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 1,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [1, 0, 0],
+      embedding_model: 'test-model', eventVector: [1, 0, 0],
       eventWindowStartAt: representativeArticle.publishedAt,
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
@@ -1008,7 +1008,7 @@ describe('repairRecentEventsForUser', () => {
     const eventId = await assignArticleToEvent(
       incomingArticle,
       new EventCache([event]),
-      { eventVector: incomingArticle.articleVector },
+      { embedding_model: 'test-model', eventVector: incomingArticle.articleVector },
       null,
       {  }
     );
@@ -1045,7 +1045,7 @@ describe('repairRecentEventsForUser', () => {
     const eventId = await assignArticleToEvent(
       incomingArticle,
       new EventCache([]),
-      { eventVector: incomingArticle.articleVector },
+      { embedding_model: 'test-model', eventVector: incomingArticle.articleVector },
       null,
       {  }
     );
@@ -1082,7 +1082,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 1,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [1, 0, 0],
+      embedding_model: 'test-model', eventVector: [1, 0, 0],
       eventWindowStartAt: representativeArticle.publishedAt,
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
@@ -1101,7 +1101,7 @@ describe('repairRecentEventsForUser', () => {
     const eventId = await assignArticleToEvent(
       incomingArticle,
       new EventCache([event]),
-      { eventVector: incomingArticle.articleVector },
+      { embedding_model: 'test-model', eventVector: incomingArticle.articleVector },
       null,
       {  }
     );
@@ -1138,7 +1138,7 @@ describe('repairRecentEventsForUser', () => {
       articleCount: 1,
       sourceCount: 1,
       eventStrength: 0.7,
-      eventVector: [1, 0, 0],
+      embedding_model: 'test-model', eventVector: [1, 0, 0],
       eventWindowStartAt: representativeArticle.publishedAt,
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
@@ -1156,7 +1156,7 @@ describe('repairRecentEventsForUser', () => {
     const eventId = await assignArticleToEvent(
       incomingArticle,
       new EventCache([event]),
-      { eventVector: incomingArticle.articleVector },
+      { embedding_model: 'test-model', eventVector: incomingArticle.articleVector },
       null,
       {  }
     );

@@ -37,7 +37,7 @@ function articlePayload(userId, feedId, index, suffix, overrides = {}) {
     feedId,
     title: `Interest score article ${index}`,
     url: `https://example.com/interest/${suffix}/${index}`,
-    articleVector: [1, 0, 0],
+    embedding_model: 'test-model', articleVector: [1, 0, 0],
     interestScore: 0.7,
     status: 'unread',
     ...overrides
@@ -143,7 +143,7 @@ describe('scoreArticlesFromIslandsForUser', () => {
       userId: user.id,
       label: 'Island',
       weight: 0.42,
-      islandVector: [1, 0, 0],
+      embedding_model: 'test-model', islandVector: [1, 0, 0],
       archivedInd: false
     });
     const unreadArticle = await Article.create(articlePayload(user.id, feed.id, 1, suffix, {
@@ -182,21 +182,21 @@ describe('scoreArticlesFromIslandsForUser', () => {
         userId: user.id,
         label: 'Positive island',
         weight: 0.6,
-        islandVector: [1, 0, 0],
+        embedding_model: 'test-model', islandVector: [1, 0, 0],
         archivedInd: false
       }),
       Island.create({
         userId: user.id,
         label: 'Negative island',
         weight: -0.8,
-        islandVector: [1, 0, 0],
+        embedding_model: 'test-model', islandVector: [1, 0, 0],
         archivedInd: false
       }),
       Island.create({
         userId: user.id,
         label: 'Archived island',
         weight: 0.95,
-        islandVector: [1, 0, 0],
+        embedding_model: 'test-model', islandVector: [1, 0, 0],
         archivedInd: true
       })
     ]);
@@ -241,7 +241,7 @@ describe('scoreArticlesFromIslandsForUser', () => {
       userId: user.id,
       label: 'Vector island',
       weight: 0.6,
-      islandVector: [1, 0, 0],
+      embedding_model: 'test-model', islandVector: [1, 0, 0],
       archivedInd: false
     });
     const matchingArticle = await Article.create(articlePayload(user.id, feed.id, 1, suffix, {

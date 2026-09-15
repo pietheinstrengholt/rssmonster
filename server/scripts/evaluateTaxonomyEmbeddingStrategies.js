@@ -6,6 +6,8 @@ import { embedTexts, getEmbeddingInfo } from '../services/embeddings/embeddingSe
 import { buildTaxonomyEmbeddingText } from '../services/islands/taxonomyEmbeddingText.js';
 import { cosineSimilarity } from '../services/vectors/index.js';
 
+import { compatibleEmbeddingModels, hasEmbeddingModel } from '../services/vectors/embeddingModel.js';
+
 const require = createRequire(import.meta.url);
 const { taxonomyItems, toIdentity } = require('../seeders/20260520104500-island-taxonomy.js');
 const fixtureUrl = new URL('../tests/fixtures/island-taxonomy-evaluation.json', import.meta.url);
@@ -60,10 +62,15 @@ function loadArticleInputs(fixture) {
 async function embedUniqueTexts(texts, maxBatchSize) {
   const uniqueTexts = [...new Set(texts)];
   const vectorsByText = new Map();
+  let embeddingModel = null;
 
   for (let index = 0; index < uniqueTexts.length; index += maxBatchSize) {
     const batch = uniqueTexts.slice(index, index + maxBatchSize);
     const response = await embedTexts(batch);
+    if (!hasEmbeddingModel(response.model) || (embeddingModel != null && !compatibleEmbeddingModels(embeddingModel, response.model))) {
+      throw new Error('Taxonomy evaluation requires one known embedding model across all batches');
+    }
+    embeddingModel = response.model;
     batch.forEach((text, batchIndex) => {
       vectorsByText.set(text, response.embeddings[batchIndex]);
     });

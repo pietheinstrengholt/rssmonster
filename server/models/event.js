@@ -62,6 +62,11 @@ export default (sequelize) => {
         type: DataTypes.JSON,
         allowNull: true
       },
+      // Records the shared model of the contributing article vectors; null when unknown or mixed.
+      embedding_model: {
+        type: DataTypes.STRING(64),
+        allowNull: true
+      },
       // Records the earliest member-article event time; null before the window is derived.
       eventWindowStartAt: {
         type: DataTypes.DATE,

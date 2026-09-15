@@ -1,3 +1,4 @@
+import { compatibleEmbeddingModels } from '../vectors/embeddingModel.js';
 import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } from './eventDecisionDiagnostics.js';
 // services/events/updateEvents.js
 // This service updates an existing event when a new article joins it.
@@ -106,6 +107,7 @@ export async function assignArticleToExistingEvent({
       'title',
       'description',
       'articleVector',
+      'embedding_model',
       'eventId',
       'feedId',
       'status',
@@ -122,6 +124,9 @@ export async function assignArticleToExistingEvent({
   if (!lockedArticle) {
     return null;
   }
+
+  if (!compatibleEmbeddingModels(lockedArticle.embedding_model, lockedEvent.embedding_model)) return null;
+  if (_articleEventVector && !compatibleEmbeddingModels(article.embedding_model, lockedArticle.embedding_model)) return null;
 
   // Handles the case where locked article event id is not value.
   if (lockedArticle.eventId != null) {
@@ -143,14 +148,14 @@ export async function assignArticleToExistingEvent({
       userId: article.userId,
       ...canonicalArticleWhere()
     },
-    attributes: ['id', 'userId', 'feedId', 'title', 'description', 'publishedAt', 'createdAt', 'articleVector'],
+    attributes: ['id', 'userId', 'feedId', 'title', 'description', 'publishedAt', 'createdAt', 'articleVector', 'embedding_model'],
     order: [['id', 'ASC']],
     transaction,
     lock: transaction.LOCK.UPDATE
   });
   // Recheck against committed membership while holding the Event lock. Another
   // assignment may have changed the span or evidence since candidate discovery.
-  const currentProjection = buildCanonicalEventProjection(eventArticles, lockedEvent.eventVector);
+  const currentProjection = buildCanonicalEventProjection(eventArticles, lockedEvent.eventVector, lockedEvent.embedding_model);
   const articleEventVector = _articleEventVector ?? lockedArticle.articleVector;
   const normalizedArticleEventVector = normalizeVector(articleEventVector);
   lockedArticle.tokenSet = tokenSet(lockedArticle.title);
@@ -181,7 +186,7 @@ export async function assignArticleToExistingEvent({
   });
   eventArticles.push(lockedArticle);
   // Builds the canonical event projection while assigning article to existing event.
-  const projection = buildCanonicalEventProjection(eventArticles, lockedEvent.eventVector);
+  const projection = buildCanonicalEventProjection(eventArticles, lockedEvent.eventVector, lockedEvent.embedding_model);
   // Resolves the event status while assigning article to existing event.
   const status = resolveEventStatus(projection.articleCount, projection.eventWindowEndAt);
   // Resolves the developing article id for assignment while assigning article to existing event.
