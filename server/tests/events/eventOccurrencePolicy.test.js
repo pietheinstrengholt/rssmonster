@@ -77,22 +77,24 @@ describe('shared Event occurrence policy', () => {
   });
 
   it('member support cannot bypass the proposed whole-Event span', () => {
-    const incoming = article(36);
-    const member = article(20, { id: 2, eventId: 1 });
+    const incoming = article(72);
+    const member = article(40, { id: 2, eventId: 1 });
     const support = evaluateCandidateSignal({ article: incoming, candidate: member, articleEventVector: incoming.articleVector });
     expect(support.accepted).toBe(true);
-    const result = evaluate(incoming, event({ eventWindowEndAt: at(20) }), { memberSignals: [support] });
+    const result = evaluate(incoming, event({ eventWindowEndAt: at(40) }), { memberSignals: [support] });
     expect(result).toMatchObject({ eligible: false, decision: 'reject', reasons: ['event_span_exceeded'] });
   });
 
-  it('preserves the exclusive 24-hour boundary', () => {
-    expect(evaluate(article(24), event()).reasons).toContain('event_span_exceeded');
-    expect(evaluate(article(23.99), event()).decision).toBe('join');
+  it('preserves the exclusive 48-hour boundary', () => {
+    expect(evaluate(article(48), event()).reasons).toContain('event_span_exceeded');
+    expect(evaluate(article(47.99), event()).decision).toBe('join');
+    expect(evaluate(article(24), event()).decision).toBe('join');
+    expect(evaluate(article(36), event()).decision).toBe('join');
   });
 
   it('rejects opposite-side seed evidence with an excessive combined span', () => {
     const seed = article(0);
-    const members = [article(-20, { id: 1 }), seed, article(20, { id: 2 })];
+    const members = [article(-40, { id: 1 }), seed, article(40, { id: 2 })];
     for (const candidate of [members[0], members[2]]) {
       expect(evaluateCandidateSignal({ article: seed, candidate, articleEventVector: seed.articleVector }).accepted).toBe(true);
     }

@@ -43,6 +43,52 @@ afterEach(() => {
 });
 
 describe('eligible reading time', () => {
+  it.each(['minimal', 'reader', 'full'].flatMap(viewMode =>
+    ['read', 'unread'].flatMap(status => [true, false].map(autoRead => ({ viewMode, status, autoRead })))
+  ))('records stationary content independently of read state: %j', async ({ viewMode, status, autoRead }) => {
+    article(1);
+    context.articles[0].status = status;
+    context.selectionStore.currentSelection.viewMode = viewMode;
+    context.selectionStore.effectiveMarkAsReadOnScroll = autoRead;
+    context.isReaderLayoutActive = viewMode === 'reader';
+    context.getSelectedReadingArticleId = () => viewMode === 'full' ? null : 1;
+    refreshAt(0);
+    now = 60000;
+    await context.finishReadingSession();
+    expect(context.markArticleSeen).toHaveBeenLastCalledWith(1, 60,
+      expect.objectContaining({ attentionOnly: true }));
+    expect(context.articles[0].status).toBe(status);
+  });
+
+  it('persists exactly 40 seconds for 20 reading, 60 hidden and 20 reading', async () => {
+    article(1);
+    refreshAt(0);
+    now = 20000;
+    visibility = 'hidden';
+    context.handleReadingVisibility();
+    await context.seenPersistenceQueue;
+    now = 80000;
+    visibility = 'visible';
+    context.handleReadingVisibility();
+    now = 100000;
+    await context.finishReadingSession();
+    expect(context.markArticleSeen.mock.calls.map(call => call[1])).toEqual([20, 40]);
+  });
+
+  it('expires the inactivity timer while the document remains stationary', async () => {
+    vi.spyOn(performance, 'now').mockRestore();
+    vi.useRealTimers();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+    article(1);
+    context.lastReadingActivityAt = performance.now();
+    context.refreshReadingTime();
+    await vi.advanceTimersByTimeAsync(180000);
+    await context.seenPersistenceQueue;
+    expect(context.visibleSince.size).toBe(0);
+    expect(context.markArticleSeen).toHaveBeenLastCalledWith(1, 120,
+      expect.objectContaining({ attentionOnly: true }));
+  });
+
   it('requests only a state change when a passed article summary was already saved', async () => {
     article(1); refreshAt(0); now = 15000;
     context.pool = new Set(); context.seenPersistenceAttempts = new Map();

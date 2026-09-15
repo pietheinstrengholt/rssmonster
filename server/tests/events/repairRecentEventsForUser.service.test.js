@@ -359,7 +359,7 @@ describe('repairRecentEventsForUser', () => {
 
   });
 
-  it('splits otherwise similar articles into separate events when their event-time window exceeds 24 hours', async () => {
+  it('splits otherwise similar articles into separate events when their event-time window exceeds 48 hours', async () => {
     const { user, feed } = await createUserGraph('windowed');
     const feedTwo = await Feed.create({
       userId: user.id,
@@ -368,7 +368,7 @@ describe('repairRecentEventsForUser', () => {
       url: `https://example.com/windowed-second-${user.id}.xml`
     });
 
-    const base = recentDateWithOffset();
+    const base = recentDateWithOffset(-49 * 60 * 60 * 1000);
     const minutesFromBase = minutes => new Date(base.getTime() + minutes * 60 * 1000);
     const sharedVector = [1, 0, 0];
 
@@ -388,13 +388,13 @@ describe('repairRecentEventsForUser', () => {
       articlePayload(user, feed, 3, {
         title: 'Acme merger talks advance after delay',
         url: `https://example.com/${user.id}/acme-3`,
-        publishedAt: minutesFromBase(25 * 60),
+        publishedAt: minutesFromBase(49 * 60),
         articleVector: sharedVector
       }),
       articlePayload(user, feedTwo, 4, {
         title: 'Acme merger talks advance after delay again',
         url: `https://example.com/${user.id}/acme-4`,
-        publishedAt: minutesFromBase(25 * 60 + 20),
+        publishedAt: minutesFromBase(49 * 60 + 20),
         articleVector: sharedVector
       })
     ]);
@@ -412,7 +412,7 @@ describe('repairRecentEventsForUser', () => {
 
     expect(events).toHaveLength(2);
     expect(articleCounts).toEqual([2, 2]);
-    expect(eventSpansInHours.every(span => span <= 24)).toBe(true);
+    expect(eventSpansInHours.every(span => span < 48)).toBe(true);
   });
 
   it('clusters near-duplicate headlines with corroborating but sub-threshold vectors', async () => {

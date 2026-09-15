@@ -8,7 +8,7 @@ import { assignArticleToExistingEvent } from '../../services/events/updateEvents
 
 const { Article, Category, Event, Feed, User } = db;
 const title = 'Acme releases the new compiler';
-const at = hours => new Date(Date.now() - (48 - hours) * 3600000);
+const at = hours => new Date(Date.now() - (96 - hours) * 3600000);
 async function graph() {
   const username = `occurrence-${randomUUID()}`;
   const user = await User.create({ username, password: 'test', role: 'user' });
@@ -70,9 +70,9 @@ describe('Event occurrence assignment', () => {
   it('rejects temporal chaining even when only the latest member discovers the Event', async () => {
     const g = await graph();
     const { event } = await makeEvent(g, 0);
-    const latest = await makeArticle(g, 20, { eventId: event.id });
+    const latest = await makeArticle(g, 40, { eventId: event.id });
     await event.update({ eventWindowEndAt: latest.publishedAt, articleCount: 2 });
-    const incoming = await makeArticle(g, 36);
+    const incoming = await makeArticle(g, 72);
     const result = await assign(g, incoming, [], [latest]);
     expect(result.id).toBeNull();
     expect(incoming.eventId).toBeNull();
@@ -82,9 +82,9 @@ describe('Event occurrence assignment', () => {
 
   it('rejects an opposite-side seed group without partial membership writes', async () => {
     const g = await graph();
-    const seed = await makeArticle(g, 20);
+    const seed = await makeArticle(g, 40);
     const left = await makeArticle(g, 0);
-    const right = await makeArticle(g, 40);
+    const right = await makeArticle(g, 80);
     const result = await assign(g, seed, [], [left, right]);
     expect(result.id).toBeNull();
     expect(await Event.count({ where: { userId: g.user.id } })).toBe(0);
@@ -154,8 +154,8 @@ describe('Event occurrence assignment', () => {
   it('revalidates a stale cached span under the membership lock', async () => {
     const g = await graph();
     const { event } = await makeEvent(g, 0);
-    const stale = { id: event.id, userId: g.user.id, name: title, embedding_model: 'test-model', eventVector: [1, 0], eventWindowStartAt: at(20), eventWindowEndAt: at(20) };
-    const incoming = await makeArticle(g, 30);
+    const stale = { id: event.id, userId: g.user.id, name: title, embedding_model: 'test-model', eventVector: [1, 0], eventWindowStartAt: at(40), eventWindowEndAt: at(40) };
+    const incoming = await makeArticle(g, 60);
     const cache = { updateInMemory: vi.fn() };
     expect(await assignArticleToExistingEvent({ article: incoming, bestEvent: stale, cache })).toBeNull();
     expect((await incoming.reload()).eventId).toBeNull();
@@ -178,16 +178,16 @@ describe('Event occurrence assignment', () => {
 
   it('serializes competing extensions so their combined span cannot exceed the window', async () => {
     const g = await graph();
-    const { event } = await makeEvent(g, 20);
-    const left = await makeArticle(g, 1);
-    const right = await makeArticle(g, 39);
+    const { event } = await makeEvent(g, 40);
+    const left = await makeArticle(g, 2);
+    const right = await makeArticle(g, 78);
     const results = await Promise.all([left, right].map(incoming => assignArticleToExistingEvent({
       article: incoming, bestEvent: event, cache: null
     })));
     expect(results.filter(Boolean)).toHaveLength(1);
     await event.reload();
     expect(event.articleCount).toBe(2);
-    expect((new Date(event.eventWindowEndAt) - new Date(event.eventWindowStartAt)) / 3600000).toBeLessThan(24);
+    expect((new Date(event.eventWindowEndAt) - new Date(event.eventWindowStartAt)) / 3600000).toBeLessThan(48);
   });
 
   it('rejects incompatible persisted seed evidence even if the caller supplied compatible vectors', async () => {

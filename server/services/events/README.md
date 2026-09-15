@@ -324,7 +324,7 @@ remain available through the same policy for all discovery paths.
 
 Every join checks the proposed **whole Event span**, including member-backed joins.
 The existing positive temporal-score boundary is retained: the span must be less
-than `EVENT_MAX_GAP_HOURS` (24 hours by default).
+than `EVENT_MAX_GAP_HOURS` (48 hours by default).
 
 The ranking score retains the existing semantic/headline/temporal weights
 (0.75/0.15/0.10), recency decay, and 0.03 entity bonus. It is not a probability.
@@ -455,7 +455,7 @@ The historical preload should retain the newest bounded set of eligible Articles
 
 For each Article being assigned:
 
-1. Collect eligible candidates within the hard ±24-hour Event window.
+1. Collect eligible candidates within the hard ±48-hour Event window.
 2. Rank candidates by absolute publication-time distance from the current Article.
 3. Prefer candidates processed during the current run when time distance ties.
 4. Apply the per-Article comparison cap only after relevance ordering.

@@ -45,7 +45,7 @@ describe('Event candidate diagnostics', () => {
   it('keeps missing occurrence evidence neutral and explains exceeded spans', () => {
     const result = evaluate('Local news', 'Local news');
     result.evidence.temporal = 0;
-    result.evidence.spanHours = 28;
+    result.evidence.spanHours = 52;
     result.reasons = ['event_span_exceeded'];
     const row = candidateDiagnostic(result);
     expect(row).toMatchObject({ temporalCompatibility: false, eventSpanCompatibility: false, versionMatch: false, versionConflict: false });

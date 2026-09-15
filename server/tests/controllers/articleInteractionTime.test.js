@@ -114,6 +114,48 @@ describe('Article interaction clocks across APIs', () => {
 });
 
 describe('observed Article attention evidence', () => {
+  it('bulk mark-read preserves prior attention and creates none for unobserved articles', async () => {
+    const { user, article, post } = await fixture();
+    await article.update({ firstSeen: old, attentionBucket: 3, lastMeaningfulReadAt: old, lastClickedAt: old, favoritedAt: old });
+    const unseen = await db.Article.create({ userId: user.id, feedId: article.feedId, title: 'Unopened' });
+    expect((await post('markallasread', {}, null)).status).toBe(200);
+    await article.reload();
+    await unseen.reload();
+    for (const row of [article, unseen]) {
+      expect(row.status).toBe('read');
+      fresh(row.readAt);
+    }
+    expect(article.firstSeen).toEqual(old);
+    expect(article.attentionBucket).toBe(3);
+    expect(article.lastMeaningfulReadAt).toEqual(old);
+    expect(article.lastClickedAt).toEqual(old);
+    expect(article.favoritedAt).toEqual(old);
+    expect(unseen.firstSeen).toBeNull();
+    expect(unseen.attentionBucket).toBe(0);
+    expect(unseen.lastMeaningfulReadAt).toBeNull();
+    expect(unseen.lastClickedAt).toBeNull();
+    expect(unseen.favoritedAt).toBeNull();
+  });
+
+  it.each([[0, 0], [2, 0], [3, 1], [15, 2], [45, 3], [75, 4]])(
+    'classifies %i seconds of 200 displayed words as bucket %i without unrelated state changes', async (seconds, bucket) => {
+      const { article, post } = await fixture();
+      await article.update({ firstSeen: old, lastClickedAt: old, favoritedAt: old });
+      expect((await post('markasseen', {
+        visibleSeconds: seconds, readingWordCount: 200, recordObservation: true, markRead: false
+      })).status).toBe(200);
+      await article.reload();
+      expect(article.attentionBucket).toBe(bucket);
+      expect(article.firstSeen).toEqual(old);
+      expect(article.lastClickedAt).toEqual(old);
+      expect(article.favoritedAt).toEqual(old);
+      expect(article.readAt).toBeNull();
+      expect(article.status).toBe('unread');
+      if (bucket >= 3) fresh(article.lastMeaningfulReadAt);
+      else expect(article.lastMeaningfulReadAt).toBeNull();
+    }
+  );
+
   it('counts normalized body words rather than adjacent HTML tags', async () => {
     const { article, post } = await fixture();
     await article.update({ contentHtml: '<p>word</p>'.repeat(200), contentText: null });
