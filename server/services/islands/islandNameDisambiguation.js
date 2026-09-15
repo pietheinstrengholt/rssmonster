@@ -5,7 +5,7 @@ import { embeddingSimilarity } from '../vectors/embeddingModel.js';
 // Provides the shared dependencies used by this service.
 const { Island } = db;
 
-// Defines the island duplicate name similarity threshold enforced by this service.
+// Legacy near-duplicate diagnostic threshold; name cleanup never archives Islands.
 export const ISLAND_DUPLICATE_NAME_SIMILARITY_THRESHOLD = Number.parseFloat(
   process.env.ISLAND_DUPLICATE_NAME_SIMILARITY_THRESHOLD || '0.92'
 );
@@ -62,11 +62,11 @@ export function normalizeIslandName(name = '') {
 }
 
 // This function appends a numeric suffix until an island name is unique.
-export function buildUniqueIslandName(name, usedNames = new Set()) {
+export function buildUniqueIslandName(name, usedNames = new Set(), maxLength = MAX_STORED_ISLAND_NAME_LENGTH) {
   // Derives the base name required while building unique island name.
   const baseName = String(name || '').trim() || 'Interest Island';
   // Derives the stored base name through slice while building unique island name.
-  const storedBaseName = baseName.slice(0, MAX_STORED_ISLAND_NAME_LENGTH);
+  const storedBaseName = baseName.slice(0, maxLength);
   // Returns early when used names does not contain normalize island name.
   if (!usedNames.has(normalizeIslandName(storedBaseName))) return storedBaseName;
 
@@ -77,7 +77,7 @@ export function buildUniqueIslandName(name, usedNames = new Set()) {
     // Derives the suffix required while building unique island name.
     const suffix = ` (${suffixNumber})`;
     // Derives the next name required while building unique island name.
-    const nextName = `${baseName.slice(0, MAX_STORED_ISLAND_NAME_LENGTH - suffix.length)}${suffix}`;
+    const nextName = `${baseName.slice(0, maxLength - suffix.length)}${suffix}`;
     // Returns early when used names does not contain normalize island name.
     if (!usedNames.has(normalizeIslandName(nextName))) return nextName;
     suffixNumber += 1;
@@ -122,7 +122,7 @@ export function sourceArticleCountForIsland(island) {
   return 0;
 }
 
-// This function orders duplicate-name islands by deterministic semantic strength.
+// This order only decides which Island retains the unsuffixed display name.
 export function compareIslandStrength(left, right) {
   // Derives the left article count through source article count for island while performing compare island strength.
   const leftArticleCount = sourceArticleCountForIsland(left);
@@ -251,7 +251,9 @@ export function buildDisambiguatedIslandName(baseName, island, usedNames = new S
     if (!usedNames.has(normalized)) return nextName;
   }
 
-  return `${baseName}: Variant ${island.id}`.slice(0, MAX_ISLAND_NAME_LENGTH);
+  const ending = `: Variant ${island.id}`;
+  const fallback = `${baseName.slice(0, MAX_ISLAND_NAME_LENGTH - ending.length)}${ending}`;
+  return buildUniqueIslandName(fallback, usedNames, MAX_ISLAND_NAME_LENGTH);
 }
 
 // This function writes the required concise disambiguation log line.
@@ -260,7 +262,7 @@ function logIslandRename({ island, from, to, strongerIsland, similarity }) {
     `[ISLAND] renamed island=${island.id} ` +
     `from=${formatLogString(from)} ` +
     `to=${formatLogString(to)} ` +
-    `reason=duplicate-name-low-sim stronger=${strongerIsland.id} ` +
+    `reason=duplicate-name stronger=${strongerIsland.id} ` +
     `sim=${Number(similarity || 0).toFixed(3)}`
   );
 }
@@ -283,7 +285,7 @@ export async function disambiguateDuplicateIslandNamesForUser(userId, options = 
   const usedNames = new Set(activeIslands.map(island => normalizeIslandName(island.label)));
   // Collects the renamed while performing disambiguate duplicate island names for user.
   const renamed = [];
-  // Collects the archived while performing disambiguate duplicate island names for user.
+  // Retained for callers that consume the historical summary shape; naming cannot archive.
   const archived = [];
 
   // Processes each values entry in turn.
@@ -304,17 +306,7 @@ export async function disambiguateDuplicateIslandNamesForUser(userId, options = 
         coerceNumbers: true
       });
 
-      // Handles the case where similarity reaches island duplicate name similarity threshold.
-      if (similarity >= ISLAND_DUPLICATE_NAME_SIMILARITY_THRESHOLD) {
-        await island.update({
-          archivedInd: true,
-          archivedAt: new Date()
-        }, { transaction });
-        archived.push(Number(island.id));
-        continue;
-      }
-
-      usedNames.delete(normalizeIslandName(island.label));
+      // Labels never remove signed evidence, even when vectors are identical.
       // Builds the disambiguated island name while performing disambiguate duplicate island names for user.
       const nextName = buildDisambiguatedIslandName(
         baseName,

@@ -71,10 +71,17 @@ export default (sequelize) => {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: DataTypes.NOW
+      },
+      // Evidence time of the last successful full Island calibration and unread rescore.
+      personalizationRefreshedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
       }
     },
     {
       indexes: [
+        { fields: ['personalizationRefreshedAt', 'id'] },
         {
           name: 'users_email_unique',
           unique: true,

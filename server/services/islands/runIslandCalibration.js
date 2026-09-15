@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Transaction } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
 import db from '../../models/index.js';
 import scoreArticlesFromIslandsForUser from '../score/scoreArticlesFromIslands.js';
 import { buildInterestIslandProfilesForUser as buildIslandProfilesForUser } from './islandArticleProfiles.js';
@@ -46,7 +46,9 @@ async function logIslandRunSummary(userId, result, startedAt) {
   console.log(`[ISLAND] Active islands................ ${formatIslandCount(activeIslandCount)}`);
   console.log('[ISLAND]');
   console.log('[ISLAND]');
-  console.log(`[ISLAND] Articles scored............... ${formatIslandCount(result.rescoredArticleCount)}`);
+  console.log(`[ISLAND] Articles evaluated............ ${formatIslandCount(result.candidatesRescored)}`);
+  console.log(`[ISLAND] Nonzero interest.............. ${formatIslandCount(result.rescoredArticleCount)}`);
+  console.log(`[ISLAND] Interest values changed....... ${formatIslandCount(result.interestScoresChanged)}`);
   console.log(`[ISLAND]  └─ via Island vectors........ ${formatIslandCount(result.fallbackScoredCount)}`);
   console.log('[ISLAND]');
   console.log(`[ISLAND] Finished...................... ${formatElapsedSeconds(startedAt)} sec`);
@@ -149,6 +151,10 @@ export async function calibrateIslandsFromBehavior(options = {}) {
 export async function runIslandCalibrationForUser(userId, options = {}) {
   // Derives the started at through now while performing run island calibration for user.
   const startedAt = Date.now();
+  // A delayed scoring retry must not present an older calibration as fresh evidence.
+  const refreshedAt = options.persistedCalibration
+    ? options.persistedCalibration.refreshedAt ? new Date(options.persistedCalibration.refreshedAt) : null
+    : new Date(startedAt);
   const processingContext = {
     crawlRunId: options.processingContext?.crawlRunId || null,
     executionId: options.processingContext?.executionId || randomUUID(),
@@ -159,7 +165,12 @@ export async function runIslandCalibrationForUser(userId, options = {}) {
   let behaviorResult;
   const calibrationStarted = performance.now();
   try {
-    behaviorResult = options.persistedCalibration || await calibrateIslandsFromBehaviorForUser(userId, options);
+    behaviorResult = options.persistedCalibration || await calibrateIslandsFromBehaviorForUser(userId, {
+      ...options,
+      afterPersist: options.afterPersist && ((transaction, summary) => options.afterPersist(transaction, {
+        ...summary, refreshedAt: refreshedAt.toISOString()
+      }))
+    });
   } catch (error) {
     await recordProcessingFailure({
       ...processingContext,
@@ -198,6 +209,7 @@ export async function runIslandCalibrationForUser(userId, options = {}) {
     articleCount: behaviorResult.articleCount,
     fallbackScoredCount: Number(scoringResult?.fallbackScoredCount || 0),
     rescoredArticleCount: Number(scoringResult?.updatedCount || 0),
+    interestFunnel: scoringResult,
     persistenceSummary: behaviorResult.persistenceSummary,
     profiles: behaviorResult.profiles
   };
@@ -208,6 +220,18 @@ export async function runIslandCalibrationForUser(userId, options = {}) {
   }
 
   await logIslandRunSummary(userId, result, startedAt);
+
+  await options.assertLease?.();
+  // Record only completed calibration + scoring, and never move freshness backwards.
+  // Legacy checkpoints have unknown evidence age and must remain due after scoring succeeds.
+  if (refreshedAt) {
+    await User.update({ personalizationRefreshedAt: refreshedAt }, {
+      where: { id: userId, [Op.or]: [
+        { personalizationRefreshedAt: null }, { personalizationRefreshedAt: { [Op.lt]: refreshedAt } }
+      ] }, silent: true
+    });
+    result.refreshedAt = refreshedAt.toISOString();
+  }
 
   return result;
 }

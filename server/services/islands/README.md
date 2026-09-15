@@ -1,5 +1,39 @@
 # Interest Island System
 
+## Interest evaluation diagnostics
+
+The scorer emits `[INTEREST FUNNEL]` for each successful pass. `eligibility` counts
+mutually exclusive exclusions (filtered, duplicate, not unread, before creation window)
+and eligible rows using one owned aggregate query. `scannedCount` counts rows actually
+read; `scopeSkippedCount` counts fast-feedback neighborhood exclusions.
+`candidatesRescored` includes neutral evaluations, `positiveCount`/`negativeCount`/
+`neutralCount` partition those evaluations, and `interestScoresChanged` counts successful
+value changes. `unchangedCount` counts equal stored values, while
+`recordedEvaluationCount` counts persisted evaluation timestamps.
+`nonzeroInterestCount` is the explicit name for the legacy `updatedCount` compatibility
+field; that legacy field does not count writes. `fallbackScoredCount` remains the legacy
+direct-Island path count; `behavioralScoredCount` counts explicit fallback paths,
+and `implicitScoredCount` counts selected recent click/read paths.
+
+`zeroReasons` partitions neutral results by no eligible evidence, no compatible vector,
+no recent fallback signal, below similarity threshold, zero preference/confidence,
+signed cancellation or rounding to zero. `islandMatches` counts zero/one/multiple
+qualifying Island relationships before strongest-per-sign path selection. Source-level
+explicit fallback suppression is reported separately from target-level threshold rejection.
+Evidence-query limits and windows still apply; excluded evidence outside those queries
+cannot be attributed to an individual target by this evaluator.
+
+`Article.interestScoredAt` records successful evaluations including unchanged neutral
+results. A batch metadata update stamps unchanged rows without changing their `updatedAt`;
+skipped/ineligible rows remain untouched. Legacy clocks stay null. Apply migration
+`20260915001000-add-interest-scored-at.mjs` before running the updated application.
+The clock records evaluation time, not freshness of the underlying Island calibration.
+No behavioral signal uses this timestamp.
+
+The diagnostics regression cases reproduce the known target-specific fallback loss
+and verify that duplicate-name cleanup preserves both preference signs and held-out
+scores. Similarity thresholds, capacity and Recommended weights are unchanged.
+
 Interest Islands are the authoritative user-specific personalization representation.
 Events identify occurrences; Islands represent signed behavioral preferences.
 
@@ -21,7 +55,12 @@ An Island stores its vector, signed weight, signal snapshot, display labels,
 archive state and population audit. There is no persisted candidate-Article
 membership table. Audit history explains formation; it is not new evidence.
 Names use the nearest taxonomy label or the profile's source-article label.
-Duplicate names are disambiguated using semantic and source-article evidence.
+Duplicate names receive distinguishing source-article phrases or unique suffixes.
+Name cleanup only updates labels, even for identical vectors and opposing signs;
+it never archives or consolidates semantic evidence. Audit count and absolute weight
+only decide which Island retains the base display name. Similarity is logged for
+diagnostics. The legacy `archived` summary stays empty. Previously archived Islands
+are not automatically reactivated; normal lifecycle and capacity rules still apply.
 
 Matched or unmatched Islands can archive when meaningful behavioral activity is
 at least 45 days old and decayed lifecycle confidence is below .12. Technical
@@ -125,8 +164,10 @@ Explicit likes/favorites and dislikes can outlive community capacity via a bound
 direct evidence fallback. Per sign, at most 100 canonical/unfiltered explicit
 articles with the corresponding interaction within the last 90 days are considered, with stable date/ID
 ordering. No absence of engagement, short read, or unread state counts as negative.
-Only evidence without a qualifying same-sign Island uses fallback. This includes
-negative evidence near a net-positive Island. Explicit negative overrides positive
+Evidence without a qualifying same-sign Island uses fallback. An Island whose
+current support contains multiple explicit sign/intent groups also leaves these
+Article-level paths available: its averaged weight cannot represent those distinct
+preferences. This includes negative evidence near a net-positive Island. Explicit negative overrides positive
 flags for this fallback; clicks/deep reads alone do not trigger positive fallback.
 
 ```
@@ -137,9 +178,41 @@ behavioralContribution = sign * .25 * recency * directRelationship * intentCompa
 Unknown/future interaction times and age over 90 days do not qualify. These limits
 bound work and influence; they are not a new Island cap or relaxed similarity gate.
 A fresh dislike on an old article qualifies through `negativeFeedbackAt`. Replaying unchanged evidence cannot stack
-penalties. Positive fallback follows the same small evidence path only when no
+penalties. Positive fallback follows the same small evidence path when no non-conflicting
 positive Island represents the explicit preference, so capacity does not erase
-likes/favorites either.
+likes/favorites either. Conflict detection uses the existing bounded current support,
+not audits or generated labels. It does not change durable formation, matching,
+Island weights or support assignment.
+
+### Recent implicit evidence
+
+Clicks and deep reads have an independent, positive-only Article path, including
+when formation or durable capacity cannot admit their interest. At most 100 owned,
+canonical, unfiltered sources with no explicit positive, favorite or negative flag
+qualify. Each signal must have a known interaction timestamp within seven days;
+publication time cannot establish recent implicit interest. Unknown, future and
+expired clocks are rejected independently. The loader reads at most 100 clicks and
+100 deep reads, deduplicates Articles, sorts by the newest valid interaction then ID,
+and keeps 100 combined sources. This route has its own bound and is not limited to
+the 500 Articles used for Island confidence.
+
+```
+implicitRecency = 2^(-interactionAgeDays/3)
+implicitContribution = authority * implicitRecency * directRelationship * intentCompatibility
+```
+
+Authority is .05 for an outbound click and .10 for attention bucket ≥3, below the
+explicit fallback's .25. Click counts and repeated reads never multiply authority.
+Existing model/dimension checks, the configured scoring similarity threshold, and
+Article-to-Article intent compatibility still apply. Only the strongest positive
+path survives across implicit sources, explicit evidence and Islands; the strongest
+negative path remains separate. Thus the new route cannot stack correlated evidence
+or infer a dislike. The existing refresh jobs evaluate it without a new schema/job.
+
+Diagnostics expose `implicitSourcesConsidered`, `qualifyingImplicitSignals`, and
+`expiredOrUndatedImplicitSignals`. Selected paths use `matchType=implicit-behavior`
+and `implicitType=click|deep-read`, with source ID, intent, recency and contribution.
+Trace reports count these separately as `Recent implicit matches`.
 
 Each Island contributes through the direct Article-to-Island comparison.
 Across distinct Islands and behavioral profiles, retain only the strongest positive
@@ -298,8 +371,13 @@ intent compatibility, confidence equations and similarity thresholds are unchang
 See [the behavioral examples](../../../docs/interest-islands.md#decay-examples-and-configuration-migration)
 for retained influence at 7, 30, 90, 180 and 365 days.
 
-The existing calibration/refresh lifecycle evaluates decay and updates persisted
-scores; elapsed time alone does not enqueue a new job. Island archival uses
+The calibration/refresh lifecycle evaluates decay and updates persisted scores.
+The AI worker also schedules due users through the existing refresh queue (daily
+by default, checked hourly), using `User.personalizationRefreshedAt` to track the
+evidence time of successful full refreshes. Elapsed-only refreshes preserve matched
+centroids instead of repeatedly blending the same evidence; behavioral refreshes
+retain normal vector adaptation. See [the scheduler contract](../jobs/README.md#elapsed-time-refresh).
+Island archival uses
 current decayed support as described below. Explicit negative fallback
 uses `negativeFeedbackAt`, the existing 90-day window and 30-day half-life.
 Positive fallback evaluates positive feedback and favorites on their own clocks

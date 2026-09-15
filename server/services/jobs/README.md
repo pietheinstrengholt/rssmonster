@@ -1,5 +1,29 @@
 # Processing Jobs
 
+## Personalization refresh status
+
+The authenticated `GET /api/setting/processing-jobs` response includes `personalization`:
+the user's durable refresh and at most ten recently updated explicit-refresh jobs.
+States distinguish `pending`, `running`, `completed`, `failed`, `cancelled`, and
+`untracked` when no retained job exists. This is job status, not a claim that every
+article has been refreshed. Explicit refreshes only evaluate their related unread subset.
+
+`latestRequestedAt` and `requestAgeMs` measure the current request; reusable-job
+`createdAt` is never used as the current request clock. The payload preserves
+`lastCompletedRefresh` through terminal reactivation and requests arriving mid-run.
+Public `lastCompletedAt`/`refreshAgeMs` measure completion age, while
+`lastCompletedLatency` separates queue wait, processing time and request-to-completion
+latency for the last completed pass. Timing begins with the latest coalesced request
+captured by that run. Missing legacy timing remains null; a pending follow-up does not
+overwrite the preceding completed run's timing. A request received during execution
+may still show `running`; completion leaves the newer request `pending`.
+
+`lastCompletedEvaluation` reports evaluated/changed counts and explicit-refresh skip
+reasons, distinguishing successful jobs that did no scoring. Article-level
+`interestScoredAt` remains the authority for recorded score evaluation, including
+neutral results. Clearing job history removes retained job timing, not article clocks.
+Payloads, vectors, article bodies and error messages are not exposed in this status.
+
 This directory owns RSSMonster's database-backed optional-work queue. Producers persist
 identifier-only jobs in the same transaction as their owned target. The dedicated
 `rssmonster-ai-worker` claims bounded batches and dispatches them through
@@ -59,6 +83,44 @@ The worker must be running. Recommended reflects the updated scores on the next
 fetch after the job completes, without requiring a crawl. An immediate fetch during
 the batching window can still see previous scores; no HTTP request waits for
 calibration. The SQLite Compose profile does not start this worker automatically.
+
+## Elapsed-time refresh
+
+The AI worker checks for aging personalization at startup and then hourly by
+default, after the crawl-priority pause and when worker capacity is available.
+`PERSONALIZATION_REFRESH_INTERVAL_MS` defaults to 86400000 (24 hours),
+`PERSONALIZATION_REFRESH_CHECK_INTERVAL_MS` to 3600000 (one hour), and
+`PERSONALIZATION_REFRESH_BATCH_SIZE` to 25 (bounded to 1000).
+
+Selection uses `User.personalizationRefreshedAt`, never Island `updatedAt` or
+job-history retention. It records the evidence time of a successful full Island
+calibration and unread rescore, including manual runs. Null history is due.
+Scoring failures do not advance it; checkpoint retries retain the original
+calibration time so delayed retries cannot disguise stale weights as fresh.
+Article `interestScoredAt` remains the per-article evaluation timestamp.
+
+The scheduler selects the oldest due users with Island history, canonical
+behavioral vectors, or nonzero interest needing reevaluation. It queues at most
+one bounded batch per check and spreads availability across that check interval.
+Pending/running jobs are left intact, including backoff. Dead/cancelled jobs
+require the existing recovery path or new behavior; the timer never resets their
+retry budget. Eligible users behind those jobs can still be selected. Large
+backlogs, crawl pauses and worker availability can extend refresh latency beyond
+24 hours; this is an age-based work schedule, not a freshness SLA.
+
+The existing user lock and job deduplication serialize competing workers and
+behavior requests. Jobs carry `elapsed_time` as their trigger reason. A real
+interaction expedites a waiting scheduled job to the normal two-second deadline;
+behavior during a running job retains the existing pending follow-up semantics.
+Elapsed-only jobs preserve matched Island vectors/model identifiers while
+recomputing weights, snapshots, lifecycle/capacity and all eligible unread scores.
+New profiles still use normal formation/matching rules. Jobs also carrying new
+behavior use normal vector blending. No interaction timestamps are changed and
+no inference or Event processing is added.
+
+Worker scheduling logs expose checked users and queued IDs; refresh completion
+logs include `refreshedAt`. Apply the additive user-timestamp migration before
+starting the updated worker. Existing accounts need no fabricated refresh history.
 
 ## Fast explicit feedback versus durable calibration
 

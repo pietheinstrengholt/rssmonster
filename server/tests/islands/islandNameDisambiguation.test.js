@@ -119,6 +119,18 @@ describe('island name disambiguation', () => {
 
     expect(buildDisambiguatedIslandName('AI Companions', target, usedNames)).toBe('AI Companions: Variant 42');
   });
+  it('preserves a unique suffix for long labels and occupied fallback names', () => {
+    const baseName = 'A'.repeat(90);
+    const target = island({ id: 42, populationAudit: [] });
+    const usedNames = new Set([normalizeIslandName(baseName)]);
+    for (let index = 0; index < 4; index++) {
+      const name = buildDisambiguatedIslandName(baseName, target, usedNames);
+      expect(name.length).toBeLessThanOrEqual(90);
+      expect(usedNames.has(normalizeIslandName(name))).toBe(false);
+      usedNames.add(normalizeIslandName(name));
+    }
+  });
+
   it.each([null, '', 'other-model'])('preserves distinct same-name Islands from incompatible spaces: %s', model => {
     expect(isNearDuplicateIslandName(island(), island({ id: 2, embedding_model: model }), -1)).toBe(false);
   });

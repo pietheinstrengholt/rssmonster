@@ -166,6 +166,9 @@ describe('processing job status service', () => {
       workerHealthReader: healthyWorker
     });
     expect(empty).toEqual({
+      personalization: { observedAt: NOW.toISOString(), durable: {
+        state: 'untracked', lastCompletedAt: null, refreshAgeMs: null
+      }, recentExplicit: [], explicitSampleLimit: 10 },
       health: { status: 'healthy', workerRunning: true },
       summary: {
         stranded: 0,

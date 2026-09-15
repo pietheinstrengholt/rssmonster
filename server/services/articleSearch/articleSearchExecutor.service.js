@@ -61,7 +61,8 @@ export const buildArticleSearchQuery = ({
   eventCountFilter,
   firstSeenAgeFilter,
   authorFilter,
-  languageFilter
+  languageFilter,
+  onEligibilityStage
 }) => {
   // Collects the query attributes while building article search query.
   const queryAttributes = ['id', 'feedId', 'aiAnalysisStatus'];
@@ -105,8 +106,9 @@ export const buildArticleSearchQuery = ({
 
   // Handles the case where needs interest score is available.
   if (needsInterestScore) {
-    queryAttributes.push('interestScore');
+    queryAttributes.push('interestScore', 'interestScoredAt');
   }
+  if (onEligibilityStage && !needsInterestScore) queryAttributes.push('interestScore', 'interestScoredAt');
 
   // Builds the article query assembled while building article search query.
   const articleQuery = {
@@ -244,6 +246,7 @@ export const buildArticleSearchQuery = ({
   }
 
   // Handles the case where briefing filter is not value.
+  onEligibilityStage?.('article_state_metadata_filters', articleQuery.where);
   if (briefingFilter !== null) {
     applyBriefingEligibility(articleQuery.where, briefingFilter, {
       minDistinctSources: briefingMinDistinctSources,
@@ -251,6 +254,7 @@ export const buildArticleSearchQuery = ({
       showOnlyDevelopingEventArticles: briefingShowOnlyDevelopingEventArticles
     });
   }
+  onEligibilityStage?.('briefing_eligibility', articleQuery.where);
 
   // Handles the case where event count filter is finite.
   if (Number.isFinite(eventCountFilter)) {
@@ -264,6 +268,7 @@ export const buildArticleSearchQuery = ({
   }
 
   // Handles the case where event is value and grouping is event.
+  onEligibilityStage?.('event_count_filter', articleQuery.where);
   if ((event === null || groupingExplicit) && grouping === 'event') {
     // Selects the selected event article column based on whether include developing events is available.
     const selectedEventArticleColumn = includeDevelopingEvents
@@ -290,6 +295,7 @@ export const buildArticleSearchQuery = ({
     });
   }
 
+  onEligibilityStage?.('event_grouping', articleQuery.where);
   return articleQuery;
 };
 

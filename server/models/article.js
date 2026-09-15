@@ -368,6 +368,9 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
+      // Last successful interest evaluation, including neutral and unchanged results.
+      // Null means no recorded evaluation; legacy history is unknown.
+      interestScoredAt: { type: DataTypes.DATE, allowNull: true, defaultValue: null },
       // Attention estimate from eligible time with readable article content (0–4).
       // Eligibility requires a visible document, active content in the reading viewport,
       // and an unexpired inactivity grace period; stationary reading can qualify.

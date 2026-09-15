@@ -20,13 +20,20 @@ async function requestRefresh(userId, { transaction, type = PERSONALIZATION_REFR
   });
   // Lock before terminal reactivation; completion may race the initial lookup.
   if (existing) await existing.reload({ transaction, lock: transaction.LOCK.UPDATE });
+  const expediteScheduled = existing?.status === 'pending'
+    && existing.payload?.triggerReasons?.length === 1 && existing.payload.triggerReasons[0] === 'elapsed_time'
+    && !triggerReasons.includes('elapsed_time');
   const { job } = await enqueueProcessingJob({
     userId, type, articleId, dedupeKey,
+    payload: { lastCompletedRefresh: existing?.payload?.lastCompletedRefresh ?? null },
     priority: fast ? 20 : 10, availableAt: new Date(Date.now() + (fast ? 0 : PERSONALIZATION_REFRESH_DELAY_MS))
   }, { transaction, reactivateTerminal: true });
   await job.reload({ transaction, lock: transaction.LOCK.UPDATE });
   // Keep the first pending deadline: continuous activity must not starve refreshes.
-  await job.update({ payload: { ...job.payload, requestId: randomUUID(),
+  await job.update({
+    // A real interaction must not wait behind the timer's hourly spreading delay.
+    ...(expediteScheduled ? { availableAt: new Date(Math.min(new Date(job.availableAt).getTime(), Date.now() + PERSONALIZATION_REFRESH_DELAY_MS)) } : {}),
+    payload: { ...job.payload, requestId: randomUUID(), latestRequestedAt: new Date().toISOString(),
     triggerReasons: [...new Set([...(job.payload.triggerReasons || []), ...triggerReasons])]
   } }, { transaction });
   return job;
@@ -39,11 +46,11 @@ export const requestExplicitFeedbackRefresh = (userId, articleId, options) => re
 
 export async function handleExplicitFeedbackRefresh(job, { assertLease }) {
   await assertLease();
-  if (!job.articleId) { logRefresh(job, { skipReason: 'missing-source' }); return; }
+  if (!job.articleId) { const result = { skipReason: 'missing-source', candidatesRescored: 0 }; logRefresh(job, result); return result; }
   const source = await db.Article.findOne({ where: {
     id: job.articleId, userId: job.userId, ...canonicalArticleWhere(), filteredInd: false
   }, attributes: ['id', 'articleVector', 'embedding_model'] });
-  if (!source?.articleVector) { logRefresh(job, { skipReason: 'missing-source-vector' }); return; }
+  if (!source?.articleVector) { const result = { skipReason: 'missing-source-vector', candidatesRescored: 0 }; logRefresh(job, result); return result; }
   const result = await scoreArticlesFromIslandsForUser(job.userId, { relatedToArticle: source, assertLease });
   logRefresh(job, { calibrationDurationMs: 0, islandsChanged: 0, ...result });
   return result;
@@ -61,7 +68,9 @@ const logRefresh = (job, result) => console.log('[PERSONALIZATION REFRESH]', JSO
   islandsChanged: result.islandsChanged || 0,
   candidatesRescored: result.candidatesRescored || 0,
   interestScoresChanged: result.interestScoresChanged || 0,
+  interestFunnel: result.interestFunnel || (result.zeroReasons ? result : null),
   calibrationReused: Boolean(result.calibrationReused),
+  ...(result.refreshedAt ? { refreshedAt: result.refreshedAt } : {}),
   ...(result.skipReason ? { skipReason: result.skipReason } : {})
 }));
 
@@ -74,6 +83,7 @@ export async function handlePersonalizationRefresh(job, { assertLease }) {
   const before = persistedCalibration ? null : await islandSnapshot(job.userId);
   const result = await runIslandCalibrationForUser(job.userId, {
     persistedCalibration, assertLease, generateLabels: false,
+    preserveMatchedVectors: job.payload?.triggerReasons?.length === 1 && job.payload.triggerReasons[0] === 'elapsed_time',
     afterPersist: async (transaction, summary) => {
       const owned = await ProcessingJob.findOne({ where: {
         id: job.id, userId: job.userId, status: 'running', leaseOwner: job.leaseOwner,
@@ -94,7 +104,7 @@ export async function handlePersonalizationRefresh(job, { assertLease }) {
 }
 
 // Compare and release under one lock so an action racing completion is never lost.
-export async function completePersonalizationRefresh(job, leaseOwner) {
+export async function completePersonalizationRefresh(job, leaseOwner, result = {}) {
   return sequelize.transaction(
     sequelize.getDialect() === 'sqlite' ? { type: db.Sequelize.Transaction.TYPES.IMMEDIATE } : {}, async transaction => {
     const current = await ProcessingJob.findOne({ where: {
@@ -103,12 +113,20 @@ export async function completePersonalizationRefresh(job, leaseOwner) {
     }, transaction, lock: transaction.LOCK.UPDATE });
     if (!current) return null;
     const status = current.payload.requestId === job.payload.requestId ? 'succeeded' : 'pending';
+    const completedAt = new Date();
     await current.update({
       status, leaseOwner: null, leaseUntil: null,
+      payload: { ...current.payload, lastCompletedRefresh: {
+        requestedAt: job.payload.latestRequestedAt ?? null,
+        startedAt: job.startedAt ?? null, completedAt: completedAt.toISOString(),
+        candidatesRescored: result.candidatesRescored ?? null,
+        interestScoresChanged: result.interestScoresChanged ?? null,
+        skipReason: result.skipReason ?? null
+      } },
       lastErrorCode: null, lastErrorMessage: null,
       ...(status === 'pending'
         ? { attempts: 0, availableAt: new Date(Date.now() + (job.type === EXPLICIT_FEEDBACK_REFRESH_TYPE ? 0 : PERSONALIZATION_REFRESH_DELAY_MS)), startedAt: null, completedAt: null }
-        : { completedAt: new Date() })
+        : { completedAt })
     }, { transaction });
     return status;
     }

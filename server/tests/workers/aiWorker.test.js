@@ -46,7 +46,10 @@ describe('AI worker', () => {
       pollIntervalMs: 1000,
       concurrency: 1,
       shutdownTimeoutMs: 30_000,
-      reportIntervalMs: 60_000
+      reportIntervalMs: 60_000,
+      personalizationCheckIntervalMs: 3_600_000,
+      personalizationMaxAgeMs: 86_400_000,
+      personalizationBatchSize: 25
     });
   });
 
@@ -187,5 +190,51 @@ describe('AI worker', () => {
     await workerPromise;
 
     expect(dependencies.closeDatabase).toHaveBeenCalledOnce();
+  });
+
+  it('checks elapsed refreshes after crawl pauses and only once per configured interval', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-15T12:00:00Z'));
+    const scheduledAt = [];
+    let polls = 0;
+    const dependencies = dependenciesFor({
+      isCrawlPriorityLeaseActive: async () => {
+        polls++;
+        if (polls === 1) return true;
+        if (polls === 4) vi.setSystemTime(new Date(Date.now() + 3600000));
+        if (polls === 5) void worker.shutdown('schedule verified');
+        return false;
+      },
+      enqueueDuePersonalizationRefreshes: async ({ now }) => {
+        scheduledAt.push({ time: now.getTime(), poll: polls });
+        return { queuedUserIds: [] };
+      }
+    });
+    const worker = createAiWorker({ config: config({ personalizationCheckIntervalMs: 3600000 }),
+      loadDependencies: async () => dependencies, logger: { error: vi.fn(), log: vi.fn() }, registerProcessHandlers: false });
+    try {
+      await worker.start();
+      expect(scheduledAt.map(value => value.poll)).toEqual([2, 4]);
+      expect(scheduledAt[1].time - scheduledAt[0].time).toBe(3600000);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('continues consuming jobs when the elapsed refresh check fails', async () => {
+    const completed = [];
+    const dependencies = dependenciesFor({
+      enqueueDuePersonalizationRefreshes: async () => { throw new Error('scheduler unavailable'); },
+      claimProcessingJobs: vi.fn().mockResolvedValueOnce([{ id: 'existing-job' }]),
+      executeProcessingJob: async job => {
+        completed.push(job.id); void worker.shutdown('consumed existing work'); return { status: 'succeeded' };
+      }
+    });
+    const errors = [];
+    const worker = createAiWorker({ config: config(), loadDependencies: async () => dependencies,
+      logger: { error: (...values) => errors.push(values), log: vi.fn() }, registerProcessHandlers: false });
+    await worker.start();
+    expect(completed).toEqual(['existing-job']);
+    expect(errors.some(([message]) => message.includes('Personalization scheduling failed'))).toBe(true);
   });
 });

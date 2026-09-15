@@ -39,7 +39,7 @@ describe('duplicate island name persistence', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
-  it('archives near duplicates and renames semantically distinct weaker islands', async () => {
+  it('renames both near duplicates and semantically distinct Islands without archival', async () => {
     const strongest = island({ id: 1, islandVector: [1, 0], weight: 0.8, populationAudit: [{ metrics: { relatedArticleCount: 2 } }] });
     const duplicate = island({ id: 2, islandVector: [0.999, 0.001] });
     const distinct = island({ id: 3, islandVector: [0, 1], populationAudit: [{ sourceArticles: { articles: [{ title: 'Quantum Cameras' }] } }] });
@@ -47,17 +47,16 @@ describe('duplicate island name persistence', () => {
 
     const result = await disambiguateDuplicateIslandNamesForUser(8, { transaction: 'tx' });
 
-    expect(duplicate.update).toHaveBeenCalledWith(expect.objectContaining({
-      archivedInd: true,
-      archivedAt: expect.any(Date)
-    }), { transaction: 'tx' });
+    expect(mocks.islandFindAll).toHaveBeenCalledWith({ where: { userId: 8, archivedInd: false }, order: [['id', 'ASC']], transaction: 'tx' });
+    expect(strongest.update).not.toHaveBeenCalled();
+    expect(duplicate.update).toHaveBeenCalledExactlyOnceWith({ label: 'Technology: Variant' }, { transaction: 'tx' });
     expect(distinct.update).toHaveBeenCalledWith({ label: 'Technology: Quantum Cameras' }, { transaction: 'tx' });
-    expect(result.archived).toEqual([2]);
+    expect(result.archived).toEqual([]);
     expect(result.renamed).toEqual([expect.objectContaining({
       islandId: 3,
       strongerIslandId: 1,
       to: 'Technology: Quantum Cameras'
-    })]);
+    }), expect.objectContaining({ islandId: 2, to: 'Technology: Variant' })]);
   });
 
   it('returns an empty summary without relationship queries when there are no active islands', async () => {

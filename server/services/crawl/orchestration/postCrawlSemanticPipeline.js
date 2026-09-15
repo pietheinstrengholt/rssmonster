@@ -160,7 +160,8 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
 
     if (Number(eventResult.articleCount || 0) > 0 || Number(scoringResult.updatedCount || 0) > 0) {
       console.log(
-        `[ISLANDS] interestScoresUpdated=${scoringResult.updatedCount || 0} ` +
+        `[ISLANDS] evaluated=${scoringResult.candidatesRescored || 0} ` +
+        `nonzeroInterest=${scoringResult.updatedCount || 0} changed=${scoringResult.interestScoresChanged || 0} ` +
         `fallbackScored=${scoringResult.fallbackScoredCount || 0} ` +
         `user=${userId} ` +
         `duration=${formatDuration(Date.now() - scoringStartedAt)}`

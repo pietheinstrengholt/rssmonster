@@ -90,7 +90,8 @@ export function sortArticles(articles, {
   sortDirection = 'desc',
   qualityFilter,
   freshnessFilter,
-  prioritizeHighTrust = false
+  prioritizeHighTrust = false,
+  onStage
 }) {
   // Apply quality score filter if present
   if (qualityFilter) {
@@ -111,6 +112,7 @@ export function sortArticles(articles, {
   }
 
   // Apply freshness score filter if present
+  onStage?.('quality_filter', articles);
   if (freshnessFilter) {
     const beforeFreshnessCount = articles.length;
     // Filters source values to the entries eligible while performing sort articles.
@@ -119,11 +121,13 @@ export function sortArticles(articles, {
   }
 
   // Unified sorting logic
+  onStage?.('freshness_filter', articles);
   if (sortRecommended) {
     articles = balanceRecommendedFeeds(sortByScore(
       articles,
       computeRecommended
     ));
+    onStage?.('recommended_scored', articles);
     // Maps source values into the result produced while performing sort articles.
     debugRecommendedScores(
       articles.map(article => ({

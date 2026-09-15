@@ -7,6 +7,7 @@ import {
 } from '../../src/workers/crawlWorkerHealth.js';
 import { readAiWorkerHealthState } from '../../src/workers/aiWorkerHealth.js';
 import { getModelValue as rowValue } from '../../utils/modelValue.js';
+import { loadPersonalizationStatus } from './personalizationStatus.js';
 
 const { ProcessingJob } = db;
 export const PROCESSING_JOB_STATUS_RECENT_FAILURE_LIMIT = 10;
@@ -112,7 +113,7 @@ const readWorkerHealth = async reader => {
 // Uses only the dedicated AI-worker heartbeat; the crawl worker never consumes jobs.
 export const readProcessingWorkerHealthState = options => readAiWorkerHealthState(options);
 
-// Returns bounded, user-owned queue status without loading job payloads.
+// Returns bounded, user-owned queue status without exposing job payloads.
 export const getProcessingJobStatus = async ({
   userId,
   now = new Date(),
@@ -130,7 +131,8 @@ export const getProcessingJobStatus = async ({
     latencyRows,
     recentFailureRows,
     workerHealth,
-    strandedCount
+    strandedCount,
+    personalization
   ] = await Promise.all([
     ProcessingJob.findAll({
       attributes: [
@@ -199,7 +201,8 @@ export const getProcessingJobStatus = async ({
       raw: true
     }),
     readWorkerHealth(workerHealthReader),
-    countStrandedArticleAnalyses({ userId: normalizedUserId })
+    countStrandedArticleAnalyses({ userId: normalizedUserId }),
+    loadPersonalizationStatus(normalizedUserId, now)
   ]);
 
   const typesByName = new Map();
@@ -272,6 +275,7 @@ export const getProcessingJobStatus = async ({
   const mostRecentFailureAt = recentFailureRows[0]?.completedAt || null;
 
   return {
+    personalization,
     health: {
       status: deriveProcessingJobHealthStatus({
         summary,

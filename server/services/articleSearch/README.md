@@ -1,5 +1,40 @@
 # Article Search
 
+## Recommendation diagnostics
+
+`GET /api/articles?sort=recommended&diagnostics=true&persistSettings=false`
+returns an additive `diagnostics` object. Use `status=briefing` to measure the
+Briefing view separately. This opt-in runs aggregate counts using snapshots of
+the actual query predicates; ordinary requests do not incur those count queries.
+Cursor pages and count-only arrival checks reject diagnostic mode with HTTP 400.
+
+`databaseStages` reports owned articles, canonical/source scope, score/text/date/tag
+filters, article-state/metadata filters, Briefing eligibility, Event-count filtering,
+Event grouping and snapshot/arrival scope. Each stage includes total articles,
+recorded interest evaluations, nonzero interest and exclusions from the preceding
+stage. Briefing metadata identifies whether its union, interest-only or developing-only
+policy applied; negative nonzero interest still qualifies under the existing contract.
+These measurements do not treat missing Event or Island evidence as ranking rejection.
+
+`runtimeStages` distinguishes a candidate execution ceiling, quality/freshness filters,
+finite Recommended calculation and final result limits. Runtime exclusions include at
+most 20 article IDs per stage. Recommended minimum/maximum/zero counts describe the
+ranked candidates, including neutral-interest candidates. SQL counts are observations
+rather than a transaction snapshot; concurrent writes can cause count differences.
+The funnel measures selected IDs, not actual browser impressions. With `includeFirstPage=true`,
+`delivery` distinguishes returned details, deferred pages and details that became unavailable.
+
+`GET /api/articles/:articleId?diagnostics=true` explains current interest evidence for
+one owned visible article, including zero reason, similarity threshold and pre-selection
+Island match count. `storedScore`, `scoredAt` and `matchesStoredScore` distinguish
+current recomputation from persisted scoring history; current reasons are not asserted
+to explain a stale stored value. This endpoint does not refresh the score.
+
+Article recommendation presentation includes `interestEvaluation` with `scoredAt`,
+`ageMs`, and `state` (`evaluated` or `untracked`). An evaluated zero is neutral,
+not untouched. Null means untouched since instrumentation or unknown legacy history;
+it must not be interpreted as proof that an older article was never evaluated.
+
 Article search turns a compact expression into an ordered list of article IDs. An
 expression can contain free text, structured filters, a date, a sort mode, and a
 result limit. These parts can be combined in one query and, in general, all active

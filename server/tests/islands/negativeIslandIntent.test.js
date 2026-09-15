@@ -45,10 +45,16 @@ describe('negative Island intent scope', () => {
     const support = titles.map((title, id) => source(title, { id }));
     const evidence = context(support);
     expect(evidence.islands[0].negativeIntent).toBe('unknown');
-    const result = evaluate(promotion, evidence);
+    // The direct Island path remains conservatively unknown. Mixed intent now
+    // also retains explicit Article paths, which may provide stronger evidence.
+    const result = evaluate(promotion, { ...evidence, fallbackEvidence: [] });
     expect(result.paths[0]).toMatchObject({ sourceIntent: 'unknown', intentCompatibility: 0.5, intentMatchType: 'missing-intent' });
     expect(result.paths[0].contribution).toBeCloseTo(-0.8 * evidence.islands[0].islandConfidence * 0.5);
-    expect(evaluate(promotion, context([...support].reverse()))).toEqual(result);
+    expect(evaluate(promotion, context([...support].reverse()))).toEqual(evaluate(promotion, evidence));
+    if (titles.includes(promotion) && titles.length > 1) {
+      expect(evaluate(promotion, evidence).paths[0]).toMatchObject({ matchType: 'behavioral-fallback',
+        sourceIntent: 'promotion', intentCompatibility: 1 });
+    }
   });
 
   it('requires unanimous recognizable negative support and uses the shared unknown-target factor', () => {

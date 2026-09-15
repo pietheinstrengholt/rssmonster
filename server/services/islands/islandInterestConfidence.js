@@ -9,9 +9,26 @@ import { DEFAULT_ARTICLE_AFFINITY_THRESHOLD, clamp } from './islandVectorUtils.j
 export const EVIDENCE_LIMIT = 500;
 export const EXPLICIT_EVIDENCE_LIMIT = 100;
 export const EXPLICIT_WINDOW_DAYS = 90;
+export const IMPLICIT_EVIDENCE_LIMIT = 100;
+export const IMPLICIT_WINDOW_DAYS = 7;
+const IMPLICIT_HALF_LIFE_DAYS = 3;
+const IMPLICIT_SIGNALS = [
+  { field: 'lastClickedAt', type: 'click', authority: 0.05 },
+  { field: 'lastMeaningfulReadAt', type: 'deep-read', authority: 0.10 }
+];
 const DAY_MS = 86400000;
 const similarity = (a, b, modelA, modelB) => embeddingSimilarity(a, b, modelA, modelB, { parseStrings: true, coerceNumbers: true });
 export const isBehavioralEvidence = a => Boolean(a.positiveInd || a.favoriteInd || a.negativeInd || a.clickedAmount > 0 || a.attentionBucket >= 3);
+
+const explicitSign = article => article.negativeInd ? -1 : article.positiveInd || article.favoriteInd ? 1 : 0;
+const implicitOnly = article => !explicitSign(article) && (article.clickedAmount > 0 || article.attentionBucket >= 3);
+// Implicit recency requires an observed interaction, never publication as a proxy.
+const implicitSignalAge = (source, field, now) => source[field] == null ? NaN : (now - new Date(source[field]).getTime()) / DAY_MS;
+const recentImplicitTimestamp = (source, now) => Math.max(...IMPLICIT_SIGNALS
+  .filter(({ field }) => activeSignal(source, field))
+  .map(({ field }) => implicitSignalAge(source, field, now))
+  .filter(age => Number.isFinite(age) && age >= 0 && age <= IMPLICIT_WINDOW_DAYS)
+  .map(age => now - age * DAY_MS));
 
 // Membership diagnostics are derived from independent canonical articles, never interaction counters.
 export function islandCohesion(members, vector, embeddingModel = null) {
@@ -56,7 +73,7 @@ const negativeSupportIntent = support => {
 };
 
 // This is a read-time support estimate, not a new Article/Island assignment or a persisted audit.
-export function prepareIslandEvidence(islands, evidence, explicitEvidence = evidence) {
+export function prepareIslandEvidence(islands, evidence, explicitEvidence = evidence, implicitEvidence = evidence) {
   const members = new Map(islands.map(i => [String(i.id), []]));
   for (const article of evidence) {
     const best = islands.map(island => ({ island, similarity: similarity(article.articleVector, island.islandVector, article.embedding_model, island.embedding_model) }))
@@ -68,16 +85,22 @@ export function prepareIslandEvidence(islands, evidence, explicitEvidence = evid
     const support = members.get(String(island.id));
     const diagnostics = islandCohesion(support, island.islandVector, island.embedding_model);
     const preferenceStrength = clamp(Number(island.weight || 0), -1, 1);
-    return { ...island, preferenceStrength,
+    // A single centroid/weight cannot represent conflicting signed or contextual
+    // explicit preferences. Keep their bounded Article-level paths available.
+    const explicitPreferenceGroups = new Set(support.filter(explicitSign)
+      .map(article => `${explicitSign(article)}:${behavioralIntent(article).type}`));
+    return { ...island, preferenceStrength, hasConflictingExplicitPreferences: explicitPreferenceGroups.size > 1,
       ...(preferenceStrength < 0 ? { negativeIntent: negativeSupportIntent(support) } : {}),
       islandConfidence: deriveIslandConfidence(diagnostics), diagnostics, seedArticleIds: support.map(a => a.id) };
   });
   const fallbackEvidence = explicitEvidence.filter(article => {
-    const sign = article.negativeInd ? -1 : article.positiveInd || article.favoriteInd ? 1 : 0;
-    return sign && !prepared.some(island => Math.sign(island.preferenceStrength) === sign
+    const sign = explicitSign(article);
+    return sign && !prepared.some(island => !island.hasConflictingExplicitPreferences && Math.sign(island.preferenceStrength) === sign
       && similarity(article.articleVector, island.islandVector, article.embedding_model, island.embedding_model) >= DEFAULT_ARTICLE_AFFINITY_THRESHOLD);
   });
-  return { islands: prepared, fallbackEvidence };
+  return { islands: prepared, fallbackEvidence,
+    implicitEvidence: [...new Map(implicitEvidence.filter(implicitOnly).map(article => [String(article.id), article])).values()],
+    suppressedExplicitEvidenceCount: explicitEvidence.filter(a => a.negativeInd || a.positiveInd || a.favoriteInd).length - fallbackEvidence.length };
 }
 
 // Apply interaction windows and stable interaction ordering before the existing evidence bounds.
@@ -89,16 +112,26 @@ export async function loadIslandEvidence(userId, { transaction, now = Date.now()
   const recent = field => db.Sequelize.where(behaviorTimestampExpression(db.sequelize, [field]), {
     [Op.gte]: new Date(now - EXPLICIT_WINDOW_DAYS * DAY_MS), [Op.lte]: new Date(now)
   });
-  const [islands, evidence, negative, positive] = await Promise.all([
+  const implicitQuery = (field, condition) => query({ positiveInd: 0, negativeInd: 0, favoriteInd: 0,
+    ...condition, [field]: { [Op.gte]: new Date(now - IMPLICIT_WINDOW_DAYS * DAY_MS), [Op.lte]: new Date(now) }
+  }, IMPLICIT_EVIDENCE_LIMIT, [field]);
+  const [islands, evidence, negative, positive, clicked, read] = await Promise.all([
     db.Island.findAll({ where: { userId, archivedInd: false }, attributes: ['id', 'label', 'generatedLabel', 'weight', 'islandVector', 'embedding_model'], order: [['id', 'ASC']], raw: true, transaction }),
     query({ [Op.or]: [{ positiveInd: 1 }, { favoriteInd: 1 }, { negativeInd: 1 }, { clickedAmount: { [Op.gt]: 0 } }, { attentionBucket: { [Op.gte]: 3 } }] }, EVIDENCE_LIMIT),
     query({ negativeInd: 1, [Op.and]: [recent('negativeFeedbackAt')] }, EXPLICIT_EVIDENCE_LIMIT, ['negativeFeedbackAt']),
     query({ negativeInd: 0, [Op.or]: [
       { positiveInd: 1, [Op.and]: [recent('positiveFeedbackAt')] },
       { favoriteInd: 1, [Op.and]: [recent('favoritedAt')] }
-    ] }, EXPLICIT_EVIDENCE_LIMIT, ['positiveFeedbackAt', 'favoritedAt'])
+    ] }, EXPLICIT_EVIDENCE_LIMIT, ['positiveFeedbackAt', 'favoritedAt']),
+    implicitQuery('lastClickedAt', { clickedAmount: { [Op.gt]: 0 } }),
+    implicitQuery('lastMeaningfulReadAt', { attentionBucket: { [Op.gte]: 3 } })
   ]);
-  return { ...prepareIslandEvidence(islands, evidence, [...negative, ...positive]), now };
+  // Two bounded reads preserve each signal's clock; deduplicate and apply one
+  // combined cap so an Article with both signals occupies only one slot.
+  const implicit = [...new Map([...clicked, ...read].map(article => [String(article.id), article])).values()]
+    .sort((a, b) => recentImplicitTimestamp(b, now) - recentImplicitTimestamp(a, now) || Number(a.id) - Number(b.id))
+    .slice(0, IMPLICIT_EVIDENCE_LIMIT);
+  return { ...prepareIslandEvidence(islands, evidence, [...negative, ...positive], implicit), now };
 }
 
 export function normalizedRelationship(sim, threshold) {
@@ -108,9 +141,19 @@ export function normalizedRelationship(sim, threshold) {
 // One path per Island; strongest positive and strongest negative survive without correlated summation.
 export function evaluateArticleInterest(article, context, threshold = 0.62) {
   const paths = [];
+  const implicitEvidence = context.implicitEvidence || [];
+  const diagnostics = { threshold, islandsConsidered: context.islands.length,
+    fallbackSourcesConsidered: context.fallbackEvidence.length,
+    implicitSourcesConsidered: implicitEvidence.length, qualifyingImplicitSignals: 0,
+    expiredOrUndatedImplicitSignals: 0,
+    suppressedExplicitEvidenceCount: context.suppressedExplicitEvidenceCount || 0,
+    compatibleComparisons: 0, qualifyingIslands: 0, qualifyingFallbackSignals: 0,
+    expiredOrUndatedFallbackSignals: 0 };
   for (const island of context.islands) {
     const sim = similarity(article.articleVector, island.islandVector, article.embedding_model, island.embedding_model);
     const direct = normalizedRelationship(sim, threshold);
+    if (Number.isFinite(sim)) diagnostics.compatibleComparisons++;
+    if (direct > 0) diagnostics.qualifyingIslands++;
     const base = { islandId: island.id, preferenceStrength: island.preferenceStrength, islandConfidence: island.islandConfidence,
       singleton: island.diagnostics.singleton, seedSelf: island.seedArticleIds.includes(article.id) };
     const candidates = [];
@@ -129,10 +172,15 @@ export function evaluateArticleInterest(article, context, threshold = 0.62) {
     for (const field of fields.filter(field => activeSignal(source, field))) {
       const timestamp = signalTimestamp(source, field);
       const age = timestamp == null ? NaN : (context.now - new Date(timestamp).getTime()) / DAY_MS;
-      if (!Number.isFinite(age) || age < 0 || age > EXPLICIT_WINDOW_DAYS) continue;
+      if (!Number.isFinite(age) || age < 0 || age > EXPLICIT_WINDOW_DAYS) {
+        diagnostics.expiredOrUndatedFallbackSignals++;
+        continue;
+      }
       const sim = similarity(article.articleVector, source.articleVector, article.embedding_model, source.embedding_model);
+      if (Number.isFinite(sim)) diagnostics.compatibleComparisons++;
       const relationshipConfidence = normalizedRelationship(sim, threshold);
       if (!relationshipConfidence) continue;
+      diagnostics.qualifyingFallbackSignals++;
       const recencyFactor = Math.pow(2, -age / 30);
       const sign = source.negativeInd ? -1 : 1;
       const intent = behavioralIntentCompatibility(source, article);
@@ -141,11 +189,40 @@ export function evaluateArticleInterest(article, context, threshold = 0.62) {
         contribution: sign * 0.25 * recencyFactor * relationshipConfidence * intent.intentCompatibility });
     }
   }
+  for (const source of implicitEvidence) {
+    if (!implicitOnly(source)) continue;
+    for (const { field, type, authority } of IMPLICIT_SIGNALS) {
+      if (!activeSignal(source, field)) continue;
+      const age = implicitSignalAge(source, field, context.now);
+      if (!Number.isFinite(age) || age < 0 || age > IMPLICIT_WINDOW_DAYS) {
+        diagnostics.expiredOrUndatedImplicitSignals++;
+        continue;
+      }
+      const sim = similarity(article.articleVector, source.articleVector, article.embedding_model, source.embedding_model);
+      if (Number.isFinite(sim)) diagnostics.compatibleComparisons++;
+      const relationshipConfidence = normalizedRelationship(sim, threshold);
+      if (!relationshipConfidence) continue;
+      diagnostics.qualifyingImplicitSignals++;
+      const recencyFactor = Math.pow(2, -age / IMPLICIT_HALF_LIFE_DAYS);
+      const intent = behavioralIntentCompatibility(source, article);
+      paths.push({ ...intent, matchType: 'implicit-behavior', sourceArticleId: source.id, implicitType: type,
+        semanticSimilarity: sim, relationshipConfidence, recencyFactor, seedSelf: source.id === article.id,
+        contribution: authority * recencyFactor * relationshipConfidence * intent.intentCompatibility });
+    }
+  }
   paths.sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution)
     || String(a.islandId ?? `e${a.sourceArticleId}`).localeCompare(String(b.islandId ?? `e${b.sourceArticleId}`)));
   const positive = paths.find(p => p.contribution > 0);
   const negative = paths.find(p => p.contribution < 0);
   const selectedPaths = [positive, negative].filter(Boolean);
-  return { score: Number(clamp((positive?.contribution || 0) + (negative?.contribution || 0), -1, 1).toFixed(4)),
-    seedSelf: isBehavioralEvidence(article), paths: selectedPaths };
+  const net = (positive?.contribution || 0) + (negative?.contribution || 0);
+  const score = Number(clamp(net, -1, 1).toFixed(4));
+  diagnostics.zeroReason = score !== 0 ? null
+    : selectedPaths.length ? (net === 0 ? 'signed_cancellation' : 'rounded_to_zero')
+    : diagnostics.qualifyingIslands + diagnostics.qualifyingFallbackSignals + diagnostics.qualifyingImplicitSignals > 0 ? 'zero_preference_or_confidence'
+    : diagnostics.compatibleComparisons > 0 ? 'below_similarity_threshold'
+    : !context.islands.length && !context.fallbackEvidence.length && !implicitEvidence.length ? 'no_eligible_evidence'
+    : (diagnostics.expiredOrUndatedFallbackSignals + diagnostics.expiredOrUndatedImplicitSignals) > 0 && !context.islands.length ? 'no_recent_fallback_signal'
+    : 'no_compatible_vector';
+  return { score, seedSelf: isBehavioralEvidence(article), paths: selectedPaths, diagnostics };
 }

@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../../models/index.js', () => ({
   default: {
-    User: { findAll: mocks.userFindAll, findByPk: vi.fn(async () => ({ id: 7 })) },
+    User: { findAll: mocks.userFindAll, findByPk: vi.fn(async () => ({ id: 7 })), update: vi.fn(async () => [1]) },
     Island: { findAll: mocks.islandFindAll, count: mocks.islandCount },
     IslandTaxonomy: { findAll: mocks.taxonomyFindAll },
     Sequelize: { QueryTypes: { SELECT: 'SELECT' } },

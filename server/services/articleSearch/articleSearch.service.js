@@ -5,6 +5,7 @@ import db from '../../models/index.js';
 const { Article, BriefingPreference, Setting } = db;
 import { Op } from 'sequelize';
 import { sortArticles } from './articleSort.service.js';
+import { createRecommendationFunnel } from './recommendationFunnel.js';
 import { resolveDateFilterToRange } from './articleDateParser.service.js';
 import { normalizeArticleSort, parseArticleQuery } from './articleQueryParser.service.js';
 import {
@@ -125,13 +126,17 @@ export const searchArticles = async ({
     minArticleIdExclusive = null, // Restrict an internal count to articles admitted after a snapshot
     pagination = null, // Opt-in keyset pagination descriptor for database-native sorts
     executionBounds = null, // Optional trusted ceilings for bounded internal consumers
-    briefingSort = 'recommended' // Internal ranking override while retaining briefing filters
+    briefingSort = 'recommended', // Internal ranking override while retaining briefing filters
+    includeDiagnostics = false
 }) => {
     // Rejects processing when user id is unavailable.
     if (!userId) {
         throw new Error("Missing userId");
     }
     const normalizedExecutionBounds = normalizeExecutionBounds(executionBounds);
+    if (includeDiagnostics && (pagination || countOnly)) {
+      throw new ArticleSearchCursorError('DIAGNOSTICS_SCOPE_UNSUPPORTED', 'Diagnostics require a non-cursor article list.', 400);
+    }
 
     /**
      * Smart folder optimization: skip settings fetch when score thresholds are explicit.
@@ -284,6 +289,13 @@ export const searchArticles = async ({
     const logicalSort = normalizeArticleSort(sortFilter !== null ? sortFilter : sort);
     // Derives the sort recommended required while performing search articles.
     const sortRecommended = logicalSort === 'recommended';
+    const funnel = includeDiagnostics ? createRecommendationFunnel({
+      view: status === 'briefing' ? 'briefing' : 'articles', sort: logicalSort,
+      briefing: { applied: briefingFilter !== null, included: briefingFilter,
+        minDistinctSources: briefingMinDistinctSources,
+        interestOnly: briefingShowOnlyInterestMatchedArticles, developingOnly: briefingShowOnlyDevelopingEventArticles },
+      grouping: effectiveGrouping
+    }) : null;
     // Derives the Top Stories runtime ranking requirement.
     const sortTopStories = logicalSort === 'topStories';
     // Derives the sort quality required while performing search articles.
@@ -309,7 +321,7 @@ export const searchArticles = async ({
       debugLog(`\x1b[31mFound ${taggedArticleIds.length} articles with tag "${workingTag}" for user ${userId}\x1b[0m`);
 
       // Snapshot consumers need the normal response even before a tag has its first match.
-      if (taggedArticleIds.length === 0 && !includeSnapshot && !pagination) {
+      if (taggedArticleIds.length === 0 && !includeSnapshot && !pagination && !funnel) {
         // Builds the empty result assembled while performing search articles.
         const emptyResult = {
           query: {
@@ -335,6 +347,8 @@ export const searchArticles = async ({
      */
     const feedIds = resolvedFeedIds
       ?? await fetchFeedIds({ userId, categoryId, feedId });
+    funnel?.captureQuery('owned_articles', { userId });
+    funnel?.captureQuery('canonical_source_scope', { userId, feedId: feedIds, ...canonicalArticleWhere() });
 
     /**
      * Build base WHERE clause for article query.
@@ -373,6 +387,7 @@ export const searchArticles = async ({
       baseWhere.id = taggedArticleIds;
     }
 
+    funnel?.captureQuery('score_text_date_tag_filters', baseWhere);
     // Builds the article search query while performing search articles.
     const articleQuery = buildArticleSearchQuery({
       baseWhere,
@@ -404,7 +419,8 @@ export const searchArticles = async ({
       eventCountFilter,
       firstSeenAgeFilter,
       authorFilter,
-      languageFilter
+      languageFilter,
+      onEligibilityStage: funnel?.captureQuery
     });
 
     debugLog(`\x1b[36mQuery attributes: ${articleQuery.attributes.join(", ")} (smartFolder: ${smartFolderSearch})\x1b[0m`);
@@ -612,12 +628,14 @@ export const searchArticles = async ({
       : filterArrivalsAfterLimit && !runtimeOrderingRequired && !runtimeFiltersRequired
         ? resultLimit || 500
         : null;
+    funnel?.captureQuery('snapshot_and_arrival_scope', articleQuery.where);
 
     // Fetch articles based on the prepared query and optional internal execution ceiling.
     let articles = await executeSearch({
       ...articleQuery,
       ...(executionLimit ? { limit: executionLimit } : {})
     });
+    funnel?.captureArticles('candidate_execution_limit', articles);
 
     debugLog(`\x1b[33mFetched ${articles.length} articles from database (before in-memory filters)\x1b[0m`);
 
@@ -638,7 +656,8 @@ export const searchArticles = async ({
         sortDirection: logicalSort,
         qualityFilter,
         freshnessFilter,
-        prioritizeHighTrust
+        prioritizeHighTrust,
+        onStage: funnel?.captureArticles
       });
     } else {
       debugLog(`\x1b[33mSkipping sort for smart folder search\x1b[0m`);
@@ -664,6 +683,10 @@ export const searchArticles = async ({
     }
 
     debugLog(`\x1b[31mFound ${itemIds.length} articles matching query for user ${userId}\x1b[0m`);
+    if (funnel) {
+      const selected = new Set(itemIds.map(String));
+      funnel.captureArticles('result_limit', articles.filter(article => selected.has(String(article.id))));
+    }
 
     // Returns early when count only is available.
     if (countOnly) {
@@ -716,6 +739,7 @@ export const searchArticles = async ({
         query: queryMetadata,
         itemIds,
         sourceCount,
+        ...(funnel ? { diagnostics: await funnel.finish() } : {}),
         ...(snapshotMaxArticleId !== null ? { snapshot: { snapshotMaxArticleId } } : {})
     };
 };

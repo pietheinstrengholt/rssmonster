@@ -30,6 +30,7 @@ export function interestPathMetrics(rows) {
     'Positive-interest articles': rows.filter(r => r.interestScore > 0).length,
     'Direct Island matches': has('vector-fallback'),
     'Behavioral fallback matches': has('behavioral-fallback'),
+    'Recent implicit matches': has('implicit-behavior'),
     'Singleton-derived matches': matched.filter(r => r.interestDiagnostics?.paths.some(p => p.singleton)).length,
     'Seed/self matches': matched.filter(r => r.interestDiagnostics?.seedSelf).length,
     'Held-out positive matches': held.filter(r => r.interestScore > 0).length,

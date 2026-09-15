@@ -253,6 +253,7 @@ const resolveEventIsland = ({ articleId, interests, islandMap }) => {
 const buildSummaryRecommendationArticle = (event, representativeArticle) => ({
   freshness: representativeArticle.freshness,
   interestScore: representativeArticle.interestScore,
+  interestScoredAt: representativeArticle.interestScoredAt,
   qualityScore: representativeArticle.qualityScore,
   sentimentScore: representativeArticle.sentimentScore,
   advertisementScore: representativeArticle.advertisementScore,
@@ -440,6 +441,7 @@ export async function getDailyBriefing({
           'favoriteInd', 'clickedAmount', 'attentionBucket', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd',
           'publishedAt',
           'interestScore',
+          'interestScoredAt',
           'advertisementScore',
           'sentimentScore',
           'qualityScore'

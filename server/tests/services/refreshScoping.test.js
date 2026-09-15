@@ -128,7 +128,9 @@ describe('conservative refresh scoping and replay', () => {
     const writes = vi.spyOn(db.Article, 'update');
     const result = await scoring.scoreArticlesFromIslandsForUser(graph.user.id);
     expect(result).toMatchObject({ candidatesRescored: 2, interestScoresChanged: 0 });
-    expect(writes).not.toHaveBeenCalled();
+    // Successful unchanged evaluations refresh their diagnostic clock, not the score.
+    for (const [values] of writes.mock.calls) expect(values).not.toHaveProperty('interestScore');
+    expect(writes).toHaveBeenCalledWith({ interestScoredAt: expect.any(Date) }, expect.objectContaining({ silent: true }));
     expect(await scores(graph)).toEqual(expected);
   });
 });

@@ -119,6 +119,8 @@ describe('runPostCrawlSemanticPipeline', () => {
     });
     mocked.scoreArticlesFromIslandsForUser.mockResolvedValue({
       updatedCount: 5,
+      candidatesRescored: 10,
+      interestScoresChanged: 2,
       fallbackScoredCount: 1
     });
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -159,7 +161,7 @@ describe('runPostCrawlSemanticPipeline', () => {
       '[EVENTS] processed=3 assigned=2 standalone=1 newEvents=1 ' +
         'existingEvents=1 touched=2 user=42 duration=1.3s',
       expect.stringMatching(
-        /^\[ISLANDS\] interestScoresUpdated=5 fallbackScored=1 user=42 duration=\d+(?:ms|\.\d+s)$/
+        /^\[ISLANDS\] evaluated=10 nonzeroInterest=5 changed=2 fallbackScored=1 user=42 duration=\d+(?:ms|\.\d+s)$/
       )
     ]);
   });

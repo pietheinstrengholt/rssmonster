@@ -47,6 +47,18 @@ export const getAiWorkerConfig = (environment = process.env) => ({
     environment.PROCESSING_JOB_REPORT_INTERVAL_MS,
     DEFAULT_REPORT_INTERVAL_MS,
     'PROCESSING_JOB_REPORT_INTERVAL_MS'
+  ),
+  personalizationCheckIntervalMs: positiveInteger(
+    environment.PERSONALIZATION_REFRESH_CHECK_INTERVAL_MS, 3_600_000,
+    'PERSONALIZATION_REFRESH_CHECK_INTERVAL_MS'
+  ),
+  personalizationMaxAgeMs: positiveInteger(
+    environment.PERSONALIZATION_REFRESH_INTERVAL_MS, 86_400_000,
+    'PERSONALIZATION_REFRESH_INTERVAL_MS'
+  ),
+  personalizationBatchSize: positiveInteger(
+    environment.PERSONALIZATION_REFRESH_BATCH_SIZE, 25,
+    'PERSONALIZATION_REFRESH_BATCH_SIZE'
   )
 });
 
@@ -56,13 +68,15 @@ const loadAiWorkerDependencies = async () => {
     processingQueue,
     processingHandlers,
     processingObservability,
-    crawlPriority
+    crawlPriority,
+    personalizationScheduler
   ] = await Promise.all([
     import('../../models/index.js'),
     import('../../services/jobs/processingJobQueue.js'),
     import('../../services/jobs/processingJobHandlers.js'),
     import('../../services/jobs/processingJobObservability.js'),
-    import('../../services/jobs/crawlPriorityLease.js')
+    import('../../services/jobs/crawlPriorityLease.js'),
+    import('../../services/jobs/personalizationRefreshScheduler.js')
   ]);
 
   try {
@@ -79,6 +93,7 @@ const loadAiWorkerDependencies = async () => {
     closeDatabase: () => db.sequelize.close(),
     databaseDialect: db.sequelize.getDialect(),
     executeProcessingJob: processingHandlers.executeClaimedProcessingJob,
+    enqueueDuePersonalizationRefreshes: personalizationScheduler.enqueueDuePersonalizationRefreshes,
     formatProcessingJobLogLine: processingHandlers.formatProcessingJobLogLine,
     isCrawlPriorityLeaseActive: crawlPriority.isCrawlPriorityLeaseActive,
     loadProcessingJobOperationalSnapshot:
@@ -103,6 +118,7 @@ export const createAiWorker = ({
   let requestedExitCode = 0;
   let lastReportAt = 0;
   let lastLeaseRecoveryAt = 0;
+  let lastPersonalizationCheckAt = null;
   let effectiveConcurrency = config.concurrency;
   let healthReportPromise = Promise.resolve();
   const inFlightJobs = new Set();
@@ -253,6 +269,24 @@ export const createAiWorker = ({
     }
   };
 
+  const schedulePersonalization = async () => {
+    if (!dependencies.enqueueDuePersonalizationRefreshes) return;
+    const now = Date.now();
+    const checkIntervalMs = config.personalizationCheckIntervalMs ?? 3_600_000;
+    if (lastPersonalizationCheckAt != null && now - lastPersonalizationCheckAt < checkIntervalMs) return;
+    lastPersonalizationCheckAt = now;
+    try {
+      const result = await dependencies.enqueueDuePersonalizationRefreshes({
+        now: new Date(now), checkIntervalMs,
+        maxAgeMs: config.personalizationMaxAgeMs,
+        limit: config.personalizationBatchSize
+      });
+      if (result.queuedUserIds.length) logger.log('[AiWorker] personalization_refresh.scheduled', JSON.stringify(result));
+    } catch (error) {
+      logger.error('[AiWorker] Personalization scheduling failed:', error);
+    }
+  };
+
   const settleJobs = async () => {
     if (inFlightJobs.size === 0) return;
     const settled = Promise.allSettled([...inFlightJobs]);
@@ -300,6 +334,7 @@ export const createAiWorker = ({
           }
           await recoverExpiredLeases();
           await reportOperations();
+          await schedulePersonalization();
           health.status = 'running';
           health.lastAttemptAt = new Date().toISOString();
           await reportHealth();

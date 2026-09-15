@@ -142,7 +142,9 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     const articleIds = (profile.articles || [])
       .map(article => Number(article.articleId))
       .filter(Number.isFinite);
-    const lifecycle = summarizeIslandLifecycle(articleIds.map(id => evidenceById.get(String(id))).filter(Boolean), profile.vector, profile.embedding_model);
+    const preserveVector = options.preserveMatchedVectors && bestMatch && bestSimilarity >= DEFAULT_ISLAND_MATCH_THRESHOLD;
+    const lifecycle = summarizeIslandLifecycle(articleIds.map(id => evidenceById.get(String(id))).filter(Boolean),
+      preserveVector ? bestMatch.islandVector : profile.vector, profile.embedding_model);
     // Builds the population audit entry while performing persist interest island profiles.
     const auditEntry = await buildPopulationAuditEntry({
       userId,
@@ -158,8 +160,9 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       const updatedIsland = await bestMatch.update({
         label: resolvedLabel,
         weight: profile.weight,
-        islandVector: blendIslandVector(bestMatch.islandVector, profile.vector),
-        embedding_model: blendedEmbeddingModel(bestMatch, profile),
+        // Elapsed time is not new vector evidence; scheduled repeats must not drift centroids.
+        islandVector: preserveVector ? bestMatch.islandVector : blendIslandVector(bestMatch.islandVector, profile.vector),
+        embedding_model: preserveVector ? bestMatch.embedding_model : blendedEmbeddingModel(bestMatch, profile),
         // Profiles are complete snapshots, not interaction deltas. Replays must not add evidence.
         positiveSignals: normalizePositiveSignals(profile.positiveSignals),
         populationAudit: appendPopulationAudit(bestMatch.populationAudit, auditEntry),

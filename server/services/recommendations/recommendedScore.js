@@ -127,6 +127,11 @@ export function buildRecommendationPresentation(article, { interestIsland = null
 
   return {
     score: serializeRecommendationValue(breakdown.recommended),
+    interestEvaluation: {
+      state: article?.interestScoredAt ? 'evaluated' : 'untracked',
+      scoredAt: article?.interestScoredAt ?? null,
+      ageMs: article?.interestScoredAt ? Math.max(0, Date.now() - new Date(article.interestScoredAt).getTime()) : null
+    },
     reasons
   };
 }

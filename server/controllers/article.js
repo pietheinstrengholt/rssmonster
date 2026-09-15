@@ -14,6 +14,7 @@ import { resolvePredictedAffinity } from '../services/recommendations/predictedA
 import { getArticleRecommendations as getArticleRecommendationsService } from '../services/recommendations/articleRecommendations.js';
 import { buildRecommendationPresentation } from '../services/recommendations/recommendedScore.js';
 import { loadInterestIslandAttributions } from '../services/recommendations/recommendationAttribution.js';
+import { explainArticleInterests } from '../services/score/scoreArticlesFromIslands.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { retryDatabaseWrite } from '../utils/databaseRetry.js';
 
@@ -133,6 +134,7 @@ const loadArticleDetails = async (userId, articlesArray) => {
       'sentimentScore',
       'qualityScore',
       'interestScore',
+      'interestScoredAt',
       'attentionBucket',
       'publishedAt',
       'firstSeen',
@@ -321,6 +323,7 @@ export const getArticles = async (req, res) => {
       unreadOnly: newerThanArticleId !== null,
       includeSnapshot: newerThanArticleId === null,
       minArticleIdExclusive: newerThanArticleId,
+      includeDiagnostics: req.query.diagnostics === 'true',
       pagination
     });
 
@@ -339,6 +342,11 @@ export const getArticles = async (req, res) => {
       const pageSize = req.query.viewMode === 'minimal' ? 50 : 20;
       const firstPageIds = result.itemIds.slice(0, pageSize);
       result.firstPage = await loadArticleDetails(userId, firstPageIds);
+      if (result.diagnostics) result.diagnostics.delivery = {
+        selectedIds: result.itemIds.length, detailsReturned: result.firstPage.length,
+        deferredToLaterPages: result.itemIds.length - firstPageIds.length,
+        detailsUnavailable: firstPageIds.length - result.firstPage.length
+      };
     }
 
     res.status(200).json(result);
@@ -457,6 +465,14 @@ const getArticle = async (req, res, _next) => {
       return res.status(404).json({ error: "Article not found" });
     }
 
+    if (req.query.diagnostics === 'true') {
+      const { results } = await explainArticleInterests(userId, [article]);
+      const current = results.get(String(article.id));
+      article.setDataValue('interestDiagnostics', { ...current,
+        storedScore: Number(article.interestScore), scoredAt: article.interestScoredAt,
+        matchesStoredScore: Math.abs(current.score - Number(article.interestScore)) <= 0.00015,
+        evidenceAsOf: new Date().toISOString() });
+    }
     res.status(200).json({ article: article });
   } catch (err) {
     console.error("Error in getArticle:", err);

@@ -195,7 +195,7 @@ export const executeClaimedProcessingJob = async (job, {
     });
     await renewLease();
     const refreshStatus = isPersonalizationRefreshType(rowValue(job, 'type'))
-      ? await completePersonalizationRefresh(job, leaseOwner) : null;
+      ? await completePersonalizationRefresh(job, leaseOwner, result) : null;
     const completed = isPersonalizationRefreshType(rowValue(job, 'type'))
       ? Boolean(refreshStatus) : await completeProcessingJob(identity);
     const status = refreshStatus || 'succeeded';

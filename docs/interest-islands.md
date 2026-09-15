@@ -164,8 +164,7 @@ changed or multiplied again during scoring.
 - **Stale:** no meaningful interaction within `ISLAND_ARCHIVE_STALE_DAYS`
   (default 45). Staleness alone does not archive a strong preference.
 - **Archived:** stale and below `ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD` (default
-  `.12`) at calibration, or displaced by the active-capacity policy (duplicate
-  archival also remains separate). Matched and unmatched Islands are evaluated;
+  `.12`) at calibration, or displaced by the active-capacity policy. Matched and unmatched Islands are evaluated;
   the original archive timestamp survives repeated calibration.
 - **Reactivated:** an archived Island wins normal profile matching and has
   lifecycle confidence at least `.12` plus a newer meaningful interaction,
@@ -182,17 +181,34 @@ support scan. Duplicate-name archival remains a separate existing rule.
 Lifecycle updates occur in the existing calibration transaction and replay
 checkpoint. A scoring retry reuses the committed lifecycle decision; it neither
 rewrites interaction clocks nor resets archival. A new behavior request causes
-the existing refresh flow to recalibrate. No new scheduler or deletion task is added.
+the existing refresh flow to recalibrate.
+
+The existing AI worker also checks for aging personalization hourly and requests
+a full refresh when its last successful calibration and unread rescore is at
+least 24 hours old. This lets preferences fade even when you take no new actions.
+Scheduled refreshes preserve matched Island centroids and behavioral timestamps;
+new behavior still permits normal vector adaptation. Refreshes can be delayed by
+crawls, queued work, or an unavailable worker.
+
+Configure `PERSONALIZATION_REFRESH_INTERVAL_MS` (default `86400000`),
+`PERSONALIZATION_REFRESH_CHECK_INTERVAL_MS` (`3600000`), and
+`PERSONALIZATION_REFRESH_BATCH_SIZE` (`25`) in the worker environment. Each check
+queues a bounded batch of due users and spreads it across the check interval.
+The per-user `personalizationRefreshedAt` clock survives job-history cleanup and
+advances only after a full refresh succeeds. Failed jobs retain normal retry and
+operator-recovery behavior.
 
 ## Island Names
 
 RSSMonster first tries to label an Island using the nearest active semantic
 taxonomy name. When no taxonomy label is available, it uses the strongest source article title.
 
-Names are also disambiguated. Semantically near-identical Islands with the same
-normalized name can be archived as duplicates. Distinct Islands that happen to
-receive the same broad name are given a distinguishing phrase or suffix rather
-than being merged solely because their labels match.
+Names are disambiguated with source-article phrases or unique suffixes. This is
+presentational: even identical vectors with the same normalized name remain
+separate active evidence, preserving positive and negative preferences. Audit count
+and absolute weight select who retains the base name, not semantic availability.
+Name cleanup does not archive, merge, or reactivate Islands. Normal lifecycle and
+active-capacity policies still apply.
 
 ## Population Audit
 
@@ -328,7 +344,7 @@ Most installations should use the defaults. The main controls are:
 | `ISLAND_ARTICLE_SCORE_THRESHOLD` | `0.62` | Direct scoring requires similarity strictly above this threshold; confidence is normalized above it. |
 | `ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD` | `0.12` | Minimum decayed lifecycle confidence for stale support to remain active or new support to reactivate an archive. |
 | `ISLAND_ARCHIVE_STALE_DAYS` | `45` | Age of the latest meaningful supporting interaction before weak support is eligible for archival. |
-| `ISLAND_DUPLICATE_NAME_SIMILARITY_THRESHOLD` | `0.92` | Similarity at which same-name Islands are treated as duplicates. |
+| `ISLAND_DUPLICATE_NAME_SIMILARITY_THRESHOLD` | `0.92` | Legacy near-duplicate diagnostic helper threshold; does not control archival or renaming. |
 | `ISLAND_AUDIT_MAX_RUNS` | `30` | Maximum retained population-audit entries. |
 | `ISLAND_AUDIT_MAX_ARTICLE_IDS` | `300` | Maximum stored article IDs per audit entry. |
 
@@ -438,3 +454,18 @@ selection across every possible community. Persistence separately reconciles
 those candidates with retained active history and enforces the actual cap.
 Internal `maxIslands` options may lower both bounds but cannot exceed the configured
 maximum. No second environment option is needed for this conservative policy.
+
+
+## Recent implicit recommendation evidence
+
+Recent outbound clicks and deep reads can contribute without an Island slot. The
+shared interest evaluator considers at most 100 implicit-only source Articles from
+the last seven days, using observed interaction clocks. Contributions have a
+three-day half-life and maximum authority .05 for clicks or .10 for deep reads,
+then apply the existing similarity and intent compatibility factors. Explicit
+feedback excludes the Article from this weaker route. Repeated actions do not stack.
+
+Current Island support containing multiple explicit sign/intent groups leaves
+bounded explicit Article paths available, preserving contextual likes and dislikes
+alongside the averaged Island. This is a read-time evidence change; durable Island
+formation remains similarity-based. See the [exact bounds and formulas](../server/services/islands/README.md#recent-implicit-evidence).
