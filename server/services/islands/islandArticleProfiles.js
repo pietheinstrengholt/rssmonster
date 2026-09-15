@@ -10,6 +10,7 @@ import {
   resolveIslandCapacity,
   ISLAND_DEBUG,
   SIGNAL_WEIGHTS,
+  MAX_ARTICLE_CLICKS,
   SIGNAL_HALF_LIFE_DAYS,
   addPositiveSignals,
   articleMagnitude,
@@ -30,8 +31,8 @@ export function computeArticleSignals(article) {
   const positives = article.positiveInd === 1 && article.negativeInd !== 1 ? 1 : 0;
   // Selects the stars based on whether article favorite status is 1.
   const stars = article.favoriteInd === 1 ? 1 : 0;
-  // Derives the clicks through min while computing article signals.
-  const clicks = Math.min(article.clickedAmount || 0, 3);
+  // Cap scored click evidence without changing the stored click counter.
+  const clicks = Math.min(article.clickedAmount || 0, MAX_ARTICLE_CLICKS);
   // Selects the deep reads based on whether article reaches 3.
   const deepReads = (article.attentionBucket || 0) >= 3 ? 1 : 0;
   // Selects the negative based on whether article negative status is 1.
@@ -104,8 +105,9 @@ export function buildArticleIslandWeight(articleProfiles) {
 
   // Derives the average score required while building article island weight.
   const averageScore = articleProfiles.reduce((sum, article) => sum + article.score, 0) / articleProfiles.length;
-  // Derives the denominator through max while building article island weight.
-  const denominator = Math.max(1, SIGNAL_WEIGHTS.star + SIGNAL_WEIGHTS.deepRead + SIGNAL_WEIGHTS.click);
+  // A favorite, deep read and capped clicks retain the existing seven-point scale,
+  // so reducing click evidence does not amplify unchanged signals.
+  const denominator = Math.max(1, SIGNAL_WEIGHTS.star + SIGNAL_WEIGHTS.deepRead + MAX_ARTICLE_CLICKS * SIGNAL_WEIGHTS.click);
   // Derives the breadth bonus required while building article island weight.
   const breadthBonus = Math.sign(averageScore) * Math.min(0.2, articleProfiles.length * 0.03);
 

@@ -49,11 +49,14 @@ export const ISLAND_DEBUG = ['1', 'true', 'yes'].includes(
   String(process.env.ISLAND_DEBUG || process.env.EVENT_DEBUG || '').toLowerCase()
 );
 
+// Click quantity contributes at most two points before recency decay.
+export const MAX_ARTICLE_CLICKS = 2;
+
 // Defines the signal weights enforced by this service.
 export const SIGNAL_WEIGHTS = {
   positive: 8,
   star: 4,
-  click: 2,
+  click: 1,
   deepRead: 1,
   negative: 8,
 };

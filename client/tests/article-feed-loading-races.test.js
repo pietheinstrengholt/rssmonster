@@ -84,6 +84,31 @@ beforeEach(() => {
 });
 
 describe('ArticleFeed loading races', () => {
+  it.each([1, 2, 3, 5])('preserves balanced Recommended order across pages of %i and a failed retry', async pageSize => {
+    const ids = [1, 2, 7, 3, 4, 8, 5, 6];
+    fetchArticleIds.mockResolvedValueOnce({ data: { itemIds: ids } });
+    fetchArticleDetails.mockImplementation(async requested => ({
+      data: [...requested].reverse().map(id => ({ id, feedId: id <= 6 ? 1 : id }))
+    }));
+    const context = createLoadingContext({ currentSelection: { status: 'unread', sort: 'recommended' } });
+    context.fetchCount = pageSize;
+    await ArticleFeed.methods.fetchArticleIds.call(context, context.selectionStore.currentSelection);
+    expect(context.usesCursorPagination).toBe(false);
+    const distance = context.distance;
+    fetchArticleDetails.mockRejectedValueOnce(new Error('temporary failure'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    await context.getContent();
+    expect(context.distance).toBe(distance);
+    const failedIds = fetchArticleDetails.mock.calls.at(-1)[0];
+    await context.getContent();
+    expect(fetchArticleDetails.mock.calls.at(-1)[0]).toEqual(failedIds);
+    for (let page = 0; context.hasMore && page < ids.length; page++) await context.getContent();
+    expect(context.hasMore).toBe(false);
+    expect(context.articles.map(article => article.id)).toEqual(ids);
+    expect(context.container).toEqual(ids);
+    expect(new Set(context.container).size).toBe(ids.length);
+  });
+
   it.each(['desc', 'recommended'])('shows an initial %s load failure and recovers through retry', async sort => {
     const request = sort === 'desc' ? fetchArticlePage : fetchArticleIds;
     request.mockRejectedValueOnce(new Error('HTTP 500'));

@@ -45,6 +45,38 @@ const sortByScore = (articles, scorer) =>
     })
     .map(({ article }) => article);
 
+// Balance the complete ranked ID collection before it is sliced into pages.
+// Pending deferred entries belong to one feed at a time; each entry is
+// visited at most twice, preserving per-feed order without repeated full-list scans.
+export function balanceRecommendedFeeds(articles) {
+  const feeds = articles.map(article => String(article.get?.('feedId') ?? article.feedId ?? ''));
+  if (feeds.includes('') || new Set(feeds).size < 2) return articles;
+
+  const result = [];
+  const deferred = [];
+  let deferredIndex = 0;
+  let nextIndex = 0;
+  let lastFeed = null;
+  let consecutive = 0;
+  while (nextIndex < articles.length || deferredIndex < deferred.length) {
+    let index;
+    if (deferredIndex < deferred.length
+      && (feeds[deferred[deferredIndex]] !== lastFeed || consecutive < 2)) {
+      index = deferred[deferredIndex++];
+    } else {
+      while (nextIndex < articles.length && consecutive >= 2 && feeds[nextIndex] === lastFeed) {
+        deferred.push(nextIndex++);
+      }
+      // If no other feed remains, drain the deferred tail normally.
+      index = nextIndex < articles.length ? nextIndex++ : deferred[deferredIndex++];
+    }
+    consecutive = feeds[index] === lastFeed ? consecutive + 1 : 1;
+    lastFeed = feeds[index];
+    result.push(articles[index]);
+  }
+  return result;
+}
+
 // Adds the optional Unread feed-trust boost to a normalized base sort score.
 const boostedSortScore = (article, baseScore, prioritizeHighTrust) => (
   Number(baseScore || 0) + (prioritizeHighTrust ? computeFeedTrust(article) : 0)
@@ -88,10 +120,10 @@ export function sortArticles(articles, {
 
   // Unified sorting logic
   if (sortRecommended) {
-    articles = sortByScore(
+    articles = balanceRecommendedFeeds(sortByScore(
       articles,
       computeRecommended
-    );
+    ));
     // Maps source values into the result produced while performing sort articles.
     debugRecommendedScores(
       articles.map(article => ({

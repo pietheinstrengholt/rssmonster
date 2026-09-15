@@ -29,6 +29,24 @@ describe('articleSearch recommended include wiring', () => {
     vi.restoreAllMocks();
   });
 
+  it.each([
+    { sort: 'recommended', search: 'limit:3' },
+    { search: 'sort:recommended limit:3', smartFolderSearch: true }
+  ])('balances Recommended sources before limiting the ID collection: %j', async selection => {
+    Feed.findAll.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    Article.findAll.mockResolvedValue(Array.from({ length: 5 }, (_, index) => ({
+      id: index + 1,
+      feedId: index === 4 ? 2 : 1,
+      interestScore: 1 - index / 10,
+      freshness: 0.5
+    })));
+
+    const result = await searchArticles({ userId: 1, status: '%', ...selection });
+
+    expect(result.itemIds).toEqual([1, 2, 5]);
+    expect(Article.findAll.mock.calls[0][0].attributes).toContain('feedId');
+  });
+
   it('includes event association when sorting by recommended', async () => {
     await searchArticles({ userId: 1, sort: 'recommended', status: '%' });
 

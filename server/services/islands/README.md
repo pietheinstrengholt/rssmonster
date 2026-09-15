@@ -43,6 +43,10 @@ force unrelated evidence into an Island. Generated labels are presentation only.
 All sources and candidates belong to the same user. Changes to formation or
 scoring require the frozen before/after workflow in the semantic test README.
 
+Click reduction retains the existing seven-point Island normalization scale, so
+unchanged favorites and other signals are not amplified. Stored click counts and
+interaction timestamps are retained; only the scored contribution is capped.
+
 ## Formation and replay safety
 
 Community capacity never authorizes a below-threshold membership. Behavioral
@@ -198,7 +202,7 @@ should measure these limits.
 ## Preference strength, relationship storage, and diagnostics
 
 Article profile formation uses +8 for more-like-this (`positiveInd`), +4 for favorites,
-+2 per outbound click (at most three), +1 for attention bucket ≥3, and −8 for
++1 per outbound click (at most two; +2 total), +1 for attention bucket ≥3, and −8 for
 not-interested (`negativeInd`). Feedback endpoints atomically set the chosen flag
 and clear the opposite flag, so the last write wins even for concurrent requests.
 For legacy rows with both explicit flags set, negative feedback suppresses the
@@ -271,7 +275,7 @@ their clocks. Read/unread toggles do not invent deep-read evidence. Existing
 firstSeen/attention-bucket and Event read-cascade semantics are retained, but the
 deep-read timestamp belongs only to the article actually viewed.
 
-Formation retains +8 positive, +4 favorite, +2 per click (capped at three), +1 deep
+Formation retains +8 positive, +4 favorite, +1 per click (capped at two; +2 total), +1 deep
 read, and −8 negative weights. Each term, including negative feedback, uses its
 own timestamp and `2^(-max(0, ageDays) / halfLifeDays)`, with no permanent floor.
 `SIGNAL_HALF_LIFE_DAYS` maps interaction fields to positive finite environment

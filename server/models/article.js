@@ -94,11 +94,31 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
+      /**
+       * Reading evidence contract (distinct from read/unread state):
+       * - firstSeen: first actual exposure; preserve the existing value.
+       * - attentionBucket: estimate from eligible time with readable article content.
+       * - lastMeaningfulReadAt: latest qualifying deep-reading observation.
+       * - lastClickedAt: existing click actions, not opening content internally.
+       * - readAt: automatic or explicit read-state transitions, not proof of reading.
+       * - favoritedAt: favorite actions only.
+       *
+       * First/last observation timestamps and accumulated duration belong to the
+       * current frontend reading session. There is no persisted generic "last
+       * observed" field; never repurpose a behavioral timestamp for that purpose.
+       *
+       * This defines the intended capture contract, not a guarantee about legacy
+       * data. The frontend enforces visibility/idle eligibility; the seen endpoint
+       * separates observation recording from explicit read-state changes.
+       */
       // Latest signal times; null retains unknown interaction time for legacy state.
+      // Updated by existing click actions; an internal list/Reader opening is not an outbound click.
       lastClickedAt: { type: DataTypes.DATE, allowNull: true },
+      // Updated only by favorite actions; clearing the favorite clears its active signal clock.
       favoritedAt: { type: DataTypes.DATE, allowNull: true },
       positiveFeedbackAt: { type: DataTypes.DATE, allowNull: true },
       negativeFeedbackAt: { type: DataTypes.DATE, allowNull: true },
+      // Updated by a qualifying deep-reading observation (bucket >= 3), never read-state changes alone.
       lastMeaningfulReadAt: { type: DataTypes.DATE, allowNull: true },
       // Marks whether the user has saved the article as a favorite.
       favoriteInd: {
@@ -348,13 +368,16 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
-      // Attention bucket (0–4)
-      // 0 = not read / passed
+      // Attention estimate from eligible time with readable article content (0–4).
+      // Eligibility requires a visible document, active content in the reading viewport,
+      // and an unexpired inactivity grace period; stationary reading can qualify.
+      // 0 = no sufficient recorded attention; exposure may be unknown, not necessarily skipped
       // 1 = skimmed
       // 2 = read
       // 3 = deep read
       // 4 = highly engaged
-      // Classifies engagement from zero for passed through four for highly engaged.
+      // These are estimates, not proof of completion or dislike. Read-state changes add no attention.
+      // The current writer only increases the bucket; this does not repair older inflated values.
       attentionBucket: {
         type: DataTypes.TINYINT,
         allowNull: false,
@@ -372,7 +395,7 @@ export default (sequelize) => {
            * - clickedAmount (outbound engagement)
            *
            * Bucket semantics:
-           * 0 = passed
+           * 0 = no sufficient recorded attention (not an inferred skip or dislike)
            * 1 = skimmed
            * 2 = read
            * 3 = deep read
@@ -389,7 +412,7 @@ export default (sequelize) => {
             case 2: base = 0.5;  break;
             case 3: base = 0.75; break;
             case 4: base = 1.0;  break;
-            default: return 0.0; // bucket 0 → no attention
+            default: return 0.0; // bucket 0 → no recorded attention contribution
           }
 
           // Logarithmic reinforcement (bounded, non-dominant)
@@ -497,15 +520,15 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: false
       },
-      // Timestamp when the article was first seen on the screen (used for freshness tracking and UI purposes)
-      // Records when the article was first displayed to the user; null until first presentation.
+      // First actual exposure on screen; preserve once set, including after marking unread.
+      // Legacy mark-read calls can also populate this field, so existing values do not prove exposure.
       firstSeen: {
         type: DataTypes.DATE,
         allowNull: true,
         defaultValue: null
       },
-      // Timestamp when the article was explicitly marked as read.
-      // Records when the article was explicitly marked read; null while unread or when no read time is known.
+      // Records automatic or explicit transitions to read, including bulk/grouped read actions.
+      // Null while unread or when no read time is known; never evidence of attended duration.
       readAt: {
         type: DataTypes.DATE,
         allowNull: true,

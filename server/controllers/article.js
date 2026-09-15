@@ -1,3 +1,4 @@
+import htmlToVisibleText from '../services/crawl/content/htmlToVisibleText.js';
 import { updateArticleBehavior } from '../services/articles/updateArticleBehavior.js';
 import db from '../models/index.js';
 const { Article, BriefingPreference, Feed, Tag, Event } = db;
@@ -1134,16 +1135,14 @@ const updateArticleStatus = async (userId, articleId, status) => {
   }
 };
 
-// Compute attention bucket based on visible seconds and content length
-const attentionBucketFromSeconds = (visibleSeconds, contentHtml) => {
-  if (!visibleSeconds || visibleSeconds <= 0) {
-    return 0; // not read
+// Capture contract: visibleSeconds should contain eligible readable-content time,
+// not headline exposure, hidden-tab time or time inferred from a read-state action.
+// The frontend caps eligible intervals at its inactivity deadline and excludes hidden time.
+// Compute the attention estimate from the submitted seconds and content length.
+const attentionBucketFromSeconds = (visibleSeconds, wordCount) => {
+  if (!visibleSeconds || visibleSeconds <= 0 || wordCount <= 0) {
+    return 0; // no sufficient recorded attention; exposure may be unknown
   }
-
-  // Word count from stripped content
-  const wordCount = contentHtml
-    ? contentHtml.trim().split(/\s+/).length
-    : 0;
 
   // Expected reading time (seconds)
   // 200 wpm average, clamped
@@ -1168,6 +1167,22 @@ const articleMarkAsSeen = async (req, res, _next) => {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
     const selectedStatus = req.body?.selectedStatus || "read";
+    const visibleSeconds = Number(req.body?.visibleSeconds ?? 0);
+    const readingWordCount = req.body?.readingWordCount;
+    for (const key of ['markRead', 'recordObservation']) {
+      if (req.body?.[key] !== undefined && typeof req.body[key] !== 'boolean') {
+        return res.status(400).json({ error: `${key} must be a boolean` });
+      }
+    }
+    if (!Number.isFinite(visibleSeconds) || visibleSeconds < 0
+      || (readingWordCount !== undefined && (!Number.isInteger(readingWordCount)
+        || readingWordCount < 0 || readingWordCount > 1000000))) {
+      return res.status(400).json({ error: 'Invalid reading measurement' });
+    }
+    // Explicit flags separate evidence from state. Retain legacy selectedStatus callers,
+    // but a legacy zero-second mark-read is also a state-only action.
+    const markRead = req.body?.markRead ?? selectedStatus === 'unread';
+    const recordObservation = req.body?.recordObservation ?? (!markRead || visibleSeconds > 0);
 
     // Validate userId
     if (!userId) {
@@ -1200,20 +1215,20 @@ const articleMarkAsSeen = async (req, res, _next) => {
       return res.status(404).json({ error: 'Error: article not found' });
     }
 
-    // Extract visibleSeconds from request (optional)
-    const visibleSeconds = Number(req.body?.visibleSeconds) || 0;
-
-    // Compute attention bucket
-    const attentionBucket = attentionBucketFromSeconds(
-      visibleSeconds,
-      article.contentHtml
-    );
+    // Modern clients count normalized rendered text, including previews and summaries.
+    // Older clients use the canonical body text or the existing HTML-to-text normalizer.
+    const normalizedText = recordObservation && visibleSeconds > 0 && readingWordCount === undefined
+      ? String(article.contentText || htmlToVisibleText(article.contentHtml || article.content || article.descriptionHtml || '') || article.description || '').trim()
+      : '';
+    const wordCount = readingWordCount ?? (normalizedText ? normalizedText.split(/\s+/u).length : 0);
+    const attentionBucket = recordObservation ? attentionBucketFromSeconds(visibleSeconds, wordCount) : 0;
 
     // Start with empty payload
     const payload = {};
 
-    // Preserve the first observation while allowing later, stronger attention evidence.
-    if (!article.firstSeen) {
+    // Preserve firstSeen while allowing later, stronger attention evidence.
+    // Explicit read actions and Event siblings do not acquire exposure evidence.
+    if (recordObservation && !article.firstSeen) {
       payload.firstSeen = new Date();
     }
     if (attentionBucket > article.attentionBucket) {
@@ -1229,7 +1244,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
     // Mark article as read only when it was unread before.
     let shouldMarkRead = false;
     const readArticles = [];
-    if (selectedStatus === 'unread') {
+    if (markRead) {
       payload.status = 'read';
       payload.readAt = new Date();
       shouldMarkRead = true;
@@ -1256,7 +1271,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
     // - unread → read transition
     // - AND article actually has an event loaded
     if (
-      selectedStatus === 'unread' &&
+      markRead &&
       updatedArticle.eventId &&
       response.event &&
       Number.isInteger(response.event.articleCount)

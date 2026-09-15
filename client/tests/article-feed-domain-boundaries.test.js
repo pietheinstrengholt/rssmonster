@@ -114,7 +114,7 @@ describe('ArticleFeed cluster insertion', () => {
 });
 
 describe('ArticleFeed visibility tracking', () => {
-  it('accumulates visible intervals before marking a passed article seen', async () => {
+  it('does not infer reading time from article intersections alone', async () => {
     const now = vi.spyOn(performance, 'now');
     now.mockReturnValueOnce(1000).mockReturnValueOnce(2500);
     const context = {
@@ -149,9 +149,9 @@ describe('ArticleFeed visibility tracking', () => {
     }]);
     await Promise.resolve();
 
-    expect(context.visibleDuration.get(7)).toBe(1500);
+    expect(context.visibleDuration.has(7)).toBe(false);
     expect(context.pool).toEqual(new Set([7]));
-    expect(context.markArticleSeen).toHaveBeenCalledWith(7, 2);
+    expect(context.markArticleSeen).toHaveBeenCalledWith(7, 0, expect.objectContaining({ markAsReadOnScroll: true }));
   });
 
   it('marks articles passed above the inset full-view scroll container', () => {

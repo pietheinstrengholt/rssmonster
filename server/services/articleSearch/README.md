@@ -476,6 +476,18 @@ Quality, corroboration, and rule-match contributions. Top Stories deliberately
 ignores personal interest and ranks event importance alongside freshness and
 Quality. Both are product-level judgments rather than synonyms for recency.
 
+In combined-feed Recommended results, a soft ordering rule allows two consecutive
+articles from a feed, then selects the highest-ranked remaining article from a
+different feed. Each feed retains its internal ranking. If no alternative remains,
+the list continues normally. Scores, eligibility, single-feed results and other
+sort modes are unchanged; this balances sources, not topics.
+
+The rule runs over the complete ranked collection before result limits and page
+slicing. The existing ordered ID list carries the feed streak across pagination
+boundaries; detail requests preserve that order, and failed requests retry the same
+IDs. Refreshing rebuilds the collection. Articles deleted during pagination retain
+the existing missing-detail handling.
+
 When a ranking model depends on event or source context, search must treat that context as part of the ranking concept. Missing context should reduce confidence or score rather than make an otherwise eligible article invalid, unless the query explicitly requires that context.
 
 Tie-breaking should be deterministic so users do not see avoidable result jitter.

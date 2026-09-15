@@ -25,12 +25,18 @@ describe('interaction-based Island recency', () => {
       .toBeGreaterThan(computeArticleSignals(source({ publishedAt: today, favoriteInd: 1, favoritedAt: old })).positiveScore);
   });
 
+  it('halves the capped two-point click contribution after one click half-life', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+    const lastClickedAt = new Date(now - SIGNAL_HALF_LIFE_DAYS.lastClickedAt * 86400000);
+    expect(computeArticleSignals(source({ clickedAmount: 20, lastClickedAt })).positiveScore).toBeCloseTo(1);
+  });
+
   it('decays each positive signal independently, preserving all weights and the click cap', () => {
     vi.spyOn(Date, 'now').mockReturnValue(now);
     const article = source({ positiveInd: 1, positiveFeedbackAt: old, favoriteInd: 1, favoritedAt: today,
       clickedAmount: 8, lastClickedAt: old, attentionBucket: 3, lastMeaningfulReadAt: today });
     expect(computeArticleSignals(article).positiveScore).toBeCloseTo(8 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.positiveFeedbackAt)
-      + 4 + 6 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.lastClickedAt) + 1);
+      + 4 + 2 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.lastClickedAt) + 1);
     expect(computeArticleSignals({ ...article, favoritedAt: old }).positiveScore).toBeLessThan(computeArticleSignals(article).positiveScore);
   });
 

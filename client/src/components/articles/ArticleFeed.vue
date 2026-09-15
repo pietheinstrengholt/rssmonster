@@ -4,7 +4,7 @@
     :smart-folders="overviewStore.smartFolders"
     @selectSmartFolder="selectSmartFolderFromOverview"
   />
-  <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @select-recommendation="openReaderRecommendation" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
+  <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @reading-article-changing="handleReadingArticleChange" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @select-recommendation="openReaderRecommendation" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
   </ArticleReaderLayout>
   <ArticleListView v-else ref="articleLayout" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
   </ArticleListView>
@@ -251,12 +251,26 @@ export default {
       immediate: true
     },
     // Returns representation changes to the beginning without reloading the same article IDs.
+    activeMinimalArticleId: {
+      flush: 'sync',
+      handler() { this.handleReadingArticleChange(); }
+    },
     articlePresentationSelectionKey() {
+      this.finishReadingSession();
+      // A different presentation has a different text length. Save the old summary
+      // before starting measurements against the new displayed content.
+      this.visibleDuration.clear();
+      this.readingWordCounts.clear();
+      this.persistedVisibleDuration = new Map();
       this.showSmartFoldersOverview = false;
-      this.$nextTick(() => this.scrollArticleListToTop());
+      this.$nextTick(() => {
+        this.scrollArticleListToTop();
+        if (this.readingTrackingStarted) this.handleReadingActivity();
+      });
     },
     // Reconnects observers after the rendered article layout changes.
     isReaderLayoutActive() {
+      this.finishReadingSession();
       this.reconnectLayoutObservers();
     }
   },
@@ -269,7 +283,12 @@ export default {
     this.setupObservers();
   },
 
-  // Removes scroll handling and disconnects observers before unmounting.
+  // Finalize while the old layout and article context still exist.
+  beforeUnmount() {
+    this.teardownObservers();
+  },
+
+  // Removes scroll handling after unmounting.
   unmounted() {
     this.activeNewerArticlesRequestId += 1;
     this.overviewStore.setCurrentSelectionNewArticleCount(0);
@@ -284,7 +303,6 @@ export default {
       this.scrollResetTimeoutId = null;
     }
     this.connectScrollContainer(null);
-    this.teardownObservers();
   },
 
   methods: {
@@ -344,6 +362,21 @@ export default {
           this.scrollResetFrameId = null;
           resetScrollSurfaces();
         });
+      });
+    },
+
+    getSelectedReadingArticleId() {
+      return this.isReaderLayoutActive
+        ? this.$refs.articleLayout?.getSelectedReadingArticleId?.() ?? null
+        : this.selectionStore.currentSelection.viewMode === 'minimal' ? this.activeMinimalArticleId : null;
+    },
+
+    handleReadingArticleChange() {
+      this.finishReadingSession();
+      this.$nextTick(() => {
+        if (!this.readingTrackingStarted) return;
+        this.observeArticles();
+        this.handleReadingActivity();
       });
     },
 

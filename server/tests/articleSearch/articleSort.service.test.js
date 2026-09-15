@@ -18,9 +18,75 @@ vi.mock('../../services/articleSearch/articleDebug.service.js', () => ({
   debugRecommendedScores: mocked.debugRecommendedScores
 }));
 
-import { sortArticles } from '../../services/articleSearch/articleSort.service.js';
+import { sortArticles, balanceRecommendedFeeds } from '../../services/articleSearch/articleSort.service.js';
 
 describe('articleSort.service', () => {
+  it('interleaves the highest-ranked alternative after two articles without changing scores or feed order', () => {
+    mocked.computeRecommended.mockImplementation(article => article.rank);
+    const articles = Array.from({ length: 8 }, (_, i) => ({ id: i + 1, feedId: i < 6 ? 1 : i - 4, rank: 1 - i / 10 }));
+    const original = structuredClone(articles);
+    const result = sortArticles(articles, { sortRecommended: true });
+    expect(result.map(article => article.id)).toEqual([1, 2, 7, 3, 4, 8, 5, 6]);
+    expect(result.filter(article => article.feedId === 1).map(article => article.id)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(articles).toEqual(original);
+    expect(result.every(article => articles.includes(article))).toBe(true);
+  });
+
+  it('leaves a single-feed or missing-source list unchanged', () => {
+    for (const feedId of [1, undefined]) {
+      const articles = Array.from({ length: 6 }, (_, id) => ({ id, feedId }));
+      expect(balanceRecommendedFeeds(articles)).toBe(articles);
+    }
+    expect(balanceRecommendedFeeds([])).toEqual([]);
+  });
+
+  it('matches the greedy rule for every short three-feed sequence', () => {
+    for (let seed = 0; seed < 2187; seed++) {
+      let value = seed;
+      const input = Array.from({ length: 7 }, (_, id) => {
+        const feedId = value % 3;
+        value = Math.floor(value / 3);
+        return { id, feedId };
+      });
+      const remaining = [...input];
+      const expected = [];
+      while (remaining.length) {
+        const previous = expected.at(-1)?.feedId;
+        const blocked = expected.length >= 2 && expected.at(-2).feedId === previous;
+        const alternate = blocked ? remaining.findIndex(article => article.feedId !== previous) : 0;
+        expected.push(remaining.splice(Math.max(0, alternate), 1)[0]);
+      }
+      expect(balanceRecommendedFeeds(input)).toEqual(expected);
+    }
+  });
+
+  it('handles a long dominant-feed tail after alternatives are exhausted', () => {
+    const articles = Array.from({ length: 10000 }, (_, id) => ({ id, feedId: id === 9999 ? 2 : 1 }));
+    const result = balanceRecommendedFeeds(articles);
+    expect(result.slice(0, 4).map(article => article.id)).toEqual([0, 1, 9999, 2]);
+    expect(result).toHaveLength(10000);
+    expect(new Set(result.map(article => article.id)).size).toBe(10000);
+  });
+
+  it('does not use a filtered-out article as a source separator', () => {
+    mocked.computeRecommended.mockImplementation(article => article.id);
+    const result = sortArticles([
+      { id: 4, feedId: 1, freshness: 1 },
+      { id: 3, feedId: 1, freshness: 1 },
+      { id: 2, feedId: 1, freshness: 1 },
+      { id: 1, feedId: 2, freshness: 0 }
+    ], { sortRecommended: true, freshnessFilter: { operator: '>', value: 0 } });
+    expect(result.map(article => article.id)).toEqual([4, 3, 2]);
+  });
+
+  it.each([{}, { sortTopStories: true }, { sortQuality: true }])('does not balance other sorting modes: %j', options => {
+    mocked.computeTopStories.mockImplementation(article => article.id);
+    const articles = [4, 3, 2, 1].map(id => ({
+      id, feedId: id === 1 ? 2 : 1, qualityScore: id * 20
+    }));
+    expect(sortArticles(articles, options).map(article => article.id)).toEqual([4, 3, 2, 1]);
+  });
+
   // Resets ranking collaborators and suppresses filter diagnostics between scenarios.
   beforeEach(() => {
     mocked.computeRecommended.mockReset();

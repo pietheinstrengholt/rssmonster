@@ -189,11 +189,51 @@ types receive a safe open/download link when they expose a valid web URL.
 
 Article exposure is tracked so the application can assist with read status without requiring constant manual input.
 
-When an article first becomes visible, its visible interval begins. Multiple visible intervals can be accumulated until the article's first completed viewing interaction is saved. Once persisted:
+`feed/visibilityTracking.js` accumulates monotonic (`performance.now()`) reading time
+for one active article while the document is visible and readable content overlaps
+the actual reading viewport, clipped by enclosing scroll containers. Headline-only
+rows and content placeholders do not qualify. Reader uses its selected article;
+Expanded uses the article nearest the upper-middle reading line, with a small
+stability margin when scrolling between cards, including gaps: another article must
+be more than 24px closer before replacing the current visible article.
 
-- The first-seen value is retained and must not be replaced by later appearances.
-- The captured visible duration is retained and must not be rewritten by later appearances.
-- The article is treated as read when the viewing interaction completes.
+Minimal headlines record exposure through the existing seen endpoint with zero seconds
+and no read-state change. Opening Minimal content starts timing only when that content
+enters the viewport. Existing firstSeen values are preserved. Exposure is deduplicated
+locally per collection; hidden documents do not generate exposure writes.
+
+Attention is saved when the active article changes, including already-read articles
+and when automatic mark-read-on-scroll is disabled. Read-state settings and the
+passed-article pool do not gate attention tracking. Outbound links retain their existing
+click recording; no external reading duration is inferred from those clicks.
+
+Stationary reading counts until the inactivity grace expires. Configure the grace
+with `VITE_READING_IDLE_GRACE_SECONDS` (positive seconds; default 120). Scroll,
+keyboard, touch, wheel and pointer-down interactions renew it. Hidden time and time
+past the deadline are excluded, including when a timer callback arrives late.
+
+Intervals are finalized on hiding, article navigation, collection replacement,
+layout changes and unmount. Resuming starts a fresh interval. Duration stays local
+to the collection; attention-only summaries use the existing seen endpoint without
+requesting a read-state transition. Summaries have bounded retries, but delivery
+on page exit is best effort. Successful summaries are compared in rounded seconds;
+unchanged summaries are not resent. An ambiguous network failure may still duplicate
+an observation because the endpoint has no request identifier.
+
+The seen endpoint accepts independent `recordObservation` and `markRead` booleans.
+Exposure/attention requests set the former; explicit read actions set only the latter
+and send zero seconds. Previously accumulated eligible time remains available for its
+own summary. Event siblings receive read-state changes only, never exposure or attention.
+Legacy `selectedStatus` callers remain supported; a zero-second legacy mark-read is
+state-only.
+
+`readingWordCount` captures normalized rendered text for the reading presentation,
+including summaries, without transmitting the text itself. The server validates the
+count and retains its existing 200-wpm estimate, 15–300-second clamp and bucket thresholds.
+Older callers fall back to canonical text or the existing HTML-to-visible-text helper.
+Changing presentation saves the old duration/count before starting a new measurement,
+so full-body time is not evaluated against a shorter summary. Empty displayed text
+cannot qualify as a read.
 
 In continuous stream modes, completion occurs when a previously visible article has been passed above the viewport. Temporary disappearance below the viewport does not by itself mean the article was reviewed. Saving the seen state is retried a limited number of times when a transient failure occurs, and local read state is reconciled with the saved result.
 

@@ -81,16 +81,19 @@ export const articleFeedReadStateMethods = {
   },
 
   // Persists an article's seen status and updates local read state.
-  async markArticleSeen(articleId, visibleSeconds = 0) {
-    const selection = this.selectionStore.currentSelection;
-    const shouldMarkRead = ['unread', 'briefing'].includes(selection.status)
-      && this.selectionStore.effectiveMarkAsReadOnScroll === true;
+  async markArticleSeen(articleId, visibleSeconds = 0, options = {}) {
+    const selection = options.selection || this.selectionStore.currentSelection;
+    const shouldMarkRead = !options.attentionOnly && ['unread', 'briefing'].includes(selection.status)
+      && (options.markAsReadOnScroll ?? this.selectionStore.effectiveMarkAsReadOnScroll) === true;
 
     try {
       const response = await markArticleSeen(articleId, {
         grouping: selection.grouping,
         visibleSeconds,
-        selectedStatus: shouldMarkRead
+        recordObservation: options.recordObservation ?? true,
+        markRead: shouldMarkRead,
+        ...(options.readingWordCount !== undefined ? { readingWordCount: options.readingWordCount } : {}),
+        selectedStatus: options.attentionOnly ? 'read' : shouldMarkRead
           ? 'unread'
           : (selection.status === 'unread' ? 'read' : selection.status)
       });
@@ -165,6 +168,8 @@ export const articleFeedReadStateMethods = {
       const response = await markArticleSeen(articleId, {
         grouping: this.selectionStore.currentSelection.grouping,
         visibleSeconds: 0,
+        recordObservation: false,
+        markRead: true,
         selectedStatus: 'unread'
       });
 
@@ -204,6 +209,8 @@ export const articleFeedReadStateMethods = {
       const response = await markArticleSeen(id, {
         grouping: this.selectionStore.currentSelection.grouping,
         visibleSeconds: 0,
+        recordObservation: false,
+        markRead: true,
         selectedStatus: 'unread'
       });
 
@@ -249,6 +256,8 @@ export const articleFeedReadStateMethods = {
       const response = await markArticleSeen(id, {
         grouping: this.selectionStore.currentSelection.grouping,
         visibleSeconds: 0,
+        recordObservation: false,
+        markRead: true,
         selectedStatus: 'unread'
       });
 

@@ -114,6 +114,78 @@ describe('Article interaction clocks across APIs', () => {
 });
 
 describe('observed Article attention evidence', () => {
+  it('counts normalized body words rather than adjacent HTML tags', async () => {
+    const { article, post } = await fixture();
+    await article.update({ contentHtml: '<p>word</p>'.repeat(200), contentText: null });
+    const response = await post('markasseen', { visibleSeconds: 30, recordObservation: true, markRead: false });
+    expect(response.status).toBe(200);
+    expect(response.body.attentionBucket).toBe(2);
+    expect(response.body.status).toBe('unread');
+  });
+
+  it('uses the measured displayed summary length instead of the full body length', async () => {
+    const { article, post } = await fixture();
+    await article.update({ contentText: 'word '.repeat(200) });
+    const response = await post('markasseen', { visibleSeconds: 15, readingWordCount: 10, recordObservation: true, markRead: false });
+    expect(response.status).toBe(200);
+    expect(response.body.attentionBucket).toBe(3);
+  });
+
+  it('separates exposure from state even when the selected view is unread', async () => {
+    const { article, post } = await fixture();
+    const response = await post('markasseen', { visibleSeconds: 0, recordObservation: true, markRead: false, selectedStatus: 'unread' });
+    expect(response.status).toBe(200);
+    await article.reload();
+    fresh(article.firstSeen);
+    expect(article.status).toBe('unread');
+    expect(article.readAt).toBeNull();
+    expect(article.attentionBucket).toBe(0);
+    expect(article.lastMeaningfulReadAt).toBeNull();
+  });
+
+  it('marks Event siblings read without creating exposure or attention for any state-only target', async () => {
+    const { user, article, post } = await fixture();
+    const event = await db.Event.create({ userId: user.id, name: 'State only', representativeArticleId: article.id });
+    await article.update({ eventId: event.id });
+    const sibling = await db.Article.create({ userId: user.id, feedId: article.feedId, title: 'Sibling', eventId: event.id });
+    const response = await post('markasseen', { visibleSeconds: 30, readingWordCount: 3, recordObservation: false, markRead: true, grouping: 'event' });
+    expect(response.status).toBe(200);
+    for (const row of [article, sibling]) {
+      await row.reload();
+      expect(row.status).toBe('read');
+      fresh(row.readAt);
+      expect(row.firstSeen).toBeNull();
+      expect(row.attentionBucket).toBe(0);
+      expect(row.lastMeaningfulReadAt).toBeNull();
+    }
+  });
+
+  it('keeps legitimate attention when a later explicit read action reports zero seconds', async () => {
+    const { article, post } = await fixture();
+    await article.update({ firstSeen: old, attentionBucket: 3, lastMeaningfulReadAt: old });
+    expect((await post('markasseen', { visibleSeconds: 0, recordObservation: false, markRead: true })).status).toBe(200);
+    await article.reload();
+    expect(article.firstSeen).toEqual(old);
+    expect(article.attentionBucket).toBe(3);
+    expect(article.lastMeaningfulReadAt).toEqual(old);
+    expect(article.status).toBe('read');
+  });
+
+  it('does not infer attention from empty displayed text', async () => {
+    const { article, post } = await fixture();
+    expect((await post('markasseen', { visibleSeconds: 30, readingWordCount: 0, recordObservation: true })).status).toBe(200);
+    await article.reload();
+    expect(article.attentionBucket).toBe(0);
+    expect(article.lastMeaningfulReadAt).toBeNull();
+  });
+
+  it.each([{ readingWordCount: -1 }, { readingWordCount: 1.5 }, { markRead: 'true' }, { recordObservation: 1 }, { visibleSeconds: -1 }])('rejects invalid measurement %j', async body => {
+    const { article, post } = await fixture();
+    expect((await post('markasseen', body)).status).toBe(400);
+    await article.reload();
+    expect(article.firstSeen).toBeNull();
+  });
+
   it('upgrades a skim to a deep read, preserves firstSeen, and queues fresh Island evidence', async () => {
     const { user, article, post } = await fixture();
     await article.update({ embedding_model: 'test-model', articleVector: [1, 0] });

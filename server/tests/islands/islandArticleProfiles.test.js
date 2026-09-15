@@ -11,6 +11,7 @@ vi.mock('../../models/index.js', async () => {
 
 import {
   buildInterestIslandProfilesForUser,
+  buildArticleIslandWeight,
   computeArticleSignals
 } from '../../services/islands/islandArticleProfiles.js';
 
@@ -31,6 +32,22 @@ describe('behavioral article island profiles', () => {
     expect(mocks.findAll.mock.calls[0][0].attributes).toContain('embedding_model');
   });
 
+  it.each([[0, 0], [1, 1], [2, 2], [3, 2], [20, 2]])('scores %i clicks as %i points before decay', (clickedAmount, expected) => {
+    const result = computeArticleSignals({ clickedAmount, lastClickedAt: new Date(Date.now() + 60000) });
+    expect(result.positiveScore).toBe(expected);
+    expect(result.positiveSignals.clicks).toBe(expected);
+  });
+
+  it('keeps unchanged favorite evidence on the existing Island normalization scale', () => {
+    expect(buildArticleIslandWeight([{ score: 4 }])).toBe(0.6014);
+  });
+
+  it('keeps a fresh favorite, capped clicks and deep read below a fresh dislike', () => {
+    const result = computeArticleSignals({ favoriteInd: 1, clickedAmount: 20, attentionBucket: 3,
+      negativeInd: 1, publishedAt: new Date(Date.now() + 60000) });
+    expect(result.positiveScore - result.negativeScore).toBe(-1);
+  });
+
   it('caps clicks and combines positive and deep-read signals', () => {
     const result = computeArticleSignals({
       positiveInd: 1,
@@ -42,10 +59,10 @@ describe('behavioral article island profiles', () => {
     });
 
     expect(result).toEqual({
-      positiveScore: 19,
+      positiveScore: 15,
       negativeScore: 0,
-      engagementScore: 19,
-      positiveSignals: { positives: 1, stars: 1, clicks: 3, deepReads: 1, negatives: 0 }
+      engagementScore: 15,
+      positiveSignals: { positives: 1, stars: 1, clicks: 2, deepReads: 1, negatives: 0 }
     });
   });
 
@@ -62,8 +79,8 @@ describe('behavioral article island profiles', () => {
   it('preserves independent engagement when resolving contradictory explicit feedback', () => {
     expect(computeArticleSignals({ positiveInd: 1, negativeInd: 1, favoriteInd: 1,
       clickedAmount: 8, attentionBucket: 3, publishedAt: new Date(Date.now() + 60_000) }))
-      .toEqual({ positiveScore: 11, negativeScore: 8, engagementScore: 11,
-        positiveSignals: { positives: 0, stars: 1, clicks: 3, deepReads: 1, negatives: 1 } });
+      .toEqual({ positiveScore: 7, negativeScore: 8, engagementScore: 7,
+        positiveSignals: { positives: 0, stars: 1, clicks: 2, deepReads: 1, negatives: 1 } });
   });
 
   it('leaves below-threshold evidence unassigned when the community cap is reached', async () => {

@@ -4,7 +4,7 @@ import {
   articleFeedReadStateMethods,
   createArticleFeedReadState
 } from '../src/components/articles/feed/readState.js';
-import { articleFeedVisibilityMethods } from '../src/components/articles/feed/visibilityTracking.js';
+import { articleFeedVisibilityMethods, createArticleFeedVisibilityState } from '../src/components/articles/feed/visibilityTracking.js';
 import {
   markArticlesAsRead,
   markArticleSeen,
@@ -85,6 +85,28 @@ afterEach(() => {
 });
 
 describe('article feed read-state reconciliation', () => {
+  it('keeps accumulated attention separate from a deliberate zero-second mark-read', async () => {
+    const context = createContext({ ...createArticleFeedVisibilityState(), ...articleFeedVisibilityMethods });
+    const clock = vi.spyOn(performance, 'now').mockReturnValue(20000);
+    context.visibleSince.set(1, 0);
+    context.readingWordCounts.set(1, 100);
+    markArticleSeen.mockResolvedValue({ data: { id: 1, status: 'read' } });
+    await context.toggleArticleReadStatus({ id: 1, status: 'unread' });
+    await context.finishReadingSession();
+    expect(markArticleSeen).toHaveBeenNthCalledWith(1, 1, expect.objectContaining({ visibleSeconds: 0, recordObservation: false, markRead: true }));
+    expect(markArticleSeen).toHaveBeenNthCalledWith(2, 1, expect.objectContaining({ visibleSeconds: 20, readingWordCount: 100, recordObservation: true, markRead: false }));
+    clock.mockRestore();
+  });
+
+  it('saves attention in the captured grouping without marking an unread article read', async () => {
+    const context = createContext();
+    markArticleSeen.mockResolvedValue({ data: { id: 1, status: 'unread', attentionBucket: 3 } });
+    await context.markArticleSeen(1, 120, { attentionOnly: true, selection: { grouping: 'none', status: 'unread' } });
+    expect(markArticleSeen).toHaveBeenCalledWith(1, { grouping: 'none', visibleSeconds: 120, selectedStatus: 'read', recordObservation: true, markRead: false });
+    expect(context.articles[0].status).toBe('unread');
+    expect(context.overviewStore.increaseReadCount).not.toHaveBeenCalled();
+  });
+
   // Verifies reader navigation pools only a previous unread article.
   it('marks a previous reader article once and ignores other modes or completed articles', () => {
     const context = createContext();
@@ -123,6 +145,8 @@ describe('article feed read-state reconciliation', () => {
     expect(markArticleSeen).toHaveBeenCalledWith(1, {
       grouping: 'event',
       visibleSeconds: 4,
+      recordObservation: true,
+      markRead: true,
       selectedStatus: 'unread'
     });
     expect(context.articles.map(article => article.status)).toEqual(['read', 'read', 'read']);
@@ -151,6 +175,8 @@ describe('article feed read-state reconciliation', () => {
     expect(markArticleSeen).toHaveBeenCalledWith(1, {
       grouping: 'none',
       visibleSeconds: 3,
+      recordObservation: true,
+      markRead: false,
       selectedStatus: 'read'
     });
     expect(context.articles[0].status).toBe('unread');
@@ -179,6 +205,8 @@ describe('article feed read-state reconciliation', () => {
     expect(markArticleSeen).toHaveBeenCalledWith(1, {
       grouping: 'none',
       visibleSeconds: 3,
+      recordObservation: true,
+      markRead: true,
       selectedStatus: 'unread'
     });
     expect(context.articles[0].status).toBe('read');
@@ -207,6 +235,8 @@ describe('article feed read-state reconciliation', () => {
     expect(markArticleSeen).toHaveBeenCalledWith(1, {
       grouping: 'none',
       visibleSeconds: 0,
+      recordObservation: false,
+      markRead: true,
       selectedStatus: 'unread'
     });
     expect(context.articles[0].status).toBe('read');
@@ -234,6 +264,8 @@ describe('article feed read-state reconciliation', () => {
     expect(markArticleSeen).toHaveBeenCalledWith(1, {
       grouping: 'event',
       visibleSeconds: 3,
+      recordObservation: true,
+      markRead: true,
       selectedStatus: 'unread'
     });
     expect(context.articles[0].status).toBe('read');
@@ -265,6 +297,8 @@ describe('article feed read-state reconciliation', () => {
     expect(markArticleSeen).toHaveBeenCalledWith(1, {
       grouping: 'event',
       visibleSeconds: 3,
+      recordObservation: true,
+      markRead: false,
       selectedStatus: 'briefing'
     });
     expect(context.articles[0].status).toBe('unread');
@@ -373,6 +407,8 @@ describe('article feed read-state reconciliation', () => {
     expect(markArticleSeen).toHaveBeenCalledWith(1, {
       grouping: 'event',
       visibleSeconds: 0,
+      recordObservation: false,
+      markRead: true,
       selectedStatus: 'unread'
     });
     expect(context.pool).toContain(1);

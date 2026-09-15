@@ -11,7 +11,7 @@ export const SEMANTIC_GRANULARITY = {
   recencyWindowDays: Number.parseInt(process.env.RECENCY_WINDOW_DAYS, 10) || 7,
 
   // Hard event-time window for event continuity; beyond this, articles form another event.
-  maxEventGapHours: Number.parseInt(process.env.EVENT_MAX_GAP_HOURS, 10) || 24,
+  maxEventGapHours: Number.parseInt(process.env.EVENT_MAX_GAP_HOURS, 10) || 48,
 
   // Time decay half-life used for event recency weighting.
   // Lower value makes older events lose match strength faster.

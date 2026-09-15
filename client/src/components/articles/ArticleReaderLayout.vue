@@ -296,6 +296,7 @@ export default {
     'duplicate-articles-loaded',
     'duplicate-articles-collapsed',
     'article-not-interested',
+    'reading-article-changing',
     'mark-previous-article-read',
     'shortcut-toggle-read',
     'shortcut-toggle-favorite',
@@ -552,8 +553,10 @@ export default {
     },
     selectedArticleId: {
       immediate: true,
+      flush: 'sync',
       // Refreshes recommendations independently whenever the Reader selection changes.
-      handler(articleId) {
+      handler(articleId, previousId) {
+        if (previousId != null) this.$emit('reading-article-changing');
         this.loadRecommendations(articleId);
       }
     },
@@ -563,6 +566,9 @@ export default {
     }
   },
   methods: {
+    getSelectedReadingArticleId() {
+      return this.selectedArticleId;
+    },
     // Returns the rendered Reader article root through component-owned article refs.
     getArticleElement(articleId) {
       if (String(this.selectedArticle?.id) === String(articleId)) {
