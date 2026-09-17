@@ -19,8 +19,8 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
 5. **Membership requires evidence of the same occurrence.**
    Semantic similarity alone must not override incompatible occurrence evidence.
 
-6. **Missing occurrence evidence is neutral.**
-   An omitted location, version, entity, or other occurrence attribute is neither agreement nor contradiction.
+6. **Event membership MUST use vector similarity together with supporting evidence and eligibility checks.**
+   Vector similarity is the primary matching signal. Headline and entity overlap and recognized occurrence details from Article titles and descriptions provide additional evidence; ownership, canonical eligibility, temporal boundaries, and embedding compatibility constrain assignment. Recognized conflicting locations or product versions may reject an otherwise strong vector match. Missing or unrecognized occurrence details MUST remain neutral: they establish neither agreement nor contradiction, and matching must rely on the available evidence.
 
 7. **The complete Event MUST satisfy its temporal boundary.**
    The span between the earliest and latest member Article times MUST be strictly less than the configured Event window. Use `publishedAt`, falling back to `createdAt` when publication time is unusable. Successive nearby Articles must not extend an Event indefinitely.
@@ -57,6 +57,17 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
 
 18. **Candidate evaluation MUST be bounded.**
     Insufficient evidence within the bounded candidate set is an acceptable outcome; forced clustering is not.
+
+19. **Event matching MAY use alternative evidence routes with configured thresholds.**
+    Satisfying any one route provides matching support; satisfying every route is not required.
+
+    | Matching route | Required evidence |
+    | --- | --- |
+    | Normal vector match | Vector similarity meets the normal threshold, together with sufficient headline-word overlap or shared entity hints. |
+    | Very strong vector match | Vector similarity meets the stronger threshold; shared headline words or entity hints are not required. |
+    | Almost identical headline | Headline-word overlap meets the near-identical threshold, together with vector similarity meeting the threshold for this route. |
+
+    Required vector and textual support MUST come from the same comparison against the Event representation or a supporting member Article. Every route remains subject to ownership, canonical eligibility, temporal boundaries, embedding compatibility, occurrence-conflict checks, and ambiguity handling. Meeting a route’s thresholds alone does not guarantee assignment.
 
 ## Interest Islands
 
