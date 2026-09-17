@@ -70,7 +70,7 @@ describe('independent compatible capability routing', () => {
       expect(client.options.apiKey).toBe(`${capability}-secret`);
     }
     const embedding = mocks.clients.find(client => client.options.apiKey === 'EMBEDDING-secret');
-    expect(embedding.embeddings.create).toHaveBeenCalledWith({ model: 'EMBEDDING-model', input: ['text'] });
+    expect(embedding.embeddings.create).toHaveBeenCalledWith({ model: 'EMBEDDING-model', input: ['text'], encoding_format: 'float' });
     expect(mocks.assistants[0].options).toEqual({ apiKey: 'ASSISTANT-secret', baseURL: 'http://assistant.example/v1', useResponses: false });
     expect(mocks.assistants[0].getModel).toHaveBeenCalledWith('ASSISTANT-model');
     expect(mocks.localGenerate).not.toHaveBeenCalled();

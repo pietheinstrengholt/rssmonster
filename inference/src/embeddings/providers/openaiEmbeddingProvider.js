@@ -30,7 +30,9 @@ export const createOpenAIEmbeddingProvider = ({
     await initialize();
     const response = await client.embeddings.create({
       model: config.modelId,
-      input: texts
+      input: texts,
+      // Compatible backends may return float arrays despite the SDK's base64 default.
+      encoding_format: 'float'
     });
     return response.data.map(item => item.embedding);
   };

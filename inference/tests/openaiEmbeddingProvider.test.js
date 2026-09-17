@@ -13,6 +13,47 @@ vi.mock('openai', () => ({
 }));
 
 describe('OpenAI embedding provider', () => {
+  it('preserves float arrays returned by compatible backends through the real SDK', async () => {
+    const { default: OpenAI } = await vi.importActual('openai');
+    const vector = Array.from({ length: 768 }, (_, index) => (index + 1) / 768);
+    const requests = [];
+    const client = new OpenAI({
+      apiKey: 'unused',
+      baseURL: 'http://lm-studio.test/v1',
+      fetch: async (_url, options) => {
+        const body = JSON.parse(options.body);
+        requests.push(body);
+        // LM Studio can return float arrays even when the SDK requests base64.
+        return new Response(JSON.stringify({
+          data: body.input.map((_, index) => ({ index, embedding: vector }))
+        }), { headers: { 'Content-Type': 'application/json' } });
+      }
+    });
+    const provider = createOpenAIEmbeddingProvider({
+      environment: {
+        EMBEDDING_PROVIDER: 'openai-compatible',
+        EMBEDDING_API_KEY: 'unused',
+        EMBEDDING_BASE_URL: 'http://lm-studio.test/v1',
+        EMBEDDING_MODEL: 'text-embedding-nomic-embed-text-v1.5',
+        EMBEDDING_DIMENSIONS: '768'
+      },
+      dependencies: { createClient: () => client, logger: { log: vi.fn() } }
+    });
+
+    await expect(provider.embed(['one'])).resolves.toEqual([vector]);
+    await expect(Promise.all([
+      provider.embed(['two', 'three']),
+      provider.embed(['four'])
+    ])).resolves.toEqual([[vector, vector], [vector]]);
+    expect(requests).toHaveLength(3);
+    for (const request of requests) {
+      expect(request).toMatchObject({
+        model: 'text-embedding-nomic-embed-text-v1.5',
+        encoding_format: 'float'
+      });
+    }
+  });
+
   it('preserves the existing model request and response behavior', async () => {
     const create = vi.fn(async () => ({
       data: [{ embedding: [0.1, 0.2] }, { embedding: [0.3, 0.4] }]
@@ -27,7 +68,8 @@ describe('OpenAI embedding provider', () => {
       .resolves.toEqual([[0.1, 0.2], [0.3, 0.4]]);
     expect(create).toHaveBeenCalledWith({
       model: 'text-embedding-3-small',
-      input: ['one', 'two']
+      input: ['one', 'two'],
+      encoding_format: 'float'
     });
     expect(createClient).toHaveBeenCalledOnce();
     await provider.initialize();
