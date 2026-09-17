@@ -11,7 +11,7 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
    Reading, favorites, clicks, feedback, and recommendation scores must not determine which Articles belong together.
 
 3. **An Event MUST contain at least two canonical Articles.**
-   Events that no longer meet this requirement must not remain active as valid Events.
+   Members counted toward Event validity MUST exist, belong to the Event’s owner, be unfiltered, and have no `duplicateOfArticleId`. Read/unread state does not affect membership eligibility. When an Event has fewer than two eligible canonical members, its remaining Articles MUST become eventless and the Event MUST stop contributing grouping and ranking evidence.
 
 4. **An Event and all its member Articles MUST belong to the same user.**
    Candidate searches, assignment, aggregation, and retrieval must preserve that ownership boundary.
@@ -23,13 +23,13 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
    An omitted location, version, entity, or other occurrence attribute is neither agreement nor contradiction.
 
 7. **The complete Event MUST satisfy its temporal boundary.**
-   Successive nearby Articles must not extend an Event indefinitely.
+   The span between the earliest and latest member Article times MUST be strictly less than the configured Event window. Use `publishedAt`, falling back to `createdAt` when publication time is unusable. Successive nearby Articles must not extend an Event indefinitely.
 
 8. **Ambiguous Articles MUST remain unassigned.**
-   When multiple Events qualify without a clear winner, assignment must not be forced.
+   When multiple existing Events qualify without the configured winning margin, the Article MUST remain eventless and MUST NOT seed a competing Event during that assignment attempt. Exact ties remain ambiguous even when the configured margin is zero.
 
 9. **A qualifying existing Event MUST be reused before another Event is created.**
-   Reuse remains subject to the same occurrence-evidence, temporal-boundary, and ambiguity requirements.
+   Reuse remains subject to the same occurrence-evidence, temporal-boundary, and ambiguity requirements. New Event creation is considered only when no existing candidate qualifies, not as a way to resolve ambiguous existing matches.
 
 10. **Events MUST NOT have personal interest or recommendation scores.**
     Non-personal measures such as coverage, source diversity, corroboration, and Event strength are permitted.
@@ -47,7 +47,7 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
     Developing-story selection and grouping preferences must remain separate from occurrence detection.
 
 15. **Event summaries MUST remain consistent with canonical membership.**
-    Counts, source diversity, coverage windows, aggregate vectors, and other Event-level state must derive only from current and active canonical member Articles.
+    Counts, source diversity, coverage windows, aggregate vectors, and other Event-level state MUST derive only from current members satisfying the eligibility definition in Event rule 3. Read Articles remain eligible contributors.
 
 16. **Event comparisons MUST use compatible semantic representations.**
     Missing, invalid, unknown, or incompatible embedding models and dimensions must not provide Event-matching evidence.
@@ -82,7 +82,19 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
    Event existence, Event membership, Event size, Event strength, Event vectors, Event summaries, or other Event-derived properties must not independently establish, strengthen, weaken, or reactivate an Island.
 
 8. **Article interactions MUST remain the source of behavioral preference evidence.**
-   Eligible user interactions and rule-applied Article signals may influence an Island regardless of whether the Article belongs to an Event.
+   Island formation, weights, decay, and lifecycle decisions MUST derive their behavioral evidence from the Article-level interaction columns defined below. Eligible user interactions and rule-applied Article signals may influence an Island regardless of whether the Article belongs to an Event.
+
+   | Article columns | Meaning for Island evidence |
+   | --- | --- |
+   | `readAt` | Read-state timing and context; marking an Article read alone does not establish meaningful reading or preference. |
+   | `firstSeen` | First actual exposure and its timing; exposure alone does not establish preference. |
+   | `favoriteInd`, `favoritedAt` | Active favorite preference and its interaction time, including favorites applied by user-configured rules. |
+   | `clickedAmount`, `lastClickedAt` | Click evidence and its latest interaction time, including equivalent rule-applied actions; repeated counts must have bounded influence. |
+   | `positiveInd`, `positiveFeedbackAt` | Explicit positive preference and its interaction time. |
+   | `negativeInd`, `negativeFeedbackAt` | Explicit negative preference and its interaction time. |
+   | `attentionBucket`, `lastMeaningfulReadAt` | Reading-engagement estimate and the latest qualifying meaningful-read time. |
+
+   These columns MUST retain their distinct meanings. A timestamp alone must not substitute for its corresponding active signal. `readAt` and `firstSeen` provide context, not independent positive or negative preference. Missing signals must remain neutral, and missing signal timestamps must follow the defined aging policy rather than being replaced with crawl, calibration, or technical update times. Article content and compatible embeddings supply semantic meaning; they do not supply behavioral preference by themselves.
 
 9. **Events MAY be used only to normalize correlated Article evidence.**
    When multiple interacted Articles belong to the same Event, their combined contribution may be bounded or subject to diminishing returns so repeated coverage of one occurrence does not disproportionately influence an Island.
@@ -94,7 +106,7 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
     Repeated engagement with distinct canonical Articles about the same occurrence may increase confidence or preference strength, while correlation-aware saturation prevents publisher volume from dominating the user profile.
 
 12. **Explicit Article-level feedback MUST retain its normal strength regardless of Event membership.**
-    A strong explicit action such as a like, dislike, favorite, or equivalent user-configured preference signal must not be weakened merely because the Article belongs to a large Event.
+    Event normalization MAY limit the additional contribution from repeated coverage, but MUST NOT reduce a single explicit like, dislike, favorite, or equivalent user-configured preference signal merely because its Event contains many Articles. Preserving a signal’s strength does not require unbounded summation of correlated signals.
 
 13. **Island formation MUST remain valid when Events are unavailable or removed.**
     Islands must be learnable and reconstructable from Article-level preference evidence without requiring Event state. Event information may improve evidence normalization but must not define the underlying preference.
@@ -112,72 +124,75 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
     Strength describes the signed preference, Island confidence describes its evidential support, and relationship confidence describes its applicability to a candidate Article.
 
 18. **A single weak interaction MUST NOT establish a strong persistent preference.**
-    Stronger influence requires sufficient supporting evidence or an explicit high-confidence signal, including a user-configured preference rule.
+    Stronger influence requires sufficient supporting evidence or an explicit high-confidence signal, including a user-configured preference rule. Clicks and reading engagement MUST provide bounded implicit evidence. Repeated observations of the same Article MUST NOT count as independent supporting Articles or become equivalent to explicit approval merely through repetition.
 
 19. **Explicit feedback MUST take precedence over contradictory weak inference in the same interaction context.**
     An explicit dislike must not be neutralized merely by a long dwell time. Later evidence and defined decay may change the resulting preference.
 
-20. **Both positive and negative preferences MUST decay without renewed supporting evidence.**
-    Historical preferences must not retain permanent influence solely because they once existed.
+20. **Active Islands MUST expire after a configured inactivity period of 30–90 days.**
+    Use one configured inactivity period for all Islands, regardless of signal type or preference sign. The deadline equals the latest qualifying supporting interaction time plus that period; the Island expires when the deadline is reached. Historical strength must not keep an Island active beyond its deadline. Weight may decay before expiry; renewal does not automatically restore previous strength.
 
 21. **Unknown interaction age MUST NOT grant permanent influence.**
-    Missing timestamps require a defined aging policy. Calibration time and technical update timestamps must not manufacture fresh preference evidence.
+    Use a valid interaction timestamp, otherwise publication time as a legacy approximation. If neither is usable, the signal MUST NOT renew or reactivate an Island. Future timestamps MUST NOT extend its deadline. Calibration time and technical update timestamps must not manufacture fresh preference evidence.
 
 22. **Recent evidence MUST be capable of outweighing older evidence.**
     Historical preferences must not permanently dominate the user’s profile.
 
 23. **Each user MUST have at most `MAX_INTEREST_ISLANDS` active Islands after a successful persistence transaction.**
-    Archived or dormant Islands do not count toward this limit. New and reactivated preferences must compete for capacity without relaxing semantic eligibility.
+    An Island is active only when it is unarchived and its deadline has not passed. Only active Islands consume capacity; archived and expired Islands do not. New and reactivated preferences must compete for capacity without relaxing semantic eligibility.
 
-24. **New preferences MUST be learnable without manual removal of old Islands.**
-    The lifecycle must support replacement, dormancy, archival, or consolidation to make room for sufficiently supported new preferences.
+24. **Only fresh, qualifying Article-level preference evidence MAY renew an Island.**
+    Renewal requires fresh evidence supporting the Island’s resulting signed preference, including direct interactions and newly applied user-configured preference signals. Opposing evidence updates the preference first; it does not automatically renew the existing preference unchanged. Receiving, matching, or scoring Articles—and replaying unchanged evidence—must not renew it. Deadlines derive from interaction time, not processing time. This applies to both positive and negative preferences.
 
-25. **Inactive preferences MUST NOT consume active capacity indefinitely.**
-    Islands whose evidence no longer supports meaningful current preference must eventually leave the active set.
+25. **Expired Islands MUST be archived and stop contributing Island-based personalization or consuming active capacity.**
+    Identity and explanation history remain available. Expired Islands are inactive even before their archived state is persisted; delayed lifecycle processing must not extend personalization or capacity participation.
 
-26. **Dormant or archived Islands MAY reactivate through renewed supporting evidence.**
-    Reactivation must reuse the existing identity when appropriate, satisfy lifecycle requirements, and compete for active capacity. Replaying old evidence alone must not reactivate an Island.
+26. **Capacity pressure MAY archive weaker Islands before expiry.**
+    Existing, new, and reactivated Islands compete in deterministic order: descending current decayed preference magnitude, then descending confidence, then latest qualifying interaction first, then ascending stable Island ID. Strong negative preferences must not be treated as weak because of their sign. New preferences must remain learnable without manual removal of old Islands.
 
-27. **Island names MUST be unique within a user’s Islands.**
-    Naming collisions must be resolved deterministically. Renaming must not change preference evidence, weight, or semantic identity.
+27. **Archived Islands MAY reactivate through fresh qualifying evidence and capacity selection.**
+    Reactivation requires a qualifying interaction strictly newer than the expiry or early-archival boundary that ended active participation. Reuse the existing identity when appropriate. Old evidence alone must not reactivate an Island, and renewal, archival, and reactivation decisions must remain explainable.
 
-28. **Distinct Islands belonging to the same user MUST maintain a minimum semantic vector distance within a compatible embedding space.**
-    Identical or near-identical vectors must not persist as separate Islands. The distance metric and minimum separation threshold must be explicitly defined and enforced during creation, updates, and reactivation.
+28. **Island names MUST be unique within a user’s Islands.**
+    Uniqueness applies across active and archived Islands belonging to the same user, after trimming leading and trailing whitespace and comparing names case-insensitively. Naming collisions must be resolved deterministically. Renaming must not change preference evidence, weight, or semantic identity.
 
-29. **Vector-separation enforcement and consolidation MUST preserve all preference evidence semantics.**
-    Resolving overlapping Islands must not silently discard positive or negative evidence or erase meaningful differences in preference intent. Survivor selection must preserve the signed evidence represented by both Islands, including evidence strength, confidence, recency, provenance, lifecycle state, and other information required to reproduce the resulting preference semantics. A higher current weight alone must not justify discarding evidence from the other Island.
+29. **Equivalent Islands SHOULD be consolidated when their preference evidence can be combined without losing meaningful differences in sign or intent.**
+    Vector similarity alone MUST NOT require consolidation, and vectors MUST NOT be artificially moved merely to satisfy a separation threshold.
 
-30. **Duplicate records and repeated processing MUST NOT multiply preference evidence.**
+30. **Consolidation MUST preserve the supporting preference evidence.**
+    A higher current weight alone must not justify discarding the other Island’s evidence. Consolidation must not manufacture new interactions or renew expired evidence.
+
+31. **Duplicate records and repeated processing MUST NOT multiply preference evidence.**
     Distinct genuine interactions and newly matched canonical Articles under a user-configured rule may reinforce the same preference. Reprocessing the same Article and unchanged rule outcome must not count as fresh evidence.
 
-31. **Calibration MUST be replay-safe.**
+32. **Calibration MUST be replay-safe.**
     Reprocessing unchanged evidence must not manufacture additional preference strength, refresh behavioral timestamps, or create duplicate Islands.
 
-32. **Island state and lifecycle decisions MUST be explainable from their supporting evidence.**
+33. **Island state and lifecycle decisions MUST be explainable from their supporting evidence.**
     Explanations must identify relevant interactions or user-configured rules and distinguish behavioral changes, decay, capacity decisions, and semantic consolidation. Explanation-retention limits must be explicit.
 
-33. **Island semantics MUST remain user-specific.**
+34. **Island semantics MUST remain user-specific.**
     One user’s interactions, rules, and preferences must not contribute evidence to another user’s Islands.
 
-34. **Unmatched behavioral evidence MAY remain outside Islands.**
+35. **Unmatched behavioral evidence MAY remain outside Islands.**
     Capacity must never justify a below-threshold semantic match or force unrelated evidence into an existing Island.
 
-35. **Semantic comparisons MUST use compatible embedding models and dimensions.**
+36. **Semantic comparisons MUST use compatible embedding models and dimensions.**
     Unknown or incompatible vector spaces must not supply matching, consolidation, or vector-distance evidence.
 
-36. **Derived scores, audit records, and generated labels MUST NOT become new behavioral evidence.**
+37. **Derived scores, audit records, and generated labels MUST NOT become new behavioral evidence.**
     Reusing a previous calculation or explanation must not create a feedback loop that strengthens the preference it describes.
 
-37. **Personalization and recommendation scoring MUST support signed results.**
+38. **Personalization and recommendation scoring MUST support signed results.**
     Positive preferences may increase scores; negative preferences may decrease them. Negative results must not be discarded solely because they are negative.
 
-38. **Recommendation eligibility MUST NOT require an Island match.**
+39. **Recommendation eligibility MUST NOT require an Island match.**
     When no trustworthy personalization evidence exists, interest must be neutral. Every otherwise eligible Article must still receive a finite Recommended score.
 
-39. **Islands MUST NOT determine Event identity or objective content clustering.**
+40. **Islands MUST NOT determine Event identity or objective content clustering.**
     Personal preferences must not change which Articles describe the same real-world occurrence.
 
-40. **Implementation changes MUST preserve these semantics.**
+41. **Implementation changes MUST preserve these semantics.**
     Models, thresholds, weighting formulas, decay functions, representations, and algorithms may change without redefining what an Island represents or weakening these boundaries.
 
 ## Articles
@@ -188,8 +203,8 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
 2. **Original content and derived representations MUST remain distinct.**
    Raw source, sanitized display content, normalized visible text, and publisher descriptions have separate purposes and must not be treated as interchangeable.
 
-3. **Publisher revisions MAY update an existing Article without changing its identity.**
-   Updated reporting from the same publisher entry must not automatically become a new Article or a duplicate.
+3. **Publisher revisions MUST be content corrections only, preserving the existing Article identity.**
+   Revisions may update publisher content, source metadata, and the corresponding sanitized representations and content hashes. A revision MUST NOT trigger or enqueue AI enrichment, quality analysis, score recalculation, embedding generation, semantic duplicate detection, Event creation or reassignment, or Island recalibration. Revisions MUST preserve stored analysis scores, embeddings, and semantic assignments; the Article must not re-enter these processes as a newly ingested Article. Normal runtime ranking and independently triggered personalization refreshes remain permitted.
 
 4. **Publisher updates MUST preserve user-owned state.**
    Revisions must not reset reading state, favorites, feedback, clicks, interaction timestamps, or manually assigned tags.
@@ -243,10 +258,12 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
     Its interaction and preference evidence may contribute regardless of Event membership, subject to semantic eligibility and Island capacity.
 
 21. **Articles MUST carry their own interaction and preference state.**
-    Supported state includes clicks, favorites, explicit likes and dislikes, reading engagement, and the timestamps needed to interpret those signals.
+    The authoritative interaction columns are `readAt`, `firstSeen`, `favoriteInd`, `favoritedAt`, `clickedAmount`, `lastClickedAt`, `positiveInd`, `positiveFeedbackAt`, `negativeInd`, `negativeFeedbackAt`, `attentionBucket`, and `lastMeaningfulReadAt`. Islands MUST use this Article-level state according to the evidence meanings defined in Interest Islands rule 8, preserving the distinction between exposure, read state, explicit preferences, and meaningful engagement.
+
+    Clearing or deleting a preference signal MUST remove only that signal’s contribution when personalization is next refreshed. Other active signals on the Article remain valid. Retained audits MUST NOT restore removed evidence.
 
 22. **User-configured preference rules MUST be able to create Article-level preference evidence.**
-    A rule-applied favorite or equivalent supported action may influence Islands without requiring a subsequent click or read.
+    A rule-applied favorite or equivalent supported action may influence Islands without requiring a subsequent click or read. Disabling or deleting a preference rule MUST stop future applications. Existing Article-level actions remain until explicitly changed and follow normal decay and expiry; rule removal alone does not reverse them.
 
 23. **Repeated ingestion MUST NOT manufacture fresh behavioral evidence.**
     Re-crawling, revising, re-embedding, or rescoring an Article must not refresh interaction timestamps or repeatedly count an unchanged rule outcome.
@@ -267,7 +284,7 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
     Quality, freshness, source evidence, and other defined ranking inputs remain applicable without personalization.
 
 29. **Crawl enrichment MUST supply available ranking inputs without making successful AI enrichment a prerequisite for recommendation.**
-    Missing analysis must use defined fallback behavior. Scores must be refreshable as time, behavior, and preference evidence change.
+    Each ranking input MUST have a documented missing-value fallback. Missing analysis MUST remain distinguishable from an observed zero or negative value. Recommended is a ranking score, not a probability. Normal runtime ranking may reflect current source metadata, including a corrected publication date. Independently triggered time-based or behavioral personalization refreshes remain permitted; publisher revisions MUST NOT initiate those refreshes.
 
 30. **Recommendation scores MUST support positive and negative results.**
     Negative preferences may lower the final score below zero; negative results must not be discarded solely because they are negative.
@@ -285,4 +302,4 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
     Retries and concurrent ingestion must not create additional Articles for the same resolved identity or repeatedly apply the same behavioral contribution.
 
 35. **Derived Article state MUST remain traceable to its inputs.**
-    Duplicate decisions, semantic relationships, and scoring must have identifiable supporting evidence. Source revisions must not leave derived state falsely represented as current.
+    Duplicate decisions, semantic relationships, and scoring must have identifiable supporting evidence. Stored analysis and semantic state retained after a content revision refer to the previously analyzed representation and MUST NOT be presented as newly computed from the revised content. Runtime ranking may combine those retained inputs with current metadata and personalization under Article rule 29. This distinction MUST NOT trigger re-enrichment on revision.
