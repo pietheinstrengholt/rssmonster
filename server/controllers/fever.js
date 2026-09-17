@@ -1,3 +1,4 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 import { updateArticleBehavior } from '../services/articles/updateArticleBehavior.js';
 import { isLocalAuthEnabled } from '../config/auth.js';
 import db from '../models/index.js';
@@ -150,7 +151,7 @@ export const postFever = async (req, res, _next) => {
         //return list with all unread article id's
         if ("unread_item_ids" in req.query) {
           const unread_item_ids = [];
-          const articles = await Article.findAll({
+          const articles = await articleRecords.findAll({
             attributes: ["id"],
             where: {
               status: 'unread',
@@ -171,7 +172,7 @@ export const postFever = async (req, res, _next) => {
         //return string/comma-separated list with id's from starred articles
         if ("saved_item_ids" in req.query) {
           const saved_item_ids = [];
-          const articles = await Article.findAll({
+          const articles = await articleRecords.findAll({
             attributes: ["id"],
             where: {
               favoriteInd: 1,
@@ -192,7 +193,7 @@ export const postFever = async (req, res, _next) => {
         //return articles with optional filtering
         if ("items" in req.query) {
           //add total number of articles to arr
-          const total_articles = await Article.count({
+          const total_articles = await articleRecords.count({
             where: {
               userId: loggedInUser.id,
               ...canonicalArticleWhere()
@@ -211,7 +212,7 @@ export const postFever = async (req, res, _next) => {
 
             articles = arrayIds.length === 0
               ? []
-              : await Article.findAll({
+              : await articleRecords.findAll({
                   where: {
                     id: { [Op.in]: arrayIds },
                     userId: loggedInUser.id,
@@ -223,7 +224,7 @@ export const postFever = async (req, res, _next) => {
             //request 50 additional items using the highest id of locally cached items
           } else if (hasQueryParameter(req.query, 'since_id')) {
 
-            articles = await Article.findAll({
+            articles = await articleRecords.findAll({
               where: {
                 id: {
                   [Op.gt]: req.query.since_id
@@ -247,7 +248,7 @@ export const postFever = async (req, res, _next) => {
             }
 
             articles = Number.isSafeInteger(maxId) && maxId >= 0
-              ? await Article.findAll({
+              ? await articleRecords.findAll({
                   where,
                   order: [['id', 'DESC']],
                   limit: 50
@@ -255,7 +256,7 @@ export const postFever = async (req, res, _next) => {
               : [];
             //if no argument is given provide total_items and up to 50 items
           } else {
-            articles = await Article.findAll({
+            articles = await articleRecords.findAll({
               where: {
                 userId: loggedInUser.id,
                 ...canonicalArticleWhere()
@@ -329,7 +330,7 @@ export const postFever = async (req, res, _next) => {
         if (unreadRecentlyRead === '1') {
           // Mark recently read items as unread (within last 24 hours)
           const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-          await Article.update(
+          await articleRecords.update(
             { status: 'unread', readAt: null },
             {
               where: {
@@ -737,7 +738,7 @@ async function appendFeverSyncIds(response, userId, state) {
     return;
   }
 
-  const articles = await Article.findAll({
+  const articles = await articleRecords.findAll({
     attributes: ['id'],
     where: {
       ...stateWhere,
@@ -797,7 +798,7 @@ async function getFeverLinks(userId, query, now = new Date()) {
 
   if (!sourceArticleIds.length) return [];
 
-  const sourceArticles = await Article.findAll({
+  const sourceArticles = await articleRecords.findAll({
     attributes: ['id'],
     where: {
       id: { [Op.in]: sourceArticleIds },
@@ -838,7 +839,7 @@ async function getFeverLinks(userId, query, now = new Date()) {
   if (!pageLinks.length) return [];
 
   const pageUrls = pageLinks.map(link => link.url);
-  const localArticles = await Article.findAll({
+  const localArticles = await articleRecords.findAll({
     attributes: ['id', 'feedId', 'title', 'url', 'normalizedUrl', 'favoriteInd'],
     where: {
       userId,

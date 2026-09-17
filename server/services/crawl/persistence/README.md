@@ -33,7 +33,7 @@ safe normalized representations intended for presentation.
 1. Checks the crawl deadline and execution lease.
 2. Validates that the feed has a user owner.
 3. Builds canonical Article values.
-4. Creates the Article and its crawl-owned tags in one transaction.
+4. Creates the Article, its owner’s ArticleInteraction, and its crawl-owned tags in one transaction.
 5. Rechecks deadline/lease ownership around transactional work.
 6. Omits derived tags and user-facing action values for entries discarded by a matching rule.
 
@@ -61,7 +61,8 @@ row or locate one by the incoming identity. Before writing it:
 Sparse or empty publisher values do not erase meaningful stored content, author, date, URL, media,
 or image metadata. A newly inferred publication date does not replace a known stored publication
 date. User-owned state—read/unread status, favorites, clicks, interaction timestamps,
-and manual tags—is preserved. Favorite/click rules timestamp initial ingestion;
+and manual tags—is preserved. Reading and behavioral state lives in ArticleInteraction;
+the current flat article projection is composed by `articles/articleRecords.js`. Favorite/click rules timestamp initial ingestion;
 source revisions never refresh those behavioral clocks.
 
 ## Revision and update semantics

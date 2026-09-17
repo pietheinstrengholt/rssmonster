@@ -1,5 +1,5 @@
+import { articleRecords } from '../articles/articleRecords.js';
 import { col, fn, literal, Op } from 'sequelize';
-import db from '../../models/index.js';
 import { computeRecommended } from '../recommendations/recommendedScore.js';
 
 const value = (article, key) => article.get?.(key) ?? article[key];
@@ -38,7 +38,7 @@ export function createRecommendationFunnel(metadata) {
       const stages = [];
       // Sequential counts avoid flooding the connection pool for a diagnostic request.
       for (const { stage, where } of queries) {
-        const [row] = await db.Article.findAll({ where, raw: true, attributes: [
+        const [row] = await articleRecords.findAll({ where, raw: true, attributes: [
           [fn('COUNT', col('id')), 'articles'],
           [fn('SUM', literal('CASE WHEN interestScoredAt IS NOT NULL THEN 1 ELSE 0 END')), 'recordedInterestEvaluations'],
           [fn('SUM', literal('CASE WHEN interestScore <> 0 THEN 1 ELSE 0 END')), 'nonzeroInterest']

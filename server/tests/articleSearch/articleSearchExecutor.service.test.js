@@ -203,7 +203,7 @@ describe('articleSearchExecutor.service', () => {
     const query = buildQuery({ developingFilter: true });
     const predicate = query.where[Op.and][0].sql;
 
-    expect(predicate).toContain("articles.status = 'unread'");
+    expect(predicate).toContain("interaction.readState = 'unread'");
     expect(predicate).toContain('developing_story_event.developingArticleId = articles.id');
     expect(predicate).toContain('developing_story_event.developingArticleId <> developing_story_event.representativeArticleId');
     expect(predicate).toContain('developing_story_event.userId = articles.userId');
@@ -258,4 +258,9 @@ describe('articleSearchExecutor.service', () => {
       col: 'feedId'
     });
   });
+});
+
+vi.mock('../../services/articles/articleRecords.js', async () => {
+  const { default: models } = await import('../../models/index.js');
+  return { articleRecords: models.Article };
 });

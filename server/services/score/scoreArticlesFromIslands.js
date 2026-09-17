@@ -1,3 +1,4 @@
+import { articleRecords } from '../articles/articleRecords.js';
 import { col, fn, literal, Op } from 'sequelize';
 import db from '../../models/index.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
@@ -5,7 +6,6 @@ import { embeddingSimilarity } from '../vectors/embeddingModel.js';
 import { DEFAULT_ARTICLE_AFFINITY_THRESHOLD, ISLAND_DEBUG } from '../islands/islandVectorUtils.js';
 import { evaluateArticleInterest, loadIslandEvidence, prepareIslandEvidence } from '../islands/islandInterestConfidence.js';
 
-const { Article } = db;
 const ARTICLE_BATCH_SIZE = 200;
 
 export function resolveIslandArticleScoreThreshold(value = process.env.ISLAND_ARTICLE_SCORE_THRESHOLD) {
@@ -49,16 +49,16 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
   const eligibilityReason = literal(`CASE
     WHEN filteredInd = 1 THEN 'filtered'
     WHEN duplicateOfArticleId IS NOT NULL THEN 'duplicate'
-    WHEN status <> 'unread' THEN 'not_unread'
-    ${createdAtFrom ? `WHEN createdAt < ${db.sequelize.escape(new Date(createdAtFrom))} THEN 'before_creation_window'` : ''}
+    WHEN interaction.readState <> 'unread' THEN 'not_unread'
+    ${createdAtFrom ? `WHEN articles.createdAt < ${db.sequelize.escape(new Date(createdAtFrom))} THEN 'before_creation_window'` : ''}
     ELSE 'eligible' END`);
-  const eligibility = await Article.findAll({ where: { userId }, raw: true,
+  const eligibility = await articleRecords.findAll({ where: { userId }, raw: true,
     attributes: [[eligibilityReason, 'reason'], [fn('COUNT', col('id')), 'count']], group: [eligibilityReason], transaction });
   summary.eligibility = Object.fromEntries(eligibility.map(row => [row.reason, Number(row.count)]));
   let afterId = 0;
   while (true) {
     await options.assertLease?.();
-    const batch = await Article.findAll({ where: {
+    const batch = await articleRecords.findAll({ where: {
       userId, status: 'unread', ...canonicalArticleWhere(), filteredInd: false, id: { [Op.gt]: afterId },
       ...(createdAtFrom ? { createdAt: { [Op.gte]: createdAtFrom } } : {})
     }, attributes: ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'articleVector', 'embedding_model', 'interestScore', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket'],
@@ -88,7 +88,7 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
       const unchanged = stored === result.score || (db.sequelize.getDialect() === 'mysql'
         && Math.fround(stored) === Math.fround(result.score));
       if (!unchanged) {
-        const [changed] = await Article.update({ interestScore: result.score, interestScoredAt: evaluatedAt }, {
+        const [changed] = await articleRecords.update({ interestScore: result.score, interestScoredAt: evaluatedAt }, {
           where: { id: article.id, userId, status: 'unread', ...canonicalArticleWhere(), filteredInd: false }, transaction
         });
         summary.interestScoresChanged += Number(changed);
@@ -107,7 +107,7 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
     }
     // One metadata write per unchanged batch; never stamp skipped or newly ineligible rows.
     if (unchangedIds.length) {
-      const [recorded] = await Article.update({ interestScoredAt: evaluatedAt }, {
+      const [recorded] = await articleRecords.update({ interestScoredAt: evaluatedAt }, {
         where: { userId, id: unchangedIds, status: 'unread', ...canonicalArticleWhere() }, transaction, silent: true
       });
       summary.recordedEvaluationCount += Number(recorded);

@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import {
   afterEach,
   beforeAll,
@@ -36,7 +37,7 @@ vi.mock('../../services/feeds/opmlConnection.js', async importOriginal => ({
   testOpmlConnection: mocked.testOpmlConnection
 }));
 
-const { Article, Category, Feed, FeedUrlAlias, User, sequelize } = db;
+const { Category, Feed, FeedUrlAlias, User, sequelize } = db;
 
 let app;
 let ownedUserIds = [];
@@ -1074,14 +1075,14 @@ describe('shared feed-management integration', () => {
       feedName: 'Reader removal',
       url: 'https://remove.example.test/reader.xml'
     });
-    const regularArticle = await Article.create({
+    const regularArticle = await articleRecords.create({
       userId: regularUser.id,
       feedId: regularFeed.id,
       title: 'Regular article',
       url: 'https://remove.example.test/regular-article',
       publishedAt: new Date('2026-07-01T10:00:00Z')
     });
-    const readerArticle = await Article.create({
+    const readerArticle = await articleRecords.create({
       userId: readerUser.id,
       feedId: readerFeed.id,
       title: 'Reader article',
@@ -1106,7 +1107,7 @@ describe('shared feed-management integration', () => {
     expect(readerResponse.status).toBe(200);
     expect(await Feed.findByPk(regularFeed.id)).toBeNull();
     expect(await Feed.findByPk(readerFeed.id)).toBeNull();
-    expect(await Article.findByPk(regularArticle.id)).toBeNull();
-    expect(await Article.findByPk(readerArticle.id)).toBeNull();
+    expect(await articleRecords.findByPk(regularArticle.id)).toBeNull();
+    expect(await articleRecords.findByPk(readerArticle.id)).toBeNull();
   });
 });

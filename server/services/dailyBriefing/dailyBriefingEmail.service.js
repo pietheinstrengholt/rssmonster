@@ -1,3 +1,4 @@
+import { articleRecords } from '../articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
@@ -7,7 +8,7 @@ import { enqueueEmail } from '../email/emailService.js';
 import { searchArticles } from '../articleSearch/articleSearch.service.js';
 import { extractBriefingExcerpt } from './dailyBriefing.service.js';
 
-const { Article, BriefingPreference, Feed } = db;
+const { BriefingPreference, Feed } = db;
 export const MAX_DIGEST_SECTION_ITEMS = 10;
 const MAX_RANKED_RESULTS = MAX_DIGEST_SECTION_ITEMS * 2;
 const MAX_RANKING_CANDIDATES = 500;
@@ -70,7 +71,7 @@ const takeSection = (ids, articleMap, seenIds) => {
 
 const loadPresentationArticles = async (userId, ids) => {
   if (!ids.length) return new Map();
-  const articles = await Article.findAll({
+  const articles = await articleRecords.findAll({
     where: {
       id: { [Op.in]: ids },
       userId,

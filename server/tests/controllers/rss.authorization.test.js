@@ -1,10 +1,11 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeAll, describe, expect, it } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
 
-const { Article, Category, Feed, User, sequelize } = db;
+const { Category, Feed, User, sequelize } = db;
 
 let app;
 
@@ -72,7 +73,7 @@ describe('RSS authorization', () => {
     const { feed: ownerFeed } = await createFeedFor(owner);
     const { feed: otherFeed } = await createFeedFor(otherUser);
 
-    await Article.create({
+    await articleRecords.create({
       userId: owner.id,
       feedId: ownerFeed.id,
       title: 'Authenticated user article',
@@ -81,7 +82,7 @@ describe('RSS authorization', () => {
       publishedAt: new Date('2026-05-31T10:00:00Z')
     });
 
-    await Article.create({
+    await articleRecords.create({
       userId: otherUser.id,
       feedId: otherFeed.id,
       title: 'Spoofed query user article',

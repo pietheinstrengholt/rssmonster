@@ -144,7 +144,7 @@ const loadBriefingCountConfig = async userId => {
     Number(briefingPreferences?.markAsReadOnScroll)
   );
   const briefingStatusCondition = briefingIncludeOnlyUnreadArticles
-    ? "AND articles.status = 'unread'"
+    ? "AND `articles->interaction`.`readState` = 'unread'"
     : '';
   const briefingMinDistinctSources = Number(briefingPreferences?.minDistinctSources) || 1;
   const briefingPrioritizeHighTrust = Boolean(
@@ -208,17 +208,18 @@ const loadGroupedFeedCounts = (baseWhere, briefingConfig) => Feed.findAll({
   include: [{
     model: Article,
     attributes: [],
-    where: baseWhere
+    where: baseWhere,
+    include: [{ model: db.ArticleInteraction, as: 'interaction', attributes: [], required: true, where: { userId: { [Op.eq]: Sequelize.col('articles.userId') } } }]
   }],
   attributes: [
     'categoryId',
     ['id', 'feedId'],
-    [Sequelize.literal(briefingConfig.countSql), 'briefingCount'],
-    [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'unread' THEN 1 END)"), 'unreadCount'],
-    [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'read' THEN 1 END)"), 'readCount'],
-    [Sequelize.literal("COUNT(CASE WHEN `articles`.`favoriteInd` = 1 THEN 1 END)"), 'favoriteCount'],
+    [Sequelize.literal(briefingConfig.countSql.replaceAll('interaction.', '`articles->interaction`.')), 'briefingCount'],
+    [Sequelize.literal("COUNT(CASE WHEN `articles->interaction`.`readState` = 'unread' THEN 1 END)"), 'unreadCount'],
+    [Sequelize.literal("COUNT(CASE WHEN `articles->interaction`.`readState` = 'read' THEN 1 END)"), 'readCount'],
+    [Sequelize.literal("COUNT(CASE WHEN `articles->interaction`.`favoriteInd` = 1 THEN 1 END)"), 'favoriteCount'],
     [Sequelize.literal("COUNT(CASE WHEN `articles`.`hotInd` = 1 THEN 1 END)"), 'hotCount'],
-    [Sequelize.literal("SUM(CASE WHEN `articles`.`clickedAmount` > 0 THEN 1 ELSE 0 END)"), 'clickedCount']
+    [Sequelize.literal("SUM(CASE WHEN `articles->interaction`.`clickedAmount` > 0 THEN 1 ELSE 0 END)"), 'clickedCount']
   ],
   replacements: briefingConfig.replacements,
   group: ['feeds.categoryId', 'feeds.id'],

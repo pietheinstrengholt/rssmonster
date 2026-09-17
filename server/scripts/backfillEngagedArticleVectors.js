@@ -1,3 +1,4 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 /**
  * Backfill vectors for engaged articles that do not have an articleVector yet.
  *
@@ -17,7 +18,7 @@ import { Op } from 'sequelize';
 import db from '../models/index.js';
 import embedArticle from '../services/articles/embedArticle.js';
 
-const { Article, sequelize } = db;
+const { sequelize } = db;
 
 const DEFAULT_BATCH_SIZE = Number.parseInt(
   process.env.ENGAGED_VECTOR_BACKFILL_BATCH_SIZE || '100',
@@ -102,7 +103,7 @@ export function buildEngagedVectorTargetWhere({
 
 // This function fetches the next stable id-ordered page of target articles.
 async function fetchBatch({ userId, afterId, batchSize, includeFeedbackSignals }) {
-  return Article.findAll({
+  return articleRecords.findAll({
     where: buildEngagedVectorTargetWhere({ userId, afterId, includeFeedbackSignals }),
     order: [['id', 'ASC']],
     limit: batchSize,
@@ -134,7 +135,7 @@ export async function backfillEngagedArticleVectors(options = {}) {
 
   await sequelize.authenticate();
 
-  const targetCount = await Article.count({
+  const targetCount = await articleRecords.count({
     where: buildEngagedVectorTargetWhere({ userId, includeFeedbackSignals })
   });
 

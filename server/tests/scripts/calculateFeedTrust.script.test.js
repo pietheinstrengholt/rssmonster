@@ -308,3 +308,8 @@ describe('feed trust command', () => {
     expect(errorSpy).toHaveBeenCalledWith('[FEED-TRUST] Failed:', failure);
   });
 });
+
+vi.mock('../../services/articles/articleRecords.js', async () => {
+  const { default: models } = await import('../../models/index.js');
+  return { articleRecords: models.Article };
+});

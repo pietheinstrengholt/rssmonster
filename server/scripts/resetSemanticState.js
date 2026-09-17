@@ -1,3 +1,4 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 // scripts/resetSemanticState.js
 /**
  * Semantic state reset (testing / debugging)
@@ -18,7 +19,6 @@ import db from '../models/index.js';
 
 const {
   sequelize,
-  Article,
   Event,
   Island,
   User
@@ -69,9 +69,9 @@ export async function resetSemanticStateForUser(userId, options = {}) {
   const eventIds = eventRows.map(r => r.id);
 
   const [articleCount, vectorCount, duplicateCount] = await Promise.all([
-    Article.count({ where: { userId } }),
-    Article.count({ where: { userId, articleVector: { [Op.ne]: null } } }),
-    Article.count({ where: { userId, duplicateOfArticleId: { [Op.ne]: null } } })
+    articleRecords.count({ where: { userId } }),
+    articleRecords.count({ where: { userId, articleVector: { [Op.ne]: null } } }),
+    articleRecords.count({ where: { userId, duplicateOfArticleId: { [Op.ne]: null } } })
   ]);
 
   console.log(`\n[RESET] ${label} — found:`);
@@ -108,7 +108,7 @@ export async function resetSemanticStateForUser(userId, options = {}) {
         : {}),
       ...(resetInterestScores ? { interestScore: 0 } : {})
     };
-    await Article.update(
+    await articleRecords.update(
       articleResetValues,
       { where: { userId }, transaction: t }
     );

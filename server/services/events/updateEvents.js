@@ -1,3 +1,4 @@
+import { articleRecords } from '../articles/articleRecords.js';
 import { compatibleEmbeddingModels } from '../vectors/embeddingModel.js';
 import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } from './eventDecisionDiagnostics.js';
 // services/events/updateEvents.js
@@ -13,7 +14,7 @@ import { extractOccurrenceFeatures, aggregateOccurrenceFeatures } from './occurr
 import { articleEventTimestamp } from './articleEventTime.js';
 
 // Provides the shared dependencies used by this service.
-const { Article, Event } = db;
+const { Event } = db;
 
 // This function converts date-like values into timestamps for lifecycle calculations.
 function toTimestamp(value) {
@@ -95,7 +96,7 @@ export async function assignArticleToExistingEvent({
   }
 
   // Loads the locked article needed while assigning article to existing event.
-  const lockedArticle = await Article.findOne({
+  const lockedArticle = await articleRecords.findOne({
     where: {
       id: article.id,
       userId: article.userId,
@@ -142,7 +143,7 @@ export async function assignArticleToExistingEvent({
   }
 
   // Loads the event articles needed while assigning article to existing event.
-  const eventArticles = await Article.findAll({
+  const eventArticles = await articleRecords.findAll({
     where: {
       eventId: lockedEvent.id,
       userId: article.userId,

@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { performance } from 'node:perf_hooks';
@@ -66,7 +67,7 @@ describe('two-batch semantic simulation', () => {
       const heldFixtures = fixture.articles.filter(a => a.regression.heldOut || a.regression.role === 'held-out');
       if (heldFixtures.length) {
         await scoreArticlesFromIslandsForUser(user.id);
-        const held = await db.Article.findAll({ where: { userId: user.id, url: heldFixtures.map(a => a.url) } });
+        const held = await articleRecords.findAll({ where: { userId: user.id, url: heldFixtures.map(a => a.url) } });
         const { results } = await explainArticleInterests(user.id, held);
         for (const article of held) {
           const original = heldFixtures.find(a => a.url === article.url);
@@ -124,7 +125,7 @@ describe('two-batch semantic simulation', () => {
       report.phases.push(phase);
       previous = snapshot;
     }
-    expect(await db.Article.count({ where: { userId: user.id } })).toBe(2000);
+    expect(await articleRecords.count({ where: { userId: user.id } })).toBe(2000);
     report.totalMilliseconds = performance.now() - started;
     await mkdir(reportDirectory, { recursive: true });
     await writeFile(new URL('batch-results.json', reportDirectory), JSON.stringify(report, null, 2));

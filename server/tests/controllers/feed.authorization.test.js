@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
@@ -7,7 +8,7 @@ import { crawlJobManager } from '../../services/crawl/index.js';
 import * as inferenceStatus from '../../services/inference/status.js';
 import * as rssRediscovery from '../../services/feeds/rediscoverRssUrl.js';
 
-const { Article, Category, Event, Feed, User, sequelize } = db;
+const { Category, Event, Feed, User, sequelize } = db;
 
 let app;
 
@@ -96,7 +97,7 @@ describe('feed ownership authorization', () => {
     const owner = await createUser(uniqueName('feed-owner'));
     const { feed } = await createFeedFor(owner);
 
-    const articles = await Promise.all([0, 1, 2, 3].map(index => Article.create({
+    const articles = await Promise.all([0, 1, 2, 3].map(index => articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -112,7 +113,7 @@ describe('feed ownership authorization', () => {
       articleCount: 3
     });
 
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: articles.slice(0, 3).map(article => article.id) } }
     );
@@ -288,7 +289,7 @@ describe('feed ownership authorization', () => {
     const owner = await createUser(uniqueName('feed-owner'));
     const foreignUser = await createUser(uniqueName('feed-deleter'));
     const { feed } = await createFeedFor(owner);
-    const article = await Article.create({
+    const article = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -302,7 +303,7 @@ describe('feed ownership authorization', () => {
       .set('Authorization', authHeaderFor(foreignUser));
 
     const persistedFeed = await Feed.findByPk(feed.id);
-    const persistedArticle = await Article.findByPk(article.id);
+    const persistedArticle = await articleRecords.findByPk(article.id);
 
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ message: 'Feed not found' });

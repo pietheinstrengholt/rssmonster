@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { readSemanticFixtureFile as readFile } from './semanticBatchFixtures.js';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -9,8 +10,7 @@ import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixt
 
 const {
   Category,
-  Feed,
-  Article
+  Feed
 } = db;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -203,7 +203,7 @@ export async function findIncrementalArticleIds(userId, fixture = null) {
   const resolvedFixture = fixture || await loadIncrementalFixture();
   const fixtureUrls = resolvedFixture.articles.map(a => a.url).filter(Boolean);
   const contentHashes = fixtureContentHashes({ articles: resolvedFixture.articles.filter(a => !isRealBackground(a)) });
-  const rows = await Article.findAll({
+  const rows = await articleRecords.findAll({
     where: {
       userId,
       ...(fixtureUrls.length ? { [Op.or]: [{ contentSourceHash: { [Op.in]: contentHashes } }, { url: { [Op.in]: fixtureUrls } }] }
@@ -234,7 +234,7 @@ export async function insertMissingFixtureArticles(userId, fixture, vectorByCont
     const longitudinal = isLongitudinal(fixtureArticle) || Boolean(fixtureArticle.regression?.batch);
     const content = articleContent(fixtureArticle);
     const contentSourceHash = hashContent(content);
-    const existingArticle = await Article.findOne({
+    const existingArticle = await articleRecords.findOne({
       where: {
         userId,
         ...(fixtureArticle.sourceId && fixtureArticle.url ? { url: fixtureArticle.url } : { contentSourceHash })
@@ -256,7 +256,7 @@ export async function insertMissingFixtureArticles(userId, fixture, vectorByCont
       ? new Date(fixtureArticle.publishedAt)
       : real ? new Date(Date.parse(fixtureArticle.publishedAt) + realShiftMs) : resolvePublished(fixtureArticle, fallbackPublished);
 
-    await Article.create({
+    await articleRecords.create({
       userId,
       feedId: feedIdMap.get(fixtureArticle.feedId),
       status: fixtureArticle.status || 'unread',

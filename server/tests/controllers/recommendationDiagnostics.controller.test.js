@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
 import jwt from 'jsonwebtoken';
@@ -11,7 +12,7 @@ async function fixture() {
   const user = await db.User.create({ username: `diagnostics-api-${randomUUID()}` });
   const category = await db.Category.create({ userId: user.id, name: 'Diagnostics' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Diagnostics', url: `https://${user.id}.example/rss` });
-  const article = await db.Article.create({ userId: user.id, feedId: feed.id, title: 'Neutral article', status: 'unread', publishedAt: new Date(), interestScoredAt: new Date(Date.now() - 60000) });
+  const article = await articleRecords.create({ userId: user.id, feedId: feed.id, title: 'Neutral article', status: 'unread', publishedAt: new Date(), interestScoredAt: new Date(Date.now() - 60000) });
   const authorization = `Bearer ${jwt.sign({ userId: user.id, username: user.username }, getJwtSecret())}`;
   return { user, article, authorization };
 }

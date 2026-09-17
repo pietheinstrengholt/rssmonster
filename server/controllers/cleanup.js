@@ -1,5 +1,4 @@
-import db from '../models/index.js';
-const { Article } = db;
+import { articleRecords } from '../services/articles/articleRecords.js';
 import { Op } from 'sequelize';
 
 // Delete all non-favorited articles older than one week
@@ -13,7 +12,7 @@ const cleanup = async (req, res, _next) => {
 
     const oneWeekAgo = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000));
 
-    const deletedCount = await Article.destroy({
+    const deletedCount = await articleRecords.destroy({
       where: {
         favoriteInd: 0,
         createdAt: { [Op.lte]: oneWeekAgo },

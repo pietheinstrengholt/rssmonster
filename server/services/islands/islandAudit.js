@@ -1,9 +1,7 @@
+import { articleRecords } from '../articles/articleRecords.js';
 import { Op } from 'sequelize';
-import db from '../../models/index.js';
 import { DEFAULT_AUDIT_MAX_ARTICLE_IDS, DEFAULT_AUDIT_MAX_RUNS } from './islandVectorUtils.js';
 
-// Provides the shared dependencies used by this service.
-const { Article } = db;
 
 // This function appends one bounded population-audit entry to an island's history.
 export function appendPopulationAudit(existingAudit, entry) {
@@ -40,7 +38,7 @@ export async function buildPopulationAuditEntry({ userId, articleIds = [], trans
 
   // Selects the rows based on whether article id is non-empty.
   const rows = articleIds.length
-    ? await Article.findAll({
+    ? await articleRecords.findAll({
       where: {
         userId,
         id: { [Op.in]: articleIds }

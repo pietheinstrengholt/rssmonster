@@ -1,3 +1,4 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 import Sequelize from 'sequelize';
 import db from '../models/index.js';
 import {
@@ -6,7 +7,7 @@ import {
 } from '../services/dailyBriefing/dailyBriefing.service.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
-const { Article, BriefingPreference, Tag } = db;
+const { BriefingPreference, Tag } = db;
 const TOP_TAG_STATUSES = new Set([
   'briefing',
   'unread',
@@ -111,7 +112,7 @@ const getTags = async (req, res) => {
       includeDevelopingEvents: req.query?.includeDevelopingEvents === 'true'
     });
 
-    const tags = await Article.findAll({
+    const tags = await articleRecords.findAll({
       where: articleWhere,
       attributes: [
         [Sequelize.col('tags.name'), 'name'],

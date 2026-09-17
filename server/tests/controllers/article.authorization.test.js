@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { scoreArticlesFromIslandsForUser } from '../../services/score/scoreArticlesFromIslands.js';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
@@ -54,7 +55,7 @@ const createArticleFor = async user => {
     feedName: `${user.username} feed`,
     url: `https://example.com/${user.username}.xml`
   });
-  const article = await Article.create({
+  const article = await articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     status: 'unread',
@@ -314,7 +315,7 @@ describe('article ownership authorization', () => {
   it('serializes developing-story presentation state from the Article model', async () => {
     const owner = await createUser(uniqueName('developing-story-details-owner'));
     const { article: representativeArticle, feed } = await createArticleFor(owner);
-    const developingArticle = await Article.create({
+    const developingArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -329,7 +330,7 @@ describe('article ownership authorization', () => {
       name: `${owner.username} developing event`,
       articleCount: 2
     });
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [representativeArticle.id, developingArticle.id] } }
     );
@@ -369,7 +370,7 @@ describe('article ownership authorization', () => {
   it('returns event article pointers with article details', async () => {
     const owner = await createUser(uniqueName('developing-badge-owner'));
     const { article: representativeArticle, feed } = await createArticleFor(owner);
-    const developingArticle = await Article.create({
+    const developingArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -383,7 +384,7 @@ describe('article ownership authorization', () => {
       developingArticleId: developingArticle.id,
       name: 'Developing badge event'
     });
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [representativeArticle.id, developingArticle.id] } }
     );
@@ -405,7 +406,7 @@ describe('article ownership authorization', () => {
     const foreignUser = await createUser(uniqueName('developing-popover-viewer'));
     const { article: representativeArticle, feed } = await createArticleFor(owner);
     await feed.update({ favicon: 'https://example.com/favicon.ico' });
-    const developingArticle = await Article.create({
+    const developingArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -413,7 +414,7 @@ describe('article ownership authorization', () => {
       title: 'Latest developing coverage',
       publishedAt: new Date('2026-05-01T12:00:00Z')
     });
-    const relatedArticle = await Article.create({
+    const relatedArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'read',
@@ -421,7 +422,7 @@ describe('article ownership authorization', () => {
       title: 'Earlier event coverage',
       publishedAt: new Date('2026-05-01T11:00:00Z')
     });
-    const filteredArticle = await Article.create({
+    const filteredArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -437,7 +438,7 @@ describe('article ownership authorization', () => {
       name: 'Developing popover event',
       articleCount: 4
     });
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [
         representativeArticle.id,
@@ -488,7 +489,7 @@ describe('article ownership authorization', () => {
   it('GET developing story rejects an event article that is not the developing article', async () => {
     const owner = await createUser(uniqueName('non-developing-popover-owner'));
     const { article: representativeArticle, feed } = await createArticleFor(owner);
-    const developingArticle = await Article.create({
+    const developingArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -502,7 +503,7 @@ describe('article ownership authorization', () => {
       developingArticleId: developingArticle.id,
       name: 'Strict developing event'
     });
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [representativeArticle.id, developingArticle.id] } }
     );
@@ -526,7 +527,7 @@ describe('article ownership authorization', () => {
       url: `https://other.example/${owner.username}.xml`,
       favicon: 'https://other.example/favicon.ico'
     });
-    const otherSourceArticle = await Article.create({
+    const otherSourceArticle = await articleRecords.create({
       userId: owner.id,
       feedId: otherFeed.id,
       status: 'unread',
@@ -534,7 +535,7 @@ describe('article ownership authorization', () => {
       title: 'Corroborating report',
       publishedAt: new Date('2026-05-01T12:00:00Z')
     });
-    const sameSourceArticle = await Article.create({
+    const sameSourceArticle = await articleRecords.create({
       userId: owner.id,
       feedId: sourceFeed.id,
       status: 'unread',
@@ -542,7 +543,7 @@ describe('article ownership authorization', () => {
       title: 'Same-feed update',
       publishedAt: new Date('2026-05-01T11:00:00Z')
     });
-    const filteredOtherSourceArticle = await Article.create({
+    const filteredOtherSourceArticle = await articleRecords.create({
       userId: owner.id,
       feedId: otherFeed.id,
       status: 'unread',
@@ -559,7 +560,7 @@ describe('article ownership authorization', () => {
       articleCount: 4,
       sourceCount: 2
     });
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [
         sourceArticle.id,
@@ -611,7 +612,7 @@ describe('article ownership authorization', () => {
     const owner = await createUser(uniqueName('duplicate-owner'));
     const foreignUser = await createUser(uniqueName('duplicate-viewer'));
     const { article, feed } = await createArticleFor(owner);
-    const duplicate = await Article.create({
+    const duplicate = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       duplicateOfArticleId: article.id,
@@ -622,7 +623,7 @@ describe('article ownership authorization', () => {
       contentHtml: 'Duplicate body',
       publishedAt: new Date('2026-05-01T11:00:00Z')
     });
-    await Article.create({
+    await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       duplicateOfArticleId: article.id,
@@ -656,7 +657,7 @@ describe('article ownership authorization', () => {
       interestScore: 0.5,
       publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
     });
-    await Article.create({
+    await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'read',
@@ -667,7 +668,7 @@ describe('article ownership authorization', () => {
       contentHtml: 'Recent read article body',
       publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
     });
-    await Article.create({
+    await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -783,7 +784,7 @@ describe('article ownership authorization', () => {
     const owner = await createUser(uniqueName('manager-developing-owner'));
     const { article: representativeArticle, feed } = await createArticleFor(owner);
     await representativeArticle.update({ status: 'read' });
-    const developingArticle = await Article.create({
+    const developingArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -798,7 +799,7 @@ describe('article ownership authorization', () => {
       name: `${owner.username} developing overview event`,
       articleCount: 2
     });
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [representativeArticle.id, developingArticle.id] } }
     );
@@ -844,7 +845,7 @@ describe('article ownership authorization', () => {
   it('mark-as-seen marks related event cluster articles as read', async () => {
     const owner = await createUser(uniqueName('article-owner'));
     const { article, feed } = await createArticleFor(owner);
-    const relatedArticle = await Article.create({
+    const relatedArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -862,7 +863,7 @@ describe('article ownership authorization', () => {
       articleCount: 2
     });
 
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [article.id, relatedArticle.id] } }
     );
@@ -923,7 +924,7 @@ describe('article ownership authorization', () => {
   it('mark-as-seen keeps an article-specific read from refreshing the developing pointer', async () => {
     const owner = await createUser(uniqueName('developing-pointer-owner'));
     const { article, feed } = await createArticleFor(owner);
-    const newerArticle = await Article.create({
+    const newerArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -938,7 +939,7 @@ describe('article ownership authorization', () => {
       name: `${owner.username} developing event`,
       articleCount: 2
     });
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [article.id, newerArticle.id] } }
     );
@@ -966,7 +967,7 @@ describe('article ownership authorization', () => {
   it('mark-as-read with no grouping updates only selected articles and preserves pointers', async () => {
     const owner = await createUser(uniqueName('ungrouped-read-owner'));
     const { article, feed } = await createArticleFor(owner);
-    const siblingArticle = await Article.create({
+    const siblingArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -981,7 +982,7 @@ describe('article ownership authorization', () => {
       name: `${owner.username} ungrouped read event`,
       articleCount: 2
     });
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [article.id, siblingArticle.id] } }
     );
@@ -1008,7 +1009,7 @@ describe('article ownership authorization', () => {
     const owner = await createUser(uniqueName('grouped-read-owner'));
     const { article, feed } = await createArticleFor(owner);
     const siblingArticles = await Promise.all([
-      Article.create({
+      articleRecords.create({
         userId: owner.id,
         feedId: feed.id,
         status: 'unread',
@@ -1016,7 +1017,7 @@ describe('article ownership authorization', () => {
         title: `${owner.username} grouped read sibling one`,
         publishedAt: new Date('2026-05-01T11:00:00Z')
       }),
-      Article.create({
+      articleRecords.create({
         userId: owner.id,
         feedId: feed.id,
         status: 'unread',
@@ -1032,7 +1033,7 @@ describe('article ownership authorization', () => {
       name: `${owner.username} grouped read event`,
       articleCount: 3
     });
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [article.id, ...siblingArticles.map(item => item.id)] } }
     );
@@ -1055,7 +1056,7 @@ describe('article ownership authorization', () => {
     expect(event.representativeArticleId).toBe(article.id);
     expect(event.developingArticleId).toBe(article.id);
 
-    await Article.update(
+    await articleRecords.update(
       { status: 'unread', readAt: null },
       { where: { id: [article.id, ...siblingArticles.map(item => item.id)] } }
     );
@@ -1084,7 +1085,7 @@ describe('article ownership authorization', () => {
   it('treats snapshot article IDs as the complete mark-as-read scope', async () => {
     const owner = await createUser(uniqueName('snapshot-read-owner'));
     const { article, feed } = await createArticleFor(owner);
-    const excludedArticle = await Article.create({
+    const excludedArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -1215,7 +1216,7 @@ describe('article ownership authorization', () => {
   it('marks search-matched articles as read without explicit identifiers', async () => {
     const owner = await createUser(uniqueName('search-read-owner'));
     const { article, feed } = await createArticleFor(owner);
-    const secondArticle = await Article.create({
+    const secondArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -1223,7 +1224,7 @@ describe('article ownership authorization', () => {
       title: `${owner.username} second search result`,
       publishedAt: new Date('2026-05-01T11:00:00Z')
     });
-    const filteredArticle = await Article.create({
+    const filteredArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -1258,7 +1259,7 @@ describe('article ownership authorization', () => {
     const owner = await createUser(uniqueName('smart-folder-read-owner'));
     const { article, feed } = await createArticleFor(owner);
     await article.update({ title: 'Windows 11 first matching article' });
-    const secondArticle = await Article.create({
+    const secondArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -1266,7 +1267,7 @@ describe('article ownership authorization', () => {
       title: 'Windows 11 second matching article',
       publishedAt: new Date('2026-05-01T11:00:00Z')
     });
-    const excludedArticle = await Article.create({
+    const excludedArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -1316,7 +1317,7 @@ describe('article ownership authorization', () => {
   it('increments click counts for a batch of owned articles', async () => {
     const owner = await createUser(uniqueName('batch-click-owner'));
     const { article, feed } = await createArticleFor(owner);
-    const secondArticle = await Article.create({
+    const secondArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -1344,7 +1345,7 @@ describe('article ownership authorization', () => {
   it('preserves concurrent batch click increments', async () => {
     const owner = await createUser(uniqueName('concurrent-batch-click-owner'));
     const { article, feed } = await createArticleFor(owner);
-    const secondArticle = await Article.create({
+    const secondArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -1423,7 +1424,7 @@ describe('article ownership authorization', () => {
   it('validates and updates favorite state for batch and single requests', async () => {
     const owner = await createUser(uniqueName('favorite-owner'));
     const { article, feed } = await createArticleFor(owner);
-    const secondArticle = await Article.create({
+    const secondArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
@@ -1529,8 +1530,9 @@ describe('article ownership authorization', () => {
 
   it('completes mark-all-read requests when persistence fails', async () => {
     const owner = await createUser(uniqueName('mark-all-failure-owner'));
+    await createArticleFor(owner);
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(Article, 'update').mockRejectedValueOnce(new Error('update failed'));
+    vi.spyOn(db.ArticleInteraction, 'update').mockRejectedValueOnce(new Error('update failed'));
 
     const response = await request(app)
       .post('/api/articles/markallasread')
@@ -1552,7 +1554,7 @@ describe('article ownership authorization', () => {
     const foreignUser = await createUser(uniqueName('mark-all-foreign'));
     const { article, feed } = await createArticleFor(owner);
     const { article: foreignArticle } = await createArticleFor(foreignUser);
-    const filteredArticle = await Article.create({
+    const filteredArticle = await articleRecords.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',

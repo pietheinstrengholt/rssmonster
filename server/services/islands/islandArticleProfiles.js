@@ -23,7 +23,7 @@ import {
 } from './islandVectorUtils.js';
 
 // Provides the shared dependencies used by this service.
-const { Article } = db;
+const { Article, ArticleInteraction } = db;
 
 // This function converts article behavior fields into weighted positive and negative signals.
 export function computeArticleSignals(article) {
@@ -205,34 +205,23 @@ function buildBehavioralArticleCommunities(articleProfiles, maxIslands = DEFAULT
 
 export async function loadIslandBehavioralArticles(userId, { transaction } = {}) {
   // Formation applies the complete magnitude/id order below; avoid a redundant SQL sort.
-  return Article.findAll({
+  const interactions = await ArticleInteraction.findAll({
     where: {
       userId,
-      ...canonicalArticleWhere(),
-      articleVector: { [Op.ne]: null },
       [Op.or]: [
-        { positiveInd: 1 },
-        { favoriteInd: 1 },
-        { clickedAmount: { [Op.gt]: 0 } },
-        { attentionBucket: { [Op.gte]: 3 } },
-        { negativeInd: 1 }
+        { positiveInd: 1 }, { favoriteInd: 1 }, { clickedAmount: { [Op.gt]: 0 } },
+        { attentionBucket: { [Op.gte]: 3 } }, { negativeInd: 1 }
       ]
     },
-    attributes: [
-      'id',
-      'feedId',
-      'title',
-      'articleVector',
-      'embedding_model',
-      'positiveInd',
-      'favoriteInd',
-      'clickedAmount',
-      'attentionBucket',
-      'negativeInd',
-      'publishedAt',
-      ...BEHAVIOR_TIMESTAMP_FIELDS
-    ],
+    attributes: ['articleId', 'positiveInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', 'negativeInd', ...BEHAVIOR_TIMESTAMP_FIELDS],
+    include: [{ model: Article, as: 'article', required: true,
+      where: { userId, ...canonicalArticleWhere(), articleVector: { [Op.ne]: null } },
+      attributes: ['id', 'feedId', 'title', 'articleVector', 'embedding_model', 'publishedAt'] }],
     transaction
+  });
+  return interactions.map(row => {
+    const { article, ...signals } = row.get({ plain: true });
+    return { ...article, ...signals };
   });
 }
 

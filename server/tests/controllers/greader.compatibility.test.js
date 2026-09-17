@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import {
   afterEach,
   beforeAll,
@@ -312,7 +313,7 @@ describe('Google Reader API compatibility foundation', () => {
           `&T=${greaderActionTokenFor(fixture.user)}`
         )
         .set('Authorization', greaderAuthHeaderFor(fixture.user));
-      const articles = await Article.findAll({
+      const articles = await articleRecords.findAll({
         where: { id: [fixture.oldUnread.id, fixture.newUnread.id] },
         order: [['id', 'ASC']]
       });
@@ -978,7 +979,7 @@ describe('Google Reader API compatibility foundation', () => {
     it('[compatible] applies repeated conflicting tags once with remove precedence', async () => {
       const fixture = await createFixture();
       await fixture.oldUnread.update({ favoriteInd: 1 });
-      const updateSpy = vi.spyOn(Article, 'update');
+      const updateSpy = vi.spyOn(db.ArticleInteraction, 'update');
 
       try {
         const response = await request(app)
@@ -1045,7 +1046,7 @@ describe('Google Reader API compatibility foundation', () => {
     it('[compatible] rolls back every edit-tag state when its bulk update fails', async () => {
       const fixture = await createFixture();
       const hookName = `greader-edit-tag-rollback-${fixture.user.id}`;
-      Article.addHook('afterBulkUpdate', hookName, () => {
+      db.ArticleInteraction.addHook('afterBulkUpdate', hookName, () => {
         throw new Error('Forced mutation failure');
       });
 
@@ -1069,7 +1070,7 @@ describe('Google Reader API compatibility foundation', () => {
         expect(fixture.oldUnread.readAt).toBeNull();
         expect(fixture.oldUnread.favoriteInd).toBe(0);
       } finally {
-        Article.removeHook('afterBulkUpdate', hookName);
+        db.ArticleInteraction.removeHook('afterBulkUpdate', hookName);
       }
     });
 
@@ -1130,7 +1131,7 @@ describe('Google Reader API compatibility foundation', () => {
           T: greaderActionTokenFor(fixture.user)
         })
         .set('Authorization', greaderAuthHeaderFor(fixture.user));
-      const readCount = await Article.count({
+      const readCount = await articleRecords.count({
         where: {
           id: fixture.canonicalArticles.map(article => article.id),
           status: 'read'
@@ -1511,7 +1512,7 @@ describe('Google Reader API compatibility foundation', () => {
 
       expect(response.status).toBe(200);
       expect(await Feed.findByPk(fixture.primaryFeed.id)).toBeNull();
-      expect(await Article.findByPk(fixture.oldUnread.id)).toBeNull();
+      expect(await articleRecords.findByPk(fixture.oldUnread.id)).toBeNull();
     });
 
     it('[current] renames and moves a subscription', async () => {

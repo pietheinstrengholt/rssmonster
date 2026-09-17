@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../../models/index.js', async () => {
   const { Sequelize } = await import('sequelize');
-  return { default: { Article: { findAll: mocks.findAll }, sequelize: new Sequelize({ dialect: 'sqlite', storage: ':memory:', logging: false }) } };
+  return { default: { Article: {}, ArticleInteraction: { findAll: async options => (await mocks.findAll(options)).map(row => ({ get: () => ({ article: row }) })) }, sequelize: new Sequelize({ dialect: 'sqlite', storage: ':memory:', logging: false }) } };
 });
 
 import {
@@ -29,7 +29,7 @@ describe('behavioral article island profiles', () => {
     expect(profiles).toHaveLength(model === 'model-b' ? 2 : 1);
     expect(profiles[0].embedding_model).toBe('model-a');
     expect(profiles[0].articles).toHaveLength(model === 'model-a' ? 2 : 1);
-    expect(mocks.findAll.mock.calls[0][0].attributes).toContain('embedding_model');
+    expect(mocks.findAll.mock.calls[0][0].include[0].attributes).toContain('embedding_model');
   });
 
   it.each([[0, 0], [1, 1], [2, 2], [3, 2], [20, 2]])('scores %i clicks as %i points before decay', (clickedAmount, expected) => {

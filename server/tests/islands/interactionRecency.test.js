@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import db from '../../models/index.js';
@@ -69,10 +70,10 @@ describe('interaction-based Island recency', () => {
     const category = await db.Category.create({ userId: user.id, name: 'Recency' });
     const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Recency', url: `https://${user.id}.example/rss` });
     const values = { userId: user.id, feedId: feed.id, title: 'Database release', embedding_model: 'test-model', articleVector: [1, 0] };
-    await db.Article.bulkCreate(Array.from({ length: 501 }, () => ({ ...values, publishedAt: today, clickedAmount: 1, lastClickedAt: old })));
-    const fresh = await db.Article.create({ ...values, publishedAt: old, favoriteInd: 1, favoritedAt: today });
-    const negative = await db.Article.create({ ...values, publishedAt: old, negativeInd: 1, negativeFeedbackAt: today });
-    const stale = await db.Article.create({ ...values, publishedAt: today, positiveInd: 1, positiveFeedbackAt: old });
+    await articleRecords.bulkCreate(Array.from({ length: 501 }, () => ({ ...values, publishedAt: today, clickedAmount: 1, lastClickedAt: old })));
+    const fresh = await articleRecords.create({ ...values, publishedAt: old, favoriteInd: 1, favoritedAt: today });
+    const negative = await articleRecords.create({ ...values, publishedAt: old, negativeInd: 1, negativeFeedbackAt: today });
+    const stale = await articleRecords.create({ ...values, publishedAt: today, positiveInd: 1, positiveFeedbackAt: old });
     const evidence = await loadIslandEvidence(user.id, { now });
     expect(evidence.fallbackEvidence.map(a => a.id)).toEqual(expect.arrayContaining([fresh.id, negative.id]));
     expect(evidence.fallbackEvidence.map(a => a.id)).not.toContain(stale.id);

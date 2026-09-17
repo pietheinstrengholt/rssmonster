@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../../models/index.js';
@@ -60,7 +61,7 @@ describe('repairRecentEventsForUser', () => {
     const { user, feed } = await createUserGraph('incremental-read-status');
     const sharedTitle = 'Samsung Galaxy Z Fold 8 lineup launches';
     const publishedAt = recentDateWithOffset();
-    const articles = await Article.bulkCreate([
+    const articles = await articleRecords.bulkCreate([
       articlePayload(user, feed, 1, {
         title: sharedTitle,
         publishedAt,
@@ -90,7 +91,7 @@ describe('repairRecentEventsForUser', () => {
 
   it('assigns an article using its persisted article vector when vectors are not supplied', async () => {
     const { user, feed } = await createUserGraph('persisted-assignment-vector');
-    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+    const representativeArticle = await articleRecords.create(articlePayload(user, feed, 1, {
       title: 'Acme merger talks advance in Brussels',
       publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0]
@@ -107,7 +108,7 @@ describe('repairRecentEventsForUser', () => {
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
     });
-    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+    const incomingArticle = await articleRecords.create(articlePayload(user, feed, 2, {
       title: 'Acme merger talks advance in Brussels after vote',
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0]
@@ -144,7 +145,7 @@ describe('repairRecentEventsForUser', () => {
 
   it('prefers an explicitly supplied event vector over the persisted article vector', async () => {
     const { user, feed } = await createUserGraph('explicit-assignment-vector');
-    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+    const representativeArticle = await articleRecords.create(articlePayload(user, feed, 1, {
       title: 'Acme merger talks advance in Brussels',
       publishedAt: recentDateWithOffset(),
       articleVector: [0, 1, 0]
@@ -161,7 +162,7 @@ describe('repairRecentEventsForUser', () => {
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
     });
-    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+    const incomingArticle = await articleRecords.create(articlePayload(user, feed, 2, {
       title: 'Acme merger talks advance in Brussels after vote',
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0]
@@ -185,7 +186,7 @@ describe('repairRecentEventsForUser', () => {
 
   it('keeps the eventless path when no vector is available', async () => {
     const { user, feed } = await createUserGraph('missing-assignment-vector');
-    const article = await Article.create(articlePayload(user, feed, 1, {
+    const article = await articleRecords.create(articlePayload(user, feed, 1, {
       articleVector: null
     }));
     const runContext = { stats: {} };
@@ -207,7 +208,7 @@ describe('repairRecentEventsForUser', () => {
 
   it('rejects duplicate articles before event assignment', async () => {
     const { user, feed } = await createUserGraph('duplicate-assignment-vector');
-    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+    const representativeArticle = await articleRecords.create(articlePayload(user, feed, 1, {
       title: 'Acme merger talks advance in Brussels',
       publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0]
@@ -224,7 +225,7 @@ describe('repairRecentEventsForUser', () => {
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
     });
-    const duplicateArticle = await Article.create(articlePayload(user, feed, 2, {
+    const duplicateArticle = await articleRecords.create(articlePayload(user, feed, 2, {
       title: 'Acme merger talks advance in Brussels after vote',
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0],
@@ -254,11 +255,11 @@ describe('repairRecentEventsForUser', () => {
 
   it('excludes filtered articles from semantic duplicate candidates', async () => {
     const { user, feed } = await createUserGraph('filtered-duplicate');
-    await Article.create(articlePayload(user, feed, 1, {
+    await articleRecords.create(articlePayload(user, feed, 1, {
       filteredInd: true,
       articleVector: [1, 0, 0]
     }));
-    const visibleArticle = await Article.create(articlePayload(user, feed, 2, {
+    const visibleArticle = await articleRecords.create(articlePayload(user, feed, 2, {
       articleVector: [1, 0, 0]
     }));
 
@@ -273,7 +274,7 @@ describe('repairRecentEventsForUser', () => {
 
   it('excludes filtered articles from incremental event candidates', async () => {
     const { user, feed } = await createUserGraph('filtered-incremental');
-    const filteredArticle = await Article.create(articlePayload(user, feed, 1, {
+    const filteredArticle = await articleRecords.create(articlePayload(user, feed, 1, {
       filteredInd: true,
       publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0]
@@ -292,7 +293,7 @@ describe('repairRecentEventsForUser', () => {
 
   it('does not treat publisher revisions as new semantic candidates', async () => {
     const { user, feed } = await createUserGraph('publisher-revision');
-    const article = await Article.create(articlePayload(user, feed, 1, {
+    const article = await articleRecords.create(articlePayload(user, feed, 1, {
       publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0]
     }));
@@ -330,8 +331,8 @@ describe('repairRecentEventsForUser', () => {
     const owner = await createUserGraph('owner');
     const foreign = await createUserGraph('foreign');
 
-    const ownerArticle = await Article.create(articlePayload(owner.user, owner.feed, 1));
-    const foreignRepresentative = await Article.create(articlePayload(foreign.user, foreign.feed, 1));
+    const ownerArticle = await articleRecords.create(articlePayload(owner.user, owner.feed, 1));
+    const foreignRepresentative = await articleRecords.create(articlePayload(foreign.user, foreign.feed, 1));
 
     const foreignEvent = await Event.create({
       userId: foreign.user.id,
@@ -372,7 +373,7 @@ describe('repairRecentEventsForUser', () => {
     const minutesFromBase = minutes => new Date(base.getTime() + minutes * 60 * 1000);
     const sharedVector = [1, 0, 0];
 
-    await Article.bulkCreate([
+    await articleRecords.bulkCreate([
       articlePayload(user, feed, 1, {
         title: 'Acme merger talks advance',
         url: `https://example.com/${user.id}/acme-1`,
@@ -424,7 +425,7 @@ describe('repairRecentEventsForUser', () => {
       url: `https://example.com/duplicates-second-${user.id}.xml`
     });
 
-    await Article.bulkCreate([
+    await articleRecords.bulkCreate([
       articlePayload(user, feed, 1, {
         title: 'Windows classic 3D Space Cadet pinball is getting a physical re-creation',
         url: `https://example.com/${user.id}/pinball-1`,
@@ -463,7 +464,7 @@ describe('repairRecentEventsForUser', () => {
       feedName: 'incremental highwater second feed',
       url: `https://example.com/incremental-highwater-second-${user.id}.xml`
     });
-    const existingArticle = await Article.create(articlePayload(user, feed, 1, {
+    const existingArticle = await articleRecords.create(articlePayload(user, feed, 1, {
       title: 'Existing unrelated event article',
       url: `https://example.com/${user.id}/existing-event`,
       publishedAt: recentDateWithOffset(-2 * 60 * 60 * 1000),
@@ -492,7 +493,7 @@ describe('repairRecentEventsForUser', () => {
       `https://example.com/${user.id}/spanish-heatwave-1`,
       `https://example.com/${user.id}/spanish-heatwave-2`
     ];
-    await Article.bulkCreate([
+    await articleRecords.bulkCreate([
       articlePayload(user, feed, 2, {
         title: 'Spanish heatwave death toll reaches 1028 in June',
         url: targetUrls[0],
@@ -530,7 +531,7 @@ describe('repairRecentEventsForUser', () => {
     expect(summaryOutput).toMatch(/Articles assigned to new events\.+ 2/);
     expect(summaryOutput).toMatch(/Total articles assigned to events\.+ 2/);
 
-    const clusteredArticles = await Article.findAll({
+    const clusteredArticles = await articleRecords.findAll({
       where: {
         userId: user.id,
         url: { [db.Sequelize.Op.in]: targetUrls }
@@ -558,13 +559,13 @@ describe('repairRecentEventsForUser', () => {
 
   it('uses already-assigned similar candidates as evidence when the event centroid misses', async () => {
     const { user, feed } = await createUserGraph('assigned-candidates');
-    const existingArticleA = await Article.create(articlePayload(user, feed, 1, {
+    const existingArticleA = await articleRecords.create(articlePayload(user, feed, 1, {
       title: 'Spanish heatwave death toll reaches 1028 in June',
       url: `https://example.com/${user.id}/assigned-candidate-a`,
       publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0]
     }));
-    const existingArticleB = await Article.create(articlePayload(user, feed, 2, {
+    const existingArticleB = await articleRecords.create(articlePayload(user, feed, 2, {
       title: 'Spanish heatwave death toll reaches 1028 in June',
       url: `https://example.com/${user.id}/assigned-candidate-b`,
       publishedAt: recentDateWithOffset(2 * 60 * 1000),
@@ -582,7 +583,7 @@ describe('repairRecentEventsForUser', () => {
       eventWindowEndAt: existingArticleB.publishedAt,
       status: 'active'
     });
-    const incomingArticle = await Article.create(articlePayload(user, feed, 3, {
+    const incomingArticle = await articleRecords.create(articlePayload(user, feed, 3, {
       title: 'Spanish heatwave death toll reaches 1028 in June',
       url: `https://example.com/${user.id}/assigned-candidate-c`,
       publishedAt: recentDateWithOffset(4 * 60 * 1000),
@@ -659,7 +660,7 @@ describe('repairRecentEventsForUser', () => {
       feedName: 'concurrent third feed',
       url: `https://example.com/concurrent-third-${user.id}.xml`
     });
-    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+    const representativeArticle = await articleRecords.create(articlePayload(user, feed, 1, {
       publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0]
     }));
@@ -678,11 +679,11 @@ describe('repairRecentEventsForUser', () => {
       status: 'active'
     });
     const incomingArticles = await Promise.all([
-      Article.create(articlePayload(user, secondFeed, 2, {
+      articleRecords.create(articlePayload(user, secondFeed, 2, {
         publishedAt: recentDateWithOffset(5 * 60 * 1000),
         articleVector: [0.9, 0.1, 0]
       })),
-      Article.create(articlePayload(user, thirdFeed, 3, {
+      articleRecords.create(articlePayload(user, thirdFeed, 3, {
         publishedAt: recentDateWithOffset(10 * 60 * 1000),
         articleVector: [0.8, 0.2, 0]
       }))
@@ -714,15 +715,15 @@ describe('repairRecentEventsForUser', () => {
       feedName: 'retried assignment second feed',
       url: `https://example.com/retried-assignment-${user.id}.xml`
     });
-    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+    const representativeArticle = await articleRecords.create(articlePayload(user, feed, 1, {
       publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0]
     }));
-    const incomingArticle = await Article.create(articlePayload(user, secondFeed, 2, {
+    const incomingArticle = await articleRecords.create(articlePayload(user, secondFeed, 2, {
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [0.9, 0.1, 0]
     }));
-    const staleIncomingArticle = await Article.findByPk(incomingArticle.id);
+    const staleIncomingArticle = await articleRecords.findByPk(incomingArticle.id);
     const event = await Event.create({
       userId: user.id,
       representativeArticleId: representativeArticle.id,
@@ -765,10 +766,10 @@ describe('repairRecentEventsForUser', () => {
 
   it('does not move an article that is already assigned to another event', async () => {
     const { user, feed } = await createUserGraph('conflicting-existing-event');
-    const targetRepresentative = await Article.create(articlePayload(user, feed, 1));
-    const sourceRepresentative = await Article.create(articlePayload(user, feed, 2));
-    const incomingArticle = await Article.create(articlePayload(user, feed, 3));
-    const staleIncomingArticle = await Article.findByPk(incomingArticle.id);
+    const targetRepresentative = await articleRecords.create(articlePayload(user, feed, 1));
+    const sourceRepresentative = await articleRecords.create(articlePayload(user, feed, 2));
+    const incomingArticle = await articleRecords.create(articlePayload(user, feed, 3));
+    const staleIncomingArticle = await articleRecords.findByPk(incomingArticle.id);
     const targetEvent = await Event.create({
       userId: user.id,
       representativeArticleId: targetRepresentative.id,
@@ -798,7 +799,7 @@ describe('repairRecentEventsForUser', () => {
     const cache = new EventCache([targetEvent]);
 
     await targetRepresentative.update({ eventId: targetEvent.id });
-    await Article.update(
+    await articleRecords.update(
       { eventId: sourceEvent.id },
       { where: { id: [sourceRepresentative.id, incomingArticle.id] } }
     );
@@ -822,11 +823,11 @@ describe('repairRecentEventsForUser', () => {
 
   it('does not update the event cache when an assignment transaction rolls back', async () => {
     const { user, feed } = await createUserGraph('rollback-existing-event');
-    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+    const representativeArticle = await articleRecords.create(articlePayload(user, feed, 1, {
       publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0]
     }));
-    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+    const incomingArticle = await articleRecords.create(articlePayload(user, feed, 2, {
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [0.9, 0.1, 0]
     }));
@@ -872,7 +873,7 @@ describe('repairRecentEventsForUser', () => {
 
   it('keeps incoming status and advances a read developing pointer', async () => {
     const { user, feed } = await createUserGraph('read-developing');
-    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+    const representativeArticle = await articleRecords.create(articlePayload(user, feed, 1, {
       title: 'Spanish heatwave death toll reaches 1028 in June',
       url: `https://example.com/${user.id}/read-developing-representative`,
       publishedAt: recentDateWithOffset(),
@@ -894,7 +895,7 @@ describe('repairRecentEventsForUser', () => {
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
     });
-    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+    const incomingArticle = await articleRecords.create(articlePayload(user, feed, 2, {
       title: 'Spanish heatwave death toll reaches 1028 in June update',
       url: `https://example.com/${user.id}/read-developing-incoming`,
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
@@ -924,7 +925,7 @@ describe('repairRecentEventsForUser', () => {
 
   it('preserves a read developing pointer when it was read after the incoming article arrived', async () => {
     const { user, feed } = await createUserGraph('late-read-developing');
-    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+    const representativeArticle = await articleRecords.create(articlePayload(user, feed, 1, {
       title: 'Regional rail plan receives approval',
       url: `https://example.com/${user.id}/late-read-developing-representative`,
       publishedAt: recentDateWithOffset(),
@@ -946,7 +947,7 @@ describe('repairRecentEventsForUser', () => {
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
     });
-    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+    const incomingArticle = await articleRecords.create(articlePayload(user, feed, 2, {
       title: 'Regional rail plan receives approval after vote',
       url: `https://example.com/${user.id}/late-read-developing-incoming`,
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
@@ -975,7 +976,7 @@ describe('repairRecentEventsForUser', () => {
 
   it('keeps incoming status and preserves an unread developing pointer', async () => {
     const { user, feed } = await createUserGraph('unread-developing');
-    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+    const representativeArticle = await articleRecords.create(articlePayload(user, feed, 1, {
       title: 'Acme merger talks advance in Brussels',
       url: `https://example.com/${user.id}/unread-developing-representative`,
       publishedAt: recentDateWithOffset(),
@@ -995,7 +996,7 @@ describe('repairRecentEventsForUser', () => {
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
     });
-    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+    const incomingArticle = await articleRecords.create(articlePayload(user, feed, 2, {
       title: 'Acme merger talks advance in Brussels after vote',
       url: `https://example.com/${user.id}/unread-developing-incoming`,
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
@@ -1024,7 +1025,7 @@ describe('repairRecentEventsForUser', () => {
 
   it('preserves each article status while creating a new event', async () => {
     const { user, feed } = await createUserGraph('new-event-status');
-    const existingArticle = await Article.create(articlePayload(user, feed, 1, {
+    const existingArticle = await articleRecords.create(articlePayload(user, feed, 1, {
       title: 'Luna launch mission reaches orbit',
       url: `https://example.com/${user.id}/new-event-status-existing`,
       publishedAt: recentDateWithOffset(),
@@ -1033,7 +1034,7 @@ describe('repairRecentEventsForUser', () => {
       status: 'read',
       readAt: recentDateWithOffset(2 * 60 * 1000)
     }));
-    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+    const incomingArticle = await articleRecords.create(articlePayload(user, feed, 2, {
       title: 'Luna launch mission reaches orbit successfully',
       url: `https://example.com/${user.id}/new-event-status-incoming`,
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
@@ -1065,7 +1066,7 @@ describe('repairRecentEventsForUser', () => {
 
   it('does not overwrite non-unread article status when joining a read event', async () => {
     const { user, feed } = await createUserGraph('special-status');
-    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+    const representativeArticle = await articleRecords.create(articlePayload(user, feed, 1, {
       title: 'Market regulator opens tech probe',
       url: `https://example.com/${user.id}/special-status-representative`,
       publishedAt: recentDateWithOffset(),
@@ -1087,13 +1088,13 @@ describe('repairRecentEventsForUser', () => {
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
     });
-    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+    const incomingArticle = await articleRecords.create(articlePayload(user, feed, 2, {
       title: 'Market regulator opens tech probe after complaint',
       url: `https://example.com/${user.id}/special-status-incoming`,
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
       createdAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0],
-      status: 'favorite'
+      status: 'read', favoriteInd: 1
     }));
 
     await representativeArticle.update({ eventId: event.id });
@@ -1111,14 +1112,15 @@ describe('repairRecentEventsForUser', () => {
 
     expect(eventId).toBe(event.id);
     expect(incomingArticle.eventId).toBe(event.id);
-    expect(incomingArticle.status).toBe('favorite');
+    expect(incomingArticle.status).toBe('read');
+    expect(incomingArticle.favoriteInd).toBe(1);
     expect(event.developingArticleId).toBe(representativeArticle.id);
   });
 
   it('repairs a foreign developing pointer when an unread article joins', async () => {
     const owner = await createUserGraph('invalid-pointer-owner');
     const foreign = await createUserGraph('invalid-pointer-foreign');
-    const representativeArticle = await Article.create(articlePayload(owner.user, owner.feed, 1, {
+    const representativeArticle = await articleRecords.create(articlePayload(owner.user, owner.feed, 1, {
       title: 'Coastal rail project receives final approval',
       url: `https://example.com/${owner.user.id}/invalid-pointer-representative`,
       publishedAt: recentDateWithOffset(),
@@ -1127,7 +1129,7 @@ describe('repairRecentEventsForUser', () => {
       status: 'read',
       readAt: recentDateWithOffset(2 * 60 * 1000)
     }));
-    const foreignArticle = await Article.create(articlePayload(foreign.user, foreign.feed, 1, {
+    const foreignArticle = await articleRecords.create(articlePayload(foreign.user, foreign.feed, 1, {
       url: `https://example.com/${foreign.user.id}/invalid-pointer-foreign`
     }));
     const event = await Event.create({
@@ -1143,7 +1145,7 @@ describe('repairRecentEventsForUser', () => {
       eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
     });
-    const incomingArticle = await Article.create(articlePayload(owner.user, owner.feed, 2, {
+    const incomingArticle = await articleRecords.create(articlePayload(owner.user, owner.feed, 2, {
       title: 'Coastal rail project receives final approval after review',
       url: `https://example.com/${owner.user.id}/invalid-pointer-incoming`,
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
@@ -1181,7 +1183,7 @@ describe('repairRecentEventsForUser', () => {
     const oldPublishedAt = new Date('2026-05-01T10:00:00.000Z');
     const sharedVector = [1, 0, 0];
 
-    await Article.bulkCreate([
+    await articleRecords.bulkCreate([
       articlePayload(user, feed, 1, {
         title: 'Historic Acme acquisition closes',
         url: `https://example.com/${user.id}/historic-acme-1`,

@@ -1,3 +1,4 @@
+import { articleRecords } from '../articles/articleRecords.js';
 // services/reconcile/semanticPipelineScopes.js
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
@@ -19,7 +20,7 @@ import { tryEnqueueGeneratedSemanticLabelJobsForUser } from '../semanticLabels/s
 import { debugSemanticLog } from '../observability/semanticLogging.js';
 
 // Provides the shared dependencies used by this service.
-const { Article, Event, Feed } = db;
+const { Event, Feed } = db;
 // Defines the cache buffer hours enforced by this service.
 const CACHE_BUFFER_HOURS = Number.parseInt(process.env.EVENT_CACHE_BUFFER_HOURS || '2', 10);
 
@@ -89,7 +90,7 @@ function buildAssignmentResult({
 // This function clears article event references that point outside the owning user's events.
 async function clearForeignEventReferencesForUser(userId) {
   // Derives the values through update while performing clear foreign event references for user.
-  const [affectedCount] = await Article.update(
+  const [affectedCount] = await articleRecords.update(
     { eventId: null },
     {
       where: {
@@ -123,7 +124,7 @@ async function summarizeArticleAssignments(userId, articleIds) {
   }
 
   // Loads the assigned rows needed while performing summarize article assignments.
-  const assignedRows = await Article.findAll({
+  const assignedRows = await articleRecords.findAll({
     where: {
       id: { [Op.in]: articleIds },
       userId,
@@ -386,7 +387,7 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
   }
 
   // Loads the articles needed while performing run incremental events for user.
-  const articles = await Article.findAll({
+  const articles = await articleRecords.findAll({
     where: articleWhere,
     include: [{
       model: Feed,
@@ -476,7 +477,7 @@ export async function repairRecentEventsForUser(userId, _options = {}) {
   cutoffDate.setDate(cutoffDate.getDate() - RECENCY_WINDOW_DAYS);
 
   // Loads the window articles needed while performing repair recent events for user.
-  const windowArticles = await Article.findAll({
+  const windowArticles = await articleRecords.findAll({
     where: {
       userId,
       ...canonicalArticleWhere(),
@@ -544,7 +545,7 @@ export async function repairRecentEventsForUser(userId, _options = {}) {
     `(${ownedPreviousEventIds.size}/${previousEventIds.size} events affected)`
   );
 
-  await Article.update(
+  await articleRecords.update(
     { eventId: null },
     { where: { id: { [Op.in]: windowArticleIds }, ...canonicalArticleWhere() } }
   );
@@ -552,7 +553,7 @@ export async function repairRecentEventsForUser(userId, _options = {}) {
   let deletedCount = 0;
 
   if (ownedPreviousEventIds.size) {
-    const retainedEventRows = await Article.findAll({
+    const retainedEventRows = await articleRecords.findAll({
       where: {
         eventId: { [Op.in]: ownedPreviousEventIdList },
         userId,
@@ -631,7 +632,7 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
   // Repeats this processing step while eligible work remains.
   while (true) {
     // Loads the articles needed while performing backfill historical events for user.
-    const articles = await Article.findAll({
+    const articles = await articleRecords.findAll({
       where: {
         userId,
         ...canonicalArticleWhere(),

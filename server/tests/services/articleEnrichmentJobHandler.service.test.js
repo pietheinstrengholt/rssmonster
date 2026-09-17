@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
@@ -26,7 +27,7 @@ import {
 import { requeueDeadProcessingJobs } from '../../services/jobs/processingJobOperator.js';
 import { recoverExpiredProcessingJobs } from '../../services/jobs/processingJobQueue.js';
 
-const { Article, Category, Feed, ProcessingFailure, ProcessingJob, Tag, User } = db;
+const { Category, Feed, ProcessingFailure, ProcessingJob, Tag, User } = db;
 
 const uniqueName = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const leaseOwner = 'article-enrichment-test-worker';
@@ -89,7 +90,7 @@ describe('article_enrichment processing-job handler', () => {
     payloadOverrides = {}
   } = {}) => {
     const suffix = uniqueName('target');
-    const article = await Article.create({
+    const article = await articleRecords.create({
       userId: feed.userId,
       feedId: feed.id,
       title: `Handler article ${suffix}`,
@@ -202,7 +203,7 @@ describe('article_enrichment processing-job handler', () => {
       status: 'succeeded'
     });
 
-    const persisted = await Article.findByPk(article.id);
+    const persisted = await articleRecords.findByPk(article.id);
     expect(persisted).toMatchObject({
       contentSummaryBullets: ['First fact', 'Second fact'],
       advertisementScore: 4,
@@ -266,7 +267,7 @@ describe('article_enrichment processing-job handler', () => {
       result: { status: 'obsolete', reason: 'already_complete' }
     });
     expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
-    expect((await Article.findByPk(article.id)).aiAnalysisStatus).toBe('complete');
+    expect((await articleRecords.findByPk(article.id)).aiAnalysisStatus).toBe('complete');
   });
 
   it('completes a stale content-version job without overwriting the revision', async () => {
@@ -283,7 +284,7 @@ describe('article_enrichment processing-job handler', () => {
       result: { status: 'obsolete', reason: 'stale_version' }
     });
     expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
-    const persisted = await Article.findByPk(article.id);
+    const persisted = await articleRecords.findByPk(article.id);
     expect(persisted.title).toBe('Newer revised title');
     expect(persisted.aiAnalysisStatus).toBe('pending');
   });
@@ -297,7 +298,7 @@ describe('article_enrichment processing-job handler', () => {
 
     const handling = handleArticleEnrichmentJob(job);
     await vi.waitFor(() => expect(finishInference).toBeTypeOf('function'));
-    await Article.update({
+    await articleRecords.update({
       title: 'Revision committed during inference',
       contentTextHash: uniqueName('inference-race-hash'),
       aiAnalysisStatus: 'pending'
@@ -305,7 +306,7 @@ describe('article_enrichment processing-job handler', () => {
     finishInference(successfulAnalysis);
 
     await expect(handling).resolves.toEqual({ status: 'obsolete', reason: 'stale_version' });
-    const persisted = await Article.findByPk(article.id);
+    const persisted = await articleRecords.findByPk(article.id);
     expect(persisted.title).toBe('Revision committed during inference');
     expect(persisted.aiAnalysisStatus).toBe('pending');
     expect(persisted.contentSummaryBullets).toBeNull();
@@ -386,7 +387,7 @@ describe('article_enrichment processing-job handler', () => {
       status: 'pending'
     });
 
-    const persisted = await Article.findByPk(article.id);
+    const persisted = await articleRecords.findByPk(article.id);
     expect(persisted.aiAnalysisStatus).toBe('processing');
     expect(persisted.contentSummaryBullets).toBeNull();
     expect(persisted.qualityScore).not.toBe(83);
@@ -427,7 +428,7 @@ describe('article_enrichment processing-job handler', () => {
     await expect(executeClaimedProcessingJob(job)).resolves.toMatchObject({ status: 'dead' });
 
     expect((await job.reload()).status).toBe('dead');
-    const persisted = await Article.findByPk(article.id);
+    const persisted = await articleRecords.findByPk(article.id);
     expect(persisted.aiAnalysisStatus).toBe('failed');
     expect(persisted.filteredInd).toBe(false);
     expect(persisted.status).toBe('unread');

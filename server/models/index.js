@@ -42,6 +42,7 @@ import OidcTransactionModel from './oidcTransaction.js';
 import CategoryModel from './category.js';
 import FeedModel from './feed.js';
 import ArticleModel from './article.js';
+import ArticleInteractionModel from './articleInteraction.js';
 import TagModel from './tag.js';
 import ActionModel from './action.js';
 import SettingModel from './setting.js';
@@ -72,6 +73,7 @@ const OidcTransaction = OidcTransactionModel(sequelize);
 const Category = CategoryModel(sequelize);
 const Feed = FeedModel(sequelize);
 const Article = ArticleModel(sequelize);
+const ArticleInteraction = ArticleInteractionModel(sequelize);
 const Tag = TagModel(sequelize);
 const Action = ActionModel(sequelize);
 const Setting = SettingModel(sequelize);
@@ -127,6 +129,12 @@ User.hasMany(PushSubscription, {
   onDelete: 'CASCADE'
 });
 PushSubscription.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// Each Article retains its owner's independent current interaction state.
+Article.hasOne(ArticleInteraction, { foreignKey: 'articleId', as: 'interaction', onDelete: 'CASCADE' });
+ArticleInteraction.belongsTo(Article, { foreignKey: 'articleId', as: 'article', onDelete: 'CASCADE' });
+User.hasMany(ArticleInteraction, { foreignKey: 'userId', onDelete: 'CASCADE' });
+ArticleInteraction.belongsTo(User, { foreignKey: 'userId' });
 
 // User ↔ Article
 User.hasMany(Article, { foreignKey: 'userId', onDelete: 'CASCADE' });
@@ -292,6 +300,7 @@ export default {
   Category,
   Feed,
   Article,
+  ArticleInteraction,
   Tag,
   Action,
   Setting,

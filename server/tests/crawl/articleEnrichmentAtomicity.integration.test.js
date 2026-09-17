@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({ analyzeArticleContent: vi.fn() }));
@@ -15,7 +16,7 @@ import updateArticle, {
   applyArticleUpdate
 } from '../../services/crawl/persistence/updateArticle.js';
 
-const { Article, Category, Feed, ProcessingJob, User } = db;
+const { Category, Feed, ProcessingJob, User } = db;
 
 const uniqueName = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
@@ -135,7 +136,7 @@ describe('article enrichment transaction atomicity', () => {
     })).rejects.toBe(queueError);
 
     findOrCreate.mockRestore();
-    expect(await Article.findOne({ where: { url: data.link } })).toBeNull();
+    expect(await articleRecords.findOne({ where: { url: data.link } })).toBeNull();
   });
 
   it('rolls back a revision when its versioned enrichment job cannot be inserted', async () => {
@@ -162,7 +163,7 @@ describe('article enrichment transaction atomicity', () => {
     })).rejects.toBe(queueError);
 
     findOrCreate.mockRestore();
-    const persisted = await Article.findByPk(saved.article.id);
+    const persisted = await articleRecords.findByPk(saved.article.id);
     expect(persisted.title).toBe(originalData.title);
     expect(persisted.contentTextHash).toBe(originalData.contentTextHash);
     expect(persisted.aiAnalysisStatus).toBe('complete');

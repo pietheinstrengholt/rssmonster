@@ -156,3 +156,8 @@ describe('push notification delivery', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 });
+
+vi.mock('../../services/articles/articleRecords.js', async () => {
+  const { default: models } = await import('../../models/index.js');
+  return { articleRecords: models.Article };
+});

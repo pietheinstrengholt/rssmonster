@@ -943,3 +943,8 @@ describe('MCP controller', () => {
     }));
   });
 });
+
+vi.mock('../../services/articles/articleRecords.js', async () => {
+  const { default: models } = await import('../../models/index.js');
+  return { articleRecords: models.Article };
+});

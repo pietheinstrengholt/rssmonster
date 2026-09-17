@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
@@ -13,7 +14,7 @@ async function fixture(count) {
   const category = await db.Category.create({ userId: user.id, name: 'Capacity' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Capacity', url: `https://${user.id}.example/rss` });
   const sources = []; const islands = [];
-  const add = async (index, behavior = { clickedAmount: 1, lastClickedAt: now }) => db.Article.create({
+  const add = async (index, behavior = { clickedAmount: 1, lastClickedAt: now }) => articleRecords.create({
     userId: user.id, feedId: feed.id, title: `Distinct technical interest ${index}`, status: 'read', publishedAt: new Date('2022-01-01'), embedding_model: 'test-model', articleVector: vector(index), ...behavior
   });
   for (let i = 0; i < count; i++) {

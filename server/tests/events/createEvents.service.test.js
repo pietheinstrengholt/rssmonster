@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../../models/index.js';
@@ -34,7 +35,7 @@ async function createUserGraph(prefix) {
 
 // This function creates a canonical article with an event vector.
 async function createArticle(user, feed, label, status = 'unread', overrides = {}) {
-  return Article.create({
+  return articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     title: `${label} article`,
@@ -71,7 +72,7 @@ describe('createAndAssignEvent', () => {
       });
 
       const event = await Event.findByPk(eventId, { transaction });
-      const linkedSeedArticle = await Article.findByPk(seedArticle.id, { transaction });
+      const linkedSeedArticle = await articleRecords.findByPk(seedArticle.id, { transaction });
 
       expect(event.representativeArticleId).toBe(seedArticle.id);
       expect(event.developingArticleId).toBe(seedArticle.id);
@@ -83,7 +84,7 @@ describe('createAndAssignEvent', () => {
       await transaction.rollback();
 
       expect(await Event.findByPk(eventId)).toBeNull();
-      expect(await Article.findByPk(seedArticle.id)).toMatchObject({
+      expect(await articleRecords.findByPk(seedArticle.id)).toMatchObject({
         eventId: null,
         status: 'read'
       });

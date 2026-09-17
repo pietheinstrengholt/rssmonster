@@ -478,3 +478,8 @@ describe('database reset helper', () => {
     expect(mocked.sequelize.sync).not.toHaveBeenCalled();
   });
 });
+
+vi.mock('../../services/articles/articleRecords.js', async () => {
+  const { default: models } = await import('../../models/index.js');
+  return { articleRecords: models.Article };
+});

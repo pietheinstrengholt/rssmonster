@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { readSemanticFixtureFile as readFile } from './semanticBatchFixtures.js';
 import { createHash } from 'node:crypto';
@@ -54,7 +55,7 @@ export async function insertExpansionArticles(context, articles, vectors) {
     sentimentScore: 70, aiAnalysisCompletedAt: new Date(article.publishedAt)
   }));
   const stored = [];
-  for (const value of values) stored.push(await db.Article.create(value));
+  for (const value of values) stored.push(await articleRecords.create(value));
   return stored;
 }
 
@@ -70,7 +71,7 @@ export async function processExpansionScenario(scenario, vectors, setClock) {
     await insertExpansionArticles(context, training, vectors);
     profiles = await buildInterestIslandProfilesForUser(context.userId, scenario.mode === 'capacity' ? { maxIslands: 3 } : {});
     await persistIslandProfilesForUser(context.userId, profiles);
-    snapshots.push({ phase: 'formation', articleCount: await db.Article.count({ where: { userId: context.userId } }),
+    snapshots.push({ phase: 'formation', articleCount: await articleRecords.count({ where: { userId: context.userId } }),
       memberIds: profiles.flatMap(p => p.articles.map(a => a.articleId)) });
     await insertExpansionArticles(context, source.filter(a => a.regression.role === 'held-out'), vectors);
   } else {
@@ -87,7 +88,7 @@ export async function processExpansionScenario(scenario, vectors, setClock) {
   }
   setClock(finalTime);
   await scoreArticlesFromIslandsForUser(context.userId);
-  const stored = await db.Article.findAll({ where: { userId: context.userId }, include: [{ model: db.Event, as: 'event' }], order: [['id', 'ASC']] });
+  const stored = await articleRecords.findAll({ where: { userId: context.userId }, include: [{ model: db.Event, as: 'event' }], order: [['id', 'ASC']] });
   const { context: evidence, results } = await explainArticleInterests(context.userId, stored, { now: finalTime });
   const byUrl = new Map(source.map(a => [a.url, a]));
   const sourceOrder = new Map(source.map((a, i) => [a.sourceId, i]));
@@ -128,7 +129,7 @@ const safeRow = row => ({ sourceId: row.sourceId, title: row.title, eventId: row
 export async function writeExpansionReport(results, checks, controlled, naturalTransfers = []) {
   await mkdir(expansionDirectory, { recursive: true });
   const mainUser = await db.User.findOne({ where: { username: 'semantic-regression-user' } });
-  const mainCount = mainUser ? await db.Article.count({ where: { userId: mainUser.id } }) : 0;
+  const mainCount = mainUser ? await articleRecords.count({ where: { userId: mainUser.id } }) : 0;
   const metrics = expansionMetrics(results);
   const payload = { mainCorpusCount: mainCount, expansionCorpusCount: metrics['Expansion articles'],
     combinedCorpusCount: mainCount + metrics['Expansion articles'], metrics, checks, controlled, naturalTransfers,

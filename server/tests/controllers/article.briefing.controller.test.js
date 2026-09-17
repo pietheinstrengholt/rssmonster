@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeAll, describe, expect, it } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
@@ -6,7 +7,6 @@ import { getJwtSecret } from '../../config/auth.js';
 import { extractBriefingExcerpt } from '../../services/dailyBriefing/dailyBriefing.service.js';
 
 const {
-  Article,
   BriefingPreference,
   Category,
   Event,
@@ -38,7 +38,7 @@ const authHeaderFor = user => `Bearer ${jwt.sign({
 
 // This function creates a canonical article suitable for briefing fixtures.
 const createArticle = ({ user, feed, slug, title, publishedAt, status = 'unread', interestScore = 0 }) => (
-  Article.create({
+  articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     status,
@@ -199,7 +199,7 @@ async function createBriefingFixture() {
   }).then(article => article.update({ eventId: eventThree.id }));
   await eventThree.update({ developingArticleId: eventThreeDevelopingMember.id });
 
-  await Article.create({
+  await articleRecords.create({
     userId: owner.id,
     feedId: firstFeed.id,
     status: 'unread',

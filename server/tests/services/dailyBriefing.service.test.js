@@ -102,7 +102,7 @@ describe('dailyBriefing.service', () => {
     expect(where[Op.and][0][Op.and][2][Op.or][0]).toEqual({
       qualityScore: { [Op.gte]: 60 }
     });
-    expect(where[Op.and][1].sql).toContain('articles.interestScore <> 0');
+    expect(where[Op.and][1].sql).toContain('interaction.interestScore <> 0');
     expect(where[Op.and][1].sql).toContain('>= 3');
   });
 
@@ -376,4 +376,9 @@ describe('dailyBriefing.service', () => {
     await expect(getDailyBriefing({ userId: null })).rejects.toThrow('userId is required');
     expect(mocked.settingFindOne).not.toHaveBeenCalled();
   });
+});
+
+vi.mock('../../services/articles/articleRecords.js', async () => {
+  const { default: models } = await import('../../models/index.js');
+  return { articleRecords: models.Article };
 });

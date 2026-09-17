@@ -106,9 +106,19 @@ export function prepareIslandEvidence(islands, evidence, explicitEvidence = evid
 // Apply interaction windows and stable interaction ordering before the existing evidence bounds.
 export async function loadIslandEvidence(userId, { transaction, now = Date.now() } = {}) {
   const where = { userId, ...canonicalArticleWhere(), filteredInd: false, articleVector: { [Op.ne]: null } };
-  const attributes = ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'feedId', 'publishedAt', 'articleVector', 'embedding_model', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', ...BEHAVIOR_TIMESTAMP_FIELDS];
-  const query = (extra, limit, fields = BEHAVIOR_TIMESTAMP_FIELDS) => db.Article.findAll({ where: { ...where, ...extra }, attributes,
-    order: [[behaviorTimestampExpression(db.sequelize, fields), 'DESC'], ['id', 'ASC']], limit, raw: true, transaction });
+  const articleAttributes = ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'feedId', 'publishedAt', 'articleVector', 'embedding_model'];
+  const query = async (extra, limit, fields = BEHAVIOR_TIMESTAMP_FIELDS) => {
+    const rows = await db.ArticleInteraction.findAll({
+      where: { userId, ...extra },
+      attributes: ['articleId', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', ...BEHAVIOR_TIMESTAMP_FIELDS],
+      include: [{ model: db.Article, as: 'article', required: true, where, attributes: articleAttributes }],
+      order: [[behaviorTimestampExpression(db.sequelize, fields), 'DESC'], ['articleId', 'ASC']], limit, transaction
+    });
+    return rows.map(row => {
+      const { article, ...signals } = row.get({ plain: true });
+      return { ...article, ...signals };
+    });
+  };
   const recent = field => db.Sequelize.where(behaviorTimestampExpression(db.sequelize, [field]), {
     [Op.gte]: new Date(now - EXPLICIT_WINDOW_DAYS * DAY_MS), [Op.lte]: new Date(now)
   });

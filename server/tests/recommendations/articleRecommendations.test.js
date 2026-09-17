@@ -1,10 +1,11 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
 import { getArticleRecommendations } from '../../services/recommendations/articleRecommendations.js';
 
 // Provides the database models used by recommendation integration tests.
-const { Article, Category, Event, Feed, User } = db;
+const { Category, Event, Feed, User } = db;
 
 // This function creates an isolated user, category, and feed for recommendation tests.
 async function createUserGraph(label = 'recommendations') {
@@ -32,7 +33,7 @@ async function createUserGraph(label = 'recommendations') {
 
 // This function creates a vectorized article with deterministic recommendation metadata.
 async function createArticle(graph, slug, vector, overrides = {}) {
-  return Article.create({
+  return articleRecords.create({
     userId: graph.user.id,
     feedId: graph.feed.id,
     status: 'unread',
@@ -54,7 +55,7 @@ async function linkArticlesToEvent(graph, articles, name) {
     name,
     articleCount: articles.length
   });
-  await Article.update(
+  await articleRecords.update(
     { eventId: event.id },
     { where: { id: articles.map(article => article.id) } }
   );

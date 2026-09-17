@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import bcrypt from 'bcryptjs';
@@ -8,7 +9,7 @@ import {
   createFeverCredentialHash
 } from '../../utils/apiCredentials.js';
 
-const { Article, Category, Feed, Hotlink, User, sequelize } = db;
+const { Category, Feed, Hotlink, User, sequelize } = db;
 
 let app;
 const TEST_FAVICON_BASE64 =
@@ -51,7 +52,7 @@ const createFixture = async () => {
     feedName: 'Fever Feed',
     url: 'https://example.com/feed.xml'
   });
-  const linkedArticle = await Article.create({
+  const linkedArticle = await articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     status: 'unread',
@@ -64,7 +65,7 @@ const createFixture = async () => {
     createdAt: new Date('2026-05-01T10:00:00Z'),
     hotlinks: 2
   });
-  const unlinkedArticle = await Article.create({
+  const unlinkedArticle = await articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     status: 'unread',
@@ -87,7 +88,7 @@ const createFixture = async () => {
 
 // This function creates a deterministic batch of Fever paging articles.
 const createPagingArticles = async (user, feed, count, prefix) =>
-  Article.bulkCreate(Array.from({ length: count }, (_, index) => ({
+  articleRecords.bulkCreate(Array.from({ length: count }, (_, index) => ({
     userId: user.id,
     feedId: feed.id,
     status: 'unread',

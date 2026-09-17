@@ -1,5 +1,6 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 import db from '../models/index.js';
-const { Article, Feed, Category, GeneratedFeed } = db;
+const { Feed, Category, GeneratedFeed } = db;
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { executeGeneratedFeedExpression } from '../services/generatedFeeds/generatedFeedExecution.js';
 import { buildRssXml } from '../services/rss/rssRenderer.js';
@@ -12,7 +13,7 @@ const requestBaseUrl = req => `${req.protocol}://${req.get('host')}`;
 const loadRssArticles = async ({ userId, itemIds }) => {
   if (!itemIds.length) return [];
 
-  const articles = await Article.findAll({
+  const articles = await articleRecords.findAll({
     where: {
       id: itemIds,
       userId,
@@ -66,7 +67,7 @@ const generateRss = async (req, res, next) => {
       feedInclude.required = true; // enforce category filter
     }
 
-    const articles = await Article.findAll({
+    const articles = await articleRecords.findAll({
       where,
       include: [feedInclude],
       order: [

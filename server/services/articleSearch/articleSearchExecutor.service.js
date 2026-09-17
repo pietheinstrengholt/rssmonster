@@ -1,3 +1,4 @@
+import { articleRecords } from '../articles/articleRecords.js';
 // Builds and executes Sequelize article search queries from normalized filters.
 // It keeps database predicate construction separate from higher-level search orchestration.
 import db from '../../models/index.js';
@@ -300,7 +301,7 @@ export const buildArticleSearchQuery = ({
 };
 
 // Executes the prepared article query against the Article model.
-export const executeSearch = async ({ where, include, attributes, order, limit }) => Article.findAll({
+export const executeSearch = async ({ where, include, attributes, order, limit }) => articleRecords.findAll({
   where,
   include,
   attributes,
@@ -309,13 +310,13 @@ export const executeSearch = async ({ where, include, attributes, order, limit }
 });
 
 // Counts articles for a prepared query without materializing matching ids.
-export const executeSearchCount = async ({ where }) => Article.count({
+export const executeSearchCount = async ({ where }) => articleRecords.count({
   where
 });
 
 // Counts only the bounded answer requested by a limited database-backed search.
 export const executeSearchBoundedCount = async ({ where, limit }) => {
-  const rows = await Article.findAll({
+  const rows = await articleRecords.findAll({
     where,
     attributes: ['id'],
     limit,
@@ -326,7 +327,7 @@ export const executeSearchBoundedCount = async ({ where, limit }) => {
 };
 
 // Counts distinct matching feeds without materializing article IDs.
-export const executeSearchSourceCount = async ({ where }) => Article.count({
+export const executeSearchSourceCount = async ({ where }) => articleRecords.count({
   where,
   distinct: true,
   col: 'feedId'

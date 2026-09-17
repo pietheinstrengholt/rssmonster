@@ -1,3 +1,4 @@
+import { articleRecords } from '../articles/articleRecords.js';
 import { explainArticleInterests } from '../score/scoreArticlesFromIslands.js';
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
@@ -9,7 +10,6 @@ import { applyArticleScoreEligibility } from '../articles/articleScoreEligibilit
 
 // Provides the shared dependencies used by this service.
 const {
-  Article,
   Event,
   Feed,
   Setting,
@@ -388,7 +388,7 @@ export async function getDailyBriefing({
     showOnlyDevelopingEventArticles
   });
   // Loads the candidate articles needed while performing get daily briefing.
-  const candidateArticles = await Article.findAll({
+  const candidateArticles = await articleRecords.findAll({
     where: articleWhere,
     attributes: ['id', 'eventId', 'feedId', 'publishedAt'],
     raw: true
@@ -428,7 +428,7 @@ export async function getDailyBriefing({
   );
   const representativeArticles = await (
     representativeArticleIds.length
-      ? Article.findAll({
+      ? articleRecords.findAll({
         where: {
           id: { [Op.in]: representativeArticleIds },
           userId,

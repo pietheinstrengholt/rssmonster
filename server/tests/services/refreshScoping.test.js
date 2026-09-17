@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
@@ -14,9 +15,9 @@ async function fixture(now) {
   const category = await db.Category.create({ userId: user.id, name: 'Scope' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Scope', url: `https://${user.id}.example/rss` });
   const values = { userId: user.id, feedId: feed.id, title: 'PostgreSQL technical deployment', publishedAt: new Date(now), embedding_model: 'test-model', articleVector: [1, 0] };
-  const source = await db.Article.create({ ...values, status: 'read' });
-  const related = await db.Article.create({ ...values, status: 'unread' });
-  const unrelated = await db.Article.create({ ...values, status: 'unread', articleVector: [0, 1] });
+  const source = await articleRecords.create({ ...values, status: 'read' });
+  const related = await articleRecords.create({ ...values, status: 'unread' });
+  const unrelated = await articleRecords.create({ ...values, status: 'unread', articleVector: [0, 1] });
   const island = await db.Island.create({ userId: user.id, label: 'Database', weight: 0.4, embedding_model: 'test-model', islandVector: [0.8, 0.6] });
   return { user, source, related, unrelated, island };
 }
@@ -125,7 +126,7 @@ describe('conservative refresh scoping and replay', () => {
     await graph.source.update({ favoriteInd: 1, favoritedAt: new Date(now) });
     await runIslandCalibrationForUser(graph.user.id, { generateLabels: false });
     const expected = await scores(graph);
-    const writes = vi.spyOn(db.Article, 'update');
+    const writes = vi.spyOn(db.ArticleInteraction, 'update');
     const result = await scoring.scoreArticlesFromIslandsForUser(graph.user.id);
     expect(result).toMatchObject({ candidatesRescored: 2, interestScoresChanged: 0 });
     // Successful unchanged evaluations refresh their diagnostic clock, not the score.

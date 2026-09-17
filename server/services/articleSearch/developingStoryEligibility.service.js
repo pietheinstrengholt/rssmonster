@@ -6,7 +6,7 @@ const { Article } = db;
 
 // Defines the persisted conditions represented by the Article isDevelopingStory virtual field.
 export const DEVELOPING_STORY_ELIGIBILITY_SQL = `(
-  articles.status = 'unread'
+  interaction.readState = 'unread'
   AND EXISTS (
     SELECT 1
     FROM events developing_story_event

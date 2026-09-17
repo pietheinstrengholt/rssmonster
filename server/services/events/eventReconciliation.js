@@ -1,3 +1,4 @@
+import { articleRecords } from '../articles/articleRecords.js';
 import db from '../../models/index.js';
 import { debugSemanticLog } from '../observability/semanticLogging.js';
 import { Op } from 'sequelize';
@@ -11,7 +12,7 @@ import { selectDevelopingArticleId } from './developingArticlePointer.js';
 import { buildCanonicalEventProjection } from './eventProjection.js';
 
 // Provides the shared dependencies used by this service.
-const { Article, Event } = db;
+const { Event } = db;
 
 // This function maps event age and size into the lifecycle status used by event queries.
 export function resolveEventStatus(articleCount, lastSeenAt) {
@@ -91,7 +92,7 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
   });
 
   // Loads the all event articles needed while performing reconcile touched events.
-  const allEventArticles = await Article.findAll({
+  const allEventArticles = await articleRecords.findAll({
     where: {
       eventId: { [Op.in]: touchedIds },
       userId,

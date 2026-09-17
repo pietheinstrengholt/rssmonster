@@ -1,10 +1,11 @@
+import { articleRecords } from '../articles/articleRecords.js';
 import { createHash } from 'node:crypto';
 import { Agent } from 'node:https';
 import webpush from 'web-push';
 import db from '../../models/index.js';
 import { buildVisibleArticleWhere } from '../articles/visibleArticleScope.js';
 
-const { Article, PushSubscription } = db;
+const { PushSubscription } = db;
 const INVALID_SUBSCRIPTION_STATUSES = new Set([404, 410]);
 const PUSH_DELIVERY_TIMEOUT_MS = 10_000;
 
@@ -84,7 +85,7 @@ export const sendNewArticlePush = async (userId, count, { logger = console } = {
   const subscriptions = await PushSubscription.findAll({ where: { userId } });
   if (subscriptions.length === 0) return { sent: 0, removed: 0 };
 
-  const unreadCount = await Article.count({
+  const unreadCount = await articleRecords.count({
     where: {
       ...await buildVisibleArticleWhere(userId),
       status: 'unread'

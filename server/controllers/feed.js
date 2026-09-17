@@ -1,3 +1,4 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 import db from '../models/index.js';
 const { Feed, FeedCrawlResult, Article, Category } = db;
 
@@ -121,7 +122,7 @@ const getFeeds = async (req, res, _next) => {
       order: [["feedName", "ASC"]]
     });
     // Aggregate article counts per feed for this user
-    const articleCounts = await Article.findAll({
+    const articleCounts = await articleRecords.findAll({
       attributes: [
         'feedId',
         [Article.sequelize.fn('COUNT', Article.sequelize.col('id')), 'articleCount'],
@@ -134,7 +135,7 @@ const getFeeds = async (req, res, _next) => {
 
     // Calculate ingestion rate (average articles per day over last 30 days)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const ingestionRates = await Article.findAll({
+    const ingestionRates = await articleRecords.findAll({
       attributes: [
         'feedId',
         [Article.sequelize.fn('COUNT', Article.sequelize.col('id')), 'articleCount30Days']

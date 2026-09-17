@@ -1,3 +1,4 @@
+import { articleRecords } from '../articles/articleRecords.js';
 import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } from './eventDecisionDiagnostics.js';
 // services/events/createEvents.js
 // This service creates a new event from a set of corroborating articles.
@@ -149,7 +150,7 @@ export async function createAndAssignEvent({
   }
 
   // Loads the locked articles needed while creating and assign event.
-  const lockedArticles = await Article.findAll({
+  const lockedArticles = await articleRecords.findAll({
     where: {
       id: { [Op.in]: eventArticleIds },
       userId: article.userId,

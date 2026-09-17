@@ -1,10 +1,11 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import db from '../../models/index.js';
 import { compileItemFilter } from '../../services/crawl/filtering/itemFilter.js';
 import processArticle from '../../services/crawl/orchestration/processArticle.js';
 
-const { Article, Category, Feed, User } = db;
+const { Category, Feed, User } = db;
 
 const uniqueName = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
@@ -77,7 +78,7 @@ describe('feed item filter persistence integration', () => {
       errors: 0,
       filteredArticles: 1
     });
-    expect(await Article.findOne({
+    expect(await articleRecords.findOne({
       where: { feedId: feed.id, externalId, externalIdType: 'guid' }
     })).toBeNull();
 
@@ -88,7 +89,7 @@ describe('feed item filter persistence integration', () => {
       updatedArticles: 0,
       errors: 0
     });
-    expect(await Article.findOne({
+    expect(await articleRecords.findOne({
       where: { feedId: feed.id, externalId, externalIdType: 'guid' }
     })).toMatchObject({ title: 'Initially rejected article' });
   });
@@ -102,7 +103,7 @@ describe('feed item filter persistence integration', () => {
       acceptedEntry,
       'title:/^Accepted/'
     );
-    const stored = await Article.findOne({
+    const stored = await articleRecords.findOne({
       where: { feedId: feed.id, externalId, externalIdType: 'guid' }
     });
 
@@ -129,7 +130,7 @@ describe('feed item filter persistence integration', () => {
       errors: 0,
       filteredArticles: 1
     });
-    expect(await Article.count({
+    expect(await articleRecords.count({
       where: { feedId: feed.id, externalId, externalIdType: 'guid' }
     })).toBe(1);
     await stored.reload();
@@ -148,7 +149,7 @@ describe('feed item filter persistence integration', () => {
     );
 
     expect(rejected).toMatchObject({ filteredArticles: 1 });
-    expect(await Article.findOne({
+    expect(await articleRecords.findOne({
       where: { feedId: feed.id, externalId, externalIdType: 'guid' }
     })).toBeNull();
   });

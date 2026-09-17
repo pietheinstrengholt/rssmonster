@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
@@ -13,8 +14,8 @@ async function fixture() {
   const category = await db.Category.create({ userId: user.id, name: 'Refresh' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Refresh', url: `https://${user.id}.example/rss` });
   const values = { userId: user.id, feedId: feed.id, title: 'PostgreSQL database technical release', embedding_model: 'test-model', articleVector: [1, 0], publishedAt: new Date() };
-  const source = await db.Article.create({ ...values, status: 'read' });
-  const candidate = await db.Article.create({ ...values, status: 'unread' });
+  const source = await articleRecords.create({ ...values, status: 'read' });
+  const candidate = await articleRecords.create({ ...values, status: 'unread' });
   return { user, source, candidate, values };
 }
 const jobs = userId => db.ProcessingJob.findAll({ where: { userId, type: PERSONALIZATION_REFRESH_TYPE } });
@@ -36,9 +37,9 @@ describe('durable personalization refresh', () => {
   it('coalesces rapid feedback, calibrates Islands and refreshes only eligible owned candidates', async () => {
     const { user, source, candidate, values } = await fixture();
     const other = await fixture();
-    const filtered = await db.Article.create({ ...values, status: 'unread', filteredInd: true, interestScore: 0.123 });
-    const duplicate = await db.Article.create({ ...values, status: 'unread', duplicateOfArticleId: source.id, interestScore: 0.123 });
-    const read = await db.Article.create({ ...values, status: 'read', interestScore: 0.123 });
+    const filtered = await articleRecords.create({ ...values, status: 'unread', filteredInd: true, interestScore: 0.123 });
+    const duplicate = await articleRecords.create({ ...values, status: 'unread', duplicateOfArticleId: source.id, interestScore: 0.123 });
+    const read = await articleRecords.create({ ...values, status: 'read', interestScore: 0.123 });
     const before = computeRecommended(candidate);
     await updateArticleBehavior(source, { positiveInd: 1, positiveFeedbackAt: new Date() });
     const deadline = (await jobs(user.id))[0].availableAt;

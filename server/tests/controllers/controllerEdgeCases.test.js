@@ -343,3 +343,8 @@ describe('RSS controller edge cases', () => {
     }
   );
 });
+
+vi.mock('../../services/articles/articleRecords.js', async () => {
+  const { default: models } = await import('../../models/index.js');
+  return { articleRecords: models.Article };
+});

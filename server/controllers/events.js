@@ -1,8 +1,9 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 import db from '../models/index.js';
 import { Op } from 'sequelize';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
-const { Article, Event, Feed, Tag } = db;
+const { Event, Feed, Tag } = db;
 
 // This function fetches articles that belong to one event.
 const getEventArticles = async (req, res) => {
@@ -30,7 +31,7 @@ const getEventArticles = async (req, res) => {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    const articles = await Article.findAll({
+    const articles = await articleRecords.findAll({
       where: {
         eventId,
         userId,

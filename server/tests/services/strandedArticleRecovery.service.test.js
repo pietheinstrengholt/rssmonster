@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({ analyzeArticleContent: vi.fn() }));
@@ -13,7 +14,7 @@ import { handleArticleEnrichmentJob } from '../../services/jobs/handlers/article
 import { buildArticleAnalysisInputHash } from '../../services/crawl/enrichment/articleEnrichmentJobs.js';
 import { countStrandedArticleAnalyses } from '../../services/jobs/strandedArticleRecovery.js';
 
-const { Article, Category, Feed, ProcessingJob, Tag, User } = db;
+const { Category, Feed, ProcessingJob, Tag, User } = db;
 const uniqueName = () => `recovery-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 let user;
 let feed;
@@ -23,7 +24,7 @@ const createOwner = async () => {
   const ownedFeed = await Feed.create({ userId: owner.id, categoryId: category.id, feedName: uniqueName(), url: `https://example.com/${uniqueName()}`, applyAiAnalysis: true });
   return { user: owner, feed: ownedFeed };
 };
-const createArticle = (values = {}) => Article.create({
+const createArticle = (values = {}) => articleRecords.create({
   userId: user.id, feedId: feed.id, title: uniqueName(), contentText: 'Article body',
   contentTextHash: 'body-hash', aiAnalysisStatus: 'pending', ...values
 });
@@ -87,7 +88,7 @@ describe('stranded article recovery', () => {
 
   it('limits combined dead-job retries and stranded recovery to 100 per request', async () => {
     await ProcessingJob.create({ userId: user.id, type: 'semantic_label', dedupeKey: uniqueName(), status: 'dead', availableAt: new Date(), payload: {} });
-    await Article.bulkCreate(Array.from({ length: 100 }, () => ({
+    await articleRecords.bulkCreate(Array.from({ length: 100 }, () => ({
       userId: user.id, feedId: feed.id, title: uniqueName(), aiAnalysisStatus: 'pending'
     })));
     expect(await requeueFailedProcessingJobs({ userId: user.id })).toEqual({ requeuedCount: 100, recoveredCount: 99, remainingCount: 1 });

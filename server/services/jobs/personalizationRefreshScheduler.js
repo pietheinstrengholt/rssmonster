@@ -9,11 +9,11 @@ export const PERSONALIZATION_REFRESH_BATCH_SIZE = 25;
 // Keep empty accounts out, but include archived memory and stale scores needing clearing.
 const hasPersonalization = sequelize.literal(`(
   EXISTS (SELECT 1 FROM islands WHERE islands.userId = users.id)
-  OR EXISTS (SELECT 1 FROM articles WHERE articles.userId = users.id
+  OR EXISTS (SELECT 1 FROM articles JOIN articleInteractions interaction ON interaction.articleId = articles.id AND interaction.userId = articles.userId WHERE articles.userId = users.id
     AND articles.filteredInd = 0 AND articles.duplicateOfArticleId IS NULL
-    AND (articles.interestScore <> 0 OR (articles.articleVector IS NOT NULL
-      AND (articles.positiveInd = 1 OR articles.negativeInd = 1 OR articles.favoriteInd = 1
-        OR articles.clickedAmount > 0 OR articles.attentionBucket >= 3))))
+    AND (interaction.interestScore <> 0 OR (articles.articleVector IS NOT NULL
+      AND (interaction.positiveInd = 1 OR interaction.negativeInd = 1 OR interaction.favoriteInd = 1
+        OR interaction.clickedAmount > 0 OR interaction.attentionBucket >= 3))))
 )`);
 // Dead/cancelled work stays visible for operator recovery; the timer cannot reset retry budgets.
 const noOutstandingRefresh = sequelize.literal(`NOT EXISTS (

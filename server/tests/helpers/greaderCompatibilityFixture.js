@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import bcrypt from 'bcryptjs';
 import db from '../../models/index.js';
 import {
@@ -10,7 +11,7 @@ import {
   serializeGreaderItemId
 } from '../../services/greader/itemIds.js';
 
-const { Article, Category, Feed, User } = db;
+const { Category, Feed, User } = db;
 
 let fixtureSequence = 0;
 
@@ -55,7 +56,7 @@ export const toUsec = date => String(new Date(date).getTime() * 1000);
 
 // This function creates an article while keeping fixture timestamps explicit.
 const createArticle = (fixture, values) =>
-  Article.create({
+  articleRecords.create({
     userId: fixture.user.id,
     status: 'unread',
     favoriteInd: 0,

@@ -623,13 +623,14 @@ export const getIslandsOverview = async (req, res, _next) => {
           a.title,
           a.url,
           a.publishedAt,
-          a.favoriteInd,
-          a.clickedAmount,
-          a.positiveInd,
-          a.attentionBucket,
-          a.negativeInd,
+          interaction.favoriteInd,
+          interaction.clickedAmount,
+          interaction.positiveInd,
+          interaction.attentionBucket,
+          interaction.negativeInd,
           f.feedName
         FROM articles a
+        JOIN articleInteractions interaction ON interaction.articleId = a.id AND interaction.userId = a.userId
         LEFT JOIN feeds f
           ON f.id = a.feedId
          AND f.userId = :userId

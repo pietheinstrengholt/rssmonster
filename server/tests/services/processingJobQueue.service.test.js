@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeEach, describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
 import {
@@ -10,7 +11,7 @@ import {
   retryProcessingJob
 } from '../../services/jobs/processingJobQueue.js';
 
-const { Article, Category, Feed, ProcessingJob, User, sequelize } = db;
+const { Category, Feed, ProcessingJob, User, sequelize } = db;
 const NOW = new Date('2026-08-28T12:00:00.000Z');
 
 let user;
@@ -107,7 +108,7 @@ describe('processing job queue', () => {
       feedName: 'Processing job ownership feed',
       url: `https://example.com/${uniqueName('processing-job-feed')}.xml`
     });
-    const article = await Article.create({
+    const article = await articleRecords.create({
       userId: articleOwner.id,
       feedId: feed.id,
       title: 'Owned by another user',

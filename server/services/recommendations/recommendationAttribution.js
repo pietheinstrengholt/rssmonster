@@ -1,11 +1,11 @@
-import db from '../../models/index.js';
+import { articleRecords } from '../articles/articleRecords.js';
 import { explainArticleInterests } from '../score/scoreArticlesFromIslands.js';
 
 // Only explain a stored score when current evidence reproduces it. Never invent an Island for fallback evidence.
 export async function loadInterestIslandAttributions(userId, articles) {
   const positive = articles.filter(a => Number(a.interestScore) > 0);
   if (!positive.length) return new Map();
-  const rows = await db.Article.findAll({ where: { userId, id: positive.map(a => a.id) }, raw: true,
+  const rows = await articleRecords.findAll({ where: { userId, id: positive.map(a => a.id) }, raw: true,
     attributes: ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'articleVector', 'embedding_model', 'interestScore', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket'] });
   const { context, results } = await explainArticleInterests(userId, rows);
   const attributions = new Map();

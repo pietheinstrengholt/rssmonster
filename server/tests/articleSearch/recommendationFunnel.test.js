@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
@@ -8,12 +9,12 @@ async function fixture() {
   const category = await db.Category.create({ userId: user.id, name: 'Funnel' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Funnel', url: `https://${user.id}.example/rss` });
   const values = { userId: user.id, feedId: feed.id, title: 'Article', status: 'unread', publishedAt: new Date(), interestScoredAt: new Date() };
-  const [neutral, positive, negative, representative, member] = await db.Article.bulkCreate([
+  const [neutral, positive, negative, representative, member] = await articleRecords.bulkCreate([
     values, { ...values, interestScore: 0.5 }, { ...values, interestScore: -0.2 }, values, values
   ]);
-  await db.Article.create({ ...values, filteredInd: true });
+  await articleRecords.create({ ...values, filteredInd: true });
   const event = await db.Event.create({ userId: user.id, name: 'Event', articleCount: 2, sourceCount: 1, representativeArticleId: representative.id });
-  await db.Article.update({ eventId: event.id }, { where: { id: [representative.id, member.id] } });
+  await articleRecords.update({ eventId: event.id }, { where: { id: [representative.id, member.id] } });
   await db.BriefingPreference.create({ userId: user.id, selectionPeriod: '24h', includeOnlyUnreadArticles: false });
   return { user, neutral, positive, negative, representative, member };
 }

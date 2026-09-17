@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
 
-const { Article, Feed, Hotlink, Setting, SmartFolder, User } = db;
+const { Article, ArticleInteraction, Feed, Hotlink, Setting, SmartFolder, User } = db;
 
 describe('model schema declarations', () => {
   it('keeps model uniqueness in sync with migrations', () => {
@@ -143,7 +143,7 @@ describe('model schema declarations', () => {
   });
 
   it('declares an optional explicit article read timestamp', () => {
-    expect(Article.rawAttributes.readAt).toMatchObject({
+    expect(ArticleInteraction.rawAttributes.readAt).toMatchObject({
       allowNull: true,
       defaultValue: null
     });

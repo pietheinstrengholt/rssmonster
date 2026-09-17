@@ -7,7 +7,7 @@ const { Article } = db;
 
 // Defines the briefing eligibility sql enforced by this service.
 export const BRIEFING_ELIGIBILITY_SQL = `(
-  articles.interestScore <> 0
+  interaction.interestScore <> 0
   OR EXISTS (
     SELECT 1
     FROM events briefing_event
@@ -18,7 +18,7 @@ export const BRIEFING_ELIGIBILITY_SQL = `(
 )`;
 
 // Defines the interest matched eligibility sql enforced by this service.
-const INTEREST_MATCHED_ELIGIBILITY_SQL = 'articles.interestScore <> 0';
+const INTEREST_MATCHED_ELIGIBILITY_SQL = 'interaction.interestScore <> 0';
 // This function normalizes the configured distinct-source threshold.
 const normalizeMinimumDistinctSources = value => {
   // Coerces the numeric value into the representation required while normalizing minimum distinct sources.

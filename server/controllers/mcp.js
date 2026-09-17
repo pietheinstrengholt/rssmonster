@@ -1,3 +1,4 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -513,7 +514,7 @@ export const registerRssMonsterTools = (server, userId) => {
               : {})
           };
           const direction = sort === 'published_asc' ? 'ASC' : 'DESC';
-          const articles = await Article.findAll({
+          const articles = await articleRecords.findAll({
             attributes: articleAttributesForDetail(page.detail),
             include: [{
               model: Feed,
@@ -588,7 +589,7 @@ export const registerRssMonsterTools = (server, userId) => {
             dialect: Article.sequelize.getDialect(),
             escapeValue: value => Article.sequelize.escape(value)
           });
-          const articles = await Article.findAll({
+          const articles = await articleRecords.findAll({
             attributes: articleAttributesForDetail(page.detail),
             include: ARTICLE_LIST_INCLUDE,
             where: {
@@ -666,7 +667,7 @@ export const registerRssMonsterTools = (server, userId) => {
           };
           const dateColumn = applyArticleDateRange(whereClause, { from, to, dateBasis });
 
-          const articles = await Article.findAll({
+          const articles = await articleRecords.findAll({
             attributes: articleAttributesForDetail(page.detail),
             include: ARTICLE_LIST_INCLUDE,
             where: whereClause,
@@ -744,7 +745,7 @@ export const registerRssMonsterTools = (server, userId) => {
 
           const dateColumn = applyArticleDateRange(whereClause, { from, to, dateBasis });
 
-          const articles = await Article.findAll({
+          const articles = await articleRecords.findAll({
             attributes: articleAttributesForDetail(page.detail),
             include: ARTICLE_LIST_INCLUDE,
             where: whereClause,
@@ -816,7 +817,7 @@ export const registerRssMonsterTools = (server, userId) => {
             ...canonicalArticleWhere()
           };
 
-          const articles = await Article.findAll({
+          const articles = await articleRecords.findAll({
             attributes: articleAttributesForDetail(page.detail),
             include: ARTICLE_LIST_INCLUDE,
             where: whereClause,
@@ -872,7 +873,7 @@ export const registerRssMonsterTools = (server, userId) => {
         console.log('[MCP Tool Called] hot_articles - sort:', sort, 'status:', status);
         try {
           const page = articlePageOptions({ cursor, detail, limit });
-          const articles = await Article.findAll({
+          const articles = await articleRecords.findAll({
             attributes: articleAttributesForDetail(page.detail),
             include: ARTICLE_LIST_INCLUDE,
             where: {
@@ -1046,7 +1047,7 @@ export const registerRssMonsterTools = (server, userId) => {
         console.log('[MCP Tool Called] articles_by_tag - tag:', tag);
         try {
           const page = articlePageOptions({ cursor, detail, limit });
-          const articles = await Article.findAll({
+          const articles = await articleRecords.findAll({
             attributes: articleAttributesForDetail(page.detail),
             include: [
               ...ARTICLE_LIST_INCLUDE,
@@ -1142,7 +1143,7 @@ export const registerRssMonsterTools = (server, userId) => {
             ...canonicalArticleWhere()
           };
 
-          const articles = await Article.findAll({
+          const articles = await articleRecords.findAll({
             attributes: articleAttributesForDetail(page.detail),
             include: ARTICLE_LIST_INCLUDE,
             where: whereClause,
@@ -1184,7 +1185,7 @@ export const registerRssMonsterTools = (server, userId) => {
         console.log('[MCP Tool Called] tags_clicked_articles');
         try {
           // 1) Fetch clicked article IDs for this user
-          const clicked = await Article.findAll({
+          const clicked = await articleRecords.findAll({
             where: { userId: userId, clickedAmount: { [Op.gt]: 0 }, ...canonicalArticleWhere() },
             attributes: ['id'],
             raw: true
@@ -1321,7 +1322,7 @@ export const registerRssMonsterTools = (server, userId) => {
         console.log('[MCP Tool Called] get_article_content - articleIds:', articleIds, 'format:', format);
         try {
           const contentField = format === 'html' ? 'contentHtml' : 'contentText';
-          const articles = await Article.findAll({
+          const articles = await articleRecords.findAll({
             attributes: [...ARTICLE_CONTENT_METADATA_ATTRIBUTES, contentField],
             where: {
               id: { [Op.in]: [...new Set(articleIds)] },

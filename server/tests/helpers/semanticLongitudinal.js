@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import db from '../../models/index.js';
 import { explainArticleInterests } from '../../services/score/scoreArticlesFromIslands.js';
 import { computeRecommended, computeRecommendedBreakdown } from '../../services/recommendations/recommendedScore.js';
@@ -5,7 +6,7 @@ import { collectIslandDiagnostics, interestPathMetrics, recommendationCoverage }
 
 // All rows are loaded once per snapshot. No corpus-wide pairwise diagnostic comparisons.
 export async function longitudinalSnapshot(userId, name) {
-  const articles = await db.Article.findAll({ where: { userId }, include: [
+  const articles = await articleRecords.findAll({ where: { userId }, include: [
     { model: db.Event, as: 'event', required: false }, { model: db.Feed, required: false }
   ], order: [['id', 'ASC']] });
   const { results } = await explainArticleInterests(userId, articles);

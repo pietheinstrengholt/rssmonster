@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../../models/index.js';
@@ -67,7 +68,7 @@ describe('articleSearch.service', () => {
     const now = new Date();
     const hoursAgo = (h) => new Date(now.getTime() - h * 60 * 60 * 1000);
 
-    articles.recent = await Article.create({
+    articles.recent = await articleRecords.create({
       userId: user.id,
       feedId: feed.id,
       url: 'https://example.com/article-recent',
@@ -83,7 +84,7 @@ describe('articleSearch.service', () => {
       qualityScore: 85
     });
 
-    articles.old = await Article.create({
+    articles.old = await articleRecords.create({
       userId: user.id,
       feedId: feed.id,
       url: 'https://example.com/article-old',
@@ -98,7 +99,7 @@ describe('articleSearch.service', () => {
       qualityScore: 70
     });
 
-    articles.starred = await Article.create({
+    articles.starred = await articleRecords.create({
       userId: user.id,
       feedId: feed.id,
       url: 'https://example.com/article-starred',
@@ -115,7 +116,7 @@ describe('articleSearch.service', () => {
       qualityScore: 90
     });
 
-    articles.clicked = await Article.create({
+    articles.clicked = await articleRecords.create({
       userId: user.id,
       feedId: feed.id,
       url: 'https://example.com/article-clicked',
@@ -131,7 +132,7 @@ describe('articleSearch.service', () => {
       qualityScore: 80
     });
 
-    articles.lowQuality = await Article.create({
+    articles.lowQuality = await articleRecords.create({
       userId: user.id,
       feedId: feed.id,
       url: 'https://example.com/article-low-quality',
@@ -146,7 +147,7 @@ describe('articleSearch.service', () => {
       qualityScore: 20
     });
 
-    articles.discarded = await Article.create({
+    articles.discarded = await articleRecords.create({
       userId: user.id,
       feedId: feed.id,
       url: 'https://example.com/article-discarded',
@@ -251,7 +252,7 @@ describe('articleSearch.service', () => {
           })
         );
         for (const [index, scopedFeed] of scopedFeeds.entries()) {
-          scopedArticles.push(await Article.create({
+          scopedArticles.push(await articleRecords.create({
             userId: user.id,
             feedId: scopedFeed.id,
             url: `https://example.com/hot-article-${index}-${testSuffix}`,
@@ -308,7 +309,7 @@ describe('articleSearch.service', () => {
     });
 
     it('distinguishes an adjacent quoted phrase from required unquoted terms', async () => {
-      const fixtures = await Article.bulkCreate([
+      const fixtures = await articleRecords.bulkCreate([
         {
           userId: user.id,
           feedId: feed.id,
@@ -374,7 +375,7 @@ describe('articleSearch.service', () => {
 
     it('keeps Smart Folder counts aligned with an unread recommended title search', async () => {
       const query = 'unread:true title:"Windows 11" sort:recommended limit:50';
-      const matchingArticle = await Article.create({
+      const matchingArticle = await articleRecords.create({
         userId: user.id,
         feedId: feed.id,
         url: 'https://example.com/windows-11-smart-folder',
@@ -482,7 +483,7 @@ describe('articleSearch.service', () => {
           { slug: 'read-representative', status: 'unread' },
           { slug: 'read-developing', status: 'read' }
         ]) {
-          createdArticles.push(await Article.create({
+          createdArticles.push(await articleRecords.create({
             userId: user.id,
             feedId: feed.id,
             url: `https://example.com/article-${values.slug}`,
@@ -564,7 +565,7 @@ describe('articleSearch.service', () => {
         ];
 
         for (const values of articleValues) {
-          createdArticles.push(await Article.create({
+          createdArticles.push(await articleRecords.create({
             userId: user.id,
             feedId: feed.id,
             url: `https://example.com/article-briefing-${values.slug}`,
@@ -722,7 +723,7 @@ describe('articleSearch.service', () => {
     });
 
     it('keeps pending analysis visible under high score thresholds', async () => {
-      const pendingArticle = await Article.create({
+      const pendingArticle = await articleRecords.create({
         userId: user.id,
         feedId: feed.id,
         url: 'https://example.com/article-pending-analysis-thresholds',
@@ -755,7 +756,7 @@ describe('articleSearch.service', () => {
       'enforces action-owned score overrides while %s inference remains unresolved',
       async aiAnalysisStatus => {
         const suffix = `${aiAnalysisStatus}-${Date.now()}`;
-        const unresolvedArticle = await Article.create({
+        const unresolvedArticle = await articleRecords.create({
           userId: user.id,
           feedId: feed.id,
           url: `https://example.com/article-unresolved-${suffix}`,
@@ -767,7 +768,7 @@ describe('articleSearch.service', () => {
           sentimentScore: 0,
           qualityScore: 0
         });
-        const advertisementActionArticle = await Article.create({
+        const advertisementActionArticle = await articleRecords.create({
           userId: user.id,
           feedId: feed.id,
           url: `https://example.com/article-ad-action-${suffix}`,
@@ -780,7 +781,7 @@ describe('articleSearch.service', () => {
           sentimentScore: 100,
           qualityScore: 100
         });
-        const qualityActionArticle = await Article.create({
+        const qualityActionArticle = await articleRecords.create({
           userId: user.id,
           feedId: feed.id,
           url: `https://example.com/article-quality-action-${suffix}`,
@@ -817,7 +818,7 @@ describe('articleSearch.service', () => {
     );
 
     it('keeps pending analysis in Smart Folder quality filters', async () => {
-      const pendingArticle = await Article.create({
+      const pendingArticle = await articleRecords.create({
         userId: user.id,
         feedId: feed.id,
         url: 'https://example.com/article-pending-analysis-smart-folder',
@@ -916,7 +917,7 @@ describe('articleSearch.service', () => {
       const createdArticles = [];
 
       try {
-        const highTrustOlder = await Article.create({
+        const highTrustOlder = await articleRecords.create({
           userId: user.id,
           feedId: highTrustFeed.id,
           url: `https://example.com/high-trust-older-${testSuffix}`,
@@ -924,7 +925,7 @@ describe('articleSearch.service', () => {
           status: 'unread',
           publishedAt: new Date('2026-01-01T12:00:00.000Z')
         });
-        const highTrustTieFirst = await Article.create({
+        const highTrustTieFirst = await articleRecords.create({
           userId: user.id,
           feedId: highTrustFeed.id,
           url: `https://example.com/high-trust-tie-first-${testSuffix}`,
@@ -932,7 +933,7 @@ describe('articleSearch.service', () => {
           status: 'unread',
           publishedAt: sharedPublishedAt
         });
-        const highTrustTieSecond = await Article.create({
+        const highTrustTieSecond = await articleRecords.create({
           userId: user.id,
           feedId: highTrustFeed.id,
           url: `https://example.com/high-trust-tie-second-${testSuffix}`,
@@ -940,7 +941,7 @@ describe('articleSearch.service', () => {
           status: 'unread',
           publishedAt: sharedPublishedAt
         });
-        const lowTrustNewest = await Article.create({
+        const lowTrustNewest = await articleRecords.create({
           userId: user.id,
           feedId: lowTrustFeed.id,
           url: `https://example.com/low-trust-newest-${testSuffix}`,
@@ -1002,7 +1003,7 @@ describe('articleSearch.service', () => {
 
       try {
         const now = new Date();
-        lowCoverageArticle = await Article.create({
+        lowCoverageArticle = await articleRecords.create({
           userId: user.id,
           feedId: feed.id,
           url: 'https://example.com/article-importance-low-coverage',
@@ -1017,7 +1018,7 @@ describe('articleSearch.service', () => {
           qualityScore: 75
         });
 
-        highCoverageArticle = await Article.create({
+        highCoverageArticle = await articleRecords.create({
           userId: user.id,
           feedId: feed.id,
           url: 'https://example.com/article-importance-high-coverage',
@@ -1104,7 +1105,7 @@ describe('articleSearch.service', () => {
         feedTrust: 0.1
       });
       const sharedPublishedAt = new Date();
-      const highTrustArticle = await Article.create({
+      const highTrustArticle = await articleRecords.create({
         userId: user.id,
         feedId: highTrustFeed.id,
         url: `https://example.com/recommended-high-trust-${testSuffix}`,
@@ -1116,7 +1117,7 @@ describe('articleSearch.service', () => {
         qualityScore: 70,
         interestScore: 0.1
       });
-      const lowTrustArticle = await Article.create({
+      const lowTrustArticle = await articleRecords.create({
         userId: user.id,
         feedId: lowTrustFeed.id,
         url: `https://example.com/recommended-low-trust-${testSuffix}`,

@@ -1,3 +1,4 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,7 +11,7 @@ import {
   isArticleEventEmbeddingTextUsable
 } from '../services/articles/embedArticle.js';
 
-const { sequelize, Category, Feed, Article } = db;
+const { sequelize, Category, Feed } = db;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_OUTPUT_PATH = join(__dirname, '..', 'tests', '.semantic-regression', 'exported-articles.json');
@@ -132,7 +133,7 @@ async function main() {
   };
 
   const articles = feedIdMap.size
-    ? await Article.findAll({
+    ? await articleRecords.findAll({
       where: articleWhere,
       attributes: [
         'id',

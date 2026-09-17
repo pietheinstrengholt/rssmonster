@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -49,11 +50,11 @@ async function fixture(spec) {
     const articleVector = [0, 0, 0]; articleVector[group] = 1;
     const title = ['Kubernetes technical deployment', 'Earthquake emergency response', 'Sourdough baking technique'][group];
     // Held-outs share a controlled direction but never contribute behavioral evidence.
-    candidates.push(await db.Article.create({ ...base, title: `${title} held-out`, articleVector, embedding_model: 'test-model', status: 'unread' }));
+    candidates.push(await articleRecords.create({ ...base, title: `${title} held-out`, articleVector, embedding_model: 'test-model', status: 'unread' }));
     if (!spec.groups[group]) continue;
     const count = spec.event && group === 1 ? 3 : spec.count || 1;
     for (let n = 0; n < count; n++) {
-      sources.push({ group, row: await db.Article.create({ ...base, title, articleVector, embedding_model: 'test-model', status: 'read', ...behavior(spec.groups[group]) }) });
+      sources.push({ group, row: await articleRecords.create({ ...base, title, articleVector, embedding_model: 'test-model', status: 'read', ...behavior(spec.groups[group]) }) });
     }
   }
   let event;

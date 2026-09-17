@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 
 import db from '../../models/index.js';
 import { cosineSimilarity } from '../../services/vectors/index.js';
@@ -5,7 +6,6 @@ import { computeRecommended, computeRecommendedBreakdown } from '../../services/
 
 const {
   User,
-  Article,
   Event,
   Feed,
   Tag,
@@ -93,7 +93,7 @@ export async function semanticArticleRankingRows(userId, options = {}) {
   let articles = [];
 
   try {
-    articles = await Article.findAll({
+    articles = await articleRecords.findAll({
       where: { userId },
       include: [
         {

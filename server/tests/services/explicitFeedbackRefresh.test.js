@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
 import jwt from 'jsonwebtoken';
@@ -17,8 +18,8 @@ async function fixture() {
   const category = await db.Category.create({ userId: user.id, name: 'Explicit' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Explicit', url: `https://${user.id}.example/rss` });
   const values = { userId: user.id, feedId: feed.id, title: 'PostgreSQL technical deployment guide', publishedAt: new Date(), embedding_model: 'test-model', articleVector: [1, 0] };
-  const source = await db.Article.create({ ...values, status: 'read' });
-  const candidate = await db.Article.create({ ...values, status: 'unread' });
+  const source = await articleRecords.create({ ...values, status: 'read' });
+  const candidate = await articleRecords.create({ ...values, status: 'unread' });
   const authorization = `Bearer ${jwt.sign({ userId: user.id, username: user.username }, getJwtSecret())}`;
   return { user, source, candidate, values, post: action => request(app).post(`/api/articles/${action}/${source.id}`).set('Authorization', authorization).send({}) };
 }
@@ -38,10 +39,10 @@ describe('fast explicit feedback scoring', () => {
     const { user, source, candidate, values, post } = await fixture();
     const other = await fixture();
     const excluded = await Promise.all([
-      db.Article.create({ ...values, status: 'unread', articleVector: [0, 1], interestScore: 0.123 }),
-      db.Article.create({ ...values, status: 'read', interestScore: 0.123 }),
-      db.Article.create({ ...values, status: 'unread', filteredInd: true, interestScore: 0.123 }),
-      db.Article.create({ ...values, status: 'unread', duplicateOfArticleId: source.id, interestScore: 0.123 })
+      articleRecords.create({ ...values, status: 'unread', articleVector: [0, 1], interestScore: 0.123 }),
+      articleRecords.create({ ...values, status: 'read', interestScore: 0.123 }),
+      articleRecords.create({ ...values, status: 'unread', filteredInd: true, interestScore: 0.123 }),
+      articleRecords.create({ ...values, status: 'unread', duplicateOfArticleId: source.id, interestScore: 0.123 })
     ]);
     const neutral = computeRecommended(candidate);
     expect((await post('markmorelikethis')).status).toBe(200);
@@ -76,8 +77,8 @@ describe('fast explicit feedback scoring', () => {
     const { user, source, candidate, values, post } = await fixture();
     await source.update({ title: 'Save €500 on a gaming laptop deal' });
     await candidate.update({ title: 'Another gaming laptop promotion' });
-    const review = await db.Article.create({ ...values, title: 'Gaming laptop technical review', status: 'unread' });
-    const unrelated = await db.Article.create({ ...values, title: 'Kernel debugging guide', articleVector: [0, 1], status: 'unread' });
+    const review = await articleRecords.create({ ...values, title: 'Gaming laptop technical review', status: 'unread' });
+    const unrelated = await articleRecords.create({ ...values, title: 'Kernel debugging guide', articleVector: [0, 1], status: 'unread' });
     expect((await post('marknotinterested')).status).toBe(200);
     expect((await executeClaimedProcessingJob(await claimFast(user.id))).status).toBe('succeeded');
     expect(await db.Island.count({ where: { userId: user.id } })).toBe(0);
@@ -105,7 +106,7 @@ describe('fast explicit feedback scoring', () => {
   it('includes the source’s matching Island scope and preserves existing positive/negative aggregation', async () => {
     const { user, source, candidate, values } = await fixture();
     const island = await db.Island.create({ userId: user.id, label: 'Database systems', embedding_model: 'test-model', islandVector: [0.7, Math.sqrt(0.51)], weight: 0.8 });
-    const islandCandidate = await db.Article.create({ ...values, status: 'unread', articleVector: [0, 1] });
+    const islandCandidate = await articleRecords.create({ ...values, status: 'unread', articleVector: [0, 1] });
     await updateArticleBehavior(source, { positiveInd: 1, positiveFeedbackAt: new Date() });
     await executeClaimedProcessingJob(await claimFast(user.id));
     await candidate.reload(); const positive = candidate.interestScore;
@@ -119,14 +120,14 @@ describe('fast explicit feedback scoring', () => {
   it('continues beyond an unrelated batch without rescoring it', async () => {
     const { user, source, candidate, values } = await fixture();
     await candidate.update({ articleVector: [0, 1], interestScore: 0.123 });
-    await db.Article.bulkCreate(Array.from({ length: 200 }, () => ({
+    await articleRecords.bulkCreate(Array.from({ length: 200 }, () => ({
       ...values, status: 'unread', articleVector: [0, 1], interestScore: 0.123
     })));
-    const related = await db.Article.create({ ...values, status: 'unread' });
+    const related = await articleRecords.create({ ...values, status: 'unread' });
     await updateArticleBehavior(source, { positiveInd: 1, positiveFeedbackAt: new Date() });
     await executeClaimedProcessingJob(await claimFast(user.id));
     await related.reload(); expect(related.interestScore).toBeGreaterThan(0);
-    const untouched = await db.Article.findAll({ where: { userId: user.id,
+    const untouched = await articleRecords.findAll({ where: { userId: user.id,
       id: { [db.Sequelize.Op.notIn]: [source.id, related.id] } }, attributes: ['interestScore'] });
     expect(untouched).toHaveLength(201);
     for (const article of untouched) expect(article.interestScore).toBeCloseTo(0.123);

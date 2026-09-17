@@ -1,3 +1,5 @@
+import { up as splitArticleInteractions } from '../../migrations/20260916001000-split-article-interactions.mjs';
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { readdir } from 'node:fs/promises';
 import { afterAll, describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
@@ -14,7 +16,7 @@ import { resetDatabase } from '../helpers/resetDb.js';
 const qi = db.sequelize.getQueryInterface();
 const directory = new URL('../../migrations/', import.meta.url);
 
-async function installHistoricalSchema() {
+async function installHistoricalSchema({ splitInteractions = true } = {}) {
   if (db.sequelize.getDialect() === 'mysql' && db.sequelize.getDatabaseName() !== 'rssmonstertest') {
     throw new Error('Migration validation requires the isolated test database.');
   }
@@ -44,6 +46,7 @@ async function installHistoricalSchema() {
   await addEmbeddingModels(qi, db.Sequelize);
   await addInterestScoredAt(qi, db.Sequelize);
   await addPersonalizationRefreshedAt(qi, db.Sequelize);
+  if (splitInteractions) await splitArticleInteractions(qi, db.Sequelize);
 }
 
 const assertRemoved = async () => {
@@ -64,12 +67,29 @@ describe(`semantic schema upgrade (${db.sequelize.getDialect()})`, () => {
     expect((await user.reload()).personalizationRefreshedAt).toBeNull();
   }, 120000);
 
+  it('copies legacy Article state into the new model without changing IDs or clocks', async () => {
+    await installHistoricalSchema({ splitInteractions: false });
+    const user = await db.User.create({ username: 'interaction-upgrade-reader' });
+    const category = await db.Category.create({ userId: user.id, name: 'Upgrade' });
+    const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Upgrade', url: 'https://upgrade.example/state' });
+    const observed = new Date('2026-09-01T12:00:00Z');
+    await qi.bulkInsert('articles', [{ id: 4321, userId: user.id, feedId: feed.id, title: 'Legacy favorite',
+      status: 'read', favoriteInd: 1, clickedAmount: 3, firstSeen: observed, readAt: observed,
+      favoritedAt: null, interestScore: 0.5, publishedAt: observed, createdAt: observed, updatedAt: observed }]);
+    await splitArticleInteractions(qi, db.Sequelize);
+    await splitArticleInteractions(qi, db.Sequelize);
+    const article = await articleRecords.findByPk(4321);
+    expect(article).toMatchObject({ id: 4321, status: 'read', favoriteInd: 1, clickedAmount: 3, firstSeen: observed, favoritedAt: null, interestScore: 0.5 });
+    expect((await db.ArticleInteraction.findByPk(4321)).readState).toBe('read');
+    expect(await qi.describeTable('articles')).not.toHaveProperty('favoriteInd');
+  }, 120000);
+
   it('preserves articles, Events, Islands, behavior, references and allocated IDs on upgrade', async () => {
     await installHistoricalSchema();
     const user = await db.User.create({ username: 'upgrade-reader' });
     const category = await db.Category.create({ userId: user.id, name: 'Upgrade' });
     const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Upgrade feed', url: 'https://upgrade.example/feed' });
-    const article = await db.Article.create({ userId: user.id, feedId: feed.id, title: 'Database release',
+    const article = await articleRecords.create({ userId: user.id, feedId: feed.id, title: 'Database release',
       url: 'https://upgrade.example/article', publishedAt: new Date(), favoriteInd: 1, clickedAmount: 3,
       positiveInd: 1, attentionBucket: 4, embedding_model: 'test-model', articleVector: [1, 0], interestScore: 0.2 });
     const event = await db.Event.create({ userId: user.id, representativeArticleId: article.id,
@@ -85,7 +105,7 @@ describe(`semantic schema upgrade (${db.sequelize.getDialect()})`, () => {
     await qi.bulkInsert('article_topics', [{ articleId: article.id, topicId: 1, confidence: 0.9, ...timestamps }]);
     await qi.bulkInsert('event_topics', [{ eventId: event.id, topicId: 1, confidence: 0.9, ...timestamps }]);
     await qi.bulkInsert('island_topics', [{ islandId: island.id, topicId: 1, confidence: 0.9, similarity: 0.9, ...timestamps }]);
-    await db.Article.create({ id: 1000, userId: user.id, feedId: feed.id, title: 'Deleted article', publishedAt: new Date() });
+    await articleRecords.create({ id: 1000, userId: user.id, feedId: feed.id, title: 'Deleted article', publishedAt: new Date() });
     await db.Article.destroy({ where: { id: 1000 } });
     await article.reload();
     await event.reload();
@@ -113,7 +133,7 @@ describe(`semantic schema upgrade (${db.sequelize.getDialect()})`, () => {
     expect(island.weight).toBe(0.5);
     expect(island.populationAudit).toEqual([{ articleIds: [article.id], sourceArticles: audit[0].sourceArticles }]);
     expect(await db.Feed.count({ where: { id: feed.id, userId: user.id } })).toBe(1);
-    const next = await db.Article.create({ userId: user.id, feedId: feed.id, title: 'Next article', publishedAt: new Date() });
+    const next = await articleRecords.create({ userId: user.id, feedId: feed.id, title: 'Next article', publishedAt: new Date() });
     expect(next.id).toBeGreaterThan(1000);
     expect((await setting.reload()).grouping).toBe('event');
     expect((await folder.reload()).query).toBe('title:"grouping:topic" grouping:event sort:recommended');
@@ -129,7 +149,7 @@ describe(`semantic schema upgrade (${db.sequelize.getDialect()})`, () => {
     expect(Number.isFinite(computeRecommended(article))).toBe(true);
     expect(article.eventId).toBe(event.id);
     expect(article.favoriteInd).toBe(1);
-    await expect(db.Article.create({ userId: user.id, feedId: 999999,
+    await expect(articleRecords.create({ userId: user.id, feedId: 999999,
       title: 'Invalid reference', publishedAt: new Date() })).rejects.toThrow();
     await expect(down(qi)).rejects.toThrow('cannot be reconstructed');
     await db.sequelize.authenticate();

@@ -1,3 +1,4 @@
+import { articleRecords } from '../../articles/articleRecords.js';
 import db from '../../../models/index.js';
 import { saveArticleTags } from './tags.js';
 import buildArticlePersistenceValues from './buildArticlePersistenceValues.js';
@@ -9,7 +10,7 @@ import {
 } from '../../feeds/executionDeadline.js';
 
 // Provides the shared dependencies used by this service.
-const { Article, sequelize } = db;
+const { sequelize } = db;
 
 // Defines the article unique conflicts enforced by this service.
 const ARTICLE_UNIQUE_CONFLICTS = [
@@ -105,7 +106,7 @@ const findConcurrentWinner = async ({ articleValues, error }) => {
   if (!conflict) return null;
 
   // Loads the article needed while finding concurrent winner.
-  const article = await Article.findOne({ where: conflict.where });
+  const article = await articleRecords.findOne({ where: conflict.where });
   // Selects the result based on whether article is available.
   return article ? { article, conflict } : null;
 };
@@ -157,7 +158,7 @@ async function saveArticle(
       throwIfExecutionExpired(execution);
       await assertExecutionLeaseOwnership(execution, { transaction });
       // Performs the create operation while performing save article.
-      const createdArticle = await Article.create(articleValues, { transaction });
+      const createdArticle = await articleRecords.create(articleValues, { transaction });
       throwIfExecutionExpired(execution);
 
       // Handles the case where is discard match is unavailable.

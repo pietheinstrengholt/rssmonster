@@ -1,3 +1,4 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 import db from '../models/index.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { deriveFeedOverviewHealth } from '../services/feeds/feedOverviewHealth.js';
@@ -141,7 +142,7 @@ export const getFeedObservability = async (req, res, _next) => {
           limit: RECENT_CRAWL_LIMIT,
           raw: true
         }),
-        Article.findOne({
+        articleRecords.findOne({
           attributes: [
             [Sequelize.fn('COUNT', Sequelize.col('id')), 'articleCount'],
             [recentArticleCountLiteral(), 'articleCount30Days'],

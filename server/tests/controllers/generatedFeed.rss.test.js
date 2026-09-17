@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { parseStringPromise } from 'xml2js';
@@ -43,7 +44,7 @@ const createFeedFor = async user => {
 };
 
 const createTaggedArticle = async ({ user, feed, title, publishedAt, tag = 'security' }) => {
-  const article = await Article.create({
+  const article = await articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     title,
@@ -196,7 +197,7 @@ describe('public Generated Feed RSS endpoint', () => {
       qualityScore: index === 0 ? 100 : 10,
       publishedAt: new Date(Date.UTC(2026, 7, 1, 0, index))
     }));
-    const createdArticles = await Article.bulkCreate(articles);
+    const createdArticles = await articleRecords.bulkCreate(articles);
     await Tag.bulkCreate(createdArticles.map(article => ({
       userId: owner.id,
       articleId: article.id,

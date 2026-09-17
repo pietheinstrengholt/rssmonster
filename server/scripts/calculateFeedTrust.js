@@ -1,3 +1,4 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 /**
  * Feed Trust calculation CLI runner
  *
@@ -17,7 +18,7 @@
 
 import { Op } from 'sequelize';
 import db from '../models/index.js';
-const { Feed, Article } = db;
+const { Feed } = db;
 import { computeArticleQuality } from '../services/articles/articleQuality.js';
 import { resolvePredictedAffinity } from '../services/recommendations/predictedAffinityResolver.js';
 
@@ -103,7 +104,7 @@ export async function calculateFeedTrustForFeed(feedId) {
     Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000
   );
 
-  const articles = await Article.findAll({
+  const articles = await articleRecords.findAll({
     where: {
       feedId: feed.id,
       publishedAt: { [Op.gte]: since }

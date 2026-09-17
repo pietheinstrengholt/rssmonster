@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
@@ -26,8 +27,8 @@ async function fixture() {
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Elapsed', url: `https://${user.id}.example/rss` });
   const values = { userId: user.id, feedId: feed.id, title: 'Kubernetes technical deployment',
     publishedAt: at(-10), embedding_model: 'test-model', articleVector: [1, 0] };
-  const source = await db.Article.create({ ...values, status: 'read', clickedAmount: 1, lastClickedAt: at(0) });
-  const candidate = await db.Article.create({ ...values, status: 'unread' });
+  const source = await articleRecords.create({ ...values, status: 'read', clickedAmount: 1, lastClickedAt: at(0) });
+  const candidate = await articleRecords.create({ ...values, status: 'unread' });
   // Nonidentical centroid exposes accidental repeated blending on a timed refresh.
   const island = await db.Island.create({ userId: user.id, label: 'Kubernetes', weight: 0.8,
     islandVector: [0.8, 0.6], embedding_model: 'test-model' });
@@ -61,8 +62,8 @@ describe('elapsed-time personalization refresh', () => {
     const vector = graph.island.islandVector;
     const initialWeight = Number(graph.island.weight);
     const initialScore = Number(graph.candidate.interestScore);
-    const filtered = await db.Article.create({ ...graph.values, status: 'unread', filteredInd: true, interestScore: 0.5 });
-    const duplicate = await db.Article.create({ ...graph.values, status: 'unread', duplicateOfArticleId: graph.source.id, interestScore: 0.5 });
+    const filtered = await articleRecords.create({ ...graph.values, status: 'unread', filteredInd: true, interestScore: 0.5 });
+    const duplicate = await articleRecords.create({ ...graph.values, status: 'unread', duplicateOfArticleId: graph.source.id, interestScore: 0.5 });
     advance(30);
     await other.user.update({ personalizationRefreshedAt: at(30) });
     expect((await enqueueDuePersonalizationRefreshes()).queuedUserIds).toEqual([graph.user.id]);
@@ -144,9 +145,9 @@ describe('elapsed-time personalization refresh', () => {
   it.each([false, true])('does not mark failed scoring fresh or invent age on a delayed retry (legacy=%s)', async legacy => {
     const graph = await fixture();
     await enqueueDuePersonalizationRefreshes();
-    const findAll = db.Article.findAll.bind(db.Article);
+    const findAll = articleRecords.findAll.bind(articleRecords);
     let interrupted = false;
-    vi.spyOn(db.Article, 'findAll').mockImplementation(options => {
+    vi.spyOn(articleRecords, 'findAll').mockImplementation(options => {
       if (!interrupted && options.where?.status === 'unread') {
         interrupted = true;
         throw new Error('unread query unavailable');

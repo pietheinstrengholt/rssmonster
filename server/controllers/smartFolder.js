@@ -1,3 +1,4 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 'use strict';
 
 import db from '../models/index.js';
@@ -10,7 +11,7 @@ import {
 } from '../services/articleSearch/articleQueryParser.service.js';
 import { fetchFeedIds } from '../services/articleSearch/articleSearchDataAccess.service.js';
 import { getSmartFolderRecommendations } from '../services/smartFolders/smartFolderLLM.js';
-const { Article, Feed, Tag, SmartFolder, Setting } = db;
+const { Feed, Tag, SmartFolder, Setting } = db;
 
 const SMART_FOLDER_COUNT_CONCURRENCY = 4;
 
@@ -220,7 +221,7 @@ const collectSmartFolderSignals = async (
   const since = new Date(Date.now() - days * 86400000);
 
   const [articleStats, feeds, tagStats, favoriteArticles, existingSmartFolders] = await Promise.all([
-    Article.findAll({
+    articleRecords.findAll({
       where: {
         userId,
         publishedAt: { [Op.gte]: since }
@@ -228,8 +229,8 @@ const collectSmartFolderSignals = async (
       attributes: [
         'feedId',
         [fn('COUNT', col('id')), 'total'],
-        [fn('SUM', literal(`CASE WHEN status = 'unread' THEN 1 ELSE 0 END`)), 'unread'],
-        [fn('SUM', literal(`CASE WHEN status = 'read' THEN 1 ELSE 0 END`)), 'read'],
+        [fn('SUM', literal(`CASE WHEN interaction.readState = 'unread' THEN 1 ELSE 0 END`)), 'unread'],
+        [fn('SUM', literal(`CASE WHEN interaction.readState = 'read' THEN 1 ELSE 0 END`)), 'read'],
         [fn('SUM', literal(`CASE WHEN clickedAmount > 0 THEN 1 ELSE 0 END`)), 'clicked'],
         [fn('SUM', literal(`CASE WHEN favoriteInd = 1 THEN 1 ELSE 0 END`)), 'favorite']
       ],
@@ -251,7 +252,7 @@ const collectSmartFolderSignals = async (
       order: [[literal('count'), 'DESC']],
       raw: true
     }),
-    Article.findAll({
+    articleRecords.findAll({
       where: {
         userId,
         favoriteInd: 1,

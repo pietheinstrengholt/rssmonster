@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 
@@ -10,7 +11,7 @@ const {
   EventCache
 } = await import('../../services/events/assignArticleToEvent.js');
 
-const { Article, Category, Event, Feed, User, sequelize } = db;
+const { Category, Event, Feed, User, sequelize } = db;
 
 // This function creates the owned user and feed required by debug assignment tests.
 async function createUserGraph(prefix) {
@@ -39,7 +40,7 @@ async function createUserGraph(prefix) {
 // This function creates recent canonical coverage with a stable semantic vector.
 async function createArticle(user, feed, label, offsetMinutes = 0) {
   const publishedAt = new Date(Date.now() - (60 - offsetMinutes) * 60 * 1000);
-  return Article.create({
+  return articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     title: `Acme merger receives final approval ${label}`,
@@ -134,7 +135,7 @@ describe('assignArticleToEvent debug diagnostics', () => {
     };
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [firstCandidate.id, secondCandidate.id] } }
     );

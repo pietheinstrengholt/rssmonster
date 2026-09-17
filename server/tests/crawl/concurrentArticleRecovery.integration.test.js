@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import db from '../../models/index.js';
@@ -6,7 +7,7 @@ import updateArticle, {
   applyArticleUpdate
 } from '../../services/crawl/persistence/updateArticle.js';
 
-const { User, Category, Feed, Article } = db;
+const { User, Category, Feed } = db;
 
 // This function returns a collision-safe test identifier.
 const uniqueName = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -108,7 +109,7 @@ describe('concurrent article recovery integration', () => {
     });
 
     await applyArticleUpdate({ updatePlan, userId: feed.userId });
-    const reconciled = await Article.findByPk(first.article.id);
+    const reconciled = await articleRecords.findByPk(first.article.id);
     expect(reconciled.title).toBe('Newer concurrent title');
     expect(reconciled.contentOriginal).toBe(incomingData.contentOriginal);
   });

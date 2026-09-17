@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { collectIslandDiagnostics, recommendationCoverage, interestPathMetrics } from './semanticRecommendationDiagnostics.js';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -7,7 +8,7 @@ import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
 
-const { Article } = db;
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPORT_DIR = join(__dirname, '..', '.semantic-regression');
 const TRACE_PATH = join(REPORT_DIR, 'trace.json');
@@ -233,7 +234,7 @@ export function renderSemanticRegressionMarkdown({ trace, metadata, duplicateGro
 
 // This function loads duplicate groups for the regression user from canonical relationships.
 async function loadDuplicateGroups(userIds) {
-  const duplicates = await Article.findAll({
+  const duplicates = await articleRecords.findAll({
     where: {
       userId: { [Op.in]: userIds },
       duplicateOfArticleId: { [Op.ne]: null }
@@ -244,7 +245,7 @@ async function loadDuplicateGroups(userIds) {
   });
   const canonicalIds = [...new Set(duplicates.map(article => Number(article.duplicateOfArticleId)))];
   const canonicals = canonicalIds.length
-    ? await Article.findAll({
+    ? await articleRecords.findAll({
       where: { userId: { [Op.in]: userIds }, id: { [Op.in]: canonicalIds } },
       attributes: ['id', 'title'],
       raw: true
@@ -296,7 +297,7 @@ export async function writeSemanticRegressionMarkdownReport({
   try {
     const candidate = JSON.parse(await readFile(join(REPORT_DIR, 'expansion-report.json'), 'utf8'));
     const users = await db.User.findAll({ where: { username: { [Op.like]: 'semantic-expansion-%' } }, attributes: ['id'], raw: true });
-    const count = users.length ? await Article.count({ where: { userId: users.map(u => u.id) } }) : 0;
+    const count = users.length ? await articleRecords.count({ where: { userId: users.map(u => u.id) } }) : 0;
     if (count > 0 && count === candidate.expansionCorpusCount) expansion = candidate;
   } catch (error) { if (error.code !== 'ENOENT') throw error; }
   const markdown = renderSemanticRegressionMarkdown({ trace, metadata, duplicateGroups, generatedAt, expansion });

@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import {
   afterEach,
   beforeAll,
@@ -13,7 +14,6 @@ import { persistDiscoveredFeedUrl, registerFeedUrlAliases } from '../../services
 import { reconcileDuplicateFeeds } from '../../services/feeds/feedReconciliation.js';
 
 const {
-  Article,
   Category,
   Event,
   Feed,
@@ -55,7 +55,7 @@ const createOwner = async () => {
 };
 
 // Creates a complete article using model hooks for its identity hashes.
-const createArticle = (feed, suffix, overrides = {}) => Article.create({
+const createArticle = (feed, suffix, overrides = {}) => articleRecords.create({
   userId: feed.userId,
   feedId: feed.id,
   externalId: `guid-${suffix}`,
@@ -209,10 +209,10 @@ describe('duplicate feed reconciliation integration', () => {
       crawlSince: null,
       mutedUntil: new Date('2026-08-20T00:00:00.000Z')
     });
-    expect(await Article.count({ where: { feedId: stable.id } })).toBe(2);
-    expect(await Article.findByPk(removedOverlap.id)).toBeNull();
-    expect(await Article.findByPk(uniqueArticle.id)).toMatchObject({ feedId: stable.id });
-    expect(await Article.findByPk(retainedOverlap.id)).toMatchObject({
+    expect(await articleRecords.count({ where: { feedId: stable.id } })).toBe(2);
+    expect(await articleRecords.findByPk(removedOverlap.id)).toBeNull();
+    expect(await articleRecords.findByPk(uniqueArticle.id)).toMatchObject({ feedId: stable.id });
+    expect(await articleRecords.findByPk(retainedOverlap.id)).toMatchObject({
       status: 'read',
       favoriteInd: 1,
       clickedAmount: 4,
@@ -237,7 +237,7 @@ describe('duplicate feed reconciliation integration', () => {
     const aliases = await FeedUrlAlias.findAll({ where: { userId: fixture.user.id } });
     expect(aliases).toHaveLength(2);
     expect(new Set(aliases.map(alias => alias.feedId))).toEqual(new Set([stable.id]));
-    expect(await Article.count({ where: { feedId: duplicate.id } })).toBe(0);
+    expect(await articleRecords.count({ where: { feedId: duplicate.id } })).toBe(0);
     expect(await FeedUrlAlias.count({ where: { feedId: duplicate.id } })).toBe(0);
     expect(await Hotlink.count({ where: { feedId: duplicate.id } })).toBe(0);
   });
@@ -290,7 +290,7 @@ describe('duplicate feed reconciliation integration', () => {
     })).rejects.toThrow('forced rollback');
 
     expect(await Feed.count({ where: { id: { [Op.in]: [stable.id, duplicate.id] } } })).toBe(2);
-    expect(await Article.findByPk(article.id)).toMatchObject({ feedId: duplicate.id });
+    expect(await articleRecords.findByPk(article.id)).toMatchObject({ feedId: duplicate.id });
     expect(await FeedUrlAlias.count({ where: { feedId: duplicate.id } })).toBe(1);
 
     const first = await reconcileDuplicateFeeds({
@@ -303,7 +303,7 @@ describe('duplicate feed reconciliation integration', () => {
     });
     expect(first).toMatchObject({ survivor: { id: stable.id }, reconciled: true });
     expect(repeated).toMatchObject({ survivor: { id: stable.id }, reconciled: false });
-    expect(await Article.findByPk(article.id)).toMatchObject({ feedId: stable.id });
+    expect(await articleRecords.findByPk(article.id)).toMatchObject({ feedId: stable.id });
   });
 
   it('rolls back a delayed reconciliation after the timeout has been reported', async () => {
@@ -341,7 +341,7 @@ describe('duplicate feed reconciliation integration', () => {
     expect(await Feed.count({
       where: { id: { [Op.in]: [stable.id, duplicate.id] } }
     })).toBe(2);
-    expect(await Article.findByPk(article.id)).toMatchObject({
+    expect(await articleRecords.findByPk(article.id)).toMatchObject({
       feedId: duplicate.id
     });
     expect(await FeedUrlAlias.count({ where: { feedId: duplicate.id } })).toBe(1);
@@ -426,7 +426,7 @@ describe('duplicate feed reconciliation integration', () => {
     expect(await Feed.count({
       where: { id: { [Op.in]: [stable.id, duplicate.id] } }
     })).toBe(2);
-    expect(await Article.findByPk(article.id)).toMatchObject({ feedId: duplicate.id });
+    expect(await articleRecords.findByPk(article.id)).toMatchObject({ feedId: duplicate.id });
     expect(await FeedUrlAlias.count({ where: { feedId: duplicate.id } })).toBe(1);
   });
 
@@ -460,7 +460,7 @@ describe('duplicate feed reconciliation integration', () => {
       leaseOwner: 'foreign-owner',
       leaseUntil
     });
-    expect(await Article.findByPk(article.id)).toMatchObject({ feedId: duplicate.id });
+    expect(await articleRecords.findByPk(article.id)).toMatchObject({ feedId: duplicate.id });
   });
 
   it('transfers the caller lease to an expired survivor during reconciliation', async () => {

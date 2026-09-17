@@ -1,10 +1,11 @@
+import { articleRecords } from '../articles/articleRecords.js';
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { RECENCY_WINDOW_DAYS } from '../config/semanticConfig.js';
 import { embeddingSimilarity, hasEmbeddingModel } from '../vectors/embeddingModel.js';
 
 // Provides the shared dependencies used by this service.
-const { Article, sequelize } = db;
+const { sequelize } = db;
 
 // Defines the duplicate article status enforced by this service.
 export const DUPLICATE_ARTICLE_STATUS = 'duplicate';
@@ -47,7 +48,7 @@ export async function findCanonicalDuplicateForArticle(article, options = {}) {
   }
 
   // Loads the candidates needed while finding canonical duplicate for article.
-  const candidates = await Article.findAll({
+  const candidates = await articleRecords.findAll({
     where: {
       userId: article.userId,
       embedding_model: article.embedding_model,
@@ -90,7 +91,7 @@ async function resolveCanonicalArticle(canonicalArticleOrId, options = {}) {
     return canonicalArticleOrId;
   }
 
-  return Article.findByPk(canonicalArticleOrId, {
+  return articleRecords.findByPk(canonicalArticleOrId, {
     attributes: ['id', 'duplicateCount'],
     transaction: options.transaction
   });
@@ -143,7 +144,7 @@ export async function markArticleAsDuplicate(article, canonicalArticleOrId, opti
     return article;
   }
 
-  await Article.update(payload, {
+  await articleRecords.update(payload, {
     where: { id: article.id },
     ...writeOptions
   });
@@ -175,7 +176,7 @@ export async function markDuplicateArticlesForUser(userId, options = {}) {
   }
 
   // Loads the articles needed while performing mark duplicate articles for user.
-  const articles = await Article.findAll({
+  const articles = await articleRecords.findAll({
     where,
     attributes: [
       'id',

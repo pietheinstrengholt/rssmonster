@@ -1,8 +1,6 @@
-import db from '../../models/index.js';
+import { articleRecords } from '../articles/articleRecords.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 
-// Provides the shared dependencies used by this service.
-const { Article } = db;
 // Defines the developing article order enforced by this service.
 const DEVELOPING_ARTICLE_ORDER = [
   ['publishedAt', 'DESC'],
@@ -104,7 +102,7 @@ export async function resolveDevelopingArticleIdForAssignment({
   // Derives the pointer id required while resolving developing article id for assignment.
   const pointerId = event.developingArticleId ?? event.representativeArticleId;
   // Selects the current article based on whether pointer id is value.
-  let currentArticle = pointerId == null ? null : await Article.findOne({
+  let currentArticle = pointerId == null ? null : await articleRecords.findOne({
     where: {
       id: pointerId,
       userId: event.userId,
@@ -121,7 +119,7 @@ export async function resolveDevelopingArticleIdForAssignment({
     event.representativeArticleId != null &&
     Number(event.representativeArticleId) !== Number(pointerId)
   ) {
-    currentArticle = await Article.findOne({
+    currentArticle = await articleRecords.findOne({
       where: {
         id: event.representativeArticleId,
         userId: event.userId,
@@ -153,7 +151,7 @@ export async function resolveDevelopingArticleIdForAssignment({
   }
 
   // Loads the canonical event articles needed while resolving developing article id for assignment.
-  const canonicalEventArticles = await Article.findAll({
+  const canonicalEventArticles = await articleRecords.findAll({
     where: {
       userId: event.userId,
       eventId: event.id,

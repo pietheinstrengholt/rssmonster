@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
@@ -6,7 +7,7 @@ import ArticleEventCandidateCache from '../../services/events/ArticleEventCandid
 import { createAndAssignEvent } from '../../services/events/createEvents.js';
 import { assignArticleToExistingEvent } from '../../services/events/updateEvents.js';
 
-const { Article, Category, Event, Feed, User } = db;
+const { Category, Event, Feed, User } = db;
 const title = 'Acme releases the new compiler';
 const at = hours => new Date(Date.now() - (96 - hours) * 3600000);
 async function graph() {
@@ -17,7 +18,7 @@ async function graph() {
   return { user, feed };
 }
 async function makeArticle(g, hours = 1, overrides = {}) {
-  return Article.create({
+  return articleRecords.create({
     userId: g.user.id, feedId: g.feed.id, title, publishedAt: at(hours),
     embedding_model: 'test-model', articleVector: [1, 0], url: `https://example.com/${randomUUID()}`, ...overrides
   });
@@ -88,7 +89,7 @@ describe('Event occurrence assignment', () => {
     const result = await assign(g, seed, [], [left, right]);
     expect(result.id).toBeNull();
     expect(await Event.count({ where: { userId: g.user.id } })).toBe(0);
-    expect(await Article.count({ where: { userId: g.user.id, eventId: null } })).toBe(3);
+    expect(await articleRecords.count({ where: { userId: g.user.id, eventId: null } })).toBe(3);
   });
 
   it('leaves ambiguous coverage unassigned and can reconsider it after evidence changes', async () => {
@@ -134,7 +135,7 @@ describe('Event occurrence assignment', () => {
   it.each([{ filteredInd: true }, { status: 'duplicate' }])('excludes noncanonical input %j', async fields => {
     const g = await graph();
     const { event, member } = await makeEvent(g);
-    const incoming = await makeArticle(g, 1, fields);
+    const incoming = await makeArticle(g, 1, { ...fields, ...(fields.status === 'duplicate' ? { duplicateOfArticleId: member.id } : {}) });
     const result = await assign(g, incoming, [event], [member]);
     expect(result.id).toBeNull();
     expect(incoming.eventId).toBeNull();
@@ -217,7 +218,7 @@ describe('Event occurrence assignment', () => {
     const g = await graph();
     const { event } = await makeEvent(g, 0, { embedding_model: 'new-model' });
     const incoming = await makeArticle(g);
-    await Article.update({ embedding_model: 'new-model' }, { where: { id: incoming.id } });
+    await articleRecords.update({ embedding_model: 'new-model' }, { where: { id: incoming.id } });
     expect(await assignArticleToExistingEvent({ article: incoming, articleEventVector: incoming.articleVector, bestEvent: event })).toBeNull();
     await incoming.reload();
     expect(incoming.eventId).toBeNull();

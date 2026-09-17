@@ -1,10 +1,11 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../../models/index.js';
 import { reconcileTouchedEvents } from '../../services/events/eventReconciliation.js';
 import { assignArticleToExistingEvent } from '../../services/events/updateEvents.js';
 
-const { sequelize, Article, Category, Event, Feed, User } = db;
+const { sequelize, Category, Event, Feed, User } = db;
 
 async function createUserGraph(prefix) {
   const hash = await bcrypt.hash('secret', 4);
@@ -32,7 +33,7 @@ async function createUserGraph(prefix) {
 }
 
 async function createArticle(user, feed, index, overrides = {}) {
-  return Article.create({
+  return articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     title: `${user.username} article ${index}`,
@@ -116,7 +117,7 @@ describe('reconcileTouchedEvents', () => {
       developingArticleId: currentArticle.id,
       articleCount: 2
     });
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [currentArticle.id, newerArticle.id] } }
     );
@@ -135,7 +136,7 @@ describe('reconcileTouchedEvents', () => {
       developingArticleId: currentArticle.id,
       articleCount: 2
     });
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [currentArticle.id, newerArticle.id] } }
     );
@@ -168,7 +169,7 @@ describe('reconcileTouchedEvents', () => {
       developingArticleId: foreignArticle.id,
       articleCount: 3
     });
-    await Article.update(
+    await articleRecords.update(
       { eventId: event.id },
       { where: { id: [representativeArticle.id, olderUnreadArticle.id, newestUnreadArticle.id] } }
     );

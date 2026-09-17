@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
 import {
@@ -62,8 +63,8 @@ describe('articleDuplicates', () => {
 
   it('updates a plain article record and resolves its canonical counter by id', async () => {
     const canonicalArticle = { increment: vi.fn().mockResolvedValue(undefined) };
-    vi.spyOn(db.Article, 'findByPk').mockResolvedValue(canonicalArticle);
-    const update = vi.spyOn(db.Article, 'update').mockResolvedValue([1]);
+    vi.spyOn(articleRecords, 'findByPk').mockResolvedValue(canonicalArticle);
+    const update = vi.spyOn(articleRecords, 'update').mockResolvedValue([1]);
     const article = {
       id: 2,
       eventId: 8,
@@ -93,7 +94,7 @@ describe('articleDuplicates', () => {
   });
 
   it('returns null when the canonical article cannot be resolved', async () => {
-    vi.spyOn(db.Article, 'findByPk').mockResolvedValue(null);
+    vi.spyOn(articleRecords, 'findByPk').mockResolvedValue(null);
 
     await expect(markArticleAsDuplicate({ id: 2 }, 1)).resolves.toBeNull();
   });

@@ -1,3 +1,4 @@
+import { articleRecords } from './articleRecords.js';
 import db from '../../models/index.js';
 import { BEHAVIOR_TIMESTAMP_FIELDS } from './articleBehaviorTime.js';
 import { requestPersonalizationRefresh, requestExplicitFeedbackRefresh } from '../jobs/personalizationRefresh.js';
@@ -5,7 +6,7 @@ import { requestPersonalizationRefresh, requestExplicitFeedbackRefresh } from '.
 // API variants share an atomic behavior write and durable refresh request.
 export async function updateArticleBehavior(target, values, options = {}) {
   if (!BEHAVIOR_TIMESTAMP_FIELDS.some(field => Object.hasOwn(values, field))) {
-    return target.update(values, options);
+    return (target === db.Article ? articleRecords : target).update(values, options);
   }
   const userId = target === db.Article ? options.where?.userId : target.userId;
   if (!Number.isSafeInteger(Number(userId)) || Number(userId) <= 0) {
@@ -22,7 +23,7 @@ export async function updateArticleBehavior(target, values, options = {}) {
     // Serialize requests before article locks, including bulk compatibility writes.
     const user = await db.User.findByPk(userId, { transaction, lock: transaction.LOCK.UPDATE });
     if (!user) throw new Error('Behavior user no longer exists');
-    const result = await target.update(values, { ...options, transaction });
+    const result = await (target === db.Article ? articleRecords : target).update(values, { ...options, transaction });
     if (target !== db.Article || Number(result[0]) > 0) {
       await requestPersonalizationRefresh(userId, { transaction, triggerReasons });
       if (values.positiveFeedbackAt || values.negativeFeedbackAt) {

@@ -1,3 +1,4 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 import { updateArticleBehavior } from '../services/articles/updateArticleBehavior.js';
 import { isLocalAuthEnabled } from '../config/auth.js';
 import db from '../models/index.js';
@@ -468,16 +469,16 @@ export const getUnreadCount = async (req, res) => {
         attributes: ['id', 'categoryId', 'feedName', 'url'],
         order: [['feedName', 'ASC'], ['id', 'ASC']]
       }),
-      Article.findAll({
+      articleRecords.findAll({
         attributes: [
           'feedId',
           [
             sequelize.literal(
-              "SUM(CASE WHEN status = 'unread' THEN 1 ELSE 0 END)"
+              "SUM(CASE WHEN interaction.readState = 'unread' THEN 1 ELSE 0 END)"
             ),
             'unreadCount'
           ],
-          [sequelize.fn('MAX', sequelize.col('createdAt')), 'newestCreatedAt']
+          [sequelize.fn('MAX', sequelize.col('articles.createdAt')), 'newestCreatedAt']
         ],
         where: {
           userId: user.id,
@@ -645,7 +646,7 @@ export const getStreamItemContents = async (req, res) => {
       return res.json({ items: [] });
     }
     
-    const articles = await Article.findAll({
+    const articles = await articleRecords.findAll({
       where: {
         id: { [Op.in]: numericIds },
         userId: user.id,
@@ -762,7 +763,7 @@ export const markAllAsRead = async (req, res) => {
     where[Op.and].push({ createdAt: { [Op.lte]: olderThan } });
 
     const mutationTime = new Date();
-    await sequelize.transaction(transaction => Article.update(
+    await sequelize.transaction(transaction => articleRecords.update(
       { status: 'read', readAt: mutationTime },
       { where, transaction }
     ));

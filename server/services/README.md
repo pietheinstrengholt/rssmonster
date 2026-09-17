@@ -2,11 +2,12 @@
 
 ```text
 Article → embedding → semantic duplicate handling → Event
-behavioral Article evidence → Interest Island
+ArticleInteraction evidence + Article representation → Interest Island
 candidate Article vector → direct Island evidence → interestScore → Recommended
 ```
 
-Articles preserve content identity, revisions and user behavior. Events group
+Articles preserve content identity, revisions and processing state. ArticleInteraction
+stores each owner’s reading state, behavioral signals and derived interest cache. Events group
 reports about one real-world occurrence. Interest Islands are persistent,
 user-specific behavioral preferences; an Event association alone is not a
 personal preference. Recommended combines optional personalization with existing
@@ -38,6 +39,28 @@ takes precedence over semantic similarity; similar content is not necessarily
 a duplicate or the same occurrence.
 
 ## Storage and consistency
+
+`ArticleInteraction.articleId` is both its primary key and Article foreign key.
+The composite article/owner foreign key prevents cross-user state. Events use
+Article occurrence evidence; Island formation and evidence retrieval start from
+ArticleInteraction and join the associated canonical Article for its vector.
+
+`articles/articleRecords.js` composes the legacy flat read/API contract with one
+owned has-one join. Use it for Article creation and state-dependent reads/writes;
+use Article directly for content-only operations. Creation initializes both rows
+in one transaction. State mutations lock bounded candidate batches and update
+ArticleInteraction without changing Article's technical update clock. Publisher
+revisions preserve the independent behavioral clocks. Reading state is read/unread;
+duplicate suppression remains `Article.duplicateOfArticleId`. The flat `status`
+response is derived from those two independent concepts.
+
+Existing installations must apply `20260916001000-split-article-interactions.mjs`
+with API and workers stopped and a pre-upgrade backup available. It copies state
+in bounded batches before dropping the old columns, preserves null behavioral
+clocks, and uses unread as the unknown prior read-state fallback for duplicates.
+Retries retain already-copied state. MySQL DDL is not transactional, so rollback
+requires the backup; do not run the old application after the schema cutover.
+This split does not add revision snapshots or an immutable interaction event log.
 
 `Article.eventId` is the membership source of truth. Event projections summarize
 canonical members and retain valid representative/developing article pointers.

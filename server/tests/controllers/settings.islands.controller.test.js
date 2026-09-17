@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
@@ -5,7 +6,6 @@ import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
 
 const {
-  Article,
   Category,
   Event,
   Feed,
@@ -45,7 +45,7 @@ const createArticleFixture = async user => {
     url: `https://example.com/${uniqueName('feed')}.xml`
   });
 
-  const article = await Article.create({
+  const article = await articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     status: 'unread',
@@ -76,7 +76,7 @@ const createEventFixture = async user => {
     url: `https://example.com/${uniqueName('events-feed')}.xml`
   });
 
-  const firstArticle = await Article.create({
+  const firstArticle = await articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     status: 'unread',
@@ -89,7 +89,7 @@ const createEventFixture = async user => {
     articleVector: [1, 0, 0],
     publishedAt: new Date('2026-05-01T10:00:00Z')
   });
-  const secondArticle = await Article.create({
+  const secondArticle = await articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     status: 'unread',
@@ -102,7 +102,7 @@ const createEventFixture = async user => {
     articleVector: [0.9, 0.1, 0],
     publishedAt: new Date('2026-05-01T11:00:00Z')
   });
-  const unclusteredArticle = await Article.create({
+  const unclusteredArticle = await articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     status: 'unread',

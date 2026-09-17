@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
@@ -37,7 +38,7 @@ const createUserFeed = async prefix => {
   return { user, category, feed };
 };
 
-const createArticle = (user, feed, title, publishedAt, values = {}) => Article.create({
+const createArticle = (user, feed, title, publishedAt, values = {}) => articleRecords.create({
   userId: user.id,
   feedId: feed.id,
   status: 'unread',

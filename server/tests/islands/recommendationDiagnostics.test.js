@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
@@ -49,12 +50,12 @@ describe('interest funnel diagnostics', () => {
     const category = await db.Category.create({ userId: user.id, name: 'Diagnostics' });
     const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Diagnostics', url: `https://${user.id}.example/rss` });
     const values = { userId: user.id, feedId: feed.id, title: 'Untouched article', status: 'unread' };
-    const eligible = await db.Article.bulkCreate(Array.from({ length: 201 }, () => values));
-    const read = await db.Article.create({ ...values, status: 'read' });
-    const filtered = await db.Article.create({ ...values, filteredInd: true });
-    const duplicate = await db.Article.create({ ...values, duplicateOfArticleId: eligible[0].id });
+    const eligible = await articleRecords.bulkCreate(Array.from({ length: 201 }, () => values));
+    const read = await articleRecords.create({ ...values, status: 'read' });
+    const filtered = await articleRecords.create({ ...values, filteredInd: true });
+    const duplicate = await articleRecords.create({ ...values, duplicateOfArticleId: eligible[0].id });
     const foreign = await db.User.create({ username: `diagnostic-other-${randomUUID()}` });
-    const foreignArticle = await db.Article.create({ ...values, userId: foreign.id });
+    const foreignArticle = await articleRecords.create({ ...values, userId: foreign.id });
     const result = await scoreArticlesFromIslandsForUser(user.id);
     expect(result).toMatchObject({ scannedCount: 201, candidatesRescored: 201, neutralCount: 201,
       unchangedCount: 201, interestScoresChanged: 0, recordedEvaluationCount: 201, updatedCount: 0,

@@ -410,7 +410,7 @@ describe('tag and cleanup controllers', () => {
       qualityScore: { [Op.gte]: 0.4 }
     });
     expect(mocked.articleLiteral).toHaveBeenCalledWith(expect.stringContaining(
-      'articles.interestScore <> 0'
+      'interaction.interestScore <> 0'
     ));
     expect(mocked.articleLiteral).toHaveBeenCalledWith(expect.stringContaining(
       'COUNT(DISTINCT briefing_source_article.feedId)'
@@ -565,4 +565,9 @@ describe('event article controllers', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'event query failed' });
   });
 
+});
+
+vi.mock('../../services/articles/articleRecords.js', async () => {
+  const { default: models } = await import('../../models/index.js');
+  return { articleRecords: models.Article };
 });

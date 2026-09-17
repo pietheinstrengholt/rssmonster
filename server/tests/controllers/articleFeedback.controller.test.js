@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
@@ -42,7 +43,7 @@ const createArticleFor = async user => {
     url: `https://example.com/${user.username}.xml`
   });
 
-  const article = await Article.create({
+  const article = await articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     status: 'unread',

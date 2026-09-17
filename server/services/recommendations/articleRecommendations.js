@@ -1,3 +1,4 @@
+import { articleRecords } from '../articles/articleRecords.js';
 import { embeddingSimilarity, hasEmbeddingModel } from '../vectors/embeddingModel.js';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
@@ -5,7 +6,7 @@ import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { hasUsableVector, parseVector } from '../vectors/index.js';
 
 // Provides the shared dependencies used by this recommendation service.
-const { Article, Feed } = db;
+const { Feed } = db;
 // Defines the largest recent candidate pool allowed by the baseline implementation.
 const HARD_MAX_CANDIDATES = 600;
 // Defines the largest recommendation result exposed by the endpoint.
@@ -33,7 +34,7 @@ function resolveUsableVector(vector) {
 
 // This function loads the owned canonical source article required for recommendations.
 async function loadRecommendationSource(userId, articleId) {
-  return Article.findOne({
+  return articleRecords.findOne({
     where: {
       id: articleId,
       userId,
@@ -72,7 +73,7 @@ function buildCandidateWhere(userId, source) {
 
 // This function loads the recent vectorized candidates and response metadata in one query.
 async function loadRecentCandidates(userId, source, maxCandidates) {
-  return Article.findAll({
+  return articleRecords.findAll({
     where: buildCandidateWhere(userId, source),
     attributes: [
       'id',

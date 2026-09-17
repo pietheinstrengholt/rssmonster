@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import jwt from 'jsonwebtoken';
@@ -17,7 +18,7 @@ async function fixture() {
   currentUserId = user.id;
   const category = await db.Category.create({ userId: user.id, name: 'Time' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Time', url: `https://${username}.example/feed` });
-  const article = await db.Article.create({ userId: user.id, feedId: feed.id, title: 'Old article', publishedAt: old, contentHtml: 'Short article body' });
+  const article = await articleRecords.create({ userId: user.id, feedId: feed.id, title: 'Old article', publishedAt: old, contentHtml: 'Short article body' });
   const authorization = `Bearer ${jwt.sign({ userId: user.id, username }, getJwtSecret())}`;
   const post = (action, body = {}, id = article.id) => request(app).post(`/api/articles/${action}${id ? `/${id}` : ''}`).set('Authorization', authorization).send(body);
   return { user, article, key, post };
@@ -77,7 +78,7 @@ describe('Article interaction clocks across APIs', () => {
     await article.update({ firstSeen: old, attentionBucket: 3, lastMeaningfulReadAt: old });
     const event = await db.Event.create({ userId: user.id, name: 'Occurrence', representativeArticleId: article.id });
     await article.update({ eventId: event.id });
-    const sibling = await db.Article.create({ userId: user.id, feedId: article.feedId, title: 'Sibling', publishedAt: old, eventId: event.id });
+    const sibling = await articleRecords.create({ userId: user.id, feedId: article.feedId, title: 'Sibling', publishedAt: old, eventId: event.id });
     expect((await post('markasseen', { visibleSeconds: 30, grouping: 'event', selectedStatus: 'read' })).status).toBe(200);
     await article.reload(); fresh(article.lastMeaningfulReadAt); expect(article.firstSeen).toEqual(old);
     await sibling.reload(); expect(sibling.lastMeaningfulReadAt).toBeNull();
@@ -117,7 +118,7 @@ describe('observed Article attention evidence', () => {
   it('bulk mark-read preserves prior attention and creates none for unobserved articles', async () => {
     const { user, article, post } = await fixture();
     await article.update({ firstSeen: old, attentionBucket: 3, lastMeaningfulReadAt: old, lastClickedAt: old, favoritedAt: old });
-    const unseen = await db.Article.create({ userId: user.id, feedId: article.feedId, title: 'Unopened' });
+    const unseen = await articleRecords.create({ userId: user.id, feedId: article.feedId, title: 'Unopened' });
     expect((await post('markallasread', {}, null)).status).toBe(200);
     await article.reload();
     await unseen.reload();
@@ -189,7 +190,7 @@ describe('observed Article attention evidence', () => {
     const { user, article, post } = await fixture();
     const event = await db.Event.create({ userId: user.id, name: 'State only', representativeArticleId: article.id });
     await article.update({ eventId: event.id });
-    const sibling = await db.Article.create({ userId: user.id, feedId: article.feedId, title: 'Sibling', eventId: event.id });
+    const sibling = await articleRecords.create({ userId: user.id, feedId: article.feedId, title: 'Sibling', eventId: event.id });
     const response = await post('markasseen', { visibleSeconds: 30, readingWordCount: 3, recordObservation: false, markRead: true, grouping: 'event' });
     expect(response.status).toBe(200);
     for (const row of [article, sibling]) {
@@ -278,7 +279,7 @@ describe('observed Article attention evidence', () => {
     const { user, article, post } = await fixture();
     const event = await db.Event.create({ userId: user.id, name: 'Occurrence', articleCount: 3, representativeArticleId: article.id });
     await article.update({ eventId: event.id, embedding_model: 'test-model', articleVector: [1, 0] });
-    const siblings = await db.Article.bulkCreate(['B', 'C'].map(title => ({
+    const siblings = await articleRecords.bulkCreate(['B', 'C'].map(title => ({
       userId: user.id, feedId: article.feedId, title, eventId: event.id, embedding_model: 'test-model', articleVector: [1, 0], publishedAt: old
     })));
     const response = await post('markasseen', { visibleSeconds: 30, grouping: 'event', selectedStatus });

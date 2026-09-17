@@ -1,3 +1,4 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 /**
  * Destructively reset and rebuild semantic state for a newly selected embedding model.
  *
@@ -25,7 +26,7 @@ import { backfillEngagedArticleVectors } from './backfillEngagedArticleVectors.j
 import { generateIslandTaxonomyVectors } from './generateIslandTaxonomyVectors.js';
 import { resetSemanticStateForUser } from './resetSemanticState.js';
 
-const { Article, Event, Island, IslandTaxonomy, User, sequelize } = db;
+const { Event, Island, IslandTaxonomy, User, sequelize } = db;
 const DEFAULT_BATCH_SIZE = 100;
 
 export function parseSemanticModelRebuildArgs(argv) {
@@ -71,7 +72,7 @@ async function loadTargetUsers(userId, models = { User }) {
   });
 }
 
-async function inspectScope(users, models = { Article, Event, Island, IslandTaxonomy }) {
+async function inspectScope(users, models = { Article: articleRecords, Event, Island, IslandTaxonomy }) {
   const userIds = users.map(user => user.id);
   const userWhere = { userId: { [Op.in]: userIds } };
   const [articles, vectors, rebuildTargets, events, islands, taxonomyVectors] =

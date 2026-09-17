@@ -23,10 +23,10 @@ explicit fallback suppression is reported separately from target-level threshold
 Evidence-query limits and windows still apply; excluded evidence outside those queries
 cannot be attributed to an individual target by this evaluator.
 
-`Article.interestScoredAt` records successful evaluations including unchanged neutral
+`ArticleInteraction.interestScoredAt` records successful evaluations including unchanged neutral
 results. A batch metadata update stamps unchanged rows without changing their `updatedAt`;
 skipped/ineligible rows remain untouched. Legacy clocks stay null. Apply migration
-`20260915001000-add-interest-scored-at.mjs` before running the updated application.
+`20260916001000-split-article-interactions.mjs` before running the updated application.
 The clock records evaluation time, not freshness of the underlying Island calibration.
 No behavioral signal uses this timestamp.
 
@@ -38,7 +38,7 @@ Interest Islands are the authoritative user-specific personalization representat
 Events identify occurrences; Islands represent signed behavioral preferences.
 
 ```text
-canonical Articles + behavior → behavioral profiles → persisted Interest Islands
+ArticleInteraction signals + canonical Article vectors → behavioral profiles → persisted Interest Islands
 candidate Article vector → direct Island comparison → interestScore → Recommended
 ```
 

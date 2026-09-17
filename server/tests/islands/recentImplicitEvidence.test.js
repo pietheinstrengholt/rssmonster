@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
@@ -80,9 +81,9 @@ describe('recent implicit evidence', () => {
     const category = await db.Category.create({ userId: user.id, name: 'Implicit' });
     const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Implicit', url: `https://${user.id}.example/rss` });
     const values = { userId: user.id, feedId: feed.id, title: target.title, embedding_model: 'test-model', articleVector: [1, 0] };
-    await db.Article.create({ ...values, articleVector: [0, 1], positiveInd: 1, positiveFeedbackAt: new Date(now) });
-    const clicked = await db.Article.create({ ...values, clickedAmount: 1, lastClickedAt: new Date(now), status: 'read' });
-    const candidate = await db.Article.create({ ...values, status: 'unread' });
+    await articleRecords.create({ ...values, articleVector: [0, 1], positiveInd: 1, positiveFeedbackAt: new Date(now) });
+    const clicked = await articleRecords.create({ ...values, clickedAmount: 1, lastClickedAt: new Date(now), status: 'read' });
+    const candidate = await articleRecords.create({ ...values, status: 'unread' });
     const profiles = await buildInterestIslandProfilesForUser(user.id, { maxIslands: 1 });
     expect(profiles.summary.unassignedBehavioralProfiles).toBe(1);
     expect(profiles.flatMap(profile => profile.articles.map(a => a.articleId))).not.toContain(clicked.id);
@@ -100,9 +101,9 @@ describe('recent implicit evidence', () => {
     const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Implicit', url: `https://${user.id}.example/rss` });
     const values = { userId: user.id, feedId: feed.id, title: target.title, embedding_model: 'test-model', articleVector: [1, 0],
       clickedAmount: 1, lastClickedAt: new Date(now - day), publishedAt: new Date(now) };
-    const older = await db.Article.bulkCreate(Array.from({ length: IMPLICIT_EVIDENCE_LIMIT + 1 }, () => values));
-    const fresh = await db.Article.create({ ...values, attentionBucket: 3, lastMeaningfulReadAt: new Date(now), publishedAt: new Date('2020-01-01') });
-    const excluded = await db.Article.bulkCreate([
+    const older = await articleRecords.bulkCreate(Array.from({ length: IMPLICIT_EVIDENCE_LIMIT + 1 }, () => values));
+    const fresh = await articleRecords.create({ ...values, attentionBucket: 3, lastMeaningfulReadAt: new Date(now), publishedAt: new Date('2020-01-01') });
+    const excluded = await articleRecords.bulkCreate([
       { ...values, userId: foreign.id }, { ...values, filteredInd: true }, { ...values, duplicateOfArticleId: fresh.id },
       { ...values, negativeInd: 1 }, { ...values, favoriteInd: 1 }, { ...values, positiveInd: 1 },
       { ...values, lastClickedAt: null }, { ...values, lastClickedAt: new Date(now + day) },

@@ -1,3 +1,4 @@
+import { articleRecords } from '../articles/articleRecords.js';
 // Reconciles same-user feed rows that have converged on one verified endpoint.
 
 import db from '../../models/index.js';
@@ -277,7 +278,7 @@ const repairArticleEventPointers = async (
       }, { transaction });
       continue;
     }
-    const replacement = await Article.findOne({
+    const replacement = await articleRecords.findOne({
       where: {
         userId: survivor.userId,
         eventId: event.id,
@@ -312,7 +313,7 @@ const transferArticles = async ({
 }) => {
   await assertExecutionLeaseOwnership(execution, { transaction });
   const feedIds = [survivor.id, ...losers.map(feed => feed.id)];
-  const articles = await Article.findAll({
+  const articles = await articleRecords.findAll({
     where: { userId, feedId: { [Op.in]: feedIds } },
     order: [['id', 'ASC']],
     transaction,
@@ -324,7 +325,7 @@ const transferArticles = async ({
     const includesLoser = group.some(article => article.feedId !== survivor.id);
     if (!includesLoser) continue;
     if (group.length === 1) {
-      await Article.update({ feedId: survivor.id }, {
+      await articleRecords.update({ feedId: survivor.id }, {
         where: { id: { [Op.in]: group.map(article => article.id) }, userId },
         transaction,
         hooks: false
@@ -364,7 +365,7 @@ const transferArticles = async ({
       transaction,
       hooks: false
     });
-    await Article.update({ duplicateOfArticleId: articleSurvivor.id }, {
+    await articleRecords.update({ duplicateOfArticleId: articleSurvivor.id }, {
       where: {
         id: { [Op.ne]: articleSurvivor.id },
         duplicateOfArticleId: { [Op.in]: loserIds },
@@ -455,7 +456,7 @@ const reconcileInTransaction = async ({
   );
   if (foreignLeasedFeed) throw createReconciliationLeaseConflictError(foreignLeasedFeed);
 
-  const counts = await Article.findAll({
+  const counts = await articleRecords.findAll({
     attributes: ['feedId', [sequelize.fn('COUNT', sequelize.col('id')), 'articleCount']],
     where: { userId, feedId: { [Op.in]: feeds.map(feed => feed.id) } },
     group: ['feedId'],

@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import {
   afterEach,
   beforeAll,
@@ -18,7 +19,7 @@ vi.mock('../../services/feeds/http/acquireHttp.js', () => ({
 import db from '../../models/index.js';
 import { discoverRssLink } from '../../services/feeds/discoverRssLink.js';
 
-const { Article, Category, Feed, FeedUrlAlias, User, sequelize } = db;
+const { Category, Feed, FeedUrlAlias, User, sequelize } = db;
 let sequence = 0;
 let ownedUserIds = [];
 
@@ -85,7 +86,7 @@ const createEstablishedFeed = async ({ url, entries = [] }) => {
     url
   });
   for (const entry of entries) {
-    await Article.create({
+    await articleRecords.create({
       userId: user.id,
       feedId: feed.id,
       externalId: entry.guid,

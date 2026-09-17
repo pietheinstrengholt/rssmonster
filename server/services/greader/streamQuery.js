@@ -1,3 +1,4 @@
+import { articleRecords } from '../articles/articleRecords.js';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
@@ -8,7 +9,7 @@ import {
 } from '../../utils/greaderParameters.js';
 
 // Provides the shared dependencies used by this service.
-const { Article, Category, Feed, sequelize } = db;
+const { Category, Feed, sequelize } = db;
 
 // Defines the label prefix enforced by this service.
 export const LABEL_PREFIX = 'user/-/label/';
@@ -422,7 +423,7 @@ export const queryGreaderStream = async options => {
   const { streamId, count, findOptions } =
     await buildGreaderStreamQuery(options);
   // Loads the articles needed while performing query greader stream.
-  const articles = await Article.findAll(findOptions);
+  const articles = await articleRecords.findAll(findOptions);
   // Derives the has more required while performing query greader stream.
   const hasMore = articles.length > count;
 

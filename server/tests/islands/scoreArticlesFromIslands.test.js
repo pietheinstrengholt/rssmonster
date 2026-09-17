@@ -1,9 +1,10 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import db from '../../models/index.js';
 import { scoreArticlesFromIslandsForUser, explainArticleInterests } from '../../services/score/scoreArticlesFromIslands.js';
 
-const { sequelize, Article, Category, Feed, Island, User } = db;
+const { sequelize, Category, Feed, Island, User } = db;
 
 async function createUserGraph() {
   const suffix = randomUUID();
@@ -49,14 +50,14 @@ describe('scoreArticlesFromIslandsForUser', () => {
     const { user, feed } = await createUserGraph();
     const suffix = randomUUID();
     const crawlStartedAt = new Date('2026-07-01T12:00:00.000Z');
-    const newArticle = await Article.create(articlePayload(user.id, feed.id, 1, suffix, {
+    const newArticle = await articleRecords.create(articlePayload(user.id, feed.id, 1, suffix, {
       interestScore: 0.8
     }));
-    const filteredArticle = await Article.create(articlePayload(user.id, feed.id, 2, suffix, {
+    const filteredArticle = await articleRecords.create(articlePayload(user.id, feed.id, 2, suffix, {
       filteredInd: true,
       interestScore: 0.85
     }));
-    const oldRevisedArticle = await Article.create(articlePayload(user.id, feed.id, 3, suffix, {
+    const oldRevisedArticle = await articleRecords.create(articlePayload(user.id, feed.id, 3, suffix, {
       articleVector: null,
       interestScore: 0.9
     }));
@@ -98,7 +99,7 @@ describe('scoreArticlesFromIslandsForUser', () => {
   it('keeps unscoped scoring available as an explicit historical rebuild', async () => {
     const { user, feed } = await createUserGraph();
     const suffix = randomUUID();
-    const historicalArticle = await Article.create(articlePayload(user.id, feed.id, 1, suffix, {
+    const historicalArticle = await articleRecords.create(articlePayload(user.id, feed.id, 1, suffix, {
       interestScore: 0.8,
       createdAt: new Date('2020-01-01T00:00:00.000Z')
     }));
@@ -112,14 +113,14 @@ describe('scoreArticlesFromIslandsForUser', () => {
   it('clears stale island scores for unread articles when no current island matches', async () => {
     const { user, feed } = await createUserGraph();
     const suffix = randomUUID();
-    const unreadArticle = await Article.create(articlePayload(user.id, feed.id, 1, suffix, {
+    const unreadArticle = await articleRecords.create(articlePayload(user.id, feed.id, 1, suffix, {
       interestScore: 0.8
     }));
-    const readArticle = await Article.create(articlePayload(user.id, feed.id, 2, suffix, {
+    const readArticle = await articleRecords.create(articlePayload(user.id, feed.id, 2, suffix, {
       status: 'read',
       interestScore: 0.9
     }));
-    const filteredArticle = await Article.create(articlePayload(user.id, feed.id, 3, suffix, {
+    const filteredArticle = await articleRecords.create(articlePayload(user.id, feed.id, 3, suffix, {
       filteredInd: true,
       interestScore: 0.95
     }));
@@ -146,14 +147,14 @@ describe('scoreArticlesFromIslandsForUser', () => {
       embedding_model: 'test-model', islandVector: [1, 0, 0],
       archivedInd: false
     });
-    const unreadArticle = await Article.create(articlePayload(user.id, feed.id, 1, suffix, {
+    const unreadArticle = await articleRecords.create(articlePayload(user.id, feed.id, 1, suffix, {
       interestScore: 0.8
     }));
-    const readArticle = await Article.create(articlePayload(user.id, feed.id, 2, suffix, {
+    const readArticle = await articleRecords.create(articlePayload(user.id, feed.id, 2, suffix, {
       status: 'read',
       interestScore: 0.9
     }));
-    const filteredArticle = await Article.create(articlePayload(user.id, feed.id, 3, suffix, {
+    const filteredArticle = await articleRecords.create(articlePayload(user.id, feed.id, 3, suffix, {
       filteredInd: true,
       interestScore: 0.95
     }));
@@ -200,14 +201,14 @@ describe('scoreArticlesFromIslandsForUser', () => {
         archivedInd: true
       })
     ]);
-    const canonicalArticle = await Article.create(articlePayload(
+    const canonicalArticle = await articleRecords.create(articlePayload(
       user.id,
       feed.id,
       1,
       suffix,
       { articleVector: [1, 0, 0] }
     ));
-    const duplicateArticle = await Article.create(articlePayload(
+    const duplicateArticle = await articleRecords.create(articlePayload(
       user.id,
       feed.id,
       2,
@@ -244,11 +245,11 @@ describe('scoreArticlesFromIslandsForUser', () => {
       embedding_model: 'test-model', islandVector: [1, 0, 0],
       archivedInd: false
     });
-    const matchingArticle = await Article.create(articlePayload(user.id, feed.id, 1, suffix, {
+    const matchingArticle = await articleRecords.create(articlePayload(user.id, feed.id, 1, suffix, {
       articleVector: '[1, 0, 0]',
       interestScore: 0.9
     }));
-    const unrelatedArticle = await Article.create(articlePayload(user.id, feed.id, 2, suffix, {
+    const unrelatedArticle = await articleRecords.create(articlePayload(user.id, feed.id, 2, suffix, {
       articleVector: [0, 1, 0],
       interestScore: 0.9
     }));
@@ -268,13 +269,13 @@ describe('scoreArticlesFromIslandsForUser', () => {
     const { user, feed } = await createUserGraph();
     const foreign = await createUserGraph();
     const suffix = randomUUID();
-    const target = await Article.create(articlePayload(user.id, feed.id, 1, suffix, {
+    const target = await articleRecords.create(articlePayload(user.id, feed.id, 1, suffix, {
       articleVector: [0, 1, 0], publishedAt: new Date()
     }));
-    const ownNegative = await Article.create(articlePayload(user.id, feed.id, 2, suffix, {
+    const ownNegative = await articleRecords.create(articlePayload(user.id, feed.id, 2, suffix, {
       status: 'read', negativeInd: 1, publishedAt: new Date()
     }));
-    await Article.bulkCreate([
+    await articleRecords.bulkCreate([
       articlePayload(foreign.user.id, foreign.feed.id, 3, suffix, { negativeInd: 1, articleVector: [0, 1, 0], publishedAt: new Date() }),
       articlePayload(user.id, feed.id, 4, suffix, { negativeInd: 1, articleVector: [0, 1, 0], filteredInd: true, publishedAt: new Date() }),
       articlePayload(user.id, feed.id, 5, suffix, { negativeInd: 1, articleVector: [0, 1, 0], duplicateOfArticleId: ownNegative.id, publishedAt: new Date() }),

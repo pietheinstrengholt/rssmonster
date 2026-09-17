@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
 import jwt from 'jsonwebtoken';
@@ -6,7 +7,7 @@ import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
 
 // Provides the database models used by recommendation endpoint tests.
-const { Article, Category, Feed, User, sequelize } = db;
+const { Category, Feed, User, sequelize } = db;
 let app;
 
 // This function creates an isolated authenticated article graph for endpoint tests.
@@ -35,7 +36,7 @@ async function createUserGraph(label = 'recommendation-endpoint') {
 
 // This function creates an article for recommendation endpoint tests.
 async function createArticle(graph, slug, vector, overrides = {}) {
-  return Article.create({
+  return articleRecords.create({
     userId: graph.user.id,
     feedId: graph.feed.id,
     status: 'unread',

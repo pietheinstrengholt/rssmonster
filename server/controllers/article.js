@@ -1,3 +1,4 @@
+import { articleRecords } from '../services/articles/articleRecords.js';
 import htmlToVisibleText from '../services/crawl/content/htmlToVisibleText.js';
 import { updateArticleBehavior } from '../services/articles/updateArticleBehavior.js';
 import db from '../models/index.js';
@@ -54,7 +55,7 @@ const markScopedArticlePageAsRead = async ({ userId, itemIds, grouping, readAt }
 
   let eventIds = [];
   if (grouping === 'event') {
-    const selectedArticles = await Article.findAll({
+    const selectedArticles = await articleRecords.findAll({
       where: { id: { [Op.in]: itemIds }, userId, ...canonicalArticleWhere() },
       attributes: ['id', 'eventId']
     });
@@ -62,7 +63,7 @@ const markScopedArticlePageAsRead = async ({ userId, itemIds, grouping, readAt }
     eventIds = [...new Set(selectedArticles.map(article => article.eventId).filter(Boolean))];
   }
 
-  const [updatedCount] = await retryDatabaseWrite(() => Article.update(
+  const [updatedCount] = await retryDatabaseWrite(() => articleRecords.update(
     { status: 'read', readAt },
     {
       where: {
@@ -105,7 +106,7 @@ const attachPredictedAffinity = articles => {
 const loadArticleDetails = async (userId, articlesArray) => {
   // Keep this projection aligned with Article.vue props and ArticleReaderLayout.vue direct reads;
   // when either frontend consumer changes, update this list and the article-details API tests together.
-  const articles = await Article.findAll({
+  const articles = await articleRecords.findAll({
     attributes: [
       'id',
       'feedId',
@@ -379,7 +380,7 @@ const getDuplicateArticles = async (req, res) => {
       return res.status(400).json({ error: 'articleId is required' });
     }
 
-    const canonicalArticle = await Article.findOne({
+    const canonicalArticle = await articleRecords.findOne({
       where: { id: articleId, userId, ...canonicalArticleWhere() },
       attributes: ['id']
     });
@@ -388,7 +389,7 @@ const getDuplicateArticles = async (req, res) => {
       return res.status(404).json({ error: 'Article not found' });
     }
 
-    const articles = await Article.findAll({
+    const articles = await articleRecords.findAll({
       where: {
         userId,
         duplicateOfArticleId: articleId,
@@ -427,7 +428,7 @@ const getArticle = async (req, res, _next) => {
 
     const articleId = req.params.articleId;
 
-    const article = await Article.findOne({
+    const article = await articleRecords.findOne({
       where: {
         id: articleId,
         userId: userId,
@@ -523,7 +524,7 @@ const getDevelopingStoryArticles = async (req, res, _next) => {
   }
 
   try {
-    const sourceArticle = await Article.findOne({
+    const sourceArticle = await articleRecords.findOne({
       where: { id: articleId, userId, ...canonicalArticleWhere() },
       attributes: ['id', 'status', 'eventId'],
       include: [{
@@ -553,7 +554,7 @@ const getDevelopingStoryArticles = async (req, res, _next) => {
       return res.status(404).json({ error: 'Developing story not found' });
     }
 
-    const relatedArticles = await Article.findAll({
+    const relatedArticles = await articleRecords.findAll({
       where: {
         eventId: sourceArticle.eventId,
         userId,
@@ -604,7 +605,7 @@ const getStorySourceArticles = async (req, res, _next) => {
   }
 
   try {
-    const sourceArticle = await Article.findOne({
+    const sourceArticle = await articleRecords.findOne({
       where: { id: articleId, userId, ...canonicalArticleWhere() },
       attributes: ['id', 'eventId', 'feedId'],
       include: [{
@@ -625,7 +626,7 @@ const getStorySourceArticles = async (req, res, _next) => {
       return res.status(404).json({ error: 'Story sources not found' });
     }
 
-    const relatedArticles = await Article.findAll({
+    const relatedArticles = await articleRecords.findAll({
       where: {
         eventId: sourceArticle.eventId,
         userId,
@@ -687,7 +688,7 @@ const markAsRead = async (req, res, _next) => {
     const readAt = new Date();
 
     if (articleIds.length > 0) {
-      const selectedArticles = await Article.findAll({
+      const selectedArticles = await articleRecords.findAll({
         where: {
           id: { [Op.in]: articleIds },
           userId: userId,
@@ -699,7 +700,7 @@ const markAsRead = async (req, res, _next) => {
       const selectedEventIds = statusGrouping === 'event'
         ? [...new Set(selectedArticles.map(article => article.eventId).filter(Boolean))]
         : [];
-      const articles = await Article.findAll({
+      const articles = await articleRecords.findAll({
         where: {
           userId,
           ...canonicalArticleWhere(),
@@ -850,7 +851,7 @@ const markAsRead = async (req, res, _next) => {
     let eventIds = [];
 
     if (normalizedGrouping === 'event') {
-      const selectedArticles = await Article.findAll({
+      const selectedArticles = await articleRecords.findAll({
         where: {
           id: { [Op.in]: itemIds },
           userId,
@@ -884,7 +885,7 @@ const markAsRead = async (req, res, _next) => {
           })
     };
 
-    const [updatedCount] = await retryDatabaseWrite(() => Article.update(
+    const [updatedCount] = await retryDatabaseWrite(() => articleRecords.update(
       { status: 'read', readAt },
       { where: updateWhere }
     ));
@@ -924,7 +925,7 @@ const markClicked = async (req, res, _next) => {
     }
 
     if (!articleId && articleIds.length > 0) {
-      const articles = await Article.findAll({
+      const articles = await articleRecords.findAll({
         where: {
           id: { [Op.in]: articleIds },
           userId: userId,
@@ -957,7 +958,7 @@ const markClicked = async (req, res, _next) => {
       return res.status(400).json({ error: "update must be mark or unmark" });
     }
 
-    const article = await Article.findOne({
+    const article = await articleRecords.findOne({
       where: {
         id: articleId,
         userId: userId,
@@ -1003,7 +1004,7 @@ const markNotInterested = async (req, res, _next) => {
       return res.status(400).json({ error: "articleId is required" });
     }
 
-    const article = await Article.findOne({
+    const article = await articleRecords.findOne({
       where: {
         id: articleId,
         userId: userId,
@@ -1044,7 +1045,7 @@ const markMoreLikeThis = async (req, res, _next) => {
       return res.status(400).json({ error: "articleId is required" });
     }
 
-    const article = await Article.findOne({
+    const article = await articleRecords.findOne({
       where: {
         id: articleId,
         userId: userId,
@@ -1125,7 +1126,7 @@ const updateArticleStatus = async (userId, articleId, status) => {
       return res.status(400).json({ error: "articleId is required" });
     }
 
-    const article = await Article.findOne({
+    const article = await articleRecords.findOne({
       where: {
         id: articleId,
         userId: userId,
@@ -1206,7 +1207,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
     }
 
     // Fetch article and feed details (needed for updating the categories read and unread counts on the frontend)
-    const article = await Article.findOne({
+    const article = await articleRecords.findOne({
       where: {
         id: articleId,
         userId,
@@ -1312,7 +1313,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
       };
 
       if (shouldMarkRead) {
-        const unreadEventArticles = await Article.findAll({
+        const unreadEventArticles = await articleRecords.findAll({
           where: {
             ...eventWhere,
             status: 'unread'
@@ -1333,7 +1334,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
         );
       }
 
-      await retryDatabaseWrite(() => Article.update(eventPayload, {
+      await retryDatabaseWrite(() => articleRecords.update(eventPayload, {
         where: eventWhere
       }));
     }
@@ -1404,7 +1405,7 @@ const articleMarkAsFavorite = async (req, res, _next) => {
     const favoriteInd = update === "mark" ? 1 : 0;
 
     if (!articleId && articleIds.length > 0) {
-      const articles = await Article.findAll({
+      const articles = await articleRecords.findAll({
         where: {
           id: { [Op.in]: articleIds },
           userId: userId,
@@ -1432,7 +1433,7 @@ const articleMarkAsFavorite = async (req, res, _next) => {
       });
     }
 
-    const article = await Article.findOne({
+    const article = await articleRecords.findOne({
       where: {
         id: articleId,
         userId: userId,
@@ -1466,7 +1467,7 @@ const articleMarkAllAsRead = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    await retryDatabaseWrite(() => Article.update({
+    await retryDatabaseWrite(() => articleRecords.update({
       status: "read",
       readAt: new Date()
     }, {

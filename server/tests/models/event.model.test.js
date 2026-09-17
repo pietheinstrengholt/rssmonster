@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeAll, describe, expect, it } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../../models/index.js';
@@ -33,7 +34,7 @@ async function createUserGraph(prefix) {
 
 // This function creates a persisted article for Event pointer tests.
 async function createArticle(user, feed, label) {
-  return Article.create({
+  return articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     title: `${label} article`,

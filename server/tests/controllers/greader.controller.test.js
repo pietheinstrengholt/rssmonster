@@ -1,3 +1,4 @@
+import { articleRecords } from '../../services/articles/articleRecords.js';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
@@ -47,7 +48,7 @@ const createFixture = async () => {
     feedDesc: 'Example feed description',
     url: 'https://example.com/rss.xml'
   });
-  const article = await Article.create({
+  const article = await articleRecords.create({
     userId: user.id,
     feedId: feed.id,
     status: 'unread',
@@ -180,7 +181,7 @@ describe('Google Reader API compatibility', () => {
 
   it('reports reading-list unread count from all unread articles for the user', async () => {
     const { user, feed, article } = await createFixture();
-    await Article.create({
+    await articleRecords.create({
       userId: user.id,
       feedId: feed.id,
       status: 'unread',
@@ -199,7 +200,7 @@ describe('Google Reader API compatibility', () => {
       feedName: 'Other Feed',
       url: 'https://other.example.com/rss.xml'
     });
-    await Article.create({
+    await articleRecords.create({
       userId: otherUser.id,
       feedId: otherFeed.id,
       status: 'unread',
@@ -319,7 +320,7 @@ describe('Google Reader API compatibility', () => {
 
     const deletedCategory = await Category.findByPk(category.id);
     const persistedFeed = await Feed.findByPk(feed.id);
-    const persistedArticle = await Article.findByPk(article.id);
+    const persistedArticle = await articleRecords.findByPk(article.id);
 
     expect(deletedCategory).toBeNull();
     expect(persistedFeed).not.toBeNull();
