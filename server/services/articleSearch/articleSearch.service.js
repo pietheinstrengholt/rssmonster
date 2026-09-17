@@ -5,6 +5,7 @@ import db from '../../models/index.js';
 const { Article, BriefingPreference, Setting } = db;
 import { Op } from 'sequelize';
 import { sortArticles } from './articleSort.service.js';
+import { refreshExpiredArticleInterests } from '../recommendations/refreshExpiredArticleInterests.js';
 import { createRecommendationFunnel } from './recommendationFunnel.js';
 import { resolveDateFilterToRange } from './articleDateParser.service.js';
 import { normalizeArticleSort, parseArticleQuery } from './articleQueryParser.service.js';
@@ -638,6 +639,8 @@ export const searchArticles = async ({
     funnel?.captureArticles('candidate_execution_limit', articles);
 
     debugLog(`\x1b[33mFetched ${articles.length} articles from database (before in-memory filters)\x1b[0m`);
+
+    if (sortRecommended) await refreshExpiredArticleInterests(userId, articles);
 
     // Delegate all in-memory sorting and filtering to sortArticles
     if (

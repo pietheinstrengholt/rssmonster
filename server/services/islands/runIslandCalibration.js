@@ -64,6 +64,11 @@ export async function persistIslandProfilesForUser(userId, profiles, options = {
       // Serialize the read/selection/write sequence, including concurrent manual and worker calibrations.
       const user = await User.findByPk(userId, { transaction, lock: Transaction.LOCK.UPDATE });
       if (!user) throw new Error('Island user no longer exists');
+      // Behavioral snapshots built before this lock may predate a newer calibration
+      // or interaction. Read and derive them again within the serialized transaction.
+      if (profiles == null || profiles.behavioralEvidence) {
+        profiles = await buildIslandProfilesForUser(userId, { ...options, transaction });
+      }
       const persisted = await persistInterestIslandProfiles(userId, profiles, transaction, options);
       await options.afterPersist?.(transaction, {
         userId, islandCount: persisted.length,
@@ -84,9 +89,7 @@ export async function persistIslandProfilesForUser(userId, profiles, options = {
 
 // This function calibrates behavior-derived island profiles for one user.
 export async function calibrateIslandsFromBehaviorForUser(userId, options = {}) {
-  // Builds the island profiles for user while performing calibrate islands from behavior for user.
-  const profiles = await buildIslandProfilesForUser(userId, options);
-  return persistIslandProfilesForUser(userId, profiles, options);
+  return persistIslandProfilesForUser(userId, null, options);
 }
 
 // This function calibrates behavior-derived islands for one user or every user.

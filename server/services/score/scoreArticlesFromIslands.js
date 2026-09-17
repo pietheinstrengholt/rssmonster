@@ -71,7 +71,8 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
       : batch;
     summary.scopeSkippedCount += batch.length - articles.length;
     const { results } = await explainArticleInterests(userId, articles, { ...options, context });
-    const evaluatedAt = new Date();
+    // Validity starts when evidence was read, not when a possibly long scan ends.
+    const evaluatedAt = new Date(context.now);
     const unchangedIds = [];
     for (const article of articles) {
       const result = results.get(String(article.id));

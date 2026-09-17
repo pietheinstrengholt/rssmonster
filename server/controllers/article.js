@@ -13,6 +13,7 @@ import {
 import { resolvePredictedAffinity } from '../services/recommendations/predictedAffinityResolver.js';
 import { getArticleRecommendations as getArticleRecommendationsService } from '../services/recommendations/articleRecommendations.js';
 import { buildRecommendationPresentation } from '../services/recommendations/recommendedScore.js';
+import { refreshExpiredArticleInterests } from '../services/recommendations/refreshExpiredArticleInterests.js';
 import { loadInterestIslandAttributions } from '../services/recommendations/recommendationAttribution.js';
 import { explainArticleInterests } from '../services/score/scoreArticlesFromIslands.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
@@ -195,8 +196,8 @@ const loadArticleDetails = async (userId, articlesArray) => {
     article.setDataValue('quality', article.quality);
   }
 
+  await refreshExpiredArticleInterests(userId, articles);
   attachPredictedAffinity(articles);
-
   const interestIslandByArticleId = await loadInterestIslandAttributions(userId, articles);
 
   for (const article of articles) {
@@ -474,6 +475,7 @@ const getArticle = async (req, res, _next) => {
         matchesStoredScore: Math.abs(current.score - Number(article.interestScore)) <= 0.00015,
         evidenceAsOf: new Date().toISOString() });
     }
+    await refreshExpiredArticleInterests(userId, [article]);
     res.status(200).json({ article: article });
   } catch (err) {
     console.error("Error in getArticle:", err);

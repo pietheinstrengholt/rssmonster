@@ -28,7 +28,14 @@ The funnel measures selected IDs, not actual browser impressions. With `includeF
 one owned visible article, including zero reason, similarity threshold and pre-selection
 Island match count. `storedScore`, `scoredAt` and `matchesStoredScore` distinguish
 current recomputation from persisted scoring history; current reasons are not asserted
-to explain a stale stored value. This endpoint does not refresh the score.
+to explain a stale stored value. This endpoint does not persist refreshed scores.
+
+When an Island expiry/archival boundary invalidates cached personalization, search
+recomputes interest before Recommended sorting and result limits. Detail endpoints
+apply the same transient correction; `interestEvaluation.scoredAt` then identifies
+the read-time evaluation. Stored scores remain unchanged, and the diagnostic fields
+above still describe persisted history. Morning-summary recommendation ordering uses
+the current interest evaluation already loaded for its explanations.
 
 Article recommendation presentation includes `interestEvaluation` with `scoredAt`,
 `ageMs`, and `state` (`evaluated` or `untracked`). An evaluated zero is neutral,

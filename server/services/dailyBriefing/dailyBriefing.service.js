@@ -250,9 +250,9 @@ const resolveEventIsland = ({ articleId, interests, islandMap }) => {
 };
 
 // This function builds the representative scoring input for one morning-summary event.
-const buildSummaryRecommendationArticle = (event, representativeArticle) => ({
+const buildSummaryRecommendationArticle = (event, representativeArticle, currentInterest) => ({
   freshness: representativeArticle.freshness,
-  interestScore: representativeArticle.interestScore,
+  interestScore: currentInterest?.score ?? 0,
   interestScoredAt: representativeArticle.interestScoredAt,
   qualityScore: representativeArticle.qualityScore,
   sentimentScore: representativeArticle.sentimentScore,
@@ -270,16 +270,16 @@ const summaryArticleIdForEvent = (event, includeDevelopingEvents) => (
 );
 
 // This function orders events by optional recommendation rank, strength, publication time, and stable ID.
-const compareSummaryEvents = (left, right, representativeMap, prioritizeHighTrust) => {
+const compareSummaryEvents = (left, right, representativeMap, prioritizeHighTrust, interests) => {
   if (prioritizeHighTrust) {
     const leftRepresentative = representativeMap.get(String(left.representativeArticleId));
     const rightRepresentative = representativeMap.get(String(right.representativeArticleId));
     const leftScore = computeRecommended(
-      buildSummaryRecommendationArticle(left, leftRepresentative),
+      buildSummaryRecommendationArticle(left, leftRepresentative, interests.get(String(leftRepresentative.id))),
       { prioritizeHighTrust: true }
     );
     const rightScore = computeRecommended(
-      buildSummaryRecommendationArticle(right, rightRepresentative),
+      buildSummaryRecommendationArticle(right, rightRepresentative, interests.get(String(rightRepresentative.id))),
       { prioritizeHighTrust: true }
     );
     const recommendationDelta = rightScore - leftScore;
@@ -323,7 +323,8 @@ const buildMorningSummaryItems = ({
       left,
       right,
       representativeMap,
-      prioritizeHighTrust
+      prioritizeHighTrust,
+      interests
     ));
 
   // Processes each ordered events entry in turn.

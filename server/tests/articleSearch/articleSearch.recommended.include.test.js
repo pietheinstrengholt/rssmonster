@@ -2,10 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
 import { searchArticles } from '../../services/articleSearch/articleSearch.service.js';
 
-const { Article, BriefingPreference, Feed, Setting, Tag } = db;
+const { Article, BriefingPreference, Feed, Island, Setting, Tag } = db;
 
 describe('articleSearch recommended include wiring', () => {
   beforeEach(() => {
+    vi.spyOn(Island, 'findOne').mockResolvedValue(null);
     vi.spyOn(Setting, 'findOne').mockResolvedValue({
       minAdvertisementScore: 0,
       minSentimentScore: 0,

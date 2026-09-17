@@ -475,6 +475,19 @@ behavioral clocks. New behavior already requests another refresh through the
 existing jobs. Duplicate-name handling, vector match thresholds, scoring queries
 excluding archived Islands, Events and automatic-deletion behavior are unchanged.
 
+Behavioral evidence is loaded and profiles are built after taking the user lock,
+inside the persistence transaction. Precomputed profiles carrying a behavioral
+snapshot are rebuilt under that lock, so a delayed calibration cannot overwrite
+newer feedback, activity clocks or audit evidence.
+
+Recommended search and Article detail reads check for owned Island expiry or
+archival boundaries since the oldest cached score. If a boundary was crossed (or
+an Island clock is unknown/future), the existing interest evaluator recomputes the
+request's Articles using one bounded evidence context and batches of 200 Article
+representations. These corrections affect ordering and presentation only; they do
+not persist scores, archive Islands or enqueue work. Persisted scoring timestamps
+record when evidence was loaded, so a long scoring pass cannot hide crossed expiry.
+
 
 ## Capacity selection
 

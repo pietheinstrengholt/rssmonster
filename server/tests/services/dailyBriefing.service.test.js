@@ -263,7 +263,7 @@ describe('dailyBriefing.service', () => {
   });
 
   // Preserves the canonical article-quality components when summary events use Recommended ordering.
-  it('uses canonical article quality when recommendation-ranking morning summary events', async () => {
+  it.each([0, 1])('uses current interest and canonical quality despite a cached interest of %s', async cachedInterest => {
     const generatedAt = new Date('2026-07-31T12:00:00Z');
     mocked.articleFindAll
       .mockResolvedValueOnce([
@@ -277,7 +277,7 @@ describe('dailyBriefing.service', () => {
           contentText: 'This lower-quality event has enough useful detail for the morning summary.',
           publishedAt: generatedAt,
           freshness: 0.5,
-          interestScore: 0,
+          interestScore: cachedInterest,
           qualityScore: 0,
           sentimentScore: 0,
           advertisementScore: 0,

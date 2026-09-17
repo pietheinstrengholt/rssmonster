@@ -27,6 +27,57 @@ describe('behavior-driven Island lifecycle', () => {
   beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); advance(0); });
   afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
+  it.each(['disliked', 'cleared'])('rebuilds an older snapshot under the user lock after its feedback is %s', async mode => {
+    const { user, source } = await fixture({ positiveInd: 1, positiveFeedbackAt: at(0) });
+    await calibrate(user.id);
+    const stale = await buildInterestIslandProfilesForUser(user.id);
+    advance(1);
+    await source.update({ positiveInd: 0, positiveFeedbackAt: null,
+      negativeInd: mode === 'disliked' ? 1 : 0, negativeFeedbackAt: mode === 'disliked' ? at(1) : null });
+    await calibrate(user.id);
+    const island = await ownedIsland(user.id);
+    const freshWeight = island.weight;
+    await persistIslandProfilesForUser(user.id, stale);
+    await island.reload();
+    expect(island.weight).toBe(freshWeight);
+    if (mode === 'disliked') {
+      expect(Number(island.weight)).toBeLessThan(0);
+      expect(island.lastBehaviorAt).toEqual(at(1));
+      expect(island.populationAudit.at(-1).sourceArticles.articles[0]).toMatchObject({ positiveInd: 0, negativeInd: 1 });
+    } else {
+      expect(island.weight).toBe(0);
+      expect(island.archivedInd).toBe(true);
+    }
+  });
+
+  it.skipIf(db.sequelize.getDialect() === 'sqlite')('reads feedback committed while calibration waits for the user lock', async () => {
+    const { user, source } = await fixture({ positiveInd: 1, positiveFeedbackAt: at(0) });
+    await calibrate(user.id);
+    advance(1);
+    const transaction = await db.sequelize.transaction();
+    await db.User.findByPk(user.id, { transaction, lock: transaction.LOCK.UPDATE });
+    await source.update({ positiveInd: 0, positiveFeedbackAt: null, negativeInd: 1, negativeFeedbackAt: at(1) }, { transaction });
+    let attemptingLock;
+    const attempted = new Promise(resolve => { attemptingLock = resolve; });
+    const findUser = db.User.findByPk.bind(db.User);
+    vi.spyOn(db.User, 'findByPk').mockImplementation((id, options) => {
+      const result = findUser(id, options);
+      if (Number(id) === user.id && options?.transaction !== transaction) attemptingLock();
+      return result;
+    });
+    const pending = calibrate(user.id);
+    try {
+      await attempted;
+      await transaction.commit();
+      await pending;
+      const island = await ownedIsland(user.id);
+      expect(Number(island.weight)).toBeLessThan(0);
+      expect(island.lastBehaviorAt).toEqual(at(1));
+    } finally {
+      if (!transaction.finished) await transaction.rollback();
+    }
+  });
+
   it('persists explicit renewal, expiry and reactivation explanations under the same identity', async () => {
     const { user, source } = await fixture({ positiveInd: 1, positiveFeedbackAt: at(0) });
     await calibrate(user.id);
