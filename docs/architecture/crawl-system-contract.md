@@ -21,7 +21,7 @@ Crawling must be safe to retry, bounded in resource usage, isolated between user
 2. **Every Feed MUST belong to exactly one user.**
    Crawling, Article creation, statistics, aliases, errors, and crawl state must preserve the user boundary.
 
-3. **A Feed MUST be processable independently from unrelated Feeds.**
+3. **A Feed MUST be processable independently from other Feeds.**
    Failure, malformed content, slowness, or unusual behavior from one Feed must not invalidate successfully processed work for other Feeds or indefinitely prevent their processing.
 
 4. **Repeated crawling MUST be safe.**
