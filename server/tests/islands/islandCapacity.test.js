@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
 import { persistIslandProfilesForUser, runIslandCalibrationForUser } from '../../services/islands/runIslandCalibration.js';
+import { rankIslandCapacityCandidates } from '../../services/islands/islandCapacity.js';
 import { buildInterestIslandProfilesForUser } from '../../services/islands/islandArticleProfiles.js';
 
 const now = new Date('2026-09-14T12:00:00Z');
@@ -28,6 +29,24 @@ describe('persisted active Island capacity', () => {
   beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(now); });
   afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
+  it('uses recency before support count when strength and confidence are tied', () => {
+    const evidence = [1, 2].flatMap(id => Array.from({ length: id === 1 ? 8 : 7 }, (_, index) => ({
+      id: id * 100 + index, feedId: index % 3, title: 'Explicit preference',
+      embedding_model: 'test-model', articleVector: vector(id), positiveInd: 1,
+      positiveFeedbackAt: new Date(now.getTime() - (index % 4) * 86400000 - (id === 1 ? 1000 : 0))
+    })));
+    const islands = [1, 2].map(id => ({
+      id, weight: 1, islandVector: vector(id), embedding_model: 'test-model',
+      archivedInd: false, lastBehaviorAt: now,
+      get() { return this; }
+    }));
+    const ranked = rankIslandCapacityCandidates(islands, evidence);
+    expect(ranked.map(row => row.strength)).toEqual([1, 1]);
+    expect(ranked.map(row => row.confidence)).toEqual([1, 1]);
+    expect(ranked.map(row => row.id)).toEqual([2, 1]);
+    expect(ranked.map(row => row.supportCount)).toEqual([7, 8]);
+  });
+
   it('reduces 25 qualifying existing Islands to 20 using current support, including strong negative evidence, without touching another user', async () => {
     const data = await fixture(25); const other = await fixture(2);
     await data.sources[24].update({ clickedAmount: 0, negativeInd: 1, negativeFeedbackAt: now });
@@ -36,10 +55,22 @@ describe('persisted active Island capacity', () => {
     expect(result.persistenceSummary.activeIslandCount).toBe(20);
     const active = await activeIds(data.user.id);
     expect(active).toEqual([...data.islands.slice(0, 19), data.islands[24]].map(row => row.id));
+    await data.islands[24].reload();
+    expect(Number(data.islands[24].weight)).toBeLessThan(0);
+    expect(data.islands[24].lastBehaviorAt).toEqual(now);
     expect(await db.Island.count({ where: { userId: data.user.id } })).toBe(25);
     expect(await activeIds(other.user.id)).toEqual(other.islands.map(row => row.id));
     const archived = await db.Island.findAll({ where: { userId: data.user.id, archivedInd: true } });
     expect(archived).toHaveLength(5);
+    for (const row of archived) {
+      const decisions = row.populationAudit.at(-1).lifecycle;
+      expect(decisions).toHaveLength(2);
+      expect(decisions.at(-1)).toMatchObject({ reason: 'capacity_archived', boundaryAt: now.toISOString(),
+        capacity: { limit: 20, candidateCount: 25, decidedBy: 'id' } });
+      expect(decisions.at(-1).capacity.rank).toBeGreaterThan(20);
+      expect(decisions.at(-1).capacity.candidate.id).toBe(row.id);
+      expect(active).toContain(decisions.at(-1).capacity.cutoff.id);
+    }
     const dates = archived.map(row => row.archivedAt);
     vi.setSystemTime(new Date(now.getTime() + 1000));
     await persistIslandProfilesForUser(data.user.id, []);
@@ -86,6 +117,23 @@ describe('persisted active Island capacity', () => {
     expect(await activeIds(data.user.id)).toHaveLength(16);
   });
 
+  it('does not let strong expired history consume formation or active capacity', async () => {
+    const data = await fixture(20);
+    const old = new Date(now.getTime() - 100 * 86400000);
+    for (const source of data.sources) await source.update({ clickedAmount: 0, lastClickedAt: null, favoriteInd: 1, favoritedAt: old });
+    for (const island of data.islands) await island.update({ lastBehaviorAt: old, weight: 1 });
+    const fresh = await data.add(20);
+    await calibrate(data.user.id);
+    const active = await db.Island.findAll({ where: { userId: data.user.id, archivedInd: false } });
+    expect(active).toHaveLength(1);
+    expect(active[0].label).toBe(fresh.title);
+    for (const island of data.islands) {
+      await island.reload();
+      expect(island.archivedInd).toBe(true);
+      expect(island.archivedAt).toEqual(new Date(old.getTime() + 90 * 86400000));
+    }
+  });
+
   it('keeps a weaker reactivation dormant at capacity and does not duplicate it on replay', async () => {
     const data = await fixture(21);
     for (const row of data.sources.slice(0, 20)) await row.update({ favoriteInd: 1, favoritedAt: now });
@@ -101,6 +149,16 @@ describe('persisted active Island capacity', () => {
     await persistIslandProfilesForUser(data.user.id, all);
     expect(await activeIds(data.user.id)).toEqual(first);
     expect(await db.Island.count({ where: { userId: data.user.id } })).toBe(21);
+  });
+
+  it('rolls back lifecycle and capacity audit records together with Island state', async () => {
+    const data = await fixture(2);
+    const rows = () => db.Island.findAll({ where: { userId: data.user.id }, order: [['id', 'ASC']], raw: true });
+    const before = await rows();
+    await expect(persistIslandProfilesForUser(data.user.id, [], { maxIslands: 1,
+      afterPersist: () => { throw new Error('abort audited persistence'); }
+    })).rejects.toThrow('abort audited persistence');
+    expect(await rows()).toEqual(before);
   });
 
   it('serializes concurrent persistence for the same user and applies a smaller requested cap consistently', async () => {

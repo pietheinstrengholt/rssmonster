@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto';
 import db from '../../../models/index.js';
+import { prepareArticleEventRemoval } from '../../events/eventReconciliation.js';
 import buildArticlePersistenceValues, {
   normalizeArticleDate,
   selectMutableArticleSourceValues
 } from './buildArticlePersistenceValues.js';
 import { replaceArticleDerivedTags } from './tags.js';
-import { enqueueArticleEnrichmentJob } from '../enrichment/articleEnrichmentJobs.js';
 import {
   assertExecutionLeaseOwnership,
   throwIfExecutionExpired
@@ -641,21 +641,23 @@ export const applyArticleUpdate = async ({
   updatePlan,
   derivedValues = {},
   tagUpdates = null,
-  articleEnrichment = null,
   userId,
   execution = {}
 }) => sequelize.transaction(async transaction => {
   throwIfExecutionExpired(execution);
   await assertExecutionLeaseOwnership(execution, { transaction });
-  // A background handler may have changed these fields on another model instance.
-  for (const field of ['aiAnalysisStatus', 'aiAnalysisCompletedAt']) {
-    if (Object.hasOwn(derivedValues, field) && typeof updatePlan.article.changed === 'function') {
-      updatePlan.article.changed(field, true);
-    }
+  // Preserve analysis and behavior; visibility loss still requires Event membership maintenance.
+  const sourceDerivedValues = Object.fromEntries(
+    ['filteredInd', 'isOfficialSource', 'officialOrganization', 'hotInd', 'hotlinks']
+      .filter(field => Object.hasOwn(derivedValues, field)).map(field => [field, derivedValues[field]])
+  );
+  if (sourceDerivedValues.filteredInd === true) {
+    await prepareArticleEventRemoval(userId, { id: updatePlan.article.id }, transaction);
+    sourceDerivedValues.eventId = null;
   }
   await updatePlan.article.update({
     ...updatePlan.updateValues,
-    ...derivedValues
+    ...sourceDerivedValues
   }, { transaction });
   throwIfExecutionExpired(execution);
 
@@ -664,17 +666,9 @@ export const applyArticleUpdate = async ({
     await replaceArticleDerivedTags({
       articleId: updatePlan.article.id,
       userId,
-      ...tagUpdates,
-      transaction
-    });
-    throwIfExecutionExpired(execution);
-  }
-
-  if (articleEnrichment) {
-    await enqueueArticleEnrichmentJob({
-      article: updatePlan.article,
-      userId,
-      ...articleEnrichment,
+      providerTags: tagUpdates.providerTags,
+      feedTags: tagUpdates.feedTags,
+      ruleTags: tagUpdates.ruleTags,
       transaction
     });
     throwIfExecutionExpired(execution);

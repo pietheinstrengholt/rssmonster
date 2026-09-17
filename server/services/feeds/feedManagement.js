@@ -1,3 +1,4 @@
+import { prepareArticleEventRemoval } from '../events/eventReconciliation.js';
 import { isInferenceConfigured } from '../inference/configuration.js';
 import { getDefaultFeedIntelligentFeatures } from '../../config/intelligentFeatures.js';
 import db from '../../models/index.js';
@@ -961,6 +962,7 @@ export const removeFeedSubscription = async ({ userId, feedId }) =>
     if (!feed) return null;
 
     //delete all articles
+    await prepareArticleEventRemoval(userId, { feedId: feed.id }, transaction);
     await Article.destroy({
       where: { feedId: feed.id, userId },
       transaction

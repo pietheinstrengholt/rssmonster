@@ -1,3 +1,4 @@
+import { isActiveIsland, islandExpiresAt } from '../services/islands/islandDeadline.js';
 import db from '../models/index.js';
 import { getAvailableInferenceCapabilities } from '../services/inference/status.js';
 import { isAssistantEnabled } from '../config/intelligentFeatures.js';
@@ -563,6 +564,7 @@ export const getIslandsOverview = async (req, res, _next) => {
         'populationAudit',
         'archivedInd',
         'archivedAt',
+        'lastBehaviorAt',
         'updatedAt'
       ],
       where: { userId },
@@ -595,7 +597,9 @@ export const getIslandsOverview = async (req, res, _next) => {
           const clicked = Array.isArray(source.clickedArticleIds) ? source.clickedArticleIds : [];
           const negative = Array.isArray(source.negativeArticleIds) ? source.negativeArticleIds : [];
           const articles = Array.isArray(source.articles) ? source.articles.map(article => article.id) : [];
-          return [...auditArticleIds, ...starred, ...clicked, ...negative, ...articles]
+          const positive = Array.isArray(source.positiveArticleIds) ? source.positiveArticleIds : [];
+          const meaningfulRead = Array.isArray(source.meaningfulReadArticleIds) ? source.meaningfulReadArticleIds : [];
+          return [...auditArticleIds, ...starred, ...clicked, ...negative, ...positive, ...meaningfulRead, ...articles]
             .map(Number)
             .filter(Number.isFinite);
         })
@@ -653,6 +657,7 @@ export const getIslandsOverview = async (req, res, _next) => {
       }
     }
     const islands = [];
+    const now = Date.now();
     for (const island of islandsRaw) {
       const islandId = String(island.id);
       const { populationAudit, populationSourceArticleIds } = auditByIslandId.get(islandId);
@@ -661,6 +666,8 @@ export const getIslandsOverview = async (req, res, _next) => {
       const historicalStarredIds = new Set();
       const historicalClickedIds = new Set();
       const historicalNegativeIds = new Set();
+      const historicalPositiveIds = new Set();
+      const historicalMeaningfulReadIds = new Set();
       for (const entry of populationAudit) {
         const source = entry?.sourceArticles || {};
         for (const articleId of Array.isArray(source.starredArticleIds) ? source.starredArticleIds : []) {
@@ -672,6 +679,8 @@ export const getIslandsOverview = async (req, res, _next) => {
         for (const articleId of Array.isArray(source.negativeArticleIds) ? source.negativeArticleIds : []) {
           historicalNegativeIds.add(Number(articleId));
         }
+        for (const articleId of Array.isArray(source.positiveArticleIds) ? source.positiveArticleIds : []) historicalPositiveIds.add(Number(articleId));
+        for (const articleId of Array.isArray(source.meaningfulReadArticleIds) ? source.meaningfulReadArticleIds : []) historicalMeaningfulReadIds.add(Number(articleId));
         const articles = Array.isArray(entry?.sourceArticles?.articles)
           ? entry.sourceArticles.articles
           : [];
@@ -682,6 +691,8 @@ export const getIslandsOverview = async (req, res, _next) => {
 
           const previous = sourceArticleSnapshots.get(articleId) || {};
           sourceArticleSnapshots.set(articleId, {
+            positiveInd: Math.max(Number(previous.positiveInd || 0), Number(article.positiveInd || 0)),
+            attentionBucket: Math.max(Number(previous.attentionBucket || 0), Number(article.attentionBucket || 0)),
             favoriteInd: Math.max(Number(previous.favoriteInd || 0), Number(article.favoriteInd || 0)),
             clickedAmount: Math.max(Number(previous.clickedAmount || 0), Number(article.clickedAmount || 0)),
             negativeInd: Math.max(Number(previous.negativeInd || 0), Number(article.negativeInd || 0))
@@ -696,7 +707,7 @@ export const getIslandsOverview = async (req, res, _next) => {
         const evidence = [];
         const clickedAmount = Math.max(Number(article.clickedAmount || 0), Number(snapshot.clickedAmount || 0));
 
-        if (Number(article.positiveInd || 0) === 1) evidence.push({ type: 'positive', label: 'Positive feedback' });
+        if (Number(article.positiveInd || 0) === 1 || Number(snapshot.positiveInd || 0) === 1 || historicalPositiveIds.has(articleId)) evidence.push({ type: 'positive', label: 'Positive feedback' });
         if (Number(article.favoriteInd || 0) === 1 || Number(snapshot.favoriteInd || 0) === 1 || historicalStarredIds.has(articleId)) {
           evidence.push({ type: 'favorite', label: 'Favorite' });
         }
@@ -706,7 +717,7 @@ export const getIslandsOverview = async (req, res, _next) => {
             : 'Clicked';
           evidence.push({ type: 'click', label: clickLabel });
         }
-        if (Number(article.attentionBucket || 0) >= 3) evidence.push({ type: 'deepRead', label: 'Deep read' });
+        if (Number(article.attentionBucket || 0) >= 3 || Number(snapshot.attentionBucket || 0) >= 3 || historicalMeaningfulReadIds.has(articleId)) evidence.push({ type: 'deepRead', label: 'Deep read' });
         if (Number(article.negativeInd || 0) === 1 || Number(snapshot.negativeInd || 0) === 1 || historicalNegativeIds.has(articleId)) {
           evidence.push({ type: 'negative', label: 'Negative feedback' });
         }
@@ -725,11 +736,14 @@ export const getIslandsOverview = async (req, res, _next) => {
         sourceArticleCount: populationSourceArticleIds.length,
         sourceArticles,
         evidenceSignalCount: allSourceArticles.reduce((sum, article) => sum + article.evidence.length, 0),
-        effectiveWeight: Number(island.weight || 0),
+        // Present expiry immediately while retaining the stored identity and explanation history.
+        archivedInd: !isActiveIsland(island, now),
+        expiresAt: islandExpiresAt(island, now),
+        effectiveWeight: isActiveIsland(island, now) ? Number(island.weight || 0) : 0,
       });
     }
 
-    const islandCount = islandsRaw.filter(island => !island.archivedInd).length;
+    const islandCount = islandsRaw.filter(island => isActiveIsland(island, now)).length;
     return res.status(200).json({
       userId,
       count: islands.length,

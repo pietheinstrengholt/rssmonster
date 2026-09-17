@@ -128,8 +128,11 @@ Recommended =
 First normalize finite `interestScore` to `[-1, 1]`, or use zero when missing or
 nonfinite. Then `positiveInterest = max(interestScore, 0)`,
 `negativeInterest = max(-interestScore, 0)`, and a matching rule contributes
-`0.08` once regardless of how many rule tags match. The final result is clamped
-to `0`–`1`.
+`0.08` once regardless of how many rule tags match. The final result retains
+negative totals and is capped at `1`. With these normalized inputs and unchanged
+weights, the range is `-0.30`–`1`.
+Recommended sorting and API serialization preserve the sign; the presentation label
+uses the same signed score on a percentage scale, not a probability.
 
 The authoritative implementation is
 [`recommendedScore.js`](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/recommendations/recommendedScore.js).

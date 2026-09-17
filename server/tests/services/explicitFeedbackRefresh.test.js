@@ -104,7 +104,7 @@ describe('fast explicit feedback scoring', () => {
 
   it('includes the source’s matching Island scope and preserves existing positive/negative aggregation', async () => {
     const { user, source, candidate, values } = await fixture();
-    const island = await db.Island.create({ userId: user.id, label: 'Database systems', embedding_model: 'test-model', islandVector: [0.7, Math.sqrt(0.51)], weight: 0.8 });
+    const island = await db.Island.create({ lastBehaviorAt: new Date(), userId: user.id, label: 'Database systems', embedding_model: 'test-model', islandVector: [0.7, Math.sqrt(0.51)], weight: 0.8 });
     const islandCandidate = await db.Article.create({ ...values, status: 'unread', articleVector: [0, 1] });
     await updateArticleBehavior(source, { positiveInd: 1, positiveFeedbackAt: new Date() });
     await executeClaimedProcessingJob(await claimFast(user.id));

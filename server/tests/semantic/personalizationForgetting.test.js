@@ -116,6 +116,14 @@ describe('controlled Interest Island forgetting evaluation', () => {
     const data = await fixture(spec);
     const snapshots = [];
     for (const day of days) {
+      // Keep this scenario continuously renewed between sparse reporting checkpoints.
+      if (spec.continued && snapshots.length) {
+        for (let renewal = days[snapshots.length - 1] + 60; renewal < day; renewal += 60) {
+          vi.setSystemTime(at(renewal));
+          await data.sources[0].row.update(behavior(['positive'], renewal));
+          await calibrate(data.user.id);
+        }
+      }
       vi.setSystemTime(at(day));
       if (spec.continued && day > 0) await data.sources[0].row.update(behavior(['positive'], day));
       if (day === spec.returnDay) await data.sources[0].row.update(behavior(['favorite'], day));
@@ -152,19 +160,15 @@ describe('controlled Interest Island forgetting evaluation', () => {
       expect(Math.abs(last.pool[0].interestScore)).toBeLessThan(Math.abs(first.pool[0].interestScore));
       for (const name of spec.groups[0]) expect(last.evidence[0].decayed[name]).toBeLessThan(first.evidence[0].decayed[name]);
     }
-    if (['click', 'abandoned', 'repeated-deep'].includes(spec.name)) {
-      expect(last.islands[0].archived).toBe(true);
-      expect(last.pool[0].interestScore).toBe(0);
+    if (!spec.continued) {
+      expect(last.islands.every(island => island.archived)).toBe(true);
+      expect(last.pool.every(article => article.interestScore === 0)).toBe(true);
+      if (!spec.returnDay) expect(snapshots[3].islands.every(island => island.archived)).toBe(true);
     }
-    if (['favorite', 'more-like-this', 'not-interested'].includes(spec.name)) expect(last.islands[0].archived).toBe(false);
-    if (spec.name === 'mixed-click-favorite') {
-      expect(last.islands[0].archived).toBe(false);
-      expect(last.pool[0].interestScore).toBeGreaterThan(0);
-    }
-    if (spec.name === 'not-interested') expect(last.pool[0].interestScore).toBeLessThan(0);
     if (spec.groups.length > 1) {
-      expect(last.pool[0].interestScore).toBeGreaterThan(last.pool[1].interestScore);
-      expect(last.pool[0].rank).toBeLessThan(last.pool[1].rank);
+      const beforeExpiry = snapshots[2];
+      expect(beforeExpiry.pool[0].interestScore).toBeGreaterThan(beforeExpiry.pool[1].interestScore);
+      expect(beforeExpiry.pool[0].rank).toBeLessThan(beforeExpiry.pool[1].rank);
     }
     if (data.event) {
       await data.event.reload();

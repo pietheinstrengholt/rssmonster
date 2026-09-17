@@ -1,3 +1,4 @@
+import { activeIslandWhere } from './islandDeadline.js';
 import { randomUUID } from 'node:crypto';
 import { Op, Transaction } from 'sequelize';
 import db from '../../models/index.js';
@@ -36,7 +37,7 @@ function logIslandRunStart(userId) {
 
 // This function writes the island run summary for one user.
 async function logIslandRunSummary(userId, result, startedAt) {
-  const activeIslandCount = await Island.count({ where: { userId, archivedInd: false } });
+  const activeIslandCount = await Island.count({ where: { userId, ...activeIslandWhere() } });
   const persistence = result.persistenceSummary || {};
 
   console.log('[ISLAND] =============================================');

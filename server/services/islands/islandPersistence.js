@@ -1,3 +1,5 @@
+import { isActiveIsland } from './islandDeadline.js';
+import { buildIslandLifecycleDecision, appendCapacityDecision } from './islandLifecycleAudit.js';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { aggregateEmbeddingModel, embeddingSimilarity, hasEmbeddingModel } from '../vectors/embeddingModel.js';
@@ -84,10 +86,11 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
   }));
   const behavioralEvidence = profiles.behavioralEvidence ?? await loadIslandBehavioralArticles(userId, { transaction });
   const evidenceById = new Map(behavioralEvidence.map(article => [String(article.id), article]));
-  // Tracks distinct used island names while performing persist interest island profiles.
-  const usedIslandNames = new Set(
-    existingIslands.map(island => normalizeIslandName(island.label))
-  );
+  // Track every owned name, including history, while excluding only the row being renamed.
+  const islandNamesById = new Map(existingIslands.map(island => [island.id, normalizeIslandName(island.label)]));
+  const resolveUniqueLabel = (label, islandId = null) => buildUniqueIslandName(label, new Set(
+    [...islandNamesById].filter(([id]) => id !== islandId).map(([, name]) => name)
+  ));
 
   // Loads the taxonomy rows needed while performing persist interest island profiles.
   const taxonomyRows = await IslandTaxonomy.findAll({
@@ -144,7 +147,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       .filter(Number.isFinite);
     const preserveVector = options.preserveMatchedVectors && bestMatch && bestSimilarity >= DEFAULT_ISLAND_MATCH_THRESHOLD;
     const lifecycle = summarizeIslandLifecycle(articleIds.map(id => evidenceById.get(String(id))).filter(Boolean),
-      preserveVector ? bestMatch.islandVector : profile.vector, profile.embedding_model);
+      preserveVector ? bestMatch.islandVector : profile.vector, profile.embedding_model, profile.weight);
     // Builds the population audit entry while performing persist interest island profiles.
     const auditEntry = await buildPopulationAuditEntry({
       userId,
@@ -155,10 +158,11 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     // Handles the case where best match is available and best similarity reaches default island match threshold.
     if (bestMatch && bestSimilarity >= DEFAULT_ISLAND_MATCH_THRESHOLD) {
       const archiveState = islandArchiveState(bestMatch, lifecycle);
+      auditEntry.lifecycle = [buildIslandLifecycleDecision(bestMatch, { ...lifecycle, weight: profile.weight }, archiveState)];
       if (archiveState.archivedInd && !bestMatch.archivedInd) archivedIslandCount++;
       // Derives the updated island through update while performing persist interest island profiles.
       const updatedIsland = await bestMatch.update({
-        label: resolvedLabel,
+        label: resolveUniqueLabel(resolvedLabel, bestMatch.id),
         weight: profile.weight,
         // Elapsed time is not new vector evidence; scheduled repeats must not drift centroids.
         islandVector: preserveVector ? bestMatch.islandVector : blendIslandVector(bestMatch.islandVector, profile.vector),
@@ -168,7 +172,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
         populationAudit: appendPopulationAudit(bestMatch.populationAudit, auditEntry),
         ...archiveState
       }, { transaction });
-      usedIslandNames.add(normalizeIslandName(updatedIsland.label));
+      islandNamesById.set(updatedIsland.id, normalizeIslandName(updatedIsland.label));
 
       matchedIslandIds.add(updatedIsland.id);
       profilesByIslandId.set(updatedIsland.id, profile);
@@ -209,8 +213,9 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     }
 
     // Builds the unique island name while performing persist interest island profiles.
-    const uniqueLabel = buildUniqueIslandName(resolvedLabel, usedIslandNames);
+    const uniqueLabel = resolveUniqueLabel(resolvedLabel);
     const archiveState = islandArchiveState(null, lifecycle);
+    auditEntry.lifecycle = [buildIslandLifecycleDecision(null, { ...lifecycle, weight: profile.weight }, archiveState)];
     // Performs the create operation while performing persist interest island profiles.
     const island = await Island.create({
       label: uniqueLabel,
@@ -222,7 +227,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       populationAudit: appendPopulationAudit([], auditEntry),
       ...archiveState
     }, { transaction });
-    usedIslandNames.add(normalizeIslandName(uniqueLabel));
+    islandNamesById.set(island.id, normalizeIslandName(uniqueLabel));
     createdIslandCount += 1;
     if (archiveState.archivedInd) archivedIslandCount++;
     createdIslandIds.push(Number(island.id));
@@ -244,24 +249,30 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
   const existingLifecycles = inactiveIslands.length ? reconstructIslandLifecycles(activeCandidates, behavioralEvidence) : new Map();
   for (const island of inactiveIslands) {
     // Only a matched profile can reactivate; replay must preserve the original archive boundary.
-    const archiveState = islandArchiveState(island, existingLifecycles.get(island.id));
-    if (archiveState.archivedInd) {
-      await island.update(archiveState, { transaction });
-      archivedIslandCount++;
-    }
+    const lifecycle = existingLifecycles.get(island.id);
+    const archiveState = islandArchiveState(island, lifecycle);
+    const auditEntry = await buildPopulationAuditEntry({ userId, articleIds: lifecycle.sourceArticleIds || [], transaction });
+    auditEntry.lifecycle = [buildIslandLifecycleDecision(island, lifecycle, archiveState)];
+    await island.update({ weight: lifecycle.weight, ...archiveState,
+      populationAudit: appendPopulationAudit(island.populationAudit, auditEntry) }, { transaction });
+    if (archiveState.archivedInd) archivedIslandCount++;
   }
 
   // Derives the name disambiguation summary through disambiguate duplicate island names for user while performing persist interest island profiles.
   const nameDisambiguationSummary = await disambiguateDuplicateIslandNamesForUser(userId, { transaction });
   const duplicateArchives = new Set(nameDisambiguationSummary.archived);
   const finalCandidates = [...new Map([...existingIslands, ...createdIslands].map(island => [island.id, island])).values()]
-    .filter(island => !island.archivedInd && !duplicateArchives.has(Number(island.id)));
+    .filter(island => isActiveIsland(island) && !duplicateArchives.has(Number(island.id)));
   const capacityArchivedIslandIds = [];
   if (finalCandidates.length > maxIslands) {
     const ranked = rankIslandCapacityCandidates(finalCandidates, behavioralEvidence, profilesByIslandId);
     const overflowIds = new Set(ranked.slice(maxIslands).map(island => island.id));
     for (const island of finalCandidates.filter(island => overflowIds.has(island.id))) {
-      await island.update({ archivedInd: true, archivedAt: new Date() }, { transaction });
+      const now = new Date();
+      const archiveState = { archivedInd: true, archivedAt: now };
+      await island.update({ ...archiveState,
+        populationAudit: appendCapacityDecision(island.populationAudit, island, archiveState, ranked, maxIslands, now)
+      }, { transaction });
       capacityArchivedIslandIds.push(Number(island.id));
       archivedIslandCount++;
     }

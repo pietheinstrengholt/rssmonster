@@ -242,7 +242,12 @@ const persistAnalysis = async ({ target, analysis, completedAt }) =>
       sentimentScore: analysis.sentimentScore,
       qualityScore: analysis.qualityScore,
       aiAnalysisStatus: 'complete',
-      aiAnalysisCompletedAt: completedAt
+      aiAnalysisCompletedAt: completedAt,
+      aiAnalysisProvenance: {
+        inputHash: target.expectedAnalysisInputHash,
+        contentTextHash: target.expectedContentTextHash,
+        contractVersion: ARTICLE_ANALYSIS_CONTRACT_VERSION
+      }
     }, { transaction });
 
     return { status: 'completed', articleId: target.articleId };

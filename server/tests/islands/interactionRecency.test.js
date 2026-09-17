@@ -4,6 +4,8 @@ import db from '../../models/index.js';
 import { computeArticleSignals, buildInterestIslandProfilesForUser } from '../../services/islands/islandArticleProfiles.js';
 import { behaviorRecencyWeight, SIGNAL_HALF_LIFE_DAYS } from '../../services/islands/islandVectorUtils.js';
 import { evaluateArticleInterest, prepareIslandEvidence, loadIslandEvidence, islandCohesion } from '../../services/islands/islandInterestConfidence.js';
+import { signalTimestamp, latestBehaviorTimestamp } from '../../services/articles/articleBehaviorTime.js';
+import { summarizeIslandLifecycle, islandArchiveState } from '../../services/islands/islandLifecycle.js';
 
 const now = Date.parse('2026-09-14T12:00:00Z');
 const today = new Date(now);
@@ -15,6 +17,25 @@ const evaluate = article => evaluateArticleInterest(candidate, { ...prepareIslan
 describe('interaction-based Island recency', () => {
   beforeAll(async () => { if (db.sequelize.getDialect() === 'sqlite') await db.sequelize.sync(); });
   afterEach(() => vi.restoreAllMocks());
+
+  it.each([null, undefined, '', 'invalid', new Date('invalid'), new Date(now + 86400000)])('uses only usable publication fallback for clock %s', clock => {
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+    const article = source({ positiveInd: 1, positiveFeedbackAt: clock, publishedAt: old });
+    expect(signalTimestamp(article, 'positiveFeedbackAt')).toEqual(old);
+    expect(computeArticleSignals(article).positiveScore).toBeCloseTo(8 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.positiveFeedbackAt));
+    expect(evaluate(article).score).toBe(0);
+    for (const publishedAt of [null, 'invalid', new Date(now + 86400000)]) {
+      const undated = { ...article, publishedAt };
+      expect(signalTimestamp(undated, 'positiveFeedbackAt')).toBeNull();
+      expect(latestBehaviorTimestamp(undated)).toBeNull();
+      expect(computeArticleSignals(undated).positiveScore).toBe(0);
+      expect(evaluate(undated).score).toBe(0);
+      const support = summarizeIslandLifecycle([undated], [1, 0], 'test-model');
+      expect(support).toMatchObject({ confidence: 0, lastBehaviorAt: null });
+      expect(islandArchiveState(null, support).archivedInd).toBe(true);
+      expect(islandArchiveState({ archivedInd: true, archivedAt: today }, support).archivedInd).toBe(true);
+    }
+  });
 
   it('treats a favorite made today on a 2022 article as fresh and decays old interaction on a new article', () => {
     vi.spyOn(Date, 'now').mockReturnValue(now);
@@ -64,6 +85,27 @@ describe('interaction-based Island recency', () => {
     expect(islandCohesion(rows, [1, 0], 'test-model').distinctInteractionDays).toBe(2);
   });
 
+  it('excludes unknown and future-only evidence before limits and falls back to usable publication in SQL', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+    const user = await db.User.create({ username: `unknown-recency-${randomUUID()}` });
+    const category = await db.Category.create({ userId: user.id, name: 'Unknown recency' });
+    const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Unknown recency', url: `https://${user.id}.example/rss` });
+    const values = { userId: user.id, feedId: feed.id, title: 'Database release', embedding_model: 'test-model', articleVector: [1, 0], positiveInd: 1, publishedAt: new Date(now + 86400000) };
+    await db.Article.bulkCreate(Array.from({ length: 501 }, (_, index) => ({ ...values,
+      positiveFeedbackAt: index % 2 ? null : new Date(now + 86400000) })));
+    expect(await buildInterestIslandProfilesForUser(user.id)).toHaveLength(0);
+    expect((await loadIslandEvidence(user.id, { now })).fallbackEvidence).toHaveLength(0);
+    const legacy = await db.Article.create({ ...values, publishedAt: today, positiveFeedbackAt: new Date(now + 86400000) });
+    const island = await db.Island.create({ userId: user.id, label: 'Database', weight: 0.5,
+      embedding_model: 'test-model', islandVector: [1, 0], lastBehaviorAt: today });
+    const loaded = await loadIslandEvidence(user.id, { now });
+    expect(loaded.islands.find(row => row.id === island.id).seedArticleIds).toEqual([legacy.id]);
+    await island.update({ archivedInd: true });
+    const fallback = await loadIslandEvidence(user.id, { now });
+    expect(fallback.fallbackEvidence.map(row => row.id)).toEqual([legacy.id]);
+    expect(evaluateArticleInterest(candidate, fallback).score).toBeGreaterThan(0);
+  });
+
   it('selects recent interaction on an old article before bounded evidence limits and honors signed windows in SQL', async () => {
     const user = await db.User.create({ username: `recency-${randomUUID()}` });
     const category = await db.Category.create({ userId: user.id, name: 'Recency' });
@@ -76,7 +118,7 @@ describe('interaction-based Island recency', () => {
     const evidence = await loadIslandEvidence(user.id, { now });
     expect(evidence.fallbackEvidence.map(a => a.id)).toEqual(expect.arrayContaining([fresh.id, negative.id]));
     expect(evidence.fallbackEvidence.map(a => a.id)).not.toContain(stale.id);
-    const island = await db.Island.create({ userId: user.id, label: 'Database', weight: 0.5, embedding_model: 'test-model', islandVector: [1, 0] });
+    const island = await db.Island.create({ lastBehaviorAt: today, userId: user.id, label: 'Database', weight: 0.5, embedding_model: 'test-model', islandVector: [1, 0] });
     const supported = await loadIslandEvidence(user.id, { now });
     expect(supported.islands.find(i => i.id === island.id).seedArticleIds).toContain(fresh.id);
     expect(supported.islands[0].diagnostics.distinctBehavioralArticles).toBe(500);

@@ -362,10 +362,10 @@ and deep reads refresh their respective clocks, and unfavorite clears its clock.
 Fever/GReader starring uses the same timing semantics. Marking an article read
 without a meaningful visible-duration report does not imply a deep read.
 
-The migration does not backfill unknown times with today. Existing null timestamps
-fall back to publication time until that signal is recorded again. If neither date
-is usable, the existing unknown-age behavior retains multiplier 1; future dates
-are capped at age zero. Raw signal weights, explicit fallback windows, intent
+The migration does not backfill unknown times with today. Missing, invalid or future interaction timestamps
+fall back to a valid, non-future publication time until that signal is recorded
+again. If neither date is usable, the signal contributes zero recency weight and
+cannot create or extend active Island participation. Raw signal weights, explicit fallback windows, intent
 handling and final Recommended weights are unchanged.
 See [the service contract](../server/services/islands/README.md#interaction-timestamps-and-legacy-behavior).
 
@@ -423,9 +423,10 @@ Selection is lexicographic, in this exact order:
    `clamp(meanSignedEvidence / 7 + signedBreadthBonus, -1, 1)` and its four-decimal rounding.
 2. Current lifecycle confidence, descending, rounded to four decimals to avoid
    floating-point noise deciding the active set.
-3. Number of currently qualifying supporting Articles, descending.
-4. Latest meaningful supporting interaction, descending; unknown age sorts last.
-5. Stable Island ID, ascending.
+3. Latest meaningful supporting interaction, descending; unknown age sorts last.
+4. Stable Island ID, ascending.
+
+Qualifying supporting Article count remains explanatory metadata, not an extra tie-breaker.
 
 Matched candidates use their profile's owned Article IDs. Unmatched retained
 Islands use the existing nearest-support assignment and affinity threshold.

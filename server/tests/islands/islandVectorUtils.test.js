@@ -31,10 +31,10 @@ describe('island vector utilities', () => {
     ]);
   });
 
-  it('keeps recency weights bounded and treats missing dates as current evidence', () => {
-    expect(behaviorRecencyWeight(null, 30)).toBe(1);
-    expect(behaviorRecencyWeight('invalid', 30)).toBe(1);
-    expect(behaviorRecencyWeight(new Date(Date.now() + 86_400_000), 30)).toBe(1);
+  it('gives unusable dates no recency weight', () => {
+    expect(behaviorRecencyWeight(null, 30)).toBe(0);
+    expect(behaviorRecencyWeight('invalid', 30)).toBe(0);
+    expect(behaviorRecencyWeight(new Date(Date.now() + 86_400_000), 30)).toBe(0);
     expect(behaviorRecencyWeight(new Date('2000-01-01T00:00:00.000Z'), 30)).toBeLessThan(0.00001);
     for (const invalid of [0, -1, Infinity, NaN]) expect(() => behaviorRecencyWeight(new Date(), invalid)).toThrow(RangeError);
   });

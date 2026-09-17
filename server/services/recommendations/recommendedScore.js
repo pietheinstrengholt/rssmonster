@@ -32,7 +32,8 @@ export function computeRecommendedBreakdown(article) {
   const quality = computeQuality(article);
   const eventMetrics = computeEventRankingMetrics(article);
   const ruleBoost = hasMatchingRuleTag(article) ? RULE_TAG_BOOST : 0;
-  const recommended = clamp01(
+  // Keep the established upper cap without discarding negative preference totals.
+  const recommended = Math.min(1,
     RECOMMENDED_WEIGHTS.positiveInterest * positiveInterest +
     RECOMMENDED_WEIGHTS.freshness * freshness +
     RECOMMENDED_WEIGHTS.quality * quality +

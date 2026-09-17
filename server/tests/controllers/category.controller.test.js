@@ -9,12 +9,15 @@ const mocked = vi.hoisted(() => ({
 
 vi.mock('../../models/index.js', () => ({
   default: {
+    sequelize: { transaction: async callback => callback({ id: 'transaction', LOCK: { UPDATE: 'UPDATE' } }) },
+    Article: { findAll: async () => [] },
     Category: {
       create: mocked.categoryCreate,
       findAll: mocked.categoryFindAll,
       findOne: mocked.categoryFindOne
     },
     Feed: {
+      findAll: async () => [],
       destroy: mocked.feedDestroy
     }
   }
@@ -206,7 +209,7 @@ describe('category controller', () => {
     await categoryController.deleteCategory(createRequest(), res);
 
     expect(mocked.feedDestroy).toHaveBeenCalledWith({
-      where: { categoryId: 3 }
+      where: { categoryId: 3, userId: 42 }, transaction: { id: 'transaction', LOCK: { UPDATE: 'UPDATE' } }
     });
     expect(category.destroy).toHaveBeenCalledOnce();
     expect(res.status).toHaveBeenCalledWith(204);

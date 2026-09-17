@@ -8,6 +8,8 @@ import { up as addEmbeddingModels } from '../../migrations/20260915000000-add-ag
 import { up as addInteractionClocks } from '../../migrations/20260914001000-add-article-interaction-timestamps.mjs';
 import { up as addInterestScoredAt } from '../../migrations/20260915001000-add-interest-scored-at.mjs';
 import { up as addPersonalizationRefreshedAt } from '../../migrations/20260915002000-add-personalization-refreshed-at.mjs';
+import { up as addAnalysisProvenance } from '../../migrations/20260917000000-add-article-analysis-provenance.mjs';
+import { up as addIslandBehaviorTime } from '../../migrations/20260917001000-add-island-behavior-time.mjs';
 
 import { resetDatabase } from '../helpers/resetDb.js';
 
@@ -44,6 +46,8 @@ async function installHistoricalSchema() {
   await addEmbeddingModels(qi, db.Sequelize);
   await addInterestScoredAt(qi, db.Sequelize);
   await addPersonalizationRefreshedAt(qi, db.Sequelize);
+  await addAnalysisProvenance(qi, db.Sequelize);
+  await addIslandBehaviorTime(qi, db.Sequelize);
 }
 
 const assertRemoved = async () => {

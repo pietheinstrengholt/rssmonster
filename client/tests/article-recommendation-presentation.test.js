@@ -20,6 +20,11 @@ describe('article recommendation presentation', () => {
     expect(bootstrapIconNames).toContain(explanation.items[0].icon);
   });
 
+  it.each([[-0.3, '-30%'], [-0.163, '-16%'], [0, '0%']])('retains signed score %s in the label', (score, label) => {
+    expect(buildArticleRecommendationExplanation({ score, reasons: [] }).scoreLabel)
+      .toBe(`${label} recommendation score`);
+  });
+
   it('combines event coverage and source diversity into one readable reason', () => {
     const explanation = buildArticleRecommendationExplanation({
       score: 0.7591,

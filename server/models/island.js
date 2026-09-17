@@ -55,6 +55,12 @@ export default (sequelize) => {
         type: DataTypes.DATE,
         allowNull: true
       },
+      // Latest qualifying Article interaction supporting the persisted preference.
+      lastBehaviorAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
+      },
       // Aggregates the positive engagement signals that support the island.
       positiveSignals: {
         type: DataTypes.JSON,
@@ -76,7 +82,8 @@ export default (sequelize) => {
       indexes: [
         { fields: ['userId'] },
         { fields: ['userId', 'weight'] },
-        { fields: ['userId', 'archivedInd'] }
+        { fields: ['userId', 'archivedInd'] },
+        { name: 'islands_user_active_behavior_idx', fields: ['userId', 'archivedInd', 'lastBehaviorAt'] }
       ],
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci'

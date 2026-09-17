@@ -19,6 +19,16 @@ describe('interest funnel diagnostics', () => {
     expect(evaluateArticleInterest(article, context([{ ...island, weight: 0 }])).diagnostics.zeroReason).toBe('zero_preference_or_confidence');
   });
 
+  it('never treats retained audit snapshots or decision confidence as behavioral evidence', () => {
+    const fabricated = { ...island, populationAudit: [{
+      runAt: now.toISOString(), articleIds: [article.id],
+      sourceArticles: { articles: [{ ...article, positiveInd: 1, positiveFeedbackAt: now }] },
+      lifecycle: [{ reason: 'renewed', confidence: 1, qualifyingBehaviorAt: now.toISOString() }]
+    }] };
+    expect(evaluateArticleInterest(article, context([fabricated])))
+      .toEqual(evaluateArticleInterest(article, context([island])));
+  });
+
   it('counts all qualifying Islands before selecting the strongest path of each sign', () => {
     const result = evaluateArticleInterest(article, context([island, { ...island, id: 2, weight: 0.4 }]));
     expect(result.paths).toHaveLength(1);
@@ -81,15 +91,15 @@ describe('interest funnel diagnostics', () => {
     const values = { ...island, id: undefined, userId: user.id, label: 'Databases',
       positiveSignals: { stars: 2, negatives: 1 },
       populationAudit: [{ metrics: { relatedArticleCount: 3 } }] };
-    const positive = await db.Island.create({ ...values, weight: 0.9 });
-    const other = await db.Island.create({ ...values, label: ' databases! ', weight });
-    const archived = await db.Island.create({ ...values, archivedInd: true, archivedAt: now });
-    const foreignIsland = await db.Island.create({ ...values, userId: foreign.id });
+    const positive = await db.Island.create({ lastBehaviorAt: now, ...values, weight: 0.9 });
+    const other = await db.Island.create({ lastBehaviorAt: now, ...values, label: ' databases! ', weight });
+    const archived = await db.Island.create({ lastBehaviorAt: now, ...values, archivedInd: true, archivedAt: now });
+    const foreignIsland = await db.Island.create({ lastBehaviorAt: now, ...values, userId: foreign.id });
     for (const row of [positive, other, archived, foreignIsland]) await row.reload();
-    const untouched = [archived.toJSON(), foreignIsland.toJSON()];
+    const untouched = foreignIsland.toJSON();
     const semanticState = row => Object.fromEntries(Object.entries(row.toJSON())
       .filter(([key]) => !['label', 'updatedAt'].includes(key)));
-    const before = [positive, other].map(semanticState);
+    const before = [positive, other, archived].map(semanticState);
     const activeIslands = () => db.Island.findAll({ where: { userId: user.id, archivedInd: false }, order: [['id', 'ASC']], raw: true });
     // These candidates supplied no formation evidence. Compare complete signed paths,
     // confidence and zero reasons, including a candidate below the relationship gate.
@@ -104,15 +114,15 @@ describe('interest funnel diagnostics', () => {
     if (weight < 0) expect(scoresBefore[0].paths.some(path => path.contribution < 0)).toBe(true);
 
     const result = await disambiguateDuplicateIslandNamesForUser(user.id);
-    await positive.reload(); await other.reload();
+    await positive.reload(); await other.reload(); await archived.reload();
     expect(result.archived).toEqual([]);
-    expect(result.renamed).toHaveLength(1);
+    expect(result.renamed).toHaveLength(2);
     expect(positive.label).toBe('Databases');
     expect(other.label).toBe('Databases: Variant');
-    expect([positive, other].map(semanticState)).toEqual(before);
+    expect([positive, other, archived].map(semanticState)).toEqual(before);
     expect(score(await activeIslands())).toEqual(scoresBefore);
     await expect(disambiguateDuplicateIslandNamesForUser(user.id)).resolves.toEqual({ renamed: [], archived: [] });
     await archived.reload(); await foreignIsland.reload();
-    expect([archived.toJSON(), foreignIsland.toJSON()]).toEqual(untouched);
+    expect(foreignIsland.toJSON()).toEqual(untouched);
   });
 });

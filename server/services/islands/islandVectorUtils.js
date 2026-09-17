@@ -1,3 +1,5 @@
+import { islandExpiresAt } from './islandDeadline.js';
+import { usableBehaviorDate } from '../articles/articleBehaviorTime.js';
 import { embeddingSimilarity } from '../vectors/embeddingModel.js';
 import {
   blendVector,
@@ -36,10 +38,6 @@ export const SIGNAL_HALF_LIFE_DAYS = Object.freeze({
   positiveFeedbackAt: configuredHalfLife('ISLAND_POSITIVE_FEEDBACK_HALF_LIFE_DAYS', 730),
   negativeFeedbackAt: configuredHalfLife('ISLAND_NEGATIVE_FEEDBACK_HALF_LIFE_DAYS', 365)
 });
-// Defines the default archive confidence threshold enforced by this service.
-export const DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD || '0.12');
-// Defines the default archive stale days enforced by this service.
-export const DEFAULT_ARCHIVE_STALE_DAYS = Number.parseInt(process.env.ISLAND_ARCHIVE_STALE_DAYS, 10) || 45;
 // Defines the default audit max runs enforced by this service.
 export const DEFAULT_AUDIT_MAX_RUNS = Number.parseInt(process.env.ISLAND_AUDIT_MAX_RUNS, 10) || 30;
 // Defines the default audit max article ids enforced by this service.
@@ -111,11 +109,10 @@ export function blendIslandVector(existingVector, incomingVector, alpha = DEFAUL
 // This function returns a recency multiplier for behavioral signals.
 export function behaviorRecencyWeight(interactedAt, halfLifeDays) {
   if (!Number.isFinite(halfLifeDays) || halfLifeDays <= 0) throw new RangeError('Behavior half-life must be positive and finite');
-  // Preserve unknown-age behavior when neither a usable interaction nor legacy date exists.
-  if (!interactedAt) return 1;
-  const timestamp = new Date(interactedAt).getTime();
-  if (!Number.isFinite(timestamp)) return 1;
-  const ageDays = Math.max(0, (Date.now() - timestamp) / 86400000);
+  const now = Date.now();
+  const timestamp = usableBehaviorDate(interactedAt, now);
+  if (!timestamp) return 0;
+  const ageDays = (now - timestamp.getTime()) / 86400000;
   return 2 ** (-ageDays / halfLifeDays);
 }
 
@@ -168,13 +165,7 @@ export function mergePositiveSignals(existingSignals = {}, incomingSignals = {})
 
 // This function decides whether an island has gone stale enough for archival handling.
 export function isStaleIsland(island) {
-  // Database writes and audit timestamps are not behavioral activity.
-  const lastBehaviorAt = island?.lastBehaviorAt ? new Date(island.lastBehaviorAt).getTime() : null;
-  if (!Number.isFinite(lastBehaviorAt)) return true;
-
-  // Derives the stale ms required while checking stale island.
-  const staleMs = DEFAULT_ARCHIVE_STALE_DAYS * 24 * 60 * 60 * 1000;
-  return (Date.now() - lastBehaviorAt) >= staleMs;
+  return Number(islandExpiresAt(island)) <= Date.now();
 }
 
 // This function picks the nearest active taxonomy display name for an island vector.

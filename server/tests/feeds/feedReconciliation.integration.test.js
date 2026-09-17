@@ -149,6 +149,23 @@ describe('duplicate feed reconciliation integration', () => {
     ownedUserIds = [];
   });
 
+  it('does not carry dissolved assignments into later overlapping Article groups', async () => {
+    const owner = await createOwner();
+    const { stable, duplicate } = await createFeedPair(owner);
+    const survivors = []; const losers = [];
+    for (let index = 0; index < 2; index++) {
+      const normalizedUrl = `https://articles.example.test/${unique('overlap')}`;
+      survivors.push(await createArticle(stable, unique('survivor'), { normalizedUrl, url: normalizedUrl }));
+      losers.push(await createArticle(duplicate, unique('loser'), { normalizedUrl, url: `${normalizedUrl}#duplicate`, filteredInd: index === 1 }));
+    }
+    const event = await Event.create({ userId: owner.user.id, representativeArticleId: losers[0].id });
+    await Article.update({ eventId: event.id }, { where: { id: losers.map(article => article.id) } });
+    await persistDiscoveredFeedUrl({ feed: duplicate, discoveredUrl: stable.url });
+    expect(await Event.findByPk(event.id)).toBeNull();
+    for (const article of survivors) { await article.reload(); expect(article.eventId).toBeNull(); }
+    expect(await Feed.count({ where: { userId: owner.user.id } })).toBe(1);
+  });
+
   it('promotes a converged URL and transfers all feed-owned data to one stable subscription', async () => {
     const fixture = await createOwner();
     const { stable, duplicate } = await createFeedPair(fixture);
@@ -176,6 +193,7 @@ describe('duplicate feed reconciliation integration', () => {
       name: 'Transferred event'
     });
     await removedOverlap.update({ eventId: event.id });
+    await uniqueArticle.update({ eventId: event.id });
 
     await Tag.create({
       articleId: removedOverlap.id,

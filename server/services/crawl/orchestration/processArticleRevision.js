@@ -1,10 +1,4 @@
-import { isInferenceConfigured } from '../../inference/configuration.js';
 import applyActions from '../enrichment/applyActions.js';
-import {
-  applyAnalysisScoreOverrides,
-  buildActionScoreOverrideIndicators,
-  createDefaultArticleAnalysis
-} from '../enrichment/articleAnalysis.js';
 import { resolveArticleActions } from '../enrichment/articleActions.js';
 import { applyArticleUpdate } from '../persistence/updateArticle.js';
 import { resolveOfficialSourceForArticle } from '../enrichment/officialSource.js';
@@ -13,7 +7,6 @@ import {
   persistAcceptedHotlinks
 } from '../runtime/hotlinkService.js';
 import { throwIfExecutionExpired } from '../../feeds/executionDeadline.js';
-import { shouldSkipArticleClassification } from '../../../config/intelligentFeatures.js';
 
 // This function snapshots the identities that a committed article update may replace in the cache.
 const buildDuplicateCacheArticleState = article => ({
@@ -64,10 +57,6 @@ const processArticleRevision = async ({
     changes.titleChanged ||
     changes.descriptionChanged ||
     changes.urlChanged;
-  // Derives the requires analysis required while processing article revision.
-  const requiresAnalysis = changes.contentChanged ||
-    changes.titleChanged ||
-    changes.descriptionChanged;
   // Selects the actions based on whether requires actions is available.
   const actions = requiresActions
     ? await resolveArticleActions(feed, preloadedActions)
@@ -109,41 +98,6 @@ const processArticleRevision = async ({
     };
   }
 
-  let analysis = null;
-  const shouldEnqueueAnalysis = requiresAnalysis &&
-    feed?.applyAiAnalysis !== false &&
-    !shouldSkipArticleClassification() && await isInferenceConfigured();
-  // Handles the case where requires analysis is available.
-  if (requiresAnalysis) {
-    analysis = createDefaultArticleAnalysis();
-    analysis = applyAnalysisScoreOverrides(analysis, actionResult);
-  }
-
-  // Handles the case where analysis is available.
-  if (analysis) {
-    Object.assign(derivedValues, {
-      contentSummaryBullets: analysis.contentSummaryBullets,
-      aiAnalysisStatus: shouldEnqueueAnalysis ? 'pending' : 'skipped',
-      aiAnalysisCompletedAt: null,
-      advertisementScore: analysis.advertisementScore,
-      sentimentScore: analysis.sentimentScore,
-      qualityScore: analysis.qualityScore,
-      ...buildActionScoreOverrideIndicators(actionResult)
-    });
-  // Handles the case where action result is available.
-  } else if (actionResult) {
-    // Without re-analysis, preserve prior scores unless a fresh action explicitly owns one.
-    if (actionResult.advertisementScore !== null) {
-      derivedValues.advertisementScore = actionResult.advertisementScore;
-      derivedValues.advertisementScoreActionOverrideInd = true;
-    }
-    // Handles the case where action result quality score is not value.
-    if (actionResult.qualityScore !== null) {
-      derivedValues.qualityScore = actionResult.qualityScore;
-      derivedValues.qualityScoreActionOverrideInd = true;
-    }
-  }
-
   // Handles the case where changes url changed is available.
   if (changes.urlChanged) {
     // Resolves the official source for article while processing article revision.
@@ -164,10 +118,9 @@ const processArticleRevision = async ({
     });
   }
 
-  // Selects the tag updates based on whether requires actions is available or requires analysis is available.
-  const tagUpdates = requiresActions || requiresAnalysis
+  // Preserve inferred tags from the retained analysis while updating publisher and rule tags.
+  const tagUpdates = requiresActions
     ? {
-        inferredTags: analysis ? analysis.tags : undefined,
         providerTags: articleData.categories,
         feedTags: feed.feedTags,
         ruleTags: actionResult ? actionResult.tags : undefined
@@ -179,12 +132,6 @@ const processArticleRevision = async ({
     updatePlan,
     derivedValues,
     tagUpdates,
-    ...(shouldEnqueueAnalysis ? {
-      articleEnrichment: {
-        providerTags: articleData.categories,
-        actionResult
-      }
-    } : {}),
     userId: feed.userId,
     ...(hasExecution ? { execution } : {})
   });

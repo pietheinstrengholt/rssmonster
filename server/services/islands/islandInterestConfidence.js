@@ -1,3 +1,4 @@
+import { activeIslandWhere } from './islandDeadline.js';
 import { behavioralIntent, behavioralIntentCompatibility, behavioralIntentTypeCompatibility } from './behavioralIntent.js';
 import { Op } from 'sequelize';
 import { BEHAVIOR_TIMESTAMP_FIELDS, activeSignal, signalTimestamp, latestBehaviorTimestamp, behaviorTimestampExpression } from '../articles/articleBehaviorTime.js';
@@ -108,16 +109,17 @@ export async function loadIslandEvidence(userId, { transaction, now = Date.now()
   const where = { userId, ...canonicalArticleWhere(), filteredInd: false, articleVector: { [Op.ne]: null } };
   const attributes = ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'feedId', 'publishedAt', 'articleVector', 'embedding_model', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', ...BEHAVIOR_TIMESTAMP_FIELDS];
   const query = (extra, limit, fields = BEHAVIOR_TIMESTAMP_FIELDS) => db.Article.findAll({ where: { ...where, ...extra }, attributes,
-    order: [[behaviorTimestampExpression(db.sequelize, fields), 'DESC'], ['id', 'ASC']], limit, raw: true, transaction });
-  const recent = field => db.Sequelize.where(behaviorTimestampExpression(db.sequelize, [field]), {
+    order: [[behaviorTimestampExpression(db.sequelize, fields, now), 'DESC'], ['id', 'ASC']], limit, raw: true, transaction });
+  const recent = field => db.Sequelize.where(behaviorTimestampExpression(db.sequelize, [field], now), {
     [Op.gte]: new Date(now - EXPLICIT_WINDOW_DAYS * DAY_MS), [Op.lte]: new Date(now)
   });
   const implicitQuery = (field, condition) => query({ positiveInd: 0, negativeInd: 0, favoriteInd: 0,
     ...condition, [field]: { [Op.gte]: new Date(now - IMPLICIT_WINDOW_DAYS * DAY_MS), [Op.lte]: new Date(now) }
   }, IMPLICIT_EVIDENCE_LIMIT, [field]);
   const [islands, evidence, negative, positive, clicked, read] = await Promise.all([
-    db.Island.findAll({ where: { userId, archivedInd: false }, attributes: ['id', 'label', 'generatedLabel', 'weight', 'islandVector', 'embedding_model'], order: [['id', 'ASC']], raw: true, transaction }),
-    query({ [Op.or]: [{ positiveInd: 1 }, { favoriteInd: 1 }, { negativeInd: 1 }, { clickedAmount: { [Op.gt]: 0 } }, { attentionBucket: { [Op.gte]: 3 } }] }, EVIDENCE_LIMIT),
+    db.Island.findAll({ where: { userId, ...activeIslandWhere(now) }, attributes: ['id', 'label', 'generatedLabel', 'weight', 'islandVector', 'embedding_model'], order: [['id', 'ASC']], raw: true, transaction }),
+    query({ [Op.and]: [db.Sequelize.where(behaviorTimestampExpression(db.sequelize, BEHAVIOR_TIMESTAMP_FIELDS, now), { [Op.ne]: null })],
+      [Op.or]: [{ positiveInd: 1 }, { favoriteInd: 1 }, { negativeInd: 1 }, { clickedAmount: { [Op.gt]: 0 } }, { attentionBucket: { [Op.gte]: 3 } }] }, EVIDENCE_LIMIT),
     query({ negativeInd: 1, [Op.and]: [recent('negativeFeedbackAt')] }, EXPLICIT_EVIDENCE_LIMIT, ['negativeFeedbackAt']),
     query({ negativeInd: 0, [Op.or]: [
       { positiveInd: 1, [Op.and]: [recent('positiveFeedbackAt')] },
@@ -170,7 +172,7 @@ export function evaluateArticleInterest(article, context, threshold = 0.62) {
   for (const source of context.fallbackEvidence) {
     const fields = source.negativeInd ? ['negativeFeedbackAt'] : ['positiveFeedbackAt', 'favoritedAt'];
     for (const field of fields.filter(field => activeSignal(source, field))) {
-      const timestamp = signalTimestamp(source, field);
+      const timestamp = signalTimestamp(source, field, context.now);
       const age = timestamp == null ? NaN : (context.now - new Date(timestamp).getTime()) / DAY_MS;
       if (!Number.isFinite(age) || age < 0 || age > EXPLICIT_WINDOW_DAYS) {
         diagnostics.expiredOrUndatedFallbackSignals++;

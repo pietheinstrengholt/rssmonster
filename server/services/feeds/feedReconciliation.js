@@ -1,6 +1,7 @@
 // Reconciles same-user feed rows that have converged on one verified endpoint.
 
 import db from '../../models/index.js';
+import { prepareArticleEventRemoval, reconcileTouchedEvents } from '../events/eventReconciliation.js';
 import {
   assertExecutionLeaseOwnership,
   throwIfExecutionExpired
@@ -9,7 +10,6 @@ import { retryDatabaseTransaction } from '../../utils/databaseRetry.js';
 
 const {
   Article,
-  Event,
   Feed,
   FeedUrlAlias,
   Hotlink,
@@ -243,65 +243,6 @@ const transferArticleTags = async (
   }
 };
 
-// Repairs event pointers before overlapping article rows are removed.
-const repairArticleEventPointers = async (
-  survivor,
-  loserIds,
-  transaction,
-  execution
-) => {
-  throwIfExecutionExpired(execution);
-  const events = await Event.findAll({
-    where: {
-      userId: survivor.userId,
-      [Op.or]: [
-        { representativeArticleId: { [Op.in]: loserIds } },
-        { developingArticleId: { [Op.in]: loserIds } }
-      ]
-    },
-    order: [['id', 'ASC']],
-    transaction,
-    lock: transaction.LOCK.UPDATE
-  });
-
-  for (const event of events) {
-    throwIfExecutionExpired(execution);
-    if (event.id === survivor.eventId) {
-      await event.update({
-        ...(loserIds.includes(event.representativeArticleId)
-          ? { representativeArticleId: survivor.id }
-          : {}),
-        ...(loserIds.includes(event.developingArticleId)
-          ? { developingArticleId: survivor.id }
-          : {})
-      }, { transaction });
-      continue;
-    }
-    const replacement = await Article.findOne({
-      where: {
-        userId: survivor.userId,
-        eventId: event.id,
-        id: { [Op.notIn]: loserIds }
-      },
-      order: [['id', 'ASC']],
-      transaction,
-      lock: transaction.LOCK.UPDATE
-    });
-    if (loserIds.includes(event.representativeArticleId) && !replacement) {
-      await event.destroy({ transaction });
-      continue;
-    }
-    await event.update({
-      ...(loserIds.includes(event.representativeArticleId)
-        ? { representativeArticleId: replacement.id }
-        : {}),
-      ...(loserIds.includes(event.developingArticleId)
-        ? { developingArticleId: replacement?.id || null }
-        : {})
-    }, { transaction });
-  }
-};
-
 // Consolidates overlapping articles and moves non-overlapping articles to the survivor feed.
 const transferArticles = async ({
   userId,
@@ -348,12 +289,6 @@ const transferArticles = async ({
     if (!articleSurvivor.eventId && semanticSource?.eventId) {
       await articleSurvivor.update({ eventId: semanticSource.eventId }, { transaction });
     }
-    await repairArticleEventPointers(
-      articleSurvivor,
-      loserIds,
-      transaction,
-      execution
-    );
     await transferArticleTags(
       articleSurvivor.id,
       loserIds,
@@ -381,12 +316,23 @@ const transferArticles = async ({
       loserArticles,
       survivor.id
     );
+    await articleSurvivor.update(mergedValues, { transaction, hooks: false });
+    const maintenance = await prepareArticleEventRemoval(userId, { id: { [Op.in]: loserIds } }, transaction);
+    if (maintenance) {
+      const retainedIds = new Set(Object.values(maintenance.articlesByEventId).flat().map(article => article.id));
+      // Later overlap groups must not inherit an assignment dissolved earlier in this transaction.
+      for (const article of articles) {
+        if (Object.hasOwn(maintenance.articlesByEventId, article.eventId) && !retainedIds.has(article.id)) {
+          article.setDataValue('eventId', null);
+        }
+      }
+    }
     await Article.destroy({
       where: { id: { [Op.in]: loserIds }, userId },
       transaction
     });
-    await articleSurvivor.update(mergedValues, { transaction, hooks: false });
   }
+  await reconcileTouchedEvents(userId, articles.map(article => article.eventId).filter(id => id != null), transaction);
 };
 
 // Moves aliases while preserving the widest first/last-seen observation window.

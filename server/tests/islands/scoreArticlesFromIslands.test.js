@@ -139,7 +139,7 @@ describe('scoreArticlesFromIslandsForUser', () => {
     const { user, feed } = await createUserGraph();
     const suffix = randomUUID();
 
-    await Island.create({
+    await Island.create({ lastBehaviorAt: new Date(),
       userId: user.id,
       label: 'Island',
       weight: 0.42,
@@ -178,21 +178,21 @@ describe('scoreArticlesFromIslandsForUser', () => {
     const suffix = randomUUID();
 
     await Promise.all([
-      Island.create({
+      Island.create({ lastBehaviorAt: new Date(),
         userId: user.id,
         label: 'Positive island',
         weight: 0.6,
         embedding_model: 'test-model', islandVector: [1, 0, 0],
         archivedInd: false
       }),
-      Island.create({
+      Island.create({ lastBehaviorAt: new Date(),
         userId: user.id,
         label: 'Negative island',
         weight: -0.8,
         embedding_model: 'test-model', islandVector: [1, 0, 0],
         archivedInd: false
       }),
-      Island.create({
+      Island.create({ lastBehaviorAt: new Date(),
         userId: user.id,
         label: 'Archived island',
         weight: 0.95,
@@ -237,7 +237,7 @@ describe('scoreArticlesFromIslandsForUser', () => {
   it('uses vector similarity for matching and unrelated unread articles', async () => {
     const { user, feed } = await createUserGraph();
     const suffix = randomUUID();
-    await Island.create({
+    await Island.create({ lastBehaviorAt: new Date(),
       userId: user.id,
       label: 'Vector island',
       weight: 0.6,

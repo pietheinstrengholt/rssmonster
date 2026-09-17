@@ -56,6 +56,50 @@ function recentDateWithOffset(offsetMs = 0) {
 }
 
 describe('repairRecentEventsForUser', () => {
+  it.each([1, 2])('atomically repairs %s outside-window survivors when recent membership is detached', async survivors => {
+    const { user, feed } = await createUserGraph('repair-survivors');
+    await feed.update({ generateEmbeddings: false });
+    const recent = await Article.create(articlePayload(user, feed, 1, { publishedAt: recentDateWithOffset(), articleVector: null }));
+    const old = await Article.bulkCreate(Array.from({ length: survivors }, (_, index) => articlePayload(user, feed, index + 2, {
+      publishedAt: new Date(Date.now() - 40 * 86400000), articleVector: [1, 0, 0]
+    })));
+    const event = await Event.create({ userId: user.id, representativeArticleId: recent.id,
+      articleCount: survivors + 1, sourceCount: 1, embedding_model: 'test-model', eventVector: [1, 0, 0] });
+    await Article.update({ eventId: event.id }, { where: { id: [recent.id, ...old.map(row => row.id)] } });
+    await repairRecentEventsForUser(user.id);
+    expect((await recent.reload()).eventId).toBeNull();
+    if (survivors === 1) {
+      expect(await Event.findByPk(event.id)).toBeNull();
+      expect((await old[0].reload()).eventId).toBeNull();
+    } else {
+      await event.reload();
+      expect(event.articleCount).toBe(2);
+      expect(event.representativeArticleId).toBe(old[0].id);
+      expect(event.eventVector).toEqual([1, 0, 0]);
+    }
+  });
+
+  it('rolls back recent detachment if repairing its prior Event fails', async () => {
+    const { user, feed } = await createUserGraph('repair-rollback');
+    await feed.update({ generateEmbeddings: false });
+    const recent = await Article.create(articlePayload(user, feed, 1, { publishedAt: recentDateWithOffset(), articleVector: null }));
+    const old = await Article.bulkCreate([2, 3].map(index => articlePayload(user, feed, index, {
+      publishedAt: new Date(Date.now() - 40 * 86400000), articleVector: [1, 0, 0]
+    })));
+    const event = await Event.create({ userId: user.id, representativeArticleId: recent.id,
+      articleCount: 3, sourceCount: 1, embedding_model: 'test-model', eventVector: [1, 0, 0] });
+    await Article.update({ eventId: event.id }, { where: { id: [recent.id, ...old.map(row => row.id)] } });
+    const update = vi.spyOn(Event.prototype, 'update').mockRejectedValue(new Error('projection failed'));
+    try {
+      await expect(repairRecentEventsForUser(user.id)).rejects.toThrow('projection failed');
+      expect((await recent.reload()).eventId).toBe(event.id);
+      expect((await event.reload()).articleCount).toBe(3);
+      expect(event.representativeArticleId).toBe(recent.id);
+    } finally {
+      update.mockRestore();
+    }
+  });
+
   it('incrementally assigns newly created read articles without changing their status', async () => {
     const { user, feed } = await createUserGraph('incremental-read-status');
     const sharedTitle = 'Samsung Galaxy Z Fold 8 lineup launches';

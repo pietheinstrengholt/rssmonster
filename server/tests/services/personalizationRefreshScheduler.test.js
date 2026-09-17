@@ -182,7 +182,7 @@ describe('elapsed-time personalization refresh', () => {
     expect((await execute(graph.user.id)).status).toBe('succeeded');
     await graph.candidate.reload(); await graph.source.reload();
     expect(Number(graph.candidate.interestScore)).toBeGreaterThan(original);
-    expect(Number(graph.candidate.interestScore)).toBeLessThan(0);
+    expect(Number(graph.candidate.interestScore)).toBe(0);
     expect(graph.source.negativeFeedbackAt).toEqual(at(0));
   });
 });

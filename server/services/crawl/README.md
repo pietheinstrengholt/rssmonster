@@ -18,7 +18,7 @@ The crawler is responsible for:
 - Preventing duplicate articles from being created.
 - Normalizing unsafe publisher content.
 - Applying user-defined rules.
-- Enriching newly created and meaningfully revised articles.
+- Enriching newly created articles while preserving analysis on publisher revisions.
 - Reporting progress.
 
 The crawler owns the transition from an external feed entry to a local article.
@@ -423,7 +423,7 @@ Publisher revisions should never reset user interaction.
 
 Update matching is two-phase: normalized source values are classified without writing, then
 source fields, affected derived fields, and crawl-owned tags are committed in one transaction.
-Content, title, and description changes rerun actions and analysis; author, publication, media,
+Content, title, and description changes rerun filtering/tag actions while preserving analysis; author, publication, media,
 and lead-image-only changes remain source-only. URL changes rerun actions and refresh
 official-source and hotlink metadata without rerunning AI analysis.
 
@@ -438,10 +438,10 @@ existing article found
 → hide article from normal queries
 
 When a later revision reruns actions and no longer matches a discard rule, set `filteredInd` back to
-false and continue the normal lightweight enrichment path. Source-only revisions that do not rerun
+false while preserving retained analysis. Source-only revisions that do not rerun
 actions preserve the existing filteredInd state.
 
-Generated, feed, and rule tags have explicit provenance and may be reconciled during updates.
+Provider, feed, and rule tags may be reconciled during updates; inferred tags retain their analysis provenance.
 Null or unknown tag types are treated as manual and are preserved. Existing read, favorite,
 click, and attention state is also preserved because action-versus-user provenance is not stored.
 
@@ -633,9 +633,9 @@ reevaluation of existing articles.
 # Analysis
 
 Genuinely new articles enqueue durable enrichment unless AI analysis is disabled for the feed.
-Existing publisher identities enqueue a versioned replacement job only when content, title, or
-description changes. Source-only changes do not spend an AI call. The article and its job commit
-in one transaction, so ingestion never exposes one without the other.
+Publisher revisions never enqueue replacement analysis or reset retained scores and summaries.
+New articles and their initial jobs commit in one transaction. Completed analysis retains its
+input identity in `aiAnalysisProvenance`; see the [revision contract](persistence/README.md).
 
 Classification runs only in `rssmonster-ai-worker`. Queue saturation and other
 retryable inference failures leave the article available in `pending` or `processing` state and

@@ -48,6 +48,77 @@ async function assign(g, incoming, events, members = [], options = {}) {
 describe('Event occurrence assignment', () => {
   afterEach(() => vi.restoreAllMocks());
 
+  it.each(['no-vector', 'insufficient', 'ambiguous', 'seed-rejected', 'join-rejected'])(
+    'preserves a concurrent committed assignment after a stale %s proposal', async outcome => {
+      const g = await graph();
+      const incoming = await makeArticle(g);
+      const stale = await Article.findByPk(incoming.id);
+      const winner = await makeEvent(g);
+      // The first worker retains its unassigned snapshot while another commits.
+      expect(await assignArticleToExistingEvent({ article: incoming, bestEvent: winner.event })).toBe(winner.event.id);
+      const committedProjection = (await winner.event.reload()).toJSON();
+      const events = [];
+      const candidates = new ArticleEventCandidateCache({ userId: g.user.id });
+      if (outcome === 'no-vector') stale.articleVector = null;
+      if (outcome === 'ambiguous' || outcome === 'join-rejected') {
+        const first = await makeEvent(g);
+        events.push(first.event);
+        if (outcome === 'ambiguous') {
+          const second = await makeEvent(g);
+          await second.event.update({ eventWindowStartAt: first.member.publishedAt, eventWindowEndAt: first.member.publishedAt });
+          events.push(second.event);
+        }
+      }
+      if (outcome === 'seed-rejected') {
+        const neighbor = await makeArticle(g, 0, { articleVector: [0, 1] });
+        candidates.insert({ ...neighbor.toJSON(), articleVector: [1, 0] });
+      }
+      const updateCache = vi.spyOn(candidates, 'updateEventId');
+      const context = { records: [], stats: {} };
+      const result = await assignArticleToEvent(stale, new EventCache(events), null, context, {
+        articleCandidateCache: candidates
+      });
+      expect(result).toBe(winner.event.id);
+      expect(stale.eventId).toBe(winner.event.id);
+      expect((await incoming.reload()).eventId).toBe(winner.event.id);
+      expect((await winner.event.reload()).toJSON()).toEqual(committedProjection);
+      expect(context.records).toContainEqual(expect.objectContaining({ id: incoming.id, eventId: winner.event.id }));
+      expect(context.lastDecision.reasons).toEqual(['membership_already_assigned']);
+      expect(updateCache).toHaveBeenCalledWith([incoming.id], winner.event.id);
+    }
+  );
+
+  it.each(['commit', 'rollback'])('observes a pending assignment only after its %s', async completion => {
+    const g = await graph();
+    const incoming = await makeArticle(g);
+    const stale = await Article.findByPk(incoming.id);
+    const { event } = await makeEvent(g);
+    const transaction = await db.sequelize.transaction();
+    let pending;
+    try {
+      await assignArticleToExistingEvent({ article: incoming, bestEvent: event, transaction });
+      let reachedRead;
+      const reading = new Promise(resolve => { reachedRead = resolve; });
+      const findOne = Article.findOne.bind(Article);
+      vi.spyOn(Article, 'findOne').mockImplementation(options => {
+        if (options.where.id === incoming.id && options.attributes?.length === 2) reachedRead();
+        return findOne(options);
+      });
+      const context = { records: [], stats: {} };
+      pending = assignArticleToEvent(stale, new EventCache([]), null, context);
+      await reading;
+      await transaction[completion]();
+      const expectedId = completion === 'commit' ? event.id : null;
+      expect(await pending).toBe(expectedId);
+      expect((await incoming.reload()).eventId).toBe(expectedId);
+      expect((await event.reload()).articleCount).toBe(completion === 'commit' ? 2 : 1);
+      expect(context.records).toContainEqual(expect.objectContaining({ id: incoming.id, eventId: expectedId }));
+    } finally {
+      if (!transaction.finished) await transaction.rollback();
+      if (pending) await pending;
+    }
+  });
+
   it.each(['centroid-cache', 'member-cache', 'database'])('uses the same acceptance through %s', async source => {
     const g = await graph();
     const { event, member } = await makeEvent(g);

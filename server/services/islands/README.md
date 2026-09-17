@@ -55,17 +55,23 @@ An Island stores its vector, signed weight, signal snapshot, display labels,
 archive state and population audit. There is no persisted candidate-Article
 membership table. Audit history explains formation; it is not new evidence.
 Names use the nearest taxonomy label or the profile's source-article label.
-Duplicate names receive distinguishing source-article phrases or unique suffixes.
+Canonical names are normalized across every owned Island, including archived history.
+Creation and matched updates reserve other Islands’ names but exclude their own current
+name, so replay does not add suffixes. Duplicate-name cleanup also includes archived
+Islands and reserves their suffixes. Collisions receive distinguishing source-article
+phrases or unique suffixes.
 Name cleanup only updates labels, even for identical vectors and opposing signs;
 it never archives or consolidates semantic evidence. Audit count and absolute weight
 only decide which Island retains the base display name. Similarity is logged for
 diagnostics. The legacy `archived` summary stays empty. Previously archived Islands
 are not automatically reactivated; normal lifecycle and capacity rules still apply.
 
-Matched or unmatched Islands can archive when meaningful behavioral activity is
-at least 45 days old and decayed lifecycle confidence is below .12. Technical
-`updatedAt` is never activity. Strong matching behavior newer than `archivedAt`
-can reactivate an archived Island with its existing ID. Archival retains its history.
+Matched and unmatched Islands expire after `ISLAND_INACTIVITY_DAYS` (default 90,
+configurable from 30 to 90 days) without qualifying behavior, regardless of strength.
+The persisted `lastBehaviorAt` clock comes only from supporting Article interactions.
+Scoring, capacity and presentation enforce expiry before archival is persisted.
+Reactivation requires qualifying behavior strictly newer than the actual expiry or
+earlier archival boundary and retains the existing ID and history.
 
 ## Boundaries
 
@@ -384,13 +390,15 @@ Positive fallback evaluates positive feedback and favorites on their own clocks
 and keeps the strongest positive path; it does not add correlated fallback scores.
 Confidence uses interaction-day breadth with the same count, source and day weights.
 
-For a signal whose timestamp is null (legacy/imported behavioral state without a
-known interaction time), publication time remains the documented approximation.
-No usable date retains the existing unknown-age multiplier of 1; future dates
-are clamped to zero age. Neither case produces non-finite profile evidence.
-The migration leaves nulls intact rather than manufacturing interaction times.
-Known clocks always override publication; rereading or favoriting a 2022 article
-today produces fresh timing evidence. Publisher revisions preserve these clocks.
+Interaction and publication dates must be valid and no later than the evaluation
+clock. Missing, invalid or future interaction timestamps fall back to a usable
+publication date as a legacy approximation. If neither is usable, the signal has
+zero recency weight and cannot form, renew or reactivate an active Island. Bounded
+SQL evidence selection applies the same fallback before ordering and limits, and
+excludes evidence without usable active-signal clocks. Recent implicit fallback
+still requires an observed interaction; it never substitutes publication time.
+Usable interaction clocks always override publication; publisher revisions preserve
+these clocks. No migration manufactures interaction dates.
 Automated favorite/click rules stamp when their state is first applied on ingestion;
 re-crawling an existing article does not refresh user behavior. Feed reconciliation
 retains the latest stored clock for each signal without treating merging as an
@@ -399,8 +407,8 @@ interaction. No event-history table, signal weight or semantic threshold is adde
 ## Behavioral lifecycle and replay
 
 `islandLifecycle.js` derives `lastBehaviorAt` and lifecycle confidence from the
-same Article evidence used for profile formation. No schema or persisted activity
-clock is added. `buildInterestIslandProfilesForUser` passes its complete owned,
+same Article evidence used for profile formation. The resulting activity clock is
+persisted as `lastBehaviorAt` for deadline enforcement. `buildInterestIslandProfilesForUser` passes its complete owned,
 canonical/unfiltered behavioral snapshot as a transient array property to
 persistence, including Articles below the formation score cutoff. Standalone
 profile persistence reconstructs that snapshot once when it is not supplied.
@@ -426,20 +434,40 @@ Articles. No support gives zero. Taking the strongest remaining fraction avoids 
 preference with arbitrarily much weak history. This factor is used only for lifecycle decisions, never
 as a new recommendation multiplier.
 
+Determine the resulting signed preference before deriving activity: matched/new
+profiles use their newly calculated weight; unmatched Islands recalculate and
+persist their weight from reconstructed support with the same Article-weight
+aggregation. This keeps the stored sign consistent with the renewal decision.
+Only individual signals supporting that resulting sign can contribute a renewal
+or reactivation timestamp. A fresh click cannot renew a still-negative preference;
+fresh negative feedback cannot renew a still-positive aggregate. If new evidence
+changes the result's sign, supporting evidence for the new sign can renew it under
+the normal expiry, reactivation and capacity rules. Exact cancellation has no
+supporting sign and therefore no renewal clock. Formation prioritization uses the
+same rule for each Article's net preference.
+
 An interaction contributes behavioral age only when both its individual decayed
 signal magnitude and its Article's absolute net evidence reach the existing
-article signal threshold. The latest usable, non-future interaction wins; null
-clocks use publication as the legacy fallback. Missing age is stale, never
-replaced with Island `createdAt`, `updatedAt`, audit time or calibration time.
+article signal threshold. The latest usable supporting interaction wins, using
+the validated legacy publication fallback when needed. Missing age is stale,
+never replaced with Island `createdAt`, `updatedAt`, audit or calibration time.
 
-Outside capacity enforcement, an active Island is archived only when stale (`ISLAND_ARCHIVE_STALE_DAYS`, 45)
-and weak (lifecycle confidence below `ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD`, .12).
-This applies even if old evidence still forms a matching profile. An archived
-match reactivates only at sufficient confidence and with a meaningful interaction
-strictly newer than its archive time; a legacy null archive time instead requires
-non-stale support. Otherwise preserve its archive time, flags and ID. Strong but
-old evidence can sustain an active Island, but cannot resurrect an archive merely
-by being recalibrated. Newly formed weak/stale profiles may be stored archived.
+An Island expires exactly at `lastBehaviorAt + ISLAND_INACTIVITY_DAYS`, independent
+of lifecycle confidence. The old stale-days and confidence archival settings are
+retired. Delayed archival records the actual expiry time, not the calibration time.
+Early capacity archival uses its earlier timestamp. Reactivation requires usable
+support strictly newer than that boundary, with its own deadline still in the future.
+Replaying unchanged evidence cannot reactivate an Island. Unknown archival boundaries
+remain dormant. Expired profiles may be retained as archived history.
+
+The nullable `lastBehaviorAt` column and active-query index require the accompanying
+migration. Legacy unknown clocks are inactive until ordinary calibration reconstructs
+them from qualifying Article evidence; no technical timestamp backfill is performed.
+Scoring queries exclude expired, unknown and future clocks. Capacity ranking and the
+Settings overview use the same deadline; the overview retains history, exposes
+`expiresAt`, marks expired rows archived and gives them zero effective weight even
+before an archival write. Formation considers fresh qualifying seeds before expired
+history so old strong preferences cannot consume all available formation slots.
 
 All changes participate in the existing persistence transaction and calibration
 checkpoint. Scoring retries skip committed calibration, preserving lifecycle and
@@ -453,8 +481,8 @@ excluding archived Islands, Events and automatic-deletion behavior are unchanged
 `islandCapacity.js` reconstructs current support from the owned behavioral
 snapshot. Matched Islands use profile Article IDs; unmatched candidates reuse
 nearest-support assignment. Rank by absolute existing profile-weight formula,
-then lifecycle confidence (four-decimal precision), qualifying support count,
-latest meaningful interaction and ascending stable ID. This is a lexicographic
+then lifecycle confidence (four-decimal precision), latest meaningful interaction
+and ascending stable ID. Support count is retained for explanation, not a tie-breaker. This is a lexicographic
 storage policy, not a recommendation formula; signed preferences compete equally.
 Capacity is applied after normal lifecycle/name archival, before the checkpoint
 commits. Overflow is archived with history intact. Reactivation must satisfy the
@@ -466,3 +494,38 @@ serializes persistence. Summaries report the complete final active count and
 The existing formation bound remains to preserve clustering and bounded work;
 it does not promise that every unassigned behavioral profile competes globally.
 See [the exact contract and ordering](../../../docs/interest-islands.md#active-capacity).
+
+
+## Retained lifecycle explanations
+
+Population audits are explanatory snapshots, never behavioral input. Each retained
+entry includes explicit likes/dislikes, favorites, click counts and meaningful-reading
+buckets, plus their interaction timestamps and publication/read/exposure context.
+`signalTimes` identifies active signals, the effective validated time, and whether it
+came from the interaction, a legacy publication fallback, or no usable clock. The
+configured half-life and current recency multiplier make signal aging inspectable. Raw
+future or invalid dates remain distinguishable from their effective fallback.
+
+Available rule provenance is captured from owned `tagType: rule` assignments: tag ID,
+name and assignment creation time. The schema does not persist the originating rule
+ID or its definition; a rule tag is contextual provenance, not proof that a rule caused
+a particular interaction. Deleted tags do not erase a retained snapshot.
+
+`lifecycle` records creation, renewal, unchanged activity, inactivity expiry, absent
+qualifying activity, reactivation and rejected reactivation. Entries include the
+signed preference, before/after clocks, deadline, boundary and confidence used in the
+decision. Unmatched Islands also record current support and lifecycle decisions.
+Capacity archival adds the candidate's rank and comparison values, the last retained
+candidate's values, the exact lexicographic order and decisive field. Archive writes
+and audit updates share the persistence transaction; capacity metadata preserves the
+same run's source snapshot. None of these records can renew a behavioral clock.
+
+Retention is bounded by `ISLAND_AUDIT_MAX_RUNS` (default 30) and
+`ISLAND_AUDIT_MAX_ARTICLE_IDS` (default 300) per snapshot/list. Counts describe all
+loaded support while retained titles are capped at 300 characters. Each Article
+retains at most 10 rule tags with names capped at 255 characters; a bounded batched
+query reports truncation. Each run retains at most two lifecycle decisions (ordinary
+lifecycle plus capacity), with only the losing and cutoff candidates for comparisons.
+The settings API exposes the retained audit and preserves historical positive/read
+badges when current Article flags change. Legacy entries remain readable but cannot
+recover interaction clocks or decision reasons that were never recorded.

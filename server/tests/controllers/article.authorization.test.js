@@ -220,6 +220,7 @@ describe('article ownership authorization', () => {
     expect(response.body[0]).toHaveProperty('quality');
     expect(response.body[0]).toHaveProperty('aiAnalysisStatus', 'complete');
     expect(response.body[0]).toHaveProperty('aiAnalysisCompletedAt', null);
+    expect(response.body[0]).toHaveProperty('aiAnalysisProvenance', null);
     expect(response.body[0]).toHaveProperty('isDevelopingStory', false);
     expect(response.body[0]).not.toHaveProperty('articleVector');
     expect(response.body[0]).not.toHaveProperty('embedding_model');
@@ -229,11 +230,25 @@ describe('article ownership authorization', () => {
     expect(response.body[0]).not.toHaveProperty('contentSourceHash');
   });
 
+  it('retains a negative Recommended score in the article details API', async () => {
+    const owner = await createUser(uniqueName('negative-recommended-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    await feed.update({ feedTrust: 0 });
+    await article.update({ interestScore: -1, qualityScore: 0, sentimentScore: 0, advertisementScore: 0 });
+    const response = await request(app)
+      .post('/api/articles/details')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ articleIds: String(article.id) });
+    expect(response.status).toBe(200);
+    expect(response.body[0].recommendation.score).toBeLessThan(0);
+    expect(response.body[0].recommendation.score).toBeCloseTo(-0.3, 3);
+  });
+
   it('returns recommendation score, reasons, event name, and interest island with article details', async () => {
     const owner = await createUser(uniqueName('article-recommendation-details-owner'));
     const { article, feed } = await createArticleFor(owner);
 
-    const island = await Island.create({
+    const island = await Island.create({ lastBehaviorAt: new Date(),
       userId: owner.id,
       label: 'Software development',
       generatedLabel: 'Developer tooling',

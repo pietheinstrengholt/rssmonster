@@ -126,6 +126,7 @@ const loadArticleDetails = async (userId, articlesArray) => {
       'contentSummaryBullets',
       'aiAnalysisStatus',
       'aiAnalysisCompletedAt',
+      'aiAnalysisProvenance',
       'isOfficialSource',
       'officialOrganization',
       'eventId',

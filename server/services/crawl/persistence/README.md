@@ -82,6 +82,24 @@ This compatibility behavior matters after improvements such as block-aware visib
 and sanitizing legacy raw descriptions: existing articles receive correct derived fields without
 all appearing newly revised.
 
+Publisher revisions preserve all analysis scores, summaries, inferred tags, completion state,
+embeddings, semantic assignments and behavioral state. They never enqueue enrichment, including
+when AI is disabled or a rule now specifies a different score. Filtering, source metadata,
+hotlink observations and provider/feed/rule tags retain their existing update semantics.
+The persistence boundary accepts only those source-derived fields and cannot enqueue analysis.
+
+Completed AI analysis stores `aiAnalysisProvenance`: the analysis input hash (title, description,
+visible-text hash and normalized provider tags), content-text hash, and analysis contract version.
+This snapshot and `aiAnalysisCompletedAt` describe the retained analysis, not the revised reading
+copy. They survive publisher revisions and job-history deletion. Null provenance means unknown
+legacy/unavailable analysis input; it must not be inferred from current source content. The field
+is available in article details. Migration `20260917000000-add-article-analysis-provenance.mjs`
+adds the nullable column without backfilling or re-enriching existing articles.
+
+A revision arriving before pending analysis completes leaves the old job's immutable guards in
+place: the worker rejects stale input before inference or persistence, and the revision does not
+create replacement work. Independently requested operator recovery remains a separate action.
+
 ## Deterministic comparisons
 
 Update comparison normalizes values before deciding that they changed:
@@ -120,7 +138,10 @@ crawl updates. Updating derived tags replaces only crawl-owned relationships for
 ## Transaction, ownership, and cache boundaries
 
 All writes are user-scoped and feed-scoped. Transactions encompass Article changes and related tag
-changes so readers never observe a partially reconciled article. Deadline and lease checks prevent
+changes so readers never observe a partially reconciled article. A rule that filters
+a revision also detaches its Event membership and repairs or dissolves the old Event
+inside that transaction. Source-only corrections retain membership; this eligibility
+maintenance does not reset analysis or enqueue enrichment. Deadline and lease checks prevent
 a stale crawl worker from committing after ownership has moved to another worker.
 
 Persistence does not mutate duplicate caches before commit. Orchestration is responsible for cache

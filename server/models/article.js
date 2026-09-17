@@ -274,9 +274,15 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 'complete'
       },
-      // Records when the current article version last completed optional AI analysis.
+      // Records completion of the retained analysis, which may predate publisher revisions.
       aiAnalysisCompletedAt: {
         type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
+      },
+      // Immutable input identity of the retained analysis; null for untracked legacy results.
+      aiAnalysisProvenance: {
+        type: DataTypes.JSON,
         allowNull: true,
         defaultValue: null
       },

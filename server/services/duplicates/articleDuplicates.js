@@ -1,4 +1,5 @@
 import db from '../../models/index.js';
+import { prepareArticleEventRemoval } from '../events/eventReconciliation.js';
 import { Op } from 'sequelize';
 import { RECENCY_WINDOW_DAYS } from '../config/semanticConfig.js';
 import { embeddingSimilarity, hasEmbeddingModel } from '../vectors/embeddingModel.js';
@@ -120,10 +121,15 @@ export async function markArticleAsDuplicate(article, canonicalArticleOrId, opti
     return article;
   }
 
+  if (!options.transaction) return sequelize.transaction(transaction =>
+    markArticleAsDuplicate(article, canonicalArticleOrId, { ...options, transaction }));
+
   // Resolves the canonical article while performing mark article as duplicate.
   const canonicalArticle = await resolveCanonicalArticle(canonicalArticleOrId, writeOptions);
   // Returns no result when canonical article is unavailable.
   if (!canonicalArticle) return null;
+
+  if (article.userId != null) await prepareArticleEventRemoval(article.userId, { id: article.id }, options.transaction);
 
   // Builds the payload assembled while performing mark article as duplicate.
   const payload = {

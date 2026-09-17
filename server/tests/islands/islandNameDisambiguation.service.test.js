@@ -47,7 +47,7 @@ describe('duplicate island name persistence', () => {
 
     const result = await disambiguateDuplicateIslandNamesForUser(8, { transaction: 'tx' });
 
-    expect(mocks.islandFindAll).toHaveBeenCalledWith({ where: { userId: 8, archivedInd: false }, order: [['id', 'ASC']], transaction: 'tx' });
+    expect(mocks.islandFindAll).toHaveBeenCalledWith({ where: { userId: 8 }, order: [['id', 'ASC']], transaction: 'tx' });
     expect(strongest.update).not.toHaveBeenCalled();
     expect(duplicate.update).toHaveBeenCalledExactlyOnceWith({ label: 'Technology: Variant' }, { transaction: 'tx' });
     expect(distinct.update).toHaveBeenCalledWith({ label: 'Technology: Quantum Cameras' }, { transaction: 'tx' });
@@ -59,7 +59,7 @@ describe('duplicate island name persistence', () => {
     }), expect.objectContaining({ islandId: 2, to: 'Technology: Variant' })]);
   });
 
-  it('returns an empty summary without relationship queries when there are no active islands', async () => {
+  it('returns an empty summary without relationship queries when there are no owned islands', async () => {
     mocks.islandFindAll.mockResolvedValue([]);
 
     await expect(disambiguateDuplicateIslandNamesForUser(8)).resolves.toEqual({ renamed: [], archived: [] });

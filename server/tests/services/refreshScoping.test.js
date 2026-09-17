@@ -17,7 +17,7 @@ async function fixture(now) {
   const source = await db.Article.create({ ...values, status: 'read' });
   const related = await db.Article.create({ ...values, status: 'unread' });
   const unrelated = await db.Article.create({ ...values, status: 'unread', articleVector: [0, 1] });
-  const island = await db.Island.create({ userId: user.id, label: 'Database', weight: 0.4, embedding_model: 'test-model', islandVector: [0.8, 0.6] });
+  const island = await db.Island.create({ lastBehaviorAt: new Date(), userId: user.id, label: 'Database', weight: 0.4, embedding_model: 'test-model', islandVector: [0.8, 0.6] });
   return { user, source, related, unrelated, island };
 }
 const claim = async (userId, now) => (await claimProcessingJobs({ userId, now: new Date(now + 60000), limit: 1 }))[0];

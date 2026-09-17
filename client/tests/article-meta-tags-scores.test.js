@@ -131,6 +131,19 @@ describe('ArticleMeta', () => {
     expect(wrapper.find('.recommended-badge').exists()).toBe(false);
   });
 
+  it('shows a negative score in the recommendation explanation', async () => {
+    const wrapper = mountArticleMeta({
+      hasInterestScore: true,
+      isRecommendationView: true,
+      recommendation: { score: -0.163, reasons: [{ code: 'freshness', value: 0.1 }] }
+    }, { attachTo: document.body });
+    await wrapper.get('.recommended-badge').trigger('click');
+    await flushPromises();
+    expect(document.querySelector('.recommendation-explanation-panel').textContent)
+      .toContain('-16% recommendation score');
+    wrapper.unmount();
+  });
+
   it('explains recommendation reasons from the article metadata badge', async () => {
     const wrapper = mountArticleMeta({
       hasInterestScore: true,

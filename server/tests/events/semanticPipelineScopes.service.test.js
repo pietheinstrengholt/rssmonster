@@ -25,6 +25,7 @@ const mocked = vi.hoisted(() => ({
   eventCacheForUser: vi.fn(),
   logEventProcessingSummary: vi.fn(),
   reconcileTouchedEvents: vi.fn(),
+  prepareArticleEventRemoval: vi.fn(),
   recordProcessingFailure: vi.fn(),
   enqueueSemanticLabels: vi.fn()
 }));
@@ -38,6 +39,7 @@ vi.mock('../../models/index.js', () => ({
       literal: vi.fn(value => value)
     },
     sequelize: {
+      transaction: vi.fn(callback => callback('tx')),
       escape: vi.fn(value => `'${value}'`),
       fn: vi.fn((name, value) => [name, value])
     }
@@ -72,7 +74,8 @@ vi.mock('../../services/events/eventPipelineDebug.js', () => ({
 
 vi.mock('../../services/events/eventReconciliation.js', () => ({
   computeEventStrength: mocked.computeEventStrength,
-  reconcileTouchedEvents: mocked.reconcileTouchedEvents
+  reconcileTouchedEvents: mocked.reconcileTouchedEvents,
+  prepareArticleEventRemoval: mocked.prepareArticleEventRemoval
 }));
 
 vi.mock('../../services/observability/processingFailures.js', () => ({
@@ -106,6 +109,7 @@ describe('semantic pipeline scopes orchestration', () => {
     mocked.eventCacheForUser.mockReset();
 
     mocked.reconcileTouchedEvents.mockReset();
+    mocked.prepareArticleEventRemoval.mockReset().mockResolvedValue({ articleIds: [31], articlesByEventId: { 50: [] } });
     mocked.recordProcessingFailure.mockReset().mockResolvedValue(undefined);
     mocked.enqueueSemanticLabels.mockReset().mockResolvedValue(undefined);
 
@@ -241,7 +245,6 @@ describe('semantic pipeline scopes orchestration', () => {
       .mockResolvedValueOnce([1]);
     mocked.Article.findAll
       .mockResolvedValueOnce([article])
-      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ eventId: 60 }]);
     mocked.Event.findAll.mockResolvedValueOnce([{ id: 50 }]);
 
@@ -255,13 +258,8 @@ describe('semantic pipeline scopes orchestration', () => {
 
     const result = await repairRecentEventsForUser(12, {  });
 
-    expect(mocked.Article.findAll).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      attributes: ['eventId'],
-      group: ['eventId'],
-      raw: true
-    }));
-    expect(mocked.Event.destroy).toHaveBeenCalledWith({
-      where: { id: { [Op.in]: [50] }, userId: 12 }
+    expect(mocked.Article.update).toHaveBeenCalledWith({ eventId: null }, {
+      where: { userId: 12, id: { [Op.in]: [31] } }, transaction: 'tx'
     });
     expect(mocked.reconcileTouchedEvents).toHaveBeenCalledWith(12, [60]);
     expect(mocked.Article.findAll).toHaveBeenLastCalledWith(expect.objectContaining({

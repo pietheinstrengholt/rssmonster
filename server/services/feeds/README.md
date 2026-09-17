@@ -297,8 +297,12 @@ If a newly proven endpoint belongs to another feed record for the same user,
 reconciliation locks the relevant user and feed records, selects a deterministic
 survivor, transfers subscriptions and articles, merges compatible state and
 aliases, and removes the duplicate. Lease ownership is asserted throughout the
-transaction. This makes repeated discovery, concurrent subscriptions, and URL
-changes converge instead of creating parallel feeds.
+transaction. Event maintenance runs before overlapping Article deletion, repairing
+anchors and dissolving groups with fewer than two eligible members; projections
+are reconciled after feed moves. Removing a subscription uses the same pre-deletion
+maintenance so representative cascades cannot erase valid cross-feed Events.
+This makes repeated discovery, concurrent subscriptions, and URL changes converge
+instead of creating parallel feeds.
 
 ## Subscription entry points
 

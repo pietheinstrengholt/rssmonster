@@ -208,7 +208,9 @@ describe('article_enrichment processing-job handler', () => {
       advertisementScore: 4,
       sentimentScore: 72,
       qualityScore: 97,
-      aiAnalysisStatus: 'complete'
+      aiAnalysisStatus: 'complete',
+      aiAnalysisProvenance: { inputHash: job.payload.expectedAnalysisInputHash,
+        contentTextHash: job.payload.expectedContentTextHash, contractVersion: 1 }
     });
     expect(persisted.aiAnalysisCompletedAt).toBeInstanceOf(Date);
     expect(await job.reload()).toMatchObject({ status: 'succeeded', leaseOwner: null });

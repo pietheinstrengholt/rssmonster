@@ -267,22 +267,21 @@ function logIslandRename({ island, from, to, strongerIsland, similarity }) {
   );
 }
 
-// This function disambiguates active same-name islands after calibration persistence.
+// This function disambiguates all owned same-name islands after calibration persistence.
 export async function disambiguateDuplicateIslandNamesForUser(userId, options = {}) {
   const { transaction } = options;
-  // Loads the active islands needed while performing disambiguate duplicate island names for user.
-  const activeIslands = await Island.findAll({
+  // Loads active and archived islands needed while performing disambiguate duplicate island names for user.
+  const ownedIslands = await Island.findAll({
     where: {
-      userId,
-      archivedInd: false
+      userId
     },
     order: [['id', 'ASC']],
     transaction
   });
   // Derives the groups through group islands by normalized name while performing disambiguate duplicate island names for user.
-  const groups = groupIslandsByNormalizedName(activeIslands);
+  const groups = groupIslandsByNormalizedName(ownedIslands);
   // Tracks distinct used names while performing disambiguate duplicate island names for user.
-  const usedNames = new Set(activeIslands.map(island => normalizeIslandName(island.label)));
+  const usedNames = new Set(ownedIslands.map(island => normalizeIslandName(island.label)));
   // Collects the renamed while performing disambiguate duplicate island names for user.
   const renamed = [];
   // Retained for callers that consume the historical summary shape; naming cannot archive.

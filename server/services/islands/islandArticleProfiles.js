@@ -1,3 +1,4 @@
+import { isActiveIsland, islandBehaviorTime } from './islandDeadline.js';
 import { Op } from 'sequelize';
 import { BEHAVIOR_TIMESTAMP_FIELDS, signalTimestamp } from '../articles/articleBehaviorTime.js';
 import db from '../../models/index.js';
@@ -65,6 +66,29 @@ export function computeArticleSignals(article) {
   };
 }
 
+// Use the same qualifying signal clocks for formation priority and durable lifecycle activity.
+export function qualifyingArticleBehaviorTime(article, signals = computeArticleSignals(article),
+  preferenceSign = Math.sign(signals.positiveScore - signals.negativeScore)) {
+  if (![-1, 1].includes(preferenceSign) || Math.abs(signals.positiveScore - signals.negativeScore) < DEFAULT_ARTICLE_SIGNAL_THRESHOLD) return null;
+  const counts = signals.positiveSignals;
+  const strengths = {
+    lastClickedAt: counts.clicks * SIGNAL_WEIGHTS.click,
+    lastMeaningfulReadAt: counts.deepReads * SIGNAL_WEIGHTS.deepRead,
+    favoritedAt: counts.stars * SIGNAL_WEIGHTS.star,
+    positiveFeedbackAt: counts.positives * SIGNAL_WEIGHTS.positive,
+    negativeFeedbackAt: counts.negatives * SIGNAL_WEIGHTS.negative
+  };
+  const times = Object.entries(strengths).flatMap(([field, strength]) => {
+    // Opposing behavior changes the net preference first; it cannot renew the other sign.
+    if ((field === 'negativeFeedbackAt' ? -1 : 1) !== preferenceSign) return [];
+    const value = signalTimestamp(article, field);
+    const time = islandBehaviorTime(value);
+    return time != null && strength * behaviorRecencyWeight(value, SIGNAL_HALF_LIFE_DAYS[field]) >= DEFAULT_ARTICLE_SIGNAL_THRESHOLD
+      ? [time] : [];
+  });
+  return times.length ? new Date(Math.max(...times)) : null;
+}
+
 // This function converts an engaged article into a profile for article-based island clustering.
 function computeBehavioralArticleProfile(article) {
   // Computes the article signals while computing behavioral article profile.
@@ -79,6 +103,7 @@ function computeBehavioralArticleProfile(article) {
     vector: Array.isArray(article.articleVector) ? article.articleVector : null,
     embedding_model: article.embedding_model ?? null,
     score,
+    lastBehaviorAt: qualifyingArticleBehaviorTime(article, articleSignals),
     positiveSignals: articleSignals.positiveSignals,
     publishedAt: article.publishedAt
   };
@@ -146,7 +171,9 @@ function buildBehavioralArticleCommunities(articleProfiles, maxIslands = DEFAULT
   // Derives the sorted through sort while building behavioral article communities.
   const sorted = articleProfiles
     .slice()
-    .sort((a, b) => (Math.abs(b.score) - Math.abs(a.score)) || (a.articleId - b.articleId));
+    // Expired history cannot consume the formation slots before fresh preferences are considered.
+    .sort((a, b) => Number(isActiveIsland(b)) - Number(isActiveIsland(a))
+      || (Math.abs(b.score) - Math.abs(a.score)) || (a.articleId - b.articleId));
 
   // Collects the communities while building behavioral article communities.
   const communities = [];

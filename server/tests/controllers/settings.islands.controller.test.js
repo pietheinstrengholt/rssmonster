@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
+import { buildPopulationAuditEntry } from '../../services/islands/islandAudit.js';
 
 const {
   Article,
@@ -143,6 +144,32 @@ describe('settings islands overview', () => {
     await sequelize.authenticate();
   }, 50_000);
 
+  it('retains owned positive and reading history, clocks, rules and lifecycle explanations in the API', async () => {
+    const user = await User.create({ username: uniqueName('audit-owner') });
+    const foreign = await User.create({ username: uniqueName('audit-foreign') });
+    const { article } = await createArticleFixture(user);
+    const { article: foreignArticle } = await createArticleFixture(foreign);
+    const time = new Date('2026-05-02T10:00:00Z');
+    await article.update({ positiveInd: 1, positiveFeedbackAt: time, attentionBucket: 4, lastMeaningfulReadAt: time });
+    const tag = await db.Tag.create({ userId: user.id, articleId: article.id, tagType: 'rule', name: 'rule-origin' });
+    await db.Tag.create({ userId: foreign.id, articleId: article.id, tagType: 'rule', name: 'foreign-rule' });
+    const entry = await buildPopulationAuditEntry({ userId: user.id, articleIds: [article.id, foreignArticle.id] });
+    entry.lifecycle = [{ reason: 'renewed', qualifyingBehaviorAt: time.toISOString() }];
+    expect(entry.articleIds).toEqual([article.id]);
+    await Island.create({ userId: user.id, label: 'Audited', weight: 0.5, lastBehaviorAt: new Date(), populationAudit: [entry] });
+    await article.update({ positiveInd: 0, attentionBucket: 0 });
+    await tag.destroy();
+    const response = await request(app).get('/api/setting/islands').set('Authorization', authHeaderFor(user));
+    expect(response.status).toBe(200);
+    const result = response.body.islands[0];
+    expect(result.populationAudit[0].lifecycle).toEqual(entry.lifecycle);
+    expect(result.populationAudit[0].sourceArticles.articles[0]).toMatchObject({
+      positiveInd: 1, attentionBucket: 4, positiveFeedbackAt: time.toISOString(), lastMeaningfulReadAt: time.toISOString(),
+      ruleProvenance: { tags: [{ id: tag.id, name: 'rule-origin' }] }
+    });
+    expect(result.sourceArticles[0].evidence.map(signal => signal.type)).toEqual(expect.arrayContaining(['positive', 'deepRead']));
+  });
+
   it('returns learned islands and their behavioral sources without coverage fields', async () => {
     const user = await User.create({
       username: uniqueName('islands-user'),
@@ -151,7 +178,7 @@ describe('settings islands overview', () => {
       role: 'user'
     });
     const { article,  } = await createArticleFixture(user);
-    const island = await Island.create({
+    const island = await Island.create({ lastBehaviorAt: new Date(),
       userId: user.id,
       label: 'Readable island',
       generatedLabel: 'Generated readable island',
@@ -200,7 +227,7 @@ describe('settings islands overview', () => {
     });
     const { article } = await createArticleFixture(user);
     await article.update({ favoriteInd: 0, clickedAmount: 0, attentionBucket: 3 });
-    const island = await Island.create({
+    const island = await Island.create({ lastBehaviorAt: new Date(),
       userId: user.id,
       label: 'PC Gaming',
       weight: 0.39,
@@ -253,6 +280,20 @@ describe('settings islands overview', () => {
     } finally {
       querySpy.mockRestore();
     }
+  });
+
+  it('presents expired history as inactive before archival is persisted', async () => {
+    const user = await User.create({ username: uniqueName('expired-islands'), role: 'user' });
+    const expired = await Island.create({ userId: user.id, label: 'Expired strong preference', weight: 1,
+      islandVector: [1, 0, 0], lastBehaviorAt: new Date(Math.floor(Date.now() / 1000) * 1000 - 91 * 86400000) });
+    const res = await request(app).get('/api/setting/islands').set('Authorization', authHeaderFor(user));
+    expect(res.status).toBe(200);
+    expect(res.body.totals.islandCount).toBe(0);
+    expect(res.body.islands).toHaveLength(1);
+    expect(res.body.islands[0]).toMatchObject({ id: expired.id, archivedInd: true, effectiveWeight: 0,
+      expiresAt: new Date(expired.lastBehaviorAt.getTime() + 90 * 86400000).toISOString() });
+    await expired.reload();
+    expect(expired.archivedInd).toBe(false);
   });
 });
 

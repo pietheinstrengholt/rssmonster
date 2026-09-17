@@ -81,6 +81,7 @@ describe('reconcileTouchedEvents', () => {
       sourceCount: 99
     });
     await ownerArticle.update({ eventId: ownerEvent.id });
+    await createArticle(owner.user, owner.feed, 2, { eventId: ownerEvent.id });
 
     const foreignRepresentative = await createArticle(foreign.user, foreign.feed, 1);
     const foreignEvent = await createEvent(foreign.user, foreignRepresentative, {
@@ -98,9 +99,9 @@ describe('reconcileTouchedEvents', () => {
     await ownerEvent.reload();
     await foreignEvent.reload();
 
-    expect(result.articlesByEventId[ownerEvent.id]).toHaveLength(1);
+    expect(result.articlesByEventId[ownerEvent.id]).toHaveLength(2);
     expect(result.articlesByEventId[foreignEvent.id]).toBeUndefined();
-    expect(ownerEvent.articleCount).toBe(1);
+    expect(ownerEvent.articleCount).toBe(2);
     expect(ownerEvent.sourceCount).toBe(1);
     expect(ownerEvent.embedding_model).toBe('test-model');
     expect(foreignEvent.articleCount).toBe(7);

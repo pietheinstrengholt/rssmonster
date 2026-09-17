@@ -428,8 +428,7 @@ describe('processArticle AI analysis controls', () => {
 
     expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
     expect(mocked.applyArticleUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      derivedValues: expect.objectContaining({ aiAnalysisStatus: 'pending' }),
-      articleEnrichment: expect.objectContaining({ providerTags: ['AI'] }),
+      derivedValues: { filteredInd: false },
       execution: { signal: controller.signal }
     }));
   });
@@ -750,28 +749,11 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.hotlinkCount).not.toHaveBeenCalled();
     expect(mocked.saveArticle).not.toHaveBeenCalled();
     expect(mocked.applyArticleUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      derivedValues: expect.objectContaining({
-        filteredInd: false,
-        contentSummaryBullets: [],
-        aiAnalysisStatus: 'pending',
-        advertisementScore: 0,
-        advertisementScoreActionOverrideInd: true,
-        sentimentScore: 70,
-        qualityScore: 0,
-        qualityScoreActionOverrideInd: true
-      }),
+      derivedValues: { filteredInd: false },
       tagUpdates: {
-        inferredTags: [],
         providerTags: ['AI'],
         feedTags: undefined,
         ruleTags: ['updated-rule']
-      },
-      articleEnrichment: {
-        providerTags: ['AI'],
-        actionResult: expect.objectContaining({
-          advertisementScore: 0,
-          qualityScore: 0
-        })
       },
       userId: 42
     }));
@@ -849,7 +831,7 @@ describe('processArticle AI analysis controls', () => {
     });
   });
 
-  it('reruns actions and enqueues analysis for a title-only publisher update', async () => {
+  it('reruns actions without enqueueing analysis for a title-only publisher update', async () => {
     mocked.updateArticle.mockResolvedValue(changedUpdatePlan({
       titleChanged: true,
       metadataChanged: true
@@ -876,8 +858,7 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
     expect(mocked.applyArticleUpdate).toHaveBeenCalledTimes(1);
     expect(mocked.applyArticleUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      derivedValues: expect.objectContaining({ aiAnalysisStatus: 'pending' }),
-      articleEnrichment: expect.objectContaining({ providerTags: ['AI'] })
+      derivedValues: { filteredInd: false }
     }));
     expect(result).toMatchObject({ updatedArticles: 1, errors: 0 });
   });
@@ -986,7 +967,7 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.applyArticleUpdate).toHaveBeenCalledTimes(1);
   });
 
-  it('uses fresh default derived analysis for changed content when AI is disabled', async () => {
+  it('preserves retained analysis for changed content when AI is disabled', async () => {
     mocked.updateArticle.mockResolvedValue(changedUpdatePlan({ contentChanged: true }));
 
     const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
@@ -1006,14 +987,8 @@ describe('processArticle AI analysis controls', () => {
 
     expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
     expect(mocked.applyArticleUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      derivedValues: expect.objectContaining({
-        contentSummaryBullets: [],
-        aiAnalysisStatus: 'skipped',
-        advertisementScore: 70,
-        sentimentScore: 70,
-        qualityScore: 70
-      }),
-      tagUpdates: expect.objectContaining({ inferredTags: [] })
+      derivedValues: { filteredInd: false },
+      tagUpdates: expect.not.objectContaining({ inferredTags: expect.anything() })
     }));
     expect(mocked.applyArticleUpdate.mock.calls[0][0]).not.toHaveProperty('articleEnrichment');
   });
@@ -1407,8 +1382,7 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
     expect(mocked.applyArticleUpdate).toHaveBeenCalledTimes(1);
     expect(mocked.applyArticleUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      derivedValues: expect.objectContaining({ aiAnalysisStatus: 'pending' }),
-      articleEnrichment: expect.objectContaining({ providerTags: ['Updates'] })
+      derivedValues: { filteredInd: false }
     }));
     expect(result).toMatchObject({ updatedArticles: 1, errors: 0 });
   });

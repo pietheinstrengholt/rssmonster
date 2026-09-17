@@ -13,6 +13,7 @@ const mocked = vi.hoisted(() => ({
 vi.mock('../../models/index.js', () => ({
   default: {
     Article: {
+      findAll: async () => [],
       findOne: mocked.articleFindOne
     },
     sequelize: {
@@ -731,7 +732,7 @@ describe('updateArticle', () => {
     expect(mocked.articleUpdate).not.toHaveBeenCalled();
   });
 
-  it('atomically applies source fields, derived fields, and tag reconciliation', async () => {
+  it('atomically applies source updates while excluding analysis and inferred-tag changes', async () => {
     const article = storedArticle();
     mocked.articleFindOne.mockResolvedValue(article);
     const module = await import('../../services/crawl/persistence/updateArticle.js');
@@ -742,7 +743,7 @@ describe('updateArticle', () => {
     await module.applyArticleUpdate({
       updatePlan,
       derivedValues: {
-        qualityScore: 90
+        qualityScore: 90, filteredInd: true
       },
       tagUpdates: {
         inferredTags: ['inferred-new'],
@@ -756,11 +757,12 @@ describe('updateArticle', () => {
     expect(mocked.articleUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Revised title',
-        qualityScore: 90
+        filteredInd: true
       }),
       { transaction: mocked.transaction }
     );
     const persistedValues = mocked.articleUpdate.mock.calls[0][0];
+    expect(persistedValues).not.toHaveProperty('qualityScore');
     expect(persistedValues).not.toHaveProperty('status');
     expect(persistedValues).not.toHaveProperty('favoriteInd');
     expect(persistedValues).not.toHaveProperty('clickedAmount');
@@ -770,12 +772,11 @@ describe('updateArticle', () => {
     }
     expect(persistedValues).not.toHaveProperty('articleVector');
     expect(persistedValues).not.toHaveProperty('embedding_model');
-    expect(persistedValues).not.toHaveProperty('eventId');
+    expect(persistedValues.eventId).toBeNull(); // Filtering removes Event eligibility.
 
     expect(mocked.replaceArticleDerivedTags).toHaveBeenCalledWith({
       articleId: article.id,
       userId: 42,
-      inferredTags: ['inferred-new'],
       providerTags: ['provider-tag'],
       feedTags: ['feed-tag'],
       ruleTags: ['rule-new'],
@@ -803,7 +804,7 @@ describe('updateArticle', () => {
     );
   });
 
-  it('enqueues revised article enrichment in the update transaction', async () => {
+  it('ignores enrichment requests and analysis mutations during publisher updates', async () => {
     const article = storedArticle();
     const module = await import('../../services/crawl/persistence/updateArticle.js');
     const updatePlan = await module.default({ id: 7, userId: 42 }, incomingArticle({
@@ -821,13 +822,8 @@ describe('updateArticle', () => {
       userId: 42
     });
 
-    expect(mocked.enqueueArticleEnrichmentJob).toHaveBeenCalledWith({
-      article,
-      userId: 42,
-      ...articleEnrichment,
-      transaction: mocked.transaction
-    });
-    expect(mocked.articleChanged).toHaveBeenCalledWith('aiAnalysisStatus', true);
+    expect(mocked.enqueueArticleEnrichmentJob).not.toHaveBeenCalled();
+    expect(mocked.articleUpdate.mock.calls[0][0]).not.toHaveProperty('aiAnalysisStatus');
   });
 
   it('skips lookup when external identity is incomplete', async () => {

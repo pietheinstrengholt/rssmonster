@@ -63,15 +63,16 @@ export function computeEventStrength({
   ).toFixed(3));
 }
 
-// This function recomputes event metadata while preserving the stable representative and valid developing pointer.
-export async function reconcileTouchedEvents(userId, touchedEventIds, transaction = null) {
+// Restore membership, projections and pointers, preserving representatives that remain valid.
+export async function reconcileTouchedEvents(userId, touchedEventIds, transaction = null, { excludedArticleIds = [] } = {}) {
   // Returns early when transaction is unavailable.
   if (!transaction) {
     // Runs the callback required while performing reconcile touched events.
     return db.sequelize.transaction(managedTransaction => reconcileTouchedEvents(
       userId,
       touchedEventIds,
-      managedTransaction
+      managedTransaction,
+      { excludedArticleIds }
     ));
   }
 
@@ -89,13 +90,15 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
     transaction,
     lock: transaction.LOCK.UPDATE
   });
+  const ownedEventIds = events.map(event => event.id);
 
   // Loads the all event articles needed while performing reconcile touched events.
   const allEventArticles = await Article.findAll({
     where: {
-      eventId: { [Op.in]: touchedIds },
+      eventId: { [Op.in]: ownedEventIds },
       userId,
-      ...canonicalArticleWhere()
+      ...canonicalArticleWhere(),
+      ...(excludedArticleIds.length ? { id: { [Op.notIn]: excludedArticleIds } } : {})
     },
     attributes: [
       'id',
@@ -134,9 +137,15 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
     // Derives the event articles required while performing reconcile touched events.
     const eventArticles = articlesByEventId[event.id] || [];
 
-    // Handles the case where event articles is empty.
-    if (!eventArticles.length) {
+    // Detach ineligible/pending-removal members, or every assignment when dissolving.
+    await Article.update({ eventId: null }, {
+      where: { userId, eventId: event.id,
+        ...(eventArticles.length >= 2 ? { id: { [Op.notIn]: eventArticles.map(article => article.id) } } : {}) },
+      transaction
+    });
+    if (eventArticles.length < 2) {
       await event.destroy({ transaction });
+      articlesByEventId[event.id] = [];
       continue;
     }
 
@@ -149,9 +158,14 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
       articleCount: projection.articleCount,
     });
     // Selects the developing article id while performing reconcile touched events.
-    const developingArticleId = selectDevelopingArticleId(event, eventArticles);
+    const representativeArticleId = eventArticles.some(article => Number(article.id) === Number(event.representativeArticleId))
+      ? event.representativeArticleId : eventArticles.reduce((id, article) => Math.min(id, Number(article.id)), Infinity);
+    const developingArticleId = selectDevelopingArticleId({
+      representativeArticleId, developingArticleId: event.developingArticleId
+    }, eventArticles);
 
     await event.update({
+      representativeArticleId,
       developingArticleId,
       ...projection,
       status,
@@ -170,4 +184,29 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
     touchedIds,
     articlesByEventId
   };
+}
+
+// Run before an eligibility loss or deletion in its transaction. Excluding pending
+// removals repairs representative FKs before their ON DELETE CASCADE can erase an Event.
+export async function prepareArticleEventRemoval(userId, articleWhere, transaction) {
+  if (!transaction) throw new Error('Event membership removal requires a transaction');
+  const articles = await Article.findAll({ where: { ...articleWhere, userId },
+    attributes: ['id', 'eventId'], transaction });
+  if (!articles.length) return { articleIds: [], articlesByEventId: {} };
+  const articleIds = articles.map(article => article.id);
+  const events = await Event.findAll({ where: { userId, [Op.or]: [
+    { id: { [Op.in]: articles.map(article => article.eventId).filter(id => id != null) } },
+    { representativeArticleId: { [Op.in]: articleIds } },
+    { developingArticleId: { [Op.in]: articleIds } }
+  ] }, attributes: ['id'], order: [['id', 'ASC']], transaction, lock: transaction.LOCK.UPDATE });
+  // Lock targets even when discovery found no Event. Re-read membership after a
+  // concurrent assignment, and prevent new assignments until the mutation commits.
+  const lockedArticles = await Article.findAll({ where: { ...articleWhere, userId, id: { [Op.in]: articleIds } },
+    attributes: ['id', 'eventId'], order: [['id', 'ASC']], transaction, lock: transaction.LOCK.UPDATE });
+  const removalIds = lockedArticles.map(article => article.id);
+  if (!removalIds.length) return { articleIds: [], articlesByEventId: {} };
+  const eventIds = [...new Set([...events.map(event => event.id), ...lockedArticles.map(article => article.eventId).filter(id => id != null)])];
+  const result = eventIds.length
+    ? await reconcileTouchedEvents(userId, eventIds, transaction, { excludedArticleIds: removalIds }) : { articlesByEventId: {} };
+  return { ...result, articleIds: removalIds };
 }

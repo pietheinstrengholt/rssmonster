@@ -151,7 +151,7 @@ export function buildArticleRecommendationExplanation(recommendation) {
   return {
     items,
     summary,
-    scoreLabel: score === null ? '' : `${Math.round(Math.max(0, Math.min(1, score)) * 100)}% recommendation score`
+    scoreLabel: score === null ? '' : `${Math.round(Math.min(1, score) * 100)}% recommendation score`
   };
 }
 

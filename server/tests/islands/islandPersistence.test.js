@@ -20,9 +20,9 @@ vi.mock('../../models/index.js', () => ({
 vi.mock('../../services/islands/islandArticleProfiles.js', () => ({ loadIslandBehavioralArticles: async () => [] }));
 vi.mock('../../services/islands/islandLifecycle.js', () => ({
   summarizeIslandLifecycle: () => ({ lastBehaviorAt: new Date(), confidence: 1 }),
-  reconstructIslandLifecycles: () => new Map([[2, { lastBehaviorAt: new Date('2000-01-01'), confidence: 0.01 }]]),
+  reconstructIslandLifecycles: () => new Map([[2, { lastBehaviorAt: new Date('2000-01-01'), confidence: 0.01, weight: 0 }]]),
   islandArchiveState: (island, support) => ({ archivedInd: support.confidence < 0.12,
-    archivedAt: support.confidence < 0.12 ? new Date() : null })
+    archivedAt: support.confidence < 0.12 ? new Date() : null, lastBehaviorAt: support.lastBehaviorAt })
 }));
 
 vi.mock('../../services/islands/islandAudit.js', () => ({
@@ -134,6 +134,34 @@ describe('island profile persistence', () => {
     expect(island.positiveSignals).toMatchObject({ stars: 1, clicks: 1 });
     await persistInterestIslandProfiles(3, [{ ...profile, positiveSignals: { stars: 1, clicks: 2 } }], 'tx');
     expect(island.positiveSignals).toMatchObject({ stars: 1, clicks: 2 });
+  });
+
+  it.each([false, true])('resolves a matched label against archived history (matched archive state: %s)', async archivedInd => {
+    const history = existingIsland({ id: 2, label: '  LOCAL AI  ', islandVector: [0, 1], archivedInd: true });
+    const matched = existingIsland({ id: 9, label: 'Previous', archivedInd });
+    mocks.islandFindAll.mockResolvedValue([history, matched]);
+    const profile = { embedding_model: 'test-model', vector: [1, 0], weight: 0.6,
+      label: 'Local AI', articles: [{ articleId: 8, score: 6 }], positiveSignals: { stars: 1 } };
+    await persistInterestIslandProfiles(3, [profile], 'tx');
+    expect(matched.label).toBe('Local AI (2)');
+    expect(matched.id).toBe(9);
+    expect(history.label).toBe('  LOCAL AI  ');
+    await persistInterestIslandProfiles(3, [profile], 'tx');
+    expect(matched.label).toBe('Local AI (2)');
+    expect(mocks.islandCreate).not.toHaveBeenCalled();
+  });
+
+  it('releases a replaced name and reserves the matched new name for later creations', async () => {
+    const matched = existingIsland({ label: 'Previous' });
+    mocks.islandFindAll.mockResolvedValue([matched]);
+    mocks.islandCreate.mockImplementation(async values => existingIsland({ id: 10, ...values }));
+    const profile = { embedding_model: 'test-model', vector: [1, 0], weight: 0.6,
+      label: 'Updated', articles: [{ articleId: 8, score: 6 }] };
+    await persistInterestIslandProfiles(3, [profile, { ...profile, vector: [0, 1], label: 'Previous' }], 'tx');
+    expect(mocks.islandCreate).toHaveBeenCalledWith(expect.objectContaining({ label: 'Previous' }), { transaction: 'tx' });
+    mocks.islandCreate.mockClear();
+    await persistInterestIslandProfiles(3, [profile, { ...profile, vector: [0, 1] }], 'tx');
+    expect(mocks.islandCreate).toHaveBeenCalledWith(expect.objectContaining({ label: 'Updated (2)' }), { transaction: 'tx' });
   });
 
   it('creates a unique island and archives an unmatched stale low-confidence island', async () => {

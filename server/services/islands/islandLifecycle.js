@@ -1,18 +1,26 @@
+import { islandBehaviorTime, islandExpiresAt, islandReactivationBoundary } from './islandDeadline.js';
 import { compatibleEmbeddingModels } from '../vectors/embeddingModel.js';
 import { signalTimestamp } from '../articles/articleBehaviorTime.js';
-import { computeArticleSignals } from './islandArticleProfiles.js';
+import { buildArticleIslandWeight, computeArticleSignals, qualifyingArticleBehaviorTime } from './islandArticleProfiles.js';
 import { deriveIslandConfidence, islandCohesion, prepareIslandEvidence } from './islandInterestConfidence.js';
 import { behaviorRecencyWeight, clamp, DEFAULT_ARTICLE_SIGNAL_THRESHOLD,
-  DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD, isStaleIsland, SIGNAL_HALF_LIFE_DAYS, SIGNAL_WEIGHTS } from './islandVectorUtils.js';
+  SIGNAL_HALF_LIFE_DAYS, SIGNAL_WEIGHTS } from './islandVectorUtils.js';
 
 // Lifecycle confidence measures remaining signed support; it does not change recommendation confidence.
-export function summarizeIslandLifecycle(articles, vector, embeddingModel = null) {
+export function summarizeIslandLifecycle(articles, vector, embeddingModel = null, resultingWeight) {
+  const evidence = articles.filter(article => compatibleEmbeddingModels(article.embedding_model, embeddingModel))
+    .map(article => {
+      const signals = computeArticleSignals(article);
+      return { article, signals, score: signals.positiveScore - signals.negativeScore };
+    }).filter(row => Math.abs(row.score) >= DEFAULT_ARTICLE_SIGNAL_THRESHOLD);
+  // Matched profiles already have their resulting weight. Reconstructed support uses
+  // the same production aggregation before any signal can advance the activity clock.
+  const weight = resultingWeight ?? buildArticleIslandWeight(evidence);
+  const preferenceSign = Math.sign(weight);
   let retainedSupport = 0;
   let lastBehaviorAt = null;
   const meaningfulSupport = [];
-  for (const article of articles) {
-    if (!compatibleEmbeddingModels(article.embedding_model, embeddingModel)) continue;
-    const signals = computeArticleSignals(article);
+  for (const { article, signals, score } of evidence) {
     const counts = signals.positiveSignals;
     const raw = {
       lastClickedAt: counts.clicks * SIGNAL_WEIGHTS.click,
@@ -21,9 +29,10 @@ export function summarizeIslandLifecycle(articles, vector, embeddingModel = null
       positiveFeedbackAt: counts.positives * SIGNAL_WEIGHTS.positive,
       negativeFeedbackAt: counts.negatives * SIGNAL_WEIGHTS.negative
     };
-    const magnitude = Math.abs(signals.positiveScore - signals.negativeScore);
-    if (magnitude < DEFAULT_ARTICLE_SIGNAL_THRESHOLD) continue;
+    const magnitude = Math.abs(score);
     meaningfulSupport.push(article);
+    const behaviorAt = qualifyingArticleBehaviorTime(article, signals, preferenceSign)?.getTime();
+    if (behaviorAt != null && (lastBehaviorAt == null || behaviorAt > lastBehaviorAt)) lastBehaviorAt = behaviorAt;
     let signalRetention = 0;
     for (const [field, strength] of Object.entries(raw)) {
       const time = signalTimestamp(article, field);
@@ -31,9 +40,6 @@ export function summarizeIslandLifecycle(articles, vector, embeddingModel = null
       if (strength * recency < DEFAULT_ARTICLE_SIGNAL_THRESHOLD) continue;
       // Normalize each signal independently so aging clicks cannot dilute a surviving favorite.
       signalRetention = Math.max(signalRetention, recency);
-      if (time == null) continue;
-      const timestamp = new Date(time).getTime();
-      if (Number.isFinite(timestamp) && timestamp <= Date.now() && (lastBehaviorAt == null || timestamp > lastBehaviorAt)) lastBehaviorAt = timestamp;
     }
     // A strong surviving preference must not be diluted by a large volume of old weak history.
     // Preserve signed cancellation after independent normalization; never hide opposing evidence.
@@ -42,6 +48,7 @@ export function summarizeIslandLifecycle(articles, vector, embeddingModel = null
     retainedSupport = Math.max(retainedSupport, signalRetention * agreement);
   }
   return {
+    weight,
     lastBehaviorAt: lastBehaviorAt == null ? null : new Date(lastBehaviorAt),
     retainedSupport,
     confidence: deriveIslandConfidence(islandCohesion(meaningfulSupport, vector, embeddingModel)) * retainedSupport
@@ -54,18 +61,25 @@ export function reconstructIslandLifecycles(islands, articles) {
   const rows = islands.map(island => typeof island.get === 'function' ? island.get({ plain: true }) : island);
   const { islands: prepared } = prepareIslandEvidence(rows, articles, []);
   return new Map(prepared.map(island => [island.id,
-    summarizeIslandLifecycle(island.seedArticleIds.map(id => byId.get(String(id))), island.islandVector, island.embedding_model)]));
+    { ...summarizeIslandLifecycle(island.seedArticleIds.map(id => byId.get(String(id))), island.islandVector, island.embedding_model),
+      sourceArticleIds: island.seedArticleIds }]));
 }
 
 export function islandArchiveState(island, support, now = new Date()) {
-  const weak = support.confidence < DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD;
-  const stale = isStaleIsland(support);
-  if (island?.archivedInd) {
-    const archivedAt = island.archivedAt == null ? NaN : new Date(island.archivedAt).getTime();
-    const newerBehavior = support.lastBehaviorAt != null && (Number.isFinite(archivedAt)
-      ? support.lastBehaviorAt.getTime() > archivedAt : !stale);
-    if (!weak && newerBehavior) return { archivedInd: false, archivedAt: null };
-    return { archivedInd: true, archivedAt: island.archivedAt ?? now };
-  }
-  return { archivedInd: weak && stale, archivedAt: weak && stale ? now : null };
+  const currentTime = Number(now);
+  const previousTime = islandBehaviorTime(island?.lastBehaviorAt, currentTime);
+  const supportingTime = islandBehaviorTime(support?.lastBehaviorAt, currentTime);
+  const supportExpiry = islandExpiresAt(support, currentTime)?.getTime();
+  // Expiry is the boundary even when its archival write was delayed. Early capacity
+  // archival instead uses the earlier archive time; unchanged evidence cannot cross it.
+  const boundary = islandReactivationBoundary(island, currentTime);
+  const unknownArchive = island?.archivedInd && boundary == null;
+  const canActivate = supportingTime != null && supportExpiry > currentTime
+    && !unknownArchive && (boundary == null || supportingTime > boundary);
+  return {
+    lastBehaviorAt: supportingTime == null
+      ? previousTime == null ? null : new Date(previousTime) : new Date(supportingTime),
+    archivedInd: !canActivate,
+    archivedAt: canActivate ? null : new Date(boundary ?? Math.min(supportExpiry ?? currentTime, currentTime))
+  };
 }

@@ -57,7 +57,7 @@ export async function handleExplicitFeedbackRefresh(job, { assertLease }) {
 }
 
 const islandSnapshot = async userId => new Map((await db.Island.findAll({
-  where: { userId }, attributes: ['id', 'weight', 'islandVector', 'positiveSignals', 'archivedInd'],
+  where: { userId }, attributes: ['id', 'weight', 'islandVector', 'positiveSignals', 'archivedInd', 'lastBehaviorAt'],
   order: [['id', 'ASC']], raw: true
 })).map(island => [String(island.id), JSON.stringify(island)]));
 

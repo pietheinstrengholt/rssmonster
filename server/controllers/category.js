@@ -1,4 +1,5 @@
 import db from '../models/index.js';
+import { prepareArticleEventRemoval } from '../services/events/eventReconciliation.js';
 const { Category, Feed } = db;
 
 const getCategories = async (req, res, _next) => {
@@ -142,13 +143,14 @@ const deleteCategory = async (req, res, _next) => {
       });
     }
 
-    // Delete all feeds associated with this category
-    await Feed.destroy({
-      where: { categoryId: category.id }
+    await db.sequelize.transaction(async transaction => {
+      const feeds = await Feed.findAll({ where: { categoryId: category.id, userId }, attributes: ['id'],
+        order: [['id', 'ASC']], transaction, lock: transaction.LOCK.UPDATE });
+      await prepareArticleEventRemoval(userId, { feedId: feeds.map(feed => feed.id) }, transaction);
+      // Delete all feeds associated with this category, then the category.
+      await Feed.destroy({ where: { categoryId: category.id, userId }, transaction });
+      await category.destroy({ transaction });
     });
-
-    // Delete the category
-    await category.destroy();
 
     return res.status(204).send();
   } catch (err) {

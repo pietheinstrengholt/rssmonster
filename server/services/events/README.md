@@ -127,6 +127,28 @@ The stable representative is assigned when the Event is created. Normal incremen
 processing must never replace a valid `representativeArticleId` when newer Articles
 join the Event.
 
+Reconciliation repairs an invalid/missing representative to the eligible member
+with the lowest Article ID, while preserving any representative that remains a
+member. Eligibility requires the same owner, an existing unfiltered Article and
+no `duplicateOfArticleId`; read Articles remain eligible. Counts, vectors, source
+diversity and coverage windows are rebuilt from those members. Invalid developing
+pointers use the existing deterministic selection policy after anchor repair.
+
+Events with fewer than two eligible members are dissolved: all remaining owned
+assignments are cleared and the Event is deleted in the same transaction. Ineligible
+assignments are also detached from Events that remain valid. Article reading state,
+preferences, analysis and embeddings survive dissolution.
+
+`prepareArticleEventRemoval` runs within eligibility-changing transactions before
+filtering, duplicate conversion or deletion. It excludes pending removals and
+repairs pointers before the representative foreign key can cascade-delete a valid
+Event. Publisher-rule filtering, cleanup, feed/category deletion and overlapping
+Article consolidation use this shared maintenance. Feed consolidation reconciles
+source projections again after all moves. Standalone reconciliation supplies its
+own transaction; callers already mutating membership pass their existing one.
+Cleanup rechecks its removal predicate under lock and deletes only captured IDs,
+so a concurrently favorited Article keeps its membership.
+
 ## Developing article
 
 ```
@@ -314,6 +336,9 @@ For every Article:
 6. Evaluate every Event through `evaluateArticleAgainstEvent` in `eventOccurrencePolicy.js`.
 7. Select a clear winner, leave ambiguous coverage unassigned, or consider new Event creation.
 8. Revalidate membership inside the existing transaction before writing.
+9. Eventless proposals never clear membership. Recheck the owned Article under a row lock,
+   preserve any concurrent committed assignment, and synchronize the result and candidate
+   caches with that observation. Membership additions and Event projections commit together.
 
 The shared policy separates hard ownership/canonical/time gates from supporting
 semantic, headline, and entity evidence. Either the centroid/name or the strongest
@@ -701,3 +726,10 @@ news domain. Event IDs in output are diagnostic, never fixture expectations.
 
 Different occurrences can still be relevant to the same personal interest;
 interest affinity does not establish occurrence identity.
+
+
+Operator-initiated recent repair detaches its selected Articles and reconciles every
+previously affected Event in one membership transaction before reassignment. Events
+with fewer than two survivors dissolve; valid survivors retain repaired projections
+and pointers even if later reassignment fails. Concurrent assignments are rechecked
+under the same removal locks used by eligibility-changing paths.

@@ -76,7 +76,7 @@ async function createBriefingFixture() {
   });
   await Setting.create({ userId: owner.id });
 
-  const island = await Island.create({
+  const island = await Island.create({ lastBehaviorAt: new Date(),
     userId: owner.id,
     label: 'Artificial Intelligence',
     embedding_model: 'test-model', islandVector: [1, 0],

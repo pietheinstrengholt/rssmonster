@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { sortArticles } from '../../services/articleSearch/articleSort.service.js';
 import {
   buildRecommendationPresentation,
   computeRecommended,
@@ -106,9 +107,9 @@ describe('computeRecommended', () => {
     expect(ordinary - computeRecommended(lowTrust)).toBeCloseTo(0.03, 6);
   });
 
-  it('keeps final scores within zero and one', () => {
+  it('preserves the negative lower bound and established upper cap', () => {
     expect(computeRecommended(articleWith({ interestScore: -5, freshness: -2, quality: 0 })))
-      .toBe(0);
+      .toBe(-0.30);
     expect(computeRecommended(articleWith({
       interestScore: 5,
       freshness: 5,
@@ -116,6 +117,19 @@ describe('computeRecommended', () => {
       event: strongEvent,
       tags: [{ tagType: 'rule' }]
     }))).toBe(1);
+  });
+
+  it('keeps distinct negative totals ordered below neutral and positive totals', () => {
+    const articles = [-1, -0.5, 0, 0.5].map((interestScore, index) => ({
+      id: 4 - index, ...articleWith({ interestScore, freshness: 0, quality: 0 })
+    }));
+    expect(articles.map(computeRecommended)).toEqual([-0.3, -0.15, 0, 0.225]);
+    expect(sortArticles(articles, { sortRecommended: true }).map(article => article.id)).toEqual([1, 2, 3, 4]);
+  });
+
+  it('serializes a negative final score without losing its sign or precision', () => {
+    const article = articleWith({ interestScore: -0.54321, freshness: 0, quality: 0 });
+    expect(JSON.parse(JSON.stringify(buildRecommendationPresentation(article))).score).toBe(-0.163);
   });
 
   it('exposes the signed-interest and shared-event breakdown', () => {

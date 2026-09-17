@@ -78,7 +78,7 @@ describe('durable personalization refresh', () => {
     await candidate.reload(); expect(candidate.interestScore).toBeLessThan(0);
   });
 
-  it('weakens aged negative evidence when the existing refresh recalibrates and rescores', async () => {
+  it('expires year-old negative evidence when the existing refresh recalibrates and rescores', async () => {
     const { user, source, candidate } = await fixture();
     await updateArticleBehavior(source, { negativeInd: 1, negativeFeedbackAt: new Date() });
     expect((await executeClaimedProcessingJob(await claim(user.id))).status).toBe('succeeded');
@@ -96,7 +96,8 @@ describe('durable personalization refresh', () => {
     expect(Number(island.weight)).toBeGreaterThan(freshWeight);
     expect(Number(island.weight)).toBeLessThan(0);
     expect(Number(candidate.interestScore)).toBeGreaterThan(freshScore);
-    expect(Number(candidate.interestScore)).toBeLessThan(0);
+    expect(Number(candidate.interestScore)).toBe(0);
+    expect(island.archivedInd).toBe(true);
     expect(island.positiveSignals.negatives).toBe(1);
   });
 

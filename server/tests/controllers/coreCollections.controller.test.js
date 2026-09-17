@@ -6,6 +6,7 @@ const mocked = vi.hoisted(() => ({
   actionDestroy: vi.fn(),
   actionFindAll: vi.fn(),
   transaction: vi.fn(),
+  prepareArticleEventRemoval: vi.fn(),
   articleDestroy: vi.fn(),
   articleFindAll: vi.fn(),
   articleLiteral: vi.fn(sql => ({ sql })),
@@ -14,6 +15,10 @@ const mocked = vi.hoisted(() => ({
   eventFindOne: vi.fn(),
   tagFindAll: vi.fn(),
   settingFindOne: vi.fn()
+}));
+
+vi.mock('../../services/events/eventReconciliation.js', () => ({
+  prepareArticleEventRemoval: mocked.prepareArticleEventRemoval
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -439,17 +444,19 @@ describe('tag and cleanup controllers', () => {
   });
 
   it('deletes only old non-favorite articles owned by the user', async () => {
+    mocked.transaction.mockImplementation(callback => callback('cleanup-transaction'));
+    mocked.prepareArticleEventRemoval.mockResolvedValue({ articleIds: [1, 2, 3] });
     mocked.articleDestroy.mockResolvedValue(3);
     const res = createResponse();
 
     await cleanupController.cleanup(createRequest(), res);
 
+    expect(mocked.prepareArticleEventRemoval).toHaveBeenCalledWith(42, {
+      favoriteInd: 0, createdAt: { [Op.lte]: expect.any(Date) }, userId: 42
+    }, 'cleanup-transaction');
     expect(mocked.articleDestroy).toHaveBeenCalledWith({
-      where: {
-        favoriteInd: 0,
-        createdAt: { [Op.lte]: expect.any(Date) },
-        userId: 42
-      }
+      where: { userId: 42, id: { [Op.in]: [1, 2, 3] } },
+      transaction: 'cleanup-transaction'
     });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
@@ -471,6 +478,8 @@ describe('tag and cleanup controllers', () => {
   });
 
   it('returns cleanup persistence errors as server errors', async () => {
+    mocked.transaction.mockImplementation(callback => callback('cleanup-transaction'));
+    mocked.prepareArticleEventRemoval.mockResolvedValue({ articleIds: [1] });
     mocked.articleDestroy.mockRejectedValue(new Error('cleanup failed'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const res = createResponse();

@@ -67,9 +67,7 @@ describe('assignArticleToEvent edge behavior', () => {
     );
 
     expect(eventId).toBeNull();
-    expect(article.update).toHaveBeenCalledWith({
-      eventId: null
-    });
+    expect(article.update).not.toHaveBeenCalled();
     expect(runContext.stats.eventlessInsufficientCandidatesCount).toBe(1);
     expect(runContext.records).toContainEqual(expect.objectContaining({
       id: article.id,

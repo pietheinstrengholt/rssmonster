@@ -12,7 +12,7 @@ import {
 } from '../config/semanticConfig.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { logEventProcessingSummary } from '../events/eventPipelineDebug.js';
-import { reconcileTouchedEvents } from '../events/eventReconciliation.js';
+import { reconcileTouchedEvents, prepareArticleEventRemoval } from '../events/eventReconciliation.js';
 import { HOUR_MS } from '../events/articleEventTime.js';
 import { recordProcessingFailure } from '../observability/processingFailures.js';
 import { tryEnqueueGeneratedSemanticLabelJobsForUser } from '../semanticLabels/semanticLabelJobs.js';
@@ -535,8 +535,6 @@ export async function repairRecentEventsForUser(userId, _options = {}) {
   const ownedPreviousEventIds = new Set(
     ownedPreviousEventRows.map(event => Number(event.id)).filter(Number.isFinite)
   );
-  // Collects the owned previous event id list while performing repair recent events for user.
-  const ownedPreviousEventIdList = [...ownedPreviousEventIds];
 
   debugSemanticLog('event',
     `[EVENT] ${windowArticles.length} articles in ` +
@@ -544,39 +542,23 @@ export async function repairRecentEventsForUser(userId, _options = {}) {
     `(${ownedPreviousEventIds.size}/${previousEventIds.size} events affected)`
   );
 
-  await Article.update(
-    { eventId: null },
-    { where: { id: { [Op.in]: windowArticleIds }, ...canonicalArticleWhere() } }
-  );
-
-  let deletedCount = 0;
-
-  if (ownedPreviousEventIds.size) {
-    const retainedEventRows = await Article.findAll({
-      where: {
-        eventId: { [Op.in]: ownedPreviousEventIdList },
-        userId,
-        ...canonicalArticleWhere()
-      },
-      attributes: ['eventId'],
-      group: ['eventId'],
-      raw: true
-    });
-    const retainedEventIds = new Set(
-      retainedEventRows.map(row => Number(row.eventId)).filter(Number.isFinite)
-    );
-    const emptyEventIds = ownedPreviousEventIdList.filter(id => !retainedEventIds.has(id));
-
-    if (emptyEventIds.length) {
-      deletedCount = await Event.destroy({
-        where: { id: { [Op.in]: emptyEventIds }, userId }
+  // Commit detachment with repair of every affected Event, including outside-window
+  // survivors. A failed/retried assignment pass must not leave stale projections.
+  const deletedCount = await db.sequelize.transaction(async transaction => {
+    const removal = await prepareArticleEventRemoval(userId, {
+      id: { [Op.in]: windowArticleIds }, ...canonicalArticleWhere()
+    }, transaction);
+    if (removal.articleIds.length) {
+      await Article.update({ eventId: null }, {
+        where: { userId, id: { [Op.in]: removal.articleIds } }, transaction
       });
     }
-  }
+    return Object.values(removal.articlesByEventId).filter(members => members.length < 2).length;
+  });
 
   // Handles the case where deleted count is available.
   if (deletedCount) {
-    debugSemanticLog('event', `[EVENT] Removed ${deletedCount} empty events`);
+    debugSemanticLog('event', `[EVENT] Removed ${deletedCount} undersized events`);
   }
 
   // Derives the repair result through run event assignment pass while performing repair recent events for user.

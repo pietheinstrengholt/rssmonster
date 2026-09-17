@@ -380,23 +380,41 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   article.tokenSet ??= tokenSet(article.title || '');
   article.entitySet ??= extractEntitySet(article);
 
+  // A rejected proposal is not a membership removal. Observe committed membership
+  // under lock so stale discovery cannot clear another worker's assignment.
+  const finishWithoutAssignment = async (decision, reasons, stat = null, trace = null) => {
+    const eventId = await db.sequelize.transaction(async transaction => {
+      const current = await Article.findOne({
+        where: { id: article.id, userId: article.userId },
+        attributes: ['id', 'eventId'],
+        transaction,
+        lock: transaction.LOCK.UPDATE
+      });
+      return current?.eventId ?? null;
+    });
+    article.eventId = eventId;
+    articleCandidateCache?.updateEventId?.([article.id], eventId);
+    upsertRunContextRecord(runContext, {
+      id: article.id, feedId: article.feedId, title: article.title,
+      description: article.description, publishedAt: article.publishedAt, createdAt: article.createdAt,
+      eventId, embedding_model: article.embedding_model, eventVector: articleEventVector
+    });
+    if (eventId != null) {
+      decision = 'join';
+      reasons = ['membership_already_assigned'];
+      if (runContext) {
+        runContext.lastDecision = { ...runContext.lastDecision, decision, reasons };
+      }
+    } else if (stat) {
+      incrementRunStat(runContext, stat);
+    }
+    trace?.(eventId, decision, reasons, eventId != null ? 'reused' : 'eventless');
+    return eventId;
+  };
+
   // Handles the case where article event vector is unavailable.
   if (!articleEventVector) {
-    await article.update({ eventId: null });
-    incrementRunStat(runContext, 'eventlessNoVectorCount');
-
-    upsertRunContextRecord(runContext, {
-      id: article.id,
-      feedId: article.feedId,
-      title: article.title,
-      description: article.description,
-      publishedAt: article.publishedAt,
-      createdAt: article.createdAt,
-      eventId: null,
-      eventVector: null
-    });
-
-    return null;
+    return finishWithoutAssignment('reject', ['no_vector'], 'eventlessNoVectorCount');
   }
 
   // Discover both paths before deciding; an early centroid winner could hide ambiguity.
@@ -539,8 +557,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       if (runContext) runContext.lastDecision = {
         ...diagnostics, decision: 'reject', reasons: ['membership_changed']
       };
-      traceOutcome(null, 'reject', ['membership_changed'], 'eventless');
-      return null;
+      return finishWithoutAssignment('reject', ['membership_changed'], null, traceOutcome);
     }
 
     upsertRunContextRecord(runContext, {
@@ -568,17 +585,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     return updatedEventId;
   }
 
-  await article.update({ eventId: null });
   if (selection.decision === 'ambiguous') {
-    incrementRunStat(runContext, 'ambiguousArticleCount');
-    upsertRunContextRecord(runContext, {
-      id: article.id, feedId: article.feedId, title: article.title,
-      description: article.description, publishedAt: article.publishedAt, createdAt: article.createdAt,
-      eventId: null, embedding_model: article.embedding_model, eventVector: articleEventVector
-    });
-    articleCandidateCache?.updateEventId?.([article.id], null);
-    traceOutcome(null, 'ambiguous', selection.reasons, 'eventless');
-    return null;
+    return finishWithoutAssignment('ambiguous', selection.reasons, 'ambiguousArticleCount', traceOutcome);
   }
 
   const corroboratedArticleCount = unassignedCandidates.length + 1;
@@ -591,23 +599,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     corroboratedArticleCount < MIN_EVENT_ARTICLES ||
     (REQUIRE_MULTI_SOURCE_FOR_EVENT && corroboratedSourceCount < MIN_EVENT_SOURCES)
   ) {
-    await article.update({ eventId: null });
-    incrementRunStat(runContext, 'eventlessInsufficientCandidatesCount');
-
-    upsertRunContextRecord(runContext, {
-      id: article.id,
-      feedId: article.feedId,
-      title: article.title,
-      description: article.description,
-      publishedAt: article.publishedAt,
-      createdAt: article.createdAt,
-      eventId: null,
-      embedding_model: article.embedding_model, eventVector: articleEventVector
-    });
-    articleCandidateCache?.updateEventId?.([article.id], null);
-    traceOutcome(null, 'reject', ['insufficient_creation_support'], 'eventless');
-
-    return null;
+    return finishWithoutAssignment('reject', ['insufficient_creation_support'],
+      'eventlessInsufficientCandidatesCount', traceOutcome);
   }
 
   // Creates the and assign event while assigning article to event.
@@ -636,6 +629,10 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       `avgSim=${formatEventMetric(avgSim)} ` +
       `sources=${corroboratedSourceCount} decision=new-event`
     );
+  }
+
+  if (!newEventId) {
+    return finishWithoutAssignment('reject', ['seed_group_not_assigned'], null, traceOutcome);
   }
 
   // Only committed creation may change neighboring candidate-cache membership.

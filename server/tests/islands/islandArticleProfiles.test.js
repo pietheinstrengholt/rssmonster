@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   findAll: vi.fn()
@@ -18,6 +18,21 @@ import {
 describe('behavioral article island profiles', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-17T00:00:00Z'));
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  it('does not let a fresh opposing click make expired negative evidence consume a formation slot', async () => {
+    mocks.findAll.mockResolvedValue([
+      { id: 1, title: 'Old dislike', articleVector: [1, 0], embedding_model: 'model-a', negativeInd: 1,
+        negativeFeedbackAt: new Date(Date.now() - 100 * 86400000), clickedAmount: 2, lastClickedAt: new Date() },
+      { id: 2, title: 'New interest', articleVector: [0, 1], embedding_model: 'model-a', clickedAmount: 1, lastClickedAt: new Date() }
+    ]);
+    const profiles = await buildInterestIslandProfilesForUser(12, { maxIslands: 1 });
+    expect(profiles).toHaveLength(1);
+    expect(profiles[0].articles.map(article => article.articleId)).toEqual([2]);
   });
 
   it.each(['model-a', null, 'model-b'])('derives profile model metadata from article evidence: %s', async model => {
@@ -33,7 +48,7 @@ describe('behavioral article island profiles', () => {
   });
 
   it.each([[0, 0], [1, 1], [2, 2], [3, 2], [20, 2]])('scores %i clicks as %i points before decay', (clickedAmount, expected) => {
-    const result = computeArticleSignals({ clickedAmount, lastClickedAt: new Date(Date.now() + 60000) });
+    const result = computeArticleSignals({ clickedAmount, lastClickedAt: new Date() });
     expect(result.positiveScore).toBe(expected);
     expect(result.positiveSignals.clicks).toBe(expected);
   });
@@ -44,7 +59,7 @@ describe('behavioral article island profiles', () => {
 
   it('keeps a fresh favorite, capped clicks and deep read below a fresh dislike', () => {
     const result = computeArticleSignals({ favoriteInd: 1, clickedAmount: 20, attentionBucket: 3,
-      negativeInd: 1, publishedAt: new Date(Date.now() + 60000) });
+      negativeInd: 1, publishedAt: new Date() });
     expect(result.positiveScore - result.negativeScore).toBe(-1);
   });
 
@@ -55,7 +70,7 @@ describe('behavioral article island profiles', () => {
       clickedAmount: 8,
       attentionBucket: 3,
       negativeInd: 0,
-      publishedAt: new Date(Date.now() + 60_000)
+      publishedAt: new Date()
     });
 
     expect(result).toEqual({
@@ -72,22 +87,22 @@ describe('behavioral article island profiles', () => {
     [{ positiveInd: 1, negativeInd: 1 }, 0, 8],
     [{}, 0, 0]
   ])('scores explicit feedback and resolves legacy conflicts: %j', (flags, positiveScore, negativeScore) => {
-    expect(computeArticleSignals({ ...flags, publishedAt: new Date(Date.now() + 60_000) }))
+    expect(computeArticleSignals({ ...flags, publishedAt: new Date() }))
       .toMatchObject({ positiveScore, negativeScore });
   });
 
   it('preserves independent engagement when resolving contradictory explicit feedback', () => {
     expect(computeArticleSignals({ positiveInd: 1, negativeInd: 1, favoriteInd: 1,
-      clickedAmount: 8, attentionBucket: 3, publishedAt: new Date(Date.now() + 60_000) }))
+      clickedAmount: 8, attentionBucket: 3, publishedAt: new Date() }))
       .toEqual({ positiveScore: 7, negativeScore: 8, engagementScore: 7,
         positiveSignals: { positives: 0, stars: 1, clicks: 2, deepReads: 1, negatives: 1 } });
   });
 
   it('leaves below-threshold evidence unassigned when the community cap is reached', async () => {
     mocks.findAll.mockResolvedValue([
-      { id: 1, title: 'Primary', embedding_model: 'test-model', articleVector: [1, 0], positiveInd: 1, publishedAt: new Date(Date.now() + 60_000) },
-      { id: 2, title: 'Related', embedding_model: 'test-model', articleVector: [0.99, 0.01], favoriteInd: 1, publishedAt: new Date(Date.now() + 60_000) },
-      { id: 3, title: 'Different', embedding_model: 'test-model', articleVector: [0, 1], clickedAmount: 1, publishedAt: new Date(Date.now() + 60_000) },
+      { id: 1, title: 'Primary', embedding_model: 'test-model', articleVector: [1, 0], positiveInd: 1, publishedAt: new Date() },
+      { id: 2, title: 'Related', embedding_model: 'test-model', articleVector: [0.99, 0.01], favoriteInd: 1, publishedAt: new Date() },
+      { id: 3, title: 'Different', embedding_model: 'test-model', articleVector: [0, 1], clickedAmount: 1, publishedAt: new Date() },
       { id: 4, title: 'No vector', embedding_model: 'test-model', articleVector: null, positiveInd: 1 },
       { id: 5, title: 'No signal', embedding_model: 'test-model', articleVector: [1, 0] }
     ]);
