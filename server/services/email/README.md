@@ -17,7 +17,7 @@ backoff; permanent failures and exhausted deliveries become terminal.
 
 When email is enabled, `bootstrap.js` starts a bounded delivery runner in the web process. It
 verifies the SMTP transport at startup, immediately drains pending work, and polls every five
-seconds for new or retryable deliveries. Database leases preserve safe behavior when multiple
+minutes for new or retryable deliveries. Database leases preserve safe behavior when multiple
 web processes run concurrently. Lifecycle logs contain delivery IDs, user IDs, message types,
 attempt counts, statuses, and sanitized error codes only.
 

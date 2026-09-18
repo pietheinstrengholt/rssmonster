@@ -77,7 +77,7 @@ subscriptions, not article content or reading state.
 
 When email is enabled, the web process starts the SMTP outbox worker and the
 Daily Briefing scheduler. The scheduler checks bounded batches every five
-minutes; the delivery worker polls every five seconds. Keep the web process
+minutes; the delivery worker polls every five minutes. Keep the web process
 running for scheduled delivery. This workflow is separate from the AI worker.
 See [Email Configuration]({% link email-configuration.md %}) for delivery logs and retries.
 

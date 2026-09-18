@@ -1,6 +1,6 @@
 import { createMailService } from './emailService.js';
 
-export const EMAIL_DELIVERY_POLL_INTERVAL_MS = 5000;
+export const EMAIL_DELIVERY_POLL_INTERVAL_MS = 5 * 60 * 1000;
 export const EMAIL_DELIVERY_BATCH_SIZE = 10;
 
 const valueOf = (row, field) => row?.get ? row.get(field) : row?.[field];

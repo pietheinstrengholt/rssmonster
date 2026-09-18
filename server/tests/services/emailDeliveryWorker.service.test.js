@@ -48,7 +48,7 @@ describe('email delivery worker', () => {
     expect(logs).toContain('outbox.claimed count=1');
     expect(logs).not.toContain('private@example.com');
     expect(logs).not.toContain('secret-token');
-    expect(EMAIL_DELIVERY_POLL_INTERVAL_MS).toBe(5000);
+    expect(EMAIL_DELIVERY_POLL_INTERVAL_MS).toBe(300_000);
   });
 
   it('logs only safe SMTP diagnostics and continues to inspect the outbox', async () => {
