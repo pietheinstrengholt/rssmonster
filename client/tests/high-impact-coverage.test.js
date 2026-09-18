@@ -240,8 +240,6 @@ describe('Article high-impact decision coverage', () => {
     expect(compute(Article, 'hasInterestScore', { interestScore: 'invalid' })).toBe(false);
     expect(compute(ArticleHeadlineRow, 'favoriteLabel', { favoriteInd: 1 })).toBe('Unmark favorite');
     expect(compute(ArticleHeadlineRow, 'favoriteLabel', { favoriteInd: 0 })).toBe('Mark as favorite');
-    expect(compute(ArticleHeadlineRow, 'statusToggleLabel', { status: 'read' })).toContain('unread');
-    expect(compute(ArticleHeadlineRow, 'statusToggleLabel', { status: 'unread' })).toContain('read');
 
     expect(compute(Article, 'feedFavicon', {
       feed: { favicon: 'direct.ico' },
@@ -977,7 +975,7 @@ describe('Vue template handler coverage', () => {
 
     stores.selectionStore.currentSelection.viewMode = 'minimal';
     await wrapper.vm.$nextTick();
-    await wrapper.get('.article-list-status').trigger('click');
+    wrapper.findComponent(ArticleHeadlineRow).findComponent({ name: 'EmitterStub' }).vm.$emit('toggle-read-status');
     expect(wrapper.emitted('toggle-minimal-read-status')).toEqual([[{ id: 11, status: 'unread' }]]);
     wrapper.unmount();
   });

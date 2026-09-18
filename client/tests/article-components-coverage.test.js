@@ -247,7 +247,7 @@ describe('ArticleHeadlineRow state presentation', () => {
       'is-read'
     ]);
     expect(wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon')))
-      .toEqual(expect.arrayContaining(['circle-fill', 'lightning-charge-fill', 'fire', 'bookmark-fill']));
+      .toEqual(expect.arrayContaining(['lightning-charge-fill', 'fire', 'bookmark-fill']));
   });
 });
 

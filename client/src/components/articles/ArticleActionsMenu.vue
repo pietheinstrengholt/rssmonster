@@ -9,7 +9,7 @@
       <ul v-bind="menuProps">
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="favoritePending" @click="$emit('toggle-favorite')"><BootstrapIcon :icon="favoriteInd ? 'bookmark-fill' : 'bookmark'" context="control" class="recommendation-action-icon recommendation-favorite-icon" />{{ favoriteInd ? 'Unmark favorite' : 'Mark as favorite' }}</button></li>
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="clickPending" @click="$emit('toggle-clicked')"><BootstrapIcon icon="arrow-up-right-square-fill" class="recommendation-action-icon recommendation-clicked-icon" />{{ clickedAmount > 0 ? 'Unmark clicked' : 'Mark as clicked' }}</button></li>
-      <li v-if="isReaderMode" role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" @click="$emit('toggle-read-status')"><BootstrapIcon :icon="status === 'read' ? 'circle-fill' : 'record-circle-fill'" context="control" class="recommendation-action-icon recommendation-status-icon" />{{ status === 'read' ? 'Mark as unread' : 'Mark as read' }}</button></li>
+      <li v-if="isReaderMode || showReadStatus" role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" @click="$emit('toggle-read-status')"><BootstrapIcon :icon="status === 'read' ? 'circle-fill' : 'record-circle-fill'" context="control" class="recommendation-action-icon recommendation-status-icon" />{{ status === 'read' ? 'Mark as unread' : 'Mark as read' }}</button></li>
       <li role="none"><hr class="app-dropdown__divider" /></li>
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" @click="$emit('more-like-this')"><BootstrapIcon icon="hand-thumbs-up-fill" class="recommendation-action-icon recommendation-positive-icon" />More like this</button></li>
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" @click="$emit('not-interested')"><BootstrapIcon icon="hand-thumbs-down-fill" class="recommendation-action-icon recommendation-negative-icon" />Not Interested</button></li>
@@ -31,6 +31,7 @@ export default {
     favoriteInd: { type: Number, default: 0 },
     favoritePending: { type: Boolean, default: false },
     isReaderMode: { type: Boolean, default: false },
+    showReadStatus: { type: Boolean, default: false },
     status: { type: String, default: '' }
   }
 };

@@ -287,7 +287,7 @@ describe('ArticleFeed visibility tracking', () => {
     expect(context.addToPool).toHaveBeenCalledWith(7);
   });
 
-  it('does not persist seen state when a mobile headline passes the viewport', async () => {
+  it('persists seen state when a mobile headline passes the viewport', async () => {
     const context = {
       ...createFocusedStores({
         selection: {
@@ -301,13 +301,15 @@ describe('ArticleFeed visibility tracking', () => {
       visibleSince: new Map(),
       visibleDuration: new Map(),
       finalizeVisibleDuration: vi.fn(),
-      markArticleSeen: vi.fn()
+      markArticleSeen: vi.fn().mockResolvedValue(true)
     };
 
     await articleFeedVisibilityMethods.addToPool.call(context, 12);
 
     expect(context.pool).toEqual(new Set([12]));
-    expect(context.markArticleSeen).not.toHaveBeenCalled();
+    expect(context.markArticleSeen).toHaveBeenCalledWith(12, 0, expect.objectContaining({
+      selection: expect.objectContaining({ viewMode: 'minimal' })
+    }));
   });
 
   it('keeps the extracted methods on the ArticleFeed Options API surface', () => {

@@ -79,7 +79,7 @@
                 </span>
 
                 <span class="briefing-preferences-option-description">
-                  Automatically mark unread briefing articles as read after you scroll past them. In Headlines mode, this runs on desktop only.
+                  Automatically mark unread briefing articles as read after you scroll past them. This also applies to Headlines mode.
                 </span>
               </span>
 

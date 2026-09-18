@@ -8,6 +8,8 @@
       <ArticleHeadlineRow
         ref="articleHeading"
         :article-id="storyArticleId"
+        :is-mobile-portrait="isMobilePortrait"
+        :image-url="imageUrl"
         :url="url"
         :title="title"
         :highlight-terms="highlightTerms"
@@ -617,6 +619,12 @@ export default {
     overflow: hidden;
   }
 
+  /* Let the open Headlines menu escape swipe clipping and cover adjacent rows. */
+  .article-list-card :deep(.mobile-swipe-shell:has(.article-actions .app-dropdown__menu--open)) {
+    overflow: visible;
+    z-index: var(--layer-dropdown);
+  }
+
   .mobile-swipe-action {
     position: absolute;
     inset: 0 auto 0 0;
@@ -659,8 +667,7 @@ export default {
   }
 
   .article-list-card > .article-media {
-    padding-left: 40px;
-    padding-right: 10px;
+    padding-inline: var(--article-space-section, 12px);
   }
 
   :global(:root[data-theme='dark'] .article-card .mobile-swipe-shell),

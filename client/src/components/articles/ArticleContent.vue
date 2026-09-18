@@ -109,7 +109,7 @@ export default {
 
 .article-content-wrapper--minimal {
   margin: 0;
-  padding: var(--article-space-section, 12px) 16px var(--article-space-section, 12px) 70px;
+  padding: var(--article-space-section, 12px) 16px;
   background: var(--surface-page);
   border-bottom: 1px solid var(--article-border, var(--border-subtle));
 }
@@ -239,8 +239,7 @@ export default {
 
 @media (max-width: 879px) and (orientation: portrait) {
   .article-content-wrapper--minimal {
-    padding-left: 40px;
-    padding-right: 10px;
+    padding-inline: var(--article-space-section, 12px);
   }
 }
 

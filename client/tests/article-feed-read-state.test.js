@@ -305,11 +305,13 @@ describe('article feed read-state reconciliation', () => {
     expect(context.overviewStore.increaseReadCount).not.toHaveBeenCalled();
   });
 
-  it.each([true, false])('respects scroll marking preference %s for desktop headlines', async enabled => {
+  it.each(['desktop', 'mobile'].flatMap(layout =>
+    [true, false].map(enabled => ({ layout, enabled }))
+  ))('respects scroll marking preference $enabled for $layout headlines', async ({ layout, enabled }) => {
     const context = createContext({
       ...createArticleFeedVisibilityState(),
       ...articleFeedVisibilityMethods,
-      isDesktopReaderWidth: true,
+      isDesktopReaderWidth: layout === 'desktop',
       getReadingViewportTop: () => 0
     });
     context.selectionStore.currentSelection.viewMode = 'minimal';

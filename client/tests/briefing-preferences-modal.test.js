@@ -112,7 +112,7 @@ describe('BriefingPreferencesModal dismissal', () => {
     const markAsReadOnScroll = wrapper.get('[name="markAsReadOnScroll"]');
     expect(markAsReadOnScroll.attributes('disabled')).toBeUndefined();
     expect(wrapper.get('.briefing-preferences-option-dependent').text()).toContain(
-      'In Headlines mode, this runs on desktop only.'
+      'This also applies to Headlines mode.'
     );
     await markAsReadOnScroll.setValue(true);
 

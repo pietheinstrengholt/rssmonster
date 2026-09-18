@@ -9,13 +9,11 @@
     @touchend="$emit('swipe-touch-end', $event)"
     @touchcancel="$emit('swipe-cancel')"
   >
-    <button class="article-list-status" type="button" :aria-label="statusToggleLabel" :title="statusToggleLabel" @click.stop="$emit('toggle-read-status')">
-      <BootstrapIcon :icon="status === 'read' ? 'circle-fill' : 'record-circle-fill'" aria-hidden="true" />
-    </button>
     <div class="article-list-source" aria-hidden="true">
       <img v-if="feedFavicon" :src="feedFavicon" class="favicon" alt="" />
       <BootstrapIcon v-else icon="rss-fill" />
     </div>
+    <img v-if="thumbnailUrl" :src="thumbnailUrl" class="article-list-thumbnail" alt="" width="72" height="72" loading="lazy" decoding="async" @error="failedImageUrl = thumbnailUrl" />
     <div class="article-list-main">
       <h5 class="article-list-title">
         <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" @click="$emit('article-clicked')"><HighlightedText :text="title" :terms="highlightTerms" /></a>
@@ -23,29 +21,32 @@
       </h5>
       <div class="article-list-meta">
         <span class="article-list-feed">{{ sourceLabel }}</span>
-        <span class="article-list-dot">·</span>
-        <ArticleStorySourcesPopover
-          v-if="showSourceBadge"
-          :article-id="articleId"
-          :source-count="sourceCount"
-        />
-        <ArticleDevelopingStoryPopover
-          v-if="isDevelopingStory"
-          :article-id="articleId"
-          icon-class="developing-story-icon"
-        />
-        <BootstrapIcon v-if="hotInd === 1" icon="fire" class="hot-icon" title="Hot article" aria-label="Hot article" />
-        <button v-if="showSimilarBadge" type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', eventId)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
-        <button v-if="duplicateCount > 0" type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="$emit('view-duplicate-articles')">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>
-        <button v-for="tag in visibleRuleTags" :key="'list-rule-' + tag.id" type="button" class="tag tag-rule" :aria-label="`Filter articles by tag ${formatTagName(tag.name)}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name) }}</button>
-        <button v-if="hasHiddenRuleTags" type="button" class="tag-disclosure" :aria-expanded="tagsExpanded ? 'true' : 'false'" :aria-label="tagsExpanded ? 'Show fewer tags' : `Show ${hiddenRuleTagCount} more tags`" @click.stop="tagsExpanded = !tagsExpanded">{{ tagsExpanded ? 'Show less' : `+${hiddenRuleTagCount}` }}</button>
+        <span v-if="!isMobilePortrait || (sourceLabel && publishedAt)" class="article-list-dot">·</span>
+        <span v-if="isMobilePortrait && publishedAt">{{ formatDate(publishedAt) }}</span>
+        <div class="article-list-badges">
+          <ArticleStorySourcesPopover
+            v-if="showSourceBadge"
+            :article-id="articleId"
+            :source-count="sourceCount"
+          />
+          <ArticleDevelopingStoryPopover
+            v-if="isDevelopingStory"
+            :article-id="articleId"
+            icon-class="developing-story-icon"
+          />
+          <BootstrapIcon v-if="hotInd === 1" icon="fire" class="hot-icon" title="Hot article" aria-label="Hot article" />
+          <button v-if="showSimilarBadge" type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', eventId)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
+          <button v-if="duplicateCount > 0" type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="$emit('view-duplicate-articles')">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>
+          <button v-for="tag in visibleRuleTags" :key="'list-rule-' + tag.id" type="button" class="tag tag-rule" :aria-label="`Filter articles by tag ${formatTagName(tag.name, { preserveCase: isMobilePortrait })}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name, { preserveCase: isMobilePortrait }) }}</button>
+          <button v-if="hasHiddenRuleTags" type="button" class="tag-disclosure" :aria-expanded="tagsExpanded ? 'true' : 'false'" :aria-label="tagsExpanded ? 'Show fewer tags' : `Show ${hiddenRuleTagCount} more tags`" @click.stop="tagsExpanded = !tagsExpanded">{{ tagsExpanded ? 'Show less' : `+${hiddenRuleTagCount}` }}</button>
+        </div>
       </div>
       <ArticlePreviewFallback v-if="!hasArticlePreview" :url="url" @open-original="$emit('article-clicked')" />
     </div>
     <div class="article-list-actions">
       <span class="article-list-time">{{ formatDate(publishedAt) }}</span>
-      <ArticleActionsMenu :clickedAmount="clickedAmount" :clickPending="clickPending" :favoriteInd="favoriteInd" :favoritePending="favoritePending" @toggle-clicked="$emit('toggle-clicked')" @toggle-favorite="$emit('toggle-favorite')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" />
-      <button class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" :disabled="favoritePending" @click.stop="$emit('toggle-favorite')">
+      <ArticleActionsMenu show-read-status :status="status" @toggle-read-status="$emit('toggle-read-status')" :clickedAmount="clickedAmount" :clickPending="clickPending" :favoriteInd="favoriteInd" :favoritePending="favoritePending" @toggle-clicked="$emit('toggle-clicked')" @toggle-favorite="$emit('toggle-favorite')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" />
+      <button v-if="!isMobilePortrait" class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" :disabled="favoritePending" @click.stop="$emit('toggle-favorite')">
         <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
       </button>
     </div>
@@ -67,10 +68,13 @@ export default {
   emits: ['article-clicked', 'article-touched', 'more-like-this', 'mute-feed', 'not-interested', 'select-tag', 'swipe-cancel', 'swipe-touch-end', 'swipe-touch-move', 'swipe-touch-start', 'toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'view-duplicate-articles', 'view-event-articles'],
   data() {
     return {
-      tagsExpanded: false
+      tagsExpanded: false,
+      failedImageUrl: ''
     };
   },
   props: {
+    isMobilePortrait: { type: Boolean, default: false },
+    imageUrl: { type: String, default: '' },
     articleId: { type: [Number, String], default: null },
     url: { type: String, default: '' },
     title: { type: String, default: '' },
@@ -98,6 +102,11 @@ export default {
     highlightTerms: { type: Array, default: () => [] }
   },
   computed: {
+    // Use the canonical article image and omit failed thumbnails without a placeholder.
+    thumbnailUrl() {
+      const url = usableHttpUrl(this.imageUrl);
+      return this.isMobilePortrait && url !== this.failedImageUrl ? url : '';
+    },
     // Returns an absolute HTTP(S) destination eligible for external navigation.
     safeArticleUrl() {
       return usableHttpUrl(this.url);
@@ -129,10 +138,6 @@ export default {
     // Returns the accessible label for the favorite toggle.
     favoriteLabel() {
       return this.favoriteInd === 1 ? 'Unmark favorite' : 'Mark as favorite';
-    },
-    // Returns the accessible label for the compact read-status control.
-    statusToggleLabel() {
-      return this.status === 'read' ? 'Mark article as unread' : 'Mark article as read';
     }
   },
   methods: {
@@ -153,7 +158,7 @@ export default {
   min-height: 64px;
   padding: 10px 16px;
   display: grid;
-  grid-template-columns: 18px 24px minmax(0, 1fr) auto;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
   column-gap: 12px;
   align-items: center;
   border-bottom: 1px solid var(--article-border, var(--border-subtle));
@@ -176,27 +181,6 @@ export default {
   background: var(--reader-list-selected-hover-background);
 }
 
-.article-list-status {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 34px;
-  padding: 0;
-  border: 0;
-  background: var(--color-transparent);
-  color: var(--color-primary);
-  cursor: pointer;
-  font-size: 13px;
-  line-height: 1;
-  transition: color var(--motion-duration-fast) var(--motion-easing-standard), transform var(--motion-duration-fast) var(--motion-easing-standard);
-}
-
-.article-list-status:hover {
-  transform: scale(1.08);
-}
-
-.article-list-status:focus-visible,
 .article-list-action-button:focus-visible,
 .article-list-actions :deep(.article-actions__trigger:focus-visible) {
   outline: 2px solid var(--border-focus);
@@ -230,11 +214,11 @@ export default {
   min-width: 0;
 }
 
-.article-list-title a {
+.article-list-title .article-link {
   color: var(--article-heading-text);
-  font-size: 16px;
-  line-height: 1.35;
-  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.25;
+  font-weight: 600;
   text-decoration: none;
   display: block;
   overflow-wrap: anywhere;
@@ -267,6 +251,10 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.article-list-badges {
+  display: contents;
 }
 
 .article-list-dot {
@@ -410,11 +398,92 @@ export default {
   color: var(--article-star-icon);
 }
 
+/* A passive read tint must not override the keyboard-selected row. */
+:global(.article-card.article-list-card:not(.article-list-card-selected) .article-list-row.is-read),
+:global(.article-card.article-list-card:not(.article-list-card-selected) .article-list-row.is-read:hover) {
+  background: color-mix(in srgb, var(--surface-page) 92%, var(--surface-chrome));
+}
+
+:global(.article-card.article-list-card .article-list-row.is-read .article-list-meta > span) {
+  color: color-mix(in srgb, var(--text-meta, var(--text-muted)) 94%, var(--surface-page));
+}
+
 @media (max-width: 879px) and (orientation: portrait) {
   .article-list-row {
-    grid-template-columns: 18px minmax(0, 1fr) auto;
-    column-gap: 10px;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    column-gap: 6px;
+    align-items: start;
     padding: 10px;
+  }
+
+  .article-list-row:not(:has(.article-list-thumbnail)) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .article-list-row:not(:has(.article-list-thumbnail)) .article-list-main {
+    grid-column: 1;
+  }
+
+  .article-list-row:not(:has(.article-list-thumbnail)) .article-list-actions {
+    grid-column: 2;
+  }
+
+  .article-list-main {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .article-list-thumbnail {
+    grid-column: 1;
+    grid-row: 1;
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+
+  .article-list-title .article-link {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .article-list-meta {
+    gap: 3px var(--article-space-tight, 4px);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.3;
+  }
+
+  .article-list-feed {
+    max-width: 100%;
+  }
+
+  .article-list-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--article-space-tight, 4px);
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .article-list-badges:empty {
+    display: none;
+  }
+
+  .tag,
+  .tag-disclosure,
+  .similar-badge,
+  .duplicate-badge,
+  .article-list-badges :deep(.story-sources-trigger) {
+    padding: 1px 5px;
+    font-weight: 500;
+    border-radius: 4px;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: left;
   }
 
   .article-list-source,
@@ -423,13 +492,15 @@ export default {
   }
 
   .article-list-actions {
-    gap: 4px;
+    grid-column: 3;
+    grid-row: 1;
+    gap: 0;
+    align-self: start;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .article-list-row,
-  .article-list-status,
   .article-list-title a {
     transition: none;
   }

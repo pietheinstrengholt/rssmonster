@@ -31,7 +31,7 @@ const BootstrapIconStub = {
 
 const ArticleActionsMenuStub = {
   name: 'ArticleActionsMenu',
-  emits: ['more-like-this', 'mute-feed', 'not-interested', 'toggle-favorite'],
+  emits: ['more-like-this', 'mute-feed', 'not-interested', 'toggle-favorite', 'toggle-read-status'],
   template: '<button class="menu-action" @click="$emit(\'more-like-this\')">Menu action</button>'
 };
 
@@ -203,7 +203,7 @@ describe('ArticleHeadlineRow interaction contract', () => {
     await wrapper.get('.article-list-row').trigger('touchmove');
     await wrapper.get('.article-list-row').trigger('touchend');
     await wrapper.get('.article-list-row').trigger('touchcancel');
-    await wrapper.get('.article-list-status').trigger('click');
+    wrapper.findComponent(ArticleActionsMenuStub).vm.$emit('toggle-read-status');
     await wrapper.get('.article-link').trigger('click');
     await wrapper.get('.similar-badge').trigger('click');
     await wrapper.get('.duplicate-badge').trigger('click');
@@ -254,7 +254,7 @@ describe('ArticleHeadlineRow interaction contract', () => {
     expect(wrapper.find('a.article-link').exists()).toBe(false);
     expect(wrapper.get('.similar-badge').attributes('aria-label')).toBe('Hide 1 similar article');
     expect(wrapper.get('.duplicate-badge').attributes('aria-label')).toBe('Hide 2 duplicate articles');
-    expect(wrapper.get('.article-list-status').attributes('aria-label')).toBe('Mark article as unread');
+    expect(wrapper.findComponent({ name: 'ArticleActionsMenu' }).props()).toMatchObject({ status: 'read', showReadStatus: true });
     expect(wrapper.get('.article-list-favorite-button').attributes('aria-label')).toBe('Unmark favorite');
   });
 });
