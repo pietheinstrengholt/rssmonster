@@ -57,6 +57,11 @@ afterEach(() => {
 });
 
 describe('Settings navigation', () => {
+  it('limits Server settings navigation to administrators', () => {
+    expect(getSettingsNavigation(false, 'admin').find(item => item.key === 'server').visible).toBe(true);
+    expect(getSettingsNavigation(false, 'user').find(item => item.key === 'server').visible).toBe(false);
+  });
+
   // Verifies the modal exposes the stable feature boundary that contains shared Settings CSS.
   it('renders the Settings ownership boundary', () => {
     const wrapper = mountSettings();

@@ -124,6 +124,7 @@ const SettingsOfficialSources = createAsyncSettingsSection(() => import('./Setti
 // This component lazily loads administrator user management.
 const SettingsManageUsers = createAsyncSettingsSection(() => import('./SettingsManageUsers.vue'));
 const SettingsInference = createAsyncSettingsSection(() => import('./SettingsInference.vue'));
+const SettingsServer = createAsyncSettingsSection(() => import('./SettingsServer.vue'));
 const SettingsAccount = createAsyncSettingsSection(() => import('./SettingsAccount.vue'));
 
 export default {
@@ -150,7 +151,8 @@ export default {
     SettingsOfficialSources,
     SettingsManageUsers,
     SettingsAccount,
-    SettingsInference
+    SettingsInference,
+    SettingsServer
   },
   // This function creates modal navigation and focus restoration state.
   data() {
@@ -200,7 +202,8 @@ export default {
         { key: 'feeds', label: 'Feeds', icon: 'rss-fill', visible: true },
         { key: 'officialSources', label: 'Official Sources', icon: 'patch-check-fill', visible: true },
         { key: 'inference', label: 'AI / Inference', icon: 'cpu-fill', visible: this.authStore.role === 'admin' },
-        { key: 'users', label: 'Manage Users', icon: 'people-fill', visible: this.authStore.role === 'admin' }
+        { key: 'users', label: 'Manage Users', icon: 'people-fill', visible: this.authStore.role === 'admin' },
+        { key: 'server', label: 'Server settings', icon: 'gear-fill', visible: this.authStore.role === 'admin' }
       ];
     },
     // This function removes settings sections hidden from the current user.
@@ -213,6 +216,7 @@ export default {
         welcome: 'SettingsWelcome',
         account: 'SettingsAccount',
         inference: 'SettingsInference',
+        server: 'SettingsServer',
         smartfolders: 'SettingsSmartFolders',
         generatedFeeds: 'SettingsGeneratedFeeds',
         actions: 'SettingsActions',

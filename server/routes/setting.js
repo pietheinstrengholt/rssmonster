@@ -7,7 +7,12 @@ import userMiddleware from "../middleware/users.js";
 
 import { requireInferenceAdministrator, getInferenceSettings, putInferenceSettings, deleteInferenceSettings, testInferenceSettings } from '../controllers/inferenceSettings.js';
 
+import { requireAdministrator } from '../middleware/administrator.js';
+import * as serverSettings from '../controllers/serverSettings.js';
+
 export const router = express.Router();
+router.get('/server', userMiddleware.isLoggedIn, requireAdministrator, serverSettings.get);
+router.put('/server', userMiddleware.isLoggedIn, requireAdministrator, serverSettings.put);
 router.use('/inference', userMiddleware.isLoggedIn, requireInferenceAdministrator);
 router.get('/inference', getInferenceSettings);
 router.put('/inference', putInferenceSettings);

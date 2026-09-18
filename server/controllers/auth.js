@@ -1,9 +1,10 @@
+import { isPublicRegistrationEnabled } from '../services/serverSettings.js';
 import { getAvailableInferenceCapabilities } from '../services/inference/status.js';
 import db from '../models/index.js';
 const { User } = db;
 import bcrypt from "bcryptjs";
 import { createAuthenticatedSession, createEmailEnrollmentResponse } from "../services/auth/session.js";
-import { isRegistrationEnabled, isLocalAuthEnabled, getAuthConfiguration } from '../config/auth.js';
+import { isLocalAuthEnabled, getAuthConfiguration } from '../config/auth.js';
 import {
   createFeverApiKey,
   createFeverCredentialHash
@@ -210,8 +211,8 @@ const validate = async (req, res, _next) => {
   }
 };
 
-const configuration = (_req, res) => res.status(200).json({
-  registrationEnabled: isRegistrationEnabled() && isLocalAuthEnabled(),
+const configuration = async (_req, res) => res.status(200).json({
+  registrationEnabled: isLocalAuthEnabled() && await isPublicRegistrationEnabled(),
   localAuthEnabled: isLocalAuthEnabled(),
   developmentLoginEnabled: isLocalAuthEnabled() && isDevelopmentLoginEnabled(),
   oidcEnabled: getAuthConfiguration().oidcEnabled,

@@ -180,7 +180,7 @@ setting. Evaluate query behavior and memory use before changing it.
 | `PORT` | `3000` | HTTP port used by the server. The supplied containers set this to 3000. |
 | `JWT_SECRET` | none | Required secret for signing and verifying JWTs. |
 | `JWT_EXPIRES_IN` | `86400` | Login-token lifetime in seconds. The example file uses `604800` (seven days). |
-| `ALLOW_REGISTRATION` | `true` | Set to `false` to disable public account creation. Hides signup and rejects registration API requests with HTTP 403, including when no users exist. Existing accounts, login, and password recovery are unaffected. |
+| `ALLOW_REGISTRATION` | `true` | Environment default; an administrator’s saved choice in **Settings → Server settings** takes precedence. Set to `false` to disable public account creation. Hides signup and rejects registration API requests with HTTP 403, including when no users exist. Existing accounts, login, and password recovery are unaffected. |
 | `FEVER_CREDENTIAL_SECRET` | none | Required secret for keyed Fever credential hashes. Changing it invalidates existing Fever API credentials. |
 | `ENABLE_DEVELOPMENT_LOGIN` | `false` | Enables login without normal credentials, but only when `NODE_ENV=development`. Never enable it in a shared environment. |
 | `DEVELOPMENT_LOGIN_USER_ID` | none | Existing positive user ID selected by development login. It must be set when development login is enabled. |
@@ -190,6 +190,12 @@ setting. Evaluate query behavior and memory use before changing it.
 Authentication and API credential flows require these secrets. The supplied
 Compose files refuse to start without them. Keep both values stable across
 restarts and upgrades.
+
+Administrators can change public registration in **Settings → Server settings**.
+Saved choices are stored in the server-wide `server_settings` table and take effect
+immediately. **Use environment default** removes the database override, falling
+back to `ALLOW_REGISTRATION` (or `true` when unset). This does not enable local
+authentication when `LOCAL_AUTH_ENABLED=false` or change OIDC auto-provisioning.
 
 For a manual installation, add `ALLOW_REGISTRATION=false` to `server/.env` and
 restart the server. For Docker Compose, add `ALLOW_REGISTRATION: "false"` under

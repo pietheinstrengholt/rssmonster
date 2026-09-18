@@ -1,5 +1,6 @@
+import { isPublicRegistrationEnabled } from '../services/serverSettings.js';
 import jwt from "jsonwebtoken";
-import { getJwtSecret, isRegistrationEnabled, isLocalAuthEnabled } from '../config/auth.js';
+import { getJwtSecret, isLocalAuthEnabled } from '../config/auth.js';
 import { isEmailEnabled, normalizeEmailAddress } from '../config/email.js';
 import db from '../models/index.js';
 
@@ -10,8 +11,8 @@ const requireLocalAuth = (_req, res, next) => {
   next();
 };
 
-const validateRegister = (req, res, next) => {
-  if (!isRegistrationEnabled()) {
+const validateRegister = async (req, res, next) => {
+  if (!await isPublicRegistrationEnabled()) {
     return res.status(403).json({ message: 'Public registration is disabled.' });
   }
 

@@ -1,14 +1,9 @@
-import db from '../models/index.js';
+export { requireAdministrator as requireInferenceAdministrator } from '../middleware/administrator.js';
 import { getAIPermissions } from '../services/ai/capabilities.js';
 import { getInferenceConfigurationMetadata, saveInferenceConfiguration,
   clearInferenceConfiguration, InferenceConfigurationError } from '../services/inference/configuration.js';
 import { clearInferenceStatus, getInferenceStatus, testInferenceConfiguration } from '../services/inference/status.js';
 
-export const requireInferenceAdministrator = async (req, res, next) => {
-  const user = await db.User.findByPk(req.userData?.userId, { attributes: ['id', 'role'] });
-  if (user?.role !== 'admin') return res.status(403).json({ error: 'Administrator access is required' });
-  next();
-};
 const action = operation => async (req, res) => {
   try { res.json(await operation(req)); } catch (error) {
     res.status(error instanceof InferenceConfigurationError ? error.status : 503)

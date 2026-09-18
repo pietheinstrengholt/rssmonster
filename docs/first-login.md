@@ -37,8 +37,10 @@ for password recovery, address changes, and briefing delivery.
 
 ## Disable Public Registration
 
-For a private installation, set `ALLOW_REGISTRATION=false` after creating the
-accounts you need. This removes **Create an account** from the sign-in page and
+For a private installation, open **Settings → Server settings** as an administrator
+and save **Disable registration** after creating the accounts you need.
+Alternatively, set `ALLOW_REGISTRATION=false` in the server environment. Disabling
+registration removes **Create an account** from the sign-in page and
 rejects direct registration API requests with HTTP 403. Existing users can still
 sign in and recover their passwords as before. Registration is enabled by default.
 
@@ -59,9 +61,14 @@ services:
       ALLOW_REGISTRATION: "false"
 ```
 
-Recreate the container to apply the change. The root `.env` alone does not pass
-this variable into the container. To reopen registration, remove the setting or
-set it to `true`, then restart the server or recreate the container.
+The saved UI choice takes precedence over `ALLOW_REGISTRATION` and applies without
+a restart. Select **Use environment default** and save to remove that override.
+
+Recreate the container to apply an environment change. The root `.env` alone does
+not pass this variable into the container. To reopen registration, save
+**Allow registration** in Server settings, or use
+the environment default and remove the environment flag or set it to `true`,
+then restart the server or recreate the container.
 
 ## Optional Development Login
 

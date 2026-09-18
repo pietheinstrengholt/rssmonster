@@ -19,7 +19,8 @@ vi.mock('../../config/auth.js', async importOriginal => ({
 
 vi.mock('../../models/index.js', () => ({
   default: {
-    User: { findByPk: mocked.userFindByPk }
+    User: { findByPk: mocked.userFindByPk },
+    ServerSetting: { findByPk: vi.fn(async () => null) }
   }
 }));
 
@@ -47,9 +48,9 @@ describe('user authentication middleware', () => {
     });
   });
 
-  it('validates registration usernames, passwords, and confirmation', () => {
+  it('validates registration usernames, passwords, and confirmation', async () => {
     const invalidUsernameRes = createResponse();
-    userMiddleware.validateRegister(
+    await userMiddleware.validateRegister(
       { body: { username: 'ab' } },
       invalidUsernameRes,
       vi.fn()
@@ -59,7 +60,7 @@ describe('user authentication middleware', () => {
     });
 
     const invalidPasswordRes = createResponse();
-    userMiddleware.validateRegister(
+    await userMiddleware.validateRegister(
       { body: { username: 'reader', password: 'short' } },
       invalidPasswordRes,
       vi.fn()
@@ -69,7 +70,7 @@ describe('user authentication middleware', () => {
     });
 
     const mismatchRes = createResponse();
-    userMiddleware.validateRegister(
+    await userMiddleware.validateRegister(
       {
         body: {
           username: 'reader',
@@ -85,11 +86,11 @@ describe('user authentication middleware', () => {
     });
   });
 
-  it('continues registration when the complete payload is valid', () => {
+  it('continues registration when the complete payload is valid', async () => {
     const next = vi.fn();
     const res = createResponse();
 
-    userMiddleware.validateRegister(
+    await userMiddleware.validateRegister(
       {
         body: {
           username: 'reader',
@@ -105,11 +106,11 @@ describe('user authentication middleware', () => {
     expect(res.status).not.toHaveBeenCalled();
   });
 
-  it('requires and normalizes registration email only when email is enabled', () => {
+  it('requires and normalizes registration email only when email is enabled', async () => {
     process.env.EMAIL_ENABLED = 'true';
     const missingRes = createResponse();
 
-    userMiddleware.validateRegister({
+    await userMiddleware.validateRegister({
       body: {
         username: 'reader',
         password: 'password',
@@ -129,7 +130,7 @@ describe('user authentication middleware', () => {
         password_repeat: 'password'
       }
     };
-    userMiddleware.validateRegister(request, createResponse(), next);
+    await userMiddleware.validateRegister(request, createResponse(), next);
 
     expect(request.body.email).toBe('reader@example.com');
     expect(next).toHaveBeenCalledOnce();

@@ -261,6 +261,7 @@ body.settings-overlay-open {
     display: block;
     width: 20px;
     height: 20px;
+    margin: 0;
 }
 
 .settings-surface .settings-page-eyebrow {
