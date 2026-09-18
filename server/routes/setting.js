@@ -9,8 +9,16 @@ import { requireInferenceAdministrator, getInferenceSettings, putInferenceSettin
 
 import { requireAdministrator } from '../middleware/administrator.js';
 import * as serverSettings from '../controllers/serverSettings.js';
+import * as oidcSettings from '../controllers/oidcSettings.js';
+import * as smtpSettings from '../controllers/smtpSettings.js';
 
 export const router = express.Router();
+router.get('/server/oidc', userMiddleware.isLoggedIn, requireAdministrator, oidcSettings.get);
+router.put('/server/oidc', userMiddleware.isLoggedIn, requireAdministrator, oidcSettings.put);
+router.delete('/server/oidc', userMiddleware.isLoggedIn, requireAdministrator, oidcSettings.clear);
+router.get('/server/smtp', userMiddleware.isLoggedIn, requireAdministrator, smtpSettings.get);
+router.put('/server/smtp', userMiddleware.isLoggedIn, requireAdministrator, smtpSettings.put);
+router.delete('/server/smtp', userMiddleware.isLoggedIn, requireAdministrator, smtpSettings.clear);
 router.get('/server', userMiddleware.isLoggedIn, requireAdministrator, serverSettings.get);
 router.put('/server', userMiddleware.isLoggedIn, requireAdministrator, serverSettings.put);
 router.use('/inference', userMiddleware.isLoggedIn, requireInferenceAdministrator);

@@ -677,3 +677,88 @@ Inference connections can also be saved by an administrator in Settings → AI /
 on MySQL, SQLite, or Desktop. A nonempty environment URL always takes precedence and
 hides editing controls; capability status remains visible. See the inference guide
 for encrypted key storage, keep/replace/remove semantics, and worker limitations.
+
+### SMTP overrides in Server settings
+
+Administrators can open **Settings → Server settings → SMTP options** and check
+**Override environment defaults for all SMTP options** on `EMAIL_ENABLED`.
+This makes all displayed SMTP values authoritative together, even when email
+is set to disabled. Clearing that checkbox and saving restores the entire
+environment configuration, including the password. **Restore environment defaults**
+also removes every SMTP override. The masked password field retains an existing
+saved override when unchanged; entering a password replaces it, and clearing an
+edited field removes it. When enabling overrides for the first time, enter the
+SMTP password if authentication is required.
+
+Override mode never inherits `SMTP_PASSWORD` or `SMTP_PASSWORD_FILE` from the
+environment. Password files are supported only with environment configuration,
+not through the form. Database passwords are encrypted at rest using
+`ENCRYPTION_KEY` and are never returned to the form, status APIs, or logs.
+
+Use `RSSMonster <reader@example.com>` for a sender with a display name. Port 587
+uses STARTTLS (`SMTP_SECURE=false`, `SMTP_REQUIRE_TLS=true`); port 465 uses implicit
+TLS (`SMTP_SECURE=true`, `SMTP_REQUIRE_TLS=false`). The public application URL is
+used in verification, password-reset, and briefing links.
+
+Saved changes affect new account/email operations immediately. Delivery and daily
+briefing workers resolve configuration on their next poll, within five minutes;
+an already running batch may finish with its current configuration. Workers keep
+polling while email is disabled, so enabling delivery does not require a restart.
+**Test SMTP connection** checks the saved configuration without sending a message.
+
+### OIDC and local authentication overrides
+
+Administrators can use **Settings → Server → OIDC options** to override
+`OIDC_ENABLED` and `LOCAL_AUTH_ENABLED` independently. Enabling the OIDC override
+also manages its provider options as one group: `OIDC_AUTO_PROVISION`,
+`OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_REDIRECT_URI`,
+`OIDC_FRONTEND_URL`, and `OIDC_SCOPES`. Clearing that override restores the entire
+provider configuration from the environment. Access-policy environment variables
+remain authoritative.
+
+Changes apply immediately, including login availability, local password actions,
+Fever/Google Reader access, and the provider callback origin. At least one sign-in
+method must remain enabled; invalid provider URLs, scopes, and callback paths are
+rejected. Existing sessions remain valid. Provider configuration changes invalidate
+pending provider sign-ins, which must be started again. Test provider sign-in before
+disabling local authentication.
+
+The existing `server_settings` table stores these overrides; no additional migration
+is required. Database client IDs and client secrets are encrypted at rest using
+`ENCRYPTION_KEY`. API responses only report whether these values are configured
+and overridden. An unchanged masked client ID retains its saved value (or the
+environment value if no override exists); editing replaces or clears it. Client
+secrets can be retained, replaced, or restored from the environment without
+being displayed.
+
+### Encryption of sensitive server settings
+
+Set `ENCRYPTION_KEY` to a Base64-encoded 32-byte key, generated outside RSSMonster:
+
+```sh
+openssl rand -base64 32
+```
+
+Database overrides for `SMTP_PASSWORD`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` use this key. The server uses Node.js AES-256-GCM with a new
+random 12-byte IV per encryption and stores `enc:v1:<iv>:<authTag>:<ciphertext>`
+with Base64 envelope components. Empty values represent cleared credentials.
+Other settings and environment-backed credentials are unchanged. The key is never
+stored in the database, generated automatically, or derived from `JWT_SECRET`.
+Keep it stable, secure, backed up separately, and identical across server/worker
+instances. Losing or changing it makes existing encrypted overrides unreadable;
+restore the original key or replace the overrides before using them.
+
+Existing plaintext database credentials remain readable without a key. The next
+successful save of their SMTP or OIDC settings encrypts all retained/replacement
+nonempty credentials in that group under the existing transaction. Configure the
+key and re-save each group to complete this migration; until then those old values
+remain plaintext at rest. There is no schema migration or automatic startup write.
+
+Missing/invalid keys do not prevent environment-only or legacy-plaintext operation,
+metadata reads, or startup with unused credentials in disabled services. Saving a
+nonempty database credential or using an encrypted credential fails with a clear
+encryption configuration error. Malformed, tampered, or wrong-key ciphertext is
+never treated as plaintext. Metadata contains presence/override flags only, allowing
+administrators to replace credentials or restore environment defaults even when
+the key is unavailable. Encrypted credentials are decrypted only for runtime use
+or to validate and re-encrypt retained values during a settings save.

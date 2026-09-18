@@ -1,5 +1,5 @@
 import { updateArticleBehavior } from '../services/articles/updateArticleBehavior.js';
-import { isLocalAuthEnabled } from '../config/auth.js';
+import { isLocalAuthEnabled } from '../services/auth/configuration.js';
 import db from '../models/index.js';
 const { Feed, Category, Article, User, sequelize } = db;
 
@@ -174,7 +174,7 @@ const articleIncludeForUser = userId => [{
  * Client login - returns SID, LSID, and Auth tokens
  */
 export const clientLogin = async (req, res) => {
-  if (!isLocalAuthEnabled()) return sendGreaderUnauthorized(res);
+  if (!(await isLocalAuthEnabled())) return sendGreaderUnauthorized(res);
   try {
     const email = req.body?.Email || req.query.Email;
     const passwd = req.body?.Passwd || req.query.Passwd;

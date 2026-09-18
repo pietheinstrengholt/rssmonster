@@ -3,7 +3,7 @@ import db from '../../models/index.js';
 import { checkDatabaseHealth } from './databaseHealth.js';
 import { readCrawlWorkerHealthState } from '../../src/workers/crawlWorkerHealth.js';
 import { readAiWorkerHealthState } from '../../src/workers/aiWorkerHealth.js';
-import { getEmailConfigurationStatus } from '../../config/email.js';
+import { getEmailConfigurationStatus } from '../email/configuration.js';
 import { getAIHealth } from '../ai/health.js';
 
 const service = (id, label, status, detail) => ({ id, label, status, detail });
@@ -45,7 +45,7 @@ const inferenceHealth = async () => {
 
 // Read-only snapshot; historical failure totals do not establish current service health.
 export const getServiceHealth = async () => {
-  const email = getEmailConfigurationStatus();
+  const email = await getEmailConfigurationStatus();
   const services = await Promise.all([
     service('web', 'Web server', 'healthy', 'The web server is responding.'),
     databaseHealth(),

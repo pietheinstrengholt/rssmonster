@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import http from 'node:http';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -7,10 +8,15 @@ import { startServer, stopServer } from '../../app.js';
 
 const listeners = [];
 
+beforeEach(async () => {
+  await db.ServerSetting.destroy({ where: { key: 'authConfiguration' } });
+});
+
 afterEach(async () => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
   await Promise.all(listeners.splice(0).map(stopServer));
+  await db.ServerSetting.destroy({ where: { key: 'authConfiguration' } });
 });
 
 describe('programmatic Express lifecycle', () => {
@@ -18,12 +24,27 @@ describe('programmatic Express lifecycle', () => {
     { ALLOW_REGISTRATION: 'invalid' },
     { LOCAL_AUTH_ENABLED: 'false', OIDC_ENABLED: 'false' },
     { OIDC_ENABLED: 'true', OIDC_ISSUER_URL: '' }
-  ])('rejects invalid authentication configuration before connecting to the database: %j', async environment => {
+  ])('rejects invalid effective authentication configuration before opening a listener: %j', async environment => {
     for (const [name, value] of Object.entries(environment)) vi.stubEnv(name, value);
-    const authenticate = vi.spyOn(db.sequelize, 'authenticate');
+    vi.stubEnv('DISABLE_LISTENER', 'false');
+    vi.stubEnv('ENABLE_HTTPS', 'false');
+    const createServer = vi.spyOn(http, 'createServer');
     await expect(startServer({ host: '127.0.0.1', port: 0 }))
       .rejects.toMatchObject({ code: 'AUTH_CONFIGURATION_INVALID' });
-    expect(authenticate).not.toHaveBeenCalled();
+    expect(createServer).not.toHaveBeenCalled();
+  });
+
+  it('validates saved authentication overrides instead of rejecting overridden environment values', async () => {
+    vi.stubEnv('ALLOW_REGISTRATION', 'true');
+    vi.stubEnv('LOCAL_AUTH_ENABLED', 'false');
+    vi.stubEnv('OIDC_ENABLED', 'true');
+    vi.stubEnv('OIDC_ISSUER_URL', '');
+    vi.stubEnv('DISABLE_LISTENER', 'false');
+    vi.stubEnv('ENABLE_HTTPS', 'false');
+    await db.ServerSetting.create({ key: 'authConfiguration', value: { LOCAL_AUTH_ENABLED: true, OIDC_ENABLED: false } });
+    const server = await startServer({ host: '127.0.0.1', port: 0 });
+    listeners.push(server);
+    expect(server.listening).toBe(true);
   });
 
   it('returns a ready loopback listener, serves an absolute bundle path and closes it', async () => {

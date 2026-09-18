@@ -60,3 +60,26 @@ responses and may POST linking or exchange requests. The client includes browser
 credentials for these two requests only. SameSite=Lax and HttpOnly protection
 remain in place, and the frontend URL participates in the transaction configuration
 hash so changes invalidate pending flows.
+
+## Runtime configuration overrides
+
+`configuration.js` reads the `authConfiguration` record from `ServerSetting` and
+merges it over the environment for each runtime lookup. The pure parser in
+`config/auth.js` remains responsible for validation. Administrator-only
+`/api/setting/server/oidc` endpoints manage the two independent enabled overrides
+and the grouped provider fields. Saves lock the aggregate row, validate the merged
+configuration, and preserve a retained secret atomically. Restoring defaults also
+validates that a sign-in method remains available. Database `OIDC_CLIENT_ID` and
+`OIDC_CLIENT_SECRET` values use the shared `secretEncryption.js` helper and
+`ENCRYPTION_KEY`, are excluded from metadata responses, and are written with SQL
+logging disabled. An omitted client ID retains the saved value or environment
+fallback; an explicit string replaces it (empty clears it). Runtime resolution
+decrypts these fields only when OIDC is enabled. Local-auth and metadata reads
+never decrypt them. Legacy plaintext stays readable and is encrypted transactionally
+on the next settings save. Environment credentials bypass encryption.
+See [key setup and migration](../../../docs/configuration.md#encryption-of-sensitive-server-settings).
+
+All runtime local-auth gates use the async resolver. Response serializers resolve
+local-auth policy before calling the synchronous User serializer. OIDC discovery,
+transaction fingerprints, callback origin validation, and CORS consume the resolved
+provider configuration; existing cache and pending-flow invalidation rules apply.

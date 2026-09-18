@@ -56,6 +56,7 @@ vi.mock('../../models/index.js', async () => {
   return {
     default: {
       ...mocked.models,
+      ServerSetting: { findByPk: vi.fn().mockResolvedValue(null) },
       User: {
         findAll: mocked.userFindAll,
         findByPk: mocked.userFindByPk,
@@ -101,6 +102,9 @@ const createUserRecord = (overrides = {}) => ({
   role: 'user',
   update: vi.fn().mockResolvedValue(undefined),
   destroy: vi.fn().mockResolvedValue(undefined),
+  toJSON({ localAuthEnabled } = {}) {
+    return { id: this.id, username: this.username, role: this.role, localPasswordEnabled: localAuthEnabled && Boolean(this.password) };
+  },
   ...overrides
 });
 
@@ -159,7 +163,7 @@ describe('user controller administration', () => {
     expect(forbiddenRes.status).toHaveBeenCalledWith(403);
     expect(mocked.userFindAll).not.toHaveBeenCalled();
 
-    const users = [{ id: 1, username: 'admin' }];
+    const users = [createUserRecord({ id: 1, username: 'admin', role: 'admin' })];
     mocked.userFindOne.mockResolvedValueOnce({ id: 1, role: 'admin' });
     mocked.userFindAll.mockResolvedValue(users);
     const successRes = createResponse();
@@ -174,7 +178,7 @@ describe('user controller administration', () => {
       }
     });
     expect(successRes.status).toHaveBeenCalledWith(200);
-    expect(successRes.json).toHaveBeenCalledWith({ users });
+    expect(successRes.json).toHaveBeenCalledWith({ users: users.map(user => user.toJSON({ localAuthEnabled: true })) });
   });
 
   it('returns a server error when the user list query fails', async () => {
@@ -232,7 +236,7 @@ describe('user controller administration', () => {
     await userController.getUser(createRequest(), res);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ user });
+    expect(res.json).toHaveBeenCalledWith({ user: user.toJSON({ localAuthEnabled: true }) });
   });
 
   it('returns a server error when the selected-user query fails', async () => {
@@ -297,7 +301,7 @@ describe('user controller administration', () => {
       passwordChangedAt: expect.any(Date)
     }, { transaction: 'transaction' });
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ user });
+    expect(res.json).toHaveBeenCalledWith({ user: user.toJSON({ localAuthEnabled: true }) });
   });
 
   it.each([null, new Date('2026-09-02T12:00:00Z')])(

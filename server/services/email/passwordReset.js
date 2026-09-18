@@ -1,9 +1,10 @@
-import { isLocalAuthEnabled } from '../../config/auth.js';
+import { getEmailConfiguration } from './configuration.js';
+import { isLocalAuthEnabled } from '../auth/configuration.js';
 import { createHash, randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
-import { getEmailConfiguration, normalizeEmailAddress } from '../../config/email.js';
+import { normalizeEmailAddress } from '../../config/email.js';
 import {
   createFeverApiKey,
   createFeverCredentialHash
@@ -51,13 +52,14 @@ export const validateResetPassword = (password, passwordRepeat) => {
 
 // Quietly queues one reset for a verified account while preserving enumeration resistance.
 export const requestPasswordReset = async (email, {
-  configuration = getEmailConfiguration(),
+  configuration,
   enqueue = null,
   now = new Date(),
   createToken = () => randomBytes(TOKEN_BYTES).toString('base64url'),
   cooldownMs = PASSWORD_RESET_ACCOUNT_COOLDOWN_MS
 } = {}) => {
-  if (!isLocalAuthEnabled() || !configuration.enabled) return { accepted: true };
+  configuration ??= await getEmailConfiguration();
+  if (!(await isLocalAuthEnabled()) || !configuration.enabled) return { accepted: true };
 
   let normalizedEmail;
   try {
@@ -118,7 +120,7 @@ export const confirmPasswordReset = async ({ token, password, passwordRepeat }, 
   now = new Date(),
   hashPassword = value => bcrypt.hash(value, 10)
 } = {}) => {
-  if (!isLocalAuthEnabled()) throw new PasswordResetError('LOCAL_AUTH_DISABLED', 'Local authentication is disabled.', 403);
+  if (!(await isLocalAuthEnabled())) throw new PasswordResetError('LOCAL_AUTH_DISABLED', 'Local authentication is disabled.', 403);
   const rawToken = normalizeToken(token);
   const validatedPassword = validateResetPassword(password, passwordRepeat);
   const passwordHash = await hashPassword(validatedPassword);

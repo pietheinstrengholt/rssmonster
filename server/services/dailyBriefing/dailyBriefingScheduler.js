@@ -1,4 +1,5 @@
 import { Op } from 'sequelize';
+import { getEmailConfiguration } from '../email/configuration.js';
 import db from '../../models/index.js';
 import { enqueueDailyBriefingEmail } from './dailyBriefingEmail.service.js';
 
@@ -110,6 +111,11 @@ export const produceDueDailyBriefings = async ({
   enqueueDigest = enqueueDailyBriefingEmail,
   logger = console
 } = {}) => {
+  if (enqueueDigest === enqueueDailyBriefingEmail) {
+    const configuration = await getEmailConfiguration();
+    if (!configuration.enabled) return { examined: 0, due: 0, queued: 0, skipped: 0, failed: 0, nextCursor: 0 };
+    enqueueDigest = (user, options) => enqueueDailyBriefingEmail(user, { ...options, configuration });
+  }
   const boundedBatchSize = positiveInteger(
     batchSize,
     DAILY_BRIEFING_SCHEDULER_BATCH_SIZE,

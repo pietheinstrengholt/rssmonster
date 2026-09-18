@@ -8,6 +8,7 @@ const mocked = vi.hoisted(() => ({
 
 vi.mock('../../models/index.js', () => ({
   default: {
+    ServerSetting: { findByPk: vi.fn().mockResolvedValue(null) },
     User: {
       findOne: mocked.findOne
     }

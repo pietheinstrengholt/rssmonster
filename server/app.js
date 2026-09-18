@@ -21,7 +21,7 @@ import cors from 'cors';
 import fs from 'fs';
 import https from 'https';
 import http from 'node:http';
-import { getAuthConfiguration, validateAuthConfiguration } from './config/auth.js';
+import { getAuthConfiguration } from './services/auth/configuration.js';
 import {
   apiRateLimiter,
   mcpRateLimiter
@@ -96,10 +96,10 @@ app.use((req, res, next) => serveStatic(req, res, next));
 app.get('/sw.js', serveServiceWorkerFallback);
 
 // CORS
-app.use(cors((req, next) => {
+app.use(cors(async (req, next) => {
   if (!req.path.startsWith('/api/auth/oidc/')) return next(null, {});
   try {
-    const { oidc } = getAuthConfiguration();
+    const { oidc } = await getAuthConfiguration();
     const origin = oidc ? new URL(oidc.frontendUrl).origin : null;
     return next(null, { origin: origin && req.get('origin') === origin ? origin : false, credentials: true });
   } catch (error) {
@@ -168,9 +168,9 @@ export const startServer = async ({
   host,
   staticDirectory
 } = {}) => {
-  validateAuthConfiguration();
   // DB
   await sequelize.authenticate();
+  await getAuthConfiguration();
   console.log('Database connection established');
 
   if (process.env.DISABLE_LISTENER === 'true') {

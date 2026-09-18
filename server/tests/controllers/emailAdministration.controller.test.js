@@ -1,3 +1,4 @@
+import { SecretEncryptionError } from '../../services/secretEncryption.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
@@ -14,7 +15,7 @@ vi.mock('../../models/index.js', () => ({
   default: { User: { findByPk: mocked.userFindByPk } }
 }));
 
-vi.mock('../../config/email.js', () => ({
+vi.mock('../../services/email/configuration.js', () => ({
   getEmailConfiguration: mocked.getEmailConfiguration,
   getEmailConfigurationStatus: mocked.getEmailConfigurationStatus,
   isEmailEnabled: mocked.isEmailEnabled
@@ -117,4 +118,13 @@ describe('email administration controller', () => {
     expect(console.error).toHaveBeenCalledWith('SMTP connectivity test failed:', 'EAUTH');
     expect(mocked.closeEmailTransport).toHaveBeenCalledOnce();
   });
+});
+
+it('reports encryption configuration failures without attempting SMTP', async () => {
+  mocked.userFindByPk.mockResolvedValue({ role: 'admin' });
+  mocked.isEmailEnabled.mockResolvedValue(true);
+  mocked.getEmailConfiguration.mockRejectedValue(new SecretEncryptionError('ENCRYPTION_KEY must be Base64 and decode to exactly 32 bytes'));
+  const response = createResponse();
+  await controller.testSmtpConnectivity({ userData: { userId: 1 } }, response);
+  expect(response.json).toHaveBeenCalledWith({ verified: false, message: 'ENCRYPTION_KEY must be Base64 and decode to exactly 32 bytes' });
 });

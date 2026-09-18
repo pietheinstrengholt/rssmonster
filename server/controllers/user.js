@@ -1,4 +1,4 @@
-import { isLocalAuthEnabled } from '../config/auth.js';
+import { isLocalAuthEnabled, serializeAuthUser } from '../services/auth/configuration.js';
 import db from '../models/index.js';
 const {
   User,
@@ -88,7 +88,8 @@ const getUsers = async (req, res, _next) => {
       }
     });
 
-    return res.status(200).json({ users });
+    const localAuthEnabled = await isLocalAuthEnabled();
+    return res.status(200).json({ users: users.map(user => user.toJSON({ localAuthEnabled })) });
   } catch (err) {
     console.error('Error in getUsers:', err);
     return res.status(500).json({ error: err.message });
@@ -128,7 +129,7 @@ const getUser = async (req, res, _next) => {
       });
     }
 
-    return res.status(200).json({ user });
+    return res.status(200).json({ user: await serializeAuthUser(user) });
   } catch (err) {
     console.error('Error in getUser:', err);
     return res.status(500).json({ error: err.message });
@@ -162,7 +163,7 @@ const postUsers = async (req, res, _next) => {
 
     // If the password is provided, rotate it and the dependent Fever credential together.
     if (req.body.password) {
-      if (!isLocalAuthEnabled() || !user.password) {
+      if (!(await isLocalAuthEnabled()) || !user.password) {
         return res.status(403).json({ message: 'This account uses provider sign-in. Local password changes are unavailable.' });
       }
       const hash = await bcrypt.hash(req.body.password, 10);
@@ -187,7 +188,7 @@ const postUsers = async (req, res, _next) => {
       await user.update(updateValues, { transaction });
     });
 
-    return res.status(200).json({ user });
+    return res.status(200).json({ user: await serializeAuthUser(user) });
   } catch (err) {
     if (err instanceof EmailConfigurationError) {
       return res.status(400).json({ message: 'Please enter a valid email address.' });

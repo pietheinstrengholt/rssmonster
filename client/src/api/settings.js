@@ -78,3 +78,11 @@ export const testInferenceSettings = configuration => api.post('/setting/inferen
 
 export const fetchServerSettings = () => api.get('/setting/server');
 export const saveServerSettings = input => api.put('/setting/server', input);
+
+export const fetchSmtpSettings = () => api.get('/setting/server/smtp');
+export const saveSmtpSettings = input => api.put('/setting/server/smtp', input);
+export const clearSmtpSettings = () => api.delete('/setting/server/smtp');
+
+export const fetchOidcSettings = () => api.get('/setting/server/oidc');
+export const saveOidcSettings = input => api.put('/setting/server/oidc', input);
+export const clearOidcSettings = () => api.delete('/setting/server/oidc');

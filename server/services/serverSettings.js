@@ -1,5 +1,6 @@
 import db from '../models/index.js';
-import { isRegistrationEnabled, isLocalAuthEnabled } from '../config/auth.js';
+import { isRegistrationEnabled } from '../config/auth.js';
+import { isLocalAuthEnabled } from './auth/configuration.js';
 
 export const getServerSettings = async () => {
   const setting = await db.ServerSetting.findByPk('allowRegistration');
@@ -12,7 +13,7 @@ export const getServerSettings = async () => {
       environmentValue,
       effectiveValue: setting?.value ?? environmentValue
     },
-    localAuthEnabled: isLocalAuthEnabled()
+    localAuthEnabled: (await isLocalAuthEnabled())
   };
 };
 

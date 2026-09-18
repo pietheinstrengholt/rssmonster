@@ -1,4 +1,4 @@
-import { isLocalAuthEnabled } from '../../config/auth.js';
+import { isLocalAuthEnabled } from './configuration.js';
 import { randomBytes } from 'node:crypto';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
@@ -32,7 +32,7 @@ export const createOidcService = ({ protocol = null, now = () => new Date() } = 
   };
 
   const start = async (configuration, { linkUser = null } = {}) => {
-    if (linkUser && !isLocalAuthEnabled()) throw new OidcLoginError();
+    if (linkUser && !(await isLocalAuthEnabled())) throw new OidcLoginError();
     const provider = await discover(configuration);
     const state = randomToken();
     const browser = randomToken();
@@ -114,7 +114,7 @@ export const createOidcService = ({ protocol = null, now = () => new Date() } = 
     };
     const attempt = await OidcTransaction.findOne({ where });
     if (!attempt || await OidcTransaction.destroy({ where }) !== 1) throw new OidcLoginError();
-    if (attempt.linkUserId && !isLocalAuthEnabled()) throw new OidcLoginError();
+    if (attempt.linkUserId && !(await isLocalAuthEnabled())) throw new OidcLoginError();
     const user = await User.findByPk(attempt.userId);
     if (!user || passwordVersion(user) !== attempt.passwordVersion) throw new OidcLoginError();
     return { user, linked: Boolean(attempt.linkUserId) };

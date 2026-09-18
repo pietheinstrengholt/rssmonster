@@ -32,25 +32,12 @@ try {
 }
 
 try {
-  const { getEmailConfiguration } = await import('./config/email.js');
-  const emailConfiguration = getEmailConfiguration();
-  if (emailConfiguration.enabled) {
-    const { createEmailDeliveryWorker } = await import(
-      './services/email/emailDeliveryWorker.js'
-    );
-    const emailWorker = createEmailDeliveryWorker({
-      configuration: emailConfiguration,
-      logger: console
-    });
-    const { createDailyBriefingScheduler } = await import(
-      './services/dailyBriefing/dailyBriefingScheduler.js'
-    );
-    const dailyBriefingScheduler = createDailyBriefingScheduler({ logger: console });
-    void emailWorker.start();
-    void dailyBriefingScheduler.start();
-  } else {
-    console.log('[EmailWorker] disabled');
-  }
+  const { createEmailDeliveryWorker } = await import('./services/email/emailDeliveryWorker.js');
+  const { createDailyBriefingScheduler } = await import('./services/dailyBriefing/dailyBriefingScheduler.js');
+  const emailWorker = createEmailDeliveryWorker({ logger: console });
+  const dailyBriefingScheduler = createDailyBriefingScheduler({ logger: console });
+  void emailWorker.start();
+  void dailyBriefingScheduler.start();
 } catch (error) {
   console.error(
     '[EmailWorker] startup.failed errorCode=' +

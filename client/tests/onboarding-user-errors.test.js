@@ -6,9 +6,7 @@ import { createCategory } from '../src/api/categories';
 import { createFeed } from '../src/api/feeds';
 import {
   deleteUser,
-  fetchEmailConfiguration,
   fetchUsers,
-  testSmtpConnectivity,
   updateUser
 } from '../src/api/users';
 import { createFocusedStores } from './helpers/focusedStores.js';
@@ -23,9 +21,7 @@ vi.mock('../src/api/feeds', () => ({
 
 vi.mock('../src/api/users', () => ({
   deleteUser: vi.fn(),
-  fetchEmailConfiguration: vi.fn(),
   fetchUsers: vi.fn(),
-  testSmtpConnectivity: vi.fn(),
   updateUser: vi.fn()
 }));
 
@@ -65,12 +61,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, 'error').mockImplementation(() => {});
   fetchUsers.mockResolvedValue({ data: { users: [] } });
-  fetchEmailConfiguration.mockResolvedValue({
-    data: { configured: false, enabled: false }
-  });
-  testSmtpConnectivity.mockResolvedValue({
-    data: { verified: true, message: 'SMTP connection succeeded.' }
-  });
   updateUser.mockResolvedValue({ data: {} });
   deleteUser.mockResolvedValue({ data: {} });
 });
@@ -194,10 +184,7 @@ describe('user-management failure handling', () => {
     expect(wrapper.find('.manage-users__empty').exists()).toBe(false);
   });
 
-  it('shows email configuration, account addresses, and tests SMTP when enabled', async () => {
-    fetchEmailConfiguration.mockResolvedValue({
-      data: { configured: true, enabled: true }
-    });
+  it('shows account addresses and verification without server email controls', async () => {
     fetchUsers.mockResolvedValue({
       data: {
         users: [{
@@ -213,16 +200,10 @@ describe('user-management failure handling', () => {
     const wrapper = mountManageUsers();
     await flushPromises();
 
-    expect(wrapper.text()).toContain('Configuration: Configured');
-    expect(wrapper.text()).toContain('Service: Enabled');
+    expect(wrapper.text()).not.toContain('Email delivery');
+    expect(wrapper.text()).not.toContain('Test SMTP connection');
     expect(wrapper.text()).toContain('reader@example.com');
     expect(wrapper.text()).toContain('Verified');
-
-    await findButton(wrapper, 'Test SMTP connection').trigger('click');
-    await flushPromises();
-
-    expect(testSmtpConnectivity).toHaveBeenCalledOnce();
-    expect(wrapper.text()).toContain('SMTP connection succeeded.');
   });
 
   it('allows an administrator to edit an account email address', async () => {

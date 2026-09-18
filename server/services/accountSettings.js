@@ -1,9 +1,9 @@
-import { isLocalAuthEnabled } from '../config/auth.js';
+import { isLocalAuthEnabled } from './auth/configuration.js';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
 import { Op } from 'sequelize';
 import db from '../models/index.js';
-import { getEmailConfigurationStatus } from '../config/email.js';
+import { getEmailConfigurationStatus } from './email/configuration.js';
 import { changeUserEmail } from './email/emailVerification.js';
 import { enqueueDailyBriefingEmail } from './dailyBriefing/dailyBriefingEmail.service.js';
 import {
@@ -81,8 +81,8 @@ const validatePassword = (password, passwordRepeat) => {
   return password;
 };
 
-const emailServiceIsAvailable = () => {
-  const status = getEmailConfigurationStatus();
+const emailServiceIsAvailable = async () => {
+  const status = await getEmailConfigurationStatus();
   return status.enabled && status.configured;
 };
 
@@ -93,13 +93,13 @@ const hasCustomizedDigestSettings = preference => Boolean(preference && (
   preference.emailDigestSkipWhenEmpty === false
 ));
 
-const serializeAccountSettings = (user, preference, { passwordChanged = false } = {}) => ({
+const serializeAccountSettings = (user, preference, { passwordChanged = false, emailServiceEnabled, localAuthEnabled } = {}) => ({
   username: user.username,
   emailManagedByProvider: !user.password,
-  localPasswordEnabled: isLocalAuthEnabled() && Boolean(user.password),
+  localPasswordEnabled: localAuthEnabled && Boolean(user.password),
   email: user.email,
   emailVerifiedAt: user.emailVerifiedAt,
-  emailServiceEnabled: emailServiceIsAvailable(),
+  emailServiceEnabled,
   serverTimezone: getServerTimezone(),
   emailDigestConfigured: hasCustomizedDigestSettings(preference),
   emailDigestEnabled: Boolean(preference?.emailDigestEnabled),
@@ -117,7 +117,7 @@ export const getAccountSettings = async userId => {
   });
   if (!user) throw new AccountSettingsError('USER_NOT_FOUND', 'Account not found.', 404);
   const preference = await BriefingPreference.findOne({ where: { userId } });
-  return serializeAccountSettings(user, preference);
+  return serializeAccountSettings(user, preference, { emailServiceEnabled: await emailServiceIsAvailable(), localAuthEnabled: await isLocalAuthEnabled() });
 };
 
 export const updateAccountSettings = async (userId, values, { now = new Date() } = {}) => {
@@ -131,10 +131,12 @@ export const updateAccountSettings = async (userId, values, { now = new Date() }
   );
   const emailDigestTime = validateDigestTime(values.emailDigestTime);
   const emailDigestTimezone = validateDigestTimezone(values.emailDigestTimezone);
-  if (!isLocalAuthEnabled() && (values.password || values.passwordRepeat)) {
+  const localAuthEnabled = await isLocalAuthEnabled();
+  if (!localAuthEnabled && (values.password || values.passwordRepeat)) {
     throw new AccountSettingsError('LOCAL_PASSWORD_DISABLED', 'Local password changes are unavailable.', 403);
   }
   const password = validatePassword(values.password, values.passwordRepeat);
+  const emailServiceEnabled = await emailServiceIsAvailable();
   const passwordHash = password ? await bcrypt.hash(password, 10) : null;
 
   return sequelize.transaction(async transaction => {
@@ -152,7 +154,7 @@ export const updateAccountSettings = async (userId, values, { now = new Date() }
 
     const previousEmail = existingUser.email;
     await changeUserEmail(userId, values.email, {
-      allowNull: !emailServiceIsAvailable(),
+      allowNull: !emailServiceEnabled,
       now,
       transaction
     });
@@ -160,7 +162,7 @@ export const updateAccountSettings = async (userId, values, { now = new Date() }
     const emailChanged = previousEmail !== user.email;
     let effectiveDigestEnabled = emailDigestEnabled;
 
-    if (effectiveDigestEnabled && !emailServiceIsAvailable()) {
+    if (effectiveDigestEnabled && !emailServiceEnabled) {
       throw new AccountSettingsError(
         'EMAIL_DISABLED',
         'Email delivery is not enabled on this server.',
@@ -200,7 +202,7 @@ export const updateAccountSettings = async (userId, values, { now = new Date() }
       });
     }
 
-    return serializeAccountSettings(user, preference, { passwordChanged: Boolean(password) });
+    return serializeAccountSettings(user, preference, { passwordChanged: Boolean(password), emailServiceEnabled, localAuthEnabled });
   });
 };
 
@@ -208,7 +210,7 @@ export const enqueueDailyBriefingTest = async (userId, {
   enqueueDigest = enqueueDailyBriefingEmail,
   createDedupeKey = () => `daily-digest-test:${randomUUID()}`
 } = {}) => {
-  if (!emailServiceIsAvailable()) {
+  if (!await emailServiceIsAvailable()) {
     throw new AccountSettingsError(
       'EMAIL_DISABLED',
       'Email delivery is not enabled on this server.',

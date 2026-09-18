@@ -1,17 +1,17 @@
+import { isEmailEnabled } from '../services/email/configuration.js';
 import { isPublicRegistrationEnabled } from '../services/serverSettings.js';
 import { getAvailableInferenceCapabilities } from '../services/inference/status.js';
 import db from '../models/index.js';
 const { User } = db;
 import bcrypt from "bcryptjs";
 import { createAuthenticatedSession, createEmailEnrollmentResponse } from "../services/auth/session.js";
-import { isLocalAuthEnabled, getAuthConfiguration } from '../config/auth.js';
+import { getAuthConfiguration } from '../services/auth/configuration.js';
 import {
   createFeverApiKey,
   createFeverCredentialHash
 } from '../utils/apiCredentials.js';
 import { isAssistantEnabled } from '../config/intelligentFeatures.js';
 import {
-  isEmailEnabled,
   normalizeEmailAddress
 } from '../config/email.js';
 import { requestUserEmailVerification } from '../services/email/emailVerification.js';
@@ -83,7 +83,7 @@ const register = async (req, res, _next) => {
       });
     }
 
-    if (email && isEmailEnabled()) {
+    if (email && (await isEmailEnabled())) {
       try {
         await requestUserEmailVerification(user.id);
       } catch (error) {
@@ -131,7 +131,7 @@ const login = async (req, res, _next) => {
       });  
     }
 
-    if (isEmailEnabled() && !user.emailVerifiedAt) {
+    if ((await isEmailEnabled()) && !user.emailVerifiedAt) {
       return res.status(200).json(createEmailEnrollmentResponse(user));
     }
 
@@ -211,13 +211,16 @@ const validate = async (req, res, _next) => {
   }
 };
 
-const configuration = async (_req, res) => res.status(200).json({
-  registrationEnabled: isLocalAuthEnabled() && await isPublicRegistrationEnabled(),
-  localAuthEnabled: isLocalAuthEnabled(),
-  developmentLoginEnabled: isLocalAuthEnabled() && isDevelopmentLoginEnabled(),
-  oidcEnabled: getAuthConfiguration().oidcEnabled,
-  emailEnabled: isEmailEnabled()
-});
+const configuration = async (_req, res) => {
+  const { localAuthEnabled, oidcEnabled } = await getAuthConfiguration();
+  return res.status(200).json({
+    registrationEnabled: localAuthEnabled && await isPublicRegistrationEnabled(),
+    localAuthEnabled,
+    developmentLoginEnabled: localAuthEnabled && isDevelopmentLoginEnabled(),
+    oidcEnabled,
+    emailEnabled: await isEmailEnabled()
+  });
+};
 
 export default {
   register,

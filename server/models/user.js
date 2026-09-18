@@ -94,10 +94,10 @@ export default (sequelize) => {
   );
 
   // This function prevents stored credentials from being serialized in API responses.
-  User.prototype.toJSON = function toJSON() {
+  User.prototype.toJSON = function toJSON({ localAuthEnabled = isLocalAuthEnabled() } = {}) {
     const values = { ...this.get({ plain: true }) };
-    if (Object.hasOwn(values, 'password')) values.localPasswordEnabled = isLocalAuthEnabled() && Boolean(values.password);
-    else if (Object.hasOwn(values, 'localPasswordEnabled')) values.localPasswordEnabled = isLocalAuthEnabled() && Boolean(values.localPasswordEnabled);
+    if (Object.hasOwn(values, 'password')) values.localPasswordEnabled = localAuthEnabled && Boolean(values.password);
+    else if (Object.hasOwn(values, 'localPasswordEnabled')) values.localPasswordEnabled = localAuthEnabled && Boolean(values.localPasswordEnabled);
     delete values.password;
     delete values.feverCredentialHash;
     delete values.bootstrapAdminClaim;

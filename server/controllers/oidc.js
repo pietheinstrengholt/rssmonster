@@ -1,7 +1,8 @@
+import { isEmailEnabled } from '../services/email/configuration.js';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
-import { getAuthConfiguration } from '../config/auth.js';
-import { isEmailEnabled } from '../config/email.js';
+import { getAuthConfiguration } from '../services/auth/configuration.js';
+
 import { oidcService } from '../services/auth/oidc.js';
 import { createAuthenticatedSession, createEmailEnrollmentResponse } from '../services/auth/session.js';
 
@@ -26,9 +27,9 @@ const logFailure = (stage, error) => {
 };
 
 // A configured origin is authoritative; forwarded or Host headers never select redirects.
-export const requireOidc = (req, res, next) => {
+export const requireOidc = async (req, res, next) => {
   res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
-  const configuration = getAuthConfiguration();
+  const configuration = (await getAuthConfiguration());
   if (!configuration.oidcEnabled) return res.status(404).json({ message: 'Not found.' });
   req.oidcConfiguration = configuration.oidc;
   if (req.method === 'POST' && req.get('origin') !== new URL(configuration.oidc.frontendUrl).origin) {
@@ -82,7 +83,7 @@ const exchange = async (req, res) => {
   try {
     const { user, linked } = await oidcService.exchange(req.oidcConfiguration, req.body?.code, browserCookie(req));
     res.clearCookie(COOKIE_NAME, cookieOptions(req.oidcConfiguration));
-    if (isEmailEnabled() && !user.emailVerifiedAt) return res.json(createEmailEnrollmentResponse(user));
+    if ((await isEmailEnabled()) && !user.emailVerifiedAt) return res.json(createEmailEnrollmentResponse(user));
     const session = await createAuthenticatedSession(user);
     return res.json({ ...session, oidcLinked: linked });
   } catch (error) {

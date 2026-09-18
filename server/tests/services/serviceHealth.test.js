@@ -5,7 +5,7 @@ vi.mock('../../models/index.js', () => ({ default: { sequelize: {} } }));
 vi.mock('../../services/health/databaseHealth.js', () => ({ checkDatabaseHealth: mocks.database }));
 vi.mock('../../src/workers/crawlWorkerHealth.js', () => ({ readCrawlWorkerHealthState: mocks.crawler }));
 vi.mock('../../src/workers/aiWorkerHealth.js', () => ({ readAiWorkerHealthState: mocks.ai }));
-vi.mock('../../config/email.js', () => ({ getEmailConfigurationStatus: mocks.email }));
+vi.mock('../../services/email/configuration.js', () => ({ getEmailConfigurationStatus: mocks.email }));
 vi.mock('../../services/ai/health.js', () => ({ getAIHealth: mocks.health }));
 import { getServiceHealth } from '../../services/health/serviceHealth.js';
 

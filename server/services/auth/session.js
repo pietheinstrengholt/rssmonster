@@ -1,3 +1,4 @@
+import { serializeAuthUser } from './configuration.js';
 import { getAvailableInferenceCapabilities } from '../inference/status.js';
 import jwt from "jsonwebtoken";
 import { getJwtSecret } from "../../config/auth.js";
@@ -28,7 +29,7 @@ export const createAuthenticatedSession = async (user) => {
   return {
     message: 'Connected!',
     token,
-    user,
+    user: await serializeAuthUser(user),
     expiresInSeconds,
     agenticFeaturesEnabled: isAssistantEnabled() && (await getAvailableInferenceCapabilities()).assistant
   };

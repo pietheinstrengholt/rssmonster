@@ -1,5 +1,5 @@
 import { changeUserEmail } from '../email/emailVerification.js';
-import { isLocalAuthEnabled } from '../../config/auth.js';
+import { isLocalAuthEnabled } from './configuration.js';
 import { createHash } from 'node:crypto';
 import db from '../../models/index.js';
 import { normalizeEmailAddress } from '../../config/email.js';
@@ -38,7 +38,7 @@ const enforceAccessPolicy = (claims, { allowedEmailDomains = [], allowedGroups =
 export const resolveOidcIdentity = async (claims, {
   accessPolicy = {}, autoProvision = false, linkUserId = null, linkPasswordVersion = null, now = new Date()
 } = {}) => {
-  if (linkUserId && !isLocalAuthEnabled()) throw new OidcLoginError();
+  if (linkUserId && !(await isLocalAuthEnabled())) throw new OidcLoginError();
   if (typeof claims?.iss !== 'string' || !claims.iss || typeof claims.sub !== 'string' || !claims.sub) throw new OidcLoginError();
   enforceAccessPolicy(claims, accessPolicy);
   const identityHash = hashOidcValue(JSON.stringify([claims.iss, claims.sub]));

@@ -1,4 +1,4 @@
-import { isLocalAuthEnabled } from '../config/auth.js';
+import { isLocalAuthEnabled } from '../services/auth/configuration.js';
 import crypto from 'node:crypto';
 import db from '../models/index.js';
 import {
@@ -79,7 +79,7 @@ export const parseGreaderAuthorization = authorization => {
 // Helper to validate auth header and return user.
 // This middleware authenticates one Google Reader request and caches its user.
 export const authenticateGreader = async (req, res, next) => {
-  if (!isLocalAuthEnabled()) return sendGreaderUnauthorized(res);
+  if (!(await isLocalAuthEnabled())) return sendGreaderUnauthorized(res);
   try {
     const credential = parseGreaderAuthorization(req.headers.authorization);
     if (!credential) {

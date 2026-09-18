@@ -1,7 +1,8 @@
+import { getEmailConfiguration } from './configuration.js';
 import { createHash, randomBytes } from 'node:crypto';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
-import { getEmailConfiguration, normalizeEmailAddress } from '../../config/email.js';
+import { normalizeEmailAddress } from '../../config/email.js';
 
 const { EmailVerificationToken, User, sequelize } = db;
 const TOKEN_BYTES = 32;
@@ -98,11 +99,12 @@ export const changeUserEmail = async (userId, email, {
 
 // Creates and queues a new verification credential, superseding every older unused credential.
 export const requestUserEmailVerification = async (userId, {
-  configuration = getEmailConfiguration(),
+  configuration,
   enqueue = null,
   now = new Date(),
   createToken = () => randomBytes(TOKEN_BYTES).toString('base64url')
 } = {}) => {
+  configuration ??= await getEmailConfiguration();
   const emailConfiguration = requireEnabledConfiguration(configuration);
   const enqueueOperation = enqueue || (await import('./emailService.js')).enqueueEmail;
   const token = createToken();

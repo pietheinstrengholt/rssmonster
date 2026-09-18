@@ -1,13 +1,15 @@
+import { isEmailEnabled } from '../services/email/configuration.js';
 import { isPublicRegistrationEnabled } from '../services/serverSettings.js';
 import jwt from "jsonwebtoken";
-import { getJwtSecret, isLocalAuthEnabled } from '../config/auth.js';
-import { isEmailEnabled, normalizeEmailAddress } from '../config/email.js';
+import { getJwtSecret } from '../config/auth.js';
+import { isLocalAuthEnabled } from '../services/auth/configuration.js';
+import { normalizeEmailAddress } from '../config/email.js';
 import db from '../models/index.js';
 
 const { User } = db;
 
-const requireLocalAuth = (_req, res, next) => {
-  if (!isLocalAuthEnabled()) return res.status(403).json({ message: 'Local authentication is disabled.' });
+const requireLocalAuth = async (_req, res, next) => {
+  if (!(await isLocalAuthEnabled())) return res.status(403).json({ message: 'Local authentication is disabled.' });
   next();
 };
 
@@ -37,7 +39,7 @@ const validateRegister = async (req, res, next) => {
       message: 'Both passwords must match'
     });
   }
-  if (isEmailEnabled() && !req.body.email) {
+  if ((await isEmailEnabled()) && !req.body.email) {
     return res.status(400).send({
       message: 'Please enter an email address.'
     });

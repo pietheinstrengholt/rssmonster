@@ -1,4 +1,5 @@
 import { createMailService } from './emailService.js';
+import { getEmailConfiguration } from './configuration.js';
 
 export const EMAIL_DELIVERY_POLL_INTERVAL_MS = 5 * 60 * 1000;
 export const EMAIL_DELIVERY_BATCH_SIZE = 10;
@@ -22,7 +23,7 @@ export const createEmailDeliveryWorker = ({
   logger = console,
   mailService = null
 } = {}) => {
-  const service = mailService || createMailService({ configuration, logger });
+  const service = mailService || (configuration ? createMailService({ configuration, logger }) : null);
   let intervalId = null;
   let runPromise = null;
 
@@ -30,26 +31,31 @@ export const createEmailDeliveryWorker = ({
     if (runPromise) return runPromise;
 
     runPromise = (async () => {
-      const deliveries = await service.claimPendingEmails({ limit: batchSize });
-      if (deliveries.length > 0) {
-        logger.log(`[EmailWorker] outbox.claimed count=${deliveries.length}`);
-      }
-
-      const results = [];
-      for (const delivery of deliveries) {
-        try {
-          results.push(await service.sendClaimedEmail(delivery));
-        } catch (error) {
-          logger.error(
-            '[EmailWorker] delivery.unhandled ' +
-            `deliveryId=${JSON.stringify(valueOf(delivery, 'id'))} ` +
-            `userId=${Number(valueOf(delivery, 'userId'))} ` +
-            `messageType=${JSON.stringify(valueOf(delivery, 'messageType'))} ` +
-            `errorCode=${JSON.stringify(safeErrorCode(error))}`
-          );
+      const currentService = service || createMailService({ configuration: await getEmailConfiguration(), logger });
+      try {
+        const deliveries = await currentService.claimPendingEmails({ limit: batchSize });
+        if (deliveries.length > 0) {
+          logger.log(`[EmailWorker] outbox.claimed count=${deliveries.length}`);
         }
+
+        const results = [];
+        for (const delivery of deliveries) {
+          try {
+            results.push(await currentService.sendClaimedEmail(delivery));
+          } catch (error) {
+            logger.error(
+              '[EmailWorker] delivery.unhandled ' +
+              `deliveryId=${JSON.stringify(valueOf(delivery, 'id'))} ` +
+              `userId=${Number(valueOf(delivery, 'userId'))} ` +
+              `messageType=${JSON.stringify(valueOf(delivery, 'messageType'))} ` +
+              `errorCode=${JSON.stringify(safeErrorCode(error))}`
+            );
+          }
+        }
+        return results;
+      } finally {
+        if (!service) await currentService.closeEmailTransport();
       }
-      return results;
     })().catch(error => {
       logger.error(
         `[EmailWorker] iteration.failed errorCode=${JSON.stringify(safeErrorCode(error))}`
@@ -68,8 +74,10 @@ export const createEmailDeliveryWorker = ({
       `[EmailWorker] starting intervalMs=${intervalMs} batchSize=${batchSize}`
     );
 
+    let verificationService;
     try {
-      const verification = await service.verifyEmailTransport();
+      verificationService = service || createMailService({ configuration: await getEmailConfiguration(), logger });
+      const verification = await verificationService.verifyEmailTransport();
       logger.log(
         `[EmailWorker] transport.verified verified=${verification.verified === true}`
       );
@@ -79,6 +87,8 @@ export const createEmailDeliveryWorker = ({
         `[EmailWorker] transport.failed errorCode=${JSON.stringify(safeErrorCode(error))}` +
         `${responseCode === null ? '' : ` responseCode=${responseCode}`}`
       );
+    } finally {
+      if (!service) await verificationService?.closeEmailTransport();
     }
 
     await runOnce();
@@ -92,7 +102,7 @@ export const createEmailDeliveryWorker = ({
     if (intervalId) clearInterval(intervalId);
     intervalId = null;
     await runPromise;
-    await service.closeEmailTransport();
+    await service?.closeEmailTransport();
     logger.log('[EmailWorker] stopped');
   };
 

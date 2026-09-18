@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
-import { getEmailConfiguration } from '../../config/email.js';
+import { getEmailConfiguration } from '../email/configuration.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { enqueueEmail } from '../email/emailService.js';
 import { searchArticles } from '../articleSearch/articleSearch.service.js';
@@ -138,11 +138,12 @@ export const enqueueDailyBriefingEmail = async (user, {
   testMode = false,
   forceWhenEmpty = false,
   now = new Date(),
-  configuration = getEmailConfiguration(),
+  configuration,
   selectArticles = selectDailyBriefingEmailArticles,
   enqueue = enqueueEmail,
   createTestDedupeKey = () => `daily-digest-test:${randomUUID()}`
 } = {}) => {
+  configuration ??= await getEmailConfiguration();
   if (!configuration.enabled) {
     throw new DailyBriefingEmailError(
       'EMAIL_DISABLED',

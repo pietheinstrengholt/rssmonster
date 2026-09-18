@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import db from '../../models/index.js';
 import { getEmailConfiguration } from '../../config/email.js';
+import { getEmailConfiguration as getEffectiveEmailConfiguration } from './configuration.js';
 import { renderEmailTemplate } from './emailTemplates.js';
 import {
   claimEmailDeliveries,
@@ -258,18 +259,19 @@ export const createMailService = ({
   };
 };
 
-let defaultMailService;
-const getDefaultMailService = () => {
-  if (!defaultMailService) defaultMailService = createMailService({ logger: console });
-  return defaultMailService;
+// Resolve each operation from shared storage; never keep a process-local SMTP snapshot.
+const withMailService = async (operation, args) => {
+  const configuration = await getEffectiveEmailConfiguration({ transaction: args[1]?.transaction });
+  const service = createMailService({ configuration, logger: console });
+  try {
+    return await service[operation](...args);
+  } finally {
+    await service.closeEmailTransport();
+  }
 };
-
-export const verifyEmailTransport = (...args) =>
-  getDefaultMailService().verifyEmailTransport(...args);
-export const enqueueEmail = (...args) => getDefaultMailService().enqueueEmail(...args);
-export const claimPendingEmails = (...args) =>
-  getDefaultMailService().claimPendingEmails(...args);
-export const sendClaimedEmail = (...args) =>
-  getDefaultMailService().sendClaimedEmail(...args);
-export const closeEmailTransport = (...args) =>
-  getDefaultMailService().closeEmailTransport(...args);
+export const verifyEmailTransport = (...args) => withMailService('verifyEmailTransport', args);
+export const enqueueEmail = (...args) => withMailService('enqueueEmail', args);
+export const claimPendingEmails = (...args) => withMailService('claimPendingEmails', args);
+export const sendClaimedEmail = (...args) => withMailService('sendClaimedEmail', args);
+// Default operations close their own transports; retain the cleanup contract for callers.
+export const closeEmailTransport = async () => {};
