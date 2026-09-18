@@ -10,7 +10,8 @@ import {
   saveIncludeDevelopingEvents,
   saveMarkAsReadOnScroll,
   savePrioritizeHighTrust,
-  saveStartupViewMode
+  saveStartupViewMode,
+  saveOpenArticleLinksInNewTab
 } from '../src/api/settings.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
@@ -19,6 +20,7 @@ vi.mock('../src/api/settings.js', () => ({
   saveIncludeDevelopingEvents: vi.fn(),
   saveMarkAsReadOnScroll: vi.fn(),
   savePrioritizeHighTrust: vi.fn(),
+  saveOpenArticleLinksInNewTab: vi.fn(),
   saveStartupViewMode: vi.fn()
 }));
 
@@ -52,6 +54,8 @@ function createStore(setShowModal = vi.fn(), setCurrentSelection = vi.fn()) {
 }
 
 beforeEach(() => {
+  saveOpenArticleLinksInNewTab.mockReset();
+  saveOpenArticleLinksInNewTab.mockResolvedValue({ data: { openArticleLinksInNewTab: true } });
   fetchSettings.mockReset();
   fetchSettings.mockResolvedValue({
     data: {
@@ -226,7 +230,8 @@ describe('UnreadConfigurationModal', () => {
       'Developing events',
       'Prioritize high-trust coverage',
       'Mark as read while scrolling',
-      'Use default view on startup'
+      'Use default view on startup',
+      'Open article links in a new tab'
     ]);
     expect(wrapper.findAll('.unread-preferences-option-description')[0].text()).toBe(
       'Include new coverage for events you have already seen.'
@@ -234,7 +239,7 @@ describe('UnreadConfigurationModal', () => {
     expect(wrapper.findAll('.unread-preferences-option-description')[2].text()).toContain(
       'This also applies to Headlines mode.'
     );
-    expect(wrapper.findAll('[role="switch"]')).toHaveLength(4);
+    expect(wrapper.findAll('[role="switch"]')).toHaveLength(5);
     expect(wrapper.get('[name="includeDevelopingEvents"]').element.checked).toBe(true);
     expect(wrapper.get('[name="prioritizeHighTrust"]').element.checked).toBe(true);
     expect(wrapper.get('[name="markAsReadOnScroll"]').element.checked).toBe(true);
@@ -256,6 +261,7 @@ describe('UnreadConfigurationModal', () => {
     await wrapper.get('[name="prioritizeHighTrust"]').setValue(false);
     await wrapper.get('[name="markAsReadOnScroll"]').setValue(false);
     await wrapper.get('[name="useDefaultStartupView"]').setValue(false);
+    await wrapper.get('[name="openArticleLinksInNewTab"]').setValue(true);
     await wrapper.get('.unread-preferences-form').trigger('submit');
     await flushPromises();
 
@@ -263,6 +269,8 @@ describe('UnreadConfigurationModal', () => {
     expect(savePrioritizeHighTrust).toHaveBeenCalledWith(false);
     expect(saveMarkAsReadOnScroll).toHaveBeenCalledWith(false);
     expect(saveStartupViewMode).toHaveBeenCalledWith('last-used');
+    expect(saveOpenArticleLinksInNewTab).toHaveBeenCalledWith(true);
+    expect(stores.uiStore.openArticleLinksInNewTab).toBe(true);
     expect(setCurrentSelection).toHaveBeenCalledWith({
       includeDevelopingEvents: false,
       markAsReadOnScroll: false

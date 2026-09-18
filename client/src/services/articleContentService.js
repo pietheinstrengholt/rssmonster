@@ -153,7 +153,7 @@ function createYouTubeEmbed(document, videoId) {
 }
 
 // This function normalizes display markup, readable text, and fallback-image membership in one DOM pass.
-export function normalizeArticleContent(value, fallbackImageUrl = '') {
+export function normalizeArticleContent(value, fallbackImageUrl = '', openArticleLinksInNewTab = false) {
   const html = String(value || '');
 
   if (typeof DOMParser === 'undefined') {
@@ -163,6 +163,16 @@ export function normalizeArticleContent(value, fallbackImageUrl = '') {
   try {
     const document = new DOMParser().parseFromString(html, 'text/html');
     normalizeMastodonLinks(document);
+    if (openArticleLinksInNewTab) {
+      document.querySelectorAll('a[href]').forEach(link => {
+        link.setAttribute('target', '_blank');
+        const rel = new Set(String(link.getAttribute('rel') || '').split(/\s+/).filter(Boolean));
+        rel.delete('opener');
+        rel.add('noopener');
+        rel.add('noreferrer');
+        link.setAttribute('rel', [...rel].join(' '));
+      });
+    }
     const embedFigures = document.querySelectorAll('figure.rssmonster-embed[data-provider="youtube"], figure.embed-youtube');
 
     embedFigures.forEach(figure => {

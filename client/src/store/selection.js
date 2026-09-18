@@ -191,6 +191,7 @@ export const useSelectionStore = defineStore('selection', {
         if (!hadPendingTheme && uiStore.pendingThemeMode === null && uiStore.themeRevision === themeRevision) {
           uiStore.setThemeMode(data.themeMode);
         }
+        uiStore.setOpenArticleLinksInNewTab(data.openArticleLinksInNewTab);
         this.setCurrentSelection(this.currentSelection.smartFolderId !== null ? {
           AIEnabled: data.AIEnabled,
           AssistantEnabled: data.AssistantEnabled,

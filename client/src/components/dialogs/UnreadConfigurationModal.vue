@@ -133,6 +133,27 @@
               <span class="unread-switch-control" aria-hidden="true"></span>
             </span>
           </label>
+          <label class="unread-preferences-option">
+            <span class="unread-preferences-option-icon" aria-hidden="true">
+              <BootstrapIcon icon="box-arrow-up-right" />
+            </span>
+            <span class="unread-preferences-option-content">
+              <span class="unread-preferences-option-title">Open article links in a new tab</span>
+              <span class="unread-preferences-option-description">
+                Keep RSSMonster open when following links in article bodies, in all reading views. When off, links follow the publisher's behavior. Article titles always open in a new tab.
+              </span>
+            </span>
+            <span class="unread-switch">
+              <input
+                v-model="form.openArticleLinksInNewTab"
+                name="openArticleLinksInNewTab"
+                type="checkbox"
+                role="switch"
+                :disabled="isLoading || isSaving"
+              />
+              <span class="unread-switch-control" aria-hidden="true"></span>
+            </span>
+          </label>
         </div>
 
       </form>
@@ -148,6 +169,7 @@ import {
   saveIncludeDevelopingEvents as saveIncludeDevelopingEventsAPI,
   saveMarkAsReadOnScroll as saveMarkAsReadOnScrollAPI,
   savePrioritizeHighTrust as savePrioritizeHighTrustAPI,
+  saveOpenArticleLinksInNewTab as saveOpenArticleLinksInNewTabAPI,
   saveStartupViewMode as saveStartupViewModeAPI
 } from '../../api/settings.js';
 import PreferencesDialogShell from './PreferencesDialogShell.vue';
@@ -167,6 +189,7 @@ export default {
         includeDevelopingEvents: false,
         markAsReadOnScroll: true,
         prioritizeHighTrust: false,
+        openArticleLinksInNewTab: false,
         useDefaultStartupView: false
       },
       isLoading: true,
@@ -195,6 +218,7 @@ export default {
         const { data } = await fetchSettingsAPI();
         if (requestId !== this.activeRequestId) return;
 
+        this.form.openArticleLinksInNewTab = Boolean(data.openArticleLinksInNewTab);
         this.form.includeDevelopingEvents = Boolean(data.includeDevelopingEvents);
         this.form.markAsReadOnScroll = data.markAsReadOnScroll !== false;
         this.form.prioritizeHighTrust = Boolean(data.prioritizeHighTrust);
@@ -220,13 +244,16 @@ export default {
         const startupViewMode = this.form.useDefaultStartupView ? 'default' : 'last-used';
         const [
           { data: unreadData },
-          { data: scrollingData }
+          { data: scrollingData },
+          { data: linkData }
         ] = await Promise.all([
           saveIncludeDevelopingEventsAPI(this.form.includeDevelopingEvents),
           saveMarkAsReadOnScrollAPI(this.form.markAsReadOnScroll),
+          saveOpenArticleLinksInNewTabAPI(this.form.openArticleLinksInNewTab),
           savePrioritizeHighTrustAPI(this.form.prioritizeHighTrust),
           saveStartupViewModeAPI(startupViewMode)
         ]);
+        this.uiStore.setOpenArticleLinksInNewTab(linkData.openArticleLinksInNewTab);
         const includeDevelopingEvents = Boolean(unreadData.includeDevelopingEvents);
         const markAsReadOnScroll = Boolean(scrollingData.markAsReadOnScroll);
 

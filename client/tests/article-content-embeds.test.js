@@ -13,6 +13,26 @@ function mountArticleContent(content) {
 }
 
 describe('ArticleContent embeds', () => {
+  it.each(['full', 'reader', 'minimal'])('opens body links in a new tab in %s mode when enabled', async viewMode => {
+    const wrapper = mount(ArticleContent, {
+      props: {
+        viewMode,
+        showMinimalContent: true,
+        openArticleLinksInNewTab: true,
+        content: '<p><a href="https://example.com" rel="nofollow opener">Plain</a><a href="https://example.org" target="_self">Self</a><a href="https://example.net" target="publisher">Named</a></p>'
+      }
+    });
+    for (const link of wrapper.findAll('a')) {
+      expect(link.attributes('target')).toBe('_blank');
+      expect(link.attributes('rel').split(' ')).toEqual(expect.arrayContaining(['noopener', 'noreferrer']));
+      expect(link.attributes('rel').split(' ')).not.toContain('opener');
+    }
+    expect(wrapper.get('a').attributes('rel')).toContain('nofollow');
+    await wrapper.setProps({ openArticleLinksInNewTab: false });
+    expect(wrapper.findAll('a').map(link => link.attributes('target'))).toEqual([undefined, '_self', 'publisher']);
+    wrapper.unmount();
+  });
+
   it('makes every segment of legacy Mastodon-formatted links visible', () => {
     const wrapper = mountArticleContent(
       '<p>Article <a href="https://eff.org/summer" target="_blank" rel="nofollow noopener" translate="no">' +

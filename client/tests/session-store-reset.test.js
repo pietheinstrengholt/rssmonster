@@ -42,6 +42,16 @@ beforeEach(() => {
 });
 
 describe('coordinated Pinia session reset', () => {
+  it('loads the saved article link preference and clears it on logout', async () => {
+    fetchSettings.mockResolvedValueOnce({ data: { openArticleLinksInNewTab: true } });
+    const selectionStore = useSelectionStore();
+    const uiStore = useUiStore();
+    await selectionStore.fetchSettings();
+    expect(uiStore.openArticleLinksInNewTab).toBe(true);
+    useAuthStore().clearSession();
+    expect(uiStore.openArticleLinksInNewTab).toBe(false);
+  });
+
   // This test verifies logout clears every user-owned store before an obsolete resource can complete.
   it('resets all focused state and ignores a resource response that resolves after logout', async () => {
     const oldTags = deferred();

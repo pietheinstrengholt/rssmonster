@@ -267,6 +267,7 @@ export const getSettings = async (req, res, _next) => {
     let themeMode = 'system';
     let startupViewMode = 'last-used';
     let markAsReadOnScroll = true;
+    let openArticleLinksInNewTab = false;
 
     const settings = await Setting.findOne({ where: { userId: userId }, raw: true });
 
@@ -278,6 +279,7 @@ export const getSettings = async (req, res, _next) => {
       includeDevelopingEvents = Boolean(settings.includeDevelopingEvents);
       prioritizeHighTrust = Boolean(settings.prioritizeHighTrust);
       themeMode = settings.themeMode || 'system';
+      openArticleLinksInNewTab = Boolean(settings.openArticleLinksInNewTab);
       startupViewMode = settings.startupViewMode || 'last-used';
       markAsReadOnScroll = settings.markAsReadOnScroll == null
         ? true
@@ -310,6 +312,7 @@ export const getSettings = async (req, res, _next) => {
       prioritizeHighTrust,
       themeMode: themeMode,
       startupViewMode,
+      openArticleLinksInNewTab,
       markAsReadOnScroll,
       AIEnabled: aiEnabled,
       AssistantEnabled: isAssistantEnabled() && available.assistant
@@ -512,6 +515,36 @@ export const setMarkAsReadOnScroll = async (req, res, _next) => {
     return res.status(200).json({ success: true, markAsReadOnScroll });
   } catch (err) {
     console.error('Error in setMarkAsReadOnScroll:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// This function saves whether article body links open in a new tab.
+export const setOpenArticleLinksInNewTab = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+    const { openArticleLinksInNewTab } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    if (typeof openArticleLinksInNewTab !== 'boolean') {
+      return res.status(400).json({ error: 'openArticleLinksInNewTab must be a boolean' });
+    }
+
+    const [settings, created] = await Setting.findOrCreate({
+      where: { userId },
+      defaults: { openArticleLinksInNewTab }
+    });
+
+    if (!created) {
+      await settings.update({ openArticleLinksInNewTab });
+    }
+
+    return res.status(200).json({ success: true, openArticleLinksInNewTab });
+  } catch (err) {
+    console.error('Error in setOpenArticleLinksInNewTab:', err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -914,6 +947,7 @@ export default {
   setThemeMode,
   setStartupViewMode,
   setMarkAsReadOnScroll,
+  setOpenArticleLinksInNewTab,
   setPrioritizeHighTrust,
   getIslandsOverview,
   getEventsOverview

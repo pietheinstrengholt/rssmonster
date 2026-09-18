@@ -16,7 +16,7 @@ import { hasUsableArticleAnalysis, isArticleAnalysisInProgress } from '../../ser
 
 export default {
   components: { HighlightedText },
-  props: { viewMode: { type: String, default: '' }, content: { type: String, default: '' }, contentText: { type: String, default: '' }, imageUrl: { type: String, default: '' }, imageWidth: { type: [Number, String], default: null }, imageHeight: { type: [Number, String], default: null }, imageMimeType: { type: String, default: '' }, imageSource: { type: String, default: '' }, contentSummaryBullets: { type: Array, default: () => [] }, aiAnalysisStatus: { type: String, default: '' }, visibleBulletCount: { type: Number, default: Infinity }, shouldShowImage: { type: Boolean, default: true }, showMinimalContent: { type: Boolean, default: false }, highlightTerms: { type: Array, default: () => [] } },
+  props: { openArticleLinksInNewTab: { type: Boolean, default: false }, viewMode: { type: String, default: '' }, content: { type: String, default: '' }, contentText: { type: String, default: '' }, imageUrl: { type: String, default: '' }, imageWidth: { type: [Number, String], default: null }, imageHeight: { type: [Number, String], default: null }, imageMimeType: { type: String, default: '' }, imageSource: { type: String, default: '' }, contentSummaryBullets: { type: Array, default: () => [] }, aiAnalysisStatus: { type: String, default: '' }, visibleBulletCount: { type: Number, default: Infinity }, shouldShowImage: { type: Boolean, default: true }, showMinimalContent: { type: Boolean, default: false }, highlightTerms: { type: Array, default: () => [] } },
   data() {
     return {
       loadedImageUrl: '',
@@ -31,7 +31,7 @@ export default {
     // Returns whether this article has renderable content.
     hasContent() { return this.content !== NULL_ARTICLE_CONTENT; },
     // Returns cached display HTML and image metadata from one normalization pass.
-    normalizedContent() { return normalizeArticleContent(this.content, this.imageUrl); },
+    normalizedContent() { return normalizeArticleContent(this.content, this.imageUrl, this.openArticleLinksInNewTab); },
     // Returns article content with known compatibility markup normalized for display.
     renderedContent() { return highlightHtmlText(this.normalizedContent.html, this.highlightTerms); },
     // Returns whether the article body contains readable text.

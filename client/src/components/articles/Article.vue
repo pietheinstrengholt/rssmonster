@@ -75,17 +75,18 @@
           </div>
         </div>
         <ArticleMedia v-if="shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" @media-clicked="articleClicked" />
-        <ArticleContent :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :contentText="contentText" :highlightTerms="highlightTerms" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :aiAnalysisStatus="aiAnalysisStatus" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="showMinimalContent" />
+        <ArticleContent :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :openArticleLinksInNewTab="uiStore.openArticleLinksInNewTab" :contentText="contentText" :highlightTerms="highlightTerms" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :aiAnalysisStatus="aiAnalysisStatus" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="showMinimalContent" />
       </div>
     </div>
     <ArticleMedia v-if="isMinimalView && shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" @media-clicked="articleClicked" />
-    <ArticleContent v-if="isMinimalView" :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :contentText="contentText" :highlightTerms="highlightTerms" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :aiAnalysisStatus="aiAnalysisStatus" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="shouldShowMinimalContent" />
+    <ArticleContent v-if="isMinimalView" :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :openArticleLinksInNewTab="uiStore.openArticleLinksInNewTab" :contentText="contentText" :highlightTerms="highlightTerms" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :aiAnalysisStatus="aiAnalysisStatus" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="shouldShowMinimalContent" />
     <div class="article-divider"></div>
   </div>
 </template>
 
 <script>
 import { mapStores } from 'pinia';
+import { useUiStore } from '../../store/ui.js';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
 import ArticleHeader from './ArticleHeader.vue';
@@ -190,7 +191,7 @@ export default {
       if (this.selectionStore.currentSelection.smartFolderId !== null) return [];
       return parseSearchHighlightTerms(this.selectionStore.currentSelection.search);
     },
-    ...mapStores(useSelectionStore, useOverviewStore),
+    ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
     ...articleSignalComputed,
     ...articleMobileSwipeComputed,
 

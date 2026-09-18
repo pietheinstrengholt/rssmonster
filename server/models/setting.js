@@ -101,6 +101,12 @@ export default (sequelize) => {
           isIn: [['last-used', 'default']]
         }
       },
+      // Controls whether links in article bodies open in a new browser tab.
+      openArticleLinksInNewTab: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       // Controls whether scrolling past an article automatically marks it as read.
       markAsReadOnScroll: {
         type: DataTypes.BOOLEAN,

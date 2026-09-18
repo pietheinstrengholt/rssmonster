@@ -6,6 +6,7 @@ import { notifyActionError } from '../services/actionNotifications.js';
 // This function creates application presentation state for one user session.
 const initialUiState = () => ({
   showModal: '',
+  openArticleLinksInNewTab: false,
   htmlXpathDraft: null,
   chatAssistantOpen: false,
   mobileSearchOpen: false,
@@ -28,6 +29,11 @@ export const useUiStore = defineStore('ui', {
     resetSessionState() {
       this.stopThemeSync();
       this.$patch({ ...initialUiState(), themeSessionId: this.themeSessionId });
+    },
+
+    // This action applies the saved article body link preference.
+    setOpenArticleLinksInNewTab(enabled) {
+      this.openArticleLinksInNewTab = Boolean(enabled);
     },
 
     // This action records the user's selected color theme mode.

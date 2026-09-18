@@ -16,6 +16,10 @@ export const saveIncludeDevelopingEvents = includeDevelopingEvents =>
 export const saveThemeMode = themeMode =>
   api.patch('/setting/theme', { themeMode }, { suppressGlobalError: true });
 
+// This function saves the user's article body link behavior.
+export const saveOpenArticleLinksInNewTab = openArticleLinksInNewTab =>
+  api.patch('/setting/article-links', { openArticleLinksInNewTab });
+
 // This function saves the user's preferred startup selection behavior.
 export const saveStartupViewMode = startupViewMode =>
   api.patch('/setting/startup-view', { startupViewMode });
