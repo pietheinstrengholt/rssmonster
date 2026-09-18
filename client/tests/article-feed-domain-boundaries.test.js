@@ -287,13 +287,14 @@ describe('ArticleFeed visibility tracking', () => {
     expect(context.addToPool).toHaveBeenCalledWith(7);
   });
 
-  it('does not persist seen state when a minimal article passes the viewport', async () => {
+  it('does not persist seen state when a mobile headline passes the viewport', async () => {
     const context = {
       ...createFocusedStores({
         selection: {
           currentSelection: { viewMode: 'minimal' }
         }
       }),
+      isDesktopReaderWidth: false,
       pool: new Set(),
       pendingSeenArticleIds: new Set(),
       seenPersistenceAttempts: new Map(),

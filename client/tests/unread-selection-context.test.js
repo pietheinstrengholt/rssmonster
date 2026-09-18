@@ -232,7 +232,7 @@ describe('UnreadConfigurationModal', () => {
       'Include new coverage for events you have already seen.'
     );
     expect(wrapper.findAll('.unread-preferences-option-description')[2].text()).toContain(
-      'This does not run in Headlines mode.'
+      'In Headlines mode, this runs on desktop only.'
     );
     expect(wrapper.findAll('[role="switch"]')).toHaveLength(4);
     expect(wrapper.get('[name="includeDevelopingEvents"]').element.checked).toBe(true);

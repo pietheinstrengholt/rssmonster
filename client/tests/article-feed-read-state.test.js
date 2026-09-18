@@ -305,6 +305,37 @@ describe('article feed read-state reconciliation', () => {
     expect(context.overviewStore.increaseReadCount).not.toHaveBeenCalled();
   });
 
+  it.each([true, false])('respects scroll marking preference %s for desktop headlines', async enabled => {
+    const context = createContext({
+      ...createArticleFeedVisibilityState(),
+      ...articleFeedVisibilityMethods,
+      isDesktopReaderWidth: true,
+      getReadingViewportTop: () => 0
+    });
+    context.selectionStore.currentSelection.viewMode = 'minimal';
+    context.selectionStore.currentSelection.markAsReadOnScroll = enabled;
+    markArticleSeen.mockResolvedValue({
+      data: { ...context.articles[0], status: 'read', readArticles: [context.articles[0]] }
+    });
+    const entry = { target: { id: 'article-1' }, isIntersecting: true,
+      boundingClientRect: { bottom: 40 } };
+    context.handleArticleIntersections([entry]);
+    expect(markArticleSeen).not.toHaveBeenCalled();
+
+    context.handleArticleIntersections([{ ...entry, isIntersecting: false,
+      boundingClientRect: { bottom: -1 } }]);
+    await context.seenPersistenceQueue;
+
+    expect(context.articles[0].status).toBe(enabled ? 'read' : 'unread');
+    if (enabled) {
+      expect(markArticleSeen).toHaveBeenCalledWith(1, expect.objectContaining({ markRead: true }));
+      expect(context.overviewStore.increaseReadCount).toHaveBeenCalledOnce();
+    } else {
+      expect(markArticleSeen).not.toHaveBeenCalled();
+      expect(context.overviewStore.increaseReadCount).not.toHaveBeenCalled();
+    }
+  });
+
   // Verifies a transient automatic read failure is retried without duplicating count updates.
   it('retries a transient automatic seen failure before committing the pool entry', async () => {
     vi.useFakeTimers();

@@ -92,7 +92,7 @@
                 Mark as read while scrolling
               </span>
               <span class="unread-preferences-option-description">
-                Automatically mark unread articles as read after you scroll past them. This does not run in Headlines mode.
+                Automatically mark unread articles as read after you scroll past them. In Headlines mode, this runs on desktop only.
               </span>
             </span>
 

@@ -371,7 +371,7 @@ export const articleFeedVisibilityMethods = {
     const selection = { ...this.selectionStore.currentSelection };
     const markAsReadOnScroll = this.selectionStore.effectiveMarkAsReadOnScroll === true;
 
-    if (this.selectionStore.currentSelection.viewMode === "minimal") {
+    if (selection.viewMode === "minimal" && !this.isDesktopReaderWidth) {
       this.pool.add(articleId);
       return;
     }
