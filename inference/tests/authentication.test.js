@@ -70,12 +70,13 @@ describe('optional inference authentication', () => {
 describe('real server transport to inference HTTP integration', () => {
   it.each([['', '', true], [secret, secret, true], [secret, '', false], [secret, 'wrong', false], ['', secret, true]])(
     'handles deployment key pairing (%#)', async (inferenceKey, serverKey, allowed) => {
-      vi.stubEnv('INFERENCE_AI_ENABLED', 'true');
       vi.stubEnv('INFERENCE_API_KEY', serverKey);
       const { app } = setup(inferenceKey);
       const listener = app.listen(0, '127.0.0.1');
       await new Promise(resolve => listener.once('listening', resolve));
-      const options = { baseUrl: `http://127.0.0.1:${listener.address().port}`, requestId: 'integration-auth' };
+      // Explicit runtime settings keep transport integration independent of the server database.
+      const options = { baseUrl: `http://127.0.0.1:${listener.address().port}`, requestId: 'integration-auth',
+        environment: { INFERENCE_AI_ENABLED: 'true' } };
       try {
         const capabilities = requestInferenceJson('/api/capabilities', undefined, { ...options, method: 'GET' });
         if (!allowed) {
