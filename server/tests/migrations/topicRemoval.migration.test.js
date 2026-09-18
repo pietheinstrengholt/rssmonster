@@ -57,7 +57,12 @@ const assertRemoved = async () => {
 };
 
 describe(`semantic schema upgrade (${db.sequelize.getDialect()})`, () => {
-  afterAll(() => resetDatabase(), 120000);
+  afterAll(async () => {
+    if (db.sequelize.getDialect() === 'sqlite') {
+      await qi.dropAllTables();
+      await db.sequelize.sync();
+    } else await resetDatabase();
+  }, 120000);
   it('creates a fresh database through the complete migration history', async () => {
     await installHistoricalSchema();
     await up(qi, db.Sequelize);
@@ -94,7 +99,8 @@ describe(`semantic schema upgrade (${db.sequelize.getDialect()})`, () => {
     await article.reload();
     await event.reload();
     expect(article.interestScoredAt).toBeNull();
-    const setting = await db.Setting.create({ userId: user.id, grouping: 'topic' });
+    // This historical schema predates the settings → user_settings table rename.
+    await qi.bulkInsert('settings', [{ userId: user.id, grouping: 'topic', ...timestamps }]);
     const folder = await db.SmartFolder.create({ userId: user.id, name: 'Saved search',
       query: 'title:"grouping:topic" grouping:topic sort:recommended' });
     const jobs = await db.ProcessingJob.bulkCreate(['topic', 'event', 'island'].map(targetType => ({
@@ -119,7 +125,8 @@ describe(`semantic schema upgrade (${db.sequelize.getDialect()})`, () => {
     expect(await db.Feed.count({ where: { id: feed.id, userId: user.id } })).toBe(1);
     const next = await db.Article.create({ userId: user.id, feedId: feed.id, title: 'Next article', publishedAt: new Date() });
     expect(next.id).toBeGreaterThan(1000);
-    expect((await setting.reload()).grouping).toBe('event');
+    const [setting] = await qi.select(null, 'settings', { where: { userId: user.id } });
+    expect(setting.grouping).toBe('event');
     expect((await folder.reload()).query).toBe('title:"grouping:topic" grouping:event sort:recommended');
     expect(await db.ProcessingJob.findByPk(jobs[0].id)).toBeNull();
     expect(await db.ProcessingJob.count({ where: { userId: user.id } })).toBe(2);

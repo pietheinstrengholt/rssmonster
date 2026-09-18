@@ -4,10 +4,11 @@ import { up, down } from '../../migrations/20260918001000-rename-user-settings.m
 
 describe('user settings migration', () => {
   it('preserves saved preferences and uniqueness through rename and rollback', async () => {
-    const { Setting, sequelize } = db;
+    const { Setting, User, sequelize } = db;
     const query = sequelize.getQueryInterface();
     expect(Setting.getTableName()).toBe('user_settings');
-    const setting = await Setting.create({ userId: 987654, themeMode: 'dark', markAsReadOnScroll: false });
+    const user = await User.create({ username: 'settings-migration-reader' });
+    const setting = await Setting.create({ userId: user.id, themeMode: 'dark', markAsReadOnScroll: false });
     const original = (await setting.reload()).get({ plain: true });
 
     try {
@@ -26,6 +27,7 @@ describe('user settings migration', () => {
     } finally {
       if ((await query.showAllTables()).includes('settings')) await up(query);
       await Setting.destroy({ where: { id: setting.id } });
+      await User.destroy({ where: { id: user.id } });
     }
   });
 });
