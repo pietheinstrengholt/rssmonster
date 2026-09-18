@@ -189,10 +189,14 @@ describe('Article high-impact decision coverage', () => {
       predictedAffinity: 'deep'
     })).toBe(Infinity);
     expect(compute(Article, 'shouldShowImage', {
+      selectionStore: { currentSelection: { viewMode: 'full' } },
+      isMobilePortrait: false,
       isUnread: true,
       predictedAffinity: 'cold'
     })).toBe(false);
     expect(compute(Article, 'shouldShowImage', {
+      selectionStore: { currentSelection: { viewMode: 'full' } },
+      isMobilePortrait: false,
       isUnread: false,
       predictedAffinity: 'cold'
     })).toBe(true);

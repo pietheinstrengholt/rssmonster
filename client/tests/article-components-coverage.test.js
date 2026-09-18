@@ -311,6 +311,32 @@ describe('ArticleContent presentation', () => {
     expect(summarized.get('li').text()).toBe('Completed summary');
   });
 
+  it('shows the lead image with summarized text even when it appears in the full body', async () => {
+    const wrapper = mountArticleContent({
+      viewMode: 'summarized',
+      imageUrl: 'https://example.com/lead.jpg',
+      content: '<p>Full body.</p><img src="https://example.com/lead.jpg">',
+      contentText: 'Canonical summary text.'
+    });
+
+    expect(wrapper.findAll('img')).toHaveLength(1);
+    expect(wrapper.get('img').attributes('src')).toBe('https://example.com/lead.jpg');
+    expect(wrapper.get('img').attributes('loading')).toBe('lazy');
+    expect(wrapper.text()).toBe('Canonical summary text.');
+
+    await wrapper.get('img').trigger('error');
+    expect(wrapper.find('img').exists()).toBe(false);
+    expect(wrapper.text()).toBe('Canonical summary text.');
+
+    await wrapper.setProps({ imageUrl: 'https://example.com/next.jpg', content: '' });
+    expect(wrapper.get('img').attributes('src')).toBe('https://example.com/next.jpg');
+
+    await wrapper.setProps({ shouldShowImage: false });
+    expect(wrapper.find('img').exists()).toBe(false);
+    await wrapper.setProps({ shouldShowImage: true, imageUrl: '' });
+    expect(wrapper.find('img').exists()).toBe(false);
+  });
+
   it('summarizes canonical plain text without interpreting its contents', () => {
     expect(summarizeArticleContent(null)).toBe('');
     expect(summarizeArticleContent('  \n\t  ')).toBe('');

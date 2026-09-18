@@ -1,6 +1,5 @@
 <template>
-  <div v-if="viewMode === 'full' || viewMode === 'reader'" class="article-content-wrapper" :class="{ 'article-content-with-thumbnail': shouldShowFallbackImage && isInlineLeadImage }"><div v-if="shouldShowFallbackImage" :class="['media-content', 'enclosure', 'article-lead-image', `article-lead-image--${imageDisplayMode}`]" :style="thumbnailStyle"><img class="article-lead-image__media" :src="imageUrl" :width="leadImageDimensions.width || undefined" :height="leadImageDimensions.height || undefined" alt="" loading="lazy" decoding="async" @load="handleLeadImageLoad" @error="handleLeadImageError" /></div><div v-if="hasContent" data-reading-content class="article-full-content" v-html="renderedContent"></div></div>
-  <div v-else-if="viewMode === 'summarized'" class="article-content-wrapper"><p v-if="hasContent" data-reading-content class="article-full-content"><HighlightedText :text="summarizedContent" :terms="highlightTerms" /></p></div>
+  <div v-if="viewMode === 'full' || viewMode === 'reader' || viewMode === 'summarized'" class="article-content-wrapper" :class="{ 'article-content-with-thumbnail': shouldShowFallbackImage && isInlineLeadImage }"><div v-if="shouldShowFallbackImage" :class="['media-content', 'enclosure', 'article-lead-image', `article-lead-image--${imageDisplayMode}`]" :style="thumbnailStyle"><img class="article-lead-image__media" :src="imageUrl" :width="leadImageDimensions.width || undefined" :height="leadImageDimensions.height || undefined" alt="" loading="lazy" decoding="async" @load="handleLeadImageLoad" @error="handleLeadImageError" /></div><p v-if="viewMode === 'summarized' && hasContent" data-reading-content class="article-full-content"><HighlightedText :text="summarizedContent" :terms="highlightTerms" /></p><div v-else-if="hasContent" data-reading-content class="article-full-content" v-html="renderedContent"></div></div>
   <div v-else-if="viewMode === 'minimal' && showMinimalContent" class="article-content-wrapper article-content-wrapper--minimal"><div v-if="hasContent" data-reading-content class="article-full-content" v-html="renderedContent"></div></div>
   <div v-else-if="viewMode === 'summaryBullets'" class="article-content-wrapper"><p v-if="analysisInProgress" class="article-full-content" role="status">Analyzing…</p><ul v-else-if="canShowAnalysis && contentSummaryBullets && contentSummaryBullets.length" data-reading-content class="article-summary"><li v-for="(bullet, index) in contentSummaryBullets.slice(0, visibleBulletCount)" :key="index"><HighlightedText :text="bullet" :terms="highlightTerms" /></li></ul><p v-else class="article-full-content">No summary available.</p></div>
 </template>
@@ -71,7 +70,12 @@ export default {
       return { '--lead-thumbnail-width': `${Math.min(width, 200)}px` };
     },
     // Returns whether the article needs its image URL rendered as a fallback lead image.
-    shouldShowFallbackImage() { return this.shouldShowImage && Boolean(String(this.imageUrl || '').trim()) && this.hasArticleContent && !this.normalizedContent.containsFallbackImage && this.imageDisplayMode !== 'hidden'; }
+    shouldShowFallbackImage() {
+      if (!this.shouldShowImage || !String(this.imageUrl || '').trim() || this.imageDisplayMode === 'hidden') return false;
+      // Summarized text omits body images, so the lead image is never a duplicate.
+      if (this.viewMode === 'summarized') return true;
+      return this.hasArticleContent && !this.normalizedContent.containsFallbackImage;
+    }
   },
   methods: {
     // This function records natural image dimensions for runtime classification.

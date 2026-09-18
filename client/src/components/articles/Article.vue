@@ -279,6 +279,7 @@ export default {
     },
     // Determines whether the article image should be displayed.
     shouldShowImage() {
+      if (this.selectionStore.currentSelection.viewMode === 'summarized' && this.isMobilePortrait) return false;
       if (!this.isUnread || !this.predictedAffinity) return true;
       return this.predictedAffinity !== 'cold';
     },

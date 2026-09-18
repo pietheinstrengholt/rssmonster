@@ -219,6 +219,21 @@ describe('mobile Headlines', () => {
     expect(menu.element.compareDocumentPosition(favorite.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('shows the summarized lead image on desktop', () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+    const stores = createFocusedStores({
+      overview: { categories: [] },
+      selection: { currentSelection: { viewMode: 'summarized', grouping: 'none' } }
+    });
+    const wrapper = mount(Article, {
+      props: { id: 42, title: 'A headline', imageUrl, contentText: 'Article text', feed: { feedName: 'A source' } },
+      global: { plugins: [stores.pinia] }
+    });
+    wrappers.push(wrapper);
+    expect(wrapper.get(`img[src="${imageUrl}"]`).exists()).toBe(true);
+    expect(wrapper.text()).toContain('Article text');
+  });
+
   it.each(['minimal', 'full', 'summarized', 'summaryBullets', 'reader'])('limits row thumbnails to Headlines in %s mode', viewMode => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
     const stores = createFocusedStores({
