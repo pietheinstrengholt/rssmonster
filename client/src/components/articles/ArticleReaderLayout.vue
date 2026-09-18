@@ -161,10 +161,10 @@
       </article>
 
       <div id="article-load-sentinel" ref="loadMoreSentinel" class="article-load-sentinel" aria-hidden="true"></div>
-      <div v-if="collectionProgress.paginationError" class="app-notice app-notice--danger" role="alert">
-        <span>{{ collectionProgress.paginationError }}</span>
-        <button type="button" class="app-button app-button--outline-secondary app-button--compact" @click="$emit('retry-pagination')">Retry</button>
-      </div>
+      <ArticleLoadError
+        v-if="collectionProgress.paginationError"
+        @retry="$emit('retry-pagination')"
+      />
 
       <div id="no-more" v-if="hasLoadedContent">
         <ArticleEndState
@@ -257,6 +257,7 @@ import ArticleDevelopingStoryPopover from './ArticleDevelopingStoryPopover.vue';
 import ArticleRecommendations from './ArticleRecommendations.vue';
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
+import ArticleLoadError from "./ArticleLoadError.vue";
 import ArticleRefreshState from "./ArticleRefreshState.vue";
 import DailyBriefingIntro from "../briefing/DailyBriefingIntro.vue";
 import UnreadSelectionContext from "./UnreadSelectionContext.vue";
@@ -282,6 +283,7 @@ export default {
     ArticleRecommendations,
     ArticleEmptyState,
     ArticleEndState,
+    ArticleLoadError,
     ArticleRefreshState,
     DailyBriefingIntro,
     HighlightedText,

@@ -32,10 +32,12 @@ describe.each([
         collectionProgress,
         ...(component === ArticleListView ? { viewMode: 'full' } : {})
       },
-      global: { plugins: [stores.pinia] }
+      global: { plugins: [stores.pinia], stubs: { ArticleLoadError: false } }
     });
 
-    expect(wrapper.get('[role="alert"]').text()).toContain(collectionProgress.paginationError);
+    expect(wrapper.get('[role="alert"]').text()).toContain('Something went wrong');
+    expect(wrapper.get('[role="alert"]').text()).toContain("We couldn't load the articles. Please try again in a moment.");
+    expect(wrapper.get('[role="alert"] button').text()).toBe('Try again');
     expect(wrapper.findComponent({ name: 'ArticleEmptyState' }).exists()).toBe(false);
     expect(wrapper.findComponent({ name: 'ArticleLoadingState' }).exists()).toBe(false);
     expect(wrapper.find('.reader-loading-state').exists()).toBe(false);
