@@ -444,6 +444,7 @@ describe('inference circuit breaker', () => {
     await expect(requestInferenceJson('/api/test', {}, {
       circuitKey: 'classification',
       requestId: 'shared-rejection',
+      environment,
       fetchImplementation: secondFetch
     })).rejects.toMatchObject({
       code: 'INFERENCE_CIRCUIT_OPEN',

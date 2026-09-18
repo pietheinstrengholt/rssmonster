@@ -1,3 +1,4 @@
+import { getInferenceEnvironment, withInferenceRuntimeSettings } from '../inference/runtimeConfiguration.js';
 import { isInferenceConfigured } from '../inference/configuration.js';
 // services/articles/embedArticles.js
 import db from '../../models/index.js';
@@ -46,8 +47,8 @@ function resolveCreatedAtFrom(options = {}) {
 
 // This function backfills embeddings for one user's articles in stable id-ordered batches.
 // It delegates vector creation and persistence to embedArticle so storage behavior stays centralized.
-export async function embedArticles(userId, options = {}) {
-  if (shouldSkipArticleEmbeddings() || !await isInferenceConfigured()) {
+async function embedArticlesOperation(userId, options = {}) {
+  if (shouldSkipArticleEmbeddings(await getInferenceEnvironment()) || !await isInferenceConfigured()) {
     return {
       userId,
       scannedCount: 0,
@@ -144,6 +145,8 @@ export async function embedArticles(userId, options = {}) {
     skippedCount
   };
 }
+
+export const embedArticles = (userId, options = {}) => withInferenceRuntimeSettings(() => embedArticlesOperation(userId, options));
 
 // Compatibility export during rename transition
 export const embedArticlesForUser = embedArticles;

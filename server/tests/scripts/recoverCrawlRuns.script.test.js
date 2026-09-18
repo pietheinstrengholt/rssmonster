@@ -1,4 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { CRAWL_FIELDS, saveCrawlSettings } from '../../services/crawl/configuration.js';
+import { resolveCrawlRunStaleAfterMs } from '../../services/crawl/crawlRunHeartbeat.js';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../../models/index.js';
 import {
@@ -31,12 +33,26 @@ describe('crawl run recovery command', () => {
     ]);
   });
 
+  const clearFixtures = async () => {
+    await CrawlRun.destroy({ where: { userId: [staleUser.id, liveUser.id] } });
+    await db.ServerSetting.destroy({ where: { key: 'crawlConfiguration' } });
+  };
+  beforeEach(async () => {
+    vi.stubEnv('CRAWL_RUN_MAX_RUNNING_MINUTES', '');
+    vi.stubEnv('CRAWL_RUN_STALE_AFTER_MS', '120000');
+    await clearFixtures();
+  });
+  afterEach(async () => {
+    vi.unstubAllEnvs();
+    await clearFixtures();
+  });
+
   it('recovers only expired heartbeats by default', async () => {
     const now = new Date('2026-08-11T12:00:00.000Z');
     const [staleRun, liveRun] = await Promise.all([
       CrawlRun.create({
         userId: staleUser.id,
-        startedAt: new Date('2026-08-11T11:55:00.000Z')
+        startedAt: new Date(now.getTime() - resolveCrawlRunStaleAfterMs() - 1000)
       }),
       CrawlRun.create({
         userId: liveUser.id,
@@ -51,10 +67,21 @@ describe('crawl run recovery command', () => {
     expect(updatedCount).toBe(1);
     expect(staleRun.status).toBe('failed');
     expect(liveRun.status).toBe('running');
+  });
 
-    await CrawlRun.update({ status: 'failed', completedAt: now }, {
-      where: { id: liveRun.id }
-    });
+  it('uses the saved stale threshold instead of the environment threshold', async () => {
+    const now = new Date('2026-08-11T12:00:00.000Z');
+    const ageMs = resolveCrawlRunStaleAfterMs() + 1000;
+    const minutes = Math.ceil(ageMs / 60000) + 1;
+    const run = await CrawlRun.create({ userId: staleUser.id, heartbeatAt: new Date(now.getTime() - ageMs) });
+    await saveCrawlSettings({ overridden: true, values: {
+      ...Object.fromEntries(CRAWL_FIELDS.map(field => [field.key, field.defaultValue])),
+      CRAWL_RUN_MAX_RUNNING_MINUTES: minutes
+    } });
+    await recoverCrawlRuns({ now });
+    expect((await run.reload()).status).toBe('running');
+    await recoverCrawlRuns({ now: new Date(now.getTime() + minutes * 60000) });
+    expect((await run.reload()).status).toBe('failed');
   });
 
   it('requires the explicit all option to reset a fresh running row', async () => {

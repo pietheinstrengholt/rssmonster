@@ -8,7 +8,7 @@ import {
   createHttpRequest
 } from './contracts.js';
 import { executeHttpRequest } from './fetchTransport.js';
-import { cancelResponseBody, readResponseText } from './responseBody.js';
+import { cancelResponseBody, getFeedResponseMaxBytes, readResponseText } from './responseBody.js';
 import { parseResponsePolicy } from './responsePolicy.js';
 import {
   canonicalizeRequestUrl,
@@ -37,7 +37,8 @@ const requestIdentity = request => JSON.stringify({
   previousContentHash: request.previousContentHash,
   retries: request.retries,
   connectTimeoutMs: request.connectTimeoutMs,
-  bodyTimeoutMs: request.bodyTimeoutMs
+  bodyTimeoutMs: request.bodyTimeoutMs,
+  responseMaxBytes: getFeedResponseMaxBytes()
 });
 
 // Cancels a policy-discarded body without exposing transport-specific behavior.

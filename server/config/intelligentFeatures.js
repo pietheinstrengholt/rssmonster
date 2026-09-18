@@ -1,4 +1,4 @@
-// Explicit deployment switches remain permission overrides; connection availability is resolved separately.
+// Pure permission checks accept the resolved runtime environment; connection availability is resolved separately.
 const isTrue = value => String(value || '').trim().toLowerCase() === 'true';
 
 export class InferenceDisabledError extends Error {

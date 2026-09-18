@@ -5,11 +5,17 @@
       <a href="https://pietheinstrengholt.github.io/rssmonster/inference.html" target="_blank" rel="noopener noreferrer">Inference documentation</a>
     </SettingsPageIntro>
 
-    <div class="app-notice inference-notice" :class="error || ['unauthorized', 'unreachable', 'incompatible', 'invalid_contract', 'configuration_error'].includes(status?.state)
+    <div v-if="!error && !loading && !checking && status?.ready" class="settings-data-panel inference-connection" role="status" aria-live="polite">
+      <p class="inference-connection-status">
+        <span class="inference-connection-dot" aria-hidden="true"></span>
+        {{ statusMessage }}
+      </p>
+      <p v-if="configuration && !configuration.configurable" class="inference-muted">Inference is configured by the deployment.</p>
+    </div>
+    <div v-else class="app-notice inference-notice" :class="error || ['unauthorized', 'unreachable', 'incompatible', 'invalid_contract', 'configuration_error'].includes(status?.state)
       ? 'app-notice--danger'
       : loading || checking ? 'app-notice--info'
-        : configuration?.configurationSource === 'none' ? 'app-notice--warning'
-          : configuration?.configurable && status?.ready ? 'app-notice--success' : 'app-notice--info'" :role="error ? 'alert' : 'status'" aria-live="polite">
+        : configuration?.configurationSource === 'none' ? 'app-notice--warning' : 'app-notice--info'" :role="error ? 'alert' : 'status'" aria-live="polite">
       <template v-if="error">{{ error }}</template>
       <template v-else-if="loading">Loading inference settings…</template>
       <template v-else>
@@ -86,16 +92,18 @@
           </article>
         </div>
       </section>
+      <SettingsInferenceRuntime @saved="runtimeSaved" />
     </template>
   </div>
 </template>
 
 <script>
+import SettingsInferenceRuntime from './SettingsInferenceRuntime.vue';
 import SettingsPageIntro from './SettingsPageIntro.vue';
 import { fetchInferenceSettings, saveInferenceSettings, clearInferenceSettings, testInferenceSettings } from '../../api/settings';
 
 const messages = {
-  not_configured: 'No inference service configured.', disabled: 'Inference is disabled by the deployment.',
+  not_configured: 'No inference service configured.', disabled: 'Inference is disabled by the current settings.',
   ready: 'Connected and ready.', partial: 'Connected and ready. Some capabilities are unavailable.',
   not_ready: 'Connected, but the inference service is not ready yet.',
   unauthorized: 'Inference authentication failed. Check the configured API key.',
@@ -105,7 +113,7 @@ const messages = {
   configuration_error: 'Stored inference credentials could not be read. Replace or remove the saved key.'
 };
 export default {
-  components: { SettingsPageIntro },
+  components: { SettingsPageIntro, SettingsInferenceRuntime },
   emits: ['forceReload'],
   data: () => ({ configuration: null, status: null, baseUrl: '', apiKeyAction: 'keep', apiKey: '',
     loading: true, saving: false, checking: false, error: '', confirmRemove: false,
@@ -117,6 +125,7 @@ export default {
   mounted() { this.load(); },
   beforeUnmount() { this.apiKey = ''; },
   methods: {
+    async runtimeSaved() { await this.check(); this.$emit('forceReload'); },
     capabilityStatus(name) {
       if (this.status?.permissions?.[name] === false) return 'Disabled';
       return this.status?.ready && this.status?.capabilities?.[name]?.available ? 'Available' : 'Unavailable';
@@ -159,6 +168,9 @@ export default {
 .inference-settings { display: grid; gap: 1rem; }
 .inference-settings p, .inference-settings h4, .inference-settings h5 { margin: 0; }
 .inference-notice { margin: 0; overflow-wrap: anywhere; }
+.inference-connection { display: grid; gap: .375rem; padding: 1rem; overflow-wrap: anywhere; }
+.inference-connection-status { display: flex; align-items: baseline; gap: .5rem; color: var(--settings-success-text); font-size: .875rem; font-weight: 600; }
+.inference-connection-dot { width: .5rem; height: .5rem; flex: 0 0 .5rem; border-radius: var(--radius-pill); background: var(--settings-success-text); }
 .inference-card { display: grid; gap: 1rem; padding: 1rem; min-width: 0; }
 .inference-card h4 { font-size: 1rem; font-weight: 700; }
 .inference-card header p { margin-top: .375rem; }

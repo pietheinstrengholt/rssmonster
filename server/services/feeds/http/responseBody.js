@@ -1,3 +1,4 @@
+import { getCrawlEnvironment } from '../../../config/crawlSettings.js';
 // Reads neutral HTTP body streams while retaining bounded bytes for deterministic decoding.
 
 import { createHash } from 'node:crypto';
@@ -14,7 +15,7 @@ export const DEFAULT_FEED_RESPONSE_MAX_BYTES = 10 * 1024 * 1024;
 // Resolves the shared feed and discovery response limit from configuration.
 export const getFeedResponseMaxBytes = () => {
   const configured = Number.parseInt(
-    process.env.FEED_RESPONSE_MAX_BYTES || '',
+    getCrawlEnvironment().FEED_RESPONSE_MAX_BYTES || '',
     10
   );
 

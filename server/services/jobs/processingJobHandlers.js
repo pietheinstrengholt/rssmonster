@@ -1,3 +1,4 @@
+import { withInferenceRuntimeSettings } from '../inference/runtimeConfiguration.js';
 import { EXPLICIT_FEEDBACK_REFRESH_TYPE, isPersonalizationRefreshType, handleExplicitFeedbackRefresh, PERSONALIZATION_REFRESH_TYPE, handlePersonalizationRefresh, completePersonalizationRefresh } from './personalizationRefresh.js';
 import {
   completeProcessingJob,
@@ -189,10 +190,10 @@ export const executeClaimedProcessingJob = async (job, {
     logJobEvent(logger, job, 'processing_job.started');
     if (!handler) throw unknownHandlerError(rowValue(job, 'type'));
     await renewLease();
-    const result = await handler(job, {
+    const result = await withInferenceRuntimeSettings(() => handler(job, {
       assertLease: renewLease,
       signal: inferenceSignal
-    });
+    }));
     await renewLease();
     const refreshStatus = isPersonalizationRefreshType(rowValue(job, 'type'))
       ? await completePersonalizationRefresh(job, leaseOwner, result) : null;

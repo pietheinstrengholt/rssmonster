@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../inference/runtimeConfiguration.js';
 import { isInferenceConfigured } from '../inference/configuration.js';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
@@ -76,7 +77,7 @@ const emptySummary = () => ({
 // Populates presentation-only labels after deterministic semantic persistence has completed.
 export async function populateGeneratedSemanticLabelsForUser(userId, targets = {}, options = {}) {
   const summary = emptySummary();
-  const environment = options.environment || process.env;
+  const environment = await getInferenceEnvironment(options.environment);
   if (shouldSkipSemanticLabeling(environment) || !await isInferenceConfigured()) return summary;
 
   const models = options.models || defaultModels;

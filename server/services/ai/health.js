@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../inference/runtimeConfiguration.js';
 import provider from './providers/inference.js';
 import { getAIPermissions, createInferenceCapabilities } from './capabilities.js';
 import { isInferenceEnabled } from '../../config/intelligentFeatures.js';
@@ -5,9 +6,10 @@ import { isInferenceEnabled } from '../../config/intelligentFeatures.js';
 const states = new Set(['starting', 'ready', 'failed', 'shutting_down']);
 
 export const createAIHealth = (inference = provider, environment = process.env) => async (options = {}) => {
-  const configured = getAIPermissions(environment);
+  const effectiveEnvironment = await getInferenceEnvironment(environment);
+  const configured = getAIPermissions(effectiveEnvironment);
   const unavailable = Object.fromEntries(Object.keys(configured).map(key => [key, false]));
-  if (!isInferenceEnabled(environment)) {
+  if (!isInferenceEnabled(effectiveEnvironment)) {
     return { enabled: false, reachable: null, ready: false, state: 'disabled', configured, capabilities: unavailable };
   }
   const requestOptions = { timeoutMs: 3000, ...options };

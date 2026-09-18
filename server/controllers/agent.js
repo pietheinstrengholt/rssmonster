@@ -72,9 +72,7 @@ const HISTORY_FILTER_FIELDS = [
   'tags',
   'to'
 ];
-const inferenceModelProvider = createInferenceModelProvider({
-  timeoutMs: Number(process.env.INFERENCE_AGENT_TIMEOUT_MS || 300_000)
-});
+const inferenceModelProvider = createInferenceModelProvider();
 const agentRunner = new Runner({
   modelProvider: inferenceModelProvider,
   tracingDisabled: true

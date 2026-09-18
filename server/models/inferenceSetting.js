@@ -4,7 +4,8 @@ export default sequelize => {
   const InferenceSetting = sequelize.define('inference_settings', {
     id: { type: DataTypes.INTEGER, primaryKey: true, allowNull: false, defaultValue: 1, validate: { isIn: [[1]] } },
     baseUrl: { type: DataTypes.STRING(2048), allowNull: false },
-    apiKeyEncrypted: { type: DataTypes.TEXT, allowNull: true }
+    apiKeyEncrypted: { type: DataTypes.TEXT, allowNull: true },
+    runtimeOverrides: { type: DataTypes.JSON, allowNull: true }
   }, {
     defaultScope: { attributes: { exclude: ['apiKeyEncrypted'] } },
     charset: 'utf8mb4', collate: 'utf8mb4_unicode_ci'

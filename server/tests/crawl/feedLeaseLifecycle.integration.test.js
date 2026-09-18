@@ -1,3 +1,5 @@
+import { CRAWL_FIELDS, saveCrawlSettings, clearCrawlSettings } from '../../services/crawl/configuration.js';
+import { getFeedInputLimits } from '../../services/feeds/feedsmith/feedInputLimits.js';
 import {
   afterEach,
   beforeAll,
@@ -102,6 +104,28 @@ describe('crawl feed-lease lifecycle integration', () => {
       await User.destroy({ where: { id: { [Op.in]: ownedUserIds } } });
     }
     ownedUserIds = [];
+  });
+
+  it('applies saved batch and lease limits to a real crawl invocation', async () => {
+    const { user } = await createFixture(3);
+    const values = Object.fromEntries(CRAWL_FIELDS.map(field => [field.key, field.suggestedValue ?? field.defaultValue]));
+    values.FEED_MAX_COUNT = 1;
+    values.FEED_MAX_ENTRIES = 7;
+    await saveCrawlSettings({ overridden: true, values });
+    try {
+      let effectiveEntries;
+      let remainingLease;
+      mocked.acquireFeed.mockImplementation(async ({ feed }) => {
+        effectiveEntries = getFeedInputLimits().entries;
+        remainingLease = new Date(feed.leaseUntil).getTime() - Date.now();
+        return { ...successfulOutcome(feed), parsedFeed: { format: 'rss', entries: [] } };
+      });
+      const result = await crawlController.performCrawl(user.id);
+      expect(result).toMatchObject({ processed: 1, errors: 0 });
+      expect(mocked.acquireFeed).toHaveBeenCalledOnce();
+      expect(effectiveEntries).toBe(7);
+      expect(remainingLease).toBeGreaterThan(590000);
+    } finally { await clearCrawlSettings(); }
   });
 
   it('stores successive favicon locations even when there are no articles', async () => {

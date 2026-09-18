@@ -1,3 +1,4 @@
+import { getCrawlEnvironment } from '../../../config/crawlSettings.js';
 // Rejects hostile feed shapes before article enrichment or database work begins.
 
 import { sanitizeFeedPersistenceMetadata } from '../feedPersistenceMetadata.js';
@@ -13,7 +14,7 @@ export const DEFAULT_FEED_INPUT_LIMITS = Object.freeze({
 
 // Reads one positive configured byte or count limit.
 const configuredLimit = (name, fallback) => {
-  const value = Number.parseInt(process.env[name] || '', 10);
+  const value = Number.parseInt(getCrawlEnvironment()[name] || '', 10);
   return Number.isSafeInteger(value) && value > 0 ? value : fallback;
 };
 

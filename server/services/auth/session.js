@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../inference/runtimeConfiguration.js';
 import { serializeAuthUser } from './configuration.js';
 import { getAvailableInferenceCapabilities } from '../inference/status.js';
 import jwt from "jsonwebtoken";
@@ -31,7 +32,7 @@ export const createAuthenticatedSession = async (user) => {
     token,
     user: await serializeAuthUser(user),
     expiresInSeconds,
-    agenticFeaturesEnabled: isAssistantEnabled() && (await getAvailableInferenceCapabilities()).assistant
+    agenticFeaturesEnabled: isAssistantEnabled(await getInferenceEnvironment()) && (await getAvailableInferenceCapabilities()).assistant
   };
 };
 

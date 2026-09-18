@@ -1,3 +1,5 @@
+import { getPushConfiguration } from './configuration.js';
+export { getPushConfiguration } from './configuration.js';
 import { createHash } from 'node:crypto';
 import { Agent } from 'node:https';
 import webpush from 'web-push';
@@ -9,7 +11,7 @@ const INVALID_SUBSCRIPTION_STATUSES = new Set([404, 410]);
 const PUSH_DELIVERY_TIMEOUT_MS = 10_000;
 
 // A socket inactivity timeout alone cannot bound a response that keeps trickling data.
-const sendNotificationWithDeadline = async (subscription, payload) => {
+const sendNotificationWithDeadline = async (subscription, payload, configuration) => {
   const agent = new Agent();
   let timeoutId;
   const deadline = new Promise((_, reject) => {
@@ -21,6 +23,7 @@ const sendNotificationWithDeadline = async (subscription, payload) => {
   try {
     return await Promise.race([
       webpush.sendNotification(subscription, payload, {
+        vapidDetails: { subject: configuration.subject, publicKey: configuration.publicKey, privateKey: configuration.privateKey },
         TTL: 60 * 60,
         timeout: PUSH_DELIVERY_TIMEOUT_MS,
         agent
@@ -36,19 +39,6 @@ const sendNotificationWithDeadline = async (subscription, payload) => {
 
 export const pushEndpointHash = endpoint =>
   createHash('sha256').update(endpoint).digest('hex');
-
-export const getPushConfiguration = (environment = process.env) => {
-  const publicKey = environment.VAPID_PUBLIC_KEY?.trim();
-  const privateKey = environment.VAPID_PRIVATE_KEY?.trim();
-  const subject = environment.VAPID_SUBJECT?.trim();
-
-  return {
-    enabled: Boolean(publicKey && privateKey && subject),
-    publicKey: publicKey || null,
-    privateKey: privateKey || null,
-    subject: subject || null
-  };
-};
 
 export const savePushSubscription = async (userId, subscription) => {
   const endpointHash = pushEndpointHash(subscription.endpoint);
@@ -72,14 +62,9 @@ export const removePushSubscription = (userId, endpoint) =>
 
 export const sendNewArticlePush = async (userId, count, { logger = console } = {}) => {
   const safeCount = Math.max(0, Math.trunc(Number(count) || 0));
-  const configuration = getPushConfiguration();
-  if (!configuration.enabled || !userId || safeCount === 0) return { sent: 0, removed: 0 };
-
-  webpush.setVapidDetails(
-    configuration.subject,
-    configuration.publicKey,
-    configuration.privateKey
-  );
+  if (!userId || safeCount === 0) return { sent: 0, removed: 0 };
+  const configuration = await getPushConfiguration();
+  if (!configuration.enabled) return { sent: 0, removed: 0 };
 
   const subscriptions = await PushSubscription.findAll({ where: { userId } });
   if (subscriptions.length === 0) return { sent: 0, removed: 0 };
@@ -108,7 +93,7 @@ export const sendNewArticlePush = async (userId, count, { logger = console } = {
         endpoint: subscription.endpoint,
         expirationTime: subscription.expirationTime?.getTime() || null,
         keys: { p256dh: subscription.p256dh, auth: subscription.auth }
-      }, payload);
+      }, payload, configuration);
       sent++;
     } catch (error) {
       if (INVALID_SUBSCRIPTION_STATUSES.has(error?.statusCode)) {

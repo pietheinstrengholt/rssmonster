@@ -763,3 +763,33 @@ publisher-update classification, and filtering decisions from being interleaved 
 Article identity constraints and recognized insert-race recovery remain defense-in-depth for writes
 already in flight. New crawl entry points must reuse this acquisition path rather than creating
 `CrawlRun` rows or invoking feed/article processing directly.
+
+## Server settings overrides
+
+`configuration.js` owns the `crawlConfiguration` aggregate in `server_settings`.
+The administrator form saves all 18 allowlisted integer settings together or
+removes the group to restore environment defaults. No secrets are stored here.
+The requested suggested values are available separately from inherited values;
+this preserves existing deployments' defaults until an administrator saves.
+
+Each `performCrawl` resolves one immutable override snapshot using the
+`AsyncLocalStorage` scope in `config/crawlSettings.js`. All nested acquisition,
+body limits, parsing, and article-processing deadlines see that snapshot without
+mutating `process.env`. Only allowlisted overrides travel in parser worker data;
+worker isolates do not query the database or receive unrelated environment secrets
+through that data. Parser heap and CPU limits apply to RSS/Atom/JSON and HTML/XPath.
+An active crawl retains its snapshot; the next crawl reads fresh database settings.
+The crawl worker also refreshes its polling interval between iterations.
+
+`CRAWL_RUN_MAX_RUNNING_MINUTES` overrides the heartbeat-staleness threshold when
+set, with a minimum of three heartbeat intervals. It never expires a run merely
+because its start time is old while its heartbeat remains fresh. Without it,
+`CRAWL_RUN_STALE_AFTER_MS` retains its existing meaning. The explicit recovery CLI
+uses the same saved settings. Changing the threshold does not itself run recovery.
+
+`FEED_HTTP_TIMEOUT_MS` is a fallback for omitted `FEED_CONNECT_TIMEOUT_MS` and
+`FEED_BODY_TIMEOUT_MS`. Explicit phase-specific environment values still win.
+Feed leases remain at least twice the overall per-feed deadline, and SQLite still
+forces sequential processing. Shared origin permits retain their existing active
+requests and queue; each queued request carries its crawl's concurrency and spacing
+limits, so saving settings does not create a second competing origin limiter.

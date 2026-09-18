@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 
+import { withCrawlConfiguration } from '../../config/crawlSettings.js';
 import { acquireHttp } from '../../services/feeds/http/acquireHttp.js';
 import {
   FETCH_OUTCOMES,
@@ -45,15 +46,19 @@ const immediateRequestPolicy = () => ({
 
 // Runs one assertion with temporary feed phase timeout environment values.
 const withFeedPhaseTimeouts = (connectValue, bodyValue, assertion) => {
+  const previousHttp = process.env.FEED_HTTP_TIMEOUT_MS;
   const previousConnect = process.env.FEED_CONNECT_TIMEOUT_MS;
   const previousBody = process.env.FEED_BODY_TIMEOUT_MS;
   try {
+    delete process.env.FEED_HTTP_TIMEOUT_MS;
     if (connectValue === undefined) delete process.env.FEED_CONNECT_TIMEOUT_MS;
     else process.env.FEED_CONNECT_TIMEOUT_MS = connectValue;
     if (bodyValue === undefined) delete process.env.FEED_BODY_TIMEOUT_MS;
     else process.env.FEED_BODY_TIMEOUT_MS = bodyValue;
     assertion();
   } finally {
+    if (previousHttp === undefined) delete process.env.FEED_HTTP_TIMEOUT_MS;
+    else process.env.FEED_HTTP_TIMEOUT_MS = previousHttp;
     if (previousConnect === undefined) delete process.env.FEED_CONNECT_TIMEOUT_MS;
     else process.env.FEED_CONNECT_TIMEOUT_MS = previousConnect;
     if (previousBody === undefined) delete process.env.FEED_BODY_TIMEOUT_MS;
@@ -249,6 +254,27 @@ describe('feed HTTP acquisition contract', () => {
       { type: 'changed', bodyText: 'shared feed' },
       { type: 'changed', bodyText: 'shared feed' }
     ]);
+  });
+
+  it('keeps concurrent crawl response-size limits isolated', async () => {
+    let release;
+    const barrier = new Promise(resolve => { release = resolve; });
+    const transport = vi.fn(async () => {
+      await barrier;
+      return { response: neutralResponse({ body: 'shared feed' }) };
+    });
+    const acquire = maxBytes => withCrawlConfiguration(
+      { FEED_RESPONSE_MAX_BYTES: maxBytes },
+      () => acquireHttp({ url: 'https://example.com/size-isolation.xml' }, { transport })
+    );
+    const small = acquire(3);
+    const large = acquire(100);
+    release();
+    await expect(Promise.all([small, large])).resolves.toMatchObject([
+      { type: 'too_large' },
+      { type: 'changed', bodyText: 'shared feed' }
+    ]);
+    expect(transport).toHaveBeenCalledTimes(2);
   });
 
   it('coalesces callers whose absolute deadlines differ slightly', async () => {

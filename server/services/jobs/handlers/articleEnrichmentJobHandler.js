@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../../inference/runtimeConfiguration.js';
 import { isInferenceConfigured } from '../../inference/configuration.js';
 import db from '../../../models/index.js';
 import { isClassificationScore, validateArticleClassification } from '../../ai/capabilities/classification.js';
@@ -167,7 +168,7 @@ const prepareAnalysisInput = async target => sequelize.transaction(async transac
     await skipArticle(article, transaction);
     return obsolete('article_filtered');
   }
-  if (rowValue(feed, 'applyAiAnalysis') === false || shouldSkipArticleClassification() || !await isInferenceConfigured()) {
+  if (rowValue(feed, 'applyAiAnalysis') === false || shouldSkipArticleClassification(await getInferenceEnvironment()) || !await isInferenceConfigured()) {
     await skipArticle(article, transaction);
     return obsolete('analysis_disabled');
   }
@@ -222,7 +223,7 @@ const persistAnalysis = async ({ target, analysis, completedAt }) =>
       await skipArticle(article, transaction);
       return obsolete('article_filtered');
     }
-    if (rowValue(feed, 'applyAiAnalysis') === false || shouldSkipArticleClassification() || !await isInferenceConfigured()) {
+    if (rowValue(feed, 'applyAiAnalysis') === false || shouldSkipArticleClassification(await getInferenceEnvironment()) || !await isInferenceConfigured()) {
       await skipArticle(article, transaction);
       return obsolete('analysis_disabled');
     }

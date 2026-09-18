@@ -1,10 +1,11 @@
+import { getCrawlEnvironment } from '../../config/crawlSettings.js';
 // Defines absolute feed execution deadlines shared across acquisition and persistence.
 
 const transactionLeaseAssertions = new WeakMap();
 export const DEFAULT_FEED_TIMEOUT_MS = 60000;
 
 // Resolves the complete per-feed processing deadline from configuration.
-export const resolveFeedTimeoutMs = (environment = process.env) => {
+export const resolveFeedTimeoutMs = (environment = getCrawlEnvironment()) => {
   const configured = Number(environment.FEED_TIMEOUT_MS);
   return Number.isSafeInteger(configured) && configured > 0
     ? configured

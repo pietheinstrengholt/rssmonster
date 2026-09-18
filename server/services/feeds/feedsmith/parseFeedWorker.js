@@ -1,3 +1,4 @@
+import { withCrawlConfiguration } from '../../../config/crawlSettings.js';
 // Runs one synchronous Feedsmith parse inside a disposable worker isolate.
 
 import { parentPort, workerData } from 'node:worker_threads';
@@ -14,7 +15,7 @@ const serializeError = error => ({
 
 try {
   parentPort.postMessage({
-    parsedFeed: parseFeedSourceSync(workerData.source, { feedUrl: workerData.feedUrl })
+    parsedFeed: withCrawlConfiguration(workerData.crawlOverrides, () => parseFeedSourceSync(workerData.source, { feedUrl: workerData.feedUrl }))
   });
 } catch (error) {
   parentPort.postMessage({ error: serializeError(error) });

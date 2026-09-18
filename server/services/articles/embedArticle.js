@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../inference/runtimeConfiguration.js';
 import { isInferenceConfigured } from '../inference/configuration.js';
 // services/articles/embedArticle.js
 import { embedTexts } from '../embeddings/embeddingService.js';
@@ -237,7 +238,7 @@ function isArticleInstance(record) {
 
 // This function embeds one article or input object and optionally persists the event vector.
 export async function embedArticle(articleOrInput, options = {}) {
-  if (shouldSkipArticleEmbeddings() || !await isInferenceConfigured()) return null;
+  if (shouldSkipArticleEmbeddings(await getInferenceEnvironment()) || !await isInferenceConfigured()) return null;
 
   // `persist=true` means this function owns writing vectors to the Article row.
   const { allowShortEventText = false, persist = true } = options;

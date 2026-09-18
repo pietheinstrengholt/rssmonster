@@ -1,3 +1,4 @@
+import { getCrawlEnvironment } from '../../../config/crawlSettings.js';
 // Coordinates publisher requests by canonical URL and origin-wide capacity.
 
 // Produces one stable HTTP URL without a fragment for request identity.
@@ -19,13 +20,12 @@ const createQueueTimeoutError = () => {
 export const createOriginRequestPolicy = ({
   maxConcurrency = 2,
   minSpacingMs = 250,
+  getLimits = () => ({ maxConcurrency, minSpacingMs }),
   clock = () => Date.now(),
   schedule = (callback, delayMs) => setTimeout(callback, delayMs),
   cancelSchedule = timer => clearTimeout(timer)
 } = {}) => {
   const origins = new Map();
-  const concurrency = Math.max(1, Number.parseInt(maxConcurrency, 10) || 1);
-  const spacingMs = Math.max(0, Number.parseInt(minSpacingMs, 10) || 0);
 
   // Removes one queued permit request and settles its cancellation exactly once.
   const removeQueued = (origin, queued, error) => {
@@ -44,7 +44,7 @@ export const createOriginRequestPolicy = ({
   // Starts queued permits fairly when one origin has capacity and spacing budget.
   const drain = origin => {
     const state = origins.get(origin);
-    if (!state || state.active >= concurrency || state.queue.length === 0) {
+    if (!state || state.active >= (state.queue[0]?.concurrency ?? 1) || state.queue.length === 0) {
       if (state && state.active === 0 && state.queue.length === 0) {
         origins.delete(origin);
       }
@@ -53,7 +53,7 @@ export const createOriginRequestPolicy = ({
 
     const waitMs = state.lastStartedAt === null
       ? 0
-      : Math.max(0, spacingMs - (clock() - state.lastStartedAt));
+      : Math.max(0, state.queue[0].spacingMs - (clock() - state.lastStartedAt));
     if (waitMs > 0) {
       if (!state.timer) {
         state.timer = schedule(() => {
@@ -109,8 +109,11 @@ export const createOriginRequestPolicy = ({
         });
       }
 
+      const limits = getLimits();
       return new Promise((resolve, reject) => {
         const queued = {
+          concurrency: Math.max(1, Number.parseInt(limits.maxConcurrency, 10) || 1),
+          spacingMs: Math.max(0, Number.parseInt(limits.minSpacingMs, 10) || 0),
           abort: null,
           reject,
           resolve,
@@ -225,20 +228,15 @@ export const createRequestCoalescer = () => {
   });
 };
 
-const configuredConcurrency = Number.parseInt(
-  process.env.FEED_ORIGIN_MAX_CONCURRENCY,
-  10
-);
-const configuredSpacingMs = Number.parseInt(
-  process.env.FEED_ORIGIN_MIN_SPACING_MS,
-  10
-);
-
 export const originRequestPolicy = createOriginRequestPolicy({
-  maxConcurrency: configuredConcurrency || 2,
-  minSpacingMs: Number.isInteger(configuredSpacingMs) && configuredSpacingMs >= 0
-    ? configuredSpacingMs
-    : 250
+  getLimits: () => {
+    const environment = getCrawlEnvironment();
+    const spacing = Number.parseInt(environment.FEED_ORIGIN_MIN_SPACING_MS, 10);
+    return {
+      maxConcurrency: Number.parseInt(environment.FEED_ORIGIN_MAX_CONCURRENCY, 10) || 2,
+      minSpacingMs: Number.isInteger(spacing) && spacing >= 0 ? spacing : 250
+    };
+  }
 });
 
 export const requestCoalescer = createRequestCoalescer();

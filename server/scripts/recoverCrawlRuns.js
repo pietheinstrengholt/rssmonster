@@ -1,3 +1,4 @@
+import { withCrawlSettings } from '../services/crawl/configuration.js';
 // Explicit maintenance command for recovering stale or administratively abandoned crawls.
 
 import dotenv from 'dotenv';
@@ -14,7 +15,7 @@ export const MANUAL_CRAWL_RESET_ERROR_MESSAGE =
   'Crawl was manually reset by an administrator.';
 
 export const recoverCrawlRuns = async ({ all = false, now = new Date() } = {}) => {
-  if (!all) return failStaleCrawlRuns({ now });
+  if (!all) return withCrawlSettings(() => failStaleCrawlRuns({ now }));
 
   return CrawlRun.update({
     status: 'failed',

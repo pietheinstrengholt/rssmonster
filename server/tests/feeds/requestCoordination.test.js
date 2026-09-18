@@ -1,5 +1,7 @@
+import { withCrawlConfiguration } from '../../config/crawlSettings.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  originRequestPolicy,
   canonicalizeRequestUrl,
   createOriginRequestPolicy,
   createRequestCoalescer
@@ -178,4 +180,21 @@ describe('canonical request coalescing', () => {
     })).resolves.toBe('fresh response');
     expect(calls).toBe(2);
   });
+});
+
+it('shares active origin permits when a new crawl snapshot reduces concurrency', async () => {
+  const url = 'https://changing-policy.example/feed';
+  const acquire = concurrency => withCrawlConfiguration({ FEED_ORIGIN_MAX_CONCURRENCY: concurrency, FEED_ORIGIN_MIN_SPACING_MS: 0 }, () => originRequestPolicy.acquire(url));
+  const first = await acquire(2);
+  const second = await acquire(2);
+  let granted = false;
+  const pending = acquire(1).then(release => { granted = true; return release; });
+  await flushPromises();
+  expect(granted).toBe(false);
+  first(); await flushPromises();
+  expect(granted).toBe(false);
+  second();
+  const release = await pending;
+  expect(granted).toBe(true);
+  release();
 });

@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../services/inference/runtimeConfiguration.js';
 import { getAvailableInferenceCapabilities, getInferenceStatus } from '../services/inference/status.js';
 import db from '../models/index.js';
 import {
@@ -21,6 +22,7 @@ export const getProcessingJobsStatus = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
+    const environment = await getInferenceEnvironment();
     const status = await getInferenceStatus().catch(() => null);
     const available = await getAvailableInferenceCapabilities(status);
     return res.status(200).json({
@@ -29,11 +31,11 @@ export const getProcessingJobsStatus = async (req, res, _next) => {
         .filter(([name]) => available[name])
         .map(([name, capability]) => [name, { provider: capability.provider, model: capability.model }])),
       features: {
-        inference: isInferenceEnabled() && Object.values(available).some(Boolean),
-        assistant: isAssistantEnabled() && available.assistant,
-        classification: !shouldSkipArticleClassification() && available.classification,
-        embeddings: !shouldSkipArticleEmbeddings() && available.embeddings,
-        semanticLabeling: !shouldSkipSemanticLabeling() && available.generation
+        inference: isInferenceEnabled(environment) && Object.values(available).some(Boolean),
+        assistant: isAssistantEnabled(environment) && available.assistant,
+        classification: !shouldSkipArticleClassification(environment) && available.classification,
+        embeddings: !shouldSkipArticleEmbeddings(environment) && available.embeddings,
+        semanticLabeling: !shouldSkipSemanticLabeling(environment) && available.generation
       }
     });
   } catch (error) {

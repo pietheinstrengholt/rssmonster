@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from './runtimeConfiguration.js';
 import provider from '../ai/providers/inference.js';
 import { validateInferenceCapabilities } from '../ai/capabilities.js';
 import { getEffectiveInferenceConfiguration, inferenceConfigurationIdentity, getTestInferenceConfiguration } from './configuration.js';
@@ -8,7 +9,7 @@ let cached;
 export const clearInferenceStatus = () => { cached = undefined; };
 const inspect = async (configuration, options) => {
   if (!configuration.baseUrl) return { state: 'not_configured', reachable: null, authenticated: null, ready: false, capabilities: null };
-  if (!isInferenceEnabled()) return { state: 'disabled', reachable: null, authenticated: null, ready: false, capabilities: null };
+  if (!isInferenceEnabled(await getInferenceEnvironment())) return { state: 'disabled', reachable: null, authenticated: null, ready: false, capabilities: null };
   const requestOptions = { timeoutMs: 3000, ...options, configuration };
   const results = await Promise.allSettled([
     provider.getHealth(requestOptions), provider.getReadiness(requestOptions),
@@ -31,7 +32,7 @@ const inspect = async (configuration, options) => {
 export const testInferenceConfiguration = async (input, options = {}) => inspect(await getTestInferenceConfiguration(input), options);
 export const getInferenceStatus = async ({ refresh = false, ...options } = {}) => {
   const configuration = await getEffectiveInferenceConfiguration();
-  const identity = `${inferenceConfigurationIdentity(configuration)}:${isInferenceEnabled()}`;
+  const identity = `${inferenceConfigurationIdentity(configuration)}:${isInferenceEnabled(await getInferenceEnvironment())}`;
   if (!refresh && cached?.identity === identity && cached.expires > Date.now()) return cached.promise;
   const promise = inspect(configuration, options);
   cached = { identity, expires: Date.now() + TTL_MS, promise };
@@ -40,7 +41,8 @@ export const getInferenceStatus = async ({ refresh = false, ...options } = {}) =
 export const getAvailableInferenceCapabilities = async (snapshot) => {
   try {
     const status = snapshot === undefined ? await getInferenceStatus() : snapshot;
+    const enabled = isInferenceEnabled(await getInferenceEnvironment());
     return Object.fromEntries(['embeddings', 'generation', 'classification', 'assistant'].map(name =>
-      [name, Boolean(isInferenceEnabled() && status?.ready && status.capabilities?.[name]?.available)]));
+      [name, Boolean(enabled && status?.ready && status.capabilities?.[name]?.available)]));
   } catch { return { embeddings: false, generation: false, classification: false, assistant: false }; }
 };

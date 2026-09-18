@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../../inference/runtimeConfiguration.js';
 import { isInferenceConfigured } from '../../inference/configuration.js';
 // server/services/crawl/enrichment/analyzeArticleContent.js
 import { classifyArticle } from '../../ai/capabilities/classification.js';
@@ -61,7 +62,7 @@ async function analyzeArticleContent(input, {
   processingContext,
   useQueueFullFallback = true
 } = {}) {
-  if (shouldSkipArticleClassification() || !await isInferenceConfigured()) {
+  if (shouldSkipArticleClassification(await getInferenceEnvironment()) || !await isInferenceConfigured()) {
     return createDefaultArticleAnalysis();
   }
 

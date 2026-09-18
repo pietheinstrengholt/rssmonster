@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../services/inference/runtimeConfiguration.js';
 import { isInferenceEnabled } from '../config/intelligentFeatures.js';
 import { getAvailableInferenceCapabilities } from '../services/inference/status.js';
 import { getAIPermissions } from '../services/ai/capabilities.js';
@@ -9,13 +10,13 @@ export const INFERENCE_DISABLED_RESPONSE = {
 
 // Keeps disabled inference capabilities quiet and prevents their controllers from running.
 export const requireInferenceEnabled = async (_req, res, next) => {
-  if (isInferenceEnabled() && Object.values(await getAvailableInferenceCapabilities()).some(Boolean)) return next();
+  if (isInferenceEnabled(await getInferenceEnvironment()) && Object.values(await getAvailableInferenceCapabilities()).some(Boolean)) return next();
   return res.status(503).json(INFERENCE_DISABLED_RESPONSE);
 };
 
 // Require the independent server permission; inference owns provider availability.
 export const requireAssistantEnabled = async (_req, res, next) => {
-  if (getAIPermissions().assistant && (await getAvailableInferenceCapabilities()).assistant) return next();
+  if (getAIPermissions(await getInferenceEnvironment()).assistant && (await getAvailableInferenceCapabilities()).assistant) return next();
   return res.status(503).json(INFERENCE_DISABLED_RESPONSE);
 };
 

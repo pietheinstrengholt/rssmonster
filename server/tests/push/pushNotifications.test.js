@@ -1,9 +1,11 @@
+import { encryptSecret } from '../../services/secretEncryption.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   articleCount: vi.fn(),
   findAll: vi.fn(),
   findSetting: vi.fn(),
+  findServerSetting: vi.fn(),
   upsert: vi.fn(),
   sendNotification: vi.fn(),
   setVapidDetails: vi.fn()
@@ -11,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../../models/index.js', () => ({
   default: {
+    ServerSetting: { findByPk: mocks.findServerSetting },
     Article: { count: mocks.articleCount },
     Setting: { findOne: mocks.findSetting },
     PushSubscription: { findAll: mocks.findAll, upsert: mocks.upsert }
@@ -41,6 +44,7 @@ describe('push notification delivery', () => {
     process.env.VAPID_SUBJECT = 'mailto:admin@example.com';
     mocks.articleCount.mockResolvedValue(0);
     mocks.findSetting.mockResolvedValue(null);
+    mocks.findServerSetting.mockResolvedValue(null);
   });
 
   it('atomically assigns a browser endpoint to the authenticated user', async () => {
@@ -155,4 +159,16 @@ describe('push notification delivery', () => {
     });
     expect(vi.getTimerCount()).toBe(0);
   });
+});
+
+it('uses the decrypted saved key pair for each delivery without setting global VAPID state', async () => {
+  vi.stubEnv('ENCRYPTION_KEY', Buffer.alloc(32, 7).toString('base64'));
+  try {
+    mocks.findServerSetting.mockResolvedValue({ value: { VAPID_PUBLIC_KEY: encryptSecret('saved-public'), VAPID_PRIVATE_KEY: encryptSecret('saved-private'), VAPID_SUBJECT: 'mailto:owner@example.com' } });
+    mocks.findAll.mockResolvedValue([{ endpoint: 'https://push.example/test', p256dh: 'key', auth: 'auth' }]);
+    mocks.sendNotification.mockResolvedValue({ statusCode: 201 });
+    await sendNewArticlePush(7, 1);
+    expect(mocks.sendNotification).toHaveBeenLastCalledWith(expect.any(Object), expect.any(String), expect.objectContaining({ vapidDetails: { subject: 'mailto:owner@example.com', publicKey: 'saved-public', privateKey: 'saved-private' } }));
+    expect(mocks.setVapidDetails).not.toHaveBeenCalled();
+  } finally { vi.unstubAllEnvs(); }
 });

@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../services/inference/runtimeConfiguration.js';
 import { isActiveIsland, islandExpiresAt } from '../services/islands/islandDeadline.js';
 import db from '../models/index.js';
 import { getAvailableInferenceCapabilities } from '../services/inference/status.js';
@@ -315,7 +316,7 @@ export const getSettings = async (req, res, _next) => {
       openArticleLinksInNewTab,
       markAsReadOnScroll,
       AIEnabled: aiEnabled,
-      AssistantEnabled: isAssistantEnabled() && available.assistant
+      AssistantEnabled: isAssistantEnabled(await getInferenceEnvironment()) && available.assistant
     });
   } catch (err) {
     console.error('Error in getSettings:', err);

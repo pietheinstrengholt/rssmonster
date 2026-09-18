@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../inference/runtimeConfiguration.js';
 import provider from './providers/inference.js';
 import { createEmbeddingCapability } from './capabilities/embedding.js';
 import { createGenerationCapability } from './capabilities/generation.js';
@@ -13,8 +14,8 @@ export const createAI = ({ inference = provider, environment = process.env } = {
   classification: createClassificationCapability(inference),
   assistant: createAssistantCapability(inference),
   getCapabilities: createInferenceCapabilities(inference),
-  getPermissions: () => getAIPermissions(environment),
-  getOperations: () => getAIOperations(environment),
+  getPermissions: async () => getAIPermissions(await getInferenceEnvironment(environment)),
+  getOperations: async () => getAIOperations(await getInferenceEnvironment(environment)),
   getHealth: createAIHealth(inference, environment)
 });
 

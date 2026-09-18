@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import SettingsSmtp from '../src/components/settings/SettingsSmtp.vue';
 import SettingsServer from '../src/components/settings/SettingsServer.vue';
-import { fetchOidcSettings, fetchServerSettings, saveServerSettings, fetchSmtpSettings, saveSmtpSettings, clearSmtpSettings } from '../src/api/settings';
+import { fetchCrawlSettings, fetchPushSettings, fetchOidcSettings, fetchServerSettings, saveServerSettings, fetchSmtpSettings, saveSmtpSettings, clearSmtpSettings } from '../src/api/settings';
 import { testSmtpConnectivity } from '../src/api/users';
 vi.mock('../src/api/users', () => ({ testSmtpConnectivity: vi.fn() }));
-vi.mock('../src/api/settings', () => ({ fetchOidcSettings: vi.fn(), saveOidcSettings: vi.fn(), clearOidcSettings: vi.fn(), fetchServerSettings: vi.fn(), saveServerSettings: vi.fn(), fetchSmtpSettings: vi.fn(), saveSmtpSettings: vi.fn(), clearSmtpSettings: vi.fn() }));
+vi.mock('../src/api/settings', () => ({ fetchCrawlSettings: vi.fn(), saveCrawlSettings: vi.fn(), clearCrawlSettings: vi.fn(), fetchPushSettings: vi.fn(), savePushSettings: vi.fn(), clearPushSettings: vi.fn(), fetchOidcSettings: vi.fn(), saveOidcSettings: vi.fn(), clearOidcSettings: vi.fn(), fetchServerSettings: vi.fn(), saveServerSettings: vi.fn(), fetchSmtpSettings: vi.fn(), saveSmtpSettings: vi.fn(), clearSmtpSettings: vi.fn() }));
 const smtpConfiguration = (overrides = {}) => ({
   configured: true, enabled: true, password: { configured: true, overridden: false },
   fields: Object.fromEntries(Object.entries({ EMAIL_ENABLED: true, PUBLIC_APP_URL: 'https://reader.example.com', SMTP_HOST: 'smtp.example.com', SMTP_PORT: 587, SMTP_SECURE: false, SMTP_REQUIRE_TLS: true, SMTP_USER: 'reader', EMAIL_FROM: 'RSSMonster <reader@example.com>', EMAIL_REPLY_TO: '' }).map(([key, value]) => [key, { value, overridden: false }])),
@@ -16,6 +16,8 @@ const configuration = (override = null, environmentValue = true) => ({
 });
 beforeEach(() => {
   vi.resetAllMocks();
+  fetchCrawlSettings.mockResolvedValue({ data: { overridden: false, fields: [], effectiveParallel: 0, effectiveLeaseMs: 120000 } });
+  fetchPushSettings.mockResolvedValue({ data: { overridden: false, configured: false, fields: { VAPID_PUBLIC_KEY: { configured: false }, VAPID_PRIVATE_KEY: { configured: false }, VAPID_SUBJECT: { value: '' } } } });
   fetchOidcSettings.mockResolvedValue({ data: { fields: {}, secret: { configured: false, overridden: false } } });
   fetchSmtpSettings.mockResolvedValue({ data: smtpConfiguration() });
   saveSmtpSettings.mockResolvedValue({ data: smtpConfiguration() });
@@ -201,6 +203,14 @@ it('includes OIDC in keyboard navigation and preserves its panel on tab switches
   expect(wrapper.get('#server-oidc-tab').attributes('aria-selected')).toBe('true');
   expect(wrapper.get('#server-oidc-panel').isVisible()).toBe(true);
   await wrapper.get('#server-oidc-tab').trigger('keydown', { key: 'ArrowRight' });
+  await flushPromises();
+  expect(wrapper.get('#server-push-tab').attributes('aria-selected')).toBe('true');
+  expect(wrapper.get('#server-push-panel').isVisible()).toBe(true);
+  await wrapper.get('#server-push-tab').trigger('keydown', { key: 'ArrowRight' });
+  await flushPromises();
+  expect(wrapper.get('#server-crawl-tab').attributes('aria-selected')).toBe('true');
+  expect(wrapper.get('#server-crawl-panel').isVisible()).toBe(true);
+  await wrapper.get('#server-crawl-tab').trigger('keydown', { key: 'ArrowRight' });
   expect(wrapper.get('#server-account-tab').attributes('aria-selected')).toBe('true');
   expect(wrapper.get('#server-oidc-panel').isVisible()).toBe(false);
   wrapper.unmount();

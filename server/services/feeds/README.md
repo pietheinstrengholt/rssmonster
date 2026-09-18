@@ -376,3 +376,13 @@ npx vitest run tests/feeds tests/crawl/feedLeaseLifecycle.integration.test.js \
 
 Run the complete server suite before merging changes that affect acquisition,
 scheduling, persistence, or subscription behavior.
+
+## Crawl settings snapshots
+
+During a crawl, response bounds, origin request limits, and both isolated parser
+adapters read the immutable crawl settings scope from `config/crawlSettings.js`.
+Parser workers receive the allowlisted overrides explicitly. Direct uses outside a
+crawl scope continue to resolve environment defaults. No parser or HTTP operation
+performs a database lookup. The origin coordinator retains one shared queue across
+snapshots, with limits captured on each acquisition. `FEED_HTTP_TIMEOUT_MS` is an
+optional fallback for phase-specific connect/body settings, which take precedence.

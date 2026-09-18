@@ -42,7 +42,7 @@ export const getEffectiveInferenceConfiguration = async ({ environment = process
   const configured = getEnvironmentInferenceConfiguration(environment);
   if (configured) return configured;
   const row = await (await model()).unscoped().findByPk(1);
-  return row ? { source: 'database', baseUrl: row.baseUrl, apiKey: decrypt(row.apiKeyEncrypted), configurable: true }
+  return row?.baseUrl ? { source: 'database', baseUrl: row.baseUrl, apiKey: decrypt(row.apiKeyEncrypted), configurable: true }
     : { source: 'none', baseUrl: null, apiKey: null, configurable: true };
 };
 export const inferenceConfigurationIdentity = config => createHash('sha256')
@@ -61,7 +61,7 @@ export const getInferenceConfigurationMetadata = async () => {
   const environment = getEnvironmentInferenceConfiguration();
   if (environment) return serializeInferenceConfiguration(environment);
   const row = await (await model()).unscoped().findByPk(1);
-  return serializeInferenceConfiguration({ source: row ? 'database' : 'none', configurable: true,
+  return serializeInferenceConfiguration({ source: row?.baseUrl ? 'database' : 'none', configurable: true,
     baseUrl: row?.baseUrl ?? null, apiKey: Boolean(row?.apiKeyEncrypted) });
 };
 const assertConfigurable = () => {
@@ -98,7 +98,7 @@ export const saveInferenceConfiguration = async input => {
 };
 export const clearInferenceConfiguration = async () => {
   assertConfigurable();
-  await (await model()).destroy({ where: { id: 1 } });
+  await (await model()).update({ baseUrl: '', apiKeyEncrypted: null }, { where: { id: 1 } });
   return serializeInferenceConfiguration(await getEffectiveInferenceConfiguration());
 };
 

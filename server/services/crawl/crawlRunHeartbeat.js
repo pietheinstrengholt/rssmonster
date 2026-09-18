@@ -1,3 +1,4 @@
+import { getCrawlEnvironment } from '../../config/crawlSettings.js';
 // Owns durable crawl-run liveness and fenced state transitions.
 
 import db from '../../models/index.js';
@@ -14,10 +15,17 @@ export const CRAWL_RUN_HEARTBEAT_INTERVAL_MS = positiveInteger(
   process.env.CRAWL_RUN_HEARTBEAT_INTERVAL_MS,
   30_000
 );
-export const CRAWL_RUN_STALE_AFTER_MS = Math.max(
-  positiveInteger(process.env.CRAWL_RUN_STALE_AFTER_MS, 120_000),
-  CRAWL_RUN_HEARTBEAT_INTERVAL_MS * 3
-);
+export const resolveCrawlRunStaleAfterMs = () => {
+  const environment = getCrawlEnvironment();
+  const minutes = Number(environment.CRAWL_RUN_MAX_RUNNING_MINUTES);
+  return Math.max(
+    Number.isSafeInteger(minutes) && minutes > 0
+      ? minutes * 60_000
+      : positiveInteger(environment.CRAWL_RUN_STALE_AFTER_MS, 120_000),
+    CRAWL_RUN_HEARTBEAT_INTERVAL_MS * 3
+  );
+};
+export const CRAWL_RUN_STALE_AFTER_MS = resolveCrawlRunStaleAfterMs();
 export const STALE_CRAWL_ERROR_MESSAGE =
   'Crawl heartbeat expired and the run was marked stale.';
 
@@ -30,7 +38,7 @@ export const createCrawlRunOwnershipLostError = crawlRunId => {
 
 // Builds the stale predicate for heartbeat-aware and legacy running rows.
 export const buildStaleCrawlRunWhere = (now = new Date()) => {
-  const staleBefore = new Date(now.getTime() - CRAWL_RUN_STALE_AFTER_MS);
+  const staleBefore = new Date(now.getTime() - resolveCrawlRunStaleAfterMs());
   return {
     status: 'running',
     [Op.or]: [
@@ -47,7 +55,7 @@ export const isStaleCrawlRun = (crawlRun, now = new Date()) => {
   const heartbeatAt = crawlRun?.heartbeatAt || crawlRun?.startedAt;
   const heartbeatTime = new Date(heartbeatAt).getTime();
   return Number.isFinite(heartbeatTime) &&
-    heartbeatTime <= now.getTime() - CRAWL_RUN_STALE_AFTER_MS;
+    heartbeatTime <= now.getTime() - resolveCrawlRunStaleAfterMs();
 };
 
 // Fails stale rows using a compare-and-set predicate so fresh heartbeats win races.

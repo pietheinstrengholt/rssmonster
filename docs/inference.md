@@ -740,3 +740,29 @@ process is running and inspect its console. The HTTP listener opens before
 missing local model assets are downloaded and initialized; `/health` remains
 available while `/ready` reports `503` until initialization completes. A
 capability assigned to OpenAI does not load its corresponding local model.
+
+## Runtime settings in RSSMonster
+
+In **Settings → AI / Inference → Runtime configuration**, enable **Override
+environment default** to save these settings together:
+
+- `INFERENCE_TIMEOUT_MS` (30,000 ms) and `INFERENCE_AGENT_TIMEOUT_MS` (300,000 ms).
+- `INFERENCE_CIRCUIT_FAILURE_THRESHOLD` (5 consecutive availability failures)
+  and `INFERENCE_CIRCUIT_COOLDOWN_MS` (30,000 ms before a recovery probe).
+- `INFERENCE_AI_ENABLED` and `INFERENCE_ASSISTANT_ENABLED`: Automatic, Enabled,
+  or Disabled. Automatic removes an explicit permission restriction; it does not
+  invent an endpoint or an available capability. Disabling inference also blocks
+  the assistant, regardless of the assistant selection.
+- `SKIP_ARTICLE_CLASSIFICATION_ANALYSIS`, `SKIP_ARTICLE_EMBEDDINGS`, and
+  `SKIP_SEMANTIC_LABELING` (all false by default).
+
+The form starts with the current environment values. Saved values take precedence
+and live in `inference_settings.runtimeOverrides`, including when the endpoint is
+configured through environment variables. **Restore environment defaults** removes
+this group without affecting the endpoint or API key. Removing a saved connection
+also leaves runtime settings intact. Changes apply to subsequent requests and
+processing batches across the web server and workers without a restart; running
+batches keep their snapshot. Explicit per-operation deadlines still apply.
+
+Apply the normal application migrations when upgrading: the runtime settings
+migration adds a nullable JSON column and preserves existing connection credentials.

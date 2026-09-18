@@ -1,3 +1,4 @@
+import { up as runtimeUp, down as runtimeDown } from '../../migrations/20260918002000-add-inference-runtime-overrides.mjs';
 import { describe, expect, it, vi } from 'vitest';
 import { Sequelize, DataTypes } from 'sequelize';
 import db from '../../models/index.js';
@@ -36,4 +37,30 @@ describe('inference settings migration', () => {
       await down(query); expect(await query.showAllTables()).not.toContain('inference_settings');
     } finally { await sequelize.close(); }
   });
+});
+
+it.each(['mysql', 'sqlite'])('preserves inference credentials through runtime settings migration and rollback on %s', async dialect => {
+  const sequelize = dialect === 'sqlite' ? new Sequelize({ dialect, storage: ':memory:', logging: false }) : db.sequelize;
+  const query = sequelize.getQueryInterface();
+  const table = 'inference_runtime_migration_test';
+  const adapter = {
+    createTable: (_name, columns) => query.createTable(table, columns),
+    addConstraint: (_name, options) => query.addConstraint(table, { ...options, name: 'inference_runtime_test_singleton' }),
+    addColumn: (_name, column, options) => query.addColumn(table, column, options),
+    removeColumn: (_name, column) => query.removeColumn(table, column),
+    dropTable: () => query.dropTable(table)
+  };
+  try {
+    await up(adapter, DataTypes);
+    await query.bulkInsert(table, [{ id: 1, baseUrl: 'http://existing.example', apiKeyEncrypted: 'existing-ciphertext', createdAt: new Date(), updatedAt: new Date() }]);
+    await runtimeUp(adapter, DataTypes);
+    const rows = await query.select(null, table);
+    expect(rows[0]).toMatchObject({ baseUrl: 'http://existing.example', apiKeyEncrypted: 'existing-ciphertext', runtimeOverrides: null });
+    await runtimeDown(adapter);
+    expect((await query.select(null, table))[0]).toMatchObject({ baseUrl: 'http://existing.example', apiKeyEncrypted: 'existing-ciphertext' });
+    expect(await query.describeTable(table)).not.toHaveProperty('runtimeOverrides');
+  } finally {
+    await down(adapter);
+    if (dialect === 'sqlite') await sequelize.close();
+  }
 });

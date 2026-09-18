@@ -1,3 +1,4 @@
+import { getCrawlEnvironment, getCrawlOverrides } from '../../../config/crawlSettings.js';
 // Supervises disposable parser workers with CPU deadlines and heap constraints.
 
 import { Worker } from 'node:worker_threads';
@@ -16,8 +17,8 @@ export const DEFAULT_FEED_PARSER_MEMORY_MB = 64;
 const DEFAULT_WORKER_URL = new URL('./parseFeedWorker.js', import.meta.url);
 
 // Reads one positive parser resource setting.
-const configuredPositiveInteger = (name, fallback) => {
-  const value = Number.parseInt(process.env[name] || '', 10);
+export const configuredPositiveInteger = (name, fallback) => {
+  const value = Number.parseInt(getCrawlEnvironment()[name] || '', 10);
   return Number.isInteger(value) && value > 0 ? value : fallback;
 };
 
@@ -54,7 +55,7 @@ export const parseFeedSourceIsolated = async (source, {
     Date.now() + parserTimeoutMs
   );
   const worker = new Worker(workerUrl, {
-    workerData: { source: safeSource, feedUrl },
+    workerData: { source: safeSource, feedUrl, crawlOverrides: getCrawlOverrides() },
     resourceLimits: {
       maxOldGenerationSizeMb: parserMemoryMb,
       maxYoungGenerationSizeMb: Math.max(4, Math.floor(parserMemoryMb / 4)),

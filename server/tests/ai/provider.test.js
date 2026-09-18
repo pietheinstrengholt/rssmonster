@@ -30,6 +30,6 @@ describe('RSSMonster inference provider adapter', () => {
       ['/ready', undefined, { ...options, method: 'GET', circuitKey: 'readiness', includeHttpStatus: true }]
     ]);
     inference.assistantStream({ input: [] }, options);
-    expect(stream).toHaveBeenCalledExactlyOnceWith('/api/assistant/model/stream', { request: { input: [] } }, options);
+    expect(stream).toHaveBeenCalledExactlyOnceWith('/api/assistant/model/stream', { request: { input: [] } }, { ...options, circuitKey: 'assistant' });
   });
 });

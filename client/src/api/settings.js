@@ -90,3 +90,15 @@ export const clearSmtpSettings = () => api.delete('/setting/server/smtp');
 export const fetchOidcSettings = () => api.get('/setting/server/oidc');
 export const saveOidcSettings = input => api.put('/setting/server/oidc', input);
 export const clearOidcSettings = () => api.delete('/setting/server/oidc');
+
+export const fetchPushSettings = () => api.get('/setting/server/push');
+export const savePushSettings = input => api.put('/setting/server/push', input);
+export const clearPushSettings = () => api.delete('/setting/server/push');
+
+export const fetchCrawlSettings = () => api.get('/setting/server/crawl');
+export const saveCrawlSettings = input => api.put('/setting/server/crawl', input);
+export const clearCrawlSettings = () => api.delete('/setting/server/crawl');
+
+export const fetchInferenceRuntimeSettings = () => api.get('/setting/inference/runtime');
+export const saveInferenceRuntimeSettings = data => api.put('/setting/inference/runtime', data);
+export const clearInferenceRuntimeSettings = () => api.delete('/setting/inference/runtime');

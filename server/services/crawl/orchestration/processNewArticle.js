@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../../inference/runtimeConfiguration.js';
 import { isInferenceConfigured } from '../../inference/configuration.js';
 import applyActions from '../enrichment/applyActions.js';
 import {
@@ -57,7 +58,7 @@ const processNewArticle = async ({
 
   const shouldEnqueueAnalysis = !actionResult.shouldDiscard &&
     feed?.applyAiAnalysis !== false &&
-    !shouldSkipArticleClassification() && await isInferenceConfigured();
+    !shouldSkipArticleClassification(await getInferenceEnvironment()) && await isInferenceConfigured();
   let analysis = null;
   let hotlinkCount = 0;
   // Handles the case where action result should discard is unavailable.

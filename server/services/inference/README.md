@@ -17,3 +17,28 @@ Semantic membership and recommendation confidence belong to the
 [domain services](../README.md), not connection resolution. Missing optional
 classification/labels must not become invented semantic evidence; unmatched
 personalization remains neutral in Recommended scoring.
+
+## Runtime overrides
+
+`runtimeConfiguration.js` owns the nine optional timeout, circuit, permission,
+and processing-skip overrides. They are a nullable JSON group on the singleton
+`inference_settings.runtimeOverrides` column, separate from the endpoint/key.
+The administrator `/api/setting/inference/runtime` GET/PUT/DELETE endpoints expose
+and validate this group even when the connection comes from the environment.
+Database overrides win over environment values; clearing the group restores
+inheritance. `null` permission values mean automatic, suppressing an environment
+permission override while still requiring a configured, available capability.
+A settings-only row has an empty endpoint and is not an inference connection.
+Removing a connection preserves runtime overrides; restoring runtime defaults
+preserves the endpoint and encrypted API key.
+
+Runtime consumers resolve these settings from the database in each process.
+Crawls, article embedding batches, and processing jobs share one lazy settings
+snapshot through AsyncLocalStorage, avoiding a query for every article and never
+mutating `process.env`. Subsequent requests/batches read current saved values;
+active work retains its snapshot. Explicit injected environments remain available
+for isolated tests. Pure `config/intelligentFeatures.js` predicates accept this
+resolved environment; callers must resolve it before checking permission.
+Transport resolves standard/assistant deadlines per request and replaces cached
+circuits when the effective circuit configuration changes. Existing explicit
+caller deadlines (including health probes and feed cancellation) remain in force.

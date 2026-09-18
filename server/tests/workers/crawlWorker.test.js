@@ -3,12 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const dependencyMocks = vi.hoisted(() => ({
   authenticate: vi.fn(),
   closeDatabase: vi.fn(),
-  runCrawl: vi.fn()
+  runCrawl: vi.fn(),
+  findServerSetting: vi.fn()
 }));
 
 // This mock exposes controllable Sequelize lifecycle behavior to the lazy dependency loader.
 vi.mock('../../models/index.js', () => ({
   default: {
+    ServerSetting: { findByPk: dependencyMocks.findServerSetting },
     sequelize: {
       authenticate: dependencyMocks.authenticate,
       close: dependencyMocks.closeDatabase
@@ -39,6 +41,7 @@ const createWorkerDependencies = (overrides = {}) => ({
 describe('crawl worker', () => {
   // This setup restores successful lazy dependencies before each worker lifecycle test.
   beforeEach(() => {
+    dependencyMocks.findServerSetting.mockReset().mockResolvedValue(null);
     dependencyMocks.authenticate.mockReset().mockResolvedValue(undefined);
     dependencyMocks.closeDatabase.mockReset().mockResolvedValue(undefined);
     dependencyMocks.runCrawl.mockReset().mockResolvedValue(undefined);
@@ -316,6 +319,25 @@ describe('crawl worker', () => {
     await firstStart;
   });
 
+  it('uses the saved interval before validating the environment fallback', async () => {
+    const previous = process.env.CRAWL_WORKER_INTERVAL_MS;
+    process.env.CRAWL_WORKER_INTERVAL_MS = 'invalid';
+    dependencyMocks.findServerSetting.mockResolvedValue({
+      value: { CRAWL_WORKER_INTERVAL_MS: 2500 }
+    });
+    const logger = { error: vi.fn(), log: vi.fn() };
+    const worker = createCrawlWorker({ logger, registerProcessHandlers: false });
+    dependencyMocks.runCrawl.mockImplementation(async () => { void worker.shutdown(); });
+    try {
+      await worker.start();
+      expect(logger.log).toHaveBeenCalledWith('[CrawlWorker] Starting crawl worker interval=2500ms');
+      expect(dependencyMocks.closeDatabase).toHaveBeenCalledOnce();
+    } finally {
+      if (previous === undefined) delete process.env.CRAWL_WORKER_INTERVAL_MS;
+      else process.env.CRAWL_WORKER_INTERVAL_MS = previous;
+    }
+  });
+
   // This test verifies direct execution reports invalid startup configuration as a fatal error.
   it('handles initialization failure when loaded as the process entry point', async () => {
     const workerPath = new URL('../../src/workers/crawlWorker.js', import.meta.url).pathname;
@@ -344,4 +366,22 @@ describe('crawl worker', () => {
     );
     expect(process.exitCode).toBe(1);
   });
+});
+
+it('refreshes the polling interval between iterations and remains interruptible', async () => {
+  vi.useFakeTimers();
+  const getIntervalMs = vi.fn().mockResolvedValue(2500);
+  const dependencies = createWorkerDependencies({ getIntervalMs });
+  const worker = createCrawlWorker({ intervalMs: 60000, loadDependencies: async () => dependencies, registerProcessHandlers: false, logger: { log() {}, error() {} } });
+  dependencies.runCrawl.mockImplementation(async () => { if (dependencies.runCrawl.mock.calls.length === 2) void worker.shutdown('done'); });
+  const running = worker.start();
+  try {
+    await vi.advanceTimersByTimeAsync(0);
+    expect(dependencies.runCrawl).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(2499);
+    expect(dependencies.runCrawl).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    await running;
+    expect(dependencies.runCrawl).toHaveBeenCalledTimes(2);
+  } finally { await worker.shutdown('cleanup'); vi.useRealTimers(); }
 });

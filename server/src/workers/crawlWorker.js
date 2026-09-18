@@ -15,7 +15,7 @@ export const isWorkerEntryPoint = ({ argv = process.argv, env = process.env } = 
   return Boolean(entryPath) && path.resolve(entryPath) === workerFile;
 };
 
-// This function validates the worker polling interval before database initialization.
+// This function validates the effective worker polling interval.
 export const parseWorkerInterval = value => {
   if (typeof value === 'undefined' || value === '') {
     return DEFAULT_INTERVAL_MS;
@@ -35,10 +35,12 @@ export const parseWorkerInterval = value => {
 const loadCrawlDependencies = async () => {
   const [
     { default: db },
-    { runSemanticPipeline }
+    { runSemanticPipeline },
+    { getCrawlWorkerInterval }
   ] = await Promise.all([
     import('../../models/index.js'),
-    import('../../scripts/runSemanticPipeline.js')
+    import('../../scripts/runSemanticPipeline.js'),
+    import('../../services/crawl/configuration.js')
   ]);
 
   try {
@@ -52,13 +54,14 @@ const loadCrawlDependencies = async () => {
 
   return {
     closeDatabase: () => db.sequelize.close(),
-    runCrawl: runSemanticPipeline
+    runCrawl: runSemanticPipeline,
+    getIntervalMs: async () => parseWorkerInterval(await getCrawlWorkerInterval())
   };
 };
 
 // This function creates an interruptible, crawl-only worker lifecycle.
 export const createCrawlWorker = ({
-  intervalMs = parseWorkerInterval(process.env.CRAWL_WORKER_INTERVAL_MS),
+  intervalMs,
   loadDependencies = loadCrawlDependencies,
   logger = console,
   registerProcessHandlers = true,
@@ -104,11 +107,11 @@ export const createCrawlWorker = ({
   };
 
   // This function waits for the next poll or resolves immediately when interrupted.
-  const sleep = () => new Promise(resolve => {
+  const sleep = (delayMs = intervalMs) => new Promise(resolve => {
     const timeoutId = setTimeout(() => {
       wakeSleep = undefined;
       resolve();
-    }, intervalMs);
+    }, delayMs);
 
     wakeSleep = () => {
       clearTimeout(timeoutId);
@@ -166,15 +169,17 @@ export const createCrawlWorker = ({
 
   // This function runs immediate and subsequent crawl iterations sequentially.
   const runLoop = async () => {
-    const interval = intervalMs % 1000 === 0
-      ? `${intervalMs / 1000}s`
-      : `${intervalMs}ms`;
-    logger.log(`[CrawlWorker] Starting crawl worker interval=${interval}`);
     installProcessHandlers();
 
     try {
       await reportHealth('starting');
       dependencies = await loadDependencies();
+      intervalMs ??= await dependencies.getIntervalMs?.()
+        ?? parseWorkerInterval(process.env.CRAWL_WORKER_INTERVAL_MS);
+      const interval = intervalMs % 1000 === 0
+        ? `${intervalMs / 1000}s`
+        : `${intervalMs}ms`;
+      logger.log(`[CrawlWorker] Starting crawl worker interval=${interval}`);
 
       while (!stopping) {
         const startedAt = Date.now();
@@ -200,7 +205,11 @@ export const createCrawlWorker = ({
         }
 
         if (!stopping) {
-          await sleep();
+          let delayMs = intervalMs;
+          try { delayMs = await dependencies.getIntervalMs?.() ?? intervalMs; } catch (error) {
+            logger.error('[CrawlWorker] Could not refresh crawl interval:', error);
+          }
+          if (!stopping) await sleep(delayMs);
         }
       }
     } finally {

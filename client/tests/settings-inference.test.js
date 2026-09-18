@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import SettingsInference from '../src/components/settings/SettingsInference.vue';
 import { fetchInferenceSettings, saveInferenceSettings, clearInferenceSettings, testInferenceSettings } from '../src/api/settings';
-vi.mock('../src/api/settings', () => ({ fetchInferenceSettings: vi.fn(), saveInferenceSettings: vi.fn(), clearInferenceSettings: vi.fn(), testInferenceSettings: vi.fn() }));
+vi.mock('../src/api/settings', () => ({ fetchInferenceSettings: vi.fn(), saveInferenceSettings: vi.fn(), clearInferenceSettings: vi.fn(), testInferenceSettings: vi.fn(), fetchInferenceRuntimeSettings: vi.fn(async () => ({ data: { overridden: false, fields: [] } })) }));
 const configuration = (source = 'database') => ({ configurationSource: source, configurable: source !== 'environment', baseUrl: source === 'none' ? null : 'http://inference', apiKeyConfigured: source !== 'none' });
 const status = { state: 'partial', ready: true, capabilities: { embeddings: { configured: true, available: true, model: 'embedding-model', provider: 'local', dimensions: 1024 } } };
 beforeEach(() => {
@@ -17,7 +17,9 @@ describe('Inference Settings', () => {
     const wrapper = await render();
     expect(wrapper.get('.inference-capabilities').text()).toContain('local');
     expect(wrapper.get('.inference-capabilities').text()).toContain('embedding-model');
-    expect(wrapper.find('form').exists()).toBe(false); expect(wrapper.find('input').exists()).toBe(false);
+    expect(wrapper.find('#inference-endpoint').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Runtime configuration');
+    expect(wrapper.find('.inference-runtime [type=checkbox]').exists()).toBe(true);
     expect(wrapper.text()).toContain('configured by the deployment'); expect(wrapper.text()).toContain('embedding-model');
     expect(wrapper.text()).toContain('1024 dimensions'); expect(wrapper.text()).not.toContain('Remove connection');
     await wrapper.get('button').trigger('click'); await flushPromises(); expect(testInferenceSettings).toHaveBeenCalled();

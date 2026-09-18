@@ -425,8 +425,8 @@ The connection and body limits apply to their individual HTTP phases, while
 `FEED_TIMEOUT_MS` remains the hard deadline for all acquisition, parsing, and
 persistence work for one feed. Increasing response or timeout limits can
 accommodate unusual feeds, but also increases the resources a slow or oversized
-response may consume. Replace the former `FEED_HTTP_TIMEOUT_MS` setting with
-the two phase-specific settings when upgrading an existing manual installation.
+response may consume. Prefer the phase-specific settings over the legacy
+`FEED_HTTP_TIMEOUT_MS` fallback when upgrading an existing manual installation.
 
 ### Parser Safety Limits
 
@@ -739,7 +739,8 @@ Set `ENCRYPTION_KEY` to a Base64-encoded 32-byte key, generated outside RSSMonst
 openssl rand -base64 32
 ```
 
-Database overrides for `SMTP_PASSWORD`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` use this key. The server uses Node.js AES-256-GCM with a new
+Database overrides for `SMTP_PASSWORD`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`,
+`VAPID_PUBLIC_KEY`, and `VAPID_PRIVATE_KEY` use this key. The server uses Node.js AES-256-GCM with a new
 random 12-byte IV per encryption and stores `enc:v1:<iv>:<authTag>:<ciphertext>`
 with Base64 envelope components. Empty values represent cleared credentials.
 Other settings and environment-backed credentials are unchanged. The key is never
@@ -762,3 +763,51 @@ never treated as plaintext. Metadata contains presence/override flags only, allo
 administrators to replace credentials or restore environment defaults even when
 the key is unavailable. Encrypted credentials are decrypted only for runtime use
 or to validate and re-encrypt retained values during a settings save.
+
+### Web Push overrides in Server settings
+
+Administrators can open **Settings → Server settings → Web Push options** to
+configure optional browser notifications. **Override environment default** manages
+`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` together. On first
+enabling the override, enter a matching P-256 VAPID key pair encoded as unpadded
+Base64url and a `mailto:` or HTTPS contact subject. Both keys are masked in the
+form and encrypted with `ENCRYPTION_KEY` in the `pushConfiguration` server setting;
+the subject is stored without encryption. Unchanged fields retain saved keys.
+Clear both keys to disable push under the override. Uncheck and save, or restore
+defaults, to remove the whole override and use the environment again.
+
+Settings APIs return presence/override metadata for both keys, never their values.
+The authenticated browser subscription endpoint still returns the public key,
+as required by Web Push; it never returns the private key. Delivery resolves the
+current configuration for each batch and uses request-local VAPID details, so no
+restart is needed. Changing a key pair may require readers to unsubscribe and
+subscribe again. No keys or subscriptions are generated automatically.
+
+### Crawl overrides in Server settings
+
+Administrators can open **Settings → Server settings → Crawl options** and enable
+**Override environment default** to manage the scheduling, request, parser, and
+entry-limit fields as one group. All 18 fields are validated as bounded integers;
+parallel mode permits only 0/1, and origin spacing permits zero. Restoring defaults
+removes only the `crawlConfiguration` row from `server_settings`.
+
+The form displays inherited environment values. **Use suggested values** loads
+60-second worker polling, a 60-minute stale-heartbeat threshold, a 100-feed batch,
+10 MiB response limit, a 120-second requested lease, 2 requests per origin with
+250 ms spacing, a 2-second/64 MiB parser, 2,000 entries, 4 KiB IDs/titles, 8 KiB
+URLs, 2 KiB authors, 2 MiB entry content, a 10-second HTTP fallback, and a
+300-second feed deadline. These suggestions are not saved automatically. Existing
+code defaults of 1,000 entries and a 60-second deadline remain unchanged when no
+override or environment value is present.
+
+New crawls read a saved snapshot, and active crawls retain their existing settings.
+Parser threads receive the same limits. The worker refreshes its polling interval
+between iterations; an existing sleep is not interrupted by a settings save.
+SQLite remains sequential. A feed lease is always at least twice the feed deadline,
+so a requested 120-second lease with a 300-second deadline becomes 600 seconds.
+
+`CRAWL_RUN_MAX_RUNNING_MINUTES` controls how long a run can go without a heartbeat
+before existing recovery logic considers it abandoned; it does not expire healthy
+long-running work. Without this setting, `CRAWL_RUN_STALE_AFTER_MS` still applies.
+`FEED_HTTP_TIMEOUT_MS` supplies a fallback only when the separate
+`FEED_CONNECT_TIMEOUT_MS` or `FEED_BODY_TIMEOUT_MS` environment value is unset.

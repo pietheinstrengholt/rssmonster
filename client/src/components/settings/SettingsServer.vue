@@ -7,6 +7,8 @@
       <button id="server-account-tab" type="button" role="tab" aria-controls="server-account-panel" :aria-selected="activeTab === 'account'" :tabindex="activeTab === 'account' ? 0 : -1" class="server-settings-tab" @click="activeTab = 'account'">Account options</button>
       <button id="server-smtp-tab" type="button" role="tab" aria-controls="server-smtp-panel" :aria-selected="activeTab === 'smtp'" :tabindex="activeTab === 'smtp' ? 0 : -1" class="server-settings-tab" @click="activeTab = 'smtp'">SMTP options</button>
       <button id="server-oidc-tab" type="button" role="tab" aria-controls="server-oidc-panel" :aria-selected="activeTab === 'oidc'" :tabindex="activeTab === 'oidc' ? 0 : -1" class="server-settings-tab" @click="activeTab = 'oidc'">OIDC options</button>
+      <button id="server-push-tab" type="button" role="tab" aria-controls="server-push-panel" :aria-selected="activeTab === 'push'" :tabindex="activeTab === 'push' ? 0 : -1" class="server-settings-tab" @click="activeTab = 'push'">Web Push options</button>
+      <button id="server-crawl-tab" type="button" role="tab" aria-controls="server-crawl-panel" :aria-selected="activeTab === 'crawl'" :tabindex="activeTab === 'crawl' ? 0 : -1" class="server-settings-tab" @click="activeTab = 'crawl'">Crawl options</button>
     </div>
     <div class="server-settings-content">
       <section v-show="activeTab === 'account'" id="server-account-panel" role="tabpanel" aria-labelledby="server-account-tab" class="server-settings-content">
@@ -49,6 +51,8 @@
         </form>
       </section>
       <SettingsOidc v-if="activeTab === 'oidc' || oidcVisited" v-show="activeTab === 'oidc'" id="server-oidc-panel" role="tabpanel" aria-labelledby="server-oidc-tab" @saved="load" />
+      <SettingsCrawl v-if="activeTab === 'crawl' || crawlVisited" v-show="activeTab === 'crawl'" id="server-crawl-panel" role="tabpanel" aria-labelledby="server-crawl-tab" />
+      <SettingsPush v-if="activeTab === 'push' || pushVisited" v-show="activeTab === 'push'" id="server-push-panel" role="tabpanel" aria-labelledby="server-push-tab" />
       <SettingsSmtp v-show="activeTab === 'smtp'" id="server-smtp-panel" role="tabpanel" aria-labelledby="server-smtp-tab" />
     </div>
   </div>
@@ -59,12 +63,18 @@ import { onMounted, ref, watch } from 'vue';
 import SettingsPageIntro from './SettingsPageIntro.vue';
 import { fetchServerSettings, saveServerSettings } from '../../api/settings';
 import SettingsOidc from './SettingsOidc.vue';
+import SettingsCrawl from './SettingsCrawl.vue';
+import SettingsPush from './SettingsPush.vue';
 import SettingsSmtp from './SettingsSmtp.vue';
 
 const activeTab = ref('account');
 const oidcVisited = ref(false);
+const pushVisited = ref(false);
+const crawlVisited = ref(false);
+watch(activeTab, tab => { if (tab === 'crawl') crawlVisited.value = true; });
+watch(activeTab, tab => { if (tab === 'push') pushVisited.value = true; });
 watch(activeTab, tab => { if (tab === 'oidc') oidcVisited.value = true; });
-const tabs = ['account', 'smtp', 'oidc'];
+const tabs = ['account', 'smtp', 'oidc', 'push', 'crawl'];
 const navigateTabs = event => {
   if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
   event.preventDefault();

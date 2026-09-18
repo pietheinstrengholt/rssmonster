@@ -1,3 +1,4 @@
+import { getCrawlOverrides } from '../../../config/crawlSettings.js';
 import { Worker } from 'node:worker_threads';
 import {
   createFeedTimeoutError,
@@ -6,6 +7,7 @@ import {
   throwIfExecutionExpired
 } from '../executionDeadline.js';
 import {
+  configuredPositiveInteger,
   DEFAULT_FEED_PARSER_MEMORY_MB,
   DEFAULT_FEED_PARSER_TIMEOUT_MS
 } from '../feedsmith/isolatedFeedParser.js';
@@ -26,13 +28,13 @@ export const parseHtmlXpathIsolated = async (source, options = {}, {
   deadlineAt = null,
   signal = null,
   workerUrl = DEFAULT_WORKER_URL,
-  parserTimeoutMs = DEFAULT_FEED_PARSER_TIMEOUT_MS,
-  parserMemoryMb = DEFAULT_FEED_PARSER_MEMORY_MB
+  parserTimeoutMs = configuredPositiveInteger('FEED_PARSER_TIMEOUT_MS', DEFAULT_FEED_PARSER_TIMEOUT_MS),
+  parserMemoryMb = configuredPositiveInteger('FEED_PARSER_MEMORY_MB', DEFAULT_FEED_PARSER_MEMORY_MB)
 } = {}) => {
   throwIfExecutionExpired({ signal, deadlineAt });
-  const parserDeadlineAt = resolveDeadlineAt(deadlineAt, parserTimeoutMs);
+  const parserDeadlineAt = Math.min(resolveDeadlineAt(deadlineAt, parserTimeoutMs), Date.now() + parserTimeoutMs);
   const worker = new Worker(workerUrl, {
-    workerData: { source: String(source || ''), options },
+    workerData: { source: String(source || ''), options, crawlOverrides: getCrawlOverrides() },
     resourceLimits: {
       maxOldGenerationSizeMb: parserMemoryMb,
       maxYoungGenerationSizeMb: Math.max(4, Math.floor(parserMemoryMb / 4)),

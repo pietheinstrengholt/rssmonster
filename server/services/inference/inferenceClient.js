@@ -1,8 +1,9 @@
+import { getInferenceEnvironment } from './runtimeConfiguration.js';
 import { randomUUID } from 'node:crypto';
 import { validateHeaderValue } from 'node:http';
 import { getEffectiveInferenceConfiguration, getEnvironmentInferenceConfiguration, inferenceConfigurationIdentity } from './configuration.js';
 import { InferenceDisabledError } from '../../config/intelligentFeatures.js';
-import { assertInferenceEnabled } from '../../config/intelligentFeatures.js';
+import { assertInferenceEnabled, isAssistantEnabled } from '../../config/intelligentFeatures.js';
 import {
   createInferenceCircuitBreaker,
   getInferenceCircuitConfig,
@@ -176,7 +177,7 @@ export { InferenceCircuitOpenError };
 
 export const getInferenceRequestConfig = (options = {}) => ({
   baseUrl: options.baseUrl || getEnvironmentInferenceConfiguration()?.baseUrl || DEFAULT_INFERENCE_URL,
-  timeoutMs: Number(options.timeoutMs || process.env.INFERENCE_TIMEOUT_MS || DEFAULT_TIMEOUT_MS),
+  timeoutMs: Number(options.timeoutMs || options.environment?.INFERENCE_TIMEOUT_MS || process.env.INFERENCE_TIMEOUT_MS || DEFAULT_TIMEOUT_MS),
   fetchImplementation: options.fetchImplementation || fetch
 });
 
@@ -208,12 +209,15 @@ const resolveTransportConfiguration = async options => {
     ? { source: 'environment', baseUrl: options.baseUrl, apiKey: process.env.INFERENCE_API_KEY || null }
     : await getEffectiveInferenceConfiguration());
   if (!configuration.baseUrl) throw new InferenceDisabledError();
-  const identity = inferenceConfigurationIdentity(configuration);
+  if (options.circuitKey === 'assistant' && !isAssistantEnabled(options.environment)) throw new InferenceDisabledError();
+  const identity = JSON.stringify([inferenceConfigurationIdentity(configuration), getInferenceCircuitConfig(options.environment)]);
   if (activeConfigurationIdentity !== identity) {
     capabilityCircuitBreakers.clear();
     activeConfigurationIdentity = identity;
   }
-  return { ...getInferenceRequestConfig({ ...options, baseUrl: configuration.baseUrl }), apiKey: configuration.apiKey };
+  const timeoutMs = options.timeoutMs ?? (options.circuitKey === 'assistant'
+    ? Number(options.environment.INFERENCE_AGENT_TIMEOUT_MS || 300000) : undefined);
+  return { ...getInferenceRequestConfig({ ...options, timeoutMs, baseUrl: configuration.baseUrl }), apiKey: configuration.apiKey };
 };
 
 export const getInferenceCircuitSnapshot = circuitKey =>
@@ -233,7 +237,9 @@ export const requestInferenceJson = async (path, payload, options = {}) => {
   const now = options.now || Date.now;
   const startedAt = now();
   try {
-    assertInferenceEnabled();
+    const environment = await getInferenceEnvironment(options.environment);
+    options = { ...options, environment };
+    assertInferenceEnabled(environment);
   } catch (error) {
     throw attachRequestMetadata(error, { requestId, inferencePath: path, startedAt, now });
   }
@@ -437,7 +443,9 @@ export const requestInferenceJson = async (path, payload, options = {}) => {
 
 // Streaming keeps its existing independent transport behavior; JSON calls own the assistant circuit.
 export async function* requestInferenceStream(path, payload, options = {}) {
-  assertInferenceEnabled();
+  const environment = await getInferenceEnvironment(options.environment);
+  options = { ...options, environment };
+  assertInferenceEnabled(environment);
   const { baseUrl, timeoutMs, fetchImplementation, apiKey } = await resolveTransportConfiguration(options);
   const requestId = resolveRequestId(options.requestId);
   const startedAt = Date.now();

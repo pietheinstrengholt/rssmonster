@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../../inference/runtimeConfiguration.js';
 import { isInferenceConfigured } from '../../inference/configuration.js';
 import db from '../../../models/index.js';
 import { shouldSkipSemanticLabeling } from '../../../config/intelligentFeatures.js';
@@ -102,7 +103,7 @@ const inferenceError = error => new SemanticLabelJobError(
 export const handleSemanticLabelJob = async (job, options = {}) => {
   const parsed = jobTarget(job);
   if (parsed.obsolete) return parsed.obsolete;
-  if (shouldSkipSemanticLabeling(options.environment || process.env) || !await isInferenceConfigured()) {
+  if (shouldSkipSemanticLabeling(await getInferenceEnvironment(options.environment)) || !await isInferenceConfigured()) {
     return obsolete('semantic_labeling_disabled');
   }
 

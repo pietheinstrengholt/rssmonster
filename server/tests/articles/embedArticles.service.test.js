@@ -6,8 +6,9 @@ const mocked = vi.hoisted(() => ({
   embedArticle: vi.fn()
 }));
 
-vi.mock('../../models/index.js', () => ({
+vi.mock('../../models/index.js', async importOriginal => ({
   default: {
+    ...(await importOriginal()).default,
     Article: {
       findAll: mocked.articleFindAll
     },

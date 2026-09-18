@@ -24,8 +24,9 @@ const mocked = vi.hoisted(() => ({
   recordProcessingFailure: vi.fn()
 }));
 
-vi.mock('../../models/index.js', () => ({
+vi.mock('../../models/index.js', async importOriginal => ({
   default: {
+    InferenceSetting: (await importOriginal()).default.InferenceSetting,
     Action: {
       findAll: mocked.actionFindAll
     },

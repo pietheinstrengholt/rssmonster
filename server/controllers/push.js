@@ -14,8 +14,8 @@ const isValidExpirationTime = value => value === null || (
   Number(value) <= 8_640_000_000_000_000
 );
 
-const getConfiguration = (_req, res) => {
-  const configuration = getPushConfiguration();
+const getConfiguration = async (_req, res) => {
+  const configuration = await getPushConfiguration({ publicOnly: true });
   return res.status(200).json({
     enabled: configuration.enabled,
     publicKey: configuration.enabled ? configuration.publicKey : null

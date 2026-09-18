@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../inference/runtimeConfiguration.js';
 import { isInferenceConfigured } from '../inference/configuration.js';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
@@ -33,12 +34,12 @@ const strandedScope = userId => ({
 
 // Terminal or cleared job history must not leave unfinished articles without runnable work.
 export const countStrandedArticleAnalyses = async ({ userId }) => {
-  if (shouldSkipArticleClassification() || !await isInferenceConfigured()) return 0;
+  if (shouldSkipArticleClassification(await getInferenceEnvironment()) || !await isInferenceConfigured()) return 0;
   return Article.count(strandedScope(userId));
 };
 
 export const recoverStrandedArticleAnalyses = async ({ userId, limit }) => {
-  if (shouldSkipArticleClassification() || !await isInferenceConfigured() || limit <= 0) return 0;
+  if (shouldSkipArticleClassification(await getInferenceEnvironment()) || !await isInferenceConfigured() || limit <= 0) return 0;
   const candidates = await Article.findAll({
     ...strandedScope(userId),
     attributes: ['id'],

@@ -1,3 +1,4 @@
+import { withCrawlConfiguration } from '../../../config/crawlSettings.js';
 import { parentPort, workerData } from 'node:worker_threads';
 import { parseHtmlXpath } from './parseHtmlXpath.js';
 
@@ -10,7 +11,7 @@ const serializeError = error => ({
 });
 
 try {
-  parentPort.postMessage({ result: parseHtmlXpath(workerData.source, workerData.options) });
+  parentPort.postMessage({ result: withCrawlConfiguration(workerData.crawlOverrides, () => parseHtmlXpath(workerData.source, workerData.options)) });
 } catch (error) {
   parentPort.postMessage({ error: serializeError(error) });
 }

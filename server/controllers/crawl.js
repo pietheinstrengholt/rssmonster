@@ -1,3 +1,6 @@
+import { withInferenceRuntimeSettings } from '../services/inference/runtimeConfiguration.js';
+import { getCrawlEnvironment } from '../config/crawlSettings.js';
+import { withCrawlSettings } from '../services/crawl/configuration.js';
 import db from '../models/index.js';
 import { randomUUID } from 'node:crypto';
 const { Action, Article, CrawlRun, Hotlink } = db;
@@ -76,11 +79,9 @@ import { compileItemFilter } from '../services/crawl/filtering/itemFilter.js';
  * ------------------------------------------------------------------ */
 
 const databaseRuntimeCapabilities = getSequelizeRuntimeCapabilities(db.sequelize);
-const effectiveCrawlConfiguration =
-  resolveEffectiveSequelizeCrawlConfiguration(db.sequelize);
 
 // Resolves the renamed crawl batch limit while temporarily honoring legacy deployments.
-export const resolveFeedMaxCount = (environment = process.env) => {
+export const resolveFeedMaxCount = (environment = getCrawlEnvironment()) => {
   const configured = Number.parseInt(
     environment.FEED_MAX_COUNT ?? environment.MAX_FEEDCOUNT ?? '',
     10
@@ -89,7 +90,7 @@ export const resolveFeedMaxCount = (environment = process.env) => {
 };
 
 // Resolves the application-wide parallel feed worker setting with a conservative default.
-export const resolveFeedParallelConcurrency = (environment = process.env) => {
+export const resolveFeedParallelConcurrency = (environment = getCrawlEnvironment()) => {
   const configured = Number.parseInt(environment.FEED_PARALLEL_CONCURRENCY ?? '', 10);
   const requested = Number.isInteger(configured) && configured > 0 ? configured : 3;
   return Math.min(
@@ -97,9 +98,6 @@ export const resolveFeedParallelConcurrency = (environment = process.env) => {
     databaseRuntimeCapabilities.maxConcurrentFeedWorkers
   );
 };
-
-// Sets the maximum number of feeds processed by one crawl invocation.
-const feedCount = resolveFeedMaxCount();
 
 // Bounds simultaneous feed work across all crawl invocations.
 const feedParallelConcurrency = resolveFeedParallelConcurrency();
@@ -128,13 +126,10 @@ const acquireParallelFeedSlot = limit => new Promise(resolve => {
   drainParallelFeedSlots();
 });
 
-// Timeout wrapper for feed processing (default 60 seconds)
-const FEED_TIMEOUT_MS = resolveFeedTimeoutMs();
-
-// Keeps claims beyond the feed deadline while allowing crashed workers to recover.
-const FEED_LEASE_MS = Math.max(
-  Number.parseInt(process.env.FEED_LEASE_MS, 10) || DEFAULT_FEED_LEASE_MS,
-  FEED_TIMEOUT_MS * 2
+// Keep claims beyond each run's feed deadline while preserving lease renewals.
+const resolveFeedLeaseMs = () => Math.max(
+  Number.parseInt(getCrawlEnvironment().FEED_LEASE_MS, 10) || DEFAULT_FEED_LEASE_MS,
+  resolveFeedTimeoutMs() * 2
 );
 
 // Overall crawl deadline (default 10 minutes)
@@ -144,11 +139,6 @@ const parsedDuplicateCacheDays = Number.parseInt(process.env.CRAWL_DUPLICATE_CAC
 const DUPLICATE_CACHE_DAYS = Number.isInteger(parsedDuplicateCacheDays) && parsedDuplicateCacheDays > 0
   ? parsedDuplicateCacheDays
   : 30;
-
-// Controls whether feeds are processed in parallel (1) or sequentially (0, default)
-const CRAWL_PARALLELPROCESSFLAG = Number(
-  effectiveCrawlConfiguration.parallelProcessFlag
-);
 
 const ACTIVE_CRAWL_INDEX = 'crawl_runs_active_user_unique';
 const CRAWL_TRIGGER_TYPES = new Set(['scheduled', 'api']);
@@ -254,8 +244,8 @@ const retryAfterSeconds = (outcome, now = new Date()) => {
 // Claims one indexed due-feed batch for a user or the scheduled global worker.
 const getFeeds = async (
   userId = null,
-  limit = feedCount,
-  leaseMs = FEED_LEASE_MS,
+  limit = resolveFeedMaxCount(),
+  leaseMs = resolveFeedLeaseMs(),
   excludeIds = [],
   feedId = null
 ) => {
@@ -402,10 +392,10 @@ const getHotlinkCountCachesByUserId = async (feeds) => {
 const runCrawl = async (userId = null, options = {}) => {
   const crawlStartedAt = new Date();
   const crawlTimeoutMs = options.crawlTimeoutMs || CRAWL_TIMEOUT_MS;
-  const feedLeaseMs = options.feedLeaseMs || FEED_LEASE_MS;
-  const feedTimeoutMs = options.feedTimeoutMs || FEED_TIMEOUT_MS;
+  const feedLeaseMs = options.feedLeaseMs || resolveFeedLeaseMs();
+  const feedTimeoutMs = options.feedTimeoutMs || resolveFeedTimeoutMs();
   const targetFeedId = options.feedId || null;
-  const maximumFeedCount = targetFeedId ? 1 : feedCount;
+  const maximumFeedCount = targetFeedId ? 1 : resolveFeedMaxCount();
   const crawlStats = options.crawlStats || {
     newArticles: 0,
     updatedArticles: 0,
@@ -429,7 +419,7 @@ const runCrawl = async (userId = null, options = {}) => {
   };
 
   const runParallel = databaseRuntimeCapabilities.parallelFeedProcessing &&
-    (options.parallel ?? CRAWL_PARALLELPROCESSFLAG === 1);
+    (options.parallel ?? resolveEffectiveSequelizeCrawlConfiguration(db.sequelize, getCrawlEnvironment()).parallelProcessFlag === 1);
   const requestedParallelConcurrency = resolveFeedParallelConcurrency({
     FEED_PARALLEL_CONCURRENCY:
       options.parallelConcurrency ?? feedParallelConcurrency
@@ -1593,7 +1583,7 @@ const resolveCrawlTriggerType = triggerType => {
 };
 
 // This function records the terminal lifecycle of one complete user crawl.
-const performCrawl = async (userId = null, options = {}) => {
+const performCrawlOperation = async (userId = null, options = {}) => {
   const triggerType = resolveCrawlTriggerType(options.triggerType);
   const activeCrawlRun = userId ? await findActiveCrawlRun(userId) : null;
 
@@ -1821,6 +1811,8 @@ const performCrawl = async (userId = null, options = {}) => {
   return result;
 };
 
+const performCrawl = (userId = null, options = {}) => withInferenceRuntimeSettings(() => withCrawlSettings(() => performCrawlOperation(userId, options)));
+
 // This function runs a crawl and then groups crawled articles semantically.
 const performCrawlWithSemanticGroupingOperation = async (userId = null, options = {}) => {
   const iterationStartedAt = Date.now();
@@ -1894,7 +1886,7 @@ const activeCrawls = new Set();
 // Holds the cross-process priority gate for every API or manually triggered critical pipeline.
 const performCrawlWithSemanticGrouping = (userId = null, options = {}) => {
   const completion = withCrawlPriorityLease(
-    () => performCrawlWithSemanticGroupingOperation(userId, options)
+    () => withInferenceRuntimeSettings(() => performCrawlWithSemanticGroupingOperation(userId, options))
   );
   activeCrawls.add(completion);
   const settled = () => activeCrawls.delete(completion);

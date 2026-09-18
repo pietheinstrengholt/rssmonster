@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../inference/runtimeConfiguration.js';
 import { isInferenceConfigured } from '../inference/configuration.js';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
@@ -79,7 +80,7 @@ export const enqueueSemanticLabelJob = async ({
   const normalizedTargetId = positiveId(targetId, 'targetId');
   const config = SEMANTIC_LABEL_TARGET_CONFIG[targetType];
   if (!config) throw new TypeError('targetType must be event or island');
-  if (shouldSkipSemanticLabeling(options.environment || process.env) || !await isInferenceConfigured()) {
+  if (shouldSkipSemanticLabeling(await getInferenceEnvironment(options.environment)) || !await isInferenceConfigured()) {
     return { created: false, skipped: 'disabled' };
   }
 
@@ -112,7 +113,7 @@ export const enqueueGeneratedSemanticLabelJobsForUser = async (
 ) => {
   const normalizedUserId = positiveId(userId, 'userId');
   const summary = { eventCount: 0, islandCount: 0 };
-  if (shouldSkipSemanticLabeling(options.environment || process.env) || !await isInferenceConfigured()) return summary;
+  if (shouldSkipSemanticLabeling(await getInferenceEnvironment(options.environment)) || !await isInferenceConfigured()) return summary;
 
   const models = options.models || defaultModels;
   const enqueueJob = options.enqueueJob || enqueueProcessingJob;
@@ -171,7 +172,7 @@ export const reconcileSemanticLabelJobsForUser = async (userId, options = {}) =>
     ? Math.min(requestedLimit, MAX_RECONCILE_LIMIT)
     : DEFAULT_SEMANTIC_LABEL_RECONCILE_LIMIT;
   const summary = { eventCount: 0, islandCount: 0, scannedCount: 0 };
-  if (shouldSkipSemanticLabeling(options.environment || process.env) || !await isInferenceConfigured()) return summary;
+  if (shouldSkipSemanticLabeling(await getInferenceEnvironment(options.environment)) || !await isInferenceConfigured()) return summary;
 
   const models = options.models || defaultModels;
   const enqueueJob = options.enqueueJob || enqueueProcessingJob;

@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../inference/runtimeConfiguration.js';
 import { prepareArticleEventRemoval } from '../events/eventReconciliation.js';
 import { isInferenceConfigured } from '../inference/configuration.js';
 import { getDefaultFeedIntelligentFeatures } from '../../config/intelligentFeatures.js';
@@ -788,7 +789,7 @@ export const addFeedSubscription = async ({
   sourceConfig = null
 }) => {
   const configuredInference = await isInferenceConfigured();
-  const intelligentFeatures = configuredInference ? getDefaultFeedIntelligentFeatures() : { applyAiAnalysis: false, generateEmbeddings: false };
+  const intelligentFeatures = configuredInference ? getDefaultFeedIntelligentFeatures(await getInferenceEnvironment()) : { applyAiAnalysis: false, generateEmbeddings: false };
   // Handles the case where category id is not undefined and category id is not value.
   if (categoryId !== undefined && categoryId !== null) {
     // Loads the owned category needed while performing add feed subscription.

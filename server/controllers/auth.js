@@ -1,3 +1,4 @@
+import { getInferenceEnvironment } from '../services/inference/runtimeConfiguration.js';
 import { isEmailEnabled } from '../services/email/configuration.js';
 import { isPublicRegistrationEnabled } from '../services/serverSettings.js';
 import { getAvailableInferenceCapabilities } from '../services/inference/status.js';
@@ -201,7 +202,7 @@ const validate = async (req, res, _next) => {
       message: 'This is the secret content. Only logged in users can see that!', 
       data: req.userData, 
       user,
-      agenticFeaturesEnabled: isAssistantEnabled() && (await getAvailableInferenceCapabilities()).assistant
+      agenticFeaturesEnabled: isAssistantEnabled(await getInferenceEnvironment()) && (await getAvailableInferenceCapabilities()).assistant
     });
   } catch (err) {
     console.error('Validation error:', err);

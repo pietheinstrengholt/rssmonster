@@ -68,8 +68,8 @@ remain authoritative; the transport still fails closed when inference is disable
 `getInferenceCapabilities(options)` (also registry `getCapabilities`) retrieves and
 validates the version 1 discovery contract. Unknown additive fields are discarded;
 malformed and unsupported contracts produce safe categorical errors. It never uses
-server provider/model settings. Registry `getPermissions` remains a separate local
-permission check.
+server provider/model settings. Registry `getPermissions` and `getOperations` are asynchronous permission checks
+that resolve saved runtime overrides. The pure helpers still accept an explicit environment.
 
 `getAIHealth(options)` composes `/health`, `/ready`, and `/api/capabilities` with
 a 3-second default timeout. It returns:
