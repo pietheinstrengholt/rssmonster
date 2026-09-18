@@ -249,23 +249,24 @@ describe('DesktopToolbar behavior coverage', () => {
     expect(wrapper.emitted('forceReload')).toHaveLength(1);
   });
 
-  it('persists a theme and restores the previous mode when saving fails', async () => {
+  it('persists a theme and keeps the new choice when saving fails', async () => {
     const stores = createStores();
-    const wrapper = mountDesktopToolbar();
+    const wrapper = mount(DesktopToolbar);
+    const choose = async label => {
+      await wrapper.get('button[title="Choose theme"]').trigger('click');
+      await wrapper.findAll('[role="menuitemradio"]').find(option => option.text() === label).trigger('click');
+      await flushPromises();
+    };
 
     saveThemeMode.mockResolvedValueOnce({});
-    await wrapper.vm.selectThemeMode('dark');
-    expect(wrapper.vm.selectedThemeMode).toBe('dark');
-    expect(stores.uiStore.themeMode).toBe('dark');
+    await choose('Dark');
+    expect(document.documentElement.dataset.theme).toBe('dark');
 
-    const error = new Error('settings unavailable');
-    saveThemeMode.mockRejectedValueOnce(error);
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    await wrapper.vm.selectThemeMode('light');
-
-    expect(wrapper.vm.selectedThemeMode).toBe('dark');
-    expect(stores.uiStore.themeMode).toBe('dark');
-    expect(console.error).toHaveBeenCalledWith('Error saving theme mode:', error);
+    saveThemeMode.mockRejectedValueOnce(new Error('settings unavailable'));
+    await choose('Light');
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(localStorage.getItem('rssmonster-theme-override')).toBe('light');
+    stores.uiStore.resetSessionState();
   });
 
   it('syncs a non-empty theme preference from the UI store watcher', async () => {

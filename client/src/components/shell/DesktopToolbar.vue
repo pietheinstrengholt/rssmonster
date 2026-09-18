@@ -787,7 +787,6 @@ import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useUiStore } from '../../store/ui.js';
 import { defineAsyncComponent } from 'vue';
-import { saveThemeMode as saveThemeModeAPI } from '../../api/settings.js';
 import {
   ARTICLE_GROUPING_OPTIONS,
   ARTICLE_SORT_OPTIONS,
@@ -796,9 +795,8 @@ import {
   getAvailableArticleOptions
 } from '../../config/articleSelectionOptions.js';
 import { useMediaQuery } from '../../composables/useMediaQuery.js';
-import { notifyActionError } from '../../services/actionNotifications.js';
 import { validateSearchQuery } from '../../services/queryValidation.js';
-import { getThemeMode, setThemeMode } from '../../services/theme.js';
+import { getThemeMode } from '../../services/theme.js';
 import AppDropdown from '../shared/AppDropdown.vue';
 import SearchDropdown from './SearchDropdown.vue';
 import { getRecentSearches, saveRecentSearches } from '../../services/recentSearches.js';
@@ -950,22 +948,10 @@ export default {
     settingsClicked: function() {
       this.showSettingsModal = true;
     },
-    // This function saves and applies an explicitly selected color theme.
-    selectThemeMode: async function(theme) {
-      const previousThemeMode = this.selectedThemeMode;
+    // This function applies the theme immediately and queues account persistence.
+    selectThemeMode: function(theme) {
       this.selectedThemeMode = theme;
-      setThemeMode(theme);
-      this.uiStore.setThemeMode(theme);
-
-      try {
-        await saveThemeModeAPI(theme);
-      } catch (err) {
-        console.error('Error saving theme mode:', err);
-        this.selectedThemeMode = previousThemeMode;
-        setThemeMode(previousThemeMode);
-        this.uiStore.setThemeMode(previousThemeMode);
-        notifyActionError('Could not save the theme preference. Please try again.', err);
-      }
+      this.uiStore.selectThemeMode(theme);
     },
     // This function closes the settings modal.
     closeSettingsModal: function() {

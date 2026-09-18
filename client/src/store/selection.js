@@ -177,6 +177,9 @@ export const useSelectionStore = defineStore('selection', {
     // This action applies persisted selection settings and delegates theme ownership to the UI store.
     async fetchSettings() {
       const requestId = ++this.settingsRequestId;
+      const uiStore = useUiStore();
+      const themeRevision = uiStore.themeRevision;
+      const hadPendingTheme = uiStore.pendingThemeMode !== null;
       this.settingsStatus = 'loading';
       this.settingsError = null;
 
@@ -184,7 +187,10 @@ export const useSelectionStore = defineStore('selection', {
         const { data } = await fetchSettingsAPI();
         if (requestId !== this.settingsRequestId) return false;
 
-        useUiStore().setThemeMode(data.themeMode);
+        // A settings response must not undo a local choice made while it was loading.
+        if (!hadPendingTheme && uiStore.pendingThemeMode === null && uiStore.themeRevision === themeRevision) {
+          uiStore.setThemeMode(data.themeMode);
+        }
         this.setCurrentSelection(this.currentSelection.smartFolderId !== null ? {
           AIEnabled: data.AIEnabled,
           AssistantEnabled: data.AssistantEnabled,

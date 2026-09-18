@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   saveIncludeDevelopingEvents,
+  saveThemeMode,
   saveMarkAsReadOnScroll,
   savePrioritizeHighTrust,
   saveStartupViewMode,
@@ -17,6 +18,14 @@ describe('settings API', () => {
   beforeEach(() => {
     patch.mockReset();
     post.mockReset();
+  });
+
+  it('saves the theme without interrupting the app on background failures', () => {
+    saveThemeMode('dark');
+
+    expect(patch).toHaveBeenCalledWith('/setting/theme', { themeMode: 'dark' }, {
+      suppressGlobalError: true
+    });
   });
 
   it('sends only the developing-events boolean to its dedicated endpoint', () => {

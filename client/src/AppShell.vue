@@ -427,11 +427,13 @@ export default {
   // Exposes the shell-owned article scroll surface to mounted feature components.
   mounted() {
     this.articleScrollRoot = this.$refs.articleScrollRootRef || null;
+    void this.uiStore.syncThemeMode();
   },
   beforeUnmount() {
     this.isUnmounting = true;
     this.feedRefreshStore?.teardown?.();
     this.unsubscribeFromSystemTheme?.();
+    this.uiStore.stopThemeSync();
     this.removeGlobalListeners();
 
     if (this.actionErrorTimer !== null) {

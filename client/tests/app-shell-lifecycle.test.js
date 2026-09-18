@@ -189,6 +189,7 @@ describe('AppShell lifecycle', () => {
 
   it('removes global listeners and clears timers during unmount', () => {
     const context = createLifecycleContext();
+    context.uiStore = { stopThemeSync: vi.fn() };
     const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
     context.overviewIntervalId = setInterval(() => {}, 300 * 1000);
     context.actionErrorTimer = setTimeout(() => {}, 6000);
@@ -208,6 +209,7 @@ describe('AppShell lifecycle', () => {
     expect(removeEventListenerSpy).toHaveBeenCalledWith('online', context.handleBrowserOnline);
     expect(removeEventListenerSpy.mock.calls.some(([type]) => type === 'auth:expired')).toBe(false);
     expect(context.unsubscribeFromSystemTheme).toHaveBeenCalledOnce();
+    expect(context.uiStore.stopThemeSync).toHaveBeenCalledOnce();
     expect(context.overviewIntervalId).toBeNull();
     expect(context.actionErrorTimer).toBeNull();
     expect(context.isUnmounting).toBe(true);

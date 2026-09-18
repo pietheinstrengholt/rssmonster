@@ -20,7 +20,7 @@ describe('connectivity status presentation', () => {
     expect(wrapper.text()).toContain(message);
   });
 
-  it('offers Retry and disables duplicate clicks while recovery is active', async () => {
+  it('offers Try again and disables duplicate clicks while recovery is active', async () => {
     const wrapper = mount(ConnectivityStatus, {
       props: {
         recovering: false,
@@ -28,6 +28,7 @@ describe('connectivity status presentation', () => {
       }
     });
 
+    expect(wrapper.get('button').text()).toBe('Try again');
     await wrapper.get('button').trigger('click');
     expect(wrapper.emitted('retry')).toHaveLength(1);
 

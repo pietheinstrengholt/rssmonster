@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ActionErrorNotice from '../src/components/shared/ActionErrorNotice.vue';
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
@@ -220,27 +220,20 @@ describe('recoverable action errors', () => {
     expect(consoleError).toHaveBeenCalledWith('Error loading article actions:', error);
   });
 
-  it('notifies and rolls back when saving a theme preference fails', async () => {
-    const error = { response: { status: 500 } };
-    saveThemeMode.mockRejectedValueOnce(error);
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    const notification = captureActionError();
-    const context = {
-      ...createFocusedStores({
-        ui: {
-          setThemeMode: vi.fn()
-        }
-      }),
-      selectedThemeMode: 'auto',
-    };
+  it('keeps the theme without an action error when background saving fails', async () => {
+    saveThemeMode.mockRejectedValueOnce({ response: { status: 500 } });
+    const listener = vi.fn();
+    window.addEventListener(ACTION_ERROR_EVENT, listener);
+    const stores = createFocusedStores();
+    const wrapper = mount(DesktopToolbar, { global: { plugins: [stores.pinia] } });
+    await wrapper.get('button[title="Choose theme"]').trigger('click');
+    await wrapper.findAll('[role="menuitemradio"]').find(option => option.text() === 'Dark').trigger('click');
+    await flushPromises();
 
-    await DesktopToolbar.methods.selectThemeMode.call(context, 'dark');
-
-    await expect(notification).resolves.toEqual({
-      message: 'Could not save the theme preference. Please try again.'
-    });
-    expect(context.selectedThemeMode).toBe('auto');
-    expect(context.uiStore.setThemeMode).toHaveBeenLastCalledWith('auto');
-    expect(console.error).toHaveBeenCalledWith('Error saving theme mode:', error);
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(listener).not.toHaveBeenCalled();
+    window.removeEventListener(ACTION_ERROR_EVENT, listener);
+    stores.uiStore.resetSessionState();
+    wrapper.unmount();
   });
 });

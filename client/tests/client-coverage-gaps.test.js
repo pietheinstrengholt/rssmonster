@@ -375,7 +375,9 @@ describe('ArticleReaderLayout interaction and DOM contracts', () => {
     await bulkItems[2].trigger('click');
     await wrapper.get('.bulk-more-button').trigger('click');
     await wrapper.findAll('.bulk-action-menu-item')[3].trigger('click');
-    await wrapper.get('.app-notice button').trigger('click');
+    const retryButton = wrapper.get('[role="alert"] button');
+    expect(retryButton.text()).toBe('Try again');
+    await retryButton.trigger('click');
     await wrapper.get('.mark-all').trigger('click');
     await wrapper.get('.dismiss').trigger('click');
 
@@ -490,7 +492,9 @@ describe('ArticleListView DOM contracts', () => {
       }
     });
 
-    await wrapper.get('.app-notice button').trigger('click');
+    const retryButton = wrapper.get('[role="alert"] button');
+    expect(retryButton.text()).toBe('Try again');
+    await retryButton.trigger('click');
     expect(wrapper.emitted('retry-pagination')).toHaveLength(1);
   });
 });

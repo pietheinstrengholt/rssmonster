@@ -207,7 +207,8 @@ describe('settings API contracts', () => {
     expect(patch).toHaveBeenNthCalledWith(
       2,
       '/setting/theme',
-      { themeMode: 'dark' }
+      { themeMode: 'dark' },
+      { suppressGlobalError: true }
     );
     expect(patch).toHaveBeenNthCalledWith(
       3,
