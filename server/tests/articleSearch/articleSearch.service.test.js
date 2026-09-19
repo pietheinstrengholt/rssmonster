@@ -21,6 +21,12 @@ describe('articleSearch.service', () => {
   let feed;
   const articles = {};
 
+  it.each([null, { pageSize: 20 }])('keeps the saved view when an older article request finishes (%j)', async pagination => {
+    await Setting.update({ viewMode: 'reader' }, { where: { userId: user.id } });
+    await searchArticles({ userId: user.id, viewMode: 'summarized', persistSettings: true, pagination });
+    expect((await Setting.findOne({ where: { userId: user.id } })).viewMode).toBe('reader');
+  });
+
   beforeAll(async () => {
     await sequelize.authenticate();
 

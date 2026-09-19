@@ -43,6 +43,32 @@ describe('settings controller', () => {
     await sequelize.authenticate();
   }, 50_000);
 
+  it('restores the selected article view without fetching articles and isolates users', async () => {
+    const user = await createUser();
+    const other = await createUser();
+    await Setting.create({ userId: other.id, viewMode: 'summarized' });
+    for (const viewMode of ['summarized', 'full', 'reader', 'minimal', 'summaryBullets']) {
+      const saved = await request(app).patch('/api/setting/view-mode')
+        .set('Authorization', authHeaderFor(user)).send({ viewMode });
+      expect(saved.status).toBe(200);
+      const restored = await request(app).get('/api/setting').set('Authorization', authHeaderFor(user));
+      expect(restored.body.viewMode).toBe(viewMode);
+    }
+    expect((await Setting.findOne({ where: { userId: other.id } })).viewMode).toBe('summarized');
+  });
+
+  it('rejects invalid and unauthenticated article view changes', async () => {
+    const user = await createUser();
+    for (const viewMode of ['invalid', null, 1]) {
+      const response = await request(app).patch('/api/setting/view-mode')
+        .set('Authorization', authHeaderFor(user)).send({ viewMode });
+      expect(response.status).toBe(400);
+    }
+    const response = await request(app).patch('/api/setting/view-mode').send({ viewMode: 'full' });
+    expect(response.status).toBe(400);
+    expect(await Setting.findOne({ where: { userId: user.id } })).toBeNull();
+  });
+
   it('persists article link preferences only for the signed-in user', async () => {
     const user = await createUser();
     const other = await createUser();

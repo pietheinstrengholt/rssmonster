@@ -428,6 +428,36 @@ export const setIncludeDevelopingEvents = async (req, res, _next) => {
   }
 };
 
+// This function saves a user's selected article presentation mode.
+export const setViewMode = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+    const { viewMode } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    if (!['reader', 'full', 'summarized', 'summaryBullets', 'minimal'].includes(viewMode)) {
+      return res.status(400).json({ error: 'Unsupported article view mode' });
+    }
+
+    const [settings, created] = await Setting.findOrCreate({
+      where: { userId },
+      defaults: { viewMode }
+    });
+
+    if (!created) {
+      await settings.update({ viewMode });
+    }
+
+    return res.status(200).json({ success: true, viewMode });
+  } catch (err) {
+    console.error('Error in setViewMode:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 // This function saves a user's selected color theme mode.
 export const setThemeMode = async (req, res, _next) => {
   try {
@@ -946,6 +976,7 @@ export default {
   setSettings,
   setIncludeDevelopingEvents,
   setThemeMode,
+  setViewMode,
   setStartupViewMode,
   setMarkAsReadOnScroll,
   setOpenArticleLinksInNewTab,

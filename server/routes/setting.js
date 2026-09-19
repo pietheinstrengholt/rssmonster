@@ -88,6 +88,7 @@ router.post('/', userMiddleware.isLoggedIn, settingController.setSettings);
 router.post('/official-sources', userMiddleware.isLoggedIn, settingController.setOfficialSources);
 router.patch('/developing-events', userMiddleware.isLoggedIn, settingController.setIncludeDevelopingEvents);
 router.patch('/article-links', userMiddleware.isLoggedIn, settingController.setOpenArticleLinksInNewTab);
+router.patch('/view-mode', userMiddleware.isLoggedIn, settingController.setViewMode);
 router.patch('/theme', userMiddleware.isLoggedIn, settingController.setThemeMode);
 router.patch('/startup-view', userMiddleware.isLoggedIn, settingController.setStartupViewMode);
 router.patch(

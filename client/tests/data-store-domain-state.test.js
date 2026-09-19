@@ -6,7 +6,8 @@ import { useSelectionStore } from '../src/store/selection.js';
 import { useUiStore } from '../src/store/ui.js';
 
 vi.mock('../src/api/settings', () => ({
-  fetchSettings: vi.fn()
+  fetchSettings: vi.fn(),
+  saveViewMode: vi.fn().mockResolvedValue({})
 }));
 vi.mock('../src/api/smartfolders', () => ({
   fetchSmartFolders: vi.fn(),

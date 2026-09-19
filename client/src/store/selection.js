@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia';
-import { fetchSettings as fetchSettingsAPI } from '../api/settings';
+import { fetchSettings as fetchSettingsAPI, saveViewMode } from '../api/settings';
 import { useOverviewStore } from './overview.js';
 import { normalizeResourceError } from './resourceState.js';
+import { notifyActionError } from '../services/actionNotifications.js';
 import { useUiStore } from './ui.js';
 import { completeSmartFolderQuery, detachSmartFolderQuery, smartFolderPresentation } from '../services/smartFolderPresentation.js';
 
@@ -130,6 +131,9 @@ const initialSelectionState = () => ({
   briefingMarkAsReadOnScroll: false,
   briefingPrioritizeHighTrust: false,
   briefingShowOnlyDevelopingEventArticles: false,
+  viewModeSessionId: 0,
+  viewModeRevision: 0,
+  viewModeSaving: false,
   settingsStatus: 'idle',
   settingsError: null,
   settingsRequestId: 0
@@ -163,14 +167,17 @@ export const useSelectionStore = defineStore('selection', {
     // This action makes every settings request from the previous session obsolete.
     invalidateSessionRequests() {
       this.settingsRequestId++;
+      this.viewModeSessionId++;
     },
 
     // This action clears user selection and resource state while retaining its invalidation generation.
     resetSessionState() {
       const settingsRequestId = this.settingsRequestId;
+      const viewModeSessionId = this.viewModeSessionId;
       this.$patch({
         ...initialSelectionState(),
-        settingsRequestId
+        settingsRequestId,
+        viewModeSessionId
       });
     },
 
@@ -178,6 +185,8 @@ export const useSelectionStore = defineStore('selection', {
     async fetchSettings() {
       const requestId = ++this.settingsRequestId;
       const uiStore = useUiStore();
+      const viewModeRevision = this.viewModeRevision;
+      const hadPendingViewMode = this.viewModeSaving;
       const themeRevision = uiStore.themeRevision;
       const hadPendingTheme = uiStore.pendingThemeMode !== null;
       this.settingsStatus = 'loading';
@@ -190,6 +199,9 @@ export const useSelectionStore = defineStore('selection', {
         // A settings response must not undo a local choice made while it was loading.
         if (!hadPendingTheme && uiStore.pendingThemeMode === null && uiStore.themeRevision === themeRevision) {
           uiStore.setThemeMode(data.themeMode);
+        }
+        if (hadPendingViewMode || this.viewModeSaving || this.viewModeRevision !== viewModeRevision) {
+          data.viewMode = this.currentSelection.viewMode;
         }
         uiStore.setOpenArticleLinksInNewTab(data.openArticleLinksInNewTab);
         this.setCurrentSelection(this.currentSelection.smartFolderId !== null ? {
@@ -473,8 +485,27 @@ export const useSelectionStore = defineStore('selection', {
     },
 
     // This action updates the article list presentation mode.
-    setViewMode(value) {
+    async setViewMode(value) {
       this.applySelection({ viewMode: value });
+      this.viewModeRevision++;
+      if (this.viewModeSaving) return;
+      this.viewModeSaving = true;
+      const sessionId = this.viewModeSessionId;
+      try {
+        let revision;
+        do {
+          revision = this.viewModeRevision;
+          await saveViewMode(this.currentSelection.viewMode);
+          if (sessionId !== this.viewModeSessionId) return;
+        } while (revision !== this.viewModeRevision);
+      } catch (error) {
+        if (sessionId === this.viewModeSessionId) {
+          notifyActionError('View changed, but your preference could not be saved.', error);
+        }
+        return false;
+      } finally {
+        if (sessionId === this.viewModeSessionId) this.viewModeSaving = false;
+      }
     },
 
     // This action normalizes grouping and refreshes its dependent overview and tag resources.

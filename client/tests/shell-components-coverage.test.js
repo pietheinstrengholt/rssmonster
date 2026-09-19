@@ -35,7 +35,8 @@ vi.mock('../src/api/settings.js', async importOriginal => {
   const actual = await importOriginal();
   return {
     ...actual,
-    saveThemeMode: vi.fn()
+    saveThemeMode: vi.fn(),
+    saveViewMode: vi.fn().mockResolvedValue({})
   };
 });
 

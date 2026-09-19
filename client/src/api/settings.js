@@ -16,6 +16,9 @@ export const saveSettings = (settingsData) =>
 export const saveIncludeDevelopingEvents = includeDevelopingEvents =>
   api.patch('/setting/developing-events', { includeDevelopingEvents });
 
+export const saveViewMode = viewMode =>
+  api.patch('/setting/view-mode', { viewMode });
+
 export const saveThemeMode = themeMode =>
   api.patch('/setting/theme', { themeMode }, { suppressGlobalError: true });
 
