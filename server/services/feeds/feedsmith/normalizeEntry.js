@@ -107,7 +107,7 @@ const feedDateCandidates = [
   feed => feed.atom?.updated,
   feed => feed.date_modified,
   feed => feed.lastBuildDate,
-  feed => feed.dc?.date,
+  feed => dublinCoreDates(feed.dc),
   feed => feed.dcterms?.modified,
   feed => feed.dcterms?.created,
   feed => feed.date
@@ -122,6 +122,12 @@ const urlDatePatterns = [
 // This function returns whether one feed value contains selectable text.
 const hasTextValue = value => typeof value === 'string' && value.trim() !== '';
 
+// Atom text constructs carry their text in value; other feed formats use strings.
+export const readTextValue = value => typeof value === 'string' ? value : value?.value;
+
+const atomContentKind = value => ['html', 'xhtml', 'text/html', 'application/xhtml+xml']
+  .includes(String(value?.type || 'text').trim().toLowerCase()) ? 'html' : 'text';
+
 // This function accepts only content kinds understood by the crawl pipeline.
 const normalizeContentKind = value => ['html', 'text'].includes(value) ? value : null;
 
@@ -135,6 +141,9 @@ const resolveContent = (entry, feedFormat) => {
   }
   if (feedFormat === 'json' && hasTextValue(entry.content_text)) {
     return { value: entry.content_text, kind: 'text' };
+  }
+  if (feedFormat === 'atom' && hasTextValue(entry.content?.value)) {
+    return { value: entry.content.value, kind: atomContentKind(entry.content) };
   }
   if (hasTextValue(entry.content)) {
     return { value: entry.content, kind: normalizeContentKind(entry.contentKind) };
@@ -174,17 +183,20 @@ const resolveDescription = (entry, feedFormat) => {
         (feedFormat === 'json' ? 'text' : 'html')
     };
   }
-  if (hasTextValue(entry.summary)) {
+  if (hasTextValue(readTextValue(entry.summary))) {
     return {
-      value: entry.summary,
-      kind: normalizeContentKind(entry.summaryKind) ||
+      value: readTextValue(entry.summary),
+      kind: (typeof entry.summary === 'object' ? atomContentKind(entry.summary) : null) ||
+        normalizeContentKind(entry.summaryKind) ||
         (feedFormat === 'json' ? 'text' : null)
     };
   }
-  if (hasTextValue(entry.atom?.summary)) {
+  if (hasTextValue(readTextValue(entry.atom?.summary))) {
     return {
-      value: entry.atom.summary,
-      kind: normalizeContentKind(entry.atom.summaryKind)
+      value: readTextValue(entry.atom.summary),
+      kind: typeof entry.atom.summary === 'object'
+        ? atomContentKind(entry.atom.summary)
+        : normalizeContentKind(entry.atom.summaryKind)
     };
   }
   const mediaGroupDescription = resolveMediaGroupDescription(entry);
@@ -205,7 +217,7 @@ const resolveAuthor = entry => {
 
   // Selects the json author based on whether authors is an array.
   const jsonAuthor = Array.isArray(entry?.authors) ? entry.authors[0] : null;
-  return jsonAuthor?.name || null;
+  return jsonAuthor?.name || jsonAuthor?.email || null;
 };
 
 // This function builds a valid UTC date from URL date path components.
@@ -356,6 +368,7 @@ function normalizeEntry(entry, feedFormat = null, linkContext = {}) {
     ...(Array.isArray(entry.categories) ? entry.categories : []),
     ...(Array.isArray(entry.category) ? entry.category : entry.category ? [entry.category] : []),
     ...(Array.isArray(entry.tags) ? entry.tags : []),
+    ...(Array.isArray(entry.dc?.subjects) ? entry.dc.subjects : []),
     ...(Array.isArray(entry.dc?.subject) ? entry.dc.subject : entry.dc?.subject ? [entry.dc.subject] : []),
     ...(Array.isArray(entry.subjects) ? entry.subjects : [])
   ];
@@ -389,7 +402,7 @@ function normalizeEntry(entry, feedFormat = null, linkContext = {}) {
   );
 
   return {
-    title: entry.title?.trim() || 'Untitled',
+    title: readTextValue(entry.title)?.trim() || 'Untitled',
     url: link || null,
     urlStatus: linkResult.status,
     contentBaseUrl,

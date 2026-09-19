@@ -3,6 +3,67 @@ import { describe, expect, it } from 'vitest';
 import { parseFeedSource } from '../../services/feeds/feedsmith/parseFeed.js';
 
 describe('Feedsmith adapter', () => {
+  it('normalizes Atom feed text constructs and missing or remote entry content', () => {
+    const feed = parseFeedSource(`
+      <feed xmlns="http://www.w3.org/2005/Atom">
+        <title type="html">News &amp; &lt;b&gt;updates&lt;/b&gt;</title>
+        <subtitle>Publisher summary</subtitle>
+        <entry><id>remote</id><content src="https://example.com/body" type="html" /></entry>
+        <entry><id>inline</id><title> Inline title </title><content>Plain body</content></entry>
+      </feed>
+    `);
+
+    expect(feed).toMatchObject({
+      title: 'News & <b>updates</b>',
+      description: 'Publisher summary',
+      entries: [
+        { title: 'Untitled', content: null, contentKind: null },
+        { title: 'Inline title', content: 'Plain body', contentKind: 'text' }
+      ]
+    });
+  });
+
+  it.each([
+    ['writer@example.com (Writer Name)', 'Writer Name'],
+    ['writer@example.com', 'writer@example.com'],
+    ['Writer Name', 'Writer Name']
+  ])('normalizes the RSS person %s to a display author', (author, expected) => {
+    const feed = parseFeedSource(`
+      <rss version="2.0"><channel><title>Authors</title>
+        <item><title>Article</title><author>${author}</author></item>
+      </channel></rss>
+    `);
+
+    expect(feed.entries[0].author).toBe(expected);
+  });
+
+  it('preserves repeated Dublin Core metadata and Dublin Core Terms modification dates', () => {
+    const feed = parseFeedSource(`
+      <rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/"
+        xmlns:dcterms="http://purl.org/dc/terms/">
+        <channel><title>Metadata</title>
+          <dc:date>invalid</dc:date><dc:date>2026-07-15T10:00:00Z</dc:date>
+          <item><title>Article</title>
+            <dc:creator>First author</dc:creator><dc:creator>Second author</dc:creator>
+            <dc:subject>News</dc:subject><dc:subject>Technology</dc:subject>
+            <dc:subject>News</dc:subject>
+            <dcterms:modified>invalid</dcterms:modified>
+            <dcterms:modified>2026-07-16T10:00:00Z</dcterms:modified>
+          </item>
+        </channel>
+      </rss>
+    `);
+
+    expect(feed).toMatchObject({
+      publishedAt: '2026-07-15T10:00:00.000Z',
+      entries: [{
+        author: 'First author',
+        categories: ['News', 'Technology'],
+        modifiedAt: '2026-07-16T10:00:00.000Z'
+      }]
+    });
+  });
+
   it.each([
     ['icons/current.png', 'https://feeds.example.com/news/icons/current.png'],
     ['/favicon.ico', 'https://feeds.example.com/favicon.ico'],

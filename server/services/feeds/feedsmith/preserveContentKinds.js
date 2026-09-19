@@ -15,11 +15,14 @@ const atomTextConstructKind = node => {
     : 'text';
 };
 
-// This function preserves Atom content and summary kinds discarded by the feed parser.
+// Preserves kinds for legacy string constructs; Feedsmith 3 objects retain their own type.
 export default function preserveContentKinds(parsedFeed, source) {
   if (parsedFeed?.format !== 'atom' || !Array.isArray(parsedFeed?.feed?.entries)) {
     return parsedFeed;
   }
+  if (!parsedFeed.feed.entries.some(entry => (
+    typeof entry.content === 'string' || typeof entry.summary === 'string'
+  ))) return parsedFeed;
 
   const { rawEntriesByParsedIndex } = correlateRawEntries(parsedFeed, source);
 

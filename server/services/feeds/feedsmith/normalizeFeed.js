@@ -1,4 +1,4 @@
-import normalizeEntry, { resolveFeedPublishedDate } from './normalizeEntry.js';
+import normalizeEntry, { readTextValue, resolveFeedPublishedDate } from './normalizeEntry.js';
 import {
   assertFeedEntryCount,
   getFeedInputLimits
@@ -56,8 +56,8 @@ export default function normalizeFeed(parsedFeed, { feedUrl = null } = {}) {
   // Selects the result based on whether source entries is an array.
   return {
     format,
-    title: sourceFeed.title || null,
-    description: sourceFeed.description || null,
+    title: readTextValue(sourceFeed.title) || null,
+    description: sourceFeed.description || readTextValue(sourceFeed.subtitle) || null,
     faviconUrl,
     publishedAt: resolveFeedPublishedDate(sourceFeed),
     selfUrl: readUrl(parsedFeed.self) ||
