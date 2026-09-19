@@ -108,7 +108,8 @@ const imageCandidate = url => url ? [{
   width: null,
   height: null,
   mimeType: null,
-  source: 'html-xpath',
+  // XPath thumbnails use the same persisted source as other publisher image fields.
+  source: 'publisher',
   position: null,
   alt: null,
   className: null

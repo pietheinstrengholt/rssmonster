@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { normalizeHtmlXpathConfig } from '../../services/feeds/htmlXpath/config.js';
 import { parseHtmlXpath } from '../../services/feeds/htmlXpath/parseHtmlXpath.js';
 import { parseHtmlXpathIsolated } from '../../services/feeds/htmlXpath/isolatedHtmlXpathParser.js';
+import detectArticleImage from '../../services/crawl/media/detectArticleImage.js';
+import buildArticlePersistenceValues from '../../services/crawl/persistence/buildArticlePersistenceValues.js';
 
 const CONFIG = {
   feedTitle: '//title',
@@ -50,7 +52,25 @@ describe('HTML/XPath adapter', () => {
       publishedAt: '2026-09-04T10:00:00.000Z',
       externalId: 'item-1',
       externalIdType: 'xpath-id',
-      imageCandidates: [{ url: 'https://example.com/images/one.jpg', source: 'html-xpath' }]
+      imageCandidates: [{ url: 'https://example.com/images/one.jpg', source: 'publisher' }]
+    });
+  });
+
+  it('maps XPath thumbnails to a supported image source for article persistence', async () => {
+    const { parsedFeed } = parseHtmlXpath(HTML, {
+      url: 'https://example.com/news/list',
+      config: CONFIG
+    });
+    const entry = parsedFeed.entries[0];
+    const leadImage = await detectArticleImage({ entry, articleUrl: entry.url });
+    const values = buildArticlePersistenceValues({ id: 7, userId: 42 }, {
+      ...entry,
+      leadImage
+    });
+
+    expect(values).toMatchObject({
+      imageUrl: 'https://example.com/images/one.jpg',
+      imageSource: 'publisher'
     });
   });
 
