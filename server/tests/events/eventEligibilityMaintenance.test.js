@@ -89,8 +89,10 @@ describe('Event eligibility maintenance', () => {
     else {
       const res = response();
       if (mode === 'cleanup') {
+        await articles[0].update({ status: 'read' });
         await cleanupController.cleanup({ userData: { userId: user.id } }, res);
         expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ deletedCount: 1 }));
       } else {
         await categoryController.deleteCategory({ userData: { userId: user.id }, params: { categoryId: category.id } }, res);
         expect(res.status).toHaveBeenCalledWith(204);
@@ -115,6 +117,7 @@ describe('Event eligibility maintenance', () => {
 
   it('keeps membership when an Article becomes favorited during cleanup selection', async () => {
     const { user, articles: [article], event } = await fixture();
+    await article.update({ status: 'read' });
     const findEvents = db.Event.findAll.bind(db.Event);
     const boundary = vi.spyOn(db.Event, 'findAll').mockImplementationOnce(async options => {
       // Selection has read the old flag, but the removal transaction has not locked it yet.
@@ -127,7 +130,7 @@ describe('Event eligibility maintenance', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ deletedCount: 0 }));
       await article.reload(); await event.reload();
-      expect(article).toMatchObject({ favoriteInd: 1, eventId: event.id });
+      expect(article).toMatchObject({ status: 'read', favoriteInd: 1, eventId: event.id });
       expect(event).toMatchObject({ representativeArticleId: article.id, articleCount: 3 });
     } finally { boundary.mockRestore(); }
   });

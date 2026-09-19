@@ -56,7 +56,8 @@ describe('ArchivingSetting', () => {
     const table = 'archiving_settings_migration_test';
     const adapter = {
       createTable: (_name, columns, options) => query.createTable(table, columns, options),
-      addIndex: (_name, fields, options) => query.addIndex(table, fields, options),
+      // SQLite index names are database-wide, so isolate them along with the table.
+      addIndex: (name, fields, options) => query.addIndex(table, fields, { ...options, name: options.name.replace(name, table) }),
       dropTable: () => query.dropTable(table)
     };
     const user = await User.create({ username: `archive-migration-${Date.now()}`, password: 'test-password' });
