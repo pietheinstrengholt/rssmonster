@@ -14,6 +14,8 @@ import {
   buildArticleIslandWeight,
   computeArticleSignals
 } from '../../services/islands/islandArticleProfiles.js';
+import { DEFAULT_ARTICLE_AFFINITY_THRESHOLD, ISLAND_DISCOVERY_PROFILE_LIMIT } from '../../services/islands/islandVectorUtils.js';
+import { embeddingSimilarity } from '../../services/vectors/embeddingModel.js';
 
 describe('behavioral article island profiles', () => {
   beforeEach(() => {
@@ -23,6 +25,38 @@ describe('behavioral article island profiles', () => {
   });
 
   afterEach(() => vi.useRealTimers());
+
+  it('bounds discovery while retaining both strong older and latest behavioral evidence', async () => {
+    const rows = Array.from({ length: ISLAND_DISCOVERY_PROFILE_LIMIT + 20 }, (_, index) => ({
+      id: index + 2, title: 'Repeated recent interest', articleVector: [0, 1], embedding_model: 'test-model',
+      attentionBucket: 3, lastMeaningfulReadAt: new Date(Date.now() - (index + 1) * 1000)
+    }));
+    const strong = { id: 1, title: 'Older favorite', articleVector: [1, 0], embedding_model: 'test-model',
+      favoriteInd: 1, favoritedAt: new Date(Date.now() - 80 * 86400000) };
+    mocks.findAll.mockResolvedValue([...rows.reverse(), strong]);
+    const profiles = await buildInterestIslandProfilesForUser(12);
+    expect(profiles.summary.discoveryProfileCount).toBe(ISLAND_DISCOVERY_PROFILE_LIMIT);
+    expect(profiles.summary.candidateCommunityCount).toBe(2);
+    const ids = profiles.flatMap(profile => profile.articles.map(article => article.articleId));
+    expect(ids).toContain(strong.id);
+    expect(ids).toContain(2);
+    expect(ids).toHaveLength(ISLAND_DISCOVERY_PROFILE_LIMIT);
+  });
+
+  it('does not retain below-threshold members after the candidate centroid moves', async () => {
+    const rows = [0, 40, 60, 70, 80, 90, 100].map((angle, index) => ({
+      id: index + 1, title: `Angle ${angle}`, embedding_model: 'test-model',
+      articleVector: [Math.cos(angle * Math.PI / 180), Math.sin(angle * Math.PI / 180)],
+      clickedAmount: 1, lastClickedAt: new Date()
+    }));
+    mocks.findAll.mockResolvedValue(rows);
+    const profiles = await buildInterestIslandProfilesForUser(12);
+    for (const profile of profiles) for (const article of profile.articles) {
+      expect(embeddingSimilarity(article.vector, profile.vector, article.embedding_model, profile.embedding_model))
+        .toBeGreaterThanOrEqual(DEFAULT_ARTICLE_AFFINITY_THRESHOLD);
+    }
+    expect(profiles.summary.unassignedBehavioralProfiles).toBeGreaterThan(0);
+  });
 
   it('does not let a fresh opposing click make expired negative evidence consume a formation slot', async () => {
     mocks.findAll.mockResolvedValue([

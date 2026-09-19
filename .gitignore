@@ -16,8 +16,9 @@ package-lock.json
 *.safetensors
 **/pinned-vectors/
 server/tests/.semantic-regression/
+server/reports/recommendations/
 node_modules/
 client/coverage/
 .env
-
+/*.sql
 # Frozen real incremental embeddings share the existing model-qualified cache.

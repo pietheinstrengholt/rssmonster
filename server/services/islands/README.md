@@ -54,7 +54,14 @@ articles against existing Islands; it does not recalibrate behavioral memory.
 An Island stores its vector, signed weight, signal snapshot, display labels,
 archive state and population audit. There is no persisted candidate-Article
 membership table. Audit history explains formation; it is not new evidence.
-Names use the nearest taxonomy label or the profile's source-article label.
+Names use the nearest compatible taxonomy label only at cosine similarity ≥ 0.60.
+This conservative presentation threshold is separate from Island membership and
+recommendation thresholds; it is not a calibrated probability. If no label qualifies,
+use the profile's supporting-article headline (strongest qualifying signal, stable
+Article ID for ties, capped at 255 characters), not the nearest unrelated category.
+Normal calibration applies this policy to created and matched Islands; it does not
+run a bulk relabel or regenerate embeddings. Optional generated display labels remain
+separate presentation enrichment.
 Canonical names are normalized across every owned Island, including archived history.
 Creation and matched updates reserve other Islands’ names but exclude their own current
 name, so replay does not add suffixes. Duplicate-name cleanup also includes archived
@@ -94,11 +101,26 @@ interaction timestamps are retained; only the scored contribution is capped.
 
 ## Formation and replay safety
 
-Community capacity never authorizes a below-threshold membership. Behavioral
-Articles may remain unassigned when no community qualifies
-and the creation limit is reached. All similarity/affinity thresholds are retained.
-Article profile arrays expose a transient `summary` with eligible, assigned and
-unassigned behavioral profile counts.
+Community capacity never authorizes a below-threshold membership. Discovery and
+active selection are separate: at most 1,000 qualifying behavioral profiles enter
+the discovery workspace, alternating the strongest decayed net signals and latest
+qualifying interactions (active before expired, stable Article IDs for ties).
+This bounded mix prevents strong old singletons from excluding every recent pattern
+before collective support is measured. The complete existing behavioral snapshot
+remains available for retained Islands' lifecycle reconstruction.
+
+Discovery can produce up to one transient candidate per sampled Article; it does
+not allocate active Island slots. Existing affinity/model checks govern joins.
+After centroid movement, below-threshold members are removed and the centroid is
+recomputed until membership is stable; each repeat removes at least one member.
+Candidates compete using the collective-evidence measure below, with active
+behavior first. Only the best configured number of profiles enters persistence,
+where existing Islands also compete. Articles outside the discovery window, pruned
+for cohesion, or belonging to losing communities remain unassigned; none are forced
+into a winner. All similarity thresholds and the active Island cap are unchanged.
+Profile summaries expose eligible, assigned, unassigned, `discoveryProfileCount`
+and `candidateCommunityCount` counts. Discovery comparisons are bounded by the
+1,000-profile workspace rather than the size of the full behavioral history.
 
 Calibration profiles represent complete current evidence snapshots. Updating an
 Island replaces its signal counters with that snapshot; it does not append the
@@ -124,13 +146,31 @@ attribution and regression explanations. Recent semantic changes improve the
 
 `preferenceStrength = clamp(Island.weight, -1, 1)` retains the existing signed
 behavioral preference. It is separate from Island confidence and relationship
-confidence. No new evidence or confidence fields are persisted.
+confidence. Confidence itself is recomputed from current Article evidence.
 
-Confidence uses at most 500 current canonical, unfiltered behavioral articles per
-user, ordered by latest active interaction time descending, then `id ASC`. Each article supports only its nearest
-active Island at the existing Article membership threshold. This is a read-time
-support estimate, not a membership mutation. Audit history is never ranking input.
+Confidence uses the latest 500 current canonical, unfiltered behavioral articles per
+user, supplemented by the active Islands' retained support. Calibration replaces
+`Island.supportArticleIds` with up to 64 distinct supporting Article IDs, ordered by
+latest active interaction time descending, then `id ASC`. Matched/new Islands use
+their profile support, checked against the resulting stored vector; unmatched active
+Islands use their reconstructed support. The list is written in the calibration
+transaction and is separate from the population audit.
+
+Scoring loads those IDs in one additional owned query, bounded by 64 IDs per active
+Island. It rechecks canonical/visibility rules, active behavior with a usable clock
+(including the existing publication fallback), embedding compatibility and the
+existing Article affinity threshold against a referencing Island. Missing or invalid
+support cannot contribute merely because its ID was retained. Recent and retained
+evidence are deduplicated before confidence is computed; explicit and implicit
+fallback windows and limits remain independent and unchanged.
+
+Each article supports only its nearest active Island at the existing Article
+membership threshold. These IDs are retrieval hints, not permanent assignments,
+and read-time scoring does not modify them. Audit history is never ranking input.
 Reports describe this current support estimate, not historical audit snapshots.
+Apply migration `20260919001000-add-island-support-article-ids.mjs` before deploying
+the updated application. Legacy rows start with null support IDs and continue using
+recent evidence until their next normal calibration; no backfill or rebuild is required.
 
 For independent article count `n`, distinct sources `s`, and interaction days `d`:
 
@@ -493,10 +533,33 @@ record when evidence was loaded, so a long scoring pass cannot hide crossed expi
 
 `islandCapacity.js` reconstructs current support from the owned behavioral
 snapshot. Matched Islands use profile Article IDs; unmatched candidates reuse
-nearest-support assignment. Rank by absolute existing profile-weight formula,
-then lifecycle confidence (four-decimal precision), latest meaningful interaction
-and ascending stable ID. Support count is retained for explanation, not a tie-breaker. This is a lexicographic
-storage policy, not a recommendation formula; signed preferences compete equally.
+nearest-support assignment. Independent canonical Article IDs are deduplicated,
+and the existing signal cutoff, decay and signed cancellation still apply:
+
+```
+collectiveStrength = min(1, abs(sum(currentSignedArticleEvidence)) / 7)
+                     * lifecycleConfidence
+```
+
+The seven-point normalization is shared with the unchanged profile-weight formula.
+Lifecycle confidence already incorporates independent support, cohesion, sign
+consistency and surviving behavior. This measure lets repeated reading evidence
+compete with a single favorite without counting repeated clicks on one Article as
+independent support. It selects storage only; it is never a Recommended multiplier.
+
+Capture active incumbent IDs before matching/creation. Their collective strength
+receives a 10% retention margin; equal comparisons favor the incumbent. A new or
+reactivated candidate with fewer than two supporting Articles and no currently
+qualifying explicit preference receives zero selection priority when incumbents
+exist. It may fill a vacancy but cannot displace supported memory on one implicit
+interaction alone. Explicit support uses the same decayed signal cutoff; an
+exhausted old favorite cannot turn a fresh click into an explicit challenger.
+
+Rank by adjusted `selectionStrength`, incumbency, absolute current profile weight,
+lifecycle confidence, latest meaningful interaction and ascending stable ID.
+Strength/confidence comparisons retain four-decimal precision. Positive and negative
+preferences compete equally. Audit comparisons include collective strength,
+adjusted strength, incumbent status and independent/explicit support counts.
 Capacity is applied after normal lifecycle/name archival, before the checkpoint
 commits. Overflow is archived with history intact. Reactivation must satisfy the
 normal behavioral gate **and** compete for a slot; matching still reuses existing
@@ -504,8 +567,9 @@ archived IDs before creation. User-row locking (SQLite immediate transactions)
 serializes persistence. Summaries report the complete final active count and
 `capacityArchivedIslandIds`, including unmatched historical rows that lose slots.
 
-The existing formation bound remains to preserve clustering and bounded work;
-it does not promise that every unassigned behavioral profile competes globally.
+The discovery window is bounded and does not promise that every historical
+behavioral profile competes globally. Existing match, archive and reactivation
+rules preserve Island IDs and history; unchanged evidence cannot renew an archive.
 See [the exact contract and ordering](../../../docs/interest-islands.md#active-capacity).
 
 

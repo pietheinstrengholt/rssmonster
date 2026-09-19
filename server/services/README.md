@@ -32,6 +32,14 @@ Islands. Favorites, explicit feedback, clicks and attention remain the evidence;
 audit entries and previous scores never become new behavioral input.
 See [Interest Islands](islands/README.md).
 
+Article embedding input strips recognized editorial prefixes only when followed
+by a delimiter, such as `Video |`, `Explainer:`, or `Live —`. The headline after
+the prefix is retained, including meaningful pipe/dash clauses. Bare words such
+as `Live music` and words beginning with a prefix, such as `Liverpool`, stay intact.
+Without publisher metadata, a trailing pipe/dash segment cannot safely be treated
+as a source suffix. Existing stored vectors are reused; applying the revised input
+recipe to historical vectors requires a separately scoped regeneration operation.
+
 All candidates, source evidence, related articles and mutations must preserve
 user ownership and existing visibility rules. Deterministic article identity
 takes precedence over semantic similarity; similar content is not necessarily
@@ -64,6 +72,38 @@ See [scoring](../../docs/scoring.md), [search](articleSearch/README.md), and
 [semantic validation](../tests/semantic/README.md).
 
 ## Maintenance
+
+`npm run recommendations:evaluate -- --userId=1` runs a read-only evaluation of
+the latest 1,000 eligible Articles by `publishedAt DESC, id DESC`.
+`npm run recommendations:recalculate -- --userId=1` uses the same selection and
+persists only `interestScore` and `interestScoredAt`. Recommended itself remains
+a runtime value. Both commands use the current active Islands and production
+behavioral fallbacks without calibration, Event repair, labeling or embedding calls.
+
+Use `--status=unread` to select **all** eligible unread Articles, processed in
+200-Article batches. An explicit `--limit=1000` caps this selection. `--status=all`
+(the default) or `--status=read` defaults to 1,000; `--limit=N` overrides it.
+Filtered Articles, canonical duplicates and legacy duplicate-status rows are
+excluded before the limit. Missing/incompatible vectors remain eligible with neutral
+interest. A required positive `--userId` prevents accidental cross-user runs.
+
+Reports are streamed to ignored `server/reports/recommendations/<run>/` when run
+from `server/`; `--output=directory` selects another directory. `summary.json`
+records completion/failure, selection, current Island IDs/confidence, score counts
+and zero reasons. `articles.jsonl` records stored/recomputed interest, Island-only
+interest, Recommended breakdowns, supporting Island IDs and full scoring diagnostics.
+No vectors are exported. Island-only results are diagnostic; recalculation always
+persists the full production interest result. Before/after Recommended values use
+the same current non-interest inputs, not historical scores.
+
+Recalculation locks selected targets and commits one batch at a time. Unchanged
+scores receive a fresh evaluation timestamp; newer existing evaluations are skipped.
+A failed/interrupted command may have committed earlier batches; partial reports
+are marked failed/running, never complete. New arrivals beyond the initial maximum
+Article ID are excluded. This is a live maintenance scan, not a database-wide snapshot:
+concurrent publication/status edits can change eligibility between batches. Evidence
+is loaded once for the run. Reports describe today's memory applied to old Articles,
+including possible training sources, not a held-out historical backtest.
 
 Use the existing incremental, recent-repair and historical-backfill services.
 Do not build parallel reconciliation pipelines or perform production rebuilds as

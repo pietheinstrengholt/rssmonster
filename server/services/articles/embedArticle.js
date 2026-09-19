@@ -41,12 +41,12 @@ const shouldLogEmbeddingFailure = error => {
   return true;
 };
 
-// This function strips common news prefixes and source suffixes from titles.
+// Strip only explicit editorial prefixes. A pipe/dash elsewhere may introduce
+// meaningful headline text; without source metadata it is not a publisher suffix.
 function normalizeTitle(title = '') {
   return title
-    .replace(/^(breaking|update|live|exclusive):?\s*/i, '')
-    .replace(/\s+\|\s+.*$/, '')
-    .replace(/\s+-\s+.*$/, '')
+    .trim()
+    .replace(/^(?:(?:breaking|update|live|exclusive|video|explainer)\s*(?:[:|–—]|\s-\s)\s*)+(?=\S)/i, '')
     .trim();
 }
 

@@ -419,14 +419,29 @@ constraint or a background migration of every existing user.
 
 Selection is lexicographic, in this exact order:
 
-1. Absolute **current reconstructed profile weight**, descending, using the existing
+1. **Collective support**, descending: `min(1, abs(sumSignedEvidence) / 7)` multiplied
+   by current lifecycle confidence. Active incumbents receive a 10% retention margin.
+2. Incumbency, so an exact tie preserves existing supported memory.
+3. Absolute **current reconstructed profile weight**, descending, using the existing
    `clamp(meanSignedEvidence / 7 + signedBreadthBonus, -1, 1)` and its four-decimal rounding.
-2. Current lifecycle confidence, descending, rounded to four decimals to avoid
+4. Current lifecycle confidence, descending, rounded to four decimals to avoid
    floating-point noise deciding the active set.
-3. Latest meaningful supporting interaction, descending; unknown age sorts last.
-4. Stable Island ID, ascending.
+5. Latest meaningful supporting interaction, descending; unknown age sorts last.
+6. Stable Island ID, ascending.
 
-Qualifying supporting Article count remains explanatory metadata, not an extra tie-breaker.
+Independent canonical Articles contribute once. Repeated reading across several
+coherent Articles can therefore compete with an isolated favorite; raw click counts
+remain capped. A lone implicit interaction may establish an Island when space is
+available, but receives zero selection priority against existing supported Islands.
+It needs independent repeated behavior or a qualifying explicit preference to
+challenge an incumbent. Signed cancellation and current decay remain in force.
+
+Candidates are discovered before active slots are allocated, using at most 1,000
+behavioral profiles drawn alternately from strong and recent qualifying evidence.
+Communities must retain the existing similarity threshold after centroid movement.
+Only the best configured number of candidates proceeds to persistence, where
+retained existing Islands also compete. This bounds discovery without making the
+20 active slots a first-come limit on which patterns can be considered.
 
 Matched candidates use their profile's owned Article IDs. Unmatched retained
 Islands use the existing nearest-support assignment and affinity threshold.
@@ -445,16 +460,11 @@ capacity under the same ordering. A weaker returning profile stays dormant.
 Matching archived Islands precedes creation, so a returning match reuses its ID.
 An archived Island never consumes an active slot.
 
-Formation retains the existing bounded pass: at most the same configured number
-of candidate communities are formed, in the existing magnitude/ID order. This is
-an additional processing bound, **not** the enforcement of active capacity. It
-keeps the existing clustering cost bounded and avoids changing memberships or
-forcing below-threshold matches. Unassigned behavior can therefore remain even
-when historical Islands exist; this change does not attempt globally optimal
-selection across every possible community. Persistence separately reconciles
-those candidates with retained active history and enforces the actual cap.
-Internal `maxIslands` options may lower both bounds but cannot exceed the configured
-maximum. No second environment option is needed for this conservative policy.
+The 1,000-profile discovery workspace is independent of the active cap and does
+not promise globally optimal selection across every possible historical community.
+Unassigned behavior is still valid. Internal `maxIslands` options can lower the
+number of candidates selected and the active cap, but cannot exceed the configured
+maximum. Persistence reconciles those candidates with retained active history.
 
 
 ## Recent implicit recommendation evidence

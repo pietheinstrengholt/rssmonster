@@ -24,6 +24,8 @@ export const DEFAULT_ARTICLE_AFFINITY_THRESHOLD = Number.parseFloat(process.env.
 export const DEFAULT_ARTICLE_SIGNAL_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARTICLE_SIGNAL_THRESHOLD || '0.05');
 // Defines the default island match threshold enforced by this service.
 export const DEFAULT_ISLAND_MATCH_THRESHOLD = Number.parseFloat(process.env.ISLAND_PROFILE_MATCH_THRESHOLD || '0.78');
+// Naming is presentation only: a nearest category is not necessarily a credible label.
+export const TAXONOMY_LABEL_SIMILARITY_THRESHOLD = 0.60;
 // Defines the default island vector alpha enforced by this service.
 export const DEFAULT_ISLAND_VECTOR_ALPHA = Number.parseFloat(process.env.ISLAND_VECTOR_ALPHA || '0.35');
 const configuredHalfLife = (name, fallback) => {
@@ -58,6 +60,11 @@ export const SIGNAL_WEIGHTS = {
   deepRead: 1,
   negative: 8,
 };
+
+// Discovery is a bounded workspace; it does not increase active Island capacity.
+export const ISLAND_DISCOVERY_PROFILE_LIMIT = 1000;
+export const ISLAND_REPLACEMENT_MARGIN = 0.10;
+export const ISLAND_SIGNAL_NORMALIZATION = SIGNAL_WEIGHTS.star + SIGNAL_WEIGHTS.deepRead + MAX_ARTICLE_CLICKS * SIGNAL_WEIGHTS.click;
 
 // These helpers keep scores bounded and avoid zero weights in weighted averages.
 export const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
@@ -168,7 +175,7 @@ export function isStaleIsland(island) {
   return Number(islandExpiresAt(island)) <= Date.now();
 }
 
-// This function picks the nearest active taxonomy display name for an island vector.
+// Use a taxonomy name only when its compatible vector provides sufficient label evidence.
 export function resolveTaxonomyDisplayName(vector, taxonomyRows = [], embeddingModel = null) {
   // Returns no result when vector is not an array or vector is empty.
   if (!Array.isArray(vector) || !vector.length) return null;
@@ -178,6 +185,7 @@ export function resolveTaxonomyDisplayName(vector, taxonomyRows = [], embeddingM
 
   // Processes each taxonomy rows entry in turn.
   for (const row of taxonomyRows) {
+    if (typeof row.displayName !== 'string' || !row.displayName.trim()) continue;
     // Derives the similarity through cosine similarity while resolving taxonomy display name.
     const similarity = embeddingSimilarity(vector, row.vector, embeddingModel, row.embedding_model);
     // Handles the case where similarity exceeds best similarity.
@@ -187,5 +195,5 @@ export function resolveTaxonomyDisplayName(vector, taxonomyRows = [], embeddingM
     }
   }
 
-  return bestName || null;
+  return bestSimilarity >= TAXONOMY_LABEL_SIMILARITY_THRESHOLD ? bestName : null;
 }

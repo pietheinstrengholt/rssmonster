@@ -41,6 +41,8 @@
     "events:backfill": "node scripts/backfillHistoricalEventArticles.js",
     "feedtrust": "NODE_ENV=production node scripts/calculateFeedTrust.js",
     "islands": "NODE_ENV=production node scripts/runIslandsCommand.js",
+    "recommendations:evaluate": "node scripts/runRecommendationsCommand.js evaluate",
+    "recommendations:recalculate": "node scripts/runRecommendationsCommand.js recalculate",
     "backfill:engaged-vectors": "NODE_ENV=production node scripts/backfillEngagedArticleVectors.js",
     "taxonomy:vectors": "node scripts/generateIslandTaxonomyVectors.js",
     "taxonomy:evaluate": "node scripts/evaluateTaxonomyEmbeddingStrategies.js",

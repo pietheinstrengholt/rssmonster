@@ -25,6 +25,32 @@ describe('embedArticle token limit guard', () => {
     vi.unstubAllEnvs();
   });
 
+  it.each([
+    ['Video | Orchestra performs a benefit concert in Amsterdam', 'Orchestra performs a benefit concert in Amsterdam'],
+    ['Explainer | How heat pumps work in older homes', 'How heat pumps work in older homes'],
+    ['  LIVE | Video: Concert resumes after the storm  ', 'Concert resumes after the storm'],
+    ['Exclusive - Orchestra announces a world tour', 'Orchestra announces a world tour'],
+    ['Update — Concert venue reopens', 'Concert venue reopens'],
+    ['Liverpool announces a summer concert', 'Liverpool announces a summer concert'],
+    ['Update on concert safety', 'Update on concert safety'],
+    ['Live music returns to Amsterdam', 'Live music returns to Amsterdam'],
+    ['Concert review | Why the encore mattered', 'Concert review | Why the encore mattered'],
+    ['Orchestra returns - a tribute to its conductor', 'Orchestra returns - a tribute to its conductor'],
+    ['Video | Concert review | Why the encore mattered', 'Concert review | Why the encore mattered'],
+    ['Video |', 'Video |']
+  ])('preserves headline evidence from %s', async (title, expected) => {
+    const { buildArticleEventEmbeddingText } = await import('../../services/articles/embedArticle.js');
+    expect(buildArticleEventEmbeddingText({ title })).toBe(`Title: ${expected}`);
+  });
+
+  it('sends the substantive prefixed headline to the provider even without body text', async () => {
+    const { embedArticle } = await import('../../services/articles/embedArticle.js');
+    embedTextsMock.mockResolvedValue({ model: 'test-model', embeddings: [[1, 0]] });
+    const headline = 'Orchestra performs a benefit concert for flood victims in Amsterdam';
+    await expect(embedArticle({ title: `Video | ${headline}` })).resolves.toMatchObject({ reused: false });
+    expect(embedTextsMock).toHaveBeenCalledWith([`Title: ${headline}`]);
+  });
+
   it('does not call the embedding provider when embeddings are skipped', async () => {
     vi.stubEnv('SKIP_ARTICLE_EMBEDDINGS', 'true');
     const { embedArticle } = await import('../../services/articles/embedArticle.js');
@@ -143,6 +169,7 @@ describe('embedArticle token limit guard', () => {
   it('reuses an existing article vector', async () => {
     const { embedArticle } = await import('../../services/articles/embedArticle.js');
     const article = {
+      title: 'Video | Existing concert article keeps its stored embedding',
       articleVector: [0.8, 0.9],
       embedding_model: null,
       update: vi.fn()

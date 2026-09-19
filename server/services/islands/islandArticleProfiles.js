@@ -4,10 +4,13 @@ import { BEHAVIOR_TIMESTAMP_FIELDS, signalTimestamp } from '../articles/articleB
 import db from '../../models/index.js';
 import { aggregateEmbeddingModel, embeddingSimilarity, hasEmbeddingModel } from '../vectors/embeddingModel.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { summarizeIslandSelection } from './islandCapacity.js';
 import {
   DEFAULT_ARTICLE_AFFINITY_THRESHOLD,
   DEFAULT_ARTICLE_SIGNAL_THRESHOLD,
   DEFAULT_MAX_ISLANDS_PER_USER,
+  ISLAND_DISCOVERY_PROFILE_LIMIT,
+  ISLAND_SIGNAL_NORMALIZATION,
   resolveIslandCapacity,
   ISLAND_DEBUG,
   SIGNAL_WEIGHTS,
@@ -132,7 +135,7 @@ export function buildArticleIslandWeight(articleProfiles) {
   const averageScore = articleProfiles.reduce((sum, article) => sum + article.score, 0) / articleProfiles.length;
   // A favorite, deep read and capped clicks retain the existing seven-point scale,
   // so reducing click evidence does not amplify unchanged signals.
-  const denominator = Math.max(1, SIGNAL_WEIGHTS.star + SIGNAL_WEIGHTS.deepRead + MAX_ARTICLE_CLICKS * SIGNAL_WEIGHTS.click);
+  const denominator = Math.max(1, ISLAND_SIGNAL_NORMALIZATION);
   // Derives the breadth bonus required while building article island weight.
   const breadthBonus = Math.sign(averageScore) * Math.min(0.2, articleProfiles.length * 0.03);
 
@@ -166,10 +169,39 @@ function addArticleToCommunity(community, article) {
   }
 }
 
-// This function clusters engaged article profiles into candidate interest islands.
-function buildBehavioralArticleCommunities(articleProfiles, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER) {
+// Alternate strong and recent evidence so either population can supply candidate seeds.
+// The complete snapshot remains available to existing Islands' lifecycle reconstruction.
+function discoveryProfiles(articleProfiles) {
+  const activeFirst = (a, b) => Number(isActiveIsland(b)) - Number(isActiveIsland(a));
+  const strong = articleProfiles.slice().sort((a, b) => activeFirst(a, b) || Math.abs(b.score) - Math.abs(a.score) || a.articleId - b.articleId);
+  const recent = articleProfiles.slice().sort((a, b) => activeFirst(a, b) || Number(b.lastBehaviorAt) - Number(a.lastBehaviorAt) || a.articleId - b.articleId);
+  const selected = new Map();
+  for (let index = 0; index < strong.length && selected.size < ISLAND_DISCOVERY_PROFILE_LIMIT; index++) {
+    for (const article of [strong[index], recent[index]]) {
+      if (selected.size < ISLAND_DISCOVERY_PROFILE_LIMIT) selected.set(article.articleId, article);
+    }
+  }
+  return [...selected.values()];
+}
+
+// Centroid movement cannot authorize a member below the existing affinity threshold.
+function coherentCommunity(bucket) {
+  let articles = bucket.articles;
+  while (articles.length) {
+    const vector = weightedAverageVector(articles.map(article => ({ vector: article.vector, weight: articleMagnitude(article.score) })));
+    const eligible = articles.filter(article => embeddingSimilarity(article.vector, vector, article.embedding_model,
+      articles[0].embedding_model) >= DEFAULT_ARTICLE_AFFINITY_THRESHOLD);
+    if (eligible.length === articles.length) return { articles, vector };
+    articles = eligible;
+  }
+  return null;
+}
+
+// Discover communities before selecting active slots; the discovery input bounds work.
+function buildBehavioralArticleCommunities(articleProfiles, evidenceById, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER) {
   // Derives the sorted through sort while building behavioral article communities.
-  const sorted = articleProfiles
+  const discovered = discoveryProfiles(articleProfiles);
+  const sorted = discovered
     .slice()
     // Expired history cannot consume the formation slots before fresh preferences are considered.
     .sort((a, b) => Number(isActiveIsland(b)) - Number(isActiveIsland(a))
@@ -207,9 +239,6 @@ function buildBehavioralArticleCommunities(articleProfiles, maxIslands = DEFAULT
       continue;
     }
 
-    // A capacity limit cannot authorize a below-threshold semantic membership.
-    if (communities.length >= maxIslands) continue;
-
     communities.push({
       articles: [article],
       samples: [{ vector: article.vector, weight: articleMagnitude(article.score) }],
@@ -218,16 +247,25 @@ function buildBehavioralArticleCommunities(articleProfiles, maxIslands = DEFAULT
   }
 
   // Maps source values into the result produced while building behavioral article communities.
-  return communities
+  const candidates = communities.map(coherentCommunity).filter(Boolean)
     .map(bucket => ({
       articles: bucket.articles,
-      vector: weightedAverageVector(bucket.samples) || bucket.vector,
+      vector: bucket.vector,
       embedding_model: aggregateEmbeddingModel(bucket.articles),
       weight: buildArticleIslandWeight(bucket.articles),
       positiveSignals: buildArticleIslandPositiveSignals(bucket.articles),
       label: buildArticleIslandLabel(bucket.articles)
-    }))
-    .sort((a, b) => (Math.abs(b.weight) - Math.abs(a.weight)) || (b.articles.length - a.articles.length));
+    }));
+  const selected = candidates.map(community => ({ community, selection: summarizeIslandSelection(
+    community.articles.map(article => evidenceById.get(String(article.articleId))), community.vector, community.embedding_model, community.weight)
+  })).sort((a, b) => Number(isActiveIsland({ lastBehaviorAt: b.selection.lastBehaviorAt || null }))
+      - Number(isActiveIsland({ lastBehaviorAt: a.selection.lastBehaviorAt || null }))
+    || b.selection.collectiveStrength - a.selection.collectiveStrength || b.selection.strength - a.selection.strength
+    || b.selection.confidence - a.selection.confidence || b.selection.lastBehaviorAt - a.selection.lastBehaviorAt
+    || a.community.articles[0].articleId - b.community.articles[0].articleId)
+    .slice(0, maxIslands).map(row => row.community);
+  selected.discoverySummary = { discoveryProfileCount: discovered.length, candidateCommunityCount: candidates.length };
+  return selected;
 }
 
 export async function loadIslandBehavioralArticles(userId, { transaction } = {}) {
@@ -236,6 +274,7 @@ export async function loadIslandBehavioralArticles(userId, { transaction } = {})
     where: {
       userId,
       ...canonicalArticleWhere(),
+      filteredInd: false,
       articleVector: { [Op.ne]: null },
       [Op.or]: [
         { positiveInd: 1 },
@@ -247,6 +286,9 @@ export async function loadIslandBehavioralArticles(userId, { transaction } = {})
     },
     attributes: [
       'id',
+      'userId',
+      'filteredInd',
+      'duplicateOfArticleId',
       'feedId',
       'title',
       'articleVector',
@@ -275,12 +317,14 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
     .filter(profile => Math.abs(profile.score) >= DEFAULT_ARTICLE_SIGNAL_THRESHOLD);
 
   // Builds the behavioral article communities while building interest island profiles for user.
-  const communities = buildBehavioralArticleCommunities(articleProfiles, maxIslands);
+  const evidenceById = new Map(articles.map(article => [String(article.id), article]));
+  const communities = buildBehavioralArticleCommunities(articleProfiles, evidenceById, maxIslands);
   // Reuse this complete owned snapshot for lifecycle decisions, even below formation's score cutoff.
   communities.behavioralEvidence = articles;
 
   const assignedCount = communities.reduce((sum, community) => sum + community.articles.length, 0);
   communities.summary = {
+    ...communities.discoverySummary,
     eligibleBehavioralProfiles: articleProfiles.length,
     assignedBehavioralProfiles: assignedCount,
     unassignedBehavioralProfiles: articleProfiles.length - assignedCount

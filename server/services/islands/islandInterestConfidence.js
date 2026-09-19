@@ -6,6 +6,7 @@ import db from '../../models/index.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { embeddingSimilarity, compatibleEmbeddingModels } from '../vectors/embeddingModel.js';
 import { DEFAULT_ARTICLE_AFFINITY_THRESHOLD, clamp } from './islandVectorUtils.js';
+import { islandSupportArticleIds, isCurrentIslandSupport } from './islandSupport.js';
 
 export const EVIDENCE_LIMIT = 500;
 export const EXPLICIT_EVIDENCE_LIMIT = 100;
@@ -107,7 +108,7 @@ export function prepareIslandEvidence(islands, evidence, explicitEvidence = evid
 // Apply interaction windows and stable interaction ordering before the existing evidence bounds.
 export async function loadIslandEvidence(userId, { transaction, now = Date.now() } = {}) {
   const where = { userId, ...canonicalArticleWhere(), filteredInd: false, articleVector: { [Op.ne]: null } };
-  const attributes = ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'feedId', 'publishedAt', 'articleVector', 'embedding_model', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', ...BEHAVIOR_TIMESTAMP_FIELDS];
+  const attributes = ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'userId', 'feedId', 'publishedAt', 'articleVector', 'embedding_model', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', ...BEHAVIOR_TIMESTAMP_FIELDS];
   const query = (extra, limit, fields = BEHAVIOR_TIMESTAMP_FIELDS) => db.Article.findAll({ where: { ...where, ...extra }, attributes,
     order: [[behaviorTimestampExpression(db.sequelize, fields, now), 'DESC'], ['id', 'ASC']], limit, raw: true, transaction });
   const recent = field => db.Sequelize.where(behaviorTimestampExpression(db.sequelize, [field], now), {
@@ -117,7 +118,7 @@ export async function loadIslandEvidence(userId, { transaction, now = Date.now()
     ...condition, [field]: { [Op.gte]: new Date(now - IMPLICIT_WINDOW_DAYS * DAY_MS), [Op.lte]: new Date(now) }
   }, IMPLICIT_EVIDENCE_LIMIT, [field]);
   const [islands, evidence, negative, positive, clicked, read] = await Promise.all([
-    db.Island.findAll({ where: { userId, ...activeIslandWhere(now) }, attributes: ['id', 'label', 'generatedLabel', 'weight', 'islandVector', 'embedding_model'], order: [['id', 'ASC']], raw: true, transaction }),
+    db.Island.findAll({ where: { userId, ...activeIslandWhere(now) }, attributes: ['id', 'userId', 'label', 'generatedLabel', 'weight', 'islandVector', 'embedding_model', 'supportArticleIds'], order: [['id', 'ASC']], raw: true, transaction }),
     query({ [Op.and]: [db.Sequelize.where(behaviorTimestampExpression(db.sequelize, BEHAVIOR_TIMESTAMP_FIELDS, now), { [Op.ne]: null })],
       [Op.or]: [{ positiveInd: 1 }, { favoriteInd: 1 }, { negativeInd: 1 }, { clickedAmount: { [Op.gt]: 0 } }, { attentionBucket: { [Op.gte]: 3 } }] }, EVIDENCE_LIMIT),
     query({ negativeInd: 1, [Op.and]: [recent('negativeFeedbackAt')] }, EXPLICIT_EVIDENCE_LIMIT, ['negativeFeedbackAt']),
@@ -128,12 +129,26 @@ export async function loadIslandEvidence(userId, { transaction, now = Date.now()
     implicitQuery('lastClickedAt', { clickedAmount: { [Op.gt]: 0 } }),
     implicitQuery('lastMeaningfulReadAt', { attentionBucket: { [Op.gte]: 3 } })
   ]);
+  const supportIslandsByArticleId = new Map();
+  for (const island of islands) {
+    for (const id of islandSupportArticleIds(island.supportArticleIds)) {
+      if (!supportIslandsByArticleId.has(id)) supportIslandsByArticleId.set(id, []);
+      supportIslandsByArticleId.get(id).push(island);
+    }
+  }
+  // One owned, bounded read supplements recent evidence; stale IDs never bypass eligibility.
+  const retained = supportIslandsByArticleId.size ? await db.Article.findAll({
+    where: { ...where, id: [...supportIslandsByArticleId.keys()] }, attributes, raw: true, transaction
+  }) : [];
+  const support = retained.filter(article => supportIslandsByArticleId.get(String(article.id))
+    .some(island => isCurrentIslandSupport(article, island, now)));
+  const confidenceEvidence = [...new Map([...evidence, ...support].map(article => [String(article.id), article])).values()];
   // Two bounded reads preserve each signal's clock; deduplicate and apply one
   // combined cap so an Article with both signals occupies only one slot.
   const implicit = [...new Map([...clicked, ...read].map(article => [String(article.id), article])).values()]
     .sort((a, b) => recentImplicitTimestamp(b, now) - recentImplicitTimestamp(a, now) || Number(a.id) - Number(b.id))
     .slice(0, IMPLICIT_EVIDENCE_LIMIT);
-  return { ...prepareIslandEvidence(islands, evidence, [...negative, ...positive], implicit), now };
+  return { ...prepareIslandEvidence(islands, confidenceEvidence, [...negative, ...positive], implicit), now };
 }
 
 export function normalizedRelationship(sim, threshold) {

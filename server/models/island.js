@@ -71,6 +71,12 @@ export default (sequelize) => {
           deepReads: 0
         }
       },
+      // Bounded support retrieval hints, revalidated against current Articles when scoring.
+      supportArticleIds: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: null
+      },
       // Stores calibration history used to explain how the island population changed.
       populationAudit: {
         type: DataTypes.JSON,

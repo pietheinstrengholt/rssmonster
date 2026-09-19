@@ -77,4 +77,15 @@ describe('island vector utilities', () => {
     expect(resolveTaxonomyDisplayName([1, 0], rows, null)).toBeNull();
   });
 
+  it('rejects the nearest taxonomy name when its similarity is too weak', () => {
+    const name = (vector, rows) => resolveTaxonomyDisplayName(vector, rows, 'test-model');
+    const row = { displayName: 'Boxing', vector: [0.28, 0.96], embedding_model: 'test-model' };
+    expect(name([1, 0], [row])).toBeNull();
+    expect(name([1, 0], [{ ...row, vector: [0.59, Math.sqrt(1 - 0.59 ** 2)] }])).toBeNull();
+    expect(name([1, 0], [{ ...row, displayName: 'Concerts', vector: [0.6, 0.8] }])).toBe('Concerts');
+    expect(name([0, 0], [row])).toBeNull();
+    expect(name([1, 0], [{ ...row, vector: [1, 0, 0] }])).toBeNull();
+    expect(name([1, 0], [{ ...row, displayName: ' ', vector: [1, 0] }, row])).toBeNull();
+  });
+
 });
