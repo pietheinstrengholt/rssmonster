@@ -234,7 +234,40 @@ describe('mobile Headlines', () => {
     expect(wrapper.text()).toContain('Article text');
   });
 
-  it.each(['minimal', 'full', 'summarized', 'summaryBullets', 'reader'])('limits row thumbnails to Headlines in %s mode', viewMode => {
+  it.each([
+    ['thumbnail', 200, 160],
+    ['hero', 1200, 600]
+  ])('shows a %s alongside summarized content in mobile portrait', async (_mode, width, height) => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+    const stores = createFocusedStores({
+      overview: { categories: [] },
+      selection: { currentSelection: { viewMode: 'summarized', grouping: 'none' } }
+    });
+    const wrapper = mount(Article, {
+      props: {
+        id: 42, title: 'A headline', imageUrl,
+        content: `<p>Full article body.</p><img src="${imageUrl}">`,
+        contentText: 'Summarized article text', feed: { feedName: 'A source' }
+      },
+      global: { plugins: [stores.pinia] }
+    });
+    wrappers.push(wrapper);
+    const image = wrapper.get(`img[src="${imageUrl}"]`);
+    Object.defineProperty(image.element, 'naturalWidth', { value: width });
+    Object.defineProperty(image.element, 'naturalHeight', { value: height });
+    await image.trigger('load');
+    expect(wrapper.findAll(`img[src="${imageUrl}"]`)).toHaveLength(1);
+    expect(image.attributes('width')).toBe(String(width));
+    expect(image.attributes('height')).toBe(String(height));
+    expect(wrapper.get('[data-reading-content]').text()).toBe('Summarized article text');
+    expect(wrapper.text()).not.toContain('Full article body.');
+
+    await image.trigger('error');
+    expect(wrapper.find(`img[src="${imageUrl}"]`).exists()).toBe(false);
+    expect(wrapper.get('[data-reading-content]').text()).toBe('Summarized article text');
+  });
+
+  it.each(['minimal', 'full', 'summarized', 'summaryBullets', 'reader'])('preserves image visibility for text-only content in mobile %s mode', viewMode => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
     const stores = createFocusedStores({
       overview: { categories: [] },
@@ -245,6 +278,6 @@ describe('mobile Headlines', () => {
       global: { plugins: [stores.pinia] }
     });
     wrappers.push(wrapper);
-    expect(wrapper.find(`img[src="${imageUrl}"]`).exists()).toBe(viewMode === 'minimal');
+    expect(wrapper.find(`img[src="${imageUrl}"]`).exists()).toBe(['minimal', 'summarized'].includes(viewMode));
   });
 });
