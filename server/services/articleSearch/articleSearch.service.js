@@ -127,7 +127,8 @@ export const searchArticles = async ({
     pagination = null, // Opt-in keyset pagination descriptor for database-native sorts
     executionBounds = null, // Optional trusted ceilings for bounded internal consumers
     briefingSort = 'recommended', // Internal ranking override while retaining briefing filters
-    includeDiagnostics = false
+    includeDiagnostics = false,
+    personalization = null // Optional request-owned evidence shared with article delivery
 }) => {
     // Rejects processing when user id is unavailable.
     if (!userId) {
@@ -638,7 +639,7 @@ export const searchArticles = async ({
 
     debugLog(`\x1b[33mFetched ${articles.length} articles from database (before in-memory filters)\x1b[0m`);
 
-    if (sortRecommended) await refreshExpiredArticleInterests(userId, articles);
+    if (sortRecommended) await refreshExpiredArticleInterests(userId, articles, personalization?.now, personalization ?? undefined);
 
     // Delegate all in-memory sorting and filtering to sortArticles
     if (

@@ -1,13 +1,14 @@
 import db from '../../models/index.js';
-import { explainArticleInterests } from '../score/scoreArticlesFromIslands.js';
+import { createRequestPersonalization } from './requestPersonalization.js';
 
 // Only explain a stored score when current evidence reproduces it. Never invent an Island for fallback evidence.
-export async function loadInterestIslandAttributions(userId, articles) {
+export async function loadInterestIslandAttributions(userId, articles, personalization = createRequestPersonalization(userId)) {
+  personalization.assertUser(userId);
   const positive = articles.filter(a => Number(a.interestScore) > 0);
   if (!positive.length) return new Map();
   const rows = await db.Article.findAll({ where: { userId, id: positive.map(a => a.id) }, raw: true,
     attributes: ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'articleVector', 'embedding_model', 'interestScore', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket'] });
-  const { context, results } = await explainArticleInterests(userId, rows);
+  const { context, results } = await personalization.explain(rows);
   const attributions = new Map();
   for (const article of rows) {
     const result = results.get(String(article.id));

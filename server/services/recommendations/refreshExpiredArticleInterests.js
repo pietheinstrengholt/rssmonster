@@ -2,14 +2,15 @@ import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { ISLAND_INACTIVITY_DAYS } from '../islands/islandDeadline.js';
-import { loadIslandEvidence } from '../islands/islandInterestConfidence.js';
-import { explainArticleInterests } from '../score/scoreArticlesFromIslands.js';
+import { createRequestPersonalization } from './requestPersonalization.js';
 
 const BATCH_SIZE = 200;
 
 // Cached scores cannot outlive their supporting Islands. This read-time correction
 // uses the production evaluator without writing Articles or creating refresh jobs.
-export async function refreshExpiredArticleInterests(userId, articles, now = Date.now()) {
+export async function refreshExpiredArticleInterests(userId, articles, now = Date.now(), personalization = createRequestPersonalization(userId, now)) {
+  personalization.assertUser(userId);
+  now = personalization.now;
   if (!articles.length) return;
   const oldest = articles.reduce((oldest, article) => {
     const time = article.interestScoredAt == null ? 0 : new Date(article.interestScoredAt).getTime();
@@ -27,15 +28,15 @@ export async function refreshExpiredArticleInterests(userId, articles, now = Dat
   });
   if (!boundary) return;
 
-  const context = await loadIslandEvidence(userId, { now });
   for (let start = 0; start < articles.length; start += BATCH_SIZE) {
     const batch = articles.slice(start, start + BATCH_SIZE);
-    const rows = await db.Article.findAll({
-      where: { userId, id: batch.map(article => article.id), ...canonicalArticleWhere(), filteredInd: false },
+    const missingIds = batch.filter(article => !personalization.hasEvaluation(article.id)).map(article => article.id);
+    const rows = missingIds.length ? await db.Article.findAll({
+      where: { userId, id: missingIds, ...canonicalArticleWhere(), filteredInd: false },
       attributes: ['id', 'title', 'description', 'articleVector', 'embedding_model',
         'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd'], raw: true
-    });
-    const { results } = await explainArticleInterests(userId, rows, { context });
+    }) : [];
+    const { results } = await personalization.explain(rows);
     for (const article of batch) {
       const result = results.get(String(article.id));
       if (!result) continue;

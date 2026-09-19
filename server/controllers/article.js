@@ -15,6 +15,7 @@ import { getArticleRecommendations as getArticleRecommendationsService } from '.
 import { buildRecommendationPresentation } from '../services/recommendations/recommendedScore.js';
 import { refreshExpiredArticleInterests } from '../services/recommendations/refreshExpiredArticleInterests.js';
 import { loadInterestIslandAttributions } from '../services/recommendations/recommendationAttribution.js';
+import { createRequestPersonalization } from '../services/recommendations/requestPersonalization.js';
 import { explainArticleInterests } from '../services/score/scoreArticlesFromIslands.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { retryDatabaseWrite } from '../utils/databaseRetry.js';
@@ -103,7 +104,7 @@ const attachPredictedAffinity = articles => {
 };
 
 // This function batch-loads article details with presentation metadata.
-const loadArticleDetails = async (userId, articlesArray) => {
+const loadArticleDetails = async (userId, articlesArray, personalization = createRequestPersonalization(userId)) => {
   // Keep this projection aligned with Article.vue props and ArticleReaderLayout.vue direct reads;
   // when either frontend consumer changes, update this list and the article-details API tests together.
   const articles = await Article.findAll({
@@ -196,9 +197,9 @@ const loadArticleDetails = async (userId, articlesArray) => {
     article.setDataValue('quality', article.quality);
   }
 
-  await refreshExpiredArticleInterests(userId, articles);
+  await refreshExpiredArticleInterests(userId, articles, personalization.now, personalization);
   attachPredictedAffinity(articles);
-  const interestIslandByArticleId = await loadInterestIslandAttributions(userId, articles);
+  const interestIslandByArticleId = await loadInterestIslandAttributions(userId, articles, personalization);
 
   for (const article of articles) {
     article.setDataValue('recommendation', buildRecommendationPresentation(article, {
@@ -306,6 +307,7 @@ export const getArticles = async (req, res) => {
         cursor: req.query.cursor || null
       };
     }
+    const personalization = createRequestPersonalization(userId);
     const result = await searchArticles({
       userId,
       search,
@@ -326,7 +328,8 @@ export const getArticles = async (req, res) => {
       includeSnapshot: newerThanArticleId === null,
       minArticleIdExclusive: newerThanArticleId,
       includeDiagnostics: req.query.diagnostics === 'true',
-      pagination
+      pagination,
+      personalization
     });
 
     if (newerThanArticleId !== null) {
@@ -335,7 +338,7 @@ export const getArticles = async (req, res) => {
 
     if (cursorPagination) {
       result.page.articles = result.page.itemIds.length
-        ? await loadArticleDetails(userId, result.page.itemIds)
+        ? await loadArticleDetails(userId, result.page.itemIds, personalization)
         : [];
       return res.status(200).json(result);
     }
@@ -343,7 +346,7 @@ export const getArticles = async (req, res) => {
     if (req.query.includeFirstPage === 'true' && result.itemIds.length > 0) {
       const pageSize = req.query.viewMode === 'minimal' ? 50 : 20;
       const firstPageIds = result.itemIds.slice(0, pageSize);
-      result.firstPage = await loadArticleDetails(userId, firstPageIds);
+      result.firstPage = await loadArticleDetails(userId, firstPageIds, personalization);
       if (result.diagnostics) result.diagnostics.delivery = {
         selectedIds: result.itemIds.length, detailsReturned: result.firstPage.length,
         deferredToLaterPages: result.itemIds.length - firstPageIds.length,

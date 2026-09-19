@@ -37,6 +37,12 @@ the read-time evaluation. Stored scores remain unchanged, and the diagnostic fie
 above still describe persisted history. Morning-summary recommendation ordering uses
 the current interest evaluation already loaded for its explanations.
 
+Article collection requests share one lazy, user-scoped personalization context
+across ranking, first-page details and Island attribution. Evidence and per-Article
+evaluations use the same request clock and are discarded after delivery; standalone
+detail requests create their own context. Attribution still checks the persisted
+score before explaining it. No scoring weights, evidence bounds or expiry rules change.
+
 Article recommendation presentation includes `interestEvaluation` with `scoredAt`,
 `ageMs`, and `state` (`evaluated` or `untracked`). An evaluated zero is neutral,
 not untouched. Null means untouched since instrumentation or unknown legacy history;
