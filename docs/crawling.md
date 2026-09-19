@@ -150,7 +150,8 @@ npm run start:ai-worker
 ```
 
 Each process authenticates its own Sequelize connection set. On `SIGINT` or
-`SIGTERM`, the crawl worker waits for its active crawl and the AI worker stops
+`SIGTERM`, the crawl worker waits for its active crawl and current user's archiving
+transaction, and the AI worker stops
 claiming, interrupts its poll, and waits up to
 `PROCESSING_JOB_SHUTDOWN_TIMEOUT_MS` for in-flight work. Remaining handlers are
 signalled to abort and their fenced leases can recover after expiry. Each
@@ -162,6 +163,27 @@ AI processing disabled. It does not consume optional processing jobs.
 The web process does not schedule this loop. Keeping the crawler separate
 means a long crawl cannot prevent PM2 from supervising and restarting the web
 application independently.
+
+### Nightly article archiving
+
+The crawl worker starts article cleanup every night at **03:00 in its configured
+local timezone** (`TZ`; typically UTC in Docker). It uses a separate timer, so a
+long crawl does not postpone the scheduled start. Keep the worker running; a
+restart schedules the next 03:00 rather than replaying missed nights.
+
+Users are processed sequentially using their `archiving_settings` and the same
+cleanup service as the Cleanup dialog. Users without a settings row use the model
+defaults. Count limits take priority over age; checked unread, favorite and clicked
+protections remain in effect. The worker logs each successful user transaction,
+including when nothing was removed:
+
+```text
+[Archiving] Completed user=42: removed 503 articles.
+```
+
+A user failure is logged and processing continues with the next user. Runs do not
+overlap within the worker. Shutdown cancels the next timer and stops between users,
+allowing the current transaction to finish before closing the database.
 
 ## PM2 Production Setup
 

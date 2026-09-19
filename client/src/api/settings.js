@@ -3,6 +3,9 @@ import api from './client';
 export const fetchSettings = () =>
   api.get('/setting');
 
+export const fetchArchivingSettings = () => api.get('/setting/archiving');
+export const saveArchivingSettings = settings => api.put('/setting/archiving', settings);
+
 /**
  * Save settings
  */

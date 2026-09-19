@@ -13,8 +13,11 @@ import * as oidcSettings from '../controllers/oidcSettings.js';
 import * as crawlSettings from '../controllers/crawlSettings.js';
 import * as pushSettings from '../controllers/pushSettings.js';
 import * as smtpSettings from '../controllers/smtpSettings.js';
+import * as archivingSettings from '../controllers/archivingSettings.js';
 
 export const router = express.Router();
+router.get('/archiving', userMiddleware.isLoggedIn, archivingSettings.get);
+router.put('/archiving', userMiddleware.isLoggedIn, archivingSettings.put);
 router.get('/server/crawl', userMiddleware.isLoggedIn, requireAdministrator, crawlSettings.get);
 router.put('/server/crawl', userMiddleware.isLoggedIn, requireAdministrator, crawlSettings.put);
 router.delete('/server/crawl', userMiddleware.isLoggedIn, requireAdministrator, crawlSettings.clear);

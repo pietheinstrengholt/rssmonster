@@ -107,7 +107,7 @@ describe('actions and category API contracts', () => {
     cleanupOldArticles();
     triggerCrawl();
 
-    expect(post).toHaveBeenCalledWith('/cleanup');
+    expect(post).toHaveBeenCalledWith('/cleanup', null, { timeout: 0 });
     expect(get).toHaveBeenCalledWith('/crawl');
   });
 });

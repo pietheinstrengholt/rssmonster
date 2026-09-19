@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createCrawlWorkerHealthReporter } from './crawlWorkerHealth.js';
+import { startNightlyArchiving } from './nightlyArchiving.js';
 
 const workerFile = fileURLToPath(import.meta.url);
 const serverDirectory = path.resolve(path.dirname(workerFile), '../..');
@@ -55,11 +56,15 @@ const loadCrawlDependencies = async () => {
   return {
     closeDatabase: () => db.sequelize.close(),
     runCrawl: runSemanticPipeline,
+    runArchiving: async options => {
+      const { runNightlyArchiving } = await import('../../services/nightlyArchiving.js');
+      return runNightlyArchiving(options);
+    },
     getIntervalMs: async () => parseWorkerInterval(await getCrawlWorkerInterval())
   };
 };
 
-// This function creates an interruptible, crawl-only worker lifecycle.
+// This function creates an interruptible crawl worker with nightly article archiving.
 export const createCrawlWorker = ({
   intervalMs,
   loadDependencies = loadCrawlDependencies,
@@ -68,6 +73,7 @@ export const createCrawlWorker = ({
   healthReporter
 } = {}) => {
   let dependencies;
+  let stopArchiving;
   let runPromise;
   let stopping = false;
   let wakeSleep;
@@ -101,6 +107,7 @@ export const createCrawlWorker = ({
       stopping = true;
       logger.log(`[CrawlWorker] Shutdown requested: ${reason}`);
       interruptSleep();
+      void stopArchiving?.();
     }
 
     return runPromise || Promise.resolve();
@@ -180,6 +187,9 @@ export const createCrawlWorker = ({
         ? `${intervalMs / 1000}s`
         : `${intervalMs}ms`;
       logger.log(`[CrawlWorker] Starting crawl worker interval=${interval}`);
+      if (!stopping && dependencies.runArchiving) {
+        stopArchiving = startNightlyArchiving({ runArchiving: dependencies.runArchiving, logger });
+      }
 
       while (!stopping) {
         const startedAt = Date.now();
@@ -214,6 +224,7 @@ export const createCrawlWorker = ({
       }
     } finally {
       interruptSleep();
+      await stopArchiving?.();
       await reportHealth('stopping').catch(error => {
         requestedExitCode = 1;
         logger.error('[CrawlWorker] Health-state cleanup failed:', error);

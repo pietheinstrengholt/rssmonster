@@ -54,7 +54,6 @@ vi.mock('../../models/index.js', () => ({
 }));
 
 const actionController = (await import('../../controllers/action.js')).default;
-const cleanupController = (await import('../../controllers/cleanup.js')).default;
 const eventsController = (await import('../../controllers/events.js')).default;
 const tagController = (await import('../../controllers/tag.js')).default;
 
@@ -285,7 +284,7 @@ describe('action controller', () => {
   });
 });
 
-describe('tag and cleanup controllers', () => {
+describe('tag controllers', () => {
   beforeEach(() => {
     resetControllerMocks();
   });
@@ -441,53 +440,6 @@ describe('tag and cleanup controllers', () => {
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: 'Failed to fetch tags' });
-  });
-
-  it('deletes only old non-favorite articles owned by the user', async () => {
-    mocked.transaction.mockImplementation(callback => callback('cleanup-transaction'));
-    mocked.prepareArticleEventRemoval.mockResolvedValue({ articleIds: [1, 2, 3] });
-    mocked.articleDestroy.mockResolvedValue(3);
-    const res = createResponse();
-
-    await cleanupController.cleanup(createRequest(), res);
-
-    expect(mocked.prepareArticleEventRemoval).toHaveBeenCalledWith(42, {
-      favoriteInd: 0, createdAt: { [Op.lte]: expect.any(Date) }, userId: 42
-    }, 'cleanup-transaction');
-    expect(mocked.articleDestroy).toHaveBeenCalledWith({
-      where: { userId: 42, id: { [Op.in]: [1, 2, 3] } },
-      transaction: 'cleanup-transaction'
-    });
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      message: 'Articles cleaned up successfully',
-      deletedCount: 3
-    });
-  });
-
-  it('rejects cleanup without an authenticated user', async () => {
-    const res = createResponse();
-
-    await cleanupController.cleanup(
-      createRequest({ userData: {} }),
-      res
-    );
-
-    expect(mocked.articleDestroy).not.toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(401);
-  });
-
-  it('returns cleanup persistence errors as server errors', async () => {
-    mocked.transaction.mockImplementation(callback => callback('cleanup-transaction'));
-    mocked.prepareArticleEventRemoval.mockResolvedValue({ articleIds: [1] });
-    mocked.articleDestroy.mockRejectedValue(new Error('cleanup failed'));
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    const res = createResponse();
-
-    await cleanupController.cleanup(createRequest(), res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: 'cleanup failed' });
   });
 });
 

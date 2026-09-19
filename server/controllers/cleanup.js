@@ -1,28 +1,15 @@
-import db from '../models/index.js';
-import { prepareArticleEventRemoval } from '../services/events/eventReconciliation.js';
-const { Article } = db;
-import { Op } from 'sequelize';
+import { cleanupArticles } from '../services/articleCleanup.js';
 
-// Delete all non-favorited articles older than one week
+// Delete eligible articles using the authenticated user's saved retention settings.
 const cleanup = async (req, res, _next) => {
   try {
-    const userId = req.userData.userId;
+    const userId = req.userData?.userId;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const oneWeekAgo = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000));
-
-    const where = {
-      favoriteInd: 0,
-      createdAt: { [Op.lte]: oneWeekAgo },
-      userId
-    };
-    const deletedCount = await db.sequelize.transaction(async transaction => {
-      const { articleIds } = await prepareArticleEventRemoval(userId, where, transaction);
-      return Article.destroy({ where: { userId, id: { [Op.in]: articleIds } }, transaction });
-    });
+    const deletedCount = await cleanupArticles(userId);
 
     return res.status(200).json({ 
       message: 'Articles cleaned up successfully',
@@ -30,7 +17,7 @@ const cleanup = async (req, res, _next) => {
     });
   } catch (err) {
     console.error('Error in cleanup:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Could not clean up articles' });
   }
 };
 

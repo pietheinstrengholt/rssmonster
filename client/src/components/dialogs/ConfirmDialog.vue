@@ -7,31 +7,34 @@
     @close="requestClose"
   >
     <template #title>{{ title }}</template>
+    <template v-if="$slots.subtitle" #description><slot name="subtitle"></slot></template>
 
     <div class="confirm-dialog__message" :aria-busy="busy ? 'true' : 'false'">
       <slot></slot>
     </div>
 
     <template #footer>
-      <button
-        type="button"
-        class="app-button app-button--secondary confirm-dialog__cancel"
-        :disabled="busy"
-        autofocus
-        @click="requestCancel"
-      >
-        {{ cancelLabel }}
-      </button>
-      <button
-        type="button"
-        class="app-button confirm-dialog__confirm"
-        :class="confirmButtonClass"
-        :disabled="busy"
-        :aria-busy="busy ? 'true' : 'false'"
-        @click="requestConfirm"
-      >
-        {{ confirmLabel }}
-      </button>
+      <slot name="footer">
+        <button
+          type="button"
+          class="app-button app-button--secondary confirm-dialog__cancel"
+          :disabled="busy"
+          autofocus
+          @click="requestCancel"
+        >
+          {{ cancelLabel }}
+        </button>
+        <button
+          type="button"
+          class="app-button confirm-dialog__confirm"
+          :class="confirmButtonClass"
+          :disabled="busy"
+          :aria-busy="busy ? 'true' : 'false'"
+          @click="requestConfirm"
+        >
+          {{ confirmLabel }}
+        </button>
+      </slot>
     </template>
   </BaseDialog>
 </template>
