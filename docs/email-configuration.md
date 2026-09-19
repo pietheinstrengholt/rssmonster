@@ -19,6 +19,11 @@ only to accounts with a verified address.
 
 ## Where to Configure Email
 
+Administrators can configure email in **Settings → Server settings → SMTP options**.
+See [Server Settings]({% link server-settings.md %}#smtp-options) for grouped
+overrides, password handling, and restoring environment defaults. The environment
+configuration below applies when no override is active.
+
 For a manual installation, put the variables in `server/.env`. Restart every
 RSSMonster server process after changing them.
 
@@ -147,14 +152,13 @@ and set `SMTP_PASSWORD_FILE` to that in-container path. Do not configure
 
 ## Verify the Configuration
 
-Sign in as an administrator and open **Settings → Manage Users**. The account
-overview reports whether the email configuration is complete and whether email
+Sign in as an administrator and open **Settings → Server settings → SMTP options**. The status
+cards report whether the email configuration is complete and whether email
 is enabled. When enabled, select **Test SMTP connection**.
 
 The connectivity test verifies that RSSMonster can connect to the SMTP server
 and complete any configured authentication and TLS negotiation. It does not
-send an email. SMTP credentials and server details are not returned to the
-browser.
+send an email. Stored SMTP passwords are not returned to the browser.
 
 The server also logs safe delivery lifecycle events. These contain delivery
 IDs, user IDs, message types, attempt counts, status, and sanitized SMTP error

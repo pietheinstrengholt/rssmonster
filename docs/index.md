@@ -74,6 +74,9 @@ SMTP and browser Push delivery also use configured external services. Choose
 
 ## Operate and understand your server
 
+Use [Server Settings]({% link server-settings.md %}) to manage server-wide options
+and environment overrides from the administrator UI.
+
 Start with [Configuration]({% link configuration.md %}) and [Administration]({% link administration.md %})
 for crawling, processing jobs, email, maintenance, and backups. Read
 [How RSSMonster Works]({% link how-rssmonster-works.md %}) for the processing architecture,

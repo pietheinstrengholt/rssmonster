@@ -10,6 +10,8 @@ has_children: true
 These pages cover the operational tasks used to run and maintain an RSSMonster
 server.
 
+- [Server Settings]({% link server-settings.md %}) covers registration, SMTP, OIDC,
+  Web Push, and crawl overrides in the administrator UI.
 - [Backup and Restore]({% link backup-restore.md %}) provides procedures for the SQLite
   and MySQL Docker Compose profiles, including secrets and verification.
 - [Server Jobs]({% link server-jobs.md %}) lists every npm command exposed by the server,
@@ -36,8 +38,9 @@ repair, seed, or reset.
 
 The desktop Settings workspace exposes user-scoped feed diagnostics, crawl
 statistics, processing jobs, score settings, automation, generated feeds, and
-semantic insights. **Manage Users** is restricted to administrators; it includes
-account management and SMTP configuration status/testing. The first registered
+semantic insights. **Manage Users** provides administrator-only account management.
+**Server settings** contains server-wide configuration, including SMTP status
+and connection testing. The first registered
 account becomes the administrator. See [First Login]({% link first-login.md %}).
 
 [Feeds and Categories]({% link feeds-and-categories.md %}) explains per-feed processing,
@@ -47,18 +50,16 @@ documents VAPID configuration for browser Push.
 
 ## Push notification settings
 
-Web Push is configured through deployment environment variables. The in-app
-Settings workspace does not provide fields for entering Push keys.
+Web Push can use deployment environment variables or saved overrides under
+**Settings → Server settings → Web Push options**. See
+[Server Settings]({% link server-settings.md %}#web-push-options) for the UI workflow.
 
-Set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` for the web
-process and each crawl worker that sends notifications. Use the same stable
-key pair across those processes and keep the private key secret. Serve the app
-over HTTPS so browsers can use its installation and notification capabilities.
-
-The supplied Compose profiles pass these variables to the web service; add them
-to the crawl worker's environment as well for scheduled-crawl notifications.
-See [Configure Web Push on the server]({% link web-app-and-notifications.md %}#configure-web-push-on-the-server)
-for key generation, `.env` examples, the worker override, and restart instructions.
+For environment configuration, set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and
+`VAPID_SUBJECT` for the web process and each crawl worker that sends notifications.
+For encrypted database overrides, provide the same `ENCRYPTION_KEY` to those
+processes. Serve the app over HTTPS. See
+[Configure Web Push on the server]({% link web-app-and-notifications.md %}#configure-web-push-on-the-server)
+for key generation and deployment examples.
 
 After server configuration, each user enables alerts in the mobile or compact
 **Options → Notifications** controls and grants browser permission. On
@@ -76,8 +77,8 @@ the Cleanup dialog, and the distinction between stored and sidebar counts.
 
 ## Email scheduling
 
-When email is enabled, the web process starts the SMTP outbox worker and the
-Daily Briefing scheduler. The scheduler checks bounded batches every five
+The web process starts the SMTP outbox worker and the Daily Briefing scheduler;
+they remain idle while email is disabled. The scheduler checks bounded batches every five
 minutes; the delivery worker polls every five minutes. Keep the web process
 running for scheduled delivery. This workflow is separate from the AI worker.
 See [Email Configuration]({% link email-configuration.md %}) for delivery logs and retries.
