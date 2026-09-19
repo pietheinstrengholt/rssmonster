@@ -67,11 +67,12 @@ works independently from SMTP and Daily Briefing email delivery.
 
 ## Article cleanup
 
-The Cleanup action deletes the current user's non-favorited articles whose
-**database creation time** is at least seven days old. It does not use publication
-time, and it does not exclude unread articles. Bookmark articles you want this
-operation to retain. Deletion is permanent without a backup; OPML exports only
-subscriptions, not article content or reading state.
+**Cleanup articles** configures per-user protections and retention limits.
+**Save settings** persists preferences; **Cleanup now** saves and applies them
+immediately. The crawl worker also applies them nightly at 03:00 in its local
+timezone. Count limits take priority over age, and checked protections always
+apply. See [Article Archiving]({% link archiving.md %}) for defaults, examples,
+the Cleanup dialog, and the distinction between stored and sidebar counts.
 
 ## Email scheduling
 

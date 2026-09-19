@@ -166,6 +166,9 @@ application independently.
 
 ### Nightly article archiving
 
+See [Article Archiving]({% link archiving.md %}) to configure protections and
+retention limits in the Cleanup dialog.
+
 The crawl worker starts article cleanup every night at **03:00 in its configured
 local timezone** (`TZ`; typically UTC in Docker). It uses a separate timer, so a
 long crawl does not postpone the scheduled start. Keep the worker running; a

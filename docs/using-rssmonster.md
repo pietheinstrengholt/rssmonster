@@ -22,6 +22,7 @@ Learn how to use RSSMonster's core reading, feed management, search, and organiz
 ## More workflows
 
 - [Feeds and Categories]({% link feeds-and-categories.md %}) covers subscriptions, processing controls, refresh, health, and official sources.
+- [Article Archiving]({% link archiving.md %}) configures article retention, manual cleanup, and nightly cleanup.
 - [Smart Folders]({% link smart-folders.md %}) saves repeatable article selections.
 - [Generated Feeds]({% link generated-feeds.md %}) exposes selections to other RSS clients.
 - [Actions]({% link actions.md %}) automates incoming article state, tags, and score overrides.
