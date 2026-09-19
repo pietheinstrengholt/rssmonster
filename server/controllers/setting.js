@@ -625,7 +625,6 @@ export const getIslandsOverview = async (req, res, _next) => {
         'label',
         'generatedLabel',
         'weight',
-        'populationAudit',
         'archivedInd',
         'archivedAt',
         'lastBehaviorAt',
@@ -639,6 +638,19 @@ export const getIslandsOverview = async (req, res, _next) => {
       ],
       raw: true
     });
+
+    // Keep large audit JSON out of MySQL's sort buffer while preserving island order.
+    const auditRows = islandsRaw.length
+      ? await Island.findAll({
+        attributes: ['id', 'populationAudit'],
+        where: { userId, id: islandsRaw.map(island => island.id) },
+        raw: true
+      })
+      : [];
+    const populationAuditById = new Map(auditRows.map(island => [String(island.id), island.populationAudit]));
+    for (const island of islandsRaw) {
+      island.populationAudit = populationAuditById.get(String(island.id));
+    }
 
     const auditByIslandId = new Map(islandsRaw.map(island => {
       const populationAudit = Array.isArray(island.populationAudit)

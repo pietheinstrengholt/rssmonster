@@ -282,6 +282,30 @@ describe('settings islands overview', () => {
     }
   });
 
+  it('returns large audit histories in island order without including another user', async () => {
+    const user = await User.create({ username: uniqueName('large-audit-owner') });
+    const foreign = await User.create({ username: uniqueName('large-audit-foreign') });
+    const populationAudit = [{ reason: 'x'.repeat(1024 * 1024), articleIds: [] }];
+    const createIsland = (label, weight, archivedInd = false) => Island.create({
+      userId: user.id, label, weight, archivedInd, lastBehaviorAt: new Date(), populationAudit
+    });
+    const archived = await createIsland('Archived', 1, true);
+    const weak = await createIsland('Weak', 0.2);
+    const strong = await createIsland('Strong', 0.8);
+    const newerStrong = await createIsland('Newer strong', 0.8);
+    await Island.create({ userId: foreign.id, label: 'Foreign', weight: 1, populationAudit });
+
+    const res = await request(app).get('/api/setting/islands').set('Authorization', authHeaderFor(user));
+
+    expect(res.status).toBe(200);
+    expect(res.body.islands.map(island => island.id)).toEqual([newerStrong.id, strong.id, weak.id, archived.id]);
+    expect(res.body.totals.islandCount).toBe(3);
+    for (const island of res.body.islands) {
+      expect(island.userId).toBe(user.id);
+      expect(island.populationAudit).toEqual(populationAudit);
+    }
+  });
+
   it('presents expired history as inactive before archival is persisted', async () => {
     const user = await User.create({ username: uniqueName('expired-islands'), role: 'user' });
     const expired = await Island.create({ userId: user.id, label: 'Expired strong preference', weight: 1,
