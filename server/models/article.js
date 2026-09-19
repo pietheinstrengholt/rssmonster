@@ -546,6 +546,10 @@ export default (sequelize) => {
     },
     {
       indexes: [
+        {
+          name: 'articles_user_status_visible_event_idx',
+          fields: ['userId', 'status', 'filteredInd', 'duplicateOfArticleId', 'eventId', 'id']
+        },
         ...(sequelize.getDialect() === 'mysql' ? [{
           name: 'articles_title_contentText_fulltext_idx',
           fields: ['title', 'contentText'],

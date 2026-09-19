@@ -113,6 +113,10 @@ const getTags = async (req, res) => {
 
     const tags = await Article.findAll({
       where: articleWhere,
+      // Read collections benefit from the covering visibility index instead of fetching every owned Article row.
+      ...(status === 'read' && db.sequelize.getDialect() === 'mysql' ? {
+        indexHints: [{ type: Sequelize.IndexHints.USE, values: ['articles_user_status_visible_event_idx'] }]
+      } : {}),
       attributes: [
         [Sequelize.col('tags.name'), 'name'],
         [
