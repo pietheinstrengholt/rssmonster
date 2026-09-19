@@ -26,7 +26,7 @@ const {
 } = db;
 
 let sequence = 0;
-let ownedUserIds = [];
+const ownedUserIds = [];
 
 // Creates a collision-safe fixture label for the shared integration database.
 const unique = prefix => `${prefix}-${Date.now()}-${++sequence}`;
@@ -137,16 +137,39 @@ const createDelayedLeaseExecution = feed => {
   return { execution, ownershipCheckStarted, releaseOwnershipCheck };
 };
 
+const cleanupOwnedUsers = async () => {
+  const userIds = ownedUserIds.splice(0);
+  if (userIds.length === 0) return;
+  await sequelize.transaction(async transaction => {
+    // Keep parent users present while duplicate/event cascades update remaining Articles.
+    await Article.destroy({ where: { userId: { [Op.in]: userIds } }, transaction });
+    await User.destroy({ where: { id: { [Op.in]: userIds } }, transaction });
+  });
+};
+
 describe('duplicate feed reconciliation integration', () => {
   beforeAll(async () => {
     await sequelize.authenticate();
   }, 50_000);
 
-  afterEach(async () => {
-    if (ownedUserIds.length > 0) {
-      await User.destroy({ where: { id: { [Op.in]: ownedUserIds } } });
-    }
-    ownedUserIds = [];
+  afterEach(cleanupOwnedUsers);
+
+  it('cleans up users with duplicate and event-linked Articles', async () => {
+    const owner = await createOwner();
+    const { stable } = await createFeedPair(owner);
+    const canonical = await createArticle(stable, unique('cleanup-canonical'), { status: 'read' });
+    const duplicate = await createArticle(stable, unique('cleanup-duplicate'), {
+      status: 'unread', duplicateOfArticleId: canonical.id
+    });
+    const event = await Event.create({ userId: owner.user.id, representativeArticleId: canonical.id });
+    await Article.update({ eventId: event.id }, { where: { id: [canonical.id, duplicate.id] } });
+
+    await cleanupOwnedUsers();
+
+    expect(await User.findByPk(owner.user.id)).toBeNull();
+    expect(await Article.count({ where: { userId: owner.user.id } })).toBe(0);
+    expect(await Event.findByPk(event.id)).toBeNull();
+    expect(await Feed.count({ where: { userId: owner.user.id } })).toBe(0);
   });
 
   it('does not carry dissolved assignments into later overlapping Article groups', async () => {

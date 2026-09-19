@@ -49,7 +49,13 @@ describe('elapsed-time personalization refresh', () => {
   beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); advance(0); });
   afterEach(async () => {
     vi.useRealTimers(); vi.restoreAllMocks();
-    for (const user of ownedUsers.splice(0)) await user.destroy();
+    const userIds = ownedUsers.splice(0).map(user => user.id);
+    if (userIds.length === 0) return;
+    await db.sequelize.transaction(async transaction => {
+      // Keep parent users present while duplicate/event cascades update remaining Articles.
+      await db.Article.destroy({ where: { userId: userIds }, transaction });
+      await db.User.destroy({ where: { id: userIds }, transaction });
+    });
   });
 
   it('decays idle preferences without centroid or clock drift and clears scores when memory archives', async () => {
