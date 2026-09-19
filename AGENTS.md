@@ -155,6 +155,10 @@ Never commit secrets, credentials, tokens, or environment-specific private value
 
 When asked to audit, investigate, review, or analyze, do not modify code unless implementation is also requested. Separate confirmed issues from suggestions and support conclusions with repository evidence.
 
+## MySQL performance
+
+For MySQL/Sequelize query-performance investigations, use the `mysql-performance` skill. You may inspect the local MySQL slow-query and error logs and query the local development Performance Schema without asking the user to paste diagnostic output.
+
 ## Final Standard
 
 Prefer: `inspect before assuming · reuse before creating · extend before replacing · fix before refactoring · bounded before unbounded`
