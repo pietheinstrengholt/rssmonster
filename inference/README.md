@@ -66,7 +66,8 @@ examples. Old provider names and global OpenAI settings remain deprecated
 aliases for one release. Explicit compatible providers require endpoints and
 keys at startup. Legacy `openai` keeps its historical model settings and default
 OpenAI URL. Startup validates configuration before loading any selected models;
-external endpoints are not probed. Leave assistant settings and legacy global
+external endpoints are not probed during normal startup. Development diagnostics
+perform the generation handshake described below. Leave assistant settings and legacy global
 credentials unset for local inference without chat.
 
 ## Island display labels
@@ -157,6 +158,9 @@ cp .env.example .env
 
 ## Run
 
+For a Windows-hosted Ollama generation provider, LAN access, and connection tests,
+see [Hosting Ollama and testing RSSMonster generation](../docs/ollama.md).
+
 Start with automatic restarts during development:
 
 ```bash
@@ -164,6 +168,12 @@ npm run dev
 ```
 
 Development mode enables content-safe inference diagnostics. Startup logs each
+remote generation handshake result: the configured endpoint's `/models` response
+must list `GENERATION_MODEL` for success. The check uses the configured credentials,
+times out after five seconds, and does not retry or block startup. Failures,
+including a missing model, produce a warning. This verifies connectivity and model
+availability, not successful generation. It also runs with `INFERENCE_DEBUG=true`
+and is skipped for local generation providers. Startup logs each
 selected on-device model with `loaded:true`, followed by a message that crawling
 can start. The service begins listening before selected models initialize, so
 health checks receive an HTTP response throughout startup. Inference endpoints

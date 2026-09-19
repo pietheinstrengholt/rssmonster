@@ -566,6 +566,9 @@ remote capabilities have their own endpoint and credentials.
 
 ## OpenAI-compatible gateways and Ollama
 
+For a Windows host and LAN development setup, see
+[Hosting Ollama and testing RSSMonster generation](ollama.md).
+
 Ollama and LM Studio run as separate services. A container's `127.0.0.1` refers
 to that container. Use reachable Docker service names on a shared network, or
 `host.docker.internal` where supported for services running on the host. On
