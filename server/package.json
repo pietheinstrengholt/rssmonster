@@ -57,7 +57,7 @@
   "license": "MIT",
   "devDependencies": {
     "@vitest/coverage-v8": "^5.0.1",
-    "eslint": "^10.10.0",
+    "eslint": "^10.11.0",
     "globals": "^17.12.0",
     "supertest": "^7.2.2",
     "vitest": "^5.0.1"
@@ -68,7 +68,7 @@
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
-    "dotenv": "^18.0.0",
+    "dotenv": "^18.0.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
     "feedsmith": "^3.0.0",
