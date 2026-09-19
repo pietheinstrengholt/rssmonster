@@ -1,5 +1,6 @@
 // inference/src/classifications/articleClassificationService.js
 import { createCompatibleClient } from '../providers/openaiCompatible.js';
+import { createStructuredCompletion } from '../providers/structuredCompletion.js';
 import {
   getArticleScoringConfig,
   getGenerationConfig,
@@ -89,13 +90,16 @@ const bucketScore = (value, fallback = 70) => {
     );
 };
 
-const callOpenAI = ({ prompt, maxCompletionTokens, rateLimitDelayMs, operation, model, requestClient = client }) => {
+const callOpenAI = ({
+  prompt, maxCompletionTokens, rateLimitDelayMs, operation, model,
+  requestClient = client, capability = 'GENERATION', reasoningEffort
+}) => {
   const result = openAIQueue.then(async () => {
     try {
       if (rateLimitDelay > 0) {
         await new Promise(resolve => setTimeout(resolve, rateLimitDelay));
       }
-      const response = await requestClient.chat.completions.create({
+      const raw = await createStructuredCompletion(requestClient, {
         model,
         messages: [
           { role: 'system', content: 'You produce strict JSON only.' },
@@ -103,8 +107,8 @@ const callOpenAI = ({ prompt, maxCompletionTokens, rateLimitDelayMs, operation, 
         ],
         ...(omitTemperature ? {} : { temperature: 0.2 }),
         max_completion_tokens: maxCompletionTokens
-      });
-      return parseJsonObject(response.choices?.[0]?.message?.content || '');
+      }, { capability, operation, reasoningEffort });
+      return parseJsonObject(raw);
     } catch (error) {
       if (error?.message?.includes('429') || error?.message?.toLowerCase().includes('rate limit')) {
         rateLimitDelay = rateLimitDelayMs;
@@ -153,7 +157,8 @@ const callGenerationProvider = ({
     maxCompletionTokens,
     rateLimitDelayMs,
     operation,
-    model: generationConfig.articleModel
+    model: generationConfig.articleModel,
+    reasoningEffort: generationConfig.reasoningEffort
   });
 };
 
@@ -409,7 +414,9 @@ export async function scoreArticle({
     rateLimitDelayMs,
     operation: 'scoring',
     model: articleScoringConfig.modelId,
-    requestClient: scoringClient
+    requestClient: scoringClient,
+    capability: 'CLASSIFICATION',
+    reasoningEffort: articleScoringConfig.reasoningEffort
   });
   const scores = {
     advertisementScore: bucketScore(parsed.advertisementScore),

@@ -524,6 +524,47 @@ rejects explicit temperature values; this existing shared compatibility switch
 is preserved. Assistant reasoning remains an optional server-side
 `ASSISTANT_REASONING_EFFORT` setting.
 
+#### Optional reasoning controls for structured output
+
+Thinking models can consume a short completion budget before producing their JSON
+answer. For compatible backends that support per-request reasoning control, set
+these independently in `inference/.env` (or the root `.env` with MySQL Compose):
+
+```env
+GENERATION_REASONING_EFFORT=none
+CLASSIFICATION_REASONING_EFFORT=none
+```
+
+Both settings are optional: absent, empty, or whitespace-only values omit the
+`reasoning_effort` field, preserving the backend default. Supported configuration
+values are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`; the
+backend/model determines which values actually work. Invalid nonblank values
+fail configuration validation without logging the supplied value. Local providers
+ignore these settings. Restart inference after changing its environment.
+
+Generation applies to summaries, tags, semantic labels, Smart Folder suggestions,
+and feed rediscovery, including configured generation workload model overrides.
+Classification applies only to remote advertisement, sentiment, and quality
+scoring. No capability borrows the other's reasoning setting, and neither changes
+assistant behavior or a shared model's global preset.
+
+A structured completion ending with `finish_reason: "length"` fails before JSON
+parsing with `INFERENCE_COMPLETION_BUDGET_EXHAUSTED`. The inference warning includes
+the operation, request ID, configured token budget, reported completion tokens,
+and reasoning-presence flag. Both compatible response fields `reasoning_content`
+and `reasoning` are recognized without exposing their contents. Truncated output
+no longer becomes a successful empty result or default score. Valid completed
+null/empty domain results keep their existing semantics. HTTP error envelopes
+and existing job retry policies are unchanged; no automatic budget escalation or
+fallback reasoning request is added.
+
+Token-limit compatibility is a separate concern: article requests currently use
+`max_completion_tokens`, while labels, folder recommendations, and feed rediscovery
+use `max_tokens`. In a local Ollama 0.34.2/Qwen3 0.6B test, a request with
+`max_completion_tokens: 100` returned 277 completion tokens. Do not assume every
+compatible backend enforces both fields. Verify returned usage for your backend;
+this reasoning-control change does not switch token parameters or increase limits.
+
 ### D. Legacy configuration migration
 
 Aliases remain available for one release, with a startup deprecation warning

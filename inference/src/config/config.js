@@ -73,6 +73,15 @@ export const getCompatibleClientOptions = (capability, env = process.env) => {
 export const getOpenAIOmitTemperature = (env = process.env) =>
   String(env.OPENAI_OMIT_TEMPERATURE || '').toLowerCase() === 'true';
 
+const getReasoningEffort = (capability, env) => {
+  const value = env[`${capability}_REASONING_EFFORT`]?.trim();
+  if (!value) return undefined;
+  if (!['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'].includes(value)) {
+    throw new Error(`${capability}_REASONING_EFFORT must be none, minimal, low, medium, high, xhigh, or max`);
+  }
+  return value;
+};
+
 export const getEmbeddingConfig = (env = process.env) => {
   const provider = getProvider('EMBEDDING', env);
   const maxBatchSize = Number(env.EMBEDDING_MAX_BATCH_SIZE ?? DEFAULT_EMBEDDING_MAX_BATCH_SIZE);
@@ -122,6 +131,7 @@ export const getEmbeddingConfig = (env = process.env) => {
 
 export const getGenerationConfig = (env = process.env) => {
   const provider = getProvider('GENERATION', env);
+  const reasoningEffort = provider === 'openai-compatible' ? getReasoningEffort('GENERATION', env) : undefined;
   const model = getProviderSetting('GENERATION', env) === 'openai' ? undefined : env.GENERATION_MODEL;
   const remoteDefault = env.GENERATION_PROVIDER === 'openai-compatible'
     ? env.OPENAI_MODEL_CRAWL || DEFAULT_OPENAI_CRAWL_MODEL : undefined;
@@ -138,6 +148,7 @@ export const getGenerationConfig = (env = process.env) => {
     modelId: provider === 'local'
       ? env.GENERATION_MODEL || DEFAULT_GENERATION_MODEL
       : model || env.OPENAI_MODEL_CRAWL || DEFAULT_OPENAI_CRAWL_MODEL,
+    ...(reasoningEffort ? { reasoningEffort } : {}),
     dtype: provider === 'local'
       ? env.GENERATION_DTYPE || DEFAULT_GENERATION_DTYPE
       : undefined,
@@ -160,6 +171,7 @@ export const getAssistantConfig = (env = process.env) => {
 
 export const getArticleScoringConfig = (env = process.env) => {
   const provider = getProvider('CLASSIFICATION', env);
+  const reasoningEffort = provider === 'openai-compatible' ? getReasoningEffort('CLASSIFICATION', env) : undefined;
   const queueMaxPending = Number(
     env.MODERNBERT_QUEUE_MAX_PENDING ?? DEFAULT_MODERNBERT_QUEUE_MAX_PENDING
   );
@@ -173,6 +185,7 @@ export const getArticleScoringConfig = (env = process.env) => {
     modelId: provider === 'local'
       ? env.CLASSIFICATION_MODEL || env.MODERNBERT_MODEL || DEFAULT_MODERNBERT_MODEL
       : env.CLASSIFICATION_MODEL || env.OPENAI_MODEL_CRAWL || DEFAULT_OPENAI_CRAWL_MODEL,
+    ...(reasoningEffort ? { reasoningEffort } : {}),
     dtype: provider === 'local'
       ? env.MODERNBERT_DTYPE || DEFAULT_MODERNBERT_DTYPE
       : undefined

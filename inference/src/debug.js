@@ -3,6 +3,7 @@ export const isInferenceDebugEnabled = (environment = process.env) =>
 
 const SAFE_ERROR_NAMES = new Set([
   'AbortError',
+  'CompletionBudgetError',
   'Error',
   'InferenceQueueAbortError',
   'InferenceQueueFullError',
@@ -18,6 +19,7 @@ const SAFE_ERROR_CODES = new Set([
   'ENETUNREACH',
   'ETIMEDOUT',
   'INFERENCE_QUEUE_ABORTED',
+  'INFERENCE_COMPLETION_BUDGET_EXHAUSTED',
   'INFERENCE_QUEUE_FULL'
 ]);
 const SAFE_STARTUP_ERROR_CODES = new Set([

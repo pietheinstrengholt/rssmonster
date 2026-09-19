@@ -237,6 +237,36 @@ while struggling with structured output or producing weak labels.
 
 ## Troubleshooting
 
+### Thinking models and short JSON answers
+
+If the handshake succeeds but structured generation returns no answer, the model
+may be using the completion budget on reasoning. For a backend/model that supports
+it, add this optional setting to `inference/.env` and restart inference:
+
+```env
+GENERATION_REASONING_EFFORT=none
+```
+
+If remote classification scoring also uses a thinking model, independently set
+`CLASSIFICATION_REASONING_EFFORT=none`. Local ModernBERT scoring is unaffected.
+Leaving either variable unset or blank sends no reasoning option. These settings
+apply to individual RSSMonster requests, not the Ollama model's global settings
+or assistant requests.
+
+Testing Ollama 0.34.2 with Qwen3 0.6B and RSSMonster's 96-token label prompt
+produced an empty answer with `finish_reason: "length"` by default, and a valid
+label using 8 tokens with `reasoning_effort: "none"`. Backend/model support varies.
+The direct chat-completion tests above can also include `"reasoning_effort":"none"`
+in their JSON body to compare behavior before configuring RSSMonster.
+
+Inference now logs `INFERENCE_COMPLETION_BUDGET_EXHAUSTED` for truncated structured
+completions instead of treating them as empty results or default scores. Check
+the reported token counts and reasoning-presence flag; reasoning text is not
+logged. See [optional reasoning controls](inference.md#optional-reasoning-controls-for-structured-output)
+for scope, accepted values, and the separate token-limit compatibility limitation.
+
+### Connection and model checks
+
 | Symptom | What to check |
 | --- | --- |
 | Connection refused | Ollama is running, the IP and port are correct, and the listener was restarted after changing `OLLAMA_HOST`. |

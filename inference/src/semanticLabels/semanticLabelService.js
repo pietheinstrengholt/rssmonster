@@ -1,4 +1,5 @@
 import { createCompatibleClient } from '../providers/openaiCompatible.js';
+import { createStructuredCompletion } from '../providers/structuredCompletion.js';
 import {
   getGenerationConfig,
   getCompatibleApiKey,
@@ -123,7 +124,7 @@ const requestGeneration = async (prompt, context = {}) => {
   }
 
   if (!client) throw new Error('OpenAI API key not configured');
-  const response = await client.chat.completions.create({
+  return createStructuredCompletion(client, {
     model: generationConfig.articleModel,
     messages: [
       {
@@ -134,8 +135,7 @@ const requestGeneration = async (prompt, context = {}) => {
     ],
     ...(omitTemperature ? {} : { temperature: 0 }),
     max_tokens: MAX_GENERATION_TOKENS
-  });
-  return response.choices?.[0]?.message?.content || '';
+  }, { operation: 'semantic-labels', reasoningEffort: generationConfig.reasoningEffort });
 };
 
 export async function generateSemanticLabels(input, requestContext = {}) {

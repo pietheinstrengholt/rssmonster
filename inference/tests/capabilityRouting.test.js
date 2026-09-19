@@ -39,14 +39,20 @@ beforeEach(() => {
   }
   vi.stubEnv('EMBEDDING_DIMENSIONS', '2');
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.restoreAllMocks();
+});
 
 const callsFor = capability => mocks.clients
   .filter(client => client.options.baseURL === `http://${capability.toLowerCase()}.example/v1`)
   .flatMap(client => client.chat.completions.create.mock.calls.map(([body]) => body));
 
 describe('independent compatible capability routing', () => {
-  it('routes every generation workload, scoring, embeddings, and assistant to their own endpoint and model', async () => {
+  it.each([['', ''], ['none', 'low'], ['none', ''], ['', 'none']])(
+    'routes capabilities independently with generation effort=%s and scoring effort=%s', async (generationEffort, classificationEffort) => {
+    vi.stubEnv('GENERATION_REASONING_EFFORT', generationEffort);
+    vi.stubEnv('CLASSIFICATION_REASONING_EFFORT', classificationEffort);
     const { default: analyze } = await import('../src/classifications/articleClassificationService.js');
     const { getSmartFolderRecommendations } = await import('../src/smartFolderRecommendations/smartFolderRecommendationService.js');
     const { rediscoverRssUrl } = await import('../src/feedRediscovery/feedRediscoveryService.js');
@@ -65,6 +71,12 @@ describe('independent compatible capability routing', () => {
     expect(callsFor('GENERATION').every(body => body.model === 'GENERATION-model')).toBe(true);
     expect(callsFor('CLASSIFICATION')).toHaveLength(1);
     expect(callsFor('CLASSIFICATION')[0].model).toBe('CLASSIFICATION-model');
+    for (const [capability, effort] of [['GENERATION', generationEffort], ['CLASSIFICATION', classificationEffort]]) {
+      for (const body of callsFor(capability)) {
+        if (effort) expect(body.reasoning_effort).toBe(effort);
+        else expect(body).not.toHaveProperty('reasoning_effort');
+      }
+    }
     for (const client of mocks.clients) {
       const capability = new URL(client.options.baseURL).hostname.split('.')[0].toUpperCase();
       expect(client.options.apiKey).toBe(`${capability}-secret`);
@@ -113,5 +125,53 @@ describe('independent compatible capability routing', () => {
       expect(response.headers['x-request-id']).toBe('independent-provider-failure');
       expect(JSON.stringify([...output.error.mock.calls, ...errorSpy.mock.calls])).not.toMatch(/secret|prompt|private/);
     } finally { errorSpy.mockRestore(); }
+  });
+});
+
+
+describe('truncated structured responses', () => {
+  it('correlates the budget diagnostic with the failed HTTP request', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const logger = { error: vi.fn(), log: vi.fn() };
+    const { createApp } = await import('../src/app.js');
+    const app = createApp({ logger });
+    for (const client of mocks.clients) {
+      client.chat.completions.create.mockResolvedValue({
+        choices: [{ finish_reason: 'length', message: { content: '', reasoning: 'private trace' } }],
+        usage: { completion_tokens: 96 }
+      });
+    }
+    const response = await request(app).post('/api/semantic-labels')
+      .set('X-Request-ID', 'structured-budget-test').send({ context: 'private input', island: true });
+    expect(response.status).toBe(500);
+    expect(response.body).toEqual({ error: 'Semantic labeling failed' });
+    expect(warn.mock.calls[0][1]).toMatchObject({
+      code: 'INFERENCE_COMPLETION_BUDGET_EXHAUSTED', requestId: 'structured-budget-test',
+      operation: 'semantic-labels', completionTokens: 96, hasReasoning: true
+    });
+    expect(logger.error.mock.calls[0][1]).toMatchObject({ code: 'INFERENCE_COMPLETION_BUDGET_EXHAUSTED' });
+    expect(JSON.stringify([...warn.mock.calls, ...logger.error.mock.calls])).not.toContain('private');
+  });
+
+  it.each([
+    ['semanticLabels/semanticLabelService.js', 'generateSemanticLabels', { context: 'Test evidence', island: true }],
+    ['classifications/articleClassificationService.js', 'generateBulletSummary', { text: 'Test', categories: [] }],
+    ['classifications/articleClassificationService.js', 'generateTags', { text: 'Test', categories: [] }],
+    ['classifications/articleClassificationService.js', 'scoreArticle', { text: 'Test', categories: [] }],
+    ['smartFolderRecommendations/smartFolderRecommendationService.js', 'getSmartFolderRecommendations', { insights: {} }],
+    ['feedRediscovery/feedRediscoveryService.js', 'rediscoverRssUrl', { websiteUrl: 'https://example.com' }]
+  ])('%s rejects a reasoning-only completion instead of returning fallback values', async (path, operation, input) => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const service = await import(/* @vite-ignore */ `../src/${path}`);
+    for (const client of mocks.clients) {
+      client.chat.completions.create.mockResolvedValue({
+        choices: [{ finish_reason: 'length', message: { content: '', reasoning_content: 'private reasoning' } }]
+      });
+    }
+    await expect(service[operation](input)).rejects.toMatchObject({ code: 'INFERENCE_COMPLETION_BUDGET_EXHAUSTED' });
+    const diagnostic = console.warn.mock.calls.find(([message]) => message.includes('Structured completion'));
+    expect(diagnostic[1]).toMatchObject({ hasReasoning: true, finishReason: 'length' });
+    expect(JSON.stringify(console.warn.mock.calls)).not.toContain('private reasoning');
   });
 });

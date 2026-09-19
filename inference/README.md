@@ -60,6 +60,25 @@ feed rediscovery, and semantic labels. Optional remote workload overrides are
 `OPENAI_OMIT_TEMPERATURE` remains the shared compatibility switch for generated
 text and remote scores; assistant reasoning remains configured in server/.env.
 
+`GENERATION_REASONING_EFFORT` and `CLASSIFICATION_REASONING_EFFORT` are optional
+per-request controls for compatible backends. Unset or blank sends no
+`reasoning_effort` field. Set `none` only when the backend/model supports disabling
+reasoning; other accepted values are `minimal`, `low`, `medium`, `high`, `xhigh`,
+and `max`, with support determined by the backend. Local providers ignore these
+settings. Generation controls summaries, tags, labels, folder recommendations,
+and feed rediscovery; classification controls remote article scores independently.
+Neither setting changes assistant behavior or the backend's model-wide settings.
+
+Structured completions with `finish_reason: "length"` now fail with
+`INFERENCE_COMPLETION_BUDGET_EXHAUSTED` before parsing, including partial answers.
+The inference log records operation, request ID, finish reason, token budget,
+reported completion tokens, and whether `reasoning_content` or `reasoning` was
+present. Prompts, generated content, and reasoning text are never logged. This
+prevents truncated responses from becoming null labels, empty recommendations,
+or default article scores. Completed answers containing nulls or empty arrays
+retain their existing domain behavior. Existing HTTP error envelopes and job retry
+policies remain in place; no larger-budget or reasoning-setting retry is added.
+
 See [the inference configuration guide](../docs/inference.md#capability-configuration)
 for fully local, mixed Ollama/LM Studio/OpenAI, fully external, and migration
 examples. Old provider names and global OpenAI settings remain deprecated

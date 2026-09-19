@@ -1,6 +1,7 @@
 // Generates personalized Smart Folder suggestions inside the inference service.
 // It sanitizes model output into strict JSON before returning suggestions to callers.
 import { createCompatibleClient } from '../providers/openaiCompatible.js';
+import { createStructuredCompletion } from '../providers/structuredCompletion.js';
 import {
   getGenerationConfig,
   getCompatibleApiKey,
@@ -196,7 +197,7 @@ OUTPUT (STRICT JSON ONLY)
       signal: context.signal,
       operation: 'smart-folder-recommendations'
     })
-    : (await client.chat.completions.create({
+    : await createStructuredCompletion(client, {
       model: generationConfig.smartFolderModel,
       messages: [
         { role: 'system', content: 'Return ONLY valid JSON. No markdown. No prose.' },
@@ -204,7 +205,7 @@ OUTPUT (STRICT JSON ONLY)
       ],
       ...(omitTemperature ? {} : { temperature: 0.2 }),
       max_tokens: 300
-    })).choices?.[0]?.message?.content;
+    }, { operation: 'smart-folder-recommendations', reasoningEffort: generationConfig.reasoningEffort });
   // Derives the parsed through safe json parse while performing get smart folder recommendations.
   const parsed = safeJsonParse(raw);
 

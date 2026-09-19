@@ -140,3 +140,24 @@ describe('capability configuration', () => {
   });
 
 });
+
+
+describe('optional structured-output reasoning configuration', () => {
+  it.each([
+    ['GENERATION', getGenerationConfig], ['CLASSIFICATION', getArticleScoringConfig]
+  ])('validates optional %s reasoning effort without affecting local providers', (capability, getConfig) => {
+    for (const value of [undefined, '', '   ']) {
+      expect(getConfig({ ...remote(capability), [`${capability}_REASONING_EFFORT`]: value }))
+        .not.toHaveProperty('reasoningEffort');
+    }
+    for (const value of ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']) {
+      expect(getConfig({ ...remote(capability), [`${capability}_REASONING_EFFORT`]: ` ${value} ` }))
+        .toMatchObject({ reasoningEffort: value });
+    }
+    expect(() => validateProviderConfiguration({
+      ...local, ...remote(capability), [`${capability}_REASONING_EFFORT`]: 'private-invalid-value'
+    }, logger())).toThrow(`${capability}_REASONING_EFFORT must be none`);
+    expect(getConfig({ ...local, [`${capability}_REASONING_EFFORT`]: 'private-invalid-value' }))
+      .not.toHaveProperty('reasoningEffort');
+  });
+});

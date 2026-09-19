@@ -1,6 +1,7 @@
 // Uses OpenAI to suggest a replacement RSS or Atom URL when an existing feed stops working.
 // The response is expected to be strict JSON with a URL, confidence score, and user-facing reason.
 import { createCompatibleClient } from '../providers/openaiCompatible.js';
+import { createStructuredCompletion } from '../providers/structuredCompletion.js';
 import {
   getGenerationConfig,
   getCompatibleApiKey,
@@ -85,7 +86,7 @@ export async function rediscoverRssUrl({
       signal: context.signal,
       operation: 'feed-rediscovery'
     })
-    : (await client.chat.completions.create({
+    : await createStructuredCompletion(client, {
       model: generationConfig.feedRediscoveryModel,
       messages: [
         { role: 'system', content: 'You produce strict JSON only.' },
@@ -93,7 +94,7 @@ export async function rediscoverRssUrl({
       ],
       ...(omitTemperature ? {} : { temperature: 0.2 }),
       max_tokens: 300
-    })).choices?.[0]?.message?.content;
+    }, { operation: 'feed-rediscovery', reasoningEffort: generationConfig.reasoningEffort });
   try {
     const result = JSON.parse(raw);
     logInferenceDebug(
