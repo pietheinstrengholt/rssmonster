@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import { pathToFileURL } from 'node:url';
 import { getConfig } from './config/config.js';
 import { getSafeErrorDetails, getSafeStartupErrorDetails } from './debug.js';
-import { checkGenerationHandshake } from './generationHandshake.js';
+import { checkAssistantHandshake, checkGenerationHandshake } from './providerHandshake.js';
 
 dotenv.config({ quiet: true });
 
@@ -55,6 +55,7 @@ export const startServer = async () => {
   server.removeListener?.('error', rejectListening);
   app.locals.readiness.announce();
   void checkGenerationHandshake();
+  void checkAssistantHandshake();
 
   try {
     await initializeConfiguredModels({ embeddingService: app.locals.embeddingService });

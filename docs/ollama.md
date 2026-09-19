@@ -181,6 +181,34 @@ Connection, HTTP, and timeout failures log safe error metadata. The handshake
 also runs when starting with `INFERENCE_DEBUG=true` outside `npm run dev`, and is
 skipped for `GENERATION_PROVIDER=local`.
 
+### Optional assistant handshake
+
+To use the same Ollama host for the assistant, configure these settings separately
+in `inference/.env`, then restart inference:
+
+```env
+ASSISTANT_PROVIDER=openai-compatible
+ASSISTANT_BASE_URL=http://192.168.0.20:11434/v1
+ASSISTANT_MODEL=qwen3:0.6b
+ASSISTANT_API_KEY=ollama
+```
+
+With development diagnostics enabled, startup also logs:
+
+```text
+[INFERENCE] Assistant handshake checking provider=openai-compatible
+[INFERENCE] Assistant handshake succeeded: endpoint responding, model="qwen3:0.6b" available (generation not tested)
+```
+
+This check uses the assistant's own endpoint, credentials, and model. It follows
+the same five-second timeout, no-retry, and non-blocking behavior as the generation
+handshake, with `Assistant handshake failed` warnings on failure. An unconfigured
+assistant is skipped. Existing legacy OpenAI credential/endpoint fallbacks still
+apply. A successful check does not verify tool calling, streaming, or response
+quality; it only confirms that the endpoint lists the configured model.
+Server-side assistant permissions are configured separately; see
+[Assistant and MCP](assistant.md).
+
 ## 6. Test generation through RSSMonster inference
 
 Once the configured local models have loaded, check readiness and submit a small
