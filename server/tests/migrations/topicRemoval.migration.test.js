@@ -10,6 +10,7 @@ import { up as addInterestScoredAt } from '../../migrations/20260915001000-add-i
 import { up as addPersonalizationRefreshedAt } from '../../migrations/20260915002000-add-personalization-refreshed-at.mjs';
 import { up as addAnalysisProvenance } from '../../migrations/20260917000000-add-article-analysis-provenance.mjs';
 import { up as addIslandBehaviorTime } from '../../migrations/20260917001000-add-island-behavior-time.mjs';
+import { up as addIslandSupport } from '../../migrations/20260919001000-add-island-support-article-ids.mjs';
 
 import { resetDatabase } from '../helpers/resetDb.js';
 
@@ -48,6 +49,7 @@ async function installHistoricalSchema() {
   await addPersonalizationRefreshedAt(qi, db.Sequelize);
   await addAnalysisProvenance(qi, db.Sequelize);
   await addIslandBehaviorTime(qi, db.Sequelize);
+  await addIslandSupport(qi, db.Sequelize);
 }
 
 const assertRemoved = async () => {
