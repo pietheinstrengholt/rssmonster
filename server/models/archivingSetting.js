@@ -37,7 +37,7 @@ export default (sequelize) => sequelize.define(
     maximumArticleAgeUnit: {
       type: DataTypes.ENUM('days', 'weeks', 'months', 'years'),
       allowNull: false,
-      defaultValue: 'days',
+      defaultValue: 'years',
       validate: { isIn: [['days', 'weeks', 'months', 'years']] }
     },
     // Null leaves the article count unlimited until the user configures a cap.

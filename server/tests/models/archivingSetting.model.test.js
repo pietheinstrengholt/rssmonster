@@ -15,7 +15,7 @@ describe('ArchivingSetting', () => {
       neverDeleteFavorites: true,
       neverDeleteClickedArticles: false,
       maximumArticleAge: 7,
-      maximumArticleAgeUnit: 'days',
+      maximumArticleAgeUnit: 'years',
       maximumArticlesPerFeed: null,
       maximumArticlesTotal: null
     });

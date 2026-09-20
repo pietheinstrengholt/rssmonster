@@ -7,9 +7,9 @@ import { articleRetentionCutoff } from '../../services/articleCleanup.js';
 
 const { User, Category, Feed, Article, ArchivingSetting, Event } = db;
 let app;
-const old = new Date('2020-01-01T12:00:00Z');
+const old = new Date('2010-01-01T12:00:00Z');
 const defaults = { neverDeleteUnread: true, neverDeleteFavorites: true, neverDeleteClicked: false,
-  maximumAgeValue: 7, maximumAgeUnit: 'days', maximumArticlesPerFeed: null, maximumArticlesTotal: null };
+  maximumAgeValue: 7, maximumAgeUnit: 'years', maximumArticlesPerFeed: null, maximumArticlesTotal: null };
 const auth = user => `Bearer ${jwt.sign({ userId: user.id, username: user.username }, getJwtSecret())}`;
 async function graph() {
   const user = await User.create({ username: `archive-${Date.now()}-${Math.random()}`, password: 'test-password' });
@@ -81,12 +81,13 @@ describe('archiving settings and cleanup', () => {
     expect(await remaining(owner)).toEqual([kept.at(-1)]);
   });
 
-  it('uses defaults when no settings row exists', async () => {
+  it('keeps articles younger than seven years when no settings row exists', async () => {
     const owner = await graph();
     await article(owner);
     const unread = await article(owner, { status: 'unread' });
+    const recent = await article(owner, { createdAt: new Date(Date.now() - 30 * 86400000) });
     expect((await cleanup(owner)).body.deletedCount).toBe(1);
-    expect(await remaining(owner)).toEqual([unread.id]);
+    expect(await remaining(owner)).toEqual([unread.id, recent.id]);
   });
 
   it('deletes oldest first only above a per-feed limit', async () => {

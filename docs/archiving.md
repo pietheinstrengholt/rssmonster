@@ -36,7 +36,7 @@ If protected articles alone exceed a limit, the retained count stays above it.
 
 | Setting | Accepted values | Default |
 | --- | --- | --- |
-| Maximum age of articles to keep | A positive whole number and Days, Weeks, Months, or Years. | 7 days |
+| Maximum age of articles to keep | A positive whole number and Days, Weeks, Months, or Years. | 7 years |
 | Maximum number of articles to keep per feed | 1–1,000,000; leave blank for unlimited. | Unlimited |
 | Maximum number of articles to keep in total | 1–1,000,000,000; leave blank for unlimited. | Unlimited |
 

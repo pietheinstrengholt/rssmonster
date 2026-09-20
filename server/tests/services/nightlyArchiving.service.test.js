@@ -2,14 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
 import { runNightlyArchiving } from '../../services/nightlyArchiving.js';
 
-async function fixture(settings) {
+async function fixture(settings, recentRead = false) {
   const user = await db.User.create({ username: `nightly-${Date.now()}-${Math.random()}`, password: 'test-password' });
   const category = await db.Category.create({ userId: user.id, name: 'Nightly' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Nightly', url: `https://example.com/${user.id}` });
   if (settings) await db.ArchivingSetting.create({ userId: user.id, ...settings });
   const articles = await db.Article.bulkCreate(['read', 'unread', 'read'].map((status, index) => ({
     userId: user.id, feedId: feed.id, title: `Article ${index}`, url: `https://example.com/${user.id}/${index}`,
-    status, createdAt: new Date('2020-01-01T12:00:00Z')
+    status, createdAt: recentRead && index === 2 ? new Date(Date.now() - 30 * 86400000) : new Date('2010-01-01T12:00:00Z')
   })));
   return { user, articles };
 }
@@ -20,7 +20,7 @@ describe('nightly per-user archiving', () => {
   it('uses each user’s settings, applies defaults, logs counts including zero, and continues after user failures', async () => {
     const failed = await fixture({ neverDeleteUnreadArticles: false });
     const capped = await fixture({ neverDeleteUnreadArticles: false, maximumArticlesTotal: 1 });
-    const defaulted = await fixture();
+    const defaulted = await fixture(undefined, true);
     const unchanged = await fixture({ maximumArticlesTotal: 10 });
     const logger = { log: vi.fn(), error: vi.fn() };
     const originalDestroy = db.Article.destroy;
@@ -33,11 +33,11 @@ describe('nightly per-user archiving', () => {
       await runNightlyArchiving({ logger });
       expect(await remaining(failed.user.id)).toBe(3);
       expect(await remaining(capped.user.id)).toBe(1);
-      expect(await remaining(defaulted.user.id)).toBe(1);
+      expect(await remaining(defaulted.user.id)).toBe(2);
       expect(await remaining(unchanged.user.id)).toBe(3);
       expect(logger.error).toHaveBeenCalledWith(`[Archiving] Failed user=${failed.user.id}:`, failure);
       expect(logger.log).toHaveBeenCalledWith(`[Archiving] Completed user=${capped.user.id}: removed 2 articles.`);
-      expect(logger.log).toHaveBeenCalledWith(`[Archiving] Completed user=${defaulted.user.id}: removed 2 articles.`);
+      expect(logger.log).toHaveBeenCalledWith(`[Archiving] Completed user=${defaulted.user.id}: removed 1 articles.`);
       expect(logger.log).toHaveBeenCalledWith(`[Archiving] Completed user=${unchanged.user.id}: removed 0 articles.`);
     } finally { destroy.mockRestore(); }
   });
