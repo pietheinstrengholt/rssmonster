@@ -89,6 +89,7 @@ describe('Event eligibility maintenance', () => {
     else {
       const res = response();
       if (mode === 'cleanup') {
+        await db.ArchivingSetting.create({ userId: user.id, maximumArticleAge: 7, maximumArticleAgeUnit: 'days' });
         await articles[0].update({ status: 'read' });
         await cleanupController.cleanup({ userData: { userId: user.id } }, res);
         expect(res.status).toHaveBeenCalledWith(200);
@@ -117,6 +118,7 @@ describe('Event eligibility maintenance', () => {
 
   it('keeps membership when an Article becomes favorited during cleanup selection', async () => {
     const { user, articles: [article], event } = await fixture();
+    await db.ArchivingSetting.create({ userId: user.id, maximumArticleAge: 7, maximumArticleAgeUnit: 'days' });
     await article.update({ status: 'read' });
     const findEvents = db.Event.findAll.bind(db.Event);
     const boundary = vi.spyOn(db.Event, 'findAll').mockImplementationOnce(async options => {
