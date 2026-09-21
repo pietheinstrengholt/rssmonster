@@ -62,12 +62,18 @@ const normalizeIdentity = (entry, feedFormat = null, articleUrl = null) => {
   const atomIdentity = resolvedIdentity(atomExternalId, 'atom-id');
   // Resolves the d identity while normalizing identity.
   const guidIdentity = resolvedIdentity(guidExternalId, 'guid');
+  // RDF about identifies the resource independently of its current navigable link.
+  const rdfIdentity = feedFormat === 'rdf'
+    ? resolvedIdentity(normalizeExternalId(entry?.rdf?.about), 'rdf-about')
+    : null;
   // Selects the format identities based on whether feed format is rss.
   const formatIdentities = feedFormat === 'rss'
     ? [guidIdentity, atomIdentity]
     : feedFormat === 'json'
       ? [jsonIdentity, guidIdentity]
-      : [atomIdentity, guidIdentity];
+      : feedFormat === 'rdf'
+        ? [rdfIdentity, atomIdentity, guidIdentity]
+        : [atomIdentity, guidIdentity];
   // Loads the feed identity needed while normalizing identity.
   const feedIdentity = formatIdentities.find(Boolean);
 

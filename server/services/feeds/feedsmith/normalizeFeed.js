@@ -1,4 +1,4 @@
-import normalizeEntry, { readTextValue, resolveFeedPublishedDate } from './normalizeEntry.js';
+import normalizeEntry, { readDisplayText, resolveFeedPublishedDate } from './normalizeEntry.js';
 import {
   assertFeedEntryCount,
   getFeedInputLimits
@@ -32,10 +32,11 @@ export default function normalizeFeed(parsedFeed, { feedUrl = null } = {}) {
     : [];
   assertFeedEntryCount(normalizedSourceEntries, getFeedInputLimits());
   // Selects the self link based on whether source feed links is an array.
-  const selfLink = (Array.isArray(sourceFeed.links) ? sourceFeed.links : [])
+  const feedLinks = [...(sourceFeed.links || []), ...(sourceFeed.atom?.links || [])];
+  const selfLink = feedLinks
     .find(link => link?.rel === 'self' && link?.href)?.href;
   // Selects the publisher site URL without confusing Atom self links for article bases.
-  const siteLink = (Array.isArray(sourceFeed.links) ? sourceFeed.links : [])
+  const siteLink = feedLinks
     .find(link => (!link?.rel || link.rel === 'alternate') && link?.href)?.href ||
     sourceFeed.link || sourceFeed.home_page_url;
   // Resolves the safe feed and site bases required by entry link normalization.
@@ -44,7 +45,7 @@ export default function normalizeFeed(parsedFeed, { feedUrl = null } = {}) {
   const resourceBaseUrl = resolveSafeHttpUrl(sourceFeed.xmlBase, safeFeedUrl) ||
     safeFeedUrl || safeSiteUrl;
   // Skip unusable candidates so a broken preferred icon does not hide a valid fallback.
-  const faviconUrl = [sourceFeed.favicon, sourceFeed.icon, sourceFeed.logo, sourceFeed.image]
+  const faviconUrl = [sourceFeed.favicon, sourceFeed.icon, sourceFeed.logo, sourceFeed.image, sourceFeed.itunes?.image]
     .map(value => resolveSafeHttpUrl(readUrl(value), resourceBaseUrl))
     .find(url => url && url.length <= FEED_PERSISTENCE_LIMITS.faviconUrlCharacters) || null;
   const linkContext = {
@@ -56,14 +57,15 @@ export default function normalizeFeed(parsedFeed, { feedUrl = null } = {}) {
   // Selects the result based on whether source entries is an array.
   return {
     format,
-    title: readTextValue(sourceFeed.title) || null,
-    description: sourceFeed.description || readTextValue(sourceFeed.subtitle) || null,
+    title: readDisplayText(sourceFeed.title) || sourceFeed.dc?.titles?.[0] || sourceFeed.dcterms?.titles?.[0] || null,
+    description: sourceFeed.description || readDisplayText(sourceFeed.subtitle) ||
+      sourceFeed.dc?.descriptions?.[0] || sourceFeed.dcterms?.descriptions?.[0] || null,
     faviconUrl,
     publishedAt: resolveFeedPublishedDate(sourceFeed),
     selfUrl: readUrl(parsedFeed.self) ||
       selfLink ||
       readUrl(sourceFeed.feed_url) ||
       null,
-    entries: normalizedSourceEntries.map(entry => normalizeEntry(entry, format, linkContext))
+    entries: normalizedSourceEntries.map(entry => normalizeEntry(entry, format, linkContext, sourceFeed))
   };
 }

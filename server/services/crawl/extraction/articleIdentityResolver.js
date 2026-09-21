@@ -5,7 +5,7 @@ import normalizeUrl from '../content/normalizeUrl.js';
 // Defines the url suffix external id type enforced by this service.
 const URL_SUFFIX_EXTERNAL_ID_TYPE = 'url-suffix-hash';
 // Defines format-provided identity types that remain authoritative when URLs change.
-const STABLE_EXTERNAL_ID_TYPES = new Set(['guid', 'atom-id', 'json-id']);
+const STABLE_EXTERNAL_ID_TYPES = new Set(['guid', 'atom-id', 'json-id', 'rdf-about']);
 // Defines the url suffix hash pattern enforced by this service.
 const URL_SUFFIX_HASH_PATTERN = /(?:~|-)([a-f0-9]{8,64})$/i;
 

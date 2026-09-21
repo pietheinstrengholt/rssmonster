@@ -2,6 +2,24 @@ import { describe, expect, it } from 'vitest';
 import articleIdentityResolver from '../../services/feeds/feedsmith/normalizeIdentity.js';
 
 describe('article identity resolver', () => {
+  it('prefers RDF resource identity over namespaced Atom identity and changing links', () => {
+    for (const link of ['https://example.com/old-slug', 'https://example.com/new-slug']) {
+      expect(articleIdentityResolver({
+        rdf: { about: ' https://example.com/stable/42 ' },
+        atom: { id: 'secondary-id' },
+        link
+      }, 'rdf')).toEqual({
+        externalId: 'https://example.com/stable/42',
+        externalIdType: 'rdf-about'
+      });
+    }
+  });
+
+  it('keeps the URL fallback for RDF entries without a usable resource identity', () => {
+    expect(articleIdentityResolver({ rdf: { about: ' ' }, link: 'https://example.com/story' }, 'rdf'))
+      .toEqual({ externalId: 'https://example.com/story', externalIdType: 'normalized-url' });
+  });
+
   it('resolves a FeedSmith RSS guid as the external identity', () => {
     expect(articleIdentityResolver({
       guid: {

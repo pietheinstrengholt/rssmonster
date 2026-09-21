@@ -60,14 +60,15 @@ handled here; `../content/normalizeHtmlUrls.js` resolves those against the accep
 
 RSSMonster does not manufacture links from GUIDs or other opaque IDs. A stable-ID entry may be
 stored with `url = null`; server APIs and the client treat this as “no external article URL.” An
-entry without a URL remains eligible only when it has a stable RSS GUID, Atom ID, or JSON Feed ID.
+entry without a URL remains eligible only when it has a stable RSS GUID, Atom ID, JSON Feed ID,
+or RDF `rdf:about` identity.
 
 ## Article identity precedence
 
 Identity matching answers “is this the same feed entry?” and is always separate from duplicate
 content detection. `articleIdentityResolver.js` enforces this precedence:
 
-1. Stable format-provided ID: RSS GUID, Atom ID, or JSON Feed ID.
+1. Stable format-provided ID: RSS GUID, Atom ID, JSON Feed ID, or RDF `rdf:about`.
 2. Complete canonicalized HTTP(S) entry URL when no stable ID exists.
 3. Deterministic metadata/content hash when neither exists.
 
@@ -94,6 +95,9 @@ ambiguous suffix.
 The feed adapter normalizes supported publisher date fields. Candidate construction then applies
 conservative fallbacks:
 
+- For XML feeds, Dublin Core Terms `issued`, then `created`, supply publication dates when the
+  existing native and Dublin Core date fields are absent or invalid. Repeated values use the first
+  parseable date.
 - A valid modification date may stand in for a missing publication date and is marked inferred.
 - A feed-level publication fallback may be used when supplied by orchestration.
 - A date encoded in a safe article URL may be used as the last publication fallback.

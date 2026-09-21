@@ -35,6 +35,7 @@ import db from '../../models/index.js';
 import { claimDueFeeds } from '../../services/feeds/feedClaims.js';
 import { updateFeedSubscription } from '../../services/feeds/feedManagement.js';
 import { deterministicJitterMs } from '../../services/feeds/feedScheduling.js';
+import { parseFeedSourceIsolated } from '../../services/feeds/feedsmith/isolatedFeedParser.js';
 
 const { Category, Feed, User, sequelize } = db;
 let sequence = 0;
@@ -126,6 +127,27 @@ describe('crawl feed-lease lifecycle integration', () => {
       expect(effectiveEntries).toBe(7);
       expect(remainingLease).toBeGreaterThan(590000);
     } finally { await clearCrawlSettings(); }
+  });
+
+  it.each([
+    ['rss', '<rss version="2.0"><channel><title>RSS</title></channel></rss>'],
+    ['atom', '<feed xmlns="http://www.w3.org/2005/Atom"><title>Atom</title></feed>'],
+    ['rdf', '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/"><channel rdf:about="https://example.test/feed"><title>RDF</title></channel></rdf:RDF>'],
+    ['json', '{"version":"https://jsonfeed.org/version/1","title":"JSON Feed 1","items":[]}'],
+    ['json', '{"version":"https://jsonfeed.org/version/1.1","title":"JSON Feed 1.1","items":[]}']
+  ])('saves the detected %s format from the real parser over stale metadata', async (format, source) => {
+    const { user, feeds: [feed] } = await createFixture(1);
+    await feed.update({ feedType: format === 'rss' ? null : 'rss' });
+    mocked.acquireFeed.mockImplementation(async ({ feed: acquiredFeed }) => ({
+      ...successfulOutcome(acquiredFeed),
+      parsedFeed: await parseFeedSourceIsolated(source, { feedUrl: acquiredFeed.url })
+    }));
+
+    const result = await crawlController.performCrawl(user.id, { parallel: false });
+
+    expect(result).toMatchObject({ processed: 1, errors: 0 });
+    await feed.reload();
+    expect(feed.feedType).toBe(format);
   });
 
   it('stores successive favicon locations even when there are no articles', async () => {

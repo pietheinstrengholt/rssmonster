@@ -101,10 +101,16 @@ const mediaCandidates = rawMedia => {
   );
 };
 
+// Atom carries enclosures in links, while RSS exposes a dedicated collection.
+const feedEnclosures = entry => [
+  ...(entry?.enclosures || []),
+  ...[...(entry?.links || []), ...(entry?.atom?.links || [])]
+    .filter(link => link?.rel === 'enclosure')
+    .map(link => ({ url: link.href, type: link.type, length: link.length }))
+];
+
 // This function converts feed enclosures into media candidates.
-const enclosureCandidates = entry => (Array.isArray(entry?.enclosures)
-  ? entry.enclosures
-  : [])
+const enclosureCandidates = entry => feedEnclosures(entry)
   .map(item => ({
     item: {
       ...item,
@@ -462,7 +468,7 @@ const normalizeCandidate = ({ entry, rawMedia, item, parent, type, pageUrl }) =>
 };
 
 // This function extracts normalized video, audio, or gallery attributes from a feed entry.
-function processStructuredMedia(entry, htmlContent = null, articleUrl = null) {
+function processStructuredMedia(entry, htmlContent = null, articleUrl = null, contentBaseUrl = articleUrl) {
   // Derives the raw media required while processing structured media.
   const rawMedia = entry?.media || {};
   // Derives the page url through first safe media url while processing structured media.
@@ -502,7 +508,7 @@ function processStructuredMedia(entry, htmlContent = null, articleUrl = null) {
   }
 
   // Derives the iframe media through provider iframe media while processing structured media.
-  const iframeMedia = providerIframeMedia(htmlContent, pageUrl);
+  const iframeMedia = providerIframeMedia(htmlContent, contentBaseUrl || pageUrl);
   // Returns early when iframe media is available.
   if (iframeMedia) return iframeMedia;
 
@@ -633,7 +639,7 @@ const normalizeImageCandidates = (entry, articleUrl) => {
   });
 
   // Selects the result based on whether enclosures is an array.
-  (Array.isArray(entry?.enclosures) ? entry.enclosures : []).forEach(enclosure => {
+  feedEnclosures(entry).forEach(enclosure => {
     // Normalizes the type before normalizing image candidates.
     const type = String(enclosure?.type || '').trim().toLowerCase();
     // Returns early when starts with is unavailable.
@@ -661,9 +667,9 @@ const normalizeImageCandidates = (entry, articleUrl) => {
   });
 
   // Runs the callback required while normalizing image candidates.
-  ['image', 'banner_image', 'thumbnail'].forEach(fieldName => {
+  [entry?.image, entry?.banner_image, entry?.thumbnail, entry?.itunes?.image].forEach(value => {
     // Derives the candidate through image candidate while normalizing image candidates.
-    const candidate = imageCandidate(entry?.[fieldName], articleUrl, 'publisher');
+    const candidate = imageCandidate(value, articleUrl, 'publisher');
     // Handles the case where candidate is available.
     if (candidate) candidates.push(candidate);
   });
@@ -672,10 +678,10 @@ const normalizeImageCandidates = (entry, articleUrl) => {
 };
 
 // This function converts Feedsmith media fields into RSSMonster's canonical media contract.
-export default function normalizeMedia(entry, htmlContent = null, articleUrl = null) {
+export default function normalizeMedia(entry, htmlContent = null, articleUrl = null, resourceBaseUrl = articleUrl) {
   return {
-    media: processStructuredMedia(entry, htmlContent, articleUrl),
-    imageCandidates: normalizeImageCandidates(entry, articleUrl)
+    media: processStructuredMedia(entry, htmlContent, resourceBaseUrl, articleUrl),
+    imageCandidates: normalizeImageCandidates(entry, resourceBaseUrl)
   };
 }
 

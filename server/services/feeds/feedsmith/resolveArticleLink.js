@@ -59,7 +59,7 @@ export const resolveArticleLinkResult = (entry, {
     readLinkValue(link?.href) && (!link.rel || link.rel === 'alternate')
   );
   // Loads the first valid link needed while resolving article link.
-  const firstValidLink = links.find(link => readLinkValue(link?.href));
+  const firstValidLink = links.find(link => link?.rel !== 'enclosure' && readLinkValue(link?.href));
   // Selects the untrusted raw link before applying base and scheme policy.
   const rawLink = readLinkValue(alternateLink?.href) ||
     readLinkValue(firstValidLink?.href) ||

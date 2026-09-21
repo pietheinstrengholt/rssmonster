@@ -14,7 +14,7 @@ describe('Feedsmith adapter', () => {
     `);
 
     expect(feed).toMatchObject({
-      title: 'News & <b>updates</b>',
+      title: 'News & updates',
       description: 'Publisher summary',
       entries: [
         { title: 'Untitled', content: null, contentKind: null },

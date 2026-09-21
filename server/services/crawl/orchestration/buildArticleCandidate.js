@@ -180,7 +180,7 @@ const buildArticleCandidate = async ({
   const descriptionResult = processDescriptionContent(
     fields.description,
     fields.descriptionKind,
-    fields.contentBaseUrl
+    fields.descriptionBaseUrl
   );
   const descriptionHtml = descriptionResult.html;
   const descriptionText = descriptionResult.text;

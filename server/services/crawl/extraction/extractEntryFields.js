@@ -3,6 +3,7 @@ const extractEntryFields = entry => ({
   title: entry?.title || 'Untitled',
   link: entry?.url || null,
   contentBaseUrl: entry?.contentBaseUrl || entry?.url || null,
+  descriptionBaseUrl: entry?.descriptionBaseUrl || entry?.contentBaseUrl || entry?.url || null,
   description: entry?.description ?? null,
   descriptionKind: entry?.descriptionKind ?? null,
   content: entry?.content ?? null,

@@ -1,8 +1,10 @@
 import normalizeIdentity from './normalizeIdentity.js';
 import normalizeMedia from './normalizeMedia.js';
+import htmlToVisibleText from '../../crawl/content/htmlToVisibleText.js';
 import {
   resolveArticleLinkResult,
-  resolveContentBaseUrl
+  resolveContentBaseUrl,
+  resolveSafeHttpUrl
 } from './resolveArticleLink.js';
 
 // This function converts parseable feed dates to the stored ISO format.
@@ -43,17 +45,23 @@ const publishedDateCandidatesByFormat = {
     entry => entry.pubDate,
     entry => entry.atom?.published,
     entry => dublinCoreDates(entry.dc),
-    entry => dublinCoreDates(entry.dcterms)
+    entry => dublinCoreDates(entry.dcterms),
+    entry => entry.dcterms?.issued,
+    entry => entry.dcterms?.created
   ],
   atom: [
     entry => entry.published,
     entry => dublinCoreDates(entry.dc),
-    entry => dublinCoreDates(entry.dcterms)
+    entry => dublinCoreDates(entry.dcterms),
+    entry => entry.dcterms?.issued,
+    entry => entry.dcterms?.created
   ],
   rdf: [
     entry => entry.atom?.published,
     entry => dublinCoreDates(entry.dc),
-    entry => dublinCoreDates(entry.dcterms)
+    entry => dublinCoreDates(entry.dcterms),
+    entry => entry.dcterms?.issued,
+    entry => entry.dcterms?.created
   ],
   json: [
     entry => entry.date_published
@@ -87,6 +95,7 @@ const fallbackPublishedDateCandidates = [
   entry => entry.atom?.published,
   entry => dublinCoreDates(entry.dc),
   entry => dublinCoreDates(entry.dcterms),
+  entry => entry.dcterms?.issued,
   entry => entry.dcterms?.created,
   entry => entry.date,
   entry => entry.created
@@ -128,6 +137,19 @@ export const readTextValue = value => typeof value === 'string' ? value : value?
 const atomContentKind = value => ['html', 'xhtml', 'text/html', 'application/xhtml+xml']
   .includes(String(value?.type || 'text').trim().toLowerCase()) ? 'html' : 'text';
 
+// Titles and feed descriptions are displayed as text, unlike article bodies and summaries.
+export const readDisplayText = value => typeof value === 'object' && atomContentKind(value) === 'html'
+  ? htmlToVisibleText(readTextValue(value))
+  : readTextValue(value);
+
+const firstText = values => values.find(hasTextValue) || null;
+
+const atomContent = value => ({
+  value: value.value,
+  kind: atomContentKind(value),
+  baseUrl: value.xml?.base
+});
+
 // This function accepts only content kinds understood by the crawl pipeline.
 const normalizeContentKind = value => ['html', 'text'].includes(value) ? value : null;
 
@@ -143,7 +165,7 @@ const resolveContent = (entry, feedFormat) => {
     return { value: entry.content_text, kind: 'text' };
   }
   if (feedFormat === 'atom' && hasTextValue(entry.content?.value)) {
-    return { value: entry.content.value, kind: atomContentKind(entry.content) };
+    return atomContent(entry.content);
   }
   if (hasTextValue(entry.content)) {
     return { value: entry.content, kind: normalizeContentKind(entry.contentKind) };
@@ -154,6 +176,7 @@ const resolveContent = (entry, feedFormat) => {
   if (hasTextValue(entry.content_text)) {
     return { value: entry.content_text, kind: 'text' };
   }
+  if (hasTextValue(entry.atom?.content?.value)) return atomContent(entry.atom.content);
   return { value: null, kind: null };
 };
 
@@ -168,7 +191,7 @@ const resolveMediaGroupDescription = entry => {
   for (const group of groups) {
     const value = group?.description?.value ?? group?.description;
     if (hasTextValue(value)) {
-      return value;
+      return { value, kind: atomContentKind(group.description) };
     }
   }
   return null;
@@ -186,6 +209,7 @@ const resolveDescription = (entry, feedFormat) => {
   if (hasTextValue(readTextValue(entry.summary))) {
     return {
       value: readTextValue(entry.summary),
+      baseUrl: entry.summary?.xml?.base,
       kind: (typeof entry.summary === 'object' ? atomContentKind(entry.summary) : null) ||
         normalizeContentKind(entry.summaryKind) ||
         (feedFormat === 'json' ? 'text' : null)
@@ -194,20 +218,24 @@ const resolveDescription = (entry, feedFormat) => {
   if (hasTextValue(readTextValue(entry.atom?.summary))) {
     return {
       value: readTextValue(entry.atom.summary),
+      baseUrl: entry.atom.summary?.xml?.base,
       kind: typeof entry.atom.summary === 'object'
         ? atomContentKind(entry.atom.summary)
         : normalizeContentKind(entry.atom.summaryKind)
     };
   }
+  const namespaceDescription = firstText([
+    ...(entry.dc?.descriptions || []),
+    ...(entry.dcterms?.descriptions || [])
+  ]);
+  if (namespaceDescription) return { value: namespaceDescription, kind: 'text' };
   const mediaGroupDescription = resolveMediaGroupDescription(entry);
-  if (hasTextValue(mediaGroupDescription)) {
-    return { value: mediaGroupDescription, kind: 'text' };
-  }
+  if (mediaGroupDescription) return mediaGroupDescription;
   return { value: null, kind: null };
 };
 
 // This function resolves the first useful author name from RSS, Atom, or JSON Feed shapes.
-const resolveAuthor = entry => {
+const resolveAuthor = (entry, feedFormat, sourceFeed) => {
   // Derives the author required while resolving author.
   const author = entry?.dc?.creator || entry?.author || entry?.dc?.creators?.[0];
   // Returns early when author is string.
@@ -215,9 +243,17 @@ const resolveAuthor = entry => {
   // Returns early when name is available.
   if (author?.name) return author.name;
 
-  // Selects the json author based on whether authors is an array.
-  const jsonAuthor = Array.isArray(entry?.authors) ? entry.authors[0] : null;
-  return jsonAuthor?.name || jsonAuthor?.email || null;
+  const inheritedAuthors = feedFormat === 'atom'
+    ? entry.source?.authors ?? sourceFeed.authors
+    : feedFormat === 'json' ? sourceFeed.authors : [];
+  // Explicit entry authors override source/feed authors, including an empty JSON authors array.
+  const authors = entry.authors ?? inheritedAuthors ?? [];
+  return firstText([
+    ...authors.map(person => person?.name || person?.email),
+    ...(entry.atom?.authors || []).map(person => person?.name || person?.email),
+    ...(entry.dcterms?.creators || []),
+    entry.itunes?.author
+  ]);
 };
 
 // This function builds a valid UTC date from URL date path components.
@@ -331,7 +367,7 @@ export function resolveUrlPublishedDate(url) {
 }
 
 // This function converts one Feedsmith entry into RSSMonster's canonical entry contract.
-function normalizeEntry(entry, feedFormat = null, linkContext = {}) {
+function normalizeEntry(entry, feedFormat = null, linkContext = {}, sourceFeed = {}) {
 
   // Selects the normalize category name based on whether value is string.
   const normalizeCategoryName = value =>
@@ -369,6 +405,7 @@ function normalizeEntry(entry, feedFormat = null, linkContext = {}) {
     ...(Array.isArray(entry.category) ? entry.category : entry.category ? [entry.category] : []),
     ...(Array.isArray(entry.tags) ? entry.tags : []),
     ...(Array.isArray(entry.dc?.subjects) ? entry.dc.subjects : []),
+    ...(Array.isArray(entry.dcterms?.subjects) ? entry.dcterms.subjects : []),
     ...(Array.isArray(entry.dc?.subject) ? entry.dc.subject : entry.dc?.subject ? [entry.dc.subject] : []),
     ...(Array.isArray(entry.subjects) ? entry.subjects : [])
   ];
@@ -385,32 +422,44 @@ function normalizeEntry(entry, feedFormat = null, linkContext = {}) {
   const linkResult = resolveArticleLinkResult(entry, linkContext);
   const link = linkResult.url;
   // Keeps resource resolution separate from the optional navigable article URL.
-  const contentBaseUrl = resolveContentBaseUrl(link, {
+  const baseContext = {
     ...linkContext,
     entryBaseUrl: entry?.xmlBase || null
-  });
+  };
+  const resourceBaseUrl = resolveContentBaseUrl(link, baseContext);
+  const xmlBaseUrl = resolveContentBaseUrl(null, baseContext);
   // Resolves content and description with their source-defined semantics.
   const selectedContent = resolveContent(entry, feedFormat);
   const selectedDescription = resolveDescription(entry, feedFormat);
+  // Construct-level bases resolve against XML ancestry, independently of the article permalink.
+  const contentBaseUrl = resolveSafeHttpUrl(selectedContent.baseUrl, xmlBaseUrl) || resourceBaseUrl;
+  const descriptionBaseUrl = resolveSafeHttpUrl(selectedDescription.baseUrl, xmlBaseUrl) || resourceBaseUrl;
   // Normalizes the identity before normalizing entry.
   const identity = normalizeIdentity(entry, feedFormat, link);
   // Normalizes the media before normalizing entry.
   const normalizedMedia = normalizeMedia(
     entry,
     selectedContent.kind === 'text' ? null : selectedContent.value,
-    contentBaseUrl
+    contentBaseUrl,
+    resourceBaseUrl
   );
 
   return {
-    title: readTextValue(entry.title)?.trim() || 'Untitled',
+    title: firstText([
+      readDisplayText(entry.title)?.trim(),
+      readDisplayText(entry.atom?.title)?.trim(),
+      ...(entry.dc?.titles || []),
+      ...(entry.dcterms?.titles || [])
+    ]) || 'Untitled',
     url: link || null,
     urlStatus: linkResult.status,
     contentBaseUrl,
+    descriptionBaseUrl,
     description: selectedDescription.value,
     descriptionKind: selectedDescription.kind,
     content: selectedContent.value,
     contentKind: selectedContent.kind,
-    author: resolveAuthor(entry),
+    author: resolveAuthor(entry, feedFormat, sourceFeed),
     categories: categoryNames,
     publishedAt: resolveEntryPublishedDate(entry, feedFormat),
     modifiedAt: resolveEntryModifiedDate(entry, feedFormat),

@@ -120,7 +120,7 @@ paths.
 
 ## Identity migration during persistence
 
-Stable RSS GUID, Atom ID, and JSON Feed ID identities are authoritative. To avoid duplicates after
+Stable RSS GUID, Atom ID, JSON Feed ID, and RDF `rdf:about` identities are authoritative. To avoid duplicates after
 the identity-precedence correction, update lookup may alias an incoming stable ID to:
 
 - A historical `normalized-url` identity with the same full normalized URL.
