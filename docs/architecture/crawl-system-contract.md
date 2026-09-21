@@ -1,257 +1,289 @@
 # CRAWL SYSTEM INVARIANTS
 
-Feeds define what RSSMonster attempts to retrieve. Crawl runs execute that work. Crawl results record what happened. Accepted feed items may create or update Articles.
+Feeds define what RSSMonster attempts to retrieve. Crawl runs execute that work. Crawl results record what happened. Accepted Feed items may create or update Articles.
 
-Crawling must be safe to retry, bounded in resource usage, isolated between users, and must preserve publisher identity and user intent.
+These invariants describe behavior that must survive a complete crawler refactor. They do not prescribe retrieval mechanisms, processing architecture, storage strategies, or an execution sequence beyond the dependencies required by the semantics below.
 
 ## Terminology
 
-- **Crawl run:** A user-scoped execution that coordinates processing of eligible Feeds.
+- **Feed identity:** The persisted identity of a user's source, distinct from the URL used to retrieve it.
+- **Crawl run:** A user-scoped execution coordinating processing of eligible Feeds.
 - **Feed execution:** Processing one Feed within a crawl run, including acquisition, parsing, item processing, and recording its outcome.
-- **Acquisition attempt:** An individual retrieval attempt within a Feed execution. A Feed execution may include bounded retries or endpoint recovery.
-- **Feed result:** The recorded final outcome of a Feed execution, including available acquisition diagnostics and item-processing counts.
+- **Acquisition attempt:** An individual retrieval attempt within a Feed execution. A Feed execution MAY include bounded retries or endpoint recovery.
+- **Feed result:** The recorded outcome of a Feed execution, including available acquisition diagnostics and item-processing information.
 - **User-configured automation:** Explicit rules configured by the owning user that apply supported changes to Articles.
-- **Unchanged retrieval:** A `304 Not Modified` response or a representation matching previously accepted content. This is distinct from a changed representation that produces no new Articles.
+- **Unchanged retrieval:** A retrieval known to represent previously accepted Feed content. It is distinct from a changed representation that happens to produce no Article changes.
 
-## Feed Crawling
+## Ownership and crawl coordination
 
-1. **Every Feed execution MUST operate on an identifiable Feed.**
-   Retrieval, results, errors, redirects, and accepted Articles must remain attributable to the originating Feed or its reconciled canonical successor.
+1. **Every Feed MUST belong to exactly one user.**
+   Feed configuration and all work arising from it belong to that user. Articles, aliases, automation, crawl history, and downstream state must retain that ownership through reconciliation and processing.
 
-2. **Every Feed MUST belong to exactly one user.**
-   Crawling, Article creation, statistics, aliases, errors, and crawl state must preserve the user boundary.
+2. **Every Feed execution MUST remain attributable to an identifiable Feed.**
+   Retrieval attempts, errors, results, and accepted Articles must refer to the originating Feed or its reconciled successor. A location change must not sever the relationship between a source and its processing history.
 
-3. **A Feed MUST be processable independently from other Feeds.**
-   Failure, malformed content, slowness, or unusual behavior from one Feed must not invalidate successfully processed work for other Feeds or indefinitely prevent their processing.
+3. **Conflicting executions MUST NOT mutate the same Feed as independent owners.**
+   Scheduled, manual, retry, and recovery work may overlap in time, but must not produce contradictory ownership or allow superseded work to overwrite newer Feed or Article state. Work that has lost execution ownership must not make further crawl-owned mutations or finalize another execution's result.
 
-4. **Repeated crawling MUST be safe.**
-   Crawling unchanged content must not manufacture new Articles, repeat committed interaction effects, or multiply semantic evidence.
+4. **Abandoned execution ownership MUST be recoverable.**
+   A crash or interrupted crawl must not permanently block a Feed. Coordination must distinguish active responsibility from abandoned work without allowing recovery to interfere with an execution that still owns its work.
 
-5. **A successful crawl MUST NOT imply that new Articles were discovered.**
-   Unchanged retrieval, existing items, filtered items, and duplicate items may all produce a successful execution with no new visible Articles.
+## Resource and execution boundaries
 
-6. **A crawl failure MUST NOT invalidate previously accepted content.**
-   Failure may update operational health and diagnostics, but must not remove or corrupt previously stored Articles or useful source data.
+1. **Crawler work MUST have finite resource and execution bounds.**
+   Retrieval time, redirects, response size, parsing, item count, retries, endpoint recovery, and concurrent work must be limited. A slow or malformed Feed must not consume capacity indefinitely or prevent other Feeds from progressing.
 
-7. **Missing content in a later crawl MUST NOT imply deletion.**
-   Items disappearing from a Feed must not automatically delete existing Articles.
+2. **Nested work MUST respect the overall execution bounds.**
+   Following another endpoint or retrying a failed operation must not repeatedly restart allowances so that a nominally bounded Feed execution becomes unbounded. Optional work performed within an execution is subject to the same principle.
 
-8. **Crawler behavior MUST be bounded.**
-   Requests, redirects, response sizes, parsing work, entry counts, retry attempts, concurrency, and processing time must have explicit limits. Nested work must respect the Feed execution's remaining deadline rather than repeatedly starting fresh time budgets.
+## Feed acquisition
 
-9. **One problematic Feed MUST NOT monopolize crawl capacity indefinitely.**
-   Persistent failures, excessive latency, redirect loops, and malformed responses must terminate within defined bounds. Request coordination must also respect configured per-origin limits.
+1. **Feed identity MUST remain distinct from Feed location.**
+   A Feed URL is a location from which RSSMonster retrieves a source; the persisted Feed is the source identity. Redirects, discovery, aliases, publisher-declared URLs, and endpoint recovery may indicate that a location changed. They must not accidentally create a new logical Feed or merge unrelated Feeds.
 
-10. **Crawl scheduling MUST NOT create uncontrolled overlapping work for the same Feed.**
-    Scheduled and manually triggered work must respect shared coordination. Persisted scheduling state determines eligibility; claims, leases, or equivalent safeguards control execution.
+2. **Accepting a replacement Feed location MUST require evidence of source continuity.**
+   A reachable endpoint or publisher declaration is not unconditional authority to replace the accepted source. Reconciliation must establish that the candidate represents the same Feed, rather than merely another accessible Feed, while keeping legitimate moves possible.
 
-## Retrieval
+3. **Legitimate endpoint changes and same-user Feed convergence MUST preserve the source's meaningful state.**
+   Articles, configuration, user-owned state, and useful history must survive reconciliation. When records are established to represent the same user's source, convergence must preserve that relationship without discarding meaningful state merely because one record becomes authoritative. Feeds belonging to different users must remain separate.
 
-11. **Crawler retrieval MUST treat remote content as untrusted input.**
-    Feed responses, redirects, headers, markup, URLs, and metadata must be validated before use.
+4. **Known historical Feed URLs MAY remain aliases of the accepted Feed.**
+   An alias expresses known source continuity, not an independent source or proof that every Feed at a similar URL is equivalent. Within a user's Feeds, a known alias must resolve consistently to the same logical Feed.
 
-12. **HTTP redirects MUST be bounded and traceable.**
-    Redirect loops or excessive redirect chains must terminate safely. Redirect targets remain subject to the same security and execution limits as the initial request.
+5. **Redirects and endpoint recovery MUST remain explainable.**
+   Available diagnostics should distinguish the requested location, failed attempts, and the ultimately accepted location. Recovery must follow the resource and security boundaries even when an intermediate endpoint appears legitimate.
 
-13. **Feed URL promotion MUST require accepted endpoint evidence.**
-    Redirects, discovery, and publisher-declared URLs must not automatically establish canonical ownership. Promotion must preserve useful historical URLs and resolve same-user endpoint conflicts safely.
+## Retrieval state and unchanged content
 
-14. **Known historical Feed URLs MAY remain aliases of the canonical Feed.**
-    Aliases are user-scoped. A normalized alias must not identify multiple independent Feeds for the same user. Same-user convergence must preserve Articles, user state, settings, and useful history; Feeds belonging to different users must not be merged.
+1. **Accepted retrieval state MUST describe an accepted Feed representation.**
+   A successful network response alone does not establish that its contents are a valid Feed. Rejected or malformed content must not become the basis for treating that representation as previously accepted on a later crawl.
 
-15. **Conditional retrieval state MUST refer to previously accepted representations.**
-    ETags, modification validators, and unchanged-content hashes must not become authoritative solely because retrieval returned HTTP success. Invalid or rejected content must not establish accepted retrieval state.
+2. **Unchanged retrieval MUST remain distinct from absence of new Articles.**
+   Unchanged means the retrieved Feed representation is already known. A changed Feed can contain only known items, filtered candidates, or duplicates and therefore produce zero Article changes. It can also revise existing Articles without creating any new ones. All of these can be successful crawls.
 
-16. **A valid `304 Not Modified` response MUST be treated as successful unchanged retrieval.**
-    It must not fabricate Article updates or refresh source-derived Article state. Matching previously accepted content may likewise skip parsing and item processing. Unchanged retrieval must not be interpreted as proof that earlier failed item processing succeeded.
+3. **Known unchanged retrieval SHOULD avoid unnecessary Article processing.**
+   Recognizing the same accepted representation does not establish a publisher revision or authorize new interaction effects. It also must not be mistaken for proof that previously failed item or downstream work has succeeded.
 
-17. **HTTP success alone MUST NOT establish successful Feed processing.**
-    Retrieval, parsing, item acceptance, persistence, and optional downstream processing are separate stages with distinct outcomes.
+4. **Successful retrieval MUST NOT imply successful Feed processing.**
+   A response may be retrieved successfully but fail validation or parsing, or contain items that fail independently. Acquisition success and the result of processing accepted content must retain separate meanings.
 
-18. **Unsupported or invalid content MUST fail safely.**
-    HTML error pages, authentication pages, malformed XML, oversized responses, and unrelated content must not silently become feed items. Explicitly configured HTML extraction sources must follow their own validation and extraction contract.
+## Feed parsing and normalization
 
-19. **Crawler network access MUST obey security boundaries.**
-    User-supplied URLs, redirects, discovery targets, and publisher-declared endpoints must not permit unintended access to prohibited local, private, or protected resources.
+1. **Supported Feed formats MUST preserve common Article-candidate semantics.**
+   RSS, Atom, and other supported sources may express entries differently, but those differences must not redefine what identifies a publisher item or what its content means. Publisher identifiers, links, publication metadata, descriptions, bodies, categories, and media must retain their meaning and provenance through normalization.
 
-## Feed Parsing
+2. **Parser tolerance MUST NOT fabricate publisher information.**
+   Missing fields may use deterministic fallbacks where supported. A fallback or inferred value must not masquerade as publisher-supplied information when that distinction affects identity, reconciliation, or presentation.
 
-20. **Supported source formats MUST normalize into a common item representation before Article persistence.**
-    RSS, Atom, JSON Feed, and configured extraction sources must supply the established downstream contracts.
+3. **Malformed content MUST fail safely at the appropriate scope.**
+   Unsafe or unusable values must not become trusted Article identity or content merely because they appeared in a Feed. An invalid Feed must not silently become Articles; an individually malformed item SHOULD be isolated when safe so it does not corrupt other items or prevent their valid processing.
 
-21. **Format-specific parsing MUST preserve downstream Article identity semantics.**
-    Adapters must preserve meaningful identifiers and their provenance rather than introducing format-dependent identity rules.
+4. **Item order and disappearance MUST NOT redefine Article identity or retention.**
+   Publishers may reorder entries or remove older entries from a limited Feed window. Reordering must not create new Articles for known items, and disappearance alone must not delete stored Articles: a Feed is not an authoritative deletion list.
 
-22. **Parser tolerance MUST NOT silently fabricate publisher information.**
-    Missing fields may use explicitly defined fallbacks, but fallback values must not masquerade as publisher-supplied metadata.
+5. **Publisher, modification, inferred, crawl, and operational times MUST retain distinct meanings.**
+   Crawl time describes RSSMonster's activity, not when a publisher created or revised an item. Known publisher times must not silently be replaced with processing times, and inferred dates must not claim stronger source authority than their inputs support.
 
-23. **Malformed individual items SHOULD be isolated when safely possible.**
-    Valid items may be retained when invalid items can be separated without accepting a structurally invalid or unsafe Feed.
+6. **Article content representations MUST retain their distinct purposes.**
+   Original source content, sanitized display content, normalized visible text, and publisher descriptions are separate contracts. Normalization must preserve useful source material without treating raw markup as safe display content or a description as interchangeable with the full body. Article representation semantics are defined by [semantic-system-contract.md](semantic-system-contract.md#articles).
 
-24. **One malformed item MUST NOT corrupt another item.**
-    Item processing must preserve independent identity, content, diagnostics, and persistence boundaries.
+7. **Ordinary Feed ingestion MUST NOT require downloading the linked Article webpage.**
+   The Feed's supplied content must support ordinary ingestion even when the linked page is unavailable. Retrieving that page may be part of an explicitly configured acquisition method; it is not an implicit prerequisite for every Feed item.
 
-25. **Item order in the Feed MUST NOT determine Article identity.**
-    Reordering items between crawls must not create new Articles for already resolved publisher entries.
+## Feed-level filtering
 
-26. **Feed truncation MUST NOT imply that omitted historical items ceased to exist.**
-    A Feed represents the items currently supplied by its source, not an authoritative deletion list.
+1. **A Feed item filter MUST prevent a rejected new item from entering Article persistence.**
+   Such a filter controls which incoming items are admitted. RSSMonster must not create an Article merely to record the rejection, and the rejected candidate must not become semantic, recommendation, or preference evidence. Crawl diagnostics may still record that filtering occurred.
 
-27. **Publication, modification, and crawl timestamps MUST retain distinct meanings.**
-    Publisher timestamps and inferred fallbacks must follow the established Article timestamp rules. Crawl time must not silently replace known publisher time.
+2. **Feed item filtering MUST remain distinct from a user-configured discard action.**
+   A discard action may intentionally retain an Article for identity and future reconciliation while excluding it from ordinary visibility and downstream contribution. Rejecting a new candidate at the Feed boundary and retaining a filtered Article are different outcomes, even when neither appears in the ordinary reading view.
 
-## Article Ingestion
+3. **Feed item filtering MUST NOT retroactively change an existing Article by itself.**
+   Failing the current admission filter does not authorize deleting, hiding, or changing a previously persisted Article. Such changes require a separate explicit rule. Filter rejection alone is not a user interaction or a statement of dislike.
 
-28. **Every item considered for Article creation MUST pass through Article identity resolution first.**
-    Deterministic publisher identity takes precedence over content similarity.
+## Article identity
 
-29. **An item resolving to an existing Article MUST be reconciled with that Article rather than recreated.**
-    Reconciliation may update permitted fields or leave the Article unchanged.
+1. **Publisher identity resolution and duplicate detection MUST remain separate decisions.**
+   Publisher identity asks whether this is the same publisher item seen before. Duplicate detection asks whether a different publisher item represents content that should not become another independent canonical Article. Identity must be resolved before duplicate suppression can decide how to treat a distinct candidate; content equality alone must not cause an unrelated Article to be overwritten as a publisher revision.
 
-30. **Article creation MUST be idempotent.**
-    Retries and concurrent processing of the same resolved publisher item must not create multiple canonical Articles.
+2. **Trustworthy stable publisher identity MUST take precedence over weaker evidence.**
+   RSS GUIDs, Atom IDs, and equivalent publisher identifiers identify entries within their user and Feed scope, not globally across unrelated sources. Partial URL coincidence, item order, or semantic similarity must not override stronger deterministic identity evidence.
 
-31. **Crawling MUST distinguish ingestion from user-configured automation.**
-    Retrieval, parsing, rediscovery, and enrichment must not by themselves infer user interactions. Explicit user-configured automation MAY modify supported Article fields, including tags, scores, status, favorite state, click-related state, and filtering state, according to each action's defined semantics.
+3. **Fallback identity MUST be deterministic and preserve source scope.**
+   Where a usable publisher identifier is absent, equivalent publisher input must resolve consistently. A fallback must not collapse unrelated items merely because they lack an identifier or share a weak attribute. The publisher identity and ownership rules in [semantic-system-contract.md](semantic-system-contract.md#articles) remain authoritative for Articles.
 
-    Automation must remain user-scoped and replay-safe. Repeated crawling must not accumulate duplicate tags, repeat committed click-related effects, or refresh interaction timestamps merely because an item was encountered again. Rule-driven state changes must not be interpreted as evidence of reading activity beyond what the action explicitly represents.
+## Hash and representation semantics
 
-32. **Publisher reconciliation MUST preserve existing user-owned Article state.**
-    Source updates must not overwrite read status, favorites, clicks, interaction timestamps, manual tags, or other user-owned state merely because publisher content changed.
+1. **Hashes and equivalent comparison evidence MUST retain their defined purposes.**
+   Evidence that a Feed representation is unchanged, that two bodies contain equal content, or that two URLs are equivalent answers different questions. Feed-representation, source-content, normalized-text, raw-URL, and normalized-URL comparisons must not be treated as interchangeable proof of publisher identity. This distinction does not require a particular hashing algorithm.
 
-    User-configured automation may change fields it explicitly governs according to the applicable action lifecycle. In the current revision design, crawl-owned tags, filtering, and rule-controlled scores may be reconciled, while existing engagement fields and manual tags remain protected.
+2. **Equivalent inputs MUST compare consistently under the applicable representation rules.**
+   Normalization or hashing changes must preserve the distinction between publisher identity, content equality, and URL equality. An internal representation change must not by itself turn a known item into a newly discovered publisher item.
 
-33. **Publisher revisions MAY update source-owned Article fields.**
-    Updates must follow Article identity, source-authority, field-retention, and revision-classification rules.
+3. **Missing or empty input MUST NOT create misleading shared identity evidence.**
+   Two items with no body have missing content, not proof of identical content. Empty values must not join unrelated Articles through a shared comparison value.
 
-34. **Sparse publisher updates MUST NOT erase useful stored content without explicit field-specific rules.**
-    Missing or empty incoming values must not automatically replace meaningful stored source data.
+## Existing Article revisions
 
-35. **Duplicate detection MUST remain distinct from Feed parsing and publisher identity resolution.**
-    Parsing establishes candidate items. Identity resolution finds existing publisher entries. Duplicate detection determines whether separate candidates represent already accepted content.
+1. **A publisher revision MUST update the existing Article's source state while preserving its identity.**
+   Once an item resolves to an existing publisher Article, meaningful corrections belong to that Article. Publisher-owned content and source metadata may change according to their authority; reconciliation must not recreate the Article or treat an internal extraction change as a new publisher revision.
 
-36. **Suppressed duplicates MUST NOT independently multiply downstream evidence.**
-    Encountering duplicate content must not create additional canonical Articles, interaction effects, or independent semantic support for the same accepted content.
+2. **Publisher reconciliation MUST protect user-owned interaction and metadata state.**
+   A corrected headline or body must not reset reading state, favorites, feedback, clicks, attention, interaction timestamps, manual tags, or equivalent user-owned state. Source authority does not grant authority over the user's actions.
 
-## Crawl Results and State
+3. **Sparse updates MUST NOT erase useful stored source content without evidence of intended removal.**
+   A Feed may later supply only a description or omit previously available metadata. Absence or emptiness alone must not silently destroy the richer stored representation of the same item.
 
-37. **Every completed Feed execution MUST have an observable final outcome.**
-    Final status, acquisition diagnostics, and processing counts must together distinguish relevant success and failure conditions. A successful recovery may include failed acquisition attempts. Item-processing failures must remain observable rather than being represented as complete item-processing success.
+4. **A revision MUST NOT become a new ingestion event or replay creation-time effects.**
+   Finding the same Article again does not justify reapplying an existing favorite, click-like action, or other committed automation effect. Revision reconciliation must preserve the replay guarantee even when source content has changed.
 
-38. **Current crawl state MUST NOT rewrite historical outcomes.**
-    Updating scheduling, health, or retry state must not retroactively change what an earlier execution recorded.
+5. **Revisions MUST follow the semantic contract's source-correction boundary.**
+   [semantic-system-contract.md](semantic-system-contract.md#articles) defines which existing analysis and semantic state revisions retain and prohibits revision-triggered re-enrichment or semantic reprocessing. Retained derived state refers to its previously analyzed representation; it must not be presented as newly computed from the correction. Independent ranking and personalization activity remains subject to that contract.
 
-39. **Feed recovery MUST NOT erase retained failure history.**
-    Clearing current error state is distinct from deleting historical diagnostics. History retention and explicit deletion policies may bound what remains available.
+## Duplicate prevention
 
-40. **Failure information MUST identify the failing stage where known.**
-    Retrieval, HTTP handling, parsing, validation, item processing, persistence, and optional downstream failures must not be conflated when the distinction is available.
+1. **Distinct new candidates MUST undergo deterministic duplicate suppression before becoming independent canonical Articles.**
+   A deterministically suppressed candidate must not become an additional canonical Article merely because it has a different publisher identifier. Deterministic identity and content evidence take precedence over semantic fallback, without prescribing a particular lookup strategy.
 
-41. **Crawl statistics MUST derive from recorded processing facts where available.**
-    Historical crawl results must not be reconstructed solely from current Article counts, which can change independently of crawling.
+2. **Duplicate content MUST remain distinct from similar coverage.**
+   Similar titles, shared subjects, or reporting on the same occurrence do not by themselves establish duplication. Any title-based fallback must be conservative and supported by sufficient evidence; separate reporting may remain independently canonical.
 
-42. **Operational timestamps MUST remain semantically distinct.**
-    Last attempt, last successful acquisition, last accepted representation change, and execution completion must not silently substitute for one another. A changed representation does not necessarily imply a new or revised Article.
+3. **Deterministic suppression and later semantic duplicate classification MUST retain distinct outcomes.**
+   A semantic duplicate may first exist as a persisted Article and later lose independent semantic and recommendation contribution when classified. Crawl processing may initiate that classification, but canonical eligibility, valid duplicate relationships, and suppression of duplicate Event, Island, and preference evidence are defined by [semantic-system-contract.md](semantic-system-contract.md#articles). A persisted duplicate must not multiply evidence simply because it exists as another record.
 
-43. **Successful unchanged retrieval MUST be capable of restoring acquisition health.**
-    It may clear acquisition failure state without pretending that new content was discovered or unrelated processing failures were resolved.
+## User-configured automation
 
-44. **Retries and recovery MUST preserve the meaning of preceding failures.**
-    A Feed execution may record one final result with bounded diagnostics for its acquisition attempts. Later successful executions must not retroactively replace earlier recorded failures.
+1. **Automation MUST represent explicit user configuration rather than inferred behavior.**
+   Rules may intentionally favorite, filter or discard, tag, or override a score for matching Articles. Crawling or matching content is not itself an interaction; the configured action supplies the authority for the resulting change. Automation may change only the state governed by that action.
 
-## Failures and Retries
+2. **Rule-created preference evidence MUST reside on the Article and retain the configured action's meaning.**
+   A rule-applied favorite may supply Article-level preference evidence without a later click or read because the user explicitly configured it. It does not imply that the Article was read, and a tag or score override must not automatically become a favorite or reading signal. Article and Island evidence semantics, including the effect of removing a rule, are defined by [semantic-system-contract.md](semantic-system-contract.md).
 
-45. **Failures MUST be classified according to available evidence.**
-    Transient, rate-limited, malformed, security-related, permanent, and configuration-related failures should remain distinguishable where supported. Classification must not imply certainty the system does not possess.
+3. **Encountering an Article again MUST NOT renew an unchanged automation outcome.**
+   Applying the same favorite again must not refresh its interaction time or count it as fresh Island support. Equivalent rules and Article input should produce equivalent actions, subject to the replay guarantee; newly matching canonical Articles may provide distinct rule-created preference evidence under the semantic contract.
 
-46. **Immediate retries MUST be bounded, and future retries MUST follow scheduling policy.**
-    Each execution has finite retry and recovery limits. Later scheduled attempts may continue with appropriate backoff rather than a fixed lifetime attempt limit. Scheduling must respect configured publisher freshness and `Retry-After` bounds, failure classification, quarantine, and disabled automatic fetching.
+4. **Discard automation MAY preserve Article identity while excluding ordinary participation.**
+   A retained discarded Article can support later recognition and reconciliation without remaining visible in ordinary reading or independently contributing to semantic, preference, or recommendation evidence. Its persistence does not override the filtered-Article eligibility rules in the semantic contract.
 
-47. **Retrying MUST be idempotent.**
-    A retry must not duplicate Articles or repeat downstream side effects already committed by an earlier attempt.
+5. **User-configured overrides MUST retain their authority over automatically derived values.**
+   An inferred value must not silently replace an explicit override. Deterministic automation must remain usable without optional AI inference unless the configured feature explicitly defines AI-dependent rule semantics.
 
-48. **Partial failure MUST preserve successfully committed independent work.**
-    A failed item or later stage must not require discarding independent committed Articles unless the applicable transaction explicitly requires atomic rollback.
+## Tags and metadata provenance
 
-49. **Failure recovery MUST NOT depend solely on process memory.**
-    Restarting RSSMonster must not leave persisted Feed state, crawl state, or committed work inconsistent or permanently unrecoverable.
+1. **Metadata origins MUST remain distinguishable where they affect authority or reconciliation.**
+   Publisher, Feed, automation, manual, and inferred metadata may describe the same Article but have different authority. Reprocessing must not silently convert one origin into another or present generated metadata as publisher or user input.
 
-50. **Crash recovery MAY terminate stale or abandoned executions with an explicit failure diagnostic.**
-    Recovery must not claim successful completion, invent item outcomes, or infer that unobserved work committed. A recovery timestamp records when abandonment was detected, not a known source-processing completion time.
+2. **Metadata reconciliation MUST preserve protected higher-authority state.**
+   Later derived processing must not overwrite a manual value or configured override unless explicitly allowed. Equivalent values from multiple sources must reconcile consistently while retaining the provenance needed for subsequent decisions.
 
-## Concurrency and Persistence
+## Article persistence
 
-51. **Concurrent crawling MUST preserve Article identity guarantees.**
-    Parallel workers must not create duplicate canonical Articles from the same resolved item. Race recovery must identify the actual persisted winner using established identity constraints.
+1. **Downstream work MUST rely on durably persisted Article identity and valid state.**
+   Essential creation state must become available consistently, so downstream processing cannot observe an invalid partially created Article. A transient parsed item or attempted write is not a successfully ingested Article, and partial Article work must not be reported as complete persistence.
 
-52. **Concurrent Feed processing MUST preserve user isolation.**
-    Identity lookup, duplicate matching, actions, tags, aliases, results, and downstream scheduling must remain scoped to the owning user.
+2. **Already committed independent Articles MUST survive later failures.**
+   Feed processing is not one giant all-or-nothing transaction. Failure of another item, a later Feed operation, or downstream work must not undo independent committed Articles. Work required to establish one valid Article may still succeed or fail together.
 
-53. **Persistence MUST NOT present partially committed work as complete success.**
-    Article changes and related state must respect their transaction boundaries. Acquisition success, committed item work, and item-processing failures must retain their separate meanings.
+3. **Concurrent processing of the same resolved publisher item MUST converge on one authoritative Article.**
+   Retries or simultaneous ingestion must recognize the authoritative persisted identity rather than create competing Articles or apply the same creation effects independently. This guarantee is independent of the storage or coordination mechanism.
 
-54. **Coordination state MUST have explicit ownership, expiry, and lifecycle semantics.**
-    Locks, claims, leases, or equivalent mechanisms must become recoverable after crashed or abandoned work. Active work must maintain ownership for the period in which it may commit changes.
+## Crawl results and operational state
 
-55. **A worker that loses ownership MUST NOT commit further crawl-owned mutations.**
-    An expired or superseded worker must not overwrite Article or Feed state, publish a terminal result as the current owner, or release another worker's claim. Recovery must preserve already committed work without duplicating its effects.
+1. **Every completed Feed execution MUST have an observable outcome grounded in what happened.**
+   Results must distinguish retrieval failure, unchanged retrieval, changed content with no new Articles, existing Article revisions, filtering, duplicates, item failures, and successful Feed processing where known. These facts may coexist: a Feed can be successfully retrieved, create some Articles, and fail on another item. A single success label must not conceal partial failure.
 
-56. **Correctness guarantees MUST hold at every supported concurrency level.**
-    Sequential and bounded parallel execution may differ in timing and processing order, but must preserve identity, ownership, transaction, and replay guarantees.
+2. **Current health and scheduling state MUST NOT rewrite retained history.**
+   A successful recovery may clear a current error while preserving earlier failed attempts and executions. Historical diagnostics may be bounded by an explicit retention policy, but a later success must not retroactively convert failure into success. A failed crawl likewise must not invalidate previously accepted useful source state.
 
-57. **Supported database dialects MUST preserve equivalent correctness guarantees.**
-    MySQL and SQLite may use different execution strategies, but must preserve the applicable ownership, identity, coordination, and persistence semantics.
+3. **Crawl statistics MUST describe recorded processing facts rather than current Article totals.**
+   Articles may later be deleted, filtered, or classified as duplicates independently of crawling. Current counts therefore cannot alone establish how many items a past execution created, revised, rejected, or failed to process.
 
-## Downstream Processing
+4. **Operational timestamps MUST retain their distinct meanings.**
+   Attempt time, successful acquisition time, accepted representation change, and execution completion describe different events. A changed representation does not prove an Article changed, and a completion timestamp does not establish when the publisher changed its content.
 
-58. **Successful Article persistence MUST be separable from optional downstream processing.**
-    Failure of embeddings, summaries, quality scoring, Event processing, Island processing, or other optional work must not remove a successfully ingested Article.
+5. **Successful unchanged retrieval MUST be capable of restoring acquisition health.**
+   Recognizing an accepted representation can establish that retrieval is healthy again without claiming new Articles were discovered. It does not establish that unrelated item-processing or downstream failures have been resolved.
 
-59. **Crawling MUST NOT require semantic processing to succeed.**
-    Unavailable or failed semantic services must not invalidate independently accepted source content.
+## Failures, retries, and recovery
 
-60. **Downstream work MUST operate on persisted canonical Article identity.**
-    Optional processors must not rely solely on transient parser objects or crawler memory to identify their target.
+1. **Failures MUST be classified according to available evidence.**
+   Retrieval, validation, parsing, item processing, persistence, and optional downstream failures should remain distinguishable when known. Transient failure, rate limiting, malformed input, prohibited retrieval, and configuration problems imply different recovery needs; diagnostics must not claim certainty beyond the evidence.
 
-61. **Downstream processing MUST NOT be counted as another source retrieval or user interaction.**
-    Analysis, derived-state refreshes, and job retries are processing activity, not additional crawl or behavioral evidence.
+2. **Retries MUST follow bounded execution and explicit scheduling policy.**
+   Immediate attempts and endpoint recovery remain within the resource bounds. Later attempts may continue under scheduling policy, respecting applicable publisher freshness, server retry guidance, backoff, quarantine, and disabled automatic fetching. A failure must not cause uncontrolled retry activity.
 
-62. **Repeated downstream processing MUST be replay-safe.**
-    Reprocessing may update derived state, but must not create duplicate Article identity, duplicate behavioral effects, or repeated independent support from the same evidence.
+3. **Recovery MUST NOT depend solely on process memory.**
+   Restarting RSSMonster must leave persisted Feed and Article state recoverable. Resumed work is subject to the persistence and replay guarantees, so recovery can complete missing work without invalidating independent committed work or repeating its effects.
 
-63. **Optional processing SHOULD be recoverable independently from source recrawling.**
-    Already persisted source content should support retries without another download solely to reconstruct that content.
+4. **Crash recovery MAY record an explicit abandoned-execution failure.**
+   Recovery must not invent successful completion or unobserved item outcomes. The time abandonment is detected is not proof of when source processing ended.
 
-## Security and Isolation
+## Downstream semantic processing
 
-64. **Feed-provided content MUST NOT be trusted as application instructions.**
-    Publisher text, markup, and metadata must not gain authority over application configuration, user actions, or privileged processing.
+1. **Successful ingestion MUST remain independent of semantic processing success.**
+   Crawling may cause embeddings, semantic duplicate detection, Event assignment, or interest scoring, but failure to initiate or complete them must not invalidate a valid Article. Missing embeddings, Events, or Islands must not prevent persistence, readability under the applicable visibility rules, or general recommendation eligibility.
 
-65. **Feed markup MUST be sanitized before presentation according to Article-content rules.**
-    Raw source preservation and safe rendered derivatives are distinct contracts. Retaining original content does not authorize rendering it unsanitized.
+2. **Semantic work MUST use persisted Article identity and state under the semantic contract.**
+   [semantic-system-contract.md](semantic-system-contract.md) defines eligible inputs, compatible representations, duplicate contribution, Event membership, Island evidence, and scoring. Crawling must not substitute transient candidate state or bypass those rules. Scheduling downstream work does not authorize processing a revision that the revision contract excludes.
 
-66. **Feed-controlled URLs MUST pass applicable security checks before server-side retrieval.**
-    Validation must cover redirects and nested acquisition paths as well as the initial Feed URL.
+3. **Event processing and personalization MUST remain independent concepts.**
+   Event assignment organizes occurrences and must not become preference evidence or imply user interaction. Interest scoring must not require Event membership; an otherwise eligible standalone Article remains eligible, with neutral interest when no trustworthy preference evidence applies. The semantic contract governs how Article evidence may contribute, including duplicate exclusions.
 
-67. **Crawler diagnostics MUST NOT expose secrets or unnecessary private infrastructure details.**
-    Credentials, authentication headers, tokens, sensitive URL components, and internal transport diagnostics must be redacted or excluded from exposed results and logs. Crawler-added secrets must not enter stored publisher content.
+4. **Optional downstream work SHOULD be recoverable from sufficient persisted input.**
+   A semantic failure should not require downloading the source again solely to reconstruct already retained input. Recovery remains subject to the revision and replay rules; it does not authorize fresh evidence or reanalysis merely because processing was retried.
 
-68. **One user's Feed configuration MUST NOT expose another user's data.**
-    Feed URLs, Articles, aliases, crawl history, errors, and automation rules must retain their ownership boundaries through direct and indirect access paths.
+5. **Crawl completion MUST NOT imply completion of all derived processing.**
+   Source ingestion, semantic processing, and AI enrichment have distinct outcomes. A successfully ingested Article may still lack optional derived state, and semantic computation itself is neither another retrieval nor a user interaction.
 
-## Observability
+## AI enrichment
 
-69. **The system MUST make relevant crawl decisions explainable.**
-    Available state and diagnostics must distinguish attempted processing from scheduling deferral, disabled automatic fetching, quarantine, or ownership conflicts where those reasons are known.
+1. **AI enrichment MUST remain distinct from source ingestion and semantic processing.**
+   Enrichment may derive summaries, analysis, or inferred metadata about an Article. Those outputs do not redefine publisher content, establish user intent, or independently determine semantic eligibility. AI failure must not invalidate the Article or make successful inference a prerequisite for recommendation.
 
-70. **The system MUST distinguish no new content from failure.**
-    Unchanged retrieval, changed content containing only known or filtered items, and failed processing must not be treated as interchangeable outcomes.
+2. **Enrichment MUST apply only to the specific Article representation it analyzed.**
+   A result based on older source content must not overwrite a newer revision. Obsolete work must be rejected, discarded, or retained only as obsolete, rather than applied as current analysis. This does not require removing already stored analysis that the revision contract deliberately preserves, nor does it authorize revision-triggered re-enrichment.
 
-71. **Accepted Articles MUST retain Feed provenance.**
-    Where retained crawl records provide sufficient correlation, the system should also make it possible to identify the execution that created or updated an Article. Missing correlation must not be replaced with an invented attribution.
+3. **Generated state MUST remain distinguishable from publisher and user-owned state.**
+   Summaries, inferred tags, and analysis must retain the provenance needed to identify them as generated and respect protected metadata and configured overrides. Missing analysis must remain distinguishable from an observed zero or negative result, with ranking fallbacks governed by the semantic contract.
 
-72. **Operational observability MUST NOT become publisher or behavioral evidence.**
-    Logs, statistics, traces, and health monitoring may support scheduling and recovery, but must not manufacture Article identity, publisher revisions, or user interactions.
+4. **Repeated inference MUST preserve the replay guarantee.**
+   Retrying equivalent enrichment may complete missing derived state, but must not multiply tags, accumulate the same score contribution, or create preference evidence. Inference activity itself is not evidence that the user read, favored, or otherwise interacted with the Article.
 
-73. **Implementation changes MUST preserve these crawl guarantees.**
-    HTTP libraries, parsers, queue mechanisms, retry strategies, concurrency implementations, database dialects, scheduling algorithms, and deployment topology may change without weakening the applicable identity, ownership, safety, persistence, and replay semantics.
+## Security and isolation
+
+1. **Remote Feed content MUST be treated as untrusted input.**
+   Responses, redirects, headers, URLs, markup, and metadata require appropriate validation before use. Publisher text must not become application instructions or acquire authority over configuration, privileged processing, automation, or user actions, including when supplied to AI enrichment.
+
+2. **All server-side acquisition MUST respect URL and network safety boundaries.**
+   User-supplied locations, redirects, discovered endpoints, publisher declarations, and nested retrieval must not enable access to prohibited resources. Accepting an earlier location does not automatically make a later target safe.
+
+3. **Raw publisher markup MUST NOT be assumed safe for presentation.**
+   Preserving original content serves source fidelity, not permission to render it unsanitized. Display representations must satisfy the Article-content safety boundary independently of whether acquisition and parsing succeeded.
+
+4. **Credentials and private transport details MUST NOT leak into diagnostics or publisher content.**
+   Exposed results and logs must exclude or redact authentication material, sensitive URL components, and unnecessary private infrastructure details. Secrets added by RSSMonster to retrieve a Feed must not become stored source text or publisher metadata.
+
+5. **User isolation MUST hold through indirect paths as well as direct access.**
+   Identity lookups, duplicate matching, aliases, automation, diagnostics, and downstream evidence must respect the Feed's ownership boundary. One user's configuration must not expose or influence another user's private Articles, crawl history, preferences, or recommendation state.
+
+## Replay safety and determinism
+
+1. **Running the same crawl against materially unchanged source state MUST NOT create additional identity or effects.**
+   With unchanged applicable configuration, repeated processing must not create additional Articles, favorites, clicks, tags, preference evidence, semantic evidence, or equivalent side effects. It must not refresh interaction timestamps or make old evidence appear new. A retry may finish previously missing work, but an already committed outcome must not be counted again.
+
+2. **Replay correctness MUST survive changes in execution conditions.**
+   Caches, retries, parallelism, process restarts, and scheduling may affect cost and timing, but must not weaken identity, ownership, persistence, or replay guarantees. Supported implementations must preserve these semantics regardless of their internal execution or storage strategy.
+
+3. **Equivalent input and configuration SHOULD produce equivalent crawl decisions.**
+   Incidental processing order must not supply identity or user intent. Genuine changes in source, configuration, or applicable state may change an outcome; repeated observation alone does not establish such a change.
+
+## Traceability and observability
+
+1. **Material crawl decisions MUST be explainable from their inputs.**
+   Feed selection, endpoint reconciliation, filtering, identity resolution, duplicate suppression, automation, revision handling, and downstream eligibility should have identifiable reasons. Available diagnostics must distinguish attempted processing from deferral, disabled fetching, quarantine, or execution-ownership conflicts where known.
+
+2. **Accepted Articles MUST retain Feed provenance.**
+   RSSMonster must be able to identify the source of an Article after ingestion and legitimate Feed reconciliation. Execution-level attribution may also be retained when established reliably; missing correlation must not be replaced with invented attribution.
+
+3. **Operational records MUST NOT become publisher or behavioral evidence.**
+   Logs, statistics, traces, and health state support explanation, scheduling, and recovery. They must not manufacture publisher revisions or user interactions, or independently supply semantic or preference support merely because an operation was observed.

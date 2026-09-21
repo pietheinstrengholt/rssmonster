@@ -8,7 +8,7 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
    Shared subjects, entities, or user interests alone do not establish an Event.
 
 2. **Event formation and membership MUST NOT depend on user behavior.**
-   Reading, favorites, clicks, feedback, and recommendation scores must not determine which Articles belong together.
+   Reading, favorites, clicks, feedback, and recommendation scores must not determine which Articles belong together. Events use article titles, descriptions, bodies, and other publisher-supplied content to detect the same occurrence. Event membership is independent of user interaction, personalization, or recommendation.
 
 3. **An Event MUST contain at least two canonical Articles.**
    Members counted toward Event validity MUST exist, belong to the Event’s owner, be unfiltered, and have no `duplicateOfArticleId`. Read/unread state does not affect membership eligibility. When an Event has fewer than two eligible canonical members, its remaining Articles MUST become eventless and the Event MUST stop contributing grouping and ranking evidence.
@@ -41,7 +41,7 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
     Normal incremental processing must not replace a valid representative when newer Articles join. An invalid or missing representative must be repaired.
 
 13. **Each Event MAY have a `developingArticleId` pointing to a canonical member.**
-    This pointer represents the current developing coverage wave for presentation and does not redefine Event identity.
+    This pointer represents the current developing coverage wave for presentation and does not redefine Event identity. Example: Article A is read at 10:00. Article B arrives at 10:15 and joins the Event, so B becomes developingArticleId. Article C arrives at 10:30 while B remains unread; the pointer stays on B. After B is read, a subsequently arriving eligible Article may start the next update.
 
 14. **Behavior-dependent presentation MUST NOT change Event membership.**
     Developing-story selection and grouping preferences must remain separate from occurrence detection.
@@ -137,8 +137,8 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
 18. **A single weak interaction MUST NOT establish a strong persistent preference.**
     Stronger influence requires sufficient supporting evidence or an explicit high-confidence signal, including a user-configured preference rule. Clicks and reading engagement MUST provide bounded implicit evidence. Repeated observations of the same Article MUST NOT count as independent supporting Articles or become equivalent to explicit approval merely through repetition.
 
-19. **Explicit feedback MUST take precedence over contradictory weak inference in the same interaction context.**
-    An explicit dislike must not be neutralized merely by a long dwell time. Later evidence and defined decay may change the resulting preference.
+19. **Explicit preference signals MUST take precedence over contradictory weaker evidence, and one Article MUST have one effective preference sign for scoring.**
+    Explicit positive or negative feedback takes precedence over favorites, clicks, reading engagement, and other weaker inference from the same Article. Explicit positive and explicit negative feedback are mutually exclusive active states. If inconsistent legacy state contains both, the signal with the most recent valid explicit-feedback timestamp determines the effective sign. An explicit dislike must not be neutralized merely by a favorite, click, or long dwell time. Later qualifying evidence and defined decay may change the resulting preference.
 
 20. **Active Islands MUST expire after a configured inactivity period of 30–90 days.**
     Use one configured inactivity period for all Islands, regardless of signal type or preference sign. The deadline equals the latest qualifying supporting interaction time plus that period; the Island expires when the deadline is reached. Historical strength must not keep an Island active beyond its deadline. Weight may decay before expiry; renewal does not automatically restore previous strength.
@@ -180,7 +180,19 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
     Reprocessing unchanged evidence must not manufacture additional preference strength, refresh behavioral timestamps, or create duplicate Islands.
 
 33. **Island state and lifecycle decisions MUST be explainable from their supporting evidence.**
-    Explanations must identify relevant interactions or user-configured rules and distinguish behavioral changes, decay, capacity decisions, and semantic consolidation. Explanation-retention limits must be explicit.
+    Explanations must identify relevant interactions or user-configured rules and distinguish behavioral changes, decay, capacity decisions, and semantic consolidation. Explanation-retention limits must be explicit. Retained scoring support MUST remain separate from population audit history.
+
+    Each Island MAY retain supporting Article IDs in `supportArticleIds`, maintained during calibration:
+
+    - Store at most **64 unique Article IDs per Island**, selected deterministically from current qualifying support, prioritizing recent behavior.
+    - Treat IDs as evidence-retrieval hints, not permanent membership, exclusive assignment, or an independent preference signal.
+    - During scoring, retrieve retained support in a batched, user-scoped query and combine it with recent behavioral evidence. Count each Article once in the combined evidence.
+    - Revalidate support against current Article state. Missing, foreign-owned, filtered, duplicate, behaviorally ineligible, or embedding-incompatible Articles MUST NOT contribute. Support MUST also meet the configured Article-to-Island affinity threshold.
+    - Recompute confidence from valid current evidence; a stored ID MUST NOT guarantee support.
+    - Historical audit entries MUST NOT become scoring evidence or restore removed preference signals.
+    - Legacy Islands without retained IDs continue using recent evidence until normal calibration populates the list.
+
+    Retained support preserves evidence continuity and confidence. It MUST NOT bypass similarity thresholds, automatically grant an Article an interest score, or introduce an additional Article-to-Article scoring path.
 
 34. **Island semantics MUST remain user-specific.**
     One user’s interactions, rules, and preferences must not contribute evidence to another user’s Islands.
@@ -205,6 +217,9 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
 
 41. **Implementation changes MUST preserve these semantics.**
     Models, thresholds, weighting formulas, decay functions, representations, and algorithms may change without redefining what an Island represents or weakening these boundaries.
+
+42. **Active Islands represent independently supported preference communities.**
+    Formation and identity matching discourage duplication, but the current implementation does not enforce a minimum pairwise semantic distance. Different Island identities or labels do not guarantee distinct interests.
 
 ## Articles
 
@@ -314,3 +329,33 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
 
 35. **Derived Article state MUST remain traceable to its inputs.**
     Duplicate decisions, semantic relationships, and scoring must have identifiable supporting evidence. Stored analysis and semantic state retained after a content revision refer to the previously analyzed representation and MUST NOT be presented as newly computed from the revised content. Runtime ranking may combine those retained inputs with current metadata and personalization under Article rule 29. This distinction MUST NOT trigger re-enrichment on revision.
+
+## Article interest scoring paths
+
+An Article’s interestScore may be derived from three evidence paths, governed by the following scoring contract rules:
+
+1. **Island matching.**
+    Compare the Article embedding with active Island embeddings. Weight qualifying similarity by the Island’s signed preference strength and evidence confidence.
+
+2. **Explicit-feedback matching.**
+    Compare the Article embedding with eligible user-owned Articles favorited, liked or disliked within the last 90 days. Apply recency decay and intent compatibility. This path is evaluated independently from Island matching and remains available even when the Article also matches an active Island.
+
+3. **Recent-behavior matching.**
+    Compare the Article embedding with eligible user-owned Articles clicked or meaningfully read within the last seven days and having no active explicit preference signal. Apply weaker authority, faster recency decay and intent compatibility. This path is evaluated independently from Island matching and explicit-feedback matching.
+
+4. **Self and duplicate evidence exclusion.**
+    An Article MUST NOT provide personalization evidence for its own interestScore. The candidate Article itself, retained duplicate records representing the same canonical Article, and repeated representations of the same underlying interaction MUST be excluded from Article-to-Article scoring evidence. The same underlying Article interaction MUST NOT produce multiple independent scoring contributions through duplicate records, repeated retrieval, or multiple evidence collections.
+
+5. **Fixed scoring reference time.**
+    One interest-scoring operation MUST use one fixed reference time. Evidence-window eligibility, recency decay, Island decay, and other time-dependent scoring decisions MUST use the same reference time throughout one scoring operation. Given identical candidate Article state, eligible evidence, configuration, semantic representations, and reference time, the resulting interestScore MUST be identical regardless of database row order, retrieval order, processing order, retries, or concurrency.
+
+6. **Semantic compatibility.**
+    All paths require compatible embeddings, user-owned eligible evidence, and similarity greater than or equal to the configured scoring threshold. Missing, invalid, unknown, or incompatible semantic representations produce no scoring contribution. An Article can therefore receive nonzero interest without matching an Island. Generated labels are presentation metadata and never scoring evidence. Scoring existing compatible embeddings requires no inference call.
+
+7. **Contribution semantics.**
+    Evaluate all qualifying matches from all scoring paths together. Each qualifying Article-to-Island or Article-to-Article match produces exactly one finite signed contribution in [-1, 1]. Positive values represent attraction and negative values represent aversion. Similarity, confidence, recency, authority, and intent adjustments MAY change the contribution magnitude but MUST NOT reverse its preference sign.
+
+    Across all contributions, retain only the single strongest positive contribution and the single strongest negative contribution. Do not first aggregate or sum same-sign contributions within a scoring path. Invalid or non-finite contributions MUST be discarded.
+
+8. **Final aggregation.**
+    Add the retained positive and negative contributions, clamp the result to [-1, 1], and round to four decimal places. A missing positive or negative contribution has value 0. No qualifying contribution produces neutral interest (0); opposing contributions may also cancel to 0. A neutral interestScore does not prevent an otherwise eligible Article from receiving a Recommended score.
