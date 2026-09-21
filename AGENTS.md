@@ -22,6 +22,7 @@ Default workflow: `inspect → understand → implement → test → lint → re
 * Never invent model fields, associations, API properties, constraints, routes, service contracts, or breakpoints.
 * Avoid over-engineering: implement the simplest robust solution for the stated requirements, and do not add speculative abstractions, defensive checks, or edge-case handling unless there is concrete evidence they are needed.
 * When changing behavior, update the relevant tests, run them before considering the change complete, and if they fail, fix either the implementation or the test and rerun until they pass; never leave CI failures for after commit/push.
+* When committing changes, prefix the commit message with exactly one of: docs:, fix:, feature:, refactor:, test:, or chore:, choosing the type that best describes the change.
 
 ## Stack
 
