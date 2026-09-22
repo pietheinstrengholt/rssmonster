@@ -1,7 +1,7 @@
 # =========================
 # 1. Build Vue client
 # =========================
-FROM node:22-alpine AS client-build
+FROM --platform=$BUILDPLATFORM node:22-alpine AS client-build
 
 WORKDIR /build/client
 
@@ -15,7 +15,7 @@ RUN npm run build
 # =========================
 # 2. Install server deps
 # =========================
-FROM node:22-alpine AS server-deps
+FROM --platform=$TARGETPLATFORM node:22-alpine AS server-deps
 
 # Build tooling is needed if sqlite3 must compile a native module.
 RUN apk add --no-cache python3 make g++
@@ -29,7 +29,7 @@ RUN npm ci --omit=dev
 # =========================
 # 3. Final runtime image
 # =========================
-FROM node:22-alpine
+FROM --platform=$TARGETPLATFORM node:22-alpine
 
 ENV NODE_ENV=production
 
