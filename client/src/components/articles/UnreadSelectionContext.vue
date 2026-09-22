@@ -31,7 +31,7 @@
               type="button"
               class="unread-selection-context__age-button"
               :aria-pressed="selectionStore.ageCutoff === option.value"
-              @click="selectionStore.setAgeCutoff(option.value)"
+              @click="selectAgeCutoff(option.value)"
             >{{ option.label }}</button>
           </div>
           <time v-if="dateContext" :datetime="dateContext.isoDate">{{ dateContext.longLabel }}</time>
@@ -84,6 +84,10 @@ export default {
       editingCustomDate.value = false;
       nextTick(() => dateDropdown.value?.getTrigger()?.focus());
     };
+    const selectAgeCutoff = value => {
+      editingCustomDate.value = false;
+      selectionStore.setAgeCutoff(value);
+    };
     const selectDateRange = value => {
       if (value === 'custom') {
         customStart.value = selectionStore.customDateRange.start;
@@ -110,6 +114,7 @@ export default {
       customEnd,
       customRangeValid,
       selectDateRange,
+      selectAgeCutoff,
       applyCustomRange,
       cancelCustomRange,
       dateRangeOptions: articleDateRangeOptions,

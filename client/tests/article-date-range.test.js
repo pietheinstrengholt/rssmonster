@@ -130,6 +130,47 @@ describe('calendar dropdown', () => {
     expect(stores.selectionStore.ageCutoff).toBe(value);
   });
 
+  it.each(['24h', '3d', '7d'].flatMap(cutoff =>
+    ['Today', 'Yesterday', 'Saturday', 'This month', 'Custom date...'].map(date => [cutoff, date])
+  ))('keeps %s and %s mutually exclusive in both directions', async (cutoff, date) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 8, 21, 16));
+    const stores = mountContext();
+    const ageButton = label => wrapper.get('[aria-label="Article age"]').findAll('button').find(button => button.text() === label);
+    const selectDate = async () => {
+      await trigger().trigger('click');
+      await option(date).trigger('click');
+      if (date === 'Custom date...') {
+        const inputs = wrapper.findAll('input[type="date"]');
+        await inputs[0].setValue('2026-09-19');
+        await inputs[1].setValue('2026-09-20');
+        await wrapper.get('form').trigger('submit');
+      }
+    };
+    await selectDate();
+    await ageButton(cutoff).trigger('click');
+    expect(trigger().text()).toBe('All');
+    expect(option('All').attributes('aria-checked')).toBe('true');
+    expect(ageButton(cutoff).attributes('aria-pressed')).toBe('true');
+    expect(stores.selectionStore.dateRange).toBe('all');
+    await selectDate();
+    expect(trigger().text()).toBe(date);
+    expect(ageButton('All').attributes('aria-pressed')).toBe('true');
+    expect(ageButton(cutoff).attributes('aria-pressed')).toBe('false');
+    expect(stores.selectionStore.ageCutoff).toBe('all');
+  });
+
+  it('dismisses a pending custom date when switching to a rolling cutoff', async () => {
+    mountContext();
+    await trigger().trigger('click');
+    await option('Custom date...').trigger('click');
+    expect(wrapper.find('form').exists()).toBe(true);
+    const age = wrapper.get('[aria-label="Article age"]');
+    await age.findAll('button').find(button => button.text() === '7d').trigger('click');
+    expect(wrapper.find('form').exists()).toBe(false);
+    expect(trigger().text()).toBe('All');
+  });
+
   it('defaults to All, toggles the menu, selects an option and resets the age choice', async () => {
     const stores = mountContext();
     stores.selectionStore.setAgeCutoff('3d');

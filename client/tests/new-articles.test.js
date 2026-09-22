@@ -23,6 +23,8 @@ const mountFeed = async (selection = {}, realList = false) => {
     BootstrapIcon: true,
     NewArticlesBanner: false,
     ArticleEndState: false,
+    UnreadSelectionContext: false,
+    AppDropdown: false,
     ArticleListView: realList ? false : { props: ['articles'], template: '<section><slot name="before-context" :reader-mode="false" /><p v-for="article in articles" :key="article.id">{{ article.title }}</p></section>' }
   } } });
   await flushPromises();
@@ -39,6 +41,34 @@ beforeEach(() => {
 afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe('new unread articles', () => {
+  it('replaces Yesterday with 7d and back through the controls and article query', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const now = new Date(2026, 8, 21, 16).getTime();
+    vi.setSystemTime(now);
+    fetchArticleIds.mockResolvedValue({ data: { ...result([104, 101, 103]).data, sourceCount: 1 } });
+    await mountFeed({}, true);
+    const selectYesterday = async () => {
+      await wrapper.get('[aria-label^="Article date range:"]').trigger('click');
+      await wrapper.findAll('[role="menuitemradio"]').find(item => item.text().replace('✓', '').trim() === 'Yesterday').trigger('click');
+      await flushPromises();
+    };
+    await selectYesterday();
+    await button('7d').trigger('click');
+    await flushPromises();
+    expect(wrapper.get('[aria-label="Article date range: All"]').text()).toBe('All');
+    expect(fetchArticleIds).toHaveBeenLastCalledWith(expect.objectContaining({
+      publishedAfter: new Date(now - 168 * 3600000).toISOString(),
+      publishedBefore: new Date(now + 1).toISOString(),
+      status: 'unread', categoryId: '3', feedId: '4', search: 'title:Science'
+    }));
+    await selectYesterday();
+    expect(button('7d').attributes('aria-pressed')).toBe('false');
+    expect(fetchArticleIds).toHaveBeenLastCalledWith(expect.objectContaining({
+      publishedAfter: new Date(2026, 8, 20).toISOString(),
+      publishedBefore: new Date(2026, 8, 21).toISOString()
+    }));
+  });
+
   it('shows and marks only four new articles when the feed has 473 unread articles', async () => {
     await mountFeed({}, true);
     stores.overviewStore.categories = [{ id: 3, unreadCount: 473, feeds: [{ id: 4, unreadCount: 473 }] }];
