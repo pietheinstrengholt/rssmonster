@@ -178,6 +178,7 @@ describe('UnreadSelectionContext', () => {
 
     const action = wrapper.findAll('button').find(button => button.text() === 'Tune your unread selection');
     expect(action.text()).toBe('Tune your unread selection');
+    expect(action.attributes('aria-label')).toBe('Tune your unread selection');
     expect(action.getComponent({ name: 'BootstrapIcon' }).props('icon')).toBe('sliders2');
 
     await action.trigger('click');

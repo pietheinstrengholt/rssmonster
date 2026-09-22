@@ -37,7 +37,7 @@
           <time v-if="dateContext" :datetime="dateContext.isoDate">{{ dateContext.longLabel }}</time>
         </div>
       </div>
-      <button type="button" class="unread-selection-context__tune" @click="uiStore.setShowModal('UnreadConfiguration')">
+      <button type="button" class="unread-selection-context__tune" aria-label="Tune your unread selection" title="Tune your unread selection" @click="uiStore.setShowModal('UnreadConfiguration')">
         <BootstrapIcon icon="sliders2" aria-hidden="true" />
         <span>Tune your unread selection</span>
       </button>
@@ -212,9 +212,29 @@ export default {
 .unread-selection-context__age-button[aria-pressed='true'] { border-color: var(--color-primary); background: var(--color-primary); color: var(--text-inverted); }
 .unread-selection-context__age-button:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 .unread-selection-context__tune:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
-@media (max-width: 767px) {
-  .unread-selection-context__divider { display: none; }
-  .unread-selection-context__date-group { flex-basis: 100%; }
+@media (max-width: 767px), (max-height: 560px) and (min-width: 480px) {
+  .unread-selection-context { padding: 0.375rem 0.5rem; }
+  .unread-selection-context__surface { gap: 0.375rem; padding: 0.5rem; }
+  .unread-selection-context__meta,
+  .unread-selection-context__divider,
+  .unread-selection-context__date-group > time,
+  .unread-selection-context__tune > span { display: none; }
+  .unread-selection-context__summary { flex: 0 1 auto; }
+  .unread-selection-context__date-group,
+  .unread-selection-context__age-cutoff { gap: 0.25rem; }
+  .unread-selection-context__date-trigger,
+  .unread-selection-context__age-button { height: var(--control-height-compact); padding-inline: 0.5rem; }
+  .unread-selection-context__tune {
+    flex: 0 0 var(--control-height-compact);
+    width: var(--control-height-compact);
+    height: var(--control-height-compact);
+    padding: 0;
+    justify-content: center;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    background: var(--surface-card);
+  }
+  .unread-selection-context__tune:hover { background: var(--briefing-context-action-hover-surface); }
 }
 :global(:root[data-theme='dark'] .unread-selection-context) { background: var(--surface-page); border-bottom-color: var(--border-subtle); }
 </style>
