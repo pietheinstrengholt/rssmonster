@@ -54,7 +54,8 @@ export const articleFeedReadStateMethods = {
     const activeRequestId = this.activeRequestId;
 
     try {
-      await markAllAsRead(selection, snapshotArticleIds);
+      // New-only completion must not expand the snapshot to older Event members.
+      await markAllAsRead(this.showingNewOnly ? { ...selection, grouping: 'none' } : selection, snapshotArticleIds);
     } catch (error) {
       console.error('Error marking all articles as read:', error);
       notifyActionError('Could not mark these articles as read. Please try again.', error);
@@ -66,7 +67,12 @@ export const articleFeedReadStateMethods = {
       return;
     }
 
-    this.articles = this.articles.map(article => ({ ...article, status: 'read' }));
+    const snapshotIds = new Set(snapshotArticleIds.map(String));
+    this.articles = this.articles.map(article => (
+      !this.showingNewOnly || snapshotIds.has(String(article.id))
+        ? { ...article, status: 'read' }
+        : article
+    ));
     this.isFlushed = true;
 
     try {

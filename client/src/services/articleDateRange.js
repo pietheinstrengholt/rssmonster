@@ -4,7 +4,14 @@ export const articleDateRangeOptions = [
   { value: 'all', label: 'All' },
   { value: 'today', label: 'Today' },
   { value: 'yesterday', label: 'Yesterday' },
-  { value: 'this-week', label: 'This week' },
+  {
+    value: 'day-before-yesterday',
+    get label() {
+      const date = new Date();
+      date.setDate(date.getDate() - 2);
+      return date.toLocaleDateString('en-GB', { weekday: 'long' });
+    }
+  },
   { value: 'this-month', label: 'This month' },
   { value: 'custom', label: 'Custom date...' }
 ];
@@ -29,11 +36,10 @@ export const resolveArticleDateRange = (value, custom = {}, now = Date.now()) =>
     customEnd.setDate(customEnd.getDate() + 1);
     return { start: customStart, end: customEnd };
   }
-  if (value === 'yesterday') {
+  if (value === 'yesterday' || value === 'day-before-yesterday') {
+    start.setDate(start.getDate() - (value === 'yesterday' ? 1 : 2));
     end.setTime(start.getTime());
-    start.setDate(start.getDate() - 1);
-  } else if (value === 'this-week') {
-    start.setDate(start.getDate() - (start.getDay() + 6) % 7);
+    end.setDate(end.getDate() + 1);
   } else if (value === 'this-month') {
     start.setDate(1);
   } else if (value !== 'today') return null;
@@ -42,12 +48,11 @@ export const resolveArticleDateRange = (value, custom = {}, now = Date.now()) =>
 
 export const withArticleDateFilters = (selection, state, now = Date.now()) => {
   const query = withArticleAgeCutoff(selection, state.ageCutoff, now);
-  delete query.publishedBefore;
   const range = selection.status === 'unread'
     ? resolveArticleDateRange(state.dateRange, state.customDateRange, now)
     : null;
   if (!range) return query;
   query.publishedAfter = new Date(Math.max(range.start.getTime(), query.publishedAfter ? Date.parse(query.publishedAfter) : -Infinity)).toISOString();
-  query.publishedBefore = range.end.toISOString();
+  query.publishedBefore = new Date(Math.min(range.end.getTime(), query.publishedBefore ? Date.parse(query.publishedBefore) : Infinity)).toISOString();
   return query;
 };

@@ -9,9 +9,9 @@
           <span class="unread-selection-context__divider" aria-hidden="true"></span>
           <AppDropdown ref="dateDropdown" class="unread-selection-context__date-filter">
             <template #trigger="{ triggerProps }">
-              <button v-bind="triggerProps" type="button" class="unread-selection-context__date-trigger" :aria-label="`Article date range: ${selectedDateRangeLabel}`">
+              <button v-bind="triggerProps" type="button" class="unread-selection-context__date-trigger" :aria-label="`Article date range: ${selectedDateRangeOption.label}`">
                 <BootstrapIcon icon="calendar3" context="control" aria-hidden="true" />
-                <span>{{ selectedDateRangeLabel }}</span>
+                <span>{{ selectedDateRangeOption.label }}</span>
                 <BootstrapIcon icon="chevron-down" context="control" aria-hidden="true" />
               </button>
             </template>
@@ -34,7 +34,6 @@
               @click="selectionStore.setAgeCutoff(option.value)"
             >{{ option.label }}</button>
           </div>
-          <span v-if="dateContext" class="unread-selection-context__current-date">{{ dateContext.label }}</span>
           <time v-if="dateContext" :datetime="dateContext.isoDate">{{ dateContext.longLabel }}</time>
         </div>
       </div>
@@ -114,7 +113,7 @@ export default {
       applyCustomRange,
       cancelCustomRange,
       dateRangeOptions: articleDateRangeOptions,
-      selectedDateRangeLabel: computed(() => articleDateRangeOptions.find(option => option.value === selectionStore.dateRange).label),
+      selectedDateRangeOption: computed(() => articleDateRangeOptions.find(option => option.value === selectionStore.dateRange)),
       ageCutoffOptions: articleAgeCutoffOptions,
       dateContext: computed(() => articleDateContext(activeDate.value))
     };
@@ -169,7 +168,6 @@ export default {
 .unread-selection-context__date-trigger:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 .unread-selection-context__date-filter .app-dropdown__item { --app-dropdown-hover-background: var(--surface-hover); --app-dropdown-hover-color: var(--text-primary); --app-dropdown-active-background: var(--color-primary-soft); --app-dropdown-active-color: var(--color-link); }
 .unread-selection-context__date-check { display: inline-block; width: 1rem; text-align: center; }
-.unread-selection-context__current-date { color: var(--color-link); font-weight: 600; }
 .unread-selection-context__custom-date { display: flex; flex-wrap: wrap; align-items: end; gap: 0.5rem; flex-basis: 100%; }
 .unread-selection-context__custom-date label { display: grid; gap: 0.25rem; }
 .unread-selection-context__custom-date input { min-height: var(--control-height-compact); max-width: 100%; padding: 0.25rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-compact); background: var(--surface-card); color: var(--text-primary); font: inherit; }

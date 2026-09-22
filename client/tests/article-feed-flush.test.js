@@ -24,7 +24,7 @@ beforeEach(() => {
 
 describe('ArticleFeed final read reconciliation', () => {
   it('retains the new-only boundary when marking the displayed collection as read', async () => {
-    const currentSelection = { status: 'unread', feedId: '4', search: 'title:Science' };
+    const currentSelection = { status: 'unread', feedId: '4', search: 'title:Science', grouping: 'event' };
     const loadedSelection = {
       ...currentSelection, search: 'title:Science unread:true read:false id:>104', persistSettings: false
     };
@@ -34,14 +34,33 @@ describe('ArticleFeed final read reconciliation', () => {
         overview: { fetchOverviewSplit: vi.fn().mockResolvedValue() }
       }),
       loadedSelection, showingNewOnly: true, totalCount: 2,
-      container: [105, 106], articles: [{ id: 105, status: 'unread' }, { id: 106, status: 'unread' }],
+      container: [105, 106], articles: [{ id: 105, status: 'unread' }, { id: 106, status: 'unread' }, { id: 103, status: 'unread', clusterParentId: 105 }],
       isFlushed: false, activeRequestId: 1,
       refreshArticleIds: vi.fn().mockResolvedValue(true)
     };
     await ArticleFeed.methods.flushPool.call(context);
-    expect(markAllAsRead).toHaveBeenCalledWith(loadedSelection, [105, 106]);
+    expect(markAllAsRead).toHaveBeenCalledWith({ ...loadedSelection, grouping: 'none' }, [105, 106]);
+    expect(context.articles.find(article => article.id === 103).status).toBe('unread');
     expect(context.refreshArticleIds).toHaveBeenCalledWith(loadedSelection, { newOnly: true });
     expect(context.selectionStore.currentSelection.search).toBe('title:Science');
+    expect(context.selectionStore.currentSelection.grouping).toBe('event');
+  });
+
+  it('bounds new-only unread totals to matching results, excluding read rows and unrelated expanded articles', () => {
+    const context = {
+      ...createFocusedStores({ overview: { unreadCount: 473 } }),
+      showingNewOnly: true, totalCount: 4, container: [105, 106],
+      articles: [{ id: 105, status: 'unread' }, { id: 106, status: 'unread' }, { id: 103, status: 'read', clusterParentId: 105 }]
+    };
+    const count = () => ArticleFeed.computed.currentViewUnreadCount.call(context);
+    expect(count()).toBe(4);
+    context.container.push(107, 108);
+    context.articles.push({ id: 107, status: 'unread' }, { id: 108, status: 'unread' });
+    expect(count()).toBe(4);
+    context.articles[0].status = 'read';
+    expect(count()).toBe(3);
+    context.showingNewOnly = false;
+    expect(count()).toBe(473);
   });
 
   // Verifies Briefing end-state totals exclude read and expanded related articles.

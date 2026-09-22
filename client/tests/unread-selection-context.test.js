@@ -202,6 +202,7 @@ describe('UnreadSelectionContext', () => {
       { id: 3, publishedAt: '2026-09-19T10:00:00' }
     ];
     const stores = createStore();
+    stores.selectionStore.setAgeCutoff('7d');
     wrapper = mount(UnreadSelectionContext, {
       attachTo: scrollRoot,
       props: { articleCount: 462, sourceCount: 4, articles, getArticleElement: id => rows[id - 1] },
@@ -211,7 +212,7 @@ describe('UnreadSelectionContext', () => {
     await flushPromises();
     const observer = observers.at(-1);
     expect(observer.options.root).toBe(scrollRoot);
-    expect(wrapper.text()).toContain('Today');
+    expect(wrapper.get('time').attributes('datetime')).toBe('2026-09-22');
     expect(wrapper.get('time').text()).toBe('Tuesday, 22 September 2026');
 
     const intersect = async entries => {
@@ -220,16 +221,15 @@ describe('UnreadSelectionContext', () => {
     };
     // Callback order does not determine the topmost row, and a partly visible first row still owns the date.
     await intersect([[2, true], [1, true]]);
-    expect(wrapper.text()).toContain('Today');
+    expect(wrapper.get('time').attributes('datetime')).toBe('2026-09-22');
     await intersect([[1, false]]);
-    expect(wrapper.text()).toContain('Yesterday');
     expect(wrapper.get('time').attributes('datetime')).toBe('2026-09-21');
     expect(wrapper.get('time').text()).toBe('Monday, 21 September 2026');
     await intersect([[2, false], [3, true]]);
     expect(wrapper.text()).toContain('Saturday');
     expect(wrapper.get('time').text()).toBe('Saturday, 19 September 2026');
     await intersect([[1, true], [3, false]]);
-    expect(wrapper.text()).toContain('Today');
+    expect(wrapper.get('time').attributes('datetime')).toBe('2026-09-22');
     expect(wrapper.text()).toContain('Based on 462 articles from 4 sources');
 
     await wrapper.setProps({ articles: [...articles, { id: 4, publishedAt: '2026-09-18T10:00:00' }] });

@@ -9,8 +9,9 @@ export const articleAgeCutoffOptions = [
 export const withArticleAgeCutoff = (selection, ageCutoff, now = Date.now()) => {
   const query = { ...selection };
   delete query.publishedAfter;
+  delete query.publishedBefore;
   const hours = articleAgeCutoffOptions.find(option => option.value === ageCutoff)?.hours;
   return selection.status === 'unread' && hours
-    ? { ...query, publishedAfter: new Date(now - hours * 3600000).toISOString() }
+    ? { ...query, publishedAfter: new Date(now - hours * 3600000).toISOString(), publishedBefore: new Date(now + 1).toISOString() }
     : query;
 };

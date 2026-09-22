@@ -168,6 +168,14 @@ export default {
 
       if (selection.status !== 'unread') return 0;
 
+      if (this.showingNewOnly) {
+        const collectionIds = new Set(this.container.map(String));
+        const readIds = new Set(this.articles.filter(article => (
+          collectionIds.has(String(article.id)) && article.status === 'read'
+        )).map(article => String(article.id)));
+        return Math.max(0, (this.totalCount ?? collectionIds.size) - readIds.size);
+      }
+
       if (selection.smartFolderId !== null) {
         const smartFolder = this.overviewStore.smartFolders.find(folder => folder.id === selection.smartFolderId);
         return smartFolder?.ArticleCount ?? 0;

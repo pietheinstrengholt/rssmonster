@@ -167,11 +167,11 @@ export const useSelectionStore = defineStore('selection', {
     setDateRange(value, custom = this.customDateRange) {
       if (!articleDateRangeOptions.some(option => option.value === value)) return false;
       if (value === 'custom' && !resolveArticleDateRange(value, custom)) return false;
-      this.$patch({ dateRange: value, ...(value === 'custom' ? { customDateRange: { ...custom } } : {}) });
+      this.$patch({ dateRange: value, ageCutoff: 'all', ...(value === 'custom' ? { customDateRange: { ...custom } } : {}) });
       return true;
     },
     setAgeCutoff(value) {
-      if (articleAgeCutoffOptions.some(option => option.value === value)) this.ageCutoff = value;
+      if (articleAgeCutoffOptions.some(option => option.value === value)) this.$patch({ ageCutoff: value, dateRange: 'all' });
     },
     // This action clears collection filters while preserving presentation and capability settings.
     resetArticleFilters() {

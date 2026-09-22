@@ -1,7 +1,7 @@
 import { flushPromises, shallowMount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
-import { fetchArticleIds, fetchArticlePage, fetchNewerArticleCount } from '../src/api/articles.js';
+import { fetchArticleIds, fetchArticlePage, fetchNewerArticleCount, markAllAsRead } from '../src/api/articles.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 import { loadUnreadBaseline, saveUnreadBaseline, newerUnreadSelection } from '../src/services/unreadBaseline.js';
 
@@ -15,14 +15,15 @@ vi.mock('../src/api/articles.js', () => ({
 let wrapper;
 let stores;
 const result = ids => ({ data: { itemIds: ids, firstPage: ids.map(id => ({ id, title: `Article ${id}`, status: 'unread' })) } });
-const mountFeed = async (selection = {}) => {
+const mountFeed = async (selection = {}, realList = false) => {
   stores = createFocusedStores({ auth: { userId: 42 }, selection: { currentSelection: {
     status: 'unread', sort: 'recommended', search: 'title:Science', categoryId: '3', feedId: '4', ...selection
   } } });
   wrapper = shallowMount(ArticleFeed, { global: { plugins: [stores.pinia], stubs: {
     BootstrapIcon: true,
     NewArticlesBanner: false,
-    ArticleListView: { props: ['articles'], template: '<section><slot name="before-context" :reader-mode="false" /><p v-for="article in articles" :key="article.id">{{ article.title }}</p></section>' }
+    ArticleEndState: false,
+    ArticleListView: realList ? false : { props: ['articles'], template: '<section><slot name="before-context" :reader-mode="false" /><p v-for="article in articles" :key="article.id">{{ article.title }}</p></section>' }
   } } });
   await flushPromises();
 };
@@ -38,6 +39,29 @@ beforeEach(() => {
 afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe('new unread articles', () => {
+  it('shows and marks only four new articles when the feed has 473 unread articles', async () => {
+    await mountFeed({}, true);
+    stores.overviewStore.categories = [{ id: 3, unreadCount: 473, feeds: [{ id: 4, unreadCount: 473 }] }];
+    stores.overviewStore.fetchOverviewSplit = vi.fn().mockResolvedValue();
+    fetchArticleIds.mockResolvedValueOnce(result([105, 106, 107, 108]));
+    await wrapper.vm.showNewArticles();
+    await flushPromises();
+    expect(wrapper.text()).toContain('4 unread articles were reviewed.');
+    expect(button('Mark 4 as read')).toBeDefined();
+    expect(button('Mark 473 as read')).toBeUndefined();
+    expect(wrapper.text()).not.toContain('473 unread articles were reviewed.');
+    fetchNewerArticleCount.mockResolvedValueOnce({ data: { newerArticleCount: 8 } });
+    await wrapper.vm.checkForNewerArticles();
+    await flushPromises();
+    expect(button('Mark 4 as read')).toBeDefined();
+    fetchArticleIds.mockResolvedValueOnce(result([]));
+    await button('Mark 4 as read').trigger('click');
+    await flushPromises();
+    expect(markAllAsRead).toHaveBeenCalledWith(expect.objectContaining({
+      search: 'title:Science unread:true read:false id:>104', grouping: 'none'
+    }), [105, 106, 107, 108]);
+  });
+
   it.each([['24h', 24], ['3d', 72], ['7d', 168]])('adds the %s cutoff while preserving the full selection and baseline', async (value, hours) => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-09-22T12:00:00Z'));
@@ -46,7 +70,7 @@ describe('new unread articles', () => {
     fetchArticleIds.mockResolvedValue(result([107]));
     stores.selectionStore.setAgeCutoff(value);
     await flushPromises();
-    expect(fetchArticleIds).toHaveBeenLastCalledWith({ ...selection, publishedAfter: new Date(Date.now() - hours * 3600000).toISOString() });
+    expect(fetchArticleIds).toHaveBeenLastCalledWith({ ...selection, publishedAfter: new Date(Date.now() - hours * 3600000).toISOString(), publishedBefore: new Date(Date.now() + 1).toISOString() });
     expect(wrapper.text()).not.toContain('Article 101');
     expect(loadUnreadBaseline(42, selection)).toBe(104);
     stores.selectionStore.setAgeCutoff('all');
@@ -59,7 +83,7 @@ describe('new unread articles', () => {
     const selection = { ...stores.selectionStore.currentSelection };
     stores.selectionStore.setAgeCutoff('3d');
     await flushPromises();
-    expect(fetchArticleIds).toHaveBeenLastCalledWith({ ...selection, publishedAfter: expect.any(String) });
+    expect(fetchArticleIds).toHaveBeenLastCalledWith({ ...selection, publishedAfter: expect.any(String), publishedBefore: expect.any(String) });
     expect(stores.selectionStore.currentSelection).toEqual(selection);
   });
 
@@ -102,7 +126,7 @@ describe('new unread articles', () => {
     expect(fetchArticlePage).toHaveBeenLastCalledWith(expect.objectContaining({ publishedAfter: cutoff }), expect.objectContaining({ cursor: 'age-page' }));
   });
 
-  it('combines calendar and age filters with new-only and rejects stale calendar responses', async () => {
+  it('switches age and calendar filters with new-only and rejects stale calendar responses', async () => {
     await mountFeed();
     fetchArticleIds.mockResolvedValueOnce(result([107]));
     await wrapper.vm.showNewArticles();
@@ -112,6 +136,7 @@ describe('new unread articles', () => {
     fetchArticleIds.mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve; }));
     stores.selectionStore.setDateRange('today');
     await flushPromises();
+    expect(stores.selectionStore.ageCutoff).toBe('all');
     fetchArticleIds.mockResolvedValueOnce(result([109]));
     stores.selectionStore.setDateRange('yesterday');
     await flushPromises();
