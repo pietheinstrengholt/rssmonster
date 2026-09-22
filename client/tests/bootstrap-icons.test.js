@@ -17,7 +17,9 @@ describe('Bootstrap icon delivery', () => {
 
   it.each([
     'activity',
+    'calendar3',
     'check-circle-fill',
+    'chevron-down',
     'chevron-right',
     'cpu-fill',
     'pause-circle',

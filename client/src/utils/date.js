@@ -24,3 +24,22 @@ export function formatRelativeDate(value) {
   const result = timeDifference(Date.now(), publishedAt);
   return result.charAt(0).toUpperCase() + result.slice(1);
 }
+
+// Uses local calendar days so the relative pill and long date always describe the same publication day.
+export function articleDateContext(value, now = new Date()) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const dayKey = day => `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isoDate = dayKey(date);
+  const label = isoDate === dayKey(now) ? 'Today'
+    : isoDate === dayKey(yesterday) ? 'Yesterday'
+      : date.toLocaleDateString('en-GB', { weekday: 'long' });
+  return {
+    isoDate,
+    label,
+    longLabel: date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  };
+}

@@ -576,6 +576,11 @@ export default (sequelize) => {
         {
           name: 'articles_userId_aiAnalysisStatus_idx',
           fields: ['userId', 'aiAnalysisStatus']
+        },
+        // Keep existing indexes first: InnoDB can use their order when choosing foreign-key support.
+        {
+          name: 'articles_user_visible_created_idx',
+          fields: ['userId', 'filteredInd', 'duplicateOfArticleId', 'createdAt']
         }
       ],
       charset: 'utf8mb4',

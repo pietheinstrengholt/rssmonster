@@ -489,7 +489,7 @@ export default {
         .filter(ref => ref && typeof ref.scrollArticleListToTop === 'function')
         .forEach(ref => ref.scrollArticleListToTop());
     },
-    // This function registers the window listeners owned by the app shell.
+    // This function registers the browser listeners owned by the app shell.
     registerGlobalListeners() {
       this.removeGlobalListeners();
       window.addEventListener(ACTION_ERROR_EVENT, this.handleActionError);
@@ -498,8 +498,9 @@ export default {
       window.addEventListener('offline', this.handleBrowserOffline);
       window.addEventListener('online', this.handleBrowserOnline);
       window.addEventListener('orientationchange', this.handleOrientationChange);
+      document.addEventListener('visibilitychange', this.handleOverviewVisibilityChange);
     },
-    // This function removes the window listeners owned by the app shell.
+    // This function removes the browser listeners owned by the app shell.
     removeGlobalListeners() {
       window.removeEventListener(ACTION_ERROR_EVENT, this.handleActionError);
       window.removeEventListener(CONNECTIVITY_ERROR_EVENT, this.handleConnectivityError);
@@ -507,6 +508,7 @@ export default {
       window.removeEventListener('offline', this.handleBrowserOffline);
       window.removeEventListener('online', this.handleBrowserOnline);
       window.removeEventListener('orientationchange', this.handleOrientationChange);
+      document.removeEventListener('visibilitychange', this.handleOverviewVisibilityChange);
     },
     // This function starts overview polling once per app shell instance.
     startOverviewPolling() {
@@ -518,7 +520,13 @@ export default {
 
       this.overviewIntervalId = setInterval(() => {
         this.getOverview(false);
-      }, 300 * 1000);
+      }, (document.hidden ? 300 : 60) * 1000);
+    },
+    // Reschedule active polling without restarting a paused or disconnected shell.
+    handleOverviewVisibilityChange() {
+      if (this.overviewIntervalId === null) return;
+      this.stopOverviewPolling();
+      this.startOverviewPolling();
     },
     // This function stops overview polling for the app shell instance.
     stopOverviewPolling() {

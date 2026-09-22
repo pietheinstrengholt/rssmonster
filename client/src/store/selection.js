@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia';
+import { articleAgeCutoffOptions } from '../services/articleAgeCutoff.js';
+import { articleDateRangeOptions, resolveArticleDateRange } from '../services/articleDateRange.js';
 import { fetchSettings as fetchSettingsAPI, saveViewMode } from '../api/settings';
 import { useOverviewStore } from './overview.js';
 import { normalizeResourceError } from './resourceState.js';
@@ -124,6 +126,9 @@ const supportedSelection = selection => Object.fromEntries(
 // This function creates selection and settings-resource state for one user session.
 const initialSelectionState = () => ({
   currentSelection: defaultSelection(),
+  ageCutoff: 'all',
+  dateRange: 'all',
+  customDateRange: { start: '', end: '' },
   activeSmartFolderMarkAsReadOnScroll: false,
   ordinaryPresentation: null,
   briefingSelectionPeriod: DEFAULT_BRIEFING_SELECTION_PERIOD,
@@ -159,6 +164,15 @@ export const useSelectionStore = defineStore('selection', {
   },
 
   actions: {
+    setDateRange(value, custom = this.customDateRange) {
+      if (!articleDateRangeOptions.some(option => option.value === value)) return false;
+      if (value === 'custom' && !resolveArticleDateRange(value, custom)) return false;
+      this.$patch({ dateRange: value, ...(value === 'custom' ? { customDateRange: { ...custom } } : {}) });
+      return true;
+    },
+    setAgeCutoff(value) {
+      if (articleAgeCutoffOptions.some(option => option.value === value)) this.ageCutoff = value;
+    },
     // This action clears collection filters while preserving presentation and capability settings.
     resetArticleFilters() {
       this.setCurrentSelection(DEFAULT_ARTICLE_FILTERS);

@@ -3,20 +3,27 @@
     v-if="showDailyBriefingIntro && hasLoadedContent && isCollectionEmpty"
     reader-mode
   />
-  <ArticleEmptyState
-    v-if="hasLoadedContent && isCollectionEmpty"
-    class="article-reader__empty"
-    :current-status="currentSelection"
-    :selected-tag="selectedTag"
-    :refresh-progress="feedRefreshStore.progress"
-    :show-refresh-progress="showFeedRefreshProgress"
-    @clear-filters="$emit('clear-filters')"
-    @clear-tag="$emit('clear-tag')"
-    @refresh-feeds="$emit('refresh-feeds')"
-    @open-smart-folders="$emit('open-smart-folders')"
-    @view-tag-status="$emit('view-tag-status', $event)"
-  />
-
+  <template v-if="hasLoadedContent && isCollectionEmpty">
+    <slot name="before-context" :reader-mode="true" />
+    <UnreadSelectionContext
+      v-if="currentSelection === 'unread' && (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all')"
+      :article-count="0"
+      :source-count="0"
+      reader-mode
+    />
+    <ArticleEmptyState
+      class="article-reader__empty"
+      :current-status="currentSelection"
+      :selected-tag="selectedTag"
+      :refresh-progress="feedRefreshStore.progress"
+      :show-refresh-progress="showFeedRefreshProgress"
+      @clear-filters="$emit('clear-filters')"
+      @clear-tag="$emit('clear-tag')"
+      @refresh-feeds="$emit('refresh-feeds')"
+      @open-smart-folders="$emit('open-smart-folders')"
+      @view-tag-status="$emit('view-tag-status', $event)"
+    />
+  </template>
   <div v-else class="article-reader">
     <aside
       ref="articleListScrollRef"
@@ -24,10 +31,13 @@
       aria-label="Article list"
     >
       <DailyBriefingIntro v-if="showDailyBriefingIntro" reader-mode />
+      <slot name="before-context" :reader-mode="true" />
       <UnreadSelectionContext
-        v-if="currentSelection === 'unread' && loadedCount > 0 && currentViewSourceCount !== null"
-        :article-count="currentViewUnreadCount"
-        :source-count="currentViewSourceCount"
+        v-if="currentSelection === 'unread' && ((loadedCount > 0 && currentViewSourceCount !== null) || (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all'))"
+        :article-count="collectionSummary.totalCount ?? currentViewUnreadCount"
+        :source-count="currentViewSourceCount ?? 0"
+        :articles="readerListArticles"
+        :get-article-element="getArticleListElement"
         reader-mode
       />
       <div class="article-list-bulk-header" @click.stop>
@@ -561,6 +571,10 @@ export default {
     }
   },
   methods: {
+    // The date context follows the scrolling list, not the selected article's detail panel.
+    getArticleListElement(articleId) {
+      return this.articleItemRefs[articleId]?.closest('article') || null;
+    },
     getSelectedReadingArticleId() {
       return this.selectedArticleId;
     },

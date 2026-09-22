@@ -164,7 +164,7 @@
 .mobile-toolbar-container {
   position: sticky;
   top: 0;
-  z-index: var(--layer-sticky);
+  z-index: var(--layer-toolbar);
   display: block;
   width: 100%;
   pointer-events: none;

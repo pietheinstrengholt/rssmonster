@@ -609,3 +609,12 @@ runtime Recommended score. No Event, Island or embedding is required;
 unmatched personal evidence means zero interest. See the
 [interest evaluator](../islands/README.md#confidence-aware-interest) and
 [final ranking formula](../../../docs/scoring.md).
+
+## Additional publication cutoff
+
+Article list and matching mark-as-read requests accept optional `publishedAfter`
+and `publishedBefore` UTC ISO timestamps. They add inclusive `publishedAt >= publishedAfter`
+and exclusive `publishedAt < publishedBefore` constraints alongside existing search
+date ranges and source/state filters before grouping and sorting. Both are included in
+the cursor fingerprint and must stay fixed for subsequent pages. Arrival counts use
+the same constraints. These request values are never persisted in user settings.

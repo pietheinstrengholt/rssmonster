@@ -21,6 +21,8 @@ const createLifecycleContext = () => {
 
   context.getOverview = vi.fn();
   context.removeGlobalListeners = () => AppShell.methods.removeGlobalListeners.call(context);
+  context.startOverviewPolling = () => AppShell.methods.startOverviewPolling.call(context);
+  context.handleOverviewVisibilityChange = () => AppShell.methods.handleOverviewVisibilityChange.call(context);
   context.stopOverviewPolling = () => AppShell.methods.stopOverviewPolling.call(context);
 
   return context;
@@ -28,6 +30,7 @@ const createLifecycleContext = () => {
 
 beforeEach(() => {
   vi.useFakeTimers();
+  vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
 });
 
 afterEach(() => {
@@ -142,14 +145,52 @@ describe('AppShell lifecycle', () => {
     expect(context.forceReload).not.toHaveBeenCalled();
   });
 
-  it('polls every five minutes without notification or service-worker support', () => {
+  it.each([[false, 60], [true, 300]])('polls every %s hidden / %i seconds without notification or service-worker support', (hidden, seconds) => {
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(hidden);
     const context = createLifecycleContext();
 
     AppShell.methods.startOverviewPolling.call(context);
-    vi.advanceTimersByTime(300 * 1000);
+    vi.advanceTimersByTime(seconds * 1000 - 1);
+    expect(context.getOverview).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
 
     expect(context.getOverview).toHaveBeenCalledOnce();
     expect(context.getOverview).toHaveBeenCalledWith(false);
+  });
+
+  it('switches between foreground and background intervals without duplicate polls', () => {
+    const context = createLifecycleContext();
+    AppShell.methods.registerGlobalListeners.call(context);
+    context.startOverviewPolling();
+    vi.advanceTimersByTime(30 * 1000);
+
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+    document.dispatchEvent(new Event('visibilitychange'));
+    vi.advanceTimersByTime(300 * 1000 - 1);
+    expect(context.getOverview).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(context.getOverview).toHaveBeenCalledTimes(1);
+
+    vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    document.dispatchEvent(new Event('visibilitychange'));
+    vi.advanceTimersByTime(60 * 1000 - 1);
+    expect(context.getOverview).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(1);
+    expect(context.getOverview).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(300 * 1000);
+    expect(context.getOverview).toHaveBeenCalledTimes(7);
+    context.removeGlobalListeners();
+  });
+
+  it('does not resume stopped polling when visibility changes', () => {
+    const context = createLifecycleContext();
+    AppShell.methods.registerGlobalListeners.call(context);
+    context.startOverviewPolling();
+    context.stopOverviewPolling();
+    document.dispatchEvent(new Event('visibilitychange'));
+    vi.advanceTimersByTime(300 * 1000);
+    expect(context.getOverview).not.toHaveBeenCalled();
+    context.removeGlobalListeners();
   });
 
   it('creates overview polling only once', () => {
@@ -191,6 +232,8 @@ describe('AppShell lifecycle', () => {
     const context = createLifecycleContext();
     context.uiStore = { stopThemeSync: vi.fn() };
     const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
+    AppShell.methods.registerGlobalListeners.call(context);
+    const removeDocumentListenerSpy = vi.spyOn(document, 'removeEventListener');
     context.overviewIntervalId = setInterval(() => {}, 300 * 1000);
     context.actionErrorTimer = setTimeout(() => {}, 6000);
 
@@ -208,6 +251,10 @@ describe('AppShell lifecycle', () => {
     expect(removeEventListenerSpy).toHaveBeenCalledWith('offline', context.handleBrowserOffline);
     expect(removeEventListenerSpy).toHaveBeenCalledWith('online', context.handleBrowserOnline);
     expect(removeEventListenerSpy.mock.calls.some(([type]) => type === 'auth:expired')).toBe(false);
+    expect(removeDocumentListenerSpy).toHaveBeenCalledWith('visibilitychange', context.handleOverviewVisibilityChange);
+    document.dispatchEvent(new Event('visibilitychange'));
+    vi.advanceTimersByTime(300 * 1000);
+    expect(context.getOverview).not.toHaveBeenCalled();
     expect(context.unsubscribeFromSystemTheme).toHaveBeenCalledOnce();
     expect(context.uiStore.stopThemeSync).toHaveBeenCalledOnce();
     expect(context.overviewIntervalId).toBeNull();

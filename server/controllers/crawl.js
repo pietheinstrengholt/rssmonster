@@ -987,7 +987,8 @@ const runCrawl = async (userId = null, options = {}) => {
       const updateData = {
         feedType: parsedFeed.format || null,
         // Missing or rejected publisher metadata must not erase the last known icon.
-        ...(parsedFeed.faviconUrl ? { favicon: parsedFeed.faviconUrl } : {}),
+        ...(parsedFeed.faviconUrl && parsedFeed.faviconUrl !== activeFeed.favicon
+          ? { favicon: parsedFeed.faviconUrl } : {}),
         status: activeFeed.status
       };
       throwIfAborted(signal);

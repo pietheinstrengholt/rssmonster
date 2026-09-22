@@ -124,6 +124,8 @@ export const searchArticles = async ({
     unreadOnly = false, // Enforce unread arrival checks regardless of query state tokens
     includeSnapshot = false, // Return an arrival boundary for non-cursor article lists
     minArticleIdExclusive = null, // Restrict an internal count to articles admitted after a snapshot
+    publishedAfter = null, // Additional inclusive publication cutoff, independent of search date tokens
+    publishedBefore = null, // Exclusive calendar-range end supplied by the client
     pagination = null, // Opt-in keyset pagination descriptor for database-native sorts
     executionBounds = null, // Optional trusted ceilings for bounded internal consumers
     briefingSort = 'recommended', // Internal ranking override while retaining briefing filters
@@ -382,6 +384,13 @@ export const searchArticles = async ({
     if (dateRange) {
       baseWhere.publishedAt = { [Op.between]: [dateRange.start, dateRange.end] };
     }
+    if (publishedAfter) {
+      baseWhere.publishedAt = { ...baseWhere.publishedAt, [Op.gte]: new Date(publishedAfter) };
+    }
+
+    if (publishedBefore) {
+      baseWhere.publishedAt = { ...baseWhere.publishedAt, [Op.lt]: new Date(publishedBefore) };
+    }
 
     // Apply tag filter if present (restricts to specific article IDs)
     if (taggedArticleIds !== null) {
@@ -509,6 +518,8 @@ export const searchArticles = async ({
         prioritizeHighTrust,
         dateFrom: dateRange?.start?.toISOString?.() || null,
         dateTo: dateRange?.end?.toISOString?.() || null,
+        publishedAfter,
+        publishedBefore,
         pageSize,
         resultLimit: resultLimit || null
       };

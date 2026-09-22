@@ -342,7 +342,8 @@ Future changes should preserve these rules:
 
 ## New unread arrivals
 
-`ArticleFeed` owns the information bar above both list and Reader layouts. Polling
+`ArticleFeed` owns arrivals state and actions; each layout renders `NewArticlesBanner`
+in its scroll area immediately above the unread context, with matching horizontal insets. Polling
 and completed crawls check for arrivals without replacing the visible collection.
 The last full unread result's maximum ID is saved in browser storage per account
 and scope, independently of the library-wide cursor snapshot. “Show new only”
@@ -351,3 +352,35 @@ selection, retaining its sort and source filters through subsequent pages and
 bulk read actions. “Show full list” removes that temporary constraint and updates
 the baseline only after the replacement load succeeds. An empty new-only response
 falls back to the full list. Baselines are never written to server settings.
+
+
+## Unread selection context
+
+The standard list and Reader list share a `UnreadSelectionContext` that scrolls with the articles, showing the
+current result count, source count, publication-date context and unread-preferences
+action. The date follows the first visible article below any sticky shell toolbar, including when
+scrolling backwards. There are no separate date groups: existing article order is
+preserved, including Recommended order. Both date labels use the same local calendar
+day; missing publication dates omit the date section.
+
+The bar uses native intersection observations of layout-owned article elements.
+Resize observations account for sticky toolbars sharing the
+scroll surface. It does not scan article geometry on scroll or change reading/read
+tracking. Reader observes its list rows independently from the selected detail pane.
+The component remains available on narrow screens, where its contents wrap naturally.
+
+The age pills add an inclusive `publishedAt` cutoff (24 hours, 3 days or 7 days),
+with All as the session default. Selection-store state stays in the browser session.
+The existing collection request carries `publishedAfter`, fixed across cursor pages;
+changing the cutoff resets pagination and invalidates older requests. Search, source,
+Event grouping and new-only constraints remain intact. Age-limited subsets do not
+advance the full unread baseline. Controls remain available when the cutoff returns
+no articles so users can widen it again.
+
+The calendar dropdown is an independent, session-only filter defaulting to All.
+Today, Yesterday, This week (Monday start) and This month use browser-local calendar
+boundaries; Custom date includes the entire selected end day. The shared dropdown
+owns menu keyboard/outside-click handling, and custom dates use native date inputs.
+Calendar bounds intersect the age cutoff and existing search filters. The query
+keeps an inclusive `publishedAfter` and exclusive `publishedBefore` across pages.
+Scrolling only changes the separate current-article date label, never the filter.

@@ -150,11 +150,16 @@ describe('crawl feed-lease lifecycle integration', () => {
     expect(feed.feedType).toBe(format);
   });
 
-  it('stores successive favicon locations even when there are no articles', async () => {
+  it.each([
+    ['rss', url => `<rss version="2.0"><channel><title>Icons</title><image><url>${url}</url></image></channel></rss>`],
+    ['atom', url => `<feed xmlns="http://www.w3.org/2005/Atom"><title>Icons</title><icon>${url}</icon><logo>https://example.test/logo.png</logo></feed>`],
+    ['rdf', url => `<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/"><channel rdf:about="https://example.test/feed"><title>Icons</title><image rdf:resource="${url}" /></channel><image rdf:about="${url}"><url>${url}</url></image></rdf:RDF>`],
+    ['json', url => JSON.stringify({ version: 'https://jsonfeed.org/version/1.1', title: 'Icons', favicon: url, icon: 'https://example.test/logo.png', items: [] })]
+  ])('stores successive %s favicon locations from the parser even without articles', async (format, source) => {
     const { user, feeds: [feed] } = await createFixture(1);
     await feed.update({ favicon: 'https://example.test/old.ico' });
 
-    for (const faviconUrl of ['https://cdn.example.test/new.png', 'https://cdn.example.test/latest.ico']) {
+    for (const faviconUrl of ['https://cdn.example.test/new.png', 'https://cdn.example.test/latest.ico', 'https://cdn.example.test/latest.ico']) {
       // Model separate scheduled attempts despite the database's second-resolution timestamps.
       const previousAttempt = new Date(Date.now() - 60_000);
       await feed.update({
@@ -164,7 +169,7 @@ describe('crawl feed-lease lifecycle integration', () => {
       });
       mocked.acquireFeed.mockResolvedValue({
         ...successfulOutcome(feed),
-        parsedFeed: { format: 'rss', faviconUrl, entries: [] }
+        parsedFeed: await parseFeedSourceIsolated(source(faviconUrl), { feedUrl: feed.url })
       });
 
       const result = await crawlController.performCrawl(user.id, { parallel: false });
@@ -172,6 +177,7 @@ describe('crawl feed-lease lifecycle integration', () => {
       expect(result).toMatchObject({ processed: 1, errors: 0 });
       await feed.reload();
       expect(feed.favicon).toBe(faviconUrl);
+      expect(feed.feedType).toBe(format);
     }
   });
 

@@ -109,6 +109,38 @@ describe('Feedsmith adapter', () => {
     expect(feed.faviconUrl).toBe('https://example.com/news/icon.png');
   });
 
+  it.each(['rss', 'rdf'])('uses Atom namespace icon/logo fallbacks in %s feeds', format => {
+    const wrap = content => format === 'rss'
+      ? `<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel>${content}</channel></rss>`
+      : `<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/" xmlns:atom="http://www.w3.org/2005/Atom"><channel rdf:about="https://example.com/feed">${content}</channel></rdf:RDF>`;
+    for (const icon of ['', '<atom:icon>javascript:alert(1)</atom:icon>']) {
+      expect(parseFeedSource(wrap(`${icon}<atom:logo>/logo.png</atom:logo>`), {
+        feedUrl: 'https://example.com/feed'
+      }).faviconUrl).toBe('https://example.com/logo.png');
+    }
+    expect(parseFeedSource(wrap('<atom:icon>/icon.png</atom:icon><atom:logo>/logo.png</atom:logo>'), {
+      feedUrl: 'https://example.com/feed'
+    }).faviconUrl).toBe('https://example.com/icon.png');
+  });
+
+  it('prefers the native RSS image over namespace artwork', () => {
+    const feed = parseFeedSource(`<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"
+      xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"><channel>
+      <image><url>https://example.com/native.png</url></image>
+      <atom:icon>https://example.com/atom.png</atom:icon>
+      <itunes:image href="https://example.com/podcast.png" />
+      </channel></rss>`);
+    expect(feed.faviconUrl).toBe('https://example.com/native.png');
+  });
+
+  it.each([
+    '<feed xmlns="http://www.w3.org/2005/Atom"><icon>javascript:alert(1)</icon><logo>/fallback.png</logo></feed>',
+    '<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"><channel><image><url>javascript:alert(1)</url></image><itunes:image href="/fallback.png" /></channel></rss>'
+  ])('uses valid fallback artwork when the preferred image is unusable', source => {
+    expect(parseFeedSource(source, { feedUrl: 'https://example.com/feed' }).faviconUrl)
+      .toBe('https://example.com/fallback.png');
+  });
+
   it.each([
     ['/articles/one', 'https://feeds.example.com/articles/one'],
     ['../articles/two', 'https://feeds.example.com/articles/two'],

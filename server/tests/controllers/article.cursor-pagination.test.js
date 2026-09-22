@@ -69,6 +69,94 @@ describe('article cursor pagination', () => {
     await sequelize.authenticate();
   }, 50_000);
 
+  it('applies both calendar bounds to lists, arrivals and matching bulk actions', async () => {
+    const { user, category, feed } = await createUserFeed('calendar-range');
+    const old = await createArticle(user, feed, 'Science old', new Date('2026-01-01T09:00:00Z'));
+    const start = await createArticle(user, feed, 'Science start', new Date('2026-01-01T10:00:00Z'));
+    const middle = await createArticle(user, feed, 'Science middle', new Date('2026-01-01T11:00:00Z'));
+    const end = await createArticle(user, feed, 'Science end', new Date('2026-01-01T12:00:00Z'));
+    await createArticle(user, feed, 'Science backdated arrival', new Date('2026-01-01T09:30:00Z'));
+    const query = {
+      categoryId: category.id, feedId: feed.id, status: 'unread', persistSettings: false,
+      search: `title:Science @2026-01-01 unread:true id:>${old.id}`,
+      publishedAfter: '2026-01-01T10:00:00.000Z', publishedBefore: '2026-01-01T12:00:00.000Z'
+    };
+    for (const grouping of ['none', 'event']) {
+      const first = await getPage(user, { ...query, grouping, sort: 'asc', pageSize: 1 });
+      expect(first.status).toBe(200);
+      expect(first.body.page.itemIds).toEqual([start.id]);
+      const second = await getPage(user, { ...query, grouping, sort: 'asc', pageSize: 1, cursor: first.body.page.nextCursor });
+      expect(second.status).toBe(200);
+      expect(second.body.page.itemIds).toEqual([middle.id]);
+      const mismatch = await getPage(user, { ...query, grouping, sort: 'asc', pageSize: 1, cursor: first.body.page.nextCursor, publishedBefore: '2026-01-01T11:00:00Z' });
+      expect(mismatch.status).toBe(409);
+      const ranked = await request(app).get('/api/articles').query({ ...query, grouping, sort: 'quality' }).set('Authorization', authHeaderFor(user));
+      expect(ranked.status).toBe(200);
+      expect(ranked.body.itemIds.sort((a, b) => a - b)).toEqual([start.id, middle.id]);
+    }
+    const count = await request(app).get('/api/articles').query({ ...query, newerThanArticleId: old.id }).set('Authorization', authHeaderFor(user));
+    expect(count.body.newerArticleCount).toBe(2);
+    const empty = await getPage(user, { ...query, publishedAfter: '2026-01-01T13:00:00Z' });
+    expect(empty.status).toBe(200);
+    expect(empty.body.totalCount).toBe(0);
+    const marked = await request(app).post('/api/articles/markasread').send({ ...query, sort: 'desc', scope: 'matching' }).set('Authorization', authHeaderFor(user));
+    expect(marked.status).toBe(200);
+    expect(marked.body.matchedCount).toBe(2);
+    expect((await end.reload()).status).toBe('unread');
+    const invalid = await getPage(user, { publishedBefore: 'invalid' });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.error.code).toBe('PUBLISHED_BEFORE_INVALID');
+  });
+
+  it('intersects publication age with scoped search, arrivals, Events and matching mark-as-read', async () => {
+    const { user, category, feed } = await createUserFeed('age-cutoff');
+    const other = await createUserFeed('age-cutoff-other');
+    const old = await createArticle(user, feed, 'Science old', new Date('2026-01-01T11:59:59Z'));
+    const boundary = await createArticle(user, feed, 'Science boundary', new Date('2026-01-01T12:00:00Z'));
+    const recent = await createArticle(user, feed, 'Science recent', new Date('2026-01-01T13:00:00Z'));
+    const backdated = await createArticle(user, feed, 'Science backdated', new Date('2026-01-01T11:59:59Z'));
+    const event = await Event.create({ userId: user.id, representativeArticleId: boundary.id });
+    await backdated.update({ eventId: event.id });
+    await boundary.update({ eventId: event.id });
+    await createArticle(user, feed, 'Unrelated', new Date('2026-01-01T14:00:00Z'));
+    await createArticle(user, feed, 'Science tomorrow', new Date('2026-01-02T14:00:00Z'));
+    await createArticle(user, feed, 'Science read', new Date('2026-01-01T14:00:00Z'), { status: 'read' });
+    await createArticle(other.user, other.feed, 'Science private', new Date('2026-01-01T14:00:00Z'));
+    const query = {
+      status: 'unread', categoryId: category.id, feedId: feed.id, sort: 'asc',
+      search: `title:Science @2026-01-01 unread:true id:>${old.id}`,
+      publishedAfter: '2026-01-01T12:00:00.000Z', persistSettings: false
+    };
+    for (const grouping of ['none', 'event']) {
+      const page = await getPage(user, { ...query, grouping, pageSize: 1 });
+      expect(page.status).toBe(200);
+      expect(page.body.totalCount).toBe(2);
+      expect(page.body.page.itemIds).toEqual([boundary.id]);
+      const next = await getPage(user, { ...query, grouping, pageSize: 1, cursor: page.body.page.nextCursor });
+      expect(next.status).toBe(200);
+      expect(next.body.page.itemIds).toEqual([recent.id]);
+      const mismatch = await getPage(user, { ...query, grouping, pageSize: 1, cursor: page.body.page.nextCursor, publishedAfter: '2026-01-01T13:00:00.000Z' });
+      expect(mismatch.status).toBe(409);
+      const legacy = await request(app).get('/api/articles').query({ ...query, grouping, sort: 'quality' }).set('Authorization', authHeaderFor(user));
+      expect(legacy.status).toBe(200);
+      expect(legacy.body.itemIds.sort((a, b) => a - b)).toEqual([boundary.id, recent.id]);
+    }
+    const count = await request(app).get('/api/articles').query({ ...query, newerThanArticleId: old.id }).set('Authorization', authHeaderFor(user));
+    expect(count.status).toBe(200);
+    expect(count.body.newerArticleCount).toBe(2);
+    const marked = await request(app).post('/api/articles/markasread').send({ ...query, scope: 'matching' }).set('Authorization', authHeaderFor(user));
+    expect(marked.status).toBe(200);
+    expect(marked.body.matchedCount).toBe(2);
+    expect((await old.reload()).status).toBe('unread');
+  });
+
+  it.each(['invalid', '', '2026-01-01'])('rejects malformed publication cutoffs (%j)', async publishedAfter => {
+    const { user } = await createUserFeed('invalid-age');
+    const response = await getPage(user, { publishedAfter });
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('PUBLISHED_AFTER_INVALID');
+  });
+
   it('uses the same scoped unread ID expression for counts and paginated results', async () => {
     const { user, category, feed } = await createUserFeed('new-only');
     const other = await createUserFeed('new-only-other');

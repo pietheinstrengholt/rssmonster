@@ -77,9 +77,12 @@ XML `lang`, and Dublin Core/Terms languages are supported. Missing, malformed,
 unknown, and non-specific declarations leave the existing text detector in use.
 
 Favicons use the first usable HTTP(S) URL from `favicon`, `icon`, `logo`, then
-`image`, then iTunes artwork. Relative URLs resolve against the feed's XML base or fetched URL, with
+`image`, then Atom namespace `icon`/`logo`, then iTunes artwork. RSS and RDF use
+the image object's `url`; Atom uses `icon` before `logo`; JSON Feed uses `favicon`
+before `icon`. Relative URLs resolve against the feed's XML base or fetched URL, with
 the publisher site as a fallback when fetch provenance is unavailable. Candidates
 must fit the stored URL column. Successful changed-feed crawls replace the stored
-icon when one is supplied and retain it when no usable candidate exists. Unchanged
+icon when a different usable URL is supplied, even without new articles, and
+retain it when no usable candidate exists. Unchanged
 responses retain the icon without reparsing. Publisher HTML icon discovery is not
 performed.

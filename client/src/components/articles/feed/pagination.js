@@ -1,4 +1,5 @@
 import { loadUnreadBaseline, saveUnreadBaseline, newerUnreadSelection } from '../../../services/unreadBaseline.js';
+import { withArticleDateFilters } from '../../../services/articleDateRange.js';
 import {
   fetchArticleDetails,
   fetchArticleIds,
@@ -146,6 +147,8 @@ const acceptUnreadCollection = (context, response, selection, newOnly) => {
     setNewerArticleCount(context, context.totalCount);
     return;
   }
+  // An age-limited subset must not advance the full unread-list baseline.
+  if (selection.publishedAfter) return;
   // Legacy ID responses contain the full ordered result; cursor responses supply its unread maximum.
   const highestId = response.data.snapshot?.highestUnreadArticleId
     ?? (response.data.itemIds || []).reduce((max, id) => Math.max(max, Number(id)), 0);
@@ -164,10 +167,10 @@ const requestInitialCollection = async (context, data) => {
 };
 
 export const articleFeedPaginationMethods = {
-  async fetchArticleIds(data) {
-    data = { ...data };
-    this.showingNewOnly = false;
-    this.highestLoadedUnreadArticleId = loadUnreadBaseline(this.authStore?.userId, data);
+  async fetchArticleIds(data, { newOnly = false } = {}) {
+    data = withArticleDateFilters(data, this.selectionStore);
+    this.showingNewOnly = newOnly;
+    if (!newOnly) this.highestLoadedUnreadArticleId = loadUnreadBaseline(this.authStore?.userId, data);
     const requestId = ++this.activeRequestId;
     try {
       await this.resetCollectionState();
@@ -183,7 +186,7 @@ export const articleFeedPaginationMethods = {
         return null;
       }
 
-      acceptUnreadCollection(this, response, data, false);
+      acceptUnreadCollection(this, response, data, newOnly);
       this.hasLoadedContent = true;
       this.$nextTick(() => {
         this.observeArticles();
@@ -205,7 +208,7 @@ export const articleFeedPaginationMethods = {
 
   // Preserves the visible collection until a complete replacement first page is ready.
   async refreshArticleIds(data, { newOnly = false } = {}) {
-    data = { ...data };
+    data = withArticleDateFilters(data, this.selectionStore);
     const requestId = ++this.activeRequestId;
     this.isLoading = true;
     try {
@@ -326,6 +329,14 @@ export const articleFeedPaginationMethods = {
     }
   },
 
+  async reloadDateFilters() {
+    const newOnly = this.showingNewOnly;
+    const selection = newOnly
+      ? newerUnreadSelection(this.selectionStore.currentSelection, this.highestLoadedUnreadArticleId)
+      : this.selectionStore.currentSelection;
+    return this.fetchArticleIds(selection || this.selectionStore.currentSelection, { newOnly: newOnly && Boolean(selection) });
+  },
+
   async showFullUnreadList() {
     try {
       return await this.refreshArticleIds(this.selectionStore.currentSelection);
@@ -339,8 +350,8 @@ export const articleFeedPaginationMethods = {
     if (this.isLoading) return false;
     const requestId = ++this.activeNewerArticlesRequestId;
     const collectionRequestId = this.activeRequestId;
-    const selection = { ...this.selectionStore.currentSelection };
-    const selectionKey = JSON.stringify(selection);
+    const selection = withArticleDateFilters(this.selectionStore.currentSelection, this.selectionStore);
+    const selectionKey = JSON.stringify(this.selectionStore.currentSelection);
     const snapshotMaxArticleId = this.highestLoadedUnreadArticleId;
     if (selection.status !== 'unread' || snapshotMaxArticleId === null) {
       setNewerArticleCount(this, 0);

@@ -131,7 +131,7 @@
   display: flex;
   align-items: center;
   min-width: 0;
-  z-index: var(--layer-sticky);
+  z-index: var(--layer-toolbar);
   padding-left: clamp(16px, 2vw, 28px);
   padding-right: 12px;
   --toolbar-control-gap: clamp(4px, 1vw, 20px);

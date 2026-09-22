@@ -90,8 +90,9 @@ buttons and fields, and `--control-height-touch` when a primary touch target nee
 New shared controls should use these heights before introducing another fixed value.
 
 Map stacking requirements to the semantic `--layer-*` scale. The current scale distinguishes content,
-the pull-to-refresh indicator, sticky chrome, dropdowns, overlays, modals and notifications. Do not add
-an arbitrary z-index—or arithmetic between layers—when one of those roles describes the element's ownership.
+the pull-to-refresh indicator, sticky content, shell toolbars, dropdowns, overlays, modals and notifications.
+Shell toolbars use `--layer-toolbar` so their menus remain above `--layer-sticky` article context bars.
+Do not add an arbitrary z-index—or arithmetic between layers—when one of those roles describes the element's ownership.
 Component-specific dimensions, media geometry, article-content typography and one-off animation
 timing should remain local until they represent a repeated application concept.
 

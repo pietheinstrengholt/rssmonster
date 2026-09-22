@@ -22,6 +22,14 @@ import { retryDatabaseWrite } from '../utils/databaseRetry.js';
 
 const RELATED_STORY_ARTICLE_LIMIT = 50;
 
+const parsePublicationBound = (value, field) => {
+  if (value == null) return null;
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value) || !Number.isFinite(Date.parse(value))) {
+    throw new ArticleSearchCursorError(field === 'publishedAfter' ? 'PUBLISHED_AFTER_INVALID' : 'PUBLISHED_BEFORE_INVALID', `${field} must be a UTC ISO timestamp.`, 400);
+  }
+  return new Date(value).toISOString();
+};
+
 // This function serializes a related-story row without relying on direct association properties.
 const serializeRelatedStoryArticle = articleRow => {
   const article = typeof articleRow?.get === 'function'
@@ -277,6 +285,8 @@ export const getArticles = async (req, res) => {
       });
     }
     const newerThanArticleIdValue = req.query.newerThanArticleId;
+    const publishedAfter = parsePublicationBound(req.query.publishedAfter, 'publishedAfter');
+    const publishedBefore = parsePublicationBound(req.query.publishedBefore, 'publishedBefore');
     let newerThanArticleId = null;
     if (newerThanArticleIdValue !== undefined) {
       if (!/^\d+$/.test(String(newerThanArticleIdValue))) {
@@ -329,6 +339,8 @@ export const getArticles = async (req, res) => {
       unreadOnly: newerThanArticleId !== null,
       includeSnapshot: newerThanArticleId === null,
       minArticleIdExclusive: newerThanArticleId,
+      publishedAfter,
+      publishedBefore,
       includeDiagnostics: req.query.diagnostics === 'true',
       pagination,
       personalization
@@ -759,6 +771,8 @@ const markAsRead = async (req, res, _next) => {
     } = body;
 
     const normalizedGrouping = normalizeGrouping(grouping);
+    const publishedAfter = parsePublicationBound(body.publishedAfter, 'publishedAfter');
+    const publishedBefore = parsePublicationBound(body.publishedBefore, 'publishedBefore');
     const toScoreThreshold = value => {
       const numericValue = Number(value);
       return Number.isFinite(numericValue) ? numericValue : 0;
@@ -789,6 +803,8 @@ const markAsRead = async (req, res, _next) => {
             tag,
             viewMode,
             grouping: normalizedGrouping,
+            publishedAfter,
+            publishedBefore,
             persistSettings: false,
             pagination: { pageSize: 100, cursor }
           });
@@ -833,6 +849,8 @@ const markAsRead = async (req, res, _next) => {
         tag,
         viewMode,
         grouping: normalizedGrouping,
+        publishedAfter,
+        publishedBefore,
         persistSettings: false
       });
       liveItemIds = result.itemIds || [];
@@ -904,6 +922,7 @@ const markAsRead = async (req, res, _next) => {
       expandedEventCount: eventIds.length
     });
   } catch (err) {
+    if (err instanceof ArticleSearchCursorError) return res.status(err.status).json({ error: { code: err.code, message: err.message } });
     console.error("Error in markAsRead:", err);
     return res.status(500).json({ error: 'Unable to mark articles as read' });
   }

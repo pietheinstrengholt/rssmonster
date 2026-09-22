@@ -22,6 +22,7 @@
   --layer-content: 0;
   --layer-refresh-indicator: 90;
   --layer-sticky: 100;
+  --layer-toolbar: 200;
   --layer-dropdown: 1000;
   --layer-overlay: 2000;
   --layer-modal: 10000;

@@ -9,10 +9,14 @@
   >
     <div class="article-list-view__items">
       <DailyBriefingIntro v-if="showDailyBriefingIntro" />
+      <slot name="before-context" :reader-mode="false" />
       <UnreadSelectionContext
-        v-if="currentSelection === 'unread' && hasLoadedContent && loadedCount > 0 && currentViewSourceCount !== null"
-        :article-count="currentViewUnreadCount"
-        :source-count="currentViewSourceCount"
+        :key="viewMode"
+        v-if="currentSelection === 'unread' && ((hasLoadedContent && loadedCount > 0 && currentViewSourceCount !== null) || (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all'))"
+        :article-count="collectionSummary.totalCount ?? currentViewUnreadCount"
+        :source-count="currentViewSourceCount ?? 0"
+        :articles="articles"
+        :get-article-element="getArticleElement"
       />
       <ArticleItem
         v-for="article in articles"

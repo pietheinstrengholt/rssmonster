@@ -1,20 +1,18 @@
 <template>
-  <div v-if="!showSmartFoldersOverview && selectionStore.currentSelection.status === 'unread' && newerArticleCount > 0" class="new-articles-banner" role="status" aria-live="polite">
-    <span aria-hidden="true"><BootstrapIcon icon="lightbulb-fill" /></span>
-    <strong>{{ newerArticleCount }} {{ newerArticleCount === 1 ? 'new article' : 'new articles' }} since your last visit</strong>
-    <div class="new-articles-banner__actions">
-      <button type="button" class="new-articles-banner__primary" :disabled="isLoading" @click="showNewArticles">Show new only</button>
-      <button type="button" :disabled="isLoading" @click="showFullUnreadList">Show full list</button>
-    </div>
-  </div>
   <SmartFoldersGridOverview
     v-if="showSmartFoldersOverview"
     :smart-folders="overviewStore.smartFolders"
     @selectSmartFolder="selectSmartFolderFromOverview"
   />
   <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @reading-article-changing="handleReadingArticleChange" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @select-recommendation="openReaderRecommendation" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
+    <template #before-context="{ readerMode }">
+      <NewArticlesBanner v-if="selectionStore.currentSelection.status === 'unread'" :count="newerArticleCount" :loading="isLoading" :reader-mode="readerMode" @show-new="showNewArticles" @show-full="showFullUnreadList" />
+    </template>
   </ArticleReaderLayout>
   <ArticleListView v-else ref="articleLayout" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
+    <template #before-context="{ readerMode }">
+      <NewArticlesBanner v-if="selectionStore.currentSelection.status === 'unread'" :count="newerArticleCount" :loading="isLoading" :reader-mode="readerMode" @show-new="showNewArticles" @show-full="showFullUnreadList" />
+    </template>
   </ArticleListView>
 </template>
 
@@ -26,6 +24,7 @@ import { useAuthStore } from '../../store/auth.js';
 import { useUiStore } from '../../store/ui.js';
 import { defineAsyncComponent } from 'vue';
 import ArticleListView from "./ArticleListView.vue";
+import NewArticlesBanner from "./NewArticlesBanner.vue";
 import {
   markAsFavorite,
   markManyClicked,
@@ -58,6 +57,7 @@ const SmartFoldersGridOverview = defineAsyncComponent(() => import("./SmartFolde
 export default {
   components: {
     ArticleListView,
+    NewArticlesBanner,
     ArticleReaderLayout,
     SmartFoldersGridOverview
   },
@@ -105,6 +105,11 @@ export default {
   },
 
   computed: {
+
+    articleDateFilterKey() {
+      const { ageCutoff, dateRange, customDateRange } = this.selectionStore;
+      return JSON.stringify([ageCutoff, dateRange, dateRange === 'custom' ? customDateRange : null]);
+    },
 
     ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useAuthStore),
     // Returns the stable key for selection fields that change collection membership or ordering.
@@ -244,6 +249,9 @@ export default {
   },
 
   watch: {
+    articleDateFilterKey() {
+      if (this.selectionStore.currentSelection.status === 'unread') this.reloadDateFilters();
+    },
     'overviewStore.articleAvailabilityRevision'() {
       this.checkForNewerArticles();
     },
@@ -684,37 +692,3 @@ export default {
   }
 };
 </script>
-
-<style scoped>
-.new-articles-banner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin: 12px;
-  padding: 14px 16px;
-  border: 1px solid var(--border-info);
-  border-radius: var(--radius-control);
-  background: var(--color-primary-soft);
-  color: var(--text-primary);
-}
-.new-articles-banner > span { color: var(--color-primary); }
-.new-articles-banner strong { flex: 1 1 240px; font-weight: 600; }
-.new-articles-banner__actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.new-articles-banner button {
-  min-height: var(--control-height-touch);
-  padding: 8px 12px;
-  border: 1px solid var(--border-info);
-  border-radius: var(--radius-control);
-  background: var(--surface-card);
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.new-articles-banner button:hover { background: var(--surface-hover); }
-.new-articles-banner button:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
-.new-articles-banner button:disabled { opacity: 0.6; cursor: wait; }
-.new-articles-banner .new-articles-banner__primary { background: var(--color-primary); color: var(--text-inverted); }
-.new-articles-banner .new-articles-banner__primary:hover { background: var(--color-primary-hover); }
-:global(:root[data-theme='dark'] .new-articles-banner) { background: var(--color-primary-surface-dark); }
-</style>

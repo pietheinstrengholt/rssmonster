@@ -15,13 +15,14 @@ vi.mock('../src/api/articles.js', () => ({
 let wrapper;
 let stores;
 const result = ids => ({ data: { itemIds: ids, firstPage: ids.map(id => ({ id, title: `Article ${id}`, status: 'unread' })) } });
-const mountFeed = async () => {
+const mountFeed = async (selection = {}) => {
   stores = createFocusedStores({ auth: { userId: 42 }, selection: { currentSelection: {
-    status: 'unread', sort: 'recommended', search: 'title:Science', categoryId: '3', feedId: '4'
+    status: 'unread', sort: 'recommended', search: 'title:Science', categoryId: '3', feedId: '4', ...selection
   } } });
   wrapper = shallowMount(ArticleFeed, { global: { plugins: [stores.pinia], stubs: {
     BootstrapIcon: true,
-    ArticleListView: { props: ['articles'], template: '<section><p v-for="article in articles" :key="article.id">{{ article.title }}</p></section>' }
+    NewArticlesBanner: false,
+    ArticleListView: { props: ['articles'], template: '<section><slot name="before-context" :reader-mode="false" /><p v-for="article in articles" :key="article.id">{{ article.title }}</p></section>' }
   } } });
   await flushPromises();
 };
@@ -34,9 +35,122 @@ beforeEach(() => {
   fetchArticleIds.mockResolvedValue(result([104, 101, 103]));
   fetchNewerArticleCount.mockResolvedValue({ data: { newerArticleCount: 3 } });
 });
-afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals(); });
+afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe('new unread articles', () => {
+  it.each([['24h', 24], ['3d', 72], ['7d', 168]])('adds the %s cutoff while preserving the full selection and baseline', async (value, hours) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-22T12:00:00Z'));
+    await mountFeed();
+    const selection = { ...stores.selectionStore.currentSelection };
+    fetchArticleIds.mockResolvedValue(result([107]));
+    stores.selectionStore.setAgeCutoff(value);
+    await flushPromises();
+    expect(fetchArticleIds).toHaveBeenLastCalledWith({ ...selection, publishedAfter: new Date(Date.now() - hours * 3600000).toISOString() });
+    expect(wrapper.text()).not.toContain('Article 101');
+    expect(loadUnreadBaseline(42, selection)).toBe(104);
+    stores.selectionStore.setAgeCutoff('all');
+    await flushPromises();
+    expect(fetchArticleIds).toHaveBeenLastCalledWith(selection);
+  });
+
+  it('preserves smart-folder expressions, Event grouping and score filters', async () => {
+    await mountFeed({ smartFolderId: 7, grouping: 'event', includeDevelopingEvents: true, minQualityScore: 40, search: 'tag:Science @2026-09-21 grouping:event limit:50' });
+    const selection = { ...stores.selectionStore.currentSelection };
+    stores.selectionStore.setAgeCutoff('3d');
+    await flushPromises();
+    expect(fetchArticleIds).toHaveBeenLastCalledWith({ ...selection, publishedAfter: expect.any(String) });
+    expect(stores.selectionStore.currentSelection).toEqual(selection);
+  });
+
+  it('keeps new-only mode and rejects stale cutoff responses', async () => {
+    await mountFeed();
+    fetchArticleIds.mockResolvedValueOnce(result([107]));
+    await wrapper.vm.showNewArticles();
+    let resolveOld;
+    fetchArticleIds.mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve; }));
+    stores.selectionStore.setAgeCutoff('24h');
+    await flushPromises();
+    fetchArticleIds.mockResolvedValueOnce(result([109]));
+    stores.selectionStore.setAgeCutoff('3d');
+    await flushPromises();
+    resolveOld(result([108]));
+    await flushPromises();
+    expect(wrapper.text()).toContain('Article 109');
+    expect(wrapper.text()).not.toContain('Article 108');
+    expect(fetchArticleIds).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'title:Science unread:true read:false id:>104', publishedAfter: expect.any(String) }));
+    expect(loadUnreadBaseline(42, stores.selectionStore.currentSelection)).toBe(104);
+    expect(wrapper.vm.showingNewOnly).toBe(true);
+  });
+
+  it('resets cursor pagination and keeps a fixed cutoff for subsequent pages', async () => {
+    await mountFeed();
+    const page = cursor => ({ data: {
+      paginationVersion: 1, totalCount: 30,
+      snapshot: { highestUnreadArticleId: 104 },
+      page: { itemIds: [104], articles: [{ id: 104 }], hasMore: true, nextCursor: cursor }
+    } });
+    fetchArticlePage.mockResolvedValue(page('old-page'));
+    stores.selectionStore.setCurrentSelection({ sort: 'desc' });
+    await flushPromises();
+    fetchArticlePage.mockResolvedValue(page('age-page'));
+    stores.selectionStore.setAgeCutoff('7d');
+    await flushPromises();
+    const cutoff = fetchArticlePage.mock.lastCall[0].publishedAfter;
+    expect(fetchArticlePage.mock.lastCall[1]).toEqual({ pageSize: wrapper.vm.fetchCount });
+    await wrapper.vm.getContent();
+    expect(fetchArticlePage).toHaveBeenLastCalledWith(expect.objectContaining({ publishedAfter: cutoff }), expect.objectContaining({ cursor: 'age-page' }));
+  });
+
+  it('combines calendar and age filters with new-only and rejects stale calendar responses', async () => {
+    await mountFeed();
+    fetchArticleIds.mockResolvedValueOnce(result([107]));
+    await wrapper.vm.showNewArticles();
+    stores.selectionStore.setAgeCutoff('7d');
+    await flushPromises();
+    let resolveOld;
+    fetchArticleIds.mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve; }));
+    stores.selectionStore.setDateRange('today');
+    await flushPromises();
+    fetchArticleIds.mockResolvedValueOnce(result([109]));
+    stores.selectionStore.setDateRange('yesterday');
+    await flushPromises();
+    resolveOld(result([108]));
+    await flushPromises();
+    expect(wrapper.text()).toContain('Article 109');
+    expect(wrapper.text()).not.toContain('Article 108');
+    expect(fetchArticleIds).toHaveBeenLastCalledWith(expect.objectContaining({
+      status: 'unread', categoryId: '3', feedId: '4', sort: 'recommended',
+      search: 'title:Science unread:true read:false id:>104',
+      publishedAfter: expect.any(String), publishedBefore: expect.any(String)
+    }));
+    expect(loadUnreadBaseline(42, stores.selectionStore.currentSelection)).toBe(104);
+    expect(wrapper.vm.showingNewOnly).toBe(true);
+  });
+
+  it('resets the cursor on calendar changes and reuses both bounds on subsequent pages', async () => {
+    await mountFeed();
+    const page = cursor => ({ data: {
+      paginationVersion: 1, totalCount: 30, snapshot: { highestUnreadArticleId: 104 },
+      page: { itemIds: [104], articles: [{ id: 104 }], hasMore: true, nextCursor: cursor }
+    } });
+    fetchArticlePage.mockResolvedValue(page('old-page'));
+    stores.selectionStore.setCurrentSelection({ sort: 'asc', smartFolderId: 7, grouping: 'event' });
+    await flushPromises();
+    fetchArticlePage.mockResolvedValue(page('calendar-page'));
+    stores.selectionStore.setDateRange('this-month');
+    await flushPromises();
+    const query = fetchArticlePage.mock.lastCall[0];
+    expect(query).toMatchObject({ smartFolderId: 7, grouping: 'event', sort: 'asc', search: 'title:Science', publishedAfter: expect.any(String), publishedBefore: expect.any(String) });
+    expect(fetchArticlePage.mock.lastCall[1]).toEqual({ pageSize: wrapper.vm.fetchCount });
+    await wrapper.vm.getContent();
+    expect(fetchArticlePage).toHaveBeenLastCalledWith(query, expect.objectContaining({ cursor: 'calendar-page' }));
+    stores.selectionStore.setDateRange('all');
+    await flushPromises();
+    expect(fetchArticlePage.mock.lastCall[0]).not.toHaveProperty('publishedAfter');
+    expect(fetchArticlePage.mock.lastCall[0]).not.toHaveProperty('publishedBefore');
+  });
+
   it('keeps the maximum full-list baseline through polling and new-only, then advances on full refresh', async () => {
     await mountFeed();
     const selection = { ...stores.selectionStore.currentSelection };

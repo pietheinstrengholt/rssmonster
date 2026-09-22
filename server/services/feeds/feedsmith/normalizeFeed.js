@@ -45,7 +45,10 @@ export default function normalizeFeed(parsedFeed, { feedUrl = null } = {}) {
   const resourceBaseUrl = resolveSafeHttpUrl(sourceFeed.xmlBase, safeFeedUrl) ||
     safeFeedUrl || safeSiteUrl;
   // Skip unusable candidates so a broken preferred icon does not hide a valid fallback.
-  const faviconUrl = [sourceFeed.favicon, sourceFeed.icon, sourceFeed.logo, sourceFeed.image, sourceFeed.itunes?.image]
+  const faviconUrl = [
+    sourceFeed.favicon, sourceFeed.icon, sourceFeed.logo, sourceFeed.image,
+    sourceFeed.atom?.icon, sourceFeed.atom?.logo, sourceFeed.itunes?.image
+  ]
     .map(value => resolveSafeHttpUrl(readUrl(value), resourceBaseUrl))
     .find(url => url && url.length <= FEED_PERSISTENCE_LIMITS.faviconUrlCharacters) || null;
   const linkContext = {
