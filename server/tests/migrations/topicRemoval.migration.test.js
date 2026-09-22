@@ -11,6 +11,8 @@ import { up as addPersonalizationRefreshedAt } from '../../migrations/2026091500
 import { up as addAnalysisProvenance } from '../../migrations/20260917000000-add-article-analysis-provenance.mjs';
 import { up as addIslandBehaviorTime } from '../../migrations/20260917001000-add-island-behavior-time.mjs';
 import { up as addIslandSupport } from '../../migrations/20260919001000-add-island-support-article-ids.mjs';
+import { up as addOriginalSource } from '../../migrations/20260922000000-add-article-original-source.mjs';
+import { up as addAuthors } from '../../migrations/20260922001000-add-article-authors.mjs';
 
 import { resetDatabase } from '../helpers/resetDb.js';
 
@@ -50,6 +52,8 @@ async function installHistoricalSchema() {
   await addAnalysisProvenance(qi, db.Sequelize);
   await addIslandBehaviorTime(qi, db.Sequelize);
   await addIslandSupport(qi, db.Sequelize);
+  await addOriginalSource(qi, db.Sequelize);
+  await addAuthors(qi, db.Sequelize);
 }
 
 const assertRemoved = async () => {
@@ -81,6 +85,8 @@ describe(`semantic schema upgrade (${db.sequelize.getDialect()})`, () => {
     const category = await db.Category.create({ userId: user.id, name: 'Upgrade' });
     const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Upgrade feed', url: 'https://upgrade.example/feed' });
     const article = await db.Article.create({ userId: user.id, feedId: feed.id, title: 'Database release',
+      author: 'Alice, Bob', authors: [{ name: 'Alice', url: 'https://upgrade.example/alice' }, { name: 'Bob', url: null }],
+      originalSource: { title: 'Original publisher', id: 'urn:publisher:1', url: 'https://publisher.example/' },
       url: 'https://upgrade.example/article', publishedAt: new Date(), favoriteInd: 1, clickedAmount: 3,
       positiveInd: 1, attentionBucket: 4, embedding_model: 'test-model', articleVector: [1, 0], interestScore: 0.2 });
     const event = await db.Event.create({ userId: user.id, representativeArticleId: article.id,
