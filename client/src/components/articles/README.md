@@ -13,6 +13,17 @@ The interface should feel calm, dense, and content-first. Titles and article con
 
 ## Experience model
 
+Expanded article metadata and Reader detail show publisher-declared “Original
+source” attribution when available, alongside the existing author/feed provenance.
+Source links accept only HTTP(S); title-only or ID-only attribution remains text.
+Compact headline rows retain their existing layout. Attribution is not a claim
+that the source is verified or that other reports are independent.
+
+Expanded and Reader-detail bylines render the ordered canonical authors list,
+linking each available HTTP(S) profile separately. Missing profiles remain text;
+URL-only authors display the profile hostname. Legacy articles retain their complete
+unsplit byline. Compact and Reader-list labels use the joined compatibility byline.
+
 The article area has three layers:
 
 1. The collection, which represents the current selection and loads articles incrementally.

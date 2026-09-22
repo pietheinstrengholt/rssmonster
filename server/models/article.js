@@ -219,6 +219,10 @@ export default (sequelize) => {
       },
       // Stores the publisher-provided author text; null when the feed omits it.
       author: DataTypes.TEXT,
+      // Ordered canonical byline; null means only legacy author text is available.
+      authors: { type: DataTypes.JSON, allowNull: true, defaultValue: null },
+      // Publisher-declared provenance; separate from this entry's identity and subscription.
+      originalSource: { type: DataTypes.JSON, allowNull: true, defaultValue: null },
       // Stores the publisher-provided article description; null when the feed omits it.
       description: DataTypes.TEXT('medium'),
       // Stores sanitized display HTML derived from the raw publisher description.

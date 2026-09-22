@@ -14,6 +14,8 @@ const MUTABLE_ARTICLE_SOURCE_FIELDS = [
   'imageSource',
   'title',
   'author',
+  'authors',
+  'originalSource',
   'description',
   'descriptionHtml',
   'descriptionText',
@@ -106,7 +108,11 @@ export default function buildArticlePersistenceValues(feed, data = {}) {
     imageSource: leadImage?.source || null,
     media: data.media || null,
     title: data.title,
-    author: data.author ?? null,
+    author: Array.isArray(data.authors)
+      ? data.authors.map(person => person.name).filter(Boolean).join(', ') || null
+      : data.author ?? null,
+    authors: data.authors ?? null,
+    originalSource: data.originalSource ?? null,
     description: data.description ?? null,
     descriptionHtml: data.descriptionHtml ?? null,
     descriptionText: data.descriptionText ?? null,

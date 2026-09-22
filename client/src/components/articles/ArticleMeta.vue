@@ -5,9 +5,14 @@
     <span v-if="hasProvenance && !hideProvenance" class="article-provenance">
       <span v-if="hasPublishedAt" class="article-published">{{ formatRelativeDate(publishedAt) }}</span>
       <span v-if="hasPublishedAt && hasSource" class="article-provenance-separator" aria-hidden="true">·</span>
-      <span v-if="hasSource" class="article-source"><a v-if="sourceUrl" target="_blank" rel="noopener noreferrer" :href="sourceUrl">{{ sourceLabel }}</a><span v-else>{{ sourceLabel }}</span></span>
+      <span v-if="hasSource" class="article-source"><ArticleAuthors :authors="authors" :fallback="sourceLabel" :fallback-url="sourceUrl" /></span>
     </span>
-    <span v-if="hideProvenance && author" class="article-source">{{ author }}</span>
+    <span v-if="hideProvenance && (authors?.length || author)" class="article-source"><ArticleAuthors :authors="authors" :fallback="author" /></span>
+    <span v-if="originalSourceLabel" class="article-source article-original-source">
+      Original source:
+      <a v-if="originalSourceUrl" :href="originalSourceUrl" target="_blank" rel="noopener noreferrer" @click.stop>{{ originalSourceLabel }}</a>
+      <span v-else>{{ originalSourceLabel }}</span>
+    </span>
     <ArticleRecommendationExplanation
       v-if="showRecommendationExplanation"
       :recommendation="recommendation"
@@ -32,18 +37,31 @@ import {
 import { formatRelativeDate } from '../../utils/date.js';
 import { hasUsableArticleAnalysis } from '../../services/articleAnalysisPresentation.js';
 import ArticleStorySourcesPopover from './ArticleStorySourcesPopover.vue';
+import ArticleAuthors from './ArticleAuthors.vue';
 
 const ArticleRecommendationExplanation = defineAsyncComponent(
   () => import('./ArticleRecommendationExplanation.vue')
 );
 export default {
-  components: { ArticleRecommendationExplanation, ArticleStorySourcesPopover },
+  components: { ArticleRecommendationExplanation, ArticleStorySourcesPopover, ArticleAuthors },
   emits: ['view-event-articles', 'view-duplicate-articles'],
   props: {
+    authors: { type: Array, default: null },
+    originalSource: { type: Object, default: null },
     hideProvenance: { type: Boolean, default: false },
     articleId: { type: [Number, String], default: null }, publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, hasInterestScore: { type: Boolean, default: false }, isRecommendationView: { type: Boolean, default: false }, recommendation: { type: Object, default: null }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, aiAnalysisStatus: { type: String, default: '' }, neutralScore: { type: Number, required: true }
   },
   computed: {
+    originalSourceUrl() {
+      try {
+        const url = new URL(this.originalSource?.url);
+        return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+      } catch { return ''; }
+    },
+    originalSourceLabel() {
+      return this.originalSource?.title || (this.originalSourceUrl
+        ? new URL(this.originalSourceUrl).hostname : this.originalSource?.id) || '';
+    },
     // Prevents ingestion defaults from appearing as completed mobile analysis signals.
     showAnalysisScores() {
       return hasUsableArticleAnalysis(this.aiAnalysisStatus);
@@ -70,7 +88,7 @@ export default {
     },
     // Returns whether source text is available for the provenance group.
     hasSource() {
-      return Boolean(this.sourceLabel);
+      return Boolean(this.authors?.length || this.sourceLabel);
     },
     // Returns whether any provenance value should be rendered.
     hasProvenance() {

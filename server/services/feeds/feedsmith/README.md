@@ -33,6 +33,8 @@ Each canonical entry contains:
 - `content`
 - `contentKind`
 - `author`
+- `authors` (nullable ordered array of `{ name, url }`, each value nullable)
+- `originalSource` (nullable `{ title, id, url }` publisher-declared provenance)
 - `languageHint`
 - `categories`
 - `publishedAt`
@@ -53,6 +55,21 @@ Core metadata, Media RSS descriptions, and iTunes author/artwork). Atom enclosur
 links supply media or image candidates rather than article permalinks. Atom entries
 inherit source/feed authors and JSON Feed items inherit feed authors when entry
 authors are absent. RSS/RDF Atom self links retain publisher feed identity.
+
+Native author lists take precedence over legacy and namespace bylines. Fallbacks
+include Dublin Core/Terms creators, namespaced Atom authors and iTunes author.
+Atom source/feed and JSON feed authors are inherited when entry authors are absent.
+All authors in the selected list are retained, in order, with exact duplicates
+removed. Profile links are resolved HTTP(S) URLs; unknown names/URLs stay null.
+Email-only XML people retain the existing email-as-display-name fallback. Names
+are never split on commas. `author` joins known names for existing search, item
+filters, compact presentation, and external integration contracts.
+
+Original source uses RSS `source`, Atom `source` (including the Atom namespace),
+or Dublin Core/Terms `source` references. IDs stay opaque, titles become display
+text, and only HTTP(S) URLs are navigable. JSON Feed `external_url` is a related
+resource, so it is not treated as proof of original provenance. No source is
+inferred from the current subscription or its publisher name.
 
 `languageHint` is a validated, canonical language tag. Selected Atom body/summary
 declarations precede entry declarations, then feed defaults. JSON/RSS language,

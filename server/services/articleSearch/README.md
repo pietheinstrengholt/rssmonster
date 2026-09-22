@@ -159,7 +159,7 @@ send another grouping mode.
 | Expression | Meaning |
 | --- | --- |
 | `tag:security` | Articles with the named tag. Tag lookup is scoped to the user. |
-| `author:Jane` | Author contains `Jane`, case-insensitively under the configured database collation. |
+| `author:Jane` | Byline contains `Jane`, including secondary authors; case-insensitive under the configured database collation. |
 | `author:"Jane Smith"` | Author contains the complete value `Jane Smith`. |
 | `language:en` | Exact stored language code; accepts two or three letters. |
 | `firstSeen:12h` | Articles first seen during the last 12 hours, plus articles never seen. |

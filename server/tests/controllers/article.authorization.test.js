@@ -244,6 +244,42 @@ describe('article ownership authorization', () => {
     expect(response.body[0].recommendation.score).toBeCloseTo(-0.3, 3);
   });
 
+  it('returns structured authors and finds secondary authors without exposing other users', async () => {
+    const owner = await createUser(uniqueName('authors-owner'));
+    const foreignUser = await createUser(uniqueName('authors-foreign'));
+    const { article } = await createArticleFor(owner);
+    const { article: foreignArticle } = await createArticleFor(foreignUser);
+    const authors = [{ name: 'Alice', url: 'https://people.test/alice' }, { name: 'Bob', url: 'https://people.test/bob' }];
+    await article.update({ authors, author: 'Alice, Bob' });
+    await foreignArticle.update({ authors, author: 'Alice, Bob' });
+    const details = await request(app).post('/api/articles/details')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ articleIds: `${article.id},${foreignArticle.id}` });
+    expect(details.status).toBe(200);
+    expect(details.body).toHaveLength(1);
+    expect(details.body[0]).toMatchObject({ authors, author: 'Alice, Bob' });
+    const search = await request(app).get('/api/articles')
+      .set('Authorization', authHeaderFor(owner))
+      .query({ search: 'author:Bob', grouping: 'none' });
+    expect(search.status).toBe(200);
+    expect(search.body.itemIds.map(Number)).toEqual([article.id]);
+  });
+
+  it('returns original-source metadata only for owned article details', async () => {
+    const owner = await createUser(uniqueName('source-details-owner'));
+    const foreignUser = await createUser(uniqueName('source-details-foreign'));
+    const { article } = await createArticleFor(owner);
+    const { article: foreignArticle } = await createArticleFor(foreignUser);
+    const originalSource = { title: 'Original agency', id: 'urn:agency', url: 'https://agency.test/' };
+    await article.update({ originalSource });
+    const response = await request(app).post('/api/articles/details')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ articleIds: `${article.id},${foreignArticle.id}` });
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveLength(1);
+    expect(response.body[0]).toMatchObject({ id: article.id, originalSource });
+  });
+
   it('returns recommendation score, reasons, event name, and interest island with article details', async () => {
     const owner = await createUser(uniqueName('article-recommendation-details-owner'));
     const { article, feed } = await createArticleFor(owner);

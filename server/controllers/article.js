@@ -120,6 +120,8 @@ const loadArticleDetails = async (userId, articlesArray, personalization = creat
       'imageUrl',
       'title',
       'author',
+      'authors',
+      'originalSource',
       'description',
       'descriptionHtml',
       'descriptionText',

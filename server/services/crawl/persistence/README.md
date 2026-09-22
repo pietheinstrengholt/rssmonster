@@ -15,6 +15,8 @@ post-crawl enrichment pipeline.
 columns. It keeps create and update paths aligned and owns:
 
 - Stable publisher identity (`externalId`, `externalIdType`).
+- Nullable `originalSource` title/ID/URL attribution, separate from entry identity.
+- Nullable ordered `authors` JSON byline, with `{ name, url }` entries.
 - Nullable article URLs plus raw and normalized URL hashes.
 - Raw source, sanitized HTML, canonical visible text, description derivatives, and their hashes.
 - Structured media, selected lead-image URL/dimensions/MIME/source, and language.
@@ -25,6 +27,19 @@ Missing values are represented as `null` where the storage contract allows them.
 linkless stable-ID articles persist a null URL and null URL hashes rather than a fabricated link.
 `contentOriginal` remains raw source; `contentHtml`, `descriptionHtml`, and structured media are the
 safe normalized representations intended for presentation.
+
+Original-source metadata is stored as one object to avoid combining attributes
+from different publishers. A new declaration replaces that object; an omitted
+declaration retains the last known attribution. Metadata-only corrections preserve
+user state and semantic membership. These declarations do not change source counts,
+duplicate matching, article identity, or recommendation weights.
+
+Structured authors and the compatibility `author` text are written together.
+`author` joins all known names, so existing author searches and feed filters match
+secondary authors too. A missing authors list retains prior attribution on revision;
+an explicit list replaces it. Legacy rows keep their unsplit `author` string and
+null `authors` until a crawl supplies structured attribution. Neither names nor
+profile URLs are used as article identity or automatic preference signals.
 
 ## Creating an article
 

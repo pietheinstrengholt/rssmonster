@@ -9,6 +9,8 @@ const extractEntryFields = entry => ({
   content: entry?.content ?? null,
   contentKind: entry?.contentKind ?? null,
   author: entry?.author ?? null,
+  authors: Array.isArray(entry?.authors) ? entry.authors : null,
+  originalSource: entry?.originalSource ?? null,
   languageHint: entry?.languageHint ?? null,
   categories: Array.isArray(entry?.categories) ? entry.categories : [],
   publishedAt: entry?.publishedAt ?? null,

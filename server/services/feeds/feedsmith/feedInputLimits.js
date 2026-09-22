@@ -84,6 +84,11 @@ export const assertNormalizedFeedLimits = (
     assertFieldBytes(entry, 'url', limits.urlBytes);
     assertFieldBytes(entry, 'title', limits.titleBytes);
     assertFieldBytes(entry, 'author', limits.authorBytes);
+    assertFieldBytes({ authors: entry.authors ? JSON.stringify(entry.authors) : null }, 'authors', limits.authorBytes);
+    for (const person of entry.authors || []) assertFieldBytes(person, 'url', limits.urlBytes);
+    assertFieldBytes(entry.originalSource, 'title', limits.titleBytes);
+    assertFieldBytes(entry.originalSource, 'id', limits.guidBytes);
+    assertFieldBytes(entry.originalSource, 'url', limits.urlBytes);
     if (
       byteLength(entry.content) + byteLength(entry.description) >
       limits.contentBytes

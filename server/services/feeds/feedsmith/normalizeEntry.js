@@ -1,5 +1,6 @@
 import normalizeIdentity from './normalizeIdentity.js';
 import normalizeMedia from './normalizeMedia.js';
+import normalizeAuthors from './normalizeAuthors.js';
 import resolveLanguageHint from './normalizeLanguage.js';
 import htmlToVisibleText from '../../crawl/content/htmlToVisibleText.js';
 import {
@@ -145,6 +146,23 @@ export const readDisplayText = value => typeof value === 'object' && atomContent
 
 const firstText = values => values.find(hasTextValue) || null;
 
+// Source declarations describe provenance, not the identity of this republished entry.
+const resolveOriginalSource = (entry, format, baseUrl) => {
+  const source = (['rss', 'atom'].includes(format) ? entry.source : null) || entry.atom?.source;
+  if (source) {
+    const title = readDisplayText(source.title)?.trim() || null;
+    const id = typeof source.id === 'string' ? source.id.trim() || null : null;
+    const links = source.links || [];
+    const url = [source.url,
+      ...links.filter(link => !link.rel || link.rel === 'alternate').map(link => link.href),
+      ...links.filter(link => link.rel === 'self').map(link => link.href)
+    ].map(value => resolveSafeHttpUrl(value, baseUrl)).find(Boolean) || null;
+    if (title || id || url) return { title, id, url };
+  }
+  const id = firstText([...(entry.dc?.sources || []), ...(entry.dcterms?.sources || [])])?.trim();
+  return id ? { title: null, id, url: resolveSafeHttpUrl(id) } : null;
+};
+
 const atomContent = value => ({
   value: value.value,
   kind: atomContentKind(value),
@@ -236,28 +254,6 @@ const resolveDescription = (entry, feedFormat) => {
   const mediaGroupDescription = resolveMediaGroupDescription(entry);
   if (mediaGroupDescription) return mediaGroupDescription;
   return { value: null, kind: null };
-};
-
-// This function resolves the first useful author name from RSS, Atom, or JSON Feed shapes.
-const resolveAuthor = (entry, feedFormat, sourceFeed) => {
-  // Derives the author required while resolving author.
-  const author = entry?.dc?.creator || entry?.author || entry?.dc?.creators?.[0];
-  // Returns early when author is string.
-  if (typeof author === 'string') return author;
-  // Returns early when name is available.
-  if (author?.name) return author.name;
-
-  const inheritedAuthors = feedFormat === 'atom'
-    ? entry.source?.authors ?? sourceFeed.authors
-    : feedFormat === 'json' ? sourceFeed.authors : [];
-  // Explicit entry authors override source/feed authors, including an empty JSON authors array.
-  const authors = entry.authors ?? inheritedAuthors ?? [];
-  return firstText([
-    ...authors.map(person => person?.name || person?.email),
-    ...(entry.atom?.authors || []).map(person => person?.name || person?.email),
-    ...(entry.dcterms?.creators || []),
-    entry.itunes?.author
-  ]);
 };
 
 // This function builds a valid UTC date from URL date path components.
@@ -432,6 +428,7 @@ function normalizeEntry(entry, feedFormat = null, linkContext = {}, sourceFeed =
   };
   const resourceBaseUrl = resolveContentBaseUrl(link, baseContext);
   const xmlBaseUrl = resolveContentBaseUrl(null, baseContext);
+  const authors = normalizeAuthors(entry, feedFormat, sourceFeed, xmlBaseUrl, resolveContentBaseUrl(null, linkContext));
   // Resolves content and description with their source-defined semantics.
   const selectedContent = resolveContent(entry, feedFormat);
   const selectedDescription = resolveDescription(entry, feedFormat);
@@ -463,7 +460,9 @@ function normalizeEntry(entry, feedFormat = null, linkContext = {}, sourceFeed =
     descriptionKind: selectedDescription.kind,
     content: selectedContent.value,
     contentKind: selectedContent.kind,
-    author: resolveAuthor(entry, feedFormat, sourceFeed),
+    authors,
+    author: authors?.map(person => person.name).filter(Boolean).join(', ') || null,
+    originalSource: resolveOriginalSource(entry, feedFormat, xmlBaseUrl),
     languageHint: resolveLanguageHint(entry, sourceFeed, selectedContent, selectedDescription),
     categories: categoryNames,
     publishedAt: resolveEntryPublishedDate(entry, feedFormat),

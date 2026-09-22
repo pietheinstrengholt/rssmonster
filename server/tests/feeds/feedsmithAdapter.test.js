@@ -57,7 +57,7 @@ describe('Feedsmith adapter', () => {
     expect(feed).toMatchObject({
       publishedAt: '2026-07-15T10:00:00.000Z',
       entries: [{
-        author: 'First author',
+        author: 'First author, Second author',
         categories: ['News', 'Technology'],
         modifiedAt: '2026-07-16T10:00:00.000Z'
       }]

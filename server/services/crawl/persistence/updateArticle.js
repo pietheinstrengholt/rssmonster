@@ -177,6 +177,7 @@ const comparableValue = (field, value) => {
   }
   // Returns early when field is media.
   if (field === 'media') return JSON.stringify(stableValue(comparableMediaValue(value)));
+  if (['originalSource', 'authors'].includes(field)) return JSON.stringify(stableValue(value ?? null));
   // Returns early when field is content html.
   if (field === 'contentHtml') return comparableContentHtml(value) ?? null;
   return value ?? null;
@@ -272,7 +273,7 @@ const classifyChanges = changedFields => {
   // Derives the description changed through changed while performing classify changes.
   const descriptionChanged = changed('description');
   // Derives the author changed through changed while performing classify changes.
-  const authorChanged = changed('author');
+  const authorChanged = changed('author') || changed('authors');
   // Derives the published changed through any changed while performing classify changes.
   const publishedChanged = anyChanged(PUBLISHED_FIELDS);
 
@@ -282,7 +283,7 @@ const classifyChanges = changedFields => {
     descriptionChanged,
     authorChanged,
     publishedChanged,
-    metadataChanged: titleChanged || descriptionChanged || authorChanged || publishedChanged,
+    metadataChanged: titleChanged || descriptionChanged || authorChanged || publishedChanged || changed('originalSource'),
     urlChanged: anyChanged(URL_FIELDS),
     mediaChanged: changed('media'),
     leadImageChanged: anyChanged(LEAD_IMAGE_FIELDS),
@@ -467,6 +468,8 @@ const buildResolvedSourceValues = (feed, article, data) => {
     leadImage: selectedLeadImage,
     title: preferIncomingValue(data.title, storedValue(article, 'title')),
     author: preferIncomingValue(data.author, storedValue(article, 'author')),
+    authors: Array.isArray(data.authors) ? data.authors : storedValue(article, 'authors'),
+    originalSource: preferIncomingValue(data.originalSource, storedValue(article, 'originalSource')),
     description: preferIncomingValue(data.description, storedValue(article, 'description')),
     descriptionHtml: preferIncomingValue(
       data.descriptionHtml,
@@ -510,6 +513,8 @@ const buildStoredSourceValues = (feed, article) => selectMutableArticleSourceVal
     },
     title: storedValue(article, 'title'),
     author: storedValue(article, 'author'),
+    authors: storedValue(article, 'authors'),
+    originalSource: storedValue(article, 'originalSource'),
     description: storedValue(article, 'description'),
     descriptionHtml: storedValue(article, 'descriptionHtml'),
     descriptionText: storedValue(article, 'descriptionText'),
