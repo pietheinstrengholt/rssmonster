@@ -56,6 +56,17 @@ export const SEMANTIC_GRANULARITY = {
 
 // Defines the event sim threshold enforced by this service.
 export const EVENT_SIM_THRESHOLD = SEMANTIC_GRANULARITY.eventSimilarityThreshold;
+
+// Category preferences affect attachment to existing Events, not candidate discovery or creation.
+export function getEventSimilarityThreshold(clusteringBehavior) {
+  switch (clusteringBehavior) {
+    case 'aggressive': return 0.78;
+    case 'moderate': return 0.84;
+    case 'conservative': return 0.89;
+    default: return EVENT_SIM_THRESHOLD;
+  }
+}
+
 // Defines the max candidates enforced by this service.
 export const MAX_CANDIDATES = SEMANTIC_GRANULARITY.maxCandidates;
 // Defines the recency window days enforced by this service.

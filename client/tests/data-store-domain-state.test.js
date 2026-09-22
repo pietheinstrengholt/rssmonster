@@ -79,6 +79,18 @@ describe('data store domain reconciliation', () => {
     expect(store.clickedCount).toBe(0);
   });
 
+  it('retains category clustering configuration through updates and clearing', () => {
+    const store = createStore();
+    store.addCategory({ id: 1, name: 'News', clusteringBehavior: 'aggressive' });
+    expect(store.categories[0].clusteringBehavior).toBe('aggressive');
+    store.updateCategory(1, { clusteringBehavior: 'conservative' });
+    expect(store.categories[0].clusteringBehavior).toBe('conservative');
+    store.updateCategory(1, { name: 'Renamed' });
+    expect(store.categories[0].clusteringBehavior).toBe('conservative');
+    store.updateCategory(1, { clusteringBehavior: null });
+    expect(store.categories[0].clusteringBehavior).toBeNull();
+  });
+
   it('adds, updates, and atomically moves normalized feeds across mixed ID types', () => {
     const store = createStore();
     store.addCategory({

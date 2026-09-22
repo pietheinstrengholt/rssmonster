@@ -26,6 +26,12 @@
             <CategoryIconPicker v-model="iconName" :disabled="isPending" />
         </div>
 
+        <CategoryClusteringSelect
+            id="new-category-clustering"
+            v-model="clusteringBehavior"
+            :disabled="isPending"
+        />
+
         <template #footer>
             <button type="button" class="app-button app-button--secondary base-dialog__button base-dialog__button--secondary" :disabled="isPending" @click="closeDialog">
                 Close
@@ -43,6 +49,7 @@ import { useOverviewStore } from '../../../store/overview.js';
 import { useUiStore } from '../../../store/ui.js';
 import BaseDialog from '../BaseDialog.vue';
 import CategoryIconPicker from './CategoryIconPicker.vue';
+import CategoryClusteringSelect from './CategoryClusteringSelect.vue';
 import { DEFAULT_CATEGORY_ICON } from './categoryIconOptions.js';
 import { createCategory } from '../../../api/categories';
 import { notifyActionError } from '../../../services/actionNotifications.js';
@@ -51,11 +58,13 @@ export default {
     name: 'NewCategory',
     components: {
         BaseDialog,
-        CategoryIconPicker
+        CategoryIconPicker,
+        CategoryClusteringSelect
     },
     // This function creates editable category fields and duplicate-save protection.
     data() {
         return {
+            clusteringBehavior: null,
             categoryName: '',
             iconName: DEFAULT_CATEGORY_ICON,
             category: {},
@@ -81,7 +90,7 @@ export default {
             const categoryName = this.trimmedCategoryName;
             this.isPending = true;
             try {
-                const result = await createCategory(categoryName, this.iconName);
+                const result = await createCategory(categoryName, this.iconName, this.clusteringBehavior);
                 this.category = result.data;
 
                 // Reconcile the API response through the store's normalization contract.

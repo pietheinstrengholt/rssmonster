@@ -75,7 +75,7 @@ const buildCategoryFeedMaps = categories => {
 
 const loadCategoriesStructure = userId => Category.findAll({
   where: { userId },
-  attributes: ['id', 'name', 'categoryOrder', 'iconName'],
+  attributes: ['id', 'name', 'categoryOrder', 'iconName', 'clusteringBehavior'],
   include: [{
     model: Feed,
     attributes: OVERVIEW_FEED_ATTRIBUTES,

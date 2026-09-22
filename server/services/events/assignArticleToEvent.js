@@ -3,6 +3,7 @@ import { compatibleEmbeddingModels, hasEmbeddingModel } from '../vectors/embeddi
 // This service assigns one article to an existing event, creates a new event, or leaves it eventless.
 import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } from './eventDecisionDiagnostics.js';
 import db from '../../models/index.js';
+import { articleEventSimilarityThreshold, eventClusteringFeedInclude } from './categoryClustering.js';
 import { Op } from 'sequelize';
 import { canonicalArticleWhere, DUPLICATE_ARTICLE_STATUS } from '../duplicates/articleDuplicates.js';
 import { createAndAssignEvent as createEventFromCandidates } from './createEvents.js';
@@ -362,7 +363,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   // Selects the article based on whether article id or obj is object.
   const article = typeof articleIdOrObj === 'object'
     ? articleIdOrObj
-    : await Article.findByPk(articleIdOrObj);
+    : await Article.findByPk(articleIdOrObj, { include: [eventClusteringFeedInclude] });
 
   // Returns no result when article is unavailable.
   if (!article) return null;
@@ -488,12 +489,13 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     memberSignalsByEvent.set(id, signals);
   }
   const now = Date.now();
+  const similarityThreshold = eventsById.size ? await articleEventSimilarityThreshold(article) : undefined;
   const decisions = [...eventsById.values()].map(event => {
     const memberSignals = memberSignalsByEvent.get(Number(event.id)) || [];
     return {
       event,
       ...evaluateArticleAgainstEvent(article, event, {
-        articleEventVector, normalizedArticleEventVector, memberSignals, now,
+        articleEventVector, normalizedArticleEventVector, memberSignals, now, similarityThreshold,
         candidateSources: [
           ...(events.includes(event) ? [cache ? 'event_cache' : 'event_database'] : []),
           ...(memberSignals.length ? ['member_articles'] : [])

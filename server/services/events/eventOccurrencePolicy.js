@@ -181,13 +181,13 @@ export function normalizeVector(vector) {
 
 // The same witness must supply semantic and lexical/entity support. Member count
 // never increases a score, and discovery source is diagnostic only.
-function signalEligibility(signal) {
-  const meetsSemantic = signal.semantic >= EVENT_SIM_THRESHOLD;
+function signalEligibility(signal, similarityThreshold) {
+  const meetsSemantic = signal.semantic >= similarityThreshold;
   const nearDuplicate = signal.headline >= DUPLICATE_HEADLINE_SIM &&
     signal.semantic >= DUPLICATE_HEADLINE_MIN_SEMANTIC;
   const meetsAuxiliary = signal.headline >= EVENT_MIN_HEADLINE_SIM ||
     signal.overlap >= EVENT_MIN_SHARED_ENTITY_OVERLAP ||
-    signal.semantic >= Math.max(EVENT_SIM_THRESHOLD, DUPLICATE_HEADLINE_SIM);
+    signal.semantic >= Math.max(similarityThreshold, DUPLICATE_HEADLINE_SIM);
   return {
     meetsSemantic, nearDuplicate, meetsAuxiliary,
     supported: (meetsSemantic && meetsAuxiliary) || nearDuplicate
@@ -211,6 +211,7 @@ export function buildEventEvidence(article, event, {
   eventOccurrenceFeatures = null,
   compareOccurrence = true,
   candidateSources = [],
+  similarityThreshold = EVENT_SIM_THRESHOLD,
   now = Date.now()
 } = {}) {
   const centroid = witnessSignal(article, {
@@ -231,7 +232,7 @@ export function buildEventEvidence(article, event, {
     : null;
   const recency = recencyDecayMultiplier(event.eventWindowEndAt || event.updatedAt, now);
   const scoreWitness = signal => {
-    const eligibility = signalEligibility(signal);
+    const eligibility = signalEligibility(signal, similarityThreshold);
     const baseScore = signal.semantic * 0.75 + signal.headline * 0.15 + temporal * 0.1;
     const entityBonus = signal.overlap >= EVENT_MIN_SHARED_ENTITY_OVERLAP ? 0.03 : 0;
     return {
@@ -295,7 +296,7 @@ export function evaluateArticleAgainstEvent(article, event, evidenceOptions = {}
     if (evidence.headline >= EVENT_MIN_HEADLINE_SIM) reasons.push('headline_overlap');
     if (evidence.overlap >= EVENT_MIN_SHARED_ENTITY_OVERLAP) reasons.push('shared_entities');
     if (evidence.nearDuplicate) reasons.push('near_identical_headline');
-    if (evidence.semantic >= Math.max(EVENT_SIM_THRESHOLD, DUPLICATE_HEADLINE_SIM)) reasons.push('strong_semantic_support');
+    if (evidence.semantic >= Math.max(evidenceOptions.similarityThreshold ?? EVENT_SIM_THRESHOLD, DUPLICATE_HEADLINE_SIM)) reasons.push('strong_semantic_support');
     reasons.push('temporal_match');
     for (const feature of ['version', 'location', 'action', 'object']) {
       if (evidence[`${feature}Agreement`]) reasons.push(`${feature}_match`);

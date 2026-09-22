@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 
 import ArticleEventCandidateCache from '../events/ArticleEventCandidateCache.js';
 import { assignArticleToEvent, EventCache } from '../events/assignArticleToEvent.js';
+import { eventClusteringFeedInclude } from '../events/categoryClustering.js';
 import embedArticle from '../articles/embedArticle.js';
 import {
   EVENT_MAX_GAP_HOURS,
@@ -19,7 +20,7 @@ import { tryEnqueueGeneratedSemanticLabelJobsForUser } from '../semanticLabels/s
 import { debugSemanticLog } from '../observability/semanticLogging.js';
 
 // Provides the shared dependencies used by this service.
-const { Article, Event, Feed } = db;
+const { Article, Event } = db;
 // Defines the cache buffer hours enforced by this service.
 const CACHE_BUFFER_HOURS = Number.parseInt(process.env.EVENT_CACHE_BUFFER_HOURS || '2', 10);
 
@@ -388,11 +389,7 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
   // Loads the articles needed while performing run incremental events for user.
   const articles = await Article.findAll({
     where: articleWhere,
-    include: [{
-      model: Feed,
-      attributes: ['generateEmbeddings'],
-      required: false
-    }],
+    include: [eventClusteringFeedInclude],
     order: [
       ['publishedAt', 'ASC'],
       ['id', 'ASC']
@@ -482,11 +479,7 @@ export async function repairRecentEventsForUser(userId, _options = {}) {
       ...canonicalArticleWhere(),
       publishedAt: { [Op.gte]: cutoffDate }
     },
-    include: [{
-      model: Feed,
-      attributes: ['generateEmbeddings'],
-      required: false
-    }],
+    include: [eventClusteringFeedInclude],
     order: [
       ['publishedAt', 'ASC'],
       ['id', 'ASC']
@@ -620,6 +613,7 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
         id: { [Op.gt]: lastId },
         articleVector: { [Op.ne]: null }
       },
+      include: [eventClusteringFeedInclude],
       order: [['id', 'ASC']],
       limit: batchSize
     });

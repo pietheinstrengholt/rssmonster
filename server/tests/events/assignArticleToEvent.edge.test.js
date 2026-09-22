@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { randomUUID } from 'node:crypto';
+import db from '../../models/index.js';
 import assignArticleToEvent, {
   EventCache
 } from '../../services/events/assignArticleToEvent.js';
@@ -29,10 +31,14 @@ describe('assignArticleToEvent edge behavior', () => {
   });
 
   it('rejects nearby candidates without vectors and records a standalone result', async () => {
-    const article = {
-      id: 10,
-      userId: 4,
-      feedId: 2,
+    const { Article, Category, Feed, User } = db;
+    const user = await User.create({ username: `event-edge-${randomUUID()}`, password: 'test' });
+    const category = await Category.create({ userId: user.id, name: 'Tests' });
+    const feed = await Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Tests', url: `https://example.com/${randomUUID()}` });
+    const article = await Article.create({
+      userId: user.id,
+      feedId: feed.id,
+      url: `https://example.com/${randomUUID()}`,
       title: 'Acme merger receives approval',
       description: 'Brussels regulators approved the Acme transaction.',
       publishedAt: new Date('2026-07-22T10:00:00.000Z'),
@@ -40,14 +46,13 @@ describe('assignArticleToEvent edge behavior', () => {
       status: 'unread',
       duplicateOfArticleId: null,
       filteredInd: false,
-      embedding_model: 'test-model', articleVector: [1, 0, 0],
-      update: vi.fn().mockResolvedValue(undefined)
-    };
+      embedding_model: 'test-model', articleVector: [1, 0, 0]
+    });
     const articleCandidateCache = {
       findNearby: vi.fn().mockReturnValue([{
         id: 9,
-        userId: 4,
-        feedId: 3,
+        userId: user.id,
+        feedId: feed.id,
         title: 'Acme merger receives approval',
         publishedAt: new Date('2026-07-22T09:00:00.000Z'),
         eventId: null
@@ -67,7 +72,7 @@ describe('assignArticleToEvent edge behavior', () => {
     );
 
     expect(eventId).toBeNull();
-    expect(article.update).not.toHaveBeenCalled();
+    expect((await article.reload()).eventId).toBeNull();
     expect(runContext.stats.eventlessInsufficientCandidatesCount).toBe(1);
     expect(runContext.records).toContainEqual(expect.objectContaining({
       id: article.id,

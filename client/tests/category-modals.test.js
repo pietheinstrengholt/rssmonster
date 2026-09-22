@@ -56,7 +56,36 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+const clusteringOptions = [
+  [null, 'Server default', ''],
+  ['aggressive', 'Aggressive', 'Recommended for high-volume news'],
+  ['moderate', 'Moderate', 'Recommended for sports, gaming, and technology'],
+  ['conservative', 'Conservative', 'Recommended for blogs and niche feeds']
+];
+
+const selectClustering = async label => {
+  const option = wrapper.findAll('select option').find(option => option.text() === label);
+  await option.setSelected();
+};
+
 describe('NewCategory', () => {
+  it.each(clusteringOptions)('creates a category with %s clustering', async (clusteringBehavior, label, recommendation) => {
+    const category = { id: 8, name: 'News', iconName: 'folder-fill', clusteringBehavior };
+    createCategory.mockResolvedValue({ data: category });
+    const { store } = mountCategoryModal(NewCategory);
+
+    expect(wrapper.get('label[for="new-category-clustering"]').text()).toBe('Event clustering');
+    expect(wrapper.get('select').element.selectedOptions[0].textContent).toBe('Server default');
+    await wrapper.get('#new-category-name').setValue('News');
+    await selectClustering(label);
+    if (recommendation) expect(wrapper.text()).toContain(recommendation);
+    await wrapper.get('.base-dialog__button--primary').trigger('click');
+    await flushPromises();
+
+    expect(createCategory).toHaveBeenCalledWith('News', 'folder-fill', clusteringBehavior);
+    expect(store.overviewStore.addCategory).toHaveBeenCalledWith(category);
+  });
+
   // Verifies creation uses the selected icon and reconciles the response through the store.
   it('creates a named category and closes the modal', async () => {
     createCategory.mockResolvedValue({
@@ -69,7 +98,7 @@ describe('NewCategory', () => {
     await wrapper.get('.base-dialog__button--primary').trigger('click');
     await flushPromises();
 
-    expect(createCategory).toHaveBeenCalledWith('Engineering', 'cpu-fill');
+    expect(createCategory).toHaveBeenCalledWith('Engineering', 'cpu-fill', null);
     expect(store.overviewStore.addCategory).toHaveBeenCalledWith({
       id: 8,
       name: 'Engineering',
@@ -112,8 +141,9 @@ describe('NewCategory', () => {
     await saveButton.trigger('click');
 
     expect(createCategory).toHaveBeenCalledOnce();
-    expect(createCategory).toHaveBeenCalledWith('Engineering', 'folder-fill');
+    expect(createCategory).toHaveBeenCalledWith('Engineering', 'folder-fill', null);
     expect(saveButton.attributes('disabled')).toBeDefined();
+    expect(wrapper.get('select').attributes('disabled')).toBeDefined();
 
     pendingRequest.resolve({
       data: { id: 8, name: 'Engineering', iconName: 'folder-fill' }
@@ -143,6 +173,47 @@ describe('NewCategory', () => {
 });
 
 describe('RenameCategory', () => {
+  it.each(clusteringOptions)('loads and preserves %s clustering when renaming', async (clusteringBehavior, label, recommendation) => {
+    const category = { id: 7, name: 'News', iconName: 'newspaper', clusteringBehavior };
+    updateCategory.mockResolvedValue({ data: { ...category, name: 'Reading' } });
+    mountCategoryModal(RenameCategory, category);
+
+    expect(wrapper.get('label[for="category-clustering"]').text()).toBe('Event clustering');
+    expect(wrapper.get('select').element.selectedOptions[0].textContent).toBe(label);
+    if (recommendation) expect(wrapper.text()).toContain(recommendation);
+    expect(wrapper.get('.base-dialog__button--primary').attributes('disabled')).toBeDefined();
+    await wrapper.get('#category-name').setValue('Reading');
+    await wrapper.get('.base-dialog__button--primary').trigger('click');
+    await flushPromises();
+    expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'newspaper', clusteringBehavior);
+  });
+
+  it.each(clusteringOptions)('saves a clustering-only change to %s', async (clusteringBehavior, label) => {
+    const originalBehavior = clusteringBehavior === 'aggressive' ? 'moderate' : 'aggressive';
+    const category = { id: 7, name: 'News', iconName: 'newspaper', clusteringBehavior: originalBehavior };
+    const updated = { ...category, clusteringBehavior };
+    updateCategory.mockResolvedValue({ data: updated });
+    const { store } = mountCategoryModal(RenameCategory, category);
+
+    await selectClustering(label);
+    expect(category.clusteringBehavior).toBe(originalBehavior);
+    expect(wrapper.get('.base-dialog__button--primary').attributes('disabled')).toBeUndefined();
+    await wrapper.get('.base-dialog__button--primary').trigger('click');
+    await flushPromises();
+    expect(updateCategory).toHaveBeenCalledWith(7, 'News', 'newspaper', clusteringBehavior);
+    expect(store.overviewStore.updateCategory).toHaveBeenCalledWith(7, updated);
+    expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
+  });
+
+  it('disables saving when the clustering selection is restored', async () => {
+    mountCategoryModal(RenameCategory);
+    expect(wrapper.get('select').element.selectedOptions[0].textContent).toBe('Server default');
+    await selectClustering('Aggressive');
+    expect(wrapper.get('.base-dialog__button--primary').attributes('disabled')).toBeUndefined();
+    await selectClustering('Server default');
+    expect(wrapper.get('.base-dialog__button--primary').attributes('disabled')).toBeDefined();
+  });
+
   // Verifies existing values are cloned and unchanged categories cannot be submitted.
   it('initializes selected category state and enables saving only after a change', async () => {
     const category = { id: 7, name: 'News', iconName: 'unsupported-icon' };
@@ -171,7 +242,7 @@ describe('RenameCategory', () => {
     await flushPromises();
     await wrapper.get('.base-dialog__button--secondary').trigger('click');
 
-    expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'book-fill');
+    expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'book-fill', null);
     expect(store.overviewStore.updateCategory).toHaveBeenCalledWith(7, {
       id: 7,
       name: 'Reading',
@@ -221,8 +292,9 @@ describe('RenameCategory', () => {
     await saveButton.trigger('click');
 
     expect(updateCategory).toHaveBeenCalledOnce();
-    expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'newspaper');
+    expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'newspaper', null);
     expect(saveButton.attributes('disabled')).toBeDefined();
+    expect(wrapper.get('select').attributes('disabled')).toBeDefined();
 
     pendingRequest.resolve({
       data: { id: 7, name: 'Reading' }

@@ -93,13 +93,22 @@ describe('actions and category API contracts', () => {
 
     expect(post).toHaveBeenCalledWith('/categories', {
       name: 'Security',
-      iconName: 'shield-lock-fill'
+      iconName: 'shield-lock-fill',
+      clusteringBehavior: null
     });
     expect(put).toHaveBeenCalledWith('/categories/4', {
       name: 'Infosec',
-      iconName: 'shield-fill'
+      iconName: 'shield-fill',
+      clusteringBehavior: undefined
     });
     expect(del).toHaveBeenCalledWith('/categories/5');
+  });
+
+  it.each([null, 'aggressive', 'moderate', 'conservative'])('sends clusteringBehavior %s in category requests', clusteringBehavior => {
+    createCategory('News', 'newspaper', clusteringBehavior);
+    updateCategory(4, 'News', 'newspaper', clusteringBehavior);
+    expect(post).toHaveBeenCalledWith('/categories', { name: 'News', iconName: 'newspaper', clusteringBehavior });
+    expect(put).toHaveBeenCalledWith('/categories/4', { name: 'News', iconName: 'newspaper', clusteringBehavior });
   });
 
   // Verifies maintenance calls use their dedicated endpoints.

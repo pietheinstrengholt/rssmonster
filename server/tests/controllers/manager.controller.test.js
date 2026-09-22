@@ -64,6 +64,7 @@ describe('manager controller', () => {
         get: vi.fn().mockReturnValue({
           id: 3,
           name: 'Technology',
+          clusteringBehavior: 'conservative',
           feeds: [
             {
               id: 8,
@@ -79,7 +80,7 @@ describe('manager controller', () => {
 
     expect(mocked.categoryFindAll).toHaveBeenCalledWith({
       where: { userId: 42 },
-      attributes: ['id', 'name', 'categoryOrder', 'iconName'],
+      attributes: ['id', 'name', 'categoryOrder', 'iconName', 'clusteringBehavior'],
       include: [{
         model: expect.any(Object),
         attributes: [
@@ -115,6 +116,7 @@ describe('manager controller', () => {
         {
           id: 3,
           name: 'Technology',
+          clusteringBehavior: 'conservative',
           readCount: 0,
           unreadCount: 0,
           briefingCount: 0,

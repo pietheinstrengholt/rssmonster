@@ -5,6 +5,7 @@ import assignArticleToEvent, { EventCache } from '../../services/events/assignAr
 import ArticleEventCandidateCache from '../../services/events/ArticleEventCandidateCache.js';
 import { createAndAssignEvent } from '../../services/events/createEvents.js';
 import { assignArticleToExistingEvent } from '../../services/events/updateEvents.js';
+import { eventClusteringFeedInclude } from '../../services/events/categoryClustering.js';
 
 const { Article, Category, Event, Feed, User } = db;
 const title = 'Acme releases the new compiler';
@@ -14,7 +15,7 @@ async function graph() {
   const user = await User.create({ username, password: 'test', role: 'user' });
   const category = await Category.create({ userId: user.id, name: 'Tests', categoryOrder: 0 });
   const feed = await Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Tests', url: `https://example.com/${username}` });
-  return { user, feed };
+  return { user, feed, category };
 }
 async function makeArticle(g, hours = 1, overrides = {}) {
   return Article.create({
@@ -47,6 +48,34 @@ async function assign(g, incoming, events, members = [], options = {}) {
 
 describe('Event occurrence assignment', () => {
   afterEach(() => vi.restoreAllMocks());
+
+  describe.each(['object', 'id', 'preloaded', 'commit'])('category thresholds through %s assignment', path => {
+    it.each([
+      ['aggressive', 0.80, true], ['aggressive', 0.77, false],
+      ['moderate', 0.85, true], ['moderate', 0.83, false],
+      ['conservative', 0.90, true], ['conservative', 0.88, false],
+      [null, 0.85, true], [null, 0.83, false]
+    ])('%s accepts similarity %s: %s', async (clusteringBehavior, similarity, accepted) => {
+      const g = await graph();
+      const { event } = await makeEvent(g);
+      await makeArticle(g, 0, { eventId: event.id });
+      // The incoming category controls attachment, regardless of the members' preference.
+      await g.category.update({ clusteringBehavior: 'conservative' });
+      const category = await Category.create({ userId: g.user.id, name: 'Incoming', clusteringBehavior });
+      const feed = await Feed.create({ userId: g.user.id, categoryId: category.id, feedName: 'Incoming', url: `https://example.com/${randomUUID()}` });
+      const incoming = await makeArticle(g, 1, {
+        feedId: feed.id, title: 'Acme compiler gains improved diagnostics',
+        articleVector: [similarity, Math.sqrt(1 - similarity ** 2)]
+      });
+      const input = path === 'id' ? incoming.id : path === 'preloaded'
+        ? await Article.findByPk(incoming.id, { include: [eventClusteringFeedInclude] }) : incoming;
+      const result = path === 'commit'
+        ? await assignArticleToExistingEvent({ article: incoming, bestEvent: event })
+        : await assignArticleToEvent(input, new EventCache([event]), null, { records: [], stats: {} });
+      expect(result).toBe(accepted ? event.id : null);
+      expect((await incoming.reload()).eventId).toBe(accepted ? event.id : null);
+    });
+  });
 
   it.each(['no-vector', 'insufficient', 'ambiguous', 'seed-rejected', 'join-rejected'])(
     'preserves a concurrent committed assignment after a stale %s proposal', async outcome => {

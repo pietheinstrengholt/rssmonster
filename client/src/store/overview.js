@@ -600,13 +600,14 @@ export const useOverviewStore = defineStore('overview', {
       return normalized;
     },
 
-    // This action updates a stored category's API-backed display fields.
+    // This action updates a stored category's API-backed configuration fields.
     updateCategory(categoryId, category = {}) {
       const stored = this.categories.find(item => idsMatch(item.id, categoryId));
       if (!stored) return false;
 
       if (category.name !== undefined) stored.name = category.name;
       if (category.iconName !== undefined) stored.iconName = category.iconName;
+      if (category.clusteringBehavior !== undefined) stored.clusteringBehavior = category.clusteringBehavior;
       return true;
     },
 

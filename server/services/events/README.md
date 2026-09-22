@@ -347,6 +347,15 @@ lexical/entity evidence; raw supporting-member count does not boost the score.
 The existing near-identical headline exception and very strong semantic fallback
 remain available through the same policy for all discovery paths.
 
+Existing-Event attachment uses the incoming Article's category preference at both
+candidate evaluation and the locked membership recheck: `aggressive` uses 0.78,
+`moderate` 0.84, and `conservative` 0.89. A null or missing preference uses the
+configured `EVENT_SIM_THRESHOLD`, which still defaults to 0.84. Higher thresholds
+are stricter; lower thresholds permit more matches. Article-candidate discovery,
+new-Event seed validation, and the near-identical headline exception retain their
+existing rules. These preferences do not alter embeddings, candidate selection,
+Event lifecycle, Islands, interest formulas, or Recommended weights.
+
 Every join checks the proposed **whole Event span**, including member-backed joins.
 The existing positive temporal-score boundary is retained: the span must be less
 than `EVENT_MAX_GAP_HOURS` (48 hours by default).

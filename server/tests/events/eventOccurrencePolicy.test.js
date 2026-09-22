@@ -4,6 +4,7 @@ import {
 } from '../../services/events/eventOccurrencePolicy.js';
 import { buildCanonicalEventProjection } from '../../services/events/eventProjection.js';
 import { extractOccurrenceFeatures, aggregateOccurrenceFeatures } from '../../services/events/occurrenceFeatures.js';
+import { EVENT_SIM_THRESHOLD, getEventSimilarityThreshold } from '../../services/config/semanticConfig.js';
 
 const origin = Date.parse('2026-09-10T00:00:00Z');
 const at = hours => new Date(origin + hours * 3600000);
@@ -18,6 +19,33 @@ const event = (overrides = {}) => ({
 const evaluate = (a, e, evidence = {}) => evaluateArticleAgainstEvent(a, e, { now: at(4).getTime(), ...evidence });
 
 describe('shared Event occurrence policy', () => {
+  it.each(['aggressive', 'moderate', 'conservative', null, undefined])('uses the %s attachment threshold at the semantic boundary', behavior => {
+    const similarityThreshold = getEventSimilarityThreshold(behavior);
+    const incoming = article(1, { title: 'Acme compiler gains improved diagnostics' });
+    for (const offset of [-0.0001, 0.0001]) {
+      const similarity = similarityThreshold + offset;
+      const result = evaluate(incoming, event({ eventVector: [similarity, Math.sqrt(1 - similarity ** 2)] }), { similarityThreshold });
+      expect(result.eligible).toBe(offset > 0);
+      expect(result.evidence.semantic).toBeCloseTo(similarity, 8);
+    }
+  });
+
+  it.each(['aggressive', 'conservative'])('keeps %s category preferences out of candidate discovery and Event creation', clusteringBehavior => {
+    for (const offset of [-0.01, 0.01]) {
+      const similarity = EVENT_SIM_THRESHOLD + offset;
+      const incoming = article(1, {
+        title: 'Acme compiler gains improved diagnostics',
+        articleVector: [similarity, Math.sqrt(1 - similarity ** 2)],
+        feed: { category: { clusteringBehavior } }
+      });
+      const candidate = article(0, { id: 1 });
+      expect(evaluateCandidateSignal({ article: incoming, candidate, articleEventVector: incoming.articleVector }).accepted).toBe(offset > 0);
+      const members = [incoming, candidate];
+      expect(evaluateEventCreation(members, { ...event(), ...buildCanonicalEventProjection(members) }).decision)
+        .toBe(offset > 0 ? 'join' : 'reject');
+    }
+  });
+
   it.each([
     ['Orion OS 4.2 released', 'Orion OS 4.3 released', 'version_conflict'],
     ['Train collision in Rotterdam', 'Train collision in Antwerp', 'location_conflict'],
@@ -110,8 +138,10 @@ describe('shared Event occurrence policy', () => {
     }).decision).toBe('reject');
   });
 
-  it('preserves near-identical headline matching below the normal semantic threshold', () => {
-    const result = evaluate(article(), event({ eventVector: [0.8, 0.6] }));
+  it.each([null, 'conservative'])('preserves near-identical headline matching with %s clustering', behavior => {
+    const result = evaluate(article(), event({ eventVector: [0.8, 0.6] }), {
+      similarityThreshold: getEventSimilarityThreshold(behavior)
+    });
     expect(result.decision).toBe('join');
     expect(result.reasons).toContain('near_identical_headline');
     expect(result.reasons).not.toContain('semantic_match');

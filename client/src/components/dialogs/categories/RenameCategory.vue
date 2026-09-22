@@ -8,7 +8,7 @@
         @close="closeDialog"
     >
         <template #title>Update category</template>
-        <template #description>Update the selected category name and icon.</template>
+        <template #description>Update the selected category name, icon, and Event clustering preference.</template>
 
         <div class="category-dialog__name-field">
             <label class="app-form-label" for="category-name">Category name</label>
@@ -25,6 +25,12 @@
             <div class="app-form-label category-dialog__icon-label">Category icon</div>
             <CategoryIconPicker v-model="category.iconName" :disabled="isPending" />
         </div>
+
+        <CategoryClusteringSelect
+            id="category-clustering"
+            v-model="category.clusteringBehavior"
+            :disabled="isPending"
+        />
 
         <template #footer>
             <button type="button" class="app-button app-button--secondary base-dialog__button base-dialog__button--secondary" :disabled="isPending" @click="closeDialog">
@@ -44,6 +50,7 @@ import { useOverviewStore } from '../../../store/overview.js';
 import { useUiStore } from '../../../store/ui.js';
 import BaseDialog from '../BaseDialog.vue';
 import CategoryIconPicker from './CategoryIconPicker.vue';
+import CategoryClusteringSelect from './CategoryClusteringSelect.vue';
 import {
     CATEGORY_ICON_OPTIONS,
     DEFAULT_CATEGORY_ICON
@@ -56,13 +63,15 @@ export default {
     name: 'RenameCategory',
     components: {
         BaseDialog,
-        CategoryIconPicker
+        CategoryIconPicker,
+        CategoryClusteringSelect
     },
     // This function creates cloned edit state and duplicate-save protection.
     data() {
         return {
             category: {},
             originalName: '',
+            originalClusteringBehavior: null,
             originalIconName: DEFAULT_CATEGORY_ICON,
             index: -1,
             isPending: false
@@ -73,6 +82,8 @@ export default {
         this.index = helper.findIndexById(this.overviewStore.categories, this.selectionStore.currentSelection.categoryId);
         this.category = JSON.parse(JSON.stringify(this.overviewStore.categories[this.index]));
         this.originalName = this.category.name;
+        this.category.clusteringBehavior ??= null;
+        this.originalClusteringBehavior = this.category.clusteringBehavior;
         const hasSupportedIcon = CATEGORY_ICON_OPTIONS.some((icon) => icon.name === this.category.iconName);
         this.category.iconName = hasSupportedIcon
             ? this.category.iconName
@@ -88,7 +99,8 @@ export default {
         // This function detects whether normalized editable fields still match their originals.
         isCategoryUnchanged() {
             return this.trimmedCategoryName === this.originalName.trim() &&
-                this.category.iconName === this.originalIconName;
+                this.category.iconName === this.originalIconName &&
+                this.category.clusteringBehavior === this.originalClusteringBehavior;
         },
         // This function disables updates for invalid, unchanged, or currently saving categories.
         isSaveDisabled() {
@@ -106,7 +118,8 @@ export default {
                 const result = await updateCategory(
                     this.selectionStore.currentSelection.categoryId,
                     categoryName,
-                    this.category.iconName
+                    this.category.iconName,
+                    this.category.clusteringBehavior
                 );
                 // Reconcile the API-backed category fields through the store.
                 this.overviewStore.updateCategory(

@@ -4,6 +4,7 @@ import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } fro
 // This service updates an existing event when a new article joins it.
 // It preserves the stable representative while refreshing event metadata.
 import db from '../../models/index.js';
+import { articleEventSimilarityThreshold, eventClusteringFeedInclude } from './categoryClustering.js';
 import { EVENT_LIFECYCLE, MAX_CANDIDATES } from '../config/semanticConfig.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { resolveDevelopingArticleIdForAssignment } from './developingArticlePointer.js';
@@ -96,6 +97,7 @@ export async function assignArticleToExistingEvent({
 
   // Loads the locked article needed while assigning article to existing event.
   const lockedArticle = await Article.findOne({
+    include: [eventClusteringFeedInclude],
     where: {
       id: article.id,
       userId: article.userId,
@@ -172,6 +174,7 @@ export async function assignArticleToExistingEvent({
     ...currentProjection
   }, {
     articleEventVector, normalizedArticleEventVector, memberSignals,
+    similarityThreshold: await articleEventSimilarityThreshold(lockedArticle),
     eventOccurrenceFeatures: aggregateOccurrenceFeatures(eventArticles.slice(0, MAX_OCCURRENCE_MEMBERS).map(extractOccurrenceFeatures))
   });
   if (eventDiagnosticsEnabled()) emitEventDiagnostic(lockedArticle, 'commit_check', {
