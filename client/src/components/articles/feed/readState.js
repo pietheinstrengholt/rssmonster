@@ -63,7 +63,10 @@ export const articleFeedReadStateMethods = {
     }
 
     if (activeRequestId !== this.activeRequestId) {
-      await this.overviewStore.fetchOverviewSplit({ forceUpdate: true });
+      await Promise.all([
+        this.overviewStore.fetchOverviewSplit({ forceUpdate: true }),
+        this.overviewStore.fetchSmartFolderCounts()
+      ]);
       return;
     }
 
@@ -78,6 +81,7 @@ export const articleFeedReadStateMethods = {
     try {
       await Promise.all([
         this.overviewStore.fetchOverviewSplit({ forceUpdate: true }),
+        this.overviewStore.fetchSmartFolderCounts(),
         this.refreshArticleIds(selection, { newOnly: Boolean(this.showingNewOnly) })
       ]);
     } catch (error) {

@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
 import { markAllAsRead } from '../src/api/articles.js';
+import { fetchSmartFolderCounts } from '../src/api/smartfolders.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
+
+vi.mock('../src/api/smartfolders.js', () => ({
+  fetchSmartFolderCounts: vi.fn()
+}));
 
 vi.mock('../src/api/articles.js', () => ({
   fetchArticleIds: vi.fn(),
@@ -20,9 +25,36 @@ vi.mock('../src/api/articles.js', () => ({
 beforeEach(() => {
   markAllAsRead.mockReset();
   markAllAsRead.mockResolvedValue({ data: { updatedCount: 3 } });
+  fetchSmartFolderCounts.mockReset();
+  fetchSmartFolderCounts.mockResolvedValue({ data: { smartFolders: [] } });
 });
 
 describe('ArticleFeed final read reconciliation', () => {
+  it.each([0, 2])('refreshes Smart Folder sidebar counts to %i after marking the collection as read', async remainingCount => {
+    const context = {
+      ...createFocusedStores({
+        selection: { currentSelection: { status: 'unread', smartFolderId: 7 } },
+        overview: {
+          smartFolders: [{ id: 7, ArticleCount: 3 }, { id: 8, ArticleCount: 5 }],
+          fetchOverviewSplit: vi.fn().mockResolvedValue()
+        }
+      }),
+      container: [101, 102, 103],
+      articles: [{ id: 101, status: 'unread' }],
+      isFlushed: false,
+      activeRequestId: 1,
+      refreshArticleIds: vi.fn().mockResolvedValue(true)
+    };
+    fetchSmartFolderCounts.mockResolvedValue({ data: { smartFolders: [
+      { id: 7, ArticleCount: remainingCount }, { id: 8, ArticleCount: 4 }
+    ] } });
+
+    await ArticleFeed.methods.flushPool.call(context);
+
+    expect(context.overviewStore.smartFolders.map(folder => folder.ArticleCount)).toEqual([remainingCount, 4]);
+    expect(markAllAsRead.mock.invocationCallOrder[0]).toBeLessThan(fetchSmartFolderCounts.mock.invocationCallOrder[0]);
+  });
+
   it('retains the new-only boundary when marking the displayed collection as read', async () => {
     const currentSelection = { status: 'unread', feedId: '4', search: 'title:Science', grouping: 'event' };
     const loadedSelection = {
@@ -159,6 +191,7 @@ describe('ArticleFeed final read reconciliation', () => {
     expect(context.articles.map(article => article.status)).toEqual(['read', 'unread']);
     expect(context.isFlushed).toBe(false);
     expect(fetchOverviewSplit).not.toHaveBeenCalled();
+    expect(fetchSmartFolderCounts).not.toHaveBeenCalled();
     expect(context.refreshArticleIds).not.toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalledWith(
       'Error marking all articles as read:',
@@ -197,5 +230,6 @@ describe('ArticleFeed final read reconciliation', () => {
     expect(context.articles).toEqual([{ id: 401, status: 'unread' }]);
     expect(context.refreshArticleIds).not.toHaveBeenCalled();
     expect(fetchOverviewSplit).toHaveBeenCalledWith({ forceUpdate: true });
+    expect(fetchSmartFolderCounts).toHaveBeenCalledOnce();
   });
 });
