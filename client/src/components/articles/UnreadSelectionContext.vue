@@ -218,23 +218,12 @@ export default {
   .unread-selection-context__meta,
   .unread-selection-context__divider,
   .unread-selection-context__date-group > time,
-  .unread-selection-context__tune > span { display: none; }
+  .unread-selection-context__tune { display: none; }
   .unread-selection-context__summary { flex: 0 1 auto; }
   .unread-selection-context__date-group,
   .unread-selection-context__age-cutoff { gap: 0.25rem; }
   .unread-selection-context__date-trigger,
   .unread-selection-context__age-button { height: var(--control-height-compact); padding-inline: 0.5rem; }
-  .unread-selection-context__tune {
-    flex: 0 0 var(--control-height-compact);
-    width: var(--control-height-compact);
-    height: var(--control-height-compact);
-    padding: 0;
-    justify-content: center;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-pill);
-    background: var(--surface-card);
-  }
-  .unread-selection-context__tune:hover { background: var(--briefing-context-action-hover-surface); }
 }
 :global(:root[data-theme='dark'] .unread-selection-context) { background: var(--surface-page); border-bottom-color: var(--border-subtle); }
 </style>
