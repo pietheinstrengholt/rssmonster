@@ -69,6 +69,31 @@ describe('article cursor pagination', () => {
     await sequelize.authenticate();
   }, 50_000);
 
+  it('uses the same scoped unread ID expression for counts and paginated results', async () => {
+    const { user, category, feed } = await createUserFeed('new-only');
+    const other = await createUserFeed('new-only-other');
+    const old = await createArticle(user, feed, 'Science old', new Date('2026-01-01'));
+    const fresh = await createArticle(user, feed, 'Science fresh', new Date('2026-01-02'));
+    await createArticle(user, feed, 'Science read', new Date('2026-01-03'), { status: 'read' });
+    await createArticle(user, feed, 'Unrelated title', new Date('2026-01-04'));
+    await createArticle(other.user, other.feed, 'Science private', new Date('2026-01-05'));
+    const query = {
+      status: 'unread', categoryId: category.id, feedId: feed.id, sort: 'asc',
+      search: `title:Science unread:true read:false id:>${old.id}`, persistSettings: false
+    };
+    const count = await request(app).get('/api/articles')
+      .query({ ...query, newerThanArticleId: old.id }).set('Authorization', authHeaderFor(user));
+    const page = await getPage(user, query);
+    const ranked = await request(app).get('/api/articles')
+      .query({ ...query, sort: 'quality' }).set('Authorization', authHeaderFor(user));
+    expect(count.status).toBe(200);
+    expect(count.body.newerArticleCount).toBe(1);
+    expect(page.status).toBe(200);
+    expect(page.body.page.itemIds).toEqual([fresh.id]);
+    expect(ranked.status).toBe(200);
+    expect(ranked.body.itemIds).toEqual([fresh.id]);
+  });
+
   it('rejects oversized search expressions before executing a search', async () => {
     const { user } = await createUserFeed('oversized-search');
     const response = await getPage(user, { search: 'x'.repeat(MAX_ARTICLE_SEARCH_LENGTH + 1) });
@@ -339,7 +364,7 @@ describe('article cursor pagination', () => {
     const first = await request(app).get('/api/articles').query(query).set('Authorization', authHeaderFor(user));
     expect(first.status).toBe(200);
     expect(first.body.itemIds).toEqual([]);
-    expect(first.body.snapshot).toEqual({ snapshotMaxArticleId: 0 });
+    expect(first.body.snapshot).toMatchObject({ snapshotMaxArticleId: 0, highestUnreadArticleId: 0 });
     await createArticle(user, feed, 'First arrival', new Date());
     const count = await request(app).get('/api/articles')
       .query({ ...query, newerThanArticleId: 0 }).set('Authorization', authHeaderFor(user));

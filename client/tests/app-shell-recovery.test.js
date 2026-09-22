@@ -62,7 +62,7 @@ afterEach(() => {
 });
 
 describe('AppShell connectivity recovery', () => {
-  it.each([false, true])('refreshes the active query only when matching arrivals exist: %s', async hasNewArticles => {
+  it.each([false, true])('checks arrivals without reloading the active query: %s', async hasNewArticles => {
     const context = connectRecoveryMethods(createRecoveryContext());
     const selection = {
       status: 'favorite', sort: 'recommended', grouping: 'event', search: 'science', smartFolderId: 20
@@ -77,8 +77,7 @@ describe('AppShell connectivity recovery', () => {
     expect(checkForNewerArticles).toHaveBeenCalledOnce();
     expect(context.overviewStore.fetchOverviewSplit).not.toHaveBeenCalled();
     expect(context.overviewStore.fetchOverview).not.toHaveBeenCalled();
-    if (hasNewArticles) expect(refreshArticleIds).toHaveBeenCalledWith(selection);
-    else expect(refreshArticleIds).not.toHaveBeenCalled();
+    expect(refreshArticleIds).not.toHaveBeenCalled();
     expect(context.selectionStore.currentSelection).toEqual(selection);
     expect(context.databaseRefreshActive).toBe(false);
   });

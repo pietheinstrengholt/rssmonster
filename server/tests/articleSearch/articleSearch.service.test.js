@@ -175,6 +175,32 @@ describe('articleSearch.service', () => {
     await Tag.create({ articleId: articles.clicked.id, userId: user.id, name: 'docker' });
   });
 
+  it.each([null, { pageSize: 1 }])('filters newer unread IDs within the selected feed and text scope (%j)', async pagination => {
+    const result = await searchArticles({
+      userId: user.id, categoryId: category.id, feedId: feed.id,
+      status: 'unread', search: `unread:true read:false id:>${articles.recent.id} title:Product`,
+      sort: 'asc', persistSettings: false, includeSnapshot: true, pagination
+    });
+    expect(result.page?.itemIds ?? result.itemIds).toEqual([articles.lowQuality.id]);
+  });
+
+  it.each([null, { pageSize: 1 }])('reports the maximum unread result ID separately from the library snapshot (%j)', async pagination => {
+    const result = await searchArticles({
+      userId: user.id, status: 'unread', sort: 'asc',
+      persistSettings: false, includeSnapshot: true, pagination
+    });
+    expect(result.snapshot.highestUnreadArticleId).toBe(articles.lowQuality.id);
+    expect(result.snapshot.snapshotMaxArticleId).toBeGreaterThan(articles.lowQuality.id);
+  });
+
+  it('computes the unread baseline within a limited result window', async () => {
+    const result = await searchArticles({
+      userId: user.id, status: 'unread', search: 'unread:true sort:asc limit:1',
+      persistSettings: false, includeSnapshot: true, pagination: { pageSize: 1 }
+    });
+    expect(result.snapshot.highestUnreadArticleId).toBe(Number(result.page.itemIds[0]));
+  });
+
   describe('debug logging', () => {
     it('suppresses article search debug logs outside development mode', async () => {
       const originalNodeEnv = process.env.NODE_ENV;

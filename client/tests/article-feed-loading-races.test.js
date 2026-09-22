@@ -69,7 +69,8 @@ const createLoadingContext = (dataStore = {
   context.resetPaginationState = () => ArticleFeed.methods.resetPaginationState.call(context);
   context.resetCollectionState = () => ArticleFeed.methods.resetCollectionState.call(context);
   context.getContent = requestId => ArticleFeed.methods.getContent.call(context, requestId);
-  context.refreshArticleIds = data => ArticleFeed.methods.refreshArticleIds.call(context, data);
+  context.refreshArticleIds = (data, options) => ArticleFeed.methods.refreshArticleIds.call(context, data, options);
+  context.showFullUnreadList = () => ArticleFeed.methods.showFullUnreadList.call(context);
   context.retryPagination = () => ArticleFeed.methods.retryPagination.call(context);
   context.scrollArticleListToTop = vi.fn();
   context.updateArticleStatusLocal = article =>
@@ -316,7 +317,8 @@ describe('ArticleFeed loading races', () => {
       .mockResolvedValueOnce({ data: { newerArticleCount: 0 } })
       .mockResolvedValueOnce({ data: { newerArticleCount: 2 } });
     const context = createLoadingContext();
-    context.snapshotMaxArticleId = 100;
+    context.snapshotMaxArticleId = 999;
+    context.highestLoadedUnreadArticleId = 100;
     context.overviewStore.unreadsSinceLastUpdate = 3;
 
     await ArticleFeed.methods.checkForNewerArticles.call(context);
@@ -336,12 +338,12 @@ describe('ArticleFeed loading races', () => {
     expect(context.overviewStore.currentSelectionNewArticleCount).toBe(2);
   });
 
-  it('uses the ranked collection snapshot for query-scoped arrival checks and clears it on refresh', async () => {
+  it('uses the unread baseline for query-scoped arrival checks and clears it on refresh', async () => {
     const context = createLoadingContext({ currentSelection: {
       status: 'unread', sort: 'recommended', grouping: 'event', search: 'science'
     } });
     fetchArticleIds.mockResolvedValue({ data: {
-      itemIds: [], firstPage: [], snapshot: { snapshotMaxArticleId: 100 }
+      itemIds: [], firstPage: [], snapshot: { snapshotMaxArticleId: 999, highestUnreadArticleId: 100 }
     } });
     await ArticleFeed.methods.fetchArticleIds.call(context, context.selectionStore.currentSelection);
     fetchNewerArticleCount.mockResolvedValue({ data: { newerArticleCount: 2 } });
@@ -356,7 +358,8 @@ describe('ArticleFeed loading races', () => {
 
   it('ignores an old arrival check after switching queries with the same snapshot boundary', async () => {
     const context = createLoadingContext();
-    context.snapshotMaxArticleId = 100;
+    context.snapshotMaxArticleId = 999;
+    context.highestLoadedUnreadArticleId = 100;
     const pending = deferred();
     fetchNewerArticleCount.mockReturnValue(pending.promise);
     const check = ArticleFeed.methods.checkForNewerArticles.call(context);

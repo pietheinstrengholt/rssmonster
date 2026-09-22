@@ -1,4 +1,12 @@
 <template>
+  <div v-if="!showSmartFoldersOverview && selectionStore.currentSelection.status === 'unread' && newerArticleCount > 0" class="new-articles-banner" role="status" aria-live="polite">
+    <span aria-hidden="true"><BootstrapIcon icon="lightbulb-fill" /></span>
+    <strong>{{ newerArticleCount }} {{ newerArticleCount === 1 ? 'new article' : 'new articles' }} since your last visit</strong>
+    <div class="new-articles-banner__actions">
+      <button type="button" class="new-articles-banner__primary" :disabled="isLoading" @click="showNewArticles">Show new only</button>
+      <button type="button" :disabled="isLoading" @click="showFullUnreadList">Show full list</button>
+    </div>
+  </div>
   <SmartFoldersGridOverview
     v-if="showSmartFoldersOverview"
     :smart-folders="overviewStore.smartFolders"
@@ -14,6 +22,7 @@
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
+import { useAuthStore } from '../../store/auth.js';
 import { useUiStore } from '../../store/ui.js';
 import { defineAsyncComponent } from 'vue';
 import ArticleListView from "./ArticleListView.vue";
@@ -97,7 +106,7 @@ export default {
 
   computed: {
 
-    ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
+    ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useAuthStore),
     // Returns the stable key for selection fields that change collection membership or ordering.
     articleCollectionSelectionKey() {
       const selection = this.selectionStore.currentSelection;
@@ -285,6 +294,7 @@ export default {
 
   // Finalize while the old layout and article context still exist.
   beforeUnmount() {
+    this.activeRequestId += 1;
     this.teardownObservers();
   },
 
@@ -674,3 +684,37 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.new-articles-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-info);
+  border-radius: var(--radius-control);
+  background: var(--color-primary-soft);
+  color: var(--text-primary);
+}
+.new-articles-banner > span { color: var(--color-primary); }
+.new-articles-banner strong { flex: 1 1 240px; font-weight: 600; }
+.new-articles-banner__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.new-articles-banner button {
+  min-height: var(--control-height-touch);
+  padding: 8px 12px;
+  border: 1px solid var(--border-info);
+  border-radius: var(--radius-control);
+  background: var(--surface-card);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.new-articles-banner button:hover { background: var(--surface-hover); }
+.new-articles-banner button:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.new-articles-banner button:disabled { opacity: 0.6; cursor: wait; }
+.new-articles-banner .new-articles-banner__primary { background: var(--color-primary); color: var(--text-inverted); }
+.new-articles-banner .new-articles-banner__primary:hover { background: var(--color-primary-hover); }
+:global(:root[data-theme='dark'] .new-articles-banner) { background: var(--color-primary-surface-dark); }
+</style>

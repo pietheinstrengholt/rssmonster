@@ -175,11 +175,6 @@
           @mark-all-read="$emit('flush-pool')"
           @dismiss="dismissReaderEndState"
         />
-        <ArticleRefreshState
-          v-if="collectionTailState.showRefreshState"
-          :unread-count="unreadsSinceLastUpdate"
-          @refresh="$emit('forceReload')"
-        />
       </div>
       <div v-else-if="!collectionProgress.paginationError" class="reader-loading-state" role="status" aria-label="Loading articles">
         <div class="reader-loading-state__items" aria-hidden="true">
@@ -258,7 +253,6 @@ import ArticleRecommendations from './ArticleRecommendations.vue';
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 import ArticleLoadError from "./ArticleLoadError.vue";
-import ArticleRefreshState from "./ArticleRefreshState.vue";
 import DailyBriefingIntro from "../briefing/DailyBriefingIntro.vue";
 import UnreadSelectionContext from "./UnreadSelectionContext.vue";
 import { formatRelativeDate } from '../../utils/date';
@@ -284,7 +278,6 @@ export default {
     ArticleEmptyState,
     ArticleEndState,
     ArticleLoadError,
-    ArticleRefreshState,
     DailyBriefingIntro,
     HighlightedText,
     UnreadSelectionContext

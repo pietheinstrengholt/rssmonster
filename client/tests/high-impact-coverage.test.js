@@ -839,8 +839,8 @@ describe('Vue template handler coverage', () => {
     ];
     for (const eventName of events) child.vm.$emit(eventName, { id: 1 });
     for (const eventName of events) expect(wrapper.emitted(eventName)).toBeTruthy();
-    await wrapper.get('.article-refresh-state').trigger('click');
-    expect(wrapper.emitted('forceReload')).toHaveLength(1);
+    expect(wrapper.find('.article-refresh-state').exists()).toBe(false);
+    expect(wrapper.emitted('forceReload')).toBeUndefined();
 
     await wrapper.setProps({ viewMode: 'full' });
     await wrapper.vm.$nextTick();
@@ -1048,10 +1048,10 @@ describe('Vue template handler coverage', () => {
     for (const button of wrapper.findAll('.bulk-action-menu-item')) await button.trigger('click');
     await wrapper.get('.article-list-bulk-tag').trigger('click');
     await wrapper.get('.article-reader__selection').trigger('click');
-    await wrapper.get('.article-refresh-state').trigger('click');
+    expect(wrapper.find('.article-refresh-state').exists()).toBe(false);
     expect(stores.selectionStore.setCurrentSelection).toHaveBeenCalledWith({ tag: 'AI' });
     expect(wrapper.emitted('bulk-action')).toBeTruthy();
-    expect(wrapper.emitted('forceReload')).toHaveLength(1);
+    expect(wrapper.emitted('forceReload')).toBeUndefined();
 
     const articleComponent = wrapper.findComponent({ name: 'Article' });
     const passthroughEvents = [

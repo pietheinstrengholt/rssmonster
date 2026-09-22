@@ -131,14 +131,14 @@ describe('AppShell lifecycle', () => {
   it('refreshes database data once without reloading settings after crawl completion', () => {
     const context = {
       forceReload: vi.fn(),
-      refreshArticlesFromDatabase: vi.fn()
+      getOverview: vi.fn()
     };
     const watcher = AppShell.watch['feedRefreshStore.successfulCompletionId'];
 
     watcher.call(context, 1, 0);
     watcher.call(context, 1, 1);
 
-    expect(context.refreshArticlesFromDatabase).toHaveBeenCalledOnce();
+    expect(context.getOverview).toHaveBeenCalledWith(false);
     expect(context.forceReload).not.toHaveBeenCalled();
   });
 

@@ -164,6 +164,7 @@ send another grouping mode.
 | `language:en` | Exact stored language code; accepts two or three letters. |
 | `firstSeen:12h` | Articles first seen during the last 12 hours, plus articles never seen. |
 | `firstSeen:7d` | Articles first seen during the last 7 days, plus articles never seen. |
+| `id:>104` | Article IDs strictly greater than a non-negative safe integer; combines with other filters before sorting and limiting. |
 | `eventCount:3` | Events containing at least three articles. |
 | `eventCount:>=3` | Same as `eventCount:3`. |
 
@@ -367,6 +368,15 @@ unread articles inserted after that boundary which satisfy the same ownership,
 source, tag, text search, score, and grouping rules. For limited
 queries, ranking and the result limit apply before counting arrivals, so an
 article outside the current result window does not trigger the refresh alert.
+
+Full unread list responses also expose `snapshot.highestUnreadArticleId`, the
+maximum unread ID in the actual result window (zero for no unread results).
+Cursor responses include it on the first page, across the whole collection rather
+than only that page. This is response metadata, never a persisted user setting.
+The client saves this baseline locally per account and selection; polling and
+new-only views leave it unchanged. New-only requests append `unread:true read:false
+id:>N` to the existing expression and disable settings persistence. Arrival checks
+use that same expression so counts and displayed results share the same cutoff.
 
 For ordinary article-list requests, recognized expression filters take precedence over the equivalent view state.
 For example, `unread:false` overrides an unread view. Any non-empty free-text or

@@ -1,4 +1,5 @@
 import api from './client';
+import { newerUnreadSelection } from '../services/unreadBaseline.js';
 import { normalizeSortValueForApi } from '../services/queryValidation';
 
 // Normalizes sort identifiers and disables settings persistence for folder requests.
@@ -31,7 +32,7 @@ export const fetchArticlePage = (params, { pageSize, cursor = null } = {}) =>
 // Counts unread arrivals using the active selection's other filters.
 export const fetchNewerArticleCount = (params, snapshotMaxArticleId) =>
   api.get('/articles', {
-    params: { ...normalizeArticleParams(params), status: 'unread', newerThanArticleId: snapshotMaxArticleId }
+    params: { ...normalizeArticleParams(newerUnreadSelection(params, snapshotMaxArticleId)), newerThanArticleId: snapshotMaxArticleId }
   });
 
 // This function fetches the structured Daily Briefing for the selected period and status.

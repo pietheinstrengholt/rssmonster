@@ -37,8 +37,8 @@ Default workflow: `inspect → understand → implement → test → lint → re
 Use repository scripts; do not assume globally installed tools.
 
 ```bash
-cd client && npm test && npm run lint && npm run build
-cd server && npm test && npm run lint
+cd client && npm run test:coverage && npm run lint && npm run build
+cd server && npm run test:ci && npm run lint
 ```
 
 Prefer focused tests first when possible. Do not run migrations, seeds, repair/backfill scripts, semantic rebuilds, deployment commands, or other production-oriented operations unless explicitly requested or required by the task. Never claim a check passed unless it actually ran successfully.
@@ -136,21 +136,39 @@ For crawl changes, preserve useful failure, timing, retry, and recovery informat
 
 For behavior changes, add focused regression tests when the area has an established testing pattern.
 
-Before finishing:
+### Validation before completion
 
-1. run relevant tests;
-2. run relevant linting;
-3. run a build when appropriate;
-4. inspect `git diff` and `git status`;
-5. verify only expected files changed.
-
-If validation cannot be run, state that clearly.
+* Run focused tests during implementation. Before declaring code changes complete,
+  run the full CI test command for each affected workspace after the final change.
+* Backend changes: run `npm run test:ci` and `npm run lint` from `server/` against
+  the isolated MySQL test database.
+* Client changes: run `npm run test:coverage`, `npm run lint`, and `npm run build`
+  from `client/`.
+* Model or migration changes: also run `npm run test:sqlite` from `server/` with
+  `DB_DIALECT=sqlite` and an isolated `DB_STORAGE` path, preparing the test schema
+  as CI does. Inspect historical-schema fixtures that use current models and
+  ensure their setup includes the required columns.
+* Use `.github/workflows/ci.yml` as the source of truth for runtime versions,
+  environment settings, setup, and validation commands, including other affected
+  workspaces such as `inference/`.
+* Run database-resetting suites sequentially against isolated test databases.
+  Required test setup, including migrations, seeds, and resets on those isolated
+  databases, is authorized without asking. This does not authorize operations on
+  development or production data.
+* Focused tests and semantic traces do not substitute for the full CI suite.
+  Preserve the separate before/after semantic validation requirements above.
+* Fix failures and rerun the required checks before declaring completion. If a
+  required check cannot run, identify it and the blocker explicitly; do not
+  describe the change as fully validated.
+* Before finishing, inspect `git diff` and `git status` and verify only expected
+  files changed. For documentation-only changes, verify referenced commands and
+  contracts; application test suites are not required.
 
 ## Permissions
 
-Allowed without asking: inspect/search files, edit task-related files, run focused tests/lint/builds, and inspect git diff/status.
+Allowed without asking: inspect/search files, edit task-related files, run focused and full test suites/lint/builds with the isolated test setup described above, and inspect git diff/status.
 
-Do not do unless explicitly requested: install/upgrade dependencies; run migrations, seeds, resets, repairs, or backfills; deploy; push/merge remote branches; modify production data.
+Do not do unless explicitly requested: install/upgrade dependencies; run migrations, seeds, resets, repairs, or backfills outside the isolated test setup described above; deploy; push/merge remote branches; modify production data.
 
 Never commit secrets, credentials, tokens, or environment-specific private values.
 

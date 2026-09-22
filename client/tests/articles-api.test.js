@@ -50,6 +50,8 @@ describe('articles API', () => {
       params: {
         ...selection,
         status: 'unread',
+        search: 'title:Science unread:true read:false id:>100',
+        persistSettings: false,
         newerThanArticleId: 100
       }
     });

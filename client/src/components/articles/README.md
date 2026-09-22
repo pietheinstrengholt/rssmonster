@@ -338,3 +338,16 @@ Future changes should preserve these rules:
 - Use passive observation only for the initial reading transition.
 - Preserve explicit read, unread, favorite, and filtering choices.
 - Keep pointer, touch, and keyboard behavior consistent with the same article state.
+
+
+## New unread arrivals
+
+`ArticleFeed` owns the information bar above both list and Reader layouts. Polling
+and completed crawls check for arrivals without replacing the visible collection.
+The last full unread result's maximum ID is saved in browser storage per account
+and scope, independently of the library-wide cursor snapshot. “Show new only”
+adds a validated ID expression and explicit unread constraints to the existing
+selection, retaining its sort and source filters through subsequent pages and
+bulk read actions. “Show full list” removes that temporary constraint and updates
+the baseline only after the replacement load succeeds. An empty new-only response
+falls back to the full list. Baselines are never written to server settings.

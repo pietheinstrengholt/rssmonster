@@ -381,7 +381,6 @@ describe('sidebar navigation helpers', () => {
     expect(wrapper.vm.getItemStatusCount({ unreadCount: 7 })).toBe(7);
     expect(wrapper.vm.getItemStatusCount({})).toBeNull();
 
-    wrapper.vm.loadType('refresh');
     wrapper.vm.loadType('unread');
     store.selectionStore.currentSelection.smartFolderId = 20;
     wrapper.vm.loadType('unread');
@@ -395,7 +394,6 @@ describe('sidebar navigation helpers', () => {
     wrapper.vm.selectSmartFolder({ id: 20 });
     wrapper.vm.selectSmartFolder({ id: 21 });
 
-    expect(wrapper.emitted('refresh-articles')).toHaveLength(1);
     expect(store.selectionStore.setSelectedStatus).toHaveBeenCalledTimes(2);
     expect(store.selectionStore.selectCategory).toHaveBeenNthCalledWith(1, 10);
     expect(store.selectionStore.selectCategory).toHaveBeenNthCalledWith(2, '%');

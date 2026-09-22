@@ -33,7 +33,8 @@ const KNOWN_FILTER_KEYS = new Set([
   'freshness',
   'event',
   'eventcount',
-  'limit'
+  'limit',
+  'id'
 ]);
 
 // Identifies an invalid persisted expression without changing lenient interactive search behavior.
@@ -307,6 +308,12 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc', strict = 
     }
     // Skips the current entry when matched boolean filter is available.
     if (matchedBooleanFilter) {
+      continue;
+    }
+
+    const idMatch = cleaned.match(/^id:>(\d+)$/i);
+    if (idMatch && Number.isSafeInteger(Number(idMatch[1]))) {
+      filters.minArticleIdExclusive = Math.max(filters.minArticleIdExclusive ?? 0, Number(idMatch[1]));
       continue;
     }
 

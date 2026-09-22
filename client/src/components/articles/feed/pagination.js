@@ -1,3 +1,4 @@
+import { loadUnreadBaseline, saveUnreadBaseline, newerUnreadSelection } from '../../../services/unreadBaseline.js';
 import {
   fetchArticleDetails,
   fetchArticleIds,
@@ -22,7 +23,7 @@ const finiteCount = (value, fallback = 0) => {
   return Number.isFinite(count) && count >= 0 ? count : fallback;
 };
 
-// Shares query-scoped arrivals with the sidebar while retaining article-list presentation state.
+// Publishes arrivals separately from the last full unread collection boundary.
 const setNewerArticleCount = (context, count) => {
   context.newerArticleCount = count;
   context.newerArticlesAvailable = count > 0;
@@ -60,6 +61,9 @@ export function createArticleFeedPaginationState() {
     newerArticlesAvailable: false,
     newerArticleCount: 0,
     snapshotMaxArticleId: null,
+    highestLoadedUnreadArticleId: null,
+    showingNewOnly: false,
+    loadedSelection: null,
     usesCursorPagination: false,
     legacyItemIds: [],
     hasLoadedContent: false,
@@ -134,6 +138,21 @@ const installLegacyCollection = async (context, response, data, requestId) => {
   return true;
 };
 
+const acceptUnreadCollection = (context, response, selection, newOnly) => {
+  context.loadedSelection = { ...selection };
+  context.showingNewOnly = newOnly;
+  if (selection.status !== 'unread') return;
+  if (newOnly) {
+    setNewerArticleCount(context, context.totalCount);
+    return;
+  }
+  // Legacy ID responses contain the full ordered result; cursor responses supply its unread maximum.
+  const highestId = response.data.snapshot?.highestUnreadArticleId
+    ?? (response.data.itemIds || []).reduce((max, id) => Math.max(max, Number(id)), 0);
+  context.highestLoadedUnreadArticleId = highestId;
+  saveUnreadBaseline(context.authStore?.userId, selection, highestId);
+};
+
 const requestInitialCollection = async (context, data) => {
   if (!supportsArticleCursorPagination(data)) return fetchArticleIds(data);
   try {
@@ -146,6 +165,9 @@ const requestInitialCollection = async (context, data) => {
 
 export const articleFeedPaginationMethods = {
   async fetchArticleIds(data) {
+    data = { ...data };
+    this.showingNewOnly = false;
+    this.highestLoadedUnreadArticleId = loadUnreadBaseline(this.authStore?.userId, data);
     const requestId = ++this.activeRequestId;
     try {
       await this.resetCollectionState();
@@ -161,6 +183,7 @@ export const articleFeedPaginationMethods = {
         return null;
       }
 
+      acceptUnreadCollection(this, response, data, false);
       this.hasLoadedContent = true;
       this.$nextTick(() => {
         this.observeArticles();
@@ -181,7 +204,8 @@ export const articleFeedPaginationMethods = {
   },
 
   // Preserves the visible collection until a complete replacement first page is ready.
-  async refreshArticleIds(data) {
+  async refreshArticleIds(data, { newOnly = false } = {}) {
+    data = { ...data };
     const requestId = ++this.activeRequestId;
     this.isLoading = true;
     try {
@@ -211,6 +235,7 @@ export const articleFeedPaginationMethods = {
         ]) this[key] = legacyPrepared[key];
       }
 
+      acceptUnreadCollection(this, response, data, newOnly);
       this.hasLoadedContent = true;
       this.$nextTick(() => {
         this.observeArticles();
@@ -240,7 +265,7 @@ export const articleFeedPaginationMethods = {
     this.isLoading = true;
     try {
       if (this.usesCursorPagination) {
-        const response = await fetchArticlePage(this.selectionStore.currentSelection, {
+        const response = await fetchArticlePage(this.loadedSelection || this.selectionStore.currentSelection, {
           pageSize: this.fetchCount,
           cursor: this.nextCursor
         });
@@ -281,20 +306,43 @@ export const articleFeedPaginationMethods = {
   async retryPagination() {
     this.paginationError = null;
     try {
-      return await this.refreshArticleIds(this.selectionStore.currentSelection);
+      return await this.refreshArticleIds(this.loadedSelection || this.selectionStore.currentSelection, { newOnly: this.showingNewOnly });
     } catch {
       this.paginationError = 'Could not reload the article list.';
       return false;
     }
   },
 
+  async showNewArticles() {
+    const selection = newerUnreadSelection(this.selectionStore.currentSelection, this.highestLoadedUnreadArticleId);
+    if (!selection) return this.showFullUnreadList();
+    try {
+      const loaded = await this.refreshArticleIds(selection, { newOnly: true });
+      if (loaded && this.totalCount === 0) return this.showFullUnreadList();
+      return loaded;
+    } catch {
+      this.paginationError = 'Could not load new articles. Please try again.';
+      return false;
+    }
+  },
+
+  async showFullUnreadList() {
+    try {
+      return await this.refreshArticleIds(this.selectionStore.currentSelection);
+    } catch {
+      this.paginationError = 'Could not reload the article list. Please try again.';
+      return false;
+    }
+  },
+
   async checkForNewerArticles() {
+    if (this.isLoading) return false;
     const requestId = ++this.activeNewerArticlesRequestId;
     const collectionRequestId = this.activeRequestId;
     const selection = { ...this.selectionStore.currentSelection };
     const selectionKey = JSON.stringify(selection);
-    const snapshotMaxArticleId = this.snapshotMaxArticleId;
-    if (snapshotMaxArticleId === null) {
+    const snapshotMaxArticleId = this.highestLoadedUnreadArticleId;
+    if (selection.status !== 'unread' || snapshotMaxArticleId === null) {
       setNewerArticleCount(this, 0);
       return false;
     }
@@ -308,7 +356,7 @@ export const articleFeedPaginationMethods = {
         requestId !== this.activeNewerArticlesRequestId
         || collectionRequestId !== this.activeRequestId
         || selectionKey !== JSON.stringify(this.selectionStore.currentSelection)
-        || snapshotMaxArticleId !== this.snapshotMaxArticleId
+        || snapshotMaxArticleId !== this.highestLoadedUnreadArticleId
       ) return false;
       setNewerArticleCount(this, finiteCount(response.data.newerArticleCount));
       return this.newerArticlesAvailable;
@@ -346,6 +394,7 @@ export const articleFeedPaginationMethods = {
     this.paginationError = null;
     setNewerArticleCount(this, 0);
     this.snapshotMaxArticleId = null;
+    this.loadedSelection = null;
     this.usesCursorPagination = false;
     this.legacyItemIds = [];
     this.currentViewSourceCount = null;

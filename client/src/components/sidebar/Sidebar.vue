@@ -90,15 +90,6 @@
       <SidebarSectionTitle title="All feeds" />
 
       <SidebarNavItem
-        v-if="overviewStore.currentSelectionNewArticleCount > 0"
-        icon="lightbulb-fill"
-        title="Click to refresh!"
-        :count="overviewStore.currentSelectionNewArticleCount"
-        row-class="sidebar-refresh-alert"
-        @select="loadType('refresh')"
-      />
-
-      <SidebarNavItem
         v-for="filter in visibleStatusFilters"
         :key="filter.value"
         :icon="filter.icon"
@@ -412,7 +403,7 @@ export default {
     SidebarNavItem,
     SidebarSectionTitle
   },
-  emits: ['forceReload', 'refresh-articles', 'logout'],
+  emits: ['forceReload', 'logout'],
   // This initializes component-owned sidebar activity state.
   data() {
     return {
@@ -500,9 +491,7 @@ export default {
 
     // This function changes the selected article status.
     loadType(status) {
-      if (status === 'refresh') {
-        this.$emit('refresh-articles');
-      } else if (status !== this.selectionStore.currentSelection.status) {
+      if (status !== this.selectionStore.currentSelection.status) {
         this.selectionStore.setSelectedStatus(status);
       } else if (this.selectionStore.currentSelection.smartFolderId !== null) {
         this.selectionStore.setSelectedStatus(status);

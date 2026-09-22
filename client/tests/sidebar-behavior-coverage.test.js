@@ -92,7 +92,7 @@ afterEach(() => {
 });
 
 describe('Sidebar navigation and action coverage', () => {
-  it('shows the refresh alert only for arrivals matching the current query', async () => {
+  it('does not show the replaced sidebar arrival control', async () => {
     const stores = createStores();
     stores.overviewStore.unreadsSinceLastUpdate = 12;
     const wrapper = mountSidebar(stores.pinia);
@@ -102,7 +102,7 @@ describe('Sidebar navigation and action coverage', () => {
     await wrapper.vm.$nextTick();
     const alert = wrapper.findAllComponents({ name: 'SidebarNavItem' })
       .find(item => item.props('title') === 'Click to refresh!');
-    expect(alert.props('count')).toBe(2);
+    expect(alert).toBeUndefined();
 
     stores.overviewStore.currentSelectionNewArticleCount = 0;
     await wrapper.vm.$nextTick();
@@ -110,7 +110,7 @@ describe('Sidebar navigation and action coverage', () => {
     wrapper.unmount();
   });
 
-  it.each([null, 20])('refreshes without changing selection with Smart Folder %s', async smartFolderId => {
+  it.each([null, 20])('keeps Smart Folder %s selection without a sidebar arrival action', async smartFolderId => {
     const stores = createStores();
     stores.overviewStore.currentSelectionNewArticleCount = 3;
     stores.selectionStore.$patch({ currentSelection: {
@@ -129,10 +129,10 @@ describe('Sidebar navigation and action coverage', () => {
     const wrapper = mountSidebar(stores.pinia);
 
     const alert = wrapper.findAll('button').find(button => button.text().includes('Click to refresh!'));
-    await alert.trigger('click');
+    expect(alert).toBeUndefined();
 
     expect(stores.selectionStore.currentSelection).toEqual(selection);
-    expect(wrapper.emitted('refresh-articles')).toEqual([[]]);
+    expect(wrapper.emitted('refresh-articles')).toBeUndefined();
     expect(wrapper.emitted('forceReload')).toBeUndefined();
     wrapper.unmount();
   });
@@ -151,7 +151,6 @@ describe('Sidebar navigation and action coverage', () => {
     const refreshFeeds = vi.spyOn(Sidebar.methods, 'refreshFeeds').mockImplementation(() => {});
     const markAsRead = vi.spyOn(Sidebar.methods, 'markAsRead').mockResolvedValue();
     const selectSmartFolder = vi.spyOn(Sidebar.methods, 'selectSmartFolder').mockImplementation(() => {});
-    const loadType = vi.spyOn(Sidebar.methods, 'loadType').mockImplementation(() => {});
     const selectTag = vi.spyOn(Sidebar.methods, 'selectTag').mockImplementation(() => {});
     const wrapper = mountSidebar(stores.pinia);
 
@@ -163,7 +162,6 @@ describe('Sidebar navigation and action coverage', () => {
 
     const navItems = wrapper.findAllComponents({ name: 'SidebarNavItem' });
     navItems.find(item => item.props('title') === 'Research').vm.$emit('select');
-    navItems.find(item => item.props('title') === 'Click to refresh!').vm.$emit('select');
     navItems.find(item => item.props('title') === 'Tag-0').vm.$emit('select');
 
     for (const retry of wrapper.findAll('.sidebar-resource-error button')) await retry.trigger('click');
@@ -171,7 +169,6 @@ describe('Sidebar navigation and action coverage', () => {
     expect(markAsRead).toHaveBeenCalledWith(stores.selectionStore.currentSelection);
     expect(setShowModal).toHaveBeenCalledWith('NewFeed');
     expect(selectSmartFolder).toHaveBeenCalledWith(expect.objectContaining({ id: 20 }));
-    expect(loadType).toHaveBeenCalledWith('refresh');
     expect(selectTag).toHaveBeenCalledWith('tag-0');
     expect(refreshOverviewCounts).toHaveBeenCalledOnce();
     expect(stores.overviewStore.fetchSmartFolders).toHaveBeenCalled();
@@ -215,9 +212,7 @@ describe('Sidebar navigation and action coverage', () => {
     expect(wrapper.vm.getItemStatusCount({})).toBeNull();
     expect(wrapper.vm.getItemStatusCount({ unreadCount: 4 })).toBe(4);
 
-    wrapper.vm.loadType('refresh');
     expect(setSmartFolder).not.toHaveBeenCalled();
-    expect(wrapper.emitted('refresh-articles')).toHaveLength(1);
 
     wrapper.vm.loadType('read');
     expect(setStatus).toHaveBeenCalledWith('read');

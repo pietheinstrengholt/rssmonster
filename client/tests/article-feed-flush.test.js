@@ -23,6 +23,27 @@ beforeEach(() => {
 });
 
 describe('ArticleFeed final read reconciliation', () => {
+  it('retains the new-only boundary when marking the displayed collection as read', async () => {
+    const currentSelection = { status: 'unread', feedId: '4', search: 'title:Science' };
+    const loadedSelection = {
+      ...currentSelection, search: 'title:Science unread:true read:false id:>104', persistSettings: false
+    };
+    const context = {
+      ...createFocusedStores({
+        selection: { currentSelection },
+        overview: { fetchOverviewSplit: vi.fn().mockResolvedValue() }
+      }),
+      loadedSelection, showingNewOnly: true, totalCount: 2,
+      container: [105, 106], articles: [{ id: 105, status: 'unread' }, { id: 106, status: 'unread' }],
+      isFlushed: false, activeRequestId: 1,
+      refreshArticleIds: vi.fn().mockResolvedValue(true)
+    };
+    await ArticleFeed.methods.flushPool.call(context);
+    expect(markAllAsRead).toHaveBeenCalledWith(loadedSelection, [105, 106]);
+    expect(context.refreshArticleIds).toHaveBeenCalledWith(loadedSelection, { newOnly: true });
+    expect(context.selectionStore.currentSelection.search).toBe('title:Science');
+  });
+
   // Verifies Briefing end-state totals exclude read and expanded related articles.
   it('counts only unread articles from the Briefing collection snapshot', () => {
     const context = {
@@ -82,7 +103,7 @@ describe('ArticleFeed final read reconciliation', () => {
     ]);
     expect(context.isFlushed).toBe(true);
     expect(fetchOverviewSplit).toHaveBeenCalledWith({ forceUpdate: true });
-    expect(context.refreshArticleIds).toHaveBeenCalledWith(activeSelection);
+    expect(context.refreshArticleIds).toHaveBeenCalledWith(activeSelection, { newOnly: false });
     expect(markAllAsRead.mock.invocationCallOrder[0])
       .toBeLessThan(context.refreshArticleIds.mock.invocationCallOrder[0]);
   });

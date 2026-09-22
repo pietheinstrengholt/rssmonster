@@ -49,7 +49,7 @@ export const articleFeedReadStateMethods = {
   async flushPool() {
     if ((!this.totalCount && !this.container.length) || this.isFlushed) return;
 
-    const selection = { ...this.selectionStore.currentSelection };
+    const selection = { ...(this.loadedSelection || this.selectionStore.currentSelection) };
     const snapshotArticleIds = [...this.container];
     const activeRequestId = this.activeRequestId;
 
@@ -72,7 +72,7 @@ export const articleFeedReadStateMethods = {
     try {
       await Promise.all([
         this.overviewStore.fetchOverviewSplit({ forceUpdate: true }),
-        this.refreshArticleIds(selection)
+        this.refreshArticleIds(selection, { newOnly: Boolean(this.showingNewOnly) })
       ]);
     } catch (error) {
       console.error('Error refreshing articles after marking all as read:', error);

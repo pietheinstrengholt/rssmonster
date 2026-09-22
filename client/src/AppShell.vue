@@ -6,7 +6,7 @@
         class="app-shell__sidebar"
       >
         <!-- Sidebar events -->
-        <app-sidebar @forceReload="forceReload" @refresh-articles="refreshNewArticles" @logout="$emit('logout')"></app-sidebar>
+        <app-sidebar @forceReload="forceReload" @logout="$emit('logout')"></app-sidebar>
       </div>
       <div class="app-shell__main-frame">
         <div
@@ -571,6 +571,7 @@ export default {
           this.uiStore.clearFatalError();
         }
         this.overviewLoaded = true;
+        if (!initial) await this.refreshNewArticles();
 
       } catch (error) {
         if (!isOverviewTimeout(error)) {
@@ -697,21 +698,16 @@ export default {
       this.connectivityRecoveryPromise = recoveryPromise;
       return recoveryPromise;
     },
-    // Rechecks the active query and reloads only when matching articles arrived after its snapshot.
+    // Rechecks arrivals without replacing the list or advancing its unread baseline.
     async refreshNewArticles() {
       if (this.databaseRefreshActive || this.articleListReloadActive) return;
       const articleFeedRefs = Array.isArray(this.$refs.articleFeed)
         ? this.$refs.articleFeed
         : [this.$refs.articleFeed];
-      const selection = { ...this.selectionStore.currentSelection };
-      const selectionKey = JSON.stringify(selection);
       this.databaseRefreshActive = true;
       try {
         await Promise.all(articleFeedRefs.filter(Boolean).map(async ref => {
-          const hasNewArticles = await ref.checkForNewerArticles();
-          if (hasNewArticles && selectionKey === JSON.stringify(this.selectionStore.currentSelection)) {
-            await ref.refreshArticleIds(selection);
-          }
+          await ref.checkForNewerArticles();
         }));
       } catch (error) {
         this.showActionError('Could not refresh articles. Please try again.', error);
@@ -844,7 +840,7 @@ export default {
     // This function refreshes database-backed data once after a successful feed-refresh job.
     'feedRefreshStore.successfulCompletionId'(completionId, previousCompletionId) {
       if (completionId > previousCompletionId) {
-        void this.refreshArticlesFromDatabase();
+        void this.getOverview(false);
       }
     },
     // This function applies a theme mode loaded from the user's settings.

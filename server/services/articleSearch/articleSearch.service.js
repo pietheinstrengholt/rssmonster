@@ -424,6 +424,11 @@ export const searchArticles = async ({
       onEligibilityStage: funnel?.captureQuery
     });
 
+    if (filters.minArticleIdExclusive != null) {
+      appendCursorCondition(articleQuery.where, { id: { [Op.gt]: filters.minArticleIdExclusive } });
+    }
+    if (includeSnapshot && status === 'unread') articleQuery.attributes.push('status');
+
     debugLog(`\x1b[36mQuery attributes: ${articleQuery.attributes.join(", ")} (smartFolder: ${smartFolderSearch})\x1b[0m`);
     // Handles the case where first seen age filter is available.
     if (firstSeenAgeFilter) {
@@ -527,6 +532,18 @@ export const searchArticles = async ({
         ? countedTotal
         : Math.min(countedTotal, effectiveResultLimit);
       const sourceCount = parsedCursor?.sourceCount ?? await executeSearchSourceCount(articleQuery);
+      // The full unread result boundary differs from the library-wide pagination snapshot.
+      let highestUnreadArticleId;
+      if (!parsedCursor && status === 'unread') {
+        if (effectiveResultLimit !== null) {
+          const rows = await executeSearch({ ...articleQuery, attributes: ['id', 'status'], limit: effectiveResultLimit });
+          highestUnreadArticleId = rows.reduce((max, row) => row.status === 'unread' ? Math.max(max, Number(row.id)) : max, 0);
+        } else {
+          highestUnreadArticleId = Number(await Article.max('id', {
+            where: { [Op.and]: [articleQuery.where, { status: 'unread' }] }
+          }) || 0);
+        }
+      }
       if (parsedCursor) {
         applyCursorPosition(articleQuery, logicalSort, parsedCursor.position);
       }
@@ -587,6 +604,7 @@ export const searchArticles = async ({
         sourceCount,
         snapshot: {
           snapshotMaxArticleId,
+          ...(highestUnreadArticleId !== undefined ? { highestUnreadArticleId } : {}),
           expiresAt: parsedCursor
             ? new Date(parsedCursor.expiresAt).toISOString()
             : articleSearchCursorExpiresAt(cursorIssuedAt)
@@ -741,6 +759,14 @@ export const searchArticles = async ({
         itemIds,
         sourceCount,
         ...(funnel ? { diagnostics: await funnel.finish() } : {}),
-        ...(snapshotMaxArticleId !== null ? { snapshot: { snapshotMaxArticleId } } : {})
+        ...(snapshotMaxArticleId !== null ? { snapshot: {
+          snapshotMaxArticleId,
+          ...(status === 'unread' ? {
+            highestUnreadArticleId: articles.reduce((max, article) => (
+              itemIdSet.has(String(article.id)) && article.status === 'unread'
+                ? Math.max(max, Number(article.id)) : max
+            ), 0)
+          } : {})
+        } } : {})
     };
 };

@@ -8,6 +8,7 @@
  * Each pattern validates a specific filter type.
  */
 export const expressionPatterns = [
+    { name: 'id', regex: /^id:>\d+$/i },
     { name: 'favorite', regex: /^favorite:(true|false)$/i },
     { name: 'star', regex: /^star:(true|false)$/i },
     { name: 'unread', regex: /^unread:(true|false)$/i },
@@ -40,7 +41,7 @@ export const expressionPatterns = [
 /**
  * Known keywords for filter expressions.
  */
-export const knownKeywords = ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'event', 'briefing', 'developing', 'eventCount', 'hot', 'tag', 'title', 'author', 'language', 'sort', 'grouping', 'limit', 'quality', 'freshness', 'firstSeen'];
+export const knownKeywords = ['id', 'favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'event', 'briefing', 'developing', 'eventCount', 'hot', 'tag', 'title', 'author', 'language', 'sort', 'grouping', 'limit', 'quality', 'freshness', 'firstSeen'];
 
 export const normalizeSortValueForApi = sort => {
     const normalized = String(sort).toLowerCase();
@@ -149,6 +150,10 @@ export function validateQuery(query, options = { allowEmpty: true }) {
         const specificDateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/);
         if (specificDateMatch && !isValidCalendarDate(specificDateMatch[1])) {
             return { valid: false, error: `Invalid calendar date: "${specificDateMatch[1]}"` };
+        }
+
+        if (/^id:/i.test(cleaned) && (!/^id:>\d+$/i.test(cleaned) || !Number.isSafeInteger(Number(cleaned.slice(4))))) {
+            return { valid: false, error: `Invalid article ID filter: "${cleaned}"` };
         }
 
         // Check if token matches any known pattern

@@ -69,11 +69,6 @@
         @mark-all-read="flushPool"
         @dismiss="dismissArticleEndState"
       />
-      <ArticleRefreshState
-        v-if="collectionTailState.showRefreshState"
-        :unread-count="unreadsSinceLastUpdate"
-        @refresh="$emit('forceReload')"
-      />
     </div>
     <div id="no-more" v-else-if="!collectionProgress.paginationError">
       <ArticleLoadingState />
@@ -99,7 +94,6 @@ import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 import ArticleLoadError from "./ArticleLoadError.vue";
 import ArticleLoadingState from "./ArticleLoadingState.vue";
-import ArticleRefreshState from "./ArticleRefreshState.vue";
 import DailyBriefingIntro from "../briefing/DailyBriefingIntro.vue";
 import UnreadSelectionContext from "./UnreadSelectionContext.vue";
 
@@ -110,7 +104,6 @@ export default {
     ArticleEndState,
     ArticleLoadError,
     ArticleLoadingState,
-    ArticleRefreshState,
     DailyBriefingIntro,
     UnreadSelectionContext
   },

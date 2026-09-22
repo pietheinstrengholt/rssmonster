@@ -206,3 +206,13 @@ it.each(['island:true', 'island:false'])('rejects removed Island operator %s', q
   expect(validateSearchQuery(query).valid).toBe(false);
   expect(validateSmartFolderQuery(query).valid).toBe(false);
 });
+
+
+describe('article ID expressions', () => {
+  it('accepts a safe exclusive ID boundary with other filters', () => {
+    expect(validateSearchQuery('title:Science unread:true id:>104').valid).toBe(true);
+  });
+  it.each(['id:>null', 'id:>-1', 'id:>1.5', 'id:>9007199254740992'])('rejects %s', query => {
+    expect(validateSearchQuery(query).valid).toBe(false);
+  });
+});

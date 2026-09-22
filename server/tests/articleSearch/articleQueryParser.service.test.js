@@ -276,3 +276,15 @@ describe('persisted article expression validation', () => {
     });
   });
 });
+
+
+describe('article ID comparison', () => {
+  it('combines a validated exclusive ID boundary with unread and existing filters', () => {
+    const parsed = parseArticleQuery({ search: 'title:Science unread:true id:>104 id:>100', strict: true });
+    expect(parsed.filters).toMatchObject({ title: 'Science', unread: true, minArticleIdExclusive: 104 });
+    expect(parsed.text).toBe('');
+  });
+  it.each(['id:>null', 'id:>-1', 'id:>1.5', 'id:>9007199254740992', 'id:>1;DROP'])('rejects invalid boundaries: %s', search => {
+    expect(() => parseArticleQuery({ search, strict: true })).toThrow();
+  });
+});
