@@ -23,6 +23,7 @@ describe('extract entry fields', () => {
       content: '<p>Body</p>',
       contentKind: 'html',
       author: 'Alice',
+      languageHint: 'nl-NL',
       categories: ['News'],
       publishedAt,
       modifiedAt
@@ -36,6 +37,7 @@ describe('extract entry fields', () => {
       content: '<p>Body</p>',
       contentKind: 'html',
       author: 'Alice',
+      languageHint: 'nl-NL',
       categories: ['News'],
       publishedAt,
       modifiedAt
@@ -58,6 +60,7 @@ describe('extract entry fields', () => {
       content: null,
       contentKind: null,
       author: null,
+      languageHint: null,
       categories: [],
       publishedAt: null,
       modifiedAt: null

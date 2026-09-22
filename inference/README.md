@@ -229,6 +229,9 @@ By default the service listens at `http://127.0.0.1:3001`. Configure the listene
 - `GET /api/embeddings/info` returns safe model metadata and its loaded state.
 - `POST /api/embeddings` embeds a non-empty `texts` array.
 - `POST /api/classifications/article` summarizes, tags, and scores an article.
+  Its optional `language` tag is validated and included as an advisory hint in
+  generation and remote scoring prompts; article text takes precedence when it
+  conflicts. Fixed local scoring inputs remain unchanged.
 - `POST /api/assistant/model` and `/api/assistant/model/stream` provide the model boundary used by the server-owned agent tools.
 - `POST /api/smart-folder-recommendations` generates personalized folder suggestions.
 - `POST /api/feed-rediscovery` suggests a replacement for a broken feed URL.

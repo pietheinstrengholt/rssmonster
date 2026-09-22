@@ -29,6 +29,11 @@ const article = overrides => ({
 });
 
 describe('article enrichment job producer', () => {
+  it('invalidates analysis input when the resolved language changes', () => {
+    const hash = value => buildArticleAnalysisInputHash({ article: article({ language: value }), providerTags: [] });
+    expect(hash('nl')).not.toBe(hash('en'));
+    expect(hash('nl')).toBe(hash('nl'));
+  });
   beforeEach(() => {
     mocked.findTags.mockReset().mockResolvedValue([]);
     mocked.enqueueProcessingJob.mockReset();

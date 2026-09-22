@@ -339,7 +339,7 @@ export default (sequelize) => {
           );
         }
       },
-      // Stores the feed-provided article language; null when unspecified.
+      // Stores the publisher language hint, falling back to content detection when absent.
       language: DataTypes.TEXT('tiny'),
       // Scores the absence of promotional content from 0 to 100, defaulting to zero.
       advertisementScore: {

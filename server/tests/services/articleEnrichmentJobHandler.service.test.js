@@ -96,6 +96,7 @@ describe('article_enrichment processing-job handler', () => {
       description: 'Handler article description',
       contentText: `Handler article body ${suffix}`,
       contentTextHash: `handler-content-hash-${suffix}`,
+      language: 'nl-NL',
       aiAnalysisStatus: 'pending',
       ...articleOverrides
     });
@@ -217,6 +218,7 @@ describe('article_enrichment processing-job handler', () => {
     expect(mocked.analyzeArticleContent).toHaveBeenCalledWith({
       text: article.contentText,
       title: article.title,
+      language: article.language || null,
       categories: ['provider topic'],
       feedName: feed.feedName,
       rateLimitDelayMs: 3000
@@ -269,6 +271,28 @@ describe('article_enrichment processing-job handler', () => {
     });
     expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
     expect((await Article.findByPk(article.id)).aiAnalysisStatus).toBe('complete');
+  });
+
+  it('accepts pre-language jobs and sends the current language to analysis', async () => {
+    const { article, job } = await createTarget();
+    await job.update({ payload: {
+      ...job.payload,
+      expectedAnalysisInputHash: buildArticleAnalysisInputHash({
+        article, providerTags: ['provider topic'], includeLanguage: false
+      })
+    } });
+    await handleArticleEnrichmentJob(job);
+    expect(mocked.analyzeArticleContent).toHaveBeenCalledWith(
+      expect.objectContaining({ language: 'nl-NL' }), expect.anything()
+    );
+    expect((await article.reload()).aiAnalysisStatus).toBe('complete');
+  });
+
+  it('rejects analysis queued for a previous language', async () => {
+    const { article, job } = await createTarget();
+    await article.update({ language: 'en' });
+    await expect(handleArticleEnrichmentJob(job)).resolves.toEqual({ status: 'obsolete', reason: 'stale_version' });
+    expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
   });
 
   it('completes a stale content-version job without overwriting the revision', async () => {

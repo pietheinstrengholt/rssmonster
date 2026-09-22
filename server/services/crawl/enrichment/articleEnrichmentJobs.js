@@ -11,11 +11,12 @@ const articleValue = (article, field) => typeof article?.getDataValue === 'funct
 
 const normalizedTags = tags => normalizeTagList(tags, { splitHierarchies: true }).sort();
 
-export const buildArticleAnalysisInputHash = ({ article, providerTags }) => createHash('sha256')
+export const buildArticleAnalysisInputHash = ({ article, providerTags, includeLanguage = true }) => createHash('sha256')
   .update(JSON.stringify({
     title: articleValue(article, 'title') || '',
     description: articleValue(article, 'description') || '',
     contentTextHash: articleValue(article, 'contentTextHash') || null,
+    ...(includeLanguage ? { language: articleValue(article, 'language') || null } : {}),
     providerTags: normalizedTags(providerTags)
   }))
   .digest('hex');

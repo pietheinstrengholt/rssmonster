@@ -223,7 +223,7 @@ const buildArticleCandidate = async ({
   }
 
   contentLanguage = resolveAnalysisLanguage({
-    currentLanguage: contentLanguage,
+    currentLanguage: fields.languageHint || contentLanguage,
     text: analysisText,
     feed,
     title: fields.title,

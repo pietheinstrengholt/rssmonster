@@ -37,6 +37,7 @@ generate summary bullets and tags;
 return advertisement, sentiment, and quality scores;
 normalize and validate AI output;
 respect feed AI settings;
+pass resolved article language as an advisory analysis hint;
 handle inference availability and rate limits through the AI classification capability;
 avoid semantic embedding or clustering responsibilities.
 
@@ -63,3 +64,8 @@ determine whether an entry is new or revised;
 reset user engagement state on publisher updates.
 
 Lightweight article analysis and semantic architecture are separate concerns.
+
+The analysis input hash includes resolved language so an in-flight result cannot
+overwrite analysis for a changed language. Inference prompts treat the hint as
+advisory and prefer article text when it conflicts. Fixed local scoring models
+continue consuming their existing text input.

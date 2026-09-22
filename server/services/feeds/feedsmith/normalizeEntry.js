@@ -1,5 +1,6 @@
 import normalizeIdentity from './normalizeIdentity.js';
 import normalizeMedia from './normalizeMedia.js';
+import resolveLanguageHint from './normalizeLanguage.js';
 import htmlToVisibleText from '../../crawl/content/htmlToVisibleText.js';
 import {
   resolveArticleLinkResult,
@@ -147,6 +148,7 @@ const firstText = values => values.find(hasTextValue) || null;
 const atomContent = value => ({
   value: value.value,
   kind: atomContentKind(value),
+  language: value.xml?.lang,
   baseUrl: value.xml?.base
 });
 
@@ -210,6 +212,7 @@ const resolveDescription = (entry, feedFormat) => {
     return {
       value: readTextValue(entry.summary),
       baseUrl: entry.summary?.xml?.base,
+      language: entry.summary?.xml?.lang,
       kind: (typeof entry.summary === 'object' ? atomContentKind(entry.summary) : null) ||
         normalizeContentKind(entry.summaryKind) ||
         (feedFormat === 'json' ? 'text' : null)
@@ -219,6 +222,7 @@ const resolveDescription = (entry, feedFormat) => {
     return {
       value: readTextValue(entry.atom.summary),
       baseUrl: entry.atom.summary?.xml?.base,
+      language: entry.atom.summary?.xml?.lang,
       kind: typeof entry.atom.summary === 'object'
         ? atomContentKind(entry.atom.summary)
         : normalizeContentKind(entry.atom.summaryKind)
@@ -460,6 +464,7 @@ function normalizeEntry(entry, feedFormat = null, linkContext = {}, sourceFeed =
     content: selectedContent.value,
     contentKind: selectedContent.kind,
     author: resolveAuthor(entry, feedFormat, sourceFeed),
+    languageHint: resolveLanguageHint(entry, sourceFeed, selectedContent, selectedDescription),
     categories: categoryNames,
     publishedAt: resolveEntryPublishedDate(entry, feedFormat),
     modifiedAt: resolveEntryModifiedDate(entry, feedFormat),

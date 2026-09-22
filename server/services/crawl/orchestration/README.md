@@ -2,6 +2,12 @@ Purpose
 
 Coordinates crawl use cases and determines when lower-level services run.
 
+Article language uses the canonical publisher `languageHint` when available,
+otherwise the existing body/analysis-text detector. The resolved value is stored
+in `Article.language`; declared tags can include region/script subtags, while
+detected fallback codes retain their existing format. Content and embeddings
+are not rewritten to include language metadata.
+
 # Expected responsibilities:
 
 define the top-level article-processing control flow;

@@ -61,6 +61,19 @@ const defaultAnalysis = () => ({
   qualityScore: 70
 });
 
+// Treat a validated code as advisory metadata; the article text remains authoritative.
+const languageHintLines = language => {
+  if (typeof language !== 'string' || language.length > 100) return [];
+  try {
+    const locale = new Intl.Locale(language);
+    if (['und', 'mul', 'zxx'].includes(locale.language) ||
+      !new Intl.DisplayNames(['en'], { type: 'language', fallback: 'none' }).of(locale.language)) return [];
+    return [`Article language hint: ${locale.baseName}. Infer from the article text if it conflicts.`];
+  } catch {
+    return [];
+  }
+};
+
 const truncateContentForLLM = (text, maxChars = 3500) => {
   if (!text || text.length <= maxChars) return text;
   return `${text.slice(0, 3000)}\n...\n${text.slice(-500)}`;
@@ -167,6 +180,7 @@ export async function generateBulletSummary({
   text,
   title,
   feedName,
+  language,
   rateLimitDelayMs = 0
 }, context = {}) {
   const startedAt = Date.now();
@@ -186,6 +200,7 @@ export async function generateBulletSummary({
     '',
     `Feed Name: ${feedName || 'unknown'}`,
     `Article Title: ${title || ''}`,
+    ...languageHintLines(language),
     'Article Content:',
     '```',
     truncateContentForLLM(text),
@@ -216,6 +231,7 @@ export async function generateTags({
   title,
   categories,
   feedName,
+  language,
   rateLimitDelayMs = 0
 }, context = {}) {
   const startedAt = Date.now();
@@ -242,6 +258,7 @@ export async function generateTags({
     '',
     `Feed Name: ${feedName || 'unknown'}`,
     `Article Title: ${title || ''}`,
+    ...languageHintLines(language),
     `Article Categories: ${categories.join(', ')}`,
     'Article Content:',
     '```',
@@ -267,6 +284,7 @@ export async function scoreArticle({
   text,
   title,
   feedName,
+  language,
   rateLimitDelayMs = 0
 }, context = {}) {
   const startedAt = Date.now();
@@ -403,6 +421,7 @@ export async function scoreArticle({
     '',
     `Feed Name: ${feedName || 'unknown'}`,
     `Article Title: ${title || ''}`,
+    ...languageHintLines(language),
     'Article Content:',
     '```',
     truncateContentForLLM(text),
@@ -436,6 +455,7 @@ async function analyzeArticleContent({
   title,
   categories: categoryNames,
   feedName,
+  language,
   rateLimitDelayMs = 0
 }, context = {}) {
   const startedAt = Date.now();
@@ -460,7 +480,7 @@ async function analyzeArticleContent({
     return analysis;
   }
 
-  const input = { text, title, categories, feedName, rateLimitDelayMs };
+  const input = { text, title, categories, feedName, language, rateLimitDelayMs };
   if (canGenerate && text.length >= 500) {
     analysis.contentSummaryBullets = await generateBulletSummary(input, context);
     if (!hasProviderTags) {

@@ -33,6 +33,7 @@ Each canonical entry contains:
 - `content`
 - `contentKind`
 - `author`
+- `languageHint`
 - `categories`
 - `publishedAt`
 - `modifiedAt`
@@ -52,6 +53,11 @@ Core metadata, Media RSS descriptions, and iTunes author/artwork). Atom enclosur
 links supply media or image candidates rather than article permalinks. Atom entries
 inherit source/feed authors and JSON Feed items inherit feed authors when entry
 authors are absent. RSS/RDF Atom self links retain publisher feed identity.
+
+`languageHint` is a validated, canonical language tag. Selected Atom body/summary
+declarations precede entry declarations, then feed defaults. JSON/RSS language,
+XML `lang`, and Dublin Core/Terms languages are supported. Missing, malformed,
+unknown, and non-specific declarations leave the existing text detector in use.
 
 Favicons use the first usable HTTP(S) URL from `favicon`, `icon`, `logo`, then
 `image`, then iTunes artwork. Relative URLs resolve against the feed's XML base or fetched URL, with

@@ -163,7 +163,14 @@ const prepareAnalysisInput = async target => sequelize.transaction(async transac
   });
   if (!feed) return obsolete('feed_deleted');
   const providerTags = await readArticleProviderTags(target.articleId, target.userId, transaction);
-  if (!versionMatches({ article, providerTags, target })) return obsolete('stale_version');
+  if (!versionMatches({ article, providerTags, target })) {
+    // Jobs queued before language became an input may run when their original content still matches.
+    const legacyHash = buildArticleAnalysisInputHash({ article, providerTags, includeLanguage: false });
+    if ((rowValue(article, 'contentTextHash') || null) !== target.expectedContentTextHash ||
+      legacyHash !== target.expectedAnalysisInputHash) return obsolete('stale_version');
+    // Guard the result against subsequent language changes, including for legacy jobs.
+    target.expectedAnalysisInputHash = buildArticleAnalysisInputHash({ article, providerTags });
+  }
   if (rowValue(article, 'filteredInd')) {
     await skipArticle(article, transaction);
     return obsolete('article_filtered');
@@ -191,6 +198,7 @@ const prepareAnalysisInput = async target => sequelize.transaction(async transac
     input: {
       text: rowValue(article, 'contentText') || '',
       title: rowValue(article, 'title') || '',
+      language: rowValue(article, 'language') || null,
       categories: providerTags,
       feedName: rowValue(feed, 'feedName') || '',
       rateLimitDelayMs: RATE_LIMIT_DELAY_MS
