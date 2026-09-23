@@ -37,10 +37,6 @@
           <time v-if="dateContext" :datetime="dateContext.isoDate">{{ dateContext.longLabel }}</time>
         </div>
       </div>
-      <button type="button" class="unread-selection-context__tune" aria-label="Tune your unread selection" title="Tune your unread selection" @click="uiStore.setShowModal('UnreadConfiguration')">
-        <BootstrapIcon icon="sliders2" aria-hidden="true" />
-        <span>Tune your unread selection</span>
-      </button>
       <form v-if="editingCustomDate" class="unread-selection-context__custom-date" aria-label="Custom article date range" @submit.prevent="applyCustomRange" @keydown.esc.stop.prevent="cancelCustomRange">
         <label>Start date <input ref="customStartInput" v-model="customStart" type="date" required :max="customEnd || undefined" /></label>
         <label>End date <input v-model="customEnd" type="date" required :min="customStart || undefined" /></label>
@@ -53,7 +49,6 @@
 
 <script>
 import { computed, nextTick, ref } from 'vue';
-import { useUiStore } from '../../store/ui.js';
 import { useSelectionStore } from '../../store/selection.js';
 import AppDropdown from '../shared/AppDropdown.vue';
 import { articleDateRangeOptions, resolveArticleDateRange } from '../../services/articleDateRange.js';
@@ -105,7 +100,6 @@ export default {
     const { activeDate } = useStickyArticleDate(props, contextBar);
     return {
       contextBar,
-      uiStore: useUiStore(),
       selectionStore,
       dateDropdown,
       customStartInput,
@@ -178,23 +172,6 @@ export default {
 .unread-selection-context__custom-date input { min-height: var(--control-height-compact); max-width: 100%; padding: 0.25rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-compact); background: var(--surface-card); color: var(--text-primary); font: inherit; }
 .unread-selection-context__custom-date input:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 .unread-selection-context__custom-date button:disabled { opacity: 0.6; cursor: default; }
-.unread-selection-context__tune {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  min-height: var(--control-height-compact);
-  padding: 0.375rem 0.5rem;
-  border: 0;
-  border-radius: var(--radius-compact);
-  background: var(--color-transparent);
-  color: var(--color-link);
-  font: inherit;
-  font-weight: 600;
-  line-height: 1.2;
-  text-align: left;
-  cursor: pointer;
-}
-.unread-selection-context__tune:hover { color: var(--color-link-hover); background: var(--briefing-context-action-hover-surface); }
 .unread-selection-context__age-cutoff { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.375rem; }
 .unread-selection-context__age-button {
   min-height: var(--control-height-compact);
@@ -211,14 +188,12 @@ export default {
 .unread-selection-context__age-button:hover { border-color: var(--color-link); color: var(--color-link); }
 .unread-selection-context__age-button[aria-pressed='true'] { border-color: var(--color-primary); background: var(--color-primary); color: var(--text-inverted); }
 .unread-selection-context__age-button:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
-.unread-selection-context__tune:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 @media (max-width: 767px), (max-height: 560px) and (min-width: 480px) {
   .unread-selection-context { padding: 0.375rem 0.5rem; }
   .unread-selection-context__surface { gap: 0.375rem; padding: 0.5rem; }
   .unread-selection-context__meta,
   .unread-selection-context__divider,
-  .unread-selection-context__date-group > time,
-  .unread-selection-context__tune { display: none; }
+  .unread-selection-context__date-group > time { display: none; }
   .unread-selection-context__summary { flex: 0 1 auto; }
   .unread-selection-context__date-group,
   .unread-selection-context__age-cutoff { gap: 0.25rem; }

@@ -1,13 +1,18 @@
 <template>
-  <div v-if="count > 0" class="new-articles-banner" :class="{ 'new-articles-banner--reader': readerMode }" role="status" aria-live="polite">
-    <div class="new-articles-banner__copy">
-      <BootstrapIcon icon="lightbulb-fill" context="control" class="new-articles-banner__icon" aria-hidden="true" />
-      <span><strong>{{ count }} {{ count === 1 ? 'new article' : 'new articles' }}</strong> since your last visit</span>
+  <div v-if="count > 0 && !dismissed" class="new-articles-banner" :class="{ 'new-articles-banner--reader': readerMode }" role="status" aria-live="polite">
+    <div class="new-articles-banner__content">
+      <div class="new-articles-banner__copy">
+        <BootstrapIcon icon="lightbulb-fill" context="control" class="new-articles-banner__icon" aria-hidden="true" />
+        <span><strong>{{ count }} {{ count === 1 ? 'new article' : 'new articles' }}</strong> since your last visit</span>
+      </div>
+      <div class="new-articles-banner__actions">
+        <button type="button" class="new-articles-banner__primary" :disabled="loading" @click="$emit('show-new')">Show new only</button>
+        <button type="button" :disabled="loading" @click="$emit('show-full')">Show full list</button>
+      </div>
     </div>
-    <div class="new-articles-banner__actions">
-      <button type="button" class="new-articles-banner__primary" :disabled="loading" @click="$emit('show-new')">Show new only</button>
-      <button type="button" :disabled="loading" @click="$emit('show-full')">Show full list</button>
-    </div>
+    <button type="button" class="new-articles-banner__close" aria-label="Dismiss new articles banner" title="Dismiss" @click="dismissed = true">
+      <BootstrapIcon icon="x" size="16" aria-hidden="true" />
+    </button>
   </div>
 </template>
 
@@ -19,14 +24,16 @@ export default {
     loading: { type: Boolean, default: false },
     readerMode: { type: Boolean, default: false }
   },
-  emits: ['show-new', 'show-full']
+  emits: ['show-new', 'show-full'],
+  data() {
+    return { dismissed: false };
+  }
 };
 </script>
 
 <style scoped>
 .new-articles-banner {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 0.375rem 0.75rem;
   margin: 0.5rem 0.875rem;
@@ -39,6 +46,22 @@ export default {
   line-height: 1.4;
 }
 .new-articles-banner--reader { margin-inline: 0; }
+.new-articles-banner__content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: inherit;
+  min-width: 0;
+}
+.new-articles-banner .new-articles-banner__close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: var(--control-height-compact);
+  height: var(--control-height-compact);
+  padding: 0;
+}
 .new-articles-banner__copy {
   display: flex;
   flex: 1 1 16rem;

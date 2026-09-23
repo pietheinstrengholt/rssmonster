@@ -136,6 +136,33 @@ afterEach(() => {
 });
 
 describe('DesktopToolbar behavior coverage', () => {
+  it('opens the active selection configuration from the navbar', async () => {
+    const { selectionStore, uiStore } = createStores();
+    const wrapper = mountDesktopToolbar();
+
+    await wrapper.get('button[aria-label="Tune your unread selection"]').trigger('click');
+    expect(uiStore.showModal).toBe('UnreadConfiguration');
+
+    selectionStore.currentSelection.status = 'briefing';
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('button[aria-label="Tune your unread selection"]').exists()).toBe(false);
+    await wrapper.get('button[aria-label="Tune your briefing"]').trigger('click');
+    expect(uiStore.showModal).toBe('BriefingPreferences');
+
+    for (const status of ['hot', 'favorite', 'read', 'clicked']) {
+      selectionStore.currentSelection.status = status;
+      await wrapper.vm.$nextTick();
+      expect(wrapper.find('button[aria-label="Tune your briefing"]').exists()).toBe(false);
+      uiStore.setShowModal('');
+      await wrapper.get(`button[aria-label="Tune your ${status} selection"]`).trigger('click');
+      expect(uiStore.showModal).toBe('UnreadConfiguration');
+    }
+    selectionStore.currentSelection.status = 'unknown';
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find('button[aria-label^="Tune your"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   it('hides desktop and mobile chat controls when only non-assistant AI is enabled', () => {
     createStores({ AIEnabled: true, AssistantEnabled: false });
 

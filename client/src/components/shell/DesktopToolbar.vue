@@ -70,6 +70,17 @@
           </svg>
         </button>
       </div>
+      <button
+        v-if="selectionSettingsAction"
+        type="button"
+        class="toolbar-selection-settings-button"
+        :title="selectionSettingsAction.label"
+        :aria-label="selectionSettingsAction.label"
+        aria-haspopup="dialog"
+        @click="uiStore.setShowModal(selectionSettingsAction.modalName)"
+      >
+        <BootstrapIcon icon="sliders2" size="20" aria-hidden="true" />
+      </button>
       <AppDropdown id="themeModeDropdown" :close-key="selectedThemeMode" align="end" class="toolbar-theme-dropdown">
         <template #trigger="{ triggerProps }">
           <button v-bind="triggerProps" type="button" class="toolbar-theme-button" title="Choose theme">
@@ -294,6 +305,7 @@
   background-color: var(--color-primary-soft);
 }
 
+.toolbar-selection-settings-button,
 .toolbar-settings-button,
 .toolbar-theme-button,
 .toolbar-search-button {
@@ -372,6 +384,7 @@
   border-color: var(--border-strong);
 }
 
+:global(:root[data-theme='dark'] .toolbar-selection-settings-button),
 :global(:root[data-theme='dark'] .toolbar-settings-button),
 :global(:root[data-theme='dark'] .toolbar-chat-button),
 :global(:root[data-theme='dark'] .toolbar-search-button) {
@@ -380,12 +393,14 @@
   border-color: var(--border-control);
 }
 
+:global(:root[data-theme='dark'] .toolbar-selection-settings-button:hover),
 :global(:root[data-theme='dark'] .toolbar-settings-button:hover),
 :global(:root[data-theme='dark'] .toolbar-chat-button:hover),
 :global(:root[data-theme='dark'] .toolbar-search-button:hover) {
   background-color: var(--toolbar-settings-hover-background-dark);
 }
 
+:global(:root[data-theme='dark'] .toolbar-selection-settings-button:hover),
 :global(:root[data-theme='dark'] .toolbar-settings-button:hover),
 :global(:root[data-theme='dark'] .toolbar-search-button:hover) {
   border-color: var(--border-strong);
@@ -456,6 +471,7 @@
   background-color: var(--toolbar-active-background);
 }
 
+.toolbar-selection-settings-button:hover,
 .toolbar-settings-button:hover,
 .toolbar-theme-button:hover,
 .toolbar-search-button:hover {
@@ -463,6 +479,7 @@
   border-color: var(--border-strong);
 }
 
+.toolbar-selection-settings-button svg,
 .toolbar-settings-button svg,
 .toolbar-theme-button svg,
 .toolbar-search-button svg {
@@ -703,6 +720,7 @@
     color: var(--text-secondary);
   }
 
+  .toolbar-selection-settings-button,
   .toolbar-settings-button,
   .toolbar-theme-button,
   .toolbar-search-button {
@@ -711,6 +729,7 @@
     border-color: var(--border-control);
   }
 
+  .toolbar-selection-settings-button:hover,
   .toolbar-settings-button:hover,
   .toolbar-theme-button:hover,
   .toolbar-chat-button:hover,
@@ -766,6 +785,7 @@
 }
 
 /* Keep explicit light-mode controls light when the device prefers dark mode. */
+:global(:root[data-theme='light'] .toolbar-selection-settings-button),
 :global(:root[data-theme='light'] .toolbar-settings-button),
 :global(:root[data-theme='light'] .toolbar-theme-button),
 :global(:root[data-theme='light'] .toolbar-search-button) {
@@ -774,6 +794,7 @@
   border-color: var(--border-control);
 }
 
+:global(:root[data-theme='light'] .toolbar-selection-settings-button:hover),
 :global(:root[data-theme='light'] .toolbar-settings-button:hover),
 :global(:root[data-theme='light'] .toolbar-theme-button:hover),
 :global(:root[data-theme='light'] .toolbar-search-button:hover) {
@@ -792,7 +813,8 @@ import {
   ARTICLE_SORT_OPTIONS,
   ARTICLE_STATUS_OPTIONS,
   ARTICLE_VIEW_MODE_OPTIONS,
-  getAvailableArticleOptions
+  getAvailableArticleOptions,
+  getArticleStatusOption
 } from '../../config/articleSelectionOptions.js';
 import { useMediaQuery } from '../../composables/useMediaQuery.js';
 import { validateSearchQuery } from '../../services/queryValidation.js';
@@ -1016,6 +1038,16 @@ export default {
       }
 
       return 'Search for words or tag:name, title:text, etc.';
+    },
+    // This function maps configurable article selections to their settings dialogs.
+    selectionSettingsAction() {
+      if (this.selectedStatus === 'briefing') {
+        return { label: 'Tune your briefing', modalName: 'BriefingPreferences' };
+      }
+      if (getArticleStatusOption(this.selectedStatus)) {
+        return { label: `Tune your ${this.selectedStatus} selection`, modalName: 'UnreadConfiguration' };
+      }
+      return null;
     },
     // This function returns the selected article status.
     selectedStatus() {

@@ -157,7 +157,7 @@ describe('UnreadSelectionContext', () => {
     expect(wrapper.findAllComponents(UnreadSelectionContext)).toHaveLength(1);
   });
 
-  it('shows only article and source context and opens unread configuration', async () => {
+  it('shows article and source context without the relocated tuning action', () => {
     const setShowModal = vi.fn();
     const stores = createStore(setShowModal);
     wrapper = mount(UnreadSelectionContext, {
@@ -176,14 +176,8 @@ describe('UnreadSelectionContext', () => {
     expect(wrapper.text()).not.toContain('interest areas');
     expect(wrapper.classes()).not.toContain('unread-selection-context--reader');
 
-    const action = wrapper.findAll('button').find(button => button.text() === 'Tune your unread selection');
-    expect(action.text()).toBe('Tune your unread selection');
-    expect(action.attributes('aria-label')).toBe('Tune your unread selection');
-    expect(action.getComponent({ name: 'BootstrapIcon' }).props('icon')).toBe('sliders2');
-
-    await action.trigger('click');
-
-    expect(setShowModal).toHaveBeenCalledWith('UnreadConfiguration');
+    expect(wrapper.text()).not.toContain('Tune your unread selection');
+    expect(wrapper.find('button[aria-label="Tune your unread selection"]').exists()).toBe(false);
   });
 
   it('keeps both date labels aligned with the top visible row through scrolling and pagination', async () => {
@@ -290,7 +284,7 @@ describe('UnreadSelectionContext', () => {
     scrollRoot.remove();
   });
 
-  it('keeps tuning and singular counts usable when a publication date is missing', async () => {
+  it('shows singular counts when a publication date is missing', async () => {
     const setShowModal = vi.fn();
     const stores = createStore(setShowModal);
     wrapper = mount(UnreadSelectionContext, {
@@ -300,8 +294,6 @@ describe('UnreadSelectionContext', () => {
     await flushPromises();
     expect(wrapper.text()).toContain('Based on 1 article from 1 source');
     expect(wrapper.find('time').exists()).toBe(false);
-    await wrapper.findAll('button').find(button => button.text() === 'Tune your unread selection').trigger('click');
-    expect(setShowModal).toHaveBeenCalledWith('UnreadConfiguration');
   });
 
   it('appears in the loaded standard unread list with scoped counts', () => {
@@ -386,6 +378,56 @@ describe('UnreadSelectionContext', () => {
 });
 
 describe('UnreadConfigurationModal', () => {
+  it.each(['hot', 'favorite', 'clicked', 'read'])('shows only applicable preferences for %s', async status => {
+    const stores = createStore();
+    stores.selectionStore.currentSelection.status = status;
+    wrapper = mount(UnreadConfigurationModal, { global: { plugins: [stores.pinia] } });
+    await flushPromises();
+
+    expect(wrapper.get('.preferences-dialog__title').text()).toBe(`Tune your ${status} selection`);
+    const labels = ['Prioritize high-trust coverage'];
+    if (status !== 'read') labels.push('Mark as read while scrolling');
+    labels.push('Open article links in a new tab');
+    expect(wrapper.findAll('.unread-preferences-option-title').map(node => node.text())).toEqual(labels);
+    expect(wrapper.findAll('[role="switch"]')).toHaveLength(labels.length);
+    expect(wrapper.get('[name="prioritizeHighTrust"]').element.checked).toBe(true);
+    expect(wrapper.get('[name="openArticleLinksInNewTab"]').element.checked).toBe(false);
+    if (status !== 'read') expect(wrapper.get('[name="markAsReadOnScroll"]').element.checked).toBe(true);
+  });
+
+  it.each(['hot', 'favorite', 'clicked', 'read'].flatMap(status =>
+    [true, false].map(enabled => ({ status, enabled }))
+  ))('saves visible $status preferences as $enabled without changing hidden preferences', async ({ status, enabled }) => {
+    const setShowModal = vi.fn();
+    const setCurrentSelection = vi.fn();
+    const stores = createStore(setShowModal, setCurrentSelection);
+    stores.selectionStore.currentSelection.status = status;
+    saveMarkAsReadOnScroll.mockResolvedValue({ data: { markAsReadOnScroll: enabled } });
+    saveOpenArticleLinksInNewTab.mockResolvedValue({ data: { openArticleLinksInNewTab: enabled } });
+    wrapper = mount(UnreadConfigurationModal, { global: { plugins: [stores.pinia] } });
+    await flushPromises();
+
+    await wrapper.get('[name="prioritizeHighTrust"]').setValue(enabled);
+    await wrapper.get('[name="openArticleLinksInNewTab"]').setValue(enabled);
+    if (status !== 'read') await wrapper.get('[name="markAsReadOnScroll"]').setValue(enabled);
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(savePrioritizeHighTrust).toHaveBeenCalledWith(enabled);
+    expect(saveOpenArticleLinksInNewTab).toHaveBeenCalledWith(enabled);
+    expect(stores.uiStore.openArticleLinksInNewTab).toBe(enabled);
+    expect(saveIncludeDevelopingEvents).not.toHaveBeenCalled();
+    expect(saveStartupViewMode).not.toHaveBeenCalled();
+    if (status === 'read') {
+      expect(saveMarkAsReadOnScroll).not.toHaveBeenCalled();
+      expect(setCurrentSelection).toHaveBeenCalledWith({});
+    } else {
+      expect(saveMarkAsReadOnScroll).toHaveBeenCalledWith(enabled);
+      expect(setCurrentSelection).toHaveBeenCalledWith({ markAsReadOnScroll: enabled });
+    }
+    expect(setShowModal).toHaveBeenCalledWith('');
+  });
+
   it('loads and renders the unread and startup preferences', async () => {
     const setShowModal = vi.fn();
     const stores = createStore(setShowModal);

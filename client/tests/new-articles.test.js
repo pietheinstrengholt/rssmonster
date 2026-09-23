@@ -41,6 +41,29 @@ beforeEach(() => {
 afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe('new unread articles', () => {
+  it('dismisses the arrivals banner without changing articles, selection or the baseline', async () => {
+    await mountFeed();
+    await wrapper.vm.checkForNewerArticles();
+    await flushPromises();
+    const selection = { ...stores.selectionStore.currentSelection };
+    const requests = fetchArticleIds.mock.calls.length;
+    expect(wrapper.text()).toContain('3 new articles since your last visit');
+
+    await wrapper.get('button[aria-label="Dismiss new articles banner"]').trigger('click');
+
+    expect(wrapper.text()).not.toContain('new articles since your last visit');
+    expect(button('Show new only')).toBeUndefined();
+    expect(button('Show full list')).toBeUndefined();
+    expect(wrapper.text()).toContain('Article 101');
+    expect(stores.selectionStore.currentSelection).toEqual(selection);
+    expect(loadUnreadBaseline(42, selection)).toBe(104);
+    expect(fetchArticleIds).toHaveBeenCalledTimes(requests);
+
+    await wrapper.vm.checkForNewerArticles();
+    await flushPromises();
+    expect(wrapper.text()).not.toContain('new articles since your last visit');
+  });
+
   it('replaces Yesterday with 7d and back through the controls and article query', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     const now = new Date(2026, 8, 21, 16).getTime();

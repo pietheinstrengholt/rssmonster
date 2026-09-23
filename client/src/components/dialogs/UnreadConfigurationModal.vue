@@ -1,9 +1,9 @@
 <template>
   <PreferencesDialogShell
-    title="Tune your unread selection"
-    description="Choose which stories appear in your unread selection."
+    :title="`Tune your ${selectionStatus} selection`"
+    :description="selectionStatus === 'unread' ? 'Choose which stories appear in your unread selection.' : `Choose how stories appear in your ${selectionStatus} selection.`"
     form-id="unread-preferences-form"
-    close-label="Close unread preferences"
+    :close-label="`Close ${selectionStatus} preferences`"
     :saving="isSaving"
     :submit-disabled="isLoading"
     @close="closeModal"
@@ -19,7 +19,7 @@
             class="unread-preferences-status unread-preferences-status-error"
             role="alert"
           >
-            Unread preferences could not be loaded. The default value is shown.
+            {{ selectionLabel }} preferences could not be loaded. The default value is shown.
           </p>
 
           <p
@@ -27,10 +27,10 @@
             class="unread-preferences-status unread-preferences-status-error"
             role="alert"
           >
-            Unread preferences could not be saved. Please try again.
+            {{ selectionLabel }} preferences could not be saved. Please try again.
           </p>
 
-          <label class="unread-preferences-option">
+          <label v-if="selectionStatus === 'unread'" class="unread-preferences-option">
             <span class="unread-preferences-option-icon" aria-hidden="true">
               <BootstrapIcon icon="graph-up-arrow" />
             </span>
@@ -82,7 +82,7 @@
             </span>
           </label>
 
-          <label class="unread-preferences-option">
+          <label v-if="selectionStatus !== 'read'" class="unread-preferences-option">
             <span class="unread-preferences-option-icon" aria-hidden="true">
               <BootstrapIcon icon="check2-circle" />
             </span>
@@ -108,7 +108,7 @@
             </span>
           </label>
 
-          <label class="unread-preferences-option">
+          <label v-if="selectionStatus === 'unread'" class="unread-preferences-option">
             <span class="unread-preferences-option-icon" aria-hidden="true">
               <BootstrapIcon icon="house-door" />
             </span>
@@ -176,13 +176,19 @@ import PreferencesDialogShell from './PreferencesDialogShell.vue';
 
 export default {
   computed: {
-    ...mapStores(useSelectionStore, useUiStore)
+    ...mapStores(useSelectionStore, useUiStore),
+    selectionStatus() {
+      return this.selectionStore.currentSelection.status;
+    },
+    selectionLabel() {
+      return this.selectionStatus.charAt(0).toUpperCase() + this.selectionStatus.slice(1);
+    }
   },
   name: 'UnreadConfigurationModal',
   components: {
     PreferencesDialogShell
   },
-  // Initializes unread preference form and request state.
+  // Initializes selection preference form and request state.
   data() {
     return {
       form: {
@@ -199,7 +205,7 @@ export default {
       activeRequestId: 0
     };
   },
-  // Loads unread preferences when the dialog is created.
+  // Loads selection preferences when the dialog is created.
   created() {
     this.loadPreferences();
   },
@@ -208,7 +214,7 @@ export default {
     this.activeRequestId++;
   },
   methods: {
-    // This function loads the current unread preference.
+    // This function loads the current selection preferences.
     async loadPreferences() {
       const requestId = ++this.activeRequestId;
       this.isLoading = true;
@@ -225,7 +231,7 @@ export default {
         this.form.useDefaultStartupView = data.startupViewMode === 'default';
       } catch (error) {
         if (requestId !== this.activeRequestId) return;
-        console.error('Error loading Unread Preferences:', error);
+        console.error('Error loading Selection Preferences:', error);
         this.loadError = true;
       } finally {
         if (requestId === this.activeRequestId) {
@@ -233,7 +239,7 @@ export default {
         }
       }
     },
-    // This function persists the unread and startup preferences.
+    // This function persists only the preferences offered for the active selection.
     async savePreferences() {
       if (this.isLoading || this.isSaving) return;
 
@@ -243,33 +249,30 @@ export default {
       try {
         const startupViewMode = this.form.useDefaultStartupView ? 'default' : 'last-used';
         const [
-          { data: unreadData },
-          { data: scrollingData },
+          unreadResult,
+          scrollingResult,
           { data: linkData }
         ] = await Promise.all([
-          saveIncludeDevelopingEventsAPI(this.form.includeDevelopingEvents),
-          saveMarkAsReadOnScrollAPI(this.form.markAsReadOnScroll),
+          this.selectionStatus === 'unread' ? saveIncludeDevelopingEventsAPI(this.form.includeDevelopingEvents) : null,
+          this.selectionStatus !== 'read' ? saveMarkAsReadOnScrollAPI(this.form.markAsReadOnScroll) : null,
           saveOpenArticleLinksInNewTabAPI(this.form.openArticleLinksInNewTab),
           savePrioritizeHighTrustAPI(this.form.prioritizeHighTrust),
-          saveStartupViewModeAPI(startupViewMode)
+          this.selectionStatus === 'unread' ? saveStartupViewModeAPI(startupViewMode) : null
         ]);
         this.uiStore.setOpenArticleLinksInNewTab(linkData.openArticleLinksInNewTab);
-        const includeDevelopingEvents = Boolean(unreadData.includeDevelopingEvents);
-        const markAsReadOnScroll = Boolean(scrollingData.markAsReadOnScroll);
-
-        this.selectionStore.setCurrentSelection({
-          includeDevelopingEvents,
-          markAsReadOnScroll
-        });
+        const selection = {};
+        if (unreadResult) selection.includeDevelopingEvents = Boolean(unreadResult.data.includeDevelopingEvents);
+        if (scrollingResult) selection.markAsReadOnScroll = Boolean(scrollingResult.data.markAsReadOnScroll);
+        this.selectionStore.setCurrentSelection(selection);
         this.closeModal();
       } catch (error) {
-        console.error('Error saving Unread Preferences:', error);
+        console.error('Error saving Selection Preferences:', error);
         this.saveError = true;
       } finally {
         this.isSaving = false;
       }
     },
-    // This function closes the unread configuration modal.
+    // This function closes the selection configuration modal.
     closeModal() {
       this.uiStore.setShowModal('');
     }
