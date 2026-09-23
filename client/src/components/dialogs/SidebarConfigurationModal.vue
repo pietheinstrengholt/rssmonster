@@ -39,6 +39,7 @@
           <span id="sidebar-declutter-label" class="sidebar-preferences-title">Declutter counts</span>
           <span id="sidebar-declutter-description" class="sidebar-preferences-description">
             Hide the total when it adds no information: show 0 instead of 0/0 and 4 instead of 4/4.
+            <template v-if="!form.showTotalCount">Enable Show total count to use this option.</template>
           </span>
         </span>
         <input
@@ -46,7 +47,7 @@
           class="sidebar-preferences-switch"
           type="checkbox"
           role="switch"
-          :disabled="isLoading || isSaving || loadError"
+          :disabled="isLoading || isSaving || loadError || !form.showTotalCount"
           aria-labelledby="sidebar-declutter-label"
           aria-describedby="sidebar-declutter-description"
         />
@@ -138,10 +139,16 @@
       </label>
       <label class="sidebar-preferences-option">
         <span class="sidebar-preferences-content">
-          <span class="sidebar-preferences-title">Inactive after</span>
+          <span id="sidebar-inactive-after-label" class="sidebar-preferences-title">Inactive after</span>
+          <span id="sidebar-inactive-after-description" class="sidebar-preferences-description">
+            Feeds move to Inactive feeds after this many days without a new article.
+            Checking for updates does not reset this period.
+          </span>
         </span>
         <select
           v-model.number="form.inactiveFeedDays"
+          aria-labelledby="sidebar-inactive-after-label"
+          aria-describedby="sidebar-inactive-after-description"
           class="app-form-select app-form-control--compact sidebar-preferences-select"
           :disabled="!form.automaticallyHideInactiveFeeds || isLoading || isSaving || loadError"
         >
@@ -239,6 +246,11 @@ export default {
   },
   computed: {
     ...mapStores(useUiStore, useAuthStore)
+  },
+  watch: {
+    'form.showTotalCount'(showTotalCount) {
+      if (!showTotalCount) this.form.declutterCounts = false;
+    }
   },
   created() {
     this.loadPreferences();

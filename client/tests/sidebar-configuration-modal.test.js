@@ -124,6 +124,42 @@ describe('Sidebar configuration dialog', () => {
     expect(uiStore.showModal).toBe('');
   });
 
+  it('turns off and disables decluttering when total counts are turned off', async () => {
+    mountDialog();
+    await flushPromises();
+    const totals = wrapper.get('[aria-labelledby="sidebar-show-total-label"]');
+    const declutter = wrapper.get('[aria-labelledby="sidebar-declutter-label"]');
+    expect(declutter.element.checked).toBe(true);
+    await totals.setValue(false);
+    expect(declutter.element.disabled).toBe(true);
+    expect(declutter.element.checked).toBe(false);
+    expect(wrapper.text()).toContain('Enable Show total count to use this option.');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(saveSidebarSettings).toHaveBeenCalledWith(expect.objectContaining({
+      showTotalCount: false, declutterCounts: false
+    }));
+  });
+
+  it('disables saved decluttering without totals and allows it after totals are enabled', async () => {
+    fetchSidebarSettings.mockResolvedValue({ data: { settings: {
+      ...defaults, showTotalCount: false, declutterCounts: true
+    } } });
+    mountDialog();
+    await flushPromises();
+    const declutter = wrapper.get('[aria-labelledby="sidebar-declutter-label"]');
+    expect(declutter.element.disabled).toBe(true);
+    expect(declutter.element.checked).toBe(false);
+    await wrapper.get('[aria-labelledby="sidebar-show-total-label"]').setValue(true);
+    expect(declutter.element.disabled).toBe(false);
+    await declutter.setValue(true);
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(saveSidebarSettings).toHaveBeenCalledWith(expect.objectContaining({
+      showTotalCount: true, declutterCounts: true
+    }));
+  });
+
   it.each([30, 60, 90])('saves inactive grouping with a %i-day threshold', async days => {
     const uiStore = mountDialog();
     await flushPromises();
