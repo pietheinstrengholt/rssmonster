@@ -121,6 +121,16 @@
       <div class="sidebar-category-heading">
         <SidebarSectionTitle title="Categories" />
         <button
+          type="button"
+          class="sidebar-category-settings"
+          aria-label="Sidebar configuration settings"
+          title="Sidebar configuration settings"
+          aria-haspopup="dialog"
+          @click="uiStore.setShowModal('SidebarConfiguration')"
+        >
+          <BootstrapIcon class="sidebar-category-settings-icon" icon="sliders2" context="control" decorative />
+        </button>
+        <button
           v-if="overviewStore.categories.length > 1 || categoryReordering"
           type="button"
           class="sidebar-category-reorder-button"
@@ -128,7 +138,7 @@
           :disabled="categoryReorderLoading"
           @click="toggleCategoryReordering"
         >
-          <BootstrapIcon :icon="categoryReordering ? 'check-lg' : 'grip-vertical'" aria-hidden="true" />
+          <BootstrapIcon :icon="categoryReordering ? 'check-lg' : 'grip-vertical'" context="control" aria-hidden="true" />
           {{ categoryReorderLoading ? 'Loading...' : categoryReordering ? 'Done' : 'Reorder' }}
         </button>
       </div>
@@ -136,7 +146,7 @@
       <SidebarNavItem
         icon="collection-fill"
         title="All categories"
-        :count="getStatusCount(selectionStore.currentSelection.status)"
+        :count="getItemStatusCount(overviewStore)"
         :selected="selectionStore.currentSelection.categoryId === '%'"
         badge-class="sidebar-count-white"
         row-class="sidebar-all-categories-item"
@@ -290,10 +300,32 @@
 }
 
 .sidebar-category-heading {
-  align-items: flex-end;
+  align-items: center;
   display: flex;
   justify-content: space-between;
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-1);
   padding-right: var(--space-3);
+}
+
+.sidebar-category-heading :deep(.sidebar-section-title) {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.sidebar-category-settings {
+  align-items: center;
+  background: var(--color-transparent);
+  border: 0;
+  border-radius: var(--radius-compact);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 12px;
+  margin-left: auto;
+  margin-right: var(--space-1);
+  padding: var(--space-0-5) var(--space-1);
 }
 
 .sidebar-category-reorder-button {
@@ -305,16 +337,17 @@
   display: inline-flex;
   font-size: 12px;
   gap: var(--space-1);
-  margin-bottom: var(--space-1);
   padding: var(--space-0-5) var(--space-1);
 }
 
+.sidebar-category-settings:hover,
 .sidebar-category-reorder-button:hover,
 .sidebar-category-reorder-button[aria-pressed='true'] {
   background: var(--surface-hover);
   color: var(--text-primary);
 }
 
+.sidebar-category-settings:focus-visible,
 .sidebar-category-reorder-button:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
@@ -387,6 +420,7 @@ import SidebarCategoryGroup from './SidebarCategoryGroup.vue';
 import SidebarNavItem from './SidebarNavItem.vue';
 import SidebarSectionTitle from './SidebarSectionTitle.vue';
 import FeedRefreshProgress from '../shared/FeedRefreshProgress.vue';
+import { formatCount } from './formatCount.js';
 import { formatTagName } from '../../utils/tags';
 import { notifyActionError } from '../../services/actionNotifications.js';
 import {
@@ -477,11 +511,17 @@ export default {
       return this.overviewStore[`${status}Count`];
     },
 
-    // This function returns an item's count for the selected article status.
+    // This includes the total only when it adds information to the selected count.
     getItemStatusCount(item) {
       const status = this.selectionStore.currentSelection.status;
       const count = item[`${status}Count`];
-      return count === undefined ? null : count;
+      if (count === undefined) return null;
+      const total = Number(item.unreadCount || 0) + Number(item.readCount || 0);
+      const { showTotalCount, declutterCounts } = this.uiStore.sidebarSettings;
+      if (!showTotalCount || (declutterCounts && (total <= 0 || total === Number(count)))) {
+        return formatCount(count);
+      }
+      return `${formatCount(count)}/${formatCount(total)}`;
     },
 
     // This function delegates explicit logout to the root coordinated session reset.

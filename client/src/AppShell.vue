@@ -346,7 +346,8 @@ export const DIALOG_COMPONENTS = Object.freeze({
   Cleanup: defineAsyncComponent(() => import("./components/dialogs/Cleanup.vue")),
   ManageUsers: defineAsyncComponent(() => import("./components/settings/SettingsManageUsers.vue")),
   BriefingPreferences: defineAsyncComponent(() => import("./components/briefing/BriefingPreferencesModal.vue")),
-  UnreadConfiguration: defineAsyncComponent(() => import("./components/dialogs/UnreadConfigurationModal.vue"))
+  UnreadConfiguration: defineAsyncComponent(() => import("./components/dialogs/UnreadConfigurationModal.vue")),
+  SidebarConfiguration: defineAsyncComponent(() => import("./components/dialogs/SidebarConfigurationModal.vue"))
 });
 
 //import onboarding component

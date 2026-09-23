@@ -25,6 +25,16 @@ Categories contain feeds. [Tags]({% link tag.md %}) label articles, and
 [Smart Folders]({% link smart-folders.md %}) select articles by a saved search. Use whichever
 matches the kind of organization you need.
 
+## Sidebar counts
+
+Open the sliders button beside **Categories** to configure its category, feed,
+and **All categories** counts. **Show total count** displays selection/total
+(for example, `9/109`); turn it off to show only the selected count.
+**Declutter counts** hides redundant totals, displaying `0` instead of `0/0`
+and `4` instead of `4/4`, while keeping informative values such as `0/4`.
+Both options default to enabled. Choose **Save changes** to apply them and
+remember them for your account; **Cancel** discards edits.
+
 ## Edit feed processing
 
 The feed editor includes a display name, description, category, active/disabled

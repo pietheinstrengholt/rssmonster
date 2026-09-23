@@ -1,5 +1,6 @@
 import { getInferenceEnvironment } from '../services/inference/runtimeConfiguration.js';
 import { isActiveIsland, islandExpiresAt } from '../services/islands/islandDeadline.js';
+import { loadSidebarSettings } from '../services/sidebarSettings.js';
 import db from '../models/index.js';
 import { getAvailableInferenceCapabilities } from '../services/inference/status.js';
 import { isAssistantEnabled } from '../config/intelligentFeatures.js';
@@ -313,6 +314,7 @@ export const getSettings = async (req, res, _next) => {
       prioritizeHighTrust,
       themeMode: themeMode,
       startupViewMode,
+      sidebarSettings: await loadSidebarSettings(userId),
       openArticleLinksInNewTab,
       markAsReadOnScroll,
       AIEnabled: aiEnabled,

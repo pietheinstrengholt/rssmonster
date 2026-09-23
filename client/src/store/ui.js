@@ -6,6 +6,8 @@ import { notifyActionError } from '../services/actionNotifications.js';
 // This function creates application presentation state for one user session.
 const initialUiState = () => ({
   showModal: '',
+  sidebarSettings: { showTotalCount: true, declutterCounts: true },
+  sidebarSettingsRevision: 0,
   openArticleLinksInNewTab: false,
   htmlXpathDraft: null,
   chatAssistantOpen: false,
@@ -29,6 +31,11 @@ export const useUiStore = defineStore('ui', {
     resetSessionState() {
       this.stopThemeSync();
       this.$patch({ ...initialUiState(), themeSessionId: this.themeSessionId });
+    },
+
+    setSidebarSettings(settings) {
+      this.sidebarSettings = { ...settings };
+      this.sidebarSettingsRevision++;
     },
 
     // This action applies the saved article body link preference.

@@ -49,6 +49,7 @@ const initializeStores = () => {
       name: 'Technology',
       briefingCount: 3,
       unreadCount: 8,
+      readCount: 101,
       hotCount: 4,
       feeds: [{
         id: 101,
@@ -57,6 +58,7 @@ const initializeStores = () => {
         status: 'active',
         briefingCount: 2,
         unreadCount: 3,
+        readCount: 20,
         hotCount: 2
       }]
     }, {
@@ -132,7 +134,7 @@ afterEach(() => {
 
 describe('Options API sidebar contracts', () => {
   // This verifies category and feed badges remain available while switching article statuses.
-  it('renders the selected status count for categories and feeds', async () => {
+  it('renders selection/total counts for categories and feeds', async () => {
     const stores = initializeStores();
     const wrapper = mountSidebar(stores.pinia);
 
@@ -144,8 +146,8 @@ describe('Options API sidebar contracts', () => {
     });
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.get('[id="10"] .sidebar-category-header .sidebar-count').text()).toBe('3');
-    expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe('2');
+    expect(wrapper.get('[id="10"] .sidebar-category-header .sidebar-count').text()).toBe('3/109');
+    expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe('2/23');
     expect(wrapper.find('.sidebar-tags').text()).toContain('Top tags in Daily briefing');
 
     stores.selectionStore.$patch({
@@ -156,8 +158,8 @@ describe('Options API sidebar contracts', () => {
     });
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.get('[id="10"] .sidebar-category-header .sidebar-count').text()).toBe('8');
-    expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe('3');
+    expect(wrapper.get('[id="10"] .sidebar-category-header .sidebar-count').text()).toBe('8/109');
+    expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe('3/23');
 
     stores.selectionStore.$patch({
       currentSelection: {
@@ -167,9 +169,85 @@ describe('Options API sidebar contracts', () => {
     });
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.get('.sidebar-all-categories-item .sidebar-count').text()).toBe('6');
-    expect(wrapper.get('[id="10"] .sidebar-category-header .sidebar-count').text()).toBe('4');
-    expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe('2');
+    expect(wrapper.get('.sidebar-all-categories-item .sidebar-count').text()).toBe('6/22');
+    expect(wrapper.get('[id="10"] .sidebar-category-header .sidebar-count').text()).toBe('4/109');
+    expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe('2/23');
+  });
+
+  it('updates read counts without changing totals and formats empty and large counts', async () => {
+    const stores = initializeStores();
+    const wrapper = mountSidebar(stores.pinia);
+    stores.selectionStore.currentSelection.status = 'read';
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get('[id="10"] .sidebar-category-header').text()).toContain('101/109');
+    expect(wrapper.get('[id="101"]').text()).toContain('20/23');
+
+    stores.overviewStore.increaseReadCount({ feedId: 101, feed: { categoryId: 10 } });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get('[id="10"] .sidebar-category-header').text()).toContain('102/109');
+    expect(wrapper.get('[id="101"]').text()).toContain('21/23');
+
+    stores.overviewStore.categories[0].readCount = 1200;
+    stores.overviewStore.categories[0].unreadCount = 300;
+    stores.overviewStore.categories[0].feeds[0].readCount = 0;
+    stores.overviewStore.categories[0].feeds[0].unreadCount = 0;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get('[id="10"] .sidebar-category-header').text()).toContain('1.2K/1.5K');
+    expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe('0');
+    wrapper.unmount();
+  });
+
+  it.each([
+    [0, 0, '0'],
+    [4, 0, '4'],
+    [0, 4, '0/4'],
+    [3, 4, '3/7']
+  ])('shows unread %i and read %i as %s throughout Categories', (unreadCount, readCount, expected) => {
+    const stores = initializeStores();
+    const category = stores.overviewStore.categories[0];
+    for (const item of [stores.overviewStore, category, category.feeds[0]]) {
+      Object.assign(item, { unreadCount, readCount });
+    }
+    const wrapper = mountSidebar(stores.pinia);
+
+    expect(wrapper.get('.sidebar-all-categories-item .sidebar-count').text()).toBe(expected);
+    expect(wrapper.get('[id="10"] .sidebar-category-header .sidebar-count').text()).toBe(expected);
+    expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe(expected);
+    wrapper.unmount();
+  });
+
+  it.each([
+    [false, false, 0, 0, '0'],
+    [false, true, 3, 4, '3'],
+    [true, false, 0, 0, '0/0'],
+    [true, false, 4, 0, '4/4'],
+    [true, true, 4, 0, '4'],
+    [true, true, 0, 4, '0/4']
+  ])('respects total=%s and declutter=%s for %i unread and %i read', async (showTotalCount, declutterCounts, unreadCount, readCount, expected) => {
+    const stores = initializeStores();
+    const wrapper = mountSidebar(stores.pinia);
+    const category = stores.overviewStore.categories[0];
+    for (const item of [stores.overviewStore, category, category.feeds[0]]) {
+      Object.assign(item, { unreadCount, readCount });
+    }
+    stores.uiStore.setSidebarSettings({ showTotalCount, declutterCounts });
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get('.sidebar-all-categories-item .sidebar-count').text()).toBe(expected);
+    expect(wrapper.get('[id="10"] .sidebar-category-header .sidebar-count').text()).toBe(expected);
+    expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe(expected);
+    wrapper.unmount();
+  });
+
+  it('opens sidebar settings independently of Reorder', async () => {
+    const stores = initializeStores();
+    const wrapper = mountSidebar(stores.pinia);
+
+    await wrapper.get('button[aria-label="Sidebar configuration settings"]').trigger('click');
+
+    expect(stores.uiStore.setShowModal).toHaveBeenCalledWith('SidebarConfiguration');
+    expect(wrapper.get('.sidebar-category-reorder-button').attributes('aria-pressed')).toBe('false');
+    wrapper.unmount();
   });
 
   it('renders navigation counts and forwards category and feed selections', async () => {
@@ -227,7 +305,7 @@ describe('Options API sidebar contracts', () => {
     expect(section.findAll('.sidebar-section-title').map(heading => heading.text())).toEqual(['Categories']);
     expect(section.get('.sidebar-category-heading').element.nextElementSibling).toBe(allCategories.element);
     expect(allCategories.get('.sidebar-item-title').text()).toBe('All categories');
-    expect(allCategories.get('.sidebar-count').text()).toBe('450');
+    expect(allCategories.get('.sidebar-count').text()).toBe('450/459');
     expect(allCategories.classes()).toContain('selected');
     expect(allCategories.attributes('aria-current')).toBe('page');
     await allCategories.trigger('click');

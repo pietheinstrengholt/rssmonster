@@ -202,6 +202,7 @@ export const useSelectionStore = defineStore('selection', {
       const viewModeRevision = this.viewModeRevision;
       const hadPendingViewMode = this.viewModeSaving;
       const themeRevision = uiStore.themeRevision;
+      const sidebarSettingsRevision = uiStore.sidebarSettingsRevision;
       const hadPendingTheme = uiStore.pendingThemeMode !== null;
       this.settingsStatus = 'loading';
       this.settingsError = null;
@@ -216,6 +217,9 @@ export const useSelectionStore = defineStore('selection', {
         }
         if (hadPendingViewMode || this.viewModeSaving || this.viewModeRevision !== viewModeRevision) {
           data.viewMode = this.currentSelection.viewMode;
+        }
+        if (data.sidebarSettings && uiStore.sidebarSettingsRevision === sidebarSettingsRevision) {
+          uiStore.setSidebarSettings(data.sidebarSettings);
         }
         uiStore.setOpenArticleLinksInNewTab(data.openArticleLinksInNewTab);
         this.setCurrentSelection(this.currentSelection.smartFolderId !== null ? {

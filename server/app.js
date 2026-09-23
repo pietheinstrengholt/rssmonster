@@ -65,6 +65,7 @@ import smartFolderRoutes from "./routes/smartFolder.js";
 import generatedFeedRoutes from './routes/generatedFeed.js';
 import greaderRoutes from "./routes/greader.js";
 import eventRoutes from "./routes/events.js";
+import sidebarRoutes from "./routes/sidebar.js";
 import briefingRoutes from "./routes/briefing.js";
 import pushRoutes from "./routes/push.js";
 
@@ -151,6 +152,7 @@ app.use("/api/smartfolders", smartFolderRoutes);
 app.use('/api/generated-feeds', generatedFeedRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/briefing", briefingRoutes);
+app.use("/api/sidebar", sidebarRoutes);
 app.use("/api/greader", greaderRoutes);
 app.use("/rss", rssRoutes);
 

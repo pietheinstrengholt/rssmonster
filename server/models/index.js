@@ -45,6 +45,7 @@ import ArticleModel from './article.js';
 import TagModel from './tag.js';
 import ActionModel from './action.js';
 import SettingModel from './setting.js';
+import SidebarSettingModel from './sidebarSetting.js';
 import ArchivingSettingModel from './archivingSetting.js';
 import ServerSettingModel from './serverSetting.js';
 import InferenceSettingModel from './inferenceSetting.js';
@@ -77,6 +78,7 @@ const Article = ArticleModel(sequelize);
 const Tag = TagModel(sequelize);
 const Action = ActionModel(sequelize);
 const Setting = SettingModel(sequelize);
+const SidebarSetting = SidebarSettingModel(sequelize);
 const ArchivingSetting = ArchivingSettingModel(sequelize);
 const ServerSetting = ServerSettingModel(sequelize);
 const InferenceSetting = InferenceSettingModel(sequelize);
@@ -223,6 +225,9 @@ User.hasOne(ArchivingSetting, {
 });
 ArchivingSetting.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
+User.hasOne(SidebarSetting, { foreignKey: 'userId', as: 'sidebarSetting', onDelete: 'CASCADE' });
+SidebarSetting.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
 // Category ↔ Feed
 Category.hasMany(Feed, { foreignKey: 'categoryId', onDelete: 'CASCADE' });
 Feed.belongsTo(Category, { foreignKey: 'categoryId' });
@@ -307,6 +312,7 @@ export default {
   Action,
   Setting,
   ArchivingSetting,
+  SidebarSetting,
   ServerSetting,
   InferenceSetting,
   SmartFolder,

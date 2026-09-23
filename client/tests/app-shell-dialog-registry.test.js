@@ -15,7 +15,8 @@ const supportedDialogs = [
   ['Cleanup', 'Cleanup'],
   ['ManageUsers', 'SettingsManageUsers'],
   ['BriefingPreferences', 'BriefingPreferencesModal'],
-  ['UnreadConfiguration', 'UnreadConfigurationModal']
+  ['UnreadConfiguration', 'UnreadConfigurationModal'],
+  ['SidebarConfiguration', 'SidebarConfigurationModal']
 ];
 
 // Resolves the AppShell computed property against a specific public store identifier.
