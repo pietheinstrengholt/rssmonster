@@ -289,7 +289,7 @@ export default {
 
 .article-reader-heading .article-reader-actions {
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 6px 2px;
   margin-left: auto;
   max-width: 100%;
 }
@@ -354,6 +354,7 @@ export default {
 }
 
 .article-reader-read {
+  margin-inline-start: 4px;
   color: var(--text-primary);
   white-space: normal;
   text-align: left;

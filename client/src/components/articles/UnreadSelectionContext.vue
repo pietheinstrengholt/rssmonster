@@ -147,6 +147,8 @@ export default {
 .unread-selection-context__summary { flex: 1 1 auto; }
 .unread-selection-context__meta strong { color: var(--text-primary); font-weight: 600; }
 .unread-selection-context__divider { width: 1px; height: 1.25rem; flex: 0 0 auto; background: var(--border-subtle); }
+.unread-selection-context--reader .unread-selection-context__divider { display: none; }
+.unread-selection-context--reader .unread-selection-context__date-group > time { flex-basis: 100%; }
 .unread-selection-context__date-trigger {
   display: inline-flex;
   align-items: center;

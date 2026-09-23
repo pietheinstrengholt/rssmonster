@@ -33,7 +33,8 @@ describe('Bootstrap icon delivery', () => {
     'arrow-left-right',
     'box-arrow-up-right',
     'shield-lock',
-    'exclamation-circle'
+    'exclamation-circle',
+    'x'
   ])('includes %s in the generated sprite', icon => {
     expect(bootstrapIconNames).toContain(icon);
   });

@@ -70,14 +70,18 @@ export default {
 .new-articles-banner__copy {
   display: flex;
   flex: 1 1 16rem;
+  min-height: var(--control-height-compact);
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
 }
 .new-articles-banner__icon { flex: 0 0 auto; color: var(--color-link); }
 .new-articles-banner strong { font-weight: 600; }
-.new-articles-banner__actions { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.new-articles-banner__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; }
 .new-articles-banner button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: var(--control-height-compact);
   padding: 0.375rem 0.5rem;
   border: 0;
@@ -86,7 +90,7 @@ export default {
   color: inherit;
   font: inherit;
   font-weight: 500;
-  line-height: 1.2;
+  line-height: inherit;
   white-space: nowrap;
   cursor: pointer;
 }

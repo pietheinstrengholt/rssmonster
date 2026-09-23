@@ -140,6 +140,7 @@ export const bootstrapIconNames = [
   'trash3-fill',
   'trophy-fill',
   'upload',
+  'x',
   'x-lg',
   'x-octagon-fill'
 ]
