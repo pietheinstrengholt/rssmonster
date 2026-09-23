@@ -1,7 +1,7 @@
 <template>
   <div ref="root" class="app-dropdown">
     <slot name="trigger" :trigger-props="triggerProps"></slot>
-    <slot name="menu" :menu-props="menuProps"></slot>
+    <slot name="menu" :menu-props="menuProps" :open="isOpen"></slot>
   </div>
 </template>
 
@@ -13,6 +13,13 @@ let activeDropdown = null;
 const handleDocumentPointerDown = event => {
   if (!activeDropdown?.$refs.root?.contains(event.target)) {
     activeDropdown?.close();
+  }
+};
+
+const handleDocumentKeydown = event => {
+  if (event.key === 'Escape' && activeDropdown) {
+    event.preventDefault();
+    activeDropdown.close(true);
   }
 };
 
@@ -30,6 +37,7 @@ const activateDropdown = dropdown => {
 
   activeDropdown = dropdown;
   document.addEventListener('pointerdown', handleDocumentPointerDown);
+  document.addEventListener('keydown', handleDocumentKeydown);
   window.addEventListener('resize', handleViewportChange);
   window.addEventListener('scroll', handleViewportChange, true);
 };
@@ -40,12 +48,14 @@ const deactivateDropdown = dropdown => {
 
   activeDropdown = null;
   document.removeEventListener('pointerdown', handleDocumentPointerDown);
+  document.removeEventListener('keydown', handleDocumentKeydown);
   window.removeEventListener('resize', handleViewportChange);
   window.removeEventListener('scroll', handleViewportChange, true);
 };
 
 export default {
   props: {
+    fixed: { type: Boolean, default: false },
     align: {
       type: String,
       default: 'start',
@@ -68,6 +78,8 @@ export default {
 
     return {
       isOpen: false,
+      fixedLeft: 0,
+      fixedTop: 0,
       openAbove: false,
       horizontalShift: 0,
       triggerId,
@@ -99,7 +111,15 @@ export default {
           'app-dropdown__menu--open': this.isOpen
         },
         role: 'menu',
-        style: {
+        style: this.fixed ? {
+          position: 'fixed',
+          left: `${this.fixedLeft}px`,
+          top: `${this.fixedTop}px`,
+          right: 'auto',
+          bottom: 'auto',
+          margin: 0,
+          transform: 'none'
+        } : {
           bottom: this.openAbove ? '100%' : 'auto',
           marginBottom: this.openAbove ? '2px' : '0',
           marginTop: this.openAbove ? '0' : '2px',
@@ -195,6 +215,14 @@ export default {
       const spaceBelow = viewportBottom - triggerRect.bottom;
 
       this.openAbove = initialMenuRect.height > spaceBelow - edgeGap && spaceAbove > spaceBelow;
+      if (this.fixed) {
+        const left = this.align === 'end' ? triggerRect.right - initialMenuRect.width : triggerRect.left;
+        const top = this.openAbove ? triggerRect.top - initialMenuRect.height - 4 : triggerRect.bottom + 4;
+        this.fixedLeft = Math.max(viewportLeft + edgeGap, Math.min(left, viewportRight - initialMenuRect.width - edgeGap));
+        this.fixedTop = Math.max(viewportTop + edgeGap, Math.min(top, viewportBottom - initialMenuRect.height - edgeGap));
+        return;
+      }
+
       this.horizontalShift = 0;
 
       this.$nextTick(() => {

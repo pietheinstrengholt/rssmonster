@@ -945,7 +945,7 @@ export default {
 
 .auth-input-action {
   align-items: center;
-  background: transparent;
+  background: var(--color-transparent);
   border: 0;
   border-radius: 6px;
   color: var(--text-secondary);

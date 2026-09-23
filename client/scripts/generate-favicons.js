@@ -1,5 +1,6 @@
 // scripts/generate-favicons.js
 import { favicons } from 'favicons';
+import { optimizePng } from './optimize-png.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -78,9 +79,12 @@ await fs.rm(outputDir, { recursive: true, force: true });
 await fs.mkdir(outputDir, { recursive: true });
 
 await Promise.all([
-  ...generatedImages.map((image) =>
-    fs.writeFile(path.join(outputDir, image.name), image.contents)
-  ),
+  ...generatedImages.map(async image => {
+    const contents = image.name.endsWith('.png')
+      ? await optimizePng(image.contents)
+      : image.contents;
+    return fs.writeFile(path.join(outputDir, image.name), contents);
+  }),
   ...response.files.flatMap((file) => {
     const fileNames = file.name === 'manifest.webmanifest'
       ? [file.name, 'site.webmanifest']

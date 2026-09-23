@@ -745,7 +745,10 @@ describe('article ownership authorization', () => {
     });
     expect(structureResponse.body.categories[0]).not.toHaveProperty('createdAt');
     expect(structureResponse.body.categories[0].feeds[0]).not.toHaveProperty('lastFetched');
-    expect(structureResponse.body.categories[0].feeds[0]).not.toHaveProperty('createdAt');
+    expect(structureResponse.body.categories[0].feeds[0]).toMatchObject({
+      createdAt: expect.any(String),
+      lastArticleReceivedAt: null
+    });
     const categoryStructureLookup = vi.spyOn(Category, 'findAll');
     const groupedCountLookup = vi.spyOn(Feed, 'findAll');
     const globalCountLookup = vi.spyOn(Article, 'findOne');

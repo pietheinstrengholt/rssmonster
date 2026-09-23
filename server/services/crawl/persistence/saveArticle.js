@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import db from '../../../models/index.js';
 import { saveArticleTags } from './tags.js';
 import buildArticlePersistenceValues from './buildArticlePersistenceValues.js';
@@ -9,7 +10,7 @@ import {
 } from '../../feeds/executionDeadline.js';
 
 // Provides the shared dependencies used by this service.
-const { Article, sequelize } = db;
+const { Article, Feed, sequelize } = db;
 
 // Defines the article unique conflicts enforced by this service.
 const ARTICLE_UNIQUE_CONFLICTS = [
@@ -184,6 +185,21 @@ async function saveArticle(
         throwIfExecutionExpired(execution);
       }
 
+      // Commit receipt activity with the new article; retries and revisions do not reach this write.
+      const receivedAt = new Date();
+      await Feed.update({ lastArticleReceivedAt: receivedAt }, {
+        where: {
+          id: feed.id,
+          userId: feed.userId,
+          [Op.or]: [
+            { lastArticleReceivedAt: null },
+            { lastArticleReceivedAt: { [Op.lt]: receivedAt } }
+          ]
+        },
+        transaction,
+        silent: true
+      });
+      throwIfExecutionExpired(execution);
       return createdArticle;
     });
 

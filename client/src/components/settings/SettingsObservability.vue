@@ -605,7 +605,7 @@ export default {
   width: 8px;
   height: 8px;
   border-radius: var(--radius-pill);
-  background: currentColor;
+  background: var(--color-current);
 }
 
 .observability-health-status--healthy { color: var(--settings-success-text); }

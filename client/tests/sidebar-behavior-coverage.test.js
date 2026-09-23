@@ -186,7 +186,7 @@ describe('Sidebar navigation and action coverage', () => {
       .find(error => error.text().includes('Smart Folder counts'));
     await smartFolderCountError.get('button').trigger('click');
     expect(setShowModal).toHaveBeenCalledWith('DeleteCategory');
-    expect(setShowModal).toHaveBeenCalledWith('RenameCategory');
+    expect(setShowModal).toHaveBeenCalledWith('UpdateCategory');
     expect(fetchSmartFolderCounts).toHaveBeenCalledOnce();
 
     stores.selectionStore.currentSelection.feedId = 11;

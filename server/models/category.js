@@ -13,6 +13,11 @@ export default (sequelize) => {
         allowNull: false,
         primaryKey: true
       },
+      pinned: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       // Identifies the user who owns this category and its feeds.
       userId: {
         type: DataTypes.INTEGER,

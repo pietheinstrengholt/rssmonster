@@ -8,9 +8,9 @@
     <span class="sidebar-icon">
       <BootstrapIcon :icon="icon" :class="iconClass" context="control" decorative color="currentColor" />
     </span>
-    <span class="sidebar-item-title">{{ title }}</span>
+    <span class="sidebar-item-title"><span class="sidebar-item-title-text">{{ title }}</span></span>
     <span v-if="count !== null && count !== undefined" class="sidebar-count-wrapper">
-      <span class="sidebar-count" :class="badgeClass">{{ formattedCount }}</span>
+      <span class="sidebar-count" :class="badgeClass"><span class="sidebar-count-value">{{ formattedCount }}</span></span>
     </span>
   </button>
 </template>
@@ -85,6 +85,7 @@ export default {
   background-color: var(--color-transparent);
   border: 0;
   font: inherit;
+  line-height: 1.25;
   text-align: left;
   transition: background-color var(--motion-duration-normal) var(--motion-easing-standard), color var(--motion-duration-normal) var(--motion-easing-standard);
 }
@@ -131,6 +132,9 @@ export default {
 }
 
 .sidebar-count-wrapper {
+  display: flex;
+  align-items: center;
+  line-height: inherit;
   margin-left: auto;
   padding-left: var(--space-2);
   padding-right: var(--space-1);
@@ -138,6 +142,12 @@ export default {
 }
 
 .sidebar-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.25em;
+  line-height: 1;
+  white-space: nowrap;
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -151,11 +161,19 @@ export default {
 }
 
 .sidebar-item-title {
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  min-height: 1.25em;
+  line-height: 1;
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.sidebar-item-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .icon-briefing { color: var(--sidebar-icon-briefing); }

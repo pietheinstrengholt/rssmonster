@@ -104,6 +104,7 @@ export const bootstrapIconNames = [
   'people-fill',
   'person-circle',
   'piggy-bank-fill',
+  'pin-angle-fill',
   'play-btn-fill',
   'play-fill',
   'plus-circle-fill',

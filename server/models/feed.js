@@ -13,6 +13,11 @@ export default (sequelize) => {
         allowNull: false,
         primaryKey: true
       },
+      pinned: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       // Identifies the user who owns this feed subscription.
       userId: {
         type: DataTypes.INTEGER,
@@ -236,6 +241,12 @@ export default (sequelize) => {
       },
       // Records when decoded feed content most recently changed.
       lastChangedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
+      },
+      // Advances only when a new article is stored, not on crawls or revisions.
+      lastArticleReceivedAt: {
         type: DataTypes.DATE,
         allowNull: true,
         defaultValue: null

@@ -1,29 +1,33 @@
 <template>
   <div
-    :id="category.id"
+    :id="shortcut ? `pinned-category-${category.id}` : category.id"
     class="sidebar-category"
     :class="{ expanded: isExpanded, selected: isSelectedCategory }"
   >
-    <button
-      type="button"
-      class="sidebar-category-header"
-      :aria-current="isSelectedCategory ? 'page' : undefined"
-      @click="$emit('select-category', category)"
-    >
-      <span class="sidebar-icon">
-        <BootstrapIcon :icon="categoryIconName" color="currentColor" />
-      </span>
-      <span class="sidebar-item-title">{{ category.name }}</span>
-      <span class="sidebar-count-wrapper">
-        <span v-if="count !== null" class="sidebar-count sidebar-count-white">{{ formattedCount }}</span>
-      </span>
-    </button>
+    <div class="sidebar-category-header">
+      <button
+        type="button"
+        class="sidebar-category-select"
+        :aria-current="isSelectedCategory ? 'page' : undefined"
+        :aria-expanded="collapsible ? isExpanded : undefined"
+        @click="collapsible ? $emit('toggle-expansion') : $emit('select-category', category)"
+      >
+        <span class="sidebar-icon">
+          <BootstrapIcon :icon="categoryIconName" context="control" decorative color="currentColor" />
+        </span>
+        <span class="sidebar-item-title"><span class="sidebar-item-title-text">{{ category.name }}</span></span>
+        <span class="sidebar-count-wrapper">
+          <span v-if="count !== null" class="sidebar-count sidebar-count-white"><span class="sidebar-count-value">{{ formattedCount }}</span></span>
+        </span>
+      </button>
+    </div>
     <div v-if="category.feeds && isExpanded">
       <div class="sidebar-feed-list">
         <SidebarFeedItem
           v-for="(feed, index) in category.feeds"
           :key="feed.id"
           :feed="feed"
+          :show-feed-favicons="showFeedFavicons"
           :selected="selectedFeedId == feed.id"
           :count="getFeedCount(feed)"
           :last="index === category.feeds.length - 1"
@@ -70,6 +74,10 @@ export default {
     SidebarFeedItem
   },
   props: {
+    shortcut: { type: Boolean, default: false },
+    showFeedFavicons: { type: Boolean, default: true },
+    collapsible: { type: Boolean, default: false },
+    expanded: { type: Boolean, default: false },
     category: {
       type: Object,
       required: true
@@ -91,15 +99,16 @@ export default {
       default: null
     }
   },
-  emits: ['select-category', 'select-feed'],
+  emits: ['select-category', 'select-feed', 'toggle-expansion'],
   computed: {
     // This indicates that the category itself, rather than one of its feeds, is selected.
     isSelectedCategory() {
-      return this.selectedCategoryId == this.category.id && this.selectedFeedId === '%';
+      return !this.collapsible && this.selectedCategoryId == this.category.id && this.selectedFeedId === '%';
     },
     // This expands the feed list for the currently selected category.
     isExpanded() {
-      return this.selectedCategoryId == this.category.id;
+      if (this.shortcut) return false;
+      return this.collapsible ? this.expanded : this.selectedCategoryId == this.category.id;
     },
     // This formats large category counts for compact sidebar display.
     formattedCount() {
@@ -107,6 +116,7 @@ export default {
     },
     // This falls back to the standard folder icon for unsupported category icons.
     categoryIconName() {
+      if (this.collapsible) return this.isExpanded ? 'chevron-down' : 'chevron-right';
       return CATEGORY_ICON_NAMES.has(this.category.iconName)
         ? this.category.iconName
         : 'folder-fill';
@@ -151,7 +161,7 @@ export default {
   background-color: var(--sidebar-row-hover-background);
 }
 
-.sidebar-category-header:focus-visible {
+.sidebar-category-select:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
@@ -166,7 +176,7 @@ export default {
   cursor: pointer;
   font: inherit;
   min-height: var(--control-height-compact);
-  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  padding: 0;
   display: flex;
   align-items: center;
   text-align: left;
@@ -178,7 +188,27 @@ export default {
   border-radius: var(--radius-compact) var(--radius-compact) 0 0;
 }
 
+.sidebar-category-select {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--control-height-compact);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  border: 0;
+  background: var(--color-transparent);
+  color: inherit;
+  font: inherit;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+
 .sidebar-count-wrapper {
+  display: flex;
+  align-items: center;
+  line-height: inherit;
   margin-left: auto;
   padding-left: var(--space-2);
   padding-right: var(--space-1);
@@ -186,6 +216,12 @@ export default {
 }
 
 .sidebar-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.25em;
+  line-height: 1;
+  white-space: nowrap;
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -199,17 +235,29 @@ export default {
 }
 
 .sidebar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   margin-right: var(--space-1);
   min-width: 13px;
   flex: 0 0 auto;
 }
 
 .sidebar-item-title {
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  min-height: 1.25em;
+  line-height: 1;
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.sidebar-item-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-feed-list {

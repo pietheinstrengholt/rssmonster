@@ -10,6 +10,9 @@ const DEFAULT_BRIEFING_SELECTION_PERIOD = '7d';
 const OVERVIEW_FEED_ATTRIBUTES = [
   'id',
   'categoryId',
+  'pinned',
+  'createdAt',
+  'lastArticleReceivedAt',
   'feedName',
   'feedDesc',
   'url',
@@ -75,7 +78,7 @@ const buildCategoryFeedMaps = categories => {
 
 const loadCategoriesStructure = userId => Category.findAll({
   where: { userId },
-  attributes: ['id', 'name', 'categoryOrder', 'iconName', 'clusteringBehavior'],
+  attributes: ['id', 'name', 'categoryOrder', 'iconName', 'clusteringBehavior', 'pinned'],
   include: [{
     model: Feed,
     attributes: OVERVIEW_FEED_ATTRIBUTES,

@@ -9,8 +9,11 @@ export const createCategory = (name, iconName, clusteringBehavior = null) =>
 /**
  * Update a category
  */
-export const updateCategory = (categoryId, name, iconName, clusteringBehavior) =>
-  api.put(`/categories/${categoryId}`, { name, iconName, clusteringBehavior });
+export const updateCategory = (categoryId, name, iconName, clusteringBehavior, pinned) =>
+  api.put(`/categories/${categoryId}`, {
+    name, iconName, clusteringBehavior,
+    ...(pinned === undefined ? {} : { pinned })
+  });
 
 /**
  * Delete a category

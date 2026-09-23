@@ -352,8 +352,10 @@ const updateFeed = async (req, res, _next) => {
     let generateEmbeddings;
     let applyAiAnalysis;
     let itemFilter;
+    let pinned;
 
     try {
+      pinned = req.body.pinned === undefined ? undefined : normalizeBooleanControl(req.body.pinned, 'pinned');
       updateIntervalMinutes = typeof req.body.updateIntervalMinutes === 'undefined'
         ? feed.updateIntervalMinutes
         : normalizeUpdateIntervalMinutes(req.body.updateIntervalMinutes);
@@ -381,14 +383,15 @@ const updateFeed = async (req, res, _next) => {
       updates: {
         feedName: req.body.feedName,
         feedDesc: req.body.feedDesc,
-        url: normalizeFeedUrl(req.body.url),
+        url: req.body.url === undefined ? undefined : normalizeFeedUrl(req.body.url),
         favicon: req.body.favicon,
         status: req.body.status,
         updateIntervalMinutes,
         feedTags,
         generateEmbeddings,
         applyAiAnalysis,
-        itemFilter
+        itemFilter,
+        ...(pinned !== undefined ? { pinned } : {})
       }
     });
     return res.status(200).json({ feed: updatedFeed });

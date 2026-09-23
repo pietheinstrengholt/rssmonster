@@ -98,7 +98,7 @@ const updateCategory = async (req, res, _next) => {
     }
 
     const { categoryId } = req.params;
-    const { name, categoryOrder, iconName, clusteringBehavior } = req.body;
+    const { name, categoryOrder, iconName, clusteringBehavior, pinned } = req.body;
 
     const category = await Category.findOne({
       where: {
@@ -117,11 +117,16 @@ const updateCategory = async (req, res, _next) => {
       return res.status(400).json({ error: 'Invalid clusteringBehavior' });
     }
 
+    if (pinned !== undefined && typeof pinned !== 'boolean') {
+      return res.status(400).json({ error: 'Invalid pinned' });
+    }
+
     await category.update({
       name,
       categoryOrder,
       iconName,
-      clusteringBehavior
+      clusteringBehavior,
+      ...(pinned !== undefined ? { pinned } : {})
     });
 
     return res.status(200).json(category);

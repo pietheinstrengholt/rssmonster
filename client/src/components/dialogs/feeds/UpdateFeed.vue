@@ -23,6 +23,14 @@
               />
             </div>
 
+            <div class="update-feed__field">
+              <label class="app-form-label update-feed__pin-option" for="update-feed-pinned">
+                <input id="update-feed-pinned" v-model="feed.pinned" type="checkbox" class="app-form-check-input" aria-describedby="update-feed-pinned-help" />
+                <span>Pinned</span>
+              </label>
+              <div id="update-feed-pinned-help" class="app-form-help">Show a shortcut in the sidebar’s Pinned section.</div>
+            </div>
+
             <!-- Feed URL (only when errors) -->
             <div class="update-feed__field" v-if="(feed.errorSince || feed.status === 'error') && selectionStore.currentSelection.AIEnabled">
               <label class="app-form-label" for="update-feed-url">Feed URL</label>
@@ -444,6 +452,7 @@ export default {
           this.feed.feedTags = Array.isArray(this.feed.feedTags) ? this.feed.feedTags : [];
           this.feed.generateEmbeddings = this.feed.generateEmbeddings ?? true;
           this.feed.applyAiAnalysis = this.feed.applyAiAnalysis ?? true;
+          this.feed.pinned = this.feed.pinned ?? false;
           this.feed.itemFilter = this.feed.itemFilter ?? '';
           this.originalFeed = JSON.parse(JSON.stringify(feed)); // Store original for comparison
           return;
@@ -532,6 +541,7 @@ export default {
       try {
         const result = await updateFeed(this.feed.id, {
           feedName: this.feed.feedName,
+          pinned: this.feed.pinned,
           feedDesc: this.feed.feedDesc,
           categoryId: this.feed.categoryId,
           url: this.feed.url,
@@ -571,6 +581,18 @@ export default {
 </script>
 
 <style scoped>
+.update-feed__pin-option {
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.update-feed__pin-option + .app-form-help {
+  margin-inline-start: calc(1rem + var(--space-2));
+}
+
 .update-feed__fieldset {
   min-width: 0;
   margin: 0;
@@ -657,7 +679,7 @@ export default {
   display: inline-flex;
   padding: 0;
   border: 0;
-  background: transparent;
+  background: var(--color-transparent);
   color: var(--text-secondary);
   cursor: help;
 }

@@ -90,6 +90,7 @@ const buildMergedFeedValues = (survivor, losers) => {
 
   return {
     categoryId: survivor.categoryId,
+    pinned: feeds.some(feed => feed.pinned),
     feedName: survivor.feedName,
     feedDesc: survivor.feedDesc || losers.find(feed => feed.feedDesc)?.feedDesc || null,
     feedType: survivor.feedType || losers.find(feed => feed.feedType)?.feedType || null,
@@ -111,6 +112,7 @@ const buildMergedFeedValues = (survivor, losers) => {
     lastAttemptAt: feeds.reduce((value, feed) => latestDate(value, feed.lastAttemptAt), null),
     lastSuccessAt: feeds.reduce((value, feed) => latestDate(value, feed.lastSuccessAt), null),
     lastChangedAt: feeds.reduce((value, feed) => latestDate(value, feed.lastChangedAt), null),
+    lastArticleReceivedAt: feeds.reduce((value, feed) => latestDate(value, feed.lastArticleReceivedAt), null),
     lastPublishedAt: feeds.reduce((value, feed) => latestDate(value, feed.lastPublishedAt), null),
     observedEntryIntervalMs: httpSource.observedEntryIntervalMs ?? survivor.observedEntryIntervalMs,
     nextFetchAt: feeds.reduce((value, feed) => earliestDate(value, feed.nextFetchAt), null),

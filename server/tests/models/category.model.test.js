@@ -8,6 +8,7 @@ describe('Category clustering behavior', () => {
     const category = Category.build({ userId: 1, name: 'Technology' });
     await category.validate();
     expect(category.clusteringBehavior).toBeNull();
+    expect(category.pinned).toBe(false);
   });
 
   it.each([null, 'aggressive', 'moderate', 'conservative'])('accepts %s', async clusteringBehavior => {

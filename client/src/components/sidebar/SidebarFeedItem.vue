@@ -1,21 +1,22 @@
 <template>
-  <button
-    type="button"
-    class="sidebar-feed"
-    :class="feedClasses"
-    :id="feed.id"
-    :aria-current="selected ? 'page' : undefined"
-    @click.stop="$emit('select', feed)"
-  >
-    <span class="sidebar-icon">
-      <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16" alt="" />
-      <BootstrapIcon v-else icon="rss-fill" color="currentColor" />
-    </span>
-    <span class="sidebar-item-title" :class="{ last }">{{ feed.feedName }}</span>
-    <span v-if="count !== null && count !== undefined" class="sidebar-count-wrapper">
-      <span class="sidebar-count sidebar-count-white">{{ formattedCount }}</span>
-    </span>
-  </button>
+  <div class="sidebar-feed" :class="feedClasses">
+    <button
+      type="button"
+      class="sidebar-feed-select"
+      :id="shortcut ? `pinned-feed-${feed.id}` : feed.id"
+      :aria-current="selected ? 'page' : undefined"
+      @click.stop="$emit('select', feed)"
+    >
+      <span v-if="showFeedFavicons" class="sidebar-icon">
+        <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16" alt="" />
+        <BootstrapIcon v-else icon="rss-fill" context="control" color="currentColor" />
+      </span>
+      <span class="sidebar-item-title" :class="{ last }"><span class="sidebar-item-title-text">{{ feed.feedName }}</span></span>
+      <span v-if="count !== null && count !== undefined" class="sidebar-count-wrapper">
+        <span class="sidebar-count sidebar-count-white"><span class="sidebar-count-value">{{ formattedCount }}</span></span>
+      </span>
+    </button>
+  </div>
 </template>
 
 <script>
@@ -23,6 +24,8 @@ import { formatCount } from './formatCount.js';
 
 export default {
   props: {
+    shortcut: { type: Boolean, default: false },
+    showFeedFavicons: { type: Boolean, default: true },
     feed: {
       type: Object,
       required: true
@@ -46,6 +49,7 @@ export default {
     feedClasses() {
       return {
         selected: this.selected,
+        'sidebar-feed--shortcut': this.shortcut,
         error: this.feed.status === 'error',
         disabled: this.feed.status === 'disabled',
         last: this.last
@@ -64,7 +68,7 @@ export default {
   appearance: none;
   box-sizing: border-box;
   min-height: var(--control-height-compact);
-  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  padding: 0;
   display: flex;
   align-items: center;
   cursor: pointer;
@@ -77,6 +81,23 @@ export default {
   transition: background-color var(--motion-duration-normal) var(--motion-easing-standard), color var(--motion-duration-normal) var(--motion-easing-standard);
 }
 
+.sidebar-feed-select {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--control-height-compact);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  border: 0;
+  background: var(--color-transparent);
+  color: inherit;
+  font: inherit;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+
 .sidebar-feed.selected {
   color: var(--sidebar-row-selected-text);
   background-color: var(--sidebar-row-selected-background);
@@ -86,7 +107,7 @@ export default {
   background-color: var(--sidebar-row-hover-background);
 }
 
-.sidebar-feed:focus-visible {
+.sidebar-feed-select:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
@@ -125,21 +146,42 @@ export default {
   border-radius: 0;
 }
 
+.sidebar-feed.sidebar-feed--shortcut {
+  width: calc(100% - (2 * var(--space-3)));
+  margin: var(--space-1) var(--space-3) 0;
+  border-radius: var(--radius-compact);
+}
+
 .sidebar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   margin-right: var(--space-1);
   min-width: 13px;
   flex: 0 0 auto;
 }
 
 .sidebar-item-title {
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  min-height: 1.25em;
+  line-height: 1;
   flex: 1 1 auto;
   min-width: 0;
 }
 
+.sidebar-item-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sidebar-count-wrapper {
+  display: flex;
+  align-items: center;
+  line-height: inherit;
   margin-left: auto;
   padding-left: var(--space-2);
   padding-right: var(--space-1);
@@ -147,6 +189,12 @@ export default {
 }
 
 .sidebar-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.25em;
+  line-height: 1;
+  white-space: nowrap;
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -157,10 +205,6 @@ export default {
 
 .sidebar-count.sidebar-count-white {
   background-color: var(--color-transparent);
-}
-
-.sidebar-feed span.sidebar-icon img {
-  margin-bottom: 2px;
 }
 
 </style>

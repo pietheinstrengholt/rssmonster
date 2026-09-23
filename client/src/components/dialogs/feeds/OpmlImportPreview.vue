@@ -620,7 +620,7 @@ export default {
 .opml-preview__category-cancel {
   padding: 0;
   border: 0;
-  background: transparent;
+  background: var(--color-transparent);
   color: var(--color-primary);
   font: inherit;
   font-weight: 600;

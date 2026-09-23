@@ -605,6 +605,7 @@ export const useOverviewStore = defineStore('overview', {
       const stored = this.categories.find(item => idsMatch(item.id, categoryId));
       if (!stored) return false;
 
+      if (category.pinned !== undefined) stored.pinned = category.pinned;
       if (category.name !== undefined) stored.name = category.name;
       if (category.iconName !== undefined) stored.iconName = category.iconName;
       if (category.clusteringBehavior !== undefined) stored.clusteringBehavior = category.clusteringBehavior;

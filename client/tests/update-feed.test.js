@@ -250,6 +250,7 @@ describe('UpdateFeed', () => {
     await context.updateFeed();
 
     expect(updateFeed).toHaveBeenCalledWith(10, {
+      pinned: false,
       feedName: 'Updated',
       feedDesc: 'New description',
       categoryId: 2,

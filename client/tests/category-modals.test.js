@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
 import NewCategory from '../src/components/dialogs/categories/NewCategory.vue';
-import RenameCategory from '../src/components/dialogs/categories/RenameCategory.vue';
+import UpdateCategory from '../src/components/dialogs/categories/UpdateCategory.vue';
 import { createCategory, updateCategory } from '../src/api/categories';
 import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
@@ -172,11 +172,11 @@ describe('NewCategory', () => {
   });
 });
 
-describe('RenameCategory', () => {
+describe('UpdateCategory', () => {
   it.each(clusteringOptions)('loads and preserves %s clustering when renaming', async (clusteringBehavior, label, recommendation) => {
     const category = { id: 7, name: 'News', iconName: 'newspaper', clusteringBehavior };
     updateCategory.mockResolvedValue({ data: { ...category, name: 'Reading' } });
-    mountCategoryModal(RenameCategory, category);
+    mountCategoryModal(UpdateCategory, category);
 
     expect(wrapper.get('label[for="category-clustering"]').text()).toBe('Event clustering');
     expect(wrapper.get('select').element.selectedOptions[0].textContent).toBe(label);
@@ -185,7 +185,7 @@ describe('RenameCategory', () => {
     await wrapper.get('#category-name').setValue('Reading');
     await wrapper.get('.base-dialog__button--primary').trigger('click');
     await flushPromises();
-    expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'newspaper', clusteringBehavior);
+    expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'newspaper', clusteringBehavior, false);
   });
 
   it.each(clusteringOptions)('saves a clustering-only change to %s', async (clusteringBehavior, label) => {
@@ -193,20 +193,20 @@ describe('RenameCategory', () => {
     const category = { id: 7, name: 'News', iconName: 'newspaper', clusteringBehavior: originalBehavior };
     const updated = { ...category, clusteringBehavior };
     updateCategory.mockResolvedValue({ data: updated });
-    const { store } = mountCategoryModal(RenameCategory, category);
+    const { store } = mountCategoryModal(UpdateCategory, category);
 
     await selectClustering(label);
     expect(category.clusteringBehavior).toBe(originalBehavior);
     expect(wrapper.get('.base-dialog__button--primary').attributes('disabled')).toBeUndefined();
     await wrapper.get('.base-dialog__button--primary').trigger('click');
     await flushPromises();
-    expect(updateCategory).toHaveBeenCalledWith(7, 'News', 'newspaper', clusteringBehavior);
+    expect(updateCategory).toHaveBeenCalledWith(7, 'News', 'newspaper', clusteringBehavior, false);
     expect(store.overviewStore.updateCategory).toHaveBeenCalledWith(7, updated);
     expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
   });
 
   it('disables saving when the clustering selection is restored', async () => {
-    mountCategoryModal(RenameCategory);
+    mountCategoryModal(UpdateCategory);
     expect(wrapper.get('select').element.selectedOptions[0].textContent).toBe('Server default');
     await selectClustering('Aggressive');
     expect(wrapper.get('.base-dialog__button--primary').attributes('disabled')).toBeUndefined();
@@ -217,7 +217,7 @@ describe('RenameCategory', () => {
   // Verifies existing values are cloned and unchanged categories cannot be submitted.
   it('initializes selected category state and enables saving only after a change', async () => {
     const category = { id: 7, name: 'News', iconName: 'unsupported-icon' };
-    mountCategoryModal(RenameCategory, category);
+    mountCategoryModal(UpdateCategory, category);
 
     expect(wrapper.get('#category-name').element.value).toBe('News');
     expect(wrapper.get('[aria-label="Folder"]').attributes('aria-checked')).toBe('true');
@@ -234,7 +234,7 @@ describe('RenameCategory', () => {
     updateCategory.mockResolvedValue({
       data: { id: 7, name: 'Reading' }
     });
-    const { store } = mountCategoryModal(RenameCategory);
+    const { store } = mountCategoryModal(UpdateCategory);
 
     await wrapper.get('#category-name').setValue('Reading');
     await wrapper.get('[aria-label="Books"]').trigger('click');
@@ -242,7 +242,7 @@ describe('RenameCategory', () => {
     await flushPromises();
     await wrapper.get('.base-dialog__button--secondary').trigger('click');
 
-    expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'book-fill', null);
+    expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'book-fill', null, false);
     expect(store.overviewStore.updateCategory).toHaveBeenCalledWith(7, {
       id: 7,
       name: 'Reading',
@@ -255,7 +255,7 @@ describe('RenameCategory', () => {
   it('reports category update failures', async () => {
     const error = new Error('update failed');
     updateCategory.mockRejectedValue(error);
-    const { store } = mountCategoryModal(RenameCategory);
+    const { store } = mountCategoryModal(UpdateCategory);
 
     await wrapper.get('#category-name').setValue('Reading');
     await wrapper.get('.base-dialog__button--primary').trigger('click');
@@ -271,7 +271,7 @@ describe('RenameCategory', () => {
 
   // Verifies whitespace-only edits cannot be submitted.
   it('does not update a category to a whitespace-only name', async () => {
-    mountCategoryModal(RenameCategory);
+    mountCategoryModal(UpdateCategory);
 
     await wrapper.get('#category-name').setValue('   ');
     await wrapper.get('.base-dialog__button--primary').trigger('click');
@@ -284,7 +284,7 @@ describe('RenameCategory', () => {
   it('normalizes names and blocks duplicate category updates', async () => {
     const pendingRequest = Promise.withResolvers();
     updateCategory.mockReturnValue(pendingRequest.promise);
-    mountCategoryModal(RenameCategory);
+    mountCategoryModal(UpdateCategory);
 
     await wrapper.get('#category-name').setValue('  Reading  ');
     const saveButton = wrapper.get('.base-dialog__button--primary');
@@ -292,7 +292,7 @@ describe('RenameCategory', () => {
     await saveButton.trigger('click');
 
     expect(updateCategory).toHaveBeenCalledOnce();
-    expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'newspaper', null);
+    expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'newspaper', null, false);
     expect(saveButton.attributes('disabled')).toBeDefined();
     expect(wrapper.get('select').attributes('disabled')).toBeDefined();
 

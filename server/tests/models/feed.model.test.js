@@ -52,6 +52,7 @@ describe('Feed model', () => {
     expect(feed.url).toBe('https://example.com/rss.xml');
 
     // ---- Defaults ----
+    expect(feed.pinned).toBe(false);
     expect(feed.status).toBe('active');
     expect(feed.feedTrust).toBe(0.75);
     expect(feed.feedDuplicationRate).toBe(0);
@@ -68,6 +69,7 @@ describe('Feed model', () => {
     expect(feed.lastSuccessAt).toBeNull();
     expect(feed.lastChangedAt).toBeNull();
     expect(feed.lastPublishedAt).toBeNull();
+    expect(feed.lastArticleReceivedAt).toBeNull();
     expect(feed.observedEntryIntervalMs).toBeNull();
     expect(feed.consecutiveFailures).toBe(0);
     expect(feed.nextFetchAt).toBeInstanceOf(Date);

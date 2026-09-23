@@ -104,6 +104,11 @@ describe('actions and category API contracts', () => {
     expect(del).toHaveBeenCalledWith('/categories/5');
   });
 
+  it.each([true, false])('sends pinned=%s with category edits', pinned => {
+    updateCategory(4, 'News', 'newspaper', null, pinned);
+    expect(put).toHaveBeenLastCalledWith('/categories/4', { name: 'News', iconName: 'newspaper', clusteringBehavior: null, pinned });
+  });
+
   it.each([null, 'aggressive', 'moderate', 'conservative'])('sends clusteringBehavior %s in category requests', clusteringBehavior => {
     createCategory('News', 'newspaper', clusteringBehavior);
     updateCategory(4, 'News', 'newspaper', clusteringBehavior);

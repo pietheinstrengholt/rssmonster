@@ -76,6 +76,7 @@ const createFeedPair = async fixture => {
     userId: fixture.user.id,
     categoryId: fixture.firstCategory.id,
     feedName: 'Established subscription',
+    lastArticleReceivedAt: new Date('2026-07-01T00:00:00Z'),
     url: `https://old.example.test/${unique('feed')}.xml`,
     feedTags: ['stable'],
     generateEmbeddings: true,
@@ -89,6 +90,7 @@ const createFeedPair = async fixture => {
     userId: fixture.user.id,
     categoryId: fixture.secondCategory.id,
     feedName: 'Later duplicate',
+    lastArticleReceivedAt: new Date('2026-08-01T00:00:00Z'),
     url: `https://redirect.example.test/${unique('feed')}.xml`,
     feedTags: ['duplicate', 'stable'],
     itemFilter: 'category:/technology/i',
@@ -240,6 +242,7 @@ describe('duplicate feed reconciliation integration', () => {
     expect(survivor.id).toBe(stable.id);
     expect(await Feed.count({ where: { userId: fixture.user.id } })).toBe(1);
     const reloaded = await Feed.findByPk(stable.id);
+    expect(reloaded.lastArticleReceivedAt).toEqual(new Date('2026-08-01T00:00:00Z'));
     expect(reloaded).toMatchObject({
       categoryId: fixture.firstCategory.id,
       feedName: 'Established subscription',
@@ -282,6 +285,22 @@ describe('duplicate feed reconciliation integration', () => {
     expect(await FeedUrlAlias.count({ where: { feedId: duplicate.id } })).toBe(0);
     expect(await Hotlink.count({ where: { feedId: duplicate.id } })).toBe(0);
   });
+
+  it.each([[false, true], [true, false], [true, true], [false, false]])(
+    'preserves pinning when merging feeds pinned=%s and pinned=%s',
+    async (stablePinned, duplicatePinned) => {
+      const fixture = await createOwner();
+      const { stable, duplicate } = await createFeedPair(fixture);
+      await stable.update({ pinned: stablePinned });
+      await duplicate.update({ pinned: duplicatePinned });
+
+      const survivor = await persistDiscoveredFeedUrl({ feed: duplicate, discoveredUrl: stable.url });
+
+      expect(survivor.id).toBe(stable.id);
+      expect((await survivor.reload()).pinned).toBe(stablePinned || duplicatePinned);
+      expect(await Feed.findByPk(duplicate.id)).toBeNull();
+    }
+  );
 
   it('retains validators, body hash, and freshness from one accepted representation', async () => {
     const fixture = await createOwner();

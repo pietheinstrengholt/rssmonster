@@ -5,6 +5,7 @@ import AppDropdown from '../src/components/shared/AppDropdown.vue';
 const DropdownHarness = {
   components: { AppDropdown },
   props: {
+    fixed: { type: Boolean, default: false },
     align: {
       type: String,
       default: 'start'
@@ -20,7 +21,7 @@ const DropdownHarness = {
   },
   emits: ['select'],
   template: `
-    <AppDropdown :id="id" :align="align" :close-key="closeKey">
+    <AppDropdown :id="id" :align="align" :close-key="closeKey" :fixed="fixed">
       <template #trigger="{ triggerProps }">
         <button v-bind="triggerProps" type="button">Open</button>
       </template>
@@ -200,4 +201,24 @@ describe('application dropdown runtime boundary', () => {
     await wrapper.setProps({ id: 'test-dropdown', closeKey: 'close' });
     expect(trigger.attributes('aria-expanded')).toBe('false');
   });
+  it('positions fixed menus within the viewport and follows scrolling', async () => {
+    vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(320);
+    vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(600);
+    const wrapper = mountDropdown({ fixed: true, align: 'end' });
+    const trigger = wrapper.get('#test-dropdown');
+    const menu = wrapper.get('[role="menu"]');
+    const triggerRect = vi.spyOn(trigger.element, 'getBoundingClientRect').mockReturnValue({ top: 570, bottom: 598, left: 286, right: 314, width: 28, height: 28 });
+    vi.spyOn(menu.element, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: 60, left: 0, right: 210, width: 210, height: 60 });
+    await trigger.trigger('click');
+    await wrapper.vm.$nextTick();
+    expect(menu.element.style.position).toBe('fixed');
+    expect(menu.element.style.top).toBe('506px');
+    expect(menu.element.style.left).toBe('102px');
+    triggerRect.mockReturnValue({ top: 20, bottom: 48, left: 3, right: 31, width: 28, height: 28 });
+    window.dispatchEvent(new Event('scroll'));
+    await wrapper.vm.$nextTick();
+    expect(menu.element.style.top).toBe('52px');
+    expect(menu.element.style.left).toBe('8px');
+  });
+
 });

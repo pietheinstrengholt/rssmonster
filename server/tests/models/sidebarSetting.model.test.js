@@ -11,8 +11,15 @@ describe('SidebarSetting', () => {
     const settings = await SidebarSetting.create({ userId: user.id });
 
     expect(await settings.reload()).toMatchObject({
+      showFeedFavicons: true,
       showTotalCount: true,
-      declutterCounts: true
+      declutterCounts: true,
+      hideZeroCountItems: false,
+      automaticallyHideInactiveFeeds: false,
+      inactiveFeedDays: 30,
+      sortByCurrentSelection: false,
+      sortOrder: 'manual',
+      sectionOrder: null
     });
     expect(await user.getSidebarSetting()).toMatchObject({ id: settings.id });
     expect(await settings.getUser()).toMatchObject({ id: user.id });

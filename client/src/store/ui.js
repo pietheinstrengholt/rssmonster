@@ -1,4 +1,5 @@
 import { acceptHMRUpdate, defineStore } from 'pinia';
+import { normalizeSidebarSectionOrder } from '../utils/sidebarSectionOrder.js';
 import { saveThemeMode } from '../api/settings.js';
 import { setThemeMode as applyThemeMode } from '../services/theme.js';
 import { notifyActionError } from '../services/actionNotifications.js';
@@ -6,7 +7,7 @@ import { notifyActionError } from '../services/actionNotifications.js';
 // This function creates application presentation state for one user session.
 const initialUiState = () => ({
   showModal: '',
-  sidebarSettings: { showTotalCount: true, declutterCounts: true },
+  sidebarSettings: { showTotalCount: true, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false },
   sidebarSettingsRevision: 0,
   openArticleLinksInNewTab: false,
   htmlXpathDraft: null,
@@ -26,11 +27,18 @@ export const useUiStore = defineStore('ui', {
   // This state owns application-wide presentation flags and fatal error reporting.
   state: initialUiState,
 
+  getters: {
+    sidebarSectionOrder: state => normalizeSidebarSectionOrder(state.sidebarSettings.sectionOrder)
+  },
+
   actions: {
     // This action clears modal, assistant, search, theme, and fatal-error state between users.
     resetSessionState() {
       this.stopThemeSync();
-      this.$patch({ ...initialUiState(), themeSessionId: this.themeSessionId });
+      const defaults = initialUiState();
+      this.$patch({ ...defaults, themeSessionId: this.themeSessionId });
+      // Replace optional preferences instead of retaining them through a deep merge.
+      this.sidebarSettings = defaults.sidebarSettings;
     },
 
     setSidebarSettings(settings) {

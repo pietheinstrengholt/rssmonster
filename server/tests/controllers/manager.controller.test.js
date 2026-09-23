@@ -80,12 +80,15 @@ describe('manager controller', () => {
 
     expect(mocked.categoryFindAll).toHaveBeenCalledWith({
       where: { userId: 42 },
-      attributes: ['id', 'name', 'categoryOrder', 'iconName', 'clusteringBehavior'],
+      attributes: ['id', 'name', 'categoryOrder', 'iconName', 'clusteringBehavior', 'pinned'],
       include: [{
         model: expect.any(Object),
         attributes: [
           'id',
           'categoryId',
+          'pinned',
+          'createdAt',
+          'lastArticleReceivedAt',
           'feedName',
           'feedDesc',
           'url',

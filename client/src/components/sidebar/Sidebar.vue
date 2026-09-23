@@ -71,123 +71,168 @@
       <button type="button" @click="overviewStore.fetchTopTags()">Retry</button>
     </div>
 
-    <div v-if="overviewStore.smartFolders.length" class="sidebar-section sidebar-smart-folders">
-      <SidebarSectionTitle title="Smart Folders" />
-
-      <SidebarNavItem
-        v-for="smartFolder in overviewStore.smartFolders"
-        :key="smartFolder.id"
-        icon="folder-fill"
-        :title="smartFolder.name"
-        :count="smartFolder.ArticleCount"
-        :selected="selectionStore.currentSelection.smartFolderId === smartFolder.id"
-        row-class="sidebar-tag-item"
-        @select="selectSmartFolder(smartFolder)"
-      />
-    </div>
-
-    <div class="sidebar-section sidebar-status-filters">
-      <SidebarSectionTitle title="All feeds" />
-
-      <SidebarNavItem
-        v-for="filter in visibleStatusFilters"
-        :key="filter.value"
-        :icon="filter.icon"
-        :icon-class="filter.iconClass"
-        :title="filter.sidebarLabel || filter.label"
-        :count="getStatusCount(filter.value)"
-        :selected="selectionStore.currentSelection.status === filter.value && selectionStore.currentSelection.smartFolderId === null"
-        row-class="sidebar-status-item"
-        @select="loadType(filter.value)"
-      />
-    </div>
-
-    <div v-if="overviewStore.topTags.length" class="sidebar-section sidebar-tags">
-      <SidebarSectionTitle :title="topTagsTitle" />
-
-      <SidebarNavItem
-        v-for="tag in topTagsDisplay"
-        :key="tag.name"
-        icon="tag-fill"
-        :title="`${formatTagName(tag.name)}`"
-        :count="tag.count"
-        :selected="selectionStore.currentSelection.tag === tag.name"
-        row-class="sidebar-tag-item"
-        @select="selectTag(tag.name)"
-      />
-    </div>
-
-    <div class="sidebar-section sidebar-categories">
-      <div class="sidebar-category-heading">
-        <SidebarSectionTitle title="Categories" />
-        <button
-          type="button"
-          class="sidebar-category-settings"
-          aria-label="Sidebar configuration settings"
-          title="Sidebar configuration settings"
-          aria-haspopup="dialog"
-          @click="uiStore.setShowModal('SidebarConfiguration')"
-        >
-          <BootstrapIcon class="sidebar-category-settings-icon" icon="sliders2" context="control" decorative />
-        </button>
-        <button
-          v-if="overviewStore.categories.length > 1 || categoryReordering"
-          type="button"
-          class="sidebar-category-reorder-button"
-          :aria-pressed="categoryReordering"
-          :disabled="categoryReorderLoading"
-          @click="toggleCategoryReordering"
-        >
-          <BootstrapIcon :icon="categoryReordering ? 'check-lg' : 'grip-vertical'" context="control" aria-hidden="true" />
-          {{ categoryReorderLoading ? 'Loading...' : categoryReordering ? 'Done' : 'Reorder' }}
-        </button>
-      </div>
-
-      <SidebarNavItem
-        icon="collection-fill"
-        title="All categories"
-        :count="getItemStatusCount(overviewStore)"
-        :selected="selectionStore.currentSelection.categoryId === '%'"
-        badge-class="sidebar-count-white"
-        row-class="sidebar-all-categories-item"
-        @select="loadAll"
-      />
-
-      <div v-if="!categoryReordering" class="sidebar-category-list">
+    <template v-for="section in uiStore.sidebarSectionOrder" :key="section">
+      <section v-if="section === 'pinned' && (pinnedCategories.length || pinnedFeeds.length)" class="sidebar-section" aria-label="Pinned">
+        <SidebarSectionTitle title="Pinned" icon="pin-angle-fill" />
         <SidebarCategoryGroup
-          v-for="category in overviewStore.categories"
-          :key="category.id"
+          v-for="category in pinnedCategories"
+          :key="`pinned-category-${category.id}`"
           :category="category"
           :selected-category-id="selectionStore.currentSelection.categoryId"
           :selected-feed-id="selectionStore.currentSelection.feedId"
           :count="getItemStatusCount(category)"
           :count-resolver="getItemStatusCount"
+          shortcut
           @select-category="loadCategory"
-          @select-feed="loadFeed"
+        />
+        <SidebarFeedItem
+          v-for="feed in pinnedFeeds"
+          :key="`pinned-feed-${feed.id}`"
+          :feed="feed"
+          :selected="selectionStore.currentSelection.feedId == feed.id"
+          :count="getItemStatusCount(feed)"
+          :show-feed-favicons="uiStore.sidebarSettings.showFeedFavicons"
+          shortcut
+          @select="loadFeed"
+        />
+      </section>
+
+      <div v-if="section === 'smart-folders' && visibleSmartFolders.length" class="sidebar-section sidebar-smart-folders">
+        <SidebarSectionTitle title="Smart Folders" />
+
+        <SidebarNavItem
+          v-for="smartFolder in visibleSmartFolders"
+          :key="smartFolder.id"
+          icon="folder-fill"
+          :title="smartFolder.name"
+          :count="smartFolder.ArticleCount"
+          :selected="selectionStore.currentSelection.smartFolderId === smartFolder.id"
+          row-class="sidebar-tag-item"
+          @select="selectSmartFolder(smartFolder)"
         />
       </div>
 
-      <component
-        :is="categoryReorderComponent"
-        v-else
-        class="sidebar-category-reorder-list"
-        :model-value="overviewStore.categories"
-        item-key="id"
-        @update:model-value="applyCategoryOrder"
-      >
-        <template #item="{ element }">
+      <div v-if="section === 'all-feeds'" class="sidebar-section sidebar-status-filters">
+        <SidebarSectionTitle title="All feeds" />
+
+        <SidebarNavItem
+          v-for="filter in visibleStatusFilters"
+          :key="filter.value"
+          :icon="filter.icon"
+          :icon-class="filter.iconClass"
+          :title="filter.sidebarLabel || filter.label"
+          :count="getStatusCount(filter.value)"
+          :selected="selectionStore.currentSelection.status === filter.value && selectionStore.currentSelection.smartFolderId === null"
+          row-class="sidebar-status-item"
+          @select="loadType(filter.value)"
+        />
+      </div>
+
+      <div v-if="section === 'top-tags' && topTagsDisplay.length" class="sidebar-section sidebar-tags">
+        <SidebarSectionTitle :title="topTagsTitle" />
+
+        <SidebarNavItem
+          v-for="tag in topTagsDisplay"
+          :key="tag.name"
+          icon="tag-fill"
+          :title="`${formatTagName(tag.name)}`"
+          :count="tag.count"
+          :selected="selectionStore.currentSelection.tag === tag.name"
+          row-class="sidebar-tag-item"
+          @select="selectTag(tag.name)"
+        />
+      </div>
+
+      <div v-if="section === 'categories'" class="sidebar-section sidebar-categories">
+        <div class="sidebar-category-heading">
+          <SidebarSectionTitle title="Categories" />
+          <button
+            type="button"
+            class="sidebar-category-settings"
+            aria-label="Sidebar configuration settings"
+            title="Sidebar configuration settings"
+            aria-haspopup="dialog"
+            @click="uiStore.setShowModal('SidebarConfiguration')"
+          >
+            <BootstrapIcon class="sidebar-category-settings-icon" icon="sliders2" context="control" decorative />
+          </button>
+          <button
+            v-if="isManualOrder && (visibleCategories.length > 1 || categoryReordering)"
+            type="button"
+            class="sidebar-category-reorder-button"
+            :aria-pressed="categoryReordering"
+            :disabled="categoryReorderLoading"
+            @click="toggleCategoryReordering"
+          >
+            <BootstrapIcon :icon="categoryReordering ? 'check-lg' : 'grip-vertical'" context="control" aria-hidden="true" />
+            {{ categoryReorderLoading ? 'Loading...' : categoryReordering ? 'Done' : 'Reorder' }}
+          </button>
+        </div>
+
+        <SidebarNavItem
+          v-if="isCountVisible(overviewStore[selectedCountField]) || visibleCategories.length || inactiveFeeds.length"
+          icon="collection-fill"
+          title="All categories"
+          :count="getItemStatusCount(overviewStore)"
+          :selected="selectionStore.currentSelection.categoryId === '%'"
+          badge-class="sidebar-count-white"
+          row-class="sidebar-all-categories-item"
+          @select="loadAll"
+        />
+
+        <div v-if="!isManualOrder || !categoryReordering" class="sidebar-category-list">
           <SidebarCategoryGroup
-            :category="element"
+            v-for="category in visibleCategories"
+            :key="category.id"
+            :category="category"
             :selected-category-id="selectionStore.currentSelection.categoryId"
             :selected-feed-id="selectionStore.currentSelection.feedId"
-            :count="getItemStatusCount(element)"
+            :count="getItemStatusCount(category)"
             :count-resolver="getItemStatusCount"
+            :show-feed-favicons="uiStore.sidebarSettings.showFeedFavicons"
             @select-category="loadCategory"
             @select-feed="loadFeed"
           />
-        </template>
-      </component>
+        </div>
 
+        <component
+          :is="categoryReorderComponent"
+          v-else
+          class="sidebar-category-reorder-list"
+          :model-value="visibleCategories"
+          item-key="id"
+          @update:model-value="applyCategoryOrder"
+        >
+          <template #item="{ element }">
+            <SidebarCategoryGroup
+              :category="element"
+              :selected-category-id="selectionStore.currentSelection.categoryId"
+              :selected-feed-id="selectionStore.currentSelection.feedId"
+              :count="getItemStatusCount(element)"
+              :count-resolver="getItemStatusCount"
+              :show-feed-favicons="uiStore.sidebarSettings.showFeedFavicons"
+              @select-category="loadCategory"
+              @select-feed="loadFeed"
+            />
+          </template>
+        </component>
+
+        <SidebarCategoryGroup
+          v-if="inactiveFeeds.length"
+          :category="inactiveCategory"
+          :selected-category-id="selectionStore.currentSelection.categoryId"
+          :selected-feed-id="selectionStore.currentSelection.feedId"
+          :count-resolver="getItemStatusCount"
+          :show-feed-favicons="uiStore.sidebarSettings.showFeedFavicons"
+          collapsible
+          :expanded="inactiveFeedsExpanded"
+          @toggle-expansion="inactiveFeedsExpanded = !inactiveFeedsExpanded"
+          @select-feed="loadFeed"
+        />
+      </div>
+    </template>
+
+    <div class="sidebar-section">
       <div class="sidebar-footer-actions">
         <div class="sidebar-divider"></div>
 
@@ -212,7 +257,7 @@
             icon="pencil-fill"
             label="Edit category"
             variant="sidebar-button sidebar-bottom-action-button sidebar-edit-button"
-            @select="uiStore.setShowModal('RenameCategory')"
+            @select="uiStore.setShowModal('UpdateCategory')"
           />
 
           <SidebarActionButton
@@ -417,6 +462,7 @@ import { markAllAsRead } from '../../api/articles';
 import { updateCategoryOrder } from '../../api/manager';
 import SidebarActionButton from './SidebarActionButton.vue';
 import SidebarCategoryGroup from './SidebarCategoryGroup.vue';
+import SidebarFeedItem from './SidebarFeedItem.vue';
 import SidebarNavItem from './SidebarNavItem.vue';
 import SidebarSectionTitle from './SidebarSectionTitle.vue';
 import FeedRefreshProgress from '../shared/FeedRefreshProgress.vue';
@@ -434,6 +480,7 @@ export default {
     FeedRefreshProgress,
     SidebarActionButton,
     SidebarCategoryGroup,
+    SidebarFeedItem,
     SidebarNavItem,
     SidebarSectionTitle
   },
@@ -443,6 +490,7 @@ export default {
     return {
       categoryReorderComponent: null,
       categoryReordering: false,
+      inactiveFeedsExpanded: false,
       categoryReorderLoading: false,
       markingAsRead: false,
       statusFilters: SIDEBAR_STATUS_OPTIONS
@@ -464,7 +512,55 @@ export default {
     },
     // This limits the sidebar to the five most frequent tags.
     topTagsDisplay() {
-      return this.overviewStore.topTags.slice(0, 5);
+      return this.overviewStore.topTags.filter(tag => this.isCountVisible(tag.count)).slice(0, 5);
+    },
+    selectedCountField() {
+      return `${this.selectionStore.currentSelection.status}Count`;
+    },
+    visibleSmartFolders() {
+      return this.overviewStore.smartFolders.filter(folder => this.isCountVisible(folder.ArticleCount));
+    },
+    inactiveFeeds() {
+      if (!this.uiStore.sidebarSettings.automaticallyHideInactiveFeeds) return [];
+      const cutoff = Date.now() - this.uiStore.sidebarSettings.inactiveFeedDays * 86400000;
+      return this.overviewStore.categories.flatMap(category => category.feeds || []).filter(feed => {
+        const date = feed.lastArticleReceivedAt || feed.createdAt;
+        return date && new Date(date).getTime() <= cutoff;
+      });
+    },
+    inactiveCategory() {
+      return { id: 'inactive-feeds', name: 'Inactive feeds', feeds: this.sortCategoryItems(this.inactiveFeeds) };
+    },
+    effectiveSortOrder() {
+      const settings = this.uiStore.sidebarSettings;
+      return settings.sortByCurrentSelection ? 'selectedCount' : settings.sortOrder || 'manual';
+    },
+    isManualOrder() {
+      return this.effectiveSortOrder === 'manual';
+    },
+    sortedCategories() {
+      return this.sortCategoryItems(this.overviewStore.categories, true).map(category => ({
+        ...category,
+        feeds: this.sortCategoryItems(category.feeds || [])
+      }));
+    },
+    pinnedCategories() {
+      return this.sortedCategories.filter(category => category.pinned);
+    },
+    pinnedFeeds() {
+      return this.sortedCategories.flatMap(category => category.feeds).filter(feed => feed.pinned);
+    },
+    visibleCategories() {
+      if (!this.uiStore.sidebarSettings.hideZeroCountItems && !this.uiStore.sidebarSettings.automaticallyHideInactiveFeeds) {
+        return this.sortedCategories;
+      }
+      const inactiveIds = new Set(this.inactiveFeeds.map(feed => feed.id));
+      return this.sortedCategories.map(category => ({
+        ...category,
+        feeds: (category.feeds || []).filter(feed => !inactiveIds.has(feed.id) && this.isCountVisible(feed[this.selectedCountField]))
+      })).filter(category => this.uiStore.sidebarSettings.automaticallyHideInactiveFeeds
+        ? category.feeds.length > 0
+        : this.isCountVisible(category[this.selectedCountField]) || category.feeds.length);
     },
     // This labels Top Tags with the article collection represented by their counts.
     topTagsTitle() {
@@ -479,9 +575,40 @@ export default {
       });
     }
   },
+  watch: {
+    isManualOrder(manual) {
+      if (!manual) this.categoryReordering = false;
+    }
+  },
   methods: {
+    // Sort copies for display so automatic sorting never overwrites the saved manual order.
+    sortCategoryItems(items, categories = false) {
+      if (this.isManualOrder) return items;
+      const order = this.effectiveSortOrder;
+      const activity = feed => new Date(feed.lastArticleReceivedAt || 0).getTime() || 0;
+      return items.map(item => {
+        let value;
+        if (order === 'name') value = (categories ? item.name : item.feedName) || '';
+        else if (order === 'selectedCount') value = Number(item[this.selectedCountField] || 0);
+        else if (order === 'totalCount') value = Number(item.unreadCount || 0) + Number(item.readCount || 0);
+        else value = categories
+          ? (item.feeds || []).reduce((latest, feed) => Math.max(latest, activity(feed)), 0)
+          : activity(item);
+        return { item, value };
+      }).sort((a, b) => order === 'name'
+        ? a.value.localeCompare(b.value, undefined, { sensitivity: 'base', numeric: true })
+        : b.value - a.value
+      ).map(entry => entry.item);
+    },
+
+    // Unknown counts remain visible until they can be resolved.
+    isCountVisible(count) {
+      return !this.uiStore.sidebarSettings.hideZeroCountItems || count == null || Number(count) !== 0;
+    },
+
     // This function loads drag-and-drop support only when category reordering is requested.
     async toggleCategoryReordering() {
+      if (!this.isManualOrder) return;
       if (this.categoryReordering) {
         this.categoryReordering = false;
         return;
@@ -504,7 +631,7 @@ export default {
         }
       }
 
-      this.categoryReordering = true;
+      this.categoryReordering = this.isManualOrder;
     },
     // This returns the count for a selected article status.
     getStatusCount(status) {
@@ -602,6 +729,15 @@ export default {
 
     // This function reconciles a drag result through the store before persisting its ID order.
     applyCategoryOrder(categories) {
+      if (!this.isManualOrder) return;
+      // Reorder visible slots without moving or dropping hidden categories and feeds.
+      if (this.uiStore.sidebarSettings.hideZeroCountItems || this.uiStore.sidebarSettings.automaticallyHideInactiveFeeds) {
+        const visibleIds = new Set(categories.map(category => category.id));
+        let index = 0;
+        categories = this.overviewStore.categories.map(category =>
+          visibleIds.has(category.id) ? categories[index++] : category
+        );
+      }
       this.overviewStore.applyCategoryOrder(categories);
       this.updateSortOrder();
     },

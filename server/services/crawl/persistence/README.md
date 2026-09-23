@@ -59,6 +59,13 @@ does not use broad title/content queries that could select an unrelated article.
 
 The result explicitly reports whether the row was created or recovered from a conflict.
 
+Each successful new-article transaction advances the owning Feed's
+`lastArticleReceivedAt`, including filtered articles. The timestamp records local
+receipt time, not publication time, and commits or rolls back with the Article.
+It never moves backwards and is not changed by revisions, recovered unique-key
+conflicts, empty crawls, or article cleanup. Sidebar inactivity grouping uses this
+metadata without changing article eligibility or semantic processing.
+
 ## Updating an existing article
 
 `updateArticle.js` reconciles one exact user/feed-owned Article. It may receive an already resolved

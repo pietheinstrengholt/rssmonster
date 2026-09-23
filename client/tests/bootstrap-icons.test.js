@@ -23,6 +23,7 @@ describe('Bootstrap icon delivery', () => {
     'chevron-right',
     'cpu-fill',
     'pause-circle',
+    'pin-angle-fill',
     'sunrise-fill',
     'sliders2',
     'folder-plus',

@@ -13,6 +13,7 @@ import { up as addIslandBehaviorTime } from '../../migrations/20260917001000-add
 import { up as addIslandSupport } from '../../migrations/20260919001000-add-island-support-article-ids.mjs';
 import { up as addOriginalSource } from '../../migrations/20260922000000-add-article-original-source.mjs';
 import { up as addAuthors } from '../../migrations/20260922001000-add-article-authors.mjs';
+import { up as addPinnedItems } from '../../migrations/20260923006000-add-sidebar-pinned-items.mjs';
 import { up as addCategoryClusteringBehavior } from '../../migrations/20260922002000-add-category-clustering-behavior.mjs';
 
 import { resetDatabase } from '../helpers/resetDb.js';
@@ -56,6 +57,10 @@ async function installHistoricalSchema() {
   await addOriginalSource(qi, db.Sequelize);
   await addAuthors(qi, db.Sequelize);
   await addCategoryClusteringBehavior(qi, db.Sequelize);
+  await addPinnedItems(qi, db.Sequelize);
+  await qi.addColumn('feeds', 'lastArticleReceivedAt', {
+    type: db.Sequelize.DATE, allowNull: true, defaultValue: null
+  });
 }
 
 const assertRemoved = async () => {

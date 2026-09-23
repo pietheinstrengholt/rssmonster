@@ -182,7 +182,7 @@ export default {
 .inference-key-replacement { margin-top: .25rem; }
 .inference-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .625rem; }
 .inference-form-actions { padding-top: 1rem; border-top: 1px solid var(--border-default); }
-.inference-remove { margin-left: auto; border-color: transparent; }
+.inference-remove { margin-left: auto; border-color: var(--color-transparent); }
 .inference-confirmation { display: grid; gap: .75rem; margin: 0; }
 .inference-card-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; }
 .inference-card-heading button { flex-shrink: 0; }

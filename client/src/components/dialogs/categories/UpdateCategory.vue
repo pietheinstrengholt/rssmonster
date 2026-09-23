@@ -26,6 +26,14 @@
             <CategoryIconPicker v-model="category.iconName" :disabled="isPending" />
         </div>
 
+        <div class="category-dialog__pinned-field">
+            <label class="app-form-label category-dialog__pin-option" for="category-pinned">
+                <input id="category-pinned" v-model="category.pinned" type="checkbox" class="app-form-check-input" :disabled="isPending" aria-describedby="category-pinned-help" />
+                <span>Pinned</span>
+            </label>
+            <div id="category-pinned-help" class="app-form-help">Show a shortcut in the sidebar’s Pinned section.</div>
+        </div>
+
         <CategoryClusteringSelect
             id="category-clustering"
             v-model="category.clusteringBehavior"
@@ -60,7 +68,7 @@ import helper from '../../../services/helper.js';
 import { notifyActionError } from '../../../services/actionNotifications.js';
 
 export default {
-    name: 'RenameCategory',
+    name: 'UpdateCategory',
     components: {
         BaseDialog,
         CategoryIconPicker,
@@ -71,6 +79,7 @@ export default {
         return {
             category: {},
             originalName: '',
+            originalPinned: false,
             originalClusteringBehavior: null,
             originalIconName: DEFAULT_CATEGORY_ICON,
             index: -1,
@@ -82,6 +91,8 @@ export default {
         this.index = helper.findIndexById(this.overviewStore.categories, this.selectionStore.currentSelection.categoryId);
         this.category = JSON.parse(JSON.stringify(this.overviewStore.categories[this.index]));
         this.originalName = this.category.name;
+        this.category.pinned ??= false;
+        this.originalPinned = this.category.pinned;
         this.category.clusteringBehavior ??= null;
         this.originalClusteringBehavior = this.category.clusteringBehavior;
         const hasSupportedIcon = CATEGORY_ICON_OPTIONS.some((icon) => icon.name === this.category.iconName);
@@ -100,6 +111,7 @@ export default {
         isCategoryUnchanged() {
             return this.trimmedCategoryName === this.originalName.trim() &&
                 this.category.iconName === this.originalIconName &&
+                this.category.pinned === this.originalPinned &&
                 this.category.clusteringBehavior === this.originalClusteringBehavior;
         },
         // This function disables updates for invalid, unchanged, or currently saving categories.
@@ -119,7 +131,8 @@ export default {
                     this.selectionStore.currentSelection.categoryId,
                     categoryName,
                     this.category.iconName,
-                    this.category.clusteringBehavior
+                    this.category.clusteringBehavior,
+                    this.category.pinned
                 );
                 // Reconcile the API-backed category fields through the store.
                 this.overviewStore.updateCategory(
@@ -146,6 +159,22 @@ export default {
 </script>
 
 <style scoped>
+.category-dialog__pinned-field {
+    margin-top: 1.5rem;
+}
+
+.category-dialog__pin-option {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+}
+
+.category-dialog__pin-option + .app-form-help {
+    margin-inline-start: calc(1rem + var(--space-2));
+}
+
 .category-dialog__name-field {
     margin-bottom: 1.5rem;
 }

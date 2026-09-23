@@ -10,7 +10,7 @@ const supportedDialogs = [
   ['HtmlXpathPreview', 'HtmlXpathPreview'],
   ['DeleteCategory', 'DeleteCategory'],
   ['DeleteFeed', 'DeleteFeed'],
-  ['RenameCategory', 'RenameCategory'],
+  ['UpdateCategory', 'UpdateCategory'],
   ['UpdateFeed', 'UpdateFeed'],
   ['Cleanup', 'Cleanup'],
   ['ManageUsers', 'SettingsManageUsers'],

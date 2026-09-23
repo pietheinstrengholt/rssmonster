@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 
 const mocked = vi.hoisted(() => ({
   articleCreate: vi.fn(),
+  feedUpdate: vi.fn(),
   articleFindOne: vi.fn(),
   officialSourceFindAll: vi.fn(),
   tagCreate: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock('../../models/index.js', () => ({
     sequelize: {
       transaction: mocked.sequelizeTransaction
     },
+    Feed: { update: mocked.feedUpdate },
     Article: {
       create: mocked.articleCreate,
       findOne: mocked.articleFindOne
@@ -87,6 +89,7 @@ const hashUrl = value => createHash('sha256').update(value).digest('hex');
 describe('saveArticle feed tags', () => {
   beforeEach(() => {
     mocked.articleCreate.mockReset();
+    mocked.feedUpdate.mockReset();
     mocked.articleFindOne.mockReset();
     mocked.officialSourceFindAll.mockReset();
     mocked.tagCreate.mockReset();

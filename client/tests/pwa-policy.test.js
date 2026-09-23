@@ -33,6 +33,7 @@ describe('PWA cache policy', () => {
       'assets/index-*.js',
       'assets/AppShell-*.js',
       'assets/settings-api-*.js',
+      'assets/actionNotifications-*.js',
       'assets/authenticatedShell-*.js',
       'assets/Sidebar-*.js',
       'assets/DesktopToolbar-*.js',

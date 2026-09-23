@@ -9,8 +9,8 @@ vi.mock('../src/api/settings.js', () => ({
   saveViewMode: vi.fn(),
   saveThemeMode: vi.fn()
 }));
-const defaults = { showTotalCount: true, declutterCounts: true };
-const saved = { showTotalCount: false, declutterCounts: false };
+const defaults = { showTotalCount: true, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false };
+const saved = { sectionOrder: ['pinned', 'categories', 'smart-folders', 'all-feeds', 'top-tags'], showTotalCount: false, declutterCounts: false, hideZeroCountItems: true, automaticallyHideInactiveFeeds: true, inactiveFeedDays: 60, sortOrder: 'name', showFeedFavicons: false, sortByCurrentSelection: true };
 
 beforeEach(() => {
   setActivePinia(createPinia());
@@ -23,8 +23,10 @@ describe('Saved sidebar settings', () => {
     await useSelectionStore().fetchSettings();
     const ui = useUiStore();
     expect(ui.sidebarSettings).toEqual(saved);
+    expect(ui.sidebarSectionOrder).toEqual(saved.sectionOrder);
     ui.resetSessionState();
     expect(ui.sidebarSettings).toEqual(defaults);
+    expect(ui.sidebarSectionOrder).toEqual(['pinned', 'smart-folders', 'all-feeds', 'top-tags', 'categories']);
   });
 
   it('does not overwrite a newly saved preference with an older startup response', async () => {
