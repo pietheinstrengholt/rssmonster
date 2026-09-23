@@ -69,6 +69,36 @@ describe('new unread articles', () => {
     }));
   });
 
+  it.each(['24h', '3d', '7d', 'yesterday', 'custom'])('counts and marks only the 40 articles in the %s collection', async filter => {
+    const ids = Array.from({ length: 40 }, (_, index) => index + 101);
+    const page = (itemIds, hasMore) => ({ data: {
+      paginationVersion: 1, totalCount: 40, sourceCount: 1,
+      snapshot: { highestUnreadArticleId: 140, snapshotMaxArticleId: 140 },
+      page: { itemIds, articles: itemIds.map(id => ({ id, status: 'unread' })), hasMore, nextCursor: hasMore ? 'next-page' : null }
+    } });
+    fetchArticlePage.mockResolvedValue(page(ids.slice(0, 20), true));
+    await mountFeed({ sort: 'desc', grouping: 'event' }, true);
+    stores.overviewStore.categories = [{ id: 3, unreadCount: 473, feeds: [{ id: 4, unreadCount: 473 }] }];
+    stores.overviewStore.fetchOverviewSplit = vi.fn().mockResolvedValue();
+    stores.overviewStore.fetchSmartFolderCounts = vi.fn().mockResolvedValue();
+    if (filter === 'custom') stores.selectionStore.setDateRange(filter, { start: '2026-09-20', end: '2026-09-21' });
+    else if (filter === 'yesterday') stores.selectionStore.setDateRange(filter);
+    else stores.selectionStore.setAgeCutoff(filter);
+    await flushPromises();
+    fetchArticlePage.mockResolvedValueOnce(page(ids.slice(20), false));
+    await wrapper.vm.getContent();
+    await flushPromises();
+    expect(wrapper.text()).toContain('40 unread articles were reviewed.');
+    expect(button('Mark 40 as read')).toBeDefined();
+    expect(button('Mark 473 as read')).toBeUndefined();
+    fetchArticlePage.mockResolvedValueOnce(page([], false));
+    await button('Mark 40 as read').trigger('click');
+    await flushPromises();
+    expect(markAllAsRead).toHaveBeenCalledWith(expect.objectContaining({
+      publishedAfter: expect.any(String), publishedBefore: expect.any(String), grouping: 'none'
+    }), ids);
+  });
+
   it('shows and marks only four new articles when the feed has 473 unread articles', async () => {
     await mountFeed({}, true);
     stores.overviewStore.categories = [{ id: 3, unreadCount: 473, feeds: [{ id: 4, unreadCount: 473 }] }];

@@ -50,12 +50,13 @@ export const articleFeedReadStateMethods = {
     if ((!this.totalCount && !this.container.length) || this.isFlushed) return;
 
     const selection = { ...(this.loadedSelection || this.selectionStore.currentSelection) };
+    const restrictToSnapshot = Boolean(this.showingNewOnly || selection.publishedAfter || selection.publishedBefore);
     const snapshotArticleIds = [...this.container];
     const activeRequestId = this.activeRequestId;
 
     try {
-      // New-only completion must not expand the snapshot to older Event members.
-      await markAllAsRead(this.showingNewOnly ? { ...selection, grouping: 'none' } : selection, snapshotArticleIds);
+      // Time-filtered and new-only completion must not include Event members outside the list.
+      await markAllAsRead(restrictToSnapshot ? { ...selection, grouping: 'none' } : selection, snapshotArticleIds);
     } catch (error) {
       console.error('Error marking all articles as read:', error);
       notifyActionError('Could not mark these articles as read. Please try again.', error);
@@ -72,7 +73,7 @@ export const articleFeedReadStateMethods = {
 
     const snapshotIds = new Set(snapshotArticleIds.map(String));
     this.articles = this.articles.map(article => (
-      !this.showingNewOnly || snapshotIds.has(String(article.id))
+      !restrictToSnapshot || snapshotIds.has(String(article.id))
         ? { ...article, status: 'read' }
         : article
     ));

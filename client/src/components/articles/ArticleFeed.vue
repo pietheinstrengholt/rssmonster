@@ -168,7 +168,7 @@ export default {
 
       if (selection.status !== 'unread') return 0;
 
-      if (this.showingNewOnly) {
+      if (this.showingNewOnly || this.loadedSelection?.publishedAfter || this.loadedSelection?.publishedBefore) {
         const collectionIds = new Set(this.container.map(String));
         const readIds = new Set(this.articles.filter(article => (
           collectionIds.has(String(article.id)) && article.status === 'read'

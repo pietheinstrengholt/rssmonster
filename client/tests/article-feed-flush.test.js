@@ -55,17 +55,17 @@ describe('ArticleFeed final read reconciliation', () => {
     expect(markAllAsRead.mock.invocationCallOrder[0]).toBeLessThan(fetchSmartFolderCounts.mock.invocationCallOrder[0]);
   });
 
-  it('retains the new-only boundary when marking the displayed collection as read', async () => {
+  it.each([null, { publishedAfter: '2026-09-21T12:00:00.000Z', publishedBefore: '2026-09-22T12:00:00.001Z' }])('retains the restricted collection boundary when marking as read (%j)', async bounds => {
     const currentSelection = { status: 'unread', feedId: '4', search: 'title:Science', grouping: 'event' };
     const loadedSelection = {
-      ...currentSelection, search: 'title:Science unread:true read:false id:>104', persistSettings: false
+      ...currentSelection, search: 'title:Science unread:true read:false id:>104', persistSettings: false, ...bounds
     };
     const context = {
       ...createFocusedStores({
         selection: { currentSelection },
         overview: { fetchOverviewSplit: vi.fn().mockResolvedValue() }
       }),
-      loadedSelection, showingNewOnly: true, totalCount: 2,
+      loadedSelection, showingNewOnly: !bounds, totalCount: 2,
       container: [105, 106], articles: [{ id: 105, status: 'unread' }, { id: 106, status: 'unread' }, { id: 103, status: 'unread', clusterParentId: 105 }],
       isFlushed: false, activeRequestId: 1,
       refreshArticleIds: vi.fn().mockResolvedValue(true)
@@ -73,15 +73,15 @@ describe('ArticleFeed final read reconciliation', () => {
     await ArticleFeed.methods.flushPool.call(context);
     expect(markAllAsRead).toHaveBeenCalledWith({ ...loadedSelection, grouping: 'none' }, [105, 106]);
     expect(context.articles.find(article => article.id === 103).status).toBe('unread');
-    expect(context.refreshArticleIds).toHaveBeenCalledWith(loadedSelection, { newOnly: true });
+    expect(context.refreshArticleIds).toHaveBeenCalledWith(loadedSelection, { newOnly: !bounds });
     expect(context.selectionStore.currentSelection.search).toBe('title:Science');
     expect(context.selectionStore.currentSelection.grouping).toBe('event');
   });
 
-  it('bounds new-only unread totals to matching results, excluding read rows and unrelated expanded articles', () => {
+  it.each([null, { publishedAfter: '2026-09-21T12:00:00.000Z' }, { publishedBefore: '2026-09-22T00:00:00.000Z' }])('bounds restricted unread totals to matching results, excluding read rows and unrelated expanded articles (%j)', bounds => {
     const context = {
       ...createFocusedStores({ overview: { unreadCount: 473 } }),
-      showingNewOnly: true, totalCount: 4, container: [105, 106],
+      showingNewOnly: !bounds, loadedSelection: bounds, totalCount: 4, container: [105, 106],
       articles: [{ id: 105, status: 'unread' }, { id: 106, status: 'unread' }, { id: 103, status: 'read', clusterParentId: 105 }]
     };
     const count = () => ArticleFeed.computed.currentViewUnreadCount.call(context);
@@ -92,6 +92,7 @@ describe('ArticleFeed final read reconciliation', () => {
     context.articles[0].status = 'read';
     expect(count()).toBe(3);
     context.showingNewOnly = false;
+    context.loadedSelection = null;
     expect(count()).toBe(473);
   });
 
