@@ -2,18 +2,19 @@ import { describe, expect, it } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import {
+  createApiRateLimiter,
   createPasswordResetRateLimiter,
   createRateLimiter
 } from '../../middleware/rateLimit.js';
 
 // This function creates a small Express app with the production limiter structure.
-const createTestApp = ({ apiLimit = 2, mcpLimit = 1 } = {}) => {
+const createTestApp = ({ apiLimit = 2, mcpLimit = 1, articleInteractionLimit = 4 } = {}) => {
   const app = express();
   app.set('trust proxy', 'loopback');
-  const apiLimiter = createRateLimiter({
+  const apiLimiter = createApiRateLimiter({
     windowMs: 60_000,
     limit: apiLimit,
-    identifier: 'api-test'
+    articleInteractionLimit
   });
   const mcpLimiter = createRateLimiter({
     windowMs: 60_000,
@@ -27,6 +28,8 @@ const createTestApp = ({ apiLimit = 2, mcpLimit = 1 } = {}) => {
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
   app.get('/rss', (_req, res) => res.send('ok'));
   app.get('/mcp', (_req, res) => res.json({ ok: true }));
+
+  app.use('/api/articles', (_req, res) => res.json({ ok: true }));
 
   return app;
 };
@@ -45,6 +48,42 @@ describe('rate limiting middleware', () => {
     expect(limitedResponse.body).toEqual({
       message: 'Too many requests. Please try again later.'
     });
+  });
+
+  it('gives scrolling and read updates a separate, bounded allowance', async () => {
+    const app = createTestApp({ apiLimit: 1 });
+
+    await request(app).get('/api/data').expect(200);
+    await request(app).get('/api/data').expect(429);
+    await request(app).get('/api/articles?cursor=next').expect(200);
+    await request(app).post('/api/articles/details').expect(200);
+    await request(app).post('/api/articles/markasread').expect(200);
+    await request(app).post('/api/articles/markasseen/123').expect(200);
+    const limited = await request(app).post('/api/articles/marktounread/123').expect(429);
+    expect(limited.headers).toHaveProperty('retry-after');
+  });
+
+  it('does not spend the general allowance on reading interactions', async () => {
+    const app = createTestApp({ apiLimit: 1, articleInteractionLimit: 1 });
+
+    await request(app).post('/api/articles/markallasread/').expect(200);
+    await request(app).get('/api/articles/').expect(429);
+    await request(app).get('/api/data').expect(200);
+  });
+
+  it.each([
+    ['get', '/api/articles/briefing'],
+    ['get', '/api/articles/123/recommendations'],
+    ['post', '/api/articles/markmorelikethis/123'],
+    ['post', '/api/articles'],
+    ['get', '/api/articles/details'],
+    ['post', '/api/articles/markasseen/123/extra']
+  ])('keeps %s %s under the general allowance', async (method, path) => {
+    const app = createTestApp({ apiLimit: 1 });
+
+    await request(app)[method](path).expect(200);
+    await request(app)[method](path).expect(429);
+    await request(app).get('/api/articles').expect(200);
   });
 
   it('applies the stricter MCP limit in addition to the API limit', async () => {

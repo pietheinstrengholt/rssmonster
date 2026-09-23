@@ -2,6 +2,7 @@ import { rateLimit } from 'express-rate-limit';
 
 const DEFAULT_WINDOW_MS = 15 * 60 * 1000;
 const DEFAULT_API_LIMIT = 600;
+const DEFAULT_ARTICLE_INTERACTION_LIMIT = 3000;
 const DEFAULT_MCP_LIMIT = 100;
 const DEFAULT_PASSWORD_RESET_WINDOW_MS = 60 * 60 * 1000;
 const DEFAULT_PASSWORD_RESET_LIMIT = 5;
@@ -61,11 +62,34 @@ const mcpWindowMs = getPositiveInteger(
 );
 const mcpLimit = getPositiveInteger('MCP_RATE_LIMIT_MAX', DEFAULT_MCP_LIMIT);
 
-export const apiRateLimiter = createRateLimiter({
-  windowMs: apiWindowMs,
-  limit: apiLimit,
-  identifier: 'api'
-});
+// Keep frequent reading interactions out of the general API request budget.
+const isArticleInteraction = req => {
+  const path = req.originalUrl.split('?')[0];
+  if (req.method === 'GET') return /^\/api\/articles\/?$/i.test(path);
+  if (req.method !== 'POST') return false;
+  return /^\/api\/articles\/(?:details|markasread|markallasread|(?:markasseen|marktounread)\/[^/]+)\/?$/i.test(path);
+};
+
+export const createApiRateLimiter = ({
+  windowMs = apiWindowMs,
+  limit = apiLimit,
+  articleInteractionLimit = getPositiveInteger(
+    'ARTICLE_INTERACTION_RATE_LIMIT_MAX',
+    DEFAULT_ARTICLE_INTERACTION_LIMIT
+  )
+} = {}) => {
+  const generalLimiter = createRateLimiter({ windowMs, limit, identifier: 'api' });
+  const articleLimiter = createRateLimiter({
+    windowMs,
+    limit: articleInteractionLimit,
+    identifier: 'article-interaction'
+  });
+
+  return (req, res, next) =>
+    (isArticleInteraction(req) ? articleLimiter : generalLimiter)(req, res, next);
+};
+
+export const apiRateLimiter = createApiRateLimiter();
 
 export const mcpRateLimiter = createRateLimiter({
   windowMs: mcpWindowMs,

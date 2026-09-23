@@ -294,6 +294,12 @@ same JWT bearer authentication. See [Assistant and MCP]({% link assistant.md %})
   `API_RATE_LIMIT_WINDOW_MS` and `API_RATE_LIMIT_MAX`; the health endpoint and
   preflight requests are excluded. MCP has an additional, lower configurable
   limit.
+- Article-list loading (`GET /api/articles`), detail loading (`POST
+  /api/articles/details`), and read/seen updates (`markasread`, `markallasread`,
+  `markasseen/:articleId`, `marktounread/:articleId`) share a separate allowance
+  of 3,000 requests per client IP per API window, configured with
+  `ARTICLE_INTERACTION_RATE_LIMIT_MAX`. These requests do not consume the general
+  API allowance. Other article endpoints retain the general limit.
 - A rate-limited request returns HTTP `429`.
 - JSON responses intentionally omit `contentOriginal`. Integrations should use
   the normalized article content fields returned by the relevant endpoint.

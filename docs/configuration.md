@@ -556,6 +556,7 @@ proxy's certificate renewal and reload mechanism instead.
 | --- | ---: | --- |
 | `API_RATE_LIMIT_WINDOW_MS` | `900000` | API rate-limit window in milliseconds (15 minutes). |
 | `API_RATE_LIMIT_MAX` | `600` | Requests allowed per client during the API window. |
+| `ARTICLE_INTERACTION_RATE_LIMIT_MAX` | `3000` | Separate allowance per client IP for article-list/detail loading and read/seen updates, using the API window. |
 | `MCP_RATE_LIMIT_WINDOW_MS` | `900000` | MCP rate-limit window in milliseconds. |
 | `MCP_RATE_LIMIT_MAX` | `100` | Requests allowed per client during the MCP window. |
 
