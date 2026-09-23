@@ -27,6 +27,11 @@ export default {
   emits: ['show-new', 'show-full'],
   data() {
     return { dismissed: false };
+  },
+  watch: {
+    count() {
+      this.dismissed = false;
+    }
   }
 };
 </script>

@@ -64,6 +64,40 @@ describe('new unread articles', () => {
     expect(wrapper.text()).not.toContain('new articles since your last visit');
   });
 
+  it.each([5, 1, 0])('shows a fresh message after the backend count changes to %s', async count => {
+    await mountFeed();
+    await wrapper.vm.checkForNewerArticles();
+    await flushPromises();
+    await wrapper.get('button[aria-label="Dismiss new articles banner"]').trigger('click');
+
+    fetchNewerArticleCount.mockResolvedValueOnce({ data: { newerArticleCount: count } });
+    await wrapper.vm.checkForNewerArticles();
+    await flushPromises();
+
+    if (count > 0) {
+      expect(wrapper.text()).toContain(`${count} ${count === 1 ? 'new article' : 'new articles'} since your last visit`);
+      expect(button('Show new only')).toBeDefined();
+    } else {
+      expect(wrapper.find('button[aria-label="Dismiss new articles banner"]').exists()).toBe(false);
+      await wrapper.vm.checkForNewerArticles();
+      await flushPromises();
+      expect(wrapper.text()).toContain('3 new articles since your last visit');
+    }
+  });
+
+  it('does not preserve dismissal when the page is recreated', async () => {
+    await mountFeed();
+    await wrapper.vm.checkForNewerArticles();
+    await flushPromises();
+    await wrapper.get('button[aria-label="Dismiss new articles banner"]').trigger('click');
+    wrapper.unmount();
+
+    await mountFeed();
+    await wrapper.vm.checkForNewerArticles();
+    await flushPromises();
+    expect(wrapper.text()).toContain('3 new articles since your last visit');
+  });
+
   it('replaces Yesterday with 7d and back through the controls and article query', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     const now = new Date(2026, 8, 21, 16).getTime();
