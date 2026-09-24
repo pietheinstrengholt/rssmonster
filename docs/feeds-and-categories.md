@@ -31,6 +31,9 @@ pinning shortcuts, and choosing an Event clustering preference for a category.
 
 ## Sidebar counts
 
+See [Sidebar Settings]({% link sidebar-settings.md %}) for a screenshot and a complete
+guide to count display, section order, visibility, sorting, and feed icons.
+
 Open the sliders button beside **Categories** to configure its category, feed,
 and **All categories** counts. **Show total count** displays selection/total
 (for example, `9/109`); turn it off to show only the selected count.

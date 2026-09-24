@@ -21,6 +21,7 @@ Learn how to use RSSMonster's core reading, feed management, search, and organiz
 
 ## More workflows
 
+- [Sidebar Settings]({% link sidebar-settings.md %}) explains counts, section order, inactive feeds, sorting, and feed icons.
 - [Feeds and Categories]({% link feeds-and-categories.md %}) covers subscriptions, processing controls, refresh, health, and official sources.
 - [Categories]({% link categories.md %}) covers category icons, pinned shortcuts, and Event clustering preferences.
 - [Article Archiving]({% link archiving.md %}) configures article retention, manual cleanup, and nightly cleanup.

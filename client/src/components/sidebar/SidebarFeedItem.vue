@@ -166,7 +166,7 @@ export default {
   display: flex;
   align-items: center;
   min-height: 1.25em;
-  line-height: 1;
+  line-height: 1.5;
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -193,7 +193,7 @@ export default {
   align-items: center;
   justify-content: center;
   min-height: 1.25em;
-  line-height: 1;
+  line-height: 1.5;
   white-space: nowrap;
   color: var(--text-secondary);
   font-weight: 500;

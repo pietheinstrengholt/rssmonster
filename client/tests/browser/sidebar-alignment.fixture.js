@@ -14,6 +14,7 @@ document.body.prepend(symbols);
 const app = createApp({
   render: () => h('div', { style: { width: '250px' } }, [
     ...['0', '9/109', '1.2K'].flatMap((count, index) => [
+      h(SidebarNavItem, { icon: 'sun', title: 'Daily briefing', count, selected: index === 1 }),
       h(SidebarNavItem, { icon: 'tag-fill', title: 'A long tag title that truncates', count, selected: index === 1 }),
       h(SidebarCategoryGroup, { category: { id: index, name: 'Category title', feeds: [] }, selectedCategoryId: index, selectedFeedId: '%', count, countResolver: () => count }),
       h(SidebarFeedItem, { feed: { id: index, feedName: 'Feed with RSS icon' }, count, selected: index === 1 }),
@@ -43,12 +44,13 @@ for (const theme of ['light', 'dark']) {
         const range = document.createRange();
         range.selectNodeContents(row.querySelector(selector));
         const rect = range.getBoundingClientRect();
-        return { selector, offset: rect.top + rect.height / 2 - center };
+        const container = row.querySelector(selector).getBoundingClientRect();
+        return { selector, offset: rect.top + rect.height / 2 - center, clipped: Math.max(0, container.top - rect.top, rect.bottom - container.bottom) };
       });
-      results.push({ theme, size, label: row.textContent.trim(), maxOffset: Math.max(...offsets), textOffsetDifference: Math.abs(textOffsets[0].offset - textOffsets[1].offset) });
+      results.push({ theme, size, label: row.textContent.trim(), maxOffset: Math.max(...offsets), clipped: Math.max(...textOffsets.map(part => part.clipped)), textOffsetDifference: Math.abs(textOffsets[0].offset - textOffsets[1].offset) });
     }
   }
 }
-const failures = results.filter(result => result.maxOffset > 0.01 || result.textOffsetDifference > 0.01);
+const failures = results.filter(result => result.clipped > 0.01 || result.maxOffset > 0.01 || result.textOffsetDifference > 0.01);
 window.sidebarAlignmentResults = { passed: failures.length === 0, cases: results.length, maxOffset: Math.max(...results.map(result => result.maxOffset)), maxTextOffsetDifference: Math.max(...results.map(result => result.textOffsetDifference)), failures };
 document.querySelector('#alignment-result').textContent = JSON.stringify(window.sidebarAlignmentResults);
