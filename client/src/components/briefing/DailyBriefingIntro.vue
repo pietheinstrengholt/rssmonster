@@ -12,8 +12,6 @@
       loading-text="Loading briefing context…"
       error-text="Briefing context is temporarily unavailable."
       empty-text="No briefing context is available for this period."
-      action-label="Tune your briefing"
-      modal-name="BriefingPreferences"
     >
       <template v-if="context">
           across

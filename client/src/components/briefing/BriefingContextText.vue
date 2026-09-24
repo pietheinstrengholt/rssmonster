@@ -12,20 +12,10 @@
       <template v-else>{{ emptyText }}</template>
     </div>
 
-    <button
-      type="button"
-      class="briefing-tune-action"
-      @click="uiStore.setShowModal(modalName)"
-    >
-      <BootstrapIcon icon="sliders2" aria-hidden="true" />
-      <span>{{ actionLabel }}</span>
-    </button>
   </aside>
 </template>
 
 <script>
-import { mapStores } from 'pinia';
-import { useUiStore } from '../../store/ui.js';
 export default {
   name: 'BriefingContextText',
   props: {
@@ -60,18 +50,9 @@ export default {
     emptyText: {
       type: String,
       default: 'No selection context is available.'
-    },
-    actionLabel: {
-      type: String,
-      required: true
-    },
-    modalName: {
-      type: String,
-      required: true
     }
   },
   computed: {
-    ...mapStores(useUiStore),
     // This function returns whether both selection statistics are available.
     hasContext() {
       return this.articleCount !== null && this.sourceCount !== null;
@@ -117,34 +98,6 @@ export default {
   font-weight: 600;
 }
 
-.briefing-tune-action {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.5rem;
-  color: var(--color-link);
-  background: var(--color-transparent);
-  border: 0;
-  border-radius: 0.375rem;
-  font: inherit;
-  font-weight: 600;
-  line-height: 1.2;
-  text-align: left;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.briefing-tune-action:hover {
-  color: var(--color-link-hover);
-  background-color: var(--briefing-context-action-hover-surface);
-}
-
-.briefing-tune-action:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
-}
-
 @media (max-width: 879px) and (orientation: portrait) {
   .briefing-context {
     display: none;
@@ -161,17 +114,4 @@ export default {
   color: var(--text-primary, #e5e7eb);
 }
 
-:global(:root[data-theme='dark'] .briefing-tune-action) {
-  color: var(--color-link, #60a5fa);
-}
-
-:global(:root[data-theme='dark'] .briefing-tune-action:hover) {
-  color: var(--color-link-hover, #93c5fd);
-  background-color: var(--briefing-context-action-hover-surface);
-}
-
-:global(:root[data-theme='dark'] .briefing-tune-action:focus-visible) {
-  color: var(--color-link-hover, #93c5fd);
-  outline-color: var(--border-focus);
-}
 </style>

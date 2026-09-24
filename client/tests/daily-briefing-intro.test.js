@@ -201,7 +201,7 @@ describe('DailyBriefingIntro', () => {
     expect(fetchDailyBriefing).toHaveBeenCalledWith({ period: '7d', status: 'unread' });
   });
 
-  it('opens Briefing Preferences from the context action', async () => {
+  it('omits the duplicate briefing tuning action', async () => {
     const setShowModal = vi.fn();
     const stores = createFocusedStores({
       selection: {
@@ -215,14 +215,8 @@ describe('DailyBriefingIntro', () => {
       }
     });
 
-    const action = wrapper.get('.briefing-tune-action');
-    expect(action.element.tagName).toBe('BUTTON');
-    expect(action.text()).toBe('Tune your briefing');
-    expect(action.getComponent({ name: 'BootstrapIcon' }).props('icon')).toBe('sliders2');
-
-    await action.trigger('click');
-
-    expect(setShowModal).toHaveBeenCalledWith('BriefingPreferences');
+    expect(wrapper.findAll('button').some(button => button.text() === 'Tune your briefing')).toBe(false);
+    expect(setShowModal).not.toHaveBeenCalled();
   });
 
   it('appears once before the article list only for the briefing selection', async () => {

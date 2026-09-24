@@ -3,15 +3,16 @@
     <div class="new-articles-banner__content">
       <div class="new-articles-banner__copy">
         <BootstrapIcon icon="lightbulb-fill" context="control" class="new-articles-banner__icon" aria-hidden="true" />
-        <span><strong>{{ count }} {{ count === 1 ? 'new article' : 'new articles' }}</strong> since your last visit</span>
+        <span v-if="readerMode" :title="`${count} new ${count === 1 ? 'article' : 'articles'} since your last visit`" :aria-label="`${count} new ${count === 1 ? 'article' : 'articles'} since your last visit`"><strong>{{ count }} new</strong></span>
+        <span v-else><strong>{{ count }} {{ count === 1 ? 'new article' : 'new articles' }}</strong> since your last visit</span>
       </div>
       <div class="new-articles-banner__actions">
-        <button type="button" class="new-articles-banner__primary" :disabled="loading" @click="$emit('show-new')">Show new only</button>
-        <button type="button" :disabled="loading" @click="$emit('show-full')">Show full list</button>
+        <button type="button" class="new-articles-banner__primary" :disabled="loading" :aria-label="readerMode ? 'Show new only' : undefined" @click="$emit('show-new')">{{ readerMode ? 'New only' : 'Show new only' }}</button>
+        <button type="button" :disabled="loading" :aria-label="readerMode ? 'Show full list' : undefined" @click="$emit('show-full')">{{ readerMode ? 'Full list' : 'Show full list' }}</button>
       </div>
     </div>
     <button type="button" class="new-articles-banner__close" aria-label="Dismiss new articles banner" title="Dismiss" @click="dismissed = true">
-      <BootstrapIcon icon="x" size="16" aria-hidden="true" />
+      <BootstrapIcon icon="x" context="control" size="16" aria-hidden="true" />
     </button>
   </div>
 </template>
@@ -50,7 +51,7 @@ export default {
   font-size: var(--font-size-ui-default);
   line-height: 1.4;
 }
-.new-articles-banner--reader { margin-inline: 0; }
+
 .new-articles-banner__content {
   display: flex;
   flex: 1 1 auto;
@@ -99,5 +100,9 @@ export default {
 .new-articles-banner button:disabled { opacity: 0.6; cursor: wait; }
 .new-articles-banner .new-articles-banner__primary { color: var(--color-link); font-weight: 600; }
 .new-articles-banner .new-articles-banner__primary:hover { color: var(--color-link-hover); }
+.new-articles-banner--reader { margin-inline: 0; padding-inline: 0.5rem; gap: 0.375rem; }
+.new-articles-banner--reader .new-articles-banner__content,
+.new-articles-banner--reader .new-articles-banner__actions { flex-wrap: nowrap; }
+.new-articles-banner--reader .new-articles-banner__copy { flex-basis: auto; gap: 0.375rem; white-space: nowrap; }
 :global(:root[data-theme='dark'] .new-articles-banner strong) { color: var(--text-primary); }
 </style>

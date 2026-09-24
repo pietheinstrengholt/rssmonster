@@ -104,6 +104,27 @@ afterEach(() => {
 });
 
 describe('UnreadSelectionContext', () => {
+  it('uses compact Reader banner wording while retaining the full wording in other modes', async () => {
+    wrapper = mount(NewArticlesBanner, { props: { count: 2, readerMode: true } });
+    expect(wrapper.text()).toContain('2 new');
+    expect(wrapper.text()).not.toContain('since your last visit');
+    const showNew = wrapper.get('[aria-label="Show new only"]');
+    const showFull = wrapper.get('[aria-label="Show full list"]');
+    expect(showNew.text()).toBe('New only');
+    expect(showFull.text()).toBe('Full list');
+    await showNew.trigger('click');
+    await showFull.trigger('click');
+    expect(wrapper.emitted('show-new')).toHaveLength(1);
+    expect(wrapper.emitted('show-full')).toHaveLength(1);
+    await wrapper.setProps({ loading: true });
+    expect(showNew.attributes('disabled')).toBeDefined();
+    expect(showFull.attributes('disabled')).toBeDefined();
+    await wrapper.setProps({ readerMode: false });
+    expect(wrapper.text()).toContain('2 new articles since your last visit');
+    expect(wrapper.text()).toContain('Show new only');
+    expect(wrapper.text()).toContain('Show full list');
+  });
+
   it.each([
     [ArticleListView, false, false],
     [ArticleReaderLayout, true, false],
@@ -122,7 +143,7 @@ describe('UnreadSelectionContext', () => {
     });
     expect(wrapper.findAllComponents(NewArticlesBanner)).toHaveLength(1);
     expect(wrapper.getComponent(NewArticlesBanner).props('readerMode')).toBe(readerMode);
-    expect(wrapper.get('[role="status"]').text()).toContain('3 new articles');
+    expect(wrapper.get('[role="status"]').text()).toContain(readerMode ? '3 new' : '3 new articles');
   });
 
   it('defaults to All and exposes the selected age through aria-pressed', async () => {
