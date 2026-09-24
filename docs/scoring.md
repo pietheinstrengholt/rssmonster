@@ -117,9 +117,9 @@ Recommended is personalized. Its bounded base score combines:
 
 ```text
 Recommended =
-    0.45 × positiveInterest
-  + 0.25 × freshness
-  + 0.20 × Quality
+    0.60 × positiveInterest
+  + 0.17 × freshness
+  + 0.13 × Quality
   + 0.10 × corroboration
   - 0.30 × negativeInterest
   + ruleMatchBoost
@@ -129,15 +129,14 @@ First normalize finite `interestScore` to `[-1, 1]`, or use zero when missing or
 nonfinite. Then `positiveInterest = max(interestScore, 0)`,
 `negativeInterest = max(-interestScore, 0)`, and a matching rule contributes
 `0.08` once regardless of how many rule tags match. The final result retains
-negative totals and is capped at `1`. With these normalized inputs and unchanged
-weights, the range is `-0.30`–`1`.
+negative totals and is capped at `1`. With these normalized inputs and weights,
+the range is `-0.30`–`1`.
 Recommended sorting and API serialization preserve the sign; the presentation label
 uses the same signed score on a percentage scale, not a probability.
 
 The authoritative implementation is
 [`recommendedScore.js`](https://github.com/pietheinstrengholt/rssmonster/blob/master/server/services/recommendations/recommendedScore.js).
-Phases A–C improved the quality of the interest input and preserved these final
-weights. Semantic confidence modifies interest; it is not another final weight.
+Semantic confidence modifies interest; it is not another final weight.
 
 Every Article eligible under the caller's ownership, visibility and explicit
 filters receives a finite Recommended score. No Event, Island, vector or

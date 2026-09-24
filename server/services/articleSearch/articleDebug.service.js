@@ -48,8 +48,8 @@ export function debugRecommendedScores(scored) {
       : 0;
 
     console.log(
-      '[RECOMMENDED DEBUG] Formula: 0.45*positiveInterest + 0.25*freshness + ' +
-      '0.20*quality + ' +
+      '[RECOMMENDED DEBUG] Formula: 0.60*positiveInterest + 0.17*freshness + ' +
+      '0.13*quality + ' +
       '0.10*corroboration - 0.30*negativeInterest + ruleBoost'
     );
     console.log(

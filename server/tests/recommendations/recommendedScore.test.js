@@ -32,10 +32,10 @@ const strongEvent = {
 };
 
 describe('computeRecommended', () => {
-  it('scores articles with no optional semantic evidence using the unchanged defaults', () => {
+  it('scores articles with no optional semantic evidence using neutral interest', () => {
     const noSemanticEvidence = articleWith();
     expect(computeRecommendedBreakdown(noSemanticEvidence)).toMatchObject({ interestScore: 0, corroboration: 0 });
-    expect(computeRecommended(noSemanticEvidence)).toBeCloseTo(0.25 * 0.5 + 0.20 * 0.5);
+    expect(computeRecommended(noSemanticEvidence)).toBeCloseTo(0.15);
     expect(Number.isFinite(computeRecommended({}))).toBe(true);
     for (const interestScore of [0, 0.8, -0.8]) {
       expect(Number.isFinite(computeRecommended(articleWith({ interestScore })))).toBe(true);
@@ -46,7 +46,15 @@ describe('computeRecommended', () => {
     const neutral = computeRecommended(articleWith({ interestScore: 0 }));
     const interested = computeRecommended(articleWith({ interestScore: 1 }));
 
-    expect(interested - neutral).toBeCloseTo(0.45, 6);
+    expect(interested - neutral).toBeCloseTo(0.60, 6);
+  });
+
+  it('ranks moderate interest above a fresher, higher-quality neutral article', () => {
+    const interested = { id: 1, ...articleWith({ interestScore: 0.2, freshness: 0.5, quality: 0.7 }) };
+    const neutral = { id: 2, ...articleWith({ freshness: 1, quality: 0.8 }) };
+
+    expect(sortArticles([neutral, interested], { sortRecommended: true }).map(article => article.id))
+      .toEqual([1, 2]);
   });
 
   it('applies negative interest as an asymmetric penalty', () => {
@@ -60,7 +68,7 @@ describe('computeRecommended', () => {
     const stale = computeRecommended(articleWith({ freshness: 0 }));
     const fresh = computeRecommended(articleWith({ freshness: 1 }));
 
-    expect(fresh - stale).toBeCloseTo(0.25, 6);
+    expect(fresh - stale).toBeCloseTo(0.17, 6);
   });
 
   it('uses Quality as a secondary signal that does not dominate interest', () => {
@@ -68,7 +76,7 @@ describe('computeRecommended', () => {
     const lowQuality = computeRecommended(articleWith({ quality: 0 }));
     const interested = computeRecommended(articleWith({ quality: 0, interestScore: 1 }));
 
-    expect(highQuality - lowQuality).toBeCloseTo(0.2, 6);
+    expect(highQuality - lowQuality).toBeCloseTo(0.13, 6);
     expect(interested).toBeGreaterThan(highQuality);
   });
 
@@ -104,7 +112,7 @@ describe('computeRecommended', () => {
     const preferenceEnabled = computeRecommended(highTrust, { prioritizeHighTrust: true });
 
     expect(preferenceEnabled).toBe(ordinary);
-    expect(ordinary - computeRecommended(lowTrust)).toBeCloseTo(0.03, 6);
+    expect(ordinary - computeRecommended(lowTrust)).toBeCloseTo(0.0195, 6);
   });
 
   it('preserves the negative lower bound and established upper cap', () => {
@@ -123,7 +131,7 @@ describe('computeRecommended', () => {
     const articles = [-1, -0.5, 0, 0.5].map((interestScore, index) => ({
       id: 4 - index, ...articleWith({ interestScore, freshness: 0, quality: 0 })
     }));
-    expect(articles.map(computeRecommended)).toEqual([-0.3, -0.15, 0, 0.225]);
+    expect(articles.map(computeRecommended)).toEqual([-0.3, -0.15, 0, 0.3]);
     expect(sortArticles(articles, { sortRecommended: true }).map(article => article.id)).toEqual([1, 2, 3, 4]);
   });
 
@@ -169,6 +177,8 @@ describe('computeRecommended', () => {
       'freshness',
       'quality'
     ]);
+    expect(presentation.score).toBeCloseTo(0.853, 4);
+    expect(presentation.reasons.map(({ contribution }) => contribution)).toEqual([0.42, 0.1, 0.08, 0.136, 0.117]);
     expect(presentation.reasons[0]).toMatchObject({
       island: { id: 7, name: 'Software development' }
     });

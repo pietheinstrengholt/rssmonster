@@ -3,9 +3,9 @@ import { computeQuality } from '../articles/articleQuality.js';
 import { clamp01, computeEventRankingMetrics } from './eventRankingMetrics.js';
 
 const RECOMMENDED_WEIGHTS = Object.freeze({
-  positiveInterest: 0.45,
-  freshness: 0.25,
-  quality: 0.20,
+  positiveInterest: 0.60,
+  freshness: 0.17,
+  quality: 0.13,
   corroboration: 0.10,
   negativeInterest: 0.30
 });
