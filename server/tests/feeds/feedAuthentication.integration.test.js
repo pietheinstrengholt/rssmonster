@@ -60,11 +60,15 @@ describe('authenticated feed HTTP flow', () => {
     });
     const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Notifications', url: 'https://private.example.test/feed', generateEmbeddings: false, applyAiAnalysis: false, ...credentials });
     for (let attempt = 0; attempt < 2; attempt++) {
-      // Force parsing again so the second attempt also exercises publisher identity.
-      await feed.update({ lastAttemptAt: null, contentHash: null });
+      // Crawls update separate instances; reset persisted state so both attempts parse the entry.
+      await db.Feed.update({ lastAttemptAt: null, contentHash: null }, { where: { id: feed.id } });
+      expect(await db.Feed.findByPk(feed.id, { attributes: ['lastAttemptAt', 'contentHash'] }))
+        .toMatchObject({ lastAttemptAt: null, contentHash: null });
       const result = await crawlController.performCrawl(user.id, { feedId: feed.id, triggerType: 'api', parallel: false });
       expect(result).toMatchObject({ processed: 1, errors: 0 });
       expect(await db.Article.count({ where: { feedId: feed.id } })).toBe(1);
+      const crawlResult = await db.FeedCrawlResult.findOne({ where: { feedId: feed.id }, order: [['id', 'DESC']] });
+      expect(crawlResult).toMatchObject({ status: 'SUCCESS', itemsFetched: 1, articlesNew: attempt === 0 ? 1 : 0 });
     }
     const article = await db.Article.findOne({ where: { feedId: feed.id } });
     expect(article.title).toBe('Task assigned');
