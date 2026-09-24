@@ -216,6 +216,11 @@ are intentionally conservative and standalone articles are valid.
 
 ## Advanced Server Tuning
 
+Individual categories can override the normal existing-Event matching threshold
+with **Aggressive**, **Moderate**, or **Conservative**, or follow **Server default**.
+See [Category Event clustering]({% link categories.md %}#choose-event-clustering)
+for recommendations, stored values, and the scope of these preferences.
+
 Most installations should keep the defaults. Administrators evaluating Event
 quality can tune these server environment variables:
 

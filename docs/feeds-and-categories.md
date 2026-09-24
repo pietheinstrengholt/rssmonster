@@ -3,6 +3,7 @@ layout: page
 title: Feeds and Categories
 parent: Using RSSMonster
 nav_order: 10
+has_children: true
 ---
 
 # Feeds and Categories
@@ -24,6 +25,9 @@ navigation is available in the persistent sidebar on wider layouts.
 Categories contain feeds. [Tags]({% link tag.md %}) label articles, and
 [Smart Folders]({% link smart-folders.md %}) select articles by a saved search. Use whichever
 matches the kind of organization you need.
+
+See [Categories]({% link categories.md %}) for changing category names and icons,
+pinning shortcuts, and choosing an Event clustering preference for a category.
 
 ## Sidebar counts
 
