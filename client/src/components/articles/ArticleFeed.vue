@@ -639,8 +639,11 @@ export default {
       this.selectionStore.setTag('');
     },
 
-    // Changes the article state offered by an empty tag result while preserving the tag.
+    // Reloads an unchanged unread selection without the temporary new-only boundary.
     viewTagStatus(status) {
+      if (status === 'unread' && this.selectionStore.currentSelection.status === status) {
+        return this.showFullUnreadList();
+      }
       this.selectionStore.setSelectedStatus(status);
     },
 

@@ -23,6 +23,7 @@ const mountFeed = async (selection = {}, realList = false) => {
     BootstrapIcon: true,
     NewArticlesBanner: false,
     ArticleEndState: false,
+    ArticleEmptyState: false,
     UnreadSelectionContext: false,
     AppDropdown: false,
     ArticleListView: realList ? false : { props: ['articles'], template: '<section><slot name="before-context" :reader-mode="false" /><p v-for="article in articles" :key="article.id">{{ article.title }}</p></section>' }
@@ -41,6 +42,30 @@ beforeEach(() => {
 afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe('new unread articles', () => {
+  it('returns to all unread articles after completing the new-only list', async () => {
+    await mountFeed({}, true);
+    await wrapper.vm.checkForNewerArticles();
+    await flushPromises();
+    fetchArticleIds.mockResolvedValueOnce(result([107, 105, 106]));
+    await button('Show new only').trigger('click');
+    await flushPromises();
+
+    markAllAsRead.mockResolvedValueOnce({ data: { updatedCount: 3 } });
+    fetchArticleIds.mockResolvedValueOnce(result([]));
+    await button('Mark 3 as read').trigger('click');
+    await flushPromises();
+    expect(button('View unread articles')).toBeDefined();
+
+    fetchArticleIds.mockResolvedValueOnce(result([104, 101, 103]));
+    await button('View unread articles').trigger('click');
+    await flushPromises();
+    expect(fetchArticleIds).toHaveBeenLastCalledWith(expect.objectContaining({
+      status: 'unread', categoryId: '3', feedId: '4', search: 'title:Science'
+    }));
+    expect(button('View unread articles')).toBeUndefined();
+    expect(wrapper.findComponent({ name: 'ArticleListView' }).props('articles').map(article => article.id)).toEqual([104, 101, 103]);
+  });
+
   it('dismisses the arrivals banner without changing articles, selection or the baseline', async () => {
     await mountFeed();
     await wrapper.vm.checkForNewerArticles();
