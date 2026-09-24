@@ -12,6 +12,21 @@ const feed = () => ({
 });
 
 describe('buildArticleCandidate linkless entries', () => {
+  it('accepts a titled notification with a URL and no body without inventing content', async () => {
+    const candidate = await buildArticleCandidate({
+      feed: feed(),
+      entry: { title: 'Task assigned', url: 'https://example.com/tasks/42', externalId: 'urn:notification:42', externalIdType: 'atom-id' },
+      feedFormat: 'atom'
+    });
+    expect(candidate?.articleData).toMatchObject({ title: 'Task assigned', link: 'https://example.com/tasks/42', contentOriginal: null, contentText: null, description: null });
+  });
+
+  it.each([undefined, '', '   '])('rejects an entry without useful content or a publisher title (%j)', async title => {
+    await expect(buildArticleCandidate({
+      feed: feed(), entry: { title, url: 'https://example.com/empty' }, rssFeedTitle: 'Feed title'
+    })).resolves.toBeNull();
+  });
+
   it('accepts a content-bearing entry with a stable opaque GUID and no URL', async () => {
     const candidate = await buildArticleCandidate({
       feed: feed(),

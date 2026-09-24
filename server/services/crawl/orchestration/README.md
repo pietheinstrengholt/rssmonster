@@ -18,6 +18,10 @@ choose between revision and new-article workflows;
 preserve top-level retry and error behavior;
 return standardized crawl result metrics.
 
+Title-only notifications with a safe article URL or stable publisher identity are
+valid article candidates. Missing body and summary fields remain empty; the feed
+title alone does not make an otherwise empty entry eligible.
+
 # RSSMonster Content Processing Flow
 
 ```text

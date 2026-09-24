@@ -52,12 +52,31 @@ const validate = (input = {}) => request(app).post('/api/feeds/validate').set('A
   .send({ categoryId: category.id, url: 'https://private.example.test/feed', ...credentials, ...input });
 
 describe('authenticated feed HTTP flow', () => {
-  it('validates, stores encrypted credentials, and uses them for scheduled and manual crawls', async () => {
-    const validated = await validate();
+  it('stores a title-only Atom notification once across repeated authenticated crawls', async () => {
+    const atom = '<feed xmlns="http://www.w3.org/2005/Atom"><title>Notifications</title><id>urn:notifications</id><updated>2026-09-23T10:00:00Z</updated><entry><id>urn:notification:42</id><title>Task assigned</title><updated>2026-09-23T10:00:00Z</updated><link href="https://private.example.test/tasks/42" /></entry></feed>';
+    http.fetch.mockImplementation(async (url, options) => {
+      expect(new Headers(options.headers).get('authorization')).toBe(authorization);
+      return response(url, 200, atom, { 'content-type': 'application/atom+xml' });
+    });
+    const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Notifications', url: 'https://private.example.test/feed', generateEmbeddings: false, applyAiAnalysis: false, ...credentials });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      // Force parsing again so the second attempt also exercises publisher identity.
+      await feed.update({ lastAttemptAt: null, contentHash: null });
+      const result = await crawlController.performCrawl(user.id, { feedId: feed.id, triggerType: 'api', parallel: false });
+      expect(result).toMatchObject({ processed: 1, errors: 0 });
+      expect(await db.Article.count({ where: { feedId: feed.id } })).toBe(1);
+    }
+    const article = await db.Article.findOne({ where: { feedId: feed.id } });
+    expect(article.title).toBe('Task assigned');
+  });
+
+  it.each(['', ' \t\u00a0'])('validates, stores encrypted credentials, and crawls with trailing whitespace %j', async suffix => {
+    const submitted = { ...credentials, authenticationUsername: `test${suffix}`, authenticationPassword: `secret${suffix}` };
+    const validated = await validate(submitted);
     expect(validated.status).toBe(200);
     expect(validated.body.feedName).toBe('Private feed');
     const created = await request(app).post('/api/feeds').set('Authorization', token)
-      .send({ ...validated.body, ...credentials });
+      .send({ ...validated.body, ...submitted });
     expect(created.status).toBe(201);
     const id = created.body.feed.id;
     const stored = await db.Feed.findByPk(id, { attributes: { include: ['authenticationPassword'] } });

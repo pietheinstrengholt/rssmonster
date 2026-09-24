@@ -272,7 +272,8 @@ const buildArticleCandidate = async ({
   };
 
   // Require useful source material before identity or duplicate database work begins.
-  if (!contentOriginal && !fields.description && !media && !leadImage) return null;
+  // A publisher title is sufficient for link-only notifications; keep absent bodies empty.
+  if (!contentOriginal && !fields.description && !media && !leadImage && (titleWasMissing || !fields.title.trim())) return null;
 
   return {
     fields,

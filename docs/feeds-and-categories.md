@@ -44,8 +44,10 @@ publisher requires an HTTP username and password. These are the feed provider's
 credentials, which may differ from your RSSMonster account credentials.
 
 Both **Username** and **Password** are required before validating a new protected
-feed. The password is masked; the eye button toggles its visibility. RSSMonster
-uses the credentials during validation, feed discovery, initial retrieval, and
+feed. The server removes trailing whitespace, including non-breaking spaces,
+from submitted usernames and passwords when validating or saving a feed. Leading
+and internal whitespace is preserved. The password is masked; the eye button
+toggles its visibility. RSSMonster uses the credentials during validation, feed discovery, initial retrieval, and
 subsequent manual or scheduled crawls. Scheduled crawling is available in server
 deployments; the desktop app uses manual refresh.
 
