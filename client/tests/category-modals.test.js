@@ -19,7 +19,7 @@ vi.mock('../src/services/actionNotifications.js', () => ({
 let wrapper;
 
 // Mounts a category modal with the store contract used by both components.
-const mountCategoryModal = (component, category = { id: 7, name: 'News', iconName: 'newspaper' }) => {
+const mountCategoryModal = (component, category = { id: 7, name: 'News', iconName: 'newspaper' }, selection = { AIEnabled: true }) => {
   const store = createFocusedStores({
     auth: { token: 'token' },
     overview: {
@@ -28,7 +28,7 @@ const mountCategoryModal = (component, category = { id: 7, name: 'News', iconNam
       updateCategory: vi.fn()
     },
     selection: {
-      currentSelection: { categoryId: 7 }
+      currentSelection: { categoryId: 7, ...selection }
     },
     ui: {
       setShowModal: vi.fn()
@@ -68,7 +68,35 @@ const selectClustering = async label => {
   await option.setSelected();
 };
 
+describe.each([NewCategory, UpdateCategory])('$name AI availability', component => {
+  it.each([false, undefined, null])('hides Event clustering when AIEnabled is %s', AIEnabled => {
+    mountCategoryModal(component, undefined, { AIEnabled });
+    expect(wrapper.find('select').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Event clustering');
+    expect(wrapper.find('input[type="text"]').exists()).toBe(true);
+  });
+
+  it('shows clustering only after AI becomes enabled', async () => {
+    const { store } = mountCategoryModal(component, undefined, {});
+    expect(wrapper.find('select').exists()).toBe(false);
+    store.selectionStore.currentSelection.AIEnabled = true;
+    await flushPromises();
+    expect(wrapper.find('select').exists()).toBe(true);
+    store.selectionStore.currentSelection.AIEnabled = false;
+    await flushPromises();
+    expect(wrapper.find('select').exists()).toBe(false);
+  });
+});
+
 describe('NewCategory', () => {
+  it('creates a category with the default clustering preference while AI is disabled', async () => {
+    createCategory.mockResolvedValue({ data: { id: 8, name: 'News', clusteringBehavior: null } });
+    mountCategoryModal(NewCategory, undefined, { AIEnabled: false });
+    await wrapper.get('#new-category-name').setValue('News');
+    await wrapper.get('.base-dialog__button--primary').trigger('click');
+    await flushPromises();
+    expect(createCategory).toHaveBeenCalledWith('News', 'folder-fill', null);
+  });
   it.each(clusteringOptions)('creates a category with %s clustering', async (clusteringBehavior, label, recommendation) => {
     const category = { id: 8, name: 'News', iconName: 'folder-fill', clusteringBehavior };
     createCategory.mockResolvedValue({ data: category });
@@ -173,6 +201,15 @@ describe('NewCategory', () => {
 });
 
 describe('UpdateCategory', () => {
+  it('preserves the saved clustering preference when editing with AI disabled', async () => {
+    const category = { id: 7, name: 'News', iconName: 'newspaper', clusteringBehavior: 'conservative', pinned: false };
+    updateCategory.mockResolvedValue({ data: { ...category, name: 'Reading' } });
+    mountCategoryModal(UpdateCategory, category, { AIEnabled: false });
+    await wrapper.get('#category-name').setValue('Reading');
+    await wrapper.get('.base-dialog__button--primary').trigger('click');
+    await flushPromises();
+    expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'newspaper', 'conservative', false);
+  });
   it.each(clusteringOptions)('loads and preserves %s clustering when renaming', async (clusteringBehavior, label, recommendation) => {
     const category = { id: 7, name: 'News', iconName: 'newspaper', clusteringBehavior };
     updateCategory.mockResolvedValue({ data: { ...category, name: 'Reading' } });

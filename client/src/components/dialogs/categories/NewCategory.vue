@@ -27,6 +27,7 @@
         </div>
 
         <CategoryClusteringSelect
+            v-if="selectionStore.currentSelection.AIEnabled"
             id="new-category-clustering"
             v-model="clusteringBehavior"
             :disabled="isPending"
@@ -45,6 +46,7 @@
 
 <script>
 import { mapStores } from 'pinia';
+import { useSelectionStore } from '../../../store/selection.js';
 import { useOverviewStore } from '../../../store/overview.js';
 import { useUiStore } from '../../../store/ui.js';
 import BaseDialog from '../BaseDialog.vue';
@@ -72,7 +74,7 @@ export default {
         };
     },
     computed: {
-      ...mapStores(useOverviewStore, useUiStore),
+      ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
         // This function normalizes the category name used for validation and submission.
         trimmedCategoryName() {
             return this.categoryName.trim();

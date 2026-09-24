@@ -8,7 +8,7 @@
         @close="closeDialog"
     >
         <template #title>Update category</template>
-        <template #description>Update the selected category name, icon, and Event clustering preference.</template>
+        <template #description>{{ selectionStore.currentSelection.AIEnabled ? 'Update the selected category name, icon, and Event clustering preference.' : 'Update the selected category name and icon.' }}</template>
 
         <div class="category-dialog__name-field">
             <label class="app-form-label" for="category-name">Category name</label>
@@ -35,6 +35,7 @@
         </div>
 
         <CategoryClusteringSelect
+            v-if="selectionStore.currentSelection.AIEnabled"
             id="category-clustering"
             v-model="category.clusteringBehavior"
             :disabled="isPending"
