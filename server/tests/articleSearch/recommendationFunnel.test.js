@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
 import { searchArticles } from '../../services/articleSearch/articleSearch.service.js';
 
@@ -21,6 +21,13 @@ const stage = (result, name) => [...result.diagnostics.databaseStages, ...result
 const options = userId => ({ userId, sort: 'recommended', status: '%', minAdvertisementScore: 0, minSentimentScore: 0, minQualityScore: 0 });
 
 describe('Recommended and Briefing funnels', () => {
+  beforeEach(() => {
+    // Keep freshness scores identical across queries and tied articles.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-24T12:00:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
   it('separates Briefing eligibility and grouping from scoring without changing selected IDs', async () => {
     const { user, neutral, positive, negative, representative } = await fixture();
     await fixture(); // Foreign articles never enter any stage count.
