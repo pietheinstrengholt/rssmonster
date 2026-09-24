@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { withCrawlConfiguration } from '../../config/crawlSettings.js';
 import { acquireHttp } from '../../services/feeds/http/acquireHttp.js';
+import { buildFeedRequestAuthentication } from '../../services/feeds/http/feedRequestAuthentication.js';
 import {
   FETCH_OUTCOMES,
   createConditionalHeaders,
@@ -67,6 +68,48 @@ const withFeedPhaseTimeouts = (connectValue, bodyValue, assertion) => {
 };
 
 describe('feed HTTP acquisition contract', () => {
+  it('separates coalesced responses by credentials and keeps authorization out of outcomes', async () => {
+    const url = 'https://private.example.test/partitioned';
+    const authentication = password => buildFeedRequestAuthentication(url, { authenticationType: 'basic', authenticationUsername: 'test', authenticationPassword: password });
+    const fetchImplementation = vi.fn(async (_url, options) => new Response(new Headers(options.headers).get('authorization') ? 'private' : 'public'));
+    const transport = request => executeHttpRequest(request, fetchImplementation, { requestPolicy: immediateRequestPolicy() });
+    const outcomes = await Promise.all([
+      acquireHttp({ url, authentication: authentication('secret') }, { transport }),
+      acquireHttp({ url, authentication: authentication('different') }, { transport }),
+      acquireHttp({ url }, { transport }),
+      acquireHttp({ url, authentication: authentication('secret') }, { transport })
+    ]);
+    expect(fetchImplementation).toHaveBeenCalledTimes(3);
+    expect(outcomes.map(outcome => outcome.bodyText)).toEqual(['private', 'private', 'public', 'private']);
+    expect(JSON.stringify(outcomes)).not.toContain('authorization');
+    expect(JSON.stringify(outcomes)).not.toContain('dGVzdDpzZWNyZXQ=');
+  });
+
+  it('does not expose credential-bearing transport errors', async () => {
+    const url = 'https://private.example.test/failure';
+    const authentication = buildFeedRequestAuthentication(url, { authenticationType: 'basic', authenticationUsername: 'test', authenticationPassword: 'secret' });
+    const result = await executeHttpRequest(createHttpRequest({ url, authentication, retries: 0 }),
+      vi.fn().mockRejectedValue(new Error(`Rejected ${authentication.authorization} test:secret`)),
+      { requestPolicy: immediateRequestPolicy() });
+    expect(result.error.type).toBe('permanent_failure');
+    expect(JSON.stringify(result)).not.toContain('secret');
+    expect(JSON.stringify(result)).not.toContain(authentication.authorization);
+  });
+
+  it('does not expose credential-bearing response stream errors', async () => {
+    const url = 'https://private.example.test/body-failure';
+    const authentication = buildFeedRequestAuthentication(url, { authenticationType: 'basic', authenticationUsername: 'test', authenticationPassword: 'secret' });
+    const fetchImplementation = vi.fn(async () => new Response(new ReadableStream({
+      start(controller) { controller.error(new Error(`Rejected ${authentication.authorization} test:secret`)); }
+    })));
+    const result = await acquireHttp({ url, authentication }, {
+      transport: request => executeHttpRequest(request, fetchImplementation, { requestPolicy: immediateRequestPolicy() })
+    });
+    expect(result.type).toBe('permanent_failure');
+    expect(JSON.stringify(result)).not.toContain('secret');
+    expect(JSON.stringify(result)).not.toContain(authentication.authorization);
+  });
+
   it('defaults connections to ten seconds and bodies to thirty seconds', () => {
     expect(resolveFeedConnectTimeoutMs({})).toBe(10000);
     expect(resolveFeedBodyTimeoutMs({})).toBe(30000);

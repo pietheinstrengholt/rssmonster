@@ -102,27 +102,24 @@ describe('recoverable action errors', () => {
     createFeed.mockRejectedValueOnce(error);
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const notification = captureActionError();
-    const context = {
-      selectedCategory: 3,
-      crawlSince: '7d',
-      feed: {
+    const stores = createFocusedStores({ overview: { categories: [{ id: 3, name: 'News' }] } });
+    const wrapper = mount(NewFeed, { global: { plugins: [stores.pinia], stubs: { BootstrapIcon: true } } });
+    await wrapper.setData({ feed: {
         feedName: 'Example',
         feedDesc: '',
         feedType: 'rss',
         url: 'https://example.com/feed.xml'
       }
-    };
-
-    await NewFeed.methods.newFeed.call(context);
+    });
+    await wrapper.findAll('button').find(button => button.text() === 'Save changes').trigger('click');
+    await flushPromises();
 
     await expect(notification).resolves.toEqual({
       message: 'Could not add this feed. Please try again.'
     });
-    expect(context.feed.url).toBe('https://example.com/feed.xml');
-    expect(console.error).toHaveBeenCalledWith(
-      'Error adding feed URL https://example.com/feed.xml:',
-      error
-    );
+    expect(wrapper.findAll('button').some(button => button.text() === 'Save changes')).toBe(true);
+    expect(console.error).toHaveBeenCalledWith('Error adding feed');
+    wrapper.unmount();
   });
 
   it('notifies when Settings actions fail and does not close the section', async () => {

@@ -14,6 +14,81 @@ website URL and review the discovered subscription before adding it. For a large
 collection, [import OPML]({% link opml.md %}). For sites without a usable RSS or Atom feed,
 use an [HTML + XPath feed]({% link html-xpath-feeds.md %}).
 
+## Add a feed
+
+1. Create a category first if you do not already have one.
+2. Choose **Add new feed** in the sidebar or mobile Options sheet.
+3. Enter the **Feed or website URL** and select its **Category**. Use the
+   publisher's direct feed URL when available.
+4. Choose **Crawl since**: **Last 7 days** is the default. You can also select
+   the last month, three months, year, or **Everything**. This limits eligible
+   articles by publication date; it cannot retrieve older articles that the
+   publisher no longer includes in the feed.
+5. Leave **Authentication type** set to **None** for public feeds. For a protected
+   feed, select **HTTP Basic** and enter the publisher-provided credentials as
+   described below.
+6. Choose **Validate feed**. After successful validation, review or edit the
+   discovered **Feed name** and **Feed description**, then choose **Save changes**.
+
+![Add new feed dialog showing the URL, category, crawl period, and HTTP Basic authentication fields](/rssmonster/assets/add-new-feed.png)
+
+The screenshot shows **HTTP Basic** selected. New feeds default to **None**, which
+hides the username and password fields. If a website does not expose a supported
+feed, the dialog can offer **Use HTML + XPath (Web scraping)**; see the
+[HTML + XPath guide]({% link html-xpath-feeds.md %}) for that workflow.
+
+## HTTP Basic Authentication
+
+Use **Authentication → Authentication type → HTTP Basic** for feeds whose
+publisher requires an HTTP username and password. These are the feed provider's
+credentials, which may differ from your RSSMonster account credentials.
+
+Both **Username** and **Password** are required before validating a new protected
+feed. The password is masked; the eye button toggles its visibility. RSSMonster
+uses the credentials during validation, feed discovery, initial retrieval, and
+subsequent manual or scheduled crawls. Scheduled crawling is available in server
+deployments; the desktop app uses manual refresh.
+
+Keep credentials separate from the URL. Enter a URL such as
+`https://example.com/private/feed.xml`, then fill in the authentication fields.
+URLs such as `https://username:password@example.com/private/feed.xml` are rejected.
+
+With **None**, RSSMonster stores and sends no HTTP authentication credentials.
+Switching from **HTTP Basic** to **None** immediately clears the form's credential
+fields; saving that change removes the stored credentials. Switching back to
+**HTTP Basic** shows empty fields.
+
+### Edit saved credentials
+
+Select the feed and open **Edit feed**. Its existing username is shown, but its
+saved password is never returned to the form. Leave the password empty to keep it,
+or enter a replacement and choose **Save changes**. The masked placeholder does
+not contain the decrypted password.
+
+### Authentication errors and redirects
+
+- **Authentication failed. Check the username and password.** means the publisher
+  returned HTTP 401. Check the credentials with the feed provider and try again.
+- **Access to this feed was denied.** means the publisher returned HTTP 403.
+  Check that the account has permission to access that feed.
+- **Authenticated feed discovery changed origin. Update the feed URL explicitly.**
+  means discovery reached a different scheme, host, or port. Verify the intended
+  destination before changing the URL. RSSMonster strips authentication on
+  cross-origin redirects and will not automatically save a different-origin URL
+  for an authenticated feed.
+
+### Server setup and password storage
+
+The server needs a valid `ENCRYPTION_KEY` before saving feed passwords. RSSMonster
+reuses its existing encryption mechanism to encrypt passwords at rest, decrypting
+them for feed retrieval. Passwords are excluded from normal Feed API responses
+and serialized feed objects; authentication diagnostics do not include credentials.
+
+Keep the same encryption key available to the server and crawl workers, and back
+it up securely. See [Encryption of sensitive server settings]({% link configuration.md %}#encryption-of-sensitive-server-settings)
+for key generation and configuration. Public feeds using **None** do not require
+an encryption key.
+
 ## Organize subscriptions
 
 Use the desktop sidebar to select individual feeds, create or rename categories,

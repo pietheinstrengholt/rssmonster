@@ -5,6 +5,8 @@ import { getDefaultFeedIntelligentFeatures } from '../../config/intelligentFeatu
 import db from '../../models/index.js';
 import discoverRssLink from './discoverRssLink.js';
 import parseFeed from './parser.js';
+import { normalizeFeedAuthentication } from './feedAuthentication.js';
+import { assertFeedAuthenticationOrigin, buildFeedRequestAuthentication } from './http/feedRequestAuthentication.js';
 import { Op } from 'sequelize';
 import {
   FeedUrlAliasConflictError,
@@ -481,10 +483,13 @@ const resolveCategory = async ({
 export const discoverFeedSubscription = async ({
   userId,
   inputUrl,
-  requireDirectFeed = false
+  requireDirectFeed = false,
+  authentication = {},
+  existingFeedId = null
 }) => {
   // Normalizes the query before performing discover feed subscription.
   const query = normalizeFeedUrl(inputUrl);
+  const requestAuthentication = buildFeedRequestAuthentication(query, authentication);
   const inputAliases = discoveryAliasCandidates({
     inputUrl,
     query,
@@ -498,7 +503,7 @@ export const discoverFeedSubscription = async ({
     })
     : null;
   // Returns early when direct existing feed is available.
-  if (directExistingFeed) {
+  if (directExistingFeed && directExistingFeed.id !== existingFeedId) {
     return {
       query,
       feedUrl: directExistingFeed.url,
@@ -514,12 +519,21 @@ export const discoverFeedSubscription = async ({
   let discoveryResult;
   const observedOutcomes = [];
   const parseFailures = [];
+  const authenticationFailure = () => {
+    if (!requestAuthentication) return;
+    const denied = observedOutcomes.find(outcome => [401, 403].includes(outcome.response?.status));
+    if (denied) throw new FeedManagementError(
+      denied.response.status === 401 ? 'FEED_AUTHENTICATION_FAILED' : 'FEED_ACCESS_DENIED',
+      denied.response.status === 401 ? 'Authentication failed. Check the username and password.' : 'Access to this feed was denied.'
+    );
+  };
   try {
     discoveryResult = await discoverRssLink.discoverRssLink(
       query,
       undefined,
       {
         includeParsedFeed: true,
+        ...(requestAuthentication ? { authentication: requestAuthentication } : {}),
         userId,
         // Retains redirect evidence from the input request and accepted feed.
         onFetchOutcome: outcome => observedOutcomes.push(outcome),
@@ -528,17 +542,20 @@ export const discoverFeedSubscription = async ({
         }
       }
     );
-  } catch {
+  } catch (error) {
+    if (error?.code === 'FEED_AUTHENTICATION_ORIGIN_CHANGED') throw new FeedManagementError(error.code, error.message);
+    authenticationFailure();
     throw htmlPageDiscoveryError(observedOutcomes, parseFailures);
   }
 
-  if (requireDirectFeed) {
+  if (requireDirectFeed && !requestAuthentication) {
     const directInputError = htmlPageDiscoveryError(observedOutcomes, parseFailures);
     if (directInputError.code === 'NON_FEED_CONTENT') throw directInputError;
   }
 
   // Rejects processing when cloudflare is available.
   if (discoveryResult?.cloudflare) {
+    authenticationFailure();
     throw new FeedManagementError(
       'CLOUDFLARE_BLOCKED',
       'Feed discovery was blocked by Cloudflare',
@@ -552,11 +569,17 @@ export const discoverFeedSubscription = async ({
     : discoveryResult?.url;
   // Rejects processing when discovered url is unavailable.
   if (!discoveredUrl) {
+    authenticationFailure();
     throw htmlPageDiscoveryError(observedOutcomes, parseFailures);
   }
 
   // Normalizes the feed url before performing discover feed subscription.
   const feedUrl = normalizeFeedUrl(discoveredUrl);
+  try {
+    assertFeedAuthenticationOrigin(requestAuthentication, feedUrl);
+  } catch (error) {
+    throw new FeedManagementError(error.code, error.message);
+  }
   const aliases = discoveryAliasCandidates({
     inputUrl,
     query,
@@ -568,8 +591,11 @@ export const discoverFeedSubscription = async ({
   // Handles the case where parsed feed is unavailable.
   if (!parsedFeed) {
     try {
-      parsedFeed = await parseFeed.process(feedUrl);
-    } catch {
+      parsedFeed = await parseFeed.process(feedUrl, ...(requestAuthentication ? [{ authentication: requestAuthentication }] : []));
+    } catch (error) {
+      if (requestAuthentication && [401, 403].includes(error.status)) {
+        throw new FeedManagementError(error.status === 401 ? 'FEED_AUTHENTICATION_FAILED' : 'FEED_ACCESS_DENIED', error.message);
+      }
       throw new FeedManagementError(
         'DISCOVERY_FAILED',
         'Unable to parse the discovered feed'
@@ -640,6 +666,7 @@ export const updateFeedSubscription = async ({
     // Loads the feed needed while performing operation.
     const feed = await Feed.findOne({
       where: { id: feedId, userId },
+      attributes: { include: ['authenticationPassword'] },
       transaction,
       lock: transaction.LOCK.UPDATE
     });
@@ -648,7 +675,11 @@ export const updateFeedSubscription = async ({
       throw new FeedManagementError('FEED_NOT_FOUND', 'Feed not found');
     }
 
-    let normalizedUpdates = updates;
+    const authentication = normalizeFeedAuthentication(updates, feed);
+    let normalizedUpdates = { ...updates, ...authentication };
+    if (authentication.authenticationType === 'basic' && !Object.hasOwn(authentication, 'authenticationPassword')) {
+      delete normalizedUpdates.authenticationPassword;
+    }
     let endpointChanged = false;
     if (updates.url !== undefined) {
       const nextUrl = normalizeFeedUrl(updates.url);
@@ -680,7 +711,7 @@ export const updateFeedSubscription = async ({
         ],
         transaction
       });
-      normalizedUpdates = { ...updates, url: nextUrl };
+      normalizedUpdates = { ...normalizedUpdates, url: nextUrl };
     }
 
     if (
@@ -703,14 +734,21 @@ export const updateFeedSubscription = async ({
       };
     }
 
-    if (endpointChanged) {
+    const authenticationChanged = authentication.authenticationType !== undefined && (
+      authentication.authenticationType !== feed.authenticationType ||
+      authentication.authenticationUsername !== feed.authenticationUsername ||
+      typeof authentication.authenticationPassword === 'string'
+    );
+    // Validators, prior failures and active leases belong to the previous credential set.
+    if (endpointChanged || authenticationChanged) {
       normalizedUpdates = {
         ...normalizedUpdates,
         ...buildEndpointReplacementState({
           feed,
           updates: normalizedUpdates,
           clock
-        })
+        }),
+        ...(!endpointChanged && feed.status === 'disabled' ? { status: 'disabled', nextFetchAt: null } : {})
       };
     }
 
@@ -750,7 +788,7 @@ export const updateFeedSubscription = async ({
     await feed.update({
       ...normalizedUpdates,
       ...(targetCategory ? { categoryId: targetCategory.id } : {})
-    }, { transaction });
+    }, { transaction, logging: false });
 
     return feed;
   };
@@ -786,8 +824,10 @@ export const addFeedSubscription = async ({
   updateExisting = false,
   skipDiscovery = false,
   feedType = null,
-  sourceConfig = null
+  sourceConfig = null,
+  authentication = {}
 }) => {
+  const authenticationValues = normalizeFeedAuthentication(authentication);
   const configuredInference = await isInferenceConfigured();
   const intelligentFeatures = configuredInference ? getDefaultFeedIntelligentFeatures(await getInferenceEnvironment()) : { applyAiAnalysis: false, generateEmbeddings: false };
   // Handles the case where category id is not undefined and category id is not value.
@@ -809,7 +849,7 @@ export const addFeedSubscription = async ({
   // OPML already supplies the subscription metadata and must remain importable while offline.
   const discovery = skipDiscovery
     ? importedFeedSubscription(inputUrl)
-    : await discoverFeedSubscription({ userId, inputUrl });
+    : await discoverFeedSubscription({ userId, inputUrl, authentication: authenticationValues });
 
   try {
     // Serializes alias assignment and feed creation within the user's identity namespace.
@@ -889,6 +929,7 @@ export const addFeedSubscription = async ({
       // Performs the create operation while performing add feed subscription.
       const feed = await Feed.create({
         ...intelligentFeatures,
+        ...authenticationValues,
         userId,
         categoryId: category.id,
         feedName,
@@ -900,7 +941,7 @@ export const addFeedSubscription = async ({
         status,
         crawlSince: toCrawlSinceDate(crawlSince),
         ...publisherSelfState(discovery.publisherSelf)
-      }, { transaction });
+      }, { transaction, logging: false });
 
       await registerFeedUrlAliases({
         userId,

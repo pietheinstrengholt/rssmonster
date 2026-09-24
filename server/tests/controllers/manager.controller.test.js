@@ -92,6 +92,8 @@ describe('manager controller', () => {
           'feedName',
           'feedDesc',
           'url',
+          'authenticationType',
+          'authenticationUsername',
           'favicon',
           'errorCount',
           'errorMessage',

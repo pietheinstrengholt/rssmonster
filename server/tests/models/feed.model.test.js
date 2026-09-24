@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../../models/index.js';
+import { decryptSecret } from '../../services/secretEncryption.js';
 
 const { sequelize, User, Category, Feed } = db;
 
@@ -11,6 +12,7 @@ describe('Feed model', () => {
   let category;
 
   beforeAll(async () => {
+    vi.stubEnv('ENCRYPTION_KEY', Buffer.alloc(32, 7).toString('base64'));
     // Ensure DB connection is alive
     await sequelize.authenticate();
 
@@ -33,6 +35,8 @@ describe('Feed model', () => {
       categoryOrder: 0
     });
   });
+
+  afterAll(() => vi.unstubAllEnvs());
 
   it('creates a feed with defaults', async () => {
     const feed = await Feed.create({
@@ -60,6 +64,9 @@ describe('Feed model', () => {
     expect(feed.errorMessage).toBeNull();
     expect(feed.errorSince).toBeNull();
     expect(feed.itemFilter).toBeNull();
+    expect(feed.authenticationType).toBeNull();
+    expect(feed.authenticationUsername).toBeNull();
+    expect(feed.authenticationPassword).toBeNull();
     expect(feed.lastFetched).toBeNull();
     expect(feed.etag).toBeNull();
     expect(feed.lastModified).toBeNull();
@@ -80,6 +87,34 @@ describe('Feed model', () => {
     expect(feed.publisherSelfStatus).toBeNull();
     expect(feed.publisherSelfCheckedAt).toBeNull();
     expect(feed.publisherSelfDiagnostic).toBeNull();
+  });
+
+  it('persists basic authentication and allows clearing it', async () => {
+    const feed = await Feed.create({
+      userId: user.id,
+      categoryId: category.id,
+      feedName: 'Authenticated feed',
+      url: 'https://example.com/authenticated.xml',
+      authenticationType: 'basic',
+      authenticationUsername: 'reader',
+      authenticationPassword: 'test-password'
+    });
+    await feed.reload({ attributes: { include: ['authenticationPassword'] } });
+    expect(feed).toMatchObject({
+      authenticationType: 'basic',
+      authenticationUsername: 'reader'
+    });
+    expect(feed.toJSON()).not.toHaveProperty('authenticationPassword');
+    expect(feed.authenticationPassword).toMatch(/^enc:v1:/);
+    expect(decryptSecret(feed.authenticationPassword)).toBe('test-password');
+    expect((await Feed.findByPk(feed.id)).get({ plain: true })).not.toHaveProperty('authenticationPassword');
+    feed.authenticationType = 'digest';
+    await expect(feed.validate()).rejects.toMatchObject({ name: 'SequelizeValidationError' });
+    await feed.update({ authenticationType: null, authenticationUsername: null, authenticationPassword: null });
+    await feed.reload({ attributes: { include: ['authenticationPassword'] } });
+    expect(feed.authenticationType).toBeNull();
+    expect(feed.authenticationUsername).toBeNull();
+    expect(feed.authenticationPassword).toBeNull();
   });
 
   it('clears automatic scheduling when the interval is zero', async () => {

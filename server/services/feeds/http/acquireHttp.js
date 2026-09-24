@@ -15,6 +15,7 @@ import {
   requestCoalescer
 } from './requestCoordination.js';
 import { resolveDeadlineAt } from '../executionDeadline.js';
+import { feedAuthenticationIdentity } from './feedRequestAuthentication.js';
 
 const TRANSIENT_HTTP_STATUSES = new Set([408, 425, 500, 502, 503, 504]);
 
@@ -34,6 +35,7 @@ const outcomeFromError = (
 const requestIdentity = request => JSON.stringify({
   url: canonicalizeRequestUrl(request.url),
   headers: request.headers,
+  authentication: feedAuthenticationIdentity(request.authentication),
   previousContentHash: request.previousContentHash,
   retries: request.retries,
   connectTimeoutMs: request.connectTimeoutMs,
@@ -121,7 +123,11 @@ const acquireRequest = async (request, transport) => {
       attempts,
       error: {
         type: FETCH_OUTCOMES.PERMANENT_FAILURE,
-        message: `Server returned HTTP ${response.status}`,
+        message: request.authentication && response.status === 401
+          ? 'Authentication failed. Check the username and password.'
+          : request.authentication && response.status === 403
+            ? 'Access to this feed was denied.'
+            : `Server returned HTTP ${response.status}`,
         status: response.status,
         retryAfter: policy.retryAfterAt
       }

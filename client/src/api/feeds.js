@@ -28,8 +28,12 @@ export const retryFeed = feedId =>
 /**
  * Validate a feed URL
  */
-export const validateFeed = (url, categoryId) =>
-  api.post('/feeds/validate', { url, categoryId });
+const authenticationData = input => input.authenticationType === 'basic'
+  ? { authenticationType: 'basic', authenticationUsername: input.authenticationUsername, authenticationPassword: input.authenticationPassword }
+  : input.authenticationType === null ? { authenticationType: null } : {};
+
+export const validateFeed = (url, categoryId, authentication = {}) =>
+  api.post('/feeds/validate', { url, categoryId, ...authenticationData(authentication) });
 
 /**
  * Test an HTML/XPath source without persisting it.
@@ -58,7 +62,8 @@ export const createFeed = ({
   url,
   status,
   crawlSince,
-  sourceConfig
+  sourceConfig,
+  ...authentication
 }) => api.post('/feeds', {
   categoryId,
   feedName,
@@ -67,14 +72,20 @@ export const createFeed = ({
   url,
   status,
   crawlSince,
-  ...(sourceConfig ? { sourceConfig } : {})
+  ...(sourceConfig ? { sourceConfig } : {}),
+  ...authenticationData(authentication)
 });
 
 /**
  * Update a feed
  */
-export const updateFeed = (feedId, feedData) =>
-  api.put(`/feeds/${feedId}`, feedData);
+export const updateFeed = (feedId, feedData) => {
+  const { authenticationType, authenticationUsername, authenticationPassword, ...details } = feedData;
+  return api.put(`/feeds/${feedId}`, {
+    ...details,
+    ...authenticationData({ authenticationType, authenticationUsername, authenticationPassword })
+  });
+};
 
 /**
  * Rediscover RSS feed using AI

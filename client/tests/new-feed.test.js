@@ -67,6 +67,59 @@ afterEach(() => {
 });
 
 describe('NewFeed', () => {
+  it.each([
+    ['FEED_AUTHENTICATION_FAILED', 'Authentication failed. Check the username and password.'],
+    ['FEED_ACCESS_DENIED', 'Access to this feed was denied.']
+  ])('shows the actionable %s validation error', async (code, error_msg) => {
+    mountNewFeed();
+    await wrapper.get('#feed-url').setValue('https://example.com/feed');
+    validateFeed.mockRejectedValue({ response: { status: 422, data: { code, error_msg } } });
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.text()).toContain(error_msg);
+  });
+  it('requires Basic credentials locally, masks the password, and sends credentials separately', async () => {
+    mountNewFeed();
+    await wrapper.get('#feed-url').setValue('https://example.com/feed.xml');
+    expect(wrapper.find('#new-feed-authentication-password').exists()).toBe(false);
+    await wrapper.get('#new-feed-authentication-type').setValue('basic');
+    await wrapper.get('form').trigger('submit');
+    expect(validateFeed).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain('Enter a username.');
+    expect(wrapper.text()).toContain('Enter a password.');
+    await wrapper.get('#new-feed-authentication-username').setValue('reader');
+    await wrapper.get('#new-feed-authentication-password').setValue('secret');
+    expect(wrapper.get('#new-feed-authentication-password').attributes('type')).toBe('password');
+    await wrapper.get('[aria-label="Show password"]').trigger('click');
+    expect(wrapper.get('#new-feed-authentication-password').attributes('type')).toBe('text');
+    await wrapper.get('[aria-label="Hide password"]').trigger('click');
+    validateFeed.mockResolvedValue({ data: { feedName: 'Example', url: 'https://example.com/feed.xml' } });
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    const authentication = { authenticationType: 'basic', authenticationUsername: 'reader', authenticationPassword: 'secret' };
+    expect(validateFeed).toHaveBeenCalledWith('https://example.com/feed.xml', 3, authentication);
+    createFeed.mockResolvedValue({ data: { feed: { id: 1, categoryId: 3 } } });
+    await wrapper.findAll('button').find(button => button.text() === 'Save changes').trigger('click');
+    await flushPromises();
+    expect(createFeed).toHaveBeenCalledWith(expect.objectContaining(authentication));
+  });
+
+  it('clears credentials and validated metadata when switching authentication off', async () => {
+    mountNewFeed();
+    await wrapper.get('#feed-url').setValue('https://example.com');
+    await wrapper.get('#new-feed-authentication-type').setValue('basic');
+    await wrapper.get('#new-feed-authentication-username').setValue('reader');
+    await wrapper.get('#new-feed-authentication-password').setValue('secret');
+    await wrapper.get('#new-feed-authentication-type').setValue('');
+    expect(wrapper.find('#new-feed-authentication-password').exists()).toBe(false);
+    validateFeed.mockResolvedValue({ data: {} });
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(validateFeed).toHaveBeenCalledWith('https://example.com', 3);
+    await wrapper.get('#new-feed-authentication-type').setValue('basic');
+    expect(wrapper.get('#new-feed-authentication-username').element.value).toBe('');
+    expect(wrapper.get('#new-feed-authentication-password').element.value).toBe('');
+  });
   // Verifies the modal explains the category prerequisite and supports closing.
   it('renders the empty category state and supports closing', async () => {
     const { store } = mountNewFeed([]);
@@ -117,6 +170,7 @@ describe('NewFeed', () => {
     ['example', true],
     ['not-a-feed', true],
     ['ftp://example.com/feed.xml', true],
+    ['https://user:password@example.com/feed.xml', true],
     ['https://example', true]
   ])('sets the validate action disabled state for %s', async (url, disabled) => {
     mountNewFeed();
@@ -242,7 +296,7 @@ describe('NewFeed', () => {
       autoAnalyze: true
     });
     expect(store.uiStore.setShowModal).toHaveBeenCalledWith('HtmlXpathFeed');
-    expect(console.error).toHaveBeenCalledWith('Error validating feed URL https://example.com:', error);
+    expect(console.error).toHaveBeenCalledWith('Error validating feed');
   });
 
   it('shows an error when validation fails after receiving a server error body', async () => {
@@ -441,10 +495,7 @@ describe('NewFeed', () => {
     }));
     expect(wrapper.vm.error_msg).toBe('Could not add this feed. Please try again.');
     expect(store.overviewStore.addFeed).not.toHaveBeenCalled();
-    expect(console.error).toHaveBeenCalledWith(
-      'Error force-adding feed URL example feed:',
-      error
-    );
+    expect(console.error).toHaveBeenCalledWith('Error force-adding feed');
   });
 
   // Verifies saving validated metadata replaces it with the persisted store representation.

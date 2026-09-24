@@ -12,6 +12,7 @@ import request from 'supertest';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
+import { decryptSecret } from '../../services/secretEncryption.js';
 import { clearOpmlPreviewJobs } from '../../services/feeds/opmlPreviewJobs.js';
 import {
   LABEL_PREFIX,
@@ -115,11 +116,97 @@ describe('shared feed-management integration', () => {
   });
 
   afterEach(async () => {
+    vi.unstubAllEnvs();
     clearOpmlPreviewJobs();
     if (ownedUserIds.length > 0) {
       await User.destroy({ where: { id: { [Op.in]: ownedUserIds } } });
     }
     ownedUserIds = [];
+  });
+
+  it('encrypts Basic credentials, excludes secrets from reads, and supports keep, replace and clear edits', async () => {
+    vi.stubEnv('ENCRYPTION_KEY', Buffer.alloc(32, 7).toString('base64'));
+    const user = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    const authentication = { authenticationType: 'basic', authenticationUsername: 'reader', authenticationPassword: 'secret'.repeat(80) };
+    const created = await request(app).post('/api/feeds').set('Authorization', regularAuthHeaderFor(user))
+      .send({ categoryId: category.id, url: 'https://auth.example.test/feed', ...authentication });
+    expect(created.status).toBe(201);
+    expect(created.body.feed).toMatchObject({ authenticationType: 'basic', authenticationUsername: 'reader' });
+    expect(created.body.feed).not.toHaveProperty('authenticationPassword');
+    const id = created.body.feed.id;
+    const readStored = () => Feed.findByPk(id, { attributes: { include: ['authenticationPassword'] } });
+    const original = (await readStored()).authenticationPassword;
+    expect(original).toMatch(/^enc:v1:/);
+    expect(decryptSecret(original)).toBe(authentication.authenticationPassword);
+    expect((await Feed.findByPk(id, { raw: true }))).not.toHaveProperty('authenticationPassword');
+    const overview = await request(app).get('/api/manager/overview-lite').set('Authorization', regularAuthHeaderFor(user));
+    expect(overview.status).toBe(200);
+    expect(overview.body.categories.flatMap(category => category.feeds).find(feed => feed.id === id))
+      .toMatchObject({ authenticationType: 'basic', authenticationUsername: 'reader' });
+    expect(JSON.stringify(overview.body)).not.toContain('authenticationPassword');
+    for (const path of [`/api/feeds/${id}`, '/api/feeds', '/api/categories']) {
+      const response = await request(app).get(path).set('Authorization', regularAuthHeaderFor(user));
+      expect(response.status).toBe(200);
+      expect(JSON.stringify(response.body)).not.toContain('authenticationPassword');
+      expect(JSON.stringify(response.body)).not.toContain(original);
+    }
+    vi.stubEnv('ENCRYPTION_KEY', '');
+    const kept = await request(app).put(`/api/feeds/${id}`).set('Authorization', regularAuthHeaderFor(user))
+      .send({ authenticationType: 'basic', authenticationUsername: 'renamed', authenticationPassword: '' });
+    expect(kept.status).toBe(200);
+    expect((await readStored()).authenticationPassword).toBe(original);
+    expect(kept.body.feed).not.toHaveProperty('authenticationPassword');
+    const failed = await request(app).put(`/api/feeds/${id}`).set('Authorization', regularAuthHeaderFor(user))
+      .send({ authenticationType: 'basic', authenticationUsername: 'renamed', authenticationPassword: 'replacement' });
+    expect(failed.status).toBe(503);
+    expect((await readStored()).authenticationPassword).toBe(original);
+    vi.stubEnv('ENCRYPTION_KEY', Buffer.alloc(32, 7).toString('base64'));
+    const replaced = await request(app).put(`/api/feeds/${id}`).set('Authorization', regularAuthHeaderFor(user))
+      .send({ authenticationType: 'basic', authenticationUsername: 'renamed', authenticationPassword: 'replacement' });
+    expect(replaced.status).toBe(200);
+    expect(decryptSecret((await readStored()).authenticationPassword)).toBe('replacement');
+    const cleared = await request(app).put(`/api/feeds/${id}`).set('Authorization', regularAuthHeaderFor(user))
+      .send({ authenticationType: null, authenticationUsername: 'stale', authenticationPassword: 'stale' });
+    expect(cleared.status).toBe(200);
+    expect(await readStored()).toMatchObject({ authenticationType: null, authenticationUsername: null, authenticationPassword: null });
+  });
+
+  it('rejects missing or invalid credentials and credential-bearing URLs without echoing secrets', async () => {
+    const user = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    for (const path of ['/api/feeds', '/api/feeds/validate']) {
+      for (const [authentication, field] of [
+        [{ authenticationType: 'digest' }, 'authenticationType'],
+        [{ authenticationType: 'basic', authenticationPassword: 'secret' }, 'authenticationUsername'],
+        [{ authenticationType: 'basic', authenticationUsername: 'reader' }, 'authenticationPassword']
+      ]) {
+        const response = await request(app).post(path).set('Authorization', regularAuthHeaderFor(user))
+          .send({ url: 'https://auth.example.test/feed', categoryId: category.id, ...authentication });
+        expect(response.status).toBe(400);
+        expect(response.body.field).toBe(field);
+        expect(JSON.stringify(response.body)).not.toContain('secret');
+      }
+      const response = await request(app).post(path).set('Authorization', regularAuthHeaderFor(user))
+        .send({ url: 'https://reader:secret@auth.example.test/feed', categoryId: category.id });
+      expect(response.status).toBe(400);
+      expect(JSON.stringify(response.body)).not.toContain('secret');
+    }
+    expect(mocked.discoverRssLink).not.toHaveBeenCalled();
+  });
+
+  it('discards credentials for None and rejects foreign-user authentication edits', async () => {
+    const user = trackUser(await createGreaderUser());
+    const foreign = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    const response = await request(app).post('/api/feeds').set('Authorization', regularAuthHeaderFor(user))
+      .send({ url: 'https://noauth.example.test/feed', categoryId: category.id, authenticationType: null, authenticationUsername: 'stale', authenticationPassword: 'stale' });
+    expect(response.status).toBe(201);
+    expect(await Feed.findByPk(response.body.feed.id, { attributes: { include: ['authenticationPassword'] } }))
+      .toMatchObject({ authenticationType: null, authenticationUsername: null, authenticationPassword: null });
+    const edit = await request(app).put(`/api/feeds/${response.body.feed.id}`).set('Authorization', regularAuthHeaderFor(foreign))
+      .send({ authenticationType: 'basic', authenticationUsername: 'reader', authenticationPassword: 'secret' });
+    expect(edit.status).toBe(404);
   });
 
   it('initializes regular and Google Reader feeds through the same discovery result', async () => {

@@ -343,6 +343,7 @@ export const fetchWithOutboundRequestSafeguard = async (
   requestLifecycle = {}
 ) => {
   let currentUrl = validateOutboundUrl(input);
+  let requestOptions = options;
 
   for (let redirectCount = 0; ; redirectCount += 1) {
     let response;
@@ -352,7 +353,7 @@ export const fetchWithOutboundRequestSafeguard = async (
         currentUrl.toString()
       );
       response = await fetchImplementation(currentUrl, {
-        ...options,
+        ...requestOptions,
         redirect: 'manual',
         dispatcher: getGuardedDispatcher(requestLifecycle.connectTimeoutMs)
       });
@@ -389,6 +390,12 @@ export const fetchWithOutboundRequestSafeguard = async (
 
     await cancelResponseBody(response);
     await requestLifecycle.afterRequest?.(lifecycleToken);
+    if (nextUrl.origin !== currentUrl.origin) {
+      // Manual redirects must apply Fetch's origin boundary for Authorization.
+      const headers = new Headers(requestOptions.headers);
+      headers.delete('authorization');
+      requestOptions = { ...requestOptions, headers: Object.fromEntries(headers) };
+    }
     onRedirect?.({
       fromUrl: currentUrl.toString(),
       toUrl: nextUrl.toString(),

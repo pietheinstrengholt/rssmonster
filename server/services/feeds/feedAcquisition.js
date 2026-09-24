@@ -2,6 +2,7 @@
 
 import discoverRssLink from './discoverRssLink.js';
 import parseFeed from './parser.js';
+import { loadFeedRequestAuthentication } from './http/feedRequestAuthentication.js';
 import { acquireHtmlXpathFeed } from './htmlXpath/acquireHtmlXpathFeed.js';
 import {
   FETCH_OUTCOMES,
@@ -66,6 +67,7 @@ const outcomeFromUnexpectedError = error => {
   if (error?.code === 'SSRF_BLOCKED') type = FETCH_OUTCOMES.SECURITY_REJECTED;
   if (error?.code === 'UNSAFE_FEED_XML') type = FETCH_OUTCOMES.MALFORMED;
   if (error?.name === 'TimeoutError') type = FETCH_OUTCOMES.TIMED_OUT;
+  if (['FEED_AUTHENTICATION_ORIGIN_CHANGED', 'SETTINGS_ENCRYPTION_ERROR'].includes(error?.code)) type = FETCH_OUTCOMES.PERMANENT_FAILURE;
 
   return createFetchOutcome(type, {
     error: {
@@ -134,11 +136,14 @@ export const acquireFeed = async ({
   };
 
   try {
+    const authentication = await loadFeedRequestAuthentication(feed);
+    if (authentication) conditionalRequest.authentication = authentication;
     if (feed?.feedType === 'html_xpath') {
       const outcome = await acquireHtmlXpathFeed({
         url: inputUrl,
         feed,
-        execution
+        execution,
+        ...(authentication ? { authentication } : {})
       });
       return withDiscoveryMetadata({
         outcome,
@@ -155,6 +160,7 @@ export const acquireFeed = async ({
       feed,
       {
         includeParsedFeed: true,
+        ...(authentication ? { authentication } : {}),
         conditionalRequest,
         execution,
         deadlineAt: execution.deadlineAt,

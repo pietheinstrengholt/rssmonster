@@ -765,6 +765,13 @@ administrators to replace credentials or restore environment defaults even when
 the key is unavailable. Encrypted credentials are decrypted only for runtime use
 or to validate and re-encrypt retained values during a settings save.
 
+Feed HTTP Basic Authentication passwords use the same key and encryption
+mechanism. Configure it on the server and crawl workers before saving or fetching
+authenticated subscriptions. Feed passwords are excluded from normal Feed API
+responses. In the feed editor, an empty password retains the saved credential;
+selecting **None** and saving clears it. See [HTTP Basic Authentication]({% link feeds-and-categories.md %}#http-basic-authentication)
+for adding and editing protected feeds.
+
 ### Web Push overrides in Server settings
 
 Administrators can open **Settings → Server settings → Web Push options** to

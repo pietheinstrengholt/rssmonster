@@ -46,6 +46,14 @@ describe('feed diagnostic logging', () => {
     expect(redactFeedUrlCredentials(url)).toContain('api_key=REDACTED');
     expect(redactFeedUrlCredentials(url)).toContain('token=REDACTED');
     expect(redactFeedLogText(`Failed ${url}.`)).not.toContain('secret');
+    expect(redactFeedUrlCredentials('https://test:secret@feeds.example.test/rss')).toBe('https://feeds.example.test/rss');
+  });
+
+  it('redacts authentication fields in structured diagnostics', () => {
+    process.env.CRAWL_VERBOSE_LOGGING = 'true';
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    logFeedDebug({ authenticationUsername: 'private-user', authenticationPassword: 'private-password', headers: { Authorization: 'Basic private-token' }, request: { authentication: { authorization: 'Basic private-token' } } });
+    expect(JSON.stringify(log.mock.calls)).not.toContain('private-');
   });
 
   it('sanitizes verbose string, error, and structured diagnostics before logging', () => {

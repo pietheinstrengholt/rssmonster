@@ -9,6 +9,7 @@ import { parseFeedSourceIsolated } from './feedsmith/isolatedFeedParser.js';
 import { detectFeedSourceKind } from './feedsmith/xmlCleanup.js';
 import { logFeedDebug, warnFeedDebug } from './feedLogging.js';
 import { acquireHttp } from './http/acquireHttp.js';
+import { assertFeedAuthenticationOrigin, loadFeedRequestAuthentication } from './http/feedRequestAuthentication.js';
 import {
   FETCH_OUTCOMES,
   isSuccessfulFetchOutcome
@@ -288,6 +289,7 @@ const completeParsedDiscovery = async ({
   recoveryKind = 'direct'
 }) => {
   let publisherSelf = null;
+  assertFeedAuthenticationOrigin(options.authentication, finalUrl);
   try {
     publisherSelf = await validatePublisherSelfIdentity({
       userId: userId || feed?.userId || null,
@@ -295,6 +297,7 @@ const completeParsedDiscovery = async ({
       parsedFeed,
       finalFeedUrl: finalUrl,
       sourceBodyHash: fetchOutcome?.bodyHash,
+      ...(options.authentication ? { authentication: options.authentication } : {}),
       execution,
       deadlineAt: execution.deadlineAt,
       signal: execution.signal
@@ -448,10 +451,13 @@ const isFatalDiscoveryError = error =>
   error?.code === 'FEED_EXECUTION_CONTEXT_INVALID' ||
   error?.code === 'UNSAFE_FEED_XML' ||
   error?.code === 'FEED_INPUT_LIMIT_EXCEEDED' ||
-  error?.code === 'FEED_RECONCILIATION_FAILED';
+  error?.code === 'FEED_RECONCILIATION_FAILED' ||
+  error?.code === 'FEED_AUTHENTICATION_ORIGIN_CHANGED';
 
 // Attempts RSS discovery from direct feeds, HTML link tags, social URL conventions, and common fallback paths.
 export const discoverRssLink = async (url, feed, options = {}) => {
+  const authentication = options.authentication || await loadFeedRequestAuthentication(feed);
+  options = { ...options, ...(authentication ? { authentication } : {}) };
   try {
     // Handles the case where url is not url.
     if (!isURL(url)) {
@@ -487,10 +493,11 @@ export const discoverRssLink = async (url, feed, options = {}) => {
     // YouTube short-circuit
     if (isYoutubeUrl(url)) {
       // Derives the yt rss through get youtube rss from handle while performing discover rss link.
-      const ytRss = await getYoutubeRssFromHandle(url, execution);
+      const ytRss = await getYoutubeRssFromHandle(url, { ...execution, ...(authentication ? { authentication } : {}) });
 
       // Handles the case where yt rss is available.
       if (ytRss) {
+        assertFeedAuthenticationOrigin(authentication, ytRss);
         logFeedDebug(`Discovered YouTube RSS feed: ${ytRss}`);
         if (!establishedFeed) {
           const resolvedFeed = await persistDiscoveredUrl(feed, ytRss, execution);
@@ -524,7 +531,8 @@ export const discoverRssLink = async (url, feed, options = {}) => {
         retries,
         deadlineAt: discoveryDeadline,
         signal: execution.signal,
-        ...requestState
+        ...requestState,
+        ...(authentication ? { authentication } : {})
       });
       options.onFetchOutcome?.(outcome, {
         ...provenance,
@@ -547,6 +555,7 @@ export const discoverRssLink = async (url, feed, options = {}) => {
       initialOutcome.type === FETCH_OUTCOMES.UNCHANGED
     ) {
       const resolvedUrl = initialResponse?.url || url;
+      assertFeedAuthenticationOrigin(authentication, resolvedUrl);
       const permanentRedirect = isPermanentHttpRedirect(
         initialOutcome,
         establishedFeed ? feed.url : url,

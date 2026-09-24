@@ -8,6 +8,8 @@ export const redactFeedUrlCredentials = value => {
   const input = String(value || '');
   try {
     const url = new URL(input);
+    url.username = '';
+    url.password = '';
     for (const key of new Set(url.searchParams.keys())) {
       if (SENSITIVE_QUERY_PARAMETER.test(key)) {
         url.searchParams.set(key, 'REDACTED');
@@ -43,7 +45,9 @@ export const sanitizeFeedLogValue = (value, seen = new WeakSet()) => {
   }
   return Object.fromEntries(Object.entries(value).map(([key, item]) => [
     key,
-    sanitizeFeedLogValue(item, seen)
+    /^(?:authorization|authenticationPassword|authenticationUsername|authentication)$/i.test(key)
+      ? '[REDACTED]'
+      : sanitizeFeedLogValue(item, seen)
   ]));
 };
 

@@ -58,6 +58,7 @@ export const createHttpRequest = ({
   connectTimeoutMs = resolveFeedConnectTimeoutMs(),
   bodyTimeoutMs = resolveFeedBodyTimeoutMs(),
   previousContentHash = null,
+  authentication = null,
   deadlineAt = null,
   signal = null
 }) => Object.freeze({
@@ -67,6 +68,7 @@ export const createHttpRequest = ({
   connectTimeoutMs,
   bodyTimeoutMs,
   previousContentHash,
+  ...(authentication ? { authentication } : {}),
   deadlineAt,
   signal
 });
@@ -138,7 +140,13 @@ export const createFetchOutcome = (type, details = {}) => {
     throw new TypeError(`Unsupported fetch outcome: ${type}`);
   }
 
-  return Object.freeze({ type, ...details });
+  const safeDetails = { ...details };
+  if (details.request?.authentication) {
+    const request = { ...details.request };
+    delete request.authentication;
+    safeDetails.request = Object.freeze(request);
+  }
+  return Object.freeze({ type, ...safeDetails });
 };
 
 // Reports whether an outcome contains a successfully acquired response body.

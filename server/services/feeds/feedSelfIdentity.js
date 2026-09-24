@@ -7,6 +7,7 @@ import {
   throwIfExecutionExpired
 } from './executionDeadline.js';
 import parseFeed from './parser.js';
+import { assertFeedAuthenticationOrigin } from './http/feedRequestAuthentication.js';
 import {
   findFeedByUrlAlias,
   registerFeedUrlAliases
@@ -282,6 +283,7 @@ export const validatePublisherSelfIdentity = async ({
   parsedFeed,
   finalFeedUrl,
   sourceBodyHash = null,
+  authentication = null,
   deadlineAt = null,
   signal = null,
   execution: suppliedExecution = null,
@@ -295,6 +297,7 @@ export const validatePublisherSelfIdentity = async ({
   let resolvedUrl;
   try {
     resolvedUrl = resolvePublisherSelfUrl(parsedFeed.selfUrl, finalFeedUrl);
+    assertFeedAuthenticationOrigin(authentication, resolvedUrl);
   } catch (error) {
     return {
       accepted: false,
@@ -354,6 +357,7 @@ export const validatePublisherSelfIdentity = async ({
   let candidateOutcome;
   try {
     candidateOutcome = await acquireCandidate(resolvedUrl, {
+      ...(authentication ? { authentication } : {}),
       retries: 0,
       ...(execution.deadlineAt ? { deadlineAt: execution.deadlineAt } : {}),
       ...(execution.signal ? { signal: execution.signal } : {})
@@ -387,6 +391,9 @@ export const validatePublisherSelfIdentity = async ({
   }
 
   const candidateFinalUrl = candidateOutcome.response?.url || resolvedUrl;
+  if (authentication && new URL(candidateFinalUrl).origin !== authentication.origin) {
+    return { accepted: false, declaredUrl: String(parsedFeed.selfUrl), resolvedUrl, status: 'unrelated', diagnostic: 'Authenticated publisher self URL changed origin', aliases: [], fetched: true };
+  }
   const evidence = verifySameFeedEvidence({
     sourceFeed: parsedFeed,
     sourceFinalUrl: finalFeedUrl,

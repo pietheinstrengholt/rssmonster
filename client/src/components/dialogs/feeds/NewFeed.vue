@@ -74,6 +74,8 @@
                         </div>
                     </section>
 
+                    <FeedAuthentication ref="authentication" id="new-feed-authentication" v-model="authentication" @change="resetValidatedFeed" />
+
                     <aside class="feed-modal-tip">
                         <span class="feed-modal-tip-icon" aria-hidden="true">
                             <BootstrapIcon icon="info-lg" />
@@ -375,11 +377,13 @@ import { useUiStore } from '../../../store/ui.js';
 import { validateFeed, createFeed } from '../../../api/feeds';
 import { notifyActionError } from '../../../services/actionNotifications.js';
 import BaseDialog from '../BaseDialog.vue';
+import FeedAuthentication from './FeedAuthentication.vue';
 
 // Keeps request-specific validation errors out of the scraper fallback path.
 const isActionableValidationError = error => {
     const data = error?.response?.data;
     return error?.response?.status === 409
+        || ['FEED_AUTHENTICATION_FAILED', 'FEED_ACCESS_DENIED', 'FEED_AUTHENTICATION_ORIGIN_CHANGED'].includes(data?.code)
         || data?.error_msg === 'Feed already exists.'
         || data?.error_msg === 'Category is invalid.';
 };
@@ -387,7 +391,8 @@ const isActionableValidationError = error => {
 export default {
     name: 'NewFeed',
     components: {
-        BaseDialog
+        BaseDialog,
+        FeedAuthentication
     },
     // Initializes the feed discovery workflow state.
     data() {
@@ -402,12 +407,16 @@ export default {
           url: null,
           category: {},
           feed: {},
+          authentication: { authenticationType: null, authenticationUsername: '', authenticationPassword: '' },
           selectedCategory: null,
           crawlSince: '7d'
         };
     },
     computed: {
       ...mapStores(useOverviewStore, useUiStore),
+        authenticationData() {
+            return this.authentication.authenticationType === 'basic' ? this.authentication : {};
+        },
         // Locks incompatible actions while any feed request is pending.
         isBusy() {
             return this.ajaxRequest || this.forceAdding || this.saving;
@@ -428,6 +437,7 @@ export default {
                     /^[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?$/i.test(label)
                 );
                 const isValid = ['http:', 'https:'].includes(parsedUrl.protocol)
+                    && !parsedUrl.username && !parsedUrl.password
                     && labels.length >= 2
                     && labels.at(-1).length >= 2
                     && hasValidLabels;
@@ -524,13 +534,15 @@ export default {
             if (this.isBusy || !this.hasValidUrl) {
                 return;
             }
+            if (!this.$refs.authentication.validate()) return;
 
             //set ajaxRequest to true so the please wait shows up the screen
             this.ajaxRequest = true;
             this.showHtmlXpathFallback = false;
 
             try {
-                const result = await validateFeed(this.normalizedUrl, this.selectedCategory);
+                const result = await validateFeed(this.normalizedUrl, this.selectedCategory,
+                    ...(this.authentication.authenticationType === 'basic' ? [this.authenticationData] : []));
                 this.error_msg = "";
                 this.isCloudflare = false;
                 this.cloudflareUrl = null;
@@ -554,7 +566,7 @@ export default {
                         ? data.error_msg
                         : 'Could not validate this feed. The URL may be invalid or the host may be unavailable.';
                 }
-                console.error(`Error validating feed URL ${this.url}:`, error);
+                console.error('Error validating feed');
             } finally {
                 this.ajaxRequest = false;
             }
@@ -564,6 +576,7 @@ export default {
             if (this.ajaxRequest || this.forceAdding || this.saving) {
                 return;
             }
+            if (!this.$refs.authentication.validate()) return;
 
             this.forceAdding = true;
             try {
@@ -577,6 +590,7 @@ export default {
                 }
 
                 const result = await createFeed({
+                    ...this.authenticationData,
                     categoryId: this.selectedCategory,
                     feedName,
                     feedDesc: null,
@@ -589,9 +603,9 @@ export default {
                 this.feed = result.data.feed;
                 this.overviewStore.addFeed(this.selectedCategory, this.feed);
                 this.uiStore.setShowModal('');
-            } catch (error) {
+            } catch {
                 this.error_msg = 'Could not add this feed. Please try again.';
-                console.error(`Error force-adding feed URL ${this.cloudflareUrl || this.url}:`, error);
+                console.error('Error force-adding feed');
             } finally {
                 this.forceAdding = false;
             }
@@ -601,10 +615,12 @@ export default {
             if (this.ajaxRequest || this.forceAdding || this.saving) {
                 return;
             }
+            if (!this.$refs.authentication.validate()) return;
 
             this.saving = true;
             try {
                 const result = await createFeed({
+                    ...this.authenticationData,
                     categoryId: this.selectedCategory,
                     feedName: this.feed.feedName,
                     feedDesc: this.feed.feedDesc,
@@ -626,7 +642,7 @@ export default {
                 //close modal
                 this.uiStore.setShowModal('');
             } catch (error) {
-                console.error(`Error adding feed URL ${this.feed.url}:`, error);
+                console.error('Error adding feed');
                 notifyActionError('Could not add this feed. Please try again.', error);
             } finally {
                 this.saving = false;

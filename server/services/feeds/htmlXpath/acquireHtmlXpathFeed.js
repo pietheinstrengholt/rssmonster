@@ -50,6 +50,7 @@ const withFeedContext = (outcome, { url, feed }) => createFetchOutcome(outcome.t
 export const acquireHtmlXpathFeed = async ({
   url,
   feed,
+  authentication = null,
   deadlineAt = null,
   signal = null,
   execution: suppliedExecution = null
@@ -69,6 +70,7 @@ export const acquireHtmlXpathFeed = async ({
 
   const outcome = await acquire({
     url,
+    ...(authentication ? { authentication } : {}),
     headers: {
       accept: HTML_ACCEPT_HEADER,
       ...createConditionalHeaders(feed)

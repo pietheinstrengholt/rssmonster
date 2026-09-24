@@ -86,8 +86,8 @@ export const acquireFeedSource = async (feedUrl, requestState = {}) => {
 };
 
 // Preserves the legacy parser API while adapting neutral outcomes to stable errors.
-export const process = async feedUrl => {
-  const outcome = await acquireFeedSource(feedUrl);
+export const process = async (feedUrl, requestState = {}) => {
+  const outcome = await acquireFeedSource(feedUrl, requestState);
   if (isSuccessfulFetchOutcome(outcome)) return outcome.parsedFeed;
 
   const error = new Error(outcome.error?.message || 'Feed parsing failed');
@@ -103,7 +103,10 @@ export const process = async feedUrl => {
         : 'INVALID_FEED';
   } else if (outcome.response?.status) {
     error.code = 'FEED_FETCH_ERROR';
-    error.message = `Feed fetch failed (HTTP ${outcome.response.status})`;
+    error.status = outcome.response.status;
+    error.message = requestState.authentication && [401, 403].includes(error.status)
+      ? outcome.error.message
+      : `Feed fetch failed (HTTP ${outcome.response.status})`;
   } else {
     error.code = 'FEED_PARSE_ERROR';
   }

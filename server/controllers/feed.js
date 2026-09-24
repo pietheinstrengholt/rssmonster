@@ -20,6 +20,8 @@ import { deriveFeedOverviewHealth } from '../services/feeds/feedOverviewHealth.j
 import { compileItemFilter } from '../services/crawl/filtering/itemFilter.js';
 import { testHtmlXpathSource } from '../services/feeds/htmlXpath/testHtmlXpathSource.js';
 import { normalizeHtmlXpathConfig } from '../services/feeds/htmlXpath/config.js';
+import { FeedAuthenticationError, normalizeFeedAuthentication } from '../services/feeds/feedAuthentication.js';
+import { decryptSecret, SecretEncryptionError } from '../services/secretEncryption.js';
 
 const UPDATE_INTERVAL_MINUTES = [null, 0, 5, 15, 30, 60, 120, 360, 720, 1440];
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -73,14 +75,23 @@ const normalizeItemFilter = value => {
 
 // This function maps shared feed-management failures to regular API responses.
 const sendFeedManagementError = (res, error) => {
+  if (error instanceof FeedAuthenticationError) {
+    return res.status(400).json({ error: error.message, error_msg: error.message, field: error.field });
+  }
+  if (error instanceof SecretEncryptionError) {
+    return res.status(503).json({ error: 'Feed credentials could not be stored. Check the server ENCRYPTION_KEY configuration.' });
+  }
   if (!isFeedManagementError(error)) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: 'Could not complete the feed request.' });
   }
   if (error.code === 'FEED_NOT_FOUND') {
     return res.status(404).json({ message: 'Feed not found' });
   }
   if (error.code === 'FEED_EXISTS') {
     return res.status(409).json({ error_msg: 'Feed already exists.' });
+  }
+  if (['FEED_AUTHENTICATION_FAILED', 'FEED_ACCESS_DENIED', 'FEED_AUTHENTICATION_ORIGIN_CHANGED'].includes(error.code)) {
+    return res.status(422).json({ code: error.code, error_msg: error.message });
   }
   if (error.code === 'CLOUDFLARE_BLOCKED') {
     return res.status(403).json({
@@ -391,12 +402,15 @@ const updateFeed = async (req, res, _next) => {
         generateEmbeddings,
         applyAiAnalysis,
         itemFilter,
+        authenticationType: req.body.authenticationType,
+        authenticationUsername: req.body.authenticationUsername,
+        authenticationPassword: req.body.authenticationPassword,
         ...(pinned !== undefined ? { pinned } : {})
       }
     });
     return res.status(200).json({ feed: updatedFeed });
   } catch (err) {
-    console.error('Error in updateFeed:', err);
+    console.error('Error in updateFeed');
     return sendFeedManagementError(res, err);
   }
 };
@@ -433,11 +447,16 @@ const newFeed = async (req, res, _next) => {
       crawlSince: req.body.crawlSince,
       skipDiscovery: isHtmlXpath,
       feedType: isHtmlXpath ? 'html_xpath' : null,
-      sourceConfig
+      sourceConfig,
+      authentication: {
+        authenticationType: req.body.authenticationType,
+        authenticationUsername: req.body.authenticationUsername,
+        authenticationPassword: req.body.authenticationPassword
+      }
     });
     return res.status(201).json({ feed: result.feed });
   } catch (err) {
-    console.error('Error in newFeed:', err);
+    console.error('Error in newFeed');
     return sendFeedManagementError(res, err);
   }
 };
@@ -484,14 +503,32 @@ const validateFeed = async (req, res, _next) => {
       return res.status(400).json({ error_msg: 'Category is invalid.' });
     }
 
+    let existingFeed = null;
+    if (req.body.feedId !== undefined) {
+      existingFeed = await Feed.findOne({
+        where: { id: req.body.feedId, userId },
+        attributes: { include: ['authenticationPassword'] },
+        logging: false
+      });
+      if (!existingFeed) return res.status(404).json({ message: 'Feed not found' });
+    }
+    const authentication = {
+      ...(existingFeed ? { authenticationType: existingFeed.authenticationType, authenticationUsername: existingFeed.authenticationUsername } : {}),
+      ...normalizeFeedAuthentication(req.body, existingFeed)
+    };
+    if (authentication.authenticationType === 'basic' && authentication.authenticationPassword === undefined) {
+      authentication.authenticationPassword = decryptSecret(existingFeed.authenticationPassword);
+    }
     const discovery = await discoverFeedSubscription({
       userId,
       inputUrl: req.body.url,
-      requireDirectFeed: true
+      requireDirectFeed: true,
+      authentication,
+      existingFeedId: existingFeed?.id ?? null
     });
 
     //check if feed already exists
-    if (discovery.existingFeed) {
+    if (discovery.existingFeed && discovery.existingFeed.id !== existingFeed?.id) {
       return res.status(409).json({
         error_msg: 'Feed already exists.'
       });
@@ -517,7 +554,7 @@ const validateFeed = async (req, res, _next) => {
       favicon
     });
   } catch (err) {
-    console.error('Error in validateFeed:', err);
+    console.error('Error in validateFeed');
     return sendFeedManagementError(res, err);
   }
 };

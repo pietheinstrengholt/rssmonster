@@ -14,6 +14,8 @@ import { up as addIslandSupport } from '../../migrations/20260919001000-add-isla
 import { up as addOriginalSource } from '../../migrations/20260922000000-add-article-original-source.mjs';
 import { up as addAuthors } from '../../migrations/20260922001000-add-article-authors.mjs';
 import { up as addPinnedItems } from '../../migrations/20260923006000-add-sidebar-pinned-items.mjs';
+import { up as addFeedAuthentication } from '../../migrations/20260923008000-add-feed-authentication.mjs';
+import { up as expandFeedAuthentication } from '../../migrations/20260923009000-expand-feed-authentication-password.mjs';
 import { up as addCategoryClusteringBehavior } from '../../migrations/20260922002000-add-category-clustering-behavior.mjs';
 
 import { resetDatabase } from '../helpers/resetDb.js';
@@ -58,6 +60,8 @@ async function installHistoricalSchema() {
   await addAuthors(qi, db.Sequelize);
   await addCategoryClusteringBehavior(qi, db.Sequelize);
   await addPinnedItems(qi, db.Sequelize);
+  await addFeedAuthentication(qi, db.Sequelize);
+  await expandFeedAuthentication(qi, db.Sequelize);
   await qi.addColumn('feeds', 'lastArticleReceivedAt', {
     type: db.Sequelize.DATE, allowNull: true, defaultValue: null
   });

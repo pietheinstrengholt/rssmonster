@@ -46,6 +46,17 @@ beforeEach(() => {
 });
 
 describe('feeds API contracts', () => {
+  it('includes Basic credentials and strips stale credentials for None', () => {
+    const authentication = { authenticationType: 'basic', authenticationUsername: 'reader', authenticationPassword: 'secret' };
+    validateFeed('https://example.com/feed', 3, authentication);
+    expect(post).toHaveBeenLastCalledWith('/feeds/validate', { url: 'https://example.com/feed', categoryId: 3, ...authentication });
+    createFeed({ url: 'https://example.com/feed', ...authentication });
+    expect(post.mock.calls.at(-1)[1]).toMatchObject(authentication);
+    updateFeed(7, { ...authentication, authenticationType: null });
+    expect(put).toHaveBeenLastCalledWith('/feeds/7', { authenticationType: null });
+    validateFeed('https://example.com/feed', 3, { ...authentication, authenticationType: null });
+    expect(post.mock.calls.at(-1)[1]).not.toHaveProperty('authenticationPassword');
+  });
   // Verifies feed retrieval and validation retain the URL and category.
   it('builds feed retrieval and validation requests', () => {
     vi.spyOn(Date, 'now').mockReturnValue(123456);

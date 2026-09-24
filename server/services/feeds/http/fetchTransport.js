@@ -8,6 +8,7 @@ import {
   createHttpResponse
 } from './contracts.js';
 import { originRequestPolicy } from './requestCoordination.js';
+import { feedAuthenticationHeaders } from './feedRequestAuthentication.js';
 import {
   remainingDeadlineMs,
   resolveDeadlineAt
@@ -115,8 +116,16 @@ const isRetryableTranslatedError = (error, request) =>
 // Converts Fetch headers into a neutral lower-case string map.
 const toNeutralHeaders = headers => Object.fromEntries(headers.entries());
 
+// Client exceptions can contain request details; authenticated requests expose only neutral codes.
+const translateRequestError = (error, authentication) => {
+  const translated = translateTransportError(error);
+  return authentication
+    ? createHttpError({ ...translated, message: `Feed request failed (${translated.code || translated.type})` })
+    : translated;
+};
+
 // Wraps a Fetch body reader and request abort controller behind the neutral stream contract.
-const toNeutralBodyStream = (response, responseController, release) => {
+const toNeutralBodyStream = (response, responseController, release, authentication) => {
   if (!response.body) {
     release();
     return null;
@@ -138,7 +147,7 @@ const toNeutralBodyStream = (response, responseController, release) => {
         return { done, chunk: value || null };
       } catch (error) {
         release();
-        return { error: translateTransportError(error) };
+        return { error: translateRequestError(error, authentication) };
       }
     },
     // Cancels both the response reader and its underlying request.
@@ -203,7 +212,8 @@ export const executeHttpRequest = async (
             Accept:
               'text/html,application/xhtml+xml,application/xml;q=0.9,application/rss+xml,application/atom+xml,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
-            ...request.headers
+            ...request.headers,
+            ...feedAuthenticationHeaders(request.authentication, request.url)
           }
         },
         undefined,
@@ -232,13 +242,13 @@ export const executeHttpRequest = async (
           url: response.url || request.url,
           headers: toNeutralHeaders(response.headers),
           redirects,
-          body: toNeutralBodyStream(response, responseController, release)
+          body: toNeutralBodyStream(response, responseController, release, request.authentication)
         }),
         attempts: attempt + 1
       };
     } catch (error) {
       finalRelease?.();
-      const translated = translateTransportError(error);
+      const translated = translateRequestError(error, request.authentication);
       if (
         isRetryableTranslatedError(translated, request) &&
         !deadlineSignal.aborted &&

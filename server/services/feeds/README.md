@@ -14,6 +14,28 @@ CommaFeed's exact behavior as a compatibility contract.
 
 ## Design goals
 
+Feed authentication settings are stored separately from subscription URLs. The
+management API accepts `authenticationType: null` or `basic`; Basic requires a
+username and password when adding a feed. On edit, an empty or omitted password
+retains the existing password, and selecting None clears both credentials.
+Passwords use the shared `secretEncryption.js` abstraction and `ENCRYPTION_KEY`
+when assigned to the Feed model. Normal queries and JSON responses exclude the
+password; credential writes disable SQL logging. Validation and creation pass
+credentials through `http/feedRequestAuthentication.js`; acquisition loads and
+decrypts the saved secret only at the retrieval boundary. The shared Fetch
+transport applies Basic authentication to the configured origin, including
+same-origin discovery and publisher-self checks. Authorization is stripped on
+cross-origin redirects and is never restored within that redirect chain. An
+authenticated subscription cannot automatically promote a different-origin URL:
+the owner must explicitly update it so a later crawl cannot leak credentials.
+Request coalescing separates different credentials, and fetch outcomes omit the
+authentication context. Authentication failures use safe 401/403 diagnostics;
+the validation API returns these as 422 responses without expiring the user's
+RSSMonster session. Validation of an owned existing feed can include `feedId`;
+an empty password retains and uses the saved secret without modifying it.
+Changing credentials resets endpoint validators and fetch failure state, using
+the same lease invalidation and rescheduling path as an explicit URL change.
+
 Feed processing must remain:
 
 - respectful of publisher cache and rate-limit instructions;

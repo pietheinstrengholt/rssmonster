@@ -84,6 +84,8 @@
               </div>
             </div>
 
+            <FeedAuthentication ref="authentication" id="update-feed-authentication" v-model="authentication" :password-stored="originalFeed.authenticationType === 'basic'" />
+
             <!-- Description -->
             <div
               class="update-feed__field"
@@ -352,6 +354,7 @@ import { useSelectionStore } from '../../../store/selection.js';
 import { useOverviewStore } from '../../../store/overview.js';
 import { useUiStore } from '../../../store/ui.js';
 import BaseDialog from '../BaseDialog.vue';
+import FeedAuthentication from './FeedAuthentication.vue';
 import { deleteFeed as deleteFeedAPI, rediscoverRss, updateFeed } from '../../../api/feeds';
 import { notifyActionError } from '../../../services/actionNotifications.js';
 import { validateItemFilter } from '../../../services/itemFilterValidation.js';
@@ -359,12 +362,14 @@ import { validateItemFilter } from '../../../services/itemFilterValidation.js';
 export default {
   name: 'UpdateFeed',
   components: {
-    BaseDialog
+    BaseDialog,
+    FeedAuthentication
   },
   // This function creates editable feed state and mutually exclusive operation flags.
   data() {
     return {
       feed: {},
+      authentication: { authenticationType: null, authenticationUsername: '', authenticationPassword: '' },
       originalFeed: {}, // Store the original feed to track changes
       rediscovering: false,
       rediscoveredRss: null,
@@ -455,6 +460,11 @@ export default {
           this.feed.pinned = this.feed.pinned ?? false;
           this.feed.itemFilter = this.feed.itemFilter ?? '';
           this.originalFeed = JSON.parse(JSON.stringify(feed)); // Store original for comparison
+          this.authentication = {
+            authenticationType: feed.authenticationType ?? null,
+            authenticationUsername: feed.authenticationUsername ?? '',
+            authenticationPassword: ''
+          };
           return;
         }
       }
@@ -536,10 +546,12 @@ export default {
         this.rediscovering ||
         !validateItemFilter(this.feed.itemFilter).valid
       ) return;
+      if (this.$refs?.authentication?.validate() === false) return;
 
       this.updating = true;
       try {
         const result = await updateFeed(this.feed.id, {
+          ...(this.authentication.authenticationType === 'basic' ? this.authentication : { authenticationType: null }),
           feedName: this.feed.feedName,
           pinned: this.feed.pinned,
           feedDesc: this.feed.feedDesc,
@@ -563,7 +575,7 @@ export default {
 
         this.uiStore.setShowModal('');
       } catch (error) {
-        console.error(`Error updating feed ${this.feed.id}:`, error);
+        console.error('Error updating feed');
         notifyActionError('Could not save this feed. Please try again.', error);
       } finally {
         this.updating = false;

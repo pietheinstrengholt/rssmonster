@@ -16,6 +16,8 @@ const OVERVIEW_FEED_ATTRIBUTES = [
   'feedName',
   'feedDesc',
   'url',
+  'authenticationType',
+  'authenticationUsername',
   'favicon',
   'errorCount',
   'errorMessage',

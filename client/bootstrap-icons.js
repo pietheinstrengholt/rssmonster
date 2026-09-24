@@ -59,6 +59,7 @@ export const bootstrapIconNames = [
   'exclamation-triangle-fill',
   'eye',
   'eye-fill',
+  'eye-slash',
   'file-code-fill',
   'file-earmark-text',
   'fire',

@@ -12,6 +12,19 @@ function response(status, location, cancel = vi.fn()) {
 }
 
 describe('fetchWithOutboundRequestSafeguard', () => {
+  it.each(['https://other.example.com/feed', 'http://example.com/feed', 'https://example.com:8443/feed'])('drops Authorization when redirecting to %s, including a later return', async destination => {
+    const fetchImplementation = vi.fn()
+      .mockResolvedValueOnce(response(302, '/same-origin'))
+      .mockResolvedValueOnce(response(302, destination))
+      .mockResolvedValueOnce(response(302, 'https://example.com/final'))
+      .mockResolvedValueOnce(response(200));
+    await fetchWithOutboundRequestSafeguard('https://example.com/start', {
+      headers: { Authorization: 'Basic dGVzdDpzZWNyZXQ=', Accept: 'application/rss+xml' }
+    }, 4, fetchImplementation);
+    const headers = fetchImplementation.mock.calls.map(([, options]) => new Headers(options.headers));
+    expect(headers.map(header => header.get('authorization'))).toEqual(['Basic dGVzdDpzZWNyZXQ=', 'Basic dGVzdDpzZWNyZXQ=', null, null]);
+    expect(headers.every(header => header.get('accept') === 'application/rss+xml')).toBe(true);
+  });
   // Clears internal-destination exceptions after each policy scenario.
   afterEach(() => {
     vi.unstubAllEnvs();

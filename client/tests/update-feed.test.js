@@ -64,7 +64,7 @@ const createContext = (overrides = {}) => {
 };
 
 // Mounts the complete feed dialog without relying on another async dialog's styles.
-const mountUpdateFeed = () => {
+const mountUpdateFeed = (overrides = {}) => {
   const feed = {
     id: 10,
     categoryId: 1,
@@ -73,7 +73,8 @@ const mountUpdateFeed = () => {
     url: 'https://example.com/feed',
     status: 'error',
     errorSince: '2026-01-01',
-    feedTags: []
+    feedTags: [],
+    ...overrides
   };
   const store = createFocusedStores({
     auth: { token: 'token' },
@@ -123,6 +124,29 @@ afterEach(() => {
 });
 
 describe('UpdateFeed', () => {
+  it('shows the saved username with an empty password and preserves it on save', async () => {
+    mountUpdateFeed({ authenticationType: 'basic', authenticationUsername: 'reader' });
+    expect(wrapper.get('#update-feed-authentication-username').element.value).toBe('reader');
+    expect(wrapper.get('#update-feed-authentication-password').element.value).toBe('');
+    expect(wrapper.text()).toContain('Leave unchanged if empty.');
+    updateFeed.mockResolvedValue({ data: { feed: { id: 10, categoryId: 1 } } });
+    await wrapper.get('.update-feed__save').trigger('click');
+    await flushPromises();
+    expect(updateFeed).toHaveBeenCalledWith(10, expect.objectContaining({ authenticationType: 'basic', authenticationUsername: 'reader', authenticationPassword: '' }));
+  });
+
+  it('omits credentials when disabling authentication on an existing feed', async () => {
+    mountUpdateFeed({ authenticationType: 'basic', authenticationUsername: 'reader' });
+    await wrapper.get('#update-feed-authentication-password').setValue('replacement');
+    await wrapper.get('#update-feed-authentication-type').setValue('');
+    updateFeed.mockResolvedValue({ data: { feed: { id: 10, categoryId: 1 } } });
+    await wrapper.get('.update-feed__save').trigger('click');
+    await flushPromises();
+    const body = updateFeed.mock.calls[0][1];
+    expect(body.authenticationType).toBeNull();
+    expect(body).not.toHaveProperty('authenticationPassword');
+    expect(body).not.toHaveProperty('authenticationUsername');
+  });
   // Verifies the rendered dialog is visible through BaseDialog without generic modal CSS.
   it('renders a visible shared dialog independently', async () => {
     const { wrapper: dialogWrapper } = mountUpdateFeed();
@@ -250,6 +274,7 @@ describe('UpdateFeed', () => {
     await context.updateFeed();
 
     expect(updateFeed).toHaveBeenCalledWith(10, {
+      authenticationType: null,
       pinned: false,
       feedName: 'Updated',
       feedDesc: 'New description',

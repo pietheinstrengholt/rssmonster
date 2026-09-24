@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize';
 import { getDefaultFeedIntelligentFeatures } from '../config/intelligentFeatures.js';
+import { encryptSecret } from '../services/secretEncryption.js';
 
 export default (sequelize) => {
   const intelligentFeatureDefaults = getDefaultFeedIntelligentFeatures();
@@ -52,6 +53,26 @@ export default (sequelize) => {
       url: {
         type: DataTypes.STRING.BINARY,
         allowNull: false
+      },
+      // Selects HTTP authentication; null means no authentication.
+      authenticationType: {
+        type: DataTypes.ENUM('basic'),
+        allowNull: true,
+        defaultValue: null,
+        validate: { isIn: [['basic']] }
+      },
+      authenticationUsername: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: null
+      },
+      authenticationPassword: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        defaultValue: null,
+        set(value) {
+          this.setDataValue('authenticationPassword', value == null ? null : encryptSecret(value));
+        }
       },
       // Stores the feed icon URL shown by clients; null when none is available.
       favicon: {
@@ -365,6 +386,7 @@ export default (sequelize) => {
       }
     },
     {
+      defaultScope: { attributes: { exclude: ['authenticationPassword'] } },
       hooks: {
         // Keeps disabled feeds outside the due-feed index regardless of their prior deadline.
         beforeValidate: feed => {
@@ -391,6 +413,13 @@ export default (sequelize) => {
       collate: 'utf8mb4_unicode_ci'
     }
   );
+
+  // Prevents stored credentials from being serialized in API responses.
+  Feed.prototype.toJSON = function toJSON() {
+    const values = { ...this.get({ plain: true }) };
+    delete values.authenticationPassword;
+    return values;
+  };
 
   return Feed;
 };
