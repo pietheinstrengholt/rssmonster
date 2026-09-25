@@ -178,13 +178,13 @@ describe('Sidebar configuration dialog', () => {
     expect(uiStore.sidebarSettings.automaticallyHideInactiveFeeds).toBe(true);
   });
 
-  it.each(['manual', 'name', 'selectedCount', 'totalCount', 'recentlyActive'])('saves %s sorting', async sortOrder => {
+  it.each(['manual', 'name', 'selectedCount', 'totalCount', 'recentlyActive', 'personalInterests'])('saves %s sorting', async sortOrder => {
     const uiStore = mountDialog();
     await flushPromises();
     const select = wrapper.get('select[aria-label="Sort sidebar category items by"]');
     expect(select.element.value).toBe('manual');
     expect(select.findAll('option').map(option => option.text())).toEqual([
-      'Manual order', 'Name', 'Selected count', 'Total count', 'Recently active'
+      'Manual order', 'Name', 'Selected count', 'Total count', 'Recently active', 'Personal interests'
     ]);
     await select.setValue(sortOrder);
     await wrapper.get('form').trigger('submit');

@@ -591,12 +591,17 @@ export default {
         if (order === 'name') value = (categories ? item.name : item.feedName) || '';
         else if (order === 'selectedCount') value = Number(item[this.selectedCountField] || 0);
         else if (order === 'totalCount') value = Number(item.unreadCount || 0) + Number(item.readCount || 0);
+        else if (order === 'personalInterests') value = categories
+          ? (item.feeds || []).reduce((sum, feed) => sum + Number(feed.sourceAffinity ?? 0), 0)
+          : item.sourceAffinity == null ? null : Number(item.sourceAffinity);
         else value = categories
           ? (item.feeds || []).reduce((latest, feed) => Math.max(latest, activity(feed)), 0)
           : activity(item);
         return { item, value };
       }).sort((a, b) => order === 'name'
         ? a.value.localeCompare(b.value, undefined, { sensitivity: 'base', numeric: true })
+        : order === 'personalInterests' && !categories && (a.value == null || b.value == null)
+          ? (a.value == null) - (b.value == null)
         : b.value - a.value
       ).map(entry => entry.item);
     },

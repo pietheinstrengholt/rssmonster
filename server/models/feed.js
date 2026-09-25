@@ -116,6 +116,13 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0.75
       },
+      // Estimates how consistently recent articles match active positive Interest Islands.
+      sourceAffinity: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+        defaultValue: null,
+        validate: { min: 0, max: 1 }
+      },
       // Stores the observed proportion of feed articles identified as duplicates.
       feedDuplicationRate: {
         type: DataTypes.FLOAT,

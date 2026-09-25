@@ -13,7 +13,8 @@ const mocks = vi.hoisted(() => ({
   persist: vi.fn(),
   score: vi.fn(),
   recordProcessingFailure: vi.fn(),
-  enqueueSemanticLabels: vi.fn()
+  enqueueSemanticLabels: vi.fn(),
+  refreshSourceAffinity: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
@@ -31,6 +32,7 @@ vi.mock('../../models/index.js', () => ({
 }));
 
 vi.mock('../../services/score/scoreArticlesFromIslands.js', () => ({ default: mocks.score }));
+vi.mock('../../services/islands/sourceAffinity.js', () => ({ refreshSourceAffinityForUser: mocks.refreshSourceAffinity }));
 vi.mock('../../services/islands/islandArticleProfiles.js', () => ({
   buildInterestIslandProfilesForUser: mocks.buildArticles
 }));

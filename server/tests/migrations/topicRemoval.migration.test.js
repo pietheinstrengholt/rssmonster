@@ -12,6 +12,7 @@ import { up as addAnalysisProvenance } from '../../migrations/20260917000000-add
 import { up as addIslandBehaviorTime } from '../../migrations/20260917001000-add-island-behavior-time.mjs';
 import { up as addIslandSupport } from '../../migrations/20260919001000-add-island-support-article-ids.mjs';
 import { up as addIslandMuted } from '../../migrations/20260925001000-add-island-muted-ind.mjs';
+import { up as addFeedSourceAffinity } from '../../migrations/20260925002000-add-feed-source-affinity.mjs';
 import { up as addOriginalSource } from '../../migrations/20260922000000-add-article-original-source.mjs';
 import { up as addAuthors } from '../../migrations/20260922001000-add-article-authors.mjs';
 import { up as addPinnedItems } from '../../migrations/20260923006000-add-sidebar-pinned-items.mjs';
@@ -60,6 +61,7 @@ async function installHistoricalSchema() {
   await addIslandBehaviorTime(qi, db.Sequelize);
   await addIslandSupport(qi, db.Sequelize);
   await addIslandMuted(qi, db.Sequelize);
+  await addFeedSourceAffinity(qi, db.Sequelize);
   await addOriginalSource(qi, db.Sequelize);
   await addAuthors(qi, db.Sequelize);
   await addCategoryClusteringBehavior(qi, db.Sequelize);

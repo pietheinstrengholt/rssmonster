@@ -511,6 +511,35 @@ describe('Options API sidebar contracts', () => {
     wrapper.unmount();
   });
 
+  it('sorts personal interests by feed affinity and category sum with stable ties', async () => {
+    const stores = initializeStores();
+    stores.overviewStore.categories[0].feeds = [
+      { id: 101, categoryId: 10, feedName: 'Zulu', sourceAffinity: null, unreadCount: 1 },
+      { id: 102, categoryId: 10, feedName: 'Alpha', sourceAffinity: 0.4, unreadCount: 1 },
+      { id: 103, categoryId: 10, feedName: 'Beta', sourceAffinity: 0, unreadCount: 1 },
+      { id: 104, categoryId: 10, feedName: 'Delta', sourceAffinity: 0.4, unreadCount: 1 }
+    ];
+    stores.overviewStore.categories[1].feeds = [
+      { id: 201, categoryId: 20, feedName: 'Other', sourceAffinity: 0.8, unreadCount: 1 },
+      { id: 202, categoryId: 20, feedName: 'Unscored', sourceAffinity: null, unreadCount: 1 }
+    ];
+    stores.overviewStore.categories.unshift({ id: 30, name: 'Unscored category', unreadCount: 1,
+      feeds: [{ id: 301, categoryId: 30, feedName: 'Blank', sourceAffinity: null, unreadCount: 1 }] });
+    const original = JSON.parse(JSON.stringify(stores.overviewStore.categories));
+    stores.uiStore.sidebarSettings.sortOrder = 'personalInterests';
+    const wrapper = mountSidebar(stores.pinia);
+    const feedNames = () => wrapper.findAllComponents(SidebarFeedItem).map(item => item.text().replace(/[0-9/]+$/, '').trim());
+    const categoryNames = () => wrapper.findAllComponents(SidebarCategoryGroup).map(item => item.get('button').text().replace(/[0-9/]+$/, '').trim());
+    expect(categoryNames()).toEqual(['Technology', 'News', 'Unscored category']);
+    expect(feedNames()).toEqual(['Alpha', 'Delta', 'Beta', 'Zulu']);
+    stores.uiStore.sidebarSettings.sortOrder = 'manual';
+    await wrapper.vm.$nextTick();
+    expect(categoryNames()).toEqual(['Unscored category', 'Technology', 'News']);
+    expect(feedNames()).toEqual(['Zulu', 'Alpha', 'Beta', 'Delta']);
+    expect(stores.overviewStore.categories).toEqual(original);
+    wrapper.unmount();
+  });
+
   it('exits reordering when automatic sorting is saved and keeps inactive feeds last', async () => {
     const stores = initializeStores();
     stores.overviewStore.categories[0].feeds = [

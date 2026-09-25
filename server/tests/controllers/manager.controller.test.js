@@ -68,7 +68,8 @@ describe('manager controller', () => {
           feeds: [
             {
               id: 8,
-              feedName: 'Security Feed'
+              feedName: 'Security Feed',
+              sourceAffinity: 0.65
             }
           ]
         })
@@ -90,6 +91,7 @@ describe('manager controller', () => {
           'createdAt',
           'lastArticleReceivedAt',
           'feedName',
+          'sourceAffinity',
           'feedDesc',
           'url',
           'authenticationType',
@@ -132,6 +134,7 @@ describe('manager controller', () => {
             {
               id: 8,
               feedName: 'Security Feed',
+              sourceAffinity: 0.65,
               readCount: 0,
               unreadCount: 0,
               briefingCount: 0,

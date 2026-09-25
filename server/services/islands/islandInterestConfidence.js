@@ -106,7 +106,7 @@ export function prepareIslandEvidence(islands, evidence, explicitEvidence = evid
 }
 
 // Apply interaction windows and stable interaction ordering before the existing evidence bounds.
-export async function loadIslandEvidence(userId, { transaction, now = Date.now() } = {}) {
+export async function loadIslandEvidence(userId, { transaction, now = Date.now(), positiveOnly = false } = {}) {
   const where = { userId, ...canonicalArticleWhere(), filteredInd: false, articleVector: { [Op.ne]: null } };
   const attributes = ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'userId', 'feedId', 'publishedAt', 'articleVector', 'embedding_model', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', ...BEHAVIOR_TIMESTAMP_FIELDS];
   const query = (extra, limit, fields = BEHAVIOR_TIMESTAMP_FIELDS) => db.Article.findAll({ where: { ...where, ...extra }, attributes,
@@ -118,7 +118,8 @@ export async function loadIslandEvidence(userId, { transaction, now = Date.now()
     ...condition, [field]: { [Op.gte]: new Date(now - IMPLICIT_WINDOW_DAYS * DAY_MS), [Op.lte]: new Date(now) }
   }, IMPLICIT_EVIDENCE_LIMIT, [field]);
   const [islands, evidence, negative, positive, clicked, read] = await Promise.all([
-    db.Island.findAll({ where: { userId, ...activeIslandWhere(now), mutedInd: false }, attributes: ['id', 'userId', 'label', 'generatedLabel', 'weight', 'islandVector', 'embedding_model', 'supportArticleIds'], order: [['id', 'ASC']], raw: true, transaction }),
+    db.Island.findAll({ where: { userId, ...activeIslandWhere(now), mutedInd: false,
+      ...(positiveOnly ? { weight: { [Op.gt]: 0 } } : {}) }, attributes: ['id', 'userId', 'label', 'generatedLabel', 'weight', 'islandVector', 'embedding_model', 'supportArticleIds'], order: [['id', 'ASC']], raw: true, transaction }),
     query({ [Op.and]: [db.Sequelize.where(behaviorTimestampExpression(db.sequelize, BEHAVIOR_TIMESTAMP_FIELDS, now), { [Op.ne]: null })],
       [Op.or]: [{ positiveInd: 1 }, { favoriteInd: 1 }, { negativeInd: 1 }, { clickedAmount: { [Op.gt]: 0 } }, { attentionBucket: { [Op.gte]: 3 } }] }, EVIDENCE_LIMIT),
     query({ negativeInd: 1, [Op.and]: [recent('negativeFeedbackAt')] }, EXPLICIT_EVIDENCE_LIMIT, ['negativeFeedbackAt']),
@@ -153,6 +154,18 @@ export async function loadIslandEvidence(userId, { transaction, now = Date.now()
 
 export function normalizedRelationship(sim, threshold) {
   return Number.isFinite(sim) && sim > threshold && threshold < 1 ? clamp((sim - threshold) / (1 - threshold)) : 0;
+}
+
+// Feed affinity uses the same compatible-vector comparison and meaningful direct-match gate.
+export function bestPositiveIslandAffinity(article, islands, threshold) {
+  let best = null;
+  for (const island of islands) {
+    if (island.preferenceStrength <= 0) continue;
+    const sim = similarity(article.articleVector, island.islandVector, article.embedding_model, island.embedding_model);
+    if (!normalizedRelationship(sim, threshold)) continue;
+    best = Math.max(best ?? 0, clamp(sim) * clamp(island.islandConfidence));
+  }
+  return best;
 }
 
 // One path per Island; strongest positive and strongest negative survive without correlated summation.

@@ -9,7 +9,7 @@ export default sequelize => sequelize.define('SidebarSetting', {
   inactiveFeedDays: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 30, validate: { isIn: [[30, 60, 90]] } },
   hideZeroCountItems: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   sortByCurrentSelection: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
-  sortOrder: { type: DataTypes.STRING(32), allowNull: false, defaultValue: 'manual', validate: { isIn: [['manual', 'name', 'selectedCount', 'totalCount', 'recentlyActive']] } },
+  sortOrder: { type: DataTypes.STRING(32), allowNull: false, defaultValue: 'manual', validate: { isIn: [['manual', 'name', 'selectedCount', 'totalCount', 'recentlyActive', 'personalInterests']] } },
   sectionOrder: { type: DataTypes.JSON, allowNull: true },
   declutterCounts: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true }
 }, {

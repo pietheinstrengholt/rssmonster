@@ -75,7 +75,7 @@ describe('Sidebar settings API', () => {
     expect(await db.SidebarSetting.findOne({ where: { userId: user.id } })).toMatchObject(settings);
   });
 
-  it.each(['manual', 'name', 'selectedCount', 'totalCount', 'recentlyActive'])('persists %s sorting', async sortOrder => {
+  it.each(['manual', 'name', 'selectedCount', 'totalCount', 'recentlyActive', 'personalInterests'])('persists %s sorting', async sortOrder => {
     const user = await createUser();
     const settings = { ...defaults, sortOrder };
     const response = await request(app).put('/api/sidebar/settings')

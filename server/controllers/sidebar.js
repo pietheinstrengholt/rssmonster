@@ -28,7 +28,7 @@ export const updateSettings = async (req, res) => {
   if (![30, 60, 90].includes(settings.inactiveFeedDays)) {
     return res.status(400).json({ error: 'inactiveFeedDays must be 30, 60 or 90' });
   }
-  if (!['manual', 'name', 'selectedCount', 'totalCount', 'recentlyActive'].includes(settings.sortOrder)) {
+  if (!['manual', 'name', 'selectedCount', 'totalCount', 'recentlyActive', 'personalInterests'].includes(settings.sortOrder)) {
     return res.status(400).json({ error: 'Invalid sidebar sortOrder' });
   }
   if (settings.sectionOrder !== undefined && (!Array.isArray(settings.sectionOrder)

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { Op, Transaction } from 'sequelize';
 import db from '../../models/index.js';
 import scoreArticlesFromIslandsForUser from '../score/scoreArticlesFromIslands.js';
+import { refreshSourceAffinityForUser } from './sourceAffinity.js';
 import { buildInterestIslandProfilesForUser as buildIslandProfilesForUser } from './islandArticleProfiles.js';
 import { persistInterestIslandProfiles } from './islandPersistence.js';
 import { DEFAULT_MAX_ISLANDS_PER_USER } from './islandVectorUtils.js';
@@ -76,6 +77,7 @@ export async function persistIslandProfilesForUser(userId, profiles, options = {
       });
       return persisted;
     });
+  await refreshSourceAffinityForUser(userId, { assertLease: options.assertLease });
 
   // Aggregates source values into the result produced while performing persist island profiles for user.
   return {
@@ -187,6 +189,7 @@ export async function runIslandCalibrationForUser(userId, options = {}) {
     throw error;
   }
   const calibrationDurationMs = options.persistedCalibration ? 0 : Math.round(performance.now() - calibrationStarted);
+  if (options.persistedCalibration) await refreshSourceAffinityForUser(userId, { assertLease: options.assertLease });
   // Derives the scoring result through score articles from islands for user while performing run island calibration for user.
   let scoringResult;
   try {

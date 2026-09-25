@@ -190,6 +190,7 @@
           <option value="selectedCount">Selected count</option>
           <option value="totalCount">Total count</option>
           <option value="recentlyActive">Recently active</option>
+          <option value="personalInterests">Personal interests</option>
         </select>
       </label>
       <label class="sidebar-preferences-option">

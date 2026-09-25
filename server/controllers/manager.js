@@ -14,6 +14,7 @@ const OVERVIEW_FEED_ATTRIBUTES = [
   'createdAt',
   'lastArticleReceivedAt',
   'feedName',
+  'sourceAffinity',
   'feedDesc',
   'url',
   'authenticationType',
