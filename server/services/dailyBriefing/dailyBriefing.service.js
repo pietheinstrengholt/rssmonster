@@ -199,6 +199,7 @@ export const buildBriefingArticleWhere = async ({
   status,
   dateFrom,
   dateTo,
+  includeHotArticles = true,
   minDistinctSources,
   showOnlyInterestMatchedArticles,
   showOnlyDevelopingEventArticles
@@ -227,6 +228,7 @@ export const buildBriefingArticleWhere = async ({
   }
 
   return applyBriefingEligibility(where, true, {
+    includeHotArticles,
     minDistinctSources,
     showOnlyInterestMatchedArticles,
     showOnlyDevelopingEventArticles
@@ -252,6 +254,7 @@ const resolveEventIsland = ({ articleId, interests, islandMap }) => {
 // This function builds the representative scoring input for one morning-summary event.
 const buildSummaryRecommendationArticle = (event, representativeArticle, currentInterest) => ({
   freshness: representativeArticle.freshness,
+  hotInd: representativeArticle.hotInd,
   interestScore: currentInterest?.score ?? 0,
   interestScoredAt: representativeArticle.interestScoredAt,
   qualityScore: representativeArticle.qualityScore,
@@ -366,6 +369,7 @@ export async function getDailyBriefing({
   userId,
   period,
   status,
+  includeHotArticles = true,
   minDistinctSources = 1,
   showOnlyInterestMatchedArticles = false,
   showOnlyDevelopingEventArticles = false,
@@ -384,6 +388,7 @@ export async function getDailyBriefing({
   const articleWhere = await buildBriefingArticleWhere({
     userId,
     ...filters,
+    includeHotArticles,
     minDistinctSources,
     showOnlyInterestMatchedArticles,
     showOnlyDevelopingEventArticles
@@ -433,7 +438,8 @@ export async function getDailyBriefing({
         where: {
           id: { [Op.in]: representativeArticleIds },
           userId,
-          ...canonicalArticleWhere()
+          ...canonicalArticleWhere(),
+          ...(includeHotArticles ? {} : { [Op.or]: [{ hotInd: 0 }, { hotInd: null }] })
         },
         attributes: [
           'id',
@@ -443,6 +449,7 @@ export async function getDailyBriefing({
           'publishedAt',
           'interestScore',
           'interestScoredAt',
+          'hotInd',
           'advertisementScore',
           'sentimentScore',
           'qualityScore'
@@ -487,6 +494,7 @@ export async function getDailyBriefing({
     filters: {
       period: filters.period,
       status: filters.status,
+      includeHotArticles: Boolean(includeHotArticles),
       minDistinctSources: Number(minDistinctSources) || 1,
       includeDevelopingEvents: Boolean(includeDevelopingEvents),
       prioritizeHighTrust: Boolean(prioritizeHighTrust),

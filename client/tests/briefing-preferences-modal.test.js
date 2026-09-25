@@ -15,6 +15,7 @@ vi.mock('../src/api/briefing.js', () => ({
 
 const preferencesResponse = {
   preferences: {
+    includeHotArticles: false,
     includeOnlyUnreadArticles: false,
     markAsReadOnScroll: false,
     includeDevelopingEvents: false,
@@ -89,6 +90,7 @@ describe('BriefingPreferencesModal dismissal', () => {
     await flushPromises();
 
     expect(fetchBriefingPreferences).toHaveBeenCalledTimes(1);
+    expect(wrapper.get('[name="includeHotArticles"]').element.checked).toBe(false);
     expect(wrapper.get('[name="includeOnlyUnreadArticles"]').element.checked).toBe(false);
     expect(wrapper.find('[name="markAsReadOnScroll"]').exists()).toBe(false);
     expect(wrapper.get('[name="includeDevelopingEvents"]').element.checked).toBe(false);
@@ -99,6 +101,17 @@ describe('BriefingPreferencesModal dismissal', () => {
     expect(wrapper.get('[name="prioritizeHighTrust"]').element.checked).toBe(false);
 
     expect(wrapper.text()).not.toContain('Muted interests');
+  });
+
+  it('saves the Hot switch and refreshes the active briefing', async () => {
+    const { wrapper, refreshBriefingSelection, refreshOverviewCounts } = mountModal();
+    await flushPromises();
+    await wrapper.get('[name="includeHotArticles"]').setValue(true);
+    await wrapper.get('.briefing-preferences-form').trigger('submit');
+    await flushPromises();
+    expect(saveBriefingPreferences).toHaveBeenCalledWith(expect.objectContaining({ includeHotArticles: true }));
+    expect(refreshBriefingSelection).toHaveBeenCalledTimes(1);
+    expect(refreshOverviewCounts).toHaveBeenCalledTimes(1);
   });
 
   it('shows and clears scrolling behavior with the unread-only dependency', async () => {
@@ -165,6 +178,7 @@ describe('BriefingPreferencesModal dismissal', () => {
 
     await wrapper.get('.briefing-preferences-reset').trigger('click');
 
+    expect(wrapper.get('[name="includeHotArticles"]').element.checked).toBe(true);
     expect(wrapper.get('[name="includeOnlyUnreadArticles"]').element.checked).toBe(false);
     expect(wrapper.get('[name="includeDevelopingEvents"]').element.checked).toBe(false);
     expect(wrapper.get('[name="showOnlyInterestMatchedArticles"]').element.checked).toBe(false);
@@ -178,6 +192,7 @@ describe('BriefingPreferencesModal dismissal', () => {
     await flushPromises();
 
     expect(saveBriefingPreferences).toHaveBeenCalledWith({
+      includeHotArticles: true,
       includeOnlyUnreadArticles: false,
       markAsReadOnScroll: false,
       includeDevelopingEvents: false,
@@ -204,6 +219,7 @@ describe('BriefingPreferencesModal dismissal', () => {
     await flushPromises();
 
     expect(saveBriefingPreferences).toHaveBeenCalledWith({
+      includeHotArticles: false,
       includeOnlyUnreadArticles: false,
       markAsReadOnScroll: false,
       includeDevelopingEvents: false,
@@ -255,6 +271,7 @@ describe('BriefingPreferencesModal dismissal', () => {
 
     expect(setShowModal).not.toHaveBeenCalled();
     expect(wrapper.get('.base-dialog__close').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('[name="includeHotArticles"]').attributes('disabled')).toBeDefined();
     expect(
       wrapper.get('.preferences-dialog__button--secondary').attributes('disabled')
     ).toBeDefined();

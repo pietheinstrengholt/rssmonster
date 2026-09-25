@@ -32,6 +32,30 @@ const strongEvent = {
 };
 
 describe('computeRecommended', () => {
+  it('adds a flat Hot bonus without scaling by hotlink count', () => {
+    const article = articleWith();
+    const base = computeRecommended(article);
+    for (const hotlinks of [0, 1, 100]) {
+      expect(computeRecommended({ ...article, hotInd: 1, hotlinks }) - base).toBeCloseTo(0.07, 6);
+      expect(computeRecommended({ ...article, hotInd: 0, hotlinks })).toBe(base);
+    }
+    expect(computeRecommendedBreakdown({ ...article, hotInd: 1 }).hotBoost).toBe(0.07);
+  });
+
+  it('combines Hot and rule bonuses while preserving negative scores', () => {
+    const article = { ...articleWith({ interestScore: -1, freshness: 0, quality: 0,
+      tags: [{ tagType: 'rule' }] }), hotInd: 1 };
+    expect(computeRecommended(article)).toBeCloseTo(-0.15, 6);
+  });
+
+  it('caps a Hot article at one', () => {
+    expect(computeRecommended({
+      ...articleWith({ interestScore: 1, freshness: 1, quality: 1,
+        event: { articleCount: 64, sourceCount: 8, sourceDiversityScore: Math.log(9) } }),
+      hotInd: 1
+    })).toBe(1);
+  });
+
   it('scores articles with no optional semantic evidence using neutral interest', () => {
     const noSemanticEvidence = articleWith();
     expect(computeRecommendedBreakdown(noSemanticEvidence)).toMatchObject({ interestScore: 0, corroboration: 0 });

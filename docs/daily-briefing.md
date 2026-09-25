@@ -51,6 +51,7 @@ load, you can still read the article list.
 | Setting | What it changes |
 | --- | --- |
 | Only unread articles | Excludes articles you have already read. |
+| Include Hot articles | Enabled by default. Includes Hot articles that meet your briefing filters; disabling it excludes all Hot articles, even if they also match your interests or belong to a qualifying Event. |
 | Mark as read while scrolling | Marks briefing articles as read after they pass the viewport. Available only when **Only unread articles** is enabled; separate from the Unread view's scrolling setting. |
 | Developing events | Uses new coverage of continuing events in the morning story overview without restricting the article list to developing stories. |
 | Show only interest-matched articles | Limits the briefing to articles with nonzero stored interest, including negative values; Recommended still applies negative interest as a penalty. |
@@ -59,6 +60,10 @@ load, you can still read the article list.
 The two **Show only** options are mutually exclusive. Switching one on switches
 the other off. **Developing events** affects the story overview, while **Show
 only developing stories** filters the article collection itself.
+
+[Hot articles]({% link hot-articles.md %}) qualify through links from other feeds
+in your subscriptions. Including them does not bypass the saved period,
+unread-only, minimum-source, or **Show only** filters.
 
 ### Selection period
 
@@ -85,8 +90,9 @@ or Escape discards unsaved edits. If saving fails, the dialog keeps your edits
 so you can retry.
 
 **Reset to defaults** selects the last seven days, one required source, and
-switches off all optional selection, scrolling, developing-event, and trust
-settings. This includes both read and unread articles. Reset changes the draft;
+enables **Include Hot articles**. It switches off the other optional selection,
+scrolling, developing-event, and trust settings, including unread-only. This
+includes both read and unread articles. Reset changes the draft;
 select **Save changes** to keep it. The screenshot shows customized settings,
 rather than the defaults.
 

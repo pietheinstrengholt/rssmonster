@@ -27,6 +27,25 @@ describe('articleSearch.service', () => {
     expect((await Setting.findOne({ where: { userId: user.id } })).viewMode).toBe('reader');
   });
 
+  it.each(['topStories', 'recommended'])('promotes Hot articles in %s database results', async sort => {
+    const values = {
+      userId: user.id, feedId: feed.id, status: 'unread',
+      publishedAt: new Date(), qualityScore: 75, sentimentScore: 75, advertisementScore: 75
+    };
+    const hot = await Article.create({ ...values, title: 'Hot ranking regression', hotInd: 1 });
+    const ordinary = await Article.create({ ...values, title: 'Ordinary ranking regression' });
+    try {
+      const rank = async () => (await searchArticles({ userId: user.id, status: 'unread', sort }))
+        .itemIds.filter(id => [hot.id, ordinary.id].includes(id));
+      expect(await rank()).toEqual([hot.id, ordinary.id]);
+      await hot.update({ hotInd: 0 });
+      expect(await rank()).toEqual([ordinary.id, hot.id]);
+    } finally {
+      await hot.destroy();
+      await ordinary.destroy();
+    }
+  });
+
   beforeAll(async () => {
     await sequelize.authenticate();
 
@@ -581,7 +600,7 @@ describe('articleSearch.service', () => {
   });
 
   describe('briefing filtering', () => {
-    it('combines nonzero interest scores and multi-article event membership', async () => {
+    it('combines Hot status, nonzero interest scores and multi-article event membership', async () => {
       const createdArticles = [];
       const createdEvents = [];
 
@@ -592,7 +611,8 @@ describe('articleSearch.service', () => {
           { slug: 'event-member-one', interestScore: 0 },
           { slug: 'event-member-two', interestScore: 0 },
           { slug: 'single-event', interestScore: 0 },
-          { slug: 'not-briefing', interestScore: 0 }
+          { slug: 'not-briefing', interestScore: 0 },
+          { slug: 'hot-standalone', interestScore: 0, hotInd: 1 }
         ];
 
         for (const values of articleValues) {
@@ -608,11 +628,12 @@ describe('articleSearch.service', () => {
             advertisementScore: 80,
             sentimentScore: 80,
             qualityScore: 80,
-            interestScore: values.interestScore
+            interestScore: values.interestScore,
+            hotInd: values.hotInd ?? 0
           }));
         }
 
-        const [positiveInterest, negativeInterest, eventMemberOne, eventMemberTwo, singleEvent, notBriefing] = createdArticles;
+        const [positiveInterest, negativeInterest, eventMemberOne, eventMemberTwo, singleEvent, notBriefing, hotStandalone] = createdArticles;
         const multiArticleEvent = await Event.create({
           userId: user.id,
           representativeArticleId: eventMemberOne.id,
@@ -644,17 +665,20 @@ describe('articleSearch.service', () => {
           status: '%'
         });
 
+        expect(included.itemIds).toContain(hotStandalone.id);
         expect(included.itemIds).toContain(positiveInterest.id);
         expect(included.itemIds).toContain(negativeInterest.id);
         expect(included.itemIds).toContain(eventMemberOne.id);
         expect(included.itemIds).toContain(eventMemberTwo.id);
         expect(included.itemIds).not.toContain(singleEvent.id);
         expect(included.itemIds).not.toContain(notBriefing.id);
+        expect(includedByStatus.itemIds).toContain(hotStandalone.id);
         expect(includedByStatus.itemIds).toContain(positiveInterest.id);
         expect(includedByStatus.itemIds).toContain(negativeInterest.id);
         expect(includedByStatus.itemIds).toContain(eventMemberOne.id);
         expect(includedByStatus.itemIds).not.toContain(eventMemberTwo.id);
 
+        expect(excluded.itemIds).not.toContain(hotStandalone.id);
         expect(excluded.itemIds).not.toContain(positiveInterest.id);
         expect(excluded.itemIds).not.toContain(negativeInterest.id);
         expect(excluded.itemIds).not.toContain(eventMemberOne.id);

@@ -7,7 +7,8 @@ const { Article } = db;
 
 // Defines the briefing eligibility sql enforced by this service.
 export const BRIEFING_ELIGIBILITY_SQL = `(
-  articles.interestScore <> 0
+  articles.hotInd = 1
+  OR articles.interestScore <> 0
   OR EXISTS (
     SELECT 1
     FROM events briefing_event
@@ -31,6 +32,7 @@ const normalizeMinimumDistinctSources = value => {
 
 // This function returns briefing eligibility with the configured event-source threshold.
 export function briefingEligibilitySql({
+  includeHotArticles = true,
   minDistinctSources = 1,
   showOnlyInterestMatchedArticles = false,
   showOnlyDevelopingEventArticles = false
@@ -45,6 +47,7 @@ export function briefingEligibilitySql({
       : BRIEFING_ELIGIBILITY_SQL);
   // Collects the conditions while performing briefing eligibility sql.
   const conditions = [baseEligibilitySql];
+  if (!includeHotArticles) conditions.push('COALESCE(articles.hotInd, 0) = 0');
 
   // Handles the case where minimum sources exceeds 1.
   if (minimumSources > 1) {

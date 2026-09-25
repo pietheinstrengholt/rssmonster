@@ -14,6 +14,7 @@ Learn how to use RSSMonster's core reading, feed management, search, and organiz
 - [HTML + XPath Feeds]({% link html-xpath-feeds.md %}) follows websites that do not provide a usable RSS or Atom feed.
 - [Filtering Feed Items]({% link feed-item-filters.md %}) limits which future entries a feed stores.
 - [Search]({% link search.md %}) finds articles already stored in RSSMonster.
+- [Hot Articles]({% link hot-articles.md %}) explains cross-feed links, Hot status, and its effect on ranking and Daily Briefing.
 - [Tags]({% link tag.md %}) explains publisher, feed, generated, and rule-based tags.
 - [Bookmarks]({% link bookmarks.md %}) keeps favorite articles for later.
 - [Marking Articles Read]({% link marking-articles-read.md %}) covers read state and bulk actions.

@@ -129,6 +129,7 @@ const loadBriefingCountConfig = async userId => {
     where: { userId },
     attributes: [
       'selectionPeriod',
+      'includeHotArticles',
       'includeOnlyUnreadArticles',
       'markAsReadOnScroll',
       'minDistinctSources',
@@ -163,6 +164,7 @@ const loadBriefingCountConfig = async userId => {
     briefingPublishedTo.getTime() - briefingWindowDays * 24 * 60 * 60 * 1000
   );
   const briefingEligibility = briefingEligibilitySql({
+    includeHotArticles: Boolean(Number(briefingPreferences?.includeHotArticles ?? true)),
     minDistinctSources: briefingMinDistinctSources,
     showOnlyInterestMatchedArticles: Boolean(
       Number(briefingPreferences?.showOnlyInterestMatchedArticles)

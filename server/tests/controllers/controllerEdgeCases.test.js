@@ -88,6 +88,7 @@ const createRequest = (overrides = {}) => ({
 
 // Supplies a complete valid preference replacement for validation-focused tests.
 const validPreferences = (overrides = {}) => ({
+  includeHotArticles: true,
   includeOnlyUnreadArticles: false,
   markAsReadOnScroll: false,
   includeDevelopingEvents: false,

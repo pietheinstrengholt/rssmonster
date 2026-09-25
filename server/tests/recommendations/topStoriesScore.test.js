@@ -20,6 +20,24 @@ const articleWith = ({
 });
 
 describe('computeTopStories', () => {
+  it('adds a flat Hot bonus without scaling by hotlink count', () => {
+    const article = articleWith();
+    const base = computeTopStories(article);
+    for (const hotlinks of [0, 1, 100]) {
+      expect(computeTopStories({ ...article, hotInd: 1, hotlinks }) - base).toBeCloseTo(0.07, 6);
+      expect(computeTopStories({ ...article, hotInd: 0, hotlinks })).toBe(base);
+    }
+    expect(computeTopStoriesBreakdown({ ...article, hotInd: 1 }).hotBoost).toBe(0.07);
+  });
+
+  it('caps a Hot article at one', () => {
+    expect(computeTopStories({
+      ...articleWith({ interestScore: 1, freshness: 1, quality: 1,
+        event: { articleCount: 64, sourceCount: 8, sourceDiversityScore: Math.log(9) } }),
+      hotInd: 1
+    })).toBe(1);
+  });
+
   it('raises ranking for greater event coverage', () => {
     const small = articleWith({ event: { articleCount: 2, sourceCount: 1 } });
     const large = articleWith({ event: { articleCount: 64, sourceCount: 1 } });

@@ -98,6 +98,32 @@
 
             <label class="briefing-preferences-option">
               <span class="briefing-preferences-option-icon" aria-hidden="true">
+                <BootstrapIcon icon="fire" />
+              </span>
+
+              <span class="briefing-preferences-option-content">
+                <span class="briefing-preferences-option-title">
+                  Include Hot articles
+                </span>
+                <span class="briefing-preferences-option-description">
+                  Include Hot articles that meet your briefing filters. Turn off to exclude all Hot articles.
+                </span>
+              </span>
+
+              <span class="briefing-switch">
+                <input
+                  name="includeHotArticles"
+                  type="checkbox"
+                  role="switch"
+                  v-model="form.includeHotArticles"
+                  :disabled="isLoading || isSaving"
+                />
+                <span class="briefing-switch-control" aria-hidden="true"></span>
+              </span>
+            </label>
+
+            <label class="briefing-preferences-option">
+              <span class="briefing-preferences-option-icon" aria-hidden="true">
                 <BootstrapIcon icon="graph-up-arrow" />
               </span>
 
@@ -333,6 +359,7 @@ import {
 import PreferencesDialogShell from '../dialogs/PreferencesDialogShell.vue';
 
 const BRIEFING_RESET_DEFAULTS = Object.freeze({
+  includeHotArticles: true,
   includeOnlyUnreadArticles: false,
   markAsReadOnScroll: false,
   includeDevelopingEvents: false,
@@ -355,6 +382,7 @@ export default {
   data() {
     return {
       form: {
+        includeHotArticles: true,
         includeOnlyUnreadArticles: false,
         markAsReadOnScroll: false,
         includeDevelopingEvents: false,

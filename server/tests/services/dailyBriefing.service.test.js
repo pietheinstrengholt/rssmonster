@@ -200,7 +200,7 @@ describe('dailyBriefing.service', () => {
   });
 
   // Promotes trusted representative sources in the summary only when the Briefing preference is active.
-  it('applies high-trust recommendation ranking to morning summary events', async () => {
+  it.each([0, 1])('includes Hot status %s in morning summary recommendation ranking', async hotInd => {
     const generatedAt = new Date('2026-07-31T12:00:00Z');
     mocked.articleFindAll
       .mockResolvedValueOnce([
@@ -211,6 +211,7 @@ describe('dailyBriefing.service', () => {
         {
           id: 101,
           title: 'Strong low-trust event',
+          hotInd,
           contentText: 'This low-trust event has enough useful detail for the morning summary.',
           publishedAt: generatedAt,
           freshness: 0.5,
@@ -259,7 +260,7 @@ describe('dailyBriefing.service', () => {
     });
 
     expect(result.filters.prioritizeHighTrust).toBe(true);
-    expect(result.morningSummary.items.map(item => item.eventId)).toEqual([2, 1]);
+    expect(result.morningSummary.items.map(item => item.eventId)).toEqual(hotInd ? [1, 2] : [2, 1]);
   });
 
   // Preserves the canonical article-quality components when summary events use Recommended ordering.

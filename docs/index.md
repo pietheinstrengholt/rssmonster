@@ -36,6 +36,7 @@ to suit your reading session and screen. [Bookmarks]({% link bookmarks.md %}),
 - **[Search]({% link search.md %}):** combine words with filters such as
   `title:javascript @today quality:>0.7`.
 - **[Smart Folders]({% link smart-folders.md %}):** save a search as a reusable view.
+- **[Hot Articles]({% link hot-articles.md %}):** find recent articles linked to by other articles in your subscriptions.
 - **[Tags]({% link tag.md %}):** organize articles using publisher, feed, generated, or rule-based labels.
 - **[Actions]({% link actions.md %}):** automatically bookmark, mark read, tag, score, or hide incoming articles.
 - **[Official Feeds]({% link official-feeds.md %}):** recognize articles from organization domains you configure.

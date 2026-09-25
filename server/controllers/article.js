@@ -233,6 +233,7 @@ export const getDailyBriefing = async (req, res, _next) => {
       where: { userId },
       attributes: [
         'selectionPeriod',
+        'includeHotArticles',
         'includeOnlyUnreadArticles',
         'includeDevelopingEvents',
         'minDistinctSources',
@@ -248,6 +249,7 @@ export const getDailyBriefing = async (req, res, _next) => {
       status: briefingPreferences
         ? (Number(briefingPreferences.includeOnlyUnreadArticles) ? 'unread' : 'all')
         : req.query.status,
+      includeHotArticles: Boolean(Number(briefingPreferences?.includeHotArticles ?? true)),
       minDistinctSources: Number(briefingPreferences?.minDistinctSources) || 1,
       includeDevelopingEvents: Boolean(
         Number(briefingPreferences?.includeDevelopingEvents)

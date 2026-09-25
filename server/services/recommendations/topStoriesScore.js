@@ -14,6 +14,8 @@ const TOP_STORIES_WEIGHTS = Object.freeze({
   quality: 0.15
 });
 
+const HOT_ARTICLE_BOOST = 0.07;
+
 // Computes the event-driven signals and bounded score used by Top Stories ranking.
 export function computeTopStoriesBreakdown(article) {
   const eventMetrics = computeEventRankingMetrics(article);
@@ -24,10 +26,12 @@ export function computeTopStoriesBreakdown(article) {
   );
   const freshness = clamp01(article?.freshness ?? 0.5);
   const quality = computeQuality(article);
+  const hotBoost = article?.hotInd ? HOT_ARTICLE_BOOST : 0;
   const topStories = clamp01(
     TOP_STORIES_WEIGHTS.eventImportance * eventImportance +
     TOP_STORIES_WEIGHTS.freshness * freshness +
-    TOP_STORIES_WEIGHTS.quality * quality
+    TOP_STORIES_WEIGHTS.quality * quality +
+    hotBoost
   );
 
   return {
@@ -35,6 +39,7 @@ export function computeTopStoriesBreakdown(article) {
     eventImportance,
     freshness,
     quality,
+    hotBoost,
     topStories
   };
 }

@@ -314,6 +314,93 @@ describe('GET /api/articles/briefing', () => {
     fixture = await createBriefingFixture();
   }, 50_000);
 
+  it.each([
+    ['standalone Hot article', {}, {}, 1],
+    ['read Hot article', {}, { status: 'read' }, 1],
+    ['Hot disabled', { includeHotArticles: false }, {}, 0],
+    ['Hot disabled with interest', { includeHotArticles: false }, { interestScore: 0.8 }, 0],
+    ['Hot disabled with an Event', { includeHotArticles: false }, {}, 0, true],
+    ['Hot enabled with an Event', { includeHotArticles: true }, {}, 1, true],
+    ['old Hot article', {}, { publishedAt: hoursAgo(8 * 24) }, 0],
+    ['filtered Hot article', {}, { filteredInd: 1 }, 0],
+    ['unread-only preference', { includeOnlyUnreadArticles: true }, { status: 'read' }, 0],
+    ['24-hour period', { selectionPeriod: '24h' }, { publishedAt: hoursAgo(48) }, 0],
+    ['minimum sources', { minDistinctSources: 2 }, {}, 0],
+    ['interest-only preference', { showOnlyInterestMatchedArticles: true }, {}, 0],
+    ['developing-only preference', { showOnlyDevelopingEventArticles: true }, {}, 0]
+  ])('keeps Hot eligibility consistent across list, counts, and context: %s', async (
+    label, preferences, overrides, expectedIncrease, eventBacked = false
+  ) => {
+    const preference = await BriefingPreference.create({ userId: fixture.owner.id, ...preferences });
+    let article;
+    let event;
+    const snapshot = async () => {
+      const responses = await Promise.all([
+        request(app).get('/api/articles/briefing').set('Authorization', authHeaderFor(fixture.owner)),
+        request(app).get('/api/articles').query({ status: 'briefing' })
+          .set('Authorization', authHeaderFor(fixture.owner)),
+        request(app).post('/api/manager/overview-counts').send({ grouping: 'event' })
+          .set('Authorization', authHeaderFor(fixture.owner))
+      ]);
+      for (const response of responses) expect(response.status).toBe(200);
+      return responses.map(response => response.body);
+    };
+    try {
+      const before = await snapshot();
+      article = await Article.create({
+        userId: fixture.owner.id,
+        feedId: fixture.feeds.firstFeed.id,
+        title: label,
+        url: `https://example.com/${uniqueName('hot-briefing')}`,
+        publishedAt: hoursAgo(1),
+        status: 'unread',
+        interestScore: 0,
+        hotInd: 1,
+        ...overrides
+      });
+      if (eventBacked) {
+        event = await Event.create({ userId: fixture.owner.id,
+          representativeArticleId: article.id, articleCount: 2 });
+        await article.update({ eventId: event.id });
+      }
+      const after = await snapshot();
+      expect(after[0].context.articleCount - before[0].context.articleCount).toBe(expectedIncrease);
+      expect(after[1].itemIds.length - before[1].itemIds.length).toBe(expectedIncrease);
+      expect(after[1].itemIds.includes(article.id)).toBe(Boolean(expectedIncrease));
+      expect(after[2].briefingCount - before[2].briefingCount).toBe(expectedIncrease);
+    } finally {
+      await event?.destroy();
+      await article?.destroy();
+      await preference.destroy();
+    }
+  });
+
+  it('excludes a Hot summary representative even when a non-Hot Event member qualifies', async () => {
+    const preference = await BriefingPreference.create({ userId: fixture.owner.id, includeHotArticles: false });
+    const representative = fixture.representatives.eventOneRepresentative;
+    const previousStrength = fixture.events.eventOne.eventStrength;
+    await fixture.events.eventOne.update({ eventStrength: 100 });
+    await representative.update({ hotInd: 1 });
+    try {
+      const response = await request(app).get('/api/articles/briefing')
+        .set('Authorization', authHeaderFor(fixture.owner));
+      expect(response.status).toBe(200);
+      expect(response.body.filters.includeHotArticles).toBe(false);
+      expect(response.body.morningSummary.items.map(item => item.representativeArticleId))
+        .not.toContain(representative.id);
+      await preference.update({ includeHotArticles: true });
+      const enabled = await request(app).get('/api/articles/briefing')
+        .set('Authorization', authHeaderFor(fixture.owner));
+      expect(enabled.status).toBe(200);
+      expect(enabled.body.morningSummary.items.map(item => item.representativeArticleId))
+        .toContain(representative.id);
+    } finally {
+      await representative.update({ hotInd: 0 });
+      await fixture.events.eventOne.update({ eventStrength: previousStrength });
+      await preference.destroy();
+    }
+  });
+
   it('requires authentication', async () => {
     const response = await request(app).get('/api/articles/briefing');
 

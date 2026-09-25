@@ -43,6 +43,7 @@ describe('Briefing Preferences API', () => {
     const user = await createUser();
     await BriefingPreference.create({
       userId: user.id,
+      includeHotArticles: true,
       includeOnlyUnreadArticles: false,
       markAsReadOnScroll: false,
       includeDevelopingEvents: false,
@@ -59,6 +60,7 @@ describe('Briefing Preferences API', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.preferences).toEqual({
+      includeHotArticles: true,
       includeOnlyUnreadArticles: false,
       markAsReadOnScroll: false,
       includeDevelopingEvents: false,
@@ -80,6 +82,7 @@ describe('Briefing Preferences API', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.preferences).toEqual({
+      includeHotArticles: true,
       includeOnlyUnreadArticles: false,
       markAsReadOnScroll: false,
       includeDevelopingEvents: false,
@@ -134,6 +137,7 @@ describe('Briefing Preferences API', () => {
       .set('Authorization', authHeaderFor(user))
       .send({
         preferences: {
+          includeHotArticles: false,
           includeOnlyUnreadArticles: false,
           markAsReadOnScroll: false,
           includeDevelopingEvents: true,
@@ -147,6 +151,7 @@ describe('Briefing Preferences API', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.preferences).toEqual({
+      includeHotArticles: false,
       includeOnlyUnreadArticles: false,
       markAsReadOnScroll: false,
       includeDevelopingEvents: true,
@@ -162,6 +167,7 @@ describe('Briefing Preferences API', () => {
       where: { userId: user.id },
       raw: true
     });
+    expect(Boolean(storedPreferences.includeHotArticles)).toBe(false);
     expect(Boolean(storedPreferences.includeOnlyUnreadArticles)).toBe(false);
     expect(Boolean(storedPreferences.markAsReadOnScroll)).toBe(false);
     expect(Boolean(storedPreferences.includeDevelopingEvents)).toBe(true);
@@ -185,6 +191,17 @@ describe('Briefing Preferences API', () => {
     expect(Boolean(otherSettings.includeDevelopingEvents)).toBe(false);
   });
 
+  it.each([null, 'false', 0, undefined])('rejects a non-boolean Hot preference: %s', async includeHotArticles => {
+    const user = await createUser();
+    const preferences = (await request(app).get('/api/briefing/preferences')
+      .set('Authorization', authHeaderFor(user))).body.preferences;
+    const response = await request(app).put('/api/briefing/preferences')
+      .set('Authorization', authHeaderFor(user))
+      .send({ preferences: { ...preferences, includeHotArticles } });
+    expect(response.status).toBe(400);
+    expect(await BriefingPreference.count({ where: { userId: user.id } })).toBe(0);
+  });
+
   it('rejects an invalid complete preference replacement', async () => {
     const user = await createUser();
 
@@ -193,6 +210,7 @@ describe('Briefing Preferences API', () => {
       .set('Authorization', authHeaderFor(user))
       .send({
         preferences: {
+          includeHotArticles: true,
           includeOnlyUnreadArticles: true,
           markAsReadOnScroll: true,
           includeDevelopingEvents: true,
@@ -217,6 +235,7 @@ describe('Briefing Preferences API', () => {
       .set('Authorization', authHeaderFor(user))
       .send({
         preferences: {
+          includeHotArticles: true,
           includeOnlyUnreadArticles: false,
           markAsReadOnScroll: false,
           includeDevelopingEvents: false,
@@ -241,6 +260,7 @@ describe('Briefing Preferences API', () => {
       .set('Authorization', authHeaderFor(user))
       .send({
         preferences: {
+          includeHotArticles: true,
           includeOnlyUnreadArticles: false,
           markAsReadOnScroll: true,
           includeDevelopingEvents: false,

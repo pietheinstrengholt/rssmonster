@@ -85,6 +85,14 @@ The briefing scrolling preference is independent from the equivalent unread-sele
 
 The developing-events preference is stored independently from the wider user setting and never updates the generic article selection.
 
+### Hot articles
+
+**Include Hot articles** is enabled by default and saved as `includeHotArticles`.
+When enabled, Hot articles can qualify without an interest match or multi-article
+Event, subject to the other saved filters and Event grouping. When disabled,
+all Hot articles are excluded, including those with matching interest or Events.
+Saving refreshes the article list, counts, Top Tags, and structured briefing.
+
 ### Selection period
 
 The lookback period controls how far RSSMonster searches for relevant developments:
@@ -121,7 +129,7 @@ During a save, duplicate submission is disabled. A failed save keeps the modal o
 
 Interest matching, strict event-only filtering, and minimum-source changes may not be visible in the simple article-query text. They still trigger a briefing revision so the article list and structured summary are fetched using the newly persisted server preferences.
 
-Reset to defaults restores the local draft to a seven-day briefing with one required source and all optional eligibility, scrolling, developing-event, and trust settings disabled. The reset is persisted only when Save Changes succeeds.
+Reset to defaults restores the local draft to a seven-day briefing with one required source and Hot articles included; the other optional eligibility, scrolling, developing-event, and trust settings are disabled. The reset is persisted only when Save Changes succeeds.
 
 ## Data refresh behavior
 

@@ -51,6 +51,7 @@ describe('articleDebug.service', () => {
       crossSource: 0.45678,
       corroboration: 0.56789,
       ruleBoost: 0.2,
+      hotBoost: 0.07,
       eventArticleCount: 8,
       sourceCount: 3
     });

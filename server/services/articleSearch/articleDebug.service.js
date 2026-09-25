@@ -50,7 +50,7 @@ export function debugRecommendedScores(scored) {
     console.log(
       '[RECOMMENDED DEBUG] Formula: 0.60*positiveInterest + 0.17*freshness + ' +
       '0.13*quality + ' +
-      '0.10*corroboration - 0.30*negativeInterest + ruleBoost'
+      '0.10*corroboration - 0.30*negativeInterest + ruleBoost + hotBoost'
     );
     console.log(
       `[RECOMMENDED DEBUG] articles=${totalArticles} ` +
@@ -75,6 +75,7 @@ export function debugRecommendedScores(scored) {
           crossSource: Number(bd.crossSource.toFixed(4)),
           corroboration: Number(bd.corroboration.toFixed(4)),
           ruleBoost: Number(bd.ruleBoost.toFixed(4)),
+          hotBoost: Number(bd.hotBoost.toFixed(4)),
           eventArticleCount: bd.eventArticleCount,
           sourceCount: bd.sourceCount,
           recommended: Number(recommended.toFixed(4))

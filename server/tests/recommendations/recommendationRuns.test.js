@@ -69,7 +69,7 @@ describe('recommendation evaluation and recalculation', () => {
     const source = await db.Article.create({ ...values, status: 'read', favoriteInd: 1, favoritedAt: new Date(now) });
     const island = await db.Island.create({ userId: user.id, label: 'Concerts', weight: 0.8,
       islandVector: [1, 0], embedding_model: 'test-model', lastBehaviorAt: new Date(now), supportArticleIds: [String(source.id)] });
-    const held = await db.Article.create({ ...values, status: 'read', interestScore: -0.4, publishedAt: new Date(now),
+    const held = await db.Article.create({ ...values, status: 'read', interestScore: -0.4, hotInd: 1, publishedAt: new Date(now),
       url: `https://${user.id}.example/held-out` });
     const event = await db.Event.create({ userId: user.id, representativeArticleId: held.id, articleCount: 8, sourceCount: 4 });
     await held.update({ eventId: event.id });
@@ -82,6 +82,7 @@ describe('recommendation evaluation and recalculation', () => {
     expect(row.supportingIslandIds).toEqual([]);
     expect(row.interestDiagnostics.seedSelf).toBe(false);
     expect(row.breakdown.ruleBoost).toBe(0.08);
+    expect(row.breakdown.hotBoost).toBe(0.07);
     expect(row.breakdown.corroboration).toBeGreaterThan(0);
     const loaded = await db.Article.findByPk(held.id, { include: [db.Feed, db.Tag, { model: db.Event, as: 'event' }] });
     const expected = computeRecommendedBreakdown({ ...loaded.get({ plain: true }), interestScore: row.interestScore });

@@ -388,6 +388,7 @@ describe('tag controllers', () => {
       where: { userId: 42 },
       attributes: [
         'selectionPeriod',
+        'includeHotArticles',
         'includeOnlyUnreadArticles',
         'minDistinctSources',
         'showOnlyInterestMatchedArticles',

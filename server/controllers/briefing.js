@@ -5,6 +5,7 @@ const SELECTION_PERIODS = new Set(['24h', '7d']);
 
 // This function returns only the public Daily Briefing preference fields.
 const serializePreferences = preference => ({
+  includeHotArticles: Boolean(preference.includeHotArticles),
   includeOnlyUnreadArticles: Boolean(preference.includeOnlyUnreadArticles),
   markAsReadOnScroll: Boolean(preference.markAsReadOnScroll),
   includeDevelopingEvents: Boolean(preference.includeDevelopingEvents),
@@ -22,6 +23,7 @@ const validatePreferencesPayload = preferences => {
   }
 
   const booleanFields = [
+    'includeHotArticles',
     'includeOnlyUnreadArticles',
     'markAsReadOnScroll',
     'includeDevelopingEvents',
@@ -100,6 +102,7 @@ export const updateBriefingPreferences = async (req, res, _next) => {
 
     const storedPreferences = {
       userId,
+      includeHotArticles: preferences.includeHotArticles,
       includeOnlyUnreadArticles: preferences.includeOnlyUnreadArticles,
       markAsReadOnScroll: preferences.markAsReadOnScroll,
       includeDevelopingEvents: preferences.includeDevelopingEvents,

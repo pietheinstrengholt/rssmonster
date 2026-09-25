@@ -18,6 +18,8 @@ import { up as addFeedAuthentication } from '../../migrations/20260923008000-add
 import { up as expandFeedAuthentication } from '../../migrations/20260923009000-expand-feed-authentication-password.mjs';
 import { up as addCategoryClusteringBehavior } from '../../migrations/20260922002000-add-category-clustering-behavior.mjs';
 
+import { up as addBriefingHotArticles } from '../../migrations/20260925000000-add-briefing-include-hot-articles.mjs';
+
 import { resetDatabase } from '../helpers/resetDb.js';
 
 const qi = db.sequelize.getQueryInterface();
@@ -62,6 +64,7 @@ async function installHistoricalSchema() {
   await addPinnedItems(qi, db.Sequelize);
   await addFeedAuthentication(qi, db.Sequelize);
   await expandFeedAuthentication(qi, db.Sequelize);
+  await addBriefingHotArticles(qi, db.Sequelize);
   await qi.addColumn('feeds', 'lastArticleReceivedAt', {
     type: db.Sequelize.DATE, allowNull: true, defaultValue: null
   });

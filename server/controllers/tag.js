@@ -44,6 +44,7 @@ const topTagArticleWhere = async ({ userId, status }) => {
       where: { userId },
       attributes: [
         'selectionPeriod',
+        'includeHotArticles',
         'includeOnlyUnreadArticles',
         'minDistinctSources',
         'showOnlyInterestMatchedArticles',
@@ -59,6 +60,7 @@ const topTagArticleWhere = async ({ userId, status }) => {
     return buildBriefingArticleWhere({
       userId,
       ...filters,
+      includeHotArticles: Boolean(Number(preferences?.includeHotArticles ?? true)),
       minDistinctSources: Number(preferences?.minDistinctSources) || 1,
       showOnlyInterestMatchedArticles: Boolean(
         Number(preferences?.showOnlyInterestMatchedArticles)

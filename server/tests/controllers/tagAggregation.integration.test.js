@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
 import tagController from '../../controllers/tag.js';
 
-const { User, Category, Feed, Article, Event, Tag } = db;
+const { User, Category, Feed, Article, Event, Tag, BriefingPreference } = db;
 let owner;
 let foreign;
 let feed;
@@ -58,6 +58,20 @@ describe('Read Top Tags aggregation', () => {
     expect(await readTags({ grouping: 'event', includeDevelopingEvents: 'true' })).toEqual([
       { name: 'beta', count: 2 }, { name: 'alpha', count: 1 }
     ]);
+  });
+
+  it('applies the Hot preference to Daily Briefing tags even with matching interest', async () => {
+    const hot = await article('Hot briefing tag', { hotInd: 1, interestScore: 0.8, publishedAt: new Date() });
+    await tag(hot, 'hot-briefing');
+    const preferences = await BriefingPreference.create({ userId: owner.id, includeHotArticles: true });
+    try {
+      expect(await readTags({ status: 'briefing' })).toContainEqual({ name: 'hot-briefing', count: 1 });
+      await preferences.update({ includeHotArticles: false });
+      expect(await readTags({ status: 'briefing' })).not.toContainEqual({ name: 'hot-briefing', count: 1 });
+    } finally {
+      await preferences.destroy();
+      await hot.destroy();
+    }
   });
 
   it('preserves the unread collection', async () => {

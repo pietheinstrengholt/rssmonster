@@ -52,6 +52,7 @@ export const buildArticleSearchQuery = ({
   event,
   developingFilter,
   briefingFilter,
+  briefingIncludeHotArticles = true,
   briefingMinDistinctSources,
   briefingShowOnlyInterestMatchedArticles,
   briefingShowOnlyDevelopingEventArticles,
@@ -108,6 +109,7 @@ export const buildArticleSearchQuery = ({
   if (needsInterestScore) {
     queryAttributes.push('interestScore', 'interestScoredAt');
   }
+  if (sortRecommended || sortTopStories || onEligibilityStage) queryAttributes.push('hotInd');
   if (onEligibilityStage && !needsInterestScore) queryAttributes.push('interestScore', 'interestScoredAt');
 
   // Builds the article query assembled while building article search query.
@@ -249,6 +251,7 @@ export const buildArticleSearchQuery = ({
   onEligibilityStage?.('article_state_metadata_filters', articleQuery.where);
   if (briefingFilter !== null) {
     applyBriefingEligibility(articleQuery.where, briefingFilter, {
+      includeHotArticles: briefingIncludeHotArticles,
       minDistinctSources: briefingMinDistinctSources,
       showOnlyInterestMatchedArticles: briefingShowOnlyInterestMatchedArticles,
       showOnlyDevelopingEventArticles: briefingShowOnlyDevelopingEventArticles

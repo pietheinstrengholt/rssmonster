@@ -38,6 +38,12 @@ export default (sequelize) => sequelize.define(
       allowNull: false,
       defaultValue: false
     },
+    // When false, excludes Hot articles even when they match other briefing signals.
+    includeHotArticles: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true
+    },
     // When true, scrolling past an unread briefing article marks it as read.
     markAsReadOnScroll: {
       type: DataTypes.BOOLEAN,

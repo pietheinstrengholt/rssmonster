@@ -140,8 +140,8 @@ Boolean filters accept `true` or `false`, case-insensitively.
 | `hot:false` | Articles not marked hot. |
 | `event:true` | Articles assigned to an event. |
 | `event:false` | Articles not assigned to an event. |
-| `briefing:true` | Articles with a nonzero interest score or belonging to an event containing more than one article. |
-| `briefing:false` | Articles with a zero interest score that do not belong to a multi-article event. |
+| `briefing:true` | Hot articles, articles with a nonzero interest score, or articles belonging to an event containing more than one article. |
+| `briefing:false` | Non-Hot articles with a zero interest score that do not belong to a multi-article event. |
 | `developing:true` | Unread articles selected as their event's developing article, when that differs from its representative article. |
 | `developing:false` | Articles that do not currently meet the developing-story conditions. |
 
@@ -177,21 +177,23 @@ firstSeen IS NULL OR firstSeen >= now - interval
 `eventCount` currently supports only a minimum event article count. Operators
 such as `>`, `<`, and `=` are not supported for this filter.
 
-Briefing eligibility combines two independent signals as a union. An article
-matches `briefing:true` when its stored `interestScore` is nonzero, including a
+Briefing eligibility combines three independent signals as a union. An article
+matches `briefing:true` when `hotInd = 1`, its stored `interestScore` is nonzero, including a
 negative score, or when its associated event has `articleCount > 1`. This filter
 does not require event grouping; grouping only controls which
 representative articles are returned after eligibility is established.
 
 ### Daily Briefing composition
 
-The Daily Briefing starts with two article groups:
+The Daily Briefing starts with three article groups:
 
 1. **Interest-matched articles:** canonical, unfiltered articles whose stored
    `interestScore` is not zero. Both positive and negative nonzero values qualify.
 2. **Developing-event articles:** canonical, unfiltered articles belonging to an
    event owned by the user where `articleCount > 1`. These articles qualify even
    when their individual `interestScore` is zero.
+3. **Hot articles:** canonical, unfiltered articles with `hotInd = 1`, including
+   standalone articles with neutral interest.
 
 Conceptually, the base selection is:
 
@@ -199,16 +201,20 @@ Conceptually, the base selection is:
 interest-scored articles
 UNION
 articles from multi-article events
+UNION
+Hot articles
 ```
 
-This is implemented as one SQL query with an `OR`, rather than concatenating two
-result arrays. An article matching both branches therefore appears only once.
+This is implemented as one SQL query with an `OR`, rather than concatenating
+result arrays. An article matching multiple branches therefore appears only once.
 
 For the Daily Briefing pseudo-status, the stored user preferences further
 restrict this combined set:
 
 - `selectionPeriod` limits publication time to the rolling last 24 hours or
   seven days.
+- `includeHotArticles` defaults to true. When false, Hot articles are excluded
+  even if they match interest or Event signals. Other eligible articles remain.
 - `includeOnlyUnreadArticles` optionally requires `status = 'unread'`.
 - `minDistinctSources` requires qualifying events to contain canonical,
   unfiltered articles from the configured number of distinct feeds. A value of
@@ -219,7 +225,9 @@ restrict this combined set:
   articles selected as a user-owned event's non-representative developing article.
 
 The two `showOnly` preferences are mutually exclusive. When both are disabled,
-the normal interest-matched and developing-event union is used.
+the normal Hot, interest-matched, and developing-event union is used. Hot status
+does not bypass saved preferences, score thresholds, ownership, visibility, or
+Event grouping.
 
 Daily Briefing always uses `sort:recommended` and event grouping, regardless of
 sort or grouping supplied by a caller. Recommended is personalized by signed

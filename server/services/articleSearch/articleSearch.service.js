@@ -180,6 +180,7 @@ export const searchArticles = async ({
 
     // Selects the raw search based on whether status is briefing.
     let rawSearch = search.trim() || (status === 'briefing' ? DEFAULT_BRIEFING_SEARCH : '');
+    let briefingIncludeHotArticles = true;
     let briefingMinDistinctSources = 1;
     let briefingShowOnlyInterestMatchedArticles = false;
     let briefingShowOnlyDevelopingEventArticles = false;
@@ -193,6 +194,7 @@ export const searchArticles = async ({
             where: { userId },
             attributes: [
                 'selectionPeriod',
+                'includeHotArticles',
                 'includeOnlyUnreadArticles',
                 'minDistinctSources',
                 'prioritizeHighTrust',
@@ -204,6 +206,7 @@ export const searchArticles = async ({
 
         // Handles the case where briefing preferences is available.
         if (briefingPreferences) {
+            briefingIncludeHotArticles = Boolean(Number(briefingPreferences.includeHotArticles ?? true));
             briefingMinDistinctSources = Number(briefingPreferences.minDistinctSources) || 1;
             briefingShowOnlyInterestMatchedArticles = Boolean(
                 Number(briefingPreferences.showOnlyInterestMatchedArticles)
@@ -295,6 +298,7 @@ export const searchArticles = async ({
     const funnel = includeDiagnostics ? createRecommendationFunnel({
       view: status === 'briefing' ? 'briefing' : 'articles', sort: logicalSort,
       briefing: { applied: briefingFilter !== null, included: briefingFilter,
+        includeHotArticles: briefingIncludeHotArticles,
         minDistinctSources: briefingMinDistinctSources,
         interestOnly: briefingShowOnlyInterestMatchedArticles, developingOnly: briefingShowOnlyDevelopingEventArticles },
       grouping: effectiveGrouping
@@ -420,6 +424,7 @@ export const searchArticles = async ({
       event,
       developingFilter,
       briefingFilter,
+      briefingIncludeHotArticles,
       briefingMinDistinctSources,
       briefingShowOnlyInterestMatchedArticles,
       briefingShowOnlyDevelopingEventArticles,

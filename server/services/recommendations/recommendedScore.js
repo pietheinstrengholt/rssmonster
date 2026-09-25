@@ -10,6 +10,7 @@ const RECOMMENDED_WEIGHTS = Object.freeze({
   negativeInterest: 0.30
 });
 const RULE_TAG_BOOST = 0.08;
+const HOT_ARTICLE_BOOST = 0.07;
 
 // Preserves the signed Interest Island range so negative affinity remains a penalty.
 const normalizeInterestScore = rawInterestScore => {
@@ -32,6 +33,7 @@ export function computeRecommendedBreakdown(article) {
   const quality = computeQuality(article);
   const eventMetrics = computeEventRankingMetrics(article);
   const ruleBoost = hasMatchingRuleTag(article) ? RULE_TAG_BOOST : 0;
+  const hotBoost = article?.hotInd ? HOT_ARTICLE_BOOST : 0;
   // Keep the established upper cap without discarding negative preference totals.
   const recommended = Math.min(1,
     RECOMMENDED_WEIGHTS.positiveInterest * positiveInterest +
@@ -39,7 +41,8 @@ export function computeRecommendedBreakdown(article) {
     RECOMMENDED_WEIGHTS.quality * quality +
     RECOMMENDED_WEIGHTS.corroboration * eventMetrics.corroboration -
     RECOMMENDED_WEIGHTS.negativeInterest * negativeInterest +
-    ruleBoost
+    ruleBoost +
+    hotBoost
   );
 
   return {
@@ -50,6 +53,7 @@ export function computeRecommendedBreakdown(article) {
     quality,
     ...eventMetrics,
     ruleBoost,
+    hotBoost,
     recommended
   };
 }

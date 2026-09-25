@@ -123,6 +123,7 @@ Recommended =
   + 0.10 × corroboration
   - 0.30 × negativeInterest
   + ruleMatchBoost
+  + hotBoost
 ```
 
 First normalize finite `interestScore` to `[-1, 1]`, or use zero when missing or
@@ -178,12 +179,18 @@ Top Stories =
     0.60 × eventImportance
   + 0.25 × freshness
   + 0.15 × Quality
+  + hotBoost
 ```
 
 Top Stories answers which current, corroborated Events matter broadly.
 Recommended answers which articles are likely to matter to this user. Top
 Stories does not use Interest Islands or rule tags. A standalone article
-remains eligible and can receive only its freshness and Quality contributions.
+remains eligible and receives its freshness, Quality, and any Hot contribution.
+
+Both sorts add a flat `hotBoost = 0.07` for [Hot articles]({% link hot-articles.md %})
+when `hotInd` is set, otherwise zero.
+The bonus does not scale with `hotlinks`. Existing weights and score caps remain
+unchanged; Top Stories stays within `[0, 1]`.
 
 ### Supported sorts
 

@@ -9,7 +9,7 @@ const BATCH_SIZE = 200;
 const attributes = ['id', 'userId', 'feedId', 'eventId', 'title', 'url', 'description', 'status', 'publishedAt',
   'articleVector', 'embedding_model', 'interestScore', 'interestScoredAt', 'qualityScore', 'sentimentScore',
   'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd',
-  'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket'];
+  'hotInd', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket'];
 
 export function resolveRecommendationRunOptions({ userId, status = 'all', limit, mode = 'evaluate' } = {}) {
   if (!Number.isSafeInteger(userId) || userId <= 0) throw new TypeError('A positive integer userId is required');
