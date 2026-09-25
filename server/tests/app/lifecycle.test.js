@@ -58,6 +58,8 @@ describe('programmatic Express lifecycle', () => {
       expect(server.address().address).toBe('127.0.0.1');
       const origin = `http://127.0.0.1:${server.address().port}`;
       expect(await (await fetch(origin)).text()).toContain('Local bundle');
+      expect((await fetch(`${origin}/interests`)).status).toBe(404);
+      expect((await fetch(`${origin}/api/nonexistent`)).status).toBe(404);
       await expect(startServer({ host: '127.0.0.1', port: server.address().port }))
         .rejects.toMatchObject({ code: 'EADDRINUSE' });
       await stopServer(server);

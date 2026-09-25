@@ -51,7 +51,7 @@ describe('article recommendation presentation', () => {
       reasons: [
         {
           code: 'interest_match',
-          island: { label: 'Software development', generatedLabel: 'Developer tooling' }
+          island: { id: 7, label: 'Software development', generatedLabel: 'Developer tooling' }
         },
         {
           code: 'event_coverage',
@@ -65,6 +65,7 @@ describe('article recommendation presentation', () => {
       'Part of “Qwen Releases New Model”.'
     ]);
     expect(explanation.summary).toContain('your “Developer tooling” interest');
+    expect(explanation.items[0]).toMatchObject({ islandId: 7, islandName: 'Developer tooling' });
   });
 
   it('uses safe fallback wording when optional names are unavailable', () => {
@@ -83,6 +84,7 @@ describe('article recommendation presentation', () => {
       'Matches one of your article rules.',
       'Freshness contributed to its ranking.'
     ]);
+    expect(explanation.items[0]).not.toHaveProperty('islandId');
     expect(explanation.scoreLabel).toBe('100% recommendation score');
   });
 

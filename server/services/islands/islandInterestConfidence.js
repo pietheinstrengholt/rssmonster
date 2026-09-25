@@ -118,7 +118,7 @@ export async function loadIslandEvidence(userId, { transaction, now = Date.now()
     ...condition, [field]: { [Op.gte]: new Date(now - IMPLICIT_WINDOW_DAYS * DAY_MS), [Op.lte]: new Date(now) }
   }, IMPLICIT_EVIDENCE_LIMIT, [field]);
   const [islands, evidence, negative, positive, clicked, read] = await Promise.all([
-    db.Island.findAll({ where: { userId, ...activeIslandWhere(now) }, attributes: ['id', 'userId', 'label', 'generatedLabel', 'weight', 'islandVector', 'embedding_model', 'supportArticleIds'], order: [['id', 'ASC']], raw: true, transaction }),
+    db.Island.findAll({ where: { userId, ...activeIslandWhere(now), mutedInd: false }, attributes: ['id', 'userId', 'label', 'generatedLabel', 'weight', 'islandVector', 'embedding_model', 'supportArticleIds'], order: [['id', 'ASC']], raw: true, transaction }),
     query({ [Op.and]: [db.Sequelize.where(behaviorTimestampExpression(db.sequelize, BEHAVIOR_TIMESTAMP_FIELDS, now), { [Op.ne]: null })],
       [Op.or]: [{ positiveInd: 1 }, { favoriteInd: 1 }, { negativeInd: 1 }, { clickedAmount: { [Op.gt]: 0 } }, { attentionBucket: { [Op.gte]: 3 } }] }, EVIDENCE_LIMIT),
     query({ negativeInd: 1, [Op.and]: [recent('negativeFeedbackAt')] }, EXPLICIT_EVIDENCE_LIMIT, ['negativeFeedbackAt']),

@@ -50,9 +50,11 @@
         <main class="settings-content">
           <component
             :is="activeComponent"
+            v-bind="active === 'islands' ? { interestId: targetInterestId } : {}"
             @close="active = 'welcome'"
             @saved="handleSaved"
             @forceReload="$emit('forceReload')"
+            @open-article="$emit('open-article', $event)"
           />
         </main>
       </div>
@@ -129,8 +131,10 @@ const SettingsAccount = createAsyncSettingsSection(() => import('./SettingsAccou
 
 export default {
   name: 'SettingsModal',
-  emits: ['close', 'forceReload'],
+  emits: ['close', 'forceReload', 'open-article'],
   props: {
+    initialSection: { type: String, default: 'welcome' },
+    interestId: { type: [Number, String], default: null },
     returnFocusTo: {
       type: Object,
       default: null
@@ -157,7 +161,8 @@ export default {
   // This function creates modal navigation and focus restoration state.
   data() {
     return {
-      active: 'welcome',
+      active: this.initialSection,
+      targetInterestId: this.interestId,
       previouslyFocusedElement: null
     };
   },
@@ -280,6 +285,7 @@ export default {
     // This function changes sections while retaining focus on the persistent navigation control.
     selectSection(sectionKey, event) {
       const navigationButton = event?.currentTarget;
+      if (sectionKey !== this.active) this.targetInterestId = null;
       this.active = sectionKey;
 
       this.$nextTick(() => {

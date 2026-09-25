@@ -9,10 +9,12 @@ const pluralized = (count, singular, plural = `${singular}s`) => (
   `${count} ${Number(count) === 1 ? singular : plural}`
 );
 
+const interestIslandName = reason => String(
+  reason?.island?.generatedLabel || reason?.island?.label || reason?.island?.name || ''
+).trim();
+
 const interestExplanation = reason => {
-  const islandName = String(
-    reason?.island?.generatedLabel || reason?.island?.label || reason?.island?.name || ''
-  ).trim();
+  const islandName = interestIslandName(reason);
   return islandName
     ? `Matches your ${quoted(islandName)} interest.`
     : 'Matches your learned interests.';
@@ -69,11 +71,15 @@ export function buildArticleRecommendationExplanation(recommendation) {
   const items = [];
 
   if (interestReason) {
+    const islandName = interestIslandName(interestReason);
     items.push({
       code: 'interest_match',
       icon: 'compass-fill',
       title: 'Interest match',
-      text: interestExplanation(interestReason)
+      text: interestExplanation(interestReason),
+      ...(islandName && interestReason.island?.id != null
+        ? { islandId: interestReason.island.id, islandName }
+        : {})
     });
   }
 
@@ -130,12 +136,7 @@ export function buildArticleRecommendationExplanation(recommendation) {
 
   let summary = 'These signals contributed to this article’s position.';
   if (interestReason && (eventReason || sourceReason)) {
-    const islandName = String(
-      interestReason?.island?.generatedLabel
-        || interestReason?.island?.label
-        || interestReason?.island?.name
-        || ''
-    ).trim();
+    const islandName = interestIslandName(interestReason);
     const interestText = islandName
       ? `your ${quoted(islandName)} interest`
       : 'your learned interests';

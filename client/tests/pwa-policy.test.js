@@ -105,7 +105,8 @@ describe('PWA cache policy', () => {
     const coreModules = {
       'src/AppShell.vue': {
         file: 'assets/AppShell-AbCd1234.js',
-        imports: ['index.html']
+        imports: ['index.html'],
+        dynamicImports: ['src/components/settings/Settings.vue']
       },
       'src/components/articles/ArticleReaderLayout.vue': {
         file: 'assets/ArticleReaderLayout-AbCd1234.js',
@@ -123,8 +124,7 @@ describe('PWA cache policy', () => {
       },
       'src/components/shell/DesktopToolbar.vue': {
         file: 'assets/DesktopToolbar-AbCd1234.js',
-        imports: ['_articleSelectionOptions-AbCd1234.js'],
-        dynamicImports: ['src/components/settings/Settings.vue']
+        imports: ['_articleSelectionOptions-AbCd1234.js']
       },
       'src/components/shell/MobileMenuOverlay.vue': {
         file: 'assets/MobileMenuOverlay-AbCd1234.js'

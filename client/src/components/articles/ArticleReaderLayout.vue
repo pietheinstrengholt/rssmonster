@@ -218,6 +218,7 @@
         @duplicate-articles-loaded="$emit('duplicate-articles-loaded', $event)"
         @duplicate-articles-collapsed="$emit('duplicate-articles-collapsed', $event)"
         @article-not-interested="$emit('article-not-interested', $event)"
+        @inspect-interest="$emit('inspect-interest', $event)"
       />
       <ArticleItem
         v-for="article in selectedRelatedArticles"
@@ -233,6 +234,7 @@
         @duplicate-articles-loaded="$emit('duplicate-articles-loaded', $event)"
         @duplicate-articles-collapsed="$emit('duplicate-articles-collapsed', $event)"
         @article-not-interested="$emit('article-not-interested', $event)"
+        @inspect-interest="$emit('inspect-interest', $event)"
       />
       <ArticleRecommendations
         v-if="selectedArticle && recommendations.length"
@@ -301,6 +303,7 @@ export default {
     'duplicate-articles-loaded',
     'duplicate-articles-collapsed',
     'article-not-interested',
+    'inspect-interest',
     'reading-article-changing',
     'mark-previous-article-read',
     'shortcut-toggle-read',
@@ -694,9 +697,9 @@ export default {
       }
     },
     // Selects the article displayed in the reader panel.
-    selectArticle(articleId) {
+    selectArticle(articleId, { markPreviousAsRead = true } = {}) {
       if (articleId === this.selectedArticleId) return;
-      if (this.selectedArticleId !== null) {
+      if (this.selectedArticleId !== null && markPreviousAsRead) {
         this.$emit('mark-previous-article-read', this.selectedArticleId);
       }
       this.selectedArticleId = articleId;

@@ -50,6 +50,12 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: false
       },
+      // Excludes this island from scoring without changing its lifecycle or evidence.
+      mutedInd: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       // Records when the island was archived; null while it remains active.
       archivedAt: {
         type: DataTypes.DATE,

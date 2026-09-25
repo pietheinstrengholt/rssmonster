@@ -52,7 +52,7 @@
                     <strong>{{ item.title }}</strong>
                     <strong v-if="item.value !== undefined" class="article-explanation-item-value">{{ item.value }}</strong>
                   </span>
-                  <span>{{ item.text }}</span>
+                  <span><slot name="item-text" :item="item">{{ item.text }}</slot></span>
                 </span>
               </li>
             </ul>

@@ -112,18 +112,12 @@
         title="Settings"
         aria-label="Open settings"
         aria-haspopup="dialog"
-        :aria-expanded="showSettingsModal ? 'true' : 'false'"
-        @click="settingsClicked"
+        :aria-expanded="settingsOpen ? 'true' : 'false'"
+        @click="$emit('open-settings')"
       >
         <BootstrapIcon icon="gear-fill" size="20" />
       </button>
     </div>
-    <Settings
-      v-if="showSettingsModal"
-      :return-focus-to="$refs.settingsButton"
-      @close="closeSettingsModal"
-      @forceReload="handleForceReload"
-    />
   </nav>
 </template>
 
@@ -807,7 +801,6 @@
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useUiStore } from '../../store/ui.js';
-import { defineAsyncComponent } from 'vue';
 import {
   ARTICLE_GROUPING_OPTIONS,
   ARTICLE_SORT_OPTIONS,
@@ -825,14 +818,13 @@ import { getRecentSearches, saveRecentSearches } from '../../services/recentSear
 
 const SEARCH_DEBOUNCE_DELAY = 300;
 
-// This async boundary defers the settings workspace until the user opens it.
-const Settings = defineAsyncComponent(() => import('../settings/Settings.vue'));
-
 export default {
   components: {
     AppDropdown,
-    SearchDropdown,
-    Settings
+    SearchDropdown
+  },
+  props: {
+    settingsOpen: { type: Boolean, default: false }
   },
   // Exposes the toolbar-specific copy boundary without tracking every viewport resize.
   setup() {
@@ -846,7 +838,6 @@ export default {
   // This function initializes the toolbar's local state and dropdown options.
   data() {
     return {
-      showSettingsModal: false,
       isCompactSearchOpen: false,
       isSearchDropdownOpen: false,
       recentSearches: getRecentSearches(),
@@ -966,18 +957,10 @@ export default {
         this.setGrouping(value);
       }
     },
-    // This function opens the settings modal.
-    settingsClicked: function() {
-      this.showSettingsModal = true;
-    },
     // This function applies the theme immediately and queues account persistence.
     selectThemeMode: function(theme) {
       this.selectedThemeMode = theme;
       this.uiStore.selectThemeMode(theme);
-    },
-    // This function closes the settings modal.
-    closeSettingsModal: function() {
-      this.showSettingsModal = false;
     },
     // This function asks the parent to reload the current content.
     handleForceReload: function() {

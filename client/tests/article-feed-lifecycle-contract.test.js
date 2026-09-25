@@ -23,7 +23,8 @@ describe('ArticleFeed collection lifecycle contract', () => {
     expect(ArticleFeed.emits).toEqual([
       'forceReload',
       'mobile-toolbar-visibility',
-      'refresh-feeds'
+      'refresh-feeds',
+      'inspect-interest'
     ]);
   });
 

@@ -58,11 +58,11 @@ controls and layout differences.
 <table>
   <tr>
     <td width="50%"><strong>Events</strong><br><sub>Inspect story coverage and broader themes.</sub></td>
-    <td width="50%"><strong>Interest Islands</strong><br><sub>Explore recurring interests shaped by reading feedback.</sub></td>
+    <td width="50%"><strong>Interest Islands</strong><br><sub>Inspect recurring interests and mute those you do not want used for recommendations.</sub></td>
   </tr>
   <tr>
     <td><a href="docs/assets/events.png"><img src="docs/assets/events.png" alt="RSSMonster event insights dashboard"></a></td>
-    <td><a href="docs/assets/interestislands.png"><img src="docs/assets/interestislands.png" alt="RSSMonster interest islands insights dashboard"></a></td>
+    <td><a href="docs/assets/interestislands.png"><img src="docs/assets/interestislands.png" alt="RSSMonster Settings Islands overview with Active interests and an open inspector"></a></td>
   </tr>
 </table>
 

@@ -50,6 +50,9 @@ profiles to existing Islands, blends vectors, replaces signal snapshots, and
 records bounded source-article audits. `runIslandCalibration.js` orchestrates
 profile creation, persistence and scoring. Normal crawl processing scores new
 articles against existing Islands; it does not recalibrate behavioral memory.
+Muted Islands remain in calibration and lifecycle maintenance but are excluded
+from the active-Island evidence loaded for future article interest scoring. Mute
+and unmute do not retrospectively update stored Article scores.
 
 An Island stores its vector, signed weight, signal snapshot, display labels,
 archive state and population audit. There is no persisted candidate-Article

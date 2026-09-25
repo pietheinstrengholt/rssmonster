@@ -264,19 +264,35 @@ become new behavioral evidence and does not itself change an Island.
 
 ## Inspecting Your Islands
 
-Open **Settings > Islands** for an explanation of what RSSMonster has learned.
-The overview itself is read-only and shows:
+Open **Settings → Islands** to review and configure the interests RSSMonster has
+learned. The Island Insights introduction stays at the top of the page, followed
+by summary cards for positive, negative, active, and archived interests. The
+**Active** filter is selected when you open the page. Use the other filters,
+search, and sort control to find an Island. Each row shows its preference
+polarity, evidence strength, supporting behavior, last activity, and lifecycle.
+Evidence strength is preference magnitude, not confidence in a recommendation.
 
-- the number of active Interest Islands;
-- each Island's signed interest weight and active or archived state;
-- the behavioral source articles explaining why it exists.
+Select **Inspect** to see an Island's evidence breakdown and example articles.
+If an article's **Why recommended** explanation says it matches one of your
+interests, select the interest name to open **Settings → Islands** with that
+Island selected and inspected.
 
-![Interest Island insights in the Settings menu](assets/interestislands.png)
+![Settings → Islands with the Active filter, Island actions, and an open inspector](assets/interestislands.png)
 
-The overview is a snapshot. Use **Refresh** to fetch the latest state without
-changing it. **Recalculate Islands** deliberately rebuilds the signed-in user's
-Islands from existing evidence and refreshes article interest scores before
-reloading the overview.
+### Muting an Island
+
+Select **Mute** beside an Island to stop using it for future Island-based
+interest scoring. The Island stays in the overview with a **Muted** badge;
+its weight, vector, evidence, and active or archived lifecycle are retained.
+Muting does not remove the Island or stop its normal evidence and lifecycle
+maintenance. Muting also does not recalculate recommendations or change
+interest scores already stored on articles.
+
+Select **Unmute** in the same row to let the Island participate in future
+interest scoring again. You can mute or unmute an Island without losing the
+current search, filter, sort, or inspected Island. Muted and archived are
+separate states: an active Island can be muted, and an archived Island can be
+unmuted without becoming active.
 
 ## Refreshing after behavior
 

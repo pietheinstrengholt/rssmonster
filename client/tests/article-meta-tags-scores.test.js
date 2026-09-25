@@ -202,6 +202,9 @@ describe('ArticleMeta', () => {
       'Source trust'
     ]);
     expect(panel.textContent).toContain('76% recommendation score');
+    const interestLink = panel.querySelector('.interest-island-link');
+    expect(interestLink.textContent).toBe('“Software development”');
+    expect(interestLink.getAttribute('aria-label')).toBe('Inspect Software development interest in Settings');
 
     document.dispatchEvent(new KeyboardEvent('keydown', {
       key: 'Escape',
@@ -212,6 +215,35 @@ describe('ArticleMeta', () => {
 
     expect(document.querySelector('.recommendation-explanation-panel')).toBeNull();
     expect(document.activeElement).toBe(trigger.element);
+    wrapper.unmount();
+  });
+
+  it('opens the attributed island from the recommendation explanation', async () => {
+    const wrapper = mountArticleMeta({
+      hasInterestScore: true,
+      isRecommendationView: true,
+      recommendation: { reasons: [{ code: 'interest_match', island: { id: 7, name: 'Race' } }] }
+    }, { attachTo: document.body });
+    await wrapper.get('.recommended-badge').trigger('click');
+    const link = document.querySelector('.interest-island-link');
+    expect(link.textContent).toBe('“Race”');
+    link.click();
+    await flushPromises();
+    expect(wrapper.emitted('inspect-interest')).toEqual([[7]]);
+    expect(document.querySelector('.recommendation-explanation-panel')).toBeNull();
+    expect(document.activeElement).toBe(wrapper.get('.recommended-badge').element);
+    wrapper.unmount();
+  });
+
+  it('keeps unattributed interest text noninteractive', async () => {
+    const wrapper = mountArticleMeta({
+      hasInterestScore: true,
+      isRecommendationView: true,
+      recommendation: { reasons: [{ code: 'interest_match', island: { name: 'Race' } }] }
+    }, { attachTo: document.body });
+    await wrapper.get('.recommended-badge').trigger('click');
+    expect(document.querySelector('.recommendation-explanation-panel').textContent).toContain('Matches your “Race” interest.');
+    expect(document.querySelector('.interest-island-link')).toBeNull();
     wrapper.unmount();
   });
 

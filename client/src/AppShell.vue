@@ -23,7 +23,7 @@
           @refresh="reloadArticleListFromDatabase"
         ></app-mobile-toolbar>
         <!-- Toolbar events -->
-        <app-desktop-toolbar v-if="isDesktopShell === true" id="desktop-toolbar" @forceReload="forceReload"></app-desktop-toolbar>
+        <app-desktop-toolbar v-if="isDesktopShell === true" id="desktop-toolbar" :settings-open="showSettingsModal" @forceReload="forceReload" @open-settings="openSettings"></app-desktop-toolbar>
 
         <!-- Error handling -->
         <app-error v-if="uiStore.fatalError" :type="uiStore.fatalError.type" @retry="forceReload"/>
@@ -46,6 +46,7 @@
           @forceReload="forceReload"
           @mobile-toolbar-visibility="setMobileToolbarVisibility"
           @refresh-feeds="refreshFeeds"
+          @inspect-interest="openInterestSettings"
         ></app-article-feed>
         <!-- Show chat assistant -->
         <app-chat-assistant
@@ -63,6 +64,15 @@
     </div>
     <!-- Mobile events -->
     <app-mobile-menu-overlay v-if="isDesktopShell === false" :mobile="mobile" @mobile="mobileClick" @refresh="refreshFeeds"></app-mobile-menu-overlay>
+    <app-settings
+      v-if="showSettingsModal"
+      :initial-section="settingsSection"
+      :interest-id="settingsInterestId"
+      :return-focus-to="settingsReturnFocusTo"
+      @close="closeSettings"
+      @forceReload="forceReload"
+      @open-article="openInterestArticle"
+    />
     <action-error-notice
       v-if="actionErrorMessage"
       :key="actionErrorId"
@@ -331,6 +341,7 @@ const DesktopToolbar = defineAsyncComponent(() =>  import("./components/shell/De
 const MobileToolbar = defineAsyncComponent(() =>  import("./components/shell/MobileToolbar.vue"));
 const MobilePullToRefresh = defineAsyncComponent(() => import("./components/shell/MobilePullToRefresh.vue"));
 const MobileMenuOverlay = defineAsyncComponent(() =>  import("./components/shell/MobileMenuOverlay.vue"));
+const Settings = defineAsyncComponent(() => import("./components/settings/Settings.vue"));
 const ChatAssistant = defineAsyncComponent(() =>  import("./components/assistant/ChatAssistant.vue"));
 
 // Each supported store identifier retains an explicit lazy import boundary.
@@ -367,6 +378,7 @@ export default {
     appMobileToolbar: MobileToolbar,
     appMobilePullToRefresh: MobilePullToRefresh,
     appMobileMenuOverlay: MobileMenuOverlay,
+    appSettings: Settings,
     appChatAssistant: ChatAssistant,
     appError: Error,
     appInitialFeeds: InitialFeeds
@@ -398,6 +410,10 @@ export default {
       overviewIntervalId: null,
       overviewLoaded: false,
       overviewReloading: false,
+      showSettingsModal: false,
+      settingsSection: 'welcome',
+      settingsInterestId: null,
+      settingsReturnFocusTo: null,
       supportsTouch: false,
       unsubscribeFromSystemTheme: null
     };
@@ -446,6 +462,25 @@ export default {
 
   },
   methods: {
+    openInterestArticle(articleId) {
+      this.closeSettings();
+      void this.$nextTick(() => this.$refs.articleFeed?.openExampleArticle(articleId));
+    },
+    openSettings() {
+      this.settingsSection = 'welcome';
+      this.settingsInterestId = null;
+      this.settingsReturnFocusTo = document.activeElement;
+      this.showSettingsModal = true;
+    },
+    openInterestSettings(islandId) {
+      this.settingsSection = 'islands';
+      this.settingsInterestId = islandId;
+      this.settingsReturnFocusTo = document.activeElement;
+      this.showSettingsModal = true;
+    },
+    closeSettings() {
+      this.showSettingsModal = false;
+    },
     // This function swaps the mounted shell components when the application breakpoint changes.
     handleResponsiveShellChange() {
       this.mobile = null;

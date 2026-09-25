@@ -41,6 +41,7 @@
         @duplicate-articles-loaded="$emit('duplicate-articles-loaded', $event)"
         @duplicate-articles-collapsed="$emit('duplicate-articles-collapsed', $event)"
         @article-not-interested="$emit('article-not-interested', $event)"
+        @inspect-interest="$emit('inspect-interest', $event)"
       />
     </div>
     <div id="article-load-sentinel" ref="loadMoreSentinel" class="article-load-sentinel" aria-hidden="true"></div>
@@ -123,6 +124,7 @@ export default {
     'duplicate-articles-loaded',
     'duplicate-articles-collapsed',
     'article-not-interested',
+    'inspect-interest',
     'shortcut-toggle-read',
     'shortcut-toggle-favorite',
     'flush-pool',

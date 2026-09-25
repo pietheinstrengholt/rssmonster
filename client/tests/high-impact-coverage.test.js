@@ -524,7 +524,8 @@ describe('ArticleListView high-impact decision coverage', () => {
 
   it('derives layout-specific progress before crossing the layout boundary', () => {
     const context = {
-      container: Array.from({ length: 21 }, (_, index) => ({ id: index + 1 })),
+      container: Array.from({ length: 21 }, (_, index) => index + 1),
+      articles: Array.from({ length: 21 }, (_, index) => ({ id: index + 1 })),
       totalCount: 21,
       distance: 20,
       fetchCount: 20,

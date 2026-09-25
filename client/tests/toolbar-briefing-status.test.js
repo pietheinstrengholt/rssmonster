@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { config, flushPromises, mount } from '@vue/test-utils';
+import { config, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 
 import DesktopToolbar from '../src/components/shell/DesktopToolbar.vue';
@@ -70,28 +70,12 @@ function desktopGroupingDropdown(wrapper) {
 }
 
 describe('toolbar Daily Briefing status', () => {
-  it('opens and closes the lazy Settings workspace from the desktop toolbar', async () => {
+  it('requests Settings from the desktop toolbar', async () => {
     createStore(true);
-    const wrapper = mount(DesktopToolbar, {
-      global: {
-        stubs: {
-          Settings: {
-            name: 'Settings',
-            emits: ['close'],
-            template: '<button class="settings-close-stub" @click="$emit(\'close\')">Close</button>'
-          }
-        }
-      }
-    });
-
-    expect(wrapper.find('.settings-close-stub').exists()).toBe(false);
+    const wrapper = mount(DesktopToolbar);
 
     await wrapper.get('.toolbar-settings-button').trigger('click');
-    await flushPromises();
-    expect(wrapper.find('.settings-close-stub').exists()).toBe(true);
-
-    await wrapper.get('.settings-close-stub').trigger('click');
-    expect(wrapper.find('.settings-close-stub').exists()).toBe(false);
+    expect(wrapper.emitted('open-settings')).toHaveLength(1);
   });
 
   it.each([DesktopToolbar, MobileToolbar])('hides Briefing in %s when AI mode is disabled', (component) => {

@@ -21,16 +21,6 @@ vi.mock('../src/services/pushNotifications.js', () => ({
   unsubscribeFromPushNotifications: pushMocks.unsubscribe
 }));
 
-// This mock prevents the toolbar's lazy Settings import from outliving the test environment.
-vi.mock('../src/components/settings/Settings.vue', () => ({
-  __esModule: true,
-  default: {
-    name: 'Settings',
-    emits: ['close', 'forceReload'],
-    template: '<button class="settings-stub" @click="$emit(\'forceReload\')">Settings</button>'
-  }
-}));
-
 vi.mock('../src/api/settings.js', async importOriginal => {
   const actual = await importOriginal();
   return {
@@ -91,17 +81,7 @@ const createStores = ({ AIEnabled = true, AssistantEnabled = true } = {}) => {
 };
 
 // This function mounts the desktop toolbar against the split Pinia store contract.
-const mountDesktopToolbar = () => shallowMount(DesktopToolbar, {
-  global: {
-    stubs: {
-      Settings: {
-        name: 'Settings',
-        emits: ['close', 'forceReload'],
-        template: '<button class="settings-stub" @click="$emit(\'forceReload\')">Settings</button>'
-      }
-    }
-  }
-});
+const mountDesktopToolbar = () => shallowMount(DesktopToolbar);
 
 // This function mounts the mobile toolbar against the split Pinia store contract.
 const mountMobileToolbar = () => mount(MobileToolbar, {
@@ -272,9 +252,7 @@ describe('DesktopToolbar behavior coverage', () => {
     expect(setChatOpen).toHaveBeenCalledWith(true);
 
     await wrapper.get('.toolbar-settings-button').trigger('click');
-    await flushPromises();
-    await wrapper.get('.settings-stub').trigger('click');
-    expect(wrapper.emitted('forceReload')).toHaveLength(1);
+    expect(wrapper.emitted('open-settings')).toHaveLength(1);
   });
 
   it('persists a theme and keeps the new choice when saving fails', async () => {

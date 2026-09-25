@@ -17,6 +17,7 @@
       v-if="showRecommendationExplanation"
       :recommendation="recommendation"
       :trigger-label="recommendationTriggerLabel"
+      @inspect-interest="$emit('inspect-interest', $event)"
     />
     <span v-else-if="hasInterestScore" class="recommended-badge">Matches your interests</span>
     <ArticleStorySourcesPopover
@@ -44,7 +45,7 @@ const ArticleRecommendationExplanation = defineAsyncComponent(
 );
 export default {
   components: { ArticleRecommendationExplanation, ArticleStorySourcesPopover, ArticleAuthors },
-  emits: ['view-event-articles', 'view-duplicate-articles'],
+  emits: ['view-event-articles', 'view-duplicate-articles', 'inspect-interest'],
   props: {
     authors: { type: Array, default: null },
     originalSource: { type: Object, default: null },
