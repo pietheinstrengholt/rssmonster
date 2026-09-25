@@ -15,6 +15,7 @@
         v-if="currentSelection === 'unread' && ((hasLoadedContent && loadedCount > 0 && currentViewSourceCount !== null) || (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all'))"
         :article-count="collectionSummary.totalCount ?? currentViewUnreadCount"
         :source-count="currentViewSourceCount ?? 0"
+        :oldest-published-at="collectionSummary.oldestPublishedAt"
         :articles="articles"
         :get-article-element="getArticleElement"
       />

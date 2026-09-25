@@ -242,6 +242,32 @@ describe('article cursor pagination', () => {
     expect(new Set(ascendingIds).size).toBe(ascendingIds.length);
   });
 
+  it('reports the oldest matching publication before the age cutoff, regardless of page size', async () => {
+    const { user, feed } = await createUserFeed('oldest-age-metadata');
+    const oldest = await createArticle(user, feed, 'Range science oldest', new Date('2026-09-01T12:00:00Z'));
+    await createArticle(user, feed, 'Range science middle', new Date('2026-09-20T12:00:00Z'));
+    await createArticle(user, feed, 'Range science newest', new Date('2026-09-24T12:00:00Z'));
+    await createArticle(user, feed, 'Unrelated older', new Date('2026-01-01T12:00:00Z'));
+    const query = {
+      feedId: feed.id, search: 'title:Range', persistSettings: false,
+      includeOldestPublishedAt: true, ageCutoff: '7d',
+      publishedAfter: '2026-09-18T12:00:00Z', publishedBefore: '2026-09-25T12:00:00Z'
+    };
+    const first = await getPage(user, { ...query, pageSize: 1 });
+    const larger = await getPage(user, { ...query, pageSize: 2 });
+    const legacy = await request(app).get('/api/articles').query({ ...query, sort: 'quality' })
+      .set('Authorization', authHeaderFor(user));
+    expect(first.status).toBe(200);
+    expect(larger.status).toBe(200);
+    expect(legacy.status).toBe(200);
+    expect(first.body.totalCount).toBe(2);
+    expect(first.body.page.itemIds).toHaveLength(1);
+    expect(legacy.body.itemIds).toHaveLength(2);
+    expect(first.body.oldestPublishedAt).toBe(oldest.publishedAt.toISOString());
+    expect(larger.body.oldestPublishedAt).toBe(oldest.publishedAt.toISOString());
+    expect(legacy.body.oldestPublishedAt).toBe(oldest.publishedAt.toISOString());
+  });
+
   it('excludes new inserts and tolerates deletion and filter departure between pages', async () => {
     const { user, feed } = await createUserFeed('cursor-mutations');
     const articles = await Promise.all([

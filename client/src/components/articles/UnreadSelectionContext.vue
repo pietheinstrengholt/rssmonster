@@ -52,7 +52,7 @@ import { computed, nextTick, ref } from 'vue';
 import { useSelectionStore } from '../../store/selection.js';
 import AppDropdown from '../shared/AppDropdown.vue';
 import { articleDateRangeOptions, resolveArticleDateRange } from '../../services/articleDateRange.js';
-import { articleAgeCutoffOptions } from '../../services/articleAgeCutoff.js';
+import { ageCutoffOptionsForOldest } from '../../services/articleAgeCutoff.js';
 import { useStickyArticleDate } from '../../composables/useStickyArticleDate.js';
 import { articleDateContext } from '../../utils/date.js';
 
@@ -62,6 +62,7 @@ export default {
   props: {
     articleCount: { type: Number, required: true },
     sourceCount: { type: Number, required: true },
+    oldestPublishedAt: { type: [String, Date], default: null },
     readerMode: { type: Boolean, default: false },
     articles: { type: Array, default: () => [] },
     getArticleElement: { type: Function, default: () => null }
@@ -113,7 +114,7 @@ export default {
       cancelCustomRange,
       dateRangeOptions: articleDateRangeOptions,
       selectedDateRangeOption: computed(() => articleDateRangeOptions.find(option => option.value === selectionStore.dateRange)),
-      ageCutoffOptions: articleAgeCutoffOptions,
+      ageCutoffOptions: computed(() => ageCutoffOptionsForOldest(props.oldestPublishedAt)),
       dateContext: computed(() => articleDateContext(activeDate.value))
     };
   }
@@ -190,12 +191,16 @@ export default {
 .unread-selection-context__age-button:hover { border-color: var(--color-link); color: var(--color-link); }
 .unread-selection-context__age-button[aria-pressed='true'] { border-color: var(--color-primary); background: var(--color-primary); color: var(--text-inverted); }
 .unread-selection-context__age-button:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+@media (max-width: 1069px), (max-height: 560px) and (min-width: 480px) {
+  .unread-selection-context__date-group > time { display: none; }
+}
+@media (max-width: 875px), (max-height: 560px) and (min-width: 480px) {
+  .unread-selection-context__meta { display: none; }
+}
 @media (max-width: 767px), (max-height: 560px) and (min-width: 480px) {
   .unread-selection-context { padding: 0.375rem 0.5rem; }
   .unread-selection-context__surface { gap: 0.375rem; padding: 0.5rem; }
-  .unread-selection-context__meta,
-  .unread-selection-context__divider,
-  .unread-selection-context__date-group > time { display: none; }
+  .unread-selection-context__divider { display: none; }
   .unread-selection-context__summary { flex: 0 1 auto; }
   .unread-selection-context__date-group,
   .unread-selection-context__age-cutoff { gap: 0.25rem; }

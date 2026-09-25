@@ -1,7 +1,7 @@
 import { withArticleAgeCutoff } from './articleAgeCutoff.js';
 
 export const articleDateRangeOptions = [
-  { value: 'all', label: 'All' },
+  { value: 'all', label: 'All dates' },
   { value: 'today', label: 'Today' },
   { value: 'yesterday', label: 'Yesterday' },
   {

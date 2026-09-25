@@ -127,7 +127,7 @@ describe('new unread articles', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     const now = new Date(2026, 8, 21, 16).getTime();
     vi.setSystemTime(now);
-    fetchArticleIds.mockResolvedValue({ data: { ...result([104, 101, 103]).data, sourceCount: 1 } });
+    fetchArticleIds.mockResolvedValue({ data: { ...result([104, 101, 103]).data, sourceCount: 1, oldestPublishedAt: new Date(now - 10 * 86400000).toISOString() } });
     await mountFeed({}, true);
     const selectYesterday = async () => {
       await wrapper.get('[aria-label^="Article date range:"]').trigger('click');
@@ -137,7 +137,7 @@ describe('new unread articles', () => {
     await selectYesterday();
     await button('7d').trigger('click');
     await flushPromises();
-    expect(wrapper.get('[aria-label="Article date range: All"]').text()).toBe('All');
+    expect(wrapper.get('[aria-label="Article date range: All dates"]').text()).toBe('All dates');
     expect(fetchArticleIds).toHaveBeenLastCalledWith(expect.objectContaining({
       publishedAfter: new Date(now - 168 * 3600000).toISOString(),
       publishedBefore: new Date(now + 1).toISOString(),
@@ -149,6 +149,27 @@ describe('new unread articles', () => {
       publishedAfter: new Date(2026, 8, 20).toISOString(),
       publishedBefore: new Date(2026, 8, 21).toISOString()
     }));
+  });
+
+  it('falls back to All when the complete result moves to a narrower age range', async () => {
+    const now = Date.parse('2026-09-25T12:00:00Z');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(now);
+    const oldContext = { data: { ...result([104, 101, 103]).data, sourceCount: 1, oldestPublishedAt: new Date(now - 10 * 86400000).toISOString() } };
+    const newContext = { data: { ...result([104, 101]).data, sourceCount: 1, oldestPublishedAt: new Date(now - 5 * 3600000).toISOString() } };
+    fetchArticleIds.mockResolvedValue(oldContext);
+    await mountFeed({}, true);
+    await button('7d').trigger('click');
+    await flushPromises();
+    expect(stores.selectionStore.ageCutoff).toBe('7d');
+
+    fetchArticleIds.mockResolvedValue(newContext);
+    stores.selectionStore.setCurrentSelection({ feedId: '5' });
+    await flushPromises();
+
+    expect(stores.selectionStore.ageCutoff).toBe('all');
+    expect(fetchArticleIds).toHaveBeenLastCalledWith(expect.objectContaining({ feedId: '5', ageCutoff: 'all' }));
+    expect(wrapper.findAll('[aria-label="Article age"] button').map(item => item.text())).toEqual(['1h', '2h', '4h', 'All']);
   });
 
   it.each(['24h', '3d', '7d', 'yesterday', 'custom'])('counts and marks only the 40 articles in the %s collection', async filter => {
@@ -212,12 +233,12 @@ describe('new unread articles', () => {
     fetchArticleIds.mockResolvedValue(result([107]));
     stores.selectionStore.setAgeCutoff(value);
     await flushPromises();
-    expect(fetchArticleIds).toHaveBeenLastCalledWith({ ...selection, publishedAfter: new Date(Date.now() - hours * 3600000).toISOString(), publishedBefore: new Date(Date.now() + 1).toISOString() });
+    expect(fetchArticleIds).toHaveBeenLastCalledWith({ ...selection, includeOldestPublishedAt: true, ageCutoff: value, publishedAfter: new Date(Date.now() - hours * 3600000).toISOString(), publishedBefore: new Date(Date.now() + 1).toISOString() });
     expect(wrapper.text()).not.toContain('Article 101');
     expect(loadUnreadBaseline(42, selection)).toBe(104);
     stores.selectionStore.setAgeCutoff('all');
     await flushPromises();
-    expect(fetchArticleIds).toHaveBeenLastCalledWith(selection);
+    expect(fetchArticleIds).toHaveBeenLastCalledWith({ ...selection, includeOldestPublishedAt: true, ageCutoff: 'all' });
   });
 
   it('preserves smart-folder expressions, Event grouping and score filters', async () => {
@@ -225,7 +246,7 @@ describe('new unread articles', () => {
     const selection = { ...stores.selectionStore.currentSelection };
     stores.selectionStore.setAgeCutoff('3d');
     await flushPromises();
-    expect(fetchArticleIds).toHaveBeenLastCalledWith({ ...selection, publishedAfter: expect.any(String), publishedBefore: expect.any(String) });
+    expect(fetchArticleIds).toHaveBeenLastCalledWith({ ...selection, includeOldestPublishedAt: true, ageCutoff: '3d', publishedAfter: expect.any(String), publishedBefore: expect.any(String) });
     expect(stores.selectionStore.currentSelection).toEqual(selection);
   });
 
@@ -311,7 +332,10 @@ describe('new unread articles', () => {
     expect(query).toMatchObject({ smartFolderId: 7, grouping: 'event', sort: 'asc', search: 'title:Science', publishedAfter: expect.any(String), publishedBefore: expect.any(String) });
     expect(fetchArticlePage.mock.lastCall[1]).toEqual({ pageSize: wrapper.vm.fetchCount });
     await wrapper.vm.getContent();
-    expect(fetchArticlePage).toHaveBeenLastCalledWith(query, expect.objectContaining({ cursor: 'calendar-page' }));
+    const { includeOldestPublishedAt, ageCutoff, ...pageQuery } = query;
+    expect(includeOldestPublishedAt).toBe(true);
+    expect(ageCutoff).toBe('all');
+    expect(fetchArticlePage).toHaveBeenLastCalledWith(pageQuery, expect.objectContaining({ cursor: 'calendar-page' }));
     stores.selectionStore.setDateRange('all');
     await flushPromises();
     expect(fetchArticlePage.mock.lastCall[0]).not.toHaveProperty('publishedAfter');
@@ -363,7 +387,7 @@ describe('new unread articles', () => {
     await mountFeed();
     wrapper.vm.highestLoadedUnreadArticleId = null;
     await wrapper.vm.showNewArticles();
-    expect(fetchArticleIds).toHaveBeenLastCalledWith(stores.selectionStore.currentSelection);
+    expect(fetchArticleIds).toHaveBeenLastCalledWith({ ...stores.selectionStore.currentSelection, includeOldestPublishedAt: true, ageCutoff: 'all' });
     fetchArticleIds.mockRejectedValueOnce(new Error('offline'));
     await wrapper.vm.showFullUnreadList();
     expect(loadUnreadBaseline(42, stores.selectionStore.currentSelection)).toBe(104);

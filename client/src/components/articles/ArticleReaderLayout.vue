@@ -9,6 +9,7 @@
       v-if="currentSelection === 'unread' && (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all')"
       :article-count="0"
       :source-count="0"
+      :oldest-published-at="collectionSummary.oldestPublishedAt"
       reader-mode
     />
     <ArticleEmptyState
@@ -36,6 +37,7 @@
         v-if="currentSelection === 'unread' && ((loadedCount > 0 && currentViewSourceCount !== null) || (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all'))"
         :article-count="collectionSummary.totalCount ?? currentViewUnreadCount"
         :source-count="currentViewSourceCount ?? 0"
+        :oldest-published-at="collectionSummary.oldestPublishedAt"
         :articles="readerListArticles"
         :get-article-element="getArticleListElement"
         reader-mode

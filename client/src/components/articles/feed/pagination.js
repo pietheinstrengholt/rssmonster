@@ -1,5 +1,6 @@
 import { loadUnreadBaseline, saveUnreadBaseline, newerUnreadSelection } from '../../../services/unreadBaseline.js';
 import { withArticleDateFilters } from '../../../services/articleDateRange.js';
+import { ageCutoffOptionsForOldest } from '../../../services/articleAgeCutoff.js';
 import {
   fetchArticleDetails,
   fetchArticleIds,
@@ -70,6 +71,7 @@ export function createArticleFeedPaginationState() {
     hasLoadedContent: false,
     isLoading: false,
     currentViewSourceCount: null,
+    oldestPublishedAt: null,
     activeRequestId: 0,
     activeNewerArticlesRequestId: 0,
     activeReaderRecommendationRequestId: 0
@@ -100,6 +102,7 @@ const installCursorPage = (context, response, { replace = false } = {}) => {
   context.currentViewSourceCount = Number.isFinite(Number(response.data.sourceCount))
     ? Number(response.data.sourceCount)
     : null;
+  if (replace) context.oldestPublishedAt = response.data.oldestPublishedAt ?? null;
   context.hasMore = Boolean(page.hasMore && page.nextCursor);
   context.nextCursor = context.hasMore ? page.nextCursor : null;
   context.paginationError = null;
@@ -129,6 +132,7 @@ const installLegacyCollection = async (context, response, data, requestId) => {
   context.currentViewSourceCount = Number.isFinite(Number(response.data.sourceCount))
     ? Number(response.data.sourceCount)
     : null;
+  context.oldestPublishedAt = response.data.oldestPublishedAt ?? null;
   context.hasMore = context.distance < ids.length;
   context.legacyItemIds = ids;
   context.nextCursor = null;
@@ -157,13 +161,24 @@ const acceptUnreadCollection = (context, response, selection, newOnly) => {
 };
 
 const requestInitialCollection = async (context, data) => {
-  if (!supportsArticleCursorPagination(data)) return fetchArticleIds(data);
+  const requestData = data.status === 'unread'
+    ? { ...data, includeOldestPublishedAt: true, ageCutoff: context.selectionStore.ageCutoff }
+    : data;
+  if (!supportsArticleCursorPagination(data)) return fetchArticleIds(requestData);
   try {
-    return await fetchArticlePage(data, { pageSize: context.fetchCount });
+    return await fetchArticlePage(requestData, { pageSize: context.fetchCount });
   } catch (error) {
     if (error?.response?.status !== 422) throw error;
-    return fetchArticleIds(data);
+    return fetchArticleIds(requestData);
   }
+};
+
+const resetUnavailableAgeCutoff = (context, response) => {
+  if (!Object.hasOwn(response.data, 'oldestPublishedAt')) return false;
+  const values = ageCutoffOptionsForOldest(response.data.oldestPublishedAt).map(option => option.value);
+  if (values.includes(context.selectionStore.ageCutoff)) return false;
+  context.selectionStore.setAgeCutoff('all');
+  return true;
 };
 
 export const articleFeedPaginationMethods = {
@@ -180,6 +195,7 @@ export const articleFeedPaginationMethods = {
 
       const response = await requestInitialCollection(this, data);
       if (requestId !== this.activeRequestId) return null;
+      if (resetUnavailableAgeCutoff(this, response)) return null;
       if (response.data.paginationVersion === 1) {
         installCursorPage(this, response, { replace: true });
       } else if (!await installLegacyCollection(this, response, data, requestId)) {
@@ -214,6 +230,7 @@ export const articleFeedPaginationMethods = {
     try {
       const response = await requestInitialCollection(this, data);
       if (requestId !== this.activeRequestId) return false;
+      if (resetUnavailableAgeCutoff(this, response)) return false;
 
       let legacyPrepared = null;
       if (response.data.paginationVersion !== 1) {
@@ -233,7 +250,7 @@ export const articleFeedPaginationMethods = {
         installCursorPage(this, response, { replace: true });
       } else {
         for (const key of [
-          'container', 'articles', 'distance', 'totalCount', 'currentViewSourceCount',
+          'container', 'articles', 'distance', 'totalCount', 'currentViewSourceCount', 'oldestPublishedAt',
           'hasMore', 'nextCursor', 'snapshotMaxArticleId', 'usesCursorPagination', 'legacyItemIds'
         ]) this[key] = legacyPrepared[key];
       }
@@ -409,5 +426,6 @@ export const articleFeedPaginationMethods = {
     this.usesCursorPagination = false;
     this.legacyItemIds = [];
     this.currentViewSourceCount = null;
+    this.oldestPublishedAt = null;
   }
 };

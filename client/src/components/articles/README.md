@@ -369,15 +369,17 @@ scroll surface. It does not scan article geometry on scroll or change reading/re
 tracking. Reader observes its list rows independently from the selected detail pane.
 The component remains available on narrow screens, where its contents wrap naturally.
 
-The age pills add an inclusive `publishedAt` cutoff (24 hours, 3 days or 7 days),
-with All as the session default. Selection-store state stays in the browser session.
+The age pills show three rolling `publishedAt` cutoffs chosen from the oldest article
+in the complete matching result, plus All as the session default. The server returns
+`oldestPublishedAt` before the age cutoff and independently of the current page.
+Selection-store state stays in the browser session.
 The existing collection request carries `publishedAfter`, fixed across cursor pages;
 changing the cutoff resets pagination and invalidates older requests. Search, source,
 Event grouping and new-only constraints remain intact. Age-limited subsets do not
 advance the full unread baseline. Controls remain available when the cutoff returns
 no articles so users can widen it again.
 
-The calendar dropdown is an independent, session-only filter defaulting to All.
+The calendar dropdown is an independent, session-only filter defaulting to All dates.
 Today, Yesterday, This week (Monday start) and This month use browser-local calendar
 boundaries; Custom date includes the entire selected end day. The shared dropdown
 owns menu keyboard/outside-click handling, and custom dates use native date inputs.

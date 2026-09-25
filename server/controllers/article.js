@@ -322,7 +322,7 @@ export const getArticles = async (req, res) => {
       };
     }
     const personalization = createRequestPersonalization(userId);
-    const result = await searchArticles({
+    const searchOptions = {
       userId,
       search,
       categoryId: req.query.categoryId,
@@ -346,10 +346,29 @@ export const getArticles = async (req, res) => {
       includeDiagnostics: req.query.diagnostics === 'true',
       pagination,
       personalization
+    };
+    const result = await searchArticles({
+      ...searchOptions,
+      includeOldestPublishedAt: req.query.includeOldestPublishedAt === 'true'
+        && (cursorPagination || req.query.ageCutoff === 'all'),
+      oldestBeforeAgeCutoff: cursorPagination && req.query.ageCutoff !== 'all'
     });
 
     if (newerThanArticleId !== null) {
       return res.status(200).json({ newerArticleCount: result.articleCount });
+    }
+
+    if (req.query.includeOldestPublishedAt === 'true' && (searchOptions.status ?? 'unread') === 'unread'
+      && !cursorPagination && req.query.ageCutoff !== 'all') {
+      const baseline = await searchArticles({
+        ...searchOptions,
+        pagination: null,
+        persistSettings: false,
+        includeSnapshot: false,
+        includeOldestPublishedAt: true,
+        ...(req.query.ageCutoff !== 'all' ? { publishedAfter: null, publishedBefore: null } : {})
+      });
+      result.oldestPublishedAt = baseline.oldestPublishedAt;
     }
 
     if (cursorPagination) {

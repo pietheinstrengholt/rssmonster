@@ -123,6 +123,8 @@ export const searchArticles = async ({
     countOnly = false, // Return only the matching count without materializing ids when possible
     unreadOnly = false, // Enforce unread arrival checks regardless of query state tokens
     includeSnapshot = false, // Return an arrival boundary for non-cursor article lists
+    includeOldestPublishedAt = false, // Return the oldest date after all result filters and limits
+    oldestBeforeAgeCutoff = false, // Omit the rolling age bounds from oldest-date metadata
     minArticleIdExclusive = null, // Restrict an internal count to articles admitted after a snapshot
     publishedAfter = null, // Additional inclusive publication cutoff, independent of search date tokens
     publishedBefore = null, // Exclusive calendar-range end supplied by the client
@@ -388,6 +390,7 @@ export const searchArticles = async ({
     if (dateRange) {
       baseWhere.publishedAt = { [Op.between]: [dateRange.start, dateRange.end] };
     }
+    const publishedAtBeforeAgeCutoff = baseWhere.publishedAt;
     if (publishedAfter) {
       baseWhere.publishedAt = { ...baseWhere.publishedAt, [Op.gte]: new Date(publishedAfter) };
     }
@@ -548,6 +551,28 @@ export const searchArticles = async ({
         ? countedTotal
         : Math.min(countedTotal, effectiveResultLimit);
       const sourceCount = parsedCursor?.sourceCount ?? await executeSearchSourceCount(articleQuery);
+      let oldestPublishedAt = null;
+      if (includeOldestPublishedAt && !parsedCursor) {
+        const oldestWhere = {
+          ...articleQuery.where,
+          [Op.and]: [...(articleQuery.where[Op.and] || [])]
+        };
+        if (oldestBeforeAgeCutoff) {
+          if (publishedAtBeforeAgeCutoff) oldestWhere.publishedAt = publishedAtBeforeAgeCutoff;
+          else delete oldestWhere.publishedAt;
+        }
+        if (effectiveResultLimit !== null) {
+          const rows = await executeSearch({
+            ...articleQuery, where: oldestWhere, attributes: ['id', 'publishedAt'], limit: effectiveResultLimit
+          });
+          oldestPublishedAt = rows.reduce((oldest, row) => {
+            const publishedAt = articleValue(row, 'publishedAt');
+            return publishedAt && (!oldest || publishedAt < oldest) ? publishedAt : oldest;
+          }, null);
+        } else {
+          oldestPublishedAt = await Article.min('publishedAt', { where: oldestWhere });
+        }
+      }
       // The full unread result boundary differs from the library-wide pagination snapshot.
       let highestUnreadArticleId;
       if (!parsedCursor && status === 'unread') {
@@ -618,6 +643,7 @@ export const searchArticles = async ({
         query: queryMetadata,
         totalCount,
         sourceCount,
+        ...(includeOldestPublishedAt ? { oldestPublishedAt } : {}),
         snapshot: {
           snapshotMaxArticleId,
           ...(highestUnreadArticleId !== undefined ? { highestUnreadArticleId } : {}),
@@ -743,6 +769,13 @@ export const searchArticles = async ({
         .map(article => articleValue(article, 'feedId'))
         .filter(feedId => feedId !== null && feedId !== undefined)
     ).size;
+    const oldestPublishedAt = includeOldestPublishedAt
+      ? articles.reduce((oldest, article) => {
+          if (!itemIdSet.has(String(articleValue(article, 'id')))) return oldest;
+          const publishedAt = articleValue(article, 'publishedAt');
+          return publishedAt && (!oldest || new Date(publishedAt) < new Date(oldest)) ? publishedAt : oldest;
+        }, null)
+      : null;
 
     // Handles the case where persist settings is available.
     if (persistSettings) {
@@ -774,6 +807,7 @@ export const searchArticles = async ({
         query: queryMetadata,
         itemIds,
         sourceCount,
+        ...(includeOldestPublishedAt ? { oldestPublishedAt } : {}),
         ...(funnel ? { diagnostics: await funnel.finish() } : {}),
         ...(snapshotMaxArticleId !== null ? { snapshot: {
           snapshotMaxArticleId,

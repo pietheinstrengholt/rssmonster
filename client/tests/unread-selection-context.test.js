@@ -155,12 +155,34 @@ describe('UnreadSelectionContext', () => {
     const buttons = wrapper.get('[role="group"][aria-label="Article age"]').findAll('button');
     expect(stores.selectionStore.ageCutoff).toBe('all');
     expect(buttons.map(button => button.attributes('aria-pressed'))).toEqual(['false', 'false', 'false', 'true']);
-    for (const [index, value] of ['24h', '3d', '7d', 'all'].entries()) {
+    for (const [index, value] of ['7d', '14d', '30d', 'all'].entries()) {
       await buttons[index].trigger('click');
       expect(stores.selectionStore.ageCutoff).toBe(value);
       expect(buttons.filter(button => button.attributes('aria-pressed') === 'true')).toHaveLength(1);
       expect(buttons[index].attributes('aria-pressed')).toBe('true');
     }
+  });
+
+  it('keeps age options tied to complete-result metadata as loaded articles change', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const now = Date.parse('2026-09-25T12:00:00Z');
+    vi.setSystemTime(now);
+    const stores = createStore();
+    wrapper = mount(UnreadSelectionContext, {
+      props: {
+        articleCount: 100,
+        sourceCount: 2,
+        oldestPublishedAt: new Date(now - 10 * 86400000).toISOString(),
+        articles: [{ id: 1, publishedAt: new Date(now - 3600000).toISOString() }]
+      },
+      global: { plugins: [stores.pinia] }
+    });
+    const labels = () => wrapper.get('[aria-label="Article age"]').findAll('button').map(button => button.text());
+    expect(labels()).toEqual(['1d', '3d', '7d', 'All']);
+    await wrapper.setProps({ articles: [{ id: 2, publishedAt: new Date(now - 40 * 86400000).toISOString() }] });
+    expect(labels()).toEqual(['1d', '3d', '7d', 'All']);
+    await wrapper.setProps({ oldestPublishedAt: new Date(now - 5 * 3600000).toISOString() });
+    expect(labels()).toEqual(['1h', '2h', '4h', 'All']);
   });
 
   it.each([[ArticleListView, 'age'], [ArticleReaderLayout, 'age'], [ArticleListView, 'calendar'], [ArticleReaderLayout, 'calendar']])('retains date controls for an empty filtered collection (%s, %s)', (component, filter) => {

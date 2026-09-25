@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { resolveArticleDateRange, withArticleDateFilters } from '../src/services/articleDateRange.js';
+import { ageCutoffOptionsForOldest } from '../src/services/articleAgeCutoff.js';
 import UnreadSelectionContext from '../src/components/articles/UnreadSelectionContext.vue';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
@@ -16,7 +17,7 @@ const mountContext = () => {
   const stores = createFocusedStores();
   wrapper = mount(UnreadSelectionContext, {
     attachTo: document.body,
-    props: { articleCount: 10, sourceCount: 2 },
+    props: { articleCount: 10, sourceCount: 2, oldestPublishedAt: new Date(Date.now() - 10 * 86400000).toISOString() },
     global: { plugins: [stores.pinia] }
   });
   return stores;
@@ -86,6 +87,27 @@ describe('article calendar ranges', () => {
   });
 });
 
+describe('dynamic rolling age options', () => {
+  const now = Date.parse('2026-09-25T12:00:00Z');
+  const values = hours => ageCutoffOptionsForOldest(new Date(now - hours * 3600000).toISOString(), now).map(option => option.value);
+  it.each([
+    [6, ['1h', '2h', '4h', 'all']],
+    [12, ['2h', '4h', '8h', 'all']],
+    [24, ['4h', '8h', '12h', 'all']],
+    [72, ['12h', '1d', '2d', 'all']],
+    [168, ['1d', '3d', '5d', 'all']],
+    [336, ['1d', '3d', '7d', 'all']],
+    [720, ['3d', '7d', '14d', 'all']],
+    [721, ['7d', '14d', '30d', 'all']]
+  ])('uses the inclusive %sh boundary', (hours, expected) => {
+    expect(values(hours)).toEqual(expected);
+    if (hours !== 721) expect(values(hours + 1 / 3600000)).not.toEqual(expected);
+  });
+  it('uses the broad range when the complete result has no publication date', () => {
+    expect(ageCutoffOptionsForOldest(null, now).map(option => option.value)).toEqual(['7d', '14d', '30d', 'all']);
+  });
+});
+
 describe('calendar dropdown', () => {
   it('labels two days ago with its local weekday and stores a stable range value', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
@@ -94,7 +116,7 @@ describe('calendar dropdown', () => {
     stores.selectionStore.setAgeCutoff('3d');
     await trigger().trigger('click');
     expect(wrapper.findAll('[role="menuitemradio"]').map(button => button.text().replace('✓', '').trim())).toEqual([
-      'All', 'Today', 'Yesterday', 'Saturday', 'This month', 'Custom date...'
+      'All dates', 'Today', 'Yesterday', 'Saturday', 'This month', 'Custom date...'
     ]);
     await option('Saturday').trigger('click');
     expect(trigger().text()).toBe('Saturday');
@@ -108,7 +130,7 @@ describe('calendar dropdown', () => {
     expect(wrapper.find('.unread-selection-context__current-date').exists()).toBe(false);
   });
 
-  it.each(['All', 'Today', 'Yesterday', 'This month'])('resets the age cutoff when selecting %s', async label => {
+  it.each(['All dates', 'Today', 'Yesterday', 'This month'])('resets the age cutoff when selecting %s', async label => {
     const stores = mountContext();
     stores.selectionStore.setAgeCutoff('24h');
     await trigger().trigger('click');
@@ -119,18 +141,18 @@ describe('calendar dropdown', () => {
     expect(age.findAll('button').find(button => button.text() === 'All').attributes('aria-pressed')).toBe('true');
   });
 
-  it.each(['24h', '3d', '7d', 'all'])('resets Yesterday when selecting age %s', async value => {
+  it.each(['1d', '3d', '7d', 'all'])('resets Yesterday when selecting age %s', async value => {
     const stores = mountContext();
     await trigger().trigger('click');
     await option('Yesterday').trigger('click');
     const age = wrapper.get('[role="group"][aria-label="Article age"]');
     await age.findAll('button').find(button => button.text().toLowerCase() === value).trigger('click');
-    expect(trigger().text()).toBe('All');
+    expect(trigger().text()).toBe('All dates');
     expect(stores.selectionStore.dateRange).toBe('all');
     expect(stores.selectionStore.ageCutoff).toBe(value);
   });
 
-  it.each(['24h', '3d', '7d'].flatMap(cutoff =>
+  it.each(['1d', '3d', '7d'].flatMap(cutoff =>
     ['Today', 'Yesterday', 'Saturday', 'This month', 'Custom date...'].map(date => [cutoff, date])
   ))('keeps %s and %s mutually exclusive in both directions', async (cutoff, date) => {
     vi.useFakeTimers({ toFake: ['Date'] });
@@ -149,8 +171,8 @@ describe('calendar dropdown', () => {
     };
     await selectDate();
     await ageButton(cutoff).trigger('click');
-    expect(trigger().text()).toBe('All');
-    expect(option('All').attributes('aria-checked')).toBe('true');
+    expect(trigger().text()).toBe('All dates');
+    expect(option('All dates').attributes('aria-checked')).toBe('true');
     expect(ageButton(cutoff).attributes('aria-pressed')).toBe('true');
     expect(stores.selectionStore.dateRange).toBe('all');
     await selectDate();
@@ -168,14 +190,14 @@ describe('calendar dropdown', () => {
     const age = wrapper.get('[aria-label="Article age"]');
     await age.findAll('button').find(button => button.text() === '7d').trigger('click');
     expect(wrapper.find('form').exists()).toBe(false);
-    expect(trigger().text()).toBe('All');
+    expect(trigger().text()).toBe('All dates');
   });
 
-  it('defaults to All, toggles the menu, selects an option and resets the age choice', async () => {
+  it('defaults to All dates, toggles the menu, selects an option and resets the age choice', async () => {
     const stores = mountContext();
     stores.selectionStore.setAgeCutoff('3d');
-    expect(trigger().text()).toBe('All');
-    expect(option('All').attributes('aria-checked')).toBe('true');
+    expect(trigger().text()).toBe('All dates');
+    expect(option('All dates').attributes('aria-checked')).toBe('true');
     expect(trigger().attributes('aria-expanded')).toBe('false');
     await trigger().trigger('click');
     expect(trigger().attributes('aria-expanded')).toBe('true');
@@ -202,8 +224,8 @@ describe('calendar dropdown', () => {
     expect(trigger().attributes('aria-expanded')).toBe('false');
     await trigger().trigger('keydown', { key: 'ArrowDown' });
     await flushPromises();
-    expect(document.activeElement).toBe(option('All').element);
-    await option('All').trigger('keydown', { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(option('All dates').element);
+    await option('All dates').trigger('keydown', { key: 'ArrowDown' });
     expect(document.activeElement).toBe(option('Today').element);
     await option('Today').trigger('keydown', { key: 'Escape' });
     await flushPromises();

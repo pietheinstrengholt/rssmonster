@@ -263,7 +263,11 @@ describe('ArticleFeed loading races', () => {
       pageSize: 20,
       cursor: 'expired-cursor'
     });
-    expect(fetchArticlePage).toHaveBeenNthCalledWith(2, context.selectionStore.currentSelection, {
+    expect(fetchArticlePage).toHaveBeenNthCalledWith(2, {
+      ...context.selectionStore.currentSelection,
+      includeOldestPublishedAt: true,
+      ageCutoff: 'all'
+    }, {
       pageSize: 20
     });
     expect(context.container).toEqual([3]);

@@ -207,6 +207,7 @@ export default {
         selectedTag: this.selectionStore.currentSelection.tag,
         unreadCount: this.currentViewUnreadCount,
         sourceCount: this.currentViewSourceCount,
+        oldestPublishedAt: this.oldestPublishedAt,
         totalCount: this.totalCount ?? this.container.length
       };
     },
