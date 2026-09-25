@@ -1,0 +1,8 @@
+{
+  "name": "rssmonster",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx concurrently --kill-others --names server,client,inference,worker,ai-worker \"npm --prefix server run dev\" \"npm --prefix client run dev\" \"npm --prefix inference run dev\" \"npm --prefix server run start:worker\" \"npm --prefix server run start:ai-worker\""
+  }
+}
