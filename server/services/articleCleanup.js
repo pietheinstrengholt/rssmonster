@@ -1,26 +1,11 @@
-import { Op, fn, col } from 'sequelize';
+import { Op, fn, col, where } from 'sequelize';
 import db from '../models/index.js';
-import { getArchivingSettings } from './archivingSettings.js';
+import { getArchivingSettings, articleRetentionCutoff } from './archivingSettings.js';
 import { prepareArticleEventRemoval } from './events/eventReconciliation.js';
 
 const BATCH_SIZE = 500;
 
-// Calendar months/years clamp to the last day of the target month in UTC.
-export function articleRetentionCutoff(value, unit, now = new Date()) {
-  const cutoff = new Date(now);
-  if (unit === 'days' || unit === 'weeks') {
-    cutoff.setUTCDate(cutoff.getUTCDate() - value * (unit === 'weeks' ? 7 : 1));
-  } else {
-    const day = cutoff.getUTCDate();
-    cutoff.setUTCDate(1);
-    cutoff.setUTCMonth(cutoff.getUTCMonth() - value * (unit === 'years' ? 12 : 1));
-    const lastDay = new Date(cutoff);
-    lastDay.setUTCMonth(lastDay.getUTCMonth() + 1, 0);
-    cutoff.setUTCDate(Math.min(day, lastDay.getUTCDate()));
-  }
-  // Retention beyond the database date range cannot have eligible articles.
-  return Number.isFinite(cutoff.getTime()) && cutoff.getUTCFullYear() >= 1000 ? cutoff : null;
-}
+export { articleRetentionCutoff } from './archivingSettings.js';
 
 export async function cleanupArticles(userId) {
   return db.sequelize.transaction(async transaction => {
@@ -33,11 +18,11 @@ export async function cleanupArticles(userId) {
     const eligible = {
       userId,
       // Count limits take priority over age; age applies when no count cap is configured.
-      ...(!hasLimits ? { createdAt: { [Op.lt]: cutoff } } : {}),
+      ...(!hasLimits ? { [Op.and]: [where(fn('COALESCE', col('publishedAt'), col('createdAt')), { [Op.lt]: cutoff })] } : {}),
       ...(settings.neverDeleteUnread ? { status: 'read' } : {}),
       ...(settings.neverDeleteFavorites ? { [Op.or]: [{ favoriteInd: 0 }, { favoriteInd: null }] } : {}),
       ...(settings.neverDeleteClicked ? {
-        [Op.and]: [{ [Op.or]: [{ clickedAmount: 0 }, { clickedAmount: null }] }, { lastClickedAt: null }]
+        clickedAmount: { [Op.or]: [0, null] }, lastClickedAt: null
       } : {})
     };
     let total = settings.maximumArticlesTotal === null ? 0 : await db.Article.count({ where: { userId }, transaction });

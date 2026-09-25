@@ -45,9 +45,16 @@ removes unprotected articles oldest first to satisfy the configured count limits
 even if those articles are newer than the age setting. When both count limits
 are blank, cleanup deletes unprotected articles older than the configured age.
 
-Age and oldest-first ordering use the time an article was stored in RSSMonster,
-not its publisher's publication date. Months and years use calendar arithmetic
-in UTC, clamping to the last valid day of the target month.
+Age uses the article’s publication date, with insertion time as the fallback.
+Oldest-first ordering for count limits still uses insertion time. Months and years
+use calendar arithmetic in UTC, clamping to the last valid day of the target month.
+
+On established feeds (a previous successful fetch or article receipt), unseen
+entries older than the user’s maximum article age are filtered before insertion. This age guard also applies when count
+limits are configured; count-based deletions alone do not prevent reimports.
+Existing articles can still receive revisions, and initial feed imports retain
+their selected history range. Unread/favorite/click protections apply to stored
+articles, not to unseen entries.
 
 For example, with **Never delete favorited articles** checked, an age of **1 year**,
 a total limit of **1,000**, and no per-feed limit, cleanup keeps favorites and

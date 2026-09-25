@@ -21,6 +21,23 @@ export const archivingSettingsSchema = z.strictObject({
   maximumArticlesTotal: z.number().int().min(1).max(1000000000).nullable()
 });
 
+// Calendar months/years clamp to the last day of the target month in UTC.
+export function articleRetentionCutoff(value, unit, now = new Date()) {
+  const cutoff = new Date(now);
+  if (unit === 'days' || unit === 'weeks') {
+    cutoff.setUTCDate(cutoff.getUTCDate() - value * (unit === 'weeks' ? 7 : 1));
+  } else {
+    const day = cutoff.getUTCDate();
+    cutoff.setUTCDate(1);
+    cutoff.setUTCMonth(cutoff.getUTCMonth() - value * (unit === 'years' ? 12 : 1));
+    const lastDay = new Date(cutoff);
+    lastDay.setUTCMonth(lastDay.getUTCMonth() + 1, 0);
+    cutoff.setUTCDate(Math.min(day, lastDay.getUTCDate()));
+  }
+  // Retention beyond the database date range cannot have eligible articles.
+  return Number.isFinite(cutoff.getTime()) && cutoff.getUTCFullYear() >= 1000 ? cutoff : null;
+}
+
 const serialize = settings => Object.fromEntries(Object.entries(fields).map(([key, column]) => [key, settings[column]]));
 
 export async function getArchivingSettings(userId, transaction) {

@@ -1,3 +1,4 @@
+import { getArchivingSettings, articleRetentionCutoff } from '../services/archivingSettings.js';
 import { withInferenceRuntimeSettings } from '../services/inference/runtimeConfiguration.js';
 import { getCrawlEnvironment } from '../config/crawlSettings.js';
 import { withCrawlSettings } from '../services/crawl/configuration.js';
@@ -890,6 +891,15 @@ const runCrawl = async (userId = null, options = {}) => {
         timeouts: timeoutCount,
         processedFeeds: processedCount
       });
+
+      // Snapshot retention once per feed, before persistence can advance its receipt clock.
+      // A feed with no previous successful fetch/receipt may still import chosen history.
+      if (activeFeed.lastSuccessAt || activeFeed.lastArticleReceivedAt) {
+        const settings = await getArchivingSettings(activeFeed.userId);
+        execution.articleRetentionCutoff = articleRetentionCutoff(
+          settings.maximumAgeValue, settings.maximumAgeUnit, crawlStartedAt
+        );
+      }
 
       // Process each article entry. This will add newly discovered articles to the database
       const preloadedActions = actionsByUserId.get(activeFeed.userId) || [];

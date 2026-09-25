@@ -82,6 +82,13 @@ const processArticle = async (
       });
     }
 
+    // Resolve existing identities first so retention never blocks their revisions.
+    // Undated entries receive the ingestion timestamp when persisted.
+    if (execution.articleRetentionCutoff && candidate.articleData.publishedAt &&
+      new Date(candidate.articleData.publishedAt) < execution.articleRetentionCutoff) {
+      return { ...emptyArticleResult, filteredArticles: 1 };
+    }
+
     return await processNewArticle({
       feed,
       candidate,

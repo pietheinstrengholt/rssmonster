@@ -7,10 +7,13 @@ async function fixture(settings, recentRead = false) {
   const category = await db.Category.create({ userId: user.id, name: 'Nightly' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Nightly', url: `https://example.com/${user.id}` });
   if (settings) await db.ArchivingSetting.create({ userId: user.id, ...settings });
-  const articles = await db.Article.bulkCreate(['read', 'unread', 'read'].map((status, index) => ({
-    userId: user.id, feedId: feed.id, title: `Article ${index}`, url: `https://example.com/${user.id}/${index}`,
-    status, createdAt: recentRead && index === 2 ? new Date(Date.now() - 30 * 86400000) : new Date('2010-01-01T12:00:00Z')
-  })));
+  const articles = await db.Article.bulkCreate(['read', 'unread', 'read'].map((status, index) => {
+    const date = recentRead && index === 2 ? new Date(Date.now() - 30 * 86400000) : new Date('2010-01-01T12:00:00Z');
+    return {
+      userId: user.id, feedId: feed.id, title: `Article ${index}`, url: `https://example.com/${user.id}/${index}`,
+      status, publishedAt: date, createdAt: date
+    };
+  }));
   return { user, articles };
 }
 

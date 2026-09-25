@@ -295,6 +295,10 @@ On the creation path, the entry must also:
 
 - not match an existing publisher identity that should be updated instead
 - not match duplicate evidence
+- on established feeds, not predate the user’s maximum article age; this check runs
+  after identity matching so existing revisions remain eligible. Retention settings
+  are loaded once per feed and skips count as filtered entries. First imports retain
+  their chosen history range; undated entries use ingestion time.
 
 Expensive AI work should only happen after eligibility has been established.
 

@@ -19,7 +19,7 @@ async function graph() {
 }
 const article = (owner, overrides = {}) => Article.create({
   userId: owner.user.id, feedId: owner.feed.id, title: 'Test', status: 'read',
-  url: `https://example.com/${owner.user.id}/${Math.random()}`, createdAt: old, ...overrides
+  url: `https://example.com/${owner.user.id}/${Math.random()}`, createdAt: old, publishedAt: overrides.createdAt || old, ...overrides
 });
 const save = (owner, settings) => request(app).put('/api/setting/archiving').set('Authorization', auth(owner.user)).send({ ...defaults, ...settings });
 const cleanup = owner => request(app).post('/api/cleanup').set('Authorization', auth(owner.user));
@@ -88,6 +88,16 @@ describe('archiving settings and cleanup', () => {
     const recent = await article(owner, { createdAt: new Date(Date.now() - 30 * 86400000) });
     expect((await cleanup(owner)).body.deletedCount).toBe(1);
     expect(await remaining(owner)).toEqual([unread.id, recent.id]);
+  });
+
+  it('uses publication age even for recent inserts and preserves recently published articles', async () => {
+    const owner = await graph();
+    await article(owner, { createdAt: new Date(), publishedAt: old });
+    const recentPublication = await article(owner, { publishedAt: new Date() });
+    const protectedUnread = await article(owner, { createdAt: new Date(), publishedAt: old, status: 'unread' });
+    await save(owner, { neverDeleteClicked: true });
+    expect((await cleanup(owner)).body.deletedCount).toBe(1);
+    expect(await remaining(owner)).toEqual([recentPublication.id, protectedUnread.id]);
   });
 
   it('deletes oldest first only above a per-feed limit', async () => {
