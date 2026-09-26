@@ -102,6 +102,7 @@ describe('manager controller', () => {
           'errorSince',
           'status',
           'updateIntervalMinutes',
+          'ongoingAdmissionWindowDays',
           'feedTags',
           'itemFilter',
           'generateEmbeddings',

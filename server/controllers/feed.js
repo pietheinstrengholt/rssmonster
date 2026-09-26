@@ -24,6 +24,7 @@ import { FeedAuthenticationError, normalizeFeedAuthentication } from '../service
 import { decryptSecret, SecretEncryptionError } from '../services/secretEncryption.js';
 
 const UPDATE_INTERVAL_MINUTES = [null, 0, 5, 15, 30, 60, 120, 360, 720, 1440];
+const ADMISSION_WINDOW_DAYS = [3, 7, 14, 30, 90, 365, 1095, 1825];
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const RETRY_CRAWL_RESULT_ATTRIBUTES = [
   'id', 'status', 'errorCategory', 'durationMs', 'itemsFetched', 'articlesNew',
@@ -56,6 +57,13 @@ const normalizeUpdateIntervalMinutes = value => {
   }
 
   return interval;
+};
+
+// Accepts the admission-window presets offered by the feed editor.
+const normalizeAdmissionWindowDays = value => {
+  const days = typeof value === 'number' || typeof value === 'string' ? Number(value) : NaN;
+  if (!ADMISSION_WINDOW_DAYS.includes(days)) throw new Error('Invalid ongoing admission window');
+  return days;
 };
 
 // This function validates boolean feed processing controls.
@@ -359,6 +367,7 @@ const updateFeed = async (req, res, _next) => {
     }
 
     let updateIntervalMinutes;
+    let ongoingAdmissionWindowDays;
     let feedTags;
     let generateEmbeddings;
     let applyAiAnalysis;
@@ -366,6 +375,9 @@ const updateFeed = async (req, res, _next) => {
     let pinned;
 
     try {
+      if (req.body.ongoingAdmissionWindowDays !== undefined) {
+        ongoingAdmissionWindowDays = normalizeAdmissionWindowDays(req.body.ongoingAdmissionWindowDays);
+      }
       pinned = req.body.pinned === undefined ? undefined : normalizeBooleanControl(req.body.pinned, 'pinned');
       updateIntervalMinutes = typeof req.body.updateIntervalMinutes === 'undefined'
         ? feed.updateIntervalMinutes
@@ -398,6 +410,7 @@ const updateFeed = async (req, res, _next) => {
         favicon: req.body.favicon,
         status: req.body.status,
         updateIntervalMinutes,
+        ...(ongoingAdmissionWindowDays !== undefined ? { ongoingAdmissionWindowDays } : {}),
         feedTags,
         generateEmbeddings,
         applyAiAnalysis,

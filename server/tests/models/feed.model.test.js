@@ -57,6 +57,8 @@ describe('Feed model', () => {
 
     // ---- Defaults ----
     expect(feed.pinned).toBe(false);
+    expect(feed.initialImportCompletedAt).toBeNull();
+    expect(feed.ongoingAdmissionWindowDays).toBe(30);
     expect(feed.status).toBe('active');
     expect(feed.feedTrust).toBe(0.75);
     expect(feed.feedDuplicationRate).toBe(0);

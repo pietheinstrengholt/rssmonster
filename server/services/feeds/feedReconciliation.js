@@ -104,6 +104,7 @@ const buildMergedFeedValues = (survivor, losers) => {
     generateEmbeddings: feeds.every(feed => feed.generateEmbeddings !== false),
     applyAiAnalysis: feeds.every(feed => feed.applyAiAnalysis !== false),
     crawlSince,
+    initialImportCompletedAt: feeds.reduce((value, feed) => earliestDate(value, feed.initialImportCompletedAt), null),
     etag: httpSource.etag,
     lastModified: httpSource.lastModified,
     contentHash: httpSource.contentHash,

@@ -25,6 +25,7 @@ const OVERVIEW_FEED_ATTRIBUTES = [
   'errorSince',
   'status',
   'updateIntervalMinutes',
+  'ongoingAdmissionWindowDays',
   'feedTags',
   'itemFilter',
   'generateEmbeddings',

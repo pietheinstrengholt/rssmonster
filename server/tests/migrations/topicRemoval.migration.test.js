@@ -69,6 +69,12 @@ async function installHistoricalSchema() {
   await addFeedAuthentication(qi, db.Sequelize);
   await expandFeedAuthentication(qi, db.Sequelize);
   await addBriefingHotArticles(qi, db.Sequelize);
+  await qi.addColumn('feeds', 'initialImportCompletedAt', {
+    type: db.Sequelize.DATE, allowNull: true, defaultValue: null
+  });
+  await qi.addColumn('feeds', 'ongoingAdmissionWindowDays', {
+    type: db.Sequelize.INTEGER, allowNull: false, defaultValue: 30
+  });
   await qi.addColumn('feeds', 'lastArticleReceivedAt', {
     type: db.Sequelize.DATE, allowNull: true, defaultValue: null
   });

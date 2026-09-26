@@ -124,6 +124,52 @@ describe('shared feed-management integration', () => {
     ownedUserIds = [];
   });
 
+  it('saves admission presets per feed and returns them in the editor overview', async () => {
+    const user = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    const completedAt = new Date('2026-01-01T00:00:00Z');
+    const feed = await Feed.create({ userId: user.id, categoryId: category.id,
+      feedName: 'Admission', url: 'https://admission.example.test/feed', initialImportCompletedAt: completedAt });
+    const other = await Feed.create({ userId: user.id, categoryId: category.id,
+      feedName: 'Other', url: 'https://admission.example.test/other' });
+    for (const days of [3, 7, 14, 30, 90, 365, 1095, 1825]) {
+      const response = await request(app).put(`/api/feeds/${feed.id}`)
+        .set('Authorization', regularAuthHeaderFor(user)).send({ ongoingAdmissionWindowDays: days });
+      expect(response.status).toBe(200);
+      expect(response.body.feed.ongoingAdmissionWindowDays).toBe(days);
+      expect((await feed.reload()).ongoingAdmissionWindowDays).toBe(days);
+    }
+    const omitted = await request(app).put(`/api/feeds/${feed.id}`)
+      .set('Authorization', regularAuthHeaderFor(user)).send({ feedName: 'Renamed' });
+    expect(omitted.status).toBe(200);
+    expect(omitted.body.feed.ongoingAdmissionWindowDays).toBe(1825);
+    expect((await feed.reload()).initialImportCompletedAt).toEqual(completedAt);
+    expect((await other.reload()).ongoingAdmissionWindowDays).toBe(30);
+    const overview = await request(app).get('/api/manager/overview-lite').set('Authorization', regularAuthHeaderFor(user));
+    expect(overview.status).toBe(200);
+    expect(overview.body.categories.flatMap(category => category.feeds).find(row => row.id === feed.id))
+      .toMatchObject({ ongoingAdmissionWindowDays: 1825 });
+    const foreign = trackUser(await createGreaderUser());
+    const denied = await request(app).put(`/api/feeds/${feed.id}`)
+      .set('Authorization', regularAuthHeaderFor(foreign)).send({ ongoingAdmissionWindowDays: 3 });
+    expect(denied.status).toBe(404);
+    expect((await feed.reload()).ongoingAdmissionWindowDays).toBe(1825);
+  });
+
+  it('rejects invalid admission windows without saving other edits', async () => {
+    const user = trackUser(await createGreaderUser());
+    const category = await createCategory(user);
+    const feed = await Feed.create({ userId: user.id, categoryId: category.id,
+      feedName: 'Unchanged', url: 'https://admission.example.test/invalid' });
+    for (const value of [null, '', 0, -1, 2, 3.5, 2147483648, true, [7], {}, 'invalid']) {
+      const response = await request(app).put(`/api/feeds/${feed.id}`)
+        .set('Authorization', regularAuthHeaderFor(user)).send({ ongoingAdmissionWindowDays: value, feedName: 'Changed' });
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Invalid ongoing admission window');
+    }
+    expect(await feed.reload()).toMatchObject({ feedName: 'Unchanged', ongoingAdmissionWindowDays: 30 });
+  });
+
   it('encrypts Basic credentials, excludes secrets from reads, and supports keep, replace and clear edits', async () => {
     vi.stubEnv('ENCRYPTION_KEY', Buffer.alloc(32, 7).toString('base64'));
     const user = trackUser(await createGreaderUser());

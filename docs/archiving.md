@@ -49,12 +49,24 @@ Age uses the article’s publication date, with insertion time as the fallback.
 Oldest-first ordering for count limits still uses insertion time. Months and years
 use calendar arithmetic in UTC, clamping to the last valid day of the target month.
 
-On established feeds (a previous successful fetch or article receipt), unseen
-entries older than the user’s maximum article age are filtered before insertion. This age guard also applies when count
-limits are configured; count-based deletions alone do not prevent reimports.
-Existing articles can still receive revisions, and initial feed imports retain
-their selected history range. Unread/favorite/click protections apply to stored
-articles, not to unseen entries.
+After a feed’s initial import completes, unseen articles must fall within both
+its ongoing admission window (30 days by default) and the user’s maximum article
+age. The shorter window wins, including when cleanup count limits are configured.
+Count-based deletions alone do not prevent reimports. Existing articles can still
+receive revisions. Initial imports and their failed/interrupted retries retain
+the selected history range. Unread/favorite/click protections apply to stored
+articles, not to unseen entries. Entries without usable publication dates retain
+the existing ingestion-time fallback.
+
+The feed stores `initialImportCompletedAt` after its first fully processed feed
+representation and `ongoingAdmissionWindowDays` for the admission window.
+In **Update feed**, the ongoing admission window offers 3 days, 1 week, 2 weeks,
+1 month, 3 months, 1 year, 3 years, and 5 years. These presets store fixed day counts
+of 3, 7, 14, 30, 90, 365, 1095, and 1825; the default is 1 month (30 days).
+Changing the window affects later crawls, without deleting stored articles or
+restarting the initial import. Migration marks feeds with successful crawl history
+as established at migration time; that time
+is not a reconstruction of their original import date.
 
 For example, with **Never delete favorited articles** checked, an age of **1 year**,
 a total limit of **1,000**, and no per-feed limit, cleanup keeps favorites and

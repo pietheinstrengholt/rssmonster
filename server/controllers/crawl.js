@@ -731,7 +731,12 @@ const runCrawl = async (userId = null, options = {}) => {
       const attemptedAt = new Date();
       const attemptUpdated = await updateOwnedFeedLease(
         feed,
-        buildFetchAttemptState(attemptedAt),
+        {
+          ...buildFetchAttemptState(attemptedAt),
+          // Incomplete imports must download and process entries again, even after partial writes.
+          ...(!feed.initialImportCompletedAt
+            ? { etag: null, lastModified: null, contentHash: null, cacheFreshUntil: null } : {})
+        },
         attemptedAt
       );
       if (!attemptUpdated) throw createFeedLeaseLostError(feed.id);
@@ -892,13 +897,18 @@ const runCrawl = async (userId = null, options = {}) => {
         processedFeeds: processedCount
       });
 
-      // Snapshot retention once per feed, before persistence can advance its receipt clock.
-      // A feed with no previous successful fetch/receipt may still import chosen history.
-      if (activeFeed.lastSuccessAt || activeFeed.lastArticleReceivedAt) {
+      // Initial-history retries remain unrestricted until a complete representation succeeds.
+      if (activeFeed.initialImportCompletedAt) {
         const settings = await getArchivingSettings(activeFeed.userId);
-        execution.articleRetentionCutoff = articleRetentionCutoff(
+        const retentionCutoff = articleRetentionCutoff(
           settings.maximumAgeValue, settings.maximumAgeUnit, crawlStartedAt
         );
+        const admissionCutoff = articleRetentionCutoff(
+          activeFeed.ongoingAdmissionWindowDays, 'days', crawlStartedAt
+        );
+        execution.articleRetentionCutoff = retentionCutoff && admissionCutoff
+          ? new Date(Math.max(retentionCutoff.getTime(), admissionCutoff.getTime()))
+          : retentionCutoff || admissionCutoff;
       }
 
       // Process each article entry. This will add newly discovered articles to the database
@@ -996,6 +1006,8 @@ const runCrawl = async (userId = null, options = {}) => {
       // Update feed metadata to use latest info from feed
       const updateData = {
         feedType: parsedFeed.format || null,
+        ...(!activeFeed.initialImportCompletedAt
+          ? { initialImportCompletedAt: schedulingAt } : {}),
         // Missing or rejected publisher metadata must not erase the last known icon.
         ...(parsedFeed.faviconUrl && parsedFeed.faviconUrl !== activeFeed.favicon
           ? { favicon: parsedFeed.faviconUrl } : {}),

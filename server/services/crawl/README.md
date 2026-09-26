@@ -295,10 +295,14 @@ On the creation path, the entry must also:
 
 - not match an existing publisher identity that should be updated instead
 - not match duplicate evidence
-- on established feeds, not predate the user’s maximum article age; this check runs
-  after identity matching so existing revisions remain eligible. Retention settings
-  are loaded once per feed and skips count as filtered entries. First imports retain
-  their chosen history range; undated entries use ingestion time.
+- on feeds with `initialImportCompletedAt`, not predate either the user’s maximum
+  article age or the feed’s `ongoingAdmissionWindowDays` (default 30). This check
+  runs after identity matching so existing revisions remain eligible. Settings
+  are loaded once per feed and skips count as filtered entries. Initial imports
+  and failed/interrupted retries retain their chosen history range; undated
+  entries use ingestion time. Completion is committed with terminal feed state
+  only after all entries and hotlinks finish without errors. Incomplete imports
+  clear HTTP validators/body hashes before fetching so retries cannot skip entries.
 
 Expensive AI work should only happen after eligibility has been established.
 

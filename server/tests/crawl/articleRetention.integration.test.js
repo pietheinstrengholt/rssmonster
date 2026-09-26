@@ -20,15 +20,15 @@ async function fixture({ established = true, years = 5 } = {}) {
   const category = await db.Category.create({ userId: user.id, name: 'Retention' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id,
     feedName: 'Retention', url: `https://retention.test/${user.id}.xml`, applyAiAnalysis: false,
-    lastSuccessAt: established ? new Date('2026-01-01') : null });
+    initialImportCompletedAt: established ? new Date('2026-01-01') : null });
   await db.ArchivingSetting.create({ userId: user.id, maximumArticleAge: years,
     neverDeleteUnreadArticles: false });
   return { user, feed };
 }
 async function run(owner, entries) {
   // Ensure same-second test crawls record a changed attempt, as in authentication tests.
-  await db.Feed.update({ lastAttemptAt: null }, { where: { id: owner.feed.id } });
-  mocked.acquireFeed.mockImplementation(async ({ feed }) => ({ type: 'changed', url: feed.url,
+  await db.Feed.update({ lastAttemptAt: null, contentHash: null }, { where: { id: owner.feed.id } });
+  mocked.acquireFeed.mockImplementation(async ({ feed }) => ({ type: feed.contentHash ? 'unchanged' : 'changed', bodyHash: 'retention-body', policy: { etag: 'retention-etag' }, url: feed.url,
     parsedFeed: { format: 'rss', title: 'Retention', entries } }));
   await crawl.performCrawl(owner.user.id, { feedId: owner.feed.id });
   return db.FeedCrawlResult.findOne({ where: { feedId: owner.feed.id }, order: [['id', 'DESC']] });
@@ -67,16 +67,75 @@ describe('article retention at ingestion', () => {
   it('uses each owner’s age setting even when count limits are configured', async () => {
     const short = await fixture({ years: 1 });
     const long = await fixture({ years: 20 });
+    await db.Feed.update({ ongoingAdmissionWindowDays: 10000 }, { where: { id: [short.feed.id, long.feed.id] } });
     await db.ArchivingSetting.update({ maximumArticlesTotal: 100 }, { where: { userId: short.user.id } });
     expect(await run(short, [entry('shared', old)])).toMatchObject({ articlesNew: 0, articlesFiltered: 1 });
     expect(await run(long, [entry('shared', old)])).toMatchObject({ articlesNew: 1, articlesFiltered: 0 });
   });
 
-  it('applies default retention and recognizes prior receipts without a fetch timestamp', async () => {
+  it('applies default retention to a completed import without a fetch timestamp', async () => {
     const owner = await fixture({ established: false });
     await db.ArchivingSetting.destroy({ where: { userId: owner.user.id } });
-    await owner.feed.update({ lastArticleReceivedAt: new Date() });
+    await owner.feed.update({ initialImportCompletedAt: new Date() });
     expect(await run(owner, [entry('default-old', old)])).toMatchObject({ articlesNew: 0, articlesFiltered: 1 });
+  });
+
+  it('uses the per-feed admission window and the shorter cleanup age', async () => {
+    const owner = await fixture();
+    const daysAgo = days => new Date(Date.now() - days * 86400000).toUTCString();
+    expect(await run(owner, [entry('two-years', daysAgo(730)), entry('two-weeks', daysAgo(14))]))
+      .toMatchObject({ articlesNew: 1, articlesFiltered: 1 });
+    await db.ArchivingSetting.update({ maximumArticleAge: 1, maximumArticleAgeUnit: 'weeks' }, { where: { userId: owner.user.id } });
+    expect(await run(owner, [entry('ten-days', daysAgo(10)), entry('three-days', daysAgo(3))]))
+      .toMatchObject({ articlesNew: 1, articlesFiltered: 1 });
+    await db.Feed.update({ ongoingAdmissionWindowDays: 2 }, { where: { id: owner.feed.id } });
+    expect(await run(owner, [entry('four-days', daysAgo(4))])).toMatchObject({ articlesNew: 0, articlesFiltered: 1 });
+  });
+
+  it('retries a partial initial import despite fetch success and prior receipts', async () => {
+    const owner = await fixture({ established: false });
+    const entries = [entry('first-old', old), entry('second-old', old)];
+    db.Article.addHook('beforeCreate', 'fail-initial-entry', article => {
+      if (article.title === 'second-old') throw new Error('Initial entry failed');
+    });
+    try {
+      expect(await run(owner, entries)).toMatchObject({ status: 'FAILED', articlesNew: 1 });
+    } finally { db.Article.removeHook('beforeCreate', 'fail-initial-entry'); }
+    expect(await owner.feed.reload()).toMatchObject({ initialImportCompletedAt: null, contentHash: 'retention-body' });
+    expect(owner.feed.lastSuccessAt).not.toBeNull();
+    expect(owner.feed.lastArticleReceivedAt).not.toBeNull();
+    // Keep the failed crawl's cache state: the production retry must clear it itself.
+    await db.Feed.update({ lastAttemptAt: null }, { where: { id: owner.feed.id } });
+    await crawl.performCrawl(owner.user.id, { feedId: owner.feed.id });
+    expect((await stored(owner)).map(a => a.title)).toEqual(['first-old', 'second-old']);
+    const completedAt = (await owner.feed.reload()).initialImportCompletedAt;
+    expect(completedAt).toBeInstanceOf(Date);
+    expect(await run(owner, [entry('third-old', old)])).toMatchObject({ articlesNew: 0, articlesFiltered: 1 });
+    expect((await owner.feed.reload()).initialImportCompletedAt).toEqual(completedAt);
+  });
+
+  it('leaves an interrupted initial import retryable', async () => {
+    const owner = await fixture({ established: false });
+    db.Article.addHook('beforeCreate', 'interrupt-initial-entry', () => {
+      const error = new Error('Import interrupted');
+      error.name = 'AbortError';
+      throw error;
+    });
+    try {
+      expect(await run(owner, [entry('interrupted-old', old)])).toMatchObject({ status: 'FAILED' });
+    } finally { db.Article.removeHook('beforeCreate', 'interrupt-initial-entry'); }
+    expect((await owner.feed.reload()).initialImportCompletedAt).toBeNull();
+    expect(await run(owner, [entry('interrupted-old', old)])).toMatchObject({ status: 'SUCCESS', articlesNew: 1 });
+    expect((await owner.feed.reload()).initialImportCompletedAt).toBeInstanceOf(Date);
+  });
+
+  it('completes an empty parsed import but not an unchanged response', async () => {
+    const owner = await fixture({ established: false });
+    mocked.acquireFeed.mockResolvedValue({ type: 'not_modified', policy: {} });
+    await crawl.performCrawl(owner.user.id, { feedId: owner.feed.id });
+    expect((await owner.feed.reload()).initialImportCompletedAt).toBeNull();
+    expect(await run(owner, [])).toMatchObject({ status: 'SUCCESS', articlesNew: 0 });
+    expect((await owner.feed.reload()).initialImportCompletedAt).toBeInstanceOf(Date);
   });
 
   it('accepts the exact cutoff and rejects the second before it', async () => {

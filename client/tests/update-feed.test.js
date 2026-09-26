@@ -124,6 +124,27 @@ afterEach(() => {
 });
 
 describe('UpdateFeed', () => {
+  it.each([[undefined, '30'], [7, '7'], [1825, '1825']])('loads the admission window %s', (saved, expected) => {
+    mountUpdateFeed({ ongoingAdmissionWindowDays: saved });
+    expect(wrapper.get('#update-feed-admission-window').element.value).toBe(expected);
+    expect(wrapper.get('label[for="update-feed-admission-window"]').text()).toBe('Ongoing admission window');
+  });
+
+  it('offers admission presets and saves the selected window', async () => {
+    mountUpdateFeed({ ongoingAdmissionWindowDays: 30 });
+    const select = wrapper.get('#update-feed-admission-window');
+    expect(select.findAll('option').map(option => [option.text(), option.element.value])).toEqual([
+      ['3 days', '3'], ['1 week', '7'], ['2 weeks', '14'], ['1 month', '30'],
+      ['3 months', '90'], ['1 year', '365'], ['3 years', '1095'], ['5 years', '1825']
+    ]);
+    expect(wrapper.get('#update-feed-admission-window-help').text()).toContain('A shorter cleanup age limit still applies');
+    await select.setValue('90');
+    updateFeed.mockResolvedValue({ data: { feed: { id: 10, categoryId: 1, ongoingAdmissionWindowDays: 90 } } });
+    await wrapper.get('.update-feed__save').trigger('click');
+    await flushPromises();
+    expect(updateFeed).toHaveBeenCalledWith(10, expect.objectContaining({ ongoingAdmissionWindowDays: 90 }));
+  });
+
   it('shows the saved username with an empty password and preserves it on save', async () => {
     mountUpdateFeed({ authenticationType: 'basic', authenticationUsername: 'reader' });
     expect(wrapper.get('#update-feed-authentication-username').element.value).toBe('reader');
@@ -282,6 +303,7 @@ describe('UpdateFeed', () => {
       url: 'https://example.com/new.xml',
       status: 'disabled',
       updateIntervalMinutes: 30,
+      ongoingAdmissionWindowDays: 30,
       feedTags: ['updated'],
       generateEmbeddings: false,
       applyAiAnalysis: false,

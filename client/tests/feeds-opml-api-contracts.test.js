@@ -46,6 +46,11 @@ beforeEach(() => {
 });
 
 describe('feeds API contracts', () => {
+  it('forwards the per-feed admission window as a numeric day count', () => {
+    updateFeed(7, { ongoingAdmissionWindowDays: 90 });
+    expect(put).toHaveBeenLastCalledWith('/feeds/7', { ongoingAdmissionWindowDays: 90 });
+  });
+
   it('includes Basic credentials and strips stale credentials for None', () => {
     const authentication = { authenticationType: 'basic', authenticationUsername: 'reader', authenticationPassword: 'secret' };
     validateFeed('https://example.com/feed', 3, authentication);

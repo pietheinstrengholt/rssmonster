@@ -222,6 +222,15 @@ export default (sequelize) => {
         allowNull: true,
         defaultValue: null
       },
+      // Marks the first fully processed feed representation; null permits initial-history retries.
+      initialImportCompletedAt: {
+        type: DataTypes.DATE, allowNull: true, defaultValue: null
+      },
+      // Bounds unseen publisher entries on subsequent crawls, independently of stored retention.
+      ongoingAdmissionWindowDays: {
+        type: DataTypes.INTEGER, allowNull: false, defaultValue: 30,
+        validate: { isInt: true, min: 1, max: 2147483647 }
+      },
       // Mirrors the latest attempt for legacy clients; nextFetchAt governs scheduling.
       lastFetched: {
         type: DataTypes.DATE,

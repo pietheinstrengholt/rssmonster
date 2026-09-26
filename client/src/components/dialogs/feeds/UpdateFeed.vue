@@ -162,6 +162,24 @@
                 </div>
               </div>
 
+              <div class="update-feed__field">
+                <label class="app-form-label" for="update-feed-admission-window">Ongoing admission window</label>
+                <select
+                  id="update-feed-admission-window"
+                  class="app-form-select"
+                  v-model="feed.ongoingAdmissionWindowDays"
+                  aria-describedby="update-feed-admission-window-help"
+                >
+                  <option v-for="option in admissionWindowOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+                <div id="update-feed-admission-window-help" class="app-form-help">
+                  After the initial import, ignore newly discovered articles published before this window.
+                  A shorter cleanup age limit still applies. Existing articles can still receive updates.
+                </div>
+              </div>
+
               <div class="update-feed__processing-grid">
                 <div>
                   <label class="app-form-label" for="feed-generate-embeddings">
@@ -375,6 +393,16 @@ export default {
       rediscoveredRss: null,
       deleting: false,
       updating: false,
+      admissionWindowOptions: [
+        { label: '3 days', value: 3 },
+        { label: '1 week', value: 7 },
+        { label: '2 weeks', value: 14 },
+        { label: '1 month', value: 30 },
+        { label: '3 months', value: 90 },
+        { label: '1 year', value: 365 },
+        { label: '3 years', value: 1095 },
+        { label: '5 years', value: 1825 }
+      ],
       updateIntervalOptions: [
         { label: 'Adaptive (publisher activity)', value: null },
         { label: 'Every 5 minutes', value: 5 },
@@ -459,6 +487,7 @@ export default {
           this.feed.applyAiAnalysis = this.feed.applyAiAnalysis ?? true;
           this.feed.pinned = this.feed.pinned ?? false;
           this.feed.itemFilter = this.feed.itemFilter ?? '';
+          this.feed.ongoingAdmissionWindowDays = this.feed.ongoingAdmissionWindowDays ?? 30;
           this.originalFeed = JSON.parse(JSON.stringify(feed)); // Store original for comparison
           this.authentication = {
             authenticationType: feed.authenticationType ?? null,
@@ -559,6 +588,7 @@ export default {
           url: this.feed.url,
           status: this.feed.status,
           updateIntervalMinutes: this.feed.updateIntervalMinutes,
+          ongoingAdmissionWindowDays: this.feed.ongoingAdmissionWindowDays,
           feedTags: this.feed.feedTags,
           generateEmbeddings: this.feed.generateEmbeddings,
           applyAiAnalysis: this.feed.applyAiAnalysis,

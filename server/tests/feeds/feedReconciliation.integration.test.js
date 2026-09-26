@@ -234,6 +234,8 @@ describe('duplicate feed reconciliation integration', () => {
     });
     await Setting.create({ userId: fixture.user.id, feedId: String(duplicate.id) });
 
+    await duplicate.update({ initialImportCompletedAt: new Date('2026-08-01T00:00:00Z') });
+    await stable.update({ ongoingAdmissionWindowDays: 14 });
     const survivor = await persistDiscoveredFeedUrl({
       feed: duplicate,
       discoveredUrl: stable.url
@@ -242,6 +244,8 @@ describe('duplicate feed reconciliation integration', () => {
     expect(survivor.id).toBe(stable.id);
     expect(await Feed.count({ where: { userId: fixture.user.id } })).toBe(1);
     const reloaded = await Feed.findByPk(stable.id);
+    expect(reloaded.initialImportCompletedAt).toEqual(new Date('2026-08-01T00:00:00Z'));
+    expect(reloaded.ongoingAdmissionWindowDays).toBe(14);
     expect(reloaded.lastArticleReceivedAt).toEqual(new Date('2026-08-01T00:00:00Z'));
     expect(reloaded).toMatchObject({
       categoryId: fixture.firstCategory.id,
