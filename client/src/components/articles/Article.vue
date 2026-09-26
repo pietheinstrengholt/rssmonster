@@ -665,7 +665,6 @@ export default {
     position: relative;
     z-index: 1;
     background: var(--surface-card);
-    will-change: transform;
     touch-action: pan-y pinch-zoom;
   }
 

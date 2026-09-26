@@ -39,6 +39,33 @@ afterEach(() => {
 });
 
 describe('MobilePullToRefresh', () => {
+  it.each(['start', 'move', 'end'])('does not refresh when zoomed at touch %s and resumes at normal scale', async stage => {
+    const viewport = { scale: stage === 'start' ? 2 : 1 };
+    vi.stubGlobal('visualViewport', viewport);
+    const wrapper = mountPullToRefresh();
+    try {
+      wrapper.vm.handleTouchStart(touchEvent());
+      if (stage === 'move') viewport.scale = 2;
+      const move = touchEvent({ y: 220 });
+      wrapper.vm.handleTouchMove(move);
+      if (stage !== 'end') expect(move.preventDefault).not.toHaveBeenCalled();
+      viewport.scale = 2;
+      wrapper.vm.handleTouchEnd();
+      await wrapper.vm.$nextTick();
+      expect(wrapper.emitted('refresh')).toBeUndefined();
+      expect(wrapper.attributes('aria-hidden')).toBe('true');
+
+      viewport.scale = 1;
+      wrapper.vm.handleTouchStart(touchEvent());
+      wrapper.vm.handleTouchMove(touchEvent({ y: 220 }));
+      wrapper.vm.handleTouchEnd();
+      expect(wrapper.emitted('refresh')).toHaveLength(1);
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('uses the semantic refresh-indicator layer without z-index arithmetic', () => {
     expect(mobilePullToRefreshSource).toContain('z-index: var(--layer-refresh-indicator);');
     expect(mobilePullToRefreshSource).not.toContain('calc(var(--layer-sticky) - 1)');

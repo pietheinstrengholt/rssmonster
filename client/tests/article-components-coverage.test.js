@@ -737,5 +737,10 @@ describe('Article mobile swipe coverage', () => {
       swipeTranslateX: 0,
       swipeTracking: false
     }).transition).toBe('transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)');
+    expect(articleMobileSwipeComputed.mobileSwipeStyle.call({
+      isMobilePortrait: true,
+      swipeTranslateX: 0,
+      swipeTracking: false
+    }).transform).toBe('none');
   });
 });

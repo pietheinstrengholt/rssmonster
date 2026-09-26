@@ -133,6 +133,31 @@ describe('Article recommendation context', () => {
 });
 
 describe('Article mobile swipe behavior', () => {
+  it.each(['start', 'move', 'end'])('does not bookmark when zoomed at touch %s', stage => {
+    const viewport = { scale: stage === 'start' ? 2 : 1 };
+    vi.stubGlobal('visualViewport', viewport);
+    try {
+      const context = createSwipeContext();
+      articleMobileSwipeMethods.onSwipeTouchStart.call(context, {
+        touches: [{ clientX: 10, clientY: 20 }]
+      });
+      if (stage === 'move') viewport.scale = 2;
+      const move = {
+        touches: [{ clientX: 210, clientY: 20 }],
+        cancelable: true,
+        preventDefault: vi.fn()
+      };
+      articleMobileSwipeMethods.onSwipeTouchMove.call(context, move);
+      if (stage !== 'end') expect(move.preventDefault).not.toHaveBeenCalled();
+      viewport.scale = 2;
+      articleMobileSwipeMethods.onSwipeTouchEnd.call(context);
+      expect(context.markAsFavorite).not.toHaveBeenCalled();
+      expect(context.swipeTranslateX).toBe(0);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('resets swipe state when the shared portrait query stops matching', () => {
     const context = createSwipeContext();
     context.resetSwipe = vi.fn();

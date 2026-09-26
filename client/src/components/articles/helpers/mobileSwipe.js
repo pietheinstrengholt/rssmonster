@@ -1,3 +1,5 @@
+import { isViewportZoomed } from '../../../utils/viewport.js';
+
 const SWIPE_MAX = 128;
 const SWIPE_THRESHOLD = 86;
 
@@ -24,7 +26,7 @@ export const articleMobileSwipeComputed = {
     if (!this.isMobilePortrait && !this.swipeTranslateX) return {};
 
     return {
-      transform: `translateX(${this.swipeTranslateX}px)`,
+      transform: this.swipeTranslateX ? `translateX(${this.swipeTranslateX}px)` : 'none',
       transition: this.swipeTracking ? 'none' : 'transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1)'
     };
   }
@@ -34,7 +36,7 @@ export const articleMobileSwipeComputed = {
 export const articleMobileSwipeMethods = {
   // Starts tracking a right-swipe favorite gesture in mobile portrait mode.
   onSwipeTouchStart(event) {
-    if (!this.isMobilePortrait || event.touches.length !== 1) {
+    if (!this.isMobilePortrait || isViewportZoomed() || event.touches.length !== 1) {
       this.resetSwipe();
       return;
     }
@@ -51,7 +53,7 @@ export const articleMobileSwipeMethods = {
   // Updates the article offset while ignoring vertical scroll gestures.
   onSwipeTouchMove(event) {
     if (!this.swipeTracking || !this.isMobilePortrait) return;
-    if (event.touches.length !== 1) {
+    if (isViewportZoomed() || event.touches.length !== 1) {
       this.resetSwipe();
       return;
     }
@@ -79,6 +81,11 @@ export const articleMobileSwipeMethods = {
   // Toggles favorite status when the swipe crosses the threshold.
   onSwipeTouchEnd() {
     if (!this.swipeTracking) return;
+
+    if (isViewportZoomed()) {
+      this.resetSwipe();
+      return;
+    }
 
     const shouldToggle = this.swipeTranslateX >= SWIPE_THRESHOLD;
     this.swipeTracking = false;

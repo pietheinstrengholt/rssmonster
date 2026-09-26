@@ -31,6 +31,8 @@
 </template>
 
 <script>
+import { isViewportZoomed } from '../../utils/viewport.js';
+
 const PULL_ACTIVATION_DISTANCE = 8;
 const PULL_RESISTANCE = 0.45;
 const PULL_THRESHOLD = 72;
@@ -192,6 +194,7 @@ export default {
         || this.scrollRoot;
       if (
         this.isRefreshActive
+        || isViewportZoomed()
         || event.touches.length !== 1
         || getScrollTop(gestureScrollRoot) > 0
         || ignoredTarget
@@ -212,7 +215,7 @@ export default {
     // This method converts a confirmed vertical drag into a resisted indicator distance.
     handleTouchMove(event) {
       if (!this.tracking || this.isRefreshActive) return;
-      if (event.touches.length !== 1 || getScrollTop(this.gestureScrollRoot) > 0) {
+      if (isViewportZoomed() || event.touches.length !== 1 || getScrollTop(this.gestureScrollRoot) > 0) {
         this.resetGesture();
         return;
       }
@@ -239,6 +242,10 @@ export default {
     // This method emits one database refresh after an armed gesture is released.
     handleTouchEnd() {
       if (!this.tracking) return;
+      if (isViewportZoomed()) {
+        this.resetGesture();
+        return;
+      }
 
       const shouldRefresh = this.isReady;
       this.tracking = false;
