@@ -152,15 +152,8 @@ DB_PASSWORD=replace-with-a-strong-password
 ```
 
 Use MySQL for higher write concurrency, multiple active users, background AI
-processing, or other demanding workloads. A MariaDB server can also be used
-through the MySQL connection profile: keep `DB_DIALECT=mysql` and point these
-settings at the MariaDB host. The crawl-run uniqueness constraint uses a
-virtual generated column; MariaDB 11.4 has been validated with the complete
-migration set. MariaDB is not a separate Sequelize dialect or a supplied
-Compose profile.
-
-All five connection values are required when `DB_DIALECT=mysql`; the default
-port is `3306`.
+processing, or other demanding workloads. All five connection values are
+required when `DB_DIALECT=mysql`; the default port is `3306`.
 
 After changing databases or creating a new database, apply the canonical
 migrations from the `server` directory with `npm run db`. Docker images apply
