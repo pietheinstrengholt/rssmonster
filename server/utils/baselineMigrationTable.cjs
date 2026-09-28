@@ -3,6 +3,21 @@
 // Removes MySQL prefix lengths because SQLite indexes the complete value.
 const normalizeIndexFields = fields => fields.replace(/(`[^`]+`)\(\d+\)/g, '$1');
 
+// MariaDB cannot index this MySQL functional expression. A virtual column
+// provides the same partial uniqueness without changing the historical DDL.
+const adaptMariaDbBaselineTable = sql => {
+  if (!sql.startsWith('CREATE TABLE `crawl_runs` (')) return sql;
+
+  const index = "  UNIQUE KEY `crawl_runs_active_user_unique` (((case when (`status` = _utf8mb4'running') then `userId` else NULL end))),";
+  if (!sql.includes(index)) throw new Error('Unexpected crawl_runs baseline index definition.');
+
+  return sql.replace(
+    index,
+    "  `activeCrawlUserId` int GENERATED ALWAYS AS (CASE WHEN `status` = 'running' THEN `userId` ELSE NULL END) VIRTUAL,\n" +
+    '  UNIQUE KEY `crawl_runs_active_user_unique` (`activeCrawlUserId`),'
+  );
+};
+
 // Converts one MySQL column definition into SQLite-compatible affinity syntax.
 const normalizeColumn = definition => {
   const columnName = definition.match(/^`([^`]+)`/)?.[1];
@@ -76,8 +91,13 @@ const buildSqliteTable = mysqlSql => {
 
 // Creates one canonical baseline table without changing the existing MySQL DDL.
 const createBaselineTable = async (queryInterface, mysqlSql) => {
-  if (queryInterface.sequelize.getDialect() !== 'sqlite') {
-    await queryInterface.sequelize.query(mysqlSql);
+  const dialect = queryInterface.sequelize.getDialect();
+  if (dialect !== 'sqlite') {
+    // DB_DIALECT=mariadb uses Sequelize's mysql/mysql2 connection profile.
+    const sql = process.env.DB_DIALECT === 'mariadb'
+      ? adaptMariaDbBaselineTable(mysqlSql)
+      : mysqlSql;
+    await queryInterface.sequelize.query(sql);
     return;
   }
 
