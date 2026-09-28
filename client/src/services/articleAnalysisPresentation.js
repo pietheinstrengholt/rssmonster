@@ -10,8 +10,3 @@ export const isArticleAnalysisInProgress = status => (
 export const hasUsableArticleAnalysis = status => (
   !UNAVAILABLE_ANALYSIS_STATUSES.has(String(status || '').toLowerCase())
 );
-
-// Returns whether optional analysis exhausted its retries for this article version.
-export const hasArticleAnalysisFailed = status => (
-  String(status || '').toLowerCase() === 'failed'
-);

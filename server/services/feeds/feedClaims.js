@@ -133,10 +133,6 @@ export const createFeedLeaseLostError = feedId => {
   return error;
 };
 
-// Reports whether an error represents lost feed-lease ownership.
-export const isFeedLeaseLostError = error =>
-  error?.code === FEED_LEASE_LOST_CODE;
-
 // Verifies and locks the current lease owner before a transactional crawl write.
 export const assertFeedLeaseOwnership = async (
   { feedId, leaseOwner } = {},

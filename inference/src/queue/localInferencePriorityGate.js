@@ -23,5 +23,3 @@ export const runLocalInference = (task, {
   requestId,
   operation
 });
-
-export const getLocalInferenceQueueSnapshot = localInferenceQueue.getSnapshot;

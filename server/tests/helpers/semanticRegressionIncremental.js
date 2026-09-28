@@ -18,9 +18,6 @@ export const INCREMENTAL_FIXTURE_PATH = join(__dirname, '..', 'fixtures', 'seman
 export const INCREMENTAL_VECTOR_FIXTURE_PATH = await resolveSemanticVectorFixturePath(
   'semantic-regression-incremental'
 );
-export const FIXTURE_USERNAME = 'semantic-regression-user';
-// All canonical incremental rows participate in the main run; isolated old gold tests are additional.
-export const EXPECTED_INCREMENTAL_ARTICLE_COUNT = 1000;
 export const isLongitudinal = article => String(article.sourceId || '').startsWith('long-');
 export const isRealBackground = article => article.regression?.provenance === 'real' && article.regression?.scenario === 'real-background';
 const isOccurrence = article => Boolean(article.regression) && !isRealBackground(article) && !isLongitudinal(article);

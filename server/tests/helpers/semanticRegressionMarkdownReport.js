@@ -1,16 +1,5 @@
-import { collectIslandDiagnostics, recommendationCoverage, interestPathMetrics } from './semanticRecommendationDiagnostics.js';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { Op } from 'sequelize';
+import { recommendationCoverage, interestPathMetrics } from './semanticRecommendationDiagnostics.js';
 
-import db from '../../models/index.js';
-import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
-
-const { Article } = db;
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPORT_DIR = join(__dirname, '..', '.semantic-regression');
-const TRACE_PATH = join(REPORT_DIR, 'trace.json');
 const SAMPLE_TITLE_LIMIT = 3;
 
 // This function makes external model identifiers safe for report filenames.
@@ -229,81 +218,4 @@ export function renderSemanticRegressionMarkdown({ trace, metadata, duplicateGro
     '- Use the JSON trace in this directory for article-level investigation and cross-run comparison.',
     ''
   ].join('\n');
-}
-
-// This function loads duplicate groups for the regression user from canonical relationships.
-async function loadDuplicateGroups(userIds) {
-  const duplicates = await Article.findAll({
-    where: {
-      userId: { [Op.in]: userIds },
-      duplicateOfArticleId: { [Op.ne]: null }
-    },
-    attributes: ['id', 'title', 'duplicateOfArticleId'],
-    order: [['duplicateOfArticleId', 'ASC'], ['id', 'ASC']],
-    raw: true
-  });
-  const canonicalIds = [...new Set(duplicates.map(article => Number(article.duplicateOfArticleId)))];
-  const canonicals = canonicalIds.length
-    ? await Article.findAll({
-      where: { userId: { [Op.in]: userIds }, id: { [Op.in]: canonicalIds } },
-      attributes: ['id', 'title'],
-      raw: true
-    })
-    : [];
-  const canonicalById = new Map(canonicals.map(article => [Number(article.id), article]));
-
-  return canonicalIds.map(canonicalId => ({
-    canonicalId,
-    canonicalTitle: canonicalById.get(canonicalId)?.title || '-',
-    duplicates: duplicates
-      .filter(article => Number(article.duplicateOfArticleId) === canonicalId)
-      .map(article => ({ id: Number(article.id), title: article.title || '-' }))
-  }));
-}
-
-// This function writes one timestamped semantic regression report beside the existing JSON trace.
-export async function writeSemanticRegressionMarkdownReport({
-  userId,
-  duplicateEvaluationUserIds = [],
-  generatedAt = new Date()
-}) {
-  const vectorFixturePath = await resolveSemanticVectorFixturePath('semantic-regression');
-  const [trace, vectorFixture, duplicateGroups] = await Promise.all([
-    readFile(TRACE_PATH, 'utf8').then(JSON.parse),
-    readFile(vectorFixturePath, 'utf8').then(JSON.parse),
-    loadDuplicateGroups([...new Set([userId, ...duplicateEvaluationUserIds].filter(Boolean))])
-  ]);
-  trace.islandDiagnostics = await collectIslandDiagnostics(userId);
-  await writeFile(TRACE_PATH, JSON.stringify(trace, null, 2));
-  console.table(recommendationCoverage(Object.values(trace.articles || {})));
-  console.table(interestPathMetrics(Object.values(trace.articles || {})));
-  console.table({
-    'Active Islands': trace.islandDiagnostics.activeIslands,
-    'Singleton Islands': trace.islandDiagnostics.islands.filter(row => row.singleton).length,
-    'Low-cohesion Islands': trace.islandDiagnostics.islands.filter(row => row.lowCohesion).length,
-    'Unassigned behavioral profiles': trace.islandDiagnostics.unassignedBehavioralProfiles
-  });
-  console.table(trace.islandDiagnostics.islands.map(({ basis: _basis, ...row }) => row));
-  const metadata = {
-    provider: vectorFixture.embeddingProvider,
-    model: vectorFixture.embeddingModel,
-    dimensions: vectorFixture.embeddingDimensions || vectorFixture.articles?.[0]?.articleVector?.length,
-    task: vectorFixture.embeddingTask
-  };
-  const filename = `${reportModelSlug(metadata.model)}-${reportTimestamp(generatedAt)}.md`;
-  const reportPath = join(REPORT_DIR, filename);
-  let expansion = null;
-  try {
-    const candidate = JSON.parse(await readFile(join(REPORT_DIR, 'expansion-report.json'), 'utf8'));
-    const users = await db.User.findAll({ where: { username: { [Op.like]: 'semantic-expansion-%' } }, attributes: ['id'], raw: true });
-    const count = users.length ? await Article.count({ where: { userId: users.map(u => u.id) } }) : 0;
-    if (count > 0 && count === candidate.expansionCorpusCount) expansion = candidate;
-  } catch (error) { if (error.code !== 'ENOENT') throw error; }
-  const markdown = renderSemanticRegressionMarkdown({ trace, metadata, duplicateGroups, generatedAt, expansion });
-
-  await mkdir(REPORT_DIR, { recursive: true });
-  await writeFile(reportPath, markdown);
-  console.log(`[SEMANTIC REPORT] wrote ${reportPath}`);
-
-  return reportPath;
 }

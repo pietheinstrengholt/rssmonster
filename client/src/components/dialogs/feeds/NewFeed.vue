@@ -405,7 +405,6 @@ export default {
           showHtmlXpathFallback: false,
           cloudflareUrl: null,
           url: null,
-          category: {},
           feed: {},
           authentication: { authenticationType: null, authenticationUsername: '', authenticationPassword: '' },
           selectedCategory: null,
