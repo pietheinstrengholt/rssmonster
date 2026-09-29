@@ -16,9 +16,12 @@
       class="article-reader__empty"
       :current-status="currentSelection"
       :selected-tag="selectedTag"
+      :search-query="selectionStore.currentSelection.smartFolderId === null ? selectionStore.currentSelection.search : null"
+      :showing-new-only="collectionProgress.showingNewOnly"
       :refresh-progress="feedRefreshStore.progress"
       :show-refresh-progress="showFeedRefreshProgress"
       @clear-filters="$emit('clear-filters')"
+      @clear-search="$emit('clear-search')"
       @clear-tag="$emit('clear-tag')"
       @refresh-feeds="$emit('refresh-feeds')"
       @open-smart-folders="$emit('open-smart-folders')"
@@ -33,39 +36,45 @@
     >
       <DailyBriefingIntro v-if="showDailyBriefingIntro" reader-mode />
       <slot name="before-context" :reader-mode="true" />
-      <UnreadSelectionContext
-        v-if="currentSelection === 'unread' && ((loadedCount > 0 && currentViewSourceCount !== null) || (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all'))"
-        :article-count="collectionSummary.totalCount ?? currentViewUnreadCount"
-        :source-count="currentViewSourceCount ?? 0"
-        :oldest-published-at="collectionSummary.oldestPublishedAt"
-        :articles="readerListArticles"
-        :get-article-element="getArticleListElement"
-        reader-mode
-      />
       <div class="article-list-bulk-header" @click.stop>
         <div class="article-list-bulk-summary">
           <div class="article-list-bulk-title">
             <BootstrapIcon :icon="selectionIcon" aria-hidden="true" />
-            <span>{{ selectionTitle }}</span>
+            <span :title="selectionTitle">{{ selectionTitle }}</span>
+            <span class="article-list-bulk-count">· {{ totalCount.toLocaleString() }} {{ totalCount === 1 ? 'article' : 'articles' }}</span>
           </div>
 
-          <div class="article-list-bulk-stats" aria-label="Current collection summary">
-            <span>{{ formattedUnreadCount }} Unread</span>
-            <span>{{ eventCount }} Events</span>
-            <span>{{ sourceCount }} Sources</span>
+          <div class="article-list-bulk-controls">
+            <UnreadSelectionContext
+              v-if="currentSelection === 'unread' && ((loadedCount > 0 && currentViewSourceCount !== null) || (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all'))"
+              :article-count="collectionSummary.totalCount ?? currentViewUnreadCount"
+              :source-count="currentViewSourceCount ?? 0"
+              :oldest-published-at="collectionSummary.oldestPublishedAt"
+              :articles="readerListArticles"
+              :get-article-element="getArticleListElement"
+              reader-mode
+            />
+            <button type="button" class="article-list-details-toggle" :aria-expanded="showCollectionDetails" aria-controls="reader-collection-details" @click="showCollectionDetails = !showCollectionDetails">Details</button>
           </div>
+          <div v-if="showCollectionDetails" id="reader-collection-details">
+            <div class="article-list-bulk-stats" aria-label="Current collection summary">
+              <span>{{ formattedUnreadCount }} Unread</span>
+              <span>{{ eventCount }} loaded {{ eventCount === 1 ? 'event' : 'events' }}</span>
+              <span>{{ sourceCount }} sources</span>
+            </div>
 
-          <div v-if="topVisibleTags.length" class="article-list-bulk-tags">
-            <span>Top tags:</span>
-            <button
-              v-for="tag in topVisibleTags"
-              :key="tag"
-              type="button"
-              class="article-list-bulk-tag"
-              @click="selectionStore.setCurrentSelection({ tag })"
-            >
-              {{ formatTagName(tag) }}
-            </button>
+            <div v-if="topVisibleTags.length" class="article-list-bulk-tags">
+              <span>Top tags:</span>
+              <button
+                v-for="tag in topVisibleTags"
+                :key="tag"
+                type="button"
+                class="article-list-bulk-tag"
+                @click="selectionStore.setCurrentSelection({ tag })"
+              >
+                {{ formatTagName(tag) }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -104,11 +113,11 @@
             <div class="bulk-action-menu-section">
               <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('favorite-visible')">
                 <BootstrapIcon icon="bookmark" aria-hidden="true" />
-                <span>Favorite all visible</span>
+                <span>Save all visible articles</span>
               </button>
               <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('mark-visible-clicked')">
                 <BootstrapIcon icon="box-arrow-up-right" aria-hidden="true" />
-                <span>Mark all visible as clicked</span>
+                <span>Mark all visible originals as opened</span>
               </button>
             </div>
           </div>
@@ -137,11 +146,11 @@
         ></button>
         <span class="article-reader__item-content">
           <span class="article-reader__item-title"><HighlightedText :text="article.title" :terms="highlightTerms" /></span>
-          <span v-if="articlePreview(article)" class="article-reader__item-preview"><HighlightedText :text="articlePreview(article)" :terms="highlightTerms" /></span>
           <span class="article-reader__item-kicker">
             <span>{{ feedName(article) }}</span>
             <span v-if="publishedLabel(article)">{{ publishedLabel(article) }}</span>
           </span>
+          <span v-if="articlePreview(article)" class="article-reader__item-preview"><HighlightedText :text="articlePreview(article)" :terms="highlightTerms" /></span>
           <span v-if="!hasArticlePreview(article)" class="article-preview-empty">
             <span class="article-preview-empty__message">No preview available</span>
             <span v-if="articleUrl(article)" aria-hidden="true" class="article-preview-empty__separator">-</span>
@@ -164,7 +173,7 @@
               :article-id="article.id ?? article.event?.developingArticleId"
               icon-class="article-reader__developing-icon"
             />
-            <span v-if="article.favoriteInd === 1" class="article-reader__badge article-reader__badge--favorite">Favorite</span>
+            <span v-if="article.favoriteInd === 1" class="article-reader__badge article-reader__badge--favorite">Saved</span>
             <span v-if="article.hotInd === 1" class="article-reader__badge article-reader__badge--hot">Hot</span>
             <span v-if="similarCount(article)" class="article-reader__badge">{{ similarCount(article) }} similar</span>
           </span>
@@ -312,6 +321,7 @@ export default {
     'shortcut-toggle-favorite',
     'flush-pool',
     'clear-filters',
+    'clear-search',
     'clear-tag',
     'refresh-feeds',
     'open-smart-folders',
@@ -346,6 +356,7 @@ export default {
       selectedArticleId: null,
       isReaderEndStateDismissed: false,
       isBulkMenuOpen: false,
+      showCollectionDetails: false,
       bulkMenuStyle: {},
       pendingClickedArticleIds: new Set(),
       recommendations: [],
@@ -885,7 +896,7 @@ export default {
   gap: 12px;
   grid-template-columns: minmax(0, 1fr) auto;
   margin: 0 -10px 10px;
-  padding: 16px 14px 14px;
+  padding: 10px 14px;
   position: relative;
 }
 
@@ -897,8 +908,8 @@ export default {
   align-items: center;
   color: var(--text-primary);
   display: flex;
-  gap: 8px;
-  font-size: 16px;
+  gap: 6px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.25;
   min-width: 0;
@@ -917,30 +928,21 @@ export default {
   font-size: 15px;
 }
 
+.article-list-bulk-count { flex-shrink: 0; color: var(--text-secondary); font-size: 12px; font-weight: 400; }
+.article-list-bulk-controls { display: flex; flex-wrap: wrap; align-items: start; gap: 8px; margin-top: 8px; }
+.article-list-bulk-controls > .unread-selection-context { flex: 1 1 auto; width: auto; min-width: 0; }
+.article-list-details-toggle { min-height: var(--control-height-compact); padding: 0.375rem 0; background: var(--color-transparent); border: 0; color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 12px; }
+.article-list-details-toggle:hover { color: var(--color-link); }
+.article-list-details-toggle:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+
 .article-list-bulk-stats {
   align-items: center;
   color: var(--text-secondary);
   display: flex;
   flex-wrap: wrap;
   font-size: 12px;
-  font-weight: 700;
-  gap: 0;
-  margin-top: 16px;
-}
-
-.article-list-bulk-stats span {
-  border-right: 1px solid var(--border-subtle);
-  line-height: 1;
-  padding: 0 12px;
-}
-
-.article-list-bulk-stats span:first-child {
-  padding-left: 0;
-}
-
-.article-list-bulk-stats span:last-child {
-  border-right: 0;
-  padding-right: 0;
+  gap: 6px 12px;
+  margin-top: 12px;
 }
 
 .article-list-bulk-tags {

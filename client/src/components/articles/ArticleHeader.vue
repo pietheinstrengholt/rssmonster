@@ -34,7 +34,7 @@
     <div class="article-header-actions" :class="{ 'article-reader-actions': isReaderDetail }">
       <ArticleActionsMenu :clickedAmount="clickedAmount" :clickPending="clickPending" :favoriteInd="favoriteInd" :favoritePending="favoritePending" :isReaderMode="isReaderMode" :status="status" @toggle-clicked="$emit('toggle-clicked')" @toggle-favorite="$emit('toggle-favorite')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" />
       <template v-if="isReaderDetail">
-        <button type="button" class="article-reader-favorite" :class="{ 'article-reader-favorite--active': favoriteInd === 1 }" :aria-label="favoriteInd === 1 ? 'Unmark favorite' : 'Mark as favorite'" :aria-pressed="favoriteInd === 1" :disabled="favoritePending" @click="$emit('toggle-favorite')">
+        <button type="button" class="article-reader-favorite" :class="{ 'article-reader-favorite--active': favoriteInd === 1 }" :aria-label="favoriteInd === 1 ? 'Remove from saved' : 'Save article'" :aria-pressed="favoriteInd === 1" :disabled="favoritePending" @click="$emit('toggle-favorite')">
           <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
         </button>
         <button type="button" class="app-button app-button--outline-secondary app-button--compact article-reader-read" @click="$emit('toggle-read-status')">

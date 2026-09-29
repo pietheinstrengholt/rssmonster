@@ -242,8 +242,8 @@ describe('Article high-impact decision coverage', () => {
     })).toBe(0);
     expect(compute(Article, 'hasInterestScore', { interestScore: '0.25' })).toBe(true);
     expect(compute(Article, 'hasInterestScore', { interestScore: 'invalid' })).toBe(false);
-    expect(compute(ArticleHeadlineRow, 'favoriteLabel', { favoriteInd: 1 })).toBe('Unmark favorite');
-    expect(compute(ArticleHeadlineRow, 'favoriteLabel', { favoriteInd: 0 })).toBe('Mark as favorite');
+    expect(compute(ArticleHeadlineRow, 'favoriteLabel', { favoriteInd: 1 })).toBe('Remove from saved');
+    expect(compute(ArticleHeadlineRow, 'favoriteLabel', { favoriteInd: 0 })).toBe('Save article');
 
     expect(compute(Article, 'feedFavicon', {
       feed: { favicon: 'direct.ico' },
@@ -326,7 +326,7 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
       [{ search: 'security' }, 'search', 'Search: security'],
       [{ feedId: '7', categoryId: '2' }, 'rss-fill', 'Feed seven'],
       [{ categoryId: '2' }, 'folder-fill', 'Technology'],
-      [{ status: 'favorite' }, 'bookmark-fill', 'Favorites'],
+      [{ status: 'favorite' }, 'bookmark-fill', 'Saved'],
       [{ status: 'unknown' }, 'collection-fill', 'All articles']
     ];
     context.overviewStore = {
@@ -1047,6 +1047,7 @@ describe('Vue template handler coverage', () => {
 
     await wrapper.get('.bulk-more-button').trigger('click');
     for (const button of wrapper.findAll('.bulk-action-menu-item')) await button.trigger('click');
+    await wrapper.findAll('button').find(button => button.text() === 'Details').trigger('click');
     await wrapper.get('.article-list-bulk-tag').trigger('click');
     await wrapper.get('.article-reader__selection').trigger('click');
     expect(wrapper.find('.article-refresh-state').exists()).toBe(false);

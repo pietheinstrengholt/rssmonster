@@ -32,8 +32,8 @@
             v-model="clusteringBehavior"
             :disabled="isPending"
         />
-
         <template #footer>
+            <InlineActionError v-if="saveError" :message="saveError" :busy="isPending" @retry="saveCategory" />
             <button type="button" class="app-button app-button--secondary base-dialog__button base-dialog__button--secondary" :disabled="isPending" @click="closeDialog">
                 Close
             </button>
@@ -45,6 +45,7 @@
 </template>
 
 <script>
+import InlineActionError from '../../shared/InlineActionError.vue';
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../../store/selection.js';
 import { useOverviewStore } from '../../../store/overview.js';
@@ -54,11 +55,11 @@ import CategoryIconPicker from './CategoryIconPicker.vue';
 import CategoryClusteringSelect from './CategoryClusteringSelect.vue';
 import { DEFAULT_CATEGORY_ICON } from './categoryIconOptions.js';
 import { createCategory } from '../../../api/categories';
-import { notifyActionError } from '../../../services/actionNotifications.js';
 
 export default {
     name: 'NewCategory',
     components: {
+        InlineActionError,
         BaseDialog,
         CategoryIconPicker,
         CategoryClusteringSelect
@@ -66,6 +67,7 @@ export default {
     // This function creates editable category fields and duplicate-save protection.
     data() {
         return {
+            saveError: '',
             clusteringBehavior: null,
             categoryName: '',
             iconName: DEFAULT_CATEGORY_ICON,
@@ -97,10 +99,11 @@ export default {
 
                 // Reconcile the API response through the store's normalization contract.
                 this.overviewStore.addCategory(this.category);
+                this.saveError = '';
                 this.uiStore.setShowModal('');
             } catch (error) {
                 console.error(`Error creating category "${categoryName}":`, error);
-                notifyActionError('Could not create this category. Please try again.', error);
+                this.saveError = 'Category wasn’t added. Your details are still here. Try again.';
             } finally {
                 this.isPending = false;
             }

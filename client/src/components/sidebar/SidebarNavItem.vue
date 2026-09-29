@@ -3,6 +3,8 @@
     type="button"
     :class="rowClasses"
     :aria-current="selected ? 'page' : undefined"
+    :title="description || undefined"
+    :aria-description="description || undefined"
     @click="$emit('select')"
   >
     <span class="sidebar-icon">
@@ -20,6 +22,7 @@ import { formatCount } from './formatCount.js';
 
 export default {
   props: {
+    description: { type: String, default: '' },
     icon: {
       type: String,
       required: true

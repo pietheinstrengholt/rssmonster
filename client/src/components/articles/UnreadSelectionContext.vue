@@ -2,29 +2,36 @@
   <div ref="contextBar" class="unread-selection-context" :class="{ 'unread-selection-context--reader': readerMode }">
     <div class="unread-selection-context__surface">
       <div class="unread-selection-context__summary">
-        <span class="unread-selection-context__meta">
+        <span v-if="!readerMode" class="unread-selection-context__meta">
           Based on <strong>{{ articleCount.toLocaleString() }}</strong> {{ articleCount === 1 ? 'article' : 'articles' }} from <strong>{{ sourceCount.toLocaleString() }}</strong> {{ sourceCount === 1 ? 'source' : 'sources' }}
         </span>
         <div class="unread-selection-context__date-group">
           <span class="unread-selection-context__divider" aria-hidden="true"></span>
           <AppDropdown ref="dateDropdown" class="unread-selection-context__date-filter">
             <template #trigger="{ triggerProps }">
-              <button v-bind="triggerProps" type="button" class="unread-selection-context__date-trigger" :aria-label="`Article date range: ${selectedDateRangeOption.label}`">
+              <button v-bind="triggerProps" type="button" class="unread-selection-context__date-trigger" :aria-label="`Article date range: ${dateTriggerLabel}`">
                 <BootstrapIcon icon="calendar3" context="control" aria-hidden="true" />
-                <span>{{ selectedDateRangeOption.label }}</span>
+                <span>{{ dateTriggerLabel }}</span>
                 <BootstrapIcon icon="chevron-down" context="control" aria-hidden="true" />
               </button>
             </template>
             <template #menu="{ menuProps }">
               <div v-bind="menuProps">
-                <button v-for="option in dateRangeOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': selectionStore.dateRange === option.value }" role="menuitemradio" :aria-checked="selectionStore.dateRange === option.value" @click="selectDateRange(option.value)">
-                  <span class="unread-selection-context__date-check" aria-hidden="true">{{ selectionStore.dateRange === option.value ? '✓' : '' }}</span>
+                <button v-for="option in dateRangeOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': selectionStore.dateRange === option.value && (!readerMode || selectionStore.ageCutoff === 'all') }" role="menuitemradio" :aria-checked="selectionStore.dateRange === option.value && (!readerMode || selectionStore.ageCutoff === 'all')" @click="selectDateRange(option.value)">
+                  <span class="unread-selection-context__date-check" aria-hidden="true">{{ selectionStore.dateRange === option.value && (!readerMode || selectionStore.ageCutoff === 'all') ? '✓' : '' }}</span>
                   {{ option.label }}
                 </button>
+                <template v-if="readerMode">
+                  <hr class="app-dropdown__divider" />
+                  <button v-for="option in ageCutoffOptions.filter(option => option.value !== 'all')" :key="`age-${option.value}`" type="button" class="app-dropdown__item" role="menuitemradio" :aria-checked="selectionStore.ageCutoff === option.value" @click="selectAgeCutoff(option.value)">
+                    <span class="unread-selection-context__date-check" aria-hidden="true">{{ selectionStore.ageCutoff === option.value ? '✓' : '' }}</span>
+                    Last {{ option.label }}
+                  </button>
+                </template>
               </div>
             </template>
           </AppDropdown>
-          <div class="unread-selection-context__age-cutoff" role="group" aria-label="Article age">
+          <div v-if="!readerMode" class="unread-selection-context__age-cutoff" role="group" aria-label="Article age">
             <button
               v-for="option in ageCutoffOptions"
               :key="option.value"
@@ -34,7 +41,7 @@
               @click="selectAgeCutoff(option.value)"
             >{{ option.label }}</button>
           </div>
-          <time v-if="dateContext" :datetime="dateContext.isoDate">{{ dateContext.longLabel }}</time>
+          <time v-if="!readerMode && dateContext" :datetime="dateContext.isoDate">{{ dateContext.longLabel }}</time>
         </div>
       </div>
       <form v-if="editingCustomDate" class="unread-selection-context__custom-date" aria-label="Custom article date range" @submit.prevent="applyCustomRange" @keydown.esc.stop.prevent="cancelCustomRange">
@@ -113,7 +120,9 @@ export default {
       applyCustomRange,
       cancelCustomRange,
       dateRangeOptions: articleDateRangeOptions,
-      selectedDateRangeOption: computed(() => articleDateRangeOptions.find(option => option.value === selectionStore.dateRange)),
+      dateTriggerLabel: computed(() => props.readerMode && selectionStore.ageCutoff !== 'all'
+        ? `Last ${selectionStore.ageCutoff}`
+        : articleDateRangeOptions.find(option => option.value === selectionStore.dateRange).label),
       ageCutoffOptions: computed(() => ageCutoffOptionsForOldest(props.oldestPublishedAt)),
       dateContext: computed(() => articleDateContext(activeDate.value))
     };
@@ -128,7 +137,9 @@ export default {
   background: var(--reader-list-item-background);
   border-bottom: 1px solid var(--reader-list-item-border);
 }
-.unread-selection-context--reader { padding-inline: 0; }
+.unread-selection-context--reader { padding: 0; border: 0; background: var(--color-transparent); }
+.unread-selection-context--reader .unread-selection-context__surface { padding: 0; border: 0; background: var(--color-transparent); }
+.unread-selection-context--reader .unread-selection-context__date-group { gap: 0; }
 .unread-selection-context__surface {
   display: flex;
   flex-wrap: wrap;
@@ -208,4 +219,5 @@ export default {
   .unread-selection-context__age-button { height: var(--control-height-compact); padding-inline: 0.5rem; }
 }
 :global(:root[data-theme='dark'] .unread-selection-context) { background: var(--surface-page); border-bottom-color: var(--border-subtle); }
+:global(:root[data-theme='dark'] .unread-selection-context--reader) { background: var(--color-transparent); }
 </style>

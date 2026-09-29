@@ -77,7 +77,7 @@
           </template>
           <template #menu="{ menuProps }">
             <div v-bind="menuProps">
-        <button v-for="option in visibleStatusOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === option.value }" role="menuitem" @click="statusClicked(option.value)">{{ option.label }} {{ getStatusCount(option.value) }}</button>
+        <button v-for="option in visibleStatusOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === option.value }" :title="option.description" :aria-description="option.description" role="menuitem" @click="statusClicked(option.value)">{{ option.label }} {{ getStatusCount(option.value) }}</button>
         <hr class="app-dropdown__divider">
         <button v-for="option in visibleSortOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === option.value }" role="menuitem" :disabled="briefingPresentationControlsDisabled" :title="briefingPresentationControlsDisabled ? briefingPresentationDisabledTitle : null" @click="sortClicked(option.value)">{{ option.label }}</button>
         <hr v-if="isAIEnabled" class="app-dropdown__divider">

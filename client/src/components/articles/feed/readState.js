@@ -13,6 +13,7 @@ export function createArticleFeedReadState() {
     pool: new Set(),
     isFlushed: false,
     activeMinimalArticleId: null,
+    manualUnreadArticleIds: new Set(),
     pendingReadStatusArticleIds: new Set(),
     pendingSeenArticleIds: new Set(),
     seenPersistenceAttempts: new Map(),
@@ -26,6 +27,7 @@ export const articleFeedReadStateMethods = {
   resetReadTracking() {
     this.pool = new Set();
     this.activeMinimalArticleId = null;
+    this.manualUnreadArticleIds.clear();
     this.pendingReadStatusArticleIds.clear();
     this.pendingSeenArticleIds.clear();
     this.seenPersistenceAttempts.clear();
@@ -40,7 +42,8 @@ export const articleFeedReadStateMethods = {
     const normalizedArticleId = Number(articleId);
     const poolArticleId = Number.isFinite(normalizedArticleId) ? normalizedArticleId : articleId;
     const article = this.articles.find(item => item.id === articleId || item.id === poolArticleId);
-    if (!article || article.status === 'read' || this.pool.has(poolArticleId)) return;
+    if (!article || article.status === 'read' || this.pool.has(poolArticleId)
+      || this.manualUnreadArticleIds.has(poolArticleId)) return;
 
     this.addToPool(poolArticleId);
   },
@@ -95,11 +98,13 @@ export const articleFeedReadStateMethods = {
   async markArticleSeen(articleId, visibleSeconds = 0, options = {}) {
     const selection = options.selection || this.selectionStore.currentSelection;
     const shouldMarkRead = !options.attentionOnly && ['unread', 'briefing'].includes(selection.status)
-      && (options.markAsReadOnScroll ?? this.selectionStore.effectiveMarkAsReadOnScroll) === true;
+      && (options.markAsReadOnScroll ?? this.selectionStore.effectiveMarkAsReadOnScroll) === true
+      && !this.manualUnreadArticleIds.has(Number(articleId));
 
     try {
       const response = await markArticleSeen(articleId, {
-        grouping: selection.grouping,
+        // Event-wide automatic reads must not reach a sibling deliberately kept unread.
+        grouping: shouldMarkRead && this.manualUnreadArticleIds.size > 0 ? 'none' : selection.grouping,
         visibleSeconds,
         recordObservation: options.recordObservation ?? true,
         markRead: shouldMarkRead,
@@ -153,7 +158,8 @@ export const articleFeedReadStateMethods = {
     if (!previousArticleId || String(previousArticleId) === String(id)) return;
 
     const previousArticle = this.articles.find(article => String(article.id) === String(previousArticleId));
-    if (!previousArticle || previousArticle.status === 'read') return;
+    if (!previousArticle || previousArticle.status === 'read'
+      || this.manualUnreadArticleIds.has(Number(previousArticleId))) return;
 
     await this.markMinimalArticleRead(previousArticleId);
   },
@@ -169,7 +175,8 @@ export const articleFeedReadStateMethods = {
   async markMinimalArticleRead(articleId) {
     const pendingArticleId = Number(articleId);
     const normalizedArticleId = Number.isFinite(pendingArticleId) ? pendingArticleId : articleId;
-    if (this.pendingReadStatusArticleIds.has(normalizedArticleId)) return;
+    if (this.pendingReadStatusArticleIds.has(normalizedArticleId)
+      || this.manualUnreadArticleIds.has(normalizedArticleId)) return;
 
     const article = this.articles.find(item => String(item.id) === String(articleId));
     const wasUnread = article?.status !== 'read';
@@ -177,7 +184,7 @@ export const articleFeedReadStateMethods = {
 
     try {
       const response = await markArticleSeen(articleId, {
-        grouping: this.selectionStore.currentSelection.grouping,
+        grouping: this.manualUnreadArticleIds.size > 0 ? 'none' : this.selectionStore.currentSelection.grouping,
         visibleSeconds: 0,
         recordObservation: false,
         markRead: true,
@@ -210,6 +217,8 @@ export const articleFeedReadStateMethods = {
 
     try {
       if (status === 'read') {
+        this.manualUnreadArticleIds.add(normalizedArticleId);
+        if (this.seenPersistenceQueue) await this.seenPersistenceQueue;
         const response = await markArticleUnread(id);
         this.updateArticleStatusLocal(response.data);
         this.overviewStore.decreaseReadCount(response.data);
@@ -228,8 +237,10 @@ export const articleFeedReadStateMethods = {
       this.applyArticleSeenResponse(response.data, {
         updateReadCounts: status !== 'read'
       });
+      this.manualUnreadArticleIds.delete(normalizedArticleId);
       this.pool.add(normalizedArticleId);
     } catch (error) {
+      if (status === 'read') this.manualUnreadArticleIds.delete(normalizedArticleId);
       console.error('Error toggling minimal article read status:', error);
       notifyActionError('Could not update the article status. Please try again.', error);
     } finally {
@@ -257,6 +268,8 @@ export const articleFeedReadStateMethods = {
 
     try {
       if (status === 'read') {
+        this.manualUnreadArticleIds.add(pendingArticleId);
+        if (this.seenPersistenceQueue) await this.seenPersistenceQueue;
         const response = await markArticleUnread(id);
         this.updateArticleStatusLocal(response.data);
         this.overviewStore.decreaseReadCount(response.data);
@@ -273,8 +286,10 @@ export const articleFeedReadStateMethods = {
       });
 
       this.applyArticleSeenResponse(response.data, { updateReadCounts: status !== 'read' });
+      this.manualUnreadArticleIds.delete(pendingArticleId);
       this.pool.add(pendingArticleId);
     } catch (error) {
+      if (status === 'read') this.manualUnreadArticleIds.delete(pendingArticleId);
       console.error('Error toggling article read status:', error);
       notifyActionError('Could not update the article status. Please try again.', error);
     } finally {
@@ -334,6 +349,7 @@ export const articleFeedReadStateMethods = {
       const pendingArticleId = Number(article.id);
       const normalizedArticleId = Number.isFinite(pendingArticleId) ? pendingArticleId : article.id;
       this.updateArticleStatusLocal(article);
+      this.manualUnreadArticleIds.delete(normalizedArticleId);
       this.pool.add(normalizedArticleId);
     }
 

@@ -143,6 +143,7 @@ export const bootstrapIconNames = [
   'trophy-fill',
   'upload',
   'x',
+  'x-circle',
   'x-lg',
   'x-octagon-fill'
 ]

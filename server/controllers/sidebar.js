@@ -17,6 +17,7 @@ export const updateSettings = async (req, res) => {
   if (!userId) return res.status(401).json({ error: 'Unauthorized: missing userId' });
   const settings = req.body?.settings;
   if (!settings || Array.isArray(settings)
+    || (settings.markReadVisibleOnly !== undefined && typeof settings.markReadVisibleOnly !== 'boolean')
     || typeof settings.sortByCurrentSelection !== 'boolean'
     || typeof settings.showFeedFavicons !== 'boolean'
     || typeof settings.showTotalCount !== 'boolean'
@@ -48,6 +49,7 @@ export const updateSettings = async (req, res) => {
     sortOrder: settings.sortOrder
   };
   if (settings.sectionOrder !== undefined) values.sectionOrder = settings.sectionOrder;
+  if (settings.markReadVisibleOnly !== undefined) values.markReadVisibleOnly = settings.markReadVisibleOnly;
   try {
     await db.SidebarSetting.upsert({ userId, ...values });
     return res.status(200).json({ settings: await loadSidebarSettings(userId) });

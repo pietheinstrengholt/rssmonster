@@ -13,9 +13,9 @@ export const ARTICLE_STATUS_OPTIONS = createOptions([
     requiresAI: true
   },
   { value: 'unread', label: 'Unread', icon: 'record-circle-fill', iconClass: 'icon-unread', countKey: 'unreadCount' },
-  { value: 'favorite', label: 'Favorite', sidebarLabel: 'Favorites', icon: 'bookmark-fill', iconClass: 'icon-star', countKey: 'favoriteCount' },
+  { value: 'favorite', label: 'Saved', sidebarLabel: 'Saved', icon: 'bookmark-fill', iconClass: 'icon-star', countKey: 'favoriteCount' },
   { value: 'hot', label: 'Hot', icon: 'fire', iconClass: 'icon-hot', countKey: 'hotCount' },
-  { value: 'clicked', label: 'Clicked', icon: 'arrow-up-right-square-fill', iconClass: 'icon-clicked', countKey: 'clickedCount' },
+  { value: 'clicked', label: 'Opened originals', description: 'Articles opened on their original websites, separately from read status.', icon: 'arrow-up-right-square-fill', iconClass: 'icon-clicked', countKey: 'clickedCount' },
   { value: 'read', label: 'Read', icon: 'circle-fill', iconClass: 'icon-read', countKey: 'readCount' }
 ]);
 

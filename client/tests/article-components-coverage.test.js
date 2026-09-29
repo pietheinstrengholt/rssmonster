@@ -130,8 +130,9 @@ describe('ArticleActionsMenu', () => {
     const items = wrapper.findAll('[role="menuitem"]');
 
     expect(items.map(item => item.text())).toEqual([
-      'Unmark favorite',
-      'Mark as clicked',
+      'Remove from saved',
+      'Mark original as opened',
+      'Mark as read',
       'More like this',
       'Not Interested',
       'Mute Feed for 7 Days'
@@ -139,9 +140,9 @@ describe('ArticleActionsMenu', () => {
     expect(items[0].get('.recommendation-favorite-icon').attributes('data-icon')).toBe('bookmark-fill');
     expect(items[0].get('.recommendation-favorite-icon').attributes('data-context')).toBe('control');
     expect(items[1].get('.recommendation-clicked-icon').attributes('data-icon')).toBe('arrow-up-right-square-fill');
-    expect(items[3].get('.recommendation-negative-icon').attributes('data-icon')).toBe('hand-thumbs-down-fill');
-    expect(items[4].get('.recommendation-mute-icon').attributes('data-icon')).toBe('slash-circle');
-    expect(items[4].get('.recommendation-mute-icon').attributes('data-context')).toBe('control');
+    expect(items[4].get('.recommendation-negative-icon').attributes('data-icon')).toBe('hand-thumbs-down-fill');
+    expect(items[5].get('.recommendation-mute-icon').attributes('data-icon')).toBe('slash-circle');
+    expect(items[5].get('.recommendation-mute-icon').attributes('data-context')).toBe('control');
     expect(items.every(item => item.element.tagName === 'BUTTON')).toBe(true);
     expect(items.every(item => item.attributes('role') === 'menuitem')).toBe(true);
 
@@ -151,6 +152,7 @@ describe('ArticleActionsMenu', () => {
 
     expect(wrapper.emitted('toggle-favorite')).toEqual([[]]);
     expect(wrapper.emitted('toggle-clicked')).toEqual([[]]);
+    expect(wrapper.emitted('toggle-read-status')).toEqual([[]]);
     expect(wrapper.emitted('not-interested')).toEqual([[]]);
     expect(wrapper.emitted('more-like-this')).toEqual([[]]);
     expect(wrapper.emitted('mute-feed')).toEqual([[]]);
@@ -163,7 +165,7 @@ describe('ArticleActionsMenu', () => {
     });
 
     const favoriteItem = wrapper.get('[role="menuitem"]');
-    expect(favoriteItem.text()).toBe('Mark as favorite');
+    expect(favoriteItem.text()).toBe('Save article');
     expect(favoriteItem.get('.recommendation-favorite-icon').attributes('data-icon')).toBe('bookmark');
   });
 
@@ -173,13 +175,13 @@ describe('ArticleActionsMenu', () => {
       global: { stubs: { BootstrapIcon: BootstrapIconStub } }
     });
 
-    expect(wrapper.findAll('[role="menuitem"]')[1].text()).toBe('Unmark clicked');
+    expect(wrapper.findAll('[role="menuitem"]')[1].text()).toBe('Remove from opened originals');
   });
 
-  // Verifies reader mode adds the current read-state action alongside the state toggles.
-  it('offers a reader-only read-status toggle', async () => {
+  // Every article menu offers the current read-state action.
+  it.each([false, true])('offers a read-status toggle in reader mode %s', async isReaderMode => {
     const wrapper = mount(ArticleActionsMenu, {
-      props: { favoriteInd: 1, isReaderMode: true, status: 'read' },
+      props: { favoriteInd: 1, isReaderMode, status: 'read' },
       global: { stubs: { BootstrapIcon: BootstrapIconStub } }
     });
 
@@ -187,8 +189,8 @@ describe('ArticleActionsMenu', () => {
     let items = wrapper.findAll('[role="menuitem"]');
 
     expect(items.map(item => item.text())).toEqual([
-      'Unmark favorite',
-      'Mark as clicked',
+      'Remove from saved',
+      'Mark original as opened',
       'Mark as unread',
       'More like this',
       'Not Interested',

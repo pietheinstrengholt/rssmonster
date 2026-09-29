@@ -7,7 +7,7 @@ import { notifyActionError } from '../services/actionNotifications.js';
 // This function creates application presentation state for one user session.
 const initialUiState = () => ({
   showModal: '',
-  sidebarSettings: { showTotalCount: true, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false },
+  sidebarSettings: { markReadVisibleOnly: false, showTotalCount: true, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false },
   sidebarSettingsRevision: 0,
   openArticleLinksInNewTab: false,
   htmlXpathDraft: null,

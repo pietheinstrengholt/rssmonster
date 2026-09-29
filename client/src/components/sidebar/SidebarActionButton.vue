@@ -81,6 +81,13 @@ export default {
   text-align: left;
 }
 
+.sidebar-button-mark-read {
+  height: auto;
+  min-height: calc(var(--control-height-default) - var(--space-1));
+  padding-block: var(--space-1-5);
+  white-space: normal;
+}
+
 .sidebar-button > div {
   align-items: center;
   display: flex;

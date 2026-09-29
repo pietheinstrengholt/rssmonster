@@ -24,13 +24,13 @@ afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals(); vi.restoreAllMocks(
 
 describe('interest explanation', () => {
   it.each([
-    [{ favorites: 1 }, 'primarily from articles you favorited'],
-    [{ clicks: 1 }, 'from your outbound article clicks'],
+    [{ favorites: 1 }, 'primarily from articles you saved'],
+    [{ clicks: 1 }, 'from articles you opened on their original websites'],
     [{ deepReads: 1 }, 'from sustained reading behavior'],
-    [{ favorites: 1, clicks: 1 }, 'from your favorites and outbound clicks'],
-    [{ favorites: 1, deepReads: 1 }, 'from your favorites and sustained reading behavior'],
-    [{ clicks: 1, deepReads: 1 }, 'from outbound clicks and sustained reading behavior'],
-    [{ favorites: 1, clicks: 1, deepReads: 1 }, 'from your favorites, outbound clicks, and sustained reading behavior'],
+    [{ favorites: 1, clicks: 1 }, 'from your saved articles and opening original articles'],
+    [{ favorites: 1, deepReads: 1 }, 'from your saved articles and sustained reading behavior'],
+    [{ clicks: 1, deepReads: 1 }, 'from opening original articles and sustained reading behavior'],
+    [{ favorites: 1, clicks: 1, deepReads: 1 }, 'from your saved articles, opening original articles, and sustained reading behavior'],
     [{}, 'breakdown is not available']
   ])('uses only present positive signals %j', (evidence, text) => {
     expect(interestExplanation({ polarity: 'positive', evidence })).toContain(text);
@@ -52,7 +52,7 @@ describe('contextual inspector', () => {
     expect(wrapper.get('[role="progressbar"]').attributes('aria-valuenow')).toBe('75');
     expect(wrapper.text()).toContain('Last activity'); expect(wrapper.text()).toContain('Unknown');
     const rows = wrapper.findAll('.inspector-evidence-row');
-    expect(rows.map(row => row.text())).toEqual(['Favorites2', 'Clicks4', 'Deep reads0']);
+    expect(rows.map(row => row.text())).toEqual(['Saved2', 'Opened originals4', 'Deep reads0']);
     expect(rows.map(row => row.get('.inspector-track > div').attributes('style'))).toEqual(['width: 50%;', 'width: 100%;', 'width: 0%;']);
     expect(wrapper.text()).toContain('not their scoring weights');
     expect(wrapper.find('svg, img, .base-dialog__title-icon, footer').exists()).toBe(false);

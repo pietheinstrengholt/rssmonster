@@ -10,7 +10,7 @@ import {
 } from '../src/api/articles.js';
 import { muteFeed } from '../src/api/feeds.js';
 import { articleActionMethods } from '../src/components/articles/helpers/articleActions.js';
-import { notifyActionError } from '../src/services/actionNotifications.js';
+import { notifyActionError, notifyActionSuccess } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
@@ -26,7 +26,8 @@ vi.mock('../src/api/feeds.js', () => ({
 }));
 
 vi.mock('../src/services/actionNotifications.js', () => ({
-  notifyActionError: vi.fn()
+  notifyActionError: vi.fn(),
+  notifyActionSuccess: vi.fn()
 }));
 
 // Creates an article action context with observable store mutations and events.
@@ -166,12 +167,12 @@ describe('articleActionMethods', () => {
 
     expect(context.$emit).not.toHaveBeenCalled();
     expect(notifyActionError).toHaveBeenCalledWith(
-      'Could not update the favorite. Please try again.',
+      'Could not update saved status. Please try again.',
       error
     );
   });
 
-  // Verifies negative feedback removes the article after persistence succeeds.
+  // Negative feedback acknowledges persistence without removing the article.
   it('marks an article as not interested', async () => {
     const context = createContext();
     markNotInterested.mockResolvedValue();
@@ -180,7 +181,31 @@ describe('articleActionMethods', () => {
     await flushPromises();
 
     expect(markNotInterested).toHaveBeenCalledWith(42);
-    expect(context.$emit).toHaveBeenCalledWith('article-not-interested', { id: 42 });
+    expect(context.$emit).not.toHaveBeenCalled();
+    expect(notifyActionSuccess).toHaveBeenCalledWith('Preference saved: less like this.');
+  });
+
+  it.each([
+    ['moreLikeThis', markMoreLikeThis],
+    ['markNotInterested', markNotInterested],
+    ['muteFeedSevenDays', muteFeed]
+  ])('acknowledges %s only after success and never on failure', async (method, api) => {
+    vi.stubGlobal('confirm', vi.fn(() => true));
+    let resolve;
+    api.mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    const context = createContext();
+    context[method]();
+    expect(notifyActionSuccess).not.toHaveBeenCalled();
+    resolve({ data: { mutedUntil: '2026-10-06T12:00:00Z' } });
+    await flushPromises();
+    expect(notifyActionSuccess).toHaveBeenCalledOnce();
+    notifyActionSuccess.mockClear();
+    api.mockRejectedValueOnce(new Error('failed'));
+    context[method]();
+    await flushPromises();
+    expect(notifyActionSuccess).not.toHaveBeenCalled();
+    expect(notifyActionError).toHaveBeenCalledOnce();
+    expect(context.$emit).not.toHaveBeenCalled();
   });
 
   // Verifies negative-feedback failures remain visible and do not remove the article.
@@ -194,8 +219,9 @@ describe('articleActionMethods', () => {
 
     expect(context.$emit).not.toHaveBeenCalled();
     expect(notifyActionError).toHaveBeenCalledWith(
-      'Could not update this article. Please try again.',
-      error
+      'Could not save your preference. Try again.',
+      error,
+      expect.any(Function)
     );
   });
 
@@ -208,6 +234,7 @@ describe('articleActionMethods', () => {
     await flushPromises();
 
     expect(markMoreLikeThis).toHaveBeenCalledWith(42);
+    expect(notifyActionSuccess).toHaveBeenCalledWith('Preference saved: more like this.');
   });
 
   // Verifies positive-interest failures use the recoverable notification flow.
@@ -220,8 +247,9 @@ describe('articleActionMethods', () => {
     await flushPromises();
 
     expect(notifyActionError).toHaveBeenCalledWith(
-      'Could not update this article. Please try again.',
-      error
+      'Could not save your preference. Try again.',
+      error,
+      expect.any(Function)
     );
   });
 
@@ -242,12 +270,13 @@ describe('articleActionMethods', () => {
     vi.setSystemTime(new Date('2026-07-31T10:00:00.000Z'));
     vi.stubGlobal('confirm', vi.fn(() => true));
     const context = createContext();
-    muteFeed.mockResolvedValue();
+    muteFeed.mockResolvedValue({ data: { mutedUntil: '2026-08-08T10:00:00.000Z' } });
 
     context.muteFeedSevenDays();
     await flushPromises();
 
     expect(muteFeed).toHaveBeenCalledWith(8, '2026-08-07T10:00:00.000Z');
+    expect(notifyActionSuccess).toHaveBeenCalledWith('Source muted until 8 August.');
   });
 
   // Verifies mute failures use the recoverable notification flow.
@@ -261,8 +290,9 @@ describe('articleActionMethods', () => {
     await flushPromises();
 
     expect(notifyActionError).toHaveBeenCalledWith(
-      'Could not mute this feed. Please try again.',
-      error
+      'Could not mute this feed. Try again.',
+      error,
+      expect.any(Function)
     );
   });
 });

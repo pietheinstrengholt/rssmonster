@@ -247,10 +247,7 @@ describe('SettingsSmartFolders coordinator', () => {
     await context.save();
 
     expect(context.$emit).not.toHaveBeenCalled();
-    expect(notifyActionError).toHaveBeenCalledWith(
-      'Could not save Smart Folders. Please try again.',
-      error
-    );
+    expect(context.saveError).toContain('Smart Folders weren’t saved. Your changes are still here. Try again.');
   });
 
   it('blocks saving while the authoritative Smart Folder refresh is pending', async () => {

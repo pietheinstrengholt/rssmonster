@@ -6,7 +6,7 @@
         class="app-shell__sidebar"
       >
         <!-- Sidebar events -->
-        <app-sidebar @forceReload="forceReload" @logout="$emit('logout')"></app-sidebar>
+        <app-sidebar :mark-visible-articles-read="markVisibleArticlesRead" @forceReload="forceReload" @logout="$emit('logout')"></app-sidebar>
       </div>
       <div class="app-shell__main-frame">
         <div
@@ -77,6 +77,11 @@
       v-if="actionErrorMessage"
       :key="actionErrorId"
       :message="actionErrorMessage"
+      :success="actionNoticeSuccess"
+      :acknowledgment="actionAcknowledgment"
+      :retry-available="Boolean(actionErrorRetry)"
+      :retrying="actionErrorRetrying"
+      @retry="retryActionError"
       @dismiss="dismissActionError"
     />
 
@@ -320,7 +325,7 @@ import { useFeedRefreshStore } from './store/feedRefresh.js';
 // client/src/AppShell.vue
 
 import { applyTheme, getPreferredTheme, setThemeMode, subscribeToSystemTheme } from './services/theme.js';
-import { ACTION_ERROR_EVENT } from './services/actionNotifications.js';
+import { ACTION_ERROR_EVENT, ACTION_SUCCESS_EVENT } from './services/actionNotifications.js';
 import { CONNECTIVITY_ERROR_EVENT } from './api/client.js';
 import { useMediaQuery } from './composables/useMediaQuery.js';
 import { useShellMode } from './composables/useShellMode.js';
@@ -397,6 +402,10 @@ export default {
     return {
       actionErrorId: 0,
       actionErrorMessage: '',
+      actionNoticeSuccess: false,
+      actionAcknowledgment: '',
+      actionErrorRetry: null,
+      actionErrorRetrying: false,
       actionErrorTimer: null,
       articleListReloadActive: false,
       articleScrollRoot: null,
@@ -488,6 +497,22 @@ export default {
     // This function handles recoverable action error events.
     handleActionError(event) {
       this.showActionError(event.detail?.message);
+      this.actionErrorRetry = typeof event.detail?.retry === 'function' ? event.detail.retry : null;
+    },
+    // Success messages share the existing dismissal and timeout lifecycle.
+    handleActionSuccess(event) {
+      if (this.actionErrorMessage && !this.actionNoticeSuccess && !this.actionErrorRetrying) {
+        this.actionAcknowledgment = event.detail?.message || '';
+        clearTimeout(this.actionErrorTimer);
+        this.actionErrorTimer = setTimeout(() => {
+          this.actionAcknowledgment = '';
+          this.actionErrorTimer = null;
+        }, 6000);
+        return;
+      }
+      this.showActionError(event.detail?.message);
+      this.actionNoticeSuccess = true;
+      this.actionErrorTimer = setTimeout(() => this.dismissActionError(), 6000);
     },
     // This function handles fatal application error events.
     handleAppError(event) {
@@ -529,6 +554,7 @@ export default {
     registerGlobalListeners() {
       this.removeGlobalListeners();
       window.addEventListener(ACTION_ERROR_EVENT, this.handleActionError);
+      window.addEventListener(ACTION_SUCCESS_EVENT, this.handleActionSuccess);
       window.addEventListener(CONNECTIVITY_ERROR_EVENT, this.handleConnectivityError);
       window.addEventListener('app:error', this.handleAppError);
       window.addEventListener('offline', this.handleBrowserOffline);
@@ -539,6 +565,7 @@ export default {
     // This function removes the browser listeners owned by the app shell.
     removeGlobalListeners() {
       window.removeEventListener(ACTION_ERROR_EVENT, this.handleActionError);
+      window.removeEventListener(ACTION_SUCCESS_EVENT, this.handleActionSuccess);
       window.removeEventListener(CONNECTIVITY_ERROR_EVENT, this.handleConnectivityError);
       window.removeEventListener('app:error', this.handleAppError);
       window.removeEventListener('offline', this.handleBrowserOffline);
@@ -571,8 +598,12 @@ export default {
       clearInterval(this.overviewIntervalId);
       this.overviewIntervalId = null;
     },
-    // This function displays a temporary recoverable action error.
+    // Recoverable failures remain visible until explicitly dismissed or successfully retried.
     showActionError(message) {
+      this.actionNoticeSuccess = false;
+      this.actionAcknowledgment = '';
+      this.actionErrorRetry = null;
+      this.actionErrorRetrying = false;
       this.actionErrorMessage = message || 'Could not complete that action. Please try again.';
       this.actionErrorId += 1;
 
@@ -580,13 +611,25 @@ export default {
         clearTimeout(this.actionErrorTimer);
       }
 
-      this.actionErrorTimer = setTimeout(() => {
-        this.dismissActionError();
-      }, 6000);
+      this.actionErrorTimer = null;
+    },
+    async retryActionError() {
+      if (!this.actionErrorRetry || this.actionErrorRetrying) return;
+      const noticeId = this.actionErrorId;
+      this.actionErrorRetrying = true;
+      try {
+        const completed = await this.actionErrorRetry();
+        if (completed !== false && this.actionErrorId === noticeId) this.dismissActionError();
+      } catch (error) {
+        console.error('Error retrying action:', error);
+      } finally {
+        if (this.actionErrorId === noticeId) this.actionErrorRetrying = false;
+      }
     },
     // This function dismisses the current recoverable action error.
     dismissActionError() {
       this.actionErrorMessage = '';
+      this.actionErrorRetry = null;
 
       if (this.actionErrorTimer) {
         clearTimeout(this.actionErrorTimer);
@@ -595,6 +638,10 @@ export default {
     },
     mobileClick(value) {
       this.mobile = value;
+    },
+    // Let the active layout determine visibility at the moment the sidebar action runs.
+    async markVisibleArticlesRead() {
+      await this.$refs.articleFeed?.markVisibleArticlesRead();
     },
     completeOnboarding() {
       // Mark onboarding as complete and refresh overview

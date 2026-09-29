@@ -6,7 +6,7 @@
       title="Your evolving interests"
       title-id="islands-title"
     >
-      Interest islands capture the interests your reading, favorites, and clicks keep reinforcing. Review the interests you have developed
+      Interest islands capture the interests your reading, saved articles, and opened originals keep reinforcing. Review the interests you have developed
       and the behavioral evidence behind them.
     </SettingsPageIntro>
 
@@ -45,7 +45,7 @@
     <section v-else-if="!interests.length" class="interests-empty">
       <template v-if="summary?.total === 0">
         <h2>No interests learned yet</h2>
-        <p>RSSMonster learns from favorites, feedback, outbound clicks, and meaningful reading behavior. Your interests will appear here as you use the reader.</p>
+        <p>RSSMonster learns from saved articles, feedback, opened originals, and meaningful reading behavior. Your interests will appear here as you use the reader.</p>
       </template>
       <template v-else><h2>No matching interests</h2><p>Try another search or filter.</p></template>
     </section>

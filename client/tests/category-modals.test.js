@@ -4,7 +4,6 @@ import { flushPromises, mount } from '@vue/test-utils';
 import NewCategory from '../src/components/dialogs/categories/NewCategory.vue';
 import UpdateCategory from '../src/components/dialogs/categories/UpdateCategory.vue';
 import { createCategory, updateCategory } from '../src/api/categories';
-import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/categories', () => ({
@@ -193,10 +192,7 @@ describe('NewCategory', () => {
 
     expect(store.overviewStore.addCategory).not.toHaveBeenCalled();
     expect(store.uiStore.setShowModal).not.toHaveBeenCalled();
-    expect(notifyActionError).toHaveBeenCalledWith(
-      'Could not create this category. Please try again.',
-      error
-    );
+    expect(wrapper.get('[role="alert"]').text()).toContain('Category wasn’t added. Your details are still here. Try again.');
   });
 });
 
@@ -300,10 +296,7 @@ describe('UpdateCategory', () => {
 
     expect(store.overviewStore.updateCategory).not.toHaveBeenCalled();
     expect(store.uiStore.setShowModal).not.toHaveBeenCalled();
-    expect(notifyActionError).toHaveBeenCalledWith(
-      'Could not save this category. Please try again.',
-      error
-    );
+    expect(wrapper.get('[role="alert"]').text()).toContain('Category wasn’t saved. Your changes are still here. Try again.');
   });
 
   // Verifies whitespace-only edits cannot be submitted.

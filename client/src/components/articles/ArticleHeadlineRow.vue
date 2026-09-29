@@ -45,7 +45,7 @@
     </div>
     <div class="article-list-actions">
       <span class="article-list-time">{{ formatDate(publishedAt) }}</span>
-      <ArticleActionsMenu show-read-status :status="status" @toggle-read-status="$emit('toggle-read-status')" :clickedAmount="clickedAmount" :clickPending="clickPending" :favoriteInd="favoriteInd" :favoritePending="favoritePending" @toggle-clicked="$emit('toggle-clicked')" @toggle-favorite="$emit('toggle-favorite')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" />
+      <ArticleActionsMenu :status="status" @toggle-read-status="$emit('toggle-read-status')" :clickedAmount="clickedAmount" :clickPending="clickPending" :favoriteInd="favoriteInd" :favoritePending="favoritePending" @toggle-clicked="$emit('toggle-clicked')" @toggle-favorite="$emit('toggle-favorite')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" />
       <button v-if="!isMobilePortrait" class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" :disabled="favoritePending" @click.stop="$emit('toggle-favorite')">
         <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
       </button>
@@ -137,7 +137,7 @@ export default {
     },
     // Returns the accessible label for the favorite toggle.
     favoriteLabel() {
-      return this.favoriteInd === 1 ? 'Unmark favorite' : 'Mark as favorite';
+      return this.favoriteInd === 1 ? 'Remove from saved' : 'Save article';
     }
   },
   methods: {

@@ -18,7 +18,7 @@
         </template>
         <template #menu="{ menuProps }">
           <div v-bind="menuProps">
-            <button v-for="option in dropdown.options" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': dropdown.selectedValue === option.value }" role="menuitem" @click="dropdownOptionClicked(dropdown.type, option.value)">{{ option.label }}</button>
+            <button v-for="option in dropdown.options" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': dropdown.selectedValue === option.value }" :title="option.description" :aria-description="option.description" role="menuitem" @click="dropdownOptionClicked(dropdown.type, option.value)">{{ option.label }}</button>
           </div>
         </template>
       </AppDropdown>

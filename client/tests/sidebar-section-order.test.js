@@ -59,7 +59,7 @@ describe('Sidebar section order', () => {
     mountSidebar(custom, true);
     expect(titles()).toEqual(['Pinned', 'Categories', 'Top tags in Unread', 'All feeds', 'Smart Folders']);
     const pinned = wrapper.get('section[aria-label="Pinned"]').element;
-    for (const label of ['Add new feed', 'Refresh feeds', 'Mark as read']) {
+    for (const label of ['Add new feed', 'Refresh feeds', 'Mark selection read']) {
       expect(button(label).element.compareDocumentPosition(pinned) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     }
     const last = wrapper.findAllComponents(SidebarSectionTitle).at(-1).element;
@@ -113,7 +113,7 @@ describe('Sidebar section order', () => {
     expect(wrapper.get('[id="101"]').attributes('aria-current')).toBe('page');
     selection.currentSelection.status = 'favorite';
     await flushPromises();
-    expect(titles()[1]).toBe('Top tags in Favorites');
+    expect(titles()[1]).toBe('Top tags in Saved');
     expect(wrapper.get('[id="101"]').text()).toContain('2/9');
     ui.setSidebarSettings({ ...ui.sidebarSettings, showTotalCount: false });
     await flushPromises();

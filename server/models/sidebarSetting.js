@@ -3,6 +3,7 @@ import { DataTypes } from 'sequelize';
 export default sequelize => sequelize.define('SidebarSetting', {
   id: { type: DataTypes.INTEGER, autoIncrement: true, allowNull: false, primaryKey: true },
   userId: { type: DataTypes.INTEGER, allowNull: false },
+  markReadVisibleOnly: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   showFeedFavicons: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
   showTotalCount: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
   automaticallyHideInactiveFeeds: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },

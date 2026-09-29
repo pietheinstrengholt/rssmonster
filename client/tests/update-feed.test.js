@@ -349,10 +349,7 @@ describe('UpdateFeed', () => {
     await context.updateFeed();
 
     expect(context.uiStore.setShowModal).not.toHaveBeenCalled();
-    expect(notifyActionError).toHaveBeenCalledWith(
-      'Could not save this feed. Please try again.',
-      error
-    );
+    expect(context.saveError).toContain('Feed wasn’t saved. Your changes are still here. Try again.');
   });
 
   // Verifies an in-flight update blocks deletion, rediscovery, and duplicate updates.

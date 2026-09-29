@@ -247,7 +247,7 @@ describe('ArticleFeed actions', () => {
     expect(context.articles[0].favoriteInd).toBe(0);
     expect(context.overviewStore.applyFavoriteDelta).not.toHaveBeenCalled();
     expect(notifyActionError).toHaveBeenCalledWith(
-      'Could not update the favorite. Please try again.',
+      'Could not update saved status. Please try again.',
       error
     );
   });
@@ -347,6 +347,18 @@ describe('ArticleFeed actions', () => {
     expect(context.overviewStore.fetchSmartFolders).toHaveBeenCalledOnce();
     expect(context.selectionStore.setSmartFolder).toHaveBeenCalledWith(folder);
     expect(context.showSmartFoldersOverview).toBe(false);
+  });
+
+  it.each(['unmatched phrase', 'unread:true title:Science'])('clears search %s while preserving the selection', query => {
+    const context = createContext();
+    context.selectionStore.setCurrentSelection({ status: 'unread', search: query, feedId: 12, tag: 'science' });
+
+    context.clearSearch();
+
+    expect(context.selectionStore.currentSelection).toMatchObject({
+      status: 'unread', search: null, feedId: 12, tag: 'science'
+    });
+    expect(context.uiStore.setSearchQuery).toHaveBeenCalledWith('');
   });
 
   // Verifies local response helpers update only matching articles and emit refresh actions.

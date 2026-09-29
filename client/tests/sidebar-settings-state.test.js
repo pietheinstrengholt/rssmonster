@@ -9,8 +9,8 @@ vi.mock('../src/api/settings.js', () => ({
   saveViewMode: vi.fn(),
   saveThemeMode: vi.fn()
 }));
-const defaults = { showTotalCount: true, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false };
-const saved = { sectionOrder: ['pinned', 'categories', 'smart-folders', 'all-feeds', 'top-tags'], showTotalCount: false, declutterCounts: false, hideZeroCountItems: true, automaticallyHideInactiveFeeds: true, inactiveFeedDays: 60, sortOrder: 'name', showFeedFavicons: false, sortByCurrentSelection: true };
+const defaults = { markReadVisibleOnly: false, showTotalCount: true, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false };
+const saved = { sectionOrder: ['pinned', 'categories', 'smart-folders', 'all-feeds', 'top-tags'], markReadVisibleOnly: false, showTotalCount: false, declutterCounts: false, hideZeroCountItems: true, automaticallyHideInactiveFeeds: true, inactiveFeedDays: 60, sortOrder: 'name', showFeedFavicons: false, sortByCurrentSelection: true };
 
 beforeEach(() => {
   setActivePinia(createPinia());

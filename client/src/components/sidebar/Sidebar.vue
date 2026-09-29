@@ -28,7 +28,8 @@
 
       <SidebarActionButton
         icon="check-square-fill"
-        label="Mark as read"
+        :label="uiStore.sidebarSettings.markReadVisibleOnly ? 'Mark all visible as read' : 'Mark selection read'"
+        :title="uiStore.sidebarSettings.markReadVisibleOnly ? 'Mark only articles currently on screen as read' : 'Mark all articles matching the current selection as read, including unloaded articles'"
         variant="sidebar-button sidebar-button-mark-read"
         :loading="markingAsRead"
         @select="markAsRead(selectionStore.currentSelection)"
@@ -121,6 +122,7 @@
           :icon="filter.icon"
           :icon-class="filter.iconClass"
           :title="filter.sidebarLabel || filter.label"
+          :description="filter.description"
           :count="getStatusCount(filter.value)"
           :selected="selectionStore.currentSelection.status === filter.value && selectionStore.currentSelection.smartFolderId === null"
           row-class="sidebar-status-item"
@@ -484,6 +486,9 @@ export default {
     SidebarNavItem,
     SidebarSectionTitle
   },
+  props: {
+    markVisibleArticlesRead: { type: Function, default: null }
+  },
   emits: ['forceReload', 'logout'],
   // This initializes component-owned sidebar activity state.
   data() {
@@ -687,9 +692,14 @@ export default {
 
     // This function marks articles in the current selection as read.
     async markAsRead(currentSelection) {
+      if (this.markingAsRead) return;
       this.markingAsRead = true;
 
       try {
+        if (this.uiStore.sidebarSettings.markReadVisibleOnly) {
+          await this.markVisibleArticlesRead?.();
+          return;
+        }
         await markAllAsRead(currentSelection);
         if (
           currentSelection.smartFolderId !== null &&

@@ -266,7 +266,10 @@ describe('Options API sidebar contracts', () => {
     expect(wrapper.get('.sidebar-smart-folders').text()).toContain('Research');
     expect(wrapper.get('.sidebar-tags').text()).not.toContain('Empty');
     expect(wrapper.get('.sidebar-tags').text()).toContain('Javascript');
-    expect(wrapper.get('.sidebar-status-filters').text()).toContain('Clicked0');
+    expect(wrapper.get('.sidebar-status-filters').text()).toContain('Opened originals0');
+    const openedOriginals = wrapper.findAll('.sidebar-status-filters button').find(button => button.text().includes('Opened originals'));
+    expect(openedOriginals.attributes('title')).toBe('Articles opened on their original websites, separately from read status.');
+    expect(openedOriginals.attributes('aria-description')).toBe(openedOriginals.attributes('title'));
 
     category.feeds[0].unreadCount = 0;
     await wrapper.vm.$nextTick();
@@ -664,7 +667,7 @@ describe('Options API sidebar contracts', () => {
     expect(shortcut.text()).toContain(kind === 'feed' ? item.feedName : item.name);
     expect(wrapper.get(`[id="${item.id}"]`).text()).toContain(kind === 'feed' ? item.feedName : item.name);
     expect(section.findAll('button:not([aria-haspopup])')).toHaveLength(1);
-    const action = wrapper.findAll('button').find(button => button.text() === 'Mark as read');
+    const action = wrapper.findAll('button').find(button => button.text() === 'Mark selection read');
     expect(action.element.compareDocumentPosition(section.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(section.element.compareDocumentPosition(wrapper.get('.sidebar-smart-folders').element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     item.pinned = false;

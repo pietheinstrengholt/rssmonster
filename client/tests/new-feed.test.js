@@ -3,7 +3,6 @@ import { flushPromises, mount } from '@vue/test-utils';
 
 import NewFeed from '../src/components/dialogs/feeds/NewFeed.vue';
 import { createFeed, validateFeed } from '../src/api/feeds';
-import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/feeds', () => ({
@@ -610,9 +609,6 @@ describe('NewFeed', () => {
     await wrapper.vm.newFeed();
 
     expect(store.overviewStore.addFeed).not.toHaveBeenCalled();
-    expect(notifyActionError).toHaveBeenCalledWith(
-      'Could not add this feed. Please try again.',
-      error
-    );
+    expect(wrapper.get('[role="alert"]').text()).toContain('Feed wasn’t added. Your details are still here. Try again.');
   });
 });

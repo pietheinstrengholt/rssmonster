@@ -59,9 +59,12 @@
         v-if="isCollectionEmpty"
         :current-status="currentSelection"
         :selected-tag="selectedTag"
+        :search-query="selectionStore.currentSelection.smartFolderId === null ? selectionStore.currentSelection.search : null"
+        :showing-new-only="collectionProgress.showingNewOnly"
         :refresh-progress="feedRefreshStore.progress"
         :show-refresh-progress="showFeedRefreshProgress"
         @clear-filters="$emit('clear-filters')"
+        @clear-search="$emit('clear-search')"
         @clear-tag="$emit('clear-tag')"
         @refresh-feeds="$emit('refresh-feeds')"
         @open-smart-folders="$emit('open-smart-folders')"
@@ -130,6 +133,7 @@ export default {
     'shortcut-toggle-favorite',
     'flush-pool',
     'clear-filters',
+    'clear-search',
     'clear-tag',
     'refresh-feeds',
     'open-smart-folders',

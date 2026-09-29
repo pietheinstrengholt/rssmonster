@@ -40,8 +40,8 @@
             v-model="category.clusteringBehavior"
             :disabled="isPending"
         />
-
         <template #footer>
+            <InlineActionError v-if="saveError" :message="saveError" :busy="isPending" @retry="saveCategory" />
             <button type="button" class="app-button app-button--secondary base-dialog__button base-dialog__button--secondary" :disabled="isPending" @click="closeDialog">
                 Close
             </button>
@@ -53,6 +53,7 @@
 </template>
 
 <script>
+import InlineActionError from '../../shared/InlineActionError.vue';
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../../store/selection.js';
 import { useOverviewStore } from '../../../store/overview.js';
@@ -66,11 +67,11 @@ import {
 } from './categoryIconOptions.js';
 import { updateCategory } from '../../../api/categories';
 import helper from '../../../services/helper.js';
-import { notifyActionError } from '../../../services/actionNotifications.js';
 
 export default {
     name: 'UpdateCategory',
     components: {
+        InlineActionError,
         BaseDialog,
         CategoryIconPicker,
         CategoryClusteringSelect
@@ -78,6 +79,7 @@ export default {
     // This function creates cloned edit state and duplicate-save protection.
     data() {
         return {
+            saveError: '',
             category: {},
             originalName: '',
             originalPinned: false,
@@ -141,10 +143,11 @@ export default {
                     { ...result.data, iconName: this.category.iconName }
                 );
 
+                this.saveError = '';
                 this.uiStore.setShowModal('');
             } catch (error) {
                 console.error(`Error updating category ${this.selectionStore.currentSelection.categoryId}:`, error);
-                notifyActionError('Could not save this category. Please try again.', error);
+                this.saveError = 'Category wasn’t saved. Your changes are still here. Try again.';
             } finally {
                 this.isPending = false;
             }

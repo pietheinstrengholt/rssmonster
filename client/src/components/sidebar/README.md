@@ -18,9 +18,10 @@ The top of the sidebar displays the RSSMonster logo and name, followed by three 
 
 - **Refresh feeds** asks the application feed-refresh store to start a feed crawl. While it runs, the sidebar projects shared live progress, including the current feed, processed feeds, new articles, errors, and recent status messages. A standard refresh is used if live progress is unavailable. Completing the refresh reloads the overview and article list even if the Sidebar is not mounted.
 - **Add new feed** opens the feed-creation flow.
-- **Mark as read** marks all articles covered by the current selection as read and then reloads the overview and article list.
+- **Mark selection read** is the default and marks all matching articles, including unloaded articles, before reloading the overview and article list.
+- Enabling **Mark only visible articles as read** in Sidebar configuration changes that same button to **Mark all visible as read**. It marks only on-screen article cards, respecting the viewport and enclosing scroll panes. Reader includes visible list items and the open article; supplemental recommendations remain outside the collection bulk action. This mode updates article state and counts without reloading the list or marking hidden Event members.
 
-These actions operate independently of scrolling and remain part of the sidebar's global control area.
+These actions remain part of the sidebar's global control area. The read-scope preference is saved per user as `markReadVisibleOnly`, defaults to false for existing and new users, and requires migration `20260929000000-add-sidebar-mark-read-scope.mjs`.
 
 ### Smart folders
 

@@ -6,7 +6,7 @@ import {
   updateClickedStatus
 } from '../../../api/articles.js';
 import { muteFeed } from '../../../api/feeds.js';
-import { notifyActionError } from '../../../services/actionNotifications.js';
+import { notifyActionError, notifyActionSuccess } from '../../../services/actionNotifications.js';
 
 // Groups API-backed actions initiated from an article card.
 export const articleActionMethods = {
@@ -52,7 +52,7 @@ export const articleActionMethods = {
       });
     } catch (error) {
       console.error(`Error updating clicked state for article ${this.id}:`, error);
-      notifyActionError('Could not update the clicked status. Please try again.', error);
+      notifyActionError('Could not update opened-original status. Please try again.', error);
     } finally {
       this.clickMutationPending = false;
     }
@@ -90,7 +90,7 @@ export const articleActionMethods = {
       });
     } catch (error) {
       console.error(`Error updating favorite state for article ${this.id}:`, error);
-      notifyActionError('Could not update the favorite. Please try again.', error);
+      notifyActionError('Could not update saved status. Please try again.', error);
     } finally {
       this.favoriteMutationPending = false;
     }
@@ -99,22 +99,25 @@ export const articleActionMethods = {
   // Marks the article as not interesting.
   markNotInterested() {
     // Mark article with negativeInd flag
-    markNotInterested(this.id)
+    return markNotInterested(this.id)
     .then(() => {
-      this.$emit('article-not-interested', { id: this.id });
+      notifyActionSuccess('Preference saved: less like this.');
     })
     .catch(error => {
       console.error(`Error marking article ${this.id} as not interested:`, error);
-      notifyActionError('Could not update this article. Please try again.', error);
+      notifyActionError('Could not save your preference. Try again.', error, () => this.markNotInterested());
     });
   },
 
   // Marks the article as similar to the user's interests.
   moreLikeThis() {
-    markMoreLikeThis(this.id)
+    return markMoreLikeThis(this.id)
+    .then(() => {
+      notifyActionSuccess('Preference saved: more like this.');
+    })
     .catch(error => {
       console.error(`Error marking article ${this.id} as more like this:`, error);
-      notifyActionError('Could not update this article. Please try again.', error);
+      notifyActionError('Could not save your preference. Try again.', error, () => this.moreLikeThis());
     });
   },
 
@@ -124,11 +127,16 @@ export const articleActionMethods = {
       const mutedUntil = new Date();
       mutedUntil.setDate(mutedUntil.getDate() + 7);
 
-      muteFeed(this.feedId, mutedUntil.toISOString())
+      return muteFeed(this.feedId, mutedUntil.toISOString())
+      .then(({ data }) => {
+        const until = new Date(data.mutedUntil).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+        notifyActionSuccess(`Source muted until ${until}.`);
+      })
       .catch(error => {
         console.error(`Error muting feed ${this.feedId}:`, error);
-        notifyActionError('Could not mute this feed. Please try again.', error);
+        notifyActionError('Could not mute this feed. Try again.', error, () => this.muteFeedSevenDays());
       });
     }
+    return false;
   }
 };

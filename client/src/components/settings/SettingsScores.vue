@@ -86,8 +86,9 @@
       </div>
     </section>
 
+    <InlineActionError v-if="saveError" :message="saveError" :busy="saving" @retry="save" />
     <div class="settings-action-footer">
-      <button class="app-button app-button--primary scores-save-button" type="button" @click="save">
+      <button class="app-button app-button--primary scores-save-button" type="button" :disabled="saving" @click="save">
         Save Changes
       </button>
     </div>
@@ -322,18 +323,21 @@
 </style>
 
 <script>
+import InlineActionError from '../shared/InlineActionError.vue';
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { saveSettings } from '../../api/settings';
-import { notifyActionError } from '../../services/actionNotifications.js';
 
 export default {
+  components: { InlineActionError },
   computed: {
     ...mapStores(useSelectionStore)
   },
   emits: ['close', 'saved', 'forceReload'],
   data() {
     return {
+        saveError: '',
+        saving: false,
         advertisementScore: 0,
         sentimentScore: 0,
         qualityScore: 0,
@@ -401,6 +405,8 @@ export default {
       Object.assign(this, this.defaultScores);
     },
     async save() {
+      if (this.saving) return;
+      this.saving = true;
       try {
         await saveSettings({
             minAdvertisementScore: this.advertisementScore,
@@ -411,11 +417,14 @@ export default {
         this.selectionStore.setMinAdvertisementScore(this.advertisementScore);
         this.selectionStore.setMinSentimentScore(this.sentimentScore);
         this.selectionStore.setMinQualityScore(this.qualityScore);
+        this.saveError = '';
         this.$emit('forceReload');
         this.$emit('close');
       } catch (error) {
           console.error('Error saving article score settings:', error);
-          notifyActionError('Could not save score settings. Please try again.', error);
+          this.saveError = 'Score settings weren’t saved. Your changes are still here. Try again.';
+      } finally {
+        this.saving = false;
       }
     }
   }

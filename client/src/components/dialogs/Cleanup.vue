@@ -6,7 +6,7 @@
         <BootstrapIcon icon="info-circle" aria-hidden="true" />
         <div>
           <strong>This will permanently delete articles that match the criteria below.</strong>
-          <p>Favorited, unread or clicked articles can be excluded based on your settings.</p>
+          <p>Saved articles, unread articles, and opened originals can be excluded based on your settings.</p>
         </div>
       </div>
       <p v-if="loading" role="status">Loading archiving settings…</p>
@@ -91,8 +91,8 @@ export default {
       message: '',
       protectionOptions: [
         { key: 'neverDeleteUnread', label: 'Never delete unread articles', help: 'Keep all articles that are still unread.' },
-        { key: 'neverDeleteFavorites', label: 'Never delete favorited articles', help: 'Keep all articles you have marked as favorite.' },
-        { key: 'neverDeleteClicked', label: 'Never delete clicked articles', help: 'Keep articles with recorded outbound link clicks.' }
+        { key: 'neverDeleteFavorites', label: 'Never delete saved articles', help: 'Keep all articles you have saved.' },
+        { key: 'neverDeleteClicked', label: 'Never delete opened originals', help: 'Keep articles whose original websites you have opened.' }
       ],
       countLimits: [
         { key: 'maximumArticlesPerFeed', label: 'Maximum number of articles to keep per feed', help: 'Keep at most this many articles per feed, subject to protections.', max: 1000000, maximumLabel: '1,000,000' },

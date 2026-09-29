@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AppShell from '../src/AppShell.vue';
 import { CONNECTIVITY_ERROR_EVENT } from '../src/api/client.js';
-import { ACTION_ERROR_EVENT } from '../src/services/actionNotifications.js';
+import { ACTION_ERROR_EVENT, ACTION_SUCCESS_EVENT, notifyActionSuccess } from '../src/services/actionNotifications.js';
 import { SHELL_MODE } from '../src/config/responsiveLayout.js';
 
 // This function creates the minimal context needed by AppShell lifecycle methods.
@@ -9,6 +9,7 @@ const createLifecycleContext = () => {
   const context = {
     actionErrorTimer: null,
     handleActionError: vi.fn(),
+    handleActionSuccess: vi.fn(),
     handleAppError: vi.fn(),
     handleBrowserOffline: vi.fn(),
     handleBrowserOnline: vi.fn(),
@@ -220,6 +221,8 @@ describe('AppShell lifecycle', () => {
     window.dispatchEvent(new CustomEvent(CONNECTIVITY_ERROR_EVENT));
 
     expect(context.handleActionError).toHaveBeenCalledOnce();
+    notifyActionSuccess('Preference saved');
+    expect(context.handleActionSuccess).toHaveBeenCalledOnce();
     expect(context.handleAppError).toHaveBeenCalledOnce();
     expect(context.handleBrowserOffline).toHaveBeenCalledOnce();
     expect(context.handleBrowserOnline).toHaveBeenCalledOnce();
@@ -243,6 +246,7 @@ describe('AppShell lifecycle', () => {
       ACTION_ERROR_EVENT,
       context.handleActionError
     );
+    expect(removeEventListenerSpy).toHaveBeenCalledWith(ACTION_SUCCESS_EVENT, context.handleActionSuccess);
     expect(removeEventListenerSpy).toHaveBeenCalledWith('app:error', context.handleAppError);
     expect(removeEventListenerSpy).toHaveBeenCalledWith(
       CONNECTIVITY_ERROR_EVENT,
@@ -263,7 +267,51 @@ describe('AppShell lifecycle', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('replaces and automatically dismisses recoverable action notices', () => {
+  it('uses the success presentation only until the next error', () => {
+    const context = { actionErrorId: 0, actionErrorTimer: null };
+    context.showActionError = message => AppShell.methods.showActionError.call(context, message);
+    context.dismissActionError = () => AppShell.methods.dismissActionError.call(context);
+    AppShell.methods.handleActionSuccess.call(context, { detail: { message: 'Preference saved' } });
+    expect(context.actionErrorMessage).toBe('Preference saved');
+    expect(context.actionNoticeSuccess).toBe(true);
+    context.showActionError('Could not save');
+    expect(context.actionNoticeSuccess).toBe(false);
+    vi.advanceTimersByTime(60000);
+    expect(context.actionErrorMessage).toBe('Could not save');
+    context.dismissActionError();
+    expect(context.actionErrorMessage).toBe('');
+  });
+
+  it('keeps failures during retry, blocks duplicate retries, and clears successful retries', async () => {
+    const context = { actionErrorId: 0, actionErrorTimer: null };
+    context.showActionError = message => AppShell.methods.showActionError.call(context, message);
+    context.dismissActionError = () => AppShell.methods.dismissActionError.call(context);
+    let finish;
+    const retry = vi.fn(() => new Promise(resolve => { finish = resolve; }));
+    AppShell.methods.handleActionError.call(context, { detail: { message: 'Save failed', retry } });
+    const pending = AppShell.methods.retryActionError.call(context);
+    await AppShell.methods.retryActionError.call(context);
+    expect(retry).toHaveBeenCalledOnce();
+    expect(context.actionErrorMessage).toBe('Save failed');
+    expect(context.actionErrorRetrying).toBe(true);
+    finish();
+    await pending;
+    expect(context.actionErrorMessage).toBe('');
+    expect(context.actionErrorRetrying).toBe(false);
+  });
+
+  it('acknowledges unrelated successes without erasing an unresolved failure', () => {
+    const context = { actionErrorMessage: 'Save failed', actionNoticeSuccess: false, showActionError: vi.fn() };
+    AppShell.methods.handleActionSuccess.call(context, { detail: { message: 'Something else saved' } });
+    expect(context.showActionError).not.toHaveBeenCalled();
+    expect(context.actionErrorMessage).toBe('Save failed');
+    expect(context.actionAcknowledgment).toBe('Something else saved');
+    vi.advanceTimersByTime(6000);
+    expect(context.actionAcknowledgment).toBe('');
+    expect(context.actionErrorMessage).toBe('Save failed');
+  });
+
+  it('keeps recoverable failures visible until dismissal', () => {
     const context = {
       actionErrorId: 0,
       actionErrorMessage: '',
@@ -273,16 +321,15 @@ describe('AppShell lifecycle', () => {
     context.dismissActionError = () => AppShell.methods.dismissActionError.call(context);
 
     AppShell.methods.showActionError.call(context, 'First failure');
-    const firstTimer = context.actionErrorTimer;
     AppShell.methods.showActionError.call(context, 'Latest failure');
 
     expect(context.actionErrorMessage).toBe('Latest failure');
     expect(context.actionErrorId).toBe(2);
-    expect(context.actionErrorTimer).not.toBe(firstTimer);
-    expect(vi.getTimerCount()).toBe(1);
+    expect(vi.getTimerCount()).toBe(0);
 
-    vi.advanceTimersByTime(6000);
-
+    vi.advanceTimersByTime(60000);
+    expect(context.actionErrorMessage).toBe('Latest failure');
+    context.dismissActionError();
     expect(context.actionErrorMessage).toBe('');
     expect(context.actionErrorTimer).toBeNull();
   });

@@ -1,11 +1,15 @@
 <template>
-  <aside class="action-error-notice" role="alert" aria-atomic="true">
-    <BootstrapIcon class="action-error-notice__icon" icon="exclamation-circle-fill" aria-hidden="true" />
-    <p>{{ message }}</p>
+  <aside class="action-error-notice" :class="{ 'action-error-notice--success': success }" :role="success ? 'status' : 'alert'" aria-atomic="true">
+    <BootstrapIcon class="action-error-notice__icon" :icon="success ? 'check-circle-fill' : 'exclamation-circle-fill'" aria-hidden="true" />
+    <div class="action-error-notice__messages">
+      <p>{{ message }}</p>
+      <p v-if="acknowledgment" class="action-error-notice__acknowledgment" role="status">{{ acknowledgment }}</p>
+    </div>
+    <button v-if="!success && retryAvailable" type="button" class="app-button app-button--secondary app-button--compact" :disabled="retrying" @click="$emit('retry')">{{ retrying ? 'Retrying…' : 'Retry' }}</button>
     <button
       class="action-error-notice__dismiss"
       type="button"
-      aria-label="Dismiss error"
+      :aria-label="success ? 'Dismiss notification' : 'Dismiss error'"
       @click="$emit('dismiss')"
     >
       <BootstrapIcon icon="x-lg" aria-hidden="true" />
@@ -16,8 +20,12 @@
 <script>
 export default {
   name: 'ActionErrorNotice',
-  emits: ['dismiss'],
+  emits: ['dismiss', 'retry'],
   props: {
+    acknowledgment: { type: String, default: '' },
+    retryAvailable: { type: Boolean, default: false },
+    retrying: { type: Boolean, default: false },
+    success: { type: Boolean, default: false },
     message: {
       type: String,
       required: true
@@ -51,11 +59,20 @@ export default {
   margin-top: 2px;
 }
 
-.action-error-notice p {
+.action-error-notice__messages {
   flex: 1;
+  min-width: 0;
+}
+
+.action-error-notice p {
   font-size: var(--font-size-ui-default);
   line-height: 1.4;
   margin: 0;
+}
+
+.action-error-notice .action-error-notice__acknowledgment {
+  color: var(--color-success);
+  margin-top: 8px;
 }
 
 .action-error-notice__dismiss {
@@ -89,4 +106,10 @@ export default {
   border-color: var(--border-danger);
   border-left-color: var(--border-danger-strong);
 }
+.action-error-notice--success,
+:global(:root[data-theme='dark']) .action-error-notice--success {
+  border-color: var(--border-success);
+  border-left-color: var(--border-success-strong);
+}
+.action-error-notice--success .action-error-notice__icon { color: var(--color-success); }
 </style>

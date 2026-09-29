@@ -8,7 +8,7 @@ export function resolveReadingIdleGraceMs(value = import.meta.env.VITE_READING_I
 
 // Clip the content against the browser and every enclosing scroll/clip surface,
 // including Reader's detail panel and Expanded's inset scrolling container.
-export function readingContentArea(content) {
+export function readingContentArea(content, minimumVisibleHeight = 48) {
   const rect = content.getBoundingClientRect();
   const viewport = window.visualViewport;
   let top = viewport?.offsetTop || 0;
@@ -37,7 +37,7 @@ export function readingContentArea(content) {
   }
   const visibleTop = Math.max(top, rect.top);
   const visibleBottom = Math.min(bottom, rect.bottom);
-  if (visibleBottom - visibleTop < Math.min(48, rect.height) || rect.height <= 0
+  if (visibleBottom - visibleTop < Math.min(minimumVisibleHeight, rect.height) || rect.height <= 0
     || Math.min(right, rect.right) <= Math.max(left, rect.left)) return null;
   const line = readingTop + (readingBottom - readingTop) * 0.4;
   return { top: visibleTop, bottom: visibleBottom, line,

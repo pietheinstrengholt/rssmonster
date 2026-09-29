@@ -15,7 +15,7 @@ vi.mock('../src/api/sidebar.js', () => ({
 let wrapper;
 const defaultSectionOrder = ['pinned', 'smart-folders', 'all-feeds', 'top-tags', 'categories'];
 const sectionLabels = () => wrapper.get('[aria-label="Sidebar section order"]').findAll('li').map(row => row.text());
-const defaults = { showTotalCount: true, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false };
+const defaults = { markReadVisibleOnly: false, showTotalCount: true, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false };
 const mountDialog = (options = {}) => {
   const pinia = createPinia();
   const uiStore = useUiStore(pinia);
@@ -110,17 +110,17 @@ describe('Sidebar configuration dialog', () => {
     await flushPromises();
     expect(wrapper.get('h2').text()).toBe('Sidebar configuration settings');
     const switches = wrapper.findAll('[role="switch"]');
-    expect(switches).toHaveLength(6);
+    expect(switches).toHaveLength(7);
     expect(switches[0].element.checked).toBe(false);
     await switches[0].setValue(true);
     await switches[1].setValue(false);
     expect(switches[2].element.checked).toBe(false);
     await switches[2].setValue(true);
-    expect(uiStore.sidebarSettings).toEqual({ showTotalCount: false, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false });
+    expect(uiStore.sidebarSettings).toEqual({ markReadVisibleOnly: false, showTotalCount: false, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false });
     await wrapper.get('form').trigger('submit');
     await flushPromises();
-    expect(saveSidebarSettings).toHaveBeenCalledWith({ sectionOrder: defaultSectionOrder, showTotalCount: true, declutterCounts: false, hideZeroCountItems: true, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false });
-    expect(uiStore.sidebarSettings).toEqual({ showTotalCount: true, declutterCounts: false, hideZeroCountItems: true, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false });
+    expect(saveSidebarSettings).toHaveBeenCalledWith({ sectionOrder: defaultSectionOrder, markReadVisibleOnly: false, showTotalCount: true, declutterCounts: false, hideZeroCountItems: true, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false });
+    expect(uiStore.sidebarSettings).toEqual({ markReadVisibleOnly: false, showTotalCount: true, declutterCounts: false, hideZeroCountItems: true, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false });
     expect(uiStore.showModal).toBe('');
   });
 
@@ -137,13 +137,13 @@ describe('Sidebar configuration dialog', () => {
     await wrapper.get('form').trigger('submit');
     await flushPromises();
     expect(saveSidebarSettings).toHaveBeenCalledWith(expect.objectContaining({
-      showTotalCount: false, declutterCounts: false
+      markReadVisibleOnly: false, showTotalCount: false, declutterCounts: false
     }));
   });
 
   it('disables saved decluttering without totals and allows it after totals are enabled', async () => {
     fetchSidebarSettings.mockResolvedValue({ data: { settings: {
-      ...defaults, showTotalCount: false, declutterCounts: true
+      ...defaults, markReadVisibleOnly: false, showTotalCount: false, declutterCounts: true
     } } });
     mountDialog();
     await flushPromises();
@@ -156,7 +156,7 @@ describe('Sidebar configuration dialog', () => {
     await wrapper.get('form').trigger('submit');
     await flushPromises();
     expect(saveSidebarSettings).toHaveBeenCalledWith(expect.objectContaining({
-      showTotalCount: true, declutterCounts: true
+      markReadVisibleOnly: false, showTotalCount: true, declutterCounts: true
     }));
   });
 
@@ -236,6 +236,24 @@ describe('Sidebar configuration dialog', () => {
     expect(uiStore.sidebarSettings.showFeedFavicons).toBe(false);
   });
 
+  it('persists the visible-only read scope without applying an unsaved draft', async () => {
+    const uiStore = mountDialog();
+    await flushPromises();
+    const toggle = wrapper.get('[aria-labelledby="sidebar-mark-read-visible-label"]');
+    expect(toggle.element.checked).toBe(false);
+    expect(wrapper.text()).toContain('only articles currently on screen');
+    await toggle.setValue(true);
+    expect(uiStore.sidebarSettings.markReadVisibleOnly).toBe(false);
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(uiStore.sidebarSettings.markReadVisibleOnly).toBe(true);
+    wrapper.unmount();
+    fetchSidebarSettings.mockResolvedValue({ data: { settings: { ...defaults, markReadVisibleOnly: true } } });
+    mountDialog();
+    await flushPromises();
+    expect(wrapper.get('[aria-labelledby="sidebar-mark-read-visible-label"]').element.checked).toBe(true);
+  });
+
   it('cancels without saving draft values', async () => {
     const uiStore = mountDialog();
     await flushPromises();
@@ -294,7 +312,7 @@ describe('Sidebar configuration dialog', () => {
     await wrapper.get('[role="switch"]').setValue(false);
     await wrapper.get('form').trigger('submit');
     useAuthStore().clearSession();
-    resolve({ data: { settings: { showTotalCount: false, declutterCounts: false, hideZeroCountItems: true, automaticallyHideInactiveFeeds: true, inactiveFeedDays: 60, sortOrder: 'name', showFeedFavicons: false, sortByCurrentSelection: true } } });
+    resolve({ data: { settings: { markReadVisibleOnly: false, showTotalCount: false, declutterCounts: false, hideZeroCountItems: true, automaticallyHideInactiveFeeds: true, inactiveFeedDays: 60, sortOrder: 'name', showFeedFavicons: false, sortByCurrentSelection: true } } });
     await flushPromises();
     expect(uiStore.sidebarSettings).toEqual(defaults);
   });
@@ -304,7 +322,7 @@ describe('Sidebar configuration dialog', () => {
     fetchSidebarSettings.mockImplementation(() => new Promise(done => { resolve = done; }));
     const uiStore = mountDialog();
     wrapper.unmount();
-    resolve({ data: { settings: { showTotalCount: false, declutterCounts: false, hideZeroCountItems: true, automaticallyHideInactiveFeeds: true, inactiveFeedDays: 60, sortOrder: 'name', showFeedFavicons: false, sortByCurrentSelection: true } } });
+    resolve({ data: { settings: { markReadVisibleOnly: false, showTotalCount: false, declutterCounts: false, hideZeroCountItems: true, automaticallyHideInactiveFeeds: true, inactiveFeedDays: 60, sortOrder: 'name', showFeedFavicons: false, sortByCurrentSelection: true } } });
     await flushPromises();
     expect(uiStore.sidebarSettings).toEqual(defaults);
   });

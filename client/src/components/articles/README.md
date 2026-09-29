@@ -110,7 +110,7 @@ The three-dot menu holds actions that should remain available without occupying 
 - Asking for more content like the current article.
 - Muting the feed for seven days after confirmation.
 
-Marking an article as not interesting removes it from the current rendered collection. Favorite and clicked changes are reflected in the article and in applicable collection counts. Repeated input is ignored while the same change is still being saved, preventing accidental double updates.
+Marking an article as not interesting saves negative preference feedback without removing it from the current rendered collection. More like this, Not Interested, and source muting show dismissible success notices after the API succeeds; mute notices include the confirmed end date. Favorite and clicked changes are reflected in the article and in applicable collection counts. Repeated input is ignored while the same change is still being saved, preventing accidental double updates.
 
 On mobile portrait screens, swiping an article to the right reveals a favorite action. Crossing the action threshold toggles favorite state; ordinary vertical scrolling must not trigger it. Links and controls inside the article remain independently usable.
 

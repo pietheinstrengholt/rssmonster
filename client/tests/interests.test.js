@@ -56,8 +56,8 @@ describe('Settings Islands interests', () => {
     const rows = wrapper.findAll('.interest-row');
     expect(rows[0].text()).toContain('Space exploration');
     expect(rows[0].text()).toContain('Positive');
-    expect(rows[0].text()).toContain('Favorites 2');
-    expect(rows[0].text()).toContain('Clicks 4');
+    expect(rows[0].text()).toContain('Saved 2');
+    expect(rows[0].text()).toContain('Opened originals 4');
     expect(rows[0].text()).toContain('Deep reads 1');
     expect(rows[0].text()).toContain('Active');
     expect(rows[0].get('[role="progressbar"]').attributes()).toMatchObject({ 'aria-valuenow': '75', 'aria-valuemin': '0', 'aria-valuemax': '100' });
@@ -84,7 +84,7 @@ describe('Settings Islands interests', () => {
     expect(wrapper.get('[role="status"]').text()).toContain('Loading interests');
     pending.resolve(result([], { ...summary, total: 0 })); await flushPromises();
     expect(wrapper.text()).toContain('No interests learned yet');
-    expect(wrapper.text()).toContain('RSSMonster learns from favorites, feedback, outbound clicks, and meaningful reading behavior.');
+    expect(wrapper.text()).toContain('RSSMonster learns from saved articles, feedback, opened originals, and meaningful reading behavior.');
     api.get.mockResolvedValue(result([]));
     await button(wrapper, 'Negative').trigger('click'); await flushPromises();
     expect(wrapper.text()).toContain('No matching interests');

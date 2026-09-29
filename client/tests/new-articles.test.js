@@ -42,6 +42,23 @@ beforeEach(() => {
 afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe('new unread articles', () => {
+  it.each(['Clear search', 'Clear filters'])('recovers an empty search using %s', async action => {
+    fetchArticleIds.mockResolvedValueOnce(result([]));
+    await mountFeed({}, true);
+
+    expect(wrapper.get('h2').text()).toBe('No articles match “title:Science”');
+    expect(button('Search read articles')).toBeUndefined();
+    await button(action).trigger('click');
+    await flushPromises();
+
+    expect(stores.selectionStore.currentSelection).toMatchObject({
+      status: 'unread', search: null,
+      categoryId: action === 'Clear search' ? '3' : '%',
+      feedId: action === 'Clear search' ? '4' : '%'
+    });
+    expect(wrapper.text()).not.toContain('No articles match');
+  });
+
   it('returns to all unread articles after completing the new-only list', async () => {
     await mountFeed({}, true);
     await wrapper.vm.checkForNewerArticles();

@@ -122,6 +122,24 @@ describe('mobile Headlines', () => {
     ]);
   });
 
+  it('offers a working read-state menu action in Expanded mode', async () => {
+    const stores = createFocusedStores({
+      overview: { categories: [] },
+      selection: { currentSelection: { viewMode: 'full', grouping: 'none' } }
+    });
+    const wrapper = mount(Article, {
+      props: { id: 42, title: 'An expanded article', status: 'read', feed: { feedName: 'A source' } },
+      global: { plugins: [stores.pinia] }
+    });
+    wrappers.push(wrapper);
+
+    await wrapper.get('button[aria-label="Article actions"]').trigger('click');
+    await wrapper.findAll('[role="menuitem"]')
+      .find(item => item.text() === 'Mark as unread').trigger('click');
+
+    expect(wrapper.emitted('toggle-read-status')).toEqual([[{ id: 42, status: 'read' }]]);
+  });
+
   it('retains the full headline and metadata with or without an image', async () => {
     const title = 'A long translated headline '.repeat(12);
     const publishedAt = '2026-09-16T12:00:00Z';
@@ -149,22 +167,22 @@ describe('mobile Headlines', () => {
     const wrapper = mountRow({ imageUrl });
     expect(wrapper.find('img').exists()).toBe(false);
     expect(wrapper.text()).toContain('A headline');
-    expect(wrapper.find('button[aria-label="Mark as favorite"]').exists()).toBe(false);
+    expect(wrapper.find('button[aria-label="Save article"]').exists()).toBe(false);
     expect(wrapper.get('button[aria-label="Article actions"]').exists()).toBe(true);
   });
 
   it('keeps contextual favorites in the menu without a separate row button', async () => {
     const wrapper = mountRow();
-    expect(wrapper.find('button[aria-label="Mark as favorite"]').exists()).toBe(false);
+    expect(wrapper.find('button[aria-label="Save article"]').exists()).toBe(false);
     const menu = wrapper.get('button[aria-label="Article actions"]');
     await menu.trigger('click');
-    const favorite = () => wrapper.findAll('[role="menuitem"]').find(item => /^(Mark as favorite|Unmark favorite)$/.test(item.text()));
-    expect(favorite().text()).toBe('Mark as favorite');
+    const favorite = () => wrapper.findAll('[role="menuitem"]').find(item => /^(Save article|Remove from saved)$/.test(item.text()));
+    expect(favorite().text()).toBe('Save article');
     await favorite().trigger('click');
     expect(wrapper.emitted('toggle-favorite')).toHaveLength(1);
     await wrapper.setProps({ favoriteInd: 1, favoritePending: true });
     await menu.trigger('click');
-    expect(favorite().text()).toBe('Unmark favorite');
+    expect(favorite().text()).toBe('Remove from saved');
     expect(favorite().attributes('disabled')).toBeDefined();
     expect(wrapper.text()).toContain('More like this');
     await wrapper.setProps({ favoritePending: false });
@@ -189,7 +207,7 @@ describe('mobile Headlines', () => {
       global: { plugins: [stores.pinia] }
     });
     wrappers.push(wrapper);
-    for (const label of ['Mark as favorite', 'Unmark favorite']) {
+    for (const label of ['Save article', 'Remove from saved']) {
       await wrapper.get('button[aria-label="Article actions"]').trigger('click');
       await wrapper.findAll('[role="menuitem"]').find(item => item.text() === label).trigger('click');
       await flushPromises();
@@ -214,7 +232,7 @@ describe('mobile Headlines', () => {
     const wrapper = mountRow({ isMobilePortrait: false, imageUrl, tags: [{ id: 1, name: 'OpenAI', tagType: 'rule' }] });
     expect(wrapper.get('button[aria-label="Filter articles by tag Openai"]').exists()).toBe(true);
     expect(wrapper.find('img').exists()).toBe(false);
-    const favorite = wrapper.get('button[aria-label="Mark as favorite"]');
+    const favorite = wrapper.get('button[aria-label="Save article"]');
     const menu = wrapper.get('button[aria-label="Article actions"]');
     expect(menu.element.compareDocumentPosition(favorite.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });

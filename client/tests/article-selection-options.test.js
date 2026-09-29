@@ -20,7 +20,7 @@ describe('article selection option configuration', () => {
       'briefing', 'unread', 'favorite', 'hot', 'clicked', 'read'
     ]);
     expect(ARTICLE_STATUS_OPTIONS.map(option => option.label)).toEqual([
-      'Daily briefing', 'Unread', 'Favorite', 'Hot', 'Clicked', 'Read'
+      'Daily briefing', 'Unread', 'Saved', 'Hot', 'Opened originals', 'Read'
     ]);
     expect(ARTICLE_SORT_OPTIONS.map(option => option.label)).toEqual([
       'Newest', 'Oldest', 'Top Stories', 'Recommended', 'Quality'
@@ -44,13 +44,13 @@ describe('article selection option configuration', () => {
     }))).toEqual(['unread', 'favorite', 'hot', 'clicked', 'read']);
   });
 
-  it('retains Sidebar ordering, icons, and its plural Favorites label', () => {
+  it('retains Sidebar ordering, icons, and its Saved label', () => {
     expect(optionValues(SIDEBAR_STATUS_OPTIONS)).toEqual([
       'briefing', 'unread', 'read', 'favorite', 'hot', 'clicked'
     ]);
     expect(getArticleStatusOption('favorite')).toMatchObject({
-      label: 'Favorite',
-      sidebarLabel: 'Favorites',
+      label: 'Saved',
+      sidebarLabel: 'Saved',
       icon: 'bookmark-fill',
       iconClass: 'icon-star',
       countKey: 'favoriteCount'

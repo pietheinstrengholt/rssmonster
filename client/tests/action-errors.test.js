@@ -63,6 +63,27 @@ describe('recoverable action errors', () => {
     expect(wrapper.emitted('dismiss')).toHaveLength(1);
   });
 
+  it('announces success politely and allows dismissal', async () => {
+    const wrapper = mount(ActionErrorNotice, {
+      props: { message: 'Preference saved: more like this.', success: true }
+    });
+    expect(wrapper.get('[role="status"]').text()).toContain('Preference saved: more like this.');
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    await wrapper.get('button[aria-label="Dismiss notification"]').trigger('click');
+    expect(wrapper.emitted('dismiss')).toHaveLength(1);
+    wrapper.unmount();
+  });
+
+  it('shows an acknowledgment alongside an unresolved error and its retry', () => {
+    const wrapper = mount(ActionErrorNotice, {
+      props: { message: 'Save failed', retryAvailable: true, acknowledgment: 'Preference saved' }
+    });
+    expect(wrapper.get('[role="alert"]').text()).toContain('Save failed');
+    expect(wrapper.get('[role="status"]').text()).toBe('Preference saved');
+    expect(wrapper.findAll('button').some(button => button.text() === 'Retry')).toBe(true);
+    wrapper.unmount();
+  });
+
   it('keeps offline and authentication failures in the fatal AppError flow', () => {
     const listener = vi.fn();
     window.addEventListener(ACTION_ERROR_EVENT, listener);
@@ -81,6 +102,7 @@ describe('recoverable action errors', () => {
     const notification = captureActionError();
     const context = {
       pendingReadStatusArticleIds: new Set(),
+      manualUnreadArticleIds: new Set(),
       pool: new Set(),
       updateArticleStatusLocal: vi.fn()
     };
@@ -101,8 +123,7 @@ describe('recoverable action errors', () => {
     const error = { response: { status: 500 } };
     createFeed.mockRejectedValueOnce(error);
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    const notification = captureActionError();
-    const stores = createFocusedStores({ overview: { categories: [{ id: 3, name: 'News' }] } });
+    const stores = createFocusedStores({ overview: { categories: [{ id: 3, name: 'News' }], addFeed: vi.fn() } });
     const wrapper = mount(NewFeed, { global: { plugins: [stores.pinia], stubs: { BootstrapIcon: true } } });
     await wrapper.setData({ feed: {
         feedName: 'Example',
@@ -114,10 +135,13 @@ describe('recoverable action errors', () => {
     await wrapper.findAll('button').find(button => button.text() === 'Save changes').trigger('click');
     await flushPromises();
 
-    await expect(notification).resolves.toEqual({
-      message: 'Could not add this feed. Please try again.'
-    });
+    expect(wrapper.get('[role="alert"]').text()).toContain('Feed wasn’t added. Your details are still here. Try again.');
     expect(wrapper.findAll('button').some(button => button.text() === 'Save changes')).toBe(true);
+    createFeed.mockResolvedValueOnce({ data: { feed: { id: 20, feedName: 'Example', feedType: 'rss', url: 'https://example.com/feed.xml' } } });
+    await wrapper.findAll('button').find(button => button.text() === 'Retry').trigger('click');
+    await flushPromises();
+    expect(createFeed.mock.calls.at(-1)[0]).toMatchObject({ feedName: 'Example', url: 'https://example.com/feed.xml' });
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
     expect(console.error).toHaveBeenCalledWith('Error adding feed');
     wrapper.unmount();
   });
@@ -126,7 +150,6 @@ describe('recoverable action errors', () => {
     const error = { response: { status: 500 } };
     saveActions.mockRejectedValueOnce(error);
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    const notification = captureActionError();
     const context = {
       actions: [{ name: 'Archive ads', actionType: 'discard', regularExpression: 'ad' }],
       loaded: true,
@@ -138,9 +161,7 @@ describe('recoverable action errors', () => {
 
     await SettingsActions.methods.save.call(context);
 
-    await expect(notification).resolves.toEqual({
-      message: 'Could not save article actions. Please try again.'
-    });
+    expect(context.saveError).toBe('Could not save article actions. Please try again.');
     expect(context.$emit).not.toHaveBeenCalled();
     expect(console.error).toHaveBeenCalledWith('Error saving article actions:', error);
   });
@@ -149,13 +170,12 @@ describe('recoverable action errors', () => {
     const message = 'Action 1: invalid regular expression or flags. Use a plain pattern or /pattern/flags.';
     saveActions.mockRejectedValueOnce({ response: { status: 400, data: { error: message } } });
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    const notification = captureActionError();
     const actions = [{ name: 'Invalid', actionType: 'read', regularExpression: '/[/i' }];
     const context = { actions, loaded: true, saving: false, $emit: vi.fn() };
 
     await SettingsActions.methods.save.call(context);
 
-    await expect(notification).resolves.toEqual({ message });
+    expect(context.saveError).toBe(message);
     expect(context.actions).toEqual(actions);
     expect(context.saving).toBe(false);
     expect(context.$emit).not.toHaveBeenCalled();

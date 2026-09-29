@@ -366,7 +366,7 @@ describe('Article API actions', () => {
     expect(context.favoriteMutationPending).toBe(false);
   });
 
-  it('emits the existing click and removal payloads after successful API actions', async () => {
+  it('updates clicks but keeps articles in place after negative feedback', async () => {
     markClicked.mockResolvedValue({ data: { clickedAmount: 4 } });
     markNotInterested.mockResolvedValue({});
     const context = {
@@ -386,7 +386,7 @@ describe('Article API actions', () => {
       'update-clicked',
       { id: 42, clickedAmount: 4 }
     );
-    expect(context.$emit).toHaveBeenCalledWith(
+    expect(context.$emit).not.toHaveBeenCalledWith(
       'article-not-interested',
       { id: 42 }
     );

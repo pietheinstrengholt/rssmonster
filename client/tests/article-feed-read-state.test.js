@@ -85,6 +85,79 @@ afterEach(() => {
 });
 
 describe('article feed read-state reconciliation', () => {
+  it('keeps a manually unread article unread while scrolling until the collection resets', async () => {
+    const context = createContext({ ...createArticleFeedVisibilityState(), ...articleFeedVisibilityMethods });
+    markArticleUnread.mockResolvedValue({ data: { ...context.articles[1], status: 'unread' } });
+    markArticleSeen.mockResolvedValue({ data: { id: 2, status: 'unread' } });
+
+    await context.toggleArticleReadStatus({ id: 2, status: 'read' });
+    await context.addToPool(2);
+
+    expect(context.articles[1].status).toBe('unread');
+    expect(markArticleSeen).toHaveBeenCalledWith(2, expect.objectContaining({ markRead: false }));
+    expect(context.manualUnreadArticleIds.has(2)).toBe(true);
+
+    context.resetReadTracking();
+    markArticleSeen.mockResolvedValue({ data: { id: 2, status: 'read', readArticles: [context.articles[1]] } });
+    await context.addToPool(2);
+
+    expect(markArticleSeen).toHaveBeenLastCalledWith(2, expect.objectContaining({ markRead: true }));
+    expect(context.articles[1].status).toBe('read');
+  });
+
+  it('lets an in-flight automatic read finish before saving a manual unread choice', async () => {
+    const context = createContext({ ...createArticleFeedVisibilityState(), ...articleFeedVisibilityMethods });
+    let finishAutomaticRead;
+    markArticleSeen.mockImplementation(() => new Promise(resolve => {
+      finishAutomaticRead = resolve;
+    }));
+    markArticleUnread.mockResolvedValue({ data: { ...context.articles[1], status: 'unread' } });
+
+    const scrolling = context.addToPool(2);
+    const manualUnread = context.toggleArticleReadStatus({ id: 2, status: 'read' });
+    expect(markArticleUnread).not.toHaveBeenCalled();
+
+    finishAutomaticRead({ data: { id: 2, status: 'read' } });
+    await Promise.all([scrolling, manualUnread]);
+
+    expect(markArticleUnread).toHaveBeenCalledWith(2);
+    expect(context.articles[1].status).toBe('unread');
+  });
+
+  it('keeps an unread Event sibling out of automatic grouped read transitions', async () => {
+    const context = createContext();
+    context.manualUnreadArticleIds.add(2);
+    markArticleSeen.mockResolvedValue({ data: { id: 1, status: 'read', readArticles: [context.articles[0]] } });
+
+    await context.markArticleSeen(1, 3);
+
+    expect(markArticleSeen).toHaveBeenCalledWith(1, expect.objectContaining({
+      grouping: 'none', markRead: true
+    }));
+  });
+
+  it('keeps a manually unread Event sibling unread when leaving another Minimal article', async () => {
+    const context = createContext();
+    context.selectionStore.setCurrentSelection({ viewMode: 'minimal' });
+    markArticleUnread.mockResolvedValue({ data: { ...context.articles[1], status: 'unread' } });
+    markArticleSeen.mockImplementation(async (id, { grouping }) => ({
+      data: {
+        id, status: 'read',
+        readArticles: grouping === 'event'
+          ? context.articles.map(article => ({ ...article, status: 'read' }))
+          : [{ ...context.articles.find(article => article.id === id), status: 'read' }]
+      }
+    }));
+
+    await context.toggleMinimalArticleReadStatus({ id: 2, status: 'read' });
+    await context.handleMinimalArticleOpened({ id: 1 });
+    await context.handleMinimalArticleOpened({ id: 3 });
+
+    expect(context.articles[0].status).toBe('read');
+    expect(context.articles[1].status).toBe('unread');
+    expect(context.articles[2].status).toBe('unread');
+  });
+
   it('keeps accumulated attention separate from a deliberate zero-second mark-read', async () => {
     const context = createContext({ ...createArticleFeedVisibilityState(), ...articleFeedVisibilityMethods });
     const clock = vi.spyOn(performance, 'now').mockReturnValue(20000);

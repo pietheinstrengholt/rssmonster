@@ -332,8 +332,8 @@
             </div>
       </fieldset>
     </form>
-
     <template #footer>
+      <InlineActionError v-if="saveError" :message="saveError" :busy="isBusy" @retry="updateFeed" />
       <div class="update-feed__footer">
       <button
         type="button"
@@ -367,6 +367,7 @@
 </template>
 
 <script>
+import InlineActionError from '../../shared/InlineActionError.vue';
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../../store/selection.js';
 import { useOverviewStore } from '../../../store/overview.js';
@@ -380,12 +381,14 @@ import { validateItemFilter } from '../../../services/itemFilterValidation.js';
 export default {
   name: 'UpdateFeed',
   components: {
+        InlineActionError,
     BaseDialog,
     FeedAuthentication
   },
   // This function creates editable feed state and mutually exclusive operation flags.
   data() {
     return {
+      saveError: '',
       feed: {},
       authentication: { authenticationType: null, authenticationUsername: '', authenticationPassword: '' },
       originalFeed: {}, // Store the original feed to track changes
@@ -603,10 +606,11 @@ export default {
           this.selectionStore.selectFeed(updatedFeed.id, updatedFeed.categoryId);
         }
 
+        this.saveError = '';
         this.uiStore.setShowModal('');
-      } catch (error) {
+      } catch {
         console.error('Error updating feed');
-        notifyActionError('Could not save this feed. Please try again.', error);
+        this.saveError = 'Feed wasn’t saved. Your changes are still here. Try again.';
       } finally {
         this.updating = false;
       }

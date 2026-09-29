@@ -11,6 +11,7 @@ describe('SidebarSetting', () => {
     const settings = await SidebarSetting.create({ userId: user.id });
 
     expect(await settings.reload()).toMatchObject({
+      markReadVisibleOnly: false,
       showFeedFavicons: true,
       showTotalCount: true,
       declutterCounts: true,

@@ -4,12 +4,12 @@
     :smart-folders="overviewStore.smartFolders"
     @selectSmartFolder="selectSmartFolderFromOverview"
   />
-  <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @reading-article-changing="handleReadingArticleChange" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @select-recommendation="openReaderRecommendation" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
+  <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @clear-search="clearSearch" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @reading-article-changing="handleReadingArticleChange" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @select-recommendation="openReaderRecommendation" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
     <template #before-context="{ readerMode }">
       <NewArticlesBanner v-if="selectionStore.currentSelection.status === 'unread'" :count="newerArticleCount" :loading="isLoading" :reader-mode="readerMode" @show-new="showNewArticles" @show-full="showFullUnreadList" />
     </template>
   </ArticleReaderLayout>
-  <ArticleListView v-else ref="articleLayout" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
+  <ArticleListView v-else ref="articleLayout" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @clear-search="clearSearch" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
     <template #before-context="{ readerMode }">
       <NewArticlesBanner v-if="selectionStore.currentSelection.status === 'unread'" :count="newerArticleCount" :loading="isLoading" :reader-mode="readerMode" @show-new="showNewArticles" @show-full="showFullUnreadList" />
     </template>
@@ -41,7 +41,8 @@ import {
 } from './feed/readState.js';
 import {
   createArticleFeedVisibilityState,
-  articleFeedVisibilityMethods
+  articleFeedVisibilityMethods,
+  readingContentArea
 } from './feed/visibilityTracking.js';
 import { notifyActionError } from '../../services/actionNotifications.js';
 import { isArticleKeyboardEventEligible } from '../../services/articleKeyboardCommands.js';
@@ -217,6 +218,7 @@ export default {
       return {
         hasLoadedContent: this.hasLoadedContent,
         isFlushed: this.isFlushed,
+        showingNewOnly: this.showingNewOnly,
         hasReachedEnd: hasReachedArticleCollectionEnd({
           articleCount: this.totalCount,
           distance: this.distance,
@@ -240,6 +242,7 @@ export default {
       return {
         hasLoadedContent: this.hasLoadedContent,
         isFlushed: this.isFlushed,
+        showingNewOnly: this.showingNewOnly,
         hasReachedEnd: hasReachedArticleCollectionEnd({
           articleCount: this.totalCount,
           distance: this.distance,
@@ -513,10 +516,23 @@ export default {
         this.updateFavoriteInd({ id, favoriteInd: persistedFavoriteInd });
       } catch (error) {
         console.error('Error toggling article favorite:', error);
-        notifyActionError('Could not update the favorite. Please try again.', error);
+        notifyActionError('Could not update saved status. Please try again.', error);
       } finally {
         this.pendingFavoriteArticleIds.delete(articleKey);
       }
+    },
+
+    // Explicit sidebar actions include on-screen cards, not the entire loaded page.
+    async markVisibleArticlesRead() {
+      if (this.isLoading) return;
+      const layout = this.$refs.articleLayout;
+      const visibleArticles = this.articles.filter(article => {
+        if (article.readerRecommendationInd) return false;
+        const elements = [layout?.getArticleListElement?.(article.id), this.getArticleElement(article.id)];
+        return elements.some(element => element && readingContentArea(element, 1));
+      });
+      await this.markReaderArticlesRead(visibleArticles);
+      await this.overviewStore.fetchSmartFolderCounts();
     },
 
     // Handles reader list bulk actions selected from the middle pane header.
@@ -649,6 +665,11 @@ export default {
       this.showSmartFoldersOverview = false;
       this.uiStore.setSearchQuery('');
       this.selectionStore.resetArticleFilters();
+    },
+
+    clearSearch() {
+      this.uiStore.setSearchQuery('');
+      this.selectionStore.setCurrentSelection({ search: null });
     },
 
     // Clears only the selected tag while preserving the active article state.

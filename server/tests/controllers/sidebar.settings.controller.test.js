@@ -11,7 +11,7 @@ const createUser = () => db.User.create({
 });
 const authorization = user => `Bearer ${jwt.sign({ userId: user.id, username: user.username }, getJwtSecret())}`;
 const sectionOrder = ['pinned', 'smart-folders', 'all-feeds', 'top-tags', 'categories'];
-const defaults = { sectionOrder, showTotalCount: true, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false };
+const defaults = { sectionOrder, markReadVisibleOnly: false, showTotalCount: true, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false };
 
 describe('Sidebar settings API', () => {
   beforeAll(async () => { app = (await import('../../app.js')).default; }, 50_000);
@@ -29,8 +29,8 @@ describe('Sidebar settings API', () => {
     const other = await createUser();
     await db.SidebarSetting.create({ userId: other.id, sectionOrder });
     for (const settings of [
-      { showTotalCount: false, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false },
-      { showTotalCount: true, declutterCounts: false, hideZeroCountItems: true, automaticallyHideInactiveFeeds: true, inactiveFeedDays: 60, sortOrder: 'name', showFeedFavicons: false, sortByCurrentSelection: true }
+      { markReadVisibleOnly: false, showTotalCount: false, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false },
+      { markReadVisibleOnly: true, showTotalCount: true, declutterCounts: false, hideZeroCountItems: true, automaticallyHideInactiveFeeds: true, inactiveFeedDays: 60, sortOrder: 'name', showFeedFavicons: false, sortByCurrentSelection: true }
     ]) {
       const response = await request(app).put('/api/sidebar/settings')
         .set('Authorization', authorization(user)).send({ settings: { ...settings, userId: other.id } });
@@ -47,10 +47,11 @@ describe('Sidebar settings API', () => {
   });
 
   it.each([null, [], {}, { showTotalCount: 'false', declutterCounts: true },
-    { showTotalCount: true, declutterCounts: 0 },
-    { showTotalCount: true, declutterCounts: true },
+    { markReadVisibleOnly: false, showTotalCount: true, declutterCounts: 0 },
+    { markReadVisibleOnly: false, showTotalCount: true, declutterCounts: true },
     ...[undefined, null, 'false', 0].map(sortByCurrentSelection => ({ ...defaults, sortByCurrentSelection })),
     ...[undefined, null, 'false', 0].map(showFeedFavicons => ({ ...defaults, showFeedFavicons })),
+    ...[null, 'true', 0, 1].map(markReadVisibleOnly => ({ ...defaults, markReadVisibleOnly })),
     { ...defaults, hideZeroCountItems: 'true' },
     { ...defaults, hideZeroCountItems: null },
     { ...defaults, automaticallyHideInactiveFeeds: 'true' },
@@ -63,6 +64,17 @@ describe('Sidebar settings API', () => {
       .set('Authorization', authorization(user)).send({ settings });
     expect(response.status).toBe(400);
     expect(await db.SidebarSetting.count({ where: { userId: user.id } })).toBe(0);
+  });
+
+  it('preserves the read scope when an older client omits the preference', async () => {
+    const user = await createUser();
+    await db.SidebarSetting.create({ userId: user.id, markReadVisibleOnly: true });
+    const settings = { ...defaults };
+    delete settings.markReadVisibleOnly;
+    const response = await request(app).put('/api/sidebar/settings')
+      .set('Authorization', authorization(user)).send({ settings });
+    expect(response.status).toBe(200);
+    expect(response.body.settings.markReadVisibleOnly).toBe(true);
   });
 
   it.each([30, 60, 90])('stores the %i-day inactivity threshold', async inactiveFeedDays => {

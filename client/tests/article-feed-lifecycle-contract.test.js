@@ -128,6 +128,7 @@ describe('ArticleFeed collection lifecycle contract', () => {
       visibleMap: new Map([[1, true]])
     };
     context.pool.add(1);
+    context.manualUnreadArticleIds.add(1);
     context.activeMinimalArticleId = 1;
     context.pendingReadStatusArticleIds.add(1);
     context.pendingSeenArticleIds.add(1);
@@ -137,6 +138,7 @@ describe('ArticleFeed collection lifecycle contract', () => {
     articleFeedReadStateMethods.resetReadTracking.call(context);
 
     expect(context.pool).toEqual(new Set());
+    expect(context.manualUnreadArticleIds.size).toBe(0);
     expect(context.activeMinimalArticleId).toBeNull();
     expect(context.pendingReadStatusArticleIds.size).toBe(0);
     expect(context.pendingSeenArticleIds.size).toBe(0);

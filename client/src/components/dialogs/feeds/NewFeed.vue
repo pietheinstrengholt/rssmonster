@@ -139,8 +139,8 @@
 
                 </fieldset>
             </form>
-
         <template #footer>
+            <InlineActionError v-if="saveError" :message="saveError" :busy="isBusy" @retry="newFeed" />
             <button type="button" class="app-button app-button--secondary base-dialog__button base-dialog__button--secondary feed-modal-action" :disabled="isBusy" @click="closeDialog">
                 Cancel
             </button>
@@ -371,11 +371,11 @@
 </style>
 
 <script>
+import InlineActionError from '../../shared/InlineActionError.vue';
 import { mapStores } from 'pinia';
 import { useOverviewStore } from '../../../store/overview.js';
 import { useUiStore } from '../../../store/ui.js';
 import { validateFeed, createFeed } from '../../../api/feeds';
-import { notifyActionError } from '../../../services/actionNotifications.js';
 import BaseDialog from '../BaseDialog.vue';
 import FeedAuthentication from './FeedAuthentication.vue';
 
@@ -391,12 +391,14 @@ const isActionableValidationError = error => {
 export default {
     name: 'NewFeed',
     components: {
+        InlineActionError,
         BaseDialog,
         FeedAuthentication
     },
     // Initializes the feed discovery workflow state.
     data() {
         return {
+          saveError: '',
           ajaxRequest: false,
           forceAdding: false,
           saving: false,
@@ -639,10 +641,11 @@ export default {
                 this.overviewStore.addFeed(this.selectedCategory, this.feed);
 
                 //close modal
+                this.saveError = '';
                 this.uiStore.setShowModal('');
-            } catch (error) {
+            } catch {
                 console.error('Error adding feed');
-                notifyActionError('Could not add this feed. Please try again.', error);
+                this.saveError = 'Feed wasn’t added. Your details are still here. Try again.';
             } finally {
                 this.saving = false;
             }

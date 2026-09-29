@@ -146,6 +146,51 @@ describe('UnreadSelectionContext', () => {
     expect(wrapper.get('[role="status"]').text()).toContain(readerMode ? '3 new' : '3 new articles');
   });
 
+  it('keeps Reader compact while retaining date ranges and age shortcuts in its menu', async () => {
+    const stores = createStore();
+    wrapper = mount(UnreadSelectionContext, {
+      props: { articleCount: 1370, sourceCount: 36, readerMode: true },
+      global: { plugins: [stores.pinia] }
+    });
+    expect(wrapper.text()).not.toContain('Based on');
+    expect(wrapper.find('[aria-label="Article age"]').exists()).toBe(false);
+    await wrapper.get('button[aria-label="Article date range: All dates"]').trigger('click');
+    const age = wrapper.findAll('[role="menuitemradio"]').find(button => button.text().trim() === 'Last 7d');
+    await age.trigger('click');
+    expect(stores.selectionStore.ageCutoff).toBe('7d');
+    expect(wrapper.get('button[aria-label="Article date range: Last 7d"]').text()).toContain('Last 7d');
+    await wrapper.get('button[aria-label="Article date range: Last 7d"]').trigger('click');
+    expect(wrapper.findAll('[role="menuitemradio"][aria-checked="true"]')).toHaveLength(1);
+    await wrapper.findAll('[role="menuitemradio"]').find(button => button.text().includes('All dates')).trigger('click');
+    expect(stores.selectionStore.ageCutoff).toBe('all');
+    expect(stores.selectionStore.dateRange).toBe('all');
+  });
+
+  it('shows the Reader total once and reveals collection details on demand', async () => {
+    const stores = createStore();
+    wrapper = shallowMount(ArticleReaderLayout, {
+      props: {
+        articles: [{ id: 1, status: 'unread', eventId: 4, tags: [{ name: 'science' }] }], container: [1],
+        collectionSummary: { status: 'unread', unreadCount: 1370, totalCount: 1400, sourceCount: 36 },
+        collectionProgress: { hasLoadedContent: true }
+      },
+      global: { plugins: [stores.pinia] }
+    });
+    expect(wrapper.text()).toContain('Unread· 1,400 articles');
+    expect(wrapper.text()).not.toContain('36 sources');
+    const details = wrapper.findAll('button').find(button => button.text() === 'Details');
+    expect(details.attributes('aria-expanded')).toBe('false');
+    await details.trigger('click');
+    expect(details.attributes('aria-expanded')).toBe('true');
+    expect(wrapper.text()).toContain('36 sources');
+    expect(wrapper.text()).toContain('1 loaded event');
+    const tag = wrapper.findAll('button').find(button => button.text() === 'Science');
+    await tag.trigger('click');
+    expect(stores.selectionStore.setCurrentSelection).toHaveBeenCalledWith({ tag: 'science' });
+    await details.trigger('click');
+    expect(wrapper.text()).not.toContain('36 sources');
+  });
+
   it('defaults to All and exposes the selected age through aria-pressed', async () => {
     const stores = createStore();
     wrapper = mount(UnreadSelectionContext, {

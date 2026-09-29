@@ -128,7 +128,8 @@
 
         </fieldset>
 
-        <div v-if="loaded" class="settings-action-footer">
+        <InlineActionError v-if="saveError" :message="saveError" :busy="saving" @retry="save" />
+    <div v-if="loaded" class="settings-action-footer">
             <button class="app-button app-button--primary smart-folders-save" type="button" @click="save" :disabled="hasInvalidSmartFolders || saving" :aria-busy="saving ? 'true' : 'false'">{{ saving ? 'Saving…' : 'Save Changes' }}</button>
         </div>
     </div>
@@ -452,6 +453,7 @@
 </style>
 
 <script>
+import InlineActionError from '../shared/InlineActionError.vue';
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
@@ -468,6 +470,7 @@ const effectiveSmartFolderMarkAsReadOnScroll = smartFolder =>
 
 export default {
     components: {
+        InlineActionError,
         SmartFolderEditor,
         SmartFolderInsights
     },
@@ -475,6 +478,7 @@ export default {
     // This function creates server-backed collection state and editor coordination state.
     data() {
         return {
+            saveError: '',
             smartFolders: [],
             selectedSmartFolderId: null,
             smartFolderEditorRef: null,
@@ -669,11 +673,12 @@ export default {
 
                 await this.overviewStore.fetchSmartFolders();
 
+                this.saveError = '';
                 this.$emit('saved');
                 this.$emit('close');
             } catch (err) {
                 console.error('Error saving smart folders:', err);
-                notifyActionError('Could not save Smart Folders. Please try again.', err);
+                this.saveError = 'Smart Folders weren’t saved. Your changes are still here. Try again.';
             } finally {
                 this.saving = false;
             }

@@ -254,8 +254,8 @@ describe('ArticleHeadlineRow interaction contract', () => {
     expect(wrapper.find('a.article-link').exists()).toBe(false);
     expect(wrapper.get('.similar-badge').attributes('aria-label')).toBe('Hide 1 similar article');
     expect(wrapper.get('.duplicate-badge').attributes('aria-label')).toBe('Hide 2 duplicate articles');
-    expect(wrapper.findComponent({ name: 'ArticleActionsMenu' }).props()).toMatchObject({ status: 'read', showReadStatus: true });
-    expect(wrapper.get('.article-list-favorite-button').attributes('aria-label')).toBe('Unmark favorite');
+    expect(wrapper.findComponent({ name: 'ArticleActionsMenu' }).props()).toMatchObject({ status: 'read' });
+    expect(wrapper.get('.article-list-favorite-button').attributes('aria-label')).toBe('Remove from saved');
   });
 });
 

@@ -8,6 +8,49 @@ import ArticleRefreshState from '../src/components/articles/ArticleRefreshState.
 import SmartFoldersGridOverview from '../src/components/articles/SmartFoldersGridOverview.vue';
 
 describe('ArticleEmptyState', () => {
+  it.each(['unread', 'read', 'favorite', 'clicked', 'hot'])('offers search recovery for an empty %s search', async currentStatus => {
+    const wrapper = mount(ArticleEmptyState, {
+      props: { currentStatus, searchQuery: 'nonexistent term' }
+    });
+
+    expect(wrapper.get('h2').text()).toBe('No articles match “nonexistent term”');
+    expect(wrapper.text()).not.toContain('You’re all caught up');
+    expect(wrapper.get('.article-empty-state-primary').text()).toContain('Clear search');
+    expect(wrapper.get('.article-empty-state-secondary').text()).toContain('Clear filters');
+    expect(wrapper.text()).not.toContain('Refresh feeds');
+
+    await wrapper.get('.article-empty-state-primary').trigger('click');
+    await wrapper.get('.article-empty-state-secondary').trigger('click');
+
+    expect(wrapper.emitted('clear-search')).toHaveLength(1);
+    expect(wrapper.emitted('clear-filters')).toHaveLength(1);
+  });
+
+  it('offers recovery without claiming a different read scope for explicit query filters', async () => {
+    const wrapper = mount(ArticleEmptyState, {
+      props: { currentStatus: 'unread', searchQuery: 'unread:true title:Science', selectedTag: 'security' }
+    });
+
+    expect(wrapper.get('h2').text()).toBe('No articles match “unread:true title:Science”');
+    expect(wrapper.text()).not.toContain('Search read articles');
+    await wrapper.get('.article-empty-state-primary').trigger('click');
+    expect(wrapper.emitted('clear-search')).toHaveLength(1);
+    expect(wrapper.emitted('clear-tag')).toBeUndefined();
+    await wrapper.get('.article-empty-state-secondary').trigger('click');
+    expect(wrapper.emitted('clear-filters')).toHaveLength(1);
+  });
+
+  it('returns an empty new-only list to the full unread collection even with a search', async () => {
+    const wrapper = mount(ArticleEmptyState, {
+      props: { currentStatus: 'unread', searchQuery: 'title:Science', showingNewOnly: true }
+    });
+
+    expect(wrapper.get('h2').text()).toBe('No new unread articles');
+    expect(wrapper.get('.article-empty-state-primary').text()).toContain('View unread articles');
+    await wrapper.get('.article-empty-state-primary').trigger('click');
+    expect(wrapper.emitted('view-tag-status')).toEqual([['unread']]);
+  });
+
   it('renders its guidance and emits each available recovery action', async () => {
     const wrapper = mount(ArticleEmptyState);
 
@@ -31,12 +74,24 @@ describe('ArticleEmptyState', () => {
       props: { currentStatus: 'favorite' }
     });
 
-    expect(wrapper.get('h2').text()).toBe('No favorites yet');
+    expect(wrapper.get('h2').text()).toBe('No saved articles yet');
     expect(wrapper.get('.article-empty-state-primary').text()).toContain('View unread articles');
     expect(wrapper.get('.article-empty-state-secondary').text()).toContain('Refresh feeds');
 
     await wrapper.get('.article-empty-state-primary').trigger('click');
     expect(wrapper.emitted('view-tag-status')).toEqual([['unread']]);
+  });
+
+  it('explains saved articles and opened originals without conflating read status', async () => {
+    const wrapper = mount(ArticleEmptyState, { props: { currentStatus: 'favorite' } });
+    expect(wrapper.get('h2').text()).toBe('No saved articles yet');
+    expect(wrapper.text()).toContain('Save an article to find it here later');
+    await wrapper.setProps({ currentStatus: 'clicked' });
+    expect(wrapper.get('h2').text()).toBe('No opened originals yet');
+    expect(wrapper.text()).toContain('Articles opened on their original websites appear here, separately from read status.');
+    await wrapper.setProps({ selectedTag: 'security' });
+    expect(wrapper.get('h2').text()).toBe('No opened original articles tagged Security');
+    wrapper.unmount();
   });
 
   it('preserves an empty tag selection and offers the complementary article state', async () => {

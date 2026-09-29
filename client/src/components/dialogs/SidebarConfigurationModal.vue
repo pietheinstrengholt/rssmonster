@@ -1,7 +1,7 @@
 <template>
   <PreferencesDialogShell
     title="Sidebar configuration settings"
-    description="Choose how counts and sections appear in the sidebar."
+    description="Choose how sidebar actions, counts, and sections behave."
     form-id="sidebar-preferences-form"
     close-label="Close sidebar settings"
     :saving="isSaving"
@@ -161,7 +161,7 @@
         <span class="sidebar-preferences-content">
           <span id="sidebar-dynamic-sort-label" class="sidebar-preferences-title">Sort by current selection</span>
           <span id="sidebar-dynamic-sort-description" class="sidebar-preferences-description">
-            Sort highest count first for Unread, Favorites, Hot, or the current selection.
+            Sort highest count first for Unread, Saved, Hot, or the current selection.
             This overrides the sort option below while enabled.
           </span>
         </span>
@@ -210,6 +210,25 @@
           aria-describedby="sidebar-feed-favicons-description"
         />
       </label>
+      <label class="sidebar-preferences-option">
+        <span class="sidebar-preferences-content">
+          <span id="sidebar-mark-read-visible-label" class="sidebar-preferences-title">Mark only visible articles as read</span>
+          <span id="sidebar-mark-read-visible-description" class="sidebar-preferences-description">
+            When on, the sidebar button marks only articles currently on screen as read.
+            In Reader, this includes visible list items and the open article.
+            When off, it marks all articles matching the current selection, including articles not yet loaded.
+          </span>
+        </span>
+        <input
+          v-model="form.markReadVisibleOnly"
+          class="sidebar-preferences-switch"
+          type="checkbox"
+          role="switch"
+          :disabled="isLoading || isSaving || loadError"
+          aria-labelledby="sidebar-mark-read-visible-label"
+          aria-describedby="sidebar-mark-read-visible-description"
+        />
+      </label>
     </form>
   </PreferencesDialogShell>
 </template>
@@ -237,7 +256,7 @@ export default {
   data() {
     return {
       sections,
-      form: { sectionOrder: normalizeSidebarSectionOrder(), showTotalCount: true, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false },
+      form: { sectionOrder: normalizeSidebarSectionOrder(), markReadVisibleOnly: false, showTotalCount: true, declutterCounts: true, hideZeroCountItems: false, automaticallyHideInactiveFeeds: false, inactiveFeedDays: 30, sortOrder: 'manual', showFeedFavicons: true, sortByCurrentSelection: false },
       isLoading: true,
       isSaving: false,
       loadError: false,
@@ -276,7 +295,7 @@ export default {
       try {
         const { data } = await fetchSidebarSettings();
         if (requestId !== this.activeRequestId || sessionId !== this.authStore.sessionRequestId) return;
-        this.form = { ...data.settings, sectionOrder: normalizeSidebarSectionOrder(data.settings.sectionOrder) };
+        this.form = { markReadVisibleOnly: false, ...data.settings, sectionOrder: normalizeSidebarSectionOrder(data.settings.sectionOrder) };
         this.uiStore.setSidebarSettings(data.settings);
       } catch {
         if (requestId === this.activeRequestId) this.loadError = true;

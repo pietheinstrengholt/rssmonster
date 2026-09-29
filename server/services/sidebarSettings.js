@@ -18,6 +18,7 @@ export const loadSidebarSettings = async userId => {
   const stored = await db.SidebarSetting.findOne({ where: { userId } });
   const settings = stored || db.SidebarSetting.build({ userId });
   return {
+    markReadVisibleOnly: Boolean(settings.markReadVisibleOnly),
     showFeedFavicons: Boolean(settings.showFeedFavicons),
     showTotalCount: Boolean(settings.showTotalCount),
     declutterCounts: Boolean(settings.declutterCounts),

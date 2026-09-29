@@ -3,7 +3,7 @@
     <div v-if="isMinimalView" class="mobile-swipe-shell">
       <div class="mobile-swipe-action" :class="{ 'mobile-swipe-action--ready': isSwipeReady }" aria-hidden="true">
         <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-x-fill' : 'bookmark-fill'" aria-hidden="true" />
-        <span>{{ favoriteInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
+        <span>{{ favoriteInd === 1 ? 'Remove from saved' : 'Save article' }}</span>
       </div>
       <ArticleHeadlineRow
         ref="articleHeading"
@@ -54,7 +54,7 @@
     <div v-else class="mobile-swipe-shell">
       <div class="mobile-swipe-action" :class="{ 'mobile-swipe-action--ready': isSwipeReady }" aria-hidden="true">
         <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-x-fill' : 'bookmark-fill'" aria-hidden="true" />
-        <span>{{ favoriteInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
+        <span>{{ favoriteInd === 1 ? 'Remove from saved' : 'Save article' }}</span>
       </div>
       <div class="article-body mobile-swipe-content" :class="isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : ''" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
         <div class="article-layout">

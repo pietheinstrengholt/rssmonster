@@ -2,7 +2,7 @@ import { flushPromises, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
-import { fetchArticlePage, fetchArticleRecommendations } from '../src/api/articles.js';
+import { fetchArticlePage, fetchArticleRecommendations, markArticleUnread } from '../src/api/articles.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
@@ -85,6 +85,20 @@ beforeEach(() => {
 });
 
 describe('ArticleFeed view loading', () => {
+  it('handles an Expanded article menu read-state action', async () => {
+    const wrapper = mountArticleFeed();
+    markArticleUnread.mockResolvedValue({ data: { id: 42, status: 'unread' } });
+    await flushPromises();
+
+    wrapper.getComponent({ name: 'ArticleListView' }).vm.$emit('toggle-read-status', {
+      id: 42, status: 'read'
+    });
+    await flushPromises();
+
+    expect(markArticleUnread).toHaveBeenCalledWith(42);
+    wrapper.unmount();
+  });
+
   it('does not request recommendations in expanded or mobile Reader layouts', async () => {
     const wrapper = mountArticleFeed();
     await flushPromises();

@@ -2,7 +2,6 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SettingsScores from '../src/components/settings/SettingsScores.vue';
 import { saveSettings } from '../src/api/settings';
-import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/settings', () => ({
@@ -156,10 +155,7 @@ describe('score settings', () => {
     await wrapper.get('.scores-save-button').trigger('click');
     await flushPromises();
 
-    expect(notifyActionError).toHaveBeenCalledWith(
-      'Could not save score settings. Please try again.',
-      internalError
-    );
+    expect(wrapper.get('[role="alert"]').text()).toContain('Score settings weren’t saved. Your changes are still here. Try again.');
     expect(stores.selectionStore.currentSelection.minAdvertisementScore).toBe(10);
     expect(wrapper.emitted('forceReload')).toBeUndefined();
     expect(wrapper.emitted('close')).toBeUndefined();

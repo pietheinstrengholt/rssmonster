@@ -37,6 +37,7 @@
       <p v-else-if="loaded" class="actions-empty-state settings-state settings-state--empty">No actions yet. Add one to automate how incoming articles are handled.</p>
       <div v-if="loaded" class="actions-order-note"><BootstrapIcon icon="info-circle" aria-hidden="true" /><p>Actions are applied from top to bottom. Once a Discard action matches, the article will be set with a filtered indicator ensuring it will not show up in queries.</p></div>
     </section>
+    <InlineActionError v-if="saveError" :message="saveError" :busy="saving" @retry="save" />
     <div class="settings-action-footer"><button class="actions-save-button app-button app-button--primary" type="button" :disabled="!loaded || loading || Boolean(loadError) || saving" @click="save">{{ saving ? 'Saving…' : 'Save Changes' }}</button></div>
   </div>
 </template>
@@ -411,13 +412,16 @@
 </style>
 
 <script>
+import InlineActionError from '../shared/InlineActionError.vue';
 import { fetchActions, saveActions } from '../../api/actions';
 import { notifyActionError } from '../../services/actionNotifications.js';
 
 export default {
+  components: { InlineActionError },
   emits: ['close', 'saved'],
   data() {
     return {
+      saveError: '',
       actions: [],
       loading: false,
       loadError: '',
@@ -425,9 +429,9 @@ export default {
       saving: false,
       actionTypes: [
         { value: 'discard', label: 'Discard', selectLabel: 'Discard article', icon: 'trash', iconClass: 'actions-type-icon--discard', description: 'Hides the article from normal queries.' },
-        { value: 'favorite', label: 'Favorite', selectLabel: 'Set favorite', icon: 'bookmark', iconClass: 'actions-type-icon--star', description: 'Marks the article as a favorite.' },
+        { value: 'favorite', label: 'Saved', selectLabel: 'Save article', icon: 'bookmark', iconClass: 'actions-type-icon--star', description: 'Saves the article for later.' },
         { value: 'read', label: 'Read', selectLabel: 'Mark as read', icon: 'eye', iconClass: 'actions-type-icon--read', description: 'Automatically marks the article as read.' },
-        { value: 'clicked', label: 'Clicked', selectLabel: 'Mark as clicked', icon: 'cursor', iconClass: 'actions-type-icon--clicked', description: 'Sets the read-later indicator.' },
+        { value: 'clicked', label: 'Opened originals', selectLabel: 'Mark original as opened', icon: 'cursor', iconClass: 'actions-type-icon--clicked', description: 'Marks the original as opened without changing read status.' },
         { value: 'advertisement', label: 'Mark as advertisement', selectLabel: 'Mark as advertisement', icon: 'megaphone', iconClass: 'actions-type-icon--advertisement', description: 'Overrides the advertisement score to 0.' },
         { value: 'badquality', label: 'Mark as low quality', selectLabel: 'Mark as low quality', icon: 'arrow-down-square', iconClass: 'actions-type-icon--badquality', description: 'Overrides the quality score to 0.' },
         { value: 'tag', label: 'Assign tag', selectLabel: 'Assign tag', icon: 'tag', iconClass: 'actions-type-icon--tag', description: 'Adds a custom tag to the article.' }
@@ -496,6 +500,7 @@ export default {
 
       try {
         await saveActions(filteredActions);
+        this.saveError = '';
         this.$emit('saved');
         this.$emit('close');
       } catch (err) {
@@ -504,7 +509,7 @@ export default {
           && typeof err.response.data?.error === 'string'
           ? err.response.data.error
           : 'Could not save article actions. Please try again.';
-        notifyActionError(validationMessage, err);
+        this.saveError = validationMessage;
       } finally {
         this.saving = false;
       }
