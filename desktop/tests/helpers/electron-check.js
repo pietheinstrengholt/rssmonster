@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { app, Menu } from 'electron';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -22,6 +22,8 @@ app.on('quit', () => rmSync(directory, { recursive: true, force: true }));
 app.once('browser-window-created', (_event, window) => {
   window.webContents.once('did-finish-load', async () => {
     try {
+      assert.equal(Menu.getApplicationMenu(), null);
+      if (process.platform !== 'darwin') assert.equal(window.isMenuBarVisible(), false);
       const result = await window.webContents.executeJavaScript(`new Promise(resolve => {
         const check = () => {
           if (!document.querySelector('input')) return;

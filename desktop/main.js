@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session } from 'electron';
+import { app, BrowserWindow, Menu, session } from 'electron';
 import { startRuntime } from './runtime.js';
 
 app.setName('RSSMonster');
@@ -37,6 +37,7 @@ if (!app.requestSingleInstanceLock()) {
   process.on('SIGTERM', () => { void shutdown(); });
 
   startup = app.whenReady().then(async () => {
+    Menu.setApplicationMenu(null);
     runtime = await startRuntime(app.getPath('userData'));
     if (shuttingDown) return;
     session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
