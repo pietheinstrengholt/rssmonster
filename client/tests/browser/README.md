@@ -41,3 +41,15 @@ browser is missing. Headless Edge is the validated browser for this change.
 
 These tests establish measurement and persistence correctness. Whether a bucket
 matches a person's perceived engagement still requires a short manual trial.
+
+## Article menu overlap
+
+With Vite running, execute `node scripts/test-article-menu-browser.js` from
+`client/`. It uses the same Playwright, browser executable and base URL variables
+above; alternatively, `ARTICLE_MENU_BROWSER_CDP` connects to an existing browser's
+debugging endpoint.
+
+The fixture renders real Article components with local data. It checks that all
+menu actions are exposed above neighboring articles in Expanded and Headlines
+modes at phone and portrait-tablet sizes, in light and dark themes. It also checks
+Headlines read-state selection and Escape dismissal without writing to a user account.

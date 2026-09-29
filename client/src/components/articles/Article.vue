@@ -622,8 +622,8 @@ export default {
     overflow: hidden;
   }
 
-  /* Let the open Headlines menu escape swipe clipping and cover adjacent rows. */
-  .article-list-card :deep(.mobile-swipe-shell:has(.article-actions .app-dropdown__menu--open)) {
+  /* Let open article menus escape swipe clipping and cover adjacent articles. */
+  .article-card :deep(.mobile-swipe-shell:has(.article-actions .app-dropdown__menu--open)) {
     overflow: visible;
     z-index: var(--layer-dropdown);
   }
