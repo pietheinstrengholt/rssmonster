@@ -140,7 +140,7 @@ Use the MySQL Compose profile when background article analysis or semantic
 labeling is required. This is a deliberate product and deployment boundary,
 not a missing Compose service.
 
-### MySQL
+### MySQL or MariaDB
 
 ```env
 DB_DIALECT=mysql
@@ -151,9 +151,17 @@ DB_USERNAME=rssmonster
 DB_PASSWORD=replace-with-a-strong-password
 ```
 
-Use MySQL for higher write concurrency, multiple active users, background AI
-processing, or other demanding workloads. All five connection values are
-required when `DB_DIALECT=mysql`; the default port is `3306`.
+Use MySQL or MariaDB for higher write concurrency, multiple active users,
+background AI processing, or other demanding workloads. Set `DB_DIALECT=mysql`
+for MySQL 8.4 or `DB_DIALECT=mariadb` for MariaDB 11.4. Both use the five
+connection values above; the default port is `3306`. RSSMonster maps the
+MariaDB setting to Sequelize's MySQL dialect and `mysql2` connector. Sequelize
+6's native MariaDB dialect fails on raw query results with the supported 3.x
+connector; the working 2.x connector has a high-severity security advisory.
+MariaDB also needs a virtual generated column to enforce one active crawl per
+user. The baseline adapter creates it without changing the historical migration.
+The bundled Compose profile runs MySQL; to use an existing MariaDB server,
+provide its host and credentials through these variables.
 
 After changing databases or creating a new database, apply the canonical
 migrations from the `server` directory with `npm run db`. Docker images apply

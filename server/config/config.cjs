@@ -4,14 +4,14 @@ const path = require('node:path');
 
 dotenv.config({ quiet: true });
 
-const SUPPORTED_DIALECTS = new Set(['mysql', 'sqlite']);
+const SUPPORTED_DIALECTS = new Set(['mysql', 'mariadb', 'sqlite']);
 
 // Resolves and validates the selected database dialect.
 const getDialect = () => {
   const dialect = process.env.DB_DIALECT || 'mysql';
 
   if (!SUPPORTED_DIALECTS.has(dialect)) {
-    throw new Error('DB_DIALECT must be either "mysql" or "sqlite".');
+    throw new Error('DB_DIALECT must be "mysql", "mariadb", or "sqlite".');
   }
 
   return dialect;
@@ -53,7 +53,9 @@ const createDatabaseConfig = logging => {
     database: requireEnvironmentVariable('DB_DATABASE'),
     host: requireEnvironmentVariable('DB_HOSTNAME'),
     port: process.env.DB_PORT || 3306,
-    dialect,
+    // Sequelize 6's MariaDB connector is incompatible with raw query results
+    // in supported connector 3.x. mysql2 speaks the MariaDB wire protocol.
+    dialect: dialect === 'mariadb' ? 'mysql' : dialect,
     logging
   };
 };

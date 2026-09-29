@@ -30,7 +30,7 @@ what deserves attention and how different reports fit together.
   Expanded view, compact summaries, keyboard navigation, and mobile gestures
   support both quick scans and longer reading sessions.
 - **Choose how much infrastructure you need.** Start with SQLite for lightweight
-  personal reading, or use MySQL and optional local inference for semantic
+  personal reading, or use MySQL/MariaDB and optional local inference for semantic
   organization and background analysis. You control storage and provider choices.
 
 ## See RSSMonster in action
@@ -128,7 +128,7 @@ configured separately from local embeddings, summaries, tags, and scoring.
 
 ### Self-hosting and compatibility
 
-Run with SQLite or MySQL and keep accounts, subscriptions, and reading state
+Run with SQLite, MySQL, or MariaDB and keep accounts, subscriptions, and reading state
 scoped to each user. Move subscriptions with [OPML import/export](docs/opml.md),
 or expose saved selections as private, tokenized [generated RSS feeds](docs/generated-feeds.md).
 [Fever](docs/fever-api.md) and [Google Reader](docs/google-reader-api.md) compatibility
@@ -146,6 +146,11 @@ and the SQLite quick start do not bundle inference models, but can connect to re
 | **[Desktop app (Electron)](docs/desktop.md)** | Reading locally on Windows, macOS, or Linux | Existing reader with a local SQLite database and manual feed refresh. No Docker, separate server setup, worker processes, or scheduled crawling. Optional remote inference via Settings. |
 | **SQLite quick start** | Trying RSSMonster and lightweight personal reading | Web reader, scheduled crawling, search, subscriptions, and rule-based organization. No separate database service, bundled inference service, or AI worker. Optional remote inference via Settings or environment. |
 | **Comprehensive MySQL deployment** | Local intelligent processing, multiple active users, and higher write concurrency | MySQL 8.4, crawl and AI workers, Qwen embeddings and generation, and ModernBERT scoring for analysis, semantic organization, and recommendations. |
+
+An existing MariaDB 11.4 server can be used with `DB_DIALECT=mariadb` and the
+same server components. This setting selects a MariaDB-compatible baseline
+schema while retaining Sequelize's MySQL/`mysql2` connector because its native
+MariaDB connector fails on raw queries. See [database configuration](docs/configuration.md#database).
 
 Install the [Progressive Web App](docs/web-app-and-notifications.md) on supported
 devices to use an existing self-hosted RSSMonster server in its own app window,
