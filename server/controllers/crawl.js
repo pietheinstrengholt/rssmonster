@@ -4,7 +4,7 @@ import { getCrawlEnvironment } from '../config/crawlSettings.js';
 import { withCrawlSettings } from '../services/crawl/configuration.js';
 import db from '../models/index.js';
 import { randomUUID } from 'node:crypto';
-const { Action, Article, CrawlRun, Hotlink } = db;
+const { Action, Article, CrawlRun, Feed, Hotlink } = db;
 import {
   getSequelizeRuntimeCapabilities,
   resolveEffectiveSequelizeCrawlConfiguration
@@ -30,6 +30,7 @@ import {
 import {
   DEFAULT_FEED_LEASE_MS,
   assertFeedLeaseOwnership,
+  buildDueFeedWhere,
   claimDueFeeds,
   claimFeedById,
   completeFeedLease,
@@ -407,13 +408,22 @@ const runCrawl = async (userId = null, options = {}) => {
     failedFeeds: 0,
     timedOutFeeds: 0
   };
+  // Count eligible work before just-in-time claims make the selected list grow.
+  const plannedTotalFeeds = !targetFeedId && typeof options.onProgress === 'function'
+    ? Math.min(maximumFeedCount, await Feed.count({
+      where: buildDueFeedWhere({ userId, now: crawlStartedAt })
+    }))
+    : 0;
   const emitProgress = (event) => {
     if (typeof options.onProgress !== 'function') {
       return;
     }
 
     try {
-      options.onProgress(event);
+      options.onProgress({
+        ...event,
+        totalFeeds: Math.max(plannedTotalFeeds, event.totalFeeds)
+      });
     } catch (err) {
       console.error('Error in onProgress callback:', sanitizeFeedLogValue(err));
     }
@@ -1458,6 +1468,7 @@ const runCrawl = async (userId = null, options = {}) => {
     executionId: options.executionId || null,
     userId,
     total: feeds.length,
+    totalFeeds: Math.max(plannedTotalFeeds, feeds.length),
     processed: processedCount,
     errors: errorCount,
     timeouts: timeoutCount,
@@ -1483,7 +1494,7 @@ const runCrawl = async (userId = null, options = {}) => {
       feedId: null,
       feedName: null,
       currentFeed: result.total,
-      totalFeeds: result.total,
+      totalFeeds: result.totalFeeds ?? result.total,
       processedFeeds: result.processed,
       newArticles: totalNewArticles,
       updatedArticles: totalUpdatedArticles,
@@ -1881,7 +1892,7 @@ const performCrawlWithSemanticGroupingOperation = async (userId = null, options 
       feedId: null,
       feedName: null,
       currentFeed: result.total,
-      totalFeeds: result.total,
+      totalFeeds: result.totalFeeds ?? result.total,
       processedFeeds: result.processed,
       newArticles: result.totalNewArticles || 0,
       updatedArticles: result.totalUpdatedArticles || 0,

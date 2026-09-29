@@ -127,6 +127,46 @@ describe('crawl run article statistics', () => {
     });
   });
 
+  it.each([false, true])('reports the full eligible feed total throughout a crawl (parallel=%s)', async parallel => {
+    const { user, category, feed } = await createUserFeed('crawlprogresstotal');
+    const secondFeed = await Feed.create({
+      userId: user.id,
+      categoryId: category.id,
+      feedName: 'Second Feed',
+      url: `https://example.com/${uniqueName('second-progress')}.xml`
+    });
+    for (const overrides of [
+      { nextFetchAt: new Date(Date.now() + 60_000) },
+      { mutedUntil: new Date(Date.now() + 60_000) },
+      { leaseUntil: new Date(Date.now() + 60_000), leaseOwner: 'another-worker' },
+      { status: 'disabled' }
+    ]) {
+      await Feed.create({
+        userId: user.id,
+        categoryId: category.id,
+        feedName: 'Ineligible Feed',
+        url: `https://example.com/${uniqueName('ineligible-progress')}.xml`,
+        ...overrides
+      });
+    }
+    await createUserFeed('otheruserprogress');
+    mocked.processArticle.mockResolvedValue({ newArticles: 0, updatedArticles: 0, errors: 0 });
+    const events = [];
+
+    await crawlController.performCrawlWithSemanticGrouping(user.id, {
+      parallel,
+      onProgress: event => events.push(event)
+    });
+
+    expect(events[0]).toMatchObject({ type: 'refresh_started', totalFeeds: 2, processedFeeds: 0 });
+    expect(events.filter(event => event.type === 'feed_started')).toEqual([
+      expect.objectContaining({ feedId: feed.id, currentFeed: 1, totalFeeds: 2 }),
+      expect.objectContaining({ feedId: secondFeed.id, currentFeed: 2, totalFeeds: 2 })
+    ]);
+    expect(events.every(event => event.totalFeeds === 2)).toBe(true);
+    expect(events.at(-1)).toMatchObject({ type: 'done', totalFeeds: 2, processedFeeds: 2 });
+  });
+
   it('processes HTML/XPath entries through the normal article pipeline', async () => {
     const { user, feed } = await createUserFeed('htmlxpathcrawl');
     await feed.update({
