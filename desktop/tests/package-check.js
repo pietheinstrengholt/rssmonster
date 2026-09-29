@@ -2,16 +2,24 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat, mkdir, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { once } from 'node:events';
 
-if (process.platform !== 'linux') throw new Error('The packaged verifier currently supports Linux only.');
+if (!['linux', 'win32'].includes(process.platform)) throw new Error('The packaged verifier supports Linux and Windows.');
+// Windows can use Electron as the Node test host without passing that mode to the app.
+delete process.env.ELECTRON_RUN_AS_NODE;
 
-const executable = path.resolve(process.argv[2] || 'release/linux-unpacked/rssmonster');
+const executable = path.resolve(process.argv[2] || (process.platform === 'win32' ? 'release/win-unpacked/RSSMonster.exe' : 'release/linux-unpacked/rssmonster'));
 const directory = await mkdtemp(path.join(tmpdir(), 'rssmonster-package-test-'));
 const profile = path.join(directory, 'profile');
+if (process.env.RSSMONSTER_TEST_MODEL_CACHE) {
+  for (const location of [profile, path.join(directory, 'RSSMonster')]) {
+    await mkdir(location, { recursive: true });
+    await symlink(path.resolve(process.env.RSSMONSTER_TEST_MODEL_CACHE), path.join(location, 'models'), process.platform === 'win32' ? 'junction' : 'dir');
+  }
+}
 let feedRequests = 0;
 const fixture = createServer((_req, res) => {
   feedRequests++;
@@ -47,7 +55,7 @@ const launch = (debug = true) => {
   child.stdout.on('data', receive);
   child.stderr.on('data', receive);
   const waitForLog = pattern => new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => finish(new Error(`Timed out: ${pattern}\n${output}`)), 60_000);
+    const timeout = setTimeout(() => finish(new Error(`Timed out: ${pattern}\n${output}`)), 300_000);
     const onExit = () => finish(new Error(`Exited before ${pattern}\n${output}`));
     const finish = (error, result) => {
       clearTimeout(timeout);
@@ -97,7 +105,7 @@ const connect = async url => {
 
 try {
   // Exercise argument-free startup on the installed executable; AppImage's wrapper is closed via its UI below.
-  if (!executable.endsWith('.AppImage')) {
+  if (process.platform === 'linux' && !executable.endsWith('.AppImage')) {
     // Packaged Electron has no argv[1] on an ordinary launch; test that path without debug flags.
     const plain = launch(false);
     let plainOrigin;
@@ -119,6 +127,7 @@ try {
     let inspector;
     try {
       const origin = (await running.waitForLog(/RSSMonster desktop ready at (http:\/\/127\.0\.0\.1:\d+)/))[1];
+      await running.waitForLog(/RSSMonster desktop AI ready/);
       const debugOrigin = (await running.waitForLog(/DevTools listening on ws:\/\/(127\.0\.0\.1:\d+)/))[1];
       const targets = await (await fetch(`http://${debugOrigin}/json/list`)).json();
       const page = targets.find(target => target.type === 'page' && target.url.startsWith(origin));
@@ -126,7 +135,7 @@ try {
       inspector = await connect(page.webSocketDebuggerUrl);
       assert.equal(await inspector.evaluate('typeof process'), 'undefined');
       assert.equal((await stat(path.join(profile, 'rssmonster.sqlite'))).isFile(), true);
-      assert.doesNotMatch(running.output(), /\[CRAWL\] Started|\[CrawlWorker\]|\[AiWorker\]/);
+      assert.doesNotMatch(running.output(), /\[CRAWL\] Started|\[CrawlWorker\]/);
       const secrets = await readFile(path.join(profile, 'secrets.json'), 'utf8');
       if (phase === 'restart') assert.equal(secrets, previousSecrets);
       previousSecrets = secrets;
@@ -143,11 +152,14 @@ try {
       };
       if (phase === 'create') await api('/auth/register', { ...credentials, password_repeat: credentials.password });
       token = (await api('/auth/login', credentials)).token;
+      assert.equal((await api('/setting')).AIEnabled, true);
+      assert.equal((await api('/setting')).AssistantEnabled, false);
+      assert.match(running.output(), /\[AiWorker\] Starting concurrency=1/);
       if (phase === 'create') {
         const category = await api('/categories', { name: 'Packaged feeds' });
         const { feed } = await api('/feeds', { categoryId: category.id, url: `http://127.0.0.1:${fixture.address().port}/feed.xml` });
-        assert.equal(feed.applyAiAnalysis, false);
-        assert.equal(feed.generateEmbeddings, false);
+        assert.equal(feed.applyAiAnalysis, true);
+        assert.equal(feed.generateEmbeddings, true);
         await inspector.evaluate(`(async () => {
           for (const [id, value] of Object.entries(${JSON.stringify(credentials)})) {
             const input = document.getElementById(id);
@@ -177,6 +189,9 @@ try {
       assert.equal(articles.itemIds.length, 1, running.output());
       await api(`/articles/${articles.itemIds[0]}`);
       await api('/articles/markasread', { articleIds: articles.itemIds });
+      const workerHealth = JSON.parse(await readFile(path.join(profile, 'ai-worker-health.json'), 'utf8'));
+      assert.notEqual(workerHealth.status, 'stopping');
+      assert.equal(workerHealth.consecutiveFailures, 0);
       const count = feedRequests;
       await api('/health');
       assert.equal(feedRequests, count);
@@ -184,9 +199,10 @@ try {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: '{"input":"test"}'
       });
       assert.equal(disabled.status, 503);
-      const exited = once(running.child, 'exit');
+      const exited = once(running.child, 'exit', { signal: AbortSignal.timeout(45_000) });
       // Close the actual window, exercising the production Electron shutdown handlers.
-      await inspector.send('Page.close');
+      // Closing a page can close CDP before its command response arrives. Wait on the process.
+      void inspector.send('Page.close').catch(() => {});
       const [code] = await exited;
       assert.equal(code, 0);
       await assert.rejects(fetch(`${origin}/api/health`));

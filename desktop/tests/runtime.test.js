@@ -21,3 +21,12 @@ test('fresh desktop DB, API refresh, shutdown drain and restart persistence', { 
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('managed inference enables AI only after readiness, then drains both services', { timeout: 30_000 }, async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'rssmonster-managed-test-'));
+  try {
+    await execute(process.execPath, [fileURLToPath(new URL('./helpers/managed-runtime-check.js', import.meta.url)), directory], { timeout: 25_000 });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

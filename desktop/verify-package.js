@@ -11,6 +11,9 @@ export const verifyPackagedRuntime = async (
 ) => {
   const entries = new Set(listPackage(path.join(resourcesDirectory, 'app.asar')).map(name => name.replaceAll('\\', '/')));
   const required = [
+    '/desktop/service-process.js',
+    '/inference/src/index.js',
+    '/server/src/workers/aiWorker.js',
     '/node_modules/feedsmith/dist/node_modules/trousse/dist/is.mjs',
     ...(await readdir(migrationsDirectory))
       .filter(name => /^\d.*\.(?:mjs|js)$/.test(name))

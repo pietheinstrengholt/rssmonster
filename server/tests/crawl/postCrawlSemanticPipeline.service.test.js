@@ -64,12 +64,17 @@ describe('runPostCrawlSemanticPipeline', () => {
     mocked.runHotArticleReconciliation.mockReset().mockResolvedValue({});
   });
 
-  it('does not run semantic stages in desktop mode', async () => {
+  it('runs the shared semantic stages after a manual desktop crawl', async () => {
     vi.stubEnv('RSSMONSTER_MODE', 'desktop');
+    mocked.embedArticles.mockResolvedValue({ embeddedCount: 1 });
+    mocked.markDuplicateArticlesForUser.mockResolvedValue({});
+    mocked.runIncrementalEventsForUser.mockResolvedValue({});
+    mocked.scoreArticlesFromIslandsForUser.mockResolvedValue({});
     const { runPostCrawlSemanticPipeline } = await import('../../services/crawl/orchestration/postCrawlSemanticPipeline.js');
     const result = await runPostCrawlSemanticPipeline({ processedUserIds: [42] });
-    expect(result).toEqual({ users: 0, embedded: 0, skipped: 0, results: [] });
-    for (const operation of Object.values(mocked)) expect(operation).not.toHaveBeenCalled();
+    expect(result.users).toBe(1);
+    expect(mocked.embedArticles).toHaveBeenCalledOnce();
+    expect(mocked.runIncrementalEventsForUser).toHaveBeenCalledOnce();
   });
 
   it('reconciles hotness after semantic duplicate eligibility changes', async () => {

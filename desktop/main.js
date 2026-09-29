@@ -1,17 +1,20 @@
-import { app, BrowserWindow, Menu, session } from 'electron';
+import { app, BrowserWindow, Menu, session, utilityProcess } from 'electron';
 import { startRuntime } from './runtime.js';
+import { createDesktopServices } from './services.js';
 
 app.setName('RSSMonster');
 let runtime;
 let startup;
 let shuttingDown = false;
 
-const shutdown = async (exitCode = 0) => {
+const shutdown = async (exitCode = process.exitCode || 0) => {
   if (shuttingDown) return;
   shuttingDown = true;
   try {
     await startup?.catch(() => {});
     BrowserWindow.getAllWindows().forEach(window => window.destroy());
+    // Chromium can retain a refresh SSE connection after the last renderer closes.
+    if (app.isReady()) await session.defaultSession.closeAllConnections();
     await runtime?.stop();
   } catch (error) {
     console.error('Desktop shutdown failed:', error);
@@ -38,7 +41,10 @@ if (!app.requestSingleInstanceLock()) {
 
   startup = app.whenReady().then(async () => {
     Menu.setApplicationMenu(null);
-    runtime = await startRuntime(app.getPath('userData'));
+    runtime = await startRuntime(app.getPath('userData'), createDesktopServices(utilityProcess, error => {
+      console.error(error);
+      void shutdown(1);
+    }));
     if (shuttingDown) return;
     session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
     session.defaultSession.setPermissionCheckHandler(() => false);
@@ -61,6 +67,16 @@ if (!app.requestSingleInstanceLock()) {
     await window.loadURL(runtime.origin);
     if (!shuttingDown) window.show();
     console.log(`RSSMonster desktop ready at ${runtime.origin}`);
+    void runtime.ready.then(() => {
+      if (!shuttingDown) {
+        console.log('RSSMonster desktop AI ready');
+        window.webContents.reload();
+      }
+    }).catch(error => {
+      if (shuttingDown) return;
+      console.error('Desktop AI startup failed:', error);
+      void shutdown(1);
+    });
   });
   void startup.catch(error => {
     console.error('Desktop startup failed:', error);

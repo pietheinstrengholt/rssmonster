@@ -94,10 +94,12 @@ describe('inference server lifecycle', () => {
     }));
     const { startServer } = await import('../src/index.js');
 
-    const startup = startServer();
+    const onListening = vi.fn();
+    const startup = startServer({ host: '127.0.0.1', port: 0, onListening });
     await vi.waitFor(() => expect(mocks.initializeConfiguredModels).toHaveBeenCalledOnce());
 
-    expect(mocks.app.listen).toHaveBeenCalledOnce();
+    expect(mocks.app.listen).toHaveBeenCalledWith(0, '127.0.0.1', expect.any(Function));
+    expect(onListening).toHaveBeenCalledWith(mocks.server);
     expect(mocks.readiness.transitionTo).not.toHaveBeenCalledWith('ready');
 
     resolveInitialization();

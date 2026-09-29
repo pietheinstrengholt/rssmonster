@@ -1,9 +1,18 @@
 # RSSMonster Desktop
 
 Electron runs the existing Express backend and Vue frontend over loopback HTTP.
-Desktop uses SQLite, manual feed refresh only, no worker process, no scheduled
-crawling, and optional remote inference configured through Settings or environment.
-No inference service or models are bundled. Background AI jobs still require a worker.
+Desktop uses SQLite and manual feed refresh. It starts the existing local inference
+service and AI worker as Electron utility processes; no crawl worker or scheduled
+feed refresh runs. The renderer continues using REST, with no Node APIs exposed.
+
+Local defaults are ModernBERT (`onnx-community/ModernBERT-base-nli-ONNX`, q8)
+classification, `onnx-community/Qwen3-Embedding-0.6B-ONNX` embeddings (1024 dimensions),
+and `onnx-community/Qwen3.5-0.8B-ONNX` generation (q4). Assistant is disabled.
+Models download on first startup into `userData/models` and load on subsequent starts.
+Allow several GB of disk space and sufficient memory for all three CPU models.
+`AIEnabled` follows actual model readiness; the window reloads once AI is ready.
+The reader can open during model initialization. Startup failures are logged and
+close the application; they do not leave services running.
 
 ## Develop
 
@@ -13,6 +22,7 @@ root, install the existing packages (skip packages already installed):
 ```sh
 npm install --prefix client
 npm install --prefix server
+npm ci --prefix inference
 npm ci --prefix desktop
 npm run desktop --prefix desktop
 ```
@@ -70,8 +80,8 @@ Ordinary branch pushes do not create desktop releases. Installers remain unsigne
 ### Packaging details
 
 `package.js` invokes the existing client build, stages selected server source and
-Electron files as siblings, and derives its runtime manifest/version from the server
-package. It seeds dependency resolution from `server/package-lock.json`, installs a
+inference and Electron files as siblings, and derives its runtime manifest/version from the server
+package. It seeds dependency resolution from the server and inference lockfiles, installs a
 clean production dependency tree, then calls electron-builder. Install server
 dependencies first so that lockfile exists. Neither development dependencies nor
 native bindings in `server/node_modules` are changed by packaging.
@@ -80,7 +90,8 @@ The existing SQLite driver is `sqlite3` (currently 6.0.1), with a native Node-AP
 binding. `npmRebuild: true` lets electron-builder's standard `@electron/rebuild`
 prepare it for the chosen Electron version/platform/architecture. Prebuilt bindings
 are used where supported; otherwise the target OS needs its native build toolchain.
-ASAR is enabled. Only `node_modules/sqlite3/build/Release/*.node` is unpacked;
+ASAR is enabled. SQLite bindings, ONNX Runtime native binaries and the Sharp native
+packages are unpacked;
 JavaScript, migrations, parser worker threads and static assets work inside ASAR.
 
 Existing RSSMonster PNG branding is reused. electron-builder converts the 1024px
@@ -92,12 +103,10 @@ launching never requires the repository as the working directory. One shared
 feed-trust script's CLI guard also tolerates packaged launches without `argv[1]`.
 
 The package excludes `.env`, local databases/logs, repository metadata, tests,
-fixtures, documentation, development dependencies, unrelated scripts, worker entry
-points and the entire standalone inference service/models. It retains the two scripts
-imported by controllers, three worker-health helpers imported by status services,
-and taxonomy constants imported by a migration. These are shared code, not running
-workers or seeds. Server-side inference client/SDK imports remain because the existing
-Express routes import them; remote inference uses the shared deployment resolver.
+fixtures, documentation, development dependencies, models/caches, unrelated scripts
+and the crawl worker entry point. It includes the shared inference source and AI
+worker, with their production dependencies. ONNX Runtime and Sharp use their
+published Node-API binaries; build on the target OS for release verification.
 
 ## Data and lifecycle
 
@@ -105,18 +114,26 @@ Application data remains under Electron's `app.getPath('userData')` (`RSSMonster
 
 - SQLite: `rssmonster.sqlite` and its SQLite sidecars.
 - Authentication: persistent `secrets.json` (keep with database backups).
+- AI worker status: `ai-worker-health.json`.
+- Models: `models/` (downloaded weights; reusable across restarts).
 - Chromium profile/cache: Electron's user profile, outside the installed application.
 
 Logs go to stdout/stderr; no application log files are written into the bundle.
 Versioned artifacts do not change the profile name or database path. Pending existing
 migrations run before the HTTP listener starts, without model sync or a seed command.
-First-time users register through the existing UI.
+Desktop configures immediate SQLite write transactions in both the HTTP process
+and AI worker to avoid deferred read-to-write lock conflicts. First-time users
+register through the existing UI. Existing feed-level AI switches
+and saved processing preferences are preserved; enable AI on existing feeds if
+they were created with analysis or embeddings disabled.
 
-Closing the final window exits on all platforms. The listener stops, accepted
-requests/manual crawls drain, and Sequelize closes before Electron exits. Active
+Closing the final window exits on all platforms. Chromium connections close, the
+listener stops, accepted
+requests/manual crawls drain, the AI worker stops, inference exits, and Sequelize
+closes before Electron exits. A stuck service is terminated after its drain deadline. Active
 crawls may delay quitting until their existing deadlines settle. Existing short-lived
-parser worker **threads** remain for timeout/memory isolation; crawler/AI worker
-**processes** never start. Frontend database polling and its PWA service worker do
+parser worker **threads** remain for timeout/memory isolation; desktop worker
+**processes** do not schedule feeds; only the AI worker is started. Frontend database polling and its PWA service worker do
 not schedule feed crawling.
 
 ## Verify
@@ -130,17 +147,20 @@ npm run test:packaged --prefix desktop
 npm run test:packaged --prefix desktop -- release/RSSMonster-2.4.0-x86_64.AppImage
 ```
 
-The packaged verifier currently targets Linux. It uses disposable profiles outside
-the repository and a local fixture feed, checks the installed executable with no arguments and default
-userData, then tests Vue login/refresh, REST, SQLite persistence across restarts,
-disabled inference and clean window/HTTP shutdown. Debugging is enabled only on its
+The packaged verifier supports Linux and Windows. It uses disposable profiles outside
+the repository and a local fixture feed, checks ordinary startup on Linux, then tests Vue login/refresh, REST, SQLite persistence across restarts,
+local AI readiness, disabled Assistant and clean window/HTTP shutdown. Debugging is enabled only on its
 test launches; it adds no test hooks to the shipped application. A graphical session
 and normal Electron host libraries are required. On systems without FUSE, the test
 uses AppImage's supported extract-and-run mode and closes it through the UI.
+The Electron/package smoke tests download models into temporary profiles by default.
+Set `RSSMONSTER_TEST_MODEL_CACHE` to an existing absolute model-cache directory to
+reuse weights through a test-only link. Production always uses `userData/models`.
 
-Tested here: Linux x64/WSL2, including AppImage and the binary extracted from the
-`.deb`. Windows x64 NSIS packaging also succeeded from WSL2 with Wine; Windows
-installation/runtime and macOS builds have not been tested locally. GitHub runner
+Local AI has been tested with Linux x64/WSL2, the AppImage, and the packaged
+Windows x64 executable on Windows 11, using disposable profiles and cached models.
+Windows NSIS packaging succeeds from WSL2 with Wine. Installer UI and macOS runtime
+verification remain separate. GitHub runner
 execution is only verified after the release workflow runs successfully.
 This environment needed NSS/NSPR/ALSA libraries supplied temporarily for testing;
 normal target systems must supply Electron's runtime libraries. Never disable the
@@ -155,5 +175,4 @@ media remain ordinary RSS reader content.
 
 Deferred: automatic release publication, auto-update/update servers, Apple
 signing/notarization, Windows signing, crash reporting, telemetry, tray mode,
-notifications, OS/protocol integrations, background crawling, inference and worker
-services.
+notifications, OS/protocol integrations and background crawling.

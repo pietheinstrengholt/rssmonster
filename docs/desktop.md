@@ -10,7 +10,7 @@ nav_order: 4
 RSSMonster can also run as an app on your computer. Introduced in **v2.3.0**,
 RSSMonster Desktop uses Electron to open the existing reader in its own window
 and run the backend locally. You do not need Docker, a separate database server,
-or an inference service to use the installed app.
+or a separately configured inference service to use the installed app.
 
 Your subscriptions, articles, and reading state are stored in a local SQLite
 database. The desktop app uses its own account and data; it does not automatically
@@ -52,7 +52,7 @@ notarization are planned separately.
    [bookmarks]({% link bookmarks.md %}).
 
 **Desktop refresh is manual.** Feeds are fetched through actions in the app;
-there is no scheduled crawler or worker process checking for updates. Closing
+there is no scheduled crawler or crawl worker checking for updates. Closing
 the last window exits RSSMonster and stops its local server. An active refresh
 may need time to finish before shutdown completes.
 
@@ -63,12 +63,17 @@ existing Vue frontend over `http://127.0.0.1` on an available local port. The
 reader continues using the same HTTP REST API as the web version. The server is
 bound to your computer's loopback interface, not exposed to your network.
 
-Desktop starts no inference service, AI worker, or crawl worker process. Administrators
-can connect a remote inference service in Settings → AI / Inference using its endpoint
-and optional matching API key. Environment URLs take precedence and hide those controls.
-Remote capabilities are discovered through the same server API as other deployments.
-Background enrichment jobs still require an AI worker, which Desktop does not start.
-Network access is needed for remote inference, feeds, and article media.
+Desktop starts its local inference service and AI worker automatically. Classification
+uses ModernBERT (`onnx-community/ModernBERT-base-nli-ONNX`), embeddings use
+`onnx-community/Qwen3-Embedding-0.6B-ONNX`, and generation uses
+`onnx-community/Qwen3.5-0.8B-ONNX`. Assistant is disabled.
+
+The models download on the first launch, requiring internet access and several GB
+of disk space. The reader opens while models initialize; AI becomes available once
+all models are ready and the window reloads. Subsequent launches reuse cached models.
+The local inference endpoint is configured automatically and protected with a
+per-launch API key. The AI worker processes enrichment jobs, not scheduled feed
+refreshes. Both services stop when you close the app.
 
 ## Storage, backups, and updates
 
@@ -77,6 +82,7 @@ application data directory (`app.getPath('userData')`), under the application
 name **RSSMonster**. The important files are:
 
 - `rssmonster.sqlite`: subscriptions, articles, accounts, and reading state.
+- `models/`: downloaded local models, reusable across restarts and upgrades.
 - `secrets.json`: persistent authentication secrets; keep this with the database.
 
 The same directory also holds the browser profile and caches. Data is stored
@@ -109,12 +115,13 @@ git clone https://github.com/pietheinstrengholt/rssmonster.git
 cd rssmonster
 npm ci --prefix client
 npm ci --prefix server
+npm ci --prefix inference
 npm ci --prefix desktop
 npm run desktop --prefix desktop
 ```
 
-This builds the Vue frontend and launches Electron. It does not start the
-self-hosted worker or inference services. Use Node.js for the operating system
+This builds the Vue frontend and launches Electron, including managed local
+inference and the AI worker. It does not start a crawl worker. Use Node.js for the operating system
 where you intend to run Electron.
 
 To build an installer for the current machine:
@@ -130,6 +137,6 @@ for platform-specific commands, native SQLite handling, and verification details
 ## Current scope
 
 Desktop provides a local SQLite reader with manual refresh. Background crawling,
-worker services, bundled inference/models, tray mode, notifications, signing, notarization,
+tray mode, notifications, signing, notarization,
 and auto-update are outside this initial version. The self-hosted version retains
 its existing worker and optional inference functionality.

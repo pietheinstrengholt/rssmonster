@@ -138,12 +138,12 @@ limitations when choosing a client.
 ## Choose a deployment
 
 Run RSSMonster as a desktop app or host a server for access across devices.
-The screenshots showcase capabilities from the broader product; desktop mode
-and the SQLite quick start do not bundle inference models, but can connect to remote inference.
+Desktop downloads local AI models on first launch. The SQLite quick start can
+connect to remote inference.
 
 | Deployment | Best for | Included capabilities |
 | --- | --- | --- |
-| **[Desktop app (Electron)](docs/desktop.md)** | Reading locally on Windows, macOS, or Linux | Existing reader with a local SQLite database and manual feed refresh. No Docker, separate server setup, worker processes, or scheduled crawling. Optional remote inference via Settings. |
+| **[Desktop app (Electron)](docs/desktop.md)** | Reading locally on Windows, macOS, or Linux | Existing reader with a local SQLite database and manual feed refresh. No Docker or separate server setup. Local inference and AI worker; models download on first launch. No scheduled crawling. |
 | **SQLite quick start** | Trying RSSMonster and lightweight personal reading | Web reader, scheduled crawling, search, subscriptions, and rule-based organization. No separate database service, bundled inference service, or AI worker. Optional remote inference via Settings or environment. |
 | **Comprehensive MySQL deployment** | Local intelligent processing, multiple active users, and higher write concurrency | MySQL 8.4, crawl and AI workers, Qwen embeddings and generation, and ModernBERT scoring for analysis, semantic organization, and recommendations. |
 
@@ -161,10 +161,11 @@ Electron desktop app runs its own backend and stores its data locally.
 Saved search-based Smart Folders work in desktop mode and both server profiles.
 Choose the comprehensive profile for local classification, embeddings, scoring, semantic labels, Smart
 Folder recommendations, and feed rediscovery **without an OpenAI API key**.
-Desktop and SQLite can connect to an inference service through **Settings → AI / Inference**
+Desktop configures its own local inference service automatically (Assistant disabled).
+The SQLite quick start can connect to an inference service through **Settings → AI / Inference**
 or `INFERENCE_BASE_URL` and an optional matching `INFERENCE_API_KEY`. Environment URLs
 take precedence and hide configuration controls; discovered capabilities remain visible.
-Background enrichment still requires an AI worker, which these lightweight profiles do not start.
+The SQLite quick start needs a separately started AI worker for background enrichment.
 Provider/model settings remain inside inference. For model downloads,
 credentials, startup, and readiness checks, follow the
 [MySQL deployment guide](docs/getting-started.md#comprehensive-mysql-deployment).

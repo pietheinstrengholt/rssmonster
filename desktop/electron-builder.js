@@ -1,16 +1,22 @@
 import { verifyPackagedRuntime } from './verify-package.js';
 
-// The staged app preserves desktop/ and server/ as siblings, just like development.
+// The staged app preserves desktop/, server/ and inference/ as siblings, just like development.
 export default {
   appId: 'com.rssmonster.desktop',
   productName: 'RSSMonster',
   directories: { app: '.stage', output: 'release', buildResources: 'resources' },
   asar: { smartUnpack: false },
-  asarUnpack: ['node_modules/sqlite3/build/Release/*.node'],
+  asarUnpack: [
+    'node_modules/sqlite3/build/Release/*.node',
+    'node_modules/onnxruntime-node/bin/**/*',
+    'node_modules/@img/**/*'
+  ],
   npmRebuild: true,
   afterPack: context => verifyPackagedRuntime(context.packager.getResourcesDir(context.appOutDir)),
   files: [
-    'desktop/{main,runtime,database}.js',
+    'desktop/{main,runtime,database,services,service-process,inference-config}.js',
+    'inference/src/**/*',
+    'inference/package.json',
     'desktop/dist/**/*',
     'server/**/*',
     'LICENSE.md',

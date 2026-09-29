@@ -19,8 +19,8 @@ const closeServer = server => new Promise((resolve, reject) => {
   server.close(error => error ? reject(error) : resolve());
 });
 
-export const startServer = async () => {
-  const { host, port } = getConfig();
+export const startServer = async (options = {}) => {
+  const { host, port } = { ...getConfig(), ...options };
   let resolveListening;
   let rejectListening;
   const listening = new Promise((resolve, reject) => {
@@ -28,7 +28,6 @@ export const startServer = async () => {
     rejectListening = reject;
   });
   const server = app.listen(port, host, () => {
-    console.log(`[INFERENCE] Listening on http://${host}:${port}`);
     resolveListening();
   });
   server.once?.('error', rejectListening);
@@ -52,6 +51,8 @@ export const startServer = async () => {
   process.once('SIGINT', shutdown);
 
   await listening;
+  console.log(`[INFERENCE] Listening on http://${host}:${server.address?.()?.port ?? port}`);
+  options.onListening?.(server);
   server.removeListener?.('error', rejectListening);
   app.locals.readiness.announce();
   void checkGenerationHandshake();

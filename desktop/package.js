@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,16 +19,19 @@ const npm = (args, cwd) => new Promise((resolve, reject) => {
   child.once('exit', code => code === 0 ? resolve() : reject(new Error(`npm ${args.join(' ')} failed (${code})`)));
 });
 
-export const prepareApplication = async () => {
+export const prepareApplication = async ({ platform = process.platform, arch = process.arch } = {}) => {
   const server = await readJson(path.join(serverDirectory, 'package.json'));
   const desktop = await readJson(path.join(desktopDirectory, 'package.json'));
+  const inferenceDirectory = path.resolve(desktopDirectory, '../inference');
+  const inference = await readJson(path.join(inferenceDirectory, 'package.json'));
+  const inferenceLock = await readJson(path.join(inferenceDirectory, 'package-lock.json'));
   const lock = await readJson(path.join(serverDirectory, 'package-lock.json'));
   await rm(stageDirectory, { recursive: true, force: true });
   await mkdir(path.join(stageDirectory, 'desktop'), { recursive: true });
   await mkdir(path.join(stageDirectory, 'server'), { recursive: true });
 
   // Install a clean production tree without copying the developer's node_modules or data.
-  const dependencies = { ...server.dependencies, ...desktop.dependencies };
+  const dependencies = { ...server.dependencies, ...inference.dependencies, ...desktop.dependencies };
   delete dependencies['sequelize-cli'];
   delete dependencies.mysql2;
   const manifest = {
@@ -40,18 +43,32 @@ export const prepareApplication = async () => {
     homepage: 'https://github.com/pietheinstrengholt/rssmonster',
     type: 'module',
     main: 'desktop/main.js',
-    dependencies
+    dependencies,
+    overrides: inference.overrides
   };
   await writeJson(path.join(stageDirectory, 'package.json'), manifest);
-  // Seed npm's resolution from the existing server lock, retaining its pinned runtime versions.
+  // Seed npm's resolution from both locks, retaining existing server pins for shared dependencies.
+  for (const [name, entry] of Object.entries(inferenceLock.packages)) {
+    if (name && !lock.packages[name]) lock.packages[name] = entry;
+  }
   lock.name = manifest.name;
   lock.version = manifest.version;
   lock.packages[''] = manifest;
   await writeJson(path.join(stageDirectory, 'package-lock.json'), lock);
   await npm(['install', '--package-lock-only', '--ignore-scripts', '--omit=dev', '--no-audit', '--no-fund'], stageDirectory);
-  await npm(['ci', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'], stageDirectory);
+  await npm(['ci', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund', `--os=${platform}`, `--cpu=${arch}`], stageDirectory);
 
-  for (const file of ['main.js', 'runtime.js', 'database.js']) {
+  // ONNX Runtime ships all CPU targets; retain only the requested platform/architecture.
+  const nativeDirectory = path.join(stageDirectory, 'node_modules/onnxruntime-node/bin/napi-v6');
+  for (const nativePlatform of await readdir(nativeDirectory)) {
+    const directory = path.join(nativeDirectory, nativePlatform);
+    if (nativePlatform !== platform) await rm(directory, { recursive: true });
+    else for (const nativeArch of await readdir(directory)) {
+      if (nativeArch !== arch) await rm(path.join(directory, nativeArch), { recursive: true });
+    }
+  }
+
+  for (const file of ['main.js', 'runtime.js', 'database.js', 'services.js', 'service-process.js', 'inference-config.js']) {
     await cp(path.join(desktopDirectory, file), path.join(stageDirectory, 'desktop', file));
   }
   await cp(path.join(desktopDirectory, 'dist'), path.join(stageDirectory, 'desktop/dist'), { recursive: true });
@@ -68,11 +85,14 @@ export const prepareApplication = async () => {
       }
     });
   }
+  await mkdir(path.join(stageDirectory, 'inference'), { recursive: true });
+  await cp(path.join(inferenceDirectory, 'src'), path.join(stageDirectory, 'inference/src'), { recursive: true });
+  await writeJson(path.join(stageDirectory, 'inference/package.json'), { type: 'module', version: inference.version });
   // HTTP controllers, status services and a migration import these shared modules.
   for (const file of [
     'scripts/calculateFeedTrust.js', 'scripts/runIslandsCommand.js',
     'seeders/20260520104500-island-taxonomy.js', 'seeders/package.json',
-    'src/workers/crawlWorkerHealth.js', 'src/workers/aiWorkerHealth.js', 'src/workers/workerHealth.js'
+    'src/workers/aiWorker.js', 'src/workers/crawlWorkerHealth.js', 'src/workers/aiWorkerHealth.js', 'src/workers/workerHealth.js'
   ]) {
     const destination = path.join(stageDirectory, 'server', file);
     await mkdir(path.dirname(destination), { recursive: true });
@@ -88,7 +108,7 @@ const packageApplication = async () => {
   const arch = process.argv[3] || process.arch;
   if (!['x64', 'arm64'].includes(arch)) throw new Error(`Unsupported build architecture: ${arch}`);
   await npm(['run', 'build'], desktopDirectory);
-  const { electronVersion } = await prepareApplication();
+  const { electronVersion } = await prepareApplication({ platform: platform.nodeName, arch });
   // Explicitly disable certificate discovery even on machines with signing credentials installed.
   process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false';
   const artifacts = await build({

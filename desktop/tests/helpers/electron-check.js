@@ -1,9 +1,10 @@
 import { app, Menu } from 'electron';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
+import { setTimeout as delay } from 'node:timers/promises';
 
 const fixture = createServer((_req, res) => {
   res.setHeader('Content-Type', 'application/rss+xml');
@@ -17,11 +18,23 @@ await new Promise(resolve => fixture.listen(0, '127.0.0.1', resolve));
 process.env.RSSMONSTER_INTERNAL_HOST_ALLOWLIST = `127.0.0.1:${fixture.address().port}`;
 
 const directory = mkdtempSync(path.join(tmpdir(), 'rssmonster-electron-test-'));
+if (process.env.RSSMONSTER_TEST_MODEL_CACHE) {
+  symlinkSync(path.resolve(process.env.RSSMONSTER_TEST_MODEL_CACHE), path.join(directory, 'models'), 'dir');
+}
 app.setPath('userData', directory);
 app.on('quit', () => rmSync(directory, { recursive: true, force: true }));
 app.once('browser-window-created', (_event, window) => {
-  window.webContents.once('did-finish-load', async () => {
+  let tested = false;
+  window.webContents.on('did-finish-load', async () => {
     try {
+      const { getInferenceStatus } = await import('../../../server/services/inference/status.js');
+      const status = await getInferenceStatus({ refresh: true });
+      if (tested || !status.ready) return;
+      tested = true;
+      assert.equal(status.capabilities.embeddings.available, true);
+      assert.equal(status.capabilities.classification.available, true);
+      assert.equal(status.capabilities.generation.available, true);
+      assert.equal(status.capabilities.assistant.available, false);
       assert.equal(Menu.getApplicationMenu(), null);
       if (process.platform !== 'darwin') assert.equal(window.isMenuBarVisible(), false);
       const result = await window.webContents.executeJavaScript(`new Promise(resolve => {
@@ -50,6 +63,8 @@ app.once('browser-window-created', (_event, window) => {
         };
         await api('/auth/register', { ...credentials, password_repeat: credentials.password });
         const { token } = await api('/auth/login', credentials);
+        const settings = await (await fetch('/api/setting', { headers: { Authorization: 'Bearer ' + token } })).json();
+        if (!settings.AIEnabled) throw new Error('AIEnabled did not follow local readiness');
         const category = await api('/categories', { name: 'Electron feeds' }, token);
         await api('/feeds', { categoryId: category.id, url: 'http://127.0.0.1:${fixture.address().port}/feed.xml' }, token);
         for (const [id, value] of Object.entries(credentials)) {
@@ -83,13 +98,24 @@ app.once('browser-window-created', (_event, window) => {
       await waitForActiveCrawls();
       const { default: db } = await import('../../../server/models/index.js');
       assert.equal(await db.Article.count(), 1);
-      assert.equal(await db.ProcessingJob.count(), 0);
-      console.log('Electron smoke passed: Vue login, refresh button, REST crawl, persisted article and renderer isolation.');
+      assert.equal(await db.Article.count({ where: { embedding_model: 'onnx-community/Qwen3-Embedding-0.6B-ONNX' } }), 1);
+      const deadline = Date.now() + 180_000;
+      while (!await db.ProcessingJob.count({ where: { type: 'article_enrichment', status: 'succeeded' } })) {
+        assert.ok(Date.now() < deadline, 'AI worker did not finish article enrichment');
+        assert.equal(await db.ProcessingJob.count({ where: { status: 'dead' } }), 0);
+        await delay(250);
+      }
+      assert.equal((await db.Article.findOne()).aiAnalysisStatus, 'complete');
+      const { readAiWorkerHealthState } = await import('../../../server/src/workers/aiWorkerHealth.js');
+      assert.equal((await readAiWorkerHealthState()).healthy, true);
+      assert.equal(process.env.AI_WORKER_HEALTH_FILE, path.join(directory, 'ai-worker-health.json'));
+      console.log('Electron smoke passed: Vue login, refresh button, REST crawl, local model readiness, embeddings, persisted article and renderer isolation.');
       await new Promise(resolve => fixture.close(resolve));
       window.close();
     } catch (error) {
       console.error(error);
-      app.exit(1);
+      process.exitCode = 1;
+      app.quit();
     }
   });
 });
