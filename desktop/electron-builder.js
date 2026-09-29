@@ -1,3 +1,5 @@
+import { verifyPackagedRuntime } from './verify-package.js';
+
 // The staged app preserves desktop/ and server/ as siblings, just like development.
 export default {
   appId: 'com.rssmonster.desktop',
@@ -6,6 +8,7 @@ export default {
   asar: { smartUnpack: false },
   asarUnpack: ['node_modules/sqlite3/build/Release/*.node'],
   npmRebuild: true,
+  afterPack: context => verifyPackagedRuntime(context.packager.getResourcesDir(context.appOutDir)),
   files: [
     'desktop/{main,runtime,database}.js',
     'desktop/dist/**/*',
@@ -21,7 +24,13 @@ export default {
     '!**/*.d.{ts,cts,mts}',
     '!node_modules/json-schema-traverse/spec/**/*',
     '!node_modules/{node-gyp,node-addon-api,prebuild-install}/**/*',
-    '!node_modules/sqlite3/{src,deps}/**/*'
+    '!node_modules/sqlite3/{src,deps}/**/*',
+    // Feedsmith vendors runtime code here; dependency collection skips nested node_modules.
+    {
+      from: 'node_modules/feedsmith/dist/node_modules',
+      to: 'node_modules/feedsmith/dist/node_modules',
+      filter: ['**/*.mjs', '**/*.cjs', '**/package.json']
+    }
   ],
   artifactName: '${productName}-${version}-${arch}.${ext}',
   mac: {

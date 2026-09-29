@@ -1,0 +1,32 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { createPackage } from '@electron/asar';
+import { verifyPackagedRuntime } from '../verify-package.js';
+
+for (const omitted of [null, 'parser', 'migration']) {
+  test(`packaged runtime ${omitted ? `rejects missing ${omitted}` : 'contains parser and ESM migrations'}`, async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'rssmonster-package-regression-'));
+    try {
+      const source = path.join(directory, 'source');
+      const migrations = path.join(directory, 'migrations');
+      const resources = path.join(directory, 'resources');
+      await Promise.all([source, migrations, resources].map(dir => mkdir(dir)));
+      await writeFile(path.join(migrations, '20260911000000-settings.mjs'), 'export const up = () => {};');
+      const files = [];
+      if (omitted !== 'parser') files.push('node_modules/feedsmith/dist/node_modules/trousse/dist/is.mjs');
+      if (omitted !== 'migration') files.push('server/migrations/20260911000000-settings.mjs');
+      for (const file of files) {
+        await mkdir(path.dirname(path.join(source, file)), { recursive: true });
+        await writeFile(path.join(source, file), 'export {};');
+      }
+      await createPackage(source, path.join(resources, 'app.asar'));
+      if (omitted) await assert.rejects(verifyPackagedRuntime(resources, migrations), /missing required files/);
+      else await verifyPackagedRuntime(resources, migrations);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+}

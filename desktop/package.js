@@ -64,7 +64,7 @@ export const prepareApplication = async () => {
       filter: async source => {
         const name = path.basename(source);
         if (name.startsWith('.') || name === 'semanticVectorFixtures.js') return false;
-        return (await stat(source)).isDirectory() || /\.(js|cjs|json)$/.test(name);
+        return (await stat(source)).isDirectory() || /\.(js|mjs|cjs|json)$/.test(name);
       }
     });
   }
