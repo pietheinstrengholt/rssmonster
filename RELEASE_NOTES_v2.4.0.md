@@ -73,6 +73,14 @@ content retention, and deployment flexibility.
   signals.
 - Reused personalization evidence within article requests and bounded expensive
   Island operations to reduce repeated work and memory pressure.
+- Added a searchable, filterable **Settings → Islands** overview with evidence
+  inspection and example articles. Interest names in **Why recommended** link
+  directly to the relevant Island inspector.
+- Islands can be muted or unmuted for future interest scoring while preserving
+  their evidence and lifecycle. Muting does not rewrite stored article scores.
+- Added feed-level personal-interest affinity from recent eligible articles and
+  positive Island matches, refreshed during Island recalibration. Feeds without
+  supporting evidence remain unscored.
 
 ### Stronger Event identity and category controls
 
@@ -94,12 +102,17 @@ content retention, and deployment flexibility.
   current unread-list baseline.
 - Readers can load only the newly arrived articles or refresh the complete unread
   list without losing the current collection unexpectedly.
-- Added unread age filters for all articles, the last 24 hours, three days, or
-  seven days.
+- Added adaptive unread age filters with three rolling cutoffs plus **All**.
+  Cutoffs range from hours to 30 days based on the oldest article in the complete
+  matching result set, independently of pagination and the selected age cutoff.
 - Added calendar filters for Today, Yesterday, This week, This month, and custom
-  date ranges.
+  date ranges. The unrestricted calendar option is labeled **All dates** to
+  distinguish it from the independent rolling age filters.
+- Age selections reset to **All** when unavailable in a new result context.
 - Added a sticky date context that follows the visible article while preserving
   the selected sort order.
+- Hid the date label below 1070px and the article/source summary below 876px to
+  keep the context controls usable on narrower screens.
 - Improved unread-filter reset, custom-date dismissal, count refresh, and mobile
   tuning controls.
 - Refresh checks now distinguish newly stored unread articles from changes that
@@ -117,13 +130,29 @@ content retention, and deployment flexibility.
   persistence in the background.
 - Improved article-loading errors, toolbar alignment, arrivals presentation, and
   compact mobile controls.
+- Reduced mobile swipe rendering overhead and preserved pinch-to-zoom gestures
+  by suspending swipe and pull-to-refresh handling while zoomed or using multiple
+  touches.
+
+### Hot articles and Daily Briefing
+
+- Hot articles receive a bounded boost in Recommended and Top Stories ordering
+  based on links from other feeds in the user's subscriptions.
+- Added **Include Hot articles** to briefing preferences, enabled by default.
+  Hot articles can qualify alongside personal-interest and Event evidence while
+  still respecting briefing filters.
+- Disabling the preference excludes Hot articles even when they also qualify
+  through interest or Event evidence.
 
 ### Configurable sidebar and shortcuts
 
 - Added persisted sidebar configuration for count display, count decluttering,
   zero-count visibility, favicons, and section order.
 - Added sorting by manual order, name, selected count, total count, or recent feed
-  activity.
+  activity, plus **Personal interests**.
+- Personal-interest sorting orders feeds by affinity, with unscored feeds last,
+  and categories by their combined feed affinity. Equal scores retain the
+  existing fallback order.
 - Added optional grouping of inactive feeds after 30, 60, or 90 days.
 - Feeds and categories can now be pinned into a dedicated, reorderable shortcuts
   section.
@@ -142,6 +171,14 @@ content retention, and deployment flexibility.
   unless configured.
 - Desktop installations retain the manual cleanup action but do not run the
   nightly worker.
+- Added a per-feed ongoing article admission window in **Update feed**, ranging
+  from three days to five years and defaulting to 30 days.
+- After the initial import, unseen entries must satisfy both the feed's admission
+  window and the user's maximum article age, preventing older entries from being
+  reimported after cleanup.
+- Changing an admission window affects later crawls without deleting stored
+  articles or restarting the initial import. Existing articles can still receive
+  revisions, and initial imports and their retries retain the selected history.
 
 ### Richer feed and article metadata
 
@@ -183,6 +220,11 @@ content retention, and deployment flexibility.
   FeedSmith, dotenv, and ESLint dependencies.
 - Added Ubuntu installation, Ollama, OIDC, server-settings, sidebar, category,
   archiving, crawl-contract, and semantic-contract documentation.
+- Added a root `npm run dev` command to start the server, client, inference
+  service, and workers together.
+- Removed unused client, server, and inference helpers and obsolete semantic
+  test execution/reporting code while retaining active tests and compatibility
+  interfaces.
 
 ## Upgrade notes
 
@@ -193,6 +235,8 @@ content retention, and deployment flexibility.
 - The personal settings table is migrated from `settings` to `user_settings`.
 - Review article-retention settings after upgrading. The default age limit is
   seven years, and nightly cleanup requires the crawl worker.
+- Established feeds receive a default 30-day ongoing admission window. Review
+  **Update feed** if a subscription needs a longer window for unseen entries.
 - Saved sensitive server settings and authenticated feed passwords require a
   stable encryption key. Back up that key together with the database.
 - Inference no longer assumes an implicit localhost endpoint. Configure a
@@ -209,6 +253,8 @@ content retention, and deployment flexibility.
 - [Inference administration](docs/inference.md)
 - [Ollama setup](docs/ollama.md)
 - [Interest Islands](docs/interest-islands.md)
+- [Hot articles](docs/hot-articles.md)
+- [Daily Briefing](docs/daily-briefing.md)
 - [Categories and Event clustering](docs/categories.md)
 - [Sidebar settings](docs/sidebar-settings.md)
 - [Article archiving](docs/archiving.md)

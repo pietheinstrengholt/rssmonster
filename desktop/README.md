@@ -44,9 +44,9 @@ Outputs are in **`desktop/release/`**:
 
 | Platform | Outputs (version comes from `server/package.json`) |
 | --- | --- |
-| macOS | `mac[-arm64]/RSSMonster.app`, `RSSMonster-2.3.0-{x64,arm64}.dmg` |
-| Windows | `RSSMonster-Setup-2.3.0-{x64,arm64}.exe` (NSIS) |
-| Linux | `RSSMonster-2.3.0-{x86_64,arm64}.AppImage`, `RSSMonster-2.3.0-{amd64,arm64}.deb` |
+| macOS | `mac[-arm64]/RSSMonster.app`, `RSSMonster-2.4.0-{x64,arm64}.dmg` |
+| Windows | `RSSMonster-Setup-2.4.0-{x64,arm64}.exe` (NSIS) |
+| Linux | `RSSMonster-2.4.0-{x86_64,arm64}.AppImage`, `RSSMonster-2.4.0-{amd64,arm64}.deb` |
 
 `dist/` remains the frontend build. `.stage/` is a disposable generated application
 directory; neither is a second maintained frontend/backend. Build outputs are ignored
@@ -55,7 +55,7 @@ by Git. Signing, notarization and electron-builder publishing are explicitly dis
 ### GitHub releases
 
 After committing the desktop files and version changes, push a version tag such as
-`v2.3.0`. `.github/workflows/desktop-release.yml` builds Windows x64, Linux x64,
+`v2.4.0`. `.github/workflows/desktop-release.yml` builds Windows x64, Linux x64,
 macOS Intel and macOS Apple Silicon installers on native GitHub runners. The tag
 must match the client, server and inference package versions; desktop inherits the
 server version. The workflow can also be run manually with an existing tag.
@@ -127,7 +127,7 @@ npm run test:electron --prefix desktop
 npm run lint --prefix desktop
 npm run test:packaged --prefix desktop
 # Test the Linux AppImage itself (path is relative to desktop/):
-npm run test:packaged --prefix desktop -- release/RSSMonster-2.3.0-x86_64.AppImage
+npm run test:packaged --prefix desktop -- release/RSSMonster-2.4.0-x86_64.AppImage
 ```
 
 The packaged verifier currently targets Linux. It uses disposable profiles outside

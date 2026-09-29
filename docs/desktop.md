@@ -23,10 +23,10 @@ and choose the installer for your system from a published release's **Assets**:
 
 | System | Download |
 | --- | --- |
-| Windows x64 | `RSSMonster-Setup-2.3.0-x64.exe` |
-| macOS, Intel | `RSSMonster-2.3.0-x64.dmg` |
-| macOS, Apple Silicon | `RSSMonster-2.3.0-arm64.dmg` |
-| Linux x64 | `RSSMonster-2.3.0-x86_64.AppImage` or `RSSMonster-2.3.0-amd64.deb` |
+| Windows x64 | `RSSMonster-Setup-2.4.0-x64.exe` |
+| macOS, Intel | `RSSMonster-2.4.0-x64.dmg` |
+| macOS, Apple Silicon | `RSSMonster-2.4.0-arm64.dmg` |
+| Linux x64 | `RSSMonster-2.4.0-x86_64.AppImage` or `RSSMonster-2.4.0-amd64.deb` |
 
 The version in each filename changes with the release. Installers only become
 publicly available after the desktop builds finish and the draft release is
