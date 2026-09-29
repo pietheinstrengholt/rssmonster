@@ -159,10 +159,11 @@ describe('crawl run article statistics', () => {
     });
 
     expect(events[0]).toMatchObject({ type: 'refresh_started', totalFeeds: 2, processedFeeds: 0 });
-    expect(events.filter(event => event.type === 'feed_started')).toEqual([
-      expect.objectContaining({ feedId: feed.id, currentFeed: 1, totalFeeds: 2 }),
-      expect.objectContaining({ feedId: secondFeed.id, currentFeed: 2, totalFeeds: 2 })
-    ]);
+    const startedFeeds = events.filter(event => event.type === 'feed_started');
+    expect(startedFeeds.map(event => event.feedId).sort((a, b) => a - b))
+      .toEqual([feed.id, secondFeed.id].sort((a, b) => a - b));
+    expect(startedFeeds.map(event => `${event.currentFeed}/${event.totalFeeds}`).sort())
+      .toEqual(['1/2', '2/2']);
     expect(events.every(event => event.totalFeeds === 2)).toBe(true);
     expect(events.at(-1)).toMatchObject({ type: 'done', totalFeeds: 2, processedFeeds: 2 });
   });

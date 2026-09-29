@@ -1362,7 +1362,7 @@ const runCrawl = async (userId = null, options = {}) => {
             return;
           }
           feeds.push(feed);
-          await runFeedWithTimeout(feed, index + 1);
+          await runFeedWithTimeout(feed, feeds.length);
           results[index] = { status: 'fulfilled' };
         } catch (reason) {
           results.push({ status: 'rejected', reason });
