@@ -56,6 +56,9 @@
       :class="{ 'article-empty-state-container': isCollectionEmpty }"
     >
       <ArticleEmptyState
+        :no-feeds="overviewStore.overviewStructureStatus === 'success' && !overviewStore.categories.some(category => category.feeds?.length)"
+        @add-feed="uiStore.setShowModal('NewFeed')"
+        @import-opml="uiStore.setShowModal('ImportSubscriptions')"
         v-if="isCollectionEmpty"
         :current-status="currentSelection"
         :selected-tag="selectedTag"
@@ -87,6 +90,7 @@
 
 <script>
 import { mapStores } from 'pinia';
+import { useUiStore } from '../../store/ui.js';
 import { useOverviewStore } from '../../store/overview.js';
 import { useSelectionStore } from '../../store/selection.js';
 import { useFeedRefreshStore } from '../../store/feedRefresh.js';
@@ -185,7 +189,7 @@ export default {
     window.removeEventListener('keydown', this.handleMinimalKeydown);
   },
   computed: {
-    ...mapStores(useOverviewStore, useSelectionStore, useFeedRefreshStore),
+    ...mapStores(useOverviewStore, useSelectionStore, useFeedRefreshStore, useUiStore),
     // Exposes the active status from the explicit collection presentation contract.
     currentSelection() {
       return this.collectionSummary.status;

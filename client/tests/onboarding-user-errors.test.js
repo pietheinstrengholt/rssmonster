@@ -4,12 +4,18 @@ import InitialFeeds from '../src/components/onboarding/InitialFeeds.vue';
 import SettingsManageUsers from '../src/components/settings/SettingsManageUsers.vue';
 import { createCategory } from '../src/api/categories';
 import { createFeed } from '../src/api/feeds';
+import { notifyActionError } from '../src/services/actionNotifications.js';
 import {
   deleteUser,
   fetchUsers,
   updateUser
 } from '../src/api/users';
 import { createFocusedStores } from './helpers/focusedStores.js';
+
+vi.mock('../src/services/actionNotifications.js', async importOriginal => ({
+  ...await importOriginal(),
+  notifyActionError: vi.fn()
+}));
 
 vi.mock('../src/api/categories', () => ({
   createCategory: vi.fn()
@@ -70,7 +76,36 @@ afterEach(() => {
 });
 
 describe('onboarding failure handling', () => {
-  it('keeps partial success retry-safe and completes after a successful retry', async () => {
+  it('starts with every starter feed unchecked and requires explicit selection', () => {
+    const wrapper = mountInitialFeeds();
+    expect(wrapper.findAll('input[type="checkbox"]')).toHaveLength(18);
+    const topics = wrapper.findAll('fieldset');
+    expect(topics).toHaveLength(9);
+    expect(topics.every(topic => topic.findAll('input[type="checkbox"]').length === 2)).toBe(true);
+    expect(topics.find(topic => topic.find('legend').text() === 'Reddit').text()).toContain('Reddit - Technology');
+    expect(topics.find(topic => topic.find('legend').text() === 'World & News').text()).toContain('BBC - World News');
+    expect(wrapper.text()).toContain('The Guardian - World News');
+    expect(wrapper.text()).toContain('CNBC - Business');
+    expect(wrapper.text()).toContain('Quanta Magazine');
+    expect(wrapper.text()).toContain('ScienceDaily');
+    expect(wrapper.text()).not.toContain('Reddit - Science');
+    expect(wrapper.findAll('input[type="checkbox"]').every(input => !input.element.checked)).toBe(true);
+    expect(findButton(wrapper, 'Start with selected feeds').attributes('disabled')).toBeDefined();
+    expect(createFeed).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it.each(['Start empty', 'Skip for now →'])('finishes through %s without subscribing', async label => {
+    const wrapper = mountInitialFeeds();
+    const button = wrapper.findAll('button').find(button => button.text().includes(label));
+    await button.trigger('click');
+    expect(wrapper.emitted('completed')).toHaveLength(1);
+    expect(createFeed).not.toHaveBeenCalled();
+    expect(createCategory).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it('completes after a partial failure, reports skipped feeds and keeps additions retry-safe', async () => {
     const internalError = new Error('database constraint detail');
     createCategory.mockResolvedValue({
       data: { id: 7, name: 'Technology' }
@@ -114,19 +149,21 @@ describe('onboarding failure handling', () => {
       ]
     });
 
-    await wrapper.get('button').trigger('click');
+    await findButton(wrapper, 'Start with selected feeds').trigger('click');
     await flushPromises();
 
-    expect(wrapper.emitted('completed')).toBeUndefined();
+    expect(wrapper.emitted('completed')).toHaveLength(1);
+    expect(notifyActionError).toHaveBeenCalledWith(expect.stringContaining('Not added: Second feed.'));
+    expect(notifyActionError).toHaveBeenCalledWith(expect.stringContaining('You can add feeds later using Add a feed.'));
     expect(wrapper.get('[role="alert"]').text()).toContain('Some starter content was added');
     expect(wrapper.get('[role="alert"]').text()).not.toContain(internalError.message);
     expect(wrapper.vm.overviewStore.categories).toHaveLength(1);
     expect(wrapper.vm.overviewStore.categories[0].feeds).toHaveLength(1);
 
-    await wrapper.get('button').trigger('click');
+    await findButton(wrapper, 'Start with selected feeds').trigger('click');
     await flushPromises();
 
-    expect(wrapper.emitted('completed')).toHaveLength(1);
+    expect(wrapper.emitted('completed')).toHaveLength(2);
     expect(createCategory).toHaveBeenCalledTimes(1);
     expect(createFeed).toHaveBeenCalledTimes(3);
     expect(wrapper.vm.overviewStore.categories[0].feeds).toHaveLength(2);
@@ -134,6 +171,27 @@ describe('onboarding failure handling', () => {
       'Error creating onboarding feed "Second feed":',
       internalError
     );
+  });
+
+  it.each(['category', 'feed'])('finishes with an empty account when every %s creation fails', async failure => {
+    createCategory.mockResolvedValue({ data: { id: 7, name: 'Science' } });
+    if (failure === 'category') createCategory.mockRejectedValue(new Error('Internal category failure'));
+    createFeed.mockRejectedValue(new Error('Internal feed failure'));
+    const wrapper = mountInitialFeeds();
+    await wrapper.setData({ feeds: [{
+      category: 'Science', selected: true, title: 'IEEE Spectrum', url: 'https://spectrum.ieee.org/rss/fulltext'
+    }] });
+
+    await findButton(wrapper, 'Start with selected feeds').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.emitted('completed')).toHaveLength(1);
+    expect(notifyActionError).toHaveBeenCalledWith(expect.stringContaining('Not added: IEEE Spectrum.'));
+    expect(notifyActionError.mock.calls[0][0]).not.toContain('Internal');
+    expect(wrapper.vm.overviewStore.categories.flatMap(category => category.feeds)).toHaveLength(0);
+    expect(wrapper.vm.setupPending).toBe(false);
+    if (failure === 'category') expect(createFeed).not.toHaveBeenCalled();
+    wrapper.unmount();
   });
 
   it('leaves authentication failures to the fatal application flow', async () => {
@@ -150,7 +208,7 @@ describe('onboarding failure handling', () => {
       }]
     });
 
-    await wrapper.get('button').trigger('click');
+    await findButton(wrapper, 'Start with selected feeds').trigger('click');
     await flushPromises();
 
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);

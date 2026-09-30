@@ -5,6 +5,7 @@ import appShellSource from '../src/AppShell.vue?raw';
 
 const supportedDialogs = [
   ['NewCategory', 'NewCategory'],
+  ['ImportSubscriptions', 'ImportSubscriptions'],
   ['NewFeed', 'NewFeed'],
   ['HtmlXpathFeed', 'HtmlXpathFeed'],
   ['HtmlXpathPreview', 'HtmlXpathPreview'],
@@ -30,7 +31,7 @@ describe('AppShell dialog registry', () => {
   // Keeps dialogs outside shell scrolling and stacking contexts on compact mobile layouts.
   it('renders the active dialog in the document-level overlay host', () => {
     expect(appShellSource).toMatch(
-      /<Teleport to="body">\s*<component :is="activeDialogComponent" v-if="activeDialogComponent" \/>\s*<\/Teleport>/
+      /<Teleport to="body">\s*<component :is="activeDialogComponent" v-if="activeDialogComponent"[^>]*\/>\s*<\/Teleport>/
     );
   });
 

@@ -722,7 +722,7 @@ describe('Vue template handler coverage', () => {
       overviewStore: {
         categories: [{ id: 1, feeds: [{ id: 2, feedName: 'Feed' }] }]
       },
-      selectionStore: { currentSelection: {} },
+      selectionStore: { currentSelection: {}, completeOnboarding: vi.fn().mockResolvedValue(true) },
       uiStore: { setFatalError: vi.fn() },
       ...AppShell.methods,
       getOverview: vi.fn()
@@ -730,7 +730,7 @@ describe('Vue template handler coverage', () => {
 
     context.mobileClick('menu');
     expect(context.mobile).toBe('menu');
-    context.completeOnboarding();
+    await context.completeOnboarding();
     expect(context.getOverview).toHaveBeenCalledWith(true);
     const setAppBadge = vi.fn();
     const clearAppBadge = vi.fn();
@@ -1154,8 +1154,8 @@ describe('Vue template handler coverage', () => {
 
     stores.overviewStore.categories = [];
     await wrapper.vm.$nextTick();
-    await wrapper.get('.onboarding').trigger('click');
-    expect(stores.overviewStore.fetchOverviewSplit).toHaveBeenCalled();
+    expect(wrapper.find('.onboarding').exists()).toBe(false);
+    expect(wrapper.find('.feed').exists()).toBe(true);
     wrapper.unmount();
     vi.useRealTimers();
   });

@@ -29,7 +29,7 @@
         <app-error v-if="uiStore.fatalError" :type="uiStore.fatalError.type" @retry="forceReload"/>
 
         <!-- Add reference to home for calling child loadContent component function -->
-        <app-initial-feeds v-if="showOnboarding" @completed="completeOnboarding"></app-initial-feeds>
+        <app-initial-feeds v-if="showOnboarding" :completing="onboardingCompleting" @completed="completeOnboarding"></app-initial-feeds>
         <app-mobile-pull-to-refresh
           v-if="showMobileArticleRefresh"
           :class="{ 'mobile-pull-to-refresh--tablet': isDesktopShell === true }"
@@ -86,7 +86,7 @@
     />
 
     <Teleport to="body">
-      <component :is="activeDialogComponent" v-if="activeDialogComponent" />
+      <component :is="activeDialogComponent" v-if="activeDialogComponent" @saved="handleSubscriptionSaved" />
     </Teleport>
 
   </div>
@@ -317,6 +317,7 @@
 </style>
 
 <script>
+import { notifyActionError } from './services/actionNotifications.js';
 import { mapStores } from 'pinia';
 import { useSelectionStore } from './store/selection.js';
 import { useOverviewStore } from './store/overview.js';
@@ -352,6 +353,7 @@ const ChatAssistant = defineAsyncComponent(() =>  import("./components/assistant
 // Each supported store identifier retains an explicit lazy import boundary.
 export const DIALOG_COMPONENTS = Object.freeze({
   NewCategory: defineAsyncComponent(() => import("./components/dialogs/categories/NewCategory.vue")),
+  ImportSubscriptions: defineAsyncComponent(() => import("./components/dialogs/feeds/ImportSubscriptions.vue")),
   NewFeed: defineAsyncComponent(() => import("./components/dialogs/feeds/NewFeed.vue")),
   HtmlXpathFeed: defineAsyncComponent(() => import("./components/dialogs/feeds/HtmlXpathFeed.vue")),
   HtmlXpathPreview: defineAsyncComponent(() => import("./components/dialogs/feeds/HtmlXpathPreview.vue")),
@@ -418,6 +420,8 @@ export default {
       isUnmounting: false,
       overviewIntervalId: null,
       overviewLoaded: false,
+      onboardingRequired: null,
+      onboardingCompleting: false,
       overviewReloading: false,
       showSettingsModal: false,
       settingsSection: 'welcome',
@@ -643,9 +647,21 @@ export default {
     async markVisibleArticlesRead() {
       await this.$refs.articleFeed?.markVisibleArticlesRead();
     },
-    completeOnboarding() {
-      // Mark onboarding as complete and refresh overview
-      this.getOverview(true);
+    async completeOnboarding() {
+      if (this.onboardingCompleting) return;
+      this.onboardingCompleting = true;
+      // Mark onboarding as complete and refresh overview.
+      try {
+        if (await this.selectionStore.completeOnboarding() === false) return;
+        await this.getOverview(true);
+      } catch (error) {
+        notifyActionError('Could not save setup completion. Please try again.', error, () => this.completeOnboarding());
+      } finally {
+        this.onboardingCompleting = false;
+      }
+    },
+    handleSubscriptionSaved() {
+      if (this.showOnboarding) void this.completeOnboarding();
     },
     // This function refreshes overview data without conflating auth, timeout, and connectivity failures.
     async getOverview(initial) {
@@ -661,6 +677,7 @@ export default {
         if (this.uiStore.fatalError?.type === 'overview') {
           this.uiStore.clearFatalError();
         }
+        if (this.onboardingRequired === null) this.onboardingRequired = this.overviewStore.categories.length === 0;
         this.overviewLoaded = true;
         if (!initial) await this.refreshNewArticles();
 
@@ -989,7 +1006,8 @@ export default {
       return this.overviewLoaded
         && !this.connectivityStatus
         && !this.uiStore.fatalError
-        && (this.overviewStore.categories.length === 0);
+        && !this.selectionStore.onboardingCompleted
+        && (this.onboardingRequired ?? this.overviewStore.categories.length === 0);
     }
   }
 };

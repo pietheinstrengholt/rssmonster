@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { articleAgeCutoffOptions } from '../services/articleAgeCutoff.js';
 import { articleDateRangeOptions, resolveArticleDateRange } from '../services/articleDateRange.js';
-import { fetchSettings as fetchSettingsAPI, saveViewMode } from '../api/settings';
+import { fetchSettings as fetchSettingsAPI, saveViewMode, completeOnboarding } from '../api/settings';
 import { useOverviewStore } from './overview.js';
 import { normalizeResourceError } from './resourceState.js';
 import { notifyActionError } from '../services/actionNotifications.js';
@@ -139,6 +139,7 @@ const initialSelectionState = () => ({
   viewModeSessionId: 0,
   viewModeRevision: 0,
   viewModeSaving: false,
+  onboardingCompleted: false,
   settingsStatus: 'idle',
   settingsError: null,
   settingsRequestId: 0
@@ -164,6 +165,13 @@ export const useSelectionStore = defineStore('selection', {
   },
 
   actions: {
+    async completeOnboarding() {
+      const sessionId = this.viewModeSessionId;
+      await completeOnboarding();
+      if (sessionId !== this.viewModeSessionId) return false;
+      this.onboardingCompleted = true;
+      return true;
+    },
     setDateRange(value, custom = this.customDateRange) {
       if (!articleDateRangeOptions.some(option => option.value === value)) return false;
       if (value === 'custom' && !resolveArticleDateRange(value, custom)) return false;
@@ -227,6 +235,7 @@ export const useSelectionStore = defineStore('selection', {
           AssistantEnabled: data.AssistantEnabled,
           markAsReadOnScroll: data.markAsReadOnScroll
         } : data);
+        this.onboardingCompleted = this.onboardingCompleted || Boolean(data.onboardingCompleted);
         this.settingsStatus = 'success';
         return true;
       } catch (error) {

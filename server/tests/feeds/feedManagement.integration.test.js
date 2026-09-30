@@ -124,6 +124,59 @@ describe('shared feed-management integration', () => {
     ownedUserIds = [];
   });
 
+  it('completes empty onboarding durably without creating subscriptions or categories', async () => {
+    const user = trackUser(await createGreaderUser());
+    const other = trackUser(await createGreaderUser());
+    const auth = regularAuthHeaderFor(user);
+    const initialSettings = (await request(app).get('/api/setting').set('Authorization', auth)).body;
+    expect(initialSettings.onboardingCompleted).toBe(false);
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const response = await request(app).patch('/api/setting/onboarding').set('Authorization', auth);
+      expect(response.status).toBe(200);
+      expect(response.body.onboardingCompleted).toBe(true);
+    }
+    const completedSettings = (await request(app).get('/api/setting').set('Authorization', auth)).body;
+    expect(completedSettings.onboardingCompleted).toBe(true);
+    for (const key of ['sort', 'viewMode', 'grouping', 'includeDevelopingEvents']) {
+      expect(completedSettings[key]).toEqual(initialSettings[key]);
+    }
+    expect((await request(app).get('/api/setting').set('Authorization', regularAuthHeaderFor(other))).body.onboardingCompleted).toBe(false);
+    expect(await Category.count({ where: { userId: user.id } })).toBe(0);
+    expect(await Feed.count({ where: { userId: user.id } })).toBe(0);
+  });
+
+  it.each([undefined, null])('validates a first feed without category %s and creates Uncategorized only on save', async categoryId => {
+    const user = trackUser(await createGreaderUser());
+    const auth = regularAuthHeaderFor(user);
+    const authentication = { authenticationType: 'basic', authenticationUsername: 'reader', authenticationPassword: 'first-feed-secret' };
+    const preview = await request(app).post('/api/feeds/validate').set('Authorization', auth)
+      .send({ url: 'https://first.example.test/source', categoryId, ...authentication });
+    expect(preview.status).toBe(200);
+    expect(await Category.count({ where: { userId: user.id } })).toBe(0);
+    const response = await request(app).post('/api/feeds').set('Authorization', auth)
+      .send({ url: 'https://first.example.test/source', categoryId, ...authentication });
+    expect(response.status).toBe(201);
+    expect(response.body.category.name).toBe('Uncategorized');
+    expect(response.body.feed.categoryId).toBe(response.body.category.id);
+    expect(response.body.feed).not.toHaveProperty('authenticationPassword');
+    const stored = await Feed.findByPk(response.body.feed.id, { attributes: { include: ['authenticationPassword'] } });
+    expect(decryptSecret(stored.authenticationPassword)).toBe('first-feed-secret');
+  });
+
+  it('reuses Uncategorized across concurrent first-feed additions', async () => {
+    const user = trackUser(await createGreaderUser());
+    const responses = await Promise.all(['one', 'two'].map(path => request(app).post('/api/feeds')
+      .set('Authorization', regularAuthHeaderFor(user)).send({ url: `https://first.example.test/${path}` })));
+    expect(responses.map(response => response.status)).toEqual([201, 201]);
+    expect(await Category.count({ where: { userId: user.id } })).toBe(1);
+    expect(responses[0].body.feed.categoryId).toBe(responses[1].body.feed.categoryId);
+    const third = await request(app).post('/api/feeds').set('Authorization', regularAuthHeaderFor(user))
+      .send({ url: 'https://first.example.test/three' });
+    expect(third.status).toBe(201);
+    expect(third.body.feed.categoryId).toBe(responses[0].body.feed.categoryId);
+    expect(await Category.count({ where: { userId: user.id } })).toBe(1);
+  });
+
   it('saves admission presets per feed and returns them in the editor overview', async () => {
     const user = trackUser(await createGreaderUser());
     const category = await createCategory(user);

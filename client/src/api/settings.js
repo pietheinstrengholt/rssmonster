@@ -108,3 +108,5 @@ export const clearCrawlSettings = () => api.delete('/setting/server/crawl');
 export const fetchInferenceRuntimeSettings = () => api.get('/setting/inference/runtime');
 export const saveInferenceRuntimeSettings = data => api.put('/setting/inference/runtime', data);
 export const clearInferenceRuntimeSettings = () => api.delete('/setting/inference/runtime');
+
+export const completeOnboarding = () => api.patch('/setting/onboarding');

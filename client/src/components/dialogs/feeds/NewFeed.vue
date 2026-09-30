@@ -8,18 +8,18 @@
         @close="closeDialog"
     >
         <template #title>
-            Add new feed
+            {{ isFirstFeed ? 'Add your first feed' : 'Add new feed' }}
         </template>
 
         <template #description>
-            Enter the feed or website URL you want to follow.
+            {{ isFirstFeed ? 'Add any RSS feed. No category required — you can organize it later.' : 'Enter the feed or website URL you want to follow.' }}
         </template>
 
             <!-- This piece of code is for adding new feeds -->
             <form id="new-feed-form" class="feed-form" @submit.prevent="checkWebsite">
                 <fieldset class="feed-form-fieldset" :disabled="isBusy">
                 <!-- Instead of manipulating the store, we operate on a cloned object -->
-                <div v-if="overviewStore.categories.length > 0">
+                <div>
                     <section class="feed-form-section">
                         <span class="feed-form-icon" aria-hidden="true">
                             <BootstrapIcon icon="link-45deg" />
@@ -47,11 +47,21 @@
                         </span>
 
                         <div class="feed-form-content">
-                            <label class="app-form-label" for="feed-category">Category</label>
-                            <p class="feed-form-description">Choose a category for this feed.</p>
+                            <div class="feed-form-label-row">
+                                <label class="app-form-label" for="feed-category">Category</label>
+                                <button type="button" class="app-button app-button--compact" :aria-expanded="showCreateCategory" @click="showCreateCategory = !showCreateCategory">+ Create category</button>
+                            </div>
+                            <div v-if="showCreateCategory">
+                                <label class="app-form-label" for="inline-category-name">Category name</label>
+                                <input id="inline-category-name" v-model="categoryName" class="app-form-control" />
+                                <button type="button" class="app-button app-button--secondary app-button--compact" :disabled="!categoryName.trim() || isBusy" @click="addCategory">Add category</button>
+                                <p v-if="categoryError" role="alert">{{ categoryError }}</p>
+                            </div>
                             <select id="feed-category" v-model="selectedCategory" class="app-form-select" aria-label="Select Category">
+                                <option v-if="!overviewStore.categories.length" :value="null">Uncategorized</option>
                                 <option v-for="category in overviewStore.categories" :value="category.id" :key="category.id" v-bind:id="category.id">{{ category.name }}</option>
                             </select>
+                            <p v-if="isFirstFeed" class="feed-form-help">Feeds can be added immediately and organized later. You don’t need to create a category first.</p>
                         </div>
                     </section>
 
@@ -85,11 +95,6 @@
                             <p>You can change these settings later in feed settings.</p>
                         </div>
                     </aside>
-                </div>
-
-                <div v-else class="feed-modal-empty">
-                    <p>No categories exist at this moment.</p>
-                    <p>First create a new category before adding a new feed.</p>
                 </div>
 
                 <div class="feed-modal-status" aria-live="polite">
@@ -147,11 +152,11 @@
 
             <button v-if="feed.feedName" type="button" class="app-button app-button--primary base-dialog__button base-dialog__button--primary feed-modal-action" :disabled="isBusy" :aria-busy="saving ? 'true' : 'false'" @click="newFeed">
                 <BootstrapIcon icon="check2" aria-hidden="true" />
-                {{ saving ? 'Saving…' : 'Save changes' }}
+                {{ saving ? 'Saving…' : isFirstFeed ? 'Add feed' : 'Save changes' }}
             </button>
 
             <button
-                v-else-if="overviewStore.categories.length > 0"
+                v-else
                 type="submit"
                 form="new-feed-form"
                 class="app-button app-button--primary base-dialog__button base-dialog__button--primary feed-modal-action"
@@ -165,6 +170,14 @@
 </template>
 
 <style scoped>
+.feed-form-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .feed-form-icon,
 .feed-modal-tip-icon {
     display: inline-flex;
@@ -375,6 +388,7 @@ import InlineActionError from '../../shared/InlineActionError.vue';
 import { mapStores } from 'pinia';
 import { useOverviewStore } from '../../../store/overview.js';
 import { useUiStore } from '../../../store/ui.js';
+import { createCategory } from '../../../api/categories';
 import { validateFeed, createFeed } from '../../../api/feeds';
 import BaseDialog from '../BaseDialog.vue';
 import FeedAuthentication from './FeedAuthentication.vue';
@@ -390,6 +404,7 @@ const isActionableValidationError = error => {
 
 export default {
     name: 'NewFeed',
+    emits: ['saved'],
     components: {
         InlineActionError,
         BaseDialog,
@@ -399,6 +414,10 @@ export default {
     data() {
         return {
           saveError: '',
+          showCreateCategory: false,
+          categoryName: '',
+          categoryError: '',
+          creatingCategory: false,
           ajaxRequest: false,
           forceAdding: false,
           saving: false,
@@ -415,12 +434,15 @@ export default {
     },
     computed: {
       ...mapStores(useOverviewStore, useUiStore),
+        isFirstFeed() {
+            return this.overviewStore.categories.length === 0;
+        },
         authenticationData() {
             return this.authentication.authenticationType === 'basic' ? this.authentication : {};
         },
         // Locks incompatible actions while any feed request is pending.
         isBusy() {
-            return this.ajaxRequest || this.forceAdding || this.saving;
+            return this.ajaxRequest || this.forceAdding || this.saving || this.creatingCategory;
         },
         // Produces an absolute HTTP(S) URL for a qualified domain, including inputs without a protocol.
         normalizedUrl() {
@@ -496,6 +518,30 @@ export default {
         this.uiStore.setHtmlXpathDraft(null);
     },
     methods: {
+        async addCategory() {
+            if (this.isBusy || !this.categoryName.trim()) return;
+            this.creatingCategory = true;
+            this.categoryError = '';
+            try {
+                const { data } = await createCategory(this.categoryName.trim());
+                this.overviewStore.addCategory(data);
+                this.selectedCategory = data.id;
+                this.showCreateCategory = false;
+                this.categoryName = '';
+            } catch {
+                this.categoryError = 'Category wasn’t added. Please try again.';
+            } finally {
+                this.creatingCategory = false;
+            }
+        },
+        reconcileFeed(result) {
+            this.feed = result.data.feed;
+            if (result.data.category && !this.overviewStore.categories.some(category => category.id === result.data.category.id)) {
+                this.overviewStore.addCategory(result.data.category);
+            }
+            this.overviewStore.addFeed(this.feed.categoryId ?? this.selectedCategory, this.feed);
+            this.$emit('saved');
+        },
         // Invalidates metadata from an earlier URL as soon as the user edits the input.
         resetValidatedFeed() {
             this.feed = {};
@@ -601,8 +647,7 @@ export default {
                     crawlSince: this.crawlSince
                 });
 
-                this.feed = result.data.feed;
-                this.overviewStore.addFeed(this.selectedCategory, this.feed);
+                this.reconcileFeed(result);
                 this.uiStore.setShowModal('');
             } catch {
                 this.error_msg = 'Could not add this feed. Please try again.';
@@ -638,7 +683,7 @@ export default {
                 this.feed = result.data.feed;
 
                 // Reconcile the API response through the store's normalization contract.
-                this.overviewStore.addFeed(this.selectedCategory, this.feed);
+                this.reconcileFeed(result);
 
                 //close modal
                 this.saveError = '';

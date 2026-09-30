@@ -454,6 +454,7 @@ const newFeed = async (req, res, _next) => {
       userId,
       inputUrl: req.body.url,
       categoryId: req.body.categoryId,
+      useDefaultCategory: req.body.categoryId == null,
       title: req.body.feedName,
       description: req.body.feedDesc,
       status: req.body.status,
@@ -467,7 +468,12 @@ const newFeed = async (req, res, _next) => {
         authenticationPassword: req.body.authenticationPassword
       }
     });
-    return res.status(201).json({ feed: result.feed });
+    return res.status(201).json({
+      feed: result.feed,
+      ...(req.body.categoryId == null ? {
+        category: await Category.findOne({ where: { id: result.feed.categoryId, userId } })
+      } : {})
+    });
   } catch (err) {
     console.error('Error in newFeed');
     return sendFeedManagementError(res, err);
@@ -503,16 +509,10 @@ const validateFeed = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    if (typeof req.body.categoryId === 'undefined') {
-      return res.status(400).json({
-        error_msg: 'Category is invalid.'
-      });
-    }
-
-    const category = await Category.findOne({
+    const category = req.body.categoryId == null ? null : await Category.findOne({
       where: { id: req.body.categoryId, userId }
     });
-    if (!category) {
+    if (req.body.categoryId != null && !category) {
       return res.status(400).json({ error_msg: 'Category is invalid.' });
     }
 
@@ -559,7 +559,7 @@ const validateFeed = async (req, res, _next) => {
     //return feed data to the frontend, the frontend will create the feed by invoking the newFeed endpoint
     return res.status(200).json({
       userId,
-      categoryId: category.id,
+      categoryId: category?.id ?? null,
       feedName,
       feedDesc,
       feedType: discovery.feedType,

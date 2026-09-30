@@ -243,6 +243,30 @@ export const setOfficialSources = async (req, res, _next) => {
   }
 };
 
+export const completeOnboarding = async (req, res) => {
+  try {
+    const userId = req.userData.userId;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    const available = await getAvailableInferenceCapabilities();
+    const aiEnabled = available.embeddings || available.generation || available.classification;
+    const [settings, created] = await Setting.findOrCreate({
+      where: { userId },
+      // Completing setup must preserve the first-load reader defaults from getSettings.
+      defaults: {
+        onboardingCompleted: true,
+        sort: aiEnabled ? 'recommended' : 'desc',
+        viewMode: aiEnabled ? 'reader' : 'full',
+        grouping: aiEnabled ? 'event' : 'none',
+        includeDevelopingEvents: aiEnabled
+      }
+    });
+    if (!created) await settings.update({ onboardingCompleted: true });
+    return res.status(200).json({ onboardingCompleted: true });
+  } catch {
+    return res.status(500).json({ error: 'Unable to complete onboarding' });
+  }
+};
+
 export const getSettings = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
@@ -314,6 +338,7 @@ export const getSettings = async (req, res, _next) => {
       prioritizeHighTrust,
       themeMode: themeMode,
       startupViewMode,
+      onboardingCompleted: Boolean(settings?.onboardingCompleted),
       sidebarSettings: await loadSidebarSettings(userId),
       openArticleLinksInNewTab,
       markAsReadOnScroll,
@@ -987,6 +1012,7 @@ export default {
   getOfficialSources,
   setOfficialSources,
   getSettings,
+  completeOnboarding,
   setSettings,
   setIncludeDevelopingEvents,
   setThemeMode,

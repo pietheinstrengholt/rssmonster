@@ -13,6 +13,9 @@
       reader-mode
     />
     <ArticleEmptyState
+        :no-feeds="overviewStore.overviewStructureStatus === 'success' && !overviewStore.categories.some(category => category.feeds?.length)"
+        @add-feed="uiStore.setShowModal('NewFeed')"
+        @import-opml="uiStore.setShowModal('ImportSubscriptions')"
       class="article-reader__empty"
       :current-status="currentSelection"
       :selected-tag="selectedTag"

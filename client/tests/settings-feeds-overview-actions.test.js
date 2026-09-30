@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import opmlImportFlow from '../src/mixins/opmlImportFlow.js';
 import SettingsFeedsOverview from '../src/components/settings/SettingsFeedsOverview.vue';
 import {
   fetchFeeds,
@@ -32,9 +33,11 @@ const createContext = (overrides = {}) => {
     ui: { setShowModal: vi.fn() }
   });
   const context = {
+    ...opmlImportFlow.data(),
     ...SettingsFeedsOverview.data(),
     ...stores,
     $emit: vi.fn(),
+    ...opmlImportFlow.methods,
     ...SettingsFeedsOverview.methods,
     ...overrides
   };
@@ -339,7 +342,7 @@ describe('SettingsFeedsOverview actions', () => {
       return preview;
     });
 
-    const previewRequest = SettingsFeedsOverview.methods.handleFileSelect.call(
+    const previewRequest = opmlImportFlow.methods.handleFileSelect.call(
       context,
       { target }
     );

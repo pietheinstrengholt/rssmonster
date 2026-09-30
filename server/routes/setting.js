@@ -43,6 +43,7 @@ router.post('/inference/test', testInferenceSettings);
 
 // GET /api/setting
 router.get('/', userMiddleware.isLoggedIn, settingController.getSettings);
+router.patch('/onboarding', userMiddleware.isLoggedIn, settingController.completeOnboarding);
 router.get('/observability/health', userMiddleware.isLoggedIn, getServicesHealth);
 router.get('/crawl-statistics', userMiddleware.isLoggedIn, settingController.getCrawlStatistics);
 router.get('/islands', userMiddleware.isLoggedIn, settingController.getIslandsOverview);

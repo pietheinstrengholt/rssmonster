@@ -48,7 +48,7 @@
     </h2>
 
     <p class="article-empty-state-text">
-      <template v-if="hasTagSelection && !hasSearch && !showingNewOnly">
+      <template v-if="!noFeeds && hasTagSelection && !hasSearch && !showingNewOnly">
         The selected tag remains active so you can choose another article state or clear it.
       </template>
       <template v-else>
@@ -74,11 +74,11 @@
       :progress="refreshProgress"
     />
 
-    <div v-if="!hasTagSelection" class="article-empty-state-divider" aria-hidden="true">
+    <div v-if="!noFeeds && !hasTagSelection" class="article-empty-state-divider" aria-hidden="true">
       <span>OR</span>
     </div>
 
-    <button v-if="!hasTagSelection" type="button" class="article-empty-state-link" @click="$emit('open-smart-folders')">
+    <button v-if="!noFeeds && !hasTagSelection" type="button" class="article-empty-state-link" @click="$emit('open-smart-folders')">
       <BootstrapIcon icon="folder" aria-hidden="true" />
       Explore smart folders
     </button>
@@ -113,6 +113,8 @@ export default {
     FeedRefreshProgress
   },
   emits: [
+    'add-feed',
+    'import-opml',
     'clear-filters',
     'clear-search',
     'clear-tag',
@@ -121,6 +123,7 @@ export default {
     'view-tag-status'
   ],
   props: {
+    noFeeds: { type: Boolean, default: false },
     selectedTag: {
       type: String,
       default: ''
@@ -156,6 +159,7 @@ export default {
     },
     // This describes the empty tag-state intersection without clearing either selection.
     emptyTitle() {
+      if (this.noFeeds) return 'No feeds yet';
       if (this.showingNewOnly) return 'No new unread articles';
       if (this.hasSearch) return `No articles match “${this.searchQuery.trim()}”`;
       if (!this.hasTagSelection) {
@@ -183,6 +187,7 @@ export default {
     },
     // This gives each empty reading state concise, actionable guidance.
     emptyDescription() {
+      if (this.noFeeds) return 'Add a website you follow or import your existing subscriptions.';
       if (this.showingNewOnly) return 'View the full unread list to keep reading.';
       if (this.hasSearch) return 'Try another search or clear the current filters.';
       const statusDescriptions = {
@@ -205,6 +210,7 @@ export default {
       return !this.hasTagSelection && ['read', 'favorite', 'hot', 'clicked'].includes(this.currentStatus);
     },
     primaryActionLabel() {
+      if (this.noFeeds) return 'Add a feed';
       if (this.showingNewOnly) return 'View unread articles';
       if (this.hasSearch) return 'Clear search';
       if (this.hasTagSelection) return 'Clear tag';
@@ -212,6 +218,7 @@ export default {
       return this.refreshIsPrimaryAction ? 'Refresh feeds' : 'Clear filters';
     },
     primaryActionIcon() {
+      if (this.noFeeds) return 'plus-lg';
       if (this.showingNewOnly) return 'arrow-left-right';
       if (this.hasSearch) return 'x-circle';
       if (this.hasTagSelection) return 'x-circle';
@@ -224,6 +231,7 @@ export default {
     },
     // This labels the secondary action for tag-specific and generic empty states.
     secondaryActionLabel() {
+      if (this.noFeeds) return 'Import OPML';
       if (this.showingNewOnly) return 'Refresh feeds';
       if (this.hasSearch) return 'Clear filters';
       if (!this.hasTagSelection) {
@@ -232,6 +240,7 @@ export default {
       return `View ${this.alternateTagStatus} articles`;
     },
     secondaryActionIcon() {
+      if (this.noFeeds) return 'upload';
       if (this.showingNewOnly) return 'arrow-clockwise';
       if (this.hasSearch) return 'x-circle';
       if (this.hasTagSelection) return 'arrow-left-right';
@@ -241,6 +250,7 @@ export default {
   methods: {
     // This clears only the tag when tag scope caused the empty collection.
     handlePrimaryAction() {
+      if (this.noFeeds) return this.$emit('add-feed');
       if (this.showingNewOnly) {
         this.$emit('view-tag-status', 'unread');
         return;
@@ -263,6 +273,7 @@ export default {
     },
     // This changes article state while preserving a tag, or refreshes a generic empty collection.
     handleSecondaryAction() {
+      if (this.noFeeds) return this.$emit('import-opml');
       if (this.showingNewOnly) {
         this.$emit('refresh-feeds');
         return;

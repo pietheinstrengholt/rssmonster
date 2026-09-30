@@ -17,6 +17,12 @@ export default (sequelize) => {
         allowNull: false,
         unique: true
       },
+      // Records explicit completion even when the account has no subscriptions.
+      onboardingCompleted: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       // Stores the last selected category filter, with percent meaning all categories.
       categoryId: {
         type: DataTypes.STRING,

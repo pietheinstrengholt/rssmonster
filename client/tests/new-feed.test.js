@@ -66,6 +66,24 @@ afterEach(() => {
 });
 
 describe('NewFeed', () => {
+  it('adds a first feed with no category and reconciles the lazily created category', async () => {
+    const { store } = mountNewFeed([]);
+    expect(wrapper.text()).toContain('Add your first feed');
+    expect(wrapper.get('#feed-category').text()).toContain('Uncategorized');
+    await wrapper.get('#feed-url').setValue('https://example.com/feed.xml');
+    validateFeed.mockResolvedValue({ data: { feedName: 'Example', url: 'https://example.com/feed.xml' } });
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(validateFeed).toHaveBeenCalledWith('https://example.com/feed.xml', null);
+    createFeed.mockResolvedValue({ data: { category: { id: 8, name: 'Uncategorized' }, feed: { id: 9, categoryId: 8 } } });
+    await wrapper.findAll('button').find(button => button.text() === 'Add feed').trigger('click');
+    await flushPromises();
+    expect(createFeed).toHaveBeenCalledWith(expect.objectContaining({ categoryId: null }));
+    expect(store.overviewStore.categories).toEqual([expect.objectContaining({ id: 8, name: 'Uncategorized' })]);
+    expect(store.overviewStore.addFeed).toHaveBeenCalledWith(8, expect.objectContaining({ id: 9 }));
+    expect(wrapper.emitted('saved')).toHaveLength(1);
+  });
+
   it.each([
     ['FEED_AUTHENTICATION_FAILED', 'Authentication failed. Check the username and password.'],
     ['FEED_ACCESS_DENIED', 'Access to this feed was denied.']
@@ -120,11 +138,11 @@ describe('NewFeed', () => {
     expect(wrapper.get('#new-feed-authentication-password').element.value).toBe('');
   });
   // Verifies the modal explains the category prerequisite and supports closing.
-  it('renders the empty category state and supports closing', async () => {
+  it('allows first-feed entry without categories and supports closing', async () => {
     const { store } = mountNewFeed([]);
 
-    expect(wrapper.text()).toContain('First create a new category');
-    expect(wrapper.find('button[type="submit"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Uncategorized');
+    expect(wrapper.find('button[type="submit"]').exists()).toBe(true);
 
     await wrapper.get('.base-dialog__close').trigger('click');
     expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
