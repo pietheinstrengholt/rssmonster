@@ -13,7 +13,7 @@ on:
 jobs:
   server-mysql:
     name: Server — MySQL
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     services:
       mysql:
@@ -94,7 +94,7 @@ jobs:
 
   server-sqlite:
     name: Server — SQLite
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       NODE_ENV: test
@@ -137,7 +137,7 @@ jobs:
 
   inference:
     name: Inference
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
@@ -188,7 +188,7 @@ jobs:
 
   client:
     name: Client
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
