@@ -59,6 +59,12 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
+      // Sets the minimum overall article quality on the displayed 0–100 scale.
+      minOverallQualityScore: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       // Sets the minimum acceptable writing-quality score.
       minQualityScore: {
         type: DataTypes.INTEGER,

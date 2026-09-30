@@ -11,27 +11,7 @@
    - tag (assign tag)
 ====================================================== */
 import { logFeedDebug } from '../../feeds/feedLogging.js';
-import { compileActionRegex } from '../../../utils/actionRegex.js';
-
-const ACTION_SEARCH_FIELDS = [
-  'contentHtml',
-  'contentText',
-  'title',
-  'description',
-  'url'
-];
-
-// This function returns each explicit publisher field available to action rules.
-const actionSearchValues = article => ACTION_SEARCH_FIELDS
-  .map(field => article?.[field])
-  .filter(value => value !== null && value !== undefined && String(value) !== '')
-  .map(String);
-
-// This function tests fields independently so existing anchored body rules keep working.
-const actionMatches = (regex, values) => values.some(value => {
-  regex.lastIndex = 0;
-  return regex.test(value);
-});
+import { compileActionRegex, matchesActionArticle } from '../../../utils/actionRegex.js';
 
 // This function applies configured actions to explicit searchable article fields.
 function applyActions(actions, article = {}) {
@@ -61,7 +41,7 @@ function applyActions(actions, article = {}) {
     }
 
     // Skips the current entry when action matches is unavailable.
-    if (!actionMatches(regex, actionSearchValues(article))) continue;
+    if (!matchesActionArticle(regex, article)) continue;
 
     // Selects behavior from the supported action type values.
     switch (action.actionType) {

@@ -50,11 +50,11 @@
         </button>
       </div>
 
-      <!-- Advertisement Score Threshold -->
-      <!-- Sentiment Score Threshold -->
-      <!-- Quality Score Threshold -->
-      <div class="scores-threshold-list">
-        <div v-for="score in scoreTypes" :key="score.key" class="scores-threshold-row">
+      <p>Overall quality is scored out of 100: 50% writing quality, 25% tone, and 25% ad-free content. It matches the article badge and Smart Folder quality filter. Articles awaiting analysis remain visible.</p>
+      <component v-for="group in thresholdGroups" :key="group.label" :is="group.advanced ? 'details' : 'div'" class="scores-threshold-list" :open="group.advanced && advancedInitiallyOpen ? true : undefined">
+        <summary v-if="group.advanced">Advanced — component thresholds</summary>
+        <p v-if="group.advanced">These additional filters apply alongside Overall quality. Set each to 0 to turn it off.</p>
+        <div v-for="score in group.scores" :key="score.key" class="scores-threshold-row">
           <span class="scores-icon-tile" :class="score.iconClass" aria-hidden="true">
             <BootstrapIcon :icon="score.icon" />
           </span>
@@ -83,7 +83,7 @@
             @input="setScoreValue(score.key, $event.target.value)"
           />
         </div>
-      </div>
+      </component>
     </section>
 
     <InlineActionError v-if="saveError" :message="saveError" :busy="saving" @retry="save" />
@@ -203,6 +203,27 @@
 .scores-threshold-section {
   margin-top: 24px;
   overflow: hidden;
+}
+
+.scores-threshold-section > p,
+.scores-threshold-list > p {
+  margin: 16px 24px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.scores-threshold-list > summary {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.scores-threshold-list > summary:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(-1 * var(--focus-ring-width));
 }
 
 .scores-threshold-heading {
@@ -331,27 +352,39 @@ import { saveSettings } from '../../api/settings';
 export default {
   components: { InlineActionError },
   computed: {
-    ...mapStores(useSelectionStore)
+    ...mapStores(useSelectionStore),
+    hasComponentThresholds() {
+      return this.advertisementScore > 0 || this.sentimentScore > 0 || this.qualityScore > 0;
+    },
+    thresholdGroups() {
+      return [
+        { label: 'Overall quality', scores: [{ key: 'overallQualityScore', inputId: 'overallQualityScore', title: 'Overall quality', icon: 'gem', iconClass: 'scores-icon-tile--quality', thresholdDescription: 'Minimum overall quality, out of 100. Set to 0 to turn off this filter.' }] },
+        { label: 'Advanced', advanced: true, scores: this.scoreTypes }
+      ];
+    }
   },
   emits: ['close', 'saved', 'forceReload'],
   data() {
     return {
         saveError: '',
         saving: false,
+        advancedInitiallyOpen: false,
         advertisementScore: 0,
         sentimentScore: 0,
         qualityScore: 0,
+        overallQualityScore: 0,
         scoreOptions: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
         defaultScores: {
           advertisementScore: 0,
           sentimentScore: 0,
-          qualityScore: 0
+          qualityScore: 0,
+          overallQualityScore: 0
         },
         scoreTypes: [
           {
             key: 'advertisementScore',
             inputId: 'adScore',
-            title: 'Advertisement Score',
+            title: 'Ad-free content',
             icon: 'megaphone',
             iconClass: 'scores-icon-tile--advertisement',
             explanation: 'Measures how free content is from promotion, from heavy marketing or spam at 0 to editorial and ad-free at 100.',
@@ -360,7 +393,7 @@ export default {
           {
             key: 'sentimentScore',
             inputId: 'sentimentScore',
-            title: 'Sentiment Score',
+            title: 'Tone',
             icon: 'emoji-smile',
             iconClass: 'scores-icon-tile--sentiment',
             explanation: 'Measures emotional neutrality and tone quality, from poor at 0 to excellent at 100.',
@@ -369,7 +402,7 @@ export default {
           {
             key: 'qualityScore',
             inputId: 'qualityScore',
-            title: 'Quality Score',
+            title: 'Writing quality',
             icon: 'gem',
             iconClass: 'scores-icon-tile--quality',
             explanation: 'Measures writing and informational quality, from shallow or clickbait content at 0 to in-depth and relevant at 100.',
@@ -381,6 +414,7 @@ export default {
   created() {
     // Initialize threshold controls from store currentSelection values
     const sel = this.selectionStore.currentSelection || {};
+    this.overallQualityScore = sel.minOverallQualityScore ?? 0;
     if (typeof sel.minAdvertisementScore !== 'undefined') {
         this.advertisementScore = sel.minAdvertisementScore;
     }
@@ -390,6 +424,7 @@ export default {
     if (typeof sel.minQualityScore !== 'undefined') {
         this.qualityScore = sel.minQualityScore;
     }
+    this.advancedInitiallyOpen = this.hasComponentThresholds;
   },
   methods: {
     scoreValue(key) {
@@ -411,12 +446,14 @@ export default {
         await saveSettings({
             minAdvertisementScore: this.advertisementScore,
             minSentimentScore: this.sentimentScore,
+            minOverallQualityScore: this.overallQualityScore,
             minQualityScore: this.qualityScore
         });
         // Update store currentSelection before closing
         this.selectionStore.setMinAdvertisementScore(this.advertisementScore);
         this.selectionStore.setMinSentimentScore(this.sentimentScore);
         this.selectionStore.setMinQualityScore(this.qualityScore);
+        this.selectionStore.setMinOverallQualityScore(this.overallQualityScore);
         this.saveError = '';
         this.$emit('forceReload');
         this.$emit('close');

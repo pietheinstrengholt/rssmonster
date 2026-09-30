@@ -10,9 +10,8 @@ export function scoreAsPercent(value) {
 }
 
 // Returns whether article scoring clears the high-quality presentation threshold.
-export function hasHighQualityArticleSignal({ qualityScore, recommendationScore }) {
-  return scoreAsPercent(qualityScore) > 90
-    || scoreAsPercent(recommendationScore) > 90;
+export function hasHighQualityArticleSignal({ quality }) {
+  return Number.isFinite(quality) && quality > 0.9;
 }
 
 // Returns the official-source label, including the configured organization when available.
@@ -49,16 +48,15 @@ export function createArticleSignals({
   feed,
   isOfficialSource,
   officialOrganization,
-  qualityScore,
-  recommendationScore,
+  quality,
   aiAnalysisStatus
 }) {
   const signals = [];
   const eventSourceScore = getEventSourceScore(event);
 
-  const usableQualityScore = hasUsableArticleAnalysis(aiAnalysisStatus) ? qualityScore : undefined;
-  if (hasHighQualityArticleSignal({ qualityScore: usableQualityScore, recommendationScore })) {
-    signals.push({ label: 'High quality', icon: 'stars' });
+  const usableQuality = hasUsableArticleAnalysis(aiAnalysisStatus) ? quality : undefined;
+  if (hasHighQualityArticleSignal({ quality: usableQuality })) {
+    signals.push({ label: 'High overall quality', icon: 'stars' });
   }
 
   if (eventSourceScore > 6) {
@@ -86,20 +84,18 @@ export const articleSignalComputed = {
       feed: this.feed,
       isOfficialSource: this.isOfficialSource,
       officialOrganization: this.officialOrganization,
-      qualityScore: this.qualityScore,
-      recommendationScore: this.recommendationScore,
+      quality: this.quality,
       aiAnalysisStatus: this.aiAnalysisStatus
     });
   },
 
-  // Returns whether quality or recommendation metadata clears the high-quality threshold.
+  // Uses the same article-only quality as the badge and filters.
   hasHighQualitySignal() {
-    const qualityScore = hasUsableArticleAnalysis(this.aiAnalysisStatus)
-      ? this.qualityScore
+    const quality = hasUsableArticleAnalysis(this.aiAnalysisStatus)
+      ? this.quality
       : undefined;
     return hasHighQualityArticleSignal({
-      qualityScore,
-      recommendationScore: this.recommendationScore
+      quality
     });
   },
 

@@ -162,7 +162,7 @@ describe('toolbar Daily Briefing status', () => {
     else store.selectionStore.$patch({ currentSelection: { smartFolderId: 3, sort: 'quality', grouping: 'event' } });
     const wrapper = mount(MobileToolbar);
     const sortOption = wrapper.findAll('#readModeDropdown-menu [role="menuitem"]')
-      .find(option => option.text() === 'Quality');
+      .find(option => option.text() === 'Quality & source trust');
     const groupingOption = wrapper.findAll('#readModeDropdown-menu [role="menuitem"]')
       .find(option => option.text() === 'Cluster per event');
 
@@ -186,7 +186,7 @@ describe('toolbar intelligent sort options', () => {
     const options = component === DesktopToolbar
       ? desktopSortDropdown(wrapper).findAll('[role="menuitem"]')
       : wrapper.findAll('#readModeDropdown-menu [role="menuitem"]');
-    const qualityOption = options.find(option => option.text() === 'Quality');
+    const qualityOption = options.find(option => option.text() === 'Quality & source trust');
     const topStoriesOption = options.find(option => option.text() === 'Top Stories');
 
     expect(options.some(option => option.text() === 'Trust')).toBe(false);

@@ -10,6 +10,7 @@ export const executeGeneratedFeedExpression = ({ userId, expression }) =>
     search: expression,
     minAdvertisementScore: 0,
     minSentimentScore: 0,
+    minOverallQualityScore: 0,
     minQualityScore: 0,
     status: '%',
     executionBounds: {

@@ -21,10 +21,10 @@
         </span>
         <div class="settings-welcome__content">
           <div class="settings-welcome__heading">
-            <h4 :id="`settings-welcome-${section.key}`">{{ section.title }}</h4>
+            <h4 :id="`settings-welcome-${section.key}`"><button type="button" class="settings-welcome__link" :aria-describedby="`settings-welcome-description-${section.key}`" @click="$emit('select-section', section.key)">{{ section.title }}</button></h4>
             <span v-if="section.capability" class="settings-welcome__capability">{{ section.capability }}</span>
           </div>
-          <p>{{ section.purpose }}</p>
+          <p :id="`settings-welcome-description-${section.key}`">{{ section.purpose }}</p>
         </div>
       </article>
     </section>
@@ -39,11 +39,41 @@
 }
 
 .settings-welcome__section {
+  position: relative;
   display: flex;
   min-width: 0;
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
+}
+
+.settings-welcome__link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-welcome__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-panel);
+}
+
+.settings-welcome__section:hover {
+  background: var(--surface-control);
+  border-color: var(--border-focus);
+}
+
+.settings-welcome__link:hover { text-decoration: underline; }
+.settings-welcome__link:focus-visible { outline: none; }
+.settings-welcome__link:focus-visible::after {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .settings-welcome__icon {
@@ -108,6 +138,7 @@ import { useSelectionStore } from '../../store/selection.js';
 import { useAuthStore } from '../../store/auth.js';
 import SettingsPageIntro from './SettingsPageIntro.vue';
 export default {
+  emits: ['select-section'],
   components: {
     SettingsPageIntro
   },
@@ -117,17 +148,17 @@ export default {
       const aiEnabled = this.selectionStore.currentSelection.AIEnabled;
 
       return [
-        { key: 'smart-folders', title: 'Smart Folders', icon: 'folder-fill', purpose: 'Build saved searches that update as new articles arrive.', visible: true },
-        { key: 'generated-feeds', title: 'Generated Feeds', icon: 'rss-fill', purpose: 'Expose article expressions as private RSS URLs for other readers.', visible: true },
+        { key: 'smartfolders', title: 'Smart Folders', icon: 'folder-fill', purpose: 'Build saved searches that update as new articles arrive.', visible: true },
+        { key: 'generatedFeeds', title: 'Generated Feeds', icon: 'rss-fill', purpose: 'Expose article expressions as private RSS URLs for other readers.', visible: true },
         { key: 'actions', title: 'Actions', icon: 'lightning-charge-fill', purpose: 'Automate how matching articles are handled during crawl.', visible: true },
         { key: 'scores', title: 'Scores', icon: 'bar-chart-fill', purpose: 'Set AI score thresholds that control article visibility.', capability: 'AI feature', visible: aiEnabled },
         { key: 'events', title: 'Events', icon: 'diagram-3-fill', purpose: 'Review articles grouped into current events.', capability: 'AI feature', visible: aiEnabled },
-        { key: 'islands', title: 'Islands', icon: 'compass-fill', purpose: 'Explore the interests learned from your reading behavior.', capability: 'AI feature', visible: aiEnabled },
-        { key: 'crawl-statistics', title: 'Crawl Statistics', icon: 'clipboard-data-fill', purpose: 'Review daily crawl outcomes and article activity.', visible: true },
-        { key: 'processing-jobs', title: 'AI Processing', icon: 'cpu-fill', purpose: 'Check background AI queue health and processing progress.', capability: 'AI feature', visible: aiEnabled },
-        { key: 'observability', title: 'Observability', icon: 'activity', purpose: 'Inspect grouped processing failures and captured diagnostics.', visible: true },
+        { key: 'islands', title: 'Your interests', icon: 'compass-fill', purpose: 'Explore the interests learned from your reading behavior.', capability: 'AI feature', visible: aiEnabled },
+        { key: 'crawlStatistics', title: 'Refresh history', icon: 'clipboard-data-fill', purpose: 'Review daily crawl outcomes and article activity.', visible: true },
+        { key: 'processingJobs', title: 'AI Processing', icon: 'cpu-fill', purpose: 'Check background AI queue health and processing progress.', capability: 'AI feature', visible: aiEnabled },
+        { key: 'observability', title: 'Health & errors', icon: 'activity', purpose: 'Inspect grouped processing failures and captured diagnostics.', visible: true },
         { key: 'feeds', title: 'Feeds', icon: 'rss-fill', purpose: 'Manage subscriptions, feed health, and OPML transfers.', visible: true },
-        { key: 'official-sources', title: 'Official Sources', icon: 'patch-check-fill', purpose: 'Mark trusted organization domains during crawl.', visible: true },
+        { key: 'officialSources', title: 'Official Sources', icon: 'patch-check-fill', purpose: 'Mark trusted organization domains during crawl.', visible: true },
         { key: 'users', title: 'Manage Users', icon: 'people-fill', purpose: 'Review existing accounts and update roles or access.', capability: 'Admin only', visible: this.authStore.role === 'admin' }
       ].filter(section => section.visible);
     }

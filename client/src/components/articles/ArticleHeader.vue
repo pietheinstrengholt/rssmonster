@@ -1,5 +1,5 @@
 <template>
-  <header class="article-header" :class="{ 'article-reader-heading': isReaderDetail }">
+  <header class="article-header" :class="{ 'article-reader-heading': isReaderDetail, 'article-header--with-original': showOriginalAction }">
     <div v-if="isReaderDetail" class="article-reader-source">
       <img v-if="feedFavicon && !faviconFailed" :src="feedFavicon" class="article-reader-favicon" alt="" @error="faviconFailed = true" />
       <BootstrapIcon v-else icon="rss-fill" context="control" class="article-reader-favicon" aria-hidden="true" />
@@ -42,6 +42,9 @@
           <span>{{ status === 'read' ? 'Mark as unread' : 'Mark as read' }}</span>
         </button>
       </template>
+    </div>
+    <div v-if="showOriginalAction" class="article-original-action">
+      <a :href="safeArticleUrl" target="_blank" rel="noopener noreferrer" title="Open original article in a new tab" @click="$emit('article-clicked')">Open original <span aria-hidden="true">↗</span></a>
     </div>
   </header>
 </template>
@@ -91,6 +94,9 @@ export default {
     // Returns an absolute HTTP(S) destination eligible for external navigation.
     safeArticleUrl() {
       return usableHttpUrl(this.url);
+    },
+    showOriginalAction() {
+      return this.safeArticleUrl && (this.isReaderDetail || this.viewMode === 'full');
     },
     // Returns whether the article links to a Bluesky profile post.
     isBlueSkyArticle() {
@@ -190,6 +196,27 @@ export default {
   display: flex;
   flex-shrink: 0;
   gap: 2px;
+}
+
+.article-original-action {
+  order: 2;
+  flex: 0 0 100%;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.article-header--with-original {
+  flex-wrap: wrap;
+}
+
+.article-original-action a {
+  color: var(--color-link);
+  text-underline-offset: 3px;
+}
+
+.article-original-action a:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 3px;
 }
 
 .article-kind-icon {

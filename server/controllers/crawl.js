@@ -277,7 +277,8 @@ const getActionsByUserId = async (feeds) => {
   const actions = await Action.findAll({
     where: {
       userId: { [db.Sequelize.Op.in]: userIds }
-    }
+    },
+    order: [['id', 'ASC']]
   });
 
   for (const action of actions) {

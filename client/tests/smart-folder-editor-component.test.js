@@ -26,6 +26,17 @@ beforeEach(() => {
 });
 
 describe('SmartFolderEditor', () => {
+  it('edits Overall quality out of 100 while preserving normalized saved expressions', async () => {
+    const wrapper = mountEditor();
+    const label = wrapper.findAll('label').find(item => item.text().includes('Minimum overall quality'));
+    expect(label.text()).toContain('80/100');
+    expect(label.get('input').attributes('max')).toBe('100');
+    await label.get('input').setValue('75');
+    await wrapper.get('form').trigger('submit');
+    expect(wrapper.emitted('save')[0][0].query).toContain('quality:>=0.75');
+    wrapper.unmount();
+  });
+
   it('creates an isolated draft from the stored query', () => {
     const smartFolder = {
       id: 1,

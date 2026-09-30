@@ -43,13 +43,14 @@ const getSmartFolderCountsForUser = async userId => {
     }),
     Setting.findOne({
       where: { userId },
-      attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
+      attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore', 'minOverallQualityScore']
     }),
     fetchFeedIds({ userId, categoryId: '%', feedId: '%' })
   ]);
 
   const minAdvertisementScore = userSettings?.minAdvertisementScore ?? 0;
   const minSentimentScore = userSettings?.minSentimentScore ?? 0;
+  const minOverallQualityScore = userSettings?.minOverallQualityScore ?? 0;
   const minQualityScore = userSettings?.minQualityScore ?? 0;
 
   return mapWithConcurrency(smartFolders, SMART_FOLDER_COUNT_CONCURRENCY, async folder => {
@@ -59,6 +60,7 @@ const getSmartFolderCountsForUser = async userId => {
         search: normalizeSmartFolderExpression(folder.query),
         minAdvertisementScore,
         minSentimentScore,
+        minOverallQualityScore,
         minQualityScore,
         resolvedFeedIds,
         smartFolderSearch: true,

@@ -611,6 +611,15 @@ User action rules execute after duplicate prevention but before persistence.
 Each regular expression tests the available `contentHtml`, `contentText`, title, description, and
 URL independently. Invalid regular expressions are skipped.
 
+Settings offers case-insensitive literal phrase conditions by default, stored as escaped
+regular expressions for compatibility. Advanced conditions preserve existing regex syntax.
+The read-only preview checks up to 100 recent visible, user-owned articles using the same
+matcher against saved fields, shows at most 10 matches, and stops expensive expressions
+after two seconds. This sample does not apply actions or predict every future crawl match.
+
+Saving replaces rules in the submitted order. The editor, batched crawl loader, and
+per-feed fallback all read ascending action IDs so saved priority remains consistent.
+
 Rules may:
 
 - set filteredInd to true, so articles are hidden from normal queries and skipped for AI enrichment. In the front-end this is called discard.

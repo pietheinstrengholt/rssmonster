@@ -286,6 +286,7 @@ export const getSettings = async (req, res, _next) => {
     let minAdvertisementScore = 0;
     let minSentimentScore = 0;
     let minQualityScore = 0;
+    let minOverallQualityScore = 0;
     let viewMode = aiEnabled ? "reader" : "full";
     let grouping = aiEnabled ? "event" : "none";
     let includeDevelopingEvents = aiEnabled;
@@ -302,6 +303,7 @@ export const getSettings = async (req, res, _next) => {
       minAdvertisementScore = settings.minAdvertisementScore || 0;
       minSentimentScore = settings.minSentimentScore || 0;
       minQualityScore = settings.minQualityScore || 0;
+      minOverallQualityScore = settings.minOverallQualityScore || 0;
       includeDevelopingEvents = Boolean(settings.includeDevelopingEvents);
       prioritizeHighTrust = Boolean(settings.prioritizeHighTrust);
       themeMode = settings.themeMode || 'system';
@@ -332,6 +334,7 @@ export const getSettings = async (req, res, _next) => {
       minAdvertisementScore: minAdvertisementScore,
       minSentimentScore: minSentimentScore,
       minQualityScore: minQualityScore,
+      minOverallQualityScore,
       viewMode: viewMode,
       grouping: String(grouping),
       includeDevelopingEvents,
@@ -362,6 +365,7 @@ export const setSettings = async (req, res, _next) => {
       minAdvertisementScore,
       minSentimentScore,
       minQualityScore,
+      minOverallQualityScore,
       includeDevelopingEvents,
       prioritizeHighTrust
     } = req.body;
@@ -380,6 +384,14 @@ export const setSettings = async (req, res, _next) => {
       minSentimentScore: validateScore(minSentimentScore, 'minSentimentScore'),
       minQualityScore: validateScore(minQualityScore, 'minQualityScore')
     };
+
+    if (minOverallQualityScore !== undefined) {
+      const value = Number(minOverallQualityScore);
+      if (!Number.isInteger(value) || value < 0 || value > 100) {
+        return res.status(400).json({ error: 'minOverallQualityScore must be an integer between 0 and 100' });
+      }
+      validatedSettings.minOverallQualityScore = value;
+    }
 
     if (includeDevelopingEvents !== undefined) {
       if (typeof includeDevelopingEvents !== 'boolean') {

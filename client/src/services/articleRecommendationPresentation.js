@@ -56,9 +56,9 @@ const freshnessExplanation = reason => {
 
 const qualityExplanation = reason => {
   const value = finiteNumber(reason?.value) || 0;
-  if (value >= 0.8) return 'Strong content quality.';
-  if (value >= 0.6) return 'Solid content quality.';
-  return 'Content quality contributed to its ranking.';
+  if (value >= 0.8) return 'Strong content quality and source trust.';
+  if (value >= 0.6) return 'Solid content quality and source trust.';
+  return 'Content quality and source trust contributed to its ranking.';
 };
 
 // This function converts backend recommendation reasons into concise reader-facing explanations.
@@ -120,7 +120,7 @@ export function buildArticleRecommendationExplanation(recommendation) {
     items.push({
       code: 'quality',
       icon: 'patch-check-fill',
-      title: 'Quality',
+      title: 'Quality & source trust',
       text: qualityExplanation(qualityReason)
     });
   }

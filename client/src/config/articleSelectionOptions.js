@@ -32,7 +32,7 @@ export const ARTICLE_SORT_OPTIONS = createOptions([
   { value: 'asc', label: 'Oldest' },
   { value: 'topStories', label: 'Top Stories', requiresAI: true },
   { value: 'recommended', label: 'Recommended', requiresAI: true },
-  { value: 'quality', label: 'Quality', requiresAI: true }
+  { value: 'quality', label: 'Quality & source trust', requiresAI: true }
 ]);
 
 export const ARTICLE_GROUPING_OPTIONS = createOptions([

@@ -2,7 +2,7 @@
   <div class="actions-settings settings-page">
     <!-- Info text -->
     <section class="settings-insight-card settings-insight-card--stacked actions-intro-card" aria-labelledby="actions-intro-title">
-      <header class="actions-intro-heading"><span class="settings-insight-icon" aria-hidden="true"><BootstrapIcon icon="lightning-charge-fill" /></span><div><p class="settings-page-eyebrow">Settings — Automation</p><h3 id="actions-intro-title">How Actions work</h3><p>Actions automatically process incoming articles during the crawl. When an article’s content or title matches a regular expression, the selected action is applied.</p></div></header>
+      <header class="actions-intro-heading"><span class="settings-insight-icon" aria-hidden="true"><BootstrapIcon icon="lightning-charge-fill" /></span><div><p class="settings-page-eyebrow">Settings — Automation</p><h3 id="actions-intro-title">How Actions work</h3><p>Actions automatically process incoming articles during the crawl. Choose a phrase to look for and what should happen when an article matches. Advanced conditions support regular expressions.</p></div></header>
       <details class="actions-intro-details">
         <summary>View action types</summary>
         <div class="actions-type-grid" aria-label="Available action types">
@@ -22,19 +22,24 @@
         <span>{{ loadError }}</span>
         <button type="button" class="app-button app-button--outline-secondary app-button--compact" @click="fetchActions">Retry</button>
       </div>
-      <div v-else-if="loaded && actions.length" class="actions-list">
-        <article v-for="(action, index) in actions" :key="index" class="actions-list-row">
-          <BootstrapIcon class="actions-grip" icon="grip-vertical" aria-hidden="true" /><span class="actions-row-icon" :class="actionTypeMeta(action.actionType).iconClass" aria-hidden="true"><BootstrapIcon :icon="actionTypeMeta(action.actionType).icon" /></span>
+      <Draggable v-else-if="loaded && actions.length" v-model="actions" class="actions-list" :item-key="actionKey" handle=".actions-grip" :disabled="saving" :animation="150" :force-fallback="true" ghost-class="actions-row--dragging" @change="announceDrag">
+        <template #item="{ element: action, index }">
+        <article class="actions-list-row">
+          <button type="button" class="actions-grip settings-control settings-control--icon-only" :disabled="saving" :aria-label="`Reorder ${action.name || 'action'}`" aria-describedby="actions-reorder-help" @keydown.up.prevent="moveAction(index, -1)" @keydown.down.prevent="moveAction(index, 1)"><BootstrapIcon icon="grip-vertical" aria-hidden="true" /></button><span class="actions-row-icon" :class="actionTypeMeta(action.actionType).iconClass" aria-hidden="true"><BootstrapIcon :icon="actionTypeMeta(action.actionType).icon" /></span>
           <div class="actions-row-fields">
-            <div class="actions-field"><label :for="`action-name-${index}`">Name</label><input :id="`action-name-${index}`" v-model="action.name" type="text" class="app-form-control settings-control" placeholder="Action name" :disabled="saving" /></div>
-            <div class="actions-field"><label :for="`action-type-${index}`">Type</label><div class="actions-type-control"><select :id="`action-type-${index}`" v-model="action.actionType" class="app-form-select settings-control" :disabled="saving"><option value="">Select action type</option><option v-for="actionType in actionTypes" :key="actionType.value" :value="actionType.value">{{ actionType.selectLabel }}</option></select><span v-if="action.actionType" class="actions-type-pill">{{ actionTypeMeta(action.actionType).label }}</span></div></div>
-            <div v-if="action.actionType === 'tag'" class="actions-field"><label :for="`action-tag-${index}`">Tag value</label><input :id="`action-tag-${index}`" v-model="action.tagValue" type="text" class="app-form-control settings-control" placeholder="e.g., important" :disabled="saving" /></div>
-            <div class="actions-field actions-field--regex"><label :for="`action-regex-${index}`">Regular Expression</label><input :id="`action-regex-${index}`" v-model="action.regularExpression" type="text" class="app-form-control settings-control" placeholder="e.g., /keyword|phrase/i" :disabled="saving" /></div>
+            <div class="actions-field"><label :for="`action-name-${index}`">Name (optional)</label><input :id="`action-name-${index}`" v-model="action.name" type="text" class="app-form-control settings-control" placeholder="Action name" :disabled="saving" /></div>
+            <ActionCondition :id="index" v-model="action.regularExpression" :disabled="saving">
+              <div class="actions-field"><label :for="`action-type-${index}`">Then</label><div class="actions-type-control"><select :id="`action-type-${index}`" v-model="action.actionType" class="app-form-select settings-control" :disabled="saving"><option value="">Select action type</option><option v-for="actionType in actionTypes" :key="actionType.value" :value="actionType.value">{{ actionType.selectLabel }}</option></select><span v-if="action.actionType" class="actions-type-pill">{{ actionTypeMeta(action.actionType).label }}</span></div></div>
+              <div v-if="action.actionType === 'tag'" class="actions-field"><label :for="`action-tag-${index}`">Tag value</label><input :id="`action-tag-${index}`" v-model="action.tagValue" type="text" class="app-form-control settings-control" placeholder="e.g., important" :disabled="saving" /></div>
+            </ActionCondition>
           </div>
-          <div class="actions-row-buttons"><button type="button" class="actions-edit-button settings-control settings-control--compact" :disabled="saving" :aria-label="`Edit ${action.name || 'action'}`" @click="focusActionName(index)"><BootstrapIcon icon="pencil" aria-hidden="true" /><span>Edit</span></button><button type="button" class="actions-delete-button settings-control settings-control--compact settings-control--icon-only" :disabled="saving" :aria-label="`Delete ${action.name || 'action'}`" @click="removeAction(index)"><BootstrapIcon icon="trash-fill" aria-hidden="true" /></button></div>
+          <div class="actions-row-buttons"><button type="button" class="app-button app-button--outline-secondary app-button--compact" :disabled="saving || index === 0" :aria-label="`Move ${action.name || 'action'} up`" @click="moveAction(index, -1)">Move up</button><button type="button" class="app-button app-button--outline-secondary app-button--compact" :disabled="saving || index === actions.length - 1" :aria-label="`Move ${action.name || 'action'} down`" @click="moveAction(index, 1)">Move down</button><button type="button" class="actions-edit-button settings-control settings-control--compact" :disabled="saving" :aria-label="`Edit ${action.name || 'action'}`" @click="focusActionName(index)"><BootstrapIcon icon="pencil" aria-hidden="true" /><span>Edit</span></button><button type="button" class="actions-delete-button settings-control settings-control--compact settings-control--icon-only" :disabled="saving" :aria-label="`Delete ${action.name || 'action'}`" @click="removeAction(index)"><BootstrapIcon icon="trash-fill" aria-hidden="true" /></button></div>
         </article>
-      </div>
+        </template>
+      </Draggable>
       <p v-else-if="loaded" class="actions-empty-state settings-state settings-state--empty">No actions yet. Add one to automate how incoming articles are handled.</p>
+      <p v-if="loaded" id="actions-reorder-help" class="actions-reorder-help">Drag a handle, use its arrow keys, or choose Move up / Move down. Save Changes to keep the new order.</p>
+      <p class="actions-reorder-help" role="status" aria-live="polite">{{ reorderMessage }}</p>
       <div v-if="loaded" class="actions-order-note"><BootstrapIcon icon="info-circle" aria-hidden="true" /><p>Actions are applied from top to bottom. Once a Discard action matches, the article will be set with a filtered indicator ensuring it will not show up in queries.</p></div>
     </section>
     <InlineActionError v-if="saveError" :message="saveError" :busy="saving" @retry="save" />
@@ -234,7 +239,7 @@
 
 .actions-list-row {
   display: grid;
-  grid-template-columns: 18px 34px minmax(0, 1fr) auto;
+  grid-template-columns: 32px 34px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
   padding: 18px 24px;
@@ -245,13 +250,15 @@
 }
 
 .actions-grip {
+  cursor: grab;
+  touch-action: none;
   color: var(--text-muted);
   font-size: 18px;
 }
 
 .actions-row-fields {
   display: grid;
-  grid-template-columns: minmax(130px, .75fr) minmax(180px, 1fr) minmax(220px, 1.35fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   min-width: 0;
 }
@@ -293,6 +300,9 @@
 }
 
 .actions-row-buttons {
+  grid-column: 3;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   display: flex;
   gap: 6px;
 }
@@ -331,12 +341,15 @@
   }
 
   .actions-grip {
-    align-self: end;
-    margin-bottom: 10px;
+    align-self: start;
+    margin-bottom: 0;
   }
 }
 
 .actions-empty-state { margin: 0; }
+.actions-reorder-help { margin: 12px 24px; color: var(--text-secondary); font-size: 13px; }
+.actions-reorder-help:empty { display: none; }
+.actions-row--dragging { opacity: 0.5; }
 
 .actions-order-note {
   margin: 0;
@@ -394,7 +407,7 @@
   }
 
   .actions-list-row {
-    grid-template-columns: 18px 34px minmax(0, 1fr);
+    grid-template-columns: 32px 34px minmax(0, 1fr);
     padding: 18px 20px;
   }
 
@@ -412,16 +425,26 @@
 </style>
 
 <script>
+import Draggable from 'vuedraggable';
+import ActionCondition from './ActionCondition.vue';
+import { expressionPhrase } from '../../services/actionConditions.js';
 import InlineActionError from '../shared/InlineActionError.vue';
 import { fetchActions, saveActions } from '../../api/actions';
 import { notifyActionError } from '../../services/actionNotifications.js';
 
+// Keep each condition editor attached to its rule while rows move, without changing API data.
+const actionKeys = new WeakMap();
+let nextActionKey = 0;
+
 export default {
-  components: { InlineActionError },
+  name: 'SettingsActions',
+  components: { InlineActionError, ActionCondition, Draggable },
   emits: ['close', 'saved'],
   data() {
     return {
       saveError: '',
+      reorderMessage: '',
+      savedActions: '',
       actions: [],
       loading: false,
       loadError: '',
@@ -442,7 +465,33 @@ export default {
   async created() {
     await this.fetchActions();
   },
+  computed: {
+    hasUnsavedChanges() {
+      return this.loaded && JSON.stringify(this.actions) !== this.savedActions;
+    }
+  },
   methods: {
+    actionKey(action) {
+      if (!actionKeys.has(action)) actionKeys.set(action, ++nextActionKey);
+      return actionKeys.get(action);
+    },
+    announceDrag(event) {
+      if (!event.moved) return;
+      this.reorderMessage = `Moved ${event.moved.element.name || 'action'} to position ${event.moved.newIndex + 1} of ${this.actions.length}. Save Changes to keep this order.`;
+    },
+    moveAction(index, direction) {
+      const nextIndex = index + direction;
+      if (!this.loaded || this.saving || nextIndex < 0 || nextIndex >= this.actions.length) return;
+      const focused = document.activeElement;
+      const [action] = this.actions.splice(index, 1);
+      this.actions.splice(nextIndex, 0, action);
+      this.announceDrag({ moved: { element: action, newIndex: nextIndex } });
+      this.$nextTick(() => {
+        // At either boundary the clicked button becomes disabled; keep focus on its handle.
+        if (focused?.disabled) focused.closest('.actions-list-row')?.querySelector('.actions-grip')?.focus();
+        else focused?.focus();
+      });
+    },
     // This function returns display metadata for an action type.
     actionTypeMeta(actionType) {
       return this.actionTypes.find((type) => type.value === actionType) || { label: 'Select type', icon: 'lightning-charge', iconClass: 'actions-type-icon--default' };
@@ -467,6 +516,7 @@ export default {
           regularExpression: action.regularExpression || '',
           tagValue: action.tagValue || ''
         }));
+        this.savedActions = JSON.stringify(this.actions);
         this.loaded = true;
       } catch (err) {
         console.error('Error loading article actions:', err);
@@ -479,7 +529,7 @@ export default {
     // This function adds one editable action after the authoritative collection has loaded.
     addAction() {
       if (!this.loaded || this.saving) return;
-      this.actions.push({ name: '', actionType: '', regularExpression: '', tagValue: '' });
+      this.actions.push({ name: '', actionType: 'favorite', regularExpression: '', tagValue: '' });
     },
     // This function removes one local action while the editor is available.
     removeAction(index) {
@@ -496,10 +546,17 @@ export default {
       if (!this.loaded || this.loading || this.loadError || this.saving) return;
 
       const filteredActions = this.actions.filter(a => a && a.actionType && a.actionType.trim() !== '');
+      const missingCondition = filteredActions.findIndex(action => !action.regularExpression?.trim() || expressionPhrase(action.regularExpression)?.trim() === '');
+      if (missingCondition !== -1) {
+        this.saveError = `Action ${missingCondition + 1}: enter a phrase or an advanced condition before saving.`;
+        return;
+      }
       this.saving = true;
 
       try {
         await saveActions(filteredActions);
+        this.actions = filteredActions;
+        this.savedActions = JSON.stringify(this.actions);
         this.saveError = '';
         this.$emit('saved');
         this.$emit('close');

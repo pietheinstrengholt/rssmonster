@@ -198,22 +198,22 @@ describe('Settings Islands interests', () => {
     expect(wrapper.find('.interest-badge--muted').exists()).toBe(false);
   });
 
-  it('keeps Settings → Islands and removes standalone navigation', () => {
+  it('keeps Settings → Your interests and removes standalone navigation', () => {
     const sidebar = render(Sidebar);
     expect(sidebar.text()).not.toContain('My interests');
     useSelectionStore().currentSelection.AIEnabled = true;
     const settings = render(Settings);
-    expect(settings.findAll('.settings-sidebar-item').some(item => item.text() === 'Islands')).toBe(true);
+    expect(settings.findAll('.settings-sidebar-item').some(item => item.text() === 'Your interests')).toBe(true);
     expect(useUiStore().page).toBeUndefined();
   });
 
-  it('opens the Islands overview through Settings navigation and forwards an example article', async () => {
+  it('opens Your interests through Settings navigation and forwards an example article', async () => {
     useSelectionStore().currentSelection.AIEnabled = true;
     api.get.mockImplementation(async url => url === '/interests' ? result() : { data: { interest: {
       ...positive, representativeArticles: [{ id: 9, title: 'Moon mission', feed: { feedName: 'Science news' } }]
     } } });
     const settings = render(Settings);
-    await button(settings, 'Islands').trigger('click'); await flushPromises();
+    await button(settings, 'Your interests').trigger('click'); await flushPromises();
     expect(settings.get('.settings-insight-card').text()).toContain('Your evolving interests');
     await settings.get('[aria-label="Inspect Space exploration"]').trigger('click'); await flushPromises();
     document.querySelector('.interest-example').click(); await flushPromises();
@@ -227,7 +227,7 @@ describe('Settings Islands interests', () => {
       : { data: { interest: { ...positive, representativeArticles: [] } } });
     const settings = render(Settings, { initialSection: 'islands', interestId: 1 });
     await flushPromises();
-    expect(button(settings, 'Islands').attributes('aria-current')).toBe('page');
+    expect(button(settings, 'Your interests').attributes('aria-current')).toBe('page');
     expect(api.get).toHaveBeenCalledWith('/interests', expect.objectContaining({ params: expect.objectContaining({ lifecycle: 'active' }) }));
     expect(settings.get('.interest-row--selected h3').text()).toBe('Space exploration');
     expect(api.get).toHaveBeenCalledWith('/interests/1', expect.objectContaining({ signal: expect.any(AbortSignal) }));

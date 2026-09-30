@@ -24,6 +24,9 @@
         v-if="refreshProgress.visible"
         class="sidebar-refresh-progress-panel"
         :progress="refreshProgress"
+        :status="feedRefreshStore.completionStatus"
+        @dismiss="feedRefreshStore.dismissProgress()"
+        @retry="refreshFeeds"
       />
 
       <SidebarActionButton

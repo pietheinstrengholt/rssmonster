@@ -84,7 +84,7 @@ describe('feed refresh store', () => {
 
     expect(store.progress).toMatchObject({
       currentFeedLabel: '2/2 feeds',
-      newArticles: 0,
+      newArticles: 3,
       processedFeeds: 2,
       progressPercent: 100,
       totalFeeds: 2,
@@ -99,6 +99,10 @@ describe('feed refresh store', () => {
       running: false,
       successfulCompletionId: 1
     });
+    expect(store.progress.visible).toBe(true);
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(store.progress.visible).toBe(true);
+    store.dismissProgress();
     expect(store.progress.visible).toBe(false);
   });
 
@@ -129,7 +133,7 @@ describe('feed refresh store', () => {
 
     eventSource.onerror();
     await vi.advanceTimersByTimeAsync(500);
-    expect(store.completionStatus).toBe('error');
+    expect(store.completionStatus).toBe('disconnected');
     expect(store.successfulCompletionId).toBe(0);
   });
 
@@ -170,7 +174,7 @@ describe('feed refresh store', () => {
     });
   });
 
-  // Verifies startup failures use the legacy endpoint and retain the existing display delay.
+  // The legacy endpoint acknowledges startup, not completion.
   it('falls back when live startup cannot provide a job', async () => {
     startFeedRefresh.mockResolvedValue({ data: {} });
     triggerCrawl.mockResolvedValue({});
@@ -181,11 +185,11 @@ describe('feed refresh store', () => {
 
     await vi.advanceTimersByTimeAsync(2000);
     expect(store).toMatchObject({
-      completionStatus: 'fallback-complete',
+      completionStatus: 'fallback-started',
       running: false
     });
-    expect(store.progress.visible).toBe(false);
-    expect(store.progress.logs[0]).toContain('Standard refresh completed');
+    expect(store.progress.visible).toBe(true);
+    expect(store.progress.logs[0]).toContain('Refresh started in the background');
   });
 
   // Verifies a failed fallback publishes safe feedback while retaining diagnostic state.

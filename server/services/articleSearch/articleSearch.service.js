@@ -111,6 +111,7 @@ export const searchArticles = async ({
     status = "unread",
     minAdvertisementScore = null,
     minSentimentScore = null,
+    minOverallQualityScore = null,
     minQualityScore = null,
     sort = "desc",
     tag = null,
@@ -156,13 +157,15 @@ export const searchArticles = async ({
       (status === 'unread' && !smartFolderSearch) ||
       minAdvertisementScore === null ||
       minSentimentScore === null ||
-      minQualityScore === null
+      minQualityScore === null ||
+      minOverallQualityScore === null
     ) {
         userSettings = await Setting.findOne({
             where: { userId },
             attributes: [
               'minAdvertisementScore',
               'minSentimentScore',
+              'minOverallQualityScore',
               'minQualityScore',
               'prioritizeHighTrust',
               'themeMode',
@@ -176,6 +179,7 @@ export const searchArticles = async ({
     // Derives the final min sentiment score required while performing search articles.
     const finalMinSentimentScore = minSentimentScore ?? userSettings?.minSentimentScore ?? 0;
     // Derives the final min quality score required while performing search articles.
+    const finalMinOverallQualityScore = minOverallQualityScore ?? userSettings?.minOverallQualityScore ?? 0;
     const finalMinQualityScore = minQualityScore ?? userSettings?.minQualityScore ?? 0;
 
     debugLog(`\x1b[32mScore thresholds: adv=${finalMinAdvertisementScore}, sentiment=${finalMinSentimentScore}, quality=${finalMinQualityScore}\x1b[0m`);
@@ -371,12 +375,12 @@ export const searchArticles = async ({
     }, {
       minAdvertisementScore: finalMinAdvertisementScore,
       minSentimentScore: finalMinSentimentScore,
+      minOverallQualityScore: finalMinOverallQualityScore,
       minQualityScore: finalMinQualityScore
     });
 
     // Text search logic:
-    Object.assign(
-      baseWhere,
+    baseWhere[Op.and].push(
       buildTextSearchWhereClause({
         titleFilter,
         quotedPhrase,
@@ -522,6 +526,7 @@ export const searchArticles = async ({
         includeDevelopingEvents: effectiveIncludeDevelopingEvents,
         minAdvertisementScore: Number(finalMinAdvertisementScore),
         minSentimentScore: Number(finalMinSentimentScore),
+        minOverallQualityScore: Number(finalMinOverallQualityScore),
         minQualityScore: Number(finalMinQualityScore),
         prioritizeHighTrust,
         dateFrom: dateRange?.start?.toISOString?.() || null,
@@ -629,6 +634,7 @@ export const searchArticles = async ({
           sort: logicalSort,
           minAdvertisementScore: finalMinAdvertisementScore,
           minSentimentScore: finalMinSentimentScore,
+          minOverallQualityScore: finalMinOverallQualityScore,
           minQualityScore: finalMinQualityScore,
           grouping: effectiveGrouping,
           includeDevelopingEvents: effectiveIncludeDevelopingEvents,
@@ -791,6 +797,7 @@ export const searchArticles = async ({
         sort: logicalSort,
         minAdvertisementScore: finalMinAdvertisementScore,
         minSentimentScore: finalMinSentimentScore,
+        minOverallQualityScore: finalMinOverallQualityScore,
         minQualityScore: finalMinQualityScore,
         grouping: effectiveGrouping,
         includeDevelopingEvents: effectiveIncludeDevelopingEvents,

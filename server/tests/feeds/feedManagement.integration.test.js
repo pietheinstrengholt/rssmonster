@@ -146,6 +146,7 @@ describe('shared feed-management integration', () => {
   });
 
   it.each([undefined, null])('validates a first feed without category %s and creates Uncategorized only on save', async categoryId => {
+    vi.stubEnv('ENCRYPTION_KEY', Buffer.alloc(32, 7).toString('base64'));
     const user = trackUser(await createGreaderUser());
     const auth = regularAuthHeaderFor(user);
     const authentication = { authenticationType: 'basic', authenticationUsername: 'reader', authenticationPassword: 'first-feed-secret' };

@@ -11,3 +11,7 @@ export const fetchActions = () =>
  */
 export const saveActions = actions =>
   api.post('/actions', { actions });
+
+// Read-only sample of articles matching an unsaved condition.
+export const previewAction = regularExpression =>
+  api.post('/actions/preview', { regularExpression });

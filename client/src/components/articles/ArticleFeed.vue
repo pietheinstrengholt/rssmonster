@@ -126,6 +126,7 @@ export default {
         selection.smartFolderId,
         selection.minAdvertisementScore,
         selection.minSentimentScore,
+        selection.minOverallQualityScore,
         selection.minQualityScore,
         selection.sort,
         selection.grouping,
@@ -535,20 +536,28 @@ export default {
       await this.overviewStore.fetchSmartFolderCounts();
     },
 
+    // Only list rows intersecting the clipped viewport belong to Reader's visible scope.
+    getVisibleReaderArticles() {
+      const layout = this.$refs.articleLayout;
+      return this.articles.filter(article => {
+        if (article.readerRecommendationInd || article.clusterParentId) return false;
+        const element = layout?.getArticleListElement?.(article.id);
+        return element && readingContentArea(element, 1);
+      });
+    },
+
     // Handles reader list bulk actions selected from the middle pane header.
     async handleReaderBulkAction({ action, selectedArticleId }) {
       if (this.selectionStore.currentSelection.viewMode !== 'reader') return;
 
-      const readerCollectionArticles = this.articles.filter(article => !article.readerRecommendationInd);
-
       try {
         if (action === 'favorite-visible') {
-          await this.favoriteReaderArticles(readerCollectionArticles);
+          await this.favoriteReaderArticles(this.getVisibleReaderArticles());
           return;
         }
 
         if (action === 'mark-visible-clicked') {
-          await this.markReaderArticlesClicked(readerCollectionArticles);
+          await this.markReaderArticlesClicked(this.getVisibleReaderArticles());
           return;
         }
 

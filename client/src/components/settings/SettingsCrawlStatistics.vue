@@ -1,7 +1,7 @@
 <template>
   <div class="crawl-statistics-settings settings-page">
     <SettingsPageIntro
-      eyebrow="Settings — Crawl Statistics"
+      eyebrow="Settings — Refresh history"
       icon="clipboard-data-fill"
       title="Daily crawl activity"
       title-id="crawl-statistics-title"

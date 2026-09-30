@@ -21,6 +21,31 @@ describe('articleSearch.service', () => {
   let feed;
   const articles = {};
 
+  it('matches the overall quality filter to the public score and Smart Folder threshold', async () => {
+    const scores = [
+      { qualityScore: 40, sentimentScore: 70, advertisementScore: 100 },
+      { qualityScore: 80, sentimentScore: 40, advertisementScore: 50 },
+      { qualityScore: 60, sentimentScore: 80, advertisementScore: 90 }
+    ];
+    const rows = await Article.bulkCreate(scores.map((values, index) => ({
+      ...values, userId: user.id, feedId: feed.id, title: `overallqualityfixture ${index}`,
+      status: 'unread', aiAnalysisStatus: 'complete', publishedAt: new Date()
+    })));
+    const options = { userId: user.id, search: 'overallqualityfixture', status: '%', grouping: 'none', sort: 'desc' };
+    try {
+      expect(rows.map(row => row.quality * 100)).toEqual([62.5, 62.5, 72.5]);
+      expect((await searchArticles({ ...options, minQualityScore: 63 })).itemIds).toEqual([rows[1].id]);
+      expect((await searchArticles({ ...options, minOverallQualityScore: 63 })).itemIds).toEqual([rows[2].id]);
+      expect((await searchArticles({ ...options, search: 'overallqualityfixture quality:>=0.63' })).itemIds).toEqual([rows[2].id]);
+      await Setting.update({ minOverallQualityScore: 73 }, { where: { userId: user.id } });
+      expect((await searchArticles(options)).itemIds).toEqual([]);
+      expect((await searchArticles({ ...options, minOverallQualityScore: 0 })).itemIds).toHaveLength(3);
+    } finally {
+      await Setting.update({ minOverallQualityScore: 0 }, { where: { userId: user.id } });
+      await Article.destroy({ where: { id: rows.map(row => row.id) } });
+    }
+  });
+
   it.each([null, { pageSize: 20 }])('keeps the saved view when an older article request finishes (%j)', async pagination => {
     await Setting.update({ viewMode: 'reader' }, { where: { userId: user.id } });
     await searchArticles({ userId: user.id, viewMode: 'summarized', persistSettings: true, pagination });
@@ -34,6 +59,8 @@ describe('articleSearch.service', () => {
     };
     const hot = await Article.create({ ...values, title: 'Hot ranking regression', hotInd: 1 });
     const ordinary = await Article.create({ ...values, title: 'Ordinary ranking regression' });
+    // Keep freshness equal while comparing the Hot boost and deterministic tie-break.
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(values.publishedAt.getTime());
     try {
       const rank = async () => (await searchArticles({ userId: user.id, status: 'unread', sort }))
         .itemIds.filter(id => [hot.id, ordinary.id].includes(id));
@@ -41,6 +68,7 @@ describe('articleSearch.service', () => {
       await hot.update({ hotInd: 0 });
       expect(await rank()).toEqual([ordinary.id, hot.id]);
     } finally {
+      clock.mockRestore();
       await hot.destroy();
       await ordinary.destroy();
     }
@@ -1388,6 +1416,7 @@ describe('articleSearch.service', () => {
           minAdvertisementScore: 0,
           minSentimentScore: 0,
           minQualityScore: 0,
+          minOverallQualityScore: 0,
           resolvedFeedIds: [feed.id],
           smartFolderSearch: true,
           countOnly: true

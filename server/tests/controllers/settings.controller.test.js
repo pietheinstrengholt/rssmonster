@@ -43,6 +43,25 @@ describe('settings controller', () => {
     await sequelize.authenticate();
   }, 50_000);
 
+  it('persists Overall quality separately from Writing quality and preserves it for older clients', async () => {
+    const user = await createUser();
+    const other = await createUser();
+    const auth = authHeaderFor(user);
+    const components = { minAdvertisementScore: 10, minSentimentScore: 20, minQualityScore: 30 };
+    const saved = await request(app).post('/api/setting').set('Authorization', auth)
+      .send({ ...components, minOverallQualityScore: 75 });
+    expect(saved.status).toBe(200);
+    expect((await request(app).get('/api/setting').set('Authorization', auth)).body)
+      .toMatchObject({ ...components, minOverallQualityScore: 75 });
+    expect((await request(app).get('/api/setting').set('Authorization', authHeaderFor(other))).body.minOverallQualityScore).toBe(0);
+    await request(app).post('/api/setting').set('Authorization', auth).send(components);
+    expect((await Setting.findOne({ where: { userId: user.id } })).minOverallQualityScore).toBe(75);
+    for (const minOverallQualityScore of [-1, 101, 50.5, 'invalid']) {
+      expect((await request(app).post('/api/setting').set('Authorization', auth)
+        .send({ ...components, minOverallQualityScore })).status).toBe(400);
+    }
+  });
+
   it('restores the selected article view without fetching articles and isolates users', async () => {
     const user = await createUser();
     const other = await createUser();

@@ -584,9 +584,9 @@ describe('article feed read-state reconciliation', () => {
 
   // Verifies reader bulk targeting respects position and publication time.
   it('selects visible, positional, and older reader articles', () => {
-    const context = createContext();
+    const context = createContext({ getVisibleReaderArticles: () => [{ id: 2 }] });
 
-    expect(context.getReaderBulkReadArticles('mark-visible-read', 2)).toBe(context.articles);
+    expect(context.getReaderBulkReadArticles('mark-visible-read', 2)).toEqual([{ id: 2 }]);
     expect(context.getReaderBulkReadArticles('mark-above-read', 2).map(article => article.id))
       .toEqual([1]);
     expect(context.getReaderBulkReadArticles('mark-below-read', 2).map(article => article.id))

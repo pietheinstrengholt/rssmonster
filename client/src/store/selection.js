@@ -19,6 +19,7 @@ const DEFAULT_ARTICLE_FILTERS = Object.freeze({
   smartFolderId: null,
   minAdvertisementScore: 0,
   minSentimentScore: 0,
+  minOverallQualityScore: 0,
   minQualityScore: 0
 });
 const SUPPORTED_SELECTION_FIELDS = [
@@ -32,6 +33,7 @@ const SUPPORTED_SELECTION_FIELDS = [
   'smartFolderId',
   'minAdvertisementScore',
   'minSentimentScore',
+  'minOverallQualityScore',
   'minQualityScore',
   'sort',
   'viewMode',
@@ -507,6 +509,9 @@ export const useSelectionStore = defineStore('selection', {
     },
 
     // This action updates the quality score threshold.
+    setMinOverallQualityScore(value) {
+      this.currentSelection.minOverallQualityScore = value;
+    },
     setMinQualityScore(value) {
       this.currentSelection.minQualityScore = value;
     },

@@ -3,13 +3,13 @@
     root-class="article-quality-explanation"
     panel-class="quality-explanation-panel"
     list-class="quality-explanation-list"
-    :trigger-label="`Quality: ${averageScore}`"
-    :trigger-class="['score', 'overall-score', scoreSeverityClass(averageScore)]"
-    :aria-label="`Quality score ${averageScore}. Show quality breakdown`"
-    dialog-title="Article quality"
-    summary="The average combines the article’s writing, tone, and ad-free quality scores."
+    :trigger-label="`Overall quality: ${overallScore}/100`"
+    :trigger-class="['score', 'overall-score', scoreSeverityClass(overallScore)]"
+    :aria-label="`Overall quality ${overallScore} out of 100. Show quality breakdown`"
+    dialog-title="Overall quality"
+    summary="Overall quality combines 50% writing quality, 25% tone, and 25% ad-free content. Overall quality filters use this same score."
     :items="qualityItems"
-    :footer-label="`${averageScore} average quality score`"
+    :footer-label="`${overallScore}/100 overall quality`"
   />
 </template>
 
@@ -25,15 +25,14 @@ const scoreSeverityClass = score => {
 export default {
   components: { ArticleExplanationPopover },
   props: {
+    quality: { type: Number, required: true },
     advertisementScore: { type: Number, required: true },
     sentimentScore: { type: Number, required: true },
     qualityScore: { type: Number, required: true }
   },
   computed: {
-    averageScore() {
-      return Math.round(
-        (this.advertisementScore + this.sentimentScore + this.qualityScore) / 3
-      );
+    overallScore() {
+      return Number((this.quality * 100).toFixed(2));
     },
     qualityItems() {
       return [
@@ -49,7 +48,7 @@ export default {
           code: 'tone',
           icon: 'chat-square-text-fill',
           iconClass: scoreSeverityClass(this.sentimentScore),
-          title: 'Tone quality',
+          title: 'Tone',
           value: this.sentimentScore,
           text: 'Neutrality and emotional balance of the writing.'
         },
@@ -57,7 +56,7 @@ export default {
           code: 'ad-free',
           icon: 'megaphone',
           iconClass: scoreSeverityClass(this.advertisementScore),
-          title: 'Ad-free quality',
+          title: 'Ad-free content',
           value: this.advertisementScore,
           text: 'Freedom from promotional and marketing language.'
         }

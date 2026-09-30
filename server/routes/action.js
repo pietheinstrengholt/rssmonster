@@ -7,6 +7,8 @@ export const router = express.Router();
 // GET /api/actions - Get all actions for the authenticated user
 router.get('/', userMiddleware.isLoggedIn, actionController.getActions);
 
+router.post('/preview', userMiddleware.isLoggedIn, actionController.previewAction);
+
 // POST /api/actions - Recreate all actions for the authenticated user
 router.post('/', userMiddleware.isLoggedIn, actionController.createAction);
 

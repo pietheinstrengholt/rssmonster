@@ -8,6 +8,7 @@
       :advertisement-score="advertisementScore"
       :sentiment-score="sentimentScore"
       :quality-score="qualityScore"
+      :quality="quality"
     />
     <span
       v-else-if="analysisStateLabel"
@@ -40,6 +41,7 @@ export default {
     isMobilePortrait: { type: Boolean, default: false },
     advertisementScore: { type: Number, default: undefined },
     sentimentScore: { type: Number, default: undefined },
+    quality: { type: Number, default: undefined },
     qualityScore: { type: Number, default: undefined },
     aiAnalysisStatus: { type: String, default: '' }
   },
@@ -59,6 +61,7 @@ export default {
     hasQualityScores() {
       const scores = [this.advertisementScore, this.sentimentScore, this.qualityScore];
       return hasUsableArticleAnalysis(this.aiAnalysisStatus)
+        && Number.isFinite(this.quality)
         && scores.every(Number.isFinite)
         && scores.some(score => score !== NEUTRAL_SCORE);
     },

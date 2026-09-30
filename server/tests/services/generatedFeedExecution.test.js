@@ -32,6 +32,7 @@ describe('Generated Feed expression execution', () => {
       minAdvertisementScore: 0,
       minSentimentScore: 0,
       minQualityScore: 0,
+      minOverallQualityScore: 0,
       status: '%',
       executionBounds: {
         maxResults: GENERATED_FEED_RESULT_LIMIT,

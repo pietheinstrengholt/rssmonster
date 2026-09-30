@@ -179,19 +179,20 @@
             <!-- Quality -->
             <fieldset v-if="aiEnabled" class="smart-folder-panel">
                 <legend>
-                    Quality & Scores
+                    Quality & freshness
                     <BootstrapIcon icon="info-circle-fill" title="Set minimum quality and freshness thresholds for matching articles." />
                 </legend>
 
                 <label class="smart-folder-range">
-                    <span>Minimum quality</span>
-                    <strong>{{ Number(draftConfig.scores.quality).toFixed(2) }}</strong>
+                    <span>Minimum overall quality</span>
+                    <strong>{{ Math.round(draftConfig.scores.quality * 100) }}/100</strong>
                     <input
-                        v-model.number="draftConfig.scores.quality"
+                        :value="draftConfig.scores.quality * 100"
+                        @input="draftConfig.scores.quality = Number($event.target.value) / 100"
                         type="range"
                         min="0"
-                        max="1"
-                        step="0.05"
+                        max="100"
+                        step="1"
                     />
                 </label>
 
@@ -290,7 +291,7 @@
                         <option value="published-asc">Published date (oldest)</option>
                         <option v-if="aiEnabled" value="topStories">Top Stories</option>
                         <option v-if="aiEnabled" value="recommended">Recommended</option>
-                        <option v-if="aiEnabled" value="quality">Quality</option>
+                        <option v-if="aiEnabled" value="quality">Quality &amp; source trust</option>
                     </select>
                 </label>
 
@@ -378,10 +379,14 @@ export default {
     // This function creates an editor-owned draft so parent collection data is never mutated.
     data() {
         return {
-            draftConfig: createEditorDraft(this.smartFolder)
+            draftConfig: createEditorDraft(this.smartFolder),
+            initialDraft: JSON.stringify(createEditorDraft(this.smartFolder))
         };
     },
     computed: {
+        hasUnsavedChanges() {
+            return JSON.stringify(this.draftConfig) !== this.initialDraft;
+        },
         // This function returns the stored query represented by the current draft.
         generatedSmartFolderQuery() {
             return buildSmartFolderQuery(this.draftConfig);

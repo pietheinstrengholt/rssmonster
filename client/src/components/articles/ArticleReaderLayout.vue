@@ -22,6 +22,8 @@
       :search-query="selectionStore.currentSelection.smartFolderId === null ? selectionStore.currentSelection.search : null"
       :showing-new-only="collectionProgress.showingNewOnly"
       :refresh-progress="feedRefreshStore.progress"
+      :refresh-status="feedRefreshStore.completionStatus"
+      @dismiss-refresh="feedRefreshStore.dismissProgress()"
       :show-refresh-progress="showFeedRefreshProgress"
       @clear-filters="$emit('clear-filters')"
       @clear-search="$emit('clear-search')"

@@ -625,19 +625,19 @@ describe('Article relevance signal coverage', () => {
   // Verifies threshold, labeling, and invalid-metadata boundaries.
   it('computes individual relevance signal boundaries', () => {
     expect(evaluate('hasHighQualitySignal', {
-      qualityScore: 0.91,
+      quality: 0.91,
       recommendationScore: 0
     })).toBe(true);
     expect(evaluate('hasHighQualitySignal', {
-      qualityScore: 0,
+      quality: 0,
       recommendationScore: 0.91
-    })).toBe(true);
+    })).toBe(false);
     expect(evaluate('hasHighQualitySignal', {
-      qualityScore: 91,
+      quality: 0.91,
       recommendationScore: 0
     })).toBe(true);
     expect(evaluate('hasHighQualitySignal', {
-      qualityScore: 'invalid',
+      quality: 'invalid',
       recommendationScore: 0
     })).toBe(false);
     expect(evaluate('hasOfficialSourceSignal', { isOfficialSource: true })).toBe(true);
@@ -661,7 +661,7 @@ describe('Article relevance signal coverage', () => {
       feed: { feedTrust: 0.9 },
       isOfficialSource: false,
       officialOrganization: '',
-      qualityScore: 0,
+      quality: 0,
       recommendationScore: 0
     })).toEqual([
       { label: 'Trending', icon: 'graph-up-arrow' },

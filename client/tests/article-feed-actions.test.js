@@ -54,6 +54,7 @@ const createContext = (overrides = {}) => {
     showSmartFoldersOverview: false,
     $emit: vi.fn(),
     ...ArticleFeed.methods,
+    getVisibleReaderArticles: () => [{ id: 1 }],
     ...overrides
   };
 };
@@ -303,8 +304,8 @@ describe('ArticleFeed actions', () => {
       selectedArticleId: 1
     });
 
-    expect(context.favoriteReaderArticles).toHaveBeenCalledWith(context.articles);
-    expect(context.markReaderArticlesClicked).toHaveBeenCalledWith(context.articles);
+    expect(context.favoriteReaderArticles).toHaveBeenCalledWith([{ id: 1 }]);
+    expect(context.markReaderArticlesClicked).toHaveBeenCalledWith([{ id: 1 }]);
     expect(context.markReaderArticlesRead).toHaveBeenCalledWith([{ id: 2 }]);
 
     context.selectionStore.currentSelection.viewMode = 'full';

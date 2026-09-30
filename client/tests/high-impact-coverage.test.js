@@ -599,7 +599,7 @@ describe('SettingsActions high-impact decision coverage', () => {
       ...SettingsActions.data(),
       ...SettingsActions.methods,
       loaded: true,
-      actions: [null, { name: 'Keep', actionType: 'favorite' }, { name: 'Blank', actionType: ' ' }],
+      actions: [null, { name: 'Keep', actionType: 'favorite', regularExpression: 'keep' }, { name: 'Blank', actionType: ' ' }],
       $el: { querySelector: vi.fn(() => ({ focus })) },
       $emit: vi.fn()
     };
@@ -607,11 +607,11 @@ describe('SettingsActions high-impact decision coverage', () => {
     context.focusActionName(1);
     expect(focus).toHaveBeenCalledOnce();
     context.addAction();
-    expect(context.actions.at(-1)).toEqual({ name: '', actionType: '', regularExpression: '', tagValue: '' });
+    expect(context.actions.at(-1)).toEqual({ name: '', actionType: 'favorite', regularExpression: '', tagValue: '' });
     context.removeAction(context.actions.length - 1);
     await context.save();
 
-    expect(saveActions).toHaveBeenCalledWith([{ name: 'Keep', actionType: 'favorite' }]);
+    expect(saveActions).toHaveBeenCalledWith([{ name: 'Keep', actionType: 'favorite', regularExpression: 'keep' }]);
     expect(context.$emit).toHaveBeenCalledWith('saved');
     expect(context.$emit).toHaveBeenCalledWith('close');
     expect(context.saving).toBe(false);
@@ -780,7 +780,7 @@ describe('Vue template handler coverage', () => {
     await introDetails.get('summary').trigger('click');
     expect(introDetails.attributes('open')).toBeDefined();
 
-    for (const input of wrapper.findAll('input')) await input.setValue('coverage');
+    for (const input of wrapper.findAll('input[type="text"]')) await input.setValue('coverage');
     for (const select of wrapper.findAll('select')) await select.setValue('favorite');
     for (const button of wrapper.findAll('.actions-edit-button')) await button.trigger('click');
     expect(wrapper.vm.actions[0]).toMatchObject({
@@ -884,7 +884,7 @@ describe('Vue template handler coverage', () => {
     });
     await flushPromises();
 
-    for (const input of wrapper.findAll('input')) await input.setValue('coverage');
+    for (const input of wrapper.findAll('input[type="text"]')) await input.setValue('coverage');
     for (const select of wrapper.findAll('select')) {
       const options = select.findAll('option');
       if (options.length) await select.setValue(options.at(-1).attributes('value'));

@@ -72,6 +72,9 @@
       v-if="showRefreshProgress && !hasTagSelection && refreshProgress?.visible"
       class="article-empty-state-refresh-progress"
       :progress="refreshProgress"
+      :status="refreshStatus"
+      @dismiss="$emit('dismiss-refresh')"
+      @retry="$emit('refresh-feeds')"
     />
 
     <div v-if="!noFeeds && !hasTagSelection" class="article-empty-state-divider" aria-hidden="true">
@@ -119,6 +122,7 @@ export default {
     'clear-search',
     'clear-tag',
     'refresh-feeds',
+    'dismiss-refresh',
     'open-smart-folders',
     'view-tag-status'
   ],
@@ -140,6 +144,7 @@ export default {
       type: String,
       default: 'unread'
     },
+    refreshStatus: { type: String, default: 'running' },
     refreshProgress: {
       type: Object,
       default: null

@@ -1,5 +1,6 @@
 'use strict';
 import db from '../models/index.js';
+import { previewAction as previewActionSample } from '../services/actions/previewAction.js';
 import { compileActionRegex } from '../utils/actionRegex.js';
 const { Action } = db;
 
@@ -10,7 +11,7 @@ const getActions = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const actions = await Action.findAll({ where: { userId }, order: [['createdAt', 'DESC']] });
+    const actions = await Action.findAll({ where: { userId }, order: [['id', 'ASC']] });
     res.status(200).json({ total: actions.length, actions });
   } catch (err) {
     next(err);
@@ -58,6 +59,7 @@ const createAction = async (req, res, next) => {
       }
     }
 
+    // Replacing in submitted order assigns ascending IDs, the shared display and crawl order.
     // Keep the previous rules if replacement fails; an explicit empty array clears them.
     const created = await db.sequelize.transaction(async transaction => {
       await Action.destroy({ where: { userId }, transaction });
@@ -70,7 +72,29 @@ const createAction = async (req, res, next) => {
   }
 };
 
+const previewAction = async (req, res, next) => {
+  const userId = req.userData.userId;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized: missing userId' });
+  const expression = req.body?.regularExpression;
+  if (typeof expression !== 'string' || !expression.trim() || expression.length > 2000) {
+    return res.status(400).json({ error: 'Enter a condition of up to 2,000 characters to preview.' });
+  }
+  try {
+    compileActionRegex(expression);
+  } catch {
+    return res.status(400).json({ error: 'Check your regular expression and flags, then try the preview again.' });
+  }
+  try {
+    const result = await previewActionSample(userId, expression);
+    res.status(200).json(result);
+  } catch (error) {
+    if (error.status === 422) return res.status(422).json({ error: error.message });
+    next(error);
+  }
+};
+
 export default {
+  previewAction,
   getActions,
   createAction
 };

@@ -61,6 +61,21 @@ body.settings-overlay-open {
     border-right: 1px solid var(--border-subtle);
 }
 
+.settings-surface .settings-nav-group + .settings-nav-group {
+    margin-top: 16px;
+}
+
+.settings-surface .settings-nav-group-title {
+    margin: 0 12px 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.settings-surface .settings-section-picker {
+    display: none;
+}
+
 .settings-surface .settings-sidebar-item {
     width: 100%;
     min-height: 44px;
@@ -433,19 +448,26 @@ body.settings-overlay-open {
     }
 
     .settings-surface .settings-sidebar {
-        display: flex;
-        gap: 8px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        padding: 10px 12px;
-        border-right: 0;
+        display: none;
+    }
+
+    .settings-surface .settings-section-picker {
+        display: grid;
+        gap: 6px;
+        padding: 10px 16px;
+        background: var(--surface-page);
         border-bottom: 1px solid var(--border-subtle);
     }
 
-    .settings-surface .settings-sidebar-item {
-        width: auto;
-        flex: 0 0 auto;
-        white-space: nowrap;
+    .settings-surface .settings-section-picker label {
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .settings-surface .settings-section-picker select {
+        width: 100%;
+        min-width: 0;
     }
 
     .settings-surface .settings-content {

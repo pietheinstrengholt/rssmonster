@@ -180,6 +180,7 @@ describe('data store remaining actions and getters', () => {
       minAdvertisementScore: 0,
       minSentimentScore: 0,
       minQualityScore: 0,
+      minOverallQualityScore: 0,
       sort,
       grouping,
       viewMode: 'reader',

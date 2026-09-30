@@ -38,6 +38,10 @@
 
       <div class="feeds-toolbar settings-toolbar">
         <div class="feeds-toolbar-actions">
+          <button type="button" class="app-button app-button--primary settings-control" @click="uiStore.setShowModal('NewFeed')">
+            <BootstrapIcon icon="plus-lg" aria-hidden="true" />
+            Add feed
+          </button>
           <input type="file" ref="opmlFileInput" accept=".opml,.xml" class="feeds-file-input" @change="handleFileSelect" />
           <button type="button" class="feeds-toolbar-button settings-control" @click="$refs.opmlFileInput.click()">
             <BootstrapIcon class="feeds-toolbar-action-icon" icon="upload" aria-hidden="true" />
@@ -47,15 +51,19 @@
             <BootstrapIcon class="feeds-toolbar-action-icon" icon="download" aria-hidden="true" />
             Export OPML
           </button>
-          <button
-            type="button"
-            class="feeds-toolbar-button settings-control"
-            :disabled="feedTrustLoading || feeds.length === 0"
-            @click="handleRecalculateFeedTrust"
-          >
-            <BootstrapIcon class="feeds-toolbar-action-icon" icon="arrow-repeat" aria-hidden="true" />
-            {{ feedTrustLoading ? 'Recalculating…' : 'Recalculate Scores' }}
-          </button>
+          <AppDropdown id="feeds-maintenance" fixed @keydown.esc="$event.defaultPrevented && $event.stopPropagation()">
+            <template #trigger="{ triggerProps }">
+              <button v-bind="triggerProps" type="button" class="feeds-toolbar-button settings-control">
+                {{ feedTrustLoading ? 'Recalculating…' : 'Maintenance' }}
+                <BootstrapIcon icon="chevron-down" aria-hidden="true" />
+              </button>
+            </template>
+            <template #menu="{ menuProps }">
+              <div v-bind="menuProps">
+                <button type="button" class="app-dropdown__item" role="menuitem" :disabled="feedTrustLoading || feeds.length === 0" @click="handleRecalculateFeedTrust">Recalculate Scores</button>
+              </div>
+            </template>
+          </AppDropdown>
         </div>
 
         <div class="feeds-toolbar-filters">
@@ -278,6 +286,8 @@
   align-items: center;
   gap: 12px;
 }
+
+.feeds-toolbar-actions { flex-wrap: wrap; }
 
 .feeds-toolbar {
   justify-content: space-between;
@@ -591,6 +601,7 @@
   .feeds-toolbar,
   .feeds-toolbar-actions,
   .feeds-toolbar-filters { width: 100%; align-items: stretch; flex-direction: column; }
+  .feeds-toolbar-actions :deep(.app-dropdown__trigger) { width: 100%; }
   .feeds-toolbar-button,
   .feeds-status-filter,
   .feeds-search { width: 100%; }
@@ -610,6 +621,7 @@ import opmlImportFlow from '../../mixins/opmlImportFlow.js';
 import { formatRelativeDate } from '../../utils/date.js';
 import SettingsFeedDetails from './SettingsFeedDetails.vue';
 import OpmlImportPreview from '../dialogs/feeds/OpmlImportPreview.vue';
+import AppDropdown from '../shared/AppDropdown.vue';
 
 const FEED_HEALTH_LABELS = Object.freeze({
     NEW: 'New',
@@ -622,7 +634,7 @@ const FEED_HEALTH_LABELS = Object.freeze({
 
 export default {
   mixins: [opmlImportFlow],
-  components: { OpmlImportPreview, SettingsFeedDetails },
+  components: { OpmlImportPreview, SettingsFeedDetails, AppDropdown },
   emits: ['close', 'saved'],
     data() {
         return {
@@ -641,6 +653,10 @@ export default {
         this.fetchFeeds();
     },
     watch: {
+        subscribedFeedIds(ids, previousIds) {
+            // Shared subscription dialogs update the overview after a successful save.
+            if (ids.some(id => !previousIds.includes(id))) this.fetchFeeds({ forceRefresh: true });
+        },
         'overviewStore.deletedFeedIds': {
             // Reconciles confirmed deletions performed by the shared edit/delete dialogs.
             handler(feedIds) {
@@ -801,6 +817,9 @@ export default {
     },
     computed: {
       ...mapStores(useOverviewStore, useSelectionStore, useUiStore),
+        subscribedFeedIds() {
+            return this.overviewStore.categories.flatMap(category => category.feeds || []).map(feed => String(feed.id));
+        },
         filteredFeeds() {
             const query = this.searchQuery.trim().toLowerCase();
 

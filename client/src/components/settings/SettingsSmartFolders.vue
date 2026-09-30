@@ -117,8 +117,8 @@
                             :smart-folder="smartFolder"
                             :ai-enabled="aiEnabled"
                             @validation-change="editorQueryInvalid = $event"
-                            @save="saveSmartFolderConfig(index, $event)"
-                            @save-copy="saveSmartFolderAsCopy"
+                            @save="persistSmartFolderConfig(index, $event)"
+                            @save-copy="persistSmartFolderCopy"
                             @cancel="cancelSmartFolderConfig"
                             @delete="removeSmartFolder(index)"
                         />
@@ -459,7 +459,7 @@ import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
 import { saveSmartFolders } from '../../api/smartfolders';
 import { validateSmartFolderQuery } from '../../services/queryValidation';
-import { notifyActionError } from '../../services/actionNotifications.js';
+import { notifyActionError, notifyActionSuccess } from '../../services/actionNotifications.js';
 import SmartFolderEditor from './smartFolders/SmartFolderEditor.vue';
 import SmartFolderInsights from './smartFolders/SmartFolderInsights.vue';
 import { smartFolderQueryRequiresUnread } from './smartFolders/smartFolderQuery.js';
@@ -469,6 +469,7 @@ const effectiveSmartFolderMarkAsReadOnScroll = smartFolder =>
     Boolean(smartFolder?.markAsReadOnScroll);
 
 export default {
+    name: 'SettingsSmartFolders',
     components: {
         InlineActionError,
         SmartFolderEditor,
@@ -479,6 +480,7 @@ export default {
     data() {
         return {
             saveError: '',
+            savedSmartFolders: '',
             smartFolders: [],
             selectedSmartFolderId: null,
             smartFolderEditorRef: null,
@@ -494,6 +496,10 @@ export default {
         await this.fetchSmartFolders();
     },
     computed: {
+        hasUnsavedChanges() {
+            return this.loaded && (JSON.stringify(this.smartFolders) !== this.savedSmartFolders
+                || Boolean(this.smartFolderEditorRef?.hasUnsavedChanges));
+        },
       ...mapStores(useSelectionStore, useOverviewStore),
         // This function reports whether AI-powered Smart Folder controls are available.
         aiEnabled() {
@@ -533,6 +539,7 @@ export default {
                     limitCount: smartFolder.limitCount || 50,
                     markAsReadOnScroll: effectiveSmartFolderMarkAsReadOnScroll(smartFolder)
                 }));
+                this.savedSmartFolders = JSON.stringify(this.smartFolders);
                 this.loaded = true;
             } catch (err) {
                 console.error('Error loading Smart Folders:', err);
@@ -601,6 +608,14 @@ export default {
 
             this.selectedSmartFolderId = smartFolder.localId;
             this.editorQueryInvalid = false;
+        },
+        async persistSmartFolderConfig(index, update) {
+            this.saveSmartFolderConfig(index, update);
+            await this.save();
+        },
+        async persistSmartFolderCopy(update) {
+            this.saveSmartFolderAsCopy(update);
+            await this.save();
         },
         // This function applies an editor result to the selected collection entry.
         saveSmartFolderConfig(index, update) {
@@ -671,7 +686,16 @@ export default {
                     this.selectionStore.setSmartFolder(response.data.smartFolders[activeFolderIndex] ?? null);
                 }
 
-                await this.overviewStore.fetchSmartFolders();
+                // The bulk API can assign new IDs even to existing folders.
+                this.smartFolders = response.data.smartFolders.map(folder => ({ ...folder, localId: folder.id }));
+                this.savedSmartFolders = JSON.stringify(this.smartFolders);
+                try {
+                    await this.overviewStore.fetchSmartFolders();
+                } catch (refreshError) {
+                    notifyActionError('Smart Folders were saved, but the sidebar couldn’t refresh. Try again.',
+                        refreshError, () => this.overviewStore.fetchSmartFolders());
+                }
+                notifyActionSuccess('Smart Folders saved.');
 
                 this.saveError = '';
                 this.$emit('saved');

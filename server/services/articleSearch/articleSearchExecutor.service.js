@@ -86,7 +86,8 @@ export const buildArticleSearchQuery = ({
       'advertisementScore',
       'sentimentScore',
       'qualityScore',
-      'qualityScoreActionOverrideInd'
+      'qualityScoreActionOverrideInd',
+      'advertisementScoreActionOverrideInd'
     );
   }
 

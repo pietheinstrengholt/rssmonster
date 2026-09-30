@@ -102,7 +102,7 @@ export function sortArticles(articles, {
       const actionOwned = Boolean(
         article.get?.('qualityScoreActionOverrideInd') ??
         article.qualityScoreActionOverrideInd
-      );
+      ) || Boolean(article.get?.('advertisementScoreActionOverrideInd') ?? article.advertisementScoreActionOverrideInd);
       return (
         (SCORE_FILTER_EXEMPT_ANALYSIS_STATUSES.has(analysisStatus) && !actionOwned) ||
         compareValues(article.quality, qualityFilter.operator, qualityFilter.value)

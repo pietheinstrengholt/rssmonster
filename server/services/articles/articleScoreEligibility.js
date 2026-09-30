@@ -1,4 +1,5 @@
-import { Op } from 'sequelize';
+import { Op, where } from 'sequelize';
+import { articleQualityPercentExpression } from './articleQuality.js';
 
 // Optional inference must not make otherwise-visible articles fail score gates.
 export const SCORE_THRESHOLD_EXEMPT_ANALYSIS_STATUSES = Object.freeze([
@@ -30,9 +31,16 @@ const scoreEligibility = ({ field, minimum, actionOverrideField = null }) => ({
 export const buildArticleScoreEligibility = ({
   minAdvertisementScore = 0,
   minSentimentScore = 0,
-  minQualityScore = 0
+  minQualityScore = 0,
+  minOverallQualityScore = 0
 } = {}) => ({
   [Op.and]: [
+    ...(Number(minOverallQualityScore) > 0 ? [{
+      [Op.or]: [
+        where(articleQualityPercentExpression(), { [Op.gte]: Number(minOverallQualityScore) }),
+        { [Op.and]: [unresolvedAnalysis(), { qualityScoreActionOverrideInd: false, advertisementScoreActionOverrideInd: false }] }
+      ]
+    }] : []),
     scoreEligibility({
       field: 'advertisementScore',
       minimum: minAdvertisementScore,

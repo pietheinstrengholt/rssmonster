@@ -417,7 +417,8 @@ describe('ArticleTagsScores', () => {
     const wrapper = mountArticleTagsScores({
       advertisementScore: 70,
       sentimentScore: 70,
-      qualityScore: 70
+      qualityScore: 70,
+      quality: 0.775
     });
     await flushPromises();
 
@@ -548,21 +549,22 @@ describe('ArticleTagsScores', () => {
   });
 
   // Verifies the summary includes every dimension, including the neutral baseline score.
-  it('renders one average quality score with an individual score breakdown', async () => {
+  it('renders the backend overall quality score with an individual score breakdown', async () => {
     const wrapper = mountArticleTagsScores({
       advertisementScore: 100,
       sentimentScore: 70,
-      qualityScore: 40
+      qualityScore: 40,
+      quality: 0.625
     }, { attachTo: document.body });
     await flushPromises();
 
     const trigger = wrapper.get('.overall-score');
-    expect(trigger.text()).toBe('Quality: 70');
+    expect(trigger.text()).toBe('Overall quality: 62.5/100');
     expect(trigger.element.tagName).toBe('BUTTON');
     expect(trigger.classes()).toContain('score-medium');
     expect(trigger.attributes()).toMatchObject({
       'aria-expanded': 'false',
-      'aria-label': 'Quality score 70. Show quality breakdown'
+      'aria-label': 'Overall quality 62.5 out of 100. Show quality breakdown'
     });
     expect(wrapper.findAll('.quality-score, .sentiment-score, .ad-score')).toHaveLength(0);
 
@@ -571,12 +573,12 @@ describe('ArticleTagsScores', () => {
 
     const panel = document.querySelector('.quality-explanation-panel');
     expect(panel.getAttribute('role')).toBe('dialog');
-    expect(panel.textContent).toContain('Article quality');
+    expect(panel.textContent).toContain('Overall quality');
     expect([...panel.querySelectorAll('.article-explanation-list strong:first-child')]
       .map(item => item.textContent)).toEqual([
       'Writing quality',
-      'Tone quality',
-      'Ad-free quality'
+      'Tone',
+      'Ad-free content'
     ]);
     expect([...panel.querySelectorAll('.article-explanation-item-value')]
       .map(item => item.textContent)).toEqual(['40', '70', '100']);
@@ -592,20 +594,21 @@ describe('ArticleTagsScores', () => {
     expect(qualityIcons).toEqual(['pencil-square', 'chat-square-text-fill', 'megaphone']);
     expect(qualityIcons.every(icon => bootstrapIconNames.includes(icon))).toBe(true);
     expect(panel.textContent).toContain('Clarity, structure, and substance');
-    expect(panel.textContent).toContain('70 average quality score');
+    expect(panel.textContent).toContain('62.5/100 overall quality');
     wrapper.unmount();
   });
 
   // Verifies the average badge uses the existing score-severity thresholds.
-  it('assigns severity from the average quality score', async () => {
+  it('assigns severity from the overall quality score', async () => {
     const wrapper = mountArticleTagsScores({
       advertisementScore: 60,
       sentimentScore: 79,
-      qualityScore: 80
+      qualityScore: 80,
+      quality: 0.7475
     });
     await flushPromises();
 
-    expect(wrapper.get('.overall-score').text()).toBe('Quality: 73');
+    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 74.75/100');
     expect(wrapper.get('.overall-score').classes()).toContain('score-medium');
   });
 
@@ -647,12 +650,13 @@ describe('ArticleTagsScores', () => {
       aiAnalysisStatus: 'complete',
       advertisementScore: 90,
       sentimentScore: 80,
-      qualityScore: 70
+      qualityScore: 70,
+      quality: 0.775
     });
     await flushPromises();
 
     expect(wrapper.find('.analysis-state').exists()).toBe(false);
-    expect(wrapper.get('.overall-score').text()).toBe('Quality: 80');
+    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 77.5/100');
   });
 
   it('preserves skipped-feed score presentation', async () => {
@@ -660,11 +664,12 @@ describe('ArticleTagsScores', () => {
       aiAnalysisStatus: 'skipped',
       advertisementScore: 100,
       sentimentScore: 70,
-      qualityScore: 40
+      qualityScore: 40,
+      quality: 0.625
     });
     await flushPromises();
 
-    expect(wrapper.get('.overall-score').text()).toBe('Quality: 70');
+    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 62.5/100');
     expect(wrapper.find('.analysis-state').exists()).toBe(false);
   });
 

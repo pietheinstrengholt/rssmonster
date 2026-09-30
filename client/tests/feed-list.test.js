@@ -1,9 +1,11 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia } from 'pinia';
 import { nextTick } from 'vue';
 import SettingsFeedsOverview from '../src/components/settings/SettingsFeedsOverview.vue';
 import { fetchFeeds } from '../src/api/feeds';
+import { useUiStore } from '../src/store/ui.js';
+import { useOverviewStore } from '../src/store/overview.js';
 
 // MOCK THE API MODULE, NOT AXIOS
 vi.mock('../src/api/feeds', () => ({
@@ -27,6 +29,49 @@ const mountOverview = () => mount(SettingsFeedsOverview, {
 });
 
 describe('SettingsFeedsOverview', () => {
+  it('opens the shared Add feed form from an empty subscription list', async () => {
+    const wrapper = mountOverview();
+    await flushPromises();
+    await wrapper.findAll('button').find(button => button.text() === 'Add feed').trigger('click');
+    expect(useUiStore().showModal).toBe('NewFeed');
+    expect(wrapper.text()).toContain('No feeds found.');
+    wrapper.unmount();
+  });
+
+  it('refreshes the feed list after a subscription is added without losing the search', async () => {
+    const wrapper = mountOverview();
+    await flushPromises();
+    await wrapper.get('input[type="search"]').setValue('New subscription');
+    fetchFeeds.mockResolvedValue({ data: { feeds: [{ id: 99, feedName: 'New subscription' }] } });
+    useOverviewStore().addCategory({ id: 1, name: 'News', feeds: [] });
+    useOverviewStore().addFeed(1, { id: 99, feedName: 'New subscription' });
+    await flushPromises();
+    expect(fetchFeeds).toHaveBeenLastCalledWith({ forceRefresh: true });
+    expect(wrapper.get('input[type="search"]').element.value).toBe('New subscription');
+    expect(wrapper.get('tbody').text()).toContain('New subscription');
+    wrapper.unmount();
+  });
+
+  it('keeps recalculation inside the keyboard-accessible Maintenance menu', async () => {
+    const wrapper = mountOverview();
+    await flushPromises();
+    const trigger = wrapper.findAll('button').find(button => button.text() === 'Maintenance');
+    expect(trigger.attributes('aria-expanded')).toBe('false');
+    await trigger.trigger('keydown', { key: 'ArrowDown' });
+    expect(trigger.attributes('aria-expanded')).toBe('true');
+    const action = wrapper.get('[role="menuitem"]');
+    expect(action.text()).toBe('Recalculate Scores');
+    expect(action.attributes('disabled')).toBeDefined();
+    const parentKeydown = vi.fn();
+    wrapper.element.addEventListener('keydown', parentKeydown);
+    await trigger.trigger('keydown', { key: 'Escape' });
+    expect(trigger.attributes('aria-expanded')).toBe('false');
+    expect(parentKeydown).not.toHaveBeenCalled();
+    await trigger.trigger('keydown', { key: 'Escape' });
+    expect(parentKeydown).toHaveBeenCalledOnce();
+    wrapper.unmount();
+  });
+
   it('renders empty state', async () => {
     const wrapper = mountOverview();
 

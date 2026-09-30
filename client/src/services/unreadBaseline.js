@@ -2,7 +2,7 @@
 const storageKey = (userId, selection) => `rssmonster.unreadBaseline.${userId}.${JSON.stringify([
   selection.categoryId, selection.feedId, selection.search, selection.tag,
   selection.smartFolderId, selection.minAdvertisementScore, selection.minSentimentScore,
-  selection.minQualityScore, selection.grouping, selection.includeDevelopingEvents, selection.sort
+  selection.minOverallQualityScore, selection.minQualityScore, selection.grouping, selection.includeDevelopingEvents, selection.sort
 ])}`;
 
 export const loadUnreadBaseline = (userId, selection) => {

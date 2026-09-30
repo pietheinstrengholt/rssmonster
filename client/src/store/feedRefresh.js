@@ -36,14 +36,12 @@ const initialFeedRefreshState = () => ({
   progress: createFeedRefreshProgress()
 });
 
-// Returns non-reactive stream and timer resources owned by one store instance.
+// Returns non-reactive stream resources owned by one store instance.
 const getRefreshRuntime = store => {
   if (!refreshRuntimeByStore.has(store)) {
     refreshRuntimeByStore.set(store, {
-      completionTimer: null,
       eventListeners: [],
-      eventSource: null,
-      fallbackTimer: null
+      eventSource: null
     });
   }
 
@@ -108,13 +106,13 @@ export const useFeedRefreshStore = defineStore('feedRefresh', {
     updateProgress(payload) {
       if (!payload || typeof payload !== 'object') return;
 
-      const totalFeeds = Number(payload.totalFeeds || 0);
-      const processedFeeds = Number(payload.processedFeeds || payload.currentFeed || 0);
+      const totalFeeds = Number(payload.totalFeeds ?? this.progress.totalFeeds);
+      const processedFeeds = Number(payload.processedFeeds ?? payload.currentFeed ?? this.progress.processedFeeds);
 
       this.progress.totalFeeds = totalFeeds;
       this.progress.processedFeeds = processedFeeds;
-      this.progress.newArticles = Number(payload.newArticles || 0);
-      this.progress.errors = Number(payload.errors || 0);
+      this.progress.newArticles = Number(payload.newArticles ?? this.progress.newArticles);
+      this.progress.errors = Number(payload.errors ?? this.progress.errors);
 
       if (payload.feedName) {
         const currentFeed = Number(payload.currentFeed || processedFeeds || 0);
@@ -203,6 +201,7 @@ export const useFeedRefreshStore = defineStore('feedRefresh', {
         this.appendLog('Live updates disconnected.');
         this.error = { message: 'Live updates disconnected.' };
         this.finishStream(false);
+        this.completionStatus = 'disconnected';
       };
 
       // This operation retains every listener registration for explicit teardown.
@@ -214,27 +213,18 @@ export const useFeedRefreshStore = defineStore('feedRefresh', {
 
     // Falls back to the legacy refresh endpoint when live startup fails.
     async runFallbackRefresh(error, refreshGeneration = this.refreshGeneration) {
-      const runtime = getRefreshRuntime(this);
-
       try {
         await triggerCrawlAPI();
         if (this.refreshGeneration !== refreshGeneration) return;
-        // This callback leaves fallback progress visible long enough to read.
-        runtime.fallbackTimer = setTimeout(() => {
-          if (this.refreshGeneration !== refreshGeneration) return;
-          this.appendLog('Standard refresh completed.');
-          this.running = false;
-          this.currentJobId = null;
-          this.completionStatus = 'fallback-complete';
-          this.progress.visible = false;
-          runtime.fallbackTimer = null;
-        }, 2000);
+        this.appendLog('Refresh started in the background. Live results are unavailable.');
+        this.running = false;
+        this.currentJobId = null;
+        this.completionStatus = 'fallback-started';
       } catch (fallbackError) {
         if (this.refreshGeneration !== refreshGeneration) return;
         this.running = false;
         this.currentJobId = null;
         this.completionStatus = 'error';
-        this.progress.visible = false;
         const refreshError = fallbackError || error;
         this.error = { message: refreshError?.message || 'Feed refresh failed' };
         console.error('Error refreshing feeds after stream fallback:', refreshError);
@@ -242,28 +232,18 @@ export const useFeedRefreshStore = defineStore('feedRefresh', {
       }
     },
 
-    // Closes a terminal stream and publishes completion after the existing display delay.
+    // Publishes the result immediately and keeps it available until dismissed or replaced.
     finishStream(success) {
       this.closeEventStream();
-      const runtime = getRefreshRuntime(this);
-      const refreshGeneration = this.refreshGeneration;
+      if (!success && !this.error) this.error = { message: 'Feed refresh failed' };
+      this.running = false;
+      this.currentJobId = null;
+      this.completionStatus = success ? 'success' : 'error';
+      if (success) this.successfulCompletionId += 1;
+    },
 
-      if (!success && !this.error) {
-        this.error = { message: 'Feed refresh failed' };
-      }
-
-      // This callback briefly preserves the terminal progress state before hiding it.
-      runtime.completionTimer = setTimeout(() => {
-        if (this.refreshGeneration !== refreshGeneration) return;
-        this.running = false;
-        this.currentJobId = null;
-        this.completionStatus = success ? 'success' : 'error';
-        this.progress.visible = false;
-        runtime.completionTimer = null;
-        if (success) {
-          this.successfulCompletionId += 1;
-        }
-      }, 500);
+    dismissProgress() {
+      if (!this.running) this.progress.visible = false;
     },
 
     // Releases the active stream request and invalidates all of its callbacks.
@@ -284,15 +264,10 @@ export const useFeedRefreshStore = defineStore('feedRefresh', {
       this.streamGeneration += 1;
     },
 
-    // Stops transport resources and delayed callbacks owned by this session.
+    // Stops transport resources owned by this session.
     teardown() {
-      const runtime = getRefreshRuntime(this);
       this.refreshGeneration += 1;
       this.closeEventStream();
-      clearTimeout(runtime.completionTimer);
-      clearTimeout(runtime.fallbackTimer);
-      runtime.completionTimer = null;
-      runtime.fallbackTimer = null;
       this.running = false;
       this.currentJobId = null;
       this.progress.visible = false;

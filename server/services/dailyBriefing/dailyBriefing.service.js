@@ -207,7 +207,7 @@ export const buildBriefingArticleWhere = async ({
   // Loads the settings needed while building briefing article where.
   const settings = await Setting.findOne({
     where: { userId },
-    attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore'],
+    attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore', 'minOverallQualityScore'],
     raw: true
   });
 
@@ -219,6 +219,7 @@ export const buildBriefingArticleWhere = async ({
   }, {
     minAdvertisementScore: settings?.minAdvertisementScore,
     minSentimentScore: settings?.minSentimentScore,
+    minOverallQualityScore: settings?.minOverallQualityScore,
     minQualityScore: settings?.minQualityScore
   });
 

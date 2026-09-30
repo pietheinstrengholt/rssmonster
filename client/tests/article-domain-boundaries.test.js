@@ -255,12 +255,12 @@ describe('Article relevance signals', () => {
       event: { sourceCount: '5' },
       feed: { feedName: 'Trusted Feed', feedTrust: '0.9' },
       isOfficialSource: false,
-      qualityScore: 91,
+      quality: 0.91,
       recommendationScore: 0
     };
 
     expect(createArticleSignals(article)).toEqual([
-      { label: 'High quality', icon: 'stars' },
+      { label: 'High overall quality', icon: 'stars' },
       { label: 'Trending', icon: 'graph-up-arrow' },
       { label: 'Trusted source (Trusted Feed)', icon: 'shield-fill-check' }
     ]);
@@ -271,7 +271,7 @@ describe('Article relevance signals', () => {
 
   it('prioritizes major events and official sources over lower-tier signals', () => {
     const wrapper = mountArticle({
-      qualityScore: 0.95,
+      quality: 0.95,
       recommendationScore: 0.92,
       isOfficialSource: true,
       officialOrganization: 'Public Agency',
@@ -287,7 +287,7 @@ describe('Article relevance signals', () => {
     });
 
     expect(wrapper.vm.articleSignals).toEqual([
-      { label: 'High quality', icon: 'stars' },
+      { label: 'High overall quality', icon: 'stars' },
       { label: 'Major event', icon: 'broadcast' },
       { label: 'Official Feed (Public Agency)', icon: 'patch-check-fill' }
     ]);

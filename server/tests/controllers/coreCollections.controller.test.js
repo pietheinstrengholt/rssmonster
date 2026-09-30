@@ -95,7 +95,7 @@ describe('action controller', () => {
 
     expect(mocked.actionFindAll).toHaveBeenCalledWith({
       where: { userId: 42 },
-      order: [['createdAt', 'DESC']]
+      order: [['id', 'ASC']]
     });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ total: 1, actions });

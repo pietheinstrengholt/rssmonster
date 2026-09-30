@@ -1,7 +1,7 @@
 <template>
   <div class="observability-settings settings-page">
     <SettingsPageIntro
-      eyebrow="Settings — Observability"
+      eyebrow="Settings — Health &amp; errors"
       icon="activity"
       title="Service health & processing failures"
       title-id="processing-failures-title"

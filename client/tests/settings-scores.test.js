@@ -41,6 +41,22 @@ afterEach(() => {
 });
 
 describe('score settings', () => {
+  it('makes Overall quality primary and keeps active component filters discoverable under Advanced', async () => {
+    const { stores, wrapper } = mountScores({ minOverallQualityScore: 75 });
+    const advanced = wrapper.findAll('details').find(detail => detail.text().includes('Advanced — component thresholds'));
+    expect(advanced.attributes('open')).toBeUndefined();
+    expect(wrapper.get('#overallQualityScore').element.value).toBe('75');
+    await wrapper.get('[aria-label="Overall quality threshold value"]').setValue('80');
+    await wrapper.get('.scores-save-button').trigger('click');
+    await flushPromises();
+    expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({ minOverallQualityScore: 80 }));
+    expect(stores.selectionStore.currentSelection.minOverallQualityScore).toBe(80);
+    wrapper.unmount();
+    const configured = mountScores({ minQualityScore: 60 }).wrapper;
+    expect(configured.findAll('details').find(detail => detail.text().includes('Advanced — component thresholds')).attributes('open')).toBeDefined();
+    configured.unmount();
+  });
+
   it('keeps score explanations optional so thresholds remain prominent', async () => {
     const { wrapper } = mountScores();
     const details = wrapper.get('.scores-intro-details');
@@ -69,7 +85,7 @@ describe('score settings', () => {
     expect(wrapper.vm.advertisementScore).toBe(15);
     expect(wrapper.vm.sentimentScore).toBe(25);
     expect(wrapper.vm.qualityScore).toBe(35);
-    expect(wrapper.findAll('.scores-threshold-row')).toHaveLength(3);
+    expect(wrapper.findAll('.scores-threshold-row')).toHaveLength(4);
   });
 
   it('keeps defaults when persisted thresholds are unavailable', () => {
@@ -82,9 +98,9 @@ describe('score settings', () => {
 
   it('updates threshold controls, clamps bounds, and ignores non-numeric values', async () => {
     const { wrapper } = mountScores();
-    const qualityInput = wrapper.get('[aria-label="Quality Score threshold value"]');
+    const qualityInput = wrapper.get('[aria-label="Writing quality threshold value"]');
 
-    await wrapper.findAll('.scores-range-input')[2].setValue('42');
+    await wrapper.get('#qualityScore').setValue('42');
     expect(wrapper.vm.qualityScore).toBe(42);
     await qualityInput.setValue('64');
     expect(wrapper.vm.qualityScore).toBe(64);
@@ -129,11 +145,13 @@ describe('score settings', () => {
     await flushPromises();
 
     expect(saveSettings).toHaveBeenCalledWith({
+      minOverallQualityScore: 0,
       minAdvertisementScore: 40,
       minQualityScore: 60,
       minSentimentScore: 50
     });
     expect(stores.selectionStore.currentSelection).toMatchObject({
+      minOverallQualityScore: 0,
       minAdvertisementScore: 40,
       minQualityScore: 60,
       minSentimentScore: 50

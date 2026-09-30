@@ -302,7 +302,7 @@ export const articleFeedReadStateMethods = {
     const selectedIndex = this.articles.findIndex(article => String(article.id) === String(selectedArticleId));
 
     if (action === 'mark-visible-read') {
-      return this.articles;
+      return this.getVisibleReaderArticles();
     }
 
     if (selectedIndex === -1) {

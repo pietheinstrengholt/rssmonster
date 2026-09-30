@@ -99,8 +99,8 @@ describe('article recommendation presentation', () => {
     expect(atThreshold.items).toEqual([]);
     expect(aboveThreshold.items).toEqual([expect.objectContaining({
       code: 'quality',
-      title: 'Quality',
-      text: 'Strong content quality.'
+      title: 'Quality & source trust',
+      text: 'Strong content quality and source trust.'
     })]);
   });
 

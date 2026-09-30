@@ -14,9 +14,9 @@ whether an article is allowed to exist or be read.
 
 ## Core Signals
 
-### Article quality
+### Overall quality
 
-Article quality asks: **How good is this particular article?**
+Overall quality asks: **How good is this particular article?**
 
 It is a normalized `0.0`–`1.0` content score derived from the article's stored
 quality, sentiment, and advertising scores. Feed reputation is not inserted
@@ -33,6 +33,21 @@ The persisted inputs use `0`–`100`; the result is clamped to that range and
 divided by `100` once. A missing component uses the neutral-good value `70`.
 Higher `advertisementScore` means less promotional content, so all three inputs
 have the same higher-is-better direction.
+
+The article badge, Settings → Scores → Overall quality, and Smart Folder quality
+control show this score out of 100. The badge preserves fractional points so that
+an article shown as 74.75 does not appear to meet a minimum of 75. Smart Folder
+expressions retain their normalized syntax: `quality:>=0.75` means at least 75/100.
+Settings stores the independent `minOverallQualityScore` threshold as an integer
+from 0 to 100, with 0 disabling that gate. Existing writing, tone, and ad-free
+thresholds remain separate additional filters under Advanced. Existing preferences
+are preserved by the migration; the new overall threshold starts at 0.
+Articles awaiting analysis remain exempt unless an explicit automation Action
+owns a quality component, consistent with the component-filter exemption policy.
+
+The existing source-aware ranking remains separate: its menu label is
+**Quality & source trust**. Recommended and Top Stories weights are unchanged.
+“High overall quality” uses the article-only score, never the Recommended score.
 
 ### FeedTrust
 

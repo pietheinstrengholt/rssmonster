@@ -57,6 +57,50 @@ afterEach(() => {
 });
 
 describe('Settings navigation', () => {
+  it('groups administrator destinations by task with Account at the top', () => {
+    const wrapper = mountSettings({ AIEnabled: true, role: 'admin' });
+    const groups = wrapper.findAll('.settings-sidebar .settings-nav-group');
+    expect(groups.map(group => group.find('h3').exists() ? group.get('h3').text() : '')).toEqual([
+      '', 'Reading', 'Subscriptions', 'Automation', 'Troubleshooting', 'Administration'
+    ]);
+    expect(groups.map(group => group.findAll('button').map(button => button.text()))).toEqual([
+      ['Welcome', 'Account'],
+      ['Smart Folders', 'Scores', 'Events', 'Your interests'],
+      ['Feeds', 'Official Sources'],
+      ['Generated Feeds', 'Actions'],
+      ['Refresh history', 'AI Processing', 'Health & errors'],
+      ['AI / Inference', 'Manage Users', 'Server settings']
+    ]);
+    expect(wrapper.findAll('optgroup').map(group => group.attributes('label'))).toEqual([
+      'Reading', 'Subscriptions', 'Automation', 'Troubleshooting', 'Administration'
+    ]);
+    wrapper.unmount();
+  });
+
+  it('applies feature and role visibility to the mobile selector too', () => {
+    const wrapper = mountSettings();
+    const options = wrapper.get('#settings-section-select').findAll('option').map(option => option.text());
+    expect(options).toContain('Account');
+    expect(options).toContain('Health & errors');
+    expect(options).not.toContain('Your interests');
+    expect(options).not.toContain('Scores');
+    expect(options).not.toContain('Manage Users');
+    expect(wrapper.find('optgroup[label="Administration"]').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('opens sections from the labelled selector and keeps desktop navigation in sync', async () => {
+    const wrapper = mountSettings();
+    expect(wrapper.get('label[for="settings-section-select"]').text()).toBe('Settings sections');
+    await wrapper.get('#settings-section-select').setValue('smartfolders');
+    await flushPromises();
+    await vi.waitFor(() => expect(wrapper.find('.smart-folders-hero h3').exists()).toBe(true));
+    expect(wrapper.get('.settings-sidebar [aria-current="page"]').text()).toBe('Smart Folders');
+    await selectSettingsSection(wrapper, 'Welcome');
+    expect(wrapper.get('#settings-section-select').element.value).toBe('welcome');
+    wrapper.unmount();
+  });
+
   it('limits Server settings navigation to administrators', () => {
     expect(getSettingsNavigation(false, 'admin').find(item => item.key === 'server').visible).toBe(true);
     expect(getSettingsNavigation(false, 'user').find(item => item.key === 'server').visible).toBe(false);
@@ -74,6 +118,36 @@ describe('Settings navigation', () => {
     wrapper.unmount();
   });
 
+  it.each([
+    ['Smart Folders', 'smartfolders', 'SettingsSmartFolders'],
+    ['Generated Feeds', 'generatedFeeds', 'SettingsGeneratedFeeds'],
+    ['Actions', 'actions', 'SettingsActions'],
+    ['Scores', 'scores', 'SettingsScores'],
+    ['Events', 'events', 'SettingsEvents'],
+    ['Your interests', 'islands', 'SettingsIslands'],
+    ['Refresh history', 'crawlStatistics', 'SettingsCrawlStatistics'],
+    ['AI Processing', 'processingJobs', 'SettingsProcessingJobs'],
+    ['Health & errors', 'observability', 'SettingsObservability'],
+    ['Feeds', 'feeds', 'SettingsFeedsOverview'],
+    ['Official Sources', 'officialSources', 'SettingsOfficialSources'],
+    ['Manage Users', 'users', 'SettingsManageUsers']
+  ])('opens %s from its Welcome card and retains focus in navigation', async (label, key, component) => {
+    const wrapper = mountSettings({ AIEnabled: true, role: 'admin', stubs: { [component]: true } });
+    await flushPromises();
+    const button = wrapper.get('.settings-welcome__directory').findAll('button').find(item => item.text() === label);
+    expect(button.attributes('type')).toBe('button');
+    expect(wrapper.get(`#${button.attributes('aria-describedby')}`).text()).not.toBe('');
+    button.element.focus();
+    await button.trigger('click');
+    await flushPromises();
+    expect(wrapper.get('#settings-section-select').element.value).toBe(key);
+    const selected = wrapper.get('.settings-sidebar [aria-current="page"]');
+    expect(selected.text()).toBe(label);
+    expect(document.activeElement).toBe(selected.element);
+    expect(wrapper.find('#settings-welcome-title').exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   it('presents Welcome as a concise, semantically ordered section directory', () => {
     const wrapper = mountSettings({ AIEnabled: false, role: 'admin' });
     const directory = wrapper.get('.settings-welcome__directory');
@@ -84,8 +158,8 @@ describe('Settings navigation', () => {
       'Smart Folders',
       'Generated Feeds',
       'Actions',
-      'Crawl Statistics',
-      'Observability',
+      'Refresh history',
+      'Health & errors',
       'Feeds',
       'Official Sources',
       'Manage Users'
@@ -137,7 +211,7 @@ describe('Settings navigation', () => {
 
   it('shows processing observability for every authenticated user', () => {
     expect(getSettingsNavigation(false).find(item => item.key === 'observability')).toMatchObject({
-      label: 'Observability',
+      label: 'Health & errors',
       visible: true
     });
   });

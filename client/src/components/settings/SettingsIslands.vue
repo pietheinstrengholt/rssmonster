@@ -1,7 +1,7 @@
 <template>
   <div ref="settingsPage" class="settings-islands settings-page">
     <SettingsPageIntro
-      eyebrow="Settings — Island Insights"
+      eyebrow="Settings — Your interests"
       icon="compass-fill"
       title="Your evolving interests"
       title-id="islands-title"

@@ -11,7 +11,8 @@ vi.mock('../src/api/smartfolders', () => ({
 }));
 
 vi.mock('../src/services/actionNotifications.js', () => ({
-  notifyActionError: vi.fn()
+  notifyActionError: vi.fn(),
+  notifyActionSuccess: vi.fn()
 }));
 
 // Creates a promise whose completion is controlled by the test.
@@ -123,7 +124,7 @@ describe('SettingsSmartFolders coordinator', () => {
         markAsReadOnScroll: true
       }
     ];
-    saveSmartFolders.mockResolvedValue({ data: { smartFolders: [] } });
+    saveSmartFolders.mockImplementation(async folders => ({ data: { smartFolders: folders } }));
 
     await context.fetchSmartFolders();
     await context.save();
@@ -216,7 +217,7 @@ describe('SettingsSmartFolders coordinator', () => {
       query: 'limit:50',
       limitCount: 50
     });
-    saveSmartFolders.mockResolvedValue({ data: { smartFolders: [] } });
+    saveSmartFolders.mockImplementation(async folders => ({ data: { smartFolders: folders } }));
 
     await context.save();
 
@@ -231,6 +232,25 @@ describe('SettingsSmartFolders coordinator', () => {
     expect(context.overviewStore.fetchSmartFolders).toHaveBeenCalledOnce();
     expect(context.$emit).toHaveBeenCalledWith('saved');
     expect(context.$emit).toHaveBeenCalledWith('close');
+  });
+
+  it('keeps a confirmed save successful when the sidebar refresh fails', async () => {
+    const context = createContext();
+    await context.fetchSmartFolders();
+    const saved = { id: 42, name: 'Saved folder', query: 'unread:true limit:50' };
+    saveSmartFolders.mockResolvedValue({ data: { smartFolders: [saved] } });
+    context.overviewStore.fetchSmartFolders.mockRejectedValue(new Error('Refresh unavailable'));
+
+    await context.save();
+
+    expect(context.saveError).toBe('');
+    expect(context.hasUnsavedChanges).toBe(false);
+    expect(context.smartFolders[0].id).toBe(42);
+    expect(context.$emit).toHaveBeenCalledWith('saved');
+    expect(notifyActionError).toHaveBeenCalledWith(
+      'Smart Folders were saved, but the sidebar couldn’t refresh. Try again.',
+      expect.any(Error), expect.any(Function)
+    );
   });
 
   it('blocks invalid editor state and reports persistence failures', async () => {

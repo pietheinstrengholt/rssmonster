@@ -20,7 +20,8 @@
           class="settings-close-button"
           type="button"
           aria-label="Close settings"
-          @click="$emit('close')"
+          :disabled="draftSectionsSaving"
+          @click="requestClose"
         >
           <BootstrapIcon icon="x-lg" aria-hidden="true" />
         </button>
@@ -28,34 +29,60 @@
 
       <div class="settings-layout">
         <aside class="settings-sidebar" aria-label="Settings navigation">
-          <button
-            v-for="item in visibleSettingsNavigation"
-            :key="item.key"
-            type="button"
-            class="settings-sidebar-item"
-            :class="{ active: active === item.key }"
-            :aria-current="active === item.key ? 'page' : undefined"
-            @click="selectSection(item.key, $event)"
-          >
-            <BootstrapIcon
-              class="settings-sidebar-icon"
-              :icon="item.icon"
-              context="control"
-              decorative
-            />
-            <span>{{ item.label }}</span>
-          </button>
+          <div v-for="group in settingsNavigationGroups" :key="group.label" class="settings-nav-group">
+            <h3 v-if="group.label" class="settings-nav-group-title">{{ group.label }}</h3>
+            <button
+              v-for="item in group.items"
+              :key="item.key"
+              type="button"
+              class="settings-sidebar-item"
+              :class="{ active: active === item.key }"
+              :aria-current="active === item.key ? 'page' : undefined"
+              @click="selectSection(item.key, $event)"
+            >
+              <BootstrapIcon
+                class="settings-sidebar-icon"
+                :icon="item.icon"
+                context="control"
+                decorative
+              />
+              <span>{{ item.label }}</span>
+            </button>
+          </div>
         </aside>
 
+        <div class="settings-section-picker">
+          <label for="settings-section-select">Settings sections</label>
+          <select id="settings-section-select" class="app-form-select" :value="active" @change="selectSection($event.target.value, $event)">
+            <template v-for="group in settingsNavigationGroups" :key="group.label">
+              <optgroup v-if="group.label" :label="group.label">
+                <option v-for="item in group.items" :key="item.key" :value="item.key">{{ item.label }}</option>
+              </optgroup>
+              <template v-else>
+                <option v-for="item in group.items" :key="item.key" :value="item.key">{{ item.label }}</option>
+              </template>
+            </template>
+          </select>
+        </div>
+
         <main class="settings-content">
-          <component
-            :is="activeComponent"
-            v-bind="active === 'islands' ? { interestId: targetInterestId } : {}"
-            @close="active = 'welcome'"
-            @saved="handleSaved"
-            @forceReload="$emit('forceReload')"
-            @open-article="$emit('open-article', $event)"
-          />
+          <div v-if="confirmDiscard" class="app-notice app-notice--warning" role="alert">
+            <p>You have unsaved changes in Actions or Smart Folders. Keep editing to save them, or discard them and close Settings.</p>
+            <button ref="keepEditingButton" type="button" class="app-button app-button--primary" @click="keepEditing">Keep editing</button>
+            <button type="button" class="app-button app-button--outline-danger" :disabled="draftSectionsSaving" @click="$emit('close')">Discard changes</button>
+          </div>
+          <KeepAlive :include="['SettingsActions', 'SettingsSmartFolders']">
+            <component
+              :is="activeComponent"
+              :ref="rememberDraftSection"
+              v-bind="active === 'islands' ? { interestId: targetInterestId } : {}"
+              @close="active = 'welcome'"
+              @saved="handleSaved"
+              @select-section="selectSection"
+              @forceReload="$emit('forceReload')"
+              @open-article="$emit('open-article', $event)"
+            />
+          </KeepAlive>
         </main>
       </div>
     </section>
@@ -163,7 +190,9 @@ export default {
     return {
       active: this.initialSection,
       targetInterestId: this.interestId,
-      previouslyFocusedElement: null
+      previouslyFocusedElement: null,
+      draftSections: {},
+      confirmDiscard: false
     };
   },
   // This function remembers the focused opener before the dialog enters the document.
@@ -188,32 +217,40 @@ export default {
   },
   computed: {
     ...mapStores(useSelectionStore, useAuthStore),
+    draftSectionsSaving() {
+      return Object.values(this.draftSections).some(section => section.saving);
+    },
     // This function returns navigation items allowed by the current role and AI configuration.
     settingsNavigation() {
       const aiEnabled = this.selectionStore.currentSelection.AIEnabled;
 
       return [
-        { key: 'welcome', label: 'Welcome', icon: 'info-circle-fill', visible: true },
-        { key: 'account', label: 'Account', icon: 'person-circle', visible: true },
-        { key: 'smartfolders', label: 'Smart Folders', icon: 'folder-fill', visible: true },
-        { key: 'generatedFeeds', label: 'Generated Feeds', icon: 'rss-fill', visible: true },
-        { key: 'actions', label: 'Actions', icon: 'lightning-charge-fill', visible: true },
-        { key: 'scores', label: 'Scores', icon: 'bar-chart-fill', visible: aiEnabled },
-        { key: 'events', label: 'Events', icon: 'diagram-3-fill', visible: aiEnabled },
-        { key: 'islands', label: 'Islands', icon: 'compass-fill', visible: aiEnabled },
-        { key: 'crawlStatistics', label: 'Crawl Statistics', icon: 'clipboard-data-fill', visible: true },
-        { key: 'processingJobs', label: 'AI Processing', icon: 'cpu-fill', visible: true },
-        { key: 'observability', label: 'Observability', icon: 'activity', visible: true },
-        { key: 'feeds', label: 'Feeds', icon: 'rss-fill', visible: true },
-        { key: 'officialSources', label: 'Official Sources', icon: 'patch-check-fill', visible: true },
-        { key: 'inference', label: 'AI / Inference', icon: 'cpu-fill', visible: this.authStore.role === 'admin' },
-        { key: 'users', label: 'Manage Users', icon: 'people-fill', visible: this.authStore.role === 'admin' },
-        { key: 'server', label: 'Server settings', icon: 'gear-fill', visible: this.authStore.role === 'admin' }
+        { key: 'welcome', group: '', label: 'Welcome', icon: 'info-circle-fill', visible: true },
+        { key: 'account', group: '', label: 'Account', icon: 'person-circle', visible: true },
+        { key: 'smartfolders', group: 'Reading', label: 'Smart Folders', icon: 'folder-fill', visible: true },
+        { key: 'generatedFeeds', group: 'Automation', label: 'Generated Feeds', icon: 'rss-fill', visible: true },
+        { key: 'actions', group: 'Automation', label: 'Actions', icon: 'lightning-charge-fill', visible: true },
+        { key: 'scores', group: 'Reading', label: 'Scores', icon: 'bar-chart-fill', visible: aiEnabled },
+        { key: 'events', group: 'Reading', label: 'Events', icon: 'diagram-3-fill', visible: aiEnabled },
+        { key: 'islands', group: 'Reading', label: 'Your interests', icon: 'compass-fill', visible: aiEnabled },
+        { key: 'crawlStatistics', group: 'Troubleshooting', label: 'Refresh history', icon: 'clipboard-data-fill', visible: true },
+        { key: 'processingJobs', group: 'Troubleshooting', label: 'AI Processing', icon: 'cpu-fill', visible: true },
+        { key: 'observability', group: 'Troubleshooting', label: 'Health & errors', icon: 'activity', visible: true },
+        { key: 'feeds', group: 'Subscriptions', label: 'Feeds', icon: 'rss-fill', visible: true },
+        { key: 'officialSources', group: 'Subscriptions', label: 'Official Sources', icon: 'patch-check-fill', visible: true },
+        { key: 'inference', group: 'Administration', label: 'AI / Inference', icon: 'cpu-fill', visible: this.authStore.role === 'admin' },
+        { key: 'users', group: 'Administration', label: 'Manage Users', icon: 'people-fill', visible: this.authStore.role === 'admin' },
+        { key: 'server', group: 'Administration', label: 'Server settings', icon: 'gear-fill', visible: this.authStore.role === 'admin' }
       ];
     },
     // This function removes settings sections hidden from the current user.
     visibleSettingsNavigation() {
       return this.settingsNavigation.filter((item) => item.visible);
+    },
+    settingsNavigationGroups() {
+      return ['', 'Reading', 'Subscriptions', 'Automation', 'Troubleshooting', 'Administration']
+        .map(label => ({ label, items: this.visibleSettingsNavigation.filter(item => item.group === label) }))
+        .filter(group => group.items.length);
     },
     // This function resolves the component displayed for the active section.
     activeComponent() {
@@ -238,6 +275,24 @@ export default {
     }
   },
   methods: {
+    rememberDraftSection(section) {
+      if (['SettingsActions', 'SettingsSmartFolders'].includes(section?.$options.name)) {
+        this.draftSections[section.$options.name] = section;
+      }
+    },
+    requestClose() {
+      if (this.draftSectionsSaving) return;
+      if (Object.values(this.draftSections).some(section => section.hasUnsavedChanges)) {
+        this.confirmDiscard = true;
+        this.$nextTick(() => this.$refs.keepEditingButton?.focus());
+        return;
+      }
+      this.$emit('close');
+    },
+    keepEditing() {
+      this.confirmDiscard = false;
+      this.$refs.settingsCloseButton?.focus();
+    },
     // This function returns currently usable focus targets inside the dialog.
     getFocusableElements() {
       const dialog = this.$refs.settingsDialog;
@@ -245,6 +300,9 @@ export default {
 
       return [...dialog.querySelectorAll(FOCUSABLE_SELECTOR)]
         .filter(element => {
+          for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
+            if (window.getComputedStyle(ancestor).display === 'none') return false;
+          }
           const style = window.getComputedStyle(element);
           return !element.hidden &&
             !element.closest('[hidden], [aria-hidden="true"]') &&
@@ -257,7 +315,8 @@ export default {
     handleDialogKeydown(event) {
       if (event.key === 'Escape') {
         event.preventDefault();
-        this.$emit('close');
+        if (this.confirmDiscard) this.keepEditing();
+        else this.requestClose();
         return;
       }
       if (event.key !== 'Tab') return;
@@ -290,8 +349,11 @@ export default {
 
       this.$nextTick(() => {
         const dialog = this.$refs.settingsDialog;
-        if (navigationButton?.isConnected && !dialog?.contains(document.activeElement)) {
-          navigationButton.focus();
+        const focusTarget = navigationButton || this.getFocusableElements().find(element =>
+          element.matches('.settings-sidebar-item[aria-current="page"], #settings-section-select')
+        );
+        if (focusTarget?.isConnected && !dialog?.contains(document.activeElement)) {
+          focusTarget.focus();
         }
       });
     },
