@@ -1,6 +1,42 @@
 <template>
   <section class="article-empty-state" aria-labelledby="article-empty-state-title">
-    <div class="article-empty-state-illustration" aria-hidden="true">
+    <!-- Search-specific empty state illustration -->
+    <div
+      v-if="hasSearch"
+      class="article-empty-state-search-illustration"
+      aria-hidden="true"
+    >
+      <div class="article-empty-state-search-document article-empty-state-search-document--back">
+        <div class="article-empty-state-search-thumbnail"></div>
+        <div class="article-empty-state-search-lines">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+
+      <div class="article-empty-state-search-document article-empty-state-search-document--front">
+        <div class="article-empty-state-search-thumbnail">
+          <BootstrapIcon icon="image" />
+        </div>
+
+        <div class="article-empty-state-search-lines">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+
+      <div class="article-empty-state-search-magnifier">
+        <BootstrapIcon icon="search" />
+      </div>
+
+      <span class="article-empty-state-search-accent article-empty-state-search-accent--one"></span>
+      <span class="article-empty-state-search-accent article-empty-state-search-accent--two"></span>
+      <span class="article-empty-state-search-accent article-empty-state-search-accent--three"></span>
+    </div>
+
+    <div v-else class="article-empty-state-illustration" aria-hidden="true">
       <div class="article-empty-state-circle">
         <BootstrapIcon icon="newspaper" />
       </div>
@@ -46,6 +82,25 @@
       <BootstrapIcon icon="folder" aria-hidden="true" />
       Explore smart folders
     </button>
+    <!-- Search help belongs ONLY to failed searches -->
+    <div
+      v-if="hasSearch"
+      class="article-empty-state-search-tips"
+    >
+      <div class="article-empty-state-search-tips-title">
+        <BootstrapIcon
+          icon="lightbulb"
+          aria-hidden="true"
+        />
+        <span>Search tips</span>
+      </div>
+
+      <ul>
+        <li>Check the spelling of your search terms</li>
+        <li>Try more general keywords</li>
+        <li>Use fewer or different words</li>
+      </ul>
+    </div>
   </section>
 </template>
 
@@ -563,5 +618,211 @@ export default {
 
 :global(:root[data-theme='dark'] .article-empty-state-link:hover) {
   color: var(--color-link-hover);
+}
+
+.article-empty-state-search-illustration {
+  flex-shrink: 0;
+  height: 178px;
+  margin-bottom: 28px;
+  position: relative;
+  width: 270px;
+}
+
+.article-empty-state-search-document {
+  align-items: center;
+  box-sizing: border-box;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px var(--shadow-card-subtle-color);
+  display: flex;
+  gap: 12px;
+  height: 82px;
+  padding: 14px 16px;
+  position: absolute;
+  width: 188px;
+}
+
+.article-empty-state-search-document--back {
+  left: 24px;
+  opacity: 0.58;
+  top: 62px;
+  transform: rotate(-8deg);
+}
+
+.article-empty-state-search-document--front {
+  left: 47px;
+  top: 46px;
+  transform: rotate(-3deg);
+}
+
+.article-empty-state-search-thumbnail {
+  align-items: center;
+  background: var(--surface-selected);
+  border-radius: 7px;
+  color: var(--text-muted);
+  display: flex;
+  flex: 0 0 40px;
+  font-size: 18px;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.article-empty-state-search-lines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.article-empty-state-search-lines span {
+  background: var(--border-subtle);
+  border-radius: 999px;
+  display: block;
+  height: 6px;
+}
+
+.article-empty-state-search-lines span:nth-child(1) {
+  width: 80%;
+}
+
+.article-empty-state-search-lines span:nth-child(2) {
+  width: 100%;
+}
+
+.article-empty-state-search-lines span:nth-child(3) {
+  width: 62%;
+}
+
+.article-empty-state-search-magnifier {
+  align-items: center;
+  color: var(--text-secondary);
+  display: flex;
+  font-size: 92px;
+  height: 108px;
+  justify-content: center;
+  position: absolute;
+  right: 8px;
+  top: 18px;
+  transform: rotate(-8deg);
+  width: 108px;
+  z-index: 3;
+}
+
+.article-empty-state-search-accent {
+  background: var(--color-brand);
+  border-radius: 999px;
+  display: block;
+  height: 3px;
+  position: absolute;
+  width: 20px;
+}
+
+.article-empty-state-search-accent--one {
+  right: 3px;
+  top: 39px;
+  transform: rotate(48deg);
+}
+
+.article-empty-state-search-accent--two {
+  right: 0;
+  top: 60px;
+  transform: rotate(0deg);
+}
+
+.article-empty-state-search-accent--three {
+  right: 22px;
+  top: 24px;
+  transform: rotate(98deg);
+}
+
+.article-empty-state-search-tips {
+  color: var(--text-secondary);
+  margin-top: 48px;
+  max-width: 360px;
+  text-align: left;
+  width: 100%;
+}
+
+.article-empty-state-search-tips-title {
+  align-items: center;
+  color: var(--text-primary);
+  display: flex;
+  font-size: 14px;
+  font-weight: 700;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.article-empty-state-search-tips-title svg {
+  color: var(--text-secondary);
+  font-size: 17px;
+}
+
+.article-empty-state-search-tips ul {
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0;
+  padding-left: 29px;
+}
+
+.article-empty-state-search-tips li {
+  padding-left: 2px;
+}
+
+@media (max-width: 879px) {
+  .article-empty-state-search-illustration {
+    height: 145px;
+    margin-bottom: 22px;
+    transform: scale(0.88);
+    transform-origin: center bottom;
+  }
+
+  .article-empty-state-search-tips {
+    margin-top: 32px;
+    max-width: 320px;
+  }
+}
+
+/* Keeps the search-specific empty state usable in short landscape viewports. */
+@media (max-height: 560px) and (min-width: 480px) {
+  .article-empty-state-search-illustration {
+    height: 74px;
+    margin-bottom: 8px;
+    transform: scale(0.48);
+    transform-origin: center top;
+  }
+
+  .article-empty-state-search-tips {
+    margin-top: 14px;
+  }
+}
+
+:global(:root[data-theme='dark'] .article-empty-state-search-document) {
+  background: var(--surface-card);
+  border-color: var(--border-default);
+  box-shadow: 0 8px 24px var(--shadow-card-subtle-color);
+}
+
+:global(:root[data-theme='dark'] .article-empty-state-search-thumbnail) {
+  background: var(--surface-hover);
+  color: var(--dark-text-muted, var(--text-muted));
+}
+
+:global(:root[data-theme='dark'] .article-empty-state-search-lines span) {
+  background: var(--border-default);
+}
+
+:global(:root[data-theme='dark'] .article-empty-state-search-magnifier) {
+  color: var(--dark-text-meta, var(--text-secondary));
+}
+
+:global(:root[data-theme='dark'] .article-empty-state-search-tips) {
+  color: var(--dark-text-meta, var(--text-secondary));
+}
+
+:global(:root[data-theme='dark'] .article-empty-state-search-tips-title) {
+  color: var(--dark-text-primary, var(--text-primary));
 }
 </style>

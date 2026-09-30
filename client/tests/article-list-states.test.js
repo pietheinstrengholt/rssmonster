@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
+import BootstrapIcon from '../src/components/shared/BootstrapIcon.vue';
 import ArticleEmptyState from '../src/components/articles/ArticleEmptyState.vue';
 import ArticleEndState from '../src/components/articles/ArticleEndState.vue';
 import ArticleLoadingState from '../src/components/articles/ArticleLoadingState.vue';
@@ -8,6 +9,47 @@ import ArticleRefreshState from '../src/components/articles/ArticleRefreshState.
 import SmartFoldersGridOverview from '../src/components/articles/SmartFoldersGridOverview.vue';
 
 describe('ArticleEmptyState', () => {
+  it('shows the search illustration and tips only while searching', async () => {
+    const wrapper = mount(ArticleEmptyState, {
+      props: { searchQuery: 'zzzxxyy' },
+      global: { components: { BootstrapIcon } }
+    });
+    const icons = () => wrapper.findAllComponents(BootstrapIcon).map(icon => icon.props('icon'));
+
+    expect(icons()).toEqual(expect.arrayContaining(['image', 'search', 'lightbulb']));
+    expect(icons()).not.toContain('send');
+    expect(wrapper.text()).toContain('Search tips');
+    expect(wrapper.findAll('li').map(item => item.text())).toEqual([
+      'Check the spelling of your search terms',
+      'Try more general keywords',
+      'Use fewer or different words'
+    ]);
+    await wrapper.get('.article-empty-state-link').trigger('click');
+    expect(wrapper.emitted('open-smart-folders')).toHaveLength(1);
+
+    await wrapper.setProps({ searchQuery: '' });
+    expect(icons()).toEqual(expect.arrayContaining(['newspaper', 'send']));
+    expect(icons()).not.toContain('image');
+    expect(wrapper.text()).not.toContain('Search tips');
+  });
+
+  it.each([
+    { noFeeds: true },
+    ...['unread', 'read', 'favorite', 'hot', 'clicked'].map(currentStatus => ({ currentStatus })),
+    { selectedTag: 'security' },
+    { currentStatus: 'briefing', searchQuery: 'unread:true' },
+    { showingNewOnly: true, searchQuery: 'Science' }
+  ])('preserves the generic illustration for %j', props => {
+    const wrapper = mount(ArticleEmptyState, {
+      props, global: { components: { BootstrapIcon } }
+    });
+    const icons = wrapper.findAllComponents(BootstrapIcon).map(icon => icon.props('icon'));
+    expect(icons).toEqual(expect.arrayContaining(['newspaper', 'send']));
+    expect(icons).not.toContain('image');
+    expect(icons).not.toContain('lightbulb');
+    expect(wrapper.text()).not.toContain('Search tips');
+  });
+
   it.each(['unread', 'read', 'favorite', 'clicked', 'hot'])('offers search recovery for an empty %s search', async currentStatus => {
     const wrapper = mount(ArticleEmptyState, {
       props: { currentStatus, searchQuery: 'nonexistent term' }
