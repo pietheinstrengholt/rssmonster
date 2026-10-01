@@ -55,6 +55,11 @@
             </div>
           </div>
 
+          <label v-if="!showSignup && !passwordResetMode && !emailEnrollmentMode" class="auth-remember">
+            <input type="checkbox" v-model="rememberMe" />
+            Remember me
+          </label>
+
           <!-- Password repeat input (signup only) -->
           <div v-if="showSignup && registrationEmailEnabled && !passwordResetMode" class="auth-field">
             <label class="app-form-label" for="email">Email address</label>
@@ -199,6 +204,7 @@ export default {
       username: '',
       email: '',
       password: '',
+      rememberMe: false,
       visiblePasswords: {},
       password_repeat: '',
       message: '',
@@ -486,7 +492,8 @@ export default {
       try {
         const credentials = {
           username: this.username,
-          password: this.password
+          password: this.password,
+          rememberMe: this.rememberMe
         };
 
         const response = await authApi.login(credentials);
@@ -510,6 +517,7 @@ export default {
         // clear form
         this.username = '';
         this.password = '';
+        this.rememberMe = false;
       } catch (error) {
         if (!this.authStore.isSessionRequestCurrent(requestId)) return;
         console.error('Login error:', error);
@@ -813,6 +821,19 @@ export default {
   font-weight: 600;
   line-height: 1.3;
   margin: 0;
+}
+
+.auth-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.auth-remember input {
+  accent-color: var(--color-primary);
 }
 
 .auth-submit {

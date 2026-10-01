@@ -112,7 +112,7 @@ const register = async (req, res, _next) => {
 
 const login = async (req, res, _next) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, rememberMe } = req.body;
 
     // Check if the user exists
     const user = await User.findOne({ where: { username } });
@@ -136,7 +136,7 @@ const login = async (req, res, _next) => {
       return res.status(200).json(createEmailEnrollmentResponse(user));
     }
 
-    return res.status(200).json(await createAuthenticatedSession(user));
+    return res.status(200).json(await createAuthenticatedSession(user, { rememberMe: rememberMe === true }));
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({

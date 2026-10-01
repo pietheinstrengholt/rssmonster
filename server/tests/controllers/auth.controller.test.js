@@ -1,5 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
 import {
@@ -224,6 +225,37 @@ describe('auth controller', () => {
     expect(validateRes.body.agenticFeaturesEnabled).toBe(
       loginRes.body.agenticFeaturesEnabled
     );
+  });
+
+  it('uses the selected lifetime for local login without changing the token contract', async () => {
+    const username = uniqueName('remember-login');
+    const password = 'correct-password';
+    const user = await User.create({ username, password: await bcrypt.hash(password, 10), role: 'user' });
+    vi.stubEnv('JWT_EXPIRES_IN', undefined);
+    vi.stubEnv('JWT_REMEMBER_EXPIRES_IN', undefined);
+    try {
+      for (const [rememberMe, expectedSeconds] of [[undefined, 86400], [false, 86400], ['true', 86400], [true, 2592000]]) {
+        const response = await request(app).post('/api/auth/login').send({ username, password, rememberMe });
+        expect(response.status).toBe(200);
+        expect(response.body.expiresInSeconds).toBe(expectedSeconds);
+        const payload = jwt.verify(response.body.token, process.env.JWT_SECRET);
+        expect(payload).toMatchObject({ username, userId: user.id, purpose: 'session' });
+        expect(payload.exp - payload.iat).toBe(expectedSeconds);
+      }
+
+      vi.stubEnv('JWT_EXPIRES_IN', '3600');
+      vi.stubEnv('JWT_REMEMBER_EXPIRES_IN', '1209600');
+      for (const [rememberMe, expectedSeconds] of [[false, 3600], [true, 1209600]]) {
+        const response = await request(app).post('/api/auth/login').send({ username, password, rememberMe });
+        expect(response.status).toBe(200);
+        expect(response.body.expiresInSeconds).toBe(expectedSeconds);
+        const payload = jwt.verify(response.body.token, process.env.JWT_SECRET);
+        expect(payload.exp - payload.iat).toBe(expectedSeconds);
+      }
+      expect((await user.reload()).lastLogin).toBeInstanceOf(Date);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('automatically authenticates the configured user when development login is enabled', async () => {

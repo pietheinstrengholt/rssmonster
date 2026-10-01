@@ -32,6 +32,14 @@ const parseBoolean = (environment, name, defaultValue) => {
   throw new AuthConfigurationError(`${name} must be either true or false`);
 };
 
+const positiveSeconds = (environment, name, defaultValue) => {
+  const value = environment[name] ?? defaultValue;
+  if (!/^\d+$/.test(String(value)) || !Number.isSafeInteger(Number(value)) || Number(value) <= 0) {
+    throw new AuthConfigurationError(`${name} must be a positive integer in seconds`);
+  }
+  return Number(value);
+};
+
 const requiredString = (environment, name) => {
   const value = String(environment[name] ?? '').trim();
   if (!value) throw new AuthConfigurationError(`${name} is required when OIDC is enabled`);
@@ -91,6 +99,8 @@ export const isLocalAuthEnabled = (environment = process.env) =>
 export const getAuthConfiguration = (environment = process.env) => {
   const registrationEnabled = isRegistrationEnabled(environment);
   const localAuthEnabled = isLocalAuthEnabled(environment);
+  const jwtExpiresInSeconds = positiveSeconds(environment, 'JWT_EXPIRES_IN', 86400);
+  const jwtRememberExpiresInSeconds = positiveSeconds(environment, 'JWT_REMEMBER_EXPIRES_IN', 2592000);
   const oidcEnabled = parseBoolean(environment, 'OIDC_ENABLED', false);
   const oidcAutoProvision = parseBoolean(environment, 'OIDC_AUTO_PROVISION', false);
   if (!localAuthEnabled && !oidcEnabled) {
@@ -118,7 +128,7 @@ export const getAuthConfiguration = (environment = process.env) => {
     }
     oidc = { issuerUrl, clientId, clientSecret, redirectUri, frontendUrl, scopes: [...new Set(scopes)], autoProvision: oidcAutoProvision, accessPolicy: oidcAccessPolicy(environment) };
   }
-  return { registrationEnabled, localAuthEnabled, oidcEnabled, oidcAutoProvision, oidc };
+  return { registrationEnabled, localAuthEnabled, jwtExpiresInSeconds, jwtRememberExpiresInSeconds, oidcEnabled, oidcAutoProvision, oidc };
 };
 
 export const validateAuthConfiguration = (environment = process.env) => {

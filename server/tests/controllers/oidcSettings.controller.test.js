@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
 import { getAuthConfiguration } from '../../services/auth/configuration.js';
+import { createAuthenticatedSession } from '../../services/auth/session.js';
 
 let app;
 let admin;
@@ -67,6 +68,14 @@ describe('OIDC server settings', () => {
     expect((await endpoint('delete')).status).toBe(200);
     expect((await getAuthConfiguration()).localAuthEnabled).toBe(true);
     expect((await getAuthConfiguration()).oidcEnabled).toBe(false);
+  });
+  it('creates a session when saved settings are the only enabled authentication method', async () => {
+    expect((await endpoint('put').send(input())).status).toBe(200);
+    vi.stubEnv('LOCAL_AUTH_ENABLED', 'false');
+    vi.stubEnv('JWT_EXPIRES_IN', '86400');
+    const session = await createAuthenticatedSession(user);
+    expect(session.expiresInSeconds).toBe(86400);
+    expect(jwt.verify(session.token, getJwtSecret())).toMatchObject({ userId: user.id, purpose: 'session' });
   });
   it('uses saved local-auth policy for compatibility endpoints and account settings', async () => {
     await endpoint('put').send(input());

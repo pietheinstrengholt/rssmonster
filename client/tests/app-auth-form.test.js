@@ -154,7 +154,7 @@ describe('App authentication form', () => {
     await wrapper.get('#password').setValue('password');
     await wrapper.get('form').trigger('submit');
     await flushPromises();
-    expect(authApi.login).toHaveBeenCalledWith({ username: 'reader', password: 'password' });
+    expect(authApi.login).toHaveBeenCalledWith({ username: 'reader', password: 'password', rememberMe: false });
 
     await wrapper.get('.auth-register a').trigger('click');
     await wrapper.get('#reset-email').setValue('reader@example.com');
@@ -222,9 +222,28 @@ describe('App authentication form', () => {
 
     expect(authApi.login).toHaveBeenCalledWith({
       username: 'reader',
-      password: 'secret'
+      password: 'secret',
+      rememberMe: false
     });
     expect(authApi.register).not.toHaveBeenCalled();
+  });
+
+  it('offers remember me only for local sign-in and sends its checked state', async () => {
+    authApi.login.mockResolvedValue({ message: 'Signed in.' });
+    const wrapper = await mountAuthForm();
+    const checkbox = wrapper.get('input[type="checkbox"]');
+    expect(checkbox.element.checked).toBe(false);
+    expect(wrapper.text()).toContain('Remember me');
+
+    await checkbox.setValue(true);
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(authApi.login).toHaveBeenCalledWith({ username: '', password: '', rememberMe: true });
+
+    wrapper.vm.switchAuthMode(true);
+    await flushPromises();
+    expect(wrapper.find('input[type="checkbox"]').exists()).toBe(false);
+    wrapper.unmount();
   });
 
   it('moves an unverified legacy account into email enrollment without a normal session', async () => {

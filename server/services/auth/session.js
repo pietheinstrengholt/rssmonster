@@ -1,5 +1,5 @@
 import { getInferenceEnvironment } from '../inference/runtimeConfiguration.js';
-import { serializeAuthUser } from './configuration.js';
+import { getAuthConfiguration, serializeAuthUser } from './configuration.js';
 import { getAvailableInferenceCapabilities } from '../inference/status.js';
 import jwt from "jsonwebtoken";
 import { getJwtSecret } from "../../config/auth.js";
@@ -8,8 +8,9 @@ import { isAssistantEnabled } from "../../config/intelligentFeatures.js";
 const EMAIL_ENROLLMENT_EXPIRES_IN_SECONDS = 30 * 60;
 
 // This function creates the standard JWT response shared by supported login flows.
-export const createAuthenticatedSession = async (user) => {
-  const expiresInSeconds = Number(process.env.JWT_EXPIRES_IN) || 86400;
+export const createAuthenticatedSession = async (user, { rememberMe = false } = {}) => {
+  const { jwtExpiresInSeconds, jwtRememberExpiresInSeconds } = await getAuthConfiguration();
+  const expiresInSeconds = rememberMe === true ? jwtRememberExpiresInSeconds : jwtExpiresInSeconds;
   const token = jwt.sign(
     {
       username: user.username,

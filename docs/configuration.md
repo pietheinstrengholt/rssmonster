@@ -188,6 +188,7 @@ setting. Evaluate query behavior and memory use before changing it.
 | `PORT` | `3000` | HTTP port used by the server. The supplied containers set this to 3000. |
 | `JWT_SECRET` | none | Required secret for signing and verifying JWTs. |
 | `JWT_EXPIRES_IN` | `86400` | Login-token lifetime in seconds. The example file uses `604800` (seven days). |
+| `JWT_REMEMBER_EXPIRES_IN` | `2592000` | Lifetime in seconds for sessions created when “Remember me” is selected at local sign-in (30 days by default). |
 | `ALLOW_REGISTRATION` | `true` | Environment default; an administrator’s saved choice in **Settings → Server settings** takes precedence. Set to `false` to disable public account creation. Hides signup and rejects registration API requests with HTTP 403, including when no users exist. Existing accounts, login, and password recovery are unaffected. |
 | `FEVER_CREDENTIAL_SECRET` | none | Required secret for keyed Fever credential hashes. Changing it invalidates existing Fever API credentials. |
 | `ENABLE_DEVELOPMENT_LOGIN` | `false` | Enables login without normal credentials, but only when `NODE_ENV=development`. Never enable it in a shared environment. |

@@ -53,6 +53,8 @@ describe('authentication policies', () => {
     expect(validateAuthConfiguration({})).toEqual({
       registrationEnabled: true,
       localAuthEnabled: true,
+      jwtExpiresInSeconds: 86400,
+      jwtRememberExpiresInSeconds: 2592000,
       oidcEnabled: false,
       oidcAutoProvision: false,
       oidc: null
@@ -142,6 +144,20 @@ describe('authentication policies', () => {
 });
 
 describe('JWT configuration', () => {
+  it('accepts custom session lifetimes', () => {
+    expect(getAuthConfiguration({ JWT_EXPIRES_IN: '3600', JWT_REMEMBER_EXPIRES_IN: '1209600' }))
+      .toMatchObject({ jwtExpiresInSeconds: 3600, jwtRememberExpiresInSeconds: 1209600 });
+  });
+
+  it.each(['0', '-1', '1.5', 'abc', 'NaN', '', '9007199254740992'])('rejects invalid session lifetime %s', value => {
+    for (const name of ['JWT_EXPIRES_IN', 'JWT_REMEMBER_EXPIRES_IN']) {
+      expect(() => getAuthConfiguration({ [name]: value })).toThrowError(expect.objectContaining({
+        name: 'AuthConfigurationError',
+        code: 'AUTH_CONFIGURATION_INVALID'
+      }));
+    }
+  });
+
   it('returns the configured JWT secret', () => {
     process.env.JWT_SECRET = 'configured-secret';
 
