@@ -2,13 +2,14 @@ import { flushPromises, shallowMount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
-import { fetchArticlePage, fetchArticleRecommendations, markArticleUnread } from '../src/api/articles.js';
+import { fetchArticleDetails, fetchArticleIds, fetchArticlePage, fetchArticleRecommendations, fetchNewerArticleCount, markArticleUnread } from '../src/api/articles.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
   fetchArticleDetails: vi.fn(),
   fetchArticleIds: vi.fn(),
   fetchArticlePage: vi.fn(),
+  fetchNewerArticleCount: vi.fn(),
   fetchArticleRecommendations: vi.fn(),
   markAllAsRead: vi.fn(),
   markArticleSeen: vi.fn(),
@@ -20,7 +21,7 @@ vi.mock('../src/api/articles.js', () => ({
 }));
 
 // This function creates the article selection store required by each feed view.
-const createStore = () => createFocusedStores({
+const createStore = (selection = {}) => createFocusedStores({
   overview: {
     categories: [],
     smartFolders: [],
@@ -36,14 +37,15 @@ const createStore = () => createFocusedStores({
       sort: 'desc',
       status: 'unread',
       tag: null,
-      viewMode: 'full'
+      viewMode: 'full',
+      ...selection
     }
   }
 });
 
 // This function mounts the feed with named stubs so view changes remain observable.
-const mountArticleFeed = () => {
-  const stores = createStore();
+const mountArticleFeed = (selection = {}) => {
+  const stores = createStore(selection);
   return shallowMount(ArticleFeed, {
     attachTo: document.body,
     global: {
@@ -85,6 +87,53 @@ beforeEach(() => {
 });
 
 describe('ArticleFeed view loading', () => {
+  it.each(['recommended', 'topStories', 'desc', 'asc', 'quality'])('keeps event grouping through %s loading, refresh, pagination, unread counts and sort changes', async sort => {
+    const ids = Array.from({ length: 21 }, (_, index) => index + 1);
+    fetchArticleIds.mockResolvedValue({ data: { itemIds: ids, firstPage: ids.slice(0, 20).map(id => ({ id })) } });
+    fetchArticleDetails.mockImplementation(async articleIds => ({ data: articleIds.map(id => ({ id })) }));
+    fetchArticlePage.mockResolvedValue({ data: {
+      paginationVersion: 1, totalCount: 21,
+      snapshot: { highestUnreadArticleId: 21, snapshotMaxArticleId: 21 },
+      page: { itemIds: [1], articles: [{ id: 1 }], hasMore: true, nextCursor: 'next-page' }
+    } });
+    fetchNewerArticleCount.mockResolvedValue({ data: { newerArticleCount: 0 } });
+    const wrapper = mountArticleFeed({ sort, grouping: 'event' });
+    await flushPromises();
+
+    const request = ['asc', 'desc'].includes(sort) ? fetchArticlePage : fetchArticleIds;
+    expect(request.mock.lastCall[0]).toMatchObject({ sort, grouping: 'event' });
+    await wrapper.vm.refreshArticleIds(wrapper.vm.selectionStore.currentSelection);
+    expect(request.mock.lastCall[0]).toMatchObject({ sort, grouping: 'event' });
+
+    await wrapper.vm.getContent();
+    if (request === fetchArticlePage) {
+      expect(fetchArticlePage).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sort, grouping: 'event' }),
+        expect.objectContaining({ cursor: 'next-page' })
+      );
+    } else {
+      expect(fetchArticleDetails).toHaveBeenLastCalledWith([21], sort);
+    }
+
+    await wrapper.vm.checkForNewerArticles();
+    expect(fetchNewerArticleCount).toHaveBeenLastCalledWith(
+      expect.objectContaining({ sort, grouping: 'event' }), 21
+    );
+
+    const nextSort = sort === 'desc' ? 'recommended' : 'desc';
+    wrapper.vm.selectionStore.setSelectedSort(nextSort);
+    await flushPromises();
+    expect(wrapper.vm.selectionStore.currentSelection.grouping).toBe('event');
+    expect((nextSort === 'desc' ? fetchArticlePage : fetchArticleIds).mock.lastCall[0])
+      .toMatchObject({ sort: nextSort, grouping: 'event' });
+
+    wrapper.vm.selectionStore.setCurrentSelection({ grouping: 'none' });
+    await flushPromises();
+    expect((nextSort === 'desc' ? fetchArticlePage : fetchArticleIds).mock.lastCall[0])
+      .toMatchObject({ sort: nextSort, grouping: 'none' });
+    wrapper.unmount();
+  });
+
   it('handles an Expanded article menu read-state action', async () => {
     const wrapper = mountArticleFeed();
     markArticleUnread.mockResolvedValue({ data: { id: 42, status: 'unread' } });

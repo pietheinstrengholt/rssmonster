@@ -4,6 +4,7 @@ import {
   fetchStorySourceArticles,
   fetchNewerArticleCount,
   fetchArticleIds,
+  fetchArticlePage,
   markAllAsRead,
   markArticlesAsRead
 } from '../src/api/articles.js';
@@ -15,6 +16,17 @@ vi.mock('../src/api/client', () => ({
 }));
 
 describe('articles API', () => {
+  it.each(['recommended', 'topStories', 'desc', 'asc', 'quality'])('sends event grouping with %s sorting', sort => {
+    const selection = { sort, grouping: 'event' };
+    fetchArticleIds(selection);
+    expect(get).toHaveBeenLastCalledWith('/articles', { params: { ...selection, includeFirstPage: true } });
+
+    fetchArticlePage(selection, { pageSize: 20, cursor: 'next-page' });
+    expect(get).toHaveBeenLastCalledWith('/articles', {
+      params: { ...selection, pagination: 'cursor', pageSize: 20, cursor: 'next-page' }
+    });
+  });
+
   it('does not persist a Smart Folder presentation as ordinary reading preferences', () => {
     fetchArticleIds({ smartFolderId: 4, sort: 'asc', grouping: 'event' });
     expect(get).toHaveBeenCalledWith('/articles', { params: {

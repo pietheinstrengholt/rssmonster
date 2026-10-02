@@ -3,9 +3,9 @@
     root-class="article-quality-explanation"
     panel-class="quality-explanation-panel"
     list-class="quality-explanation-list"
-    :trigger-label="`Overall quality: ${overallScore}/100`"
+    :trigger-label="`Quality: ${overallScore}/100`"
     :trigger-class="['score', 'overall-score', scoreSeverityClass(overallScore)]"
-    :aria-label="`Overall quality ${overallScore} out of 100. Show quality breakdown`"
+    :aria-label="`Quality ${overallScore} out of 100. Show quality breakdown`"
     dialog-title="Overall quality"
     summary="Overall quality combines 50% writing quality, 25% tone, and 25% ad-free content. Overall quality filters use this same score."
     :items="qualityItems"
@@ -32,7 +32,7 @@ export default {
   },
   computed: {
     overallScore() {
-      return Number((this.quality * 100).toFixed(2));
+      return Math.round(this.quality * 100);
     },
     qualityItems() {
       return [

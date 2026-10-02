@@ -559,12 +559,12 @@ describe('ArticleTagsScores', () => {
     await flushPromises();
 
     const trigger = wrapper.get('.overall-score');
-    expect(trigger.text()).toBe('Overall quality: 62.5/100');
+    expect(trigger.text()).toBe('Quality: 63/100');
     expect(trigger.element.tagName).toBe('BUTTON');
     expect(trigger.classes()).toContain('score-medium');
     expect(trigger.attributes()).toMatchObject({
       'aria-expanded': 'false',
-      'aria-label': 'Overall quality 62.5 out of 100. Show quality breakdown'
+      'aria-label': 'Quality 63 out of 100. Show quality breakdown'
     });
     expect(wrapper.findAll('.quality-score, .sentiment-score, .ad-score')).toHaveLength(0);
 
@@ -594,21 +594,21 @@ describe('ArticleTagsScores', () => {
     expect(qualityIcons).toEqual(['pencil-square', 'chat-square-text-fill', 'megaphone']);
     expect(qualityIcons.every(icon => bootstrapIconNames.includes(icon))).toBe(true);
     expect(panel.textContent).toContain('Clarity, structure, and substance');
-    expect(panel.textContent).toContain('62.5/100 overall quality');
+    expect(panel.textContent).toContain('63/100 overall quality');
     wrapper.unmount();
   });
 
   // Verifies the average badge uses the existing score-severity thresholds.
   it('assigns severity from the overall quality score', async () => {
     const wrapper = mountArticleTagsScores({
-      advertisementScore: 60,
-      sentimentScore: 79,
-      qualityScore: 80,
-      quality: 0.7475
+      advertisementScore: 90,
+      sentimentScore: 80,
+      qualityScore: 60,
+      quality: 0.725
     });
     await flushPromises();
 
-    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 74.75/100');
+    expect(wrapper.get('.overall-score').text()).toBe('Quality: 73/100');
     expect(wrapper.get('.overall-score').classes()).toContain('score-medium');
   });
 
@@ -656,7 +656,7 @@ describe('ArticleTagsScores', () => {
     await flushPromises();
 
     expect(wrapper.find('.analysis-state').exists()).toBe(false);
-    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 77.5/100');
+    expect(wrapper.get('.overall-score').text()).toBe('Quality: 78/100');
   });
 
   it('preserves skipped-feed score presentation', async () => {
@@ -669,7 +669,7 @@ describe('ArticleTagsScores', () => {
     });
     await flushPromises();
 
-    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 62.5/100');
+    expect(wrapper.get('.overall-score').text()).toBe('Quality: 63/100');
     expect(wrapper.find('.analysis-state').exists()).toBe(false);
   });
 
