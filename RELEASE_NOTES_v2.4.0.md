@@ -2,7 +2,8 @@
 
 RSSMonster 2.4.0 is a substantial update focused on identity and server
 administration, behavior-driven personalization, reader controls, feed metadata,
-content retention, and deployment flexibility.
+content retention, and deployment flexibility. It contains 133 commits since
+v2.3.0.
 
 ## Highlights
 
@@ -18,8 +19,22 @@ content retention, and deployment flexibility.
   authentication, account linking, allowed email domains, groups, and claims.
 - Added separate controls for public local registration. Administrators can close
   registration without affecting existing accounts or OIDC provisioning.
+- Added **Remember me** for local sign-in, with an independently configurable
+  extended session lifetime. Ordinary and remembered JWT lifetimes are forwarded
+  correctly by both Docker Compose profiles.
 - Improved development-login handling so bypass requests are not made when the
   bypass is disabled.
+
+### First-run and search experience
+
+- Reworked first-time onboarding around three explicit choices: add a feed,
+  import an OPML file, or start with an empty account.
+- Starter feeds are now optional, unselected by default, and organized into
+  browsable topic groups.
+- Added persistent onboarding completion so returning users do not repeat the
+  first-run flow.
+- Added a dedicated no-results search illustration, clearer recovery actions,
+  and practical search tips.
 
 ### Administrator-managed server settings
 
@@ -34,6 +49,24 @@ content retention, and deployment flexibility.
   full application restart where supported.
 - Renamed the internal `settings` table to `user_settings` to distinguish personal
   preferences from deployment-wide settings.
+
+### Settings, Actions, and quality controls
+
+- Grouped Settings navigation into Reading, Subscriptions, Automation,
+  Troubleshooting, and Administration, with a compact section picker on smaller
+  screens.
+- Actions and Smart Folder drafts now survive section switches, and Settings
+  warns before closing with unsaved changes.
+- Automation Actions can use a simple case-insensitive phrase or an advanced
+  regular expression.
+- Added a read-only Action preview that checks up to 100 recent eligible articles
+  before the rule is saved.
+- Actions can be reordered by drag-and-drop, keyboard controls, or explicit move
+  buttons; saved order remains execution order.
+- Added an independent **Overall quality** threshold from 0 to 100 while retaining
+  the existing writing, tone, and ad-free controls under Advanced.
+- Renamed the source-aware quality sort to **Quality & source trust** so it is not
+  confused with the article-only Overall quality score.
 
 ### Inference configuration and compatible providers
 
@@ -53,6 +86,22 @@ content retention, and deployment flexibility.
   embedding-model metadata so incompatible vector spaces are rejected instead of
   compared.
 - Added publication of the standalone inference Docker image.
+
+### Desktop local AI
+
+- RSSMonster Desktop now starts the local inference service and AI worker as
+  managed Electron utility processes.
+- Desktop bundles the runtime for ModernBERT classification, Qwen3 embeddings,
+  and Qwen3.5 generation. Models download into the user-data directory on first
+  launch and are reused on later starts.
+- The reader can open while models initialize and enables AI after readiness is
+  confirmed. The Assistant remains disabled by default.
+- Desktop still refreshes feeds manually: the AI worker processes enrichment
+  jobs, but no crawl worker or scheduled feed refresh is started.
+- Added clean startup and shutdown coordination for the server, inference service,
+  and AI worker, including bounded termination for stalled services.
+- Fixed packaged parser dependencies and ESM migration discovery, removed the
+  default Electron application menu, and expanded packaged-runtime verification.
 
 ### Behavior-driven personalization
 
@@ -130,6 +179,18 @@ content retention, and deployment flexibility.
   persistence in the background.
 - Improved article-loading errors, toolbar alignment, arrivals presentation, and
   compact mobile controls.
+- Renamed Favorites to **Saved** and Clicked to **Opened originals**, clarifying
+  that outbound publisher visits are separate from read state.
+- Added a sidebar preference to mark only currently visible articles as read;
+  the default continues to mark the complete matching selection.
+- Reader bulk actions labeled “visible” now operate only on list rows actually in
+  the viewport rather than every loaded article.
+- More like this, Not interested, and feed muting now show confirmed success
+  notices without unexpectedly removing the article from the current view.
+- Recoverable article, feed, settings, and refresh failures retain the user's
+  input and provide contextual retry controls.
+- Prevented mobile article menus from being clipped at viewport and scroll-pane
+  edges.
 - Reduced mobile swipe rendering overhead and preserved pinch-to-zoom gestures
   by suspending swipe and pull-to-refresh handling while zoomed or using multiple
   touches.
@@ -218,6 +279,12 @@ content retention, and deployment flexibility.
   portability, and SQLite/MySQL historical-schema tests.
 - Fixed Docker multi-platform build stages and upgraded client, server, inference,
   FeedSmith, dotenv, and ESLint dependencies.
+- Added explicit MariaDB 11.4 support through `DB_DIALECT=mariadb`, using the
+  supported MySQL connector and a MariaDB-compatible baseline schema.
+- Crawl progress now reports the full eligible-feed total before parallel claims
+  complete and numbers feeds consistently in claim order.
+- Pinned CI execution to Ubuntu 24.04 and expanded desktop and
+  article-presentation regression checks.
 - Added Ubuntu installation, Ollama, OIDC, server-settings, sidebar, category,
   archiving, crawl-contract, and semantic-contract documentation.
 - Added a root `npm run dev` command to start the server, client, inference
@@ -241,6 +308,11 @@ content retention, and deployment flexibility.
   stable encryption key. Back up that key together with the database.
 - Inference no longer assumes an implicit localhost endpoint. Configure a
   deployment endpoint through the environment or **Settings → AI / Inference**.
+- Desktop is the exception to that deployment rule: it configures and manages its
+  bundled local inference service automatically. First launch needs network access,
+  several gigabytes of disk space, and enough memory for the three CPU models.
+- MariaDB installations must explicitly set `DB_DIALECT=mariadb`; the bundled
+  comprehensive Compose profile continues to use MySQL.
 - Existing semantic vectors carry model metadata after migration. Vectors from
   incompatible models are deliberately excluded from comparisons.
 - Category Event-clustering changes affect future assignments only; they do not
@@ -252,6 +324,8 @@ content retention, and deployment flexibility.
 - [Server settings](docs/server-settings.md)
 - [Inference administration](docs/inference.md)
 - [Ollama setup](docs/ollama.md)
+- [Desktop application](docs/desktop.md)
+- [Scoring and Overall quality](docs/scoring.md)
 - [Interest Islands](docs/interest-islands.md)
 - [Hot articles](docs/hot-articles.md)
 - [Daily Briefing](docs/daily-briefing.md)
