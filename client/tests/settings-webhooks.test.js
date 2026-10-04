@@ -7,7 +7,6 @@ import { createWebhook, deleteWebhook, fetchWebhooks, updateWebhook } from '../s
 import { generateWebhookSecret, summarizeWebhookConditions } from '../src/services/webhookConditions.js';
 
 vi.mock('../src/services/webhooks.js', () => ({
-  WEBHOOK_PERSISTENCE_AVAILABLE: true,
   createWebhook: vi.fn(),
   deleteWebhook: vi.fn(),
   fetchWebhooks: vi.fn(),
@@ -138,6 +137,31 @@ describe('Webhooks settings', () => {
     }));
     expect(updateWebhook.mock.calls[0][1]).not.toHaveProperty('secret');
     expect(wrapper.text()).toContain('Webhook saved.');
+    wrapper.unmount();
+  });
+
+  it('keeps the edited draft and re-enables saving after an API validation failure', async () => {
+    const wrapper = await mountPage();
+    await wrapper.get('.webhook-editor-grid input[type="text"]').setValue('Unsaved changes');
+    updateWebhook.mockRejectedValueOnce({ response: { data: { error: { code: 'NAME_INVALID', message: 'Name rejected.' } } } });
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('Name rejected.');
+    expect(wrapper.get('.webhook-editor-grid input[type="text"]').element.value).toBe('Unsaved changes');
+    expect(wrapper.get('button[type="submit"]').element.disabled).toBe(false);
+    wrapper.unmount();
+  });
+
+  it('selects another saved webhook after deletion', async () => {
+    const wrapper = await mountPage([webhook(), webhook({ id: 12, name: 'Other webhook' })]);
+    deleteWebhook.mockResolvedValue();
+    await wrapper.get('.webhook-editor-actions .app-button--outline-danger').trigger('click');
+    wrapper.findComponent(ConfirmDialog).vm.$emit('confirm');
+    await flushPromises();
+
+    expect(wrapper.get('#webhook-editor-title').text()).toBe('Edit Other webhook');
+    expect(wrapper.findAll('.webhook-list-item')).toHaveLength(1);
     wrapper.unmount();
   });
 

@@ -9,8 +9,8 @@
       Send matching articles to external services such as Home Assistant, n8n, Node-RED, Discord, or Slack.
     </SettingsPageIntro>
 
-    <div v-if="!persistenceAvailable" class="app-notice app-notice--warning" role="status">
-      Webhook configuration is a preview. Saving and loading require the server API, and article delivery is not active yet.
+    <div class="app-notice app-notice--warning" role="status">
+      Webhook delivery is not active yet. Saved configurations will not send articles until delivery support is added.
     </div>
     <div v-if="notice.message" class="app-notice" :class="notice.type === 'error' ? 'app-notice--danger' : 'app-notice--success'" :role="notice.type === 'error' ? 'alert' : 'status'">
       {{ notice.message }}
@@ -33,13 +33,7 @@
           </button>
         </header>
 
-        <div v-if="!persistenceAvailable" class="settings-state webhook-empty">
-          <div>
-            <strong>Configured webhooks unavailable</strong>
-            <p>The server API is needed to view saved configurations.</p>
-          </div>
-        </div>
-        <div v-else-if="!webhooks.length" class="settings-state settings-state--empty webhook-empty">
+        <div v-if="!webhooks.length" class="settings-state settings-state--empty webhook-empty">
           <div>
             <strong>No webhooks configured</strong>
             <p>Create a webhook to send matching RSSMonster articles to another service.</p>
@@ -157,11 +151,11 @@
         </fieldset>
 
         <footer class="webhook-editor-actions">
-          <button v-if="!creating && persistenceAvailable" type="button" class="app-button app-button--outline-danger" :disabled="saving || deleting" @click="confirmation = true">
+          <button v-if="!creating" type="button" class="app-button app-button--outline-danger" :disabled="saving || deleting" @click="confirmation = true">
             <BootstrapIcon icon="trash" aria-hidden="true" />
             Delete
           </button>
-          <button type="submit" class="app-button app-button--primary" :disabled="!persistenceAvailable || !validation.valid || saving || deleting" :aria-busy="saving ? 'true' : 'false'">
+          <button type="submit" class="app-button app-button--primary" :disabled="!validation.valid || saving || deleting" :aria-busy="saving ? 'true' : 'false'">
             {{ saving ? 'Saving…' : creating ? 'Create webhook' : 'Save changes' }}
           </button>
         </footer>
@@ -180,7 +174,6 @@ import { useOverviewStore } from '../../store/overview.js';
 import ConfirmDialog from '../dialogs/ConfirmDialog.vue';
 import SettingsPageIntro from './SettingsPageIntro.vue';
 import {
-  WEBHOOK_PERSISTENCE_AVAILABLE,
   fetchWebhooks,
   createWebhook,
   updateWebhook,
@@ -208,7 +201,7 @@ export default {
   components: { ConfirmDialog, SettingsPageIntro },
   data() {
     return {
-      webhooks: [], loading: WEBHOOK_PERSISTENCE_AVAILABLE, loadError: '',
+      webhooks: [], loading: true, loadError: '',
       selectedWebhookId: null, creating: true, draft: emptyDraft(1), nextConditionId: 1,
       showValidation: false, secretVisible: false, secretChanged: false,
       saving: false, deleting: false, confirmation: false,
@@ -217,7 +210,6 @@ export default {
   },
   computed: {
     ...mapStores(useOverviewStore),
-    persistenceAvailable() { return WEBHOOK_PERSISTENCE_AVAILABLE; },
     categories() { return this.overviewStore.categories || []; },
     feeds() { return this.categories.flatMap(category => category.feeds || []); },
     fields() { return WEBHOOK_FIELDS; },
@@ -225,13 +217,12 @@ export default {
     validation() { return validateWebhookDraft(this.draft, this.categories); }
   },
   mounted() {
-    if (this.persistenceAvailable) this.loadWebhooks();
+    this.loadWebhooks();
   },
   methods: {
     summarizeWebhookConditions,
     operatorsFor: webhookOperatorsFor,
     async loadWebhooks() {
-      if (!this.persistenceAvailable) return;
       this.loading = true;
       this.loadError = '';
       try {
@@ -299,7 +290,7 @@ export default {
     },
     async save() {
       this.showValidation = true;
-      if (!this.persistenceAvailable || !this.validation.valid || this.saving || this.deleting) return;
+      if (!this.validation.valid || this.saving || this.deleting) return;
       this.saving = true;
       this.notice = { type: 'success', message: '' };
       const payload = {
@@ -326,12 +317,13 @@ export default {
       }
     },
     async confirmDelete() {
-      if (!this.persistenceAvailable || !this.selectedWebhook || this.deleting) return;
+      if (!this.selectedWebhook || this.deleting) return;
       this.deleting = true;
       try {
         await deleteWebhook(this.selectedWebhookId);
         this.webhooks = this.webhooks.filter(webhook => webhook.id !== this.selectedWebhookId);
-        this.startCreate();
+        if (this.webhooks.length) this.selectWebhook(this.webhooks[0]);
+        else this.startCreate();
         this.notice = { type: 'success', message: 'Webhook deleted.' };
         this.confirmation = false;
       } catch (error) {
