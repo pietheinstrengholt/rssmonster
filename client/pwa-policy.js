@@ -130,8 +130,9 @@ export const OPTIONAL_ASSET_CACHE_NAME = 'rssmonster-optional-hashed-assets-v1';
 export const OPTIONAL_ASSET_CACHE_MAX_ENTRIES = 60;
 export const OPTIONAL_ASSET_CACHE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
-// Public RSS documents must reach the server instead of resolving to the cached application shell.
+// API navigations (including OIDC redirects) and public RSS documents must reach the server.
 export const NAVIGATION_FALLBACK_DENYLIST = Object.freeze([
+  /^\/api(?:\/|$)/,
   /^\/rss(?:\/|$)/
 ]);
 

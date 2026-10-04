@@ -19,6 +19,22 @@ const createRouteInput = (url, destination) => ({
 });
 
 describe('PWA cache policy', () => {
+  it.each([
+    '/api',
+    '/api/articles',
+    '/api/auth/oidc/login',
+    '/api/auth/oidc/callback?code=provider-code&state=provider-state',
+    '/api/auth/oidc/callback?error=access_denied&state=provider-state'
+  ])('does not replace API navigation %s with the application shell', pathnameAndSearch => {
+    expect(NAVIGATION_FALLBACK_DENYLIST.some(pattern => pattern.test(pathnameAndSearch)))
+      .toBe(true);
+  });
+
+  it.each(['/', '/settings', '/settings/oidc', '/apiary'])('keeps the application shell for %s', pathname => {
+    expect(NAVIGATION_FALLBACK_DENYLIST.some(pattern => pattern.test(pathname)))
+      .toBe(false);
+  });
+
   it('does not replace public RSS navigations with the application shell', () => {
     const isDenied = pathname => NAVIGATION_FALLBACK_DENYLIST.some(pattern => pattern.test(pathname));
 
