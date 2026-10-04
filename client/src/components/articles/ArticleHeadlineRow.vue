@@ -37,7 +37,7 @@
           <BootstrapIcon v-if="hotInd === 1" icon="fire" class="hot-icon" title="Hot article" aria-label="Hot article" />
           <button v-if="showSimilarBadge" type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', eventId)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
           <button v-if="duplicateCount > 0" type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="$emit('view-duplicate-articles')">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>
-          <button v-for="tag in visibleRuleTags" :key="'list-rule-' + tag.id" type="button" class="tag tag-rule" :aria-label="`Filter articles by tag ${formatTagName(tag.name, { preserveCase: isMobilePortrait })}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name, { preserveCase: isMobilePortrait }) }}</button>
+          <button v-for="tag in visibleRuleTags" :key="'list-rule-' + tag.id" type="button" :class="['tag', { 'tag-rule': tag.tagType === 'rule' }]" :aria-label="`Filter articles by tag ${formatTagName(tag.name, { preserveCase: isMobilePortrait })}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name, { preserveCase: isMobilePortrait }) }}</button>
           <button v-if="hasHiddenRuleTags" type="button" class="tag-disclosure" :aria-expanded="tagsExpanded ? 'true' : 'false'" :aria-label="tagsExpanded ? 'Show fewer tags' : `Show ${hiddenRuleTagCount} more tags`" @click.stop="tagsExpanded = !tagsExpanded">{{ tagsExpanded ? 'Show less' : `+${hiddenRuleTagCount}` }}</button>
         </div>
       </div>
@@ -45,7 +45,7 @@
     </div>
     <div class="article-list-actions">
       <span class="article-list-time">{{ formatDate(publishedAt) }}</span>
-      <ArticleActionsMenu :status="status" @toggle-read-status="$emit('toggle-read-status')" :clickedAmount="clickedAmount" :clickPending="clickPending" :favoriteInd="favoriteInd" :favoritePending="favoritePending" @toggle-clicked="$emit('toggle-clicked')" @toggle-favorite="$emit('toggle-favorite')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" />
+      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :status="status" @toggle-read-status="$emit('toggle-read-status')" :clickedAmount="clickedAmount" :clickPending="clickPending" :favoriteInd="favoriteInd" :favoritePending="favoritePending" @toggle-clicked="$emit('toggle-clicked')" @toggle-favorite="$emit('toggle-favorite')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
       <button v-if="!isMobilePortrait" class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" :disabled="favoritePending" @click.stop="$emit('toggle-favorite')">
         <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
       </button>
@@ -65,7 +65,7 @@ import { usableHttpUrl } from '../../utils/content.js';
 
 export default {
   components: { ArticleActionsMenu, ArticleDevelopingStoryPopover, ArticlePreviewFallback, ArticleStorySourcesPopover, HighlightedText },
-  emits: ['article-clicked', 'article-touched', 'more-like-this', 'mute-feed', 'not-interested', 'select-tag', 'swipe-cancel', 'swipe-touch-end', 'swipe-touch-move', 'swipe-touch-start', 'toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'view-duplicate-articles', 'view-event-articles'],
+  emits: ['article-clicked', 'article-touched', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags', 'not-interested', 'select-tag', 'swipe-cancel', 'swipe-touch-end', 'swipe-touch-move', 'swipe-touch-start', 'toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'view-duplicate-articles', 'view-event-articles'],
   data() {
     return {
       tagsExpanded: false,
@@ -73,6 +73,7 @@ export default {
     };
   },
   props: {
+    tagEditingDisabled: { type: Boolean, default: false },
     isMobilePortrait: { type: Boolean, default: false },
     imageUrl: { type: String, default: '' },
     articleId: { type: [Number, String], default: null },
@@ -113,7 +114,8 @@ export default {
     },
     // Returns tags assigned by rules for the compact metadata row.
     ruleTags() {
-      return (this.tags || []).filter(tag => tag.tagType === 'rule');
+      // Manual assignments also belong in compact article metadata.
+      return (this.tags || []).filter(tag => ['rule', 'manual'].includes(tag.tagType));
     },
     // Returns the rule tags visible at the current disclosure level.
     visibleRuleTags() {
@@ -281,6 +283,9 @@ export default {
 }
 
 .tag {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
   background-color: var(--article-tag-background);
   color: var(--badge-tag-text);
 }

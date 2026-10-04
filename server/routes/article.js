@@ -12,6 +12,8 @@ router.get('/:articleId/recommendations', userMiddleware.isLoggedIn, articleCont
 router.get('/:articleId/developing-story', userMiddleware.isLoggedIn, articleController.getDevelopingStoryArticles);
 router.get('/:articleId/story-sources', userMiddleware.isLoggedIn, articleController.getStorySourceArticles);
 router.get('/:articleId', userMiddleware.isLoggedIn, articleController.getArticle);
+router.post('/:articleId/tags', userMiddleware.isLoggedIn, articleController.articleAddTags);
+router.delete('/:articleId/tags/:tagId', userMiddleware.isLoggedIn, articleController.articleRemoveTag);
 router.post('/markasread', userMiddleware.isLoggedIn, articleController.markAsRead);
 router.post('/markclicked', userMiddleware.isLoggedIn, articleController.markClicked);
 router.post('/markclicked/:articleId', userMiddleware.isLoggedIn, articleController.markClicked);

@@ -144,7 +144,7 @@ describe('ArticleHeadlineRow interaction contract', () => {
     expect(wrapper.get('.tag-disclosure').text()).toBe('+2');
   });
 
-  it('shows all rule tags without disclosure when the compact limit is not exceeded', () => {
+  it('includes manual tags in compact disclosure counts', () => {
     const wrapper = mount(ArticleHeadlineRow, {
       props: {
         tags: [
@@ -159,7 +159,7 @@ describe('ArticleHeadlineRow interaction contract', () => {
     });
 
     expect(wrapper.findAll('.tag-rule')).toHaveLength(3);
-    expect(wrapper.find('.tag-disclosure').exists()).toBe(false);
+    expect(wrapper.get('.tag-disclosure').text()).toBe('+1');
   });
 
   it('renders grouped metadata and forwards every compact-row interaction', async () => {

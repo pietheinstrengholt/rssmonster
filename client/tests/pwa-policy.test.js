@@ -45,6 +45,7 @@ describe('PWA cache policy', () => {
 
   it('keeps stable entry and responsive-shell patterns without broad asset globs', () => {
     expect(PRECACHE_GLOB_PATTERNS).toEqual(expect.arrayContaining([
+      'assets/tags-*.js',
       'index.html',
       'assets/index-*.js',
       'assets/AppShell-*.js',

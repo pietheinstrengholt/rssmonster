@@ -37,7 +37,7 @@ unless a filter's detailed description below states otherwise.
 | Free text | `word`, `multiple words`, `"exact phrase"` |
 | Title | `title:word`, `title:"exact phrase"` |
 | Author | `author:name`, `author:"full name"` |
-| Tag | `tag:name` |
+| Tag | `tag:name`, `tag:"multiword name"` |
 | Language | `language:en`, using an exact two- or three-letter code |
 | Favorite | `favorite:true`, `favorite:false`, `star:true`, `star:false` |
 | Read state | `unread:true`, `unread:false`, `read:true`, `read:false` |
@@ -88,8 +88,9 @@ operators are not part of the query language.
 - `language:en` matches an exact two- or three-letter stored language code, such as `en` or `eng`.
 - `firstSeen:12h` or `firstSeen:7d` includes articles first seen within that many hours or days, plus articles that have never been seen.
 
-Tag values should be a single unquoted token. Quoted tag values retain their
-quote characters and should not be used.
+Quote tag names containing spaces or query punctuation, for example
+`tag:"read later"`. Tag matching uses the same trimmed, lowercase names as
+article assignments.
 
 ### Scores
 

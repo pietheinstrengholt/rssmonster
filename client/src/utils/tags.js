@@ -1,5 +1,8 @@
 const TAG_DISPLAY_NAMES = new Map([['openai', 'OpenAI']]);
 
+// Matches the normalization used for persisted article tag names on the server.
+export const normalizeTagName = tag => String(tag || '').trim().toLowerCase();
+
 // This function formats stored tag names for display.
 export const formatTagName = (tag, { preserveCase = false } = {}) => {
   const name = String(tag || '');

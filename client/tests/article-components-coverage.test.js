@@ -133,6 +133,8 @@ describe('ArticleActionsMenu', () => {
       'Remove from saved',
       'Mark original as opened',
       'Mark as read',
+      'Add tags',
+      'Manage tags',
       'More like this',
       'Not Interested',
       'Mute Feed for 7 Days'
@@ -140,9 +142,9 @@ describe('ArticleActionsMenu', () => {
     expect(items[0].get('.recommendation-favorite-icon').attributes('data-icon')).toBe('bookmark-fill');
     expect(items[0].get('.recommendation-favorite-icon').attributes('data-context')).toBe('control');
     expect(items[1].get('.recommendation-clicked-icon').attributes('data-icon')).toBe('arrow-up-right-square-fill');
-    expect(items[4].get('.recommendation-negative-icon').attributes('data-icon')).toBe('hand-thumbs-down-fill');
-    expect(items[5].get('.recommendation-mute-icon').attributes('data-icon')).toBe('slash-circle');
-    expect(items[5].get('.recommendation-mute-icon').attributes('data-context')).toBe('control');
+    expect(items[6].get('.recommendation-negative-icon').attributes('data-icon')).toBe('hand-thumbs-down-fill');
+    expect(items[7].get('.recommendation-mute-icon').attributes('data-icon')).toBe('slash-circle');
+    expect(items[7].get('.recommendation-mute-icon').attributes('data-context')).toBe('control');
     expect(items.every(item => item.element.tagName === 'BUTTON')).toBe(true);
     expect(items.every(item => item.attributes('role') === 'menuitem')).toBe(true);
 
@@ -156,6 +158,8 @@ describe('ArticleActionsMenu', () => {
     expect(wrapper.emitted('not-interested')).toEqual([[]]);
     expect(wrapper.emitted('more-like-this')).toEqual([[]]);
     expect(wrapper.emitted('mute-feed')).toEqual([[]]);
+    expect(wrapper.emitted('add-tags')).toEqual([[]]);
+    expect(wrapper.emitted('manage-tags')).toEqual([[]]);
   });
 
   // Verifies an unfavorited article uses the marking label.
@@ -192,6 +196,8 @@ describe('ArticleActionsMenu', () => {
       'Remove from saved',
       'Mark original as opened',
       'Mark as unread',
+      'Add tags',
+      'Manage tags',
       'More like this',
       'Not Interested',
       'Mute Feed for 7 Days'

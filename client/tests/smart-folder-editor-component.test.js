@@ -123,16 +123,25 @@ describe('SmartFolderEditor', () => {
     expect(config.events.isNotEvent).toBe(false);
   });
 
-  it('normalizes tag input and prevents unsupported separators', () => {
+  it('preserves multiword tag names during normalization', () => {
     const wrapper = mountEditor();
-    const separatorEvent = { key: ',', preventDefault: vi.fn() };
 
     wrapper.vm.draftConfig.content.tags = 'machine learning';
     wrapper.vm.normalizeDraftTag();
-    expect(wrapper.vm.draftConfig.content.tags).toBe('machine');
+    expect(wrapper.vm.draftConfig.content.tags).toBe('machine learning');
 
-    wrapper.vm.preventTagSeparator(separatorEvent);
-    expect(separatorEvent.preventDefault).toHaveBeenCalledOnce();
+  });
+
+  it('allows typing and saving a multiword tag condition', async () => {
+    const wrapper = mountEditor();
+    const input = wrapper.findAll('label').find(label => label.text() === 'Tags').find('input');
+    await input.setValue('Read Later');
+    const space = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
+    input.element.dispatchEvent(space);
+    expect(space.defaultPrevented).toBe(false);
+    await input.trigger('blur');
+    await wrapper.get('form').trigger('submit');
+    expect(wrapper.emitted('save')[0][0].query).toContain('tag:"read later"');
   });
 
   it('emits semantic save, copy, cancel, and delete intents', async () => {

@@ -1,7 +1,7 @@
 <template>
   <div v-if="categoryName || displayTags.length || hasQualityScores || analysisStateLabel" class="article-tags">
     <button v-if="categoryName" type="button" class="tag-badge" :aria-label="`Filter articles by category ${categoryName}`" @click.stop="$emit('select-category')">{{ categoryName }}</button>
-    <button v-for="tag in visibleTags" :key="tag.id" type="button" :class="['tag', { 'tag-rule': tag.tagType === 'rule' }]" :aria-label="`Filter articles by tag ${formatTagName(tag.name)}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name) }}</button>
+    <button v-for="tag in visibleTags" :key="tag.id" type="button" :class="['tag', { 'tag-rule': tag.tagType === 'rule', 'tag-manual': tag.tagType === 'manual' }]" :aria-label="`Filter articles by tag ${formatTagName(tag.name)}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name) }}</button>
     <button v-if="hasHiddenTags" type="button" class="tag-disclosure" :aria-expanded="tagsExpanded ? 'true' : 'false'" :aria-label="tagsExpanded ? 'Show fewer tags' : `Show ${hiddenTagCount} more tags`" @click.stop="tagsExpanded = !tagsExpanded">{{ tagsExpanded ? 'Show less' : `+${hiddenTagCount}` }}</button>
     <ArticleQualityExplanation
       v-if="hasQualityScores"
@@ -71,7 +71,7 @@ export default {
         ? this.tags
         : this.tags.filter(tag => tag.tagType !== 'inferred');
       const ruleTags = usableTags.filter(tag => tag.tagType === 'rule');
-      if (this.isMobilePortrait) return ruleTags;
+      if (this.isMobilePortrait) return usableTags.filter(tag => ['rule', 'manual'].includes(tag.tagType));
       return [...usableTags.filter(tag => tag.tagType !== 'rule'), ...ruleTags];
     },
     // Returns the tags visible at the current disclosure level.
@@ -129,6 +129,9 @@ export default {
 }
 
 .tag {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
   background-color: var(--article-tag-background);
   border: 1px solid var(--color-transparent);
   color: var(--badge-tag-text);
@@ -169,7 +172,7 @@ export default {
     min-width: 0;
   }
 
-  .tag:not(.tag-rule) {
+  .tag:not(.tag-rule):not(.tag-manual) {
     display: none;
   }
 }

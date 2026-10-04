@@ -9,6 +9,15 @@ import {
 } from '../../services/articleSearch/articleQueryParser.service.js';
 
 describe('articleQueryParser.service', () => {
+  it('keeps quoted tag labels separate from full-text phrases', () => {
+    const parsed = parseArticleQuery({ search: 'tag:"read later" "AI agents"' });
+    expect(parsed.filters.tag).toBe('read later');
+    expect(parsed.text).toBe('AI agents');
+    expect(parsed.textMode).toBe('exact');
+    expect(validateArticleExpression('tag:"a\\"b\\\\c"').filters.tag).toBe('a"b\\c');
+    expect(() => validateArticleExpression('tag:"   "')).toThrow(ArticleExpressionValidationError);
+    expect(parseArticleQuery({ search: 'tag:"first label" tag:second' }).filters.tag).toBe('second');
+  });
   it('parses explicit grouping and rejects unsupported grouping in saved expressions', () => {
     expect(validateArticleExpression('sort:recommended grouping:none grouping:EVENT').filters.grouping).toBe('event');
     expect(() => validateArticleExpression('grouping:invalid')).toThrow(ArticleExpressionValidationError);

@@ -137,7 +137,7 @@ export function validateQuery(query, options = { allowEmpty: true }) {
     }
 
     // Split on whitespace/commas while preserving field:"quoted phrase" tokens.
-    const tokens = workingQuery.match(/(?:[A-Za-z]+:)?"[^"]*"|[^\s,]+/g) || [];
+    const tokens = workingQuery.match(/(?:[A-Za-z]+:)?"(?:\\.|[^"\\])*"|[^\s,]+/g) || [];
 
     for (const token of tokens) {
         // Skip placeholders

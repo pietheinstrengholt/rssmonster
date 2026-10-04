@@ -514,7 +514,7 @@ describe('ArticleTagsScores', () => {
   });
 
   // Preserves the mobile contract that only rule-generated tags are displayed and counted.
-  it('groups only visible rule tags in mobile portrait mode', () => {
+  it('groups explicit manual and rule tags in mobile portrait mode', () => {
     const tags = [
       { id: 1, name: 'manual-first', tagType: 'manual' },
       ...Array.from({ length: 5 }, (_, index) => ({
@@ -525,8 +525,8 @@ describe('ArticleTagsScores', () => {
     ];
     const wrapper = mountArticleTagsScores({ tags, isMobilePortrait: true });
 
-    expect(wrapper.findAll('.tag').map(tag => tag.text())).toEqual(['Rule-1', 'Rule-2', 'Rule-3']);
-    expect(wrapper.get('.tag-disclosure').text()).toBe('+2');
+    expect(wrapper.findAll('.tag').map(tag => tag.text())).toEqual(['Manual-first', 'Rule-1', 'Rule-2']);
+    expect(wrapper.get('.tag-disclosure').text()).toBe('+3');
   });
 
   // Verifies nested metadata buttons do not bubble into a clickable article surface.

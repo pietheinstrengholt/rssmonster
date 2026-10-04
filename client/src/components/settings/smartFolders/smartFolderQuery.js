@@ -1,4 +1,5 @@
 import { tokenizeSmartFolderExpression } from '../../../services/smartFolderPresentation.js';
+import { normalizeTagName } from '../../../utils/tags.js';
 
 // Creates the complete default configuration used by the Smart Folder editor.
 export function createEmptySmartFolderConfig() {
@@ -63,19 +64,17 @@ export function smartFolderQueryRequiresUnread(query) {
 
 // Restores a query value for display in an editor field.
 export function stripSmartFolderQuotes(value) {
-    return String(value || '').replace(/^"|"$/g, '').replace(/\\"/g, '"');
+    return String(value || '').replace(/^"|"$/g, '').replace(/\\(["\\])/g, '$1');
 }
 
-// Quotes generated values only when their whitespace requires it.
+// Quotes generated values when whitespace or query punctuation requires it.
 export function quoteSmartFolderValue(value) {
-    return /\s/.test(value) ? `"${value.replaceAll('"', '\\"')}"` : value;
+    return /[\s,"\\]/.test(value) ? `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"` : value;
 }
 
 // Reduces tag input to the single tag supported by the existing editor.
 export function normalizeSmartFolderTag(value) {
-    return String(value || '')
-        .split(/[,\s]+/)
-        .filter(Boolean)[0] || '';
+    return normalizeTagName(value);
 }
 
 // Reads the numeric threshold suffix used by score filters.
@@ -186,7 +185,7 @@ export function buildSmartFolderQuery(config) {
     }
 
     if (config.content.tags.trim()) {
-        parts.push(`tag:${normalizeSmartFolderTag(config.content.tags)}`);
+        parts.push(`tag:${quoteSmartFolderValue(normalizeSmartFolderTag(config.content.tags))}`);
     }
 
     if (config.content.title) parts.push(`title:${quoteSmartFolderValue(config.content.title)}`);

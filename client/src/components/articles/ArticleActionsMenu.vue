@@ -1,5 +1,5 @@
 <template>
-  <AppDropdown class="article-actions" :align="isReaderMode ? 'end' : 'start'">
+  <AppDropdown ref="dropdown" class="article-actions" :align="isReaderMode ? 'end' : 'start'">
     <template #trigger="{ triggerProps }">
       <button v-bind="triggerProps" class="article-actions__trigger" type="button" aria-label="Article actions">
         <BootstrapIcon icon="three-dots" />
@@ -10,6 +10,9 @@
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="favoritePending" @click="$emit('toggle-favorite')"><BootstrapIcon :icon="favoriteInd ? 'bookmark-fill' : 'bookmark'" context="control" class="recommendation-action-icon recommendation-favorite-icon" />{{ favoriteInd ? 'Remove from saved' : 'Save article' }}</button></li>
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="clickPending" @click="$emit('toggle-clicked')"><BootstrapIcon icon="arrow-up-right-square-fill" class="recommendation-action-icon recommendation-clicked-icon" />{{ clickedAmount > 0 ? 'Remove from opened originals' : 'Mark original as opened' }}</button></li>
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" @click="$emit('toggle-read-status')"><BootstrapIcon :icon="status === 'read' ? 'circle-fill' : 'record-circle-fill'" context="control" class="recommendation-action-icon recommendation-status-icon" />{{ status === 'read' ? 'Mark as unread' : 'Mark as read' }}</button></li>
+      <li role="none"><hr class="app-dropdown__divider" /></li>
+      <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="tagEditingDisabled" :title="tagEditingDisabled ? 'Tag the original article instead.' : undefined" @click="openTagDialog('add-tags')"><BootstrapIcon icon="tag" context="control" class="recommendation-action-icon" />Add tags</button></li>
+      <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="tagEditingDisabled" :title="tagEditingDisabled ? 'Tag the original article instead.' : undefined" @click="openTagDialog('manage-tags')"><BootstrapIcon icon="tags-fill" context="control" class="recommendation-action-icon" />Manage tags</button></li>
       <li role="none"><hr class="app-dropdown__divider" /></li>
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" @click="$emit('more-like-this')"><BootstrapIcon icon="hand-thumbs-up-fill" class="recommendation-action-icon recommendation-positive-icon" />More like this</button></li>
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" @click="$emit('not-interested')"><BootstrapIcon icon="hand-thumbs-down-fill" class="recommendation-action-icon recommendation-negative-icon" />Not Interested</button></li>
@@ -24,10 +27,20 @@ import AppDropdown from '../shared/AppDropdown.vue';
 
 export default {
   components: { AppDropdown },
-  emits: ['toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed'],
+  emits: ['toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags'],
+  methods: {
+    openTagDialog(event) {
+      if (this.tagEditingDisabled) return;
+      this.$refs.dropdown.close();
+      // Let the shared modal restore focus to the menu trigger, rather than a hidden item.
+      this.$refs.dropdown.getTrigger()?.focus();
+      this.$emit(event);
+    }
+  },
   props: {
     clickedAmount: { type: Number, default: 0 },
     clickPending: { type: Boolean, default: false },
+    tagEditingDisabled: { type: Boolean, default: false },
     favoriteInd: { type: Number, default: 0 },
     favoritePending: { type: Boolean, default: false },
     isReaderMode: { type: Boolean, default: false },

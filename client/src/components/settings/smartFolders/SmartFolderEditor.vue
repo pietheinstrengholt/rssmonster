@@ -140,8 +140,7 @@
                         type="text"
                         class="app-form-control"
                         placeholder="ai"
-                        @keydown="preventTagSeparator"
-                        @input="normalizeDraftTag"
+                        @blur="normalizeDraftTag"
                     />
                 </label>
 
@@ -474,12 +473,6 @@ export default {
         // This function reduces tag input to the single supported tag.
         normalizeDraftTag() {
             this.draftConfig.content.tags = normalizeSmartFolderTag(this.draftConfig.content.tags);
-        },
-        // This function prevents separators that would create unsupported multiple tags.
-        preventTagSeparator(event) {
-            if (event.key === ',' || event.key === ' ') {
-                event.preventDefault();
-            }
         },
         // This function copies the current generated query when Clipboard support is available.
         async copyGeneratedQuery() {

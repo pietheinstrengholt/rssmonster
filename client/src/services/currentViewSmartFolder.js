@@ -14,7 +14,7 @@ export function currentViewSmartFolder(selection, { dateRange = 'all' } = {}) {
     if (expressionPatterns.some(pattern => pattern.regex.test(token))) return true;
     return !token.includes(':') && !token.startsWith('@') && validateSmartFolderQuery(token).valid;
   });
-  if (selection.tag) searchTokens.push(`tag:"${String(selection.tag).replaceAll('"', '\\"')}"`);
+  if (selection.tag) searchTokens.push(`tag:"${String(selection.tag).replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`);
   const tokens = [...tokenizeSmartFolderQuery(buildSmartFolderQuery(config)), ...searchTokens];
   // Match the expression parser's last-token-wins rules without changing operators.
   const key = token => token.startsWith('@') ? 'date' : token.match(/^([a-z]+):/i)?.[1].toLowerCase();

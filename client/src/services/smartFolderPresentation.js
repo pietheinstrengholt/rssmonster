@@ -2,7 +2,7 @@ import { normalizeSortValueForApi } from './queryValidation.js';
 
 // Keeps quoted values intact when reading presentation tokens from a saved expression.
 export const tokenizeSmartFolderExpression = query => (
-  String(query || '').match(/(?:[A-Za-z]+:)?"[^"]*"|[^\s,]+/g) || []
+  String(query || '').match(/(?:[A-Za-z]+:)?"(?:\\.|[^"\\])*"|[^\s,]+/g) || []
 );
 
 // Resolves the same last-token-wins presentation used by article search.

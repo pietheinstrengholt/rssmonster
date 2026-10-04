@@ -226,6 +226,7 @@
         v-bind="selectedArticle"
         reader-detail
         :key="selectedArticle.id"
+        @update-tags="$emit('update-tags', $event)"
         @update-favorite="$emit('update-favorite', $event)"
         @update-clicked="$emit('update-clicked', $event)"
         @toggle-read-status="$emit('toggle-read-status', $event)"
@@ -242,6 +243,7 @@
         :ref="element => setRelatedArticleRef(element, article.id)"
         v-bind="article"
         reader-detail
+        @update-tags="$emit('update-tags', $event)"
         @update-favorite="$emit('update-favorite', $event)"
         @update-clicked="$emit('update-clicked', $event)"
         @toggle-read-status="$emit('toggle-read-status', $event)"
@@ -312,6 +314,7 @@ export default {
     UnreadSelectionContext
   },
   emits: [
+    'update-tags',
     'update-favorite',
     'update-clicked',
     'toggle-read-status',

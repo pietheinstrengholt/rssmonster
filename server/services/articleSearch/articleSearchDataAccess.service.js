@@ -2,6 +2,7 @@
 // These helpers isolate tag and feed id lookups from the search service orchestration.
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
+import { normalizeTagName } from '../crawl/persistence/tags.js';
 
 // Provides the shared dependencies used by this service.
 const { Feed, Tag } = db;
@@ -15,7 +16,7 @@ export const fetchTaggedArticleIds = async ({ userId, tagName }) => {
 
   // Loads the tag rows needed while performing fetch tagged article id.
   const tagRows = await Tag.findAll({
-    where: { userId, name: tagName },
+    where: { userId, name: normalizeTagName(tagName) },
     attributes: ['articleId']
   });
 

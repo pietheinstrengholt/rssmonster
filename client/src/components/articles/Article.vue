@@ -8,6 +8,7 @@
       <ArticleHeadlineRow
         ref="articleHeading"
         :article-id="storyArticleId"
+        :tag-editing-disabled="Boolean(duplicateOfArticleId)"
         :is-mobile-portrait="isMobilePortrait"
         :image-url="imageUrl"
         :url="url"
@@ -31,7 +32,7 @@
         :duplicate-count="duplicateCount"
         :event-expanded="eventExpanded"
         :duplicates-expanded="duplicatesExpanded"
-        :tags="tags || []"
+        :tags="articleTags"
         :published-at="publishedAt"
         :has-article-preview="hasArticlePreview"
         @article-clicked="articleClicked"
@@ -48,7 +49,7 @@
         @toggle-favorite="markAsFavorite"
         @not-interested="markNotInterested"
         @more-like-this="moreLikeThis"
-        @mute-feed="muteFeedSevenDays"
+        @mute-feed="muteFeedSevenDays" @add-tags="tagDialogMode = 'add'" @manage-tags="tagDialogMode = 'manage'"
       />
     </div>
     <div v-else class="mobile-swipe-shell">
@@ -58,10 +59,10 @@
       </div>
       <div class="article-body mobile-swipe-content" :class="isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : ''" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
         <div class="article-layout">
-          <ArticleHeader :reader-detail="isReaderDetail" :feed="feed" :feed-favicon="feedFavicon" :author="author" :published-at="publishedAt" ref="articleHeading" :articleId="storyArticleId" :url="url" :title="title" :highlightTerms="highlightTerms" :clickedAmount="clickedAmount" :clickPending="clickMutationPending" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-clicked="toggleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" />
+          <ArticleHeader :tag-editing-disabled="Boolean(duplicateOfArticleId)" :reader-detail="isReaderDetail" :feed="feed" :feed-favicon="feedFavicon" :author="author" :published-at="publishedAt" ref="articleHeading" :articleId="storyArticleId" :url="url" :title="title" :highlightTerms="highlightTerms" :clickedAmount="clickedAmount" :clickPending="clickMutationPending" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-clicked="toggleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" @add-tags="tagDialogMode = 'add'" @manage-tags="tagDialogMode = 'manage'" />
           <div class="meta-row" :class="{ 'article-reader-metabar': isReaderDetail }">
             <ArticleMeta :authors="authors" :original-source="originalSource" :hide-provenance="isReaderDetail" :articleId="storyArticleId" :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :hasInterestScore="hasInterestScore" :isRecommendationView="isRecommendationView" :recommendation="recommendation" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :aiAnalysisStatus="aiAnalysisStatus" :neutralScore="NEUTRAL_SCORE" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" @inspect-interest="$emit('inspect-interest', $event)" />
-            <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :quality="quality" :aiAnalysisStatus="aiAnalysisStatus" @select-category="selectCategory" @select-tag="selectTag" />
+            <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="articleTags" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :quality="quality" :aiAnalysisStatus="aiAnalysisStatus" @select-category="selectCategory" @select-tag="selectTag" />
           </div>
           <ArticlePreviewFallback v-if="!hasArticlePreview" :url="url" @open-original="articleClicked" />
           <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
@@ -80,11 +81,13 @@
     </div>
     <ArticleMedia v-if="isMinimalView && shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" @media-clicked="articleClicked" />
     <ArticleContent v-if="isMinimalView" :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :openArticleLinksInNewTab="uiStore.openArticleLinksInNewTab" :contentText="contentText" :highlightTerms="highlightTerms" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :aiAnalysisStatus="aiAnalysisStatus" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="shouldShowMinimalContent" />
+    <ArticleTagDialog v-if="tagDialogMode" :article-id="id" :tags="articleTags" :mode="tagDialogMode" @close="tagDialogMode = null" @updated="updateTags" />
     <div class="article-divider"></div>
   </div>
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
 import { mapStores } from 'pinia';
 import { useUiStore } from '../../store/ui.js';
 import { useSelectionStore } from '../../store/selection.js';
@@ -116,9 +119,10 @@ const NEUTRAL_SCORE = 70;
 
 export default {
   inheritAttrs: false,
-  components: { ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent, ArticleHeadlineRow, ArticleMedia, ArticlePreviewFallback },
-  emits: ['update-favorite', 'update-clicked', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'event-articles-loaded', 'event-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed', 'article-not-interested', 'inspect-interest'],
+  components: { ArticleTagDialog: defineAsyncComponent(() => import('./ArticleTagDialog.vue')), ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent, ArticleHeadlineRow, ArticleMedia, ArticlePreviewFallback },
+  emits: ['update-tags', 'update-favorite', 'update-clicked', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'event-articles-loaded', 'event-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed', 'article-not-interested', 'inspect-interest'],
   props: {
+    duplicateOfArticleId: { type: [Number, String], default: null },
     readerDetail: { type: Boolean, default: false },
     id: { type: [Number, String], required: true },
     url: { type: String, default: '' },
@@ -174,18 +178,22 @@ export default {
       ...createArticleExpansionState(),
       ...createArticleMobileSwipeState(),
       showMinimalContent: false,
+      tagDialogMode: null,
+      updatedTags: null,
       favoriteMutationPending: false,
       clickMutationPending: false,
       NEUTRAL_SCORE
     };
   },
   watch: {
+    tags() { this.updatedTags = null; },
     // This function cancels an active swipe when portrait eligibility ends.
     isMobilePortrait(matches) {
       if (!matches) this.resetSwipe();
     }
   },
   computed: {
+    articleTags() { return this.updatedTags ?? this.tags; },
     isReaderDetail() {
       return this.readerDetail && this.selectionStore.currentSelection.viewMode === 'reader';
     },
@@ -373,6 +381,12 @@ export default {
     }
   },
   methods: {
+    updateTags(tags) {
+      this.updatedTags = tags;
+      this.$emit('update-tags', { id: this.id, tags });
+      void this.overviewStore.fetchTopTags();
+      this.overviewStore.scheduleSmartFolderCountsRefresh();
+    },
     ...articleActionMethods,
     ...articleExpansionMethods,
     ...articleMobileSwipeMethods,

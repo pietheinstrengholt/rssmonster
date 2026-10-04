@@ -5,6 +5,7 @@ import {
   resolveDailyBriefingFilters
 } from '../services/dailyBriefing/dailyBriefing.service.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { normalizeTagName } from '../services/crawl/persistence/tags.js';
 
 const { Article, BriefingPreference, Tag } = db;
 const TOP_TAG_STATUSES = new Set([
@@ -96,6 +97,44 @@ const getTags = async (req, res) => {
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const hasSearch = req.query?.search !== undefined;
+    if (req.query?.scope !== undefined && req.query.scope !== 'all') {
+      return res.status(400).json({ error: 'Unsupported tag scope' });
+    }
+    if (hasSearch && (typeof req.query.search !== 'string' || normalizeTagName(req.query.search).length > 255)) {
+      return res.status(400).json({ error: 'search must be a string of up to 255 characters' });
+    }
+    // The default remains the sidebar snapshot; all names support article tag selection.
+    if (req.query?.scope === 'all' || hasSearch) {
+      const search = hasSearch ? normalizeTagName(req.query.search) : '';
+      const maxLimit = hasSearch ? 50 : 100;
+      const limit = Number(req.query.limit ?? (hasSearch ? 20 : 100));
+      const offset = Number(req.query.offset ?? 0);
+      if (!Number.isSafeInteger(limit) || limit < 1 || limit > maxLimit ||
+        !Number.isSafeInteger(offset) || offset < 0) {
+        return res.status(400).json({ error: `limit must be 1 to ${maxLimit} and offset must be a non-negative integer` });
+      }
+      const tags = await Tag.findAll({
+        where: {
+          userId,
+          // Literal substring matching avoids treating a tag's % or _ as a wildcard.
+          ...(search ? { [Sequelize.Op.and]: Sequelize.where(
+            Sequelize.fn('INSTR', Sequelize.col('tags.name'), search), { [Sequelize.Op.gt]: 0 }
+          ) } : {})
+        },
+        attributes: ['name'],
+        include: [{ model: Article, attributes: [], required: true, where: { userId } }],
+        group: ['tags.name'],
+        // Keep an exact existing name inside the bounded result, even with many substring matches.
+        order: [...(search ? [[Sequelize.where(Sequelize.col('tags.name'), { [Sequelize.Op.eq]: search }), 'DESC']] : []), ['name', 'ASC']],
+        limit: limit + 1,
+        offset,
+        subQuery: false,
+        raw: true
+      });
+      return res.status(200).json({ tags: tags.slice(0, limit), hasMore: tags.length > limit });
     }
 
     const status = String(req.query?.status || 'unread').toLowerCase();

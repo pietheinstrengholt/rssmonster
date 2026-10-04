@@ -10,6 +10,7 @@ export const PRECACHE_GLOB_PATTERNS = Object.freeze([
   'assets/axios-vendor-*.js',
   'assets/settings-api-*.js',
   'assets/actionNotifications-*.js',
+  'assets/tags-*.js',
   'assets/AppShell-*.js',
   'assets/AppShell-*.css',
   'assets/authenticatedShell-*.js',

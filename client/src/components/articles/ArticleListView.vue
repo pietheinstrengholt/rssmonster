@@ -31,6 +31,7 @@
         :aria-current="isArticleSelected(article.id) ? 'true' : null"
         :tabindex="minimalArticleTabindex(article.id)"
         :isMinimalContentOpen="String(article.id) === String(activeMinimalArticleId)"
+        @update-tags="$emit('update-tags', $event)"
         @update-favorite="$emit('update-favorite', $event)"
         @update-clicked="$emit('update-clicked', $event)"
         @minimal-article-opened="$emit('minimal-article-opened', $event)"
@@ -123,6 +124,7 @@ export default {
     UnreadSelectionContext
   },
   emits: [
+    'update-tags',
     'update-favorite',
     'update-clicked',
     'minimal-article-opened',

@@ -639,7 +639,7 @@ describe('SettingsActions high-impact decision coverage', () => {
 });
 
 describe('SmartFolderEditor high-impact decision coverage', () => {
-  it('covers opposite status and event choices plus separator guards', async () => {
+  it('covers opposite status and event choices', async () => {
     const wrapper = mount(SmartFolderEditor, {
       props: {
         smartFolder: { name: 'Coverage', query: '', limitCount: 50 },
@@ -663,9 +663,6 @@ describe('SmartFolderEditor high-impact decision coverage', () => {
       useMinimumCount: false
     });
 
-    const ordinaryKey = { key: 'x', preventDefault: vi.fn() };
-    wrapper.vm.preventTagSeparator(ordinaryKey);
-    expect(ordinaryKey.preventDefault).not.toHaveBeenCalled();
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
     await expect(wrapper.vm.copyGeneratedQuery()).resolves.toBeUndefined();
   });

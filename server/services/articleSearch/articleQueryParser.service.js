@@ -125,8 +125,11 @@ const tokenizeSearch = search => {
     else quoteIndex = index;
 
     if (search[quoteIndex] === '"') {
-      index = search.indexOf('"', quoteIndex + 1);
-      index = index === -1 ? search.length : index + 1;
+      index = quoteIndex + 1;
+      while (index < search.length) {
+        if (search[index] === '\\' && index + 1 < search.length) { index += 2; continue; }
+        if (search[index++] === '"') break;
+      }
     } else {
       while (index < search.length && search[index] !== ',' && !/\s/.test(search[index])) index += 1;
     }
@@ -232,7 +235,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc', strict = 
       `Expression must not exceed ${MAX_ARTICLE_SEARCH_LENGTH} characters.`
     );
   }
-  if (strict && (rawSearch.match(/"/g)?.length || 0) % 2 !== 0) {
+  if (strict && (rawSearch.match(/\\.|"/g)?.filter(token => token === '"').length || 0) % 2 !== 0) {
     throw new ArticleExpressionValidationError(
       'EXPRESSION_UNTERMINATED_QUOTE',
       'Expression contains an unterminated quoted value.'
@@ -274,7 +277,9 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc', strict = 
   }
 
   // Derives the quoted text match through match while parsing article query.
-  const quotedTextMatch = workingSearch.match(/"([^"]+)"/);
+  // A quoted tag value is a field filter, not a full-text phrase.
+  const quotedTextToken = tokenizeSearch(workingSearch).find(token => token.startsWith('"') && token.endsWith('"'));
+  const quotedTextMatch = quotedTextToken ? [quotedTextToken, quotedTextToken.slice(1, -1)] : null;
   // Handles the case where quoted text match is available.
   if (quotedTextMatch) {
     text = quotedTextMatch[1].trim();
@@ -340,14 +345,15 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc', strict = 
     const tag = parseTextFilter(cleaned, 'tag:');
     // Handles the case where tag is available.
     if (tag) {
-      if (strict && !tag.trim().replace(/^"|"$/g, '')) {
+      const tagValue = tag.trim().replace(/^"|"$/g, '').replace(/\\(["\\])/g, '$1').trim();
+      if (strict && !tagValue) {
         rejectExpressionToken(
           'EXPRESSION_INVALID_TOKEN',
           `Tag filter cannot be empty: "${cleaned}".`,
           cleaned
         );
       }
-      filters.tag = tag.trim();
+      filters.tag = tagValue;
       continue;
     }
 

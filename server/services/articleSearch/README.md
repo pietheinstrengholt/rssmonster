@@ -238,8 +238,9 @@ raw feed-trust preference boost. The generic Unread `prioritizeHighTrust`
 preference still affects the chronological Newest and Oldest sorts. These
 preferences do not change eligibility or sidebar counts.
 
-Tag values should currently be a single unquoted token. Quoted tag values retain
-their quote characters and therefore should not be used.
+Tag values use the same trimmed, lowercase names as article assignments. Quote
+multiword labels, for example `tag:"read later"`; escaped quotes and backslashes
+inside quoted labels are supported.
 
 ## Score filters
 

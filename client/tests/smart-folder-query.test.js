@@ -12,6 +12,17 @@ import {
 } from '../src/components/settings/smartFolders/smartFolderQuery.js';
 
 describe('Smart Folder query domain', () => {
+  it('round-trips a complete multiword tag name', () => {
+    const query = 'tag:"read later" sort:desc grouping:none limit:50';
+    expect(parseSmartFolderQuery(query).content.tags).toBe('read later');
+    expect(buildSmartFolderQuery(parseSmartFolderQuery(query))).toBe(query);
+  });
+  it('round-trips tag punctuation using one quoted label', () => {
+    const config = createEmptySmartFolderConfig();
+    config.content.tags = 'a,"b\\c';
+    const query = buildSmartFolderQuery(config);
+    expect(parseSmartFolderQuery(query).content.tags).toBe(config.content.tags);
+  });
   it('round-trips an explicit grouping independently of event eligibility', () => {
     const query = 'event:true sort:recommended grouping:event limit:50';
     const config = parseSmartFolderQuery(query);
@@ -20,8 +31,8 @@ describe('Smart Folder query domain', () => {
   });
   it.each([
     ['security', 'security'],
-    [' security, ai ', 'security'],
-    ['machine learning', 'machine'],
+    [' security, ai ', 'security, ai'],
+    ['machine learning', 'machine learning'],
     ['', '']
   ])('normalizes the supported single tag from %j', (value, expected) => {
     expect(normalizeSmartFolderTag(value)).toBe(expected);
@@ -88,7 +99,7 @@ describe('Smart Folder query domain', () => {
         relativeUnit: 'h'
       },
       content: {
-        tags: 'machine',
+        tags: 'machine learning',
         title: 'Daily Brief',
         author: 'Jane',
         language: 'nl',

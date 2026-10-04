@@ -13,7 +13,31 @@ the sidebar for quick filtering.
 
 ## Where Tags Come From
 
-Tags can be added to an article in several ways during a feed crawl.
+Tags can be added automatically during a feed crawl or manually from an article.
+
+### Manual Tags
+
+Open the article's **…** menu and choose **Add tags** to select existing labels
+or create a new one inline. Existing article tags remain selected and cannot be
+removed in this workflow. Current tags appear immediately. Suggestions combine
+up to ten names from the current sidebar's usage snapshot (**Most used in this
+view**) with ten alphabetical defaults, without repeating selected labels.
+Search looks up matching names on the server after a 250 ms pause, returning up
+to twenty results with selected matches first. Clearing search restores the
+small suggestion set. **Create "name"** selects a new label without closing the
+dialog. The dialog never loads the complete tag collection.
+
+There is no Recently used section: crawl processing can recreate tag rows, so
+their creation timestamps do not reliably represent when you last used a tag.
+
+Choose **Manage tags** to add and remove labels together. Uncheck a label or
+remove its chip, then choose **Save changes**. New labels are selected in the
+dialog and persisted when you save; cancelling leaves the article unchanged.
+
+Saved tags appear immediately on the article, including compact and mobile
+metadata. They use the same search, Smart Folder, and sidebar navigation as
+automatically assigned tags. If a multi-request save is interrupted, the dialog
+keeps your selections and retries only the remaining changes.
 
 ### Publisher Tags and Categories
 
@@ -97,5 +121,55 @@ Combine it with other expressions to narrow the result further:
 tag:nintendo unread:true @lastweek sort:recommended
 ```
 
-Tag values in search expressions should be written as a single unquoted token.
+Quote multiword tag names in search expressions, for example `tag:"read later"`.
 See the [Search Guide]({% link search.md %}) for every supported expression.
+
+## Article Tagging API
+
+Authenticated API clients can assign manual tags to existing articles. There is
+no separate tag catalogue: a new label is created when it is first assigned to
+an article, and remains available while at least one assignment exists.
+
+| Operation | API |
+| --- | --- |
+| Default suggestions | `GET /api/tags?scope=all&limit=10` |
+| Search available names | `GET /api/tags?search=security&limit=20` |
+| Read current assignments | `GET /api/articles/:articleId` (`article.tags`) |
+| Add existing or new labels | `POST /api/articles/:articleId/tags` with `{"tags":["security","project"]}` |
+| Remove one assignment | `DELETE /api/articles/:articleId/tags/:tagId` |
+
+The available-name response is `{ "tags": [{ "name": "security" }], "hasMore": false }`.
+Names are distinct and alphabetically ordered across the user's articles,
+regardless of reading status. `limit` defaults to 100 and accepts 1–100; `offset`
+defaults to zero. Advance the offset by the limit while `hasMore` is true.
+Supplying `search` selects this same name catalogue (with or without
+`scope=all`). Search is normalized using the existing trim/lowercase convention
+and matches literal substrings; `%` and `_` are not wildcards. An exact match is
+ordered first, followed by alphabetical matches. Search defaults to twenty
+results and accepts limits of 1–50. Queries longer than 255 characters after
+normalization are rejected. Both tag and article ownership are enforced in the
+same limited SQL query. Existing user/name indexes are reused; no popularity
+aggregation runs on keystrokes.
+Without `scope=all` or `search`, `GET /api/tags` retains its status-scoped Top Tags
+behavior.
+
+Add requests accept 1–100 string names. Names are trimmed and lowercased using
+the same conventions as automatically assigned tags; empty names and names
+longer than 255 characters are rejected. Repeated assignments are idempotent.
+New assignments have `tagType: "manual"`. An existing assignment keeps its
+original provenance and is not converted from a rule, feed, or provider tag.
+
+Both mutation endpoints return `{ "tags": [...] }` with the article's current
+assignments, each containing `id`, `name`, and `tagType`. The removal ID identifies
+one assignment on that article, not a label shared across the library. Removal
+does not affect another article's assignments, even when the names match.
+An explicitly removed automatic tag can return during later crawl processing.
+Manual tags survive automatic tag reconciliation.
+
+Mutations require an owned, visible canonical article. Malformed IDs or invalid
+payloads return 400; nonexistent, foreign-owned, or unavailable articles and
+assignments return 404. Authentication uses the existing API session middleware.
+Changes are immediately available to tag search and Smart Folder queries.
+Multiword labels work in search and Smart Folders using a quoted tag expression,
+for example `tag:"read later"`. The Smart Folder editor preserves the complete
+tag name and generates the required quotes.

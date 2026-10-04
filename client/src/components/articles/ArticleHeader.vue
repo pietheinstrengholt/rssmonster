@@ -32,7 +32,7 @@
       <span v-else class="article-link"><HighlightedText :text="title" :terms="highlightTerms" /></span>
     </component>
     <div class="article-header-actions" :class="{ 'article-reader-actions': isReaderDetail }">
-      <ArticleActionsMenu :clickedAmount="clickedAmount" :clickPending="clickPending" :favoriteInd="favoriteInd" :favoritePending="favoritePending" :isReaderMode="isReaderMode" :status="status" @toggle-clicked="$emit('toggle-clicked')" @toggle-favorite="$emit('toggle-favorite')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" />
+      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :clickedAmount="clickedAmount" :clickPending="clickPending" :favoriteInd="favoriteInd" :favoritePending="favoritePending" :isReaderMode="isReaderMode" :status="status" @toggle-clicked="$emit('toggle-clicked')" @toggle-favorite="$emit('toggle-favorite')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
       <template v-if="isReaderDetail">
         <button type="button" class="article-reader-favorite" :class="{ 'article-reader-favorite--active': favoriteInd === 1 }" :aria-label="favoriteInd === 1 ? 'Remove from saved' : 'Save article'" :aria-pressed="favoriteInd === 1" :disabled="favoritePending" @click="$emit('toggle-favorite')">
           <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
@@ -58,8 +58,9 @@ import { usableHttpUrl } from '../../utils/content.js';
 
 export default {
   components: { ArticleActionsMenu, ArticleDevelopingStoryPopover, HighlightedText },
-  emits: ['article-clicked', 'toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed'],
+  emits: ['article-clicked', 'toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags'],
   props: {
+    tagEditingDisabled: { type: Boolean, default: false },
     readerDetail: { type: Boolean, default: false },
     feed: { type: Object, default: () => ({}) },
     feedFavicon: { type: String, default: '' },

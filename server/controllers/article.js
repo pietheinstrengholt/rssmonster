@@ -19,8 +19,54 @@ import { createRequestPersonalization } from '../services/recommendations/reques
 import { explainArticleInterests } from '../services/score/scoreArticlesFromIslands.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { retryDatabaseWrite } from '../utils/databaseRetry.js';
+import { addArticleTags, removeArticleTag } from '../services/articles/articleTags.js';
+import { normalizeTagList, normalizeTagName } from '../services/crawl/persistence/tags.js';
 
 const RELATED_STORY_ARTICLE_LIMIT = 50;
+
+const isValidTaggingId = value => /^\d+$/.test(String(value)) &&
+  Number.isSafeInteger(Number(value)) && Number(value) > 0;
+
+const articleAddTags = async (req, res) => {
+  const userId = req.userData?.userId;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized: missing userId' });
+  if (!isValidTaggingId(req.params.articleId)) {
+    return res.status(400).json({ error: 'Invalid articleId' });
+  }
+  const requestedTags = req.body?.tags;
+  if (!Array.isArray(requestedTags) || requestedTags.length === 0 || requestedTags.length > 100 ||
+    requestedTags.some(name => typeof name !== 'string' || !normalizeTagName(name) || normalizeTagName(name).length > 255)) {
+    return res.status(400).json({ error: 'tags must contain 1 to 100 non-empty names of up to 255 characters' });
+  }
+  try {
+    const tags = await addArticleTags({
+      articleId: Number(req.params.articleId), userId, names: normalizeTagList(requestedTags)
+    });
+    if (!tags) return res.status(404).json({ error: 'Article not found' });
+    return res.status(200).json({ tags });
+  } catch (err) {
+    console.error('Error adding article tags:', err);
+    return res.status(500).json({ error: 'Unable to add article tags' });
+  }
+};
+
+const articleRemoveTag = async (req, res) => {
+  const userId = req.userData?.userId;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized: missing userId' });
+  if (!isValidTaggingId(req.params.articleId) || !isValidTaggingId(req.params.tagId)) {
+    return res.status(400).json({ error: 'Invalid articleId or tagId' });
+  }
+  try {
+    const tags = await removeArticleTag({
+      articleId: Number(req.params.articleId), userId, tagId: Number(req.params.tagId)
+    });
+    if (!tags) return res.status(404).json({ error: 'Article or tag not found' });
+    return res.status(200).json({ tags });
+  } catch (err) {
+    console.error('Error removing article tag:', err);
+    return res.status(500).json({ error: 'Unable to remove article tag' });
+  }
+};
 
 const parsePublicationBound = (value, field) => {
   if (value == null) return null;
@@ -177,6 +223,7 @@ const loadArticleDetails = async (userId, articlesArray, personalization = creat
       },
       {
         model: Tag,
+        where: { userId },
         required: false,
         attributes: ['id', 'name', 'tagType']
       },
@@ -443,6 +490,7 @@ const getDuplicateArticles = async (req, res) => {
         },
         {
           model: Tag,
+          where: { userId },
           required: false,
           attributes: ['id', 'name', 'tagType']
         }
@@ -496,6 +544,7 @@ const getArticle = async (req, res, _next) => {
         },
         {
           model: Tag,
+          where: { userId },
           required: false,
           attributes: ['id', 'name', 'tagType']
         }
@@ -1537,6 +1586,8 @@ const articleMarkAllAsRead = async (req, res, _next) => {
 };
 
 export default {
+  articleAddTags,
+  articleRemoveTag,
   getDailyBriefing,
   getArticles,
   getDuplicateArticles,
