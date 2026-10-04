@@ -90,6 +90,9 @@ describe('Webhooks settings', () => {
     await wrapper.get('.webhook-condition-row select[aria-label="Condition 1 value"]').setValue('7');
     await wrapper.get('.webhook-add-condition').trigger('click');
     expect(wrapper.findAll('.webhook-condition-row')).toHaveLength(2);
+    await wrapper.get('select[aria-label="Condition 2 field"]').setValue('domain');
+    expect(wrapper.get('select[aria-label="Condition 2 operator"]').findAll('option').map(item => item.text()))
+      .toEqual(['Select operator', 'is', 'is not']);
     await wrapper.get('[aria-label="Remove condition 2"]').trigger('click');
     expect(wrapper.findAll('.webhook-condition-row')).toHaveLength(1);
     wrapper.unmount();

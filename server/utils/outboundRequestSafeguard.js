@@ -47,6 +47,17 @@ const createBlockedAddressList = () => {
 };
 
 const blockedAddresses = createBlockedAddressList();
+const allowedLanAddresses = new BlockList();
+[
+  ['10.0.0.0', 8],
+  ['127.0.0.0', 8],
+  ['172.16.0.0', 12],
+  ['192.168.0.0', 16]
+].forEach(([address, prefix]) => allowedLanAddresses.addSubnet(address, prefix, 'ipv4'));
+[
+  ['::1', 128],
+  ['fc00::', 7]
+].forEach(([address, prefix]) => allowedLanAddresses.addSubnet(address, prefix, 'ipv6'));
 
 // Creates a consistently identifiable error for a rejected outbound target.
 const createBlockedRequestError = message => {
@@ -199,9 +210,11 @@ const isAddressAllowlisted = (address, family, allowlist) =>
 // Reports whether an address belongs to a non-public or special-use range.
 const isBlockedAddress = (address, family) =>
   blockedAddresses.check(address, family === 4 ? 'ipv4' : 'ipv6');
+const isAllowedLanAddress = (address, family) =>
+  allowedLanAddresses.check(address, family === 4 ? 'ipv4' : 'ipv6');
 
 // Validates URL syntax before any network activity occurs.
-const validateOutboundUrl = input => {
+const validateOutboundUrl = (input, { allowPrivateAddresses = false } = {}) => {
   let url;
   try {
     url = new URL(input);
@@ -230,7 +243,8 @@ const validateOutboundUrl = input => {
       isHostAllowlisted(hostname, port, allowlist) ||
       isAddressAllowlisted(hostname, family, allowlist);
 
-    if (!allowed && isBlockedAddress(hostname, family)) {
+    if (!allowed && isBlockedAddress(hostname, family) &&
+        !(allowPrivateAddresses && isAllowedLanAddress(hostname, family))) {
       throw createBlockedRequestError(
         `destination ${hostname}:${port} is not publicly routable`
       );
@@ -241,7 +255,7 @@ const validateOutboundUrl = input => {
 };
 
 // Resolves, validates, and pins one address for an outbound connection.
-const resolveSafeConnectionTarget = async (hostnameInput, portInput) => {
+const resolveSafeConnectionTarget = async (hostnameInput, portInput, allowPrivateAddresses = false) => {
   const hostname = normalizeHostname(hostnameInput);
   const port = Number(portInput);
   const allowlist = parseInternalHostAllowlist();
@@ -260,7 +274,8 @@ const resolveSafeConnectionTarget = async (hostnameInput, portInput) => {
       hostAllowed ||
       isAddressAllowlisted(result.address, result.family, allowlist);
 
-    if (!allowed && isBlockedAddress(result.address, result.family)) {
+    if (!allowed && isBlockedAddress(result.address, result.family) &&
+        !(allowPrivateAddresses && isAllowedLanAddress(result.address, result.family))) {
       throw createBlockedRequestError(
         `hostname ${hostname} resolves to non-public address ${result.address}`
       );
@@ -273,12 +288,12 @@ const resolveSafeConnectionTarget = async (hostnameInput, portInput) => {
 const guardedDispatchers = new Map();
 
 // Creates one SSRF-guarded connector with an explicit TCP/TLS phase timeout.
-const createGuardedDispatcher = connectTimeoutMs => {
+const createGuardedDispatcher = (connectTimeoutMs, allowPrivateAddresses) => {
   const defaultConnector = buildConnector({ timeout: connectTimeoutMs });
   const guardedConnector = (options, callback) => {
     const originalHostname = normalizeHostname(options.hostname);
 
-    resolveSafeConnectionTarget(originalHostname, options.port)
+    resolveSafeConnectionTarget(originalHostname, options.port, allowPrivateAddresses)
       .then(address => {
         defaultConnector(
           {
@@ -298,18 +313,19 @@ const createGuardedDispatcher = connectTimeoutMs => {
 };
 
 // Reuses process-lifetime connection pools for each configured timeout.
-const getGuardedDispatcher = connectTimeoutMs => {
+const getGuardedDispatcher = (connectTimeoutMs, allowPrivateAddresses = false) => {
   const normalizedTimeoutMs = Number.isSafeInteger(connectTimeoutMs) &&
     connectTimeoutMs > 0
     ? connectTimeoutMs
     : 10000;
-  if (!guardedDispatchers.has(normalizedTimeoutMs)) {
+  const key = `${normalizedTimeoutMs}:${allowPrivateAddresses}`;
+  if (!guardedDispatchers.has(key)) {
     guardedDispatchers.set(
-      normalizedTimeoutMs,
-      createGuardedDispatcher(normalizedTimeoutMs)
+      key,
+      createGuardedDispatcher(normalizedTimeoutMs, allowPrivateAddresses)
     );
   }
-  return guardedDispatchers.get(normalizedTimeoutMs);
+  return guardedDispatchers.get(key);
 };
 
 // Cancels an intermediate redirect response without masking the main result.
@@ -333,7 +349,7 @@ const unwrapBlockedRequestError = error => {
   return error;
 };
 
-// Fetches a public URL while validating DNS connections and every redirect hop.
+// Validates and pins each request destination; callers may explicitly allow LAN targets.
 export const fetchWithOutboundRequestSafeguard = async (
   input,
   options = {},
@@ -342,7 +358,7 @@ export const fetchWithOutboundRequestSafeguard = async (
   onRedirect,
   requestLifecycle = {}
 ) => {
-  let currentUrl = validateOutboundUrl(input);
+  let currentUrl = validateOutboundUrl(input, requestLifecycle);
   let requestOptions = options;
 
   for (let redirectCount = 0; ; redirectCount += 1) {
@@ -355,7 +371,10 @@ export const fetchWithOutboundRequestSafeguard = async (
       response = await fetchImplementation(currentUrl, {
         ...requestOptions,
         redirect: 'manual',
-        dispatcher: getGuardedDispatcher(requestLifecycle.connectTimeoutMs)
+        dispatcher: getGuardedDispatcher(
+          requestLifecycle.connectTimeoutMs,
+          requestLifecycle.allowPrivateAddresses
+        )
       });
     } catch (error) {
       await requestLifecycle.afterRequest?.(lifecycleToken);
@@ -401,7 +420,7 @@ export const fetchWithOutboundRequestSafeguard = async (
       toUrl: nextUrl.toString(),
       status: response.status
     });
-    currentUrl = validateOutboundUrl(nextUrl);
+    currentUrl = validateOutboundUrl(nextUrl, requestLifecycle);
   }
 };
 

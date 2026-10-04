@@ -24,11 +24,12 @@ export default sequelize => {
         len: [1, 4096],
         isHttpUrl(value) {
           try {
-            if (['http:', 'https:'].includes(new URL(value).protocol)) return;
+            const url = new URL(value);
+            if (['http:', 'https:'].includes(url.protocol) && !url.username && !url.password) return;
           } catch {
             // Invalid URLs fail the same validation as unsupported protocols.
           }
-          throw new Error('Endpoint must be an HTTP or HTTPS URL');
+          throw new Error('Endpoint must be an HTTP or HTTPS URL without embedded credentials');
         }
       }
     },

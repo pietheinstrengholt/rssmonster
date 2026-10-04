@@ -3,7 +3,8 @@ export const WEBHOOK_FIELDS = [
   { value: 'category', label: 'Category', operators: ['is', 'is_not'] },
   { value: 'title', label: 'Title', operators: ['is', 'is_not', 'contains', 'does_not_contain'] },
   { value: 'author', label: 'Author', operators: ['is', 'is_not', 'contains', 'does_not_contain'] },
-  { value: 'url', label: 'URL/domain', operators: ['is', 'is_not', 'contains', 'does_not_contain'] },
+  { value: 'url', label: 'Article URL', operators: ['is', 'is_not', 'contains', 'does_not_contain'] },
+  { value: 'domain', label: 'Domain', operators: ['is', 'is_not'] },
   { value: 'content', label: 'Content', operators: ['contains', 'does_not_contain'] },
   { value: 'language', label: 'Language', operators: ['is', 'is_not'] }
 ];
@@ -62,8 +63,9 @@ export const validateWebhookDraft = (draft, categories = []) => {
   else if (endpointUrl.length > 4096) errors.endpointUrl = 'Endpoint URL must be 4096 characters or fewer.';
   else {
     try {
-      if (!['http:', 'https:'].includes(new URL(endpointUrl).protocol)) {
-        errors.endpointUrl = 'Enter an HTTP or HTTPS URL.';
+      const url = new URL(endpointUrl);
+      if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+        errors.endpointUrl = 'Enter an HTTP or HTTPS URL without embedded credentials.';
       }
     } catch {
       errors.endpointUrl = 'Enter a valid HTTP or HTTPS URL.';

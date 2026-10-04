@@ -3,6 +3,7 @@ import db from '../../../models/index.js';
 import { saveArticleTags } from './tags.js';
 import buildArticlePersistenceValues from './buildArticlePersistenceValues.js';
 import { enqueueArticleEnrichmentJob } from '../enrichment/articleEnrichmentJobs.js';
+import { enqueueMatchingWebhooks } from '../../webhookMatching.js';
 import { buildActionScoreOverrideIndicators } from '../enrichment/articleAnalysis.js';
 import {
   assertExecutionLeaseOwnership,
@@ -182,6 +183,11 @@ async function saveArticle(
           ...articleEnrichment,
           transaction
         });
+        throwIfExecutionExpired(execution);
+      }
+
+      if (!isDiscardMatch) {
+        await enqueueMatchingWebhooks({ article: createdArticle, feed, transaction });
         throwIfExecutionExpired(execution);
       }
 

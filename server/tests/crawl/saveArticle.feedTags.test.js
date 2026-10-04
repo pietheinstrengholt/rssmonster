@@ -7,6 +7,7 @@ const mocked = vi.hoisted(() => ({
   articleFindOne: vi.fn(),
   officialSourceFindAll: vi.fn(),
   tagCreate: vi.fn(),
+  webhookFindAll: vi.fn(),
   enqueueArticleEnrichmentJob: vi.fn(),
   sequelizeTransaction: vi.fn(),
   transaction: { id: 'article-save-transaction' }
@@ -27,7 +28,8 @@ vi.mock('../../models/index.js', () => ({
     },
     Tag: {
       create: mocked.tagCreate
-    }
+    },
+    Webhook: { findAll: mocked.webhookFindAll }
   }
 }));
 
@@ -93,12 +95,14 @@ describe('saveArticle feed tags', () => {
     mocked.articleFindOne.mockReset();
     mocked.officialSourceFindAll.mockReset();
     mocked.tagCreate.mockReset();
+    mocked.webhookFindAll.mockReset();
     mocked.enqueueArticleEnrichmentJob.mockReset();
     mocked.sequelizeTransaction.mockReset();
     mocked.articleCreate.mockResolvedValue({ id: 123 });
     mocked.articleFindOne.mockResolvedValue(null);
     mocked.officialSourceFindAll.mockResolvedValue([]);
     mocked.tagCreate.mockResolvedValue({});
+    mocked.webhookFindAll.mockResolvedValue([]);
     mocked.enqueueArticleEnrichmentJob.mockResolvedValue({});
     mocked.sequelizeTransaction.mockImplementation(callback => callback(mocked.transaction));
   });

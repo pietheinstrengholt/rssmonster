@@ -1,16 +1,8 @@
 import { Op } from 'sequelize';
 import db from '../models/index.js';
+import { WEBHOOK_CONDITION_OPERATORS } from './webhookConditions.js';
 
 const { Category, Feed, Webhook, WebhookCondition, sequelize } = db;
-const FIELDS = {
-  feed: ['is', 'is_not'],
-  category: ['is', 'is_not'],
-  title: ['is', 'is_not', 'contains', 'does_not_contain'],
-  author: ['is', 'is_not', 'contains', 'does_not_contain'],
-  url: ['is', 'is_not', 'contains', 'does_not_contain'],
-  content: ['contains', 'does_not_contain'],
-  language: ['is', 'is_not']
-};
 const WEBHOOK_KEYS = ['name', 'enabled', 'endpointUrl', 'secret', 'matchMode', 'conditions'];
 const CONDITION_KEYS = ['field', 'operator', 'value'];
 const positiveId = value => /^[1-9]\d*$/.test(String(value)) && Number.isSafeInteger(Number(value));
@@ -30,7 +22,8 @@ export const validateWebhookPayload = body => {
     return invalid('ENDPOINT_URL_INVALID', 'Endpoint URL must be an HTTP or HTTPS URL of up to 4096 characters.');
   }
   try {
-    if (!['http:', 'https:'].includes(new URL(endpointUrl).protocol)) throw new Error();
+    const url = new URL(endpointUrl);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error();
   } catch {
     return invalid('ENDPOINT_URL_INVALID', 'Endpoint URL must be an HTTP or HTTPS URL of up to 4096 characters.');
   }
@@ -52,8 +45,8 @@ export const validateWebhookPayload = body => {
   for (const [index, condition] of body.conditions.entries()) {
     if (!condition || typeof condition !== 'object' || Array.isArray(condition) ||
         Object.keys(condition).some(key => !CONDITION_KEYS.includes(key)) ||
-        typeof condition.field !== 'string' || !Object.hasOwn(FIELDS, condition.field) ||
-        typeof condition.operator !== 'string' || !FIELDS[condition.field].includes(condition.operator) ||
+        typeof condition.field !== 'string' || !Object.hasOwn(WEBHOOK_CONDITION_OPERATORS, condition.field) ||
+        typeof condition.operator !== 'string' || !WEBHOOK_CONDITION_OPERATORS[condition.field].includes(condition.operator) ||
         typeof condition.value !== 'string' || !condition.value.trim() ||
         condition.value.trim().length > 4096 ||
         (['feed', 'category'].includes(condition.field) && !positiveId(condition.value.trim()))) {

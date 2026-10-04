@@ -31,6 +31,7 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-86400}
       JWT_REMEMBER_EXPIRES_IN: ${JWT_REMEMBER_EXPIRES_IN:-2592000}
       FEVER_CREDENTIAL_SECRET: ${FEVER_CREDENTIAL_SECRET:?FEVER_CREDENTIAL_SECRET must be set}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
@@ -233,6 +234,35 @@ services:
       retries: 3
       start_period: 2m
 
+    networks:
+      - rssmonster-network
+
+  rssmonster-webhook-worker:
+    image: "${RSSMONSTER_IMAGE:-rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}}"
+    container_name: rssmonster-webhook-worker
+    restart: unless-stopped
+    depends_on:
+      rssmonster:
+        condition: service_healthy
+        restart: true
+    command: [npm, run, start:webhook-worker]
+    environment:
+      NODE_ENV: production
+      DB_HOSTNAME: mysql
+      DB_DIALECT: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-rssmonster}
+      DB_USERNAME: ${DB_USERNAME:-rssmonster}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - rssmonster-network
 

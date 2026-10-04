@@ -96,6 +96,7 @@ describe('Webhook management API', () => {
     const cases = [
       [definition({ matchMode: 'SOME' }), 'MATCH_MODE_INVALID'],
       [definition({ endpointUrl: 'file:///tmp/hook' }), 'ENDPOINT_URL_INVALID'],
+      [definition({ endpointUrl: 'https://user:password@example.com/hook' }), 'ENDPOINT_URL_INVALID'],
       [definition({ conditions: [{ field: 'island', operator: 'is', value: '1' }] }), 'CONDITION_INVALID'],
       [definition({ conditions: [{ field: 'title', operator: 'matches', value: 'x' }] }), 'CONDITION_INVALID'],
       [definition({ conditions: 'bad' }), 'CONDITIONS_INVALID'],
@@ -122,6 +123,17 @@ describe('Webhook management API', () => {
       .set('Authorization', auth(user)).send(definition());
     const deleted = await request(app).delete(`/api/webhooks/${missingId}`).set('Authorization', auth(user));
     expect([loaded.status, updated.status, deleted.status]).toEqual([404, 404, 404]);
+  });
+
+  it('accepts a deterministic domain condition', async () => {
+    const user = await createUser();
+    const created = await post(user, definition({
+      conditions: [{ field: 'domain', operator: 'is', value: 'news.example.com' }]
+    }));
+    expect(created.status).toBe(201);
+    expect(created.body.webhook.conditions).toMatchObject([
+      { field: 'domain', operator: 'is', value: 'news.example.com' }
+    ]);
   });
 
   it('rolls back create and update when condition insertion fails', async () => {

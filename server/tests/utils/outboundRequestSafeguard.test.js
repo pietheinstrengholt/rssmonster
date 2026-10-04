@@ -45,6 +45,20 @@ describe('fetchWithOutboundRequestSafeguard', () => {
     expect(fetchImplementation).not.toHaveBeenCalled();
   });
 
+  it('allows webhook LAN destinations while still blocking link-local metadata and credentials', async () => {
+    const fetchImplementation = vi.fn().mockResolvedValue(response(204));
+    const lifecycle = { allowPrivateAddresses: true };
+    await expect(fetchWithOutboundRequestSafeguard(
+      'http://192.168.1.10/hook', {}, 0, fetchImplementation, undefined, lifecycle
+    )).resolves.toMatchObject({ status: 204 });
+    expect(fetchImplementation).toHaveBeenCalledOnce();
+    for (const url of ['http://169.254.169.254/latest/meta-data', 'http://user:pass@127.0.0.1/hook']) {
+      await expect(fetchWithOutboundRequestSafeguard(
+        url, {}, 0, fetchImplementation, undefined, lifecycle
+      )).rejects.toMatchObject({ code: 'SSRF_BLOCKED' });
+    }
+  });
+
   // Supports global, host-port, IPv6, and CIDR exceptions for intentional internal targets.
   it.each([
     ['*', 'http://127.0.0.1/feed'],

@@ -21,6 +21,7 @@ services:
       # Required application secrets.
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       FEVER_CREDENTIAL_SECRET: ${FEVER_CREDENTIAL_SECRET:?FEVER_CREDENTIAL_SECRET must be set}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
 
       # Optional deployment settings.
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-86400}
@@ -135,6 +136,31 @@ services:
       timeout: 5s
       retries: 3
       start_period: 2m
+
+  rssmonster-webhook-worker:
+    image: "${RSSMONSTER_IMAGE:-rssmonster/rssmonster:${RSSMONSTER_TAG:-latest}}"
+    container_name: rssmonster-webhook-worker
+    restart: unless-stopped
+    depends_on:
+      rssmonster:
+        condition: service_healthy
+        restart: true
+    command: [npm, run, start:webhook-worker]
+    environment:
+      NODE_ENV: production
+      DB_DIALECT: sqlite
+      DB_STORAGE: /app/data/rssmonster.sqlite
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+    volumes:
+      - rssmonster-data:/app/data
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   rssmonster-data:
