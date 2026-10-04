@@ -132,6 +132,8 @@ const createAsyncSettingsSection = loader => defineAsyncComponent({
 const SettingsSmartFolders = createAsyncSettingsSection(() => import('./SettingsSmartFolders.vue'));
 // This component lazily loads Generated Feed settings.
 const SettingsGeneratedFeeds = createAsyncSettingsSection(() => import('./SettingsGeneratedFeeds.vue'));
+// This component lazily loads outbound webhook configuration.
+const SettingsWebhooks = createAsyncSettingsSection(() => import('./SettingsWebhooks.vue'));
 // This component lazily loads article action settings.
 const SettingsActions = createAsyncSettingsSection(() => import('./SettingsActions.vue'));
 // This component lazily loads AI score settings.
@@ -171,6 +173,7 @@ export default {
     SettingsWelcome,
     SettingsSmartFolders,
     SettingsGeneratedFeeds,
+    SettingsWebhooks,
     SettingsActions,
     SettingsScores,
     SettingsIslands,
@@ -230,6 +233,7 @@ export default {
         { key: 'smartfolders', group: 'Reading', label: 'Smart Folders', icon: 'folder-fill', visible: true },
         { key: 'generatedFeeds', group: 'Automation', label: 'Generated Feeds', icon: 'rss-fill', visible: true },
         { key: 'actions', group: 'Automation', label: 'Actions', icon: 'lightning-charge-fill', visible: true },
+        { key: 'webhooks', group: 'Automation', label: 'Webhooks', icon: 'diagram-3', visible: true },
         { key: 'scores', group: 'Reading', label: 'Scores', icon: 'bar-chart-fill', visible: aiEnabled },
         { key: 'events', group: 'Reading', label: 'Events', icon: 'diagram-3-fill', visible: aiEnabled },
         { key: 'islands', group: 'Reading', label: 'Your interests', icon: 'compass-fill', visible: aiEnabled },
@@ -261,6 +265,7 @@ export default {
         server: 'SettingsServer',
         smartfolders: 'SettingsSmartFolders',
         generatedFeeds: 'SettingsGeneratedFeeds',
+        webhooks: 'SettingsWebhooks',
         actions: 'SettingsActions',
         scores: 'SettingsScores',
         events: 'SettingsEvents',

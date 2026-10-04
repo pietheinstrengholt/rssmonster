@@ -67,7 +67,7 @@ describe('Settings navigation', () => {
       ['Welcome', 'Account'],
       ['Smart Folders', 'Scores', 'Events', 'Your interests'],
       ['Feeds', 'Official Sources'],
-      ['Generated Feeds', 'Actions'],
+      ['Generated Feeds', 'Actions', 'Webhooks'],
       ['Refresh history', 'AI Processing', 'Health & errors'],
       ['AI / Inference', 'Manage Users', 'Server settings']
     ]);
@@ -122,6 +122,7 @@ describe('Settings navigation', () => {
     ['Smart Folders', 'smartfolders', 'SettingsSmartFolders'],
     ['Generated Feeds', 'generatedFeeds', 'SettingsGeneratedFeeds'],
     ['Actions', 'actions', 'SettingsActions'],
+    ['Webhooks', 'webhooks', 'SettingsWebhooks'],
     ['Scores', 'scores', 'SettingsScores'],
     ['Events', 'events', 'SettingsEvents'],
     ['Your interests', 'islands', 'SettingsIslands'],
@@ -158,6 +159,7 @@ describe('Settings navigation', () => {
       'Smart Folders',
       'Generated Feeds',
       'Actions',
+      'Webhooks',
       'Refresh history',
       'Health & errors',
       'Feeds',
@@ -207,6 +209,14 @@ describe('Settings navigation', () => {
     });
     expect(Settings.computed.activeComponent.call({ active: 'generatedFeeds' }))
       .toBe('SettingsGeneratedFeeds');
+  });
+
+  it('shows Webhooks under Automation for every authenticated user', () => {
+    expect(getSettingsNavigation(false).find(item => item.key === 'webhooks')).toMatchObject({
+      group: 'Automation', label: 'Webhooks', icon: 'diagram-3', visible: true
+    });
+    expect(Settings.computed.activeComponent.call({ active: 'webhooks' }))
+      .toBe('SettingsWebhooks');
   });
 
   it('shows processing observability for every authenticated user', () => {

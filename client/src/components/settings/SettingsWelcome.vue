@@ -50,7 +50,7 @@
 .settings-welcome__link {
   padding: 0;
   border: 0;
-  background: transparent;
+  background: var(--color-transparent);
   color: inherit;
   font: inherit;
   text-align: left;
@@ -151,6 +151,7 @@ export default {
         { key: 'smartfolders', title: 'Smart Folders', icon: 'folder-fill', purpose: 'Build saved searches that update as new articles arrive.', visible: true },
         { key: 'generatedFeeds', title: 'Generated Feeds', icon: 'rss-fill', purpose: 'Expose article expressions as private RSS URLs for other readers.', visible: true },
         { key: 'actions', title: 'Actions', icon: 'lightning-charge-fill', purpose: 'Automate how matching articles are handled during crawl.', visible: true },
+        { key: 'webhooks', title: 'Webhooks', icon: 'diagram-3', purpose: 'Prepare outbound notifications for articles matching deterministic conditions.', visible: true },
         { key: 'scores', title: 'Scores', icon: 'bar-chart-fill', purpose: 'Set AI score thresholds that control article visibility.', capability: 'AI feature', visible: aiEnabled },
         { key: 'events', title: 'Events', icon: 'diagram-3-fill', purpose: 'Review articles grouped into current events.', capability: 'AI feature', visible: aiEnabled },
         { key: 'islands', title: 'Your interests', icon: 'compass-fill', purpose: 'Explore the interests learned from your reading behavior.', capability: 'AI feature', visible: aiEnabled },

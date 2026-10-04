@@ -67,6 +67,9 @@ import WorkerLeaseModel from './workerLease.js';
 import EmailVerificationTokenModel from './emailVerificationToken.js';
 import PasswordResetTokenModel from './passwordResetToken.js';
 import EmailDeliveryModel from './emailDelivery.js';
+import WebhookModel from './webhook.js';
+import WebhookConditionModel from './webhookCondition.js';
+import WebhookDeliveryModel from './webhookDelivery.js';
 
 // ---- Initialize models ----
 const User = UserModel(sequelize);
@@ -100,6 +103,9 @@ const WorkerLease = WorkerLeaseModel(sequelize);
 const EmailVerificationToken = EmailVerificationTokenModel(sequelize);
 const PasswordResetToken = PasswordResetTokenModel(sequelize);
 const EmailDelivery = EmailDeliveryModel(sequelize);
+const Webhook = WebhookModel(sequelize);
+const WebhookCondition = WebhookConditionModel(sequelize);
+const WebhookDelivery = WebhookDeliveryModel(sequelize);
 
 // ---- Associations ----
 OidcIdentity.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
@@ -209,6 +215,28 @@ User.hasMany(EmailDelivery, {
   onDelete: 'CASCADE'
 });
 EmailDelivery.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// User/Webhook/Article ↔ Webhook conditions and deliveries
+User.hasMany(Webhook, { foreignKey: 'userId', as: 'webhooks', onDelete: 'CASCADE' });
+Webhook.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Webhook.hasMany(WebhookCondition, {
+  foreignKey: 'webhookId',
+  as: 'conditions',
+  onDelete: 'CASCADE'
+});
+WebhookCondition.belongsTo(Webhook, { foreignKey: 'webhookId', as: 'webhook' });
+Webhook.hasMany(WebhookDelivery, {
+  foreignKey: 'webhookId',
+  as: 'deliveries',
+  onDelete: 'CASCADE'
+});
+WebhookDelivery.belongsTo(Webhook, { foreignKey: 'webhookId', as: 'webhook' });
+Article.hasMany(WebhookDelivery, {
+  foreignKey: 'articleId',
+  as: 'webhookDeliveries',
+  onDelete: 'CASCADE'
+});
+WebhookDelivery.belongsTo(Article, { foreignKey: 'articleId', as: 'article' });
 
 // User ↔ BriefingPreference
 User.hasOne(BriefingPreference, {
@@ -332,5 +360,8 @@ export default {
   WorkerLease,
   EmailVerificationToken,
   PasswordResetToken,
-  EmailDelivery
+  EmailDelivery,
+  Webhook,
+  WebhookCondition,
+  WebhookDelivery
 };
