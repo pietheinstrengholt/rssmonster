@@ -65,7 +65,7 @@ describe('Settings navigation', () => {
     ]);
     expect(groups.map(group => group.findAll('button').map(button => button.text()))).toEqual([
       ['Welcome', 'Account'],
-      ['Smart Folders', 'Scores', 'Events', 'Your interests'],
+      ['Smart Folders', 'Offline reading', 'Scores', 'Events', 'Your interests'],
       ['Feeds', 'Official Sources'],
       ['Generated Feeds', 'Actions', 'Webhooks'],
       ['Refresh history', 'AI Processing', 'Health & errors'],
@@ -156,6 +156,7 @@ describe('Settings navigation', () => {
 
     expect(directory.find('h6').exists()).toBe(false);
     expect(headings).toEqual([
+      'Offline reading',
       'Smart Folders',
       'Generated Feeds',
       'Actions',

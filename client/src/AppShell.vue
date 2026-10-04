@@ -317,6 +317,9 @@
 </style>
 
 <script>
+import { useOfflineReadingStore } from './store/offlineReading.js';
+import { useAuthStore } from './store/auth.js';
+import { validateSession } from './api/auth.js';
 import { notifyActionError } from './services/actionNotifications.js';
 import { mapStores } from 'pinia';
 import { useSelectionStore } from './store/selection.js';
@@ -439,7 +442,10 @@ export default {
   async created() {
     this.registerGlobalListeners();
 
-    if (navigator.onLine === false) {
+    if (this.offlineReadingStore.readOnly) {
+      this.overviewLoaded = true;
+      this.connectivityStatus = navigator.onLine === false ? 'browser-offline' : 'backend-unreachable';
+    } else if (navigator.onLine === false) {
       this.handleBrowserOffline();
     } else {
       // Fetch all category and feed information for a complete overview including counts.
@@ -533,11 +539,23 @@ export default {
         ? 'browser-offline'
         : 'backend-unreachable';
       this.stopOverviewPolling();
+      void this.enterOfflineReading?.();
     },
     // This function reacts immediately when the browser reports that its network is unavailable.
     handleBrowserOffline() {
       this.connectivityStatus = 'browser-offline';
       this.stopOverviewPolling();
+      void this.enterOfflineReading?.();
+    },
+    async enterOfflineReading() {
+      const store = this.offlineReadingStore;
+      if (!store?.account || store.readOnly) return;
+      const sessionId = store.sessionId;
+      if (!store.profile?.enabled || !store.profile.activeGeneration) return;
+      const articles = await store.loadSnapshot().catch(() => null);
+      if (store.sessionId !== sessionId || articles === null || !this.connectivityStatus) return;
+      store.setReadOnly(true);
+      this.overviewLoaded = true;
     },
     // This function verifies backend access before leaving degraded mode after a browser reconnect.
     handleBrowserOnline() {
@@ -680,6 +698,7 @@ export default {
         if (this.onboardingRequired === null) this.onboardingRequired = this.overviewStore.categories.length === 0;
         this.overviewLoaded = true;
         if (!initial) await this.refreshNewArticles();
+        else void this.offlineReadingStore?.refreshSnapshot();
 
       } catch (error) {
         if (!isOverviewTimeout(error)) {
@@ -759,9 +778,28 @@ export default {
 
       this.connectivityStatus = 'backend-unreachable';
       this.connectivityRecovering = true;
+      const token = this.authStore?.token;
+      const sessionRequestId = this.authStore?.sessionRequestId;
+      const wasOfflineReading = this.offlineReadingStore?.readOnly;
       // This operation owns the single overview-and-article recovery sequence.
       const recoveryPromise = (async () => {
         try {
+          if (this.authStore?.token) {
+            try {
+              const data = await validateSession(token);
+              if (this.isUnmounting || token !== this.authStore.token || sessionRequestId !== this.authStore.sessionRequestId) return false;
+              if (data.user.id !== this.authStore.userId) {
+                window.dispatchEvent(new Event('auth:expired'));
+                return false;
+              }
+              this.authStore.setSession({ token: this.authStore.token, role: data.user.role, userId: data.user.id });
+            } catch (error) {
+              if (this.isUnmounting || token !== this.authStore.token || sessionRequestId !== this.authStore.sessionRequestId) return false;
+              if (error.response?.status === 401 || error.response?.status === 403) window.dispatchEvent(new Event('auth:expired'));
+              throw error;
+            }
+          }
+          this.offlineReadingStore?.setReadOnly(false);
           await this.overviewStore.fetchOverviewSplit({ initial: true });
           await this.$nextTick();
           const articleFeedRefs = Array.isArray(this.$refs.articleFeed)
@@ -781,10 +819,18 @@ export default {
           this.connectivityStatus = null;
           this.overviewLoaded = true;
           this.startOverviewPolling();
+          void this.offlineReadingStore?.refreshSnapshot();
           return true;
         } catch (error) {
-          if (!isOverviewTimeout(error)) {
-            console.error('Error recovering application connectivity:', error);
+          if (this.isUnmounting || token !== this.authStore?.token || sessionRequestId !== this.authStore?.sessionRequestId) return false;
+          if (!isOverviewTimeout(error)) console.error('Error recovering application connectivity:', error);
+          if (![401, 403].includes(error.response?.status)) {
+            if (wasOfflineReading) this.offlineReadingStore.setReadOnly(true);
+            else await this.enterOfflineReading?.();
+            if (this.offlineReadingStore?.readOnly) {
+              this.connectivityStatus = navigator.onLine === false ? 'browser-offline' : 'backend-unreachable';
+              return false;
+            }
           }
 
           if (error?.response?.status === 401) {
@@ -965,7 +1011,7 @@ export default {
     }
   },
   computed: {
-    ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useFeedRefreshStore),
+    ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useFeedRefreshStore, useAuthStore, useOfflineReadingStore),
     isMobileShell() {
       return this.shellMode === SHELL_MODE.MOBILE;
     },

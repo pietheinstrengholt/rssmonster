@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Offline IndexedDB regression</title></head>
+<body><script type="module">
+import { offlineDatabase, openOfflineDatabase, upgradeOfflineDatabase, OFFLINE_DATABASE_NAME } from '/src/services/offlineDatabase.js';
+const assert = (condition, message) => { if (!condition) throw new Error(message); };
+const removeDatabase = () => new Promise((resolve, reject) => {
+  const request = indexedDB.deleteDatabase(OFFLINE_DATABASE_NAME);
+  request.onsuccess = resolve;
+  request.onerror = () => reject(request.error);
+});
+window.testOfflineDatabase = async () => {
+  await removeDatabase();
+  const database = await openOfflineDatabase();
+  assert(database.version === 1, 'versioned schema');
+  assert(database.objectStoreNames.contains('profiles') && database.objectStoreNames.contains('articles'), 'required stores');
+  database.close();
+  // Exercise a real versionchange transaction: existing records survive the next upgrade.
+  const account = { apiOrigin: 'https://one.example', userId: 1 };
+  await offlineDatabase.updateProfile(account, { enabled: true });
+  await new Promise((resolve, reject) => {
+    const request = indexedDB.open(OFFLINE_DATABASE_NAME, 2);
+    request.onupgradeneeded = event => upgradeOfflineDatabase(request.result, event.oldVersion);
+    request.onsuccess = () => {
+      const tx = request.result.transaction('profiles');
+      const profile = tx.objectStore('profiles').get([account.apiOrigin, account.userId]);
+      profile.onsuccess = () => assert(profile.result.enabled, 'upgrade preserves profile');
+      tx.oncomplete = () => { request.result.close(); resolve(); };
+    };
+    request.onerror = () => reject(request.error);
+  });
+  await removeDatabase();
+  const otherUser = { ...account, userId: 2 };
+  const otherOrigin = { ...account, apiOrigin: 'https://two.example' };
+  const accounts = [account, otherUser, otherOrigin];
+  const install = async (scope, generation, articles) => {
+    const profile = await offlineDatabase.updateProfile(scope, { enabled: true });
+    assert(await offlineDatabase.beginGeneration(scope, profile, generation), 'generation begins');
+    assert(await offlineDatabase.writeGeneration(scope, generation, articles), 'staging succeeds');
+    assert(await offlineDatabase.writeGeneration(scope, generation, articles, true), 'activation succeeds');
+  };
+  const article = (id, publishedAt) => ({ id, publishedAt, content: `<p>Article ${id}</p>` });
+  for (const scope of accounts) await install(scope, 'old', [article(1, '2026-09-01')]);
+  const profile = await offlineDatabase.getProfile(account);
+  await offlineDatabase.beginGeneration(account, profile, 'new');
+  const articles = [article(2, '2026-10-01'), article(4, '2026-10-01'), article(3, '2026-09-15')];
+  await offlineDatabase.writeGeneration(account, 'new', articles);
+  assert((await offlineDatabase.loadSnapshot(account))[0].id === 1, 'staging retains active snapshot');
+  await offlineDatabase.failGeneration(account, 'new', 'interrupted');
+  assert((await offlineDatabase.loadSnapshot(account))[0].id === 1, 'interruption retains snapshot');
+  await install(account, 'ready', articles);
+  assert(JSON.stringify((await offlineDatabase.loadSnapshot(account)).map(article => article.id)) === '[4,2,3]', 'date DESC, ID DESC');
+  const inspect = await openOfflineDatabase();
+  const records = await new Promise(resolve => {
+    const request = inspect.transaction('articles').objectStore('articles').getAll();
+    request.onsuccess = () => resolve(request.result);
+  });
+  inspect.close();
+  assert(records.filter(row => row.apiOrigin === account.apiOrigin && row.userId === account.userId).every(row => row.generation === 'ready'), 'obsolete generations pruned');
+  assert((await offlineDatabase.loadSnapshot(otherUser))[0].id === 1, 'user isolation');
+  assert((await offlineDatabase.loadSnapshot(otherOrigin))[0].id === 1, 'API origin isolation');
+  await offlineDatabase.clearSnapshot(account);
+  assert(await offlineDatabase.getProfile(account) === null, 'clear removes profile');
+  assert((await offlineDatabase.loadSnapshot(account)).length === 0, 'clear removes active articles');
+  assert((await offlineDatabase.loadSnapshot(otherUser)).length === 1, 'clear preserves other user');
+  assert((await offlineDatabase.loadSnapshot(otherOrigin)).length === 1, 'clear preserves other origin');
+  assert(!await offlineDatabase.writeGeneration(account, 'ready', articles, true), 'logout cannot resurrect a cleared profile');
+  await removeDatabase();
+  return 'PASS: native IndexedDB creation, upgrade, date/ID ordering, atomic activation, interruption, pruning and account/origin isolation';
+};
+</script></body></html>

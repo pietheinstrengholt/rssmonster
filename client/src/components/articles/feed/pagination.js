@@ -182,7 +182,31 @@ const resetUnavailableAgeCutoff = (context, response) => {
 };
 
 export const articleFeedPaginationMethods = {
+  async loadOfflineArticles() {
+    const requestId = ++this.activeRequestId;
+    this.isLoading = true;
+    try {
+      const articles = await this.offlineReadingStore.loadSnapshot();
+      if (requestId !== this.activeRequestId) return false;
+      await this.resetCollectionState();
+      if (requestId !== this.activeRequestId) return false;
+      this.articles = articles;
+      this.container = articles.map(article => article.id);
+      this.totalCount = articles.length;
+      this.distance = articles.length;
+      this.hasMore = false;
+      this.hasLoadedContent = true;
+      this.$nextTick(() => this.observeArticles());
+      return true;
+    } catch (error) {
+      if (requestId === this.activeRequestId) this.paginationError = `Could not load downloaded articles: ${error.message}`;
+      return false;
+    } finally {
+      if (requestId === this.activeRequestId) this.isLoading = false;
+    }
+  },
   async fetchArticleIds(data, { newOnly = false } = {}) {
+    if (this.offlineReadingStore?.readOnly) return this.loadOfflineArticles();
     data = withArticleDateFilters(data, this.selectionStore);
     this.showingNewOnly = newOnly;
     if (!newOnly) this.highestLoadedUnreadArticleId = loadUnreadBaseline(this.authStore?.userId, data);
@@ -224,6 +248,7 @@ export const articleFeedPaginationMethods = {
 
   // Preserves the visible collection until a complete replacement first page is ready.
   async refreshArticleIds(data, { newOnly = false } = {}) {
+    if (this.offlineReadingStore?.readOnly) return this.loadOfflineArticles();
     data = withArticleDateFilters(data, this.selectionStore);
     const requestId = ++this.activeRequestId;
     this.isLoading = true;
@@ -364,6 +389,7 @@ export const articleFeedPaginationMethods = {
   },
 
   async checkForNewerArticles() {
+    if (this.offlineReadingStore?.readOnly) return false;
     if (this.isLoading) return false;
     const requestId = ++this.activeNewerArticlesRequestId;
     const collectionRequestId = this.activeRequestId;

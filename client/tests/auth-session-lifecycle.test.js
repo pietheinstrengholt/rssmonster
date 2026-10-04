@@ -250,7 +250,7 @@ describe('authentication lifecycle', () => {
     vi.spyOn(Cookies, 'get').mockReturnValue('expired-token');
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
-    authApi.validateSession.mockRejectedValue(new Error('expired'));
+    authApi.validateSession.mockRejectedValue({ response: { status: 401 } });
     const logout = vi.fn();
 
     await App.methods.checkSession.call({ ...createAuthContext(), logout });

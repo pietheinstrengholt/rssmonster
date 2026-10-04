@@ -128,6 +128,8 @@ const createAsyncSettingsSection = loader => defineAsyncComponent({
   }
 });
 
+// This component lazily loads device-specific offline reading settings.
+const SettingsOfflineReading = createAsyncSettingsSection(() => import('./SettingsOfflineReading.vue'));
 // This component lazily loads Smart Folder settings.
 const SettingsSmartFolders = createAsyncSettingsSection(() => import('./SettingsSmartFolders.vue'));
 // This component lazily loads Generated Feed settings.
@@ -172,6 +174,7 @@ export default {
   components: {
     SettingsWelcome,
     SettingsSmartFolders,
+    SettingsOfflineReading,
     SettingsGeneratedFeeds,
     SettingsWebhooks,
     SettingsActions,
@@ -231,6 +234,7 @@ export default {
         { key: 'welcome', group: '', label: 'Welcome', icon: 'info-circle-fill', visible: true },
         { key: 'account', group: '', label: 'Account', icon: 'person-circle', visible: true },
         { key: 'smartfolders', group: 'Reading', label: 'Smart Folders', icon: 'folder-fill', visible: true },
+        { key: 'offlineReading', group: 'Reading', label: 'Offline reading', icon: 'download', visible: true },
         { key: 'generatedFeeds', group: 'Automation', label: 'Generated Feeds', icon: 'rss-fill', visible: true },
         { key: 'actions', group: 'Automation', label: 'Actions', icon: 'lightning-charge-fill', visible: true },
         { key: 'webhooks', group: 'Automation', label: 'Webhooks', icon: 'diagram-3', visible: true },
@@ -264,6 +268,7 @@ export default {
         inference: 'SettingsInference',
         server: 'SettingsServer',
         smartfolders: 'SettingsSmartFolders',
+        offlineReading: 'SettingsOfflineReading',
         generatedFeeds: 'SettingsGeneratedFeeds',
         webhooks: 'SettingsWebhooks',
         actions: 'SettingsActions',

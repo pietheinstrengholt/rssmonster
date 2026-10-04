@@ -96,6 +96,7 @@ export const articleFeedReadStateMethods = {
 
   // Persists an article's seen status and updates local read state.
   async markArticleSeen(articleId, visibleSeconds = 0, options = {}) {
+    if (this.offlineReadingStore?.readOnly || navigator.onLine === false) return false;
     const selection = options.selection || this.selectionStore.currentSelection;
     const shouldMarkRead = !options.attentionOnly && ['unread', 'briefing'].includes(selection.status)
       && (options.markAsReadOnScroll ?? this.selectionStore.effectiveMarkAsReadOnScroll) === true

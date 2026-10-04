@@ -270,3 +270,47 @@ Future store changes should preserve:
 - Authoritative overview refresh as the final repair mechanism
 
 When adding state, first identify its owner. Authentication facts belong to authentication, article membership and presentation choices belong to selection, server navigation snapshots and counts belong to overview, and transient application chrome belongs to UI. If no existing domain clearly owns it, reconsider whether it should be component-local before creating another global concern.
+
+## Offline reading (Phase 1)
+
+`offlineReading.js` owns device/account configuration, preparation progress and the
+read-only offline presentation flag. `services/offlineReading.js` downloads an
+ungrouped chronological collection with `persistSettings: false`; it never uses the
+current search, Smart Folder, ranking or read filter. Native IndexedDB
+(`rssmonster-offline`, version 1) stores profiles and existing article detail DTOs,
+scoped by API origin and user ID. A generation is staged separately and activation
+and pruning commit together. A failed refresh retains the active generation.
+
+A local identity marker binds the previously validated account to a SHA-256
+fingerprint of its existing session cookie. Credentials are not stored in IndexedDB.
+An unreachable validation endpoint can unlock an enabled active snapshot; this does
+not establish server authentication. Recovery validates the current session before
+restoring online state. Explicit invalid authentication and logout clear only the
+account's profile and articles. Offline actions and automatic read/attention writes
+are blocked, with no queue or replay. Browser storage deletion/eviction still removes
+downloads.
+
+Regression coverage lives in `tests/offline-*.test.js` and
+`tests/settings-offline-reading.test.js`. For native IndexedDB checks, serve the
+client with Vite on port 5173 and run `npm run test:offline-browser` with an existing
+Playwright installation (`PLAYWRIGHT_MODULE`) and browser
+(`READING_BROWSER_EXECUTABLE`); the script does not install dependencies.
+Pass `OFFLINE_PWA_BASE_URL` pointing at a production preview to also exercise a real
+service-worker-controlled offline reload, validated recovery and invalid-session logout.
+
+Offline implementation files:
+
+- Added: `services/offlineDatabase.js`, `services/offlineReading.js`,
+  `services/offlineIdentity.js`, `store/offlineReading.js`,
+  `components/settings/SettingsOfflineReading.vue`.
+- Integrated: `App.vue`, `AppShell.vue`, `api/client.js`, `store/auth.js`,
+  `components/articles/ArticleFeed.vue`, `components/articles/ArticleReaderLayout.vue`,
+  `components/articles/feed/pagination.js`, `components/articles/feed/readState.js`,
+  `components/articles/feed/visibilityTracking.js`, `components/settings/Settings.vue`,
+  `components/settings/SettingsWelcome.vue`.
+- Validation/documentation: `tests/offline-reading.test.js`,
+  `tests/offline-startup.test.js`, `tests/offline-rendering.test.js`,
+  `tests/settings-offline-reading.test.js`, `tests/auth-session-lifecycle.test.js`,
+  `tests/settings-navigation.test.js`, `tests/high-impact-coverage.test.js`,
+  `tests/browser/offline.html`, `scripts/test-offline-browser.js`, `package.json`,
+  `store/README.md`, `components/settings/README.md`.

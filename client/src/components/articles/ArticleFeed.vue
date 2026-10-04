@@ -1,4 +1,5 @@
 <template>
+  <p v-if="offlineReadingStore.readOnly" class="app-notice app-notice--info" role="status">Downloaded articles · Offline reading · Read and saved changes require a connection. Search and live rankings are unavailable.</p>
   <SmartFoldersGridOverview
     v-if="showSmartFoldersOverview"
     :smart-folders="overviewStore.smartFolders"
@@ -17,6 +18,7 @@
 </template>
 
 <script>
+import { useOfflineReadingStore } from '../../store/offlineReading.js';
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
@@ -113,7 +115,7 @@ export default {
       return JSON.stringify([ageCutoff, dateRange, dateRange === 'custom' ? customDateRange : null]);
     },
 
-    ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useAuthStore),
+    ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useAuthStore, useOfflineReadingStore),
     // Returns the stable key for selection fields that change collection membership or ordering.
     articleCollectionSelectionKey() {
       const selection = this.selectionStore.currentSelection;
@@ -204,6 +206,7 @@ export default {
 
     // Groups the stable collection labels and counts rendered by either layout.
     collectionSummary() {
+      if (this.offlineReadingStore.readOnly) return { status: '%', selectedTag: null, sourceCount: null, unreadCount: 0, totalCount: this.articles.length };
       return {
         status: this.selectionStore.currentSelection.status,
         selectedTag: this.selectionStore.currentSelection.tag,
@@ -263,6 +266,12 @@ export default {
   },
 
   watch: {
+    'offlineReadingStore.profile.activeGeneration'() {
+      if (this.offlineReadingStore.readOnly) this.fetchArticleIds(this.selectionStore.currentSelection);
+    },
+    'offlineReadingStore.readOnly'() {
+      this.fetchArticleIds(this.selectionStore.currentSelection);
+    },
     articleDateFilterKey() {
       if (this.selectionStore.currentSelection.status === 'unread') this.reloadDateFilters();
     },

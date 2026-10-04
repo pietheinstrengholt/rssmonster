@@ -1,3 +1,7 @@
+import { useOfflineReadingStore } from './offlineReading.js';
+import Cookies from 'js-cookie';
+import { offlineAccount } from '../services/offlineReading.js';
+import { rememberOfflineIdentity, forgetOfflineIdentity, clearRememberedOfflineSnapshot } from '../services/offlineIdentity.js';
 import { defineStore } from 'pinia';
 import { setAuthToken } from '../api/client.js';
 import { useOverviewStore } from './overview.js';
@@ -23,7 +27,7 @@ export const useAuthStore = defineStore('auth', {
       return requestId === this.sessionRequestId;
     },
     // This function applies every authenticated-session field from login or validation.
-    setSession({ token, role, userId = null }) {
+    setSession({ token, role, userId = null, offline = false }) {
       if (this.token && this.token !== token) {
         this.clearSession();
       }
@@ -31,6 +35,7 @@ export const useAuthStore = defineStore('auth', {
       this.token = token;
       this.role = role;
       this.userId = userId;
+      if (!offline && userId != null) void rememberOfflineIdentity({ token, role, userId }).catch(() => {});
     },
     // This function invalidates all requests before atomically clearing every user-owned store.
     clearSession() {
@@ -40,6 +45,12 @@ export const useAuthStore = defineStore('auth', {
       const feedRefreshStore = useFeedRefreshStore();
 
       this.sessionRequestId++;
+      const offlineStore = useOfflineReadingStore();
+      if (this.userId == null && !offlineStore.account) {
+        void clearRememberedOfflineSnapshot(Cookies.get('token')).catch(error => console.warn('Could not clear offline data:', error));
+      }
+      offlineStore.resetSession(this.userId == null ? offlineStore.account : offlineAccount(this.userId));
+      forgetOfflineIdentity();
       setAuthToken(null);
       selectionStore.invalidateSessionRequests();
       overviewStore.invalidateSessionRequests();

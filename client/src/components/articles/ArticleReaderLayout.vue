@@ -262,6 +262,7 @@
 </template>
 
 <script>
+import { useOfflineReadingStore } from '../../store/offlineReading.js';
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
@@ -385,7 +386,7 @@ export default {
 
   },
   computed: {
-    ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useFeedRefreshStore),
+    ...mapStores(useSelectionStore, useOverviewStore, useUiStore, useFeedRefreshStore, useOfflineReadingStore),
     // Returns visible text intent only for a direct search, not a saved Smart Folder query.
     highlightTerms() {
       if (this.selectionStore.currentSelection.smartFolderId !== null) return [];
@@ -632,9 +633,9 @@ export default {
       const requestId = ++this.recommendationRequestId;
       this.recommendations = [];
       this.recommendationsError = false;
-      this.recommendationsLoading = Boolean(articleId);
+      this.recommendationsLoading = Boolean(articleId) && !this.offlineReadingStore?.readOnly;
 
-      if (!articleId) return;
+      if (!articleId || this.offlineReadingStore?.readOnly) return;
 
       try {
         const response = await fetchArticleRecommendations(articleId);

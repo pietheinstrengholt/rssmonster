@@ -357,6 +357,7 @@ export const articleFeedVisibilityMethods = {
 
   // Persists a passed article with bounded retries before committing it to the pool.
   async addToPool(articleId) {
+    if (this.offlineReadingStore?.readOnly || navigator.onLine === false) return;
     if (this.pool.has(articleId) || this.pendingSeenArticleIds.has(articleId)) return;
 
     // FINALIZE VISIBILITY IF ARTICLE IS STILL VISIBLE

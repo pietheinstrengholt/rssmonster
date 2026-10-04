@@ -255,3 +255,14 @@ key actions are available; existing secrets are never retrieved or stored in the
 Save applies drafts, Test connection probes the current form without saving, Refresh checks
 the saved endpoint, and removal requires
 confirmation. Loading and explicit refresh use a bounded server status cache.
+
+### Offline reading
+
+The Reading navigation includes Offline reading immediately after Smart Folders.
+The device/account setting defaults to 100 articles and supports 50, 100 and 500.
+Enabling or changing the limit prepares a safe replacement snapshot while connected;
+disabling stops future refreshes and retains existing downloads. Refresh now exposes
+preparation progress, and Clear offline data uses the shared destructive confirmation
+dialog to remove the current account's profile and article records. Storage estimates
+and Wi-Fi detection are omitted in Phase 1. The page describes downloaded read/saved
+state and clearly excludes offline mutations, search, live rankings and external media.

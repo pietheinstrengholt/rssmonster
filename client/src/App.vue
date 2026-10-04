@@ -166,6 +166,9 @@
 </template>
 
 <script>
+import { useOfflineReadingStore } from './store/offlineReading.js';
+import { offlineReading, offlineAccount } from './services/offlineReading.js';
+import { loadOfflineIdentity } from './services/offlineIdentity.js';
 import Cookies from 'js-cookie';
 import { mapStores } from 'pinia';
 import { defineAsyncComponent } from 'vue';
@@ -385,10 +388,31 @@ export default {
           role: data.user.role,
           userId: data.user.id
         });
+        await useOfflineReadingStore().initialize(data.user.id);
+        if (!this.authStore.isSessionRequestCurrent(requestId)) return;
         this.isAuthenticated = true;
       } catch (error) {
         if (!this.authStore.isSessionRequestCurrent(requestId)) return;
         console.error('Session validation error:', error);
+        if (![401, 403].includes(error.response?.status)) {
+          try {
+            const identity = await loadOfflineIdentity(token);
+            const profile = identity && await offlineReading.getProfile(offlineAccount(identity.userId));
+            if (!this.authStore.isSessionRequestCurrent(requestId)) return;
+            if (profile?.enabled && profile.activeGeneration) {
+              this.authStore.setSession({ token, ...identity, offline: true });
+              await useOfflineReadingStore().initialize(identity.userId, true);
+              if (!this.authStore.isSessionRequestCurrent(requestId)) return;
+              this.isAuthenticated = true;
+              return;
+            }
+          } catch (storageError) {
+            console.warn('Offline startup unavailable:', storageError);
+          }
+          // An unreachable validation endpoint does not revoke the saved identity.
+          this.message = 'Cannot validate your session. Connect to RSSMonster and reload to sign in.';
+          return;
+        }
         this.logout({ preservePasswordReset: Boolean(this.passwordResetMode) });
       }
     },
@@ -630,6 +654,7 @@ export default {
         role: response.user.role,
         userId: response.user.id
       });
+      void useOfflineReadingStore().initialize(response.user.id);
       this.isAuthenticated = true;
     },
     // This function creates an account and returns to sign-in after confirmed success.

@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "test": "vitest run",
+    "test:offline-browser": "node scripts/test-offline-browser.js",
     "test:reading-browser": "node scripts/test-reading-browser.js",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",

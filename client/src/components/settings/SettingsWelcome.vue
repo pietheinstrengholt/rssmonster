@@ -148,6 +148,7 @@ export default {
       const aiEnabled = this.selectionStore.currentSelection.AIEnabled;
 
       return [
+        { key: 'offlineReading', title: 'Offline reading', icon: 'download', purpose: 'Download the latest articles for read-only access on this device.', visible: true },
         { key: 'smartfolders', title: 'Smart Folders', icon: 'folder-fill', purpose: 'Build saved searches that update as new articles arrive.', visible: true },
         { key: 'generatedFeeds', title: 'Generated Feeds', icon: 'rss-fill', purpose: 'Expose article expressions as private RSS URLs for other readers.', visible: true },
         { key: 'actions', title: 'Actions', icon: 'lightning-charge-fill', purpose: 'Automate how matching articles are handled during crawl.', visible: true },

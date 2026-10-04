@@ -16,6 +16,17 @@ const api = axios.create({
   timeout: 15000
 });
 
+let offlineReadOnly = false;
+export const setOfflineReadOnly = value => { offlineReadOnly = value; };
+
+// Offline reading is read-only, including automatic attention/read tracking.
+api.interceptors.request.use(config => {
+  if ((offlineReadOnly || navigator.onLine === false) && !config.url.includes('/auth/validate')) {
+    return Promise.reject(new axios.AxiosError('This action requires a connection to RSSMonster.', 'ERR_OFFLINE', config));
+  }
+  return config;
+});
+
 const AUTH_BOOTSTRAP_PATHS = [
   '/auth/login',
   '/auth/register',
