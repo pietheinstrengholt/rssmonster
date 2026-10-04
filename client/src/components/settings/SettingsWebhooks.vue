@@ -9,9 +9,6 @@
       Send matching articles to external services such as Home Assistant, n8n, Node-RED, Discord, or Slack.
     </SettingsPageIntro>
 
-    <div class="app-notice app-notice--warning" role="status">
-      Webhook delivery is not active yet. Saved configurations will not send articles until delivery support is added.
-    </div>
     <div v-if="notice.message" class="app-notice" :class="notice.type === 'error' ? 'app-notice--danger' : 'app-notice--success'" :role="notice.type === 'error' ? 'alert' : 'status'">
       {{ notice.message }}
     </div>

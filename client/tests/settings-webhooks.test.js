@@ -54,6 +54,7 @@ describe('Webhooks settings', () => {
 
     expect(fetchWebhooks).toHaveBeenCalledOnce();
     expect(wrapper.get('#settings-webhooks-title').text()).toBe('Webhooks');
+    expect(wrapper.text()).not.toContain('Webhook delivery is not active yet');
     expect(wrapper.text()).toContain('Technology + title contains "Home Assistant"');
     expect(wrapper.text()).toContain('Paused');
     await wrapper.findAll('.webhook-list-item')[1].trigger('click');
