@@ -173,8 +173,9 @@ the developing pointer either way.
 ## Viewing Event Coverage
 
 When AI-backed features are available, choose **Events** from the **Grouping**
-control. RSSMonster displays one selected article for each Event instead of
-repeating every related article in the main list.
+control, independently of the selected sort (Newest, Oldest, Quality,
+Recommended, or Top Stories). RSSMonster displays one selected article for each
+Event instead of repeating every related article in the main list.
 
 Grouped articles show a **similar articles** count. Select that label to expand
 the other articles directly below the parent. A source badge can also show how

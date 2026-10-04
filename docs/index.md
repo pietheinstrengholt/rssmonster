@@ -39,6 +39,7 @@ to suit your reading session and screen. [Bookmarks]({% link bookmarks.md %}),
 - **[Hot Articles]({% link hot-articles.md %}):** find recent articles linked to by other articles in your subscriptions.
 - **[Tags]({% link tag.md %}):** organize articles using publisher, feed, generated, or rule-based labels.
 - **[Actions]({% link actions.md %}):** automatically bookmark, mark read, tag, score, or hide incoming articles.
+- **[Webhooks]({% link webhooks.md %}):** send matching new articles to external services.
 - **[Official Feeds]({% link official-feeds.md %}):** recognize articles from organization domains you configure.
 - **[Feed item filters]({% link feed-item-filters.md %}):** decide which future entries a subscription accepts.
 - **[HTML + XPath feeds]({% link html-xpath-feeds.md %}):** follow sites without a usable syndication feed.

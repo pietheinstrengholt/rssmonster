@@ -58,9 +58,14 @@ modified key combination, or interacting with another control.
 ## Manual and Bulk Actions
 
 Use an article's read-status control when you want to mark it read or restore
-it to unread immediately. RSSMonster also provides collection and Reader-mode
-bulk actions for marking multiple articles as read, including articles above
-or below the current Reader selection.
+it to unread immediately. The sidebar action can **Mark selection read**,
+including unloaded matching articles, or **Mark all visible as read** when that
+sidebar preference is enabled. Reader mode's list menu can mark visible
+articles, articles older than the selected article, or articles above or below
+it as read. It can also save all visible articles or mark their originals as
+opened. “Visible” means the rows currently on screen, not the entire loaded
+page. There is no bulk undo control; use an article's status or saved control
+to reverse an individual change.
 
 These explicit actions are useful when automatic scrolling does not match how
 you reviewed a collection.

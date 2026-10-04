@@ -29,6 +29,14 @@ They update automatically as new articles arrive.
 3. (Optional) Set `limitCount` to cap results (50 by default).
 4. Save. The folder updates itself as content changes.
 
+On wide screens, **Save as smart folder** in the collection header opens a
+draft based on the current status, search expression, tag, sort, grouping, and
+quality threshold. The unread view's Today and Yesterday presets are included.
+Review the displayed rules and name before saving. Feed/category selection and
+publication-date controls without equivalent query rules are omitted; the
+dialog flags that omission. The saved folder is a dynamic query, not a snapshot
+of today's list.
+
 Use the same tokens as the search bar: status (`unread:true`, `favorite:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), quality (`quality:>0.7`), freshness (`freshness:>=0.5`), event grouping (`event:true`, `eventCount:>=3`), hot items (`hot:true`), and sorts.
 
 ---

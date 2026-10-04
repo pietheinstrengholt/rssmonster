@@ -20,7 +20,7 @@ The configuration file depends on how RSSMonster is run:
 - **MySQL Docker Compose:** use the same root `.env` with
   `docker-compose.mysql.yml`.
 - **Manual server installation:** copy `server/.env.example` to
-  `server/.env`. The web, crawl worker, and AI worker load this file.
+  `server/.env`. The web, crawl, AI, and webhook workers load this file.
 - **Client:** copy `client/.env.example` to `client/.env`. Variables beginning
   with `VITE_` are compiled into the client bundle, so rebuild the client after
   changing them.
@@ -29,7 +29,9 @@ Restart the affected process or recreate its container after changing server
 settings. For Docker, only variables listed under a service's `environment`
 section are passed into the container. Add crawling options to
 `rssmonster-worker`, processing-job options to `rssmonster-ai-worker`, and
-shared database or inference options to both services. For example:
+shared database or inference options to the processes that use them. The
+webhook worker also needs the same `ENCRYPTION_KEY` as the web process to sign
+deliveries. For example:
 
 ```yaml
 services:
@@ -104,7 +106,7 @@ RSSMONSTER_IMAGE=rssmonster/rssmonster@sha256:replace-with-published-digest
 ```
 
 `RSSMONSTER_IMAGE` takes precedence over `RSSMONSTER_TAG` and applies to the web,
-crawl-worker, and AI-worker containers so they always run the same image. Change
+crawl-worker, AI-worker, and webhook-worker containers so they always run the same image. Change
 the pin deliberately when updating, review the release or source changes, back
 up the database, and then run `docker compose pull` followed by
 `docker compose up -d` with the applicable Compose file.
@@ -189,6 +191,7 @@ setting. Evaluate query behavior and memory use before changing it.
 | `JWT_SECRET` | none | Required secret for signing and verifying JWTs. |
 | `JWT_EXPIRES_IN` | `86400` | Login-token lifetime in seconds. The example file uses `604800` (seven days). |
 | `JWT_REMEMBER_EXPIRES_IN` | `2592000` | Lifetime in seconds for sessions created when “Remember me” is selected at local sign-in (30 days by default). |
+| `ARTICLE_CURSOR_SECRET` | `JWT_SECRET` | Optional HMAC secret for signed article-search cursors. Keep stable across web instances; changing it invalidates existing cursors. |
 | `ALLOW_REGISTRATION` | `true` | Environment default; an administrator’s saved choice in **Settings → Server settings** takes precedence. Set to `false` to disable public account creation. Hides signup and rejects registration API requests with HTTP 403, including when no users exist. Existing accounts, login, and password recovery are unaffected. |
 | `FEVER_CREDENTIAL_SECRET` | none | Required secret for keyed Fever credential hashes. Changing it invalidates existing Fever API credentials. |
 | `ENABLE_DEVELOPMENT_LOGIN` | `false` | Enables login without normal credentials, but only when `NODE_ENV=development`. Never enable it in a shared environment. |
@@ -385,6 +388,8 @@ responses, and timeouts.
 | `FEED_TIMEOUT_MS` | `60000` | ms | Overall processing deadline for one feed. |
 | `FEED_LEASE_MS` | `120000` | ms | Duration of a feed claim. The effective value is never less than twice `FEED_TIMEOUT_MS`. |
 | `CRAWL_TIMEOUT_MS` | `600000` | ms | Overall deadline for a crawl invocation. |
+| `CRAWL_JOB_TTL_MS` | `60000` | ms | Time a completed or failed manual-refresh job remains available for progress subscribers. |
+| `CRAWL_JOB_MAX_AGE_MS` | `1800000` | ms | Safety limit for an in-memory manual-refresh job that never reaches a terminal state. |
 | `CRAWL_DUPLICATE_CACHE_DAYS` | `30` | days | Article history loaded into the deterministic duplicate cache. Higher values use more memory and database work. |
 | `CRAWL_RUN_HEARTBEAT_INTERVAL_MS` | `30000` | ms | Renewal interval for an active crawl run's ownership heartbeat. |
 | `CRAWL_RUN_STALE_AFTER_MS` | `120000` | ms | Age after which a missing crawl-run heartbeat is treated as stale. The effective value is at least three heartbeat intervals. |
@@ -414,8 +419,9 @@ PM2 and the MySQL Compose profile run scheduled crawling in `rssmonster-worker`
 and optional jobs in `rssmonster-ai-worker`. A renewable database lease pauses
 new optional claims while the crawl, embedding, event and island-scoring
 pipeline is active; crawling never waits for the optional queue to drain.
-The lightweight SQLite Compose profile runs only `rssmonster-worker` and has
-no optional-job consumer by default. Remote inference connectivity is configured independently.
+The lightweight SQLite Compose profile runs `rssmonster-worker` and
+`rssmonster-webhook-worker`, with no optional AI-job consumer by default. Remote
+inference connectivity is configured independently.
 
 ### HTTP Fetch Behavior
 
@@ -620,6 +626,13 @@ prevent article or revision persistence.
 | `ARTICLE_RECOMMENDATION_MIN_SIMILARITY` | `0.64` | Minimum cosine similarity for recent article recommendations. Valid range is -1 through 1. Higher values return fewer, closer matches. |
 | `ARTICLE_RECOMMENDATION_MAX_CANDIDATES` | `600` | Number of recent vectorized articles considered. Values are capped at 600. Lower values reduce query and scoring work. |
 
+`DUPLICATE_SIMILARITY_THRESHOLD` defaults to `0.99` for the bounded,
+same-model vector candidate check in post-crawl duplicate processing.
+`EVENT_CACHE_BUFFER_HOURS` defaults to `2` hours beyond the Event gap window
+when loading recent Event candidates. These are advanced semantic controls;
+changing them can change stored relationships, so evaluate results before
+using a different value.
+
 Zero recommendations is valid. Tune the similarity threshold cautiously and
 evaluate results across several users and feed mixes.
 
@@ -750,7 +763,8 @@ openssl rand -base64 32
 ```
 
 Database overrides for `SMTP_PASSWORD`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`,
-`VAPID_PUBLIC_KEY`, and `VAPID_PRIVATE_KEY` use this key. The server uses Node.js AES-256-GCM with a new
+`VAPID_PUBLIC_KEY`, and `VAPID_PRIVATE_KEY`, as well as saved outbound
+[webhook]({% link webhooks.md %}) signing secrets, use this key. The server uses Node.js AES-256-GCM with a new
 random 12-byte IV per encryption and stores `enc:v1:<iv>:<authTag>:<ciphertext>`
 with Base64 envelope components. Empty values represent cleared credentials.
 Other settings and environment-backed credentials are unchanged. The key is never

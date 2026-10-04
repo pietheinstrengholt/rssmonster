@@ -62,7 +62,10 @@ still valid. Its successful response includes the authenticated user, the
 decoded token data, and whether agentic features are enabled.
 
 JWT lifetime is controlled by `JWT_EXPIRES_IN` and defaults to 86,400 seconds
-(24 hours). RSSMonster does not expose refresh-token, logout, or token-revocation
+(24 hours). Set `rememberMe: true` in a local login request to use
+`JWT_REMEMBER_EXPIRES_IN` instead (30 days by default); the response's
+`expiresInSeconds` reports the actual lifetime. RSSMonster does not expose
+refresh-token, logout, or token-revocation
 endpoints. When a token expires, log in again; to log out a client should discard
 its token. Changing a password invalidates older sessions using the stored password-change
 version; changing `JWT_SECRET` invalidates all previously issued JWTs. See
@@ -255,6 +258,8 @@ Maintenance routes can be expensive and should not be polled unnecessarily.
 | `PATCH` | `/api/setting/prioritize-high-trust` | Update high-trust prioritization |
 | `GET` | `/api/actions` | List article-processing rules |
 | `POST` | `/api/actions` | Replace the user's complete rules list |
+| `GET`, `POST` | `/api/webhooks` | List or create the user's outbound webhooks |
+| `GET`, `PUT`, `DELETE` | `/api/webhooks/:id` | Read, update, or delete one owned webhook |
 | `GET` | `/api/users/email-configuration` | Inspect email readiness; administrator only |
 | `POST` | `/api/users/email-configuration/test` | Test SMTP connectivity without sending mail; administrator only |
 | `GET` | `/api/users` | List users; administrator only |

@@ -152,8 +152,9 @@ Recommendation thresholds deliberately allow no results.
 
 ## Can I read offline after installing the app?
 
-Installation caches the application shell, not your entire article archive.
-Article loading and reading-state changes require server access. See
+Installation caches the application shell. Enable **Settings → Offline reading**
+while connected to download a limited selection for read-only access on that
+device. Read and saved changes still require server access. See
 [Web App and Notifications]({% link web-app-and-notifications.md %}).
 
 ## Can RSSMonster email my briefing or reset my password?

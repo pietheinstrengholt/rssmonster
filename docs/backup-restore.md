@@ -51,7 +51,8 @@ apply migrations immediately.
 The database does not contain the root `.env`. Preserve it separately because
 changing `JWT_SECRET`, `FEVER_CREDENTIAL_SECRET`, database passwords, or VAPID
 keys can invalidate sessions, API credentials, database access, or push
-subscriptions.
+subscriptions. Preserve `ENCRYPTION_KEY` as well: it decrypts saved credentials
+and webhook signing secrets.
 
 On a POSIX host, an owner-only copy can be created with:
 
@@ -65,16 +66,16 @@ long-lived plaintext copy. Never include this file in an image or repository.
 
 ## SQLite
 
-The SQLite profile stores its database in `/app/data`. Stop both processes that
+The SQLite profile stores its database in `/app/data`. Stop all processes that
 can write to it, then archive the complete directory so the database and any
 WAL/SHM companion files remain together.
 
 ### Back Up SQLite
 
-1. Stop the web process and crawl worker:
+1. Stop the web, crawl, and webhook worker processes:
 
    ```bash
-   docker compose stop rssmonster rssmonster-worker
+   docker compose stop rssmonster rssmonster-worker rssmonster-webhook-worker
    ```
 
 2. Create the archive through a one-off application container:
@@ -120,10 +121,10 @@ make a separate backup of the current database before continuing.
    If a `.sha256` file is available, verify it with `sha256sum -c` from the same
    directory context in which it was created.
 
-2. Stop both writers:
+2. Stop all application database users:
 
    ```bash
-   docker compose stop rssmonster rssmonster-worker
+   docker compose stop rssmonster rssmonster-worker rssmonster-webhook-worker
    ```
 
 3. Remove only the active SQLite database and its companion files:
@@ -146,7 +147,7 @@ make a separate backup of the current database before continuing.
    ```bash
    docker compose up -d
    docker compose ps
-   docker compose logs --tail=100 rssmonster rssmonster-worker
+   docker compose logs --tail=100 rssmonster rssmonster-worker rssmonster-webhook-worker
    ```
 
 If extraction or startup fails, leave the services stopped, correct the cause,
@@ -157,7 +158,7 @@ partial restore.
 
 The MySQL profile stores database files in a named volume. Back up the logical
 database with `mysqldump`; do not copy the live MySQL data directory. The web,
-crawl-worker, and AI-worker containers are stopped during this procedure to
+crawl-worker, AI-worker, and webhook-worker containers are stopped during this procedure to
 remove application writes while the dump is created. MySQL and inference can
 remain running.
 
@@ -167,7 +168,7 @@ remain running.
 
    ```bash
    docker compose -f docker-compose.mysql.yml stop \
-     rssmonster rssmonster-worker rssmonster-ai-worker
+     rssmonster rssmonster-worker rssmonster-ai-worker rssmonster-webhook-worker
    ```
 
 2. Create a logical dump using the database credentials already present in the
@@ -214,7 +215,7 @@ The following procedure drops and recreates only the database named by
    docker compose -f docker-compose.mysql.yml up -d mysql
    docker compose -f docker-compose.mysql.yml ps mysql
    docker compose -f docker-compose.mysql.yml stop \
-     rssmonster rssmonster-worker rssmonster-ai-worker
+     rssmonster rssmonster-worker rssmonster-ai-worker rssmonster-webhook-worker
    ```
 
 3. Drop and recreate the configured application database. This is the
@@ -241,7 +242,7 @@ The following procedure drops and recreates only the database named by
    docker compose -f docker-compose.mysql.yml up -d
    docker compose -f docker-compose.mysql.yml ps
    docker compose -f docker-compose.mysql.yml logs --tail=100 \
-     mysql rssmonster rssmonster-worker rssmonster-ai-worker
+     mysql rssmonster rssmonster-worker rssmonster-ai-worker rssmonster-webhook-worker
    ```
 
 If the import fails, keep the application services stopped. Drop and recreate

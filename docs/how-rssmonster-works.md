@@ -46,10 +46,13 @@ rssmonster-ai-worker
       ├─ quality scoring
       ├─ inferred tags
       └─ semantic labels
+
+rssmonster-webhook-worker
+ └─ send queued outbound article.matched deliveries
 ```
 
-The lightweight SQLite Compose profile starts only `rssmonster-worker` and has
-AI processing disabled. It does not start `rssmonster-ai-worker` or consume
+The lightweight SQLite Compose profile starts the crawl and webhook workers and
+has AI processing disabled. It does not start `rssmonster-ai-worker` or consume
 optional processing jobs.
 
 The crawl scheduler owns the ordered, deterministic semantic path. Article

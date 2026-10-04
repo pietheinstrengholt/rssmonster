@@ -64,6 +64,8 @@ the Vue application; they do not operate on server data.
 | `npm test` | Vitest filters and CLI options | Runs the complete client test suite once. Use it for normal verification and in CI. |
 | `npm run test:coverage` | Vitest filters and CLI options | Runs client tests once with V8 coverage enabled. Use it when reviewing test coverage; it is slower than the normal test command. |
 | `npm run test:watch` | Vitest filters and CLI options | Starts Vitest in interactive watch mode. Use it during client development when repeatedly editing related code and tests. |
+| `npm run test:offline-browser` | None | Runs the browser fixture for offline reading. |
+| `npm run test:reading-browser` | None | Runs browser checks for article reading interactions. |
 | `npm run lint` | ESLint CLI options | Lints the client tree with the repository ESLint configuration. Run it before submitting client changes. |
 
 ### Builds and Static Checks
@@ -109,6 +111,7 @@ up production data and inspect the scope before using them.
 | `npm run start-server` | None | Alias for `npm start`; it starts the same bootstrap entry point. Use whichever name is expected by the surrounding process configuration. |
 | `npm run start:worker` | None | Starts scheduled crawling only. It never consumes article-analysis or semantic-label jobs. Crawls run immediately and repeat after `CRAWL_WORKER_INTERVAL_MS`; see [Crawling]({% link crawling.md %}). |
 | `npm run start:ai-worker` | None | Starts the durable processing-job consumer used by PM2 and the MySQL Compose profile. It pauses new claims while the crawl-critical lease is active. |
+| `npm run start:webhook-worker` | None | Sends queued outbound webhooks; both supplied Compose profiles include this worker. |
 | `npm run jobs:operator -- list-dead --user-id <id> [--type <type>] [--limit <1-100>]` | Existing database with processing-job migration applied | Lists a bounded dead-job set for one explicit owner without returning payloads. |
 | `npm run jobs:operator -- requeue-dead --user-id <id> --job-id <uuid> [...]` | Exact dead-job IDs inspected by an operator | Requeues only the selected owner's exact dead jobs. This is manual recovery, not an automatic repair. |
 | `npm run dev` | None | Starts the Express server with Node watch mode and restarts it when the configured server source paths change. Use it for normal server development. |
@@ -147,6 +150,8 @@ command merely because an incremental run created no assignments.
 | Command | Arguments | What it does and when to use it |
 | --- | --- | --- |
 | `npm run feedtrust` | None | Recalculates each feed's user-specific trust score from article quality, exposed engagement, deterministic originality, and negative feedback. Use it after importing behavioral history or changing feed-trust logic. |
+| `npm run recommendations:evaluate` | Required `--userId=<id>`; optional `--limit=<count>`, `--status=all\|unread\|read`, `--output=<directory>` | Calculate recommendation scores and write local `summary.json` and `articles.jsonl` reports without persisting scores. Uses the latest 1,000 eligible articles by default. |
+| `npm run recommendations:recalculate` | Same options as `recommendations:evaluate` | Calculate and persist `interestScore` and `interestScoredAt` for the selected user's eligible articles. Review the evaluation report and scope first. |
 | `npm run seed:island-taxonomy` | Sequelize seed options | Applies only the `20260520104500-island-taxonomy.js` seed. Use it to create the built-in Interest Island taxonomy. This changes database data. |
 | `npm run seed:undo:island-taxonomy` | Sequelize seed options | **Destructive.** Undoes only the built-in Interest Island taxonomy seed. Use it only when intentionally removing that seeded taxonomy. |
 | `npm run seed:official-sources` | `--userId=<integer-id>` or `--userId <integer-id>` | Creates or updates built-in official-source rules for every user by default, or one user when specified. Use it after installing the official-source schema, adding a user that needs the defaults, or changing the built-in rules. |

@@ -31,7 +31,6 @@ API JSON omits raw `contentOriginal`; use the returned normalized content fields
 | --- | --- | --- |
 | Duplicate | Another record representing the same content, based on deterministic identity/content evidence | A syndicated copy |
 | [Event]({% link events.md %}) | Coverage of a particular occurrence | Several reports about one product announcement |
-| | A broader semantic theme connecting events or behavior | Developments in battery technology |
 | [Interest Island]({% link interest-islands.md %}) | A recurring personal interest inferred from engagement | The user's sustained interest in electric transport |
 
 Articles about the same event can provide different reporting and remain distinct.

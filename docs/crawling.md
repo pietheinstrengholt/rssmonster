@@ -157,8 +157,8 @@ claiming, interrupts its poll, and waits up to
 signalled to abort and their fenced leases can recover after expiry. Each
 process closes its own database connections once.
 
-The lightweight SQLite Compose topology starts only the crawl worker and keeps
-AI processing disabled. It does not consume optional processing jobs.
+The lightweight SQLite Compose topology starts the crawl and webhook workers
+and keeps AI processing disabled. It does not consume optional processing jobs.
 
 The web process does not schedule this loop. Keeping the crawler separate
 means a long crawl cannot prevent PM2 from supervising and restarting the web
@@ -190,14 +190,16 @@ allowing the current transaction to finish before closing the database.
 
 ## PM2 Production Setup
 
-The root `ecosystem.config.cjs` defines separate web, crawl, AI-worker, and
-inference processes:
+The root `ecosystem.config.cjs` defines separate web, crawl, AI-worker,
+webhook-worker, and inference processes:
 
 - `rssmonster-web` runs `server/bootstrap.js`;
 - `rssmonster-worker` runs `server/src/workers/crawlWorker.js` as one fork-mode
   instance and does not consume optional jobs;
 - `rssmonster-ai-worker` runs `server/src/workers/aiWorker.js` as one fork-mode
   instance and consumes `processing_jobs`;
+- `rssmonster-webhook-worker` runs `server/src/workers/webhookWorker.js` and sends
+  queued [webhooks]({% link webhooks.md %});
 - `rssmonster-inference` runs `inference/src/index.js` as one fork-mode
   instance; see [Inference]({% link inference.md %}).
 
@@ -207,7 +209,7 @@ environment:
 ```bash
 pm2 startOrReload ecosystem.config.cjs --env production --update-env
 pm2 save
-pm2 status rssmonster-web rssmonster-worker rssmonster-ai-worker rssmonster-inference
+pm2 status rssmonster-web rssmonster-worker rssmonster-ai-worker rssmonster-webhook-worker rssmonster-inference
 ```
 
 Useful operational commands include:
@@ -215,8 +217,10 @@ Useful operational commands include:
 ```bash
 pm2 logs rssmonster-worker
 pm2 logs rssmonster-ai-worker
+pm2 logs rssmonster-webhook-worker
 pm2 restart rssmonster-worker --update-env
 pm2 restart rssmonster-ai-worker --update-env
+pm2 restart rssmonster-webhook-worker --update-env
 pm2 describe rssmonster-worker
 pm2 describe rssmonster-ai-worker
 ```

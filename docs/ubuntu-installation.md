@@ -204,12 +204,13 @@ Install PM2 using your nvm-managed Node.js:
 ```bash
 npm install -g pm2
 cd ~/Projects/rssmonster
-pm2 start ecosystem.config.cjs --only rssmonster-web,rssmonster-worker --env production
+pm2 start ecosystem.config.cjs --only rssmonster-web,rssmonster-worker,rssmonster-webhook-worker --env production
 pm2 status
 ```
 
 The supplied configuration starts the web application through `server/bootstrap.js`
-and runs the dedicated crawl worker. Both processes should show `online`.
+and runs the dedicated crawl and webhook workers. All three processes should
+show `online`.
 
 Open [http://localhost:3000](http://localhost:3000) on the Ubuntu machine, or
 your configured domain. Create your first account, then add feeds or import an

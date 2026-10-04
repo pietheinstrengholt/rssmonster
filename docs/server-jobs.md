@@ -33,11 +33,12 @@ a routine scheduler unless its description explicitly calls for that use.
 | `npm run start-server` | Alias for `npm start`; it starts the same `bootstrap.js` entry point. |
 | `npm run start:worker` | Start the long-running crawl worker directly. It runs an immediate crawl iteration and continues polling; see [Crawling]({% link crawling.md %}). |
 | `npm run start:ai-worker` | Start the long-running durable processing-job consumer used by PM2 and MySQL Compose. |
+| `npm run start:webhook-worker` | Send queued outbound webhooks. Both supplied Compose profiles include this worker. |
 | `npm run dev` | Start the Express server with Node's watch mode and restart it when server source files change. |
 | `npm run debug` | Start the same watched development server with the Node inspector enabled. |
 
 In production, use the repository's PM2 ecosystem definition to supervise the
-web, crawl-worker, AI-worker, and inference processes instead of starting these
+web, crawl-worker, AI-worker, webhook-worker, and inference processes instead of starting these
 commands in separate shell sessions.
 
 ## Tests and Linting
@@ -121,6 +122,8 @@ vectors. Keep taxonomy and article vectors in the same embedding model space.
 | Command | Purpose |
 | --- | --- |
 | `npm run feedtrust` | Recalculate each feed's user-specific trust score from article quality, exposed engagement, deterministic originality, and negative feedback. |
+| `npm run recommendations:evaluate` | Produce local recommendation-score reports for one user without changing article scores. Requires `--userId=<id>`; supports `--limit`, `--status`, and `--output`. |
+| `npm run recommendations:recalculate` | Persist recommendation interest scores for one user and write a report. Accepts the same options as `recommendations:evaluate`. |
 | `npm run seed:island-taxonomy` | Apply the named Sequelize seed that creates the Interest Island taxonomy. This changes database data. |
 | `npm run seed:undo:island-taxonomy` | Undo that specific taxonomy seed. This removes seeded taxonomy data and is destructive. |
 | `npm run seed:official-sources` | Create or update the built-in official-source rules. Pass `--userId=<id>` to scope it to one user. |

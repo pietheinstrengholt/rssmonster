@@ -30,6 +30,12 @@ role. Later registrations create regular user accounts. Each person should
 register and use their own credentials so that subscriptions, articles,
 reading state, preferences, and other user data remain scoped correctly.
 
+Local sign-in offers **Remember me**. Select it to keep that browser's session
+for the longer period configured by `JWT_REMEMBER_EXPIRES_IN` (30 days by
+default). Without it, the normal `JWT_EXPIRES_IN` period applies (24 hours by
+default). This choice applies to the local password login; it does not change
+OIDC or compatibility-client authentication.
+
 Keep your credentials somewhere safe. RSSMonster has no default account to
 fall back to. When email is enabled, existing users without a verified address
 complete email enrollment on their next sign-in. See [Account and Email]({% link account.md %})

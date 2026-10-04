@@ -78,15 +78,27 @@ not need to reinstall the app for ordinary server updates.
 
 ## Offline support
 
-Installation does not download your entire archive for offline reading. The
-service worker caches the basic interface and application assets after an online
-visit, so the app's shell can reopen without a connection. Fetching articles,
-signing in, loading settings, and saving reading state still require access to
-the RSSMonster server. Optional screens may also need to be opened online first.
+Installation alone does not download your article archive. The service worker
+caches the interface and application assets after an online visit. To prepare
+articles, sign in while connected and open **Settings → Offline reading**. Enable
+offline reading and choose **Articles to keep offline**: 50, 100, or 500 of
+your latest articles. Preparation starts when you enable it or change the
+limit; **Refresh now** updates the downloaded selection while connected.
+The status panel shows the number prepared and the last refresh. Downloads are
+stored on this device for this account and server.
 
-If the interface opens but articles cannot load, reconnect to the network and
-retry or reload. A private instance must remain reachable through the network
-or VPN you normally use to access it.
+When the server cannot be reached, a previously validated session with a
+prepared offline library can open the downloaded articles in read-only mode.
+You can read their stored text, metadata, tags, and read/saved state as captured
+at download time. External embeds and streams, live recommendations and
+rankings, server search, and new read/saved changes are unavailable offline.
+Changes made while disconnected are not queued for later upload. Reconnect to
+resume normal reading and refresh the selection. A private instance must remain
+reachable through the network or VPN used for online access.
+
+Disabling offline reading retains existing downloads. **Clear offline data**
+removes this account's downloaded articles and offline configuration from the
+device. Signing out also clears the saved offline data for that account.
 
 ## Enable notifications
 

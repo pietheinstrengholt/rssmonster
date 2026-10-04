@@ -19,6 +19,7 @@ and authentication schemes differ; a JWT is not a Fever or Google Reader token.
 | Generated RSS | `/rss/generated/:token` | Secret token in the URL | [Generated feeds]({% link generated-feeds.md %}) |
 | Built-in assistant | `/api/agent` | JWT; AI and assistant must be enabled | [Assistant]({% link assistant.md %}) |
 | MCP tools | `/mcp` | JWT bearer token | [MCP integration]({% link assistant.md %}#integrate-using-mcp) |
+| Outbound webhooks | `/api/webhooks` for configuration; delivery to your endpoint | JWT for configuration; optional HMAC for delivery | [Webhooks]({% link webhooks.md %}) |
 
 ## Native API quick start
 

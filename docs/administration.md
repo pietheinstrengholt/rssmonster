@@ -38,7 +38,8 @@ repair, seed, or reset.
 
 The desktop Settings workspace exposes user-scoped feed diagnostics, crawl
 statistics, processing jobs, score settings, automation, generated feeds, and
-semantic insights. **Manage Users** provides administrator-only account management.
+semantic insights. [Webhooks]({% link webhooks.md %}) are user-owned and use a
+separate delivery worker. **Manage Users** provides administrator-only account management.
 **Server settings** contains server-wide configuration, including SMTP status
 and connection testing. The first registered
 account becomes the administrator. See [First Login]({% link first-login.md %}).
