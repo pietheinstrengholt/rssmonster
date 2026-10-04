@@ -420,6 +420,11 @@ export const useOverviewStore = defineStore('overview', {
       this.unreadsSinceLastUpdate = unreadCount - previousUnreadCount;
     },
 
+    // Hydrate folder structure from the existing fetch or bulk-save response.
+    setSmartFolders(folders) {
+      this.smartFolders = folders.map(folder => ({ ...folder, ArticleCount: folder.ArticleCount ?? 0 }));
+    },
+
     // This action fetches smart-folder structure with request-ordered background counts.
     async fetchSmartFolders() {
       const requestId = ++this.smartFoldersRequestId;
@@ -433,10 +438,7 @@ export const useOverviewStore = defineStore('overview', {
         const { data } = await fetchSmartFoldersAPI();
         if (requestId !== this.smartFoldersRequestId) return false;
 
-        this.smartFolders = (data.smartFolders || []).map(folder => ({
-          ...folder,
-          ArticleCount: folder.ArticleCount ?? 0
-        }));
+        this.setSmartFolders(data.smartFolders || []);
         this.smartFoldersStatus = 'success';
         void this.fetchSmartFolderCounts();
         return true;

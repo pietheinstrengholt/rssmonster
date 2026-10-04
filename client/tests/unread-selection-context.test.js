@@ -439,7 +439,7 @@ describe('UnreadSelectionContext', () => {
   it.each([
     ['standard', ArticleListView, { viewMode: 'full' }],
     ['reader', ArticleReaderLayout, {}]
-  ])('is hidden in the loaded %s unread list when no posts are found', (_mode, component, extraProps) => {
+  ])('keeps the save shortcut available in an empty %s unread list', (_mode, component, extraProps) => {
     const stores = createStore();
     wrapper = shallowMount(component, {
       props: {
@@ -461,7 +461,7 @@ describe('UnreadSelectionContext', () => {
       }
     });
 
-    expect(wrapper.findComponent(UnreadSelectionContext).exists()).toBe(false);
+    expect(wrapper.findComponent(UnreadSelectionContext).exists()).toBe(true);
   });
 });
 

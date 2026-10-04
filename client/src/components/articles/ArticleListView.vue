@@ -12,7 +12,7 @@
       <slot name="before-context" :reader-mode="false" />
       <UnreadSelectionContext
         :key="viewMode"
-        v-if="currentSelection === 'unread' && ((hasLoadedContent && loadedCount > 0 && currentViewSourceCount !== null) || (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all'))"
+        v-if="(selectionStore.currentSelection.smartFolderId == null && currentSelection !== 'briefing') || (currentSelection === 'unread' && ((hasLoadedContent && loadedCount > 0 && currentViewSourceCount !== null) || (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all')))"
         :article-count="collectionSummary.totalCount ?? currentViewUnreadCount"
         :source-count="currentViewSourceCount ?? 0"
         :oldest-published-at="collectionSummary.oldestPublishedAt"

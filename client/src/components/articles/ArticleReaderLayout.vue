@@ -6,7 +6,7 @@
   <template v-if="hasLoadedContent && isCollectionEmpty">
     <slot name="before-context" :reader-mode="true" />
     <UnreadSelectionContext
-      v-if="currentSelection === 'unread' && (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all')"
+      v-if="(selectionStore.currentSelection.smartFolderId == null && currentSelection !== 'briefing') || (currentSelection === 'unread' && (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all'))"
       :article-count="0"
       :source-count="0"
       :oldest-published-at="collectionSummary.oldestPublishedAt"
@@ -51,7 +51,7 @@
 
           <div class="article-list-bulk-controls">
             <UnreadSelectionContext
-              v-if="currentSelection === 'unread' && ((loadedCount > 0 && currentViewSourceCount !== null) || (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all'))"
+              v-if="(selectionStore.currentSelection.smartFolderId == null && currentSelection !== 'briefing') || (currentSelection === 'unread' && ((loadedCount > 0 && currentViewSourceCount !== null) || (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all')))"
               :article-count="collectionSummary.totalCount ?? currentViewUnreadCount"
               :source-count="currentViewSourceCount ?? 0"
               :oldest-published-at="collectionSummary.oldestPublishedAt"

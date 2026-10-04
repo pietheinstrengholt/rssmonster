@@ -5,7 +5,7 @@
         <span v-if="!readerMode" class="unread-selection-context__meta">
           Based on <strong>{{ articleCount.toLocaleString() }}</strong> {{ articleCount === 1 ? 'article' : 'articles' }} from <strong>{{ sourceCount.toLocaleString() }}</strong> {{ sourceCount === 1 ? 'source' : 'sources' }}
         </span>
-        <div class="unread-selection-context__date-group">
+        <div v-if="selectionStore.currentSelection.status === 'unread'" class="unread-selection-context__date-group">
           <span class="unread-selection-context__divider" aria-hidden="true"></span>
           <AppDropdown ref="dateDropdown" class="unread-selection-context__date-filter">
             <template #trigger="{ triggerProps }">
@@ -44,6 +44,7 @@
           <time v-if="!readerMode && dateContext" :datetime="dateContext.isoDate">{{ dateContext.longLabel }}</time>
         </div>
       </div>
+      <SaveCurrentViewSmartFolder />
       <form v-if="editingCustomDate" class="unread-selection-context__custom-date" aria-label="Custom article date range" @submit.prevent="applyCustomRange" @keydown.esc.stop.prevent="cancelCustomRange">
         <label>Start date <input ref="customStartInput" v-model="customStart" type="date" required :max="customEnd || undefined" /></label>
         <label>End date <input v-model="customEnd" type="date" required :min="customStart || undefined" /></label>
@@ -58,6 +59,7 @@
 import { computed, nextTick, ref } from 'vue';
 import { useSelectionStore } from '../../store/selection.js';
 import AppDropdown from '../shared/AppDropdown.vue';
+import SaveCurrentViewSmartFolder from './SaveCurrentViewSmartFolder.vue';
 import { articleDateRangeOptions, resolveArticleDateRange } from '../../services/articleDateRange.js';
 import { ageCutoffOptionsForOldest } from '../../services/articleAgeCutoff.js';
 import { useStickyArticleDate } from '../../composables/useStickyArticleDate.js';
@@ -65,7 +67,7 @@ import { articleDateContext } from '../../utils/date.js';
 
 export default {
   name: 'UnreadSelectionContext',
-  components: { AppDropdown },
+  components: { AppDropdown, SaveCurrentViewSmartFolder },
   props: {
     articleCount: { type: Number, required: true },
     sourceCount: { type: Number, required: true },
@@ -202,7 +204,7 @@ export default {
 .unread-selection-context__age-button:hover { border-color: var(--color-link); color: var(--color-link); }
 .unread-selection-context__age-button[aria-pressed='true'] { border-color: var(--color-primary); background: var(--color-primary); color: var(--text-inverted); }
 .unread-selection-context__age-button:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
-@media (max-width: 1069px), (max-height: 560px) and (min-width: 480px) {
+@media (width < 1230px), (max-height: 560px) and (min-width: 480px) {
   .unread-selection-context__date-group > time { display: none; }
 }
 @media (max-width: 875px), (max-height: 560px) and (min-width: 480px) {
