@@ -2,8 +2,8 @@
 
 RSSMonster 2.4.0 is a substantial update focused on identity and server
 administration, behavior-driven personalization, reader controls, feed metadata,
-content retention, and deployment flexibility. It contains 133 commits since
-v2.3.0.
+content retention, and deployment flexibility. It also adds offline reading,
+operational webhooks, reusable Smart Folders, and manual article tagging.
 
 ## Highlights
 
@@ -67,6 +67,23 @@ v2.3.0.
   the existing writing, tone, and ad-free controls under Advanced.
 - Renamed the source-aware quality sort to **Quality & source trust** so it is not
   confused with the article-only Overall quality score.
+
+### Operational webhooks
+
+- Added **Settings → Webhooks** to create, edit, enable, pause, or delete
+  user-owned webhook configurations backed by authenticated APIs.
+- Conditions can match feed, category, title, author, URL, domain, article text,
+  or language, with **All conditions** or **Any condition** matching.
+- Newly accepted articles queue durable JSON deliveries; existing articles and
+  later revisions do not trigger another delivery.
+- Added a separate delivery worker with bounded concurrency, timeouts, retry
+  delays, and up to five delivery attempts. The supplied Compose profiles and
+  root development command include the worker.
+- Added optional HMAC-SHA256 signatures with encrypted signing secrets. Responses
+  omit saved secrets, and deliveries carry stable identifiers so receivers can
+  handle retries safely.
+- Removed the obsolete notice that webhook delivery was unavailable now that
+  configuration, matching, queuing, and delivery are operational.
 
 ### Inference configuration and compatible providers
 
@@ -195,6 +212,43 @@ v2.3.0.
   by suspending swipe and pull-to-refresh handling while zoomed or using multiple
   touches.
 
+### Read-only offline PWA reading
+
+- Added **Settings → Offline reading** to prepare 50, 100, or 500 latest articles
+  while connected, with preparation progress, refresh, and clear-data controls.
+- Downloads are isolated by device, account, and server, and stored in IndexedDB.
+  An incomplete refresh keeps the previous complete download available.
+- Previously validated sessions can open prepared articles when the server is
+  unreachable, including stored text, metadata, tags, and captured read/saved
+  state.
+- Offline mode is read-only: live search, recommendations, external streams, and
+  article mutations are unavailable, and changes are not queued for later sync.
+- Disabling preparation retains downloaded articles; signing out or clearing
+  offline data removes the account's local downloads.
+
+### Smart Folders and manual article tagging
+
+- Added **Save as smart folder** to wide-screen collection headers, with a named
+  draft and rule preview based on the current status, search, tag, sorting,
+  grouping, quality threshold, and supported date presets.
+- The dialog explains when feed/category context or publication-date controls
+  cannot be represented by Smart Folder rules. Saved folders remain dynamic
+  queries rather than snapshots of the current list.
+- Added **Add tags** and **Manage tags** to the article menu, including inline
+  creation, multi-tag selection, and removal of individual article assignments.
+- Manual tags reuse the existing user-owned Tag model and behave consistently in
+  article rendering, search, Smart Folders, and sidebar navigation. Removing an
+  assignment leaves the same label on other articles intact.
+- Tag dialogs show current selections immediately and load small default
+  suggestions instead of the complete catalogue. Debounced server-side search
+  returns bounded results, with selected matches first and stale responses
+  ignored.
+- Saved changes update article metadata and sidebar counts without reloading the
+  article list; interrupted saves preserve selections and retry remaining changes.
+- Improved multiword and escaped tag-name handling in search and Smart Folder
+  expressions, mobile tag visibility, native checkbox styling, dialog typography,
+  and keyboard focus.
+
 ### Hot articles and Daily Briefing
 
 - Hot articles receive a bounded boost in Recommended and Top Stories ordering
@@ -279,6 +333,9 @@ v2.3.0.
   portability, and SQLite/MySQL historical-schema tests.
 - Fixed Docker multi-platform build stages and upgraded client, server, inference,
   FeedSmith, dotenv, and ESLint dependencies.
+- Updated desktop Electron, archive tooling, and migration dependencies.
+- Excluded API routes from the PWA navigation fallback so API requests retain
+  their normal responses instead of receiving the application HTML shell.
 - Added explicit MariaDB 11.4 support through `DB_DIALECT=mariadb`, using the
   supported MySQL connector and a MariaDB-compatible baseline schema.
 - Crawl progress now reports the full eligible-feed total before parallel claims
@@ -287,6 +344,9 @@ v2.3.0.
   article-presentation regression checks.
 - Added Ubuntu installation, Ollama, OIDC, server-settings, sidebar, category,
   archiving, crawl-contract, and semantic-contract documentation.
+- Updated guides for offline reading, webhooks, Smart Folders, initial feed
+  imports, admission windows, backups, runtime configuration, API conventions,
+  and worker commands.
 - Added a root `npm run dev` command to start the server, client, inference
   service, and workers together.
 - Removed unused client, server, and inference helpers and obsolete semantic
@@ -296,7 +356,13 @@ v2.3.0.
 ## Upgrade notes
 
 - Back up the database before upgrading and allow the normal RSSMonster startup
-  process to apply all pending migrations.
+  process to apply all pending migrations, including the new webhook tables.
+- Manual deployments using webhooks must run `npm run start:webhook-worker` from
+  `server/` alongside the web and crawl processes. Use the same `ENCRYPTION_KEY`
+  for the web and delivery worker when configuring signing secrets.
+- Offline article downloads require an online preparation step on each device;
+  installing the PWA alone does not download articles. Offline reading does not
+  synchronize edits or replace a database backup.
 - Topics have been removed. Personalization now uses behavior-driven Interest
   Islands directly.
 - The personal settings table is migrated from `settings` to `user_settings`.
@@ -333,3 +399,7 @@ v2.3.0.
 - [Sidebar settings](docs/sidebar-settings.md)
 - [Article archiving](docs/archiving.md)
 - [Feeds and HTTP Basic authentication](docs/feeds-and-categories.md)
+- [Smart Folders](docs/smart-folders.md)
+- [Tags and manual article tagging](docs/tag.md)
+- [Offline PWA reading and notifications](docs/web-app-and-notifications.md)
+- [Webhooks and delivery worker](docs/webhooks.md)
