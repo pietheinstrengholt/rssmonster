@@ -37,18 +37,18 @@ describe('offline Settings', () => {
     expect(wrapper.text()).toContain('Existing downloads are retained');
     expect(offlineReading.clearSnapshot).not.toHaveBeenCalled();
   });
-  it('saves a changed limit and refreshes when enabled', async () => {
+  it.each([250, 1000, 2500, 5000])('saves the %s limit and refreshes when enabled', async limit => {
     profile.enabled = true;
     useOfflineReadingStore().profile = { ...profile };
-    await wrapper.get('input[value="500"]').setValue(true);
+    await wrapper.get(`input[value="${limit}"]`).setValue(true);
     await flushPromises();
-    expect(profile.articleLimit).toBe(500);
+    expect(profile.articleLimit).toBe(limit);
     expect(offlineReading.refreshSnapshot).toHaveBeenCalledOnce();
   });
   it('allows disabled configuration without downloading', async () => {
-    await wrapper.get('input[value="50"]').setValue(true);
+    await wrapper.get('input[value="250"]').setValue(true);
     await flushPromises();
-    expect(profile.articleLimit).toBe(50);
+    expect(profile.articleLimit).toBe(250);
     expect(offlineReading.refreshSnapshot).not.toHaveBeenCalled();
   });
   it('shows progress and provides Refresh now', async () => {

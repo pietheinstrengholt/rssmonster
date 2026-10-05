@@ -2,7 +2,7 @@ import { API_BASE_URL } from '../api/client.js';
 import { fetchArticlePage } from '../api/articles.js';
 import { offlineDatabase } from './offlineDatabase.js';
 
-export const OFFLINE_ARTICLE_LIMITS = Object.freeze([50, 100, 500]);
+export const OFFLINE_ARTICLE_LIMITS = Object.freeze([100, 250, 1000, 2500, 5000]);
 export const offlineApiOrigin = () => new URL(API_BASE_URL, window.location.origin).origin;
 export const offlineAccount = userId => ({ apiOrigin: offlineApiOrigin(), userId });
 export const latestOfflineSelection = Object.freeze({
@@ -64,7 +64,7 @@ export const createOfflineReadingService = (database = offlineDatabase, fetchPag
     getStatus: getProfile,
     async updateConfiguration(account, changes) {
       if (changes.articleLimit !== undefined && !OFFLINE_ARTICLE_LIMITS.includes(changes.articleLimit)) {
-        throw new Error('Articles to keep offline must be 50, 100 or 500.');
+        throw new Error('Articles to keep offline must be 100, 250, 1000, 2500 or 5000.');
       }
       return database.updateProfile(account, { ...changes, pendingGeneration: null,
         ...(changes.enabled === false ? { status: 'disabled' } : {}) });

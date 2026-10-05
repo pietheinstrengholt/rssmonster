@@ -45,26 +45,28 @@ describe('offline schema upgrades', () => {
 });
 
 describe('offline snapshots', () => {
-  it.each([50, 100, 500])('supports the %s limit and enforces it across cursor pages', async limit => {
+  it.each([100, 250, 1000, 2500, 5000])('supports the %s limit and enforces it across cursor pages', async limit => {
     const db = createDatabase();
     const fetchPage = vi.fn(async (selection, { cursor }) => {
       const offset = Number(cursor || 0);
-      return page(Array.from({ length: 100 }, (_, i) => 1000 - offset - i), String(offset + 100));
+      return page(Array.from({ length: 100 }, (_, i) => 10000 - offset - i), String(offset + 100));
     });
     const service = createOfflineReadingService(db, fetchPage);
     await service.updateConfiguration(account, { articleLimit: limit });
     await service.prepareSnapshot(account);
     const snapshot = await service.loadSnapshot(account);
     expect(snapshot).toHaveLength(limit);
-    expect(snapshot.map(item => item.id)).toEqual(Array.from({ length: limit }, (_, i) => 1000 - i));
+    expect(snapshot.map(item => item.id)).toEqual(Array.from({ length: limit }, (_, i) => 10000 - i));
     expect(snapshot.some(item => item.status === 'read')).toBe(true);
     expect(snapshot.some(item => item.status === 'unread')).toBe(true);
+    expect(fetchPage).toHaveBeenCalledTimes(Math.ceil(limit / 100));
+    expect(fetchPage.mock.calls.every(([, pagination]) => pagination.pageSize === 100)).toBe(true);
     expect(fetchPage.mock.calls[0][0]).toEqual(latestOfflineSelection);
     expect(latestOfflineSelection).toMatchObject({ status: '%', grouping: 'none', persistSettings: false, search: '', sort: 'desc' });
   });
-  it.each([0, 51, 1000, '100', null])('rejects invalid limit %s', async articleLimit => {
+  it.each([0, 50, 500, 5001, '100', null])('rejects invalid limit %s', async articleLimit => {
     const db = createDatabase();
-    await expect(createOfflineReadingService(db).updateConfiguration(account, { articleLimit })).rejects.toThrow('50, 100 or 500');
+    await expect(createOfflineReadingService(db).updateConfiguration(account, { articleLimit })).rejects.toThrow('100, 250, 1000, 2500 or 5000');
     expect(db.updateProfile).not.toHaveBeenCalled();
   });
   it('keeps the previous snapshot available until every page completes', async () => {

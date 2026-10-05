@@ -482,7 +482,7 @@ export default {
 
 .offline-limit-options {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--space-2);
   margin-left: calc(2.5rem + var(--space-3));
   margin-top: var(--space-3);
@@ -765,6 +765,7 @@ export default {
   }
 
   .offline-limit-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     margin-left: 0;
   }
 

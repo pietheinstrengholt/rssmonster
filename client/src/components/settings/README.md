@@ -259,7 +259,7 @@ confirmation. Loading and explicit refresh use a bounded server status cache.
 ### Offline reading
 
 The Reading navigation includes Offline reading immediately after Smart Folders.
-The device/account setting defaults to 100 articles and supports 50, 100 and 500.
+The device/account setting defaults to 100 articles and supports 100, 250, 1000, 2500 and 5000.
 Enabling or changing the limit prepares a safe replacement snapshot while connected;
 disabling stops future refreshes and retains existing downloads. Refresh now exposes
 preparation progress, and Clear offline data uses the shared destructive confirmation
