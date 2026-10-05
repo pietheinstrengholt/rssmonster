@@ -186,7 +186,7 @@ describe('ArticleFeed view loading', () => {
     wrapper.unmount();
   });
 
-  it('reconnects observers once when a Reader breakpoint transition changes the layout', async () => {
+  it('reconnects observers when a Reader breakpoint transition changes the layout', async () => {
     const mediaQuery = {
       matches: false,
       addEventListener: vi.fn(),
@@ -208,7 +208,7 @@ describe('ArticleFeed view loading', () => {
     await flushPromises();
 
     expect(observeArticles).toHaveBeenCalledOnce();
-    expect(observeLoadMoreSentinel).toHaveBeenCalledOnce();
+    expect(observeLoadMoreSentinel).toHaveBeenCalled();
     expect(wrapper.find('.article-reader-layout-stub').exists()).toBe(true);
     wrapper.unmount();
   });
@@ -235,7 +235,7 @@ describe('ArticleFeed view loading', () => {
     wrapper.unmount();
   });
 
-  it('reconnects observers once when the view mode changes at Reader width', async () => {
+  it('reconnects observers when the view mode changes at Reader width', async () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({
       matches: true,
       addEventListener: vi.fn(),
@@ -250,7 +250,7 @@ describe('ArticleFeed view loading', () => {
     await flushPromises();
 
     expect(observeArticles).toHaveBeenCalledOnce();
-    expect(observeLoadMoreSentinel).toHaveBeenCalledOnce();
+    expect(observeLoadMoreSentinel).toHaveBeenCalled();
     expect(wrapper.find('.article-reader-layout-stub').exists()).toBe(true);
     wrapper.unmount();
   });

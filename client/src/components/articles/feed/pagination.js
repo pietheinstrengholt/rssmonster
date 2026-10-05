@@ -70,6 +70,10 @@ export function createArticleFeedPaginationState() {
     legacyItemIds: [],
     hasLoadedContent: false,
     isLoading: false,
+    paginationRequestActive: false,
+    loadMoreArmed: true,
+    loadMoreIntersecting: false,
+    loadMoreEntriesAfter: 0,
     currentViewSourceCount: null,
     oldestPublishedAt: null,
     activeRequestId: 0,
@@ -300,13 +304,31 @@ export const articleFeedPaginationMethods = {
   },
 
   handleLoadMoreIntersections(entries) {
-    if (!entries.some(entry => entry.isIntersecting)) return;
-    if (this.isLoading || !this.hasLoadedContent || !this.hasMore) return;
+    const currentEntries = entries.filter(entry => (
+      entry.target === this.observedLoadMoreSentinel && entry.time >= this.loadMoreEntriesAfter
+    )).sort((a, b) => a.time - b.time);
+    let entered = false;
+    for (const entry of currentEntries) {
+      // A new observer's initial notification establishes geometry, not a rearm condition.
+      if (!entry.isIntersecting && this.loadMoreObservationReady && this.loadMoreIntersecting) {
+        this.loadMoreArmed = true;
+      }
+      if (!entry.isIntersecting) entered = false;
+      else if (!this.loadMoreObservationReady || !this.loadMoreIntersecting) entered = true;
+      this.loadMoreObservationReady = true;
+      this.loadMoreIntersecting = entry.isIntersecting;
+    }
+    // Preserve fast exit/re-entry transitions, but request at most once for the whole batch.
+    if (!entered || !this.loadMoreArmed) return;
+    if (this.isLoading || this.paginationRequestActive || !this.hasLoadedContent || !this.hasMore) return;
+    this.loadMoreArmed = false;
     this.getContent();
   },
 
   async getContent(requestId = this.activeRequestId) {
-    if (this.isLoading || !this.hasMore) return;
+    if (this.isLoading || this.paginationRequestActive || !this.hasMore) return;
+    this.loadMoreArmed = false;
+    this.paginationRequestActive = true;
     this.isLoading = true;
     try {
       if (this.usesCursorPagination) {
@@ -344,6 +366,7 @@ export const articleFeedPaginationMethods = {
       }
       console.error('Error fetching article details:', error);
     } finally {
+      this.paginationRequestActive = false;
       if (requestId === this.activeRequestId) this.isLoading = false;
     }
   },
@@ -437,6 +460,11 @@ export const articleFeedPaginationMethods = {
   },
 
   resetPaginationState() {
+    // A replacement collection gets its own entry permission; an older request keeps its lock.
+    this.loadMoreArmed = true;
+    this.loadMoreIntersecting = false;
+    this.loadMoreEntriesAfter = performance.now();
+    this.loadMoreObserver?.takeRecords();
     this.activeReaderRecommendationRequestId += 1;
     this.activeNewerArticlesRequestId += 1;
     this.articles = [];

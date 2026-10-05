@@ -1,3 +1,5 @@
+const ARTICLE_PREFETCH_MARGIN = '0px 0px 800px 0px';
+
 const MAX_SEEN_PERSISTENCE_ATTEMPTS = 3;
 const SEEN_RETRY_BASE_DELAY_MS = 200;
 
@@ -66,6 +68,9 @@ export function createArticleFeedVisibilityState() {
     readingWordCounts: new Map(),
     visibilityObserver: null,
     loadMoreObserver: null,
+    observedLoadMoreSentinel: null,
+    loadMoreRoot: null,
+    loadMoreObservationReady: false,
     observedArticleElements: new Map(),
 
     // tracks previous visibility state per article
@@ -217,20 +222,13 @@ export const articleFeedVisibilityMethods = {
     }
     window.addEventListener('pagehide', this.finishReadingSession);
     window.addEventListener('pageshow', this.handleReadingVisibility);
+    window.addEventListener('resize', this.observeLoadMoreSentinel);
     this.lastReadingActivityAt = performance.now();
     if (!('IntersectionObserver' in window)) return;
 
     this.visibilityObserver = new IntersectionObserver(
       this.handleArticleIntersections,
       { threshold: 0 }
-    );
-    this.loadMoreObserver = new IntersectionObserver(
-      this.handleLoadMoreIntersections,
-      {
-        root: null,
-        rootMargin: '300px 0px',
-        threshold: 0
-      }
     );
 
     this.$nextTick(() => {
@@ -250,8 +248,12 @@ export const articleFeedVisibilityMethods = {
     }
     window.removeEventListener('pagehide', this.finishReadingSession);
     window.removeEventListener('pageshow', this.handleReadingVisibility);
+    window.removeEventListener('resize', this.observeLoadMoreSentinel);
     this.visibilityObserver?.disconnect();
     this.loadMoreObserver?.disconnect();
+    this.loadMoreObserver = null;
+    this.observedLoadMoreSentinel = null;
+    this.loadMoreRoot = null;
     this.observedArticleElements.clear();
   },
 
@@ -303,13 +305,26 @@ export const articleFeedVisibilityMethods = {
 
   // Observes the sentinel that triggers loading the next article page.
   observeLoadMoreSentinel() {
-    if (!this.loadMoreObserver) return;
+    if (!('IntersectionObserver' in window)) return;
 
     const sentinel = this.getLoadMoreSentinel();
-    if (sentinel) {
-      this.loadMoreObserver.disconnect();
-      this.loadMoreObserver.observe(sentinel);
-    }
+    const root = sentinel ? this.getPaginationScrollRoot() : null;
+    if (sentinel === this.observedLoadMoreSentinel && root === this.loadMoreRoot) return;
+
+    this.loadMoreObserver?.disconnect();
+    this.loadMoreObserver = null;
+    this.observedLoadMoreSentinel = sentinel;
+    this.loadMoreRoot = root;
+    this.loadMoreObservationReady = false;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(entries => {
+      // Ignore notifications queued by a layout that has already been replaced.
+      if (this.loadMoreObserver !== observer) return;
+      this.handleLoadMoreIntersections(entries);
+    }, { root, rootMargin: ARTICLE_PREFETCH_MARGIN, threshold: 0 });
+    this.loadMoreObserver = observer;
+    observer.observe(sentinel);
   },
 
   // Tracks article visibility and conditionally marks unread articles passed above the viewport.

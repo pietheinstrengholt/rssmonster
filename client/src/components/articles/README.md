@@ -78,6 +78,31 @@ Reader mode is a desktop enhancement. On smaller screens it falls back to the no
 
 Collections load incrementally. The initial response can include the first articles immediately, and more details are fetched as the user approaches the end of the rendered list. Loading begins before the exact boundary is reached to keep scrolling continuous.
 
+Pagination observes the existing bottom sentinel relative to the active list scroller:
+Reader's middle list, Expanded's scroll surface, the shell article pane, or the
+browser viewport when mobile CSS leaves those surfaces unscrolled. The bottom-only
+prefetch margin is centralized as `ARTICLE_PREFETCH_MARGIN` in
+`feed/visibilityTracking.js` (currently `0px 0px 800px 0px`). Observation stays
+attached across page appends; only a changed root or target reconnects it.
+
+Each accepted entry consumes permission for one next-page request. Request
+completion and observer recreation do not restore permission. An observed exit
+and subsequent entry permit another automatic page. Short or empty rendered pages
+with more results can be advanced explicitly with **Load more articles**; they do
+not automatically fill the viewport. The next-page request lock survives collection
+replacement, while the existing generation check rejects the old response.
+
+Regression coverage lives in `article-pagination-observer.test.js` and
+`article-feed-loading-races.test.js`. Unit tests exercise browser notifications and
+pagination state; they cannot establish real clipping, scroll anchoring or network
+lead time. Browser verification should check desktop, tablet, mobile, Reader and
+Expanded roots; grouped/ungrouped events; search/filter replacements; all five
+sorts; fast scrolling and a delayed response. Confirm requests start with positive
+distance remaining to the list end, one request remains active, and a short append
+that stays intersecting needs an explicit load or an exit/re-entry. Also resize
+across layouts while a page is pending. Mobile Safari touch/viewport behavior and
+latency against real feeds require device verification.
+
 The collection keeps its complete ordered set separate from the articles currently rendered. This supports large selections without requiring every full article payload at once.
 
 Starting a new selection resets pagination, visible-article tracking, temporary related articles, and session-level read bookkeeping. The new collection is isolated from any request still completing for the old selection.

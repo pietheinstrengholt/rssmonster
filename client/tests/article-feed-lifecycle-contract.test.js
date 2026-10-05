@@ -191,16 +191,23 @@ describe('ArticleFeed collection lifecycle contract', () => {
       articles: [{ id: 9 }],
       getArticleElement: vi.fn().mockReturnValue(articleElement),
       getLoadMoreSentinel: vi.fn().mockReturnValue(sentinel),
+      getPaginationScrollRoot: vi.fn().mockReturnValue(null),
+      observedLoadMoreSentinel: sentinel,
       visibilityObserver,
       loadMoreObserver
     };
 
     articleFeedVisibilityMethods.observeArticles.call(context);
-    articleFeedVisibilityMethods.observeLoadMoreSentinel.call(context);
+    vi.stubGlobal('IntersectionObserver', vi.fn());
+    try {
+      articleFeedVisibilityMethods.observeLoadMoreSentinel.call(context);
+    } finally {
+      vi.unstubAllGlobals();
+    }
 
     expect(context.getArticleElement).toHaveBeenCalledWith(9);
     expect(visibilityObserver.observe).toHaveBeenCalledWith(articleElement);
-    expect(loadMoreObserver.disconnect).toHaveBeenCalledOnce();
-    expect(loadMoreObserver.observe).toHaveBeenCalledWith(sentinel);
+    expect(loadMoreObserver.disconnect).not.toHaveBeenCalled();
+    expect(loadMoreObserver.observe).not.toHaveBeenCalled();
   });
 });

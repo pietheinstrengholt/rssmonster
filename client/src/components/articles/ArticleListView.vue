@@ -47,6 +47,13 @@
       />
     </div>
     <div id="article-load-sentinel" ref="loadMoreSentinel" class="article-load-sentinel" aria-hidden="true"></div>
+    <button
+      v-if="hasLoadedContent && collectionProgress.hasMore && !collectionProgress.paginationError"
+      type="button"
+      class="app-button app-button--outline-secondary app-button--compact"
+      :disabled="collectionProgress.isLoading"
+      @click="$emit('load-more')"
+    >Load more articles</button>
     <ArticleLoadError
       v-if="collectionProgress.paginationError"
       @retry="$emit('retry-pagination')"
@@ -146,6 +153,7 @@ export default {
     'refresh-feeds',
     'open-smart-folders',
     'retry-pagination',
+    'load-more',
     'view-tag-status',
     'forceReload'
   ],
@@ -291,6 +299,16 @@ export default {
     getLoadMoreSentinel() {
       return this.$refs.loadMoreSentinel || null;
     },
+    // Uses the existing layout surfaces and their effective CSS overflow, including mobile.
+    getPaginationScrollRoot() {
+      const candidates = [
+        this.viewMode === 'full' ? this.$refs.expandedArticleScrollRef : null,
+        this.scrollRoot
+      ];
+      return candidates.find(element => element
+        && ['auto', 'scroll', 'overlay'].includes(window.getComputedStyle(element).overflowY)) || null;
+    },
+
     // Returns the active inset viewport edge when Expanded mode owns scrolling.
     getReadingViewportTop() {
       const scrollContainer = this.viewMode === 'full'

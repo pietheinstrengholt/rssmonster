@@ -5,12 +5,12 @@
     :smart-folders="overviewStore.smartFolders"
     @selectSmartFolder="selectSmartFolderFromOverview"
   />
-  <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @clear-search="clearSearch" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @reading-article-changing="handleReadingArticleChange" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @select-recommendation="openReaderRecommendation" @update-tags="updateArticleTags" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
+  <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" @vue:mounted="observeLoadMoreSentinel" @vue:updated="observeLoadMoreSentinel" @vue:unmounted="observeLoadMoreSentinel" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @clear-search="clearSearch" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @load-more="getContent()" @reading-article-changing="handleReadingArticleChange" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @select-recommendation="openReaderRecommendation" @update-tags="updateArticleTags" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
     <template #before-context="{ readerMode }">
       <NewArticlesBanner v-if="selectionStore.currentSelection.status === 'unread'" :count="newerArticleCount" :loading="isLoading" :reader-mode="readerMode" @show-new="showNewArticles" @show-full="showFullUnreadList" />
     </template>
   </ArticleReaderLayout>
-  <ArticleListView v-else ref="articleLayout" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @clear-search="clearSearch" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @update-tags="updateArticleTags" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
+  <ArticleListView v-else ref="articleLayout" @vue:mounted="observeLoadMoreSentinel" @vue:updated="observeLoadMoreSentinel" @vue:unmounted="observeLoadMoreSentinel" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @clear-search="clearSearch" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @load-more="getContent()" @update-tags="updateArticleTags" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
     <template #before-context="{ readerMode }">
       <NewArticlesBanner v-if="selectionStore.currentSelection.status === 'unread'" :count="newerArticleCount" :loading="isLoading" :reader-mode="readerMode" @show-new="showNewArticles" @show-full="showFullUnreadList" />
     </template>
@@ -221,6 +221,8 @@ export default {
     streamCollectionProgress() {
       return {
         hasLoadedContent: this.hasLoadedContent,
+        hasMore: this.hasMore,
+        isLoading: this.isLoading || this.paginationRequestActive,
         isFlushed: this.isFlushed,
         showingNewOnly: this.showingNewOnly,
         hasReachedEnd: hasReachedArticleCollectionEnd({
@@ -245,6 +247,8 @@ export default {
     readerCollectionProgress() {
       return {
         hasLoadedContent: this.hasLoadedContent,
+        hasMore: this.hasMore,
+        isLoading: this.isLoading || this.paginationRequestActive,
         isFlushed: this.isFlushed,
         showingNewOnly: this.showingNewOnly,
         hasReachedEnd: hasReachedArticleCollectionEnd({
@@ -281,6 +285,7 @@ export default {
     // Reconnects scrolling behavior when the app shell supplies a replacement scroll surface.
     scrollRoot(value) {
       this.connectScrollContainer(value);
+      this.reconnectLayoutObservers();
     },
     articleCollectionSelectionKey: {
       // Reloads articles only when the active collection changes.
@@ -305,6 +310,7 @@ export default {
       this.showSmartFoldersOverview = false;
       this.$nextTick(() => {
         this.scrollArticleListToTop();
+        this.observeLoadMoreSentinel();
         if (this.readingTrackingStarted) this.handleReadingActivity();
       });
     },
@@ -429,6 +435,11 @@ export default {
     // Returns the active layout's pagination sentinel without querying descendant markup.
     getLoadMoreSentinel() {
       return this.$refs.articleLayout?.getLoadMoreSentinel?.() || null;
+    },
+
+    // Returns the scrolling surface that contains the active pagination sentinel.
+    getPaginationScrollRoot() {
+      return this.$refs.articleLayout?.getPaginationScrollRoot?.() || null;
     },
 
     // Returns the active layout's reading viewport edge for visibility transitions.

@@ -115,6 +115,7 @@ describe('ArticleFeed actions', () => {
       scrollContainer: previousRoot,
       handleScroll: vi.fn(),
       checkForNewerArticles: vi.fn(),
+      reconnectLayoutObservers: vi.fn(),
       connectScrollContainer: ArticleFeed.methods.connectScrollContainer
     });
 

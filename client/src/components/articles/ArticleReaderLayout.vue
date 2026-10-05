@@ -187,6 +187,13 @@
       </article>
 
       <div id="article-load-sentinel" ref="loadMoreSentinel" class="article-load-sentinel" aria-hidden="true"></div>
+      <button
+        v-if="hasLoadedContent && collectionProgress.hasMore && !collectionProgress.paginationError"
+        type="button"
+        class="app-button app-button--outline-secondary app-button--compact"
+        :disabled="collectionProgress.isLoading"
+        @click="$emit('load-more')"
+      >Load more articles</button>
       <ArticleLoadError
         v-if="collectionProgress.paginationError"
         @retry="$emit('retry-pagination')"
@@ -335,6 +342,7 @@ export default {
     'refresh-feeds',
     'open-smart-folders',
     'retry-pagination',
+    'load-more',
     'view-tag-status',
     'forceReload',
     'bulk-action',
@@ -614,6 +622,11 @@ export default {
     getLoadMoreSentinel() {
       return this.$refs.loadMoreSentinel || null;
     },
+    // Pagination follows the middle list, independently of the article detail panel.
+    getPaginationScrollRoot() {
+      return this.$refs.articleListScrollRef || null;
+    },
+
     // Returns the browser viewport edge used by Reader visibility tracking.
     getReadingViewportTop() {
       return 0;

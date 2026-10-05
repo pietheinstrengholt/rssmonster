@@ -709,22 +709,153 @@ describe('ArticleFeed loading races', () => {
 
   it('loads another page only when the sentinel intersects and loading is ready', () => {
     const context = createLoadingContext();
-    context.container = [1, 2];
-    context.distance = 1;
     context.hasMore = true;
     context.hasLoadedContent = true;
+    context.observedLoadMoreSentinel = document.createElement('div');
     context.getContent = vi.fn();
+    const intersect = isIntersecting => ArticleFeed.methods.handleLoadMoreIntersections.call(context, [{
+      target: context.observedLoadMoreSentinel, time: performance.now(), isIntersecting
+    }]);
 
-    ArticleFeed.methods.handleLoadMoreIntersections.call(context, [{ isIntersecting: false }]);
+    intersect(false);
     context.isLoading = true;
-    ArticleFeed.methods.handleLoadMoreIntersections.call(context, [{ isIntersecting: true }]);
+    intersect(true);
     context.isLoading = false;
     context.hasLoadedContent = false;
-    ArticleFeed.methods.handleLoadMoreIntersections.call(context, [{ isIntersecting: true }]);
+    intersect(true);
     context.hasLoadedContent = true;
-    ArticleFeed.methods.handleLoadMoreIntersections.call(context, [{ isIntersecting: true }]);
+    intersect(false);
+    intersect(true);
+    intersect(true);
 
     expect(context.getContent).toHaveBeenCalledOnce();
+  });
+
+  describe.each(['cursor', 'legacy'])('%s sentinel pagination', mode => {
+    const prepare = () => {
+      const context = createLoadingContext();
+      context.hasLoadedContent = true;
+      context.hasMore = true;
+      context.usesCursorPagination = mode === 'cursor';
+      context.nextCursor = 'first-cursor';
+      context.legacyItemIds = Array.from({ length: 60 }, (_, i) => i + 1);
+      context.observedLoadMoreSentinel = document.createElement('div');
+      const intersect = (isIntersecting, extra = {}) => ArticleFeed.methods.handleLoadMoreIntersections.call(context, [{
+        target: context.observedLoadMoreSentinel, time: performance.now(), isIntersecting, ...extra
+      }]);
+      const api = mode === 'cursor' ? fetchArticlePage : fetchArticleDetails;
+      const response = (articles, hasMore = true) => mode === 'cursor'
+        ? { data: { totalCount: 60, page: { itemIds: articles.map(article => article.id), articles,
+          hasMore, nextCursor: hasMore ? 'next-cursor' : null } } }
+        : { data: articles };
+      return { context, intersect, api, response };
+    };
+
+    it('keeps one page in flight and does not cascade after a short append', async () => {
+      const { context, intersect, api, response } = prepare();
+      const page = deferred();
+      api.mockReturnValueOnce(page.promise);
+      intersect(true);
+      intersect(true);
+      await context.getContent();
+      expect(api).toHaveBeenCalledOnce();
+
+      // One rendered article is deliberately too short to move the sentinel out of the zone.
+      page.resolve(response([{ id: 1 }]));
+      await flushPromises();
+      intersect(true);
+      intersect(true);
+      expect(context.articles.map(article => article.id)).toEqual([1]);
+      expect(context.hasMore).toBe(true);
+      expect(api).toHaveBeenCalledOnce();
+
+      api.mockResolvedValueOnce(response([{ id: 21 }]));
+      intersect(false);
+      intersect(true);
+      await flushPromises();
+      expect(api).toHaveBeenCalledTimes(2);
+      if (mode === 'cursor') expect(api.mock.calls[1][1].cursor).toBe('next-cursor');
+      else expect(api.mock.calls[1][0]).toEqual(context.legacyItemIds.slice(20, 40));
+    });
+
+    it('allows an explicit load after an empty rendered page without automatically filling the viewport', async () => {
+      const { context, intersect, api, response } = prepare();
+      api.mockResolvedValueOnce(response([]));
+      intersect(true);
+      await flushPromises();
+      intersect(true);
+      expect(context.hasMore).toBe(true);
+      expect(api).toHaveBeenCalledOnce();
+      api.mockResolvedValueOnce(response([{ id: 21 }]));
+      await context.getContent();
+      intersect(true);
+      expect(api).toHaveBeenCalledTimes(2);
+      expect(context.articles.map(article => article.id)).toEqual([21]);
+    });
+
+    it('stops at the terminal page', async () => {
+      const { context, intersect, api, response } = prepare();
+      context.legacyItemIds = [1];
+      api.mockResolvedValueOnce(response([{ id: 1 }], false));
+      intersect(true);
+      await flushPromises();
+      intersect(false);
+      intersect(true);
+      await context.getContent();
+      expect(context.hasMore).toBe(false);
+      expect(api).toHaveBeenCalledOnce();
+      if (mode === 'cursor') expect(context.nextCursor).toBeNull();
+    });
+
+    it('releases the request lock on failure without rearming the sentinel', async () => {
+      const { context, intersect, api } = prepare();
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      api.mockRejectedValueOnce(new Error('unavailable'));
+      intersect(true);
+      await flushPromises();
+      intersect(true);
+      expect(context.isLoading).toBe(false);
+      expect(context.paginationRequestActive).toBe(false);
+      expect(context.loadMoreArmed).toBe(false);
+      expect(api).toHaveBeenCalledOnce();
+      expect(context.hasMore).toBe(mode === 'legacy');
+      if (mode === 'cursor') expect(context.paginationError).toBe('Could not load more articles.');
+    });
+
+    it('keeps the request lock across a collection reset and ignores the stale response', async () => {
+      const { context, intersect, api, response } = prepare();
+      const page = deferred();
+      api.mockReturnValueOnce(page.promise);
+      intersect(true);
+      const oldEntryTime = performance.now();
+      context.activeRequestId++;
+      context.resetCollectionState();
+      context.articles = [{ id: 99 }];
+      context.hasMore = true;
+      context.isLoading = false;
+      intersect(true, { time: oldEntryTime });
+      await context.getContent();
+      expect(api).toHaveBeenCalledOnce();
+      expect(context.paginationRequestActive).toBe(true);
+      context.isLoading = true; // The replacement request owns loading now.
+      page.resolve(response([{ id: 1 }]));
+      await flushPromises();
+      expect(context.articles.map(article => article.id)).toEqual([99]);
+      expect(context.isLoading).toBe(true);
+      expect(context.paginationRequestActive).toBe(false);
+    });
+
+    it('does not replay an entry received while a page is loading', async () => {
+      const { intersect, api, response } = prepare();
+      const page = deferred();
+      api.mockReturnValueOnce(page.promise);
+      intersect(true);
+      intersect(false);
+      intersect(true);
+      page.resolve(response([{ id: 1 }]));
+      await flushPromises();
+      expect(api).toHaveBeenCalledOnce();
+    });
   });
 
   it('releases the loading guard after a detail failure so pagination can retry', async () => {
