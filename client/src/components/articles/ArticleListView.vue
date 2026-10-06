@@ -34,7 +34,7 @@
         @update-tags="$emit('update-tags', $event)"
         @update-favorite="$emit('update-favorite', $event)"
         @update-clicked="$emit('update-clicked', $event)"
-        @minimal-article-opened="$emit('minimal-article-opened', $event)"
+        @minimal-article-opened="openMinimalArticle"
         @minimal-article-closed="$emit('minimal-article-closed', $event)"
         @toggle-read-status="$emit('toggle-read-status', $event)"
         @toggle-minimal-read-status="$emit('toggle-minimal-read-status', $event)"
@@ -291,6 +291,20 @@ export default {
     }
   },
   methods: {
+    // Keeps the clicked headline in place when the previously open article collapses.
+    openMinimalArticle(article) {
+      const element = this.getArticleElement(article.id);
+      const top = element?.getBoundingClientRect().top;
+      const scrollRoot = this.getPaginationScrollRoot();
+      this.$emit('minimal-article-opened', article);
+      this.$nextTick(() => {
+        if (!element) return;
+        const offset = element.getBoundingClientRect().top - top;
+        if (offset === 0) return;
+        if (scrollRoot) scrollRoot.scrollTop += offset;
+        else window.scrollBy({ top: offset, behavior: 'instant' });
+      });
+    },
     // Returns the rendered article root owned through this layout's component refs.
     getArticleElement(articleId) {
       return this.minimalArticleRefs[articleId]?.$el || null;
@@ -451,7 +465,10 @@ export default {
       if (!selectedElement) return;
 
       selectedElement.focus({ preventScroll });
-      selectedElement.scrollIntoView({ block: 'nearest' });
+      if (!preventScroll) {
+        const headline = selectedElement.querySelector('.article-list-row');
+        (headline || selectedElement).scrollIntoView({ block: 'nearest' });
+      }
     },
     // Scrolls the selected expanded article into view.
     scrollSelectedArticleIntoView() {

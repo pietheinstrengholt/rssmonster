@@ -141,7 +141,7 @@ describe('ArticleListView keyboard navigation', () => {
   });
 
   // Verifies compact focus and tabindex state follow the active article.
-  it('focuses and scrolls only the active compact article', () => {
+  it('focuses the active compact article without scrolling when requested', () => {
     const context = createContext({
       viewMode: 'minimal',
       activeMinimalArticleId: '2'
@@ -155,7 +155,7 @@ describe('ArticleListView keyboard navigation', () => {
     expect(context.minimalArticleRefs[2].$el.focus)
       .toHaveBeenCalledWith({ preventScroll: true });
     expect(context.minimalArticleRefs[2].$el.scrollIntoView)
-      .toHaveBeenCalledWith({ block: 'nearest' });
+      .not.toHaveBeenCalled();
 
     context.viewMode = 'full';
     expect(context.minimalArticleTabindex(2)).toBeNull();
