@@ -12,6 +12,8 @@ export const bootstrapIconNames = [
   'arrow-right',
   'arrow-up-short',
   'arrow-up-right-square-fill',
+  'arrows-angle-contract',
+  'arrows-angle-expand',
   'award-fill',
   'bar-chart-fill',
   'bluesky',

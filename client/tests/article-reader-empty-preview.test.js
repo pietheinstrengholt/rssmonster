@@ -337,6 +337,6 @@ describe('Reader article presentation boundary', () => {
     expect(wrapper.classes('article-reader-detail')).toBe(isReader);
     expect(wrapper.find('.article-reader-metabar').exists()).toBe(isReader);
     expect(wrapper.getComponent({ name: 'ArticleMeta' }).props('hideProvenance')).toBe(isReader);
-    expect(wrapper.getComponent({ name: 'ArticleHeader' }).props('feedFavicon')).toBe('https://example.com/icon.png');
+    expect(wrapper.find('img[src="https://example.com/icon.png"]').exists()).toBe(isReader);
   });
 });

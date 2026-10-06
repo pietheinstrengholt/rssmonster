@@ -33,18 +33,20 @@
       @view-tag-status="$emit('view-tag-status', $event)"
     />
   </template>
-  <div v-else class="article-reader">
+  <div v-else class="article-reader" :class="{ 'article-reader--expanded': readerExpanded }">
     <aside
       ref="articleListScrollRef"
       class="article-reader__list"
       aria-label="Article list"
+      :inert="readerExpanded ? '' : null"
+      :aria-hidden="readerExpanded"
     >
       <DailyBriefingIntro v-if="showDailyBriefingIntro" reader-mode />
       <slot name="before-context" :reader-mode="true" />
       <div class="article-list-bulk-header" @click.stop>
         <div class="article-list-bulk-summary">
           <div class="article-list-bulk-title">
-            <BootstrapIcon :icon="selectionIcon" aria-hidden="true" />
+            <BootstrapIcon :icon="selectionIcon" context="control" aria-hidden="true" />
             <span :title="selectionTitle">{{ selectionTitle }}</span>
             <span class="article-list-bulk-count">· {{ totalCount.toLocaleString() }} {{ totalCount === 1 ? 'article' : 'articles' }}</span>
           </div>
@@ -93,7 +95,7 @@
             :aria-expanded="isBulkMenuOpen ? 'true' : 'false'"
             @click.stop="toggleBulkMenu"
           >
-            <BootstrapIcon icon="three-dots" aria-hidden="true" />
+            <BootstrapIcon icon="three-dots" context="control" aria-hidden="true" />
           </button>
 
           <div v-if="isBulkMenuOpen" class="bulk-action-menu" :style="bulkMenuStyle" role="menu">
@@ -232,6 +234,11 @@
         ref="selectedArticleComponent"
         v-bind="selectedArticle"
         reader-detail
+        :reader-text-size="readerTextSize"
+        reader-toolbar
+        :reader-expanded="readerExpanded"
+        @toggle-reader-expanded="readerExpanded = !readerExpanded"
+        @update-reader-text-size="setReaderTextSize"
         :key="selectedArticle.id"
         @update-tags="$emit('update-tags', $event)"
         @update-favorite="$emit('update-favorite', $event)"
@@ -250,6 +257,7 @@
         :ref="element => setRelatedArticleRef(element, article.id)"
         v-bind="article"
         reader-detail
+        :reader-text-size="readerTextSize"
         @update-tags="$emit('update-tags', $event)"
         @update-favorite="$emit('update-favorite', $event)"
         @update-clicked="$emit('update-clicked', $event)"
@@ -305,6 +313,8 @@ import { summarizeArticleContent } from '../../services/articleContentService.js
 import { getArticleStatusOption } from '../../config/articleSelectionOptions.js';
 import HighlightedText from '../shared/HighlightedText.vue';
 import { parseSearchHighlightTerms } from '../../services/searchHighlight.js';
+
+import { READER_TEXT_SIZES, readReaderTextSize, saveReaderTextSize } from '../../services/readerTextSize.js';
 
 const PREVIEW_LENGTH = 150;
 
@@ -371,6 +381,8 @@ export default {
       articleItemRefs: {},
       relatedArticleRefs: {},
       selectedArticleId: null,
+      readerExpanded: false,
+      readerTextSize: readReaderTextSize(),
       isReaderEndStateDismissed: false,
       isBulkMenuOpen: false,
       showCollectionDetails: false,
@@ -604,6 +616,11 @@ export default {
     }
   },
   methods: {
+    setReaderTextSize(value) {
+      if (!READER_TEXT_SIZES.includes(value)) return;
+      this.readerTextSize = value;
+      saveReaderTextSize(value);
+    },
     // The date context follows the scrolling list, not the selected article's detail panel.
     getArticleListElement(articleId) {
       return this.articleItemRefs[articleId]?.closest('article') || null;
@@ -755,6 +772,7 @@ export default {
     },
     // Focuses and scrolls the selected article list item into view.
     focusSelectedListItem() {
+      if (this.readerExpanded) return;
       const selectedItem = this.articleItemRefs[this.selectedArticleId];
       if (!selectedItem) return;
       selectedItem.focus({ preventScroll: true });
@@ -881,14 +899,25 @@ export default {
   box-sizing: border-box;
   display: grid;
   grid-template-columns: minmax(340px, 38%) minmax(0, 1fr);
+  transition: grid-template-columns 180ms ease;
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
 
+.article-reader--expanded {
+  grid-template-columns: minmax(0px, 0%) minmax(0, 1fr);
+}
+
+/* Keep both scroll surfaces mounted while the list column collapses. */
+.article-reader--expanded .article-reader__list {
+  visibility: hidden;
+}
+
 .article-reader__list {
   --article-list-scrollbar-thumb: var(--scrollbar-thumb-strong);
   border-right: 1px solid var(--border-subtle);
+  min-width: 0;
   min-height: 0;
   overflow-y: auto;
   padding: 0 10px 24px;
@@ -915,23 +944,31 @@ export default {
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-primary);
   display: grid;
-  gap: 12px;
+  gap: 6px;
   grid-template-columns: minmax(0, 1fr) auto;
   margin: 0 -10px 10px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   position: relative;
 }
 
 .article-list-bulk-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
+}
+
+#reader-collection-details {
+  grid-column: 1 / -1;
 }
 
 .article-list-bulk-title {
   align-items: center;
   color: var(--text-primary);
   display: flex;
-  gap: 6px;
-  font-size: 14px;
+  gap: 3px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.25;
   min-width: 0;
@@ -947,13 +984,13 @@ export default {
 .article-list-bulk-title .bi {
   color: var(--text-secondary);
   flex: 0 0 auto;
-  font-size: 15px;
+  font-size: 13px;
 }
 
 .article-list-bulk-count { flex-shrink: 0; color: var(--text-secondary); font-size: 12px; font-weight: 400; }
-.article-list-bulk-controls { display: flex; flex-wrap: wrap; align-items: start; gap: 8px; margin-top: 8px; }
-.article-list-bulk-controls > .unread-selection-context { flex: 1 1 auto; width: auto; min-width: 0; }
-.article-list-details-toggle { min-height: var(--control-height-compact); padding: 0.375rem 0; background: var(--color-transparent); border: 0; color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 12px; }
+.article-list-bulk-controls { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.article-list-bulk-controls > .unread-selection-context { flex: 0 1 auto; width: auto; min-width: 0; }
+.article-list-details-toggle { flex: 0 0 auto; white-space: nowrap; min-height: var(--control-height-compact); padding: 0.375rem 0; background: var(--color-transparent); border: 0; color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 12px; }
 .article-list-details-toggle:hover { color: var(--color-link); }
 .article-list-details-toggle:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 
@@ -998,6 +1035,7 @@ export default {
 }
 
 .bulk-action-menu-wrap {
+  align-self: start;
   position: relative;
 }
 
@@ -1009,9 +1047,9 @@ export default {
   color: var(--text-secondary);
   cursor: pointer;
   display: inline-flex;
-  height: 30px;
+  height: var(--control-height-compact);
   justify-content: center;
-  width: 30px;
+  width: 26px;
 }
 
 .bulk-more-button:hover,
@@ -1296,6 +1334,7 @@ export default {
   min-width: 0;
   overflow-y: auto;
   overscroll-behavior-y: contain;
+  overflow-anchor: none;
   scrollbar-color: var(--reader-article-panel-scrollbar-thumb) var(--color-transparent);
   scrollbar-width: thin;
 }
@@ -1377,6 +1416,7 @@ export default {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .article-reader,
   .article-reader__item,
   .article-reader__item-title {
     transition: none;

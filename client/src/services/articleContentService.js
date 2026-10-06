@@ -2,6 +2,40 @@ export const NULL_ARTICLE_CONTENT = '<html><head></head><body>null</body></html>
 
 const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 
+// Reads the rendered body without UI controls, hidden subtrees, or known publisher ad wrappers.
+export function getRenderedArticleText(root) {
+  if (!root) return '';
+  const hidden = element => {
+    const style = getComputedStyle(element);
+    return element.hidden || element.hasAttribute('inert') || element.getAttribute('aria-hidden') === 'true'
+      || style.display === 'none' || ['hidden', 'collapse'].includes(style.visibility) || style.opacity === '0';
+  };
+  for (let element = root; element; element = element.parentElement) {
+    if (hidden(element)) return '';
+  }
+  const chunks = [];
+  const visit = node => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      chunks.push(node.textContent);
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE || hidden(node)) return;
+    if (node.matches('script, style, template, noscript, svg, canvas, iframe, object, embed, audio, video, form, button, input, select, textarea, nav, [role="navigation"], .advertisement, .advertisements, #advertisement, .social-share, .social-sharing, .cookie-consent')) return;
+    if (node.tagName === 'BR') { chunks.push(' '); return; }
+    if (node.tagName === 'DETAILS' && !node.open) {
+      const summary = node.querySelector(':scope > summary');
+      if (summary) visit(summary);
+      return;
+    }
+    const block = ['block', 'list-item', 'table', 'table-row', 'table-cell', 'flex', 'grid', 'flow-root'].includes(getComputedStyle(node).display);
+    if (block) chunks.push(' ');
+    node.childNodes.forEach(visit);
+    if (block) chunks.push(' ');
+  };
+  visit(root);
+  return chunks.join('').replace(/\s+/gu, ' ').trim();
+}
+
 // This function converts a legacy raw description into display-safe literal HTML.
 export function safeDescriptionFallbackHtml(value) {
   return String(value || '')

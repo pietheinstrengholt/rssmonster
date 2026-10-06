@@ -1,25 +1,34 @@
 <template>
   <div v-if="categoryName || displayTags.length || hasQualityScores || analysisStateLabel" class="article-tags">
-    <button v-if="categoryName" type="button" class="tag-badge" :aria-label="`Filter articles by category ${categoryName}`" @click.stop="$emit('select-category')">{{ categoryName }}</button>
-    <button v-for="tag in visibleTags" :key="tag.id" type="button" :class="['tag', { 'tag-rule': tag.tagType === 'rule', 'tag-manual': tag.tagType === 'manual' }]" :aria-label="`Filter articles by tag ${formatTagName(tag.name)}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name) }}</button>
-    <button v-if="hasHiddenTags" type="button" class="tag-disclosure" :aria-expanded="tagsExpanded ? 'true' : 'false'" :aria-label="tagsExpanded ? 'Show fewer tags' : `Show ${hiddenTagCount} more tags`" @click.stop="tagsExpanded = !tagsExpanded">{{ tagsExpanded ? 'Show less' : `+${hiddenTagCount}` }}</button>
-    <ArticleQualityExplanation
-      v-if="hasQualityScores"
-      :advertisement-score="advertisementScore"
-      :sentiment-score="sentimentScore"
-      :quality-score="qualityScore"
-      :quality="quality"
-    />
-    <span
-      v-else-if="analysisStateLabel"
-      class="analysis-state"
-      role="status"
-      aria-label="Article analysis in progress"
-    >{{ analysisStateLabel }}</span>
+    <ArticleReaderBadge v-if="categoryName">
+      <button type="button" class="tag-badge" :aria-label="`Filter articles by category ${categoryName}`" @click.stop="$emit('select-category')">{{ categoryName }}</button>
+    </ArticleReaderBadge>
+    <ArticleReaderBadge v-for="tag in visibleTags" :key="tag.id">
+      <button type="button" :class="['tag', { 'tag-rule': tag.tagType === 'rule', 'tag-manual': tag.tagType === 'manual' }]" :aria-label="`Filter articles by tag ${formatTagName(tag.name)}`" @click.stop="$emit('select-tag', tag)">{{ formatTagName(tag.name) }}</button>
+    </ArticleReaderBadge>
+    <ArticleReaderBadge v-if="hasHiddenTags">
+      <button type="button" class="tag-disclosure" :aria-expanded="tagsExpanded ? 'true' : 'false'" :aria-label="tagsExpanded ? 'Show fewer tags' : `Show ${hiddenTagCount} more tags`" @click.stop="tagsExpanded = !tagsExpanded">{{ tagsExpanded ? 'Show less' : `+${hiddenTagCount}` }}</button>
+    </ArticleReaderBadge>
+    <ArticleReaderBadge v-if="hasQualityScores">
+      <ArticleQualityExplanation
+        :advertisement-score="advertisementScore"
+        :sentiment-score="sentimentScore"
+        :quality-score="qualityScore"
+        :quality="quality"
+      />
+    </ArticleReaderBadge>
+    <ArticleReaderBadge v-else-if="analysisStateLabel">
+      <span
+        class="analysis-state"
+        role="status"
+        aria-label="Article analysis in progress"
+      >{{ analysisStateLabel }}</span>
+    </ArticleReaderBadge>
   </div>
 </template>
 <script>
 import { defineAsyncComponent } from 'vue';
+import ArticleReaderBadge from './ArticleReaderBadge.vue';
 import { formatTagName } from '../../utils/tags';
 import {
   hasUsableArticleAnalysis,
@@ -33,7 +42,7 @@ const ArticleQualityExplanation = defineAsyncComponent(
 );
 
 export default {
-  components: { ArticleQualityExplanation },
+  components: { ArticleReaderBadge, ArticleQualityExplanation },
   emits: ['select-category', 'select-tag'],
   props: {
     categoryName: { type: String, default: '' },

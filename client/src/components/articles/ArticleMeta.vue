@@ -2,31 +2,45 @@
   <div class="article-meta">
     <!-- <BootstrapIcon v-if="showAnalysisScores && isMobilePortrait && advertisementScore !== undefined && advertisementScore < neutralScore" icon="megaphone-fill" class="mobile-score-icon ad-icon" :title="`Promotional content detected (score: ${advertisementScore})`" /> -->
     <!-- <BootstrapIcon v-if="showAnalysisScores && isMobilePortrait && sentimentScore !== undefined && sentimentScore < neutralScore" icon="arrow-down-circle-fill" :class="['mobile-score-icon', 'sentiment-icon', getSentimentClass(sentimentScore)]" :title="`Tone quality: ${sentimentScore}`" /> -->
-    <span v-if="hasProvenance && !hideProvenance" class="article-provenance">
-      <span v-if="hasPublishedAt" class="article-published">{{ formatRelativeDate(publishedAt) }}</span>
-      <span v-if="hasPublishedAt && hasSource" class="article-provenance-separator" aria-hidden="true">·</span>
-      <span v-if="hasSource" class="article-source"><ArticleAuthors :authors="authors" :fallback="sourceLabel" :fallback-url="sourceUrl" /></span>
-    </span>
-    <span v-if="hideProvenance && (authors?.length || author)" class="article-source"><ArticleAuthors :authors="authors" :fallback="author" /></span>
-    <span v-if="originalSourceLabel" class="article-source article-original-source">
-      Original source:
-      <a v-if="originalSourceUrl" :href="originalSourceUrl" target="_blank" rel="noopener noreferrer" @click.stop>{{ originalSourceLabel }}</a>
-      <span v-else>{{ originalSourceLabel }}</span>
-    </span>
-    <ArticleRecommendationExplanation
-      v-if="showRecommendationExplanation"
-      :recommendation="recommendation"
-      :trigger-label="recommendationTriggerLabel"
-      @inspect-interest="$emit('inspect-interest', $event)"
-    />
-    <span v-else-if="hasInterestScore" class="recommended-badge">Matches your interests</span>
-    <ArticleStorySourcesPopover
-      v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none' && event.sourceCount >= 2"
-      :article-id="articleId"
-      :source-count="event.sourceCount"
-    />
-    <button v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none'" type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
-    <button v-if="duplicateCount > 0" type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="$emit('view-duplicate-articles')">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>
+    <ArticleReaderBadge v-if="hasProvenance && !hideProvenance">
+      <span class="article-provenance">
+        <span v-if="hasPublishedAt" class="article-published">{{ formatRelativeDate(publishedAt) }}</span>
+        <span v-if="hasPublishedAt && hasSource" class="article-provenance-separator" aria-hidden="true">·</span>
+        <span v-if="hasSource" class="article-source"><ArticleAuthors :authors="authors" :fallback="sourceLabel" :fallback-url="sourceUrl" /></span>
+      </span>
+    </ArticleReaderBadge>
+    <ArticleReaderBadge v-if="hideProvenance && (authors?.length || author)">
+      <span class="article-source"><ArticleAuthors :authors="authors" :fallback="author" /></span>
+    </ArticleReaderBadge>
+    <ArticleReaderBadge v-if="originalSourceLabel">
+      <span class="article-source article-original-source">
+        Original source:
+        <a v-if="originalSourceUrl" :href="originalSourceUrl" target="_blank" rel="noopener noreferrer" @click.stop>{{ originalSourceLabel }}</a>
+        <span v-else>{{ originalSourceLabel }}</span>
+      </span>
+    </ArticleReaderBadge>
+    <ArticleReaderBadge v-if="showRecommendationExplanation">
+      <ArticleRecommendationExplanation
+        :recommendation="recommendation"
+        :trigger-label="recommendationTriggerLabel"
+        @inspect-interest="$emit('inspect-interest', $event)"
+      />
+    </ArticleReaderBadge>
+    <ArticleReaderBadge v-else-if="hasInterestScore">
+      <span class="recommended-badge">Matches your interests</span>
+    </ArticleReaderBadge>
+    <ArticleReaderBadge v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none' && event.sourceCount >= 2">
+      <ArticleStorySourcesPopover
+        :article-id="articleId"
+        :source-count="event.sourceCount"
+      />
+    </ArticleReaderBadge>
+    <ArticleReaderBadge v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none'">
+      <button type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
+    </ArticleReaderBadge>
+    <ArticleReaderBadge v-if="duplicateCount > 0">
+      <button type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="$emit('view-duplicate-articles')">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>
+    </ArticleReaderBadge>
   </div>
 </template>
 
@@ -39,12 +53,13 @@ import { formatRelativeDate } from '../../utils/date.js';
 import { hasUsableArticleAnalysis } from '../../services/articleAnalysisPresentation.js';
 import ArticleStorySourcesPopover from './ArticleStorySourcesPopover.vue';
 import ArticleAuthors from './ArticleAuthors.vue';
+import ArticleReaderBadge from './ArticleReaderBadge.vue';
 
 const ArticleRecommendationExplanation = defineAsyncComponent(
   () => import('./ArticleRecommendationExplanation.vue')
 );
 export default {
-  components: { ArticleRecommendationExplanation, ArticleStorySourcesPopover, ArticleAuthors },
+  components: { ArticleReaderBadge, ArticleRecommendationExplanation, ArticleStorySourcesPopover, ArticleAuthors },
   emits: ['view-event-articles', 'view-duplicate-articles', 'inspect-interest'],
   props: {
     authors: { type: Array, default: null },

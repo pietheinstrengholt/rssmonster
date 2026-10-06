@@ -1,7 +1,7 @@
 <template>
   <AppDropdown ref="dropdown" class="article-actions" :align="isReaderMode ? 'end' : 'start'">
     <template #trigger="{ triggerProps }">
-      <button v-bind="triggerProps" class="article-actions__trigger" type="button" aria-label="Article actions">
+      <button v-bind="triggerProps" class="article-actions__trigger" type="button" aria-label="Article actions" title="Article actions">
         <BootstrapIcon icon="three-dots" />
       </button>
     </template>

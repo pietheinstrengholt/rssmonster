@@ -9,7 +9,7 @@
           <span class="unread-selection-context__divider" aria-hidden="true"></span>
           <AppDropdown ref="dateDropdown" class="unread-selection-context__date-filter">
             <template #trigger="{ triggerProps }">
-              <button v-bind="triggerProps" type="button" class="unread-selection-context__date-trigger" :aria-label="`Article date range: ${dateTriggerLabel}`">
+              <button v-bind="triggerProps" type="button" class="unread-selection-context__date-trigger" :aria-label="`Article date range: ${dateTriggerLabel}`" :title="readerMode ? dateTriggerLabel : undefined">
                 <BootstrapIcon icon="calendar3" context="control" aria-hidden="true" />
                 <span>{{ dateTriggerLabel }}</span>
                 <BootstrapIcon icon="chevron-down" context="control" aria-hidden="true" />
@@ -179,6 +179,18 @@ export default {
   white-space: nowrap;
 }
 .unread-selection-context__date-filter { flex: 0 0 auto; }
+.unread-selection-context--reader .unread-selection-context__date-trigger {
+  max-width: 120px;
+  gap: 4px;
+  padding-inline: 4px;
+  font-size: 12px;
+}
+.unread-selection-context--reader .unread-selection-context__date-trigger > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .unread-selection-context__date-trigger:hover { background: var(--briefing-context-action-hover-surface); }
 .unread-selection-context__date-trigger:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 .unread-selection-context__date-filter .app-dropdown__item { --app-dropdown-hover-background: var(--surface-hover); --app-dropdown-hover-color: var(--text-primary); --app-dropdown-active-background: var(--color-primary-soft); --app-dropdown-active-color: var(--color-link); }

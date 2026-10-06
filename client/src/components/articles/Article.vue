@@ -1,5 +1,6 @@
 <template>
-  <div class="article-card" :id="`article-${id}`" :class="[{ 'event-article': isEventArticle }, { 'article-list-card': isMinimalView, 'article-reader-detail': isReaderDetail }]" v-bind="filteredAttrs">
+  <div ref="articleRoot" :data-reader-text-size="isReaderDetail ? readerTextSize : undefined" class="article-card" :id="`article-${id}`" :class="[{ 'event-article': isEventArticle }, { 'article-list-card': isMinimalView, 'article-reader-detail': isReaderDetail }]" v-bind="filteredAttrs">
+    <ArticleReaderToolbar v-if="isReaderDetail && readerToolbar" :text-size="readerTextSize" @update-text-size="$emit('update-reader-text-size', $event)" :expanded="readerExpanded" @toggle-expanded="$emit('toggle-reader-expanded')" :article-id="id" :get-reading-content="getReadingContent" :language="language" :url="url" :status="status" :favorite-ind="favoriteInd" :favorite-pending="favoriteMutationPending" :clicked-amount="clickedAmount" :click-pending="clickMutationPending" :tag-editing-disabled="Boolean(duplicateOfArticleId)" @article-clicked="articleClicked" @toggle-clicked="toggleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" @add-tags="tagDialogMode = 'add'" @manage-tags="tagDialogMode = 'manage'" />
     <div v-if="isMinimalView" class="mobile-swipe-shell">
       <div class="mobile-swipe-action" :class="{ 'mobile-swipe-action--ready': isSwipeReady }" aria-hidden="true">
         <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-x-fill' : 'bookmark-fill'" aria-hidden="true" />
@@ -60,11 +61,15 @@
       </div>
       <div class="article-body mobile-swipe-content" :class="isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : ''" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
         <div class="article-layout">
-          <ArticleHeader :tag-editing-disabled="Boolean(duplicateOfArticleId)" :reader-detail="isReaderDetail" :feed="feed" :feed-favicon="feedFavicon" :author="author" :published-at="publishedAt" ref="articleHeading" :articleId="storyArticleId" :url="url" :title="title" :highlightTerms="highlightTerms" :clickedAmount="clickedAmount" :clickPending="clickMutationPending" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :hasAudioMedia="hasAudioMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-clicked="toggleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" @add-tags="tagDialogMode = 'add'" @manage-tags="tagDialogMode = 'manage'" />
-          <div class="meta-row" :class="{ 'article-reader-metabar': isReaderDetail }">
+          <ArticleHeader :reader-toolbar="isReaderDetail && readerToolbar" :tag-editing-disabled="Boolean(duplicateOfArticleId)" :reader-detail="isReaderDetail" ref="articleHeading" :articleId="storyArticleId" :url="url" :title="title" :highlightTerms="highlightTerms" :clickedAmount="clickedAmount" :clickPending="clickMutationPending" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :hasAudioMedia="hasAudioMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-clicked="toggleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" @add-tags="tagDialogMode = 'add'" @manage-tags="tagDialogMode = 'manage'" />
+          <component :is="isReaderDetail ? 'ArticleReaderMetabar' : 'div'" class="meta-row" :class="{ 'article-reader-metabar': isReaderDetail }">
+            <template #leading>
+              <img v-if="feedFavicon && !faviconFailed" :src="feedFavicon" class="article-reader-favicon" alt="" @error="faviconFailed = true" />
+              <BootstrapIcon v-else icon="rss-fill" context="control" class="article-reader-favicon" aria-hidden="true" />
+            </template>
             <ArticleMeta :authors="authors" :original-source="originalSource" :hide-provenance="isReaderDetail" :articleId="storyArticleId" :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :hasInterestScore="hasInterestScore" :isRecommendationView="isRecommendationView" :recommendation="recommendation" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :aiAnalysisStatus="aiAnalysisStatus" :neutralScore="NEUTRAL_SCORE" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" @inspect-interest="$emit('inspect-interest', $event)" />
             <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="articleTags" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :quality="quality" :aiAnalysisStatus="aiAnalysisStatus" @select-category="selectCategory" @select-tag="selectTag" />
-          </div>
+          </component>
           <ArticlePreviewFallback v-if="!hasArticlePreview" :url="url" @open-original="articleClicked" />
           <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
             <template v-for="(signal, index) in articleSignals" :key="signal.label">
@@ -94,7 +99,9 @@ import { useUiStore } from '../../store/ui.js';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
 import ArticleHeader from './ArticleHeader.vue';
+import ArticleReaderToolbar from './ArticleReaderToolbar.vue';
 import ArticleMeta from './ArticleMeta.vue';
+import ArticleReaderMetabar from './ArticleReaderMetabar.vue';
 import ArticleTagsScores from './ArticleTagsScores.vue';
 import ArticleContent from './ArticleContent.vue';
 import ArticleHeadlineRow from './ArticleHeadlineRow.vue';
@@ -128,11 +135,14 @@ function isSafeMediaUrl(value) {
 
 export default {
   inheritAttrs: false,
-  components: { ArticleTagDialog: defineAsyncComponent(() => import('./ArticleTagDialog.vue')), ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent, ArticleHeadlineRow, ArticleMedia, ArticlePreviewFallback },
-  emits: ['update-tags', 'update-favorite', 'update-clicked', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'event-articles-loaded', 'event-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed', 'article-not-interested', 'inspect-interest'],
+  components: { ArticleTagDialog: defineAsyncComponent(() => import('./ArticleTagDialog.vue')), ArticleHeader, ArticleReaderToolbar, ArticleReaderMetabar, ArticleMeta, ArticleTagsScores, ArticleContent, ArticleHeadlineRow, ArticleMedia, ArticlePreviewFallback },
+  emits: ['update-reader-text-size', 'toggle-reader-expanded', 'update-tags', 'update-favorite', 'update-clicked', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'event-articles-loaded', 'event-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed', 'article-not-interested', 'inspect-interest'],
   props: {
     duplicateOfArticleId: { type: [Number, String], default: null },
     readerDetail: { type: Boolean, default: false },
+    readerToolbar: { type: Boolean, default: false },
+    readerExpanded: { type: Boolean, default: false },
+    readerTextSize: { type: String, default: 'medium' },
     id: { type: [Number, String], required: true },
     url: { type: String, default: '' },
     title: { type: String, default: '' },
@@ -189,12 +199,14 @@ export default {
       showMinimalContent: false,
       tagDialogMode: null,
       updatedTags: null,
+      faviconFailed: false,
       favoriteMutationPending: false,
       clickMutationPending: false,
       NEUTRAL_SCORE
     };
   },
   watch: {
+    feedFavicon() { this.faviconFailed = false; },
     tags() { this.updatedTags = null; },
     // This function cancels an active swipe when portrait eligibility ends.
     isMobilePortrait(matches) {
@@ -391,6 +403,7 @@ export default {
     }
   },
   methods: {
+    getReadingContent() { return this.$refs.articleRoot?.querySelector('[data-reading-content]'); },
     updateTags(tags) {
       this.updatedTags = tags;
       this.$emit('update-tags', { id: this.id, tags });
@@ -746,14 +759,54 @@ export default {
 :global(:root[data-theme='dark'] .article-card.article-list-card > .article-media) {
   background: var(--surface-page);
 }
+.article-reader-detail {
+  /* Scale reading text together while keeping Reader chrome at its existing size. */
+  --reader-text-scale: 1;
+  --reader-title-size: clamp(calc(26px * var(--reader-text-scale)), calc(3cqi * var(--reader-text-scale)), calc(32px * var(--reader-text-scale)));
+  --reader-body-size: calc(14px * var(--reader-text-scale));
+  --reader-h1-size: calc(24px * var(--reader-text-scale));
+  --reader-h2-size: calc(20px * var(--reader-text-scale));
+  --reader-h3-size: calc(18px * var(--reader-text-scale));
+  --reader-h4-size: calc(16px * var(--reader-text-scale));
+  --reader-h5-size: calc(15px * var(--reader-text-scale));
+  --reader-h6-size: calc(14px * var(--reader-text-scale));
+  --reader-caption-size: calc(0.8125rem * var(--reader-text-scale));
+  /* Relative code sizes follow their surrounding reading text without scaling twice. */
+  --reader-inline-code-size: 0.875em;
+  --reader-pre-size: 0.875em;
+}
+
+.article-reader-detail[data-reader-text-size='small'] {
+  --reader-text-scale: 0.93;
+}
+
+.article-reader-detail[data-reader-text-size='large'] {
+  --reader-text-scale: 1.14;
+}
+
 .article-reader-detail .article-body {
   padding: 24px clamp(24px, 3cqi, 32px);
   --article-affinity-title-color: var(--text-primary);
 }
 
+.article-reader-detail > .mobile-swipe-shell {
+  overflow: visible;
+}
+
 .article-reader-detail .article-reader-metabar {
+  flex-wrap: nowrap;
   gap: 6px;
   margin-top: 14px;
+}
+
+.article-reader-metabar .article-reader-favicon {
+  display: block;
+  margin: 0;
+  transform: translateY(-1px);
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 
 .article-reader-metabar :deep(.tag),

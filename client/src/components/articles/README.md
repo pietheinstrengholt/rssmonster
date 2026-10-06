@@ -13,16 +13,17 @@ The interface should feel calm, dense, and content-first. Titles and article con
 
 ## Experience model
 
-Expanded article metadata and Reader detail show publisher-declared “Original
-source” attribution when available, alongside the existing author/feed provenance.
-Source links accept only HTTP(S); title-only or ID-only attribution remains text.
-Compact headline rows retain their existing layout. Attribution is not a claim
-that the source is verified or that other reports are independent.
+Expanded and Reader-detail metadata show publisher-declared “Original source”
+attribution when available. Expanded also shows the combined date/feed provenance. Source links accept
+only HTTP(S); title-only or ID-only attribution remains text. Attribution is not a
+claim that the source is verified or that reports are independent.
 
-Expanded and Reader-detail bylines render the ordered canonical authors list,
-linking each available HTTP(S) profile separately. Missing profiles remain text;
-URL-only authors display the profile hostname. Legacy articles retain their complete
-unsplit byline. Compact and Reader-list labels use the joined compatibility byline.
+Expanded and Reader-detail bylines render the ordered canonical authors list, linking each available
+HTTP(S) profile separately. Missing profiles remain text; URL-only authors display
+the profile hostname. Legacy articles retain their complete unsplit byline. Compact
+and Reader-list labels use the joined compatibility byline. Reader detail omits the
+repeated source header and combined date/feed badge; the middle list supplies that
+context. Author and Original source badges remain available in Reader metadata.
 
 The article area has three layers:
 
@@ -60,19 +61,74 @@ The compact view is optimized for higher-volume browsing and therefore loads lar
 
 ### Desktop reader
 
-On wider desktop screens, reader mode uses a two-pane layout. The left pane is a scrollable article list and the right pane displays the selected article in full. The list occupies a substantial but secondary portion of the screen so scanning and reading can happen without navigation away from the collection.
+At desktop widths of at least 1024px, Reader uses an article-list pane and a
+selected-article pane alongside the shell's left sidebar. `ArticleReaderLayout.vue`
+owns both scroll surfaces and the grid: `minmax(340px, 38%) minmax(0, 1fr)`.
+`ArticleFeed.vue` owns the existing responsive switch; below this width Reader
+falls back to the article stream.
 
-The list header summarizes the active collection with its name, unread total, event total, source total, and the most common visible tags. Tags can be selected directly to refine the collection. A collection-level menu provides bulk actions for:
+The list header keeps the collection title/count, date filter, **Details**, and
+bulk menu on one row, with 6px gaps and 12px horizontal padding. Long collection
+names and date labels truncate; date labels retain their full accessible name and
+tooltip. Details opens unread/event/source totals and selectable top tags below
+the header. The bulk menu offers visible-row read/save/opened actions and actions
+relative to the selected article; visible actions use the on-screen list rows,
+rather than all loaded articles.
 
-- Marking all currently loaded articles as read.
-- Marking articles older than the selected article as read.
-- Marking articles above or below the selected article as read.
-- Favoriting all currently loaded articles.
-- Marking all currently loaded articles as clicked.
+The selected article has a sticky `ArticleReaderToolbar.vue` outside the article
+body's touch handlers. Read/unread, save/unsave, and Open original actions sit on
+the left. The right group contains **Aa**, headphones when speech is supported,
+expand/restore, and the three-dot article menu. Related Reader articles retain
+their own article controls without duplicating the selected article's toolbar.
+All controls use the existing dropdown, icon, focus, and theme conventions.
 
-Changing the selected reader article marks the previously selected unread article as read. The first available article is selected automatically when a new non-empty collection is opened.
+- **Text size:** Aa uses `AppDropdown.vue` with Small, Medium, and Large radio-menu
+  items. Selection applies immediately, closes the menu, and returns focus to Aa.
+  `ArticleReaderLayout.vue` owns `readerTextSize` and passes it to selected and
+  related Reader articles. `services/readerTextSize.js` validates and stores only
+  `small`, `medium`, or `large` under `rssmonster.readerTextSize`. Initialization
+  restores the saved value; missing, invalid, or inaccessible storage defaults to
+  Medium. Storage failures do not prevent changing the current size.
+- **Listen:** `composables/useArticleSpeech.js` uses `window.speechSynthesis` and
+  `SpeechSynthesisUtterance`. The first click starts; further clicks pause/resume
+  the same utterance. The active toolbar state indicates speaking. Unsupported
+  browsers hide the button. `getRenderedArticleText` in `articleContentService.js`
+  reads the current `[data-reading-content]` subtree, excluding controls,
+  navigation, hidden content, embedded media, and known publisher ad wrappers.
+  It excludes the article heading and metadata. Changing articles, leaving
+  Reader, or unmounting cancels playback; queue ownership prevents overlapping
+  Reader utterances and stale callbacks resetting a newer session. Audio is
+  neither generated on the backend nor stored; voices and playback depend on the
+  browser's speech implementation.
+- **Expand:** `readerExpanded` is local to the Reader layout. The grid's list
+  column transitions to zero over 180ms; the sidebar stays outside this change.
+  The list becomes invisible and inert while both panes and the selected article
+  remain mounted. Restore returns the normal grid sizing without resetting the
+  selection, scroll surfaces, metadata interactions, or speech session. Reduced
+  motion disables the transition. Keyboard navigation still selects articles,
+  without attempting to focus the hidden list.
 
-Reader mode is a desktop enhancement. On smaller screens it falls back to the normal article stream so the content does not become constrained by two narrow panes.
+The feed favicon (or RSS fallback) leads the metadata bar below the title.
+`ArticleReaderMetabar.vue` measures registered `ArticleReaderBadge.vue` instances
+with ResizeObserver and MutationObserver. Badges that fit remain on one row;
+only trailing badges that overflow move into the three-dot disclosure. The first
+badge's label truncates at very narrow widths. The disclosure disappears when all
+badges fit again. Vue Teleport moves the existing badge controls into their overflow
+slots, preserving handlers and reactive state; outside press and Escape close the
+panel. Full and compact modes retain their existing metadata presentation.
+
+Changing the selected Reader article marks the previously selected unread article
+as read. The first article is selected automatically for a new non-empty collection.
+Text size and expansion do not change article read state or request new content.
+
+Focused regression coverage includes `reader-article-toolbar.test.js`,
+`article-reader-metabar.test.js`, `article-speech.test.js`, `reader-expand.test.js`,
+`reader-text-size.test.js`, `unread-selection-context.test.js`, and
+`reader-visible-bulk-actions.test.js`. Real-browser checks should also verify
+centered toolbar contents, metadata overflow, list-header fit at the 340px list
+minimum, both themes, reduced motion, scroll preservation, and computed typography.
+Speech unit/browser UI checks can mock synthesis; audible voice quality and native
+playback require verification in the target browser.
 
 ## Collection loading
 
@@ -123,7 +179,8 @@ Compact icons before the title explain the article type or why it may deserve at
 
 Source-specific and media-specific icons take precedence where they explain the format more clearly than a generic relevance icon. The intent is to provide fast recognition without turning the header into a crowded badge row.
 
-Reader mode keeps the read/unread toggle inside the article actions menu.
+Reader detail keeps the title focused on the article. The selected article exposes
+read/unread directly in the sticky toolbar and also in its article actions menu.
 
 ## Article actions
 
@@ -141,7 +198,9 @@ On mobile portrait screens, swiping an article to the right reveals a favorite a
 
 ## Metadata and labels
 
-A horizontal metadata area follows the title. It provides concise context such as:
+A horizontal metadata area follows the title. Reader detail uses the adaptive
+single-row badge bar described above. Other layouts retain their existing wrapping
+metadata area. Context includes:
 
 - Relative publication time.
 - Author or feed name, linked to the feed's origin.
@@ -297,7 +356,9 @@ Shortcuts do not run while the user is typing, editing content, using a modified
 
 Daily briefing collections include briefing-specific context before their articles.
 
-Unread collections can show how many unread articles and distinct sources are represented and provide a route to tune the unread selection. This context is hidden on narrow mobile screens where reading space is more valuable.
+Unread collections provide date and age filters alongside collection context.
+The stream context adapts to narrow screens; desktop Reader uses the compact
+list-header controls described above, with collection totals under Details.
 
 Smart folders have an overview that presents saved query-based collections as a responsive grid. Each folder shows its name and query and opens the corresponding article selection. When no smart folders exist, the overview explains their purpose rather than showing an empty grid.
 
@@ -381,9 +442,11 @@ falls back to the full list. Baselines are never written to server settings.
 
 ## Unread selection context
 
-The standard list and Reader list share a `UnreadSelectionContext` that scrolls with the articles, showing the
-current result count, source count, publication-date context and unread-preferences
-action. The date follows the first visible article below any sticky shell toolbar, including when
+The standard list and Reader list share a `UnreadSelectionContext` that scrolls
+with the articles. The stream shows result/source counts, publication-date context,
+date and age filters, and Save as smart folder for a search. Reader embeds the
+compact date dropdown in its single-row list header; counts and Details belong to
+`ArticleReaderLayout.vue`, and source/publication context stays in the list rows. The date follows the first visible article below any sticky shell toolbar, including when
 scrolling backwards. There are no separate date groups: existing article order is
 preserved, including Recommended order. Both date labels use the same local calendar
 day; missing publication dates omit the date section.

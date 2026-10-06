@@ -524,7 +524,7 @@ describe('ArticleHeader actions', () => {
       'data-status': 'read'
     });
     expect(wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon')))
-      .toEqual(['rss-fill', 'fire', 'bookmark-fill', 'circle']);
+      .toEqual(['fire', 'bookmark-fill', 'circle']);
 
     await wrapper.get('.article-link').trigger('click');
     await wrapper.get('.actions-stub').trigger('click');

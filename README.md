@@ -89,6 +89,15 @@ available. Bookmark articles, open original sources, and control when articles
 are marked read. [Keyboard shortcuts](docs/keyboard-shortcuts.md), portrait
 bookmark swipes, and light, dark, or system themes support everyday reading.
 
+Desktop Reader includes a focused article toolbar for read state, bookmarks, and
+opening the original. Choose **Small**, **Medium**, or **Large** text with **Aa**;
+the size is remembered in your browser. The headphones button reads the rendered
+article body using browser text-to-speech when supported, with pause/resume on
+subsequent clicks. Expand the article to hide the middle list while keeping the
+sidebar visible, then restore the normal layout with the same button. See the
+[Reader implementation notes](client/src/components/articles/README.md#desktop-reader)
+for layout, typography, and interaction details.
+
 ### Organization
 
 Arrange subscriptions into categories, label articles with tags, and keep

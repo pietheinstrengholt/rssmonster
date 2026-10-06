@@ -97,7 +97,7 @@ export default {
 .article-content-wrapper {
   color: var(--text-primary);
   padding-top: var(--article-space-normal, 8px);
-  font-size: 14px;
+  font-size: var(--reader-body-size, 14px);
   line-height: 1.65;
   font-weight: 400;
   margin: 0 0 var(--article-space-tight, 4px);
@@ -106,7 +106,7 @@ export default {
 .article-full-content {
   font-family: var(--font-family);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--reader-body-size, 14px);
   line-height: 1.65;
   font-weight: 400;
 }

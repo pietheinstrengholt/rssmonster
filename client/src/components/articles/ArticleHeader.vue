@@ -1,12 +1,5 @@
 <template>
   <header class="article-header" :class="{ 'article-reader-heading': isReaderDetail, 'article-header--with-original': showOriginalAction }">
-    <div v-if="isReaderDetail" class="article-reader-source">
-      <img v-if="feedFavicon && !faviconFailed" :src="feedFavicon" class="article-reader-favicon" alt="" @error="faviconFailed = true" />
-      <BootstrapIcon v-else icon="rss-fill" context="control" class="article-reader-favicon" aria-hidden="true" />
-      <a v-if="sourceUrl" :href="sourceUrl" target="_blank" rel="noopener noreferrer" class="article-reader-source-name">{{ feed.feedName || author }}</a>
-      <span v-else class="article-reader-source-name">{{ feed.feedName || author }}</span>
-      <span v-if="publishedAt" class="article-reader-timestamp">{{ formatRelativeDate(publishedAt) }}</span>
-    </div>
     <component :is="isReaderDetail ? 'h1' : 'h5'" class="article-header-left" :class="{ 'article-reader-title': isReaderDetail }">
       <BootstrapIcon v-if="isBlueSkyArticle" icon="bluesky" class="article-kind-icon bluesky-icon" />
       <BootstrapIcon v-if="isRedditArticle" icon="reddit" class="article-kind-icon reddit-icon" />
@@ -32,7 +25,7 @@
       <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" @click="$emit('article-clicked')"><HighlightedText :text="title" :terms="highlightTerms" /></a>
       <span v-else class="article-link"><HighlightedText :text="title" :terms="highlightTerms" /></span>
     </component>
-    <div class="article-header-actions" :class="{ 'article-reader-actions': isReaderDetail }">
+    <div v-if="!isReaderDetail || !readerToolbar" class="article-header-actions" :class="{ 'article-reader-actions': isReaderDetail }">
       <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :clickedAmount="clickedAmount" :clickPending="clickPending" :favoriteInd="favoriteInd" :favoritePending="favoritePending" :isReaderMode="isReaderMode" :status="status" @toggle-clicked="$emit('toggle-clicked')" @toggle-favorite="$emit('toggle-favorite')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
       <template v-if="isReaderDetail">
         <button type="button" class="article-reader-favorite" :class="{ 'article-reader-favorite--active': favoriteInd === 1 }" :aria-label="favoriteInd === 1 ? 'Remove from saved' : 'Save article'" :aria-pressed="favoriteInd === 1" :disabled="favoritePending" @click="$emit('toggle-favorite')">
@@ -54,7 +47,6 @@
 import ArticleActionsMenu from './ArticleActionsMenu.vue';
 import ArticleDevelopingStoryPopover from './ArticleDevelopingStoryPopover.vue';
 import HighlightedText from '../shared/HighlightedText.vue';
-import { formatRelativeDate } from '../../utils/date.js';
 import { usableHttpUrl } from '../../utils/content.js';
 
 export default {
@@ -63,10 +55,7 @@ export default {
   props: {
     tagEditingDisabled: { type: Boolean, default: false },
     readerDetail: { type: Boolean, default: false },
-    feed: { type: Object, default: () => ({}) },
-    feedFavicon: { type: String, default: '' },
-    author: { type: String, default: '' },
-    publishedAt: { type: [String, Date], default: '' },
+    readerToolbar: { type: Boolean, default: false },
     articleId: { type: [Number, String], default: null },
     url: { type: String, default: '' }, title: { type: String, default: '' }, clickedAmount: { type: Number, default: 0 },
     clickPending: { type: Boolean, default: false },
@@ -77,28 +66,16 @@ export default {
     isGroupedView: { type: Boolean, default: false }, eventArticleCountTotal: { type: Number, default: 0 },
     highlightTerms: { type: Array, default: () => [] }
   },
-  data() {
-    return { faviconFailed: false };
-  },
-  watch: {
-    feedFavicon() {
-      this.faviconFailed = false;
-    }
-  },
   computed: {
     isReaderDetail() {
       return this.readerDetail && this.isReaderMode;
-    },
-    sourceUrl() {
-      const url = usableHttpUrl(this.feed?.url);
-      return url ? `${new URL(url).origin}/` : '';
     },
     // Returns an absolute HTTP(S) destination eligible for external navigation.
     safeArticleUrl() {
       return usableHttpUrl(this.url);
     },
     showOriginalAction() {
-      return this.safeArticleUrl && (this.isReaderDetail || this.viewMode === 'full');
+      return this.safeArticleUrl && ((this.isReaderDetail && !this.readerToolbar) || this.viewMode === 'full');
     },
     // Returns whether the article links to a Bluesky profile post.
     isBlueSkyArticle() {
@@ -144,7 +121,6 @@ export default {
     }
   },
   methods: {
-    formatRelativeDate,
     // Opens the original article through the header-owned link behavior.
     openOriginalArticle() {
       this.$refs.originalArticleLink?.click();
@@ -287,39 +263,6 @@ export default {
   gap: 16px 12px;
 }
 
-.article-reader-source {
-  display: flex;
-  align-items: center;
-  flex: 1 1 200px;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-width: 0;
-}
-
-.article-reader-source .article-reader-favicon {
-  display: block;
-  margin: 0;
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-  flex: 0 0 auto;
-}
-
-.article-reader-source-name {
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
-  text-decoration: none;
-}
-
-.article-reader-timestamp {
-  color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.4;
-}
-
 .article-reader-heading .article-reader-actions {
   flex-wrap: wrap;
   gap: 6px 2px;
@@ -336,7 +279,7 @@ export default {
 
 .article-reader-title .article-link {
   color: var(--text-primary);
-  font-size: clamp(26px, 3cqi, 32px);
+  font-size: var(--reader-title-size, clamp(26px, 3cqi, 32px));
   font-weight: 700;
   line-height: 1.2;
   overflow-wrap: anywhere;

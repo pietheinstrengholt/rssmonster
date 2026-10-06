@@ -119,6 +119,25 @@ identifiers and other technical values where character alignment or distinction 
 not a general metadata or body-text treatment. Publisher article content may require compatibility
 overrides, but application-owned UI should return to the shared system stack.
 
+## Reader text sizes
+
+Reader detail defines its typography variables on `.article-reader-detail` in
+`Article.vue`; `data-reader-text-size` selects Medium (scale 1), Small (0.93), or
+Large (1.14). `--reader-title-size` preserves `clamp(26px, 3cqi, 32px)` at Medium
+and scales all three terms together. The body baseline remains 14px / 400 / 1.65.
+`--reader-h1-size` through `--reader-h6-size` preserve 24/20/18/16/15/14px at
+Medium, with heading weight 700 and line height 1.25. The title retains weight
+700 and line height 1.2. `--reader-caption-size` scales the existing 0.8125rem
+figure captions while keeping line height 1.4. Inline and preformatted code keep
+relative 0.875em sizes so they scale with surrounding text without scaling twice;
+code inside pre inherits its pre size.
+
+`ArticleHeader.vue`, `ArticleContent.vue`, and the namespaced publisher-content
+rules in `articleContentOverrides.css` consume these variables with the existing
+values as fallbacks. Avoid scaling the entire article root: toolbar controls,
+metadata pills, recommendations, sidebar and list text keep their own UI sizes.
+The preference belongs to the Reader layout and browser storage, not server settings.
+
 ## Type Scale
 
 Use the smallest size that remains readable for the element's role. The established application scale
