@@ -1348,8 +1348,9 @@ export default {
   overflow-y: auto;
   overscroll-behavior-y: contain;
   overflow-anchor: none;
-  scrollbar-color: var(--reader-article-panel-scrollbar-thumb) var(--color-transparent);
+  scrollbar-color: var(--color-transparent) var(--color-transparent);
   scrollbar-width: thin;
+  transition: scrollbar-color var(--motion-duration-normal) var(--motion-easing-standard);
 }
 
 .article-reader__content::-webkit-scrollbar {
@@ -1362,8 +1363,19 @@ export default {
 }
 
 .article-reader__content::-webkit-scrollbar-thumb {
-  background-color: var(--reader-article-panel-scrollbar-thumb);
+  background-color: var(--color-transparent);
   border-radius: 999px;
+  transition: background-color var(--motion-duration-normal) var(--motion-easing-standard);
+}
+
+.article-reader__content:hover,
+.article-reader__content:focus-within {
+  scrollbar-color: var(--reader-article-panel-scrollbar-thumb) var(--color-transparent);
+}
+
+.article-reader__content:hover::-webkit-scrollbar-thumb,
+.article-reader__content:focus-within::-webkit-scrollbar-thumb {
+  background-color: var(--reader-article-panel-scrollbar-thumb);
 }
 
 .article-load-sentinel {

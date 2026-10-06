@@ -503,8 +503,9 @@ export default {
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
-    scrollbar-color: var(--expanded-scrollbar-thumb) var(--color-transparent);
+    scrollbar-color: var(--color-transparent) var(--color-transparent);
     scrollbar-width: thin;
+    transition: scrollbar-color var(--motion-duration-normal) var(--motion-easing-standard);
   }
 
   .article-list-view.article-list-view--expanded::-webkit-scrollbar {
@@ -516,8 +517,19 @@ export default {
   }
 
   .article-list-view.article-list-view--expanded::-webkit-scrollbar-thumb {
-    background-color: var(--expanded-scrollbar-thumb);
+    background-color: var(--color-transparent);
     border-radius: 999px;
+    transition: background-color var(--motion-duration-normal) var(--motion-easing-standard);
+  }
+
+  .article-list-view.article-list-view--expanded:hover,
+  .article-list-view.article-list-view--expanded:focus-within {
+    scrollbar-color: var(--expanded-scrollbar-thumb) var(--color-transparent);
+  }
+
+  .article-list-view.article-list-view--expanded:hover::-webkit-scrollbar-thumb,
+  .article-list-view.article-list-view--expanded:focus-within::-webkit-scrollbar-thumb {
+    background-color: var(--expanded-scrollbar-thumb);
   }
 
   :global(:root[data-theme='dark']) .article-list-view.article-list-view--expanded {

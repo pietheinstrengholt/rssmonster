@@ -89,8 +89,10 @@ describe('Article rendering containment', () => {
 
   // Verifies Expanded mode uses its native scroll surface without viewport-coupled overlay geometry.
   it('styles the native Expanded scrollbar', () => {
-    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded\s*\{[^}]*scrollbar-color:\s*var\(--expanded-scrollbar-thumb\) var\(--color-transparent\);[^}]*scrollbar-width:\s*thin;/s);
-    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded::\-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--expanded-scrollbar-thumb\);[^}]*border-radius:\s*999px;/s);
+    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded\s*\{[^}]*scrollbar-color:\s*var\(--color-transparent\) var\(--color-transparent\);[^}]*scrollbar-width:\s*thin;/s);
+    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded::\-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--color-transparent\);[^}]*border-radius:\s*999px;/s);
+    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded:hover,\s*\.article-list-view\.article-list-view--expanded:focus-within\s*\{[^}]*scrollbar-color:\s*var\(--expanded-scrollbar-thumb\) var\(--color-transparent\);/s);
+    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded:hover::-webkit-scrollbar-thumb,\s*\.article-list-view\.article-list-view--expanded:focus-within::-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--expanded-scrollbar-thumb\);/s);
     expect(articleListSource).not.toContain('updateExpandedScrollbarMetrics');
     expect(articleListSource).not.toContain('--expanded-scrollbar-offset');
     expect(articleListSource).not.toMatch(/\.article-list-view\.article-list-view--expanded::after/);
