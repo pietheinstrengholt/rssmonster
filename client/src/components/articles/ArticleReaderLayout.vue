@@ -947,6 +947,7 @@ export default {
   gap: 6px;
   grid-template-columns: minmax(0, 1fr) auto;
   margin: 0 -10px 10px;
+  min-height: 50px;
   padding: 8px 12px;
   position: relative;
 }

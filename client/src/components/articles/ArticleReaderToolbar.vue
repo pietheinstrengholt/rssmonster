@@ -87,12 +87,12 @@ export default {
   z-index: var(--layer-sticky);
   display: flex;
   align-items: center;
-  align-content: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  min-height: 54px;
-  padding: 6px 18px;
-  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: nowrap;
+  /* Tighten spacing against the existing Reader pane container before labels would wrap. */
+  gap: clamp(0px, calc(5cqi - 20px), 10px);
+  min-height: 50px;
+  padding: 5px clamp(6px, calc(7cqi - 24px), 20px);
+  border-bottom: 1px solid var(--border-default);
   background: var(--surface-card);
   color: var(--text-secondary);
   font-family: var(--font-family);
@@ -104,9 +104,11 @@ export default {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  height: 36px;
-  padding: 6px 9px;
+  gap: clamp(2px, calc(3cqi - 11px), 7px);
+  min-width: 32px;
+  height: 38px;
+  flex-shrink: 0;
+  padding: 7px clamp(0px, calc(5cqi - 22px), 9px);
   border: 0;
   border-radius: var(--radius-control);
   background: var(--color-transparent);
@@ -145,14 +147,19 @@ export default {
   flex-shrink: 0;
 }
 
+.reader-article-toolbar__secondary .reader-article-toolbar__action {
+  width: clamp(32px, calc(4cqi + 12px), 36px);
+  padding-inline: 0;
+}
+
 .reader-article-toolbar__action--active {
   color: var(--color-primary);
   background: var(--color-primary-soft);
 }
 
 .reader-article-toolbar :deep(.article-actions .article-actions__trigger) {
-  width: 36px;
-  height: 36px;
+  width: clamp(32px, calc(4cqi + 12px), 36px);
+  height: 38px;
   border-radius: var(--radius-control);
   color: var(--text-secondary);
   opacity: 1;

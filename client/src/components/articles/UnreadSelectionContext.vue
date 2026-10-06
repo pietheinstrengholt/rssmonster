@@ -3,7 +3,7 @@
     <div class="unread-selection-context__surface">
       <div class="unread-selection-context__summary">
         <span v-if="!readerMode" class="unread-selection-context__meta">
-          Based on <strong>{{ articleCount.toLocaleString() }}</strong> {{ articleCount === 1 ? 'article' : 'articles' }} from <strong>{{ sourceCount.toLocaleString() }}</strong> {{ sourceCount === 1 ? 'source' : 'sources' }}
+          <span class="unread-selection-context__meta-prefix">Based on </span><strong>{{ articleCount.toLocaleString() }}</strong> {{ articleCount === 1 ? 'article' : 'articles' }} from <strong>{{ sourceCount.toLocaleString() }}</strong> {{ sourceCount === 1 ? 'source' : 'sources' }}
         </span>
         <div v-if="selectionStore.currentSelection.status === 'unread'" class="unread-selection-context__date-group">
           <span class="unread-selection-context__divider" aria-hidden="true"></span>
@@ -180,9 +180,9 @@ export default {
 }
 .unread-selection-context__date-filter { flex: 0 0 auto; }
 .unread-selection-context--reader .unread-selection-context__date-trigger {
-  max-width: 120px;
+  max-width: 128px;
   gap: 4px;
-  padding-inline: 4px;
+  padding-inline: 8px;
   font-size: 12px;
 }
 .unread-selection-context--reader .unread-selection-context__date-trigger > span {
@@ -218,6 +218,9 @@ export default {
 .unread-selection-context__age-button:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 @media (width < 1230px), (max-height: 560px) and (min-width: 480px) {
   .unread-selection-context__date-group > time { display: none; }
+}
+@media (width < 918px) {
+  .unread-selection-context__meta-prefix { display: none; }
 }
 @media (max-width: 875px), (max-height: 560px) and (min-width: 480px) {
   .unread-selection-context__meta { display: none; }

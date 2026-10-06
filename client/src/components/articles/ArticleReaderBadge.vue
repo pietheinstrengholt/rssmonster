@@ -49,4 +49,13 @@ export default {
   display: inline-block;
   vertical-align: middle;
 }
+
+/* Keep explanation triggers and metadata pills on the same centered text line. */
+.reader-metadata-badge :deep(button),
+.reader-metadata-badge :deep(.recommended-badge),
+.reader-metadata-badge :deep(.source-badge) {
+  min-height: 24px;
+  padding-block: 0;
+  line-height: 22px;
+}
 </style>
