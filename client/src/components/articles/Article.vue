@@ -802,7 +802,6 @@ export default {
 .article-reader-metabar .article-reader-favicon {
   display: block;
   margin: 0;
-  transform: translateY(-1px);
   width: 22px;
   height: 22px;
   object-fit: contain;
