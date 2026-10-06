@@ -1,6 +1,7 @@
 import { flushPromises, shallowMount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
+import NewArticlesBanner from '../src/components/articles/NewArticlesBanner.vue';
 import { fetchArticleIds, fetchArticlePage, fetchNewerArticleCount, markAllAsRead } from '../src/api/articles.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 import { loadUnreadBaseline, saveUnreadBaseline, newerUnreadSelection } from '../src/services/unreadBaseline.js';
@@ -42,6 +43,12 @@ beforeEach(() => {
 afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe('new unread articles', () => {
+  it.each([[32, '32 new articles'], [1, '1 new article']])('names the articles in the reader banner for count %s', (count, label) => {
+    wrapper = shallowMount(NewArticlesBanner, { props: { count, readerMode: true } });
+
+    expect(wrapper.get('[role="status"]').text()).toContain(label);
+  });
+
   it.each(['Clear search', 'Clear filters'])('recovers an empty search using %s', async action => {
     fetchArticleIds.mockResolvedValueOnce(result([]));
     await mountFeed({}, true);

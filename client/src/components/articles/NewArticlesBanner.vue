@@ -3,7 +3,7 @@
     <div class="new-articles-banner__content">
       <div class="new-articles-banner__copy">
         <BootstrapIcon icon="lightbulb-fill" context="control" class="new-articles-banner__icon" aria-hidden="true" />
-        <span v-if="readerMode" :title="`${count} new ${count === 1 ? 'article' : 'articles'} since your last visit`" :aria-label="`${count} new ${count === 1 ? 'article' : 'articles'} since your last visit`"><strong>{{ count }} new</strong></span>
+        <span v-if="readerMode" :title="`${count} new ${count === 1 ? 'article' : 'articles'} since your last visit`" :aria-label="`${count} new ${count === 1 ? 'article' : 'articles'} since your last visit`"><strong>{{ count }} {{ count === 1 ? 'new article' : 'new articles' }}</strong></span>
         <span v-else><strong>{{ count }} {{ count === 1 ? 'new article' : 'new articles' }}</strong> since your last visit</span>
       </div>
       <div class="new-articles-banner__actions">
