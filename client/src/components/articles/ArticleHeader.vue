@@ -1,5 +1,5 @@
 <template>
-  <header class="article-header" :class="{ 'article-reader-heading': isReaderDetail, 'article-header--with-original': showOriginalAction }">
+  <header class="article-header" :class="{ 'article-reader-heading': isReaderDetail }">
     <component :is="isReaderDetail ? 'h1' : 'h5'" class="article-header-left" :class="{ 'article-reader-title': isReaderDetail }">
       <BootstrapIcon v-if="isBlueSkyArticle" icon="bluesky" class="article-kind-icon bluesky-icon" />
       <BootstrapIcon v-if="isRedditArticle" icon="reddit" class="article-kind-icon reddit-icon" />
@@ -37,9 +37,6 @@
         </button>
       </template>
     </div>
-    <div v-if="showOriginalAction" class="article-original-action">
-      <a :href="safeArticleUrl" target="_blank" rel="noopener noreferrer" title="Open original article in a new tab" @click="$emit('article-clicked')">Open original <span aria-hidden="true">↗</span></a>
-    </div>
   </header>
 </template>
 
@@ -73,9 +70,6 @@ export default {
     // Returns an absolute HTTP(S) destination eligible for external navigation.
     safeArticleUrl() {
       return usableHttpUrl(this.url);
-    },
-    showOriginalAction() {
-      return this.safeArticleUrl && ((this.isReaderDetail && !this.readerToolbar) || this.viewMode === 'full');
     },
     // Returns whether the article links to a Bluesky profile post.
     isBlueSkyArticle() {
@@ -174,27 +168,6 @@ export default {
   display: flex;
   flex-shrink: 0;
   gap: 2px;
-}
-
-.article-original-action {
-  order: 2;
-  flex: 0 0 100%;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.article-header--with-original {
-  flex-wrap: wrap;
-}
-
-.article-original-action a {
-  color: var(--color-link);
-  text-underline-offset: 3px;
-}
-
-.article-original-action a:focus-visible {
-  outline: 2px solid var(--border-focus);
-  outline-offset: 3px;
 }
 
 .article-kind-icon {

@@ -30,12 +30,14 @@ function mountArticleHeader(props = {}) {
 }
 
 describe('Open original action', () => {
-  it.each(['reader', 'full'])('offers an explicit original link in %s without removing the headline link', async viewMode => {
+  it.each(['reader', 'full', 'minimal', 'summarized', 'summaryBullets'])('keeps only the headline link in %s', async viewMode => {
     const wrapper = mountArticleHeader({ viewMode, url: 'https://example.com/article' });
-    const original = wrapper.findAll('a').find(link => link.text() === 'Open original ↗');
-    expect(original.attributes()).toMatchObject({ href: 'https://example.com/article', target: '_blank', rel: 'noopener noreferrer' });
-    expect(wrapper.get('a.article-link').text()).toBe('Article title');
-    await original.trigger('click');
+    expect(wrapper.text()).not.toContain('Open original');
+    const headline = wrapper.get('a');
+    expect(wrapper.findAll('a')).toHaveLength(1);
+    expect(headline.attributes()).toMatchObject({ href: 'https://example.com/article', target: '_blank', rel: 'noopener noreferrer' });
+    expect(headline.text()).toBe('Article title');
+    await headline.trigger('click');
     expect(wrapper.emitted('article-clicked')).toEqual([[]]);
   });
 
@@ -44,10 +46,6 @@ describe('Open original action', () => {
     expect(wrapper.text()).not.toContain('Open original');
   });
 
-  it.each(['minimal', 'summarized', 'summaryBullets'])('leaves %s presentation unchanged', viewMode => {
-    const wrapper = mountArticleHeader({ viewMode, url: 'https://example.com/article' });
-    expect(wrapper.text()).not.toContain('Open original');
-  });
 });
 
 describe('ArticleHeader search highlighting', () => {
