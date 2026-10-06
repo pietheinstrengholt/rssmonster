@@ -44,7 +44,7 @@
           <time v-if="!readerMode && dateContext" :datetime="dateContext.isoDate">{{ dateContext.longLabel }}</time>
         </div>
       </div>
-      <SaveCurrentViewSmartFolder />
+      <SaveCurrentViewSmartFolder v-if="!hideSaveSmartFolder" />
       <form v-if="editingCustomDate" class="unread-selection-context__custom-date" aria-label="Custom article date range" @submit.prevent="applyCustomRange" @keydown.esc.stop.prevent="cancelCustomRange">
         <label>Start date <input ref="customStartInput" v-model="customStart" type="date" required :max="customEnd || undefined" /></label>
         <label>End date <input v-model="customEnd" type="date" required :min="customStart || undefined" /></label>
@@ -73,6 +73,7 @@ export default {
     sourceCount: { type: Number, required: true },
     oldestPublishedAt: { type: [String, Date], default: null },
     readerMode: { type: Boolean, default: false },
+    hideSaveSmartFolder: { type: Boolean, default: false },
     articles: { type: Array, default: () => [] },
     getArticleElement: { type: Function, default: () => null }
   },

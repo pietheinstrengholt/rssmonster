@@ -60,12 +60,12 @@
               :articles="readerListArticles"
               :get-article-element="getArticleListElement"
               reader-mode
+              hide-save-smart-folder
             />
             <button type="button" class="article-list-details-toggle" :aria-expanded="showCollectionDetails" aria-controls="reader-collection-details" @click="showCollectionDetails = !showCollectionDetails">Details</button>
           </div>
           <div v-if="showCollectionDetails" id="reader-collection-details">
             <div class="article-list-bulk-stats" aria-label="Current collection summary">
-              <span>{{ formattedUnreadCount }} Unread</span>
               <span>{{ eventCount }} loaded {{ eventCount === 1 ? 'event' : 'events' }}</span>
               <span>{{ sourceCount }} sources</span>
             </div>
@@ -98,7 +98,7 @@
             <BootstrapIcon icon="three-dots" context="control" aria-hidden="true" />
           </button>
 
-          <div v-if="isBulkMenuOpen" class="bulk-action-menu" :style="bulkMenuStyle" role="menu">
+          <div v-if="isBulkMenuOpen" class="bulk-action-menu" :style="bulkMenuStyle" role="menu" aria-label="More actions">
             <div class="bulk-action-menu-section">
               <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('mark-visible-read')">
                 <BootstrapIcon icon="check2-circle" aria-hidden="true" />
@@ -127,6 +127,14 @@
                 <span>Mark all visible originals as opened</span>
               </button>
             </div>
+            <SaveCurrentViewSmartFolder menu-item class="bulk-action-menu-section">
+              <template #trigger="{ triggerProps, isSaving }">
+                <button v-bind="triggerProps" type="button" class="bulk-action-menu-item" role="menuitem" aria-haspopup="dialog" :disabled="isSaving">
+                  <BootstrapIcon icon="folder-plus" aria-hidden="true" />
+                  <span>Save as smart folder</span>
+                </button>
+              </template>
+            </SaveCurrentViewSmartFolder>
           </div>
         </div>
       </div>
@@ -301,6 +309,7 @@ import ArticleEndState from "./ArticleEndState.vue";
 import ArticleLoadError from "./ArticleLoadError.vue";
 import DailyBriefingIntro from "../briefing/DailyBriefingIntro.vue";
 import UnreadSelectionContext from "./UnreadSelectionContext.vue";
+import SaveCurrentViewSmartFolder from './SaveCurrentViewSmartFolder.vue';
 import { formatRelativeDate } from '../../utils/date';
 import { formatTagName } from '../../utils/tags';
 import { usableHttpUrl } from '../../utils/content';
@@ -328,7 +337,8 @@ export default {
     ArticleLoadError,
     DailyBriefingIntro,
     HighlightedText,
-    UnreadSelectionContext
+    UnreadSelectionContext,
+    SaveCurrentViewSmartFolder
   },
   emits: [
     'update-tags',
@@ -519,10 +529,6 @@ export default {
       if (category?.name) return category.name;
 
       return statusOption?.sidebarLabel || statusOption?.label || 'All articles';
-    },
-    // Returns the formatted unread count for the active reader collection.
-    formattedUnreadCount() {
-      return new Intl.NumberFormat().format(this.currentViewUnreadCount);
     },
     // Returns the distinct event count in the loaded reader list.
     eventCount() {

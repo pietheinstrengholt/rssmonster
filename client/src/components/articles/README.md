@@ -446,7 +446,10 @@ The standard list and Reader list share a `UnreadSelectionContext` that scrolls
 with the articles. The stream shows result/source counts, publication-date context,
 date and age filters, and Save as smart folder for a search. Reader embeds the
 compact date dropdown in its single-row list header; counts and Details belong to
-`ArticleReaderLayout.vue`, and source/publication context stays in the list rows. The date follows the first visible article below any sticky shell toolbar, including when
+`ArticleReaderLayout.vue`, and source/publication context stays in the list rows.
+For a search, Reader offers Save as smart folder in a separate section of More
+actions, using the same save popup. Empty Reader results retain the context-bar
+save action because there is no bulk header. The date follows the first visible article below any sticky shell toolbar, including when
 scrolling backwards. There are no separate date groups: existing article order is
 preserved, including Recommended order. Both date labels use the same local calendar
 day; missing publication dates omit the date section.

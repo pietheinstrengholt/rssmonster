@@ -2,17 +2,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import SaveCurrentViewSmartFolder from '../src/components/articles/SaveCurrentViewSmartFolder.vue';
+import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
 import { currentViewSmartFolder, smartFolderRulePreview } from '../src/services/currentViewSmartFolder.js';
 import { validateSmartFolderQuery } from '../src/services/queryValidation.js';
 import { useSelectionStore } from '../src/store/selection.js';
 import { useOverviewStore } from '../src/store/overview.js';
 import { fetchSmartFolders, fetchSmartFolderCounts, saveSmartFolders } from '../src/api/smartfolders.js';
 vi.mock('../src/api/smartfolders.js', () => ({ fetchSmartFolders: vi.fn(), fetchSmartFolderCounts: vi.fn(), saveSmartFolders: vi.fn() }));
-let wrapper, selection, overview;
+vi.mock('../src/api/articles.js', async importOriginal => ({
+  ...await importOriginal(),
+  fetchArticleRecommendations: vi.fn().mockResolvedValue({ data: { articles: [] } })
+}));
+let wrapper, selection, overview, pinia;
 const existing = { id: 7, name: 'Existing', query: 'unread:true', limitCount: 50, markAsReadOnScroll: true };
 beforeEach(() => {
   vi.resetAllMocks();
-  setActivePinia(createPinia());
+  pinia = createPinia();
+  setActivePinia(pinia);
   selection = useSelectionStore(); overview = useOverviewStore();
   fetchSmartFolders.mockResolvedValue({ data: { smartFolders: [existing] } });
   fetchSmartFolderCounts.mockResolvedValue({ data: { smartFolders: [] } });
@@ -22,6 +28,54 @@ afterEach(() => { wrapper?.unmount(); wrapper = null; document.body.innerHTML = 
 const render = () => { wrapper = mount(SaveCurrentViewSmartFolder, { attachTo: document.body, global: { stubs: { BootstrapIcon: true } } }); };
 const button = text => wrapper.findAll('button').find(item => item.text() === text);
 const open = async () => { await button('Save as smart folder').trigger('click'); await flushPromises(); };
+const renderReader = async () => {
+  selection.currentSelection.viewMode = 'reader';
+  const articles = [{ id: 42, title: 'Search result', status: 'unread' }];
+  wrapper = mount(ArticleReaderLayout, {
+    attachTo: document.body,
+    props: { articles, container: articles, collectionSummary: { status: 'unread', unreadCount: 1, sourceCount: 1 }, collectionProgress: { hasLoadedContent: true, hasReachedEnd: true } },
+    global: { plugins: [pinia], stubs: { BootstrapIcon: true, ArticleItem: true } }
+  });
+  await flushPromises();
+};
+describe('Reader save current view', () => {
+  it('offers saving a search in More actions and keeps the save popup', async () => {
+    selection.setSelectedSearch('title:news');
+    await renderReader();
+    expect(button('Save as smart folder')).toBeUndefined();
+    await wrapper.get('button[aria-label="More actions"]').trigger('click');
+    const menu = wrapper.get('[role="menu"][aria-label="More actions"]');
+    expect(menu.text()).toContain('Mark all visible as read');
+    expect(menu.text()).toContain('Save as smart folder');
+    expect(button('Save as smart folder').attributes('role')).toBe('menuitem');
+    await open();
+    expect(wrapper.get('[role="dialog"]').text()).toContain('Save current view');
+    expect(document.activeElement).toBe(wrapper.get('input[type="text"]').element);
+    await wrapper.get('input[type="text"]').setValue('Reader search');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(saveSmartFolders).toHaveBeenCalledWith(expect.arrayContaining([
+      expect.objectContaining({ name: 'Reader search', query: expect.stringContaining('title:news') })
+    ]));
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+  });
+  it('omits the save action without a search', async () => {
+    await renderReader();
+    await wrapper.get('button[aria-label="More actions"]').trigger('click');
+    expect(button('Save as smart folder')).toBeUndefined();
+    expect(wrapper.get('[role="menu"][aria-label="More actions"]').text()).toContain('Mark all visible as read');
+  });
+  it('returns focus to the save action after cancelling', async () => {
+    selection.setSelectedSearch('title:news');
+    await renderReader();
+    await wrapper.get('button[aria-label="More actions"]').trigger('click');
+    await open();
+    await button('Cancel').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+    expect(document.activeElement).toBe(button('Save as smart folder').element);
+  });
+});
 describe('current view draft', () => {
   it('uses editor defaults and ignores unsupported navigation and layout while keeping supported grouping', () => {
     const draft = currentViewSmartFolder({ status: 'unread', categoryId: 3, feedId: 5, tag: 'AI', minOverallQualityScore: 80, minQualityScore: 90, minSentimentScore: 50, viewMode: 'summary', grouping: 'event', includeDevelopingEvents: true, ageCutoff: '7d', dateRange: 'custom', sort: 'recommended' });

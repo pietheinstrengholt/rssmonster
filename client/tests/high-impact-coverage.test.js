@@ -367,7 +367,6 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
       }
     });
 
-    expect(compute(ArticleReaderLayout, 'formattedUnreadCount', context)).toMatch(/1.?234/);
     expect(compute(ArticleReaderLayout, 'eventCount', context)).toBe(2);
     expect(compute(ArticleReaderLayout, 'sourceCount', context)).toBe(2);
     expect(compute(ArticleReaderLayout, 'topVisibleTags', context)).toEqual(['AI', 'News', 'Vue']);

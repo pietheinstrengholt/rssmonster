@@ -1,10 +1,12 @@
 <template>
-  <AppDropdown v-if="canSaveSearch" ref="dropdown" align="end" fixed :close-key="selectionKey" class="save-smart-folder">
+  <AppDropdown v-if="canSaveSearch" ref="dropdown" align="end" fixed :close-key="selectionKey" class="save-smart-folder" :class="{ 'save-smart-folder--menu-item': menuItem }">
     <template #trigger="{ triggerProps }">
-      <button v-bind="triggerProps" type="button" class="app-button app-button--outline-secondary app-button--compact" aria-haspopup="dialog" :disabled="isSaving">
-        <BootstrapIcon icon="folder-plus" context="control" aria-hidden="true" />
-        <span>Save as smart folder</span>
-      </button>
+      <slot name="trigger" :trigger-props="triggerProps" :is-saving="isSaving">
+        <button v-bind="triggerProps" type="button" class="app-button app-button--outline-secondary app-button--compact" aria-haspopup="dialog" :disabled="isSaving">
+          <BootstrapIcon icon="folder-plus" context="control" aria-hidden="true" />
+          <span>Save as smart folder</span>
+        </button>
+      </slot>
     </template>
     <template #menu="{ menuProps }">
       <form v-if="dropdown?.isOpen" v-bind="menuProps" role="dialog" aria-modal="false" :aria-labelledby="`${menuProps.id}-title`" class="save-smart-folder__popover" @submit.prevent="save" @keydown.stop="onKeydown">
@@ -37,6 +39,8 @@ import { currentViewSmartFolder, smartFolderRulePreview } from '../../services/c
 import { validateSmartFolderQuery } from '../../services/queryValidation.js';
 import { saveSmartFolders } from '../../api/smartfolders.js';
 import { notifyActionError, notifyActionSuccess } from '../../services/actionNotifications.js';
+
+defineProps({ menuItem: { type: Boolean, default: false } });
 
 const selectionStore = useSelectionStore();
 const overviewStore = useOverviewStore();
@@ -136,5 +140,5 @@ async function save() {
 .save-smart-folder__chip.score-medium { background-color: var(--article-score-medium-background); color: var(--article-score-medium-text); }
 .save-smart-folder__chip.score-poor { background-color: var(--article-score-poor-background); color: var(--article-score-poor-text); }
 .save-smart-folder__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); }
-@media (width < 1084px) { .save-smart-folder { display: none; } }
+@media (width < 1084px) { .save-smart-folder:not(.save-smart-folder--menu-item) { display: none; } }
 </style>

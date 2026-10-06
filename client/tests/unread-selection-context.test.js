@@ -184,6 +184,8 @@ describe('UnreadSelectionContext', () => {
     expect(details.attributes('aria-expanded')).toBe('true');
     expect(wrapper.text()).toContain('36 sources');
     expect(wrapper.text()).toContain('1 loaded event');
+    expect(wrapper.get('[aria-label="Current collection summary"]').text()).not.toMatch(/Unread|1,370|1,400/);
+    expect(wrapper.text().match(/1,400 articles/g)).toHaveLength(1);
     const tag = wrapper.findAll('button').find(button => button.text() === 'Science');
     await tag.trigger('click');
     expect(stores.selectionStore.setCurrentSelection).toHaveBeenCalledWith({ tag: 'science' });
