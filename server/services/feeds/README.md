@@ -210,9 +210,10 @@ coordination.
 
 Only absolute HTTP(S) subscription URLs are accepted. Embedded credentials are
 rejected. The outbound safeguard validates the initial endpoint and every
-redirect hop, including DNS resolution, so a public hostname cannot redirect or
-rebind into loopback, link-local, private, or otherwise prohibited network
-space.
+redirect hop. Direct connections also validate and pin DNS results, so a public
+hostname cannot redirect or rebind into loopback, link-local, private, or otherwise
+prohibited network space. Proxied connections rely on the trusted proxy for
+DNS-based destination filtering as described below.
 
 Redirect handling remains manual inside the safeguarded transport boundary.
 Code must never replace it with automatic client redirects, because doing so
@@ -220,6 +221,58 @@ would bypass per-hop SSRF validation and per-origin permits.
 
 Security failures produce `security_rejected`, are logged without leaking
 sensitive URL material, and are quarantined instead of retried automatically.
+
+## Outbound feed proxies
+
+Feed HTTP acquisition supports `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY`,
+including lowercase variants. This covers scheduled and manual crawls, feed
+validation and discovery, publisher self URL verification, HTML/XPath acquisition
+and previews, and OPML connection checks through the shared feed transport.
+Webhooks, AI clients, and push notifications retain their existing transports.
+This is separate from `TRUST_PROXY`, which controls inbound reverse proxy handling.
+
+Setting a proxy URL opts the deployment into trusting that proxy for remote
+DNS resolution and destination filtering. Only HTTP(S) proxy URLs are accepted;
+`HTTPS_PROXY` describes the destination protocol and may itself contain an
+`http://` proxy URL. Proxy URLs may contain percent-encoded username/password
+credentials. Feed diagnostics suppress raw transport and stream error messages
+when a proxy is configured so proxy credentials cannot appear in those messages.
+
+Lowercase variables take precedence over uppercase variables, even when empty.
+`HTTP_PROXY` serves both HTTP and HTTPS destinations unless `HTTPS_PROXY` overrides
+HTTPS. With only `HTTPS_PROXY`, HTTP destinations remain direct. `NO_PROXY` is a
+comma- or space-separated hostname list with optional ports, domain suffixes and
+wildcards; `*` bypasses every proxy. Matching is delegated to Undici. It is not an
+IP/CIDR access allowlist.
+
+Direct connections, including `NO_PROXY` matches and protocol fallback, retain
+DNS validation, blocked address checks, IP pinning, and explicit internal-host
+exceptions. `NO_PROXY` never grants permission to reach private addresses;
+configure `RSSMONSTER_INTERNAL_HOST_ALLOWLIST` for intentional internal feeds.
+Proxied destinations retain URL syntax, credential and literal-IP checks on every
+redirect, but RSSMonster cannot validate the addresses resolved by the proxy or
+apply its CIDR allowlist to that remote resolution. The proxy must reject private,
+loopback, link-local/metadata and other prohibited destinations after resolution,
+including redirected targets. Hostname checks alone cannot enforce this boundary.
+
+Proxy requests retain configured connection timeouts, overall deadlines, bounded
+retries, manual redirects, cross-origin authorization stripping, per-origin
+permits and response limits. Proxy failures never trigger direct fallback.
+
+Configure the variables on both the web application and crawl worker: validation
+runs in the web process and scheduled acquisition runs in the worker. Both Compose
+profiles forward the variables to these two services and preserve lowercase
+precedence. For example, use the following deployment environment values:
+
+```dotenv
+HTTP_PROXY=http://proxy.example:3128
+HTTPS_PROXY=http://proxy.example:3128
+NO_PROXY=feeds.internal.example
+RSSMONSTER_INTERNAL_HOST_ALLOWLIST=feeds.internal.example
+```
+
+Restart both processes after changing proxy URLs. No proxy variables means the
+existing guarded direct transport is used.
 
 ## Bounded response handling
 

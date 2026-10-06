@@ -36,6 +36,10 @@ services:
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
       RSSMONSTER_INTERNAL_HOST_ALLOWLIST: ${RSSMONSTER_INTERNAL_HOST_ALLOWLIST:-}
+      # Feed acquisition only; lowercase host variables take precedence.
+      HTTP_PROXY: ${http_proxy-${HTTP_PROXY:-}}
+      HTTPS_PROXY: ${https_proxy-${HTTPS_PROXY:-}}
+      NO_PROXY: ${no_proxy-${NO_PROXY:-}}
       FEED_MAX_COUNT: ${FEED_MAX_COUNT:-100}
       FEED_CONNECT_TIMEOUT_MS: ${FEED_CONNECT_TIMEOUT_MS:-10000}
       FEED_BODY_TIMEOUT_MS: ${FEED_BODY_TIMEOUT_MS:-30000}
@@ -115,6 +119,10 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       FEVER_CREDENTIAL_SECRET: ${FEVER_CREDENTIAL_SECRET:?FEVER_CREDENTIAL_SECRET must be set}
       RSSMONSTER_INTERNAL_HOST_ALLOWLIST: ${RSSMONSTER_INTERNAL_HOST_ALLOWLIST:-}
+      # Feed acquisition only; lowercase host variables take precedence.
+      HTTP_PROXY: ${http_proxy-${HTTP_PROXY:-}}
+      HTTPS_PROXY: ${https_proxy-${HTTPS_PROXY:-}}
+      NO_PROXY: ${no_proxy-${NO_PROXY:-}}
       FEED_MAX_COUNT: ${FEED_MAX_COUNT:-100}
       FEED_CONNECT_TIMEOUT_MS: ${FEED_CONNECT_TIMEOUT_MS:-10000}
       FEED_BODY_TIMEOUT_MS: ${FEED_BODY_TIMEOUT_MS:-30000}

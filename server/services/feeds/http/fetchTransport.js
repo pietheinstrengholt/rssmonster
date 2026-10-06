@@ -1,6 +1,6 @@
 // Adapts native Fetch and Undici behavior into neutral feed HTTP contracts.
 
-import { fetchWithOutboundRequestSafeguard } from '../../../utils/outboundRequestSafeguard.js';
+import { fetchWithOutboundRequestSafeguard, isOutboundProxyConfigured } from '../../../utils/outboundRequestSafeguard.js';
 import {
   createHttpBodyStream,
   createHttpError,
@@ -64,6 +64,22 @@ export const translateTransportError = error => {
   const lowerMessage = message.toLowerCase();
   const code = findErrorCode(error);
 
+  if (code === 'OUTBOUND_PROXY_CONFIGURATION_INVALID') {
+    return createHttpError({ type: 'permanent_failure', message, code });
+  }
+
+  // Undici wraps both forward-proxy and CONNECT authentication failures in fetch errors.
+  for (let cause = error; cause; cause = cause.cause) {
+    if (cause.message === 'Proxy Authentication Required (407)' ||
+        cause.message === 'Proxy response (407) !== 200 when HTTP Tunneling') {
+      return createHttpError({
+        type: 'permanent_failure',
+        message: 'The outbound proxy requires authentication',
+        code: 'PROXY_AUTHENTICATION_REQUIRED'
+      });
+    }
+  }
+
   if (code === 'SSRF_BLOCKED') {
     const malformed = lowerMessage.includes('url is invalid');
     return createHttpError({
@@ -116,10 +132,10 @@ const isRetryableTranslatedError = (error, request) =>
 // Converts Fetch headers into a neutral lower-case string map.
 const toNeutralHeaders = headers => Object.fromEntries(headers.entries());
 
-// Client exceptions can contain request details; authenticated requests expose only neutral codes.
+// Client exceptions can contain feed or proxy credentials; expose only neutral codes.
 const translateRequestError = (error, authentication) => {
   const translated = translateTransportError(error);
-  return authentication
+  return authentication || isOutboundProxyConfigured()
     ? createHttpError({ ...translated, message: `Feed request failed (${translated.code || translated.type})` })
     : translated;
 };
@@ -221,6 +237,7 @@ export const executeHttpRequest = async (
         redirect => redirects.push(createHttpRedirect(redirect)),
         {
           connectTimeoutMs: request.connectTimeoutMs,
+          useProxy: true,
           // Holds a separate permit for every redirect hop's actual origin.
           beforeRequest: url => requestPolicy.acquire(url, {
             deadlineAt: deadline,

@@ -1,7 +1,7 @@
 import { lookup } from 'node:dns/promises';
 import { BlockList, isIP } from 'node:net';
 
-import { Agent, buildConnector, fetch as undiciFetch } from 'undici';
+import { Agent, buildConnector, EnvHttpProxyAgent, fetch as undiciFetch } from 'undici';
 
 const ALLOWLIST_ENV_NAME = 'RSSMONSTER_INTERNAL_HOST_ALLOWLIST';
 const DEFAULT_MAX_REDIRECTS = 10;
@@ -286,9 +286,21 @@ const resolveSafeConnectionTarget = async (hostnameInput, portInput, allowPrivat
 };
 
 const guardedDispatchers = new Map();
+const proxyDispatchers = new Map();
+
+// Matches Undici's lowercase precedence, including explicitly empty values.
+const resolveProxyConfiguration = () => ({
+  httpProxy: process.env.http_proxy ?? process.env.HTTP_PROXY ?? '',
+  httpsProxy: process.env.https_proxy ?? process.env.HTTPS_PROXY ?? ''
+});
+
+export const isOutboundProxyConfigured = () => {
+  const { httpProxy, httpsProxy } = resolveProxyConfiguration();
+  return Boolean(httpProxy || httpsProxy);
+};
 
 // Creates one SSRF-guarded connector with an explicit TCP/TLS phase timeout.
-const createGuardedDispatcher = (connectTimeoutMs, allowPrivateAddresses) => {
+const createGuardedConnector = (connectTimeoutMs, allowPrivateAddresses) => {
   const defaultConnector = buildConnector({ timeout: connectTimeoutMs });
   const guardedConnector = (options, callback) => {
     const originalHostname = normalizeHostname(options.hostname);
@@ -309,7 +321,7 @@ const createGuardedDispatcher = (connectTimeoutMs, allowPrivateAddresses) => {
       .catch(error => callback(error, null));
   };
 
-  return new Agent({ connect: guardedConnector });
+  return guardedConnector;
 };
 
 // Reuses process-lifetime connection pools for each configured timeout.
@@ -322,10 +334,45 @@ const getGuardedDispatcher = (connectTimeoutMs, allowPrivateAddresses = false) =
   if (!guardedDispatchers.has(key)) {
     guardedDispatchers.set(
       key,
-      createGuardedDispatcher(normalizedTimeoutMs, allowPrivateAddresses)
+      new Agent({ connect: createGuardedConnector(normalizedTimeoutMs, allowPrivateAddresses) })
     );
   }
   return guardedDispatchers.get(key);
+};
+
+// Proxy DNS and destination filtering belong to the trusted deployment proxy.
+// NO_PROXY and protocol fallback still use the guarded direct connector.
+const getOutboundDispatcher = ({ connectTimeoutMs, allowPrivateAddresses = false, useProxy = false }) => {
+  const configuration = resolveProxyConfiguration();
+  if (!useProxy || !(configuration.httpProxy || configuration.httpsProxy)) {
+    return getGuardedDispatcher(connectTimeoutMs, allowPrivateAddresses);
+  }
+
+  const timeout = Number.isSafeInteger(connectTimeoutMs) && connectTimeoutMs > 0
+    ? connectTimeoutMs
+    : 10000;
+  const key = JSON.stringify([timeout, allowPrivateAddresses, configuration]);
+  if (!proxyDispatchers.has(key)) {
+    let dispatcher;
+    try {
+      for (const value of Object.values(configuration).filter(Boolean)) {
+        const url = new URL(value);
+        if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Unsupported proxy protocol');
+      }
+      dispatcher = new EnvHttpProxyAgent({
+        ...configuration,
+        connect: createGuardedConnector(timeout, allowPrivateAddresses),
+        connectTimeout: timeout
+      });
+    } catch {
+      // URL parsing errors can include the proxy's username and password.
+      const error = new Error('Outbound proxy configuration is invalid; use an HTTP(S) proxy URL');
+      error.code = 'OUTBOUND_PROXY_CONFIGURATION_INVALID';
+      throw error;
+    }
+    proxyDispatchers.set(key, dispatcher);
+  }
+  return proxyDispatchers.get(key);
 };
 
 // Cancels an intermediate redirect response without masking the main result.
@@ -349,7 +396,7 @@ const unwrapBlockedRequestError = error => {
   return error;
 };
 
-// Validates and pins each request destination; callers may explicitly allow LAN targets.
+// Validates every hop; direct connections are pinned, proxied targets trust proxy policy.
 export const fetchWithOutboundRequestSafeguard = async (
   input,
   options = {},
@@ -371,10 +418,7 @@ export const fetchWithOutboundRequestSafeguard = async (
       response = await fetchImplementation(currentUrl, {
         ...requestOptions,
         redirect: 'manual',
-        dispatcher: getGuardedDispatcher(
-          requestLifecycle.connectTimeoutMs,
-          requestLifecycle.allowPrivateAddresses
-        )
+        dispatcher: getOutboundDispatcher(requestLifecycle)
       });
     } catch (error) {
       await requestLifecycle.afterRequest?.(lifecycleToken);
