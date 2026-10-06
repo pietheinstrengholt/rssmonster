@@ -3,7 +3,8 @@
 RSSMonster 2.4.0 is a substantial update focused on identity and server
 administration, behavior-driven personalization, reader controls, feed metadata,
 content retention, and deployment flexibility. It also adds offline reading,
-operational webhooks, reusable Smart Folders, and manual article tagging.
+operational webhooks, reusable Smart Folders, manual article tagging, browser
+text-to-speech, and outbound feed-proxy support.
 
 ## Highlights
 
@@ -165,7 +166,8 @@ operational webhooks, reusable Smart Folders, and manual article tagging.
 ### New unread-reading controls
 
 - Added a dismissible new-articles banner that tracks arrivals relative to the
-  current unread-list baseline.
+  current unread-list baseline. Reader now spells out “new article” or “new
+  articles” alongside the count.
 - Readers can load only the newly arrived articles or refresh the complete unread
   list without losing the current collection unexpectedly.
 - Added adaptive unread age filters with three rolling cutoffs plus **All**.
@@ -186,6 +188,35 @@ operational webhooks, reusable Smart Folders, and manual article tagging.
 
 ### Reader and presentation improvements
 
+- Added a sticky selected-article toolbar with read/unread, save/unsave, and Open
+  original actions, plus text size, listening, expand/restore, and the article
+  menu on the right. Related articles retain their existing controls.
+- Added **Aa** text-size choices: Small, Medium, and Large. The browser remembers
+  the selection; Medium preserves the current typography exactly. Reader title,
+  body, headings, captions, and code scale together while toolbar controls,
+  metadata pills, recommendations, and list/sidebar text retain their sizes.
+  The title keeps its responsive sizing.
+- Added native browser text-to-speech for the rendered Reader article body,
+  excluding the title, metadata, controls, hidden content, and known ad wrappers.
+  The headphones button starts reading, then pauses/resumes on subsequent clicks.
+  Playback stops when changing articles, leaving Reader, or unmounting; browsers
+  without speech support hide the control. No backend audio generation or stored
+  audio is required.
+- Added expand/restore for the selected article: hide the middle list while
+  keeping the sidebar visible, then restore the three-pane layout. The transition
+  respects reduced motion and keeps the selected article, reader scroll, and
+  playback state intact without browser fullscreen.
+- Moved the feed favicon into the Reader metadata bar and removed the repeated
+  source header. Author and Original source badges remain available. Badges stay
+  on one row as the pane resizes; only those that overflow move into a three-dot
+  disclosure, and very narrow labels truncate instead of wrapping.
+- Reworked the Reader list header into one aligned row for the collection
+  title/count, date filter, Details, and bulk menu, with more breathing room at
+  both edges and between controls. Details reveals collection statistics and
+  tags below the header; long labels truncate while controls remain accessible.
+- Centered Reader toolbar icons and labels and corrected favicon alignment in
+  both themes. Reader list timestamps now prefer publication date, falling back
+  to first-seen time only when publication date is unavailable.
 - Enabled scroll-to-read behavior for desktop Headlines and refined headline
   read-state controls.
 - Added lead images to summarized articles on desktop and mobile.
@@ -212,10 +243,21 @@ operational webhooks, reusable Smart Folders, and manual article tagging.
   by suspending swipe and pull-to-refresh handling while zoomed or using multiple
   touches.
 
+### Audio and media presentation
+
+- Added feed labels, available duration, and playback-speed choices from 1× to 2×
+  to native audio players, with clearer accessible player names.
+- Added audio indicators to article headings and Headlines rows so playable
+  audio is easier to identify while scanning.
+- Improved native video recognition for direct media sources and corrected
+  audio/video fallback-link labels when structured feed media and inline
+  publisher media differ.
+
 ### Read-only offline PWA reading
 
-- Added **Settings → Offline reading** to prepare 50, 100, or 500 latest articles
-  while connected, with preparation progress, refresh, and clear-data controls.
+- Added **Settings → Offline reading** to prepare the latest articles while
+  connected, with preparation progress, refresh, and clear-data controls. Download
+  sizes now support 100, 250, 1,000, 2,500, or 5,000 articles.
 - Downloads are isolated by device, account, and server, and stored in IndexedDB.
   An incomplete refresh keeps the previous complete download available.
 - Previously validated sessions can open prepared articles when the server is
@@ -228,9 +270,9 @@ operational webhooks, reusable Smart Folders, and manual article tagging.
 
 ### Smart Folders and manual article tagging
 
-- Added **Save as smart folder** to wide-screen collection headers, with a named
-  draft and rule preview based on the current status, search, tag, sorting,
-  grouping, quality threshold, and supported date presets.
+- Added **Save as smart folder** to wide-screen collection headers for active
+  searches, with a named draft and rule preview based on the current status,
+  search, tag, sorting, grouping, quality threshold, and supported date presets.
 - The dialog explains when feed/category context or publication-date controls
   cannot be represented by Smart Folder rules. Saved folders remain dynamic
   queries rather than snapshots of the current list.
@@ -317,8 +359,31 @@ operational webhooks, reusable Smart Folders, and manual article tagging.
 - Cross-origin redirects strip credentials and require the destination URL to be
   accepted explicitly.
 
+### Outbound feed proxies
+
+- Added `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY` support, including lowercase
+  variants, for shared feed acquisition: discovery, validation, manual/scheduled
+  crawls, HTML/XPath previews, and OPML connection checks.
+- Both Docker Compose profiles forward proxy configuration to the web service
+  and crawl worker. Lowercase variables take precedence, including empty values.
+  This setting is separate from inbound reverse-proxy `TRUST_PROXY` handling.
+- Retained bounded retries, deadlines, response limits, and redirect credential
+  stripping. Proxy errors do not silently retry through a direct connection, and
+  proxy diagnostics avoid exposing proxy credentials.
+- Direct requests retain existing destination safeguards. Proxied DNS resolution
+  and destination filtering belong to the trusted proxy; `NO_PROXY` changes
+  routing and does not grant access to private destinations.
+
 ### Reliability, performance, and operations
 
+- Article pagination now prefetches ahead of the list end using the active
+  layout's scroll surface, including Reader, Expanded, and mobile viewport
+  layouts. Observers remain attached across page appends and reconnect when the
+  scroll root or target changes.
+- Prevented cascading page requests while the load sentinel remains visible and
+  prevented overlapping pagination during collection changes. Short result
+  pages offer **Load more articles**; automatic loading resumes after a fresh
+  exit/re-entry rather than filling the viewport with repeated requests.
 - Added a consolidated health summary and total failure counts to observability
   settings.
 - Fixed analysis hashing and recovery of failed or stranded AI processing jobs.
@@ -360,6 +425,13 @@ operational webhooks, reusable Smart Folders, and manual article tagging.
 - Manual deployments using webhooks must run `npm run start:webhook-worker` from
   `server/` alongside the web and crawl processes. Use the same `ENCRYPTION_KEY`
   for the web and delivery worker when configuring signing secrets.
+- Outbound proxy deployments must configure both the web service and crawl
+  worker and restart both after changing proxy URLs. Use a trusted proxy that
+  blocks prohibited destinations after DNS resolution; direct internal feeds
+  still require the explicit internal-host allowlist.
+- Reader text size is a browser-local preference; expand/restore state is local
+  to the current Reader layout. Browser speech availability and voices depend
+  on the browser/platform.
 - Offline article downloads require an online preparation step on each device;
   installing the PWA alone does not download articles. Offline reading does not
   synchronize edits or replace a database backup.
@@ -399,6 +471,8 @@ operational webhooks, reusable Smart Folders, and manual article tagging.
 - [Sidebar settings](docs/sidebar-settings.md)
 - [Article archiving](docs/archiving.md)
 - [Feeds and HTTP Basic authentication](docs/feeds-and-categories.md)
+- [Outbound feed-proxy configuration](server/services/feeds/README.md#outbound-feed-proxies)
+- [Reader layout and controls](client/src/components/articles/README.md#desktop-reader)
 - [Smart Folders](docs/smart-folders.md)
 - [Tags and manual article tagging](docs/tag.md)
 - [Offline PWA reading and notifications](docs/web-app-and-notifications.md)
