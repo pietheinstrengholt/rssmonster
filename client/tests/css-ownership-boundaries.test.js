@@ -82,7 +82,10 @@ describe('CSS ownership boundaries', () => {
     expect(appShellSource).toMatch(/\.app-shell__sidebar:hover,[\s\S]*?\.app-shell__sidebar:focus-within\s*\{[^}]*scrollbar-color:\s*var\(--sidebar-scrollbar-thumb\) var\(--color-transparent\);/s);
     expect(appShellSource).toMatch(/@media \(min-width: 880px\)[\s\S]*?\.app-shell__main\s*\{[^}]*scrollbar-color:\s*var\(--main-scrollbar-thumb\) var\(--color-transparent\);[^}]*scrollbar-width:\s*thin;/s);
     expect(appShellSource).toMatch(/\.app-shell__main::\-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--main-scrollbar-thumb\);[^}]*border-radius:\s*999px;/s);
-    expect(articleReaderSource).toMatch(/\.article-reader__list\s*\{[^}]*scrollbar-color:\s*var\(--article-list-scrollbar-thumb\) var\(--color-transparent\);/s);
+    expect(articleReaderSource).toMatch(/\.article-reader__list\s*\{[^}]*scrollbar-color:\s*var\(--color-transparent\) var\(--color-transparent\);/s);
+    expect(articleReaderSource).toMatch(/\.article-reader__list:hover,\s*\.article-reader__list:focus-within\s*\{[^}]*scrollbar-color:\s*var\(--article-list-scrollbar-thumb\) var\(--color-transparent\);/s);
+    expect(articleReaderSource).toMatch(/\.article-reader__list::-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--color-transparent\);/s);
+    expect(articleReaderSource).toMatch(/\.article-reader__list:hover::-webkit-scrollbar-thumb,\s*\.article-reader__list:focus-within::-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--article-list-scrollbar-thumb\);/s);
     expect(articleReaderSource).toMatch(/\.article-reader__content\s*\{[^}]*scrollbar-color:\s*var\(--reader-article-panel-scrollbar-thumb\) var\(--color-transparent\);/s);
     expect(`${appShellSource}\n${articleReaderSource}`).not.toMatch(/ScrollTimeout|\.is-scrolling/);
   });

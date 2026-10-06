@@ -921,8 +921,9 @@ export default {
   min-height: 0;
   overflow-y: auto;
   padding: 0 10px 24px;
-  scrollbar-color: var(--article-list-scrollbar-thumb) var(--color-transparent);
+  scrollbar-color: var(--color-transparent) var(--color-transparent);
   scrollbar-width: thin;
+  transition: scrollbar-color var(--motion-duration-normal) var(--motion-easing-standard);
 }
 
 .article-reader__list::-webkit-scrollbar {
@@ -935,8 +936,19 @@ export default {
 }
 
 .article-reader__list::-webkit-scrollbar-thumb {
-  background-color: var(--article-list-scrollbar-thumb);
+  background-color: var(--color-transparent);
   border-radius: 999px;
+  transition: background-color var(--motion-duration-normal) var(--motion-easing-standard);
+}
+
+.article-reader__list:hover,
+.article-reader__list:focus-within {
+  scrollbar-color: var(--article-list-scrollbar-thumb) var(--color-transparent);
+}
+
+.article-reader__list:hover::-webkit-scrollbar-thumb,
+.article-reader__list:focus-within::-webkit-scrollbar-thumb {
+  background-color: var(--article-list-scrollbar-thumb);
 }
 
 .article-list-bulk-header {

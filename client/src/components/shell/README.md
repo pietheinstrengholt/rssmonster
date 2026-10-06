@@ -53,7 +53,7 @@ Each vertical scroll surface has one explicit owner:
 
 The article collection `.article-list-view__items` does not add toolbar padding, search-open compensation, or vertical clipping. Horizontal swipe clipping belongs to the dedicated `.mobile-swipe-shell`. A view should not hide overflow to conceal an incorrect parent height; the intended shell or view scroll owner must expose the layout error and own scrolling directly.
 
-Native scrollbar styling uses 6-pixel tracks, transparent backgrounds, rounded theme-aware thumbs, and no JavaScript visibility timers. The sidebar thumb is transparent at rest—including initial load—and appears on hover or keyboard focus. The desktop main pane exposes its scrollbar from `880px`; platform overlay and idle-fade behavior still belongs to the browser or operating system.
+Native scrollbar styling uses 6-pixel tracks, transparent backgrounds, rounded theme-aware thumbs, and no JavaScript visibility timers. The sidebar and Reader article-list thumbs are transparent at rest—including initial load—and appear on hover or keyboard focus. The desktop main pane exposes its scrollbar from `880px`; platform overlay and idle-fade behavior still belongs to the browser or operating system.
 
 The connectivity notice is positioned by `.app-shell__overlay-host` inside `.app-shell__main-frame`. The notice component owns only its local inset and maximum width and must not calculate offsets from `--sidebar-width`.
 
