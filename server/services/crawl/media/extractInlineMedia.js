@@ -165,7 +165,7 @@ export default function extractInlineMedia($, feedMedia = null) {
     const fallback = $('<p></p>');
     if (fallbackUrl) {
       fallback.append($('<a></a>').attr('href', fallbackUrl).text(
-        record.text || (record.candidate.type === 'audio' ? 'Listen to audio' : 'Watch video')
+        record.text || (record.element.name === 'audio' ? 'Listen to audio' : 'Watch video')
       ));
     } else if (record.text) {
       fallback.text(record.text);

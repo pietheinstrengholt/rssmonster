@@ -23,6 +23,47 @@ function mountArticleMedia(props = {}) {
 }
 
 describe('ArticleMedia', () => {
+  it('shows the feed name and existing clock duration above native audio', () => {
+    const wrapper = mountArticleMedia({
+      media: { type: 'audio', url: 'https://example.com/episode.mp3', durationSeconds: 2590 },
+      title: 'Episode title', feedTitle: 'The Daily'
+    });
+    expect(wrapper.text()).toContain('The Daily');
+    expect(wrapper.text()).toContain('43:10');
+    expect(wrapper.text()).not.toContain('Episode title');
+    expect(wrapper.get('audio').attributes()).toMatchObject({ controls: '', preload: 'metadata', 'aria-label': 'Audio: Episode title' });
+    expect(wrapper.get('audio').attributes('autoplay')).toBeUndefined();
+    wrapper.unmount();
+  });
+
+  it('changes only the associated native audio playback speed', async () => {
+    const props = { media: { type: 'audio', url: 'https://example.com/episode.mp3' } };
+    const wrapper = mountArticleMedia(props);
+    const other = mountArticleMedia(props);
+    const audio = wrapper.get('audio').element;
+    const speed = wrapper.get('select[aria-label="Playback speed"]');
+    expect(wrapper.text()).toContain('Audio');
+    expect(speed.element.value).toBe('1');
+    expect(audio.playbackRate).toBe(1);
+    expect(speed.findAll('option').map(option => option.text())).toEqual(['1×', '1.25×', '1.5×', '1.75×', '2×']);
+    await speed.setValue('1.5');
+    expect(audio.playbackRate).toBe(1.5);
+    expect(other.get('audio').element.playbackRate).toBe(1);
+    wrapper.unmount();
+    other.unmount();
+  });
+
+  it.each([
+    { type: 'video', url: 'https://example.com/movie.mp4', mimeType: 'video/mp4' },
+    { type: 'video', provider: 'youtube', url: 'https://www.youtube.com/watch?v=abc' }
+  ])('keeps audio speed controls out of video presentations: $provider $mimeType', media => {
+    const wrapper = mountArticleMedia({ media });
+    expect(wrapper.find('select[aria-label="Playback speed"]').exists()).toBe(false);
+    expect(wrapper.find('audio').exists()).toBe(false);
+    expect(wrapper.find('video').exists()).toBe(media.mimeType === 'video/mp4');
+    wrapper.unmount();
+  });
+
   it('renders a linked video poster without an inline player', async () => {
     const wrapper = mountArticleMedia();
     const link = wrapper.get('a.article-media-link');
@@ -128,6 +169,25 @@ describe('ArticleMedia', () => {
     expect(wrapper.get('video').attributes('controls')).toBeDefined();
     expect(wrapper.get('source').attributes('type')).toBe('video/webm');
     expect(wrapper.find('.article-media-link').exists()).toBe(false);
+  });
+
+  it.each(['mp4', 'm4v', 'mov', 'webm', 'm3u8'])('plays a direct %s URL without MIME metadata', extension => {
+    const url = `https://cdn.example/movie.${extension.toUpperCase()}?token=123#video`;
+    const wrapper = mountArticleMedia({ media: { type: 'video', url } });
+
+    expect(wrapper.get('video').attributes('controls')).toBeDefined();
+    expect(wrapper.get('video').attributes('preload')).toBe('metadata');
+    expect(wrapper.get('video').attributes('autoplay')).toBeUndefined();
+    expect(wrapper.get('source').attributes('src')).toBe(url);
+    expect(wrapper.get('source').attributes('type')).toBeUndefined();
+  });
+
+  it('keeps provider pages as links even when a query contains a video filename', () => {
+    const url = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&filename=movie.mp4';
+    const wrapper = mountArticleMedia({ media: { type: 'video', provider: 'youtube', url } });
+
+    expect(wrapper.find('video').exists()).toBe(false);
+    expect(wrapper.get('a').attributes('href')).toBe(url);
   });
 
   it('renders a safe gallery with accessible labels', () => {

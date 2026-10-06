@@ -19,7 +19,15 @@
       />
       <a v-if="destinationUrl" :href="destinationUrl" target="_blank" rel="noopener noreferrer">Watch video</a>
     </video>
-    <audio v-else class="article-media-native" controls preload="metadata">
+    <div v-if="!isVideo" class="article-media-audio-header">
+      <BootstrapIcon icon="headphones" aria-hidden="true" />
+      <span class="article-media-audio-title">{{ feedTitle || 'Audio' }}</span>
+      <span v-if="durationLabel" class="article-media-inline-metadata">{{ durationLabel }}</span>
+      <select v-model.number="playbackRate" class="app-form-select article-media-rate" aria-label="Playback speed" @change="setPlaybackRate">
+        <option v-for="rate in [1, 1.25, 1.5, 1.75, 2]" :key="rate" :value="rate">{{ rate }}×</option>
+      </select>
+    </div>
+    <audio v-if="!isVideo" ref="audio" class="article-media-native" controls preload="metadata" :aria-label="title ? `Audio: ${title}` : 'Audio player'">
       <source v-for="source in safeSources" :key="source.url" :src="source.url" :type="source.mimeType || undefined" />
       <track
         v-for="track in safeTracks"
@@ -32,7 +40,7 @@
       />
       <a v-if="destinationUrl" :href="destinationUrl" target="_blank" rel="noopener noreferrer">Listen to audio</a>
     </audio>
-    <span v-if="metadata" class="article-media-inline-metadata">{{ metadata }}</span>
+    <span v-if="isVideo && metadata" class="article-media-inline-metadata">{{ metadata }}</span>
   </div>
   <div v-else-if="isVideo" class="article-media article-media-video">
     <a
@@ -97,7 +105,11 @@ export default {
     articleUrl: { type: String, default: '' },
     imageUrl: { type: String, default: '' },
     contentHtml: { type: String, default: '' },
-    title: { type: String, default: '' }
+    title: { type: String, default: '' },
+    feedTitle: { type: String, default: '' }
+  },
+  data() {
+    return { playbackRate: 1 };
   },
   computed: {
     // Returns whether this component can present the supplied media type.
@@ -118,7 +130,8 @@ export default {
         (this.media?.type === 'video' && (
           this.media?.provider === 'inline' ||
           String(this.media?.mimeType || '').toLowerCase().startsWith('video/') ||
-          Array.isArray(this.media?.sources)
+          Array.isArray(this.media?.sources) ||
+          this.safeSources.some(source => /\.(?:mp4|m4v|mov|webm|m3u8)$/i.test(new URL(source.url).pathname))
         ));
     },
     // Returns deduplicated HTTP(S) sources eligible for native playback.
@@ -243,6 +256,9 @@ export default {
     }
   },
   methods: {
+    setPlaybackRate() {
+      this.$refs.audio.playbackRate = this.playbackRate;
+    },
     // This function accepts only HTTP(S) URLs for media navigation and images.
     safeHttpUrl(value) {
       try {
@@ -291,6 +307,28 @@ export default {
 .article-media-inline {
   display: grid;
   gap: 6px;
+}
+
+.article-media-audio-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.article-media-audio-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.article-media-rate {
+  width: auto;
+  min-height: var(--control-height-compact);
+  font-size: inherit;
+  padding-block: 0.25rem;
 }
 
 .article-media-native {

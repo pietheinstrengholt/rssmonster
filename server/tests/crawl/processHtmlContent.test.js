@@ -221,6 +221,24 @@ describe('crawl content sanitization', () => {
     expect(result.text).toBe('Download publisher video');
   });
 
+  it.each([
+    ['audio', 'Listen to audio'],
+    ['video', 'Watch video']
+  ])('keeps a fallback link for unsupported inline %s without publisher text', (type, label) => {
+    const result = processHtmlContent(
+      `<p>Introduction</p><${type}><source src="/media.bin" type="application/octet-stream"></${type}>`,
+      null,
+      'https://origin.example/articles/story',
+      feed,
+      'Unsupported inline media'
+    );
+
+    expect(result.media).toBeNull();
+    expect(result.html).toContain('<p>Introduction</p>');
+    expect(result.html).toContain(`<a href="https://origin.example/media.bin">${label}</a>`);
+    expect(result.html).not.toMatch(/<audio|<video|<source/i);
+  });
+
   it('removes malformed inline media with dangerous sources but keeps fallback text', () => {
     const result = processHtmlContent(
       '<div><video src="javascript:alert(1)" autoplay><source src="data:video/mp4,bad">' +

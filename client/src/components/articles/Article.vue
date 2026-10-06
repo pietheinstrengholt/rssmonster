@@ -35,6 +35,7 @@
         :tags="articleTags"
         :published-at="publishedAt"
         :has-article-preview="hasArticlePreview"
+        :has-audio-media="hasAudioMedia"
         @article-clicked="articleClicked"
         @article-touched="articleTouched"
         @swipe-touch-start="onSwipeTouchStart"
@@ -59,7 +60,7 @@
       </div>
       <div class="article-body mobile-swipe-content" :class="isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : ''" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
         <div class="article-layout">
-          <ArticleHeader :tag-editing-disabled="Boolean(duplicateOfArticleId)" :reader-detail="isReaderDetail" :feed="feed" :feed-favicon="feedFavicon" :author="author" :published-at="publishedAt" ref="articleHeading" :articleId="storyArticleId" :url="url" :title="title" :highlightTerms="highlightTerms" :clickedAmount="clickedAmount" :clickPending="clickMutationPending" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-clicked="toggleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" @add-tags="tagDialogMode = 'add'" @manage-tags="tagDialogMode = 'manage'" />
+          <ArticleHeader :tag-editing-disabled="Boolean(duplicateOfArticleId)" :reader-detail="isReaderDetail" :feed="feed" :feed-favicon="feedFavicon" :author="author" :published-at="publishedAt" ref="articleHeading" :articleId="storyArticleId" :url="url" :title="title" :highlightTerms="highlightTerms" :clickedAmount="clickedAmount" :clickPending="clickMutationPending" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :hasAudioMedia="hasAudioMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-clicked="toggleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" @add-tags="tagDialogMode = 'add'" @manage-tags="tagDialogMode = 'manage'" />
           <div class="meta-row" :class="{ 'article-reader-metabar': isReaderDetail }">
             <ArticleMeta :authors="authors" :original-source="originalSource" :hide-provenance="isReaderDetail" :articleId="storyArticleId" :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :hasInterestScore="hasInterestScore" :isRecommendationView="isRecommendationView" :recommendation="recommendation" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :aiAnalysisStatus="aiAnalysisStatus" :neutralScore="NEUTRAL_SCORE" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" @inspect-interest="$emit('inspect-interest', $event)" />
             <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="articleTags" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :quality="quality" :aiAnalysisStatus="aiAnalysisStatus" @select-category="selectCategory" @select-tag="selectTag" />
@@ -75,11 +76,11 @@
             </template>
           </div>
         </div>
-        <ArticleMedia v-if="shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" @media-clicked="articleClicked" />
+        <ArticleMedia v-if="shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" :feedTitle="feed.feedName" @media-clicked="articleClicked" />
         <ArticleContent :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :openArticleLinksInNewTab="uiStore.openArticleLinksInNewTab" :contentText="contentText" :highlightTerms="highlightTerms" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :aiAnalysisStatus="aiAnalysisStatus" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="showMinimalContent" />
       </div>
     </div>
-    <ArticleMedia v-if="isMinimalView && shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" @media-clicked="articleClicked" />
+    <ArticleMedia v-if="isMinimalView && shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" :feedTitle="feed.feedName" @media-clicked="articleClicked" />
     <ArticleContent v-if="isMinimalView" :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :openArticleLinksInNewTab="uiStore.openArticleLinksInNewTab" :contentText="contentText" :highlightTerms="highlightTerms" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :aiAnalysisStatus="aiAnalysisStatus" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="shouldShowMinimalContent" />
     <ArticleTagDialog v-if="tagDialogMode" :article-id="id" :tags="articleTags" :mode="tagDialogMode" @close="tagDialogMode = null" @updated="updateTags" />
     <div class="article-divider"></div>
@@ -116,6 +117,14 @@ import { safeDescriptionFallbackHtml } from '../../services/articleContentServic
 import { parseSearchHighlightTerms } from '../../services/searchHighlight.js';
 
 const NEUTRAL_SCORE = 70;
+
+function isSafeMediaUrl(value) {
+  try {
+    return ['http:', 'https:'].includes(new URL(String(value || '')).protocol);
+  } catch {
+    return false;
+  }
+}
 
 export default {
   inheritAttrs: false,
@@ -298,30 +307,31 @@ export default {
     hasVideoMedia() {
       return this.media && typeof this.media === 'object' && this.media.type === 'video';
     },
+    // Returns whether structured audio has a safe source for native playback.
+    hasAudioMedia() {
+      if (this.media?.type !== 'audio') return false;
+      const sources = Array.isArray(this.media.sources) && this.media.sources.length
+        ? this.media.sources.map(source => source?.url)
+        : [this.media.url];
+      return sources.some(isSafeMediaUrl);
+    },
     // Returns whether normalized media exposes at least one safe client-renderable asset.
     hasPresentableMedia() {
       if (!this.media || typeof this.media !== 'object' || Array.isArray(this.media)) return false;
 
-      const isSafeUrl = value => {
-        try {
-          return ['http:', 'https:'].includes(new URL(String(value || '')).protocol);
-        } catch {
-          return false;
-        }
-      };
       const sourceUrls = Array.isArray(this.media.sources)
         ? this.media.sources.map(source => source?.url)
         : [];
 
       if (this.media.type === 'gallery') {
-        return Array.isArray(this.media.items) && this.media.items.some(item => isSafeUrl(item?.url));
+        return Array.isArray(this.media.items) && this.media.items.some(item => isSafeMediaUrl(item?.url));
       }
-      if (this.media.type === 'image') return isSafeUrl(this.media.url);
-      if (this.media.type === 'audio') return [this.media.url, ...sourceUrls].some(isSafeUrl);
+      if (this.media.type === 'image') return isSafeMediaUrl(this.media.url);
+      if (this.media.type === 'audio') return [this.media.url, ...sourceUrls].some(isSafeMediaUrl);
       if (this.media.type === 'video') {
-        return [this.media.url, this.media.thumbnailUrl, this.url, ...sourceUrls].some(isSafeUrl);
+        return [this.media.url, this.media.thumbnailUrl, this.url, ...sourceUrls].some(isSafeMediaUrl);
       }
-      return isSafeUrl(this.media.url);
+      return isSafeMediaUrl(this.media.url);
     },
     // Returns whether normalized media belongs in the active article view.
     shouldRenderMedia() {

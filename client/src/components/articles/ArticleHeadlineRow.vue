@@ -24,6 +24,7 @@
         <span v-if="!isMobilePortrait || (sourceLabel && publishedAt)" class="article-list-dot">·</span>
         <span v-if="isMobilePortrait && publishedAt">{{ formatDate(publishedAt) }}</span>
         <div class="article-list-badges">
+          <BootstrapIcon v-if="hasAudioMedia" icon="headphones" title="Audio article" aria-label="Audio article" />
           <ArticleStorySourcesPopover
             v-if="showSourceBadge"
             :article-id="articleId"
@@ -99,6 +100,7 @@ export default {
     duplicatesExpanded: { type: Boolean, default: false },
     tags: { type: Array, default: () => [] },
     publishedAt: { type: [String, Date], default: '' },
+    hasAudioMedia: { type: Boolean, default: false },
     hasArticlePreview: { type: Boolean, default: false },
     highlightTerms: { type: Array, default: () => [] }
   },

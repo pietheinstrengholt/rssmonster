@@ -13,13 +13,14 @@
       <BootstrapIcon v-if="isGitHubArticle" icon="github" class="article-kind-icon github-icon" />
       <BootstrapIcon v-if="isMastodonArticle" icon="mastodon" class="article-kind-icon mastodon-icon" />
       <BootstrapIcon v-if="isMediumArticle" icon="medium" class="article-kind-icon medium-icon" />
-      <BootstrapIcon v-if="isPodcastArticle" icon="mic-fill" class="article-kind-icon podcast-icon" />
+      <BootstrapIcon v-if="isPodcastArticle && !hasAudioMedia" icon="mic-fill" class="article-kind-icon podcast-icon" />
       <ArticleDevelopingStoryPopover
         v-if="isDeveloping"
         class="article-kind-popover"
         :article-id="articleId"
         :icon-class="['article-kind-icon', 'developing-story-icon']"
       />
+      <BootstrapIcon v-if="hasAudioMedia" icon="headphones" class="article-kind-icon media-audio-icon" title="Audio article" aria-label="Audio article" />
       <BootstrapIcon v-if="hasVideoMedia" icon="play-btn-fill" class="article-kind-icon media-video-icon" />
       <template v-else>
         <!-- <BootstrapIcon v-if="clickedAmount > 0" icon="arrow-up-right-square-fill" class="article-kind-icon clicked-icon" /> -->
@@ -70,7 +71,7 @@ export default {
     url: { type: String, default: '' }, title: { type: String, default: '' }, clickedAmount: { type: Number, default: 0 },
     clickPending: { type: Boolean, default: false },
     favoriteInd: { type: Number, default: 0 }, favoritePending: { type: Boolean, default: false }, hotInd: { type: Number, default: 0 }, status: { type: String, default: '' },
-    viewMode: { type: String, default: '' }, hasVideoMedia: { type: Boolean, default: false },
+    viewMode: { type: String, default: '' }, hasVideoMedia: { type: Boolean, default: false }, hasAudioMedia: { type: Boolean, default: false },
     isDeveloping: { type: Boolean, default: false },
     hasInterestScore: { type: Boolean, default: false },
     isGroupedView: { type: Boolean, default: false }, eventArticleCountTotal: { type: Number, default: 0 },
@@ -231,6 +232,10 @@ export default {
   flex-shrink: 0;
   line-height: 1;
   vertical-align: middle;
+}
+
+.media-audio-icon {
+  color: var(--text-secondary);
 }
 
 .article-kind-popover {

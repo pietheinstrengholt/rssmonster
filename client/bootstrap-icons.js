@@ -78,6 +78,7 @@ export const bootstrapIconNames = [
   'grip-vertical',
   'hand-thumbs-down-fill',
   'hand-thumbs-up-fill',
+  'headphones',
   'heart',
   'heart-pulse-fill',
   'house',
