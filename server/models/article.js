@@ -96,7 +96,7 @@ export default (sequelize) => {
       },
       /**
        * Reading evidence contract (distinct from read/unread state):
-       * - firstSeen: first actual exposure; preserve the existing value.
+       * - firstSeen: first time visible on screen; not publication time or proof of reading.
        * - attentionBucket: estimate from eligible time with readable article content.
        * - lastMeaningfulReadAt: latest qualifying deep-reading observation.
        * - lastClickedAt: existing click actions, not opening content internally.
@@ -533,7 +533,9 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: false
       },
-      // First actual exposure on screen; preserve once set, including after marking unread.
+      // First time the article was visible on screen, even without being opened or read.
+      // Tracks whether it has appeared on screen once, not publication time or proof of reading.
+      // Preserve once set, including after marking unread.
       // Legacy mark-read calls can also populate this field, so existing values do not prove exposure.
       firstSeen: {
         type: DataTypes.DATE,

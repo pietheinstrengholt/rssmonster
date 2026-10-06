@@ -107,6 +107,23 @@ function mountArticle(props = {}, viewMode = 'full') {
   });
 }
 
+describe('ArticleReaderLayout dates', () => {
+  it.each([
+    ['prefers publication time over first exposure', { publishedAt: '2026-10-04T12:00:00Z', firstSeen: '2026-10-06T11:00:00Z' }, '2 days ago'],
+    ['falls back to first exposure when publication time is missing', { publishedAt: null, firstSeen: '2026-10-06T11:00:00Z' }, '1 hour ago'],
+    ['omits the date when both timestamps are missing', { publishedAt: null, firstSeen: null }, '']
+  ])('%s', (_label, dates, expectedDate) => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(new Date('2026-10-06T12:00:00Z').getTime());
+    const wrapper = mountReader(createArticle(dates));
+    try {
+      expect(wrapper.get('.article-reader__item-kicker').text()).toBe(`Example Feed${expectedDate}`);
+    } finally {
+      wrapper.unmount();
+      now.mockRestore();
+    }
+  });
+});
+
 describe('ArticleReaderLayout empty previews', () => {
   it('shows the fallback when content, description, and image are missing', () => {
     const wrapper = mountReader();

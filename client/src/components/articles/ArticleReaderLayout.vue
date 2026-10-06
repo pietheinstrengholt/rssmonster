@@ -817,7 +817,7 @@ export default {
     },
     // Returns the publication label for a row in the reader article list.
     publishedLabel(article) {
-      return formatRelativeDate(article.firstSeen || article.publishedAt);
+      return formatRelativeDate(article.publishedAt || article.firstSeen);
     },
     // Returns a short plain-text preview for a row in the reader article list.
     articlePreview(article) {
