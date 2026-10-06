@@ -21,6 +21,8 @@ import chatAssistantSource from '../src/components/assistant/ChatAssistant.vue?r
 import connectivityStatusSource from '../src/components/shared/ConnectivityStatus.vue?raw';
 import desktopToolbarSource from '../src/components/shell/DesktopToolbar.vue?raw';
 import mobileToolbarSource from '../src/components/shell/MobileToolbar.vue?raw';
+import newArticlesBannerSource from '../src/components/articles/NewArticlesBanner.vue?raw';
+import unreadSelectionContextSource from '../src/components/articles/UnreadSelectionContext.vue?raw';
 import settingsActionsSource from '../src/components/settings/SettingsActions.vue?raw';
 import settingsFeedsSource from '../src/components/settings/SettingsFeedsOverview.vue?raw';
 import settingsUsersSource from '../src/components/settings/SettingsManageUsers.vue?raw';
@@ -34,6 +36,11 @@ const globalStyles = readFileSync(resolve(process.cwd(), 'src/assets/scss/global
 const settingsStyles = readFileSync(resolve(process.cwd(), 'src/assets/css/settings.css'), 'utf8');
 
 describe('CSS ownership boundaries', () => {
+  it('aligns the mobile new-articles banner with the unread context surface', () => {
+    expect(newArticlesBannerSource).toMatch(/@media \(max-width: 767px\), \(max-height: 560px\) and \(min-width: 480px\)\s*\{\s*\.new-articles-banner:not\(\.new-articles-banner--reader\)\s*\{[^}]*margin-inline:\s*0\.5rem;/s);
+    expect(unreadSelectionContextSource).toMatch(/@media \(max-width: 767px\), \(max-height: 560px\) and \(min-width: 480px\)\s*\{\s*\.unread-selection-context\s*\{[^}]*padding:\s*0\.375rem 0\.5rem;/s);
+  });
+
   // Verifies chat styles cannot mutate article presentation and still reach rendered response HTML explicitly.
   it('contains ChatAssistant styles within the component', () => {
     expect(chatAssistantSource).toContain('<style scoped>');

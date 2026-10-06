@@ -104,5 +104,8 @@ export default {
 .new-articles-banner--reader .new-articles-banner__content,
 .new-articles-banner--reader .new-articles-banner__actions { flex-wrap: nowrap; }
 .new-articles-banner--reader .new-articles-banner__copy { flex-basis: auto; gap: 0.375rem; white-space: nowrap; }
+@media (max-width: 767px), (max-height: 560px) and (min-width: 480px) {
+  .new-articles-banner:not(.new-articles-banner--reader) { margin-inline: 0.5rem; }
+}
 :global(:root[data-theme='dark'] .new-articles-banner strong) { color: var(--text-primary); }
 </style>
