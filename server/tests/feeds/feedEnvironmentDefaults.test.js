@@ -3,10 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_FEED_LEASE_MS } from '../../services/feeds/feedClaims.js';
 import { DEFAULT_FEED_INPUT_LIMITS } from '../../services/feeds/feedsmith/feedInputLimits.js';
-import {
-  DEFAULT_FEED_PARSER_MEMORY_MB,
-  DEFAULT_FEED_PARSER_TIMEOUT_MS
-} from '../../services/feeds/feedsmith/isolatedFeedParser.js';
+import { DEFAULT_FEED_PARSER_MEMORY_MB } from '../../services/feeds/feedsmith/isolatedFeedParser.js';
 import { DEFAULT_FEED_RESPONSE_MAX_BYTES } from '../../services/feeds/http/responseBody.js';
 import {
   resolveFeedBodyTimeoutMs,
@@ -40,14 +37,16 @@ describe('feed environment example defaults', () => {
       .toBe(DEFAULT_FEED_CACHE_FRESHNESS_MAX_MS);
     expect(Number(exampleValue('FEED_RETRY_AFTER_MAX_MS')))
       .toBe(DEFAULT_FEED_RETRY_AFTER_MAX_MS);
-    expect(Number(exampleValue('FEED_PARSER_TIMEOUT_MS')))
-      .toBe(DEFAULT_FEED_PARSER_TIMEOUT_MS);
     expect(Number(exampleValue('FEED_PARSER_MEMORY_MB')))
       .toBe(DEFAULT_FEED_PARSER_MEMORY_MB);
     expect(Number(exampleValue('FEED_MAX_ENTRIES')))
       .toBe(DEFAULT_FEED_INPUT_LIMITS.entries);
     expect(Number(exampleValue('FEED_MAX_CONTENT_BYTES')))
       .toBe(DEFAULT_FEED_INPUT_LIMITS.contentBytes);
+  });
+
+  it('documents a ten-second parser budget for slower hosts', () => {
+    expect(Number(exampleValue('FEED_PARSER_TIMEOUT_MS'))).toBe(10000);
   });
 
   it('documents the current crawl batch default under its preferred name', () => {
