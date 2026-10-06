@@ -1,5 +1,5 @@
 <template>
-  <AppDropdown v-if="selectionStore.currentSelection.smartFolderId == null" ref="dropdown" align="end" fixed :close-key="selectionKey" class="save-smart-folder">
+  <AppDropdown v-if="canSaveSearch" ref="dropdown" align="end" fixed :close-key="selectionKey" class="save-smart-folder">
     <template #trigger="{ triggerProps }">
       <button v-bind="triggerProps" type="button" class="app-button app-button--outline-secondary app-button--compact" aria-haspopup="dialog" :disabled="isSaving">
         <BootstrapIcon icon="folder-plus" context="control" aria-hidden="true" />
@@ -46,6 +46,11 @@ const folderName = ref('');
 const draft = ref(currentViewSmartFolder(selectionStore.currentSelection, selectionStore));
 const isSaving = ref(false);
 const saveError = ref('');
+const canSaveSearch = computed(() => {
+  const { smartFolderId, status, search } = selectionStore.currentSelection;
+  // Briefing owns a generated query rather than a user search.
+  return smartFolderId == null && status !== 'briefing' && Boolean(search?.trim());
+});
 const selectionKey = computed(() => JSON.stringify([selectionStore.currentSelection, selectionStore.dateRange, selectionStore.ageCutoff, selectionStore.customDateRange]));
 const rulePreview = computed(() => smartFolderRulePreview(draft.value.query));
 const validation = computed(() => validateSmartFolderQuery(draft.value.query));

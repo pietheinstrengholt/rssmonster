@@ -46,9 +46,37 @@ describe('current view draft', () => {
   it('keeps names concise', () => { expect(currentViewSmartFolder({ status: 'unread', search: 'a'.repeat(500) }).name.length).toBeLessThan(80); });
 });
 describe('save current view', () => {
-  it('shows for normal selections and hides for Smart Folders', async () => {
-    render(); expect(button('Save as smart folder')).toBeDefined();
-    selection.currentSelection.smartFolderId = 7; await flushPromises(); expect(wrapper.find('button').exists()).toBe(false);
+  beforeEach(() => { selection.setSelectedSearch('title:news'); });
+  it.each(['unread', 'favorite', 'hot', 'read', 'briefing', 'clicked'])('hides for the %s sidebar selection', async status => {
+    render();
+    selection.setSelectedStatus(status); await flushPromises();
+    expect(button('Save as smart folder')).toBeUndefined();
+  });
+  it.each(['category', 'feed', 'tag', 'smart folder'])('hides for a selected %s', async context => {
+    render();
+    if (context === 'category') selection.selectCategory(3);
+    if (context === 'feed') selection.selectFeed(5, 3);
+    if (context === 'tag') selection.setTag('AI');
+    if (context === 'smart folder') selection.setSmartFolder(existing);
+    await flushPromises();
+    expect(button('Save as smart folder')).toBeUndefined();
+  });
+  it.each([null, '', '   '])('hides without a nonblank search (%s)', async search => {
+    render(); selection.setSelectedSearch(search); await flushPromises();
+    expect(button('Save as smart folder')).toBeUndefined();
+  });
+  it.each(['news', 'title:news language:nl'])('shows for a user search (%s)', async search => {
+    selection.setSelectedStatus('briefing'); render();
+    expect(button('Save as smart folder')).toBeUndefined();
+    selection.setSelectedSearch(search); await flushPromises();
+    expect(button('Save as smart folder')).toBeDefined();
+  });
+  it.each(['category', 'feed', 'smart folder'])('shows when searching from a selected %s', async context => {
+    if (context === 'category') selection.selectCategory(3);
+    if (context === 'feed') selection.selectFeed(5, 3);
+    if (context === 'smart folder') selection.setSmartFolder(existing);
+    render(); selection.setSelectedSearch('title:news'); await flushPromises();
+    expect(button('Save as smart folder')).toBeDefined();
   });
   it('prefills and selects the name and previews the persisted draft', async () => {
     selection.currentSelection.search = 'Verstappen language:nl'; render(); await open();
@@ -64,7 +92,7 @@ describe('save current view', () => {
     render(); await open(); await wrapper.get('input').setValue('My folder');
     fetchSmartFolders.mockResolvedValueOnce({ data: { smartFolders: [existing] } }).mockResolvedValueOnce({ data: { smartFolders: [{ id: 9, name: 'My folder' }] } });
     await wrapper.get('form').trigger('submit'); await flushPromises();
-    expect(saveSmartFolders).toHaveBeenCalledWith([{ ...existing, ArticleCount: 0 }, { name: 'My folder', query: 'unread:true sort:desc grouping:none limit:50', limitCount: 50, markAsReadOnScroll: false }]);
+    expect(saveSmartFolders).toHaveBeenCalledWith([{ ...existing, ArticleCount: 0 }, { name: 'My folder', query: 'unread:true sort:desc grouping:none limit:50 title:news', limitCount: 50, markAsReadOnScroll: false }]);
     expect(overview.smartFolders[0].name).toBe('My folder'); expect(fetchSmartFolders).toHaveBeenCalledTimes(2);
     expect(selection.currentSelection.smartFolderId).toBeNull(); expect(button('Save as smart folder').attributes('aria-expanded')).toBe('false');
   });
