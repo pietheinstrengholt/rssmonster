@@ -570,6 +570,7 @@ export default {
   border-top: 1px solid var(--border-subtle);
 }
 .headline-list-topbars {
+  container: headline-topbars / inline-size;
   display: grid;
   gap: 12px;
   margin: 0.5rem 16px 12px;

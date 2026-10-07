@@ -53,3 +53,17 @@ The fixture renders real Article components with local data. It checks that all
 menu actions are exposed above neighboring articles in Expanded and Headlines
 modes at phone and portrait-tablet sizes, in light and dark themes. It also checks
 Headlines read-state selection and Escape dismissal without writing to a user account.
+
+## Unread context row height
+
+With Vite running, execute `node scripts/test-unread-context-browser.js` from
+`client/`, using the same `PLAYWRIGHT_MODULE`, `READING_BROWSER_EXECUTABLE` and
+`READING_TEST_BASE_URL` overrides described above. The fixture mounts the real
+context bar with application styles and checks both themes, search-action
+visibility, date visibility and filter alignment around the 1250px viewport breakpoint,
+and narrow content widths. From 320px upward the bar must remain 54px tall with controls
+on one row; smaller widths must still avoid horizontal overflow.
+
+The same fixture checks the new-articles banner: the visit-context suffix is
+visible from 882px upward and hidden below it, the banner remains 50px tall from
+304px upward with compact spacing below 460px, and narrower widths wrap without horizontal overflow.

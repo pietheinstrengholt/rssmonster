@@ -246,21 +246,23 @@ export default {
 :global(:root[data-theme='dark'] .unread-selection-context--reader) { background: var(--color-transparent); }
 .unread-selection-context--headlines {
   container: headline-context / inline-size;
+  min-width: 0;
   padding: 0;
   border: 0;
   background: var(--color-transparent);
 }
 .unread-selection-context--headlines .unread-selection-context__surface {
+  min-width: 0;
   min-height: 54px;
   padding: 8px 16px;
   box-sizing: border-box;
 }
 .unread-selection-context--headlines .unread-selection-context__summary {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, max-content) minmax(0, 1fr);
   align-items: center;
-  flex: 1 1 auto;
-  width: 100%;
+  flex: 1 1 0;
+  max-width: 100%;
   gap: 12px 24px;
 }
 .unread-selection-context--headlines .unread-selection-context__meta {
@@ -268,8 +270,16 @@ export default {
   align-items: center;
   justify-self: start;
   gap: 10px;
-  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
   color: var(--text-primary);
+}
+.unread-selection-context--headlines .unread-selection-context__meta > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .unread-selection-context--headlines .unread-selection-context__meta-prefix { display: inline; }
 .unread-selection-context--headlines .unread-selection-context__icon {
@@ -281,12 +291,30 @@ export default {
 .unread-selection-context--headlines .unread-selection-context__date-group {
   justify-self: center;
   justify-content: center;
+  max-width: 100%;
   gap: 10px;
+}
+.unread-selection-context--headlines .unread-selection-context__date-filter {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.unread-selection-context--headlines .unread-selection-context__date-trigger {
+  max-width: 100%;
+  white-space: normal;
+}
+.unread-selection-context--headlines .unread-selection-context__date-trigger > span { min-width: 0; }
+.unread-selection-context--headlines .unread-selection-context__date-trigger > .app-icon { flex: 0 0 auto; }
+.unread-selection-context--headlines .unread-selection-context__age-cutoff {
+  min-width: 0;
+  max-width: 100%;
 }
 .unread-selection-context--headlines .unread-selection-context__divider { display: none; }
 .unread-selection-context__current-date {
   display: inline-flex;
   justify-self: end;
+  min-width: 0;
+  max-width: 100%;
   white-space: nowrap;
   align-items: center;
   gap: 7px;
@@ -296,17 +324,16 @@ export default {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
-@container headline-context (width < 1230px) {
+@media (width < 1250px) {
   .unread-selection-context--headlines .unread-selection-context__summary {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
   }
-  .unread-selection-context--headlines .unread-selection-context__date-group { justify-self: end; }
+  .unread-selection-context--headlines .unread-selection-context__date-group { justify-self: end; justify-content: flex-end; }
+  .unread-selection-context--headlines .unread-selection-context__date-filter { flex: 1 1 0; min-width: min(4rem, 100%); }
+  .unread-selection-context--headlines .unread-selection-context__date-trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .unread-selection-context__current-date { display: none; }
 }
-@container headline-context (width < 875px) {
-  .unread-selection-context--headlines .unread-selection-context__summary { grid-template-columns: minmax(0, 1fr); }
-  .unread-selection-context--headlines .unread-selection-context__meta { white-space: normal; }
-  .unread-selection-context--headlines .unread-selection-context__date-group { justify-self: start; justify-content: flex-start; }
-  .unread-selection-context__current-date { display: inline-flex; justify-self: start; white-space: normal; }
+@container headline-context (width < 1084px) {
+  .unread-selection-context--headlines :deep(.save-smart-folder) { display: none; }
 }
 </style>

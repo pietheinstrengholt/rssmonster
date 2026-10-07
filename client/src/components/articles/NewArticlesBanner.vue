@@ -4,7 +4,7 @@
       <div class="new-articles-banner__copy">
         <BootstrapIcon :icon="headlineMode ? 'info-circle-fill' : 'lightbulb-fill'" context="control" class="new-articles-banner__icon" aria-hidden="true" />
         <span v-if="readerMode" :title="`${count} new ${count === 1 ? 'article' : 'articles'} since your last visit`" :aria-label="`${count} new ${count === 1 ? 'article' : 'articles'} since your last visit`"><strong>{{ count }} {{ count === 1 ? 'new article' : 'new articles' }}</strong></span>
-        <span v-else><strong>{{ count }} {{ count === 1 ? 'new article' : 'new articles' }}</strong> since your last visit</span>
+        <span v-else><strong>{{ count }} {{ count === 1 ? 'new article' : 'new articles' }}</strong><span class="new-articles-banner__context"> since your last visit</span></span>
       </div>
       <div class="new-articles-banner__actions">
         <button type="button" class="new-articles-banner__primary" :disabled="loading" :aria-label="readerMode ? 'Show new only' : undefined" @click="$emit('show-new')">{{ readerMode ? 'New only' : 'Show new only' }}</button>
@@ -128,5 +128,17 @@ export default {
 .new-articles-banner--headlines button:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
+}
+@container headline-topbars (width < 882px) {
+  .new-articles-banner--headlines .new-articles-banner__context { display: none; }
+  .new-articles-banner--headlines .new-articles-banner__copy { flex-basis: auto; }
+}
+@container headline-topbars (width < 460px) {
+  .new-articles-banner.new-articles-banner--headlines { padding-inline: 4px; gap: 2px; }
+  .new-articles-banner--headlines .new-articles-banner__content { gap: 2px; }
+  .new-articles-banner--headlines .new-articles-banner__copy { flex-basis: 0; min-width: min-content; gap: 2px; line-height: 1.2; }
+  .new-articles-banner--headlines .new-articles-banner__icon { width: 16px; height: 16px; }
+  .new-articles-banner--headlines .new-articles-banner__actions { gap: 2px; }
+  .new-articles-banner--headlines .new-articles-banner__actions button { padding-inline: 2px; }
 }
 </style>
