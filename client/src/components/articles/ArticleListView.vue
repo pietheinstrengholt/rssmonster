@@ -559,6 +559,10 @@ export default {
   }
 }
 
+.article-list-view__items > :deep(:nth-child(1 of .article-list-card)) {
+  border-top: 1px solid var(--border-subtle);
+}
+
 .article-list-view__items {
   padding-top: 0;
   right: 0;
