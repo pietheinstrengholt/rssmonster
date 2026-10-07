@@ -7,19 +7,75 @@ nav_order: 17
 
 # Webhooks
 
-Webhooks send newly saved, matching articles to an HTTP service. Open
-**Settings → Webhooks** to create one for your account. Give it a name and an
-HTTP or HTTPS endpoint URL, choose **Enabled**, and add at least one condition.
-Use **All conditions** to require every condition or **Any condition** to require
-one. You can pause, edit, or delete a saved webhook from the same page.
+Webhooks send newly saved, matching articles to an HTTP service. Use them to
+start an automation in a service such as n8n, Node-RED, or Home Assistant.
+Each webhook belongs to your account and matches articles from your subscriptions.
 
-Conditions can inspect the feed, category, title, author, article URL, URL
-domain, article text, or language. Feed and category values come from your own
-subscriptions. Text comparisons ignore case and surrounding whitespace;
-missing article metadata does not satisfy a negative condition. Webhooks match
-only newly inserted, accepted articles during crawling. Editing a webhook does
-not scan older articles, and a later revision of an existing article does not
-create another delivery.
+![Webhooks settings showing the configured webhook list and the new webhook editor with endpoint, signing secret, match mode, and conditions]({{ '/assets/webhooks-settings.png' | relative_url }})
+
+## Create a webhook
+
+1. Open **Settings → Webhooks** in the **Automation** group.
+2. Select **New webhook** in **Configured webhooks**.
+3. Enter a descriptive **Name** and the receiving service's **Endpoint URL**.
+   Use an HTTP or HTTPS URL without embedded credentials.
+4. Leave **Enabled** checked to start matching new articles after saving.
+5. Optionally enter a **Signing secret** or select **Generate**. Configure the
+   receiver with the same secret to verify deliveries as described below.
+6. Choose **All conditions** to require every condition or **Any condition** to
+   require at least one.
+7. Choose a **Field**, **Operator**, and **Value** for each condition. Use
+   **Add condition** for another row or the row's trash button to remove it.
+8. Select **Create webhook**. The button becomes available when the name,
+   endpoint, and at least one complete condition are valid.
+
+The screenshot shows the editor before a webhook has been configured. The name
+and endpoint examples are placeholders; enter your own values before saving.
+Your endpoint must accept RSSMonster's JSON payload. If the destination service
+requires a different message format, transform the payload in your automation
+before forwarding it.
+
+## Conditions
+
+| Field | Operators | Value |
+| --- | --- | --- |
+| Feed | is, is not | Select one of your subscribed feeds. |
+| Category | is, is not | Select one of your categories. |
+| Title | is, is not, contains, does not contain | Text to match against the article title. |
+| Author | is, is not, contains, does not contain | Text to match against the article author. |
+| Article URL | is, is not, contains, does not contain | A full URL or text within it. |
+| Domain | is, is not | The article URL's hostname, such as `example.com`, without a scheme or path. |
+| Content | contains, does not contain | Text to match against the article's plain-text content (`contentText`). |
+| Language | is, is not | The stored language value, such as `en`. |
+
+Text comparisons ignore case and surrounding whitespace. **Contains** matches
+literal text, not a regular expression or a search expression. **Domain** uses
+an exact hostname match: `example.com` does not also match `news.example.com`.
+Missing article metadata does not satisfy a negative condition.
+
+For example, to send release announcements from a particular category, select
+**All conditions**, add **Category → is →** your category, and add
+**Title → contains → release**. With **Any condition**, either condition alone
+would trigger the webhook.
+
+Webhooks match only newly inserted, accepted articles during crawling. Creating
+or editing a webhook does not scan older articles, and a later revision of an
+existing article does not create another delivery. Matching does not require AI
+processing. Use [Actions]({% link actions.md %}) to change an incoming article's
+state, tags, or scores, or [Search]({% link search.md %}) to find stored articles.
+
+## Edit, pause, or delete
+
+Select a webhook in **Configured webhooks** to edit its settings and conditions,
+then select **Save changes**. The list shows a condition summary and an
+**Enabled** or **Paused** status for each webhook.
+
+To pause a webhook, clear **Enabled** and select **Save changes**. Enable it and
+save again to resume. While paused, it does not queue new matches or send queued
+deliveries; pending deliveries can continue when it is enabled again.
+
+To remove a webhook, select **Delete** and confirm **Delete webhook** in the
+dialog.
 
 ## Delivery and signing
 

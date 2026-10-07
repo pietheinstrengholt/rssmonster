@@ -11,7 +11,10 @@ Find the right articles fast with a few expressive tokens. You can mix free text
 
 Search expressions are also the query language used by
 [Smart Folders]({% link smart-folders.md %}). A query that works in the search bar can be
-saved as a Smart Folder to create a reusable, dynamically updated view.
+saved as a Smart Folder to create a reusable, dynamically updated view. From
+the search results, open the three-dot **More actions** menu, choose
+**Save as smart folder**, review the name and included rules, and select
+**Save smart folder**. See the [steps and screenshot]({% link smart-folders.md %}#save-an-existing-search-as-a-smart-folder).
 
 ---
 

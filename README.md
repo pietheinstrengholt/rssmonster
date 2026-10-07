@@ -247,7 +247,7 @@ Use the [documentation index](docs/index.md) to explore the complete guides.
 | Installation and deployment | [Getting Started](docs/getting-started.md), [manual installation](docs/getting-started.md#manual-installation), [macOS](docs/osx-installation.md), [Ubuntu](docs/ubuntu-installation.md), [production deployment](docs/getting-started.md#production-deployment) |
 | Configuration and storage | [Server settings UI](docs/server-settings.md), [Environment settings and reverse proxies](docs/configuration.md), [SQLite and MySQL](docs/configuration.md#database), [Backup and Restore](docs/backup-restore.md) |
 | Local inference and models | [Inference administration](docs/inference.md), [Model Usage](docs/model-usage.md), [Assistant and MCP](docs/assistant.md) |
-| Finding and organizing articles | [Search](docs/search.md), [Smart Folders](docs/smart-folders.md), [feed item filters](docs/feed-item-filters.md), [Actions](docs/actions.md) |
+| Finding and organizing articles | [Search](docs/search.md), [Smart Folders](docs/smart-folders.md), [feed item filters](docs/feed-item-filters.md), [Actions](docs/actions.md), [Webhooks](docs/webhooks.md) |
 | Semantic architecture and rankings | [How RSSMonster Works](docs/how-rssmonster-works.md), [implementation guide](docs/semantic-services-implementation.md), [Scoring](docs/scoring.md), [FeedTrust](docs/feedtrust.md) |
 | Notifications and integrations | [Web Push](docs/web-app-and-notifications.md), [Fever API](docs/fever-api.md), [Google Reader API](docs/google-reader-api.md) |
 | Development and maintenance | [Contributing](docs/contributing.md), [npm Commands](docs/npm-commands.md), [Server Jobs](docs/server-jobs.md) |

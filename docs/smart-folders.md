@@ -29,15 +29,36 @@ They update automatically as new articles arrive.
 3. (Optional) Set `limitCount` to cap results (50 by default).
 4. Save. The folder updates itself as content changes.
 
-On wide screens, **Save as smart folder** in the collection header opens a
-draft based on the current status, search expression, tag, sort, grouping, and
-quality threshold. The unread view's Today and Yesterday presets are included.
-Review the displayed rules and name before saving. Feed/category selection and
+Use the same tokens as the search bar: status (`unread:true`, `favorite:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), quality (`quality:>0.7`), freshness (`freshness:>=0.5`), event grouping (`event:true`, `eventCount:>=3`), hot items (`hot:true`), and sorts.
+
+## Save an existing search as a Smart Folder
+
+You can save an existing search expression directly from its results, without
+retyping it in Settings.
+
+1. Enter and run a search expression in the search bar, such as `copilot` or
+   `tag:ai unread:true sort:recommended`.
+2. Open the collection's three-dot **More actions** menu and choose
+   **Save as smart folder**.
+3. In **Save current view**, enter a **Folder name** and review **Rules included**.
+4. Select **Save smart folder**. The folder appears under **Smart Folders** in
+   the sidebar, where you can open the saved search again.
+
+![Saving a copilot search as a Smart Folder from the More actions menu, with a folder name and included rules]({{ '/assets/save-as-smart-folder.png' | relative_url }})
+
+The screenshot shows a `copilot` search with **Unread**, **Recommended**, and
+**Group by event** included alongside the search text. You can change the
+suggested folder name before saving. To edit the saved expression later, open
+**Settings → Smart Folders**.
+
+The action is available across article views, including compact layouts; it is
+hidden for non-search collections, an existing Smart Folder, or Daily Briefing.
+The draft includes the current search expression, status, tag, sort, grouping,
+and quality threshold. The unread view's Today and Yesterday presets are included.
+Feed/category selection and
 publication-date controls without equivalent query rules are omitted; the
 dialog flags that omission. The saved folder is a dynamic query, not a snapshot
-of today's list.
-
-Use the same tokens as the search bar: status (`unread:true`, `favorite:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), quality (`quality:>0.7`), freshness (`freshness:>=0.5`), event grouping (`event:true`, `eventCount:>=3`), hot items (`hot:true`), and sorts.
+of today's list: its results update as articles arrive or their state changes.
 
 ---
 

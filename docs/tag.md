@@ -17,6 +17,23 @@ Tags can be added automatically during a feed crawl or manually from an article.
 
 ### Manual Tags
 
+You can add and manage tags on individual articles, including articles already
+in your library. These changes apply to the selected article; removing a tag
+from it does not remove the same label from other articles.
+
+#### Add tags to an article
+
+1. Open the article's three-dot **Article actions** menu and choose **Add tags**.
+2. Select existing labels from the suggestions or use **Search tags** to find
+   a label by name.
+3. To create a label, select **Create new tag**, enter a name, and select
+   **Create**. You can also type a new name into the search field and choose
+   **Create "name"** when offered.
+4. Select **Add tags** to save the selected labels to the article.
+
+Creating a label selects it in the dialog; it is saved to the article only when
+you submit your changes. **Cancel** closes the dialog without saving.
+
 Open the article's **…** menu and choose **Add tags** to select existing labels
 or create a new one inline. Existing article tags remain selected and cannot be
 removed in this workflow. Current tags appear immediately. Suggestions combine
@@ -30,9 +47,23 @@ dialog. The dialog never loads the complete tag collection.
 There is no Recently used section: crawl processing can recreate tag rows, so
 their creation timestamps do not reliably represent when you last used a tag.
 
-Choose **Manage tags** to add and remove labels together. Uncheck a label or
-remove its chip, then choose **Save changes**. New labels are selected in the
-dialog and persisted when you save; cancelling leaves the article unchanged.
+#### Manage an article's tags
+
+1. Open the article's three-dot **Article actions** menu and choose **Manage tags**.
+2. Review **Current tags** at the top of the dialog. Select the **×** on a tag
+   chip or uncheck its matching search result to remove it from the selection.
+3. Under **Add more tags**, search for and select existing labels, choose from
+   **Most used in this view** or **More tags**, or use **Create new tag**.
+4. Select **Save changes** to apply additions and removals together, or
+   **Cancel** to leave the article unchanged.
+
+![Manage tags dialog for an individual article, showing current tags, tag search, suggestions, Create new tag, and Save changes]({{ '/assets/manage-tags.png' | relative_url }})
+
+The screenshot shows **Verstappen** and **Videos** selected on one article.
+Remove either chip to stop assigning that label to this article, or select
+additional labels before saving. Removing an automatically assigned tag can be
+temporary: later crawl processing may add it again. Manually added tags survive
+automatic tag reconciliation.
 
 Saved tags appear immediately on the article, including compact and mobile
 metadata. They use the same search, Smart Folder, and sidebar navigation as

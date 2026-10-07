@@ -34,6 +34,17 @@ Reader mode is designed for keyboard navigation. See
 through articles with those shortcuts also marks the articles you leave as
 read, as described in [Marking Articles Read]({% link marking-articles-read.md %}).
 
+The list header shows the collection title and total article count. **Details**
+reveals loaded-event and source counts and top tags. Date filters are hidden in
+an empty Reader collection. The three-dot **More actions** menu contains bulk
+actions and, for an active search, **Save as smart folder**.
+
+The selected article has a sticky toolbar for read/unread, saving, **Open original**,
+text size (**Aa**), listening, and expand/restore. Expanding hides the middle list
+while retaining the sidebar; restoring returns to the three-column layout without
+losing the selected article or reading position. Text size is remembered in the
+browser. Listening uses browser text-to-speech when supported.
+
 ![RSSMonster in Reader mode](assets/mode-reader.png)
 
 ## Summarized Mode
@@ -49,8 +60,24 @@ offers a link to the original article instead.
 
 **Summary Bullets** shows available generated summary bullets and is offered when
 AI is enabled. Articles need completed analysis to have those summaries.
-**Headlines** is the most compact list. Automatic scroll-based marking as read
-does not run in Headlines mode; use explicit article actions instead.
+**Headlines** is the most compact list. It supports the **Mark as read while
+scrolling** preference as well as explicit article actions.
+
+Headlines can expand an article in place while keeping its row anchored in the
+viewport. Desktop article streams avoid nested scrollbars, and Reader list/content
+and Expanded scrollbars reveal themselves during scrolling or hover.
+
+## Collection actions
+
+Use the collection's three-dot **More actions** menu in any article view to mark
+visible articles read, save them, or record their originals as opened. Relative
+actions mark loaded articles above, below, or older than the current article.
+See [Marking Articles Read]({% link marking-articles-read.md %}#manual-and-bulk-actions)
+for how each scope is determined.
+
+New-article notifications and date/filter context share the collection's top area.
+On narrow screens, filters stay left-aligned and the action menu remains available
+while summaries shorten or hide to leave room for the controls.
 
 ## Reading controls and preferences
 
@@ -59,14 +86,50 @@ choose a collection, a sort to order it, and grouping to combine related coverag
 AI-dependent status, sort, and grouping choices appear only when enabled.
 See [Scoring]({% link scoring.md %}), [Events]({% link events.md %}), and [Daily Briefing]({% link daily-briefing.md %}).
 
+With **Unread** selected, use the toolbar's sliders button to
+[tune your unread selection]({% link marking-articles-read.md %}#tune-your-unread-selection).
+The dialog controls developing coverage, high-trust prioritization, marking read
+while scrolling, startup selection, and opening article links in a new tab.
+
 Article controls include read/unread state, bookmarks, opening the original,
 and, when available, related stories, story sources, score explanations, and
 **More like this** / **Not interested** feedback. Use those feedback actions to
 refine personal interest; they are different from changing read state.
 
-The desktop theme control offers **System**, **Light**, and **Dark**. System
-follows the operating-system preference. Full Settings and theme controls are
-available in the desktop shell; the mobile gear opens the smaller Options sheet.
+## Dark mode and appearance
+
+RSSMonster supports light and dark themes across its reading views, navigation,
+menus, and settings. Dark mode uses dark backgrounds with light text while
+keeping selected articles, links, tags, and score badges distinct.
+
+To change the theme in the desktop layout:
+
+1. Select the sun-shaped **Choose theme** button near the top-right corner,
+   beside the Settings gear.
+2. Choose **Dark**, **Light**, or **System**. The change applies immediately;
+   there is no separate save button.
+
+| Theme | Behavior |
+| --- | --- |
+| System | Follows your operating system's light or dark preference, including changes while RSSMonster is open. This is the default when no preference has been saved. |
+| Light | Keeps the interface in the light theme regardless of the system preference. |
+| Dark | Keeps the interface in the dark theme regardless of the system preference. |
+
+Your choice is remembered in the browser and saved to your account. Choose
+**System** again whenever you want the interface to follow your device's
+appearance setting.
+
+![RSSMonster Reader view in dark mode, showing the sidebar, article list, selected article, and theme control beside Settings]({{ '/assets/reader-dark-mode.png' | relative_url }})
+
+The screenshot shows **Reader** view in dark mode, with navigation on the left,
+the selected article highlighted in the middle list, and its content on the
+right. You can use dark mode with the other reading views as well; changing
+the theme preserves your current collection and reading layout.
+
+The theme picker and full Settings are available in the desktop layout. The
+compact/mobile gear opens the smaller **Options** sheet, without a theme picker;
+the saved theme still applies there, including the device preference when
+**System** is selected.
 
 ## Mobile Experience
 
