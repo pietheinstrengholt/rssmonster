@@ -61,8 +61,9 @@ With Vite running, execute `node scripts/test-unread-context-browser.js` from
 `READING_TEST_BASE_URL` overrides described above. The fixture mounts the real
 context bar with application styles and checks both themes, search-action
 visibility, date visibility and filter alignment around the 1250px viewport breakpoint,
-and narrow content widths. From 320px upward the bar must remain 54px tall with controls
-on one row; smaller widths must still avoid horizontal overflow.
+mobile summary visibility at the 767px breakpoint, and narrow content widths.
+On mobile, filters align left and the three-dot menu stays on the right.
+From 320px upward the bar must remain 54px tall with controls on one row; smaller widths must still avoid horizontal overflow.
 
 The same fixture checks the new-articles banner: the visit-context suffix is
 visible from 882px upward and hidden below it, the banner remains 50px tall from

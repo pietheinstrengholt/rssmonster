@@ -7,7 +7,7 @@ const browser = await chromium.launch({
   ...(process.env.READING_BROWSER_EXECUTABLE ? { executablePath: process.env.READING_BROWSER_EXECUTABLE } : {})
 });
 try {
-  for (const width of [1800, 1251, 1250, 1249, 1200, 390]) {
+  for (const width of [1800, 1251, 1250, 1249, 1200, 768, 767, 390]) {
     const page = await browser.newPage({ viewport: { width, height: 1000 } });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));

@@ -334,6 +334,11 @@ export default {
   .unread-selection-context--headlines .unread-selection-context__date-trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .unread-selection-context__current-date { display: none; }
 }
+@media (max-width: 767px) {
+  .unread-selection-context--headlines .unread-selection-context__meta { display: none; }
+  .unread-selection-context--headlines .unread-selection-context__summary { grid-template-columns: minmax(0, 1fr); }
+  .unread-selection-context--headlines .unread-selection-context__date-group { justify-self: start; justify-content: flex-start; }
+}
 @container headline-context (width < 1084px) {
   .unread-selection-context--headlines .unread-selection-context__surface > :deep(.save-smart-folder) { display: none; }
 }

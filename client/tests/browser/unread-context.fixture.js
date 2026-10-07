@@ -2,6 +2,7 @@ import { createApp, h, nextTick } from 'vue';
 import { createFocusedStores } from '../helpers/focusedStores.js';
 import UnreadSelectionContext from '../../src/components/articles/UnreadSelectionContext.vue';
 import NewArticlesBanner from '../../src/components/articles/NewArticlesBanner.vue';
+import ArticleBulkActionMenu from '../../src/components/articles/ArticleBulkActionMenu.vue';
 import BootstrapIcon from '../../src/components/shared/BootstrapIcon.vue';
 import '../../src/assets/scss/global.scss';
 import '../../src/assets/styles/theme.css';
@@ -14,11 +15,12 @@ pane.style.container = 'headline-topbars / inline-size';
 const app = createApp({
   render: () => [h(NewArticlesBanner, { headlineMode: true, count: 55 }), h(UnreadSelectionContext, {
     headlineMode: true,
+    hideSaveSmartFolder: window.innerWidth <= 767,
     articleCount: 4281,
     sourceCount: 41,
     oldestPublishedAt: '2020-01-01',
     articles: [{ id: 1, publishedAt: '2026-10-06T12:00:00Z' }]
-  })]
+  }, window.innerWidth <= 767 ? { actions: () => h(ArticleBulkActionMenu, { articleCount: 1 }) } : undefined)]
 });
 app.use(stores.pinia).component('BootstrapIcon', BootstrapIcon).mount(pane);
 // The sticky-date composable connects on the next tick and then updates the rendered date.
@@ -48,6 +50,8 @@ for (const search of ['', 'science']) {
       const group = summary.querySelector('.unread-selection-context__date-group');
       const groupRect = group.getBoundingClientRect();
       const summaryRect = summary.getBoundingClientRect();
+      const menuRect = surface.querySelector('[aria-label="More actions"]')?.getBoundingClientRect();
+      const surfaceStyle = getComputedStyle(surface);
       const controlCenters = [...group.querySelectorAll('button')]
         .filter(button => button.getClientRects().length)
         .map(button => {
@@ -67,7 +71,10 @@ for (const search of ['', 'science']) {
         bannerContextVisible: getComputedStyle(banner.querySelector('.new-articles-banner__context')).display !== 'none',
         bannerOverflow,
         rowSpread: Math.max(...controlCenters) - Math.min(...controlCenters),
+        metaVisible: Boolean(summary.querySelector('.unread-selection-context__meta')?.getClientRects().length),
         dateVisible: Boolean(date?.getClientRects().length),
+        menuRightOffset: menuRect ? Math.abs(menuRect.right - rect.right + parseFloat(surfaceStyle.paddingRight) + parseFloat(surfaceStyle.borderRightWidth)) : 0,
+        leftOffset: Math.abs(groupRect.left - summaryRect.left),
         rightOffset: Math.abs(groupRect.right - summaryRect.right),
         centerOffset: Math.abs((groupRect.left + groupRect.right - summaryRect.left - summaryRect.right) / 2),
         overflow,
@@ -79,7 +86,8 @@ for (const search of ['', 'science']) {
 const failures = rows.filter(row => row.overflow.length || row.scrollOverflow || row.bannerOverflow
   || row.bannerContextVisible !== (row.width >= 882)
   || (row.width >= 304 && Math.abs(row.bannerHeight - 50) > 1)
+  || row.metaVisible !== (window.innerWidth > 767)
   || row.dateVisible !== (window.innerWidth >= 1250)
-  || (window.innerWidth >= 1250 ? row.centerOffset > 1 : row.rightOffset > 1)
+  || (window.innerWidth <= 767 ? row.leftOffset > 1 || row.menuRightOffset > 1 : window.innerWidth >= 1250 ? row.centerOffset > 1 : row.rightOffset > 1)
   || (row.width >= 320 && (Math.abs(row.height - 54) > 1 || row.rowSpread > 1)));
 document.querySelector('#result').textContent = JSON.stringify({ viewportWidth: window.innerWidth, cases: rows.length, failures });
