@@ -409,7 +409,7 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
     expect(context.similarCount({ eventArticleCountTotal: 4, isEventArticle: true })).toBe(0);
   });
 
-  it('covers refs, selection, menu positioning, and bulk actions', () => {
+  it('covers refs, selection, and end-state dismissal', () => {
     const itemElement = { focus: vi.fn(), scrollIntoView: vi.fn() };
     const context = createReaderContext({
       articles: [{ id: 1, status: 'unread' }, { id: 2, status: 'read' }],
@@ -425,14 +425,6 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
     context.selectArticleByIndex(1);
     expect(itemElement.focus).toHaveBeenCalledWith({ preventScroll: true });
     expect(context.$emit).toHaveBeenCalledWith('mark-previous-article-read', 1);
-    context.isBulkMenuOpen = true;
-    context.updateBulkMenuPosition();
-    expect(context.bulkMenuStyle).toEqual({ left: '12px', top: '58px' });
-    context.runBulkAction('favorite-visible');
-    expect(context.$emit).toHaveBeenCalledWith('bulk-action', {
-      action: 'favorite-visible',
-      selectedArticleId: 2
-    });
     context.dismissReaderEndState();
     expect(context.isReaderEndStateDismissed).toBe(true);
     context.setArticleItemRef(null, 1);
@@ -457,10 +449,6 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
     }
     expect(context.$emit).toHaveBeenCalledWith('shortcut-toggle-read', { id: 1, status: 'unread' });
     expect(context.$emit).toHaveBeenCalledWith('shortcut-toggle-favorite', { id: 1 });
-
-    context.isBulkMenuOpen = true;
-    context.handleReaderKeydown({ key: 'Escape', target: document.body });
-    expect(context.isBulkMenuOpen).toBe(false);
   });
 
   it('covers article and container watcher resets', () => {
@@ -479,7 +467,6 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
     expect(context.selectedArticleId).toBe(4);
     ArticleReaderLayout.watch.container.call(context);
     expect(context.isReaderEndStateDismissed).toBe(false);
-    expect(context.closeBulkMenu).toHaveBeenCalledOnce();
   });
 });
 

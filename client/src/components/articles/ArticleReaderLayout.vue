@@ -85,58 +85,13 @@
           </div>
         </div>
 
-        <div class="bulk-action-menu-wrap">
-          <button
-            ref="bulkMoreButton"
-            type="button"
-            class="bulk-more-button"
-            title="More actions"
-            aria-label="More actions"
-            :aria-expanded="isBulkMenuOpen ? 'true' : 'false'"
-            @click.stop="toggleBulkMenu"
-          >
-            <BootstrapIcon icon="three-dots" context="control" aria-hidden="true" />
-          </button>
-
-          <div v-if="isBulkMenuOpen" class="bulk-action-menu" :style="bulkMenuStyle" role="menu" aria-label="More actions">
-            <div class="bulk-action-menu-section">
-              <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('mark-visible-read')">
-                <BootstrapIcon icon="check2-circle" aria-hidden="true" />
-                <span>Mark all visible as read</span>
-              </button>
-              <button type="button" class="bulk-action-menu-item" role="menuitem" :disabled="!selectedArticle" @click="runBulkAction('mark-older-read')">
-                <BootstrapIcon icon="clock-history" aria-hidden="true" />
-                <span>Mark older than current article as read</span>
-              </button>
-              <button type="button" class="bulk-action-menu-item" role="menuitem" :disabled="selectedArticleIndex <= 0" @click="runBulkAction('mark-above-read')">
-                <BootstrapIcon icon="arrow-up-short" aria-hidden="true" />
-                <span>Mark articles above as read</span>
-              </button>
-              <button type="button" class="bulk-action-menu-item" role="menuitem" :disabled="selectedArticleIndex === -1 || selectedArticleIndex >= readerListArticles.length - 1" @click="runBulkAction('mark-below-read')">
-                <BootstrapIcon icon="arrow-down-short" aria-hidden="true" />
-                <span>Mark articles below as read</span>
-              </button>
-            </div>
-            <div class="bulk-action-menu-section">
-              <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('favorite-visible')">
-                <BootstrapIcon icon="bookmark" aria-hidden="true" />
-                <span>Save all visible articles</span>
-              </button>
-              <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('mark-visible-clicked')">
-                <BootstrapIcon icon="box-arrow-up-right" aria-hidden="true" />
-                <span>Mark all visible originals as opened</span>
-              </button>
-            </div>
-            <SaveCurrentViewSmartFolder menu-item class="bulk-action-menu-section">
-              <template #trigger="{ triggerProps, isSaving }">
-                <button v-bind="triggerProps" type="button" class="bulk-action-menu-item" role="menuitem" aria-haspopup="dialog" :disabled="isSaving">
-                  <BootstrapIcon icon="folder-plus" aria-hidden="true" />
-                  <span>Save as smart folder</span>
-                </button>
-              </template>
-            </SaveCurrentViewSmartFolder>
-          </div>
-        </div>
+        <ArticleBulkActionMenu
+          :selected-article-id="selectedArticleId"
+          :selected-article-index="selectedArticleIndex"
+          :article-count="readerListArticles.length"
+          :close-key="container.join(',')"
+          @bulk-action="$emit('bulk-action', $event)"
+        />
       </div>
 
       <article
@@ -309,7 +264,7 @@ import ArticleEndState from "./ArticleEndState.vue";
 import ArticleLoadError from "./ArticleLoadError.vue";
 import DailyBriefingIntro from "../briefing/DailyBriefingIntro.vue";
 import UnreadSelectionContext from "./UnreadSelectionContext.vue";
-import SaveCurrentViewSmartFolder from './SaveCurrentViewSmartFolder.vue';
+import ArticleBulkActionMenu from './ArticleBulkActionMenu.vue';
 import { formatRelativeDate } from '../../utils/date';
 import { formatTagName } from '../../utils/tags';
 import { usableHttpUrl } from '../../utils/content';
@@ -338,7 +293,7 @@ export default {
     DailyBriefingIntro,
     HighlightedText,
     UnreadSelectionContext,
-    SaveCurrentViewSmartFolder
+    ArticleBulkActionMenu
   },
   emits: [
     'update-tags',
@@ -394,9 +349,7 @@ export default {
       readerExpanded: false,
       readerTextSize: readReaderTextSize(),
       isReaderEndStateDismissed: false,
-      isBulkMenuOpen: false,
       showCollectionDetails: false,
-      bulkMenuStyle: {},
       pendingClickedArticleIds: new Set(),
       recommendations: [],
       recommendationsLoading: false,
@@ -406,16 +359,10 @@ export default {
   },
   mounted() {
     window.addEventListener('keydown', this.handleReaderKeydown);
-    window.addEventListener('resize', this.updateBulkMenuPosition);
-    window.addEventListener('scroll', this.updateBulkMenuPosition, true);
-    document.addEventListener('click', this.closeBulkMenu);
   },
   beforeUnmount() {
     this.recommendationRequestId += 1;
     window.removeEventListener('keydown', this.handleReaderKeydown);
-    window.removeEventListener('resize', this.updateBulkMenuPosition);
-    window.removeEventListener('scroll', this.updateBulkMenuPosition, true);
-    document.removeEventListener('click', this.closeBulkMenu);
 
   },
   computed: {
@@ -618,7 +565,6 @@ export default {
     },
     container() {
       this.isReaderEndStateDismissed = false;
-      this.closeBulkMenu();
     }
   },
   methods: {
@@ -699,41 +645,6 @@ export default {
     },
     // Formats stored tag names for display.
     formatTagName,
-    // Opens or closes the reader bulk action menu.
-    toggleBulkMenu() {
-      this.isBulkMenuOpen = !this.isBulkMenuOpen;
-      if (this.isBulkMenuOpen) {
-        this.$nextTick(() => this.updateBulkMenuPosition());
-      }
-    },
-    // Closes the reader bulk action menu.
-    closeBulkMenu() {
-      this.isBulkMenuOpen = false;
-    },
-    // Positions the bulk menu under the three-dot button across pane boundaries.
-    updateBulkMenuPosition() {
-      if (!this.isBulkMenuOpen) return;
-
-      const button = this.$refs.bulkMoreButton;
-      if (!button) return;
-
-      const rect = button.getBoundingClientRect();
-      const menuWidth = 280;
-      const left = Math.min(rect.left, window.innerWidth - menuWidth - 12);
-
-      this.bulkMenuStyle = {
-        left: `${Math.round(Math.max(12, left))}px`,
-        top: `${Math.round(rect.bottom + 8)}px`
-      };
-    },
-    // Emits the selected bulk action to the article feed parent.
-    runBulkAction(action) {
-      this.closeBulkMenu();
-      this.$emit('bulk-action', {
-        action,
-        selectedArticleId: this.selectedArticleId
-      });
-    },
     // Hides the reader end state until the current article session changes.
     dismissReaderEndState() {
       this.isReaderEndStateDismissed = true;
@@ -786,11 +697,6 @@ export default {
     },
     // Handles reader-mode keyboard navigation.
     handleReaderKeydown(event) {
-      if (event.key === 'Escape' && this.isBulkMenuOpen) {
-        this.closeBulkMenu();
-        return;
-      }
-
       const command = getArticleKeyboardCommand(event, {
         allowInteractiveTarget: event.target?.classList?.contains('article-reader__selection'),
         checkEditableAncestors: false
@@ -1051,91 +957,6 @@ export default {
 
 .article-list-bulk-tag:hover {
   opacity: 0.85;
-}
-
-.bulk-action-menu-wrap {
-  align-self: start;
-  position: relative;
-}
-
-.bulk-more-button {
-  align-items: center;
-  background: var(--color-transparent);
-  border: 0;
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: inline-flex;
-  height: var(--control-height-compact);
-  justify-content: center;
-  width: 26px;
-}
-
-.bulk-more-button:hover,
-.bulk-more-button:focus-visible {
-  background: var(--reader-list-item-hover-background);
-  color: var(--text-primary);
-  outline: none;
-}
-
-.bulk-action-menu {
-  background: var(--surface-card);
-  border: 1px solid var(--border-default);
-  border-radius: 8px;
-  box-shadow: 0 16px 36px var(--shadow-reader-bulk-menu-color);
-  max-width: calc(100vw - 24px);
-  min-width: 280px;
-  padding: 8px;
-  position: fixed;
-  z-index: var(--layer-dropdown);
-}
-
-.bulk-action-menu-section {
-  border-bottom: 1px solid var(--border-subtle);
-  padding: 6px 0;
-}
-
-.bulk-action-menu-section:first-child {
-  padding-top: 0;
-}
-
-.bulk-action-menu-section:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.bulk-action-menu-item {
-  align-items: center;
-  background: var(--color-transparent);
-  border: none;
-  border-radius: 6px;
-  color: var(--toolbar-text);
-  display: flex;
-  font-size: 14px;
-  font-weight: 500;
-  gap: 10px;
-  min-height: 36px;
-  padding: 8px 10px;
-  text-align: left;
-  width: 100%;
-}
-
-.bulk-action-menu-item:hover:not(:disabled),
-.bulk-action-menu-item:focus-visible:not(:disabled) {
-  background: var(--reader-list-item-hover-background);
-  outline: none;
-}
-
-.bulk-action-menu-item:disabled {
-  color: var(--text-muted);
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.bulk-action-menu-item .bi {
-  color: var(--text-secondary);
-  flex: 0 0 18px;
-  width: 18px;
 }
 
 .article-reader__item {
@@ -1469,16 +1290,6 @@ export default {
 
 :global(:root[data-theme='dark']) .article-list-bulk-header {
   background: var(--bg-modal);
-  border-color: var(--border-subtle);
-}
-
-:global(:root[data-theme='dark']) .bulk-action-menu {
-  background: var(--bg-modal);
-  border-color: var(--border-default);
-  box-shadow: 0 18px 40px var(--shadow-reader-bulk-menu-color);
-}
-
-:global(:root[data-theme='dark']) .bulk-action-menu-section {
   border-color: var(--border-subtle);
 }
 

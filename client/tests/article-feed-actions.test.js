@@ -283,8 +283,8 @@ describe('ArticleFeed actions', () => {
     expect(context.articles.map(article => article.clickedAmount)).toEqual([2, 3]);
   });
 
-  // Verifies bulk actions route by action and remain reader-only.
-  it('routes reader bulk actions and guards other view modes', async () => {
+  // Verifies bulk actions route by action and guard unsupported view modes.
+  it('routes bulk actions and guards unsupported view modes', async () => {
     const context = createContext({
       favoriteReaderArticles: vi.fn().mockResolvedValue(),
       markReaderArticlesClicked: vi.fn().mockResolvedValue(),
@@ -309,7 +309,7 @@ describe('ArticleFeed actions', () => {
     expect(context.markReaderArticlesClicked).toHaveBeenCalledWith([{ id: 1 }]);
     expect(context.markReaderArticlesRead).toHaveBeenCalledWith([{ id: 2 }]);
 
-    context.selectionStore.currentSelection.viewMode = 'full';
+    context.selectionStore.currentSelection.viewMode = 'unsupported';
     await ArticleFeed.methods.handleReaderBulkAction.call(context, {
       action: 'favorite-visible',
       selectedArticleId: 1

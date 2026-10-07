@@ -14,12 +14,33 @@
         <UnreadSelectionContext
           :key="viewMode"
           :headline-mode="useRefinedTopbars"
-          v-if="(selectionStore.currentSelection.smartFolderId == null && currentSelection !== 'briefing') || (currentSelection === 'unread' && ((hasLoadedContent && loadedCount > 0 && currentViewSourceCount !== null) || (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all')))"
+          v-if="showSelectionContext"
           :article-count="collectionSummary.totalCount ?? currentViewUnreadCount"
           :source-count="currentViewSourceCount ?? 0"
           :oldest-published-at="collectionSummary.oldestPublishedAt"
           :articles="articles"
           :get-article-element="getArticleElement"
+          :hide-save-smart-folder="useRefinedTopbars"
+        >
+          <template v-if="useRefinedTopbars" #actions>
+            <ArticleBulkActionMenu
+              :selected-article-id="bulkSelectedArticleId"
+              :selected-article-index="articles.findIndex(article => String(article.id) === String(bulkSelectedArticleId))"
+              :article-count="articles.length"
+              :close-key="`${viewMode}:${container.join(',')}`"
+              @open="bulkSelectedArticleId = articles[selectedArticleIndex()]?.id ?? closestArticleIdToViewport()"
+              @bulk-action="$emit('bulk-action', $event)"
+            />
+          </template>
+        </UnreadSelectionContext>
+        <ArticleBulkActionMenu
+          v-if="useRefinedTopbars && !showSelectionContext"
+          :selected-article-id="bulkSelectedArticleId"
+          :selected-article-index="articles.findIndex(article => String(article.id) === String(bulkSelectedArticleId))"
+          :article-count="articles.length"
+          :close-key="`${viewMode}:${container.join(',')}`"
+          @open="bulkSelectedArticleId = articles[selectedArticleIndex()]?.id ?? closestArticleIdToViewport()"
+          @bulk-action="$emit('bulk-action', $event)"
         />
       </div>
       <ArticleItem
@@ -122,6 +143,7 @@ import ArticleLoadError from "./ArticleLoadError.vue";
 import ArticleLoadingState from "./ArticleLoadingState.vue";
 import DailyBriefingIntro from "../briefing/DailyBriefingIntro.vue";
 import UnreadSelectionContext from "./UnreadSelectionContext.vue";
+import ArticleBulkActionMenu from "./ArticleBulkActionMenu.vue";
 
 export default {
   components: {
@@ -131,7 +153,8 @@ export default {
     ArticleLoadError,
     ArticleLoadingState,
     DailyBriefingIntro,
-    UnreadSelectionContext
+    UnreadSelectionContext,
+    ArticleBulkActionMenu
   },
   emits: [
     'update-tags',
@@ -150,6 +173,7 @@ export default {
     'shortcut-toggle-read',
     'shortcut-toggle-favorite',
     'flush-pool',
+    'bulk-action',
     'clear-filters',
     'clear-search',
     'clear-tag',
@@ -194,6 +218,7 @@ export default {
     return {
       minimalArticleRefs: {},
       selectedArticleId: null,
+      bulkSelectedArticleId: null,
       isArticleEndStateDismissed: false
     };
   },
@@ -205,6 +230,12 @@ export default {
   },
   computed: {
     ...mapStores(useOverviewStore, useSelectionStore, useFeedRefreshStore, useUiStore),
+    showSelectionContext() {
+      const selection = this.selectionStore;
+      return (selection.currentSelection.smartFolderId == null && this.currentSelection !== 'briefing')
+        || (this.currentSelection === 'unread' && ((this.hasLoadedContent && this.loadedCount > 0 && this.currentViewSourceCount !== null)
+          || selection.ageCutoff !== 'all' || selection.dateRange !== 'all'));
+    },
     useRefinedTopbars() {
       return ['minimal', 'full', 'summarized', 'summaryBullets'].includes(this.viewMode);
     },

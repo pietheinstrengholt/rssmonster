@@ -49,6 +49,7 @@
           {{ dateContext.longLabel }}
         </time>
       </div>
+      <slot name="actions" />
       <SaveCurrentViewSmartFolder v-if="!hideSaveSmartFolder" />
       <form v-if="editingCustomDate" class="unread-selection-context__custom-date" aria-label="Custom article date range" @submit.prevent="applyCustomRange" @keydown.esc.stop.prevent="cancelCustomRange">
         <label>Start date <input ref="customStartInput" v-model="customStart" type="date" required :max="customEnd || undefined" /></label>
@@ -334,6 +335,6 @@ export default {
   .unread-selection-context__current-date { display: none; }
 }
 @container headline-context (width < 1084px) {
-  .unread-selection-context--headlines :deep(.save-smart-folder) { display: none; }
+  .unread-selection-context--headlines .unread-selection-context__surface > :deep(.save-smart-folder) { display: none; }
 }
 </style>

@@ -12,9 +12,9 @@ vi.mock('../src/api/articles', async importOriginal => ({
 
 let surface;
 const rect = (top, bottom) => ({ top, bottom, left: 0, right: 400, height: bottom - top, width: 400 });
-function setup() {
+function setup(viewMode = 'reader') {
   const stores = createFocusedStores({
-    selection: { currentSelection: { viewMode: 'reader' } },
+    selection: { currentSelection: { viewMode } },
     overview: { fetchOverviewSplit: vi.fn().mockResolvedValue() }
   });
   surface = document.createElement('section');
@@ -35,7 +35,9 @@ function setup() {
       ...ArticleFeed.methods,
       articles: rows.map((row, index) => ({ id: index + 1, status: 'unread', favoriteInd: 0 })),
       pendingFavoriteArticleIds: new Set(),
-      $refs: { articleLayout: { getArticleListElement: id => rows[id - 1] } }
+      $refs: { articleLayout: viewMode === 'reader'
+        ? { getArticleListElement: id => rows[id - 1] }
+        : { getArticleElement: id => rows[id - 1] } }
     }
   };
 }
@@ -57,8 +59,8 @@ const actions = [
 ];
 
 describe('Reader visible bulk actions', () => {
-  it.each(actions)('%s sends only on-screen list rows, recalculated after scrolling', async (action, api) => {
-    const { context, scroll } = setup();
+  it.each(['reader', 'full', 'summarized', 'summaryBullets', 'minimal'].flatMap(mode => actions.map(([action, api]) => [mode, action, api])))('%s %s sends only on-screen articles, recalculated after scrolling', async (mode, action, api) => {
+    const { context, scroll } = setup(mode);
     await context.handleReaderBulkAction({ action, selectedArticleId: 20 });
     expect(api.mock.calls[0][0]).toEqual([1, 2, 3, 4, 5]);
     scroll(500);

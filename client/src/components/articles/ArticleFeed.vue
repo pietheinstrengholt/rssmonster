@@ -10,7 +10,7 @@
       <NewArticlesBanner v-if="selectionStore.currentSelection.status === 'unread'" :count="newerArticleCount" :loading="isLoading" :reader-mode="readerMode" @show-new="showNewArticles" @show-full="showFullUnreadList" />
     </template>
   </ArticleReaderLayout>
-  <ArticleListView v-else ref="articleLayout" @vue:mounted="observeLoadMoreSentinel" @vue:updated="observeLoadMoreSentinel" @vue:unmounted="observeLoadMoreSentinel" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @clear-search="clearSearch" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @load-more="getContent()" @update-tags="updateArticleTags" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
+  <ArticleListView v-else ref="articleLayout" @vue:mounted="observeLoadMoreSentinel" @vue:updated="observeLoadMoreSentinel" @vue:unmounted="observeLoadMoreSentinel" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @bulk-action="handleReaderBulkAction" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @clear-search="clearSearch" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @load-more="getContent()" @update-tags="updateArticleTags" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
     <template #before-context="{ readerMode, headlineMode }">
       <NewArticlesBanner v-if="selectionStore.currentSelection.status === 'unread'" :count="newerArticleCount" :loading="isLoading" :reader-mode="readerMode" :headline-mode="headlineMode" @show-new="showNewArticles" @show-full="showFullUnreadList" />
     </template>
@@ -556,19 +556,21 @@ export default {
       await this.overviewStore.fetchSmartFolderCounts();
     },
 
-    // Only list rows intersecting the clipped viewport belong to Reader's visible scope.
+    // Only articles intersecting the clipped viewport belong to the visible bulk scope.
     getVisibleReaderArticles() {
       const layout = this.$refs.articleLayout;
       return this.articles.filter(article => {
         if (article.readerRecommendationInd || article.clusterParentId) return false;
-        const element = layout?.getArticleListElement?.(article.id);
+        const element = layout?.getArticleListElement
+          ? layout.getArticleListElement(article.id)
+          : layout?.getArticleElement?.(article.id);
         return element && readingContentArea(element, 1);
       });
     },
 
-    // Handles reader list bulk actions selected from the middle pane header.
+    // Handles bulk actions from the active article layout.
     async handleReaderBulkAction({ action, selectedArticleId }) {
-      if (this.selectionStore.currentSelection.viewMode !== 'reader') return;
+      if (!['reader', 'full', 'summarized', 'summaryBullets', 'minimal'].includes(this.selectionStore.currentSelection.viewMode)) return;
 
       try {
         if (action === 'favorite-visible') {
