@@ -16,7 +16,7 @@ afterEach(() => {
   else delete HTMLElement.prototype.scrollIntoView;
 });
 
-it.each(['shell', 'window'])('keeps the clicked headline in place on the %s scroll surface', async surface => {
+it.each(['list', 'shell', 'window'])('keeps the clicked headline in place on the %s scroll surface', async surface => {
   const stores = createFocusedStores({
     selection: { currentSelection: { viewMode: 'minimal', grouping: 'none' } }
   });
@@ -42,11 +42,16 @@ it.each(['shell', 'window'])('keeps the clicked headline in place on the %s scro
       @minimal-article-opened="active = $event.id" />`
   });
   wrapper = mount(Harness, { attachTo: scrollRoot, global: { plugins: [stores.pinia] } });
+  const list = wrapper.getComponent(ArticleListView).element;
+  if (surface === 'list') {
+    list.style.overflowY = 'auto';
+    list.scrollTop = 500;
+  }
   const firstBody = () => wrapper.findAll('[data-reading-content]').some(body => body.text() === 'Content 1');
   const headline = wrapper.findAll('h5').find(item => item.text() === 'Headline 2');
   const article = headline.element.closest('[tabindex]');
   vi.spyOn(article, 'getBoundingClientRect').mockImplementation(() => ({
-    top: 800 + (firstBody() ? 300 : 0) - (surface === 'shell' ? scrollRoot.scrollTop : windowOffset)
+    top: 800 + (firstBody() ? 300 : 0) - (surface === 'list' ? list.scrollTop : surface === 'shell' ? scrollRoot.scrollTop : windowOffset)
   }));
   const initialTop = article.getBoundingClientRect().top;
 

@@ -353,18 +353,16 @@ export default {
     // Uses the existing layout surfaces and their effective CSS overflow, including mobile.
     getPaginationScrollRoot() {
       const candidates = [
-        this.viewMode === 'full' ? this.$refs.expandedArticleScrollRef : null,
+        this.$refs.expandedArticleScrollRef,
         this.scrollRoot
       ];
       return candidates.find(element => element
         && ['auto', 'scroll', 'overlay'].includes(window.getComputedStyle(element).overflowY)) || null;
     },
 
-    // Returns the active inset viewport edge when Expanded mode owns scrolling.
+    // Returns the active inset viewport edge when the article list owns scrolling.
     getReadingViewportTop() {
-      const scrollContainer = this.viewMode === 'full'
-        ? this.$refs.expandedArticleScrollRef
-        : null;
+      const scrollContainer = this.$refs.expandedArticleScrollRef;
       const overflowY = scrollContainer
         ? window.getComputedStyle(scrollContainer).overflowY
         : null;
@@ -373,7 +371,7 @@ export default {
       const top = scrollContainer?.getBoundingClientRect?.().top;
       return Number.isFinite(top) ? top : 0;
     },
-    // Restores the component-owned expanded article surface to the beginning.
+    // Restores the component-owned article surface to the beginning.
     scrollToTop() {
       const articleStream = this.$refs.expandedArticleScrollRef;
       if (articleStream) articleStream.scrollTop = 0;
@@ -459,9 +457,7 @@ export default {
     },
     // Returns the article nearest to the top of the reading viewport.
     closestArticleIdToViewport() {
-      const scrollRoot = this.viewMode === 'full'
-        ? this.$refs.expandedArticleScrollRef
-        : this.scrollRoot;
+      const scrollRoot = this.getPaginationScrollRoot();
       const viewportTop = scrollRoot?.getBoundingClientRect?.().top || 0;
       let closestArticleId = null;
       let closestDistance = Infinity;
@@ -550,7 +546,7 @@ export default {
 <style scoped>
 /* Landscape phones and portrait tablets */
 @media (min-width: 880px) {
-  .article-list-view.article-list-view--expanded {
+  .article-list-view {
     --expanded-scrollbar-thumb: var(--scrollbar-thumb-strong);
     flex: 1;
     min-height: 0;
@@ -562,35 +558,35 @@ export default {
     transition: scrollbar-color var(--motion-duration-normal) var(--motion-easing-standard);
   }
 
-  .article-list-view.article-list-view--expanded::-webkit-scrollbar {
+  .article-list-view::-webkit-scrollbar {
     width: 6px;
   }
 
-  .article-list-view.article-list-view--expanded::-webkit-scrollbar-track {
+  .article-list-view::-webkit-scrollbar-track {
     background: var(--color-transparent);
   }
 
-  .article-list-view.article-list-view--expanded::-webkit-scrollbar-thumb {
+  .article-list-view::-webkit-scrollbar-thumb {
     background-color: var(--color-transparent);
     border-radius: 999px;
     transition: background-color var(--motion-duration-normal) var(--motion-easing-standard);
   }
 
-  .article-list-view.article-list-view--expanded:hover,
-  .article-list-view.article-list-view--expanded:focus-within {
+  .article-list-view:hover,
+  .article-list-view:focus-within {
     scrollbar-color: var(--expanded-scrollbar-thumb) var(--color-transparent);
   }
 
-  .article-list-view.article-list-view--expanded:hover::-webkit-scrollbar-thumb,
-  .article-list-view.article-list-view--expanded:focus-within::-webkit-scrollbar-thumb {
+  .article-list-view:hover::-webkit-scrollbar-thumb,
+  .article-list-view:focus-within::-webkit-scrollbar-thumb {
     background-color: var(--expanded-scrollbar-thumb);
   }
 
-  :global(:root[data-theme='dark']) .article-list-view.article-list-view--expanded {
+  :global(:root[data-theme='dark'] .article-list-view) {
     --expanded-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
   }
 
-  .article-list-view.article-list-view--expanded .article-list-view__items {
+  .article-list-view .article-list-view__items {
     padding-top: 0;
     width: 100%;
   }
@@ -642,6 +638,13 @@ export default {
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;
+}
+
+@media (min-width: 880px) {
+  /* Loading and empty states must fit the same scroll pane as populated lists. */
+  .article-list-view.article-list-view--empty {
+    flex: 1;
+  }
 }
 
 :global(:root[data-theme='dark'] .article-list-view__items) {

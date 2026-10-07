@@ -261,11 +261,18 @@
   }
 }
 
-/* Exposes the desktop shell scrollbar when the shell itself owns scrolling. */
+/* Matches the article panes when the desktop shell itself owns scrolling. */
 @media (min-width: 880px) {
+  /* Article layouts own scrolling below the toolbar; other shell screens still scroll here. */
+  .app-shell__main:has(> .article-list-view, > .article-reader) {
+    min-height: 0;
+    overflow: clip;
+  }
+
   .app-shell__main {
-    scrollbar-color: var(--main-scrollbar-thumb) var(--color-transparent);
+    scrollbar-color: var(--color-transparent) var(--color-transparent);
     scrollbar-width: thin;
+    transition: scrollbar-color var(--motion-duration-normal) var(--motion-easing-standard);
   }
 
   .app-shell__main::-webkit-scrollbar {
@@ -278,8 +285,19 @@
   }
 
   .app-shell__main::-webkit-scrollbar-thumb {
-    background-color: var(--main-scrollbar-thumb);
+    background-color: var(--color-transparent);
     border-radius: 999px;
+    transition: background-color var(--motion-duration-normal) var(--motion-easing-standard);
+  }
+
+  .app-shell__main:hover,
+  .app-shell__main:focus-within {
+    scrollbar-color: var(--main-scrollbar-thumb) var(--color-transparent);
+  }
+
+  .app-shell__main:hover::-webkit-scrollbar-thumb,
+  .app-shell__main:focus-within::-webkit-scrollbar-thumb {
+    background-color: var(--main-scrollbar-thumb);
   }
 }
 

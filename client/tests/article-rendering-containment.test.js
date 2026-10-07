@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils';
 import Article from '../src/components/articles/Article.vue';
 import articleActionsSource from '../src/components/articles/ArticleActionsMenu.vue?raw';
 import articleListSource from '../src/components/articles/ArticleListView.vue?raw';
+import articleLoadingSource from '../src/components/articles/ArticleLoadingState.vue?raw';
 import articleSource from '../src/components/articles/Article.vue?raw';
 import readerLayoutSource from '../src/components/articles/ArticleReaderLayout.vue?raw';
 import { createFocusedStores } from './helpers/focusedStores.js';
@@ -41,6 +42,12 @@ const mountArticle = (viewMode, props = {}, attrs = {}) => {
 };
 
 describe('Article rendering containment', () => {
+  it('keeps loading content inside the desktop list pane without extending the document', () => {
+    expect(articleListSource).toMatch(/@media \(min-width: 880px\)\s*\{\s*\/\*[^]*?\*\/\s*\.article-list-view\.article-list-view--empty\s*\{\s*flex:\s*1;/);
+    expect(articleLoadingSource).toMatch(/\.article-loading-state\s*\{[^}]*position:\s*relative;/s);
+    expect(readerLayoutSource).toMatch(/\.reader-loading-state\s*\{[^}]*position:\s*relative;/s);
+  });
+
   // Verifies every content-heavy stream mode keeps the observed article root as its containment boundary.
   it.each(['full', 'summarized', 'summaryBullets', 'reader'])(
     'uses the stable article card boundary in %s mode',
@@ -84,18 +91,18 @@ describe('Article rendering containment', () => {
     expect(articleSource).toMatch(/\.mobile-swipe-shell\s*\{[^}]*overflow:\s*hidden;/s);
     expect(articleListSource).toMatch(/\.article-list-view__items\s*\{[^}]*padding-top:\s*0;/s);
     expect(articleListSource).not.toMatch(/\.article-list-view__items\s*\{[^}]*(?:overflow|overflow-[xy]):/s);
-    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded\s*\{[^}]*overflow-y:\s*auto;/s);
+    expect(articleListSource).toMatch(/\.article-list-view\s*\{[^}]*overflow-y:\s*auto;/s);
   });
 
-  // Verifies Expanded mode uses its native scroll surface without viewport-coupled overlay geometry.
-  it('styles the native Expanded scrollbar', () => {
-    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded\s*\{[^}]*scrollbar-color:\s*var\(--color-transparent\) var\(--color-transparent\);[^}]*scrollbar-width:\s*thin;/s);
-    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded::\-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--color-transparent\);[^}]*border-radius:\s*999px;/s);
-    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded:hover,\s*\.article-list-view\.article-list-view--expanded:focus-within\s*\{[^}]*scrollbar-color:\s*var\(--expanded-scrollbar-thumb\) var\(--color-transparent\);/s);
-    expect(articleListSource).toMatch(/\.article-list-view\.article-list-view--expanded:hover::-webkit-scrollbar-thumb,\s*\.article-list-view\.article-list-view--expanded:focus-within::-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--expanded-scrollbar-thumb\);/s);
+  // Verifies desktop list modes use their native scroll surface without viewport-coupled overlay geometry.
+  it('styles the native article-list scrollbar in every desktop list mode', () => {
+    expect(articleListSource).toMatch(/\.article-list-view\s*\{[^}]*scrollbar-color:\s*var\(--color-transparent\) var\(--color-transparent\);[^}]*scrollbar-width:\s*thin;/s);
+    expect(articleListSource).toMatch(/\.article-list-view::\-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--color-transparent\);[^}]*border-radius:\s*999px;/s);
+    expect(articleListSource).toMatch(/\.article-list-view:hover,\s*\.article-list-view:focus-within\s*\{[^}]*scrollbar-color:\s*var\(--expanded-scrollbar-thumb\) var\(--color-transparent\);/s);
+    expect(articleListSource).toMatch(/\.article-list-view:hover::-webkit-scrollbar-thumb,\s*\.article-list-view:focus-within::-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--expanded-scrollbar-thumb\);/s);
     expect(articleListSource).not.toContain('updateExpandedScrollbarMetrics');
     expect(articleListSource).not.toContain('--expanded-scrollbar-offset');
-    expect(articleListSource).not.toMatch(/\.article-list-view\.article-list-view--expanded::after/);
+    expect(articleListSource).not.toMatch(/\.article-list-view::after/);
   });
 
   // Verifies an open actions menu stacks above surrounding content without changing article containment.

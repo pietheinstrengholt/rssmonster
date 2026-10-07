@@ -19,6 +19,9 @@ const createContext = (overrides = {}) => {
   elements.set(1, createArticleElement(80));
   elements.set(2, createArticleElement(20));
   elements.set(3, createArticleElement(140));
+  const scrollRoot = document.createElement('div');
+  scrollRoot.style.overflowY = 'auto';
+  scrollRoot.getBoundingClientRect = vi.fn().mockReturnValue({ top: 10 });
 
   return {
     articles: [
@@ -29,9 +32,7 @@ const createContext = (overrides = {}) => {
     viewMode: 'full',
     activeMinimalArticleId: null,
     selectedArticleId: null,
-    scrollRoot: {
-      getBoundingClientRect: vi.fn().mockReturnValue({ top: 10 })
-    },
+    scrollRoot,
     $refs: {},
     minimalArticleRefs: Object.fromEntries(
       [...elements].map(([id, element]) => [id, {
@@ -125,12 +126,14 @@ describe('ArticleListView keyboard navigation', () => {
     expect(context.selectedArticle()).toBeNull();
   });
 
-  // Verifies Expanded mode measures keyboard navigation from its own scroll region.
-  it('uses the Expanded-mode scroll region as the reading viewport', () => {
+  // Verifies desktop list modes measure keyboard navigation from their own scroll region.
+  it.each(['full', 'summarized', 'summaryBullets', 'minimal'])('uses the list scroll region as the reading viewport in %s', viewMode => {
     const expandedArticlePane = document.createElement('div');
     expandedArticlePane.className = 'article-list-view--expanded';
+    expandedArticlePane.style.overflowY = 'auto';
     expandedArticlePane.getBoundingClientRect = vi.fn().mockReturnValue({ top: 60 });
     const context = createContext({
+      viewMode,
       $refs: { expandedArticleScrollRef: expandedArticlePane }
     });
 

@@ -170,17 +170,14 @@ describe('layout pagination roots', () => {
     })).toBe(root);
   });
 
-  it('uses Expanded, shell or browser scrolling according to effective CSS overflow', () => {
+  it.each(['full', 'summarized', 'summaryBullets', 'minimal'])('uses list, shell or browser scrolling according to effective CSS overflow in %s', viewMode => {
     const expanded = document.createElement('div');
     const shell = document.createElement('div');
     document.body.append(expanded, shell);
-    const context = { viewMode: 'full', $refs: { expandedArticleScrollRef: expanded }, scrollRoot: shell };
+    const context = { viewMode, $refs: { expandedArticleScrollRef: expanded }, scrollRoot: shell };
     expanded.style.overflowY = 'auto';
     shell.style.overflowY = 'auto';
     expect(ArticleListView.methods.getPaginationScrollRoot.call(context)).toBe(expanded);
-    context.viewMode = 'minimal';
-    expect(ArticleListView.methods.getPaginationScrollRoot.call(context)).toBe(shell);
-    context.viewMode = 'full';
     expanded.style.overflowY = 'visible';
     expect(ArticleListView.methods.getPaginationScrollRoot.call(context)).toBe(shell);
     shell.style.overflowY = 'visible';

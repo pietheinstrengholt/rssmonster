@@ -47,13 +47,15 @@ The breakpoint behavior belongs to the application shell rather than to individu
 Each vertical scroll surface has one explicit owner:
 
 - On mobile, the single-column shell and browser viewport provide the reading flow.
-- At `768px+`, `.app-shell__sidebar` and `.app-shell__main` are independent shell scroll surfaces.
-- At `880px+`, Expanded view may own its native scrollbar on `.article-list-view--expanded`.
+- At `768px+`, `.app-shell__sidebar` scrolls independently. In the hybrid layout, `.app-shell__main` owns article scrolling.
+- At `880px+`, Expanded, Summarized, Summarized Bullets, and Headlines own their native scrollbar on `.article-list-view`, below the desktop toolbar.
 - Reader view owns separate native scrollbars on `.article-reader__list` and `.article-reader__content`.
+
+On desktop, the shell main pane clips overflow when it contains an article list or Reader layout, leaving scrolling to those panes. Other shell screens retain main-pane scrolling. Loading and empty article lists can shrink into the available space, and the loading component contains its absolutely positioned accessibility label so it cannot extend the document.
 
 The article collection `.article-list-view__items` does not add toolbar padding, search-open compensation, or vertical clipping. Horizontal swipe clipping belongs to the dedicated `.mobile-swipe-shell`. A view should not hide overflow to conceal an incorrect parent height; the intended shell or view scroll owner must expose the layout error and own scrolling directly.
 
-Native scrollbar styling uses 6-pixel tracks, transparent backgrounds, rounded theme-aware thumbs, and no JavaScript visibility timers. The sidebar, both Reader panes, and Expanded view thumbs are transparent at rest—including initial load—and appear on hover or keyboard focus. The desktop main pane exposes its scrollbar from `880px`; platform overlay and idle-fade behavior still belongs to the browser or operating system.
+Native scrollbar styling uses 6-pixel tracks, transparent backgrounds, rounded theme-aware thumbs, and no JavaScript visibility timers. The sidebar, both Reader panes, all desktop article-list views, and desktop main pane thumbs are transparent at rest—including initial load—and appear on hover or keyboard focus. Article-list scrolling stays below the toolbar; the desktop main pane uses this styling from `880px` when other shell content needs to scroll. Platform overlay and idle-fade behavior still belongs to the browser or operating system.
 
 The connectivity notice is positioned by `.app-shell__overlay-host` inside `.app-shell__main-frame`. The notice component owns only its local inset and maximum width and must not calculate offsets from `--sidebar-width`.
 
@@ -69,7 +71,7 @@ Shell and article layout selectors describe ownership rather than historical pag
 | `.app-shell__sidebar` | Persistent navigation column and sidebar scroll surface |
 | `.article-list-view` | Article-list layout owner |
 | `.article-list-view__items` | Article collection without toolbar geometry |
-| `.article-list-view--expanded` | Expanded presentation and its desktop scroll surface |
+| `.article-list-view--expanded` | Expanded presentation |
 | `.article-list-view--empty` | Empty collection presentation |
 | `.article-reader` | Reader layout owner |
 | `.article-reader__list` | Reader article list and scroll surface |

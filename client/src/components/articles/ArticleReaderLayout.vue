@@ -1211,6 +1211,7 @@ export default {
 }
 
 .reader-loading-state {
+  position: relative;
   padding-top: 2px;
 }
 

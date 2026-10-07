@@ -36,6 +36,11 @@ const globalStyles = readFileSync(resolve(process.cwd(), 'src/assets/scss/global
 const settingsStyles = readFileSync(resolve(process.cwd(), 'src/assets/css/settings.css'), 'utf8');
 
 describe('CSS ownership boundaries', () => {
+  it('leaves desktop article scrolling to the list and Reader panes while preserving shell scrolling elsewhere', () => {
+    expect(appShellSource).toMatch(/@media \(min-width: 880px\)\s*\{\s*\/\*[^]*?\*\/\s*\.app-shell__main:has\(> \.article-list-view, > \.article-reader\)\s*\{[^}]*min-height:\s*0;[^}]*overflow:\s*clip;/);
+    expect(appShellSource).toMatch(/\.app-shell__main\s*\{[^}]*height:\s*100%;[^}]*overflow-y:\s*auto;/s);
+  });
+
   it('aligns the mobile new-articles banner with the unread context surface', () => {
     expect(newArticlesBannerSource).toMatch(/@media \(max-width: 767px\), \(max-height: 560px\) and \(min-width: 480px\)\s*\{\s*\.new-articles-banner:not\(\.new-articles-banner--reader\)\s*\{[^}]*margin-inline:\s*0\.5rem;/s);
     expect(unreadSelectionContextSource).toMatch(/@media \(max-width: 767px\), \(max-height: 560px\) and \(min-width: 480px\)\s*\{\s*\.unread-selection-context\s*\{[^}]*padding:\s*0\.375rem 0\.5rem;/s);
@@ -87,8 +92,10 @@ describe('CSS ownership boundaries', () => {
   it('keeps native scrollbar presentation with each scroll owner', () => {
     expect(appShellSource).toMatch(/\.app-shell__sidebar\s*\{[^}]*scrollbar-color:\s*var\(--color-transparent\) var\(--color-transparent\);/s);
     expect(appShellSource).toMatch(/\.app-shell__sidebar:hover,[\s\S]*?\.app-shell__sidebar:focus-within\s*\{[^}]*scrollbar-color:\s*var\(--sidebar-scrollbar-thumb\) var\(--color-transparent\);/s);
-    expect(appShellSource).toMatch(/@media \(min-width: 880px\)[\s\S]*?\.app-shell__main\s*\{[^}]*scrollbar-color:\s*var\(--main-scrollbar-thumb\) var\(--color-transparent\);[^}]*scrollbar-width:\s*thin;/s);
-    expect(appShellSource).toMatch(/\.app-shell__main::\-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--main-scrollbar-thumb\);[^}]*border-radius:\s*999px;/s);
+    expect(appShellSource).toMatch(/@media \(min-width: 880px\)[\s\S]*?\.app-shell__main\s*\{[^}]*scrollbar-color:\s*var\(--color-transparent\) var\(--color-transparent\);[^}]*scrollbar-width:\s*thin;/s);
+    expect(appShellSource).toMatch(/\.app-shell__main::\-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--color-transparent\);[^}]*border-radius:\s*999px;/s);
+    expect(appShellSource).toMatch(/\.app-shell__main:hover,\s*\.app-shell__main:focus-within\s*\{[^}]*scrollbar-color:\s*var\(--main-scrollbar-thumb\) var\(--color-transparent\);/s);
+    expect(appShellSource).toMatch(/\.app-shell__main:hover::-webkit-scrollbar-thumb,\s*\.app-shell__main:focus-within::-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--main-scrollbar-thumb\);/s);
     expect(articleReaderSource).toMatch(/\.article-reader__list\s*\{[^}]*scrollbar-color:\s*var\(--color-transparent\) var\(--color-transparent\);/s);
     expect(articleReaderSource).toMatch(/\.article-reader__list:hover,\s*\.article-reader__list:focus-within\s*\{[^}]*scrollbar-color:\s*var\(--article-list-scrollbar-thumb\) var\(--color-transparent\);/s);
     expect(articleReaderSource).toMatch(/\.article-reader__list::-webkit-scrollbar-thumb\s*\{[^}]*background-color:\s*var\(--color-transparent\);/s);

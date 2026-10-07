@@ -53,6 +53,7 @@
 
 <style scoped>
 .article-loading-state {
+  position: relative;
   color: var(--text-primary);
   margin: 0 auto;
   max-width: 880px;
