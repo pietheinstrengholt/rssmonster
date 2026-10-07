@@ -1,8 +1,8 @@
 <template>
-  <div v-if="count > 0 && !dismissed" class="new-articles-banner" :class="{ 'new-articles-banner--reader': readerMode }" role="status" aria-live="polite">
+  <div v-if="count > 0 && !dismissed" class="new-articles-banner" :class="{ 'new-articles-banner--reader': readerMode, 'new-articles-banner--headlines': headlineMode }" role="status" aria-live="polite">
     <div class="new-articles-banner__content">
       <div class="new-articles-banner__copy">
-        <BootstrapIcon icon="lightbulb-fill" context="control" class="new-articles-banner__icon" aria-hidden="true" />
+        <BootstrapIcon :icon="headlineMode ? 'info-circle-fill' : 'lightbulb-fill'" context="control" class="new-articles-banner__icon" aria-hidden="true" />
         <span v-if="readerMode" :title="`${count} new ${count === 1 ? 'article' : 'articles'} since your last visit`" :aria-label="`${count} new ${count === 1 ? 'article' : 'articles'} since your last visit`"><strong>{{ count }} {{ count === 1 ? 'new article' : 'new articles' }}</strong></span>
         <span v-else><strong>{{ count }} {{ count === 1 ? 'new article' : 'new articles' }}</strong> since your last visit</span>
       </div>
@@ -12,7 +12,7 @@
       </div>
     </div>
     <button type="button" class="new-articles-banner__close" aria-label="Dismiss new articles banner" title="Dismiss" @click="dismissed = true">
-      <BootstrapIcon icon="x" context="control" size="16" aria-hidden="true" />
+      <BootstrapIcon :icon="headlineMode ? 'x-lg' : 'x'" context="control" size="16" aria-hidden="true" />
     </button>
   </div>
 </template>
@@ -23,6 +23,7 @@ export default {
   props: {
     count: { type: Number, required: true },
     loading: { type: Boolean, default: false },
+    headlineMode: { type: Boolean, default: false },
     readerMode: { type: Boolean, default: false }
   },
   emits: ['show-new', 'show-full'],
@@ -108,4 +109,24 @@ export default {
   .new-articles-banner:not(.new-articles-banner--reader) { margin-inline: 0.5rem; }
 }
 :global(:root[data-theme='dark'] .new-articles-banner strong) { color: var(--text-primary); }
+.new-articles-banner.new-articles-banner--headlines {
+  margin: 0;
+  padding: 7px 16px;
+  min-height: 50px;
+  box-sizing: border-box;
+  border-color: var(--border-info);
+  background: var(--surface-info-subtle);
+  color: var(--text-secondary);
+  gap: 16px;
+}
+.new-articles-banner--headlines strong { color: var(--text-primary); }
+.new-articles-banner--headlines .new-articles-banner__icon { width: 22px; height: 22px; }
+.new-articles-banner--headlines .new-articles-banner__copy { gap: 10px; }
+.new-articles-banner--headlines .new-articles-banner__actions { gap: 8px; }
+.new-articles-banner--headlines button { min-height: 34px; }
+.new-articles-banner--headlines .new-articles-banner__close { width: 34px; height: 34px; }
+.new-articles-banner--headlines button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
 </style>

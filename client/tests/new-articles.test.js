@@ -43,6 +43,20 @@ beforeEach(() => {
 afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe('new unread articles', () => {
+  it('keeps Headlines banner actions and dynamic counts working', async () => {
+    wrapper = shallowMount(NewArticlesBanner, { props: { count: 3, headlineMode: true } });
+
+    expect(wrapper.text()).toContain('3 new articles since your last visit');
+    await button('Show new only').trigger('click');
+    await button('Show full list').trigger('click');
+    expect(wrapper.emitted('show-new')).toHaveLength(1);
+    expect(wrapper.emitted('show-full')).toHaveLength(1);
+    await wrapper.get('[aria-label="Dismiss new articles banner"]').trigger('click');
+    expect(wrapper.text()).toBe('');
+    await wrapper.setProps({ count: 1 });
+    expect(wrapper.text()).toContain('1 new article since your last visit');
+  });
+
   it.each([[32, '32 new articles'], [1, '1 new article']])('names the articles in the reader banner for count %s', (count, label) => {
     wrapper = shallowMount(NewArticlesBanner, { props: { count, readerMode: true } });
 

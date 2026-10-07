@@ -1,9 +1,10 @@
 <template>
-  <div ref="contextBar" class="unread-selection-context" :class="{ 'unread-selection-context--reader': readerMode }">
-    <div class="unread-selection-context__surface">
+  <div ref="contextBar" class="unread-selection-context" :class="{ 'unread-selection-context--reader': readerMode, 'unread-selection-context--headlines': headlineMode }">
+    <div class="unread-selection-context__surface" :aria-label="headlineMode ? 'Headline context and filters' : undefined" :role="headlineMode ? 'region' : undefined">
       <div class="unread-selection-context__summary">
         <span v-if="!readerMode" class="unread-selection-context__meta">
-          <span class="unread-selection-context__meta-prefix">Based on </span><strong>{{ articleCount.toLocaleString() }}</strong> {{ articleCount === 1 ? 'article' : 'articles' }} from <strong>{{ sourceCount.toLocaleString() }}</strong> {{ sourceCount === 1 ? 'source' : 'sources' }}
+          <BootstrapIcon v-if="headlineMode" icon="file-earmark-text" context="control" class="unread-selection-context__icon" aria-hidden="true" />
+          <span><span class="unread-selection-context__meta-prefix">Based on </span><strong>{{ articleCount.toLocaleString() }}</strong> {{ articleCount === 1 ? 'article' : 'articles' }} from <strong>{{ sourceCount.toLocaleString() }}</strong> {{ sourceCount === 1 ? 'source' : 'sources' }}</span>
         </span>
         <div v-if="selectionStore.currentSelection.status === 'unread'" class="unread-selection-context__date-group">
           <span class="unread-selection-context__divider" aria-hidden="true"></span>
@@ -41,8 +42,12 @@
               @click="selectAgeCutoff(option.value)"
             >{{ option.label }}</button>
           </div>
-          <time v-if="!readerMode && dateContext" :datetime="dateContext.isoDate">{{ dateContext.longLabel }}</time>
+          <time v-if="!headlineMode && !readerMode && dateContext" :datetime="dateContext.isoDate">{{ dateContext.longLabel }}</time>
         </div>
+        <time v-if="headlineMode && selectionStore.currentSelection.status === 'unread' && dateContext" class="unread-selection-context__current-date" :datetime="dateContext.isoDate">
+          <BootstrapIcon icon="calendar-date" context="control" aria-hidden="true" />
+          {{ dateContext.longLabel }}
+        </time>
       </div>
       <SaveCurrentViewSmartFolder v-if="!hideSaveSmartFolder" />
       <form v-if="editingCustomDate" class="unread-selection-context__custom-date" aria-label="Custom article date range" @submit.prevent="applyCustomRange" @keydown.esc.stop.prevent="cancelCustomRange">
@@ -72,6 +77,7 @@ export default {
     articleCount: { type: Number, required: true },
     sourceCount: { type: Number, required: true },
     oldestPublishedAt: { type: [String, Date], default: null },
+    headlineMode: { type: Boolean, default: false },
     readerMode: { type: Boolean, default: false },
     hideSaveSmartFolder: { type: Boolean, default: false },
     articles: { type: Array, default: () => [] },
@@ -238,4 +244,69 @@ export default {
 }
 :global(:root[data-theme='dark'] .unread-selection-context) { background: var(--surface-page); border-bottom-color: var(--border-subtle); }
 :global(:root[data-theme='dark'] .unread-selection-context--reader) { background: var(--color-transparent); }
+.unread-selection-context--headlines {
+  container: headline-context / inline-size;
+  padding: 0;
+  border: 0;
+  background: var(--color-transparent);
+}
+.unread-selection-context--headlines .unread-selection-context__surface {
+  min-height: 54px;
+  padding: 8px 16px;
+  box-sizing: border-box;
+}
+.unread-selection-context--headlines .unread-selection-context__summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  flex: 1 1 auto;
+  width: 100%;
+  gap: 12px 24px;
+}
+.unread-selection-context--headlines .unread-selection-context__meta {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 10px;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+.unread-selection-context--headlines .unread-selection-context__meta-prefix { display: inline; }
+.unread-selection-context--headlines .unread-selection-context__icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+}
+.unread-selection-context--headlines .unread-selection-context__date-group {
+  justify-self: center;
+  justify-content: center;
+  gap: 10px;
+}
+.unread-selection-context--headlines .unread-selection-context__divider { display: none; }
+.unread-selection-context__current-date {
+  display: inline-flex;
+  justify-self: end;
+  white-space: nowrap;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-secondary);
+}
+.unread-selection-context--headlines :is(button, input):focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+@container headline-context (width < 1230px) {
+  .unread-selection-context--headlines .unread-selection-context__summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .unread-selection-context--headlines .unread-selection-context__date-group { justify-self: end; }
+  .unread-selection-context__current-date { display: none; }
+}
+@container headline-context (width < 875px) {
+  .unread-selection-context--headlines .unread-selection-context__summary { grid-template-columns: minmax(0, 1fr); }
+  .unread-selection-context--headlines .unread-selection-context__meta { white-space: normal; }
+  .unread-selection-context--headlines .unread-selection-context__date-group { justify-self: start; justify-content: flex-start; }
+  .unread-selection-context__current-date { display: inline-flex; justify-self: start; white-space: normal; }
+}
 </style>

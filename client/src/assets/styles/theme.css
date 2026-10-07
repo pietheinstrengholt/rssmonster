@@ -55,6 +55,7 @@
   --surface-hover: #ECEFF3;
   --surface-hover-strong: var(--surface-hover);
   --surface-selected: #E8F2FE;
+  --surface-info-subtle: color-mix(in srgb, var(--color-link) 8%, var(--surface-card));
   --text-primary: #111827;
   --text-secondary: #6B7280;
   --text-muted: var(--text-secondary);
@@ -392,6 +393,7 @@
   --surface-hover-strong: #313B4D;
   --bg-danger-subtle: #4A1F1F;
   --surface-selected: #1E3A8A;
+  --surface-info-subtle: color-mix(in srgb, var(--color-link) 12%, var(--surface-card));
   --bg-modal: var(--surface-card);
   --surface-control: var(--surface-chrome);
   --bg-input: var(--surface-card);

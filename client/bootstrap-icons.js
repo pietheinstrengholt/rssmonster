@@ -26,6 +26,7 @@ export const bootstrapIconNames = [
   'briefcase-fill',
   'brightness-high',
   'broadcast',
+  'calendar-date',
   'calendar3',
   'camera-reels-fill',
   'card-text',

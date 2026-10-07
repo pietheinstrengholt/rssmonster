@@ -9,16 +9,19 @@
   >
     <div class="article-list-view__items">
       <DailyBriefingIntro v-if="showDailyBriefingIntro" />
-      <slot name="before-context" :reader-mode="false" />
-      <UnreadSelectionContext
-        :key="viewMode"
-        v-if="(selectionStore.currentSelection.smartFolderId == null && currentSelection !== 'briefing') || (currentSelection === 'unread' && ((hasLoadedContent && loadedCount > 0 && currentViewSourceCount !== null) || (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all')))"
-        :article-count="collectionSummary.totalCount ?? currentViewUnreadCount"
-        :source-count="currentViewSourceCount ?? 0"
-        :oldest-published-at="collectionSummary.oldestPublishedAt"
-        :articles="articles"
-        :get-article-element="getArticleElement"
-      />
+      <div class="article-list-topbars" :class="{ 'headline-list-topbars': useRefinedTopbars }">
+        <slot name="before-context" :reader-mode="false" :headline-mode="useRefinedTopbars" />
+        <UnreadSelectionContext
+          :key="viewMode"
+          :headline-mode="useRefinedTopbars"
+          v-if="(selectionStore.currentSelection.smartFolderId == null && currentSelection !== 'briefing') || (currentSelection === 'unread' && ((hasLoadedContent && loadedCount > 0 && currentViewSourceCount !== null) || (selectionStore.ageCutoff !== 'all' || selectionStore.dateRange !== 'all')))"
+          :article-count="collectionSummary.totalCount ?? currentViewUnreadCount"
+          :source-count="currentViewSourceCount ?? 0"
+          :oldest-published-at="collectionSummary.oldestPublishedAt"
+          :articles="articles"
+          :get-article-element="getArticleElement"
+        />
+      </div>
       <ArticleItem
         v-for="article in articles"
         v-bind="article"
@@ -202,6 +205,9 @@ export default {
   },
   computed: {
     ...mapStores(useOverviewStore, useSelectionStore, useFeedRefreshStore, useUiStore),
+    useRefinedTopbars() {
+      return ['minimal', 'full', 'summarized', 'summaryBullets'].includes(this.viewMode);
+    },
     // Exposes the active status from the explicit collection presentation contract.
     currentSelection() {
       return this.collectionSummary.status;
@@ -559,8 +565,18 @@ export default {
   }
 }
 
+.article-list-topbars { display: contents; }
 .article-list-view__items > :deep(:nth-child(1 of .article-list-card)) {
   border-top: 1px solid var(--border-subtle);
+}
+.headline-list-topbars {
+  display: grid;
+  gap: 12px;
+  margin: 0.5rem 16px 12px;
+}
+.headline-list-topbars:not(:has(> *)) { display: none; }
+@media (max-width: 767px), (max-height: 560px) and (min-width: 480px) {
+  .headline-list-topbars { margin-inline: 0.5rem; }
 }
 
 .article-list-view__items {

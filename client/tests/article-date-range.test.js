@@ -13,11 +13,11 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const mountContext = () => {
+const mountContext = (headlineMode = false) => {
   const stores = createFocusedStores();
   wrapper = mount(UnreadSelectionContext, {
     attachTo: document.body,
-    props: { articleCount: 10, sourceCount: 2, oldestPublishedAt: new Date(Date.now() - 10 * 86400000).toISOString() },
+    props: { headlineMode, articleCount: 10, sourceCount: 2, oldestPublishedAt: new Date(Date.now() - 10 * 86400000).toISOString() },
     global: { plugins: [stores.pinia] }
   });
   return stores;
@@ -108,11 +108,11 @@ describe('dynamic rolling age options', () => {
   });
 });
 
-describe('calendar dropdown', () => {
+describe.each([false, true])('calendar dropdown (Headlines: %s)', headlineMode => {
   it('labels two days ago with its local weekday and stores a stable range value', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(2026, 8, 21, 16));
-    const stores = mountContext();
+    const stores = mountContext(headlineMode);
     stores.selectionStore.setAgeCutoff('3d');
     await trigger().trigger('click');
     expect(wrapper.findAll('[role="menuitemradio"]').map(button => button.text().replace('✓', '').trim())).toEqual([
@@ -125,13 +125,13 @@ describe('calendar dropdown', () => {
   });
 
   it('omits the redundant current-date label', async () => {
-    mountContext();
+    mountContext(headlineMode);
     await wrapper.setProps({ articles: [{ id: 1, publishedAt: new Date().toISOString() }] });
     expect(wrapper.find('.unread-selection-context__current-date').exists()).toBe(false);
   });
 
   it.each(['All dates', 'Today', 'Yesterday', 'This month'])('resets the age cutoff when selecting %s', async label => {
-    const stores = mountContext();
+    const stores = mountContext(headlineMode);
     stores.selectionStore.setAgeCutoff('24h');
     await trigger().trigger('click');
     await option(label).trigger('click');
@@ -142,7 +142,7 @@ describe('calendar dropdown', () => {
   });
 
   it.each(['1d', '3d', '7d', 'all'])('resets Yesterday when selecting age %s', async value => {
-    const stores = mountContext();
+    const stores = mountContext(headlineMode);
     await trigger().trigger('click');
     await option('Yesterday').trigger('click');
     const age = wrapper.get('[role="group"][aria-label="Article age"]');
@@ -157,7 +157,7 @@ describe('calendar dropdown', () => {
   ))('keeps %s and %s mutually exclusive in both directions', async (cutoff, date) => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(2026, 8, 21, 16));
-    const stores = mountContext();
+    const stores = mountContext(headlineMode);
     const ageButton = label => wrapper.get('[aria-label="Article age"]').findAll('button').find(button => button.text() === label);
     const selectDate = async () => {
       await trigger().trigger('click');
@@ -183,7 +183,7 @@ describe('calendar dropdown', () => {
   });
 
   it('dismisses a pending custom date when switching to a rolling cutoff', async () => {
-    mountContext();
+    mountContext(headlineMode);
     await trigger().trigger('click');
     await option('Custom date...').trigger('click');
     expect(wrapper.find('form').exists()).toBe(true);
@@ -194,7 +194,7 @@ describe('calendar dropdown', () => {
   });
 
   it('defaults to All dates, toggles the menu, selects an option and resets the age choice', async () => {
-    const stores = mountContext();
+    const stores = mountContext(headlineMode);
     stores.selectionStore.setAgeCutoff('3d');
     expect(trigger().text()).toBe('All dates');
     expect(option('All dates').attributes('aria-checked')).toBe('true');
@@ -217,7 +217,7 @@ describe('calendar dropdown', () => {
   });
 
   it('closes on outside pointer presses and Escape, and supports keyboard navigation', async () => {
-    mountContext();
+    mountContext(headlineMode);
     await trigger().trigger('click');
     document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
     await flushPromises();
@@ -234,7 +234,7 @@ describe('calendar dropdown', () => {
   });
 
   it('validates and applies custom dates without changing the filter when cancelled', async () => {
-    const stores = mountContext();
+    const stores = mountContext(headlineMode);
     stores.selectionStore.setAgeCutoff('3d');
     await trigger().trigger('click');
     await option('Custom date...').trigger('click');
