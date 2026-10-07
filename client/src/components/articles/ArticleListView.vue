@@ -597,8 +597,20 @@ export default {
 }
 
 .article-list-topbars { display: contents; }
-.article-list-view__items > :deep(:nth-child(1 of .article-list-card)) {
+.article-list-view__items > :deep(:nth-child(1 of .article-card).article-list-card) {
   border-top: 1px solid var(--border-subtle);
+}
+.article-list-view__items > :deep(:nth-child(1 of .article-card):not(.article-list-card))::before {
+  content: '';
+  display: block;
+  height: 1px;
+  margin-inline: 16px 18px;
+  background-color: var(--border-subtle);
+}
+@media (max-width: 879px) and (orientation: portrait) {
+  .article-list-view__items > :deep(:nth-child(1 of .article-card):not(.article-list-card))::before {
+    margin-inline: 8px;
+  }
 }
 .headline-list-topbars {
   container: headline-topbars / inline-size;
