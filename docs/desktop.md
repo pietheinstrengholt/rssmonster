@@ -19,21 +19,24 @@ connect or sync with an existing self-hosted RSSMonster installation.
 ## Download and install
 
 Open [RSSMonster releases on GitHub](https://github.com/pietheinstrengholt/rssmonster/releases)
-and choose the installer for your system from a published release's **Assets**:
+and choose the installer or portable executable for your system from a published release's **Assets**:
 
 | System | Download |
 | --- | --- |
 | Windows x64 | `RSSMonster-Setup-2.4.0-x64.exe` |
+| Windows x64, portable | `RSSMonster-Portable-2.4.0-x64.exe` |
 | macOS, Intel | `RSSMonster-2.4.0-x64.dmg` |
 | macOS, Apple Silicon | `RSSMonster-2.4.0-arm64.dmg` |
 | Linux x64 | `RSSMonster-2.4.0-x86_64.AppImage` or `RSSMonster-2.4.0-amd64.deb` |
 
-The version in each filename changes with the release. Installers only become
+The version in each filename changes with the release. Desktop downloads only become
 publicly available after the desktop builds finish and the draft release is
 published. If a release has no desktop assets yet, use the source instructions
 below or choose a release that includes them.
 
-- **Windows:** run the `.exe` installer and launch RSSMonster.
+- **Windows installer:** run the Setup `.exe` installer and launch RSSMonster.
+- **Windows portable:** put the Portable `.exe` in a writable folder and run it;
+  no installation is needed. You may rename it to `RSSMonster.exe`.
 - **macOS:** open the `.dmg` and copy RSSMonster to Applications.
 - **Linux:** install the `.deb` with your package manager, or make the AppImage
   executable and run it on a system with AppImage support.
@@ -77,7 +80,7 @@ refreshes. Both services stop when you close the app.
 
 ## Storage, backups, and updates
 
-RSSMonster stores desktop data in Electron's operating-system-specific
+Installed RSSMonster stores desktop data in Electron's operating-system-specific
 application data directory (`app.getPath('userData')`), under the application
 name **RSSMonster**. The important files are:
 
@@ -95,6 +98,37 @@ secrets. OPML exports preserve subscriptions, but do not replace a database back
 
 There is no automatic updater. Download and install a newer release manually,
 backing up your data before upgrading.
+
+### Windows portable storage
+
+The portable executable keeps all persistent application data in `data/` beside
+it, including downloaded ModernBERT, Qwen3-Embedding and Qwen3.5 models:
+
+```text
+RSSMonster\
+├── RSSMonster.exe
+└── data\
+    ├── rssmonster.sqlite
+    ├── secrets.json
+    └── models\
+```
+
+You only need the executable to start: RSSMonster creates `data/` and its contents
+automatically on first launch. Additional Electron/Chromium runtime files and caches
+also appear under `data/`. The launcher extracts application binaries temporarily
+while running; persistent state remains inside your portable folder.
+
+Use a writable location, such as a folder in Documents or on a USB drive. Protected
+locations such as Program Files may prevent startup; RSSMonster displays an error
+instead of switching to AppData. Launching through a shortcut or from another working
+directory still uses the directory containing the portable executable.
+
+Close RSSMonster fully before backing up or moving the complete RSSMonster folder.
+Keep `secrets.json` with the database to preserve authentication secrets. To upgrade,
+close the app and replace only `RSSMonster.exe`, preserving `data/`; database
+migrations run on the next launch. The installer continues using its existing
+`%APPDATA%\RSSMonster` profile. Installed and portable profiles are separate and
+are not automatically migrated between modes.
 
 ## Desktop app or installed web app?
 
@@ -124,11 +158,20 @@ This builds the Vue frontend and launches Electron, including managed local
 inference and the AI worker. It does not start a crawl worker. Use Node.js for the operating system
 where you intend to run Electron.
 
-To build an installer for the current machine:
+To build desktop artifacts for the current machine:
 
 ```sh
 npm run desktop:build --prefix desktop
 ```
+
+To build both Windows targets explicitly on Windows:
+
+```sh
+npm run desktop:build:win --prefix desktop -- x64
+```
+
+This produces separate `RSSMonster-Setup-<version>-x64.exe` and
+`RSSMonster-Portable-<version>-x64.exe` artifacts. Building does not publish them.
 
 Artifacts are written to `desktop/release/`. See the
 [desktop developer README](https://github.com/pietheinstrengholt/rssmonster/blob/master/desktop/README.md)

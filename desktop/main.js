@@ -1,8 +1,16 @@
-import { app, BrowserWindow, Menu, session, utilityProcess } from 'electron';
+import { app, BrowserWindow, dialog, Menu, session, utilityProcess } from 'electron';
 import { startRuntime } from './runtime.js';
 import { createDesktopServices } from './services.js';
+import { configureDesktopStorage } from './storage.js';
 
 app.setName('RSSMonster');
+let dataDirectory;
+let storageError;
+try {
+  dataDirectory = configureDesktopStorage(app);
+} catch (error) {
+  storageError = error;
+}
 let runtime;
 let startup;
 let shuttingDown = false;
@@ -23,7 +31,11 @@ const shutdown = async (exitCode = process.exitCode || 0) => {
   app.exit(exitCode);
 };
 
-if (!app.requestSingleInstanceLock()) {
+if (storageError) {
+  console.error('Desktop startup failed:', storageError);
+  dialog.showErrorBox('RSSMonster could not start', storageError.message);
+  app.exit(1);
+} else if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => {
@@ -41,7 +53,7 @@ if (!app.requestSingleInstanceLock()) {
 
   startup = app.whenReady().then(async () => {
     Menu.setApplicationMenu(null);
-    runtime = await startRuntime(app.getPath('userData'), createDesktopServices(utilityProcess, error => {
+    runtime = await startRuntime(dataDirectory, createDesktopServices(utilityProcess, error => {
       console.error(error);
       void shutdown(1);
     }));

@@ -27,12 +27,13 @@ npm ci --prefix desktop
 npm run desktop --prefix desktop
 ```
 
-There is no root npm package or workspace. Equivalently, `cd desktop` and run
-`npm run desktop`. This builds Vue into `desktop/dist` with same-origin `/api`
+Desktop has its own npm package. Equivalently, `cd desktop` and run
+`npm run desktop`. The root `npm run dev` starts the self-hosted stack instead.
+The Desktop command builds Vue into `desktop/dist` with same-origin `/api`
 requests, then starts Electron. `npm start --prefix desktop` reuses that build.
 Restart after server changes; rebuild after client changes. No preload or IPC API.
 
-## Build installable artifacts
+## Build desktop artifacts
 
 ```sh
 npm run desktop:build --prefix desktop
@@ -55,7 +56,7 @@ Outputs are in **`desktop/release/`**:
 | Platform | Outputs (version comes from `server/package.json`) |
 | --- | --- |
 | macOS | `mac[-arm64]/RSSMonster.app`, `RSSMonster-2.4.0-{x64,arm64}.dmg` |
-| Windows | `RSSMonster-Setup-2.4.0-{x64,arm64}.exe` (NSIS) |
+| Windows | `RSSMonster-Setup-2.4.0-{x64,arm64}.exe` (NSIS installer), `RSSMonster-Portable-2.4.0-{x64,arm64}.exe` (portable launcher) |
 | Linux | `RSSMonster-2.4.0-{x86_64,arm64}.AppImage`, `RSSMonster-2.4.0-{amd64,arm64}.deb` |
 
 `dist/` remains the frontend build. `.stage/` is a disposable generated application
@@ -66,12 +67,13 @@ by Git. Signing, notarization and electron-builder publishing are explicitly dis
 
 After committing the desktop files and version changes, push a version tag such as
 `v2.4.0`. `.github/workflows/desktop-release.yml` builds Windows x64, Linux x64,
-macOS Intel and macOS Apple Silicon installers on native GitHub runners. The tag
+macOS Intel and macOS Apple Silicon artifacts on native GitHub runners. Windows
+produces both an installer and a portable executable. The tag
 must match the client, server and inference package versions; desktop inherits the
 server version. The workflow can also be run manually with an existing tag.
 
-After every build and desktop runtime test succeeds, the workflow attaches the five
-installers to a **draft** GitHub Release. Review the downloads and publish the draft
+After every build and desktop runtime test succeeds, the workflow attaches the six desktop
+artifacts to a **draft** GitHub Release. Review the downloads and publish the draft
 to make them publicly available. Reruns can replace assets on that draft, but refuse
 to modify an already published release. Uploads use the built-in `GITHUB_TOKEN`;
 only the release job has `contents: write`. No additional publishing secret is needed.
@@ -85,6 +87,9 @@ package. It seeds dependency resolution from the server and inference lockfiles,
 clean production dependency tree, then calls electron-builder. Install server
 dependencies first so that lockfile exists. Neither development dependencies nor
 native bindings in `server/node_modules` are changed by packaging.
+
+Desktop pins Umzug 2.3.0 to match the existing shared migration runner API and the
+server lockfile. The packaged dependency tree must retain that API compatibility.
 
 The existing SQLite driver is `sqlite3` (currently 6.0.1), with a native Node-API
 binding. `npmRebuild: true` lets electron-builder's standard `@electron/rebuild`
@@ -110,7 +115,8 @@ published Node-API binaries; build on the target OS for release verification.
 
 ## Data and lifecycle
 
-Application data remains under Electron's `app.getPath('userData')` (`RSSMonster`):
+Installed application data remains under Electron's `app.getPath('userData')`
+(`RSSMonster`, normally `%APPDATA%\RSSMonster` on Windows):
 
 - SQLite: `rssmonster.sqlite` and its SQLite sidecars.
 - Authentication: persistent `secrets.json` (keep with database backups).
@@ -136,6 +142,42 @@ parser worker **threads** remain for timeout/memory isolation; desktop worker
 **processes** do not schedule feeds; only the AI worker is started. Frontend database polling and its PWA service worker do
 not schedule feed crawling.
 
+### Windows portable
+
+The portable artifact requires no installation. Put it in a writable folder (including
+a USB drive), optionally rename it to `RSSMonster.exe`, and launch it:
+
+```text
+RSSMonster\
+├── RSSMonster.exe
+└── data\
+    ├── rssmonster.sqlite
+    ├── secrets.json
+    └── models\
+```
+
+First launch creates `data/` recursively before any application state is initialized.
+The existing runtime creates the database and persistent secrets, runs migrations,
+and downloads all three models into `data/models/`. Additional Chromium files such
+as `Cache/` and `Local Storage/`, worker health, `logs/` and `Crashpad/` may appear
+under `data/`. Portable startup fails with an error dialog if storage is not writable;
+it never falls back to AppData. Installed profiles are not moved or imported.
+
+Detection uses electron-builder's `PORTABLE_EXECUTABLE_DIR`, restricted to packaged
+Windows launches. The launcher sets this to its original `$EXEDIR` before starting
+Electron from a temporary extraction directory. Storage uses that original directory,
+independent of working directory, shortcuts, executable name, and extraction path.
+Before Electron's ready event and single-instance lock, `storage.js` creates/probes
+the directory and redirects `userData`, `sessionData`, logs and crash dumps into it.
+The runtime receives the same data root through its existing interface.
+
+Close RSSMonster fully before copying or moving its complete folder, including
+`data/`. Keep database and secrets together to preserve accounts/authentication.
+To upgrade, close the app and replace only `RSSMonster.exe`; preserve `data/`.
+Migrations run normally on the next launch. The launcher temporarily extracts
+application binaries to Windows' temp directory and removes them on normal exit;
+persistent RSSMonster state stays beside the launcher.
+
 ## Verify
 
 ```sh
@@ -145,6 +187,8 @@ npm run lint --prefix desktop
 npm run test:packaged --prefix desktop
 # Test the Linux AppImage itself (path is relative to desktop/):
 npm run test:packaged --prefix desktop -- release/RSSMonster-2.4.0-x86_64.AppImage
+# On Windows, verify the actual portable launcher from a disposable folder:
+npm run test:packaged --prefix desktop -- release/RSSMonster-Portable-2.4.0-x64.exe --portable
 ```
 
 The packaged verifier supports Linux and Windows. It uses disposable profiles outside
@@ -155,7 +199,13 @@ and normal Electron host libraries are required. On systems without FUSE, the te
 uses AppImage's supported extract-and-run mode and closes it through the UI.
 The Electron/package smoke tests download models into temporary profiles by default.
 Set `RSSMONSTER_TEST_MODEL_CACHE` to an existing absolute model-cache directory to
-reuse weights through a test-only link. Production always uses `userData/models`.
+reuse weights through a test-only link. Production always uses `userData/models`
+(portable: `data/models`). Portable verification copies the artifact into a temporary
+folder with spaces, launches from another working directory, moves the folder
+between launches, verifies the existing JWT/database/secrets and checks that no
+AppData profile is created. Omit the model-cache override to exercise a completely
+clean first launch with model downloads. Storage unit tests always cover clean
+recursive creation, reuse, unwritable storage and early Electron path configuration.
 
 Local AI has been tested with Linux x64/WSL2, the AppImage, and the packaged
 Windows x64 executable on Windows 11, using disposable profiles and cached models.

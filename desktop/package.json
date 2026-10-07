@@ -22,7 +22,7 @@
     "test:packaged": "node tests/package-check.js"
   },
   "dependencies": {
-    "umzug": "3.8.3"
+    "umzug": "2.3.0"
   },
   "devDependencies": {
     "@electron/asar": "4.3.1",

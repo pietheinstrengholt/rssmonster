@@ -7,7 +7,9 @@ has_children: true
 
 For a local app with manual feed refresh, see
 [RSSMonster Desktop]({% link desktop.md %}). It runs the reader and SQLite on your
-computer without Docker or a separate server.
+computer without Docker or a separate server. On Windows, choose the installer
+for the normal application-data profile or the portable executable to keep data
+beside the app in a writable folder, including a USB drive.
 
 For self-hosting, choose the SQLite profile for lightweight personal reading, or the MySQL profile
 for local inference and background analysis. First-time model downloads can take

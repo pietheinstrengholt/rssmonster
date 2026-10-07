@@ -14,7 +14,7 @@ export default {
   npmRebuild: true,
   afterPack: context => verifyPackagedRuntime(context.packager.getResourcesDir(context.appOutDir)),
   files: [
-    'desktop/{main,runtime,database,services,service-process,inference-config}.js',
+    'desktop/{main,runtime,database,services,service-process,inference-config,storage}.js',
     'inference/src/**/*',
     'inference/package.json',
     'desktop/dist/**/*',
@@ -47,11 +47,12 @@ export default {
     notarize: false
   },
   win: {
-    target: ['nsis'],
+    target: ['nsis', 'portable'],
     icon: '../client/public/img/icons/apple-touch-icon-1024x1024.png',
     signExecutable: false
   },
   nsis: { artifactName: '${productName}-Setup-${version}-${arch}.${ext}' },
+  portable: { artifactName: '${productName}-Portable-${version}-${arch}.${ext}' },
   linux: {
     target: ['AppImage', 'deb'],
     category: 'Network',

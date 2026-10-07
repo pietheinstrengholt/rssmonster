@@ -2,20 +2,30 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdtemp, readFile, rm, stat, mkdir, symlink } from 'node:fs/promises';
+import { copyFile, mkdtemp, readFile, rename, rm, stat, mkdir, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { once } from 'node:events';
+import { setTimeout as delay } from 'node:timers/promises';
 
 if (!['linux', 'win32'].includes(process.platform)) throw new Error('The packaged verifier supports Linux and Windows.');
 // Windows can use Electron as the Node test host without passing that mode to the app.
 delete process.env.ELECTRON_RUN_AS_NODE;
 
-const executable = path.resolve(process.argv[2] || (process.platform === 'win32' ? 'release/win-unpacked/RSSMonster.exe' : 'release/linux-unpacked/rssmonster'));
+const portable = process.argv.includes('--portable');
+if (portable && process.platform !== 'win32') throw new Error('Portable artifact verification requires Windows.');
+const artifact = process.argv.slice(2).find(argument => argument !== '--portable');
+let executable = path.resolve(artifact || (process.platform === 'win32' ? 'release/win-unpacked/RSSMonster.exe' : 'release/linux-unpacked/rssmonster'));
 const directory = await mkdtemp(path.join(tmpdir(), 'rssmonster-package-test-'));
-const profile = path.join(directory, 'profile');
+let portableDirectory = path.join(directory, 'Portable RSSMonster');
+let profile = portable ? path.join(portableDirectory, 'data') : path.join(directory, 'profile');
+if (portable) {
+  await mkdir(portableDirectory);
+  await copyFile(executable, path.join(portableDirectory, 'RSSMonster.exe'));
+  executable = path.join(portableDirectory, 'RSSMonster.exe');
+}
 if (process.env.RSSMONSTER_TEST_MODEL_CACHE) {
-  for (const location of [profile, path.join(directory, 'RSSMonster')]) {
+  for (const location of portable ? [profile] : [profile, path.join(directory, 'RSSMonster')]) {
     await mkdir(location, { recursive: true });
     await symlink(path.resolve(process.env.RSSMONSTER_TEST_MODEL_CACHE), path.join(location, 'models'), process.platform === 'win32' ? 'junction' : 'dir');
   }
@@ -33,13 +43,16 @@ const fixture = createServer((_req, res) => {
 await new Promise(resolve => fixture.listen(0, '127.0.0.1', resolve));
 const credentials = { username: 'package-test', password: 'package-test-password' };
 let previousSecrets;
+let previousToken;
 
 const launch = (debug = true) => {
-  const child = spawn(executable, debug ? ['--remote-debugging-port=0', `--user-data-dir=${profile}`] : [], {
+  const startedAt = Date.now();
+  const child = spawn(executable, debug ? ['--remote-debugging-port=0', ...(!portable ? [`--user-data-dir=${profile}`] : [])] : [], {
     cwd: directory,
     env: {
       ...process.env,
       XDG_CONFIG_HOME: directory,
+      APPDATA: process.platform === 'win32' ? path.join(directory, 'AppData') : process.env.APPDATA,
       XDG_CACHE_HOME: path.join(directory, 'cache'),
       APPIMAGE_EXTRACT_AND_RUN: '1',
       RSSMONSTER_INTERNAL_HOST_ALLOWLIST: `127.0.0.1:${fixture.address().port}`
@@ -74,7 +87,7 @@ const launch = (debug = true) => {
     child.once('error', finish);
     check();
   });
-  return { child, waitForLog, output: () => output };
+  return { child, startedAt, waitForLog, output: () => output };
 };
 
 const connect = async url => {
@@ -103,6 +116,20 @@ const connect = async url => {
   return { socket, send, evaluate };
 };
 
+const poll = async (running, check) => {
+  const deadline = Date.now() + 300_000;
+  let lastError;
+  while (Date.now() < deadline) {
+    assert.equal(running.child.exitCode, null, `Packaged app exited\n${running.output()}`);
+    try {
+      const result = await check();
+      if (result) return result;
+    } catch (error) { lastError = error; }
+    await delay(250);
+  }
+  throw new Error(`Timed out waiting for packaged app: ${lastError?.message || ''}\n${running.output()}`);
+};
+
 try {
   // Exercise argument-free startup on the installed executable; AppImage's wrapper is closed via its UI below.
   if (process.platform === 'linux' && !executable.endsWith('.AppImage')) {
@@ -126,11 +153,25 @@ try {
     const running = launch();
     let inspector;
     try {
-      const origin = (await running.waitForLog(/RSSMonster desktop ready at (http:\/\/127\.0\.0\.1:\d+)/))[1];
-      await running.waitForLog(/RSSMonster desktop AI ready/);
-      const debugOrigin = (await running.waitForLog(/DevTools listening on ws:\/\/(127\.0\.0\.1:\d+)/))[1];
-      const targets = await (await fetch(`http://${debugOrigin}/json/list`)).json();
-      const page = targets.find(target => target.type === 'page' && target.url.startsWith(origin));
+      let origin;
+      let page;
+      if (portable) {
+        // The NSIS portable wrapper does not forward the extracted app's stdout/stderr.
+        page = await poll(running, async () => {
+          const health = JSON.parse(await readFile(path.join(profile, 'ai-worker-health.json'), 'utf8'));
+          if (health.status === 'stopping' || Date.parse(health.updatedAt) < running.startedAt) return;
+          const port = (await readFile(path.join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0];
+          const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
+          return targets.find(target => target.type === 'page' && /^http:\/\/127\.0\.0\.1:\d+/.test(target.url));
+        });
+        origin = new URL(page.url).origin;
+      } else {
+        origin = (await running.waitForLog(/RSSMonster desktop ready at (http:\/\/127\.0\.0\.1:\d+)/))[1];
+        await running.waitForLog(/RSSMonster desktop AI ready/);
+        const debugOrigin = (await running.waitForLog(/DevTools listening on ws:\/\/(127\.0\.0\.1:\d+)/))[1];
+        const targets = await (await fetch(`http://${debugOrigin}/json/list`)).json();
+        page = targets.find(target => target.type === 'page' && target.url.startsWith(origin));
+      }
       assert.ok(page, 'Packaged local Vue page is present');
       inspector = await connect(page.webSocketDebuggerUrl);
       assert.equal(await inspector.evaluate('typeof process'), 'undefined');
@@ -139,7 +180,7 @@ try {
       const secrets = await readFile(path.join(profile, 'secrets.json'), 'utf8');
       if (phase === 'restart') assert.equal(secrets, previousSecrets);
       previousSecrets = secrets;
-      let token = '';
+      let token = previousToken || '';
       const api = async (route, body) => {
         const response = await fetch(`${origin}/api${route}`, {
           method: body ? 'POST' : 'GET',
@@ -151,10 +192,12 @@ try {
         return result;
       };
       if (phase === 'create') await api('/auth/register', { ...credentials, password_repeat: credentials.password });
+      if (phase === 'restart') await api('/setting'); // The existing JWT survives moving portable storage.
       token = (await api('/auth/login', credentials)).token;
+      previousToken = token;
       assert.equal((await api('/setting')).AIEnabled, true);
       assert.equal((await api('/setting')).AssistantEnabled, false);
-      assert.match(running.output(), /\[AiWorker\] Starting concurrency=1/);
+      if (!portable) assert.match(running.output(), /\[AiWorker\] Starting concurrency=1/);
       if (phase === 'create') {
         const category = await api('/categories', { name: 'Packaged feeds' });
         const { feed } = await api('/feeds', { categoryId: category.id, url: `http://127.0.0.1:${fixture.address().port}/feed.xml` });
@@ -183,7 +226,8 @@ try {
             check();
           });
         })()`);
-        await running.waitForLog(/\[CRAWL\] Completed/);
+        if (portable) await poll(running, async () => (await api('/articles?status=%25&persistSettings=false')).itemIds.length > 0);
+        else await running.waitForLog(/\[CRAWL\] Completed/);
       }
       const articles = await api('/articles?status=%25&persistSettings=false');
       assert.equal(articles.itemIds.length, 1, running.output());
@@ -208,11 +252,23 @@ try {
       await assert.rejects(fetch(`${origin}/api/health`));
       console.log(`${phase}: packaged Vue/API, SQLite, manual refresh/persistence and clean shutdown passed`);
     } finally {
-      inspector?.socket.close();
       if (running.child.pid && running.child.exitCode === null && running.child.signalCode === null) {
-        running.child.kill('SIGTERM');
+        if (inspector) void inspector.send('Page.close').catch(() => running.child.kill('SIGTERM'));
+        else running.child.kill('SIGTERM');
         await once(running.child, 'exit');
       }
+      inspector?.socket.close();
+    }
+    if (portable && phase === 'create') {
+      const moved = path.join(directory, 'Moved Portable RSSMonster');
+      await rename(portableDirectory, moved);
+      portableDirectory = moved;
+      executable = path.join(moved, 'RSSMonster.exe');
+      profile = path.join(moved, 'data');
+    }
+    if (portable) {
+      assert.equal(await stat(path.join(directory, 'AppData', 'RSSMonster')).then(() => true, () => false), false,
+        'Portable runtime must not create an AppData profile');
     }
   }
 } finally {

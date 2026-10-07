@@ -4,7 +4,8 @@ RSSMonster 2.4.0 is a substantial update focused on identity and server
 administration, behavior-driven personalization, reader controls, feed metadata,
 content retention, and deployment flexibility. It also adds offline reading,
 operational webhooks, reusable Smart Folders, manual article tagging, browser
-text-to-speech, and outbound feed-proxy support.
+text-to-speech, outbound feed-proxy support, and a fully portable Windows
+Desktop distribution.
 
 ## Highlights
 
@@ -121,6 +122,28 @@ text-to-speech, and outbound feed-proxy support.
 - Fixed packaged parser dependencies and ESM migration discovery, removed the
   default Electron application menu, and expanded packaged-runtime verification.
 
+### Windows portable Desktop
+
+- Added a separate `RSSMonster-Portable-<version>-x64.exe` alongside the existing
+  `RSSMonster-Setup-<version>-x64.exe` installer. GitHub desktop release builds
+  now include both Windows artifacts.
+- Portable Desktop requires no installation and automatically creates `data/`
+  beside the original executable. SQLite, persistent secrets, downloaded models,
+  worker health, and Electron/Chromium state remain under that directory.
+- Portable storage follows the launcher's actual location, independently of the
+  current working directory or its temporary application extraction directory.
+  Paths with spaces and moving the portable folder preserve the stored data.
+- Unwritable storage shows a clear startup error instead of falling back to
+  AppData. Installed Desktop continues using its existing application-data
+  directory without automatically moving or importing profiles.
+- Users can close the app and move or back up the complete folder. Upgrades
+  replace only the executable and preserve `data/`; normal migrations run on
+  the next launch.
+- Aligned the packaged Umzug dependency with the shared migration runner's
+  existing API, fixing a packaged SQLite startup failure. Added storage and
+  packaging regression tests and native Windows create/restart verification,
+  including folder relocation, existing-token validity, and no AppData profile.
+
 ### Behavior-driven personalization
 
 - Removed the Topic layer and made Interest Islands the primary long-term
@@ -179,8 +202,12 @@ text-to-speech, and outbound feed-proxy support.
 - Age selections reset to **All** when unavailable in a new result context.
 - Added a sticky date context that follows the visible article while preserving
   the selected sort order.
-- Hid the date label below 1070px and the article/source summary below 876px to
-  keep the context controls usable on narrower screens.
+- Refined the new-article banner and sticky context bar across article views,
+  including clearer spacing, consistent mobile widths, and left-aligned compact
+  filters. Summaries hide or shorten on narrower screens while the collection
+  action menu remains available.
+- Empty Reader collections hide the date selector rather than offering filters
+  with no article context.
 - Improved unread-filter reset, custom-date dismissal, count refresh, and mobile
   tuning controls.
 - Refresh checks now distinguish newly stored unread articles from changes that
@@ -212,8 +239,21 @@ text-to-speech, and outbound feed-proxy support.
   disclosure, and very narrow labels truncate instead of wrapping.
 - Reworked the Reader list header into one aligned row for the collection
   title/count, date filter, Details, and bulk menu, with more breathing room at
-  both edges and between controls. Details reveals collection statistics and
-  tags below the header; long labels truncate while controls remain accessible.
+  both edges and between controls. The title shows the total article count;
+  Details reveals loaded-event and source counts and top tags without repeating
+  the unread count. Long labels truncate while controls remain accessible.
+- Moved **Save as smart folder** into the collection's **More actions** menu for
+  active searches and removed the redundant Original article header action;
+  publisher links and the selected Reader toolbar's **Open original** remain.
+- Added bulk actions to Expanded, Summarized, Summary Bullets, and Headlines,
+  including compact layouts, using the same menu as Reader. Relative read
+  actions use the selected/open article or the article nearest the viewport top
+  and operate on loaded articles; visible actions target on-screen rows.
+- Auto-hide Reader list/content and Expanded scrollbars and prevent nested
+  scrolling across desktop article streams. Expanding a Headlines article
+  preserves its row's viewport position.
+- Refined first-article dividers, toolbar and metadata alignment in both themes,
+  and simplified the quality filter's button label to **Quality**.
 - Centered Reader toolbar icons and labels and corrected favicon alignment in
   both themes. Reader list timestamps now prefer publication date, falling back
   to first-seen time only when publication date is unavailable.
@@ -270,8 +310,8 @@ text-to-speech, and outbound feed-proxy support.
 
 ### Smart Folders and manual article tagging
 
-- Added **Save as smart folder** to wide-screen collection headers for active
-  searches, with a named draft and rule preview based on the current status,
+- Added **Save as smart folder** to collection actions for active searches,
+  including compact layouts, with a named draft and rule preview based on the current status,
   search, tag, sorting, grouping, quality threshold, and supported date presets.
 - The dialog explains when feed/category context or publication-date controls
   cannot be represented by Smart Folder rules. Saved folders remain dynamic
@@ -396,6 +436,10 @@ text-to-speech, and outbound feed-proxy support.
   pending messages are picked up reliably.
 - Improved feed parsing fixtures, publication fallback coverage, migration
   portability, and SQLite/MySQL historical-schema tests.
+- Set the example feed-parser timeout to ten seconds for slower hosts. The
+  unset code fallback remains two seconds; existing configured values are unchanged.
+- Centralized bulk read-state updates so article layouts share persistence,
+  pending-operation handling, and read-count updates.
 - Fixed Docker multi-platform build stages and upgraded client, server, inference,
   FeedSmith, dotenv, and ESLint dependencies.
 - Updated desktop Electron, archive tooling, and migration dependencies.
@@ -411,7 +455,12 @@ text-to-speech, and outbound feed-proxy support.
   archiving, crawl-contract, and semantic-contract documentation.
 - Updated guides for offline reading, webhooks, Smart Folders, initial feed
   imports, admission windows, backups, runtime configuration, API conventions,
-  and worker commands.
+  and worker commands. Expanded Desktop documentation for portable storage,
+  build/verification commands, writable folders, and backup/upgrade workflows.
+- Expanded the Smart Folder, tag, webhook, unread-setting, and theme guides
+  with current controls and screenshots.
+- Consolidated contributor agent skills under `.agents/skills`, with shared
+  design, review, test-first, and implementation-closing workflows.
 - Added a root `npm run dev` command to start the server, client, inference
   service, and workers together.
 - Removed unused client, server, and inference helpers and obsolete semantic
@@ -449,6 +498,10 @@ text-to-speech, and outbound feed-proxy support.
 - Desktop is the exception to that deployment rule: it configures and manages its
   bundled local inference service automatically. First launch needs network access,
   several gigabytes of disk space, and enough memory for the three CPU models.
+- Windows portable users should close RSSMonster before copying its folder or
+  replacing the executable. Preserve the complete `data/` directory, including
+  `secrets.json`, and use a writable location. Installed users retain their
+  existing `%APPDATA%\RSSMonster` profile; the two modes are separate.
 - MariaDB installations must explicitly set `DB_DIALECT=mariadb`; the bundled
   comprehensive Compose profile continues to use MySQL.
 - Existing semantic vectors carry model metadata after migration. Vectors from
@@ -472,7 +525,11 @@ text-to-speech, and outbound feed-proxy support.
 - [Article archiving](docs/archiving.md)
 - [Feeds and HTTP Basic authentication](docs/feeds-and-categories.md)
 - [Outbound feed-proxy configuration](server/services/feeds/README.md#outbound-feed-proxies)
-- [Reader layout and controls](client/src/components/articles/README.md#desktop-reader)
+- [Reading views and controls](docs/usability.md)
+- [Bulk actions and read-state behavior](docs/marking-articles-read.md)
+- [Desktop and server backups](docs/backup-restore.md)
+- [Build and verification commands](docs/npm-commands.md)
+- [Reader implementation notes](client/src/components/articles/README.md#desktop-reader)
 - [Smart Folders](docs/smart-folders.md)
 - [Tags and manual article tagging](docs/tag.md)
 - [Offline PWA reading and notifications](docs/web-app-and-notifications.md)

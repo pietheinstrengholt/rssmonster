@@ -7,14 +7,15 @@ nav_order: 4
 
 # npm Commands
 
-RSSMonster has separate npm packages for the Vue client, Express server, and
-inference service. This page lists every command exposed by those packages,
+RSSMonster has separate npm packages for the Vue client, Express server,
+inference service, and Electron Desktop. The repository root also has a shared
+development command. This page lists the commands exposed by those packages,
 what it does, and when to use it.
 
 Run a command from the directory named in its section:
 
 ```bash
-cd client     # or server, or inference
+cd client     # or server, inference, or desktop
 npm run <command>
 ```
 
@@ -41,7 +42,7 @@ the complete, version-matched list:
 
 ```bash
 npm run dev -- --help       # Vite, from client
-npm test -- --help          # Vitest, from any package
+npm test -- --help          # Vitest, from client/server/inference
 npm run lint -- --help      # ESLint, from any package
 npm run db -- --help        # Migration runner help, from server
 ```
@@ -50,6 +51,46 @@ Vitest commands also accept a file or name filter. For example,
 `npm test -- tests/theme-service.test.js` runs one client test file. Do not pass
 extra options to RSSMonster maintenance scripts unless they appear below; some
 older scripts ignore unknown options instead of reporting an error.
+
+## Root development command
+
+`npm run dev` from the repository root starts the self-hosted server, client,
+inference service, crawl worker, AI worker, and webhook worker together. It does
+not launch Electron. Use the Desktop commands below for the local SQLite app.
+
+## Desktop Commands
+
+Run these commands from `desktop`, or use `npm run <command> --prefix desktop`
+from the repository root. Desktop manages its own local inference and AI worker;
+do not start the root development stack for a normal Desktop session.
+
+| Command | Arguments | What it does and when to use it |
+| --- | --- | --- |
+| `npm run build` | None | Builds the existing Vue client into `desktop/dist` with a same-origin API. |
+| `npm start` | Electron launch arguments | Launches Electron using the existing frontend build. |
+| `npm run dev` / `npm run desktop` | None | Builds the frontend and launches Electron. |
+| `npm test` | None | Runs Desktop's Node test suite, including storage, SQLite runtime, services, and packaging checks. |
+| `npm run lint` | ESLint CLI options | Lints Desktop with the server's installed ESLint and shared configuration. |
+| `npm run desktop:build` | Optional platform (`mac`, `win`, `linux`) and architecture (`x64`, `arm64`) | Builds packaged artifacts; defaults to the host platform and architecture. |
+| `npm run desktop:build:mac` | Optional architecture | Builds macOS artifacts. |
+| `npm run desktop:build:win` | Optional architecture | Builds both the NSIS installer and separate Windows portable executable. |
+| `npm run desktop:build:linux` | Optional architecture | Builds Linux AppImage and Debian artifacts. |
+| `npm run test:electron` | None | Runs the graphical Electron smoke test with disposable storage and local models. |
+| `npm run test:packaged` | Optional executable path; `--portable` for the actual Windows portable launcher | Verifies a shipped executable, API, models, persistence, and shutdown. Portable verification also moves the folder and checks that no AppData profile is created. |
+
+For example, on Windows, from the repository root:
+
+```sh
+npm run desktop:build:win --prefix desktop -- x64
+npm run test:packaged --prefix desktop -- release/RSSMonster-Portable-2.4.0-x64.exe --portable
+```
+
+Build outputs go to `desktop/release/`. Packaged-test paths are relative to
+`desktop/` when invoked with `--prefix desktop`. Graphical tests require Electron
+host libraries and a desktop session; models download into disposable profiles
+unless `RSSMONSTER_TEST_MODEL_CACHE` points to an existing absolute model cache.
+Building does not publish a release. See [Desktop]({% link desktop.md %}) for
+installer/portable storage, backups, and upgrade instructions.
 
 ## Client Commands
 

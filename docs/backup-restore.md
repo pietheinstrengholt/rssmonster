@@ -12,7 +12,7 @@ not backups. Keep multiple backup generations and at least one copy outside the
 Docker host. Test restoration periodically; an unreadable or incomplete backup
 should not be discovered during an outage.
 
-These procedures cover the supplied SQLite and MySQL Compose profiles. They use
+The Docker procedures below cover the supplied SQLite and MySQL Compose profiles. They use
 POSIX shell commands. Adapt the directory-permission and checksum commands to
 the host platform when necessary.
 
@@ -63,6 +63,26 @@ install -m 600 .env \
 
 An encrypted secret manager or encrypted off-host backup is preferable to a
 long-lived plaintext copy. Never include this file in an image or repository.
+
+## Desktop backups
+
+Close RSSMonster fully before copying its data so SQLite and any WAL/SHM sidecars
+remain consistent. Keep `rssmonster.sqlite` and `secrets.json` together; the latter
+contains persistent authentication secrets. A database-only copy does not preserve
+those secrets.
+
+Installed Desktop stores data in Electron's application-data directory, normally
+`%APPDATA%\RSSMonster` on Windows. Back up that complete directory. Windows
+portable Desktop stores everything under `data/` beside the portable executable;
+back up or move the complete RSSMonster folder, including the executable and `data/`.
+Downloaded models and Chromium state are included in that folder.
+
+To restore a portable backup, close the app, preserve a separate copy of the current
+folder, and restore the complete backup into a writable location. Launch the backed-up
+executable or a compatible newer version; pending migrations run at startup. To
+upgrade without restoring, replace only the executable and preserve `data/`.
+Installed and portable profiles are separate and are not automatically migrated.
+See [Desktop storage and updates]({% link desktop.md %}#storage-backups-and-updates).
 
 ## SQLite
 

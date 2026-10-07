@@ -446,6 +446,10 @@ response may consume. Prefer the phase-specific settings over the legacy
 ### Parser Safety Limits
 
 Feeds are parsed in disposable worker threads with CPU and memory bounds.
+The table lists code fallbacks. `server/.env.example` explicitly sets
+`FEED_PARSER_TIMEOUT_MS=10000` (ten seconds) to allow more time on slower hosts;
+an unset value still uses the two-second fallback. Existing configured values
+are not changed automatically.
 Entries that exceed the configured input limits are rejected before article
 enrichment and persistence.
 

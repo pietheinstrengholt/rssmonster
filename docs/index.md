@@ -62,7 +62,9 @@ expression syntax; conversational requests belong in the assistant.
 ## Use RSSMonster beyond the browser tab
 
 [Run RSSMonster as a desktop app]({% link desktop.md %}) with its own local SQLite
-database and manual feed refresh, without Docker or a separate server.
+database, managed local AI, and manual feed refresh, without Docker or a separate
+server. Windows offers both an installer and a portable executable that keeps its
+application data in an adjacent `data/` folder.
 
 [Install the web app and enable notifications]({% link web-app-and-notifications.md %}),
 configure [account recovery and briefing emails]({% link account.md %}), or connect a

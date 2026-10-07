@@ -149,6 +149,7 @@ jobs:
           version=${RELEASE_TAG#v}
           assets=(
             "installers/RSSMonster-Setup-$version-x64.exe"
+            "installers/RSSMonster-Portable-$version-x64.exe"
             "installers/RSSMonster-$version-x64.dmg"
             "installers/RSSMonster-$version-arm64.dmg"
             "installers/RSSMonster-$version-x86_64.AppImage"

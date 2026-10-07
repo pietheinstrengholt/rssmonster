@@ -68,7 +68,7 @@ export const prepareApplication = async ({ platform = process.platform, arch = p
     }
   }
 
-  for (const file of ['main.js', 'runtime.js', 'database.js', 'services.js', 'service-process.js', 'inference-config.js']) {
+  for (const file of ['main.js', 'runtime.js', 'database.js', 'services.js', 'service-process.js', 'inference-config.js', 'storage.js']) {
     await cp(path.join(desktopDirectory, file), path.join(stageDirectory, 'desktop', file));
   }
   await cp(path.join(desktopDirectory, 'dist'), path.join(stageDirectory, 'desktop/dist'), { recursive: true });
