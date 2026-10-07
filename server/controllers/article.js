@@ -20,6 +20,7 @@ import { explainArticleInterests } from '../services/score/scoreArticlesFromIsla
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { retryDatabaseWrite } from '../utils/databaseRetry.js';
 import { addArticleTags, removeArticleTag } from '../services/articles/articleTags.js';
+import { markArticlesRead } from '../services/articles/bulkRead.js';
 import { normalizeTagList, normalizeTagName } from '../services/crawl/persistence/tags.js';
 
 const RELATED_STORY_ARTICLE_LIMIT = 50;
@@ -98,41 +99,6 @@ const serializeRelatedStoryArticle = articleRow => {
 
 // This function normalizes article grouping values used by API consumers.
 const normalizeGrouping = value => (value === 'event' ? value : 'none');
-
-const cursorCompatibleScope = ({ sort, search }) => (
-  ['asc', 'desc'].includes(String(sort || 'desc').toLowerCase())
-  && !/(?:^|\s)sort:(?:topStories|recommended|quality)(?:\s|$)/i.test(String(search || ''))
-  && !/(?:^|\s)(?:quality|freshness):/i.test(String(search || ''))
-);
-
-const markScopedArticlePageAsRead = async ({ userId, itemIds, grouping, readAt }) => {
-  if (!itemIds.length) return { updatedCount: 0, expandedEventCount: 0 };
-
-  let eventIds = [];
-  if (grouping === 'event') {
-    const selectedArticles = await Article.findAll({
-      where: { id: { [Op.in]: itemIds }, userId, ...canonicalArticleWhere() },
-      attributes: ['id', 'eventId']
-    });
-
-    eventIds = [...new Set(selectedArticles.map(article => article.eventId).filter(Boolean))];
-  }
-
-  const [updatedCount] = await retryDatabaseWrite(() => Article.update(
-    { status: 'read', readAt },
-    {
-      where: {
-        userId,
-        ...canonicalArticleWhere(),
-        status: 'unread',
-        ...(eventIds.length
-          ? { [Op.or]: [{ id: { [Op.in]: itemIds } }, { eventId: { [Op.in]: eventIds } }] }
-          : { id: { [Op.in]: itemIds } })
-      }
-    }
-  ));
-  return { updatedCount, expandedEventCount: eventIds.length };
-};
 
 // This function attaches feed-level predicted affinity hints to unread articles.
 const attachPredictedAffinity = articles => {
@@ -775,225 +741,40 @@ const markAsRead = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const readAt = new Date();
-
+    let selection;
     if (articleIds.length > 0) {
-      const selectedArticles = await Article.findAll({
-        where: {
-          id: { [Op.in]: articleIds },
-          userId: userId,
-          ...canonicalArticleWhere()
-        },
-        attributes: ['id', 'eventId']
-      });
-
-      const selectedEventIds = statusGrouping === 'event'
-        ? [...new Set(selectedArticles.map(article => article.eventId).filter(Boolean))]
-        : [];
-      const articles = await Article.findAll({
-        where: {
-          userId,
-          ...canonicalArticleWhere(),
-          status: 'unread',
-          ...(selectedEventIds.length > 0
-            ? {
-                [Op.or]: [
-                  { id: { [Op.in]: articleIds } },
-                  { eventId: { [Op.in]: selectedEventIds } }
-                ]
-              }
-            : {
-                id: { [Op.in]: articleIds }
-              })
-        },
-        include: [{ model: Feed, required: true }]
-      });
-
-      if (!articles.length) {
-        return res.status(200).json({
-          message: "No unread articles to mark as read",
-          articles: []
-        });
-      }
-
-      const updatedArticles = await Promise.all(
-        articles.map(article => retryDatabaseWrite(
-          () => article.update({ status: "read", readAt })
-        ))
-      );
-
-      return res.status(200).json({
-        message: "Articles marked as read",
-        articles: updatedArticles
-      });
-    }
-
-    const {
-      search = '',
-      categoryId = '%',
-      feedId = '%',
-      minAdvertisementScore = 0,
-      minSentimentScore = 0,
-      minOverallQualityScore = 0,
-      minQualityScore = 0,
-      sort = 'desc',
-      tag = null,
-      viewMode = 'full',
-      grouping = statusGrouping
-    } = body;
-
-    const normalizedGrouping = normalizeGrouping(grouping);
-    const publishedAfter = parsePublicationBound(body.publishedAfter, 'publishedAfter');
-    const publishedBefore = parsePublicationBound(body.publishedBefore, 'publishedBefore');
-    const toScoreThreshold = value => {
-      const numericValue = Number(value);
-      return Number.isFinite(numericValue) ? numericValue : 0;
-    };
-
-    if (
-      body.scope === 'matching'
-      && !hasSnapshotArticleIds
-      && cursorCompatibleScope({ sort, search })
-    ) {
-      let cursor = null;
-      let matchedCount = 0;
-      let updatedCount = 0;
-      let expandedEventCount = 0;
-
-      try {
-        do {
-          const result = await searchArticles({
-            userId,
-            search: search ? String(search) : '',
-            categoryId: categoryId ?? '%',
-            feedId: feedId ?? '%',
-            status: 'unread',
-            minAdvertisementScore: toScoreThreshold(minAdvertisementScore),
-            minSentimentScore: toScoreThreshold(minSentimentScore),
-            minOverallQualityScore: toScoreThreshold(minOverallQualityScore),
-            minQualityScore: toScoreThreshold(minQualityScore),
-            sort: sort || 'desc',
-            tag,
-            viewMode,
-            grouping: normalizedGrouping,
-            publishedAfter,
-            publishedBefore,
-            persistSettings: false,
-            pagination: { pageSize: 100, cursor }
-          });
-          const itemIds = result.page.itemIds;
-          matchedCount += itemIds.length;
-          const pageUpdate = await markScopedArticlePageAsRead({
-            userId,
-            itemIds,
-            grouping: normalizedGrouping,
-            readAt
-          });
-          updatedCount += pageUpdate.updatedCount;
-          expandedEventCount += pageUpdate.expandedEventCount;
-          cursor = result.page.hasMore ? result.page.nextCursor : null;
-        } while (cursor);
-
-        return res.status(200).json({
-          message: matchedCount ? 'Articles marked as read' : 'No unread articles to mark as read',
-          updatedCount,
-          matchedCount,
-          expandedEventCount
-        });
-      } catch (error) {
-        if (!(error instanceof ArticleSearchCursorError) || error.code !== 'CURSOR_SORT_UNSUPPORTED') {
-          throw error;
+      selection = { type: 'articles', articleIds };
+    } else if (hasSnapshotArticleIds) {
+      // Publication bounds remain validated even when a supplied snapshot owns the scope.
+      parsePublicationBound(body.publishedAfter, 'publishedAfter');
+      parsePublicationBound(body.publishedBefore, 'publishedBefore');
+      selection = { type: 'snapshot', articleIds: snapshotArticleIds };
+    } else {
+      selection = {
+        type: 'matching',
+        allowCursor: body.scope === 'matching',
+        query: {
+          search: body.search,
+          categoryId: body.categoryId,
+          feedId: body.feedId,
+          minAdvertisementScore: body.minAdvertisementScore,
+          minSentimentScore: body.minSentimentScore,
+          minOverallQualityScore: body.minOverallQualityScore,
+          minQualityScore: body.minQualityScore,
+          sort: body.sort,
+          tag: body.tag,
+          viewMode: body.viewMode,
+          publishedAfter: parsePublicationBound(body.publishedAfter, 'publishedAfter'),
+          publishedBefore: parsePublicationBound(body.publishedBefore, 'publishedBefore')
         }
-      }
+      };
     }
 
-    let liveItemIds = [];
-    if (!hasSnapshotArticleIds) {
-      const result = await searchArticles({
-        userId,
-        search: search ? String(search) : '',
-        categoryId: categoryId ?? '%',
-        feedId: feedId ?? '%',
-        status: 'unread',
-        minAdvertisementScore: toScoreThreshold(minAdvertisementScore),
-        minSentimentScore: toScoreThreshold(minSentimentScore),
-        minOverallQualityScore: toScoreThreshold(minOverallQualityScore),
-        minQualityScore: toScoreThreshold(minQualityScore),
-        sort: sort || 'desc',
-        tag,
-        viewMode,
-        grouping: normalizedGrouping,
-        publishedAfter,
-        publishedBefore,
-        persistSettings: false
-      });
-      liveItemIds = result.itemIds || [];
-    }
-
-    // Treats a supplied list snapshot as the complete selection scope.
-    const itemIds = [
-      ...new Map(
-        (hasSnapshotArticleIds ? snapshotArticleIds : liveItemIds)
-          .map(id => [String(id), id])
-      ).values()
-    ];
-
-    if (itemIds.length === 0) {
-      return res.status(200).json({
-        message: 'No unread articles to mark as read',
-        updatedCount: 0,
-        matchedCount: 0,
-        expandedEventCount: 0
-      });
-    }
-
-    let eventIds = [];
-
-    if (normalizedGrouping === 'event') {
-      const selectedArticles = await Article.findAll({
-        where: {
-          id: { [Op.in]: itemIds },
-          userId,
-          ...canonicalArticleWhere()
-        },
-        attributes: ['id', 'eventId']
-      });
-
-      eventIds = [
-        ...new Set(
-          selectedArticles
-            .map(article => article.eventId)
-            .filter(eventId => eventId !== null && eventId !== undefined)
-        )
-      ];
-    }
-
-    const updateWhere = {
-      userId,
-      ...canonicalArticleWhere(),
-      status: 'unread',
-      ...(eventIds.length > 0
-        ? {
-            [Op.or]: [
-              { id: { [Op.in]: itemIds } },
-              { eventId: { [Op.in]: eventIds } }
-            ]
-          }
-        : {
-            id: { [Op.in]: itemIds }
-          })
-    };
-
-    const [updatedCount] = await retryDatabaseWrite(() => Article.update(
-      { status: 'read', readAt },
-      { where: updateWhere }
-    ));
-
+    const result = await markArticlesRead({ userId, selection, grouping: statusGrouping });
+    const hasMatches = selection.type === 'articles' ? result.articles.length > 0 : result.matchedCount > 0;
     return res.status(200).json({
-      message: 'Articles marked as read',
-      updatedCount,
-      matchedCount: itemIds.length,
-      expandedEventCount: eventIds.length
+      message: hasMatches ? 'Articles marked as read' : 'No unread articles to mark as read',
+      ...result
     });
   } catch (err) {
     if (err instanceof ArticleSearchCursorError) return res.status(err.status).json({ error: { code: err.code, message: err.message } });
