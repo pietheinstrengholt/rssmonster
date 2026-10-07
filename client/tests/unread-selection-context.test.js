@@ -104,6 +104,23 @@ afterEach(() => {
 });
 
 describe('UnreadSelectionContext', () => {
+  it('hides the date selector only in an empty Reader view', async () => {
+    const stores = createStore();
+    wrapper = mount(UnreadSelectionContext, {
+      props: { articleCount: 1, sourceCount: 1, readerMode: true },
+      global: { plugins: [stores.pinia] }
+    });
+    const dateSelector = () => wrapper.find('button[aria-label^="Article date range:"]');
+
+    expect(dateSelector().exists()).toBe(true);
+    await wrapper.setProps({ articleCount: 0, sourceCount: 0 });
+    expect(dateSelector().exists()).toBe(false);
+    await wrapper.setProps({ articleCount: 1, sourceCount: 1 });
+    expect(dateSelector().exists()).toBe(true);
+    await wrapper.setProps({ articleCount: 0, sourceCount: 0, readerMode: false });
+    expect(dateSelector().exists()).toBe(true);
+  });
+
   it('uses compact Reader banner wording while retaining the full wording in other modes', async () => {
     wrapper = mount(NewArticlesBanner, { props: { count: 2, readerMode: true } });
     expect(wrapper.text()).toContain('2 new');

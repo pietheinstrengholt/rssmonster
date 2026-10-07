@@ -6,7 +6,7 @@
           <BootstrapIcon v-if="headlineMode" icon="file-earmark-text" context="control" class="unread-selection-context__icon" aria-hidden="true" />
           <span><span class="unread-selection-context__meta-prefix">Based on </span><strong>{{ articleCount.toLocaleString() }}</strong> {{ articleCount === 1 ? 'article' : 'articles' }} from <strong>{{ sourceCount.toLocaleString() }}</strong> {{ sourceCount === 1 ? 'source' : 'sources' }}</span>
         </span>
-        <div v-if="selectionStore.currentSelection.status === 'unread'" class="unread-selection-context__date-group">
+        <div v-if="selectionStore.currentSelection.status === 'unread' && (!readerMode || articleCount > 0)" class="unread-selection-context__date-group">
           <span class="unread-selection-context__divider" aria-hidden="true"></span>
           <AppDropdown ref="dateDropdown" class="unread-selection-context__date-filter">
             <template #trigger="{ triggerProps }">
