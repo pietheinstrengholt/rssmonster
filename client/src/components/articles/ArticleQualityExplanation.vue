@@ -3,7 +3,7 @@
     root-class="article-quality-explanation"
     panel-class="quality-explanation-panel"
     list-class="quality-explanation-list"
-    :trigger-label="`Quality: ${overallScore}/100`"
+    :trigger-label="`Quality: ${overallScore}`"
     :trigger-class="['score', 'overall-score', scoreSeverityClass(overallScore)]"
     :aria-label="`Quality ${overallScore} out of 100. Show quality breakdown`"
     dialog-title="Overall quality"

@@ -559,7 +559,7 @@ describe('ArticleTagsScores', () => {
     await flushPromises();
 
     const trigger = wrapper.get('.overall-score');
-    expect(trigger.text()).toBe('Quality: 63/100');
+    expect(trigger.text()).toBe('Quality: 63');
     expect(trigger.element.tagName).toBe('BUTTON');
     expect(trigger.classes()).toContain('score-medium');
     expect(trigger.attributes()).toMatchObject({
@@ -608,7 +608,7 @@ describe('ArticleTagsScores', () => {
     });
     await flushPromises();
 
-    expect(wrapper.get('.overall-score').text()).toBe('Quality: 73/100');
+    expect(wrapper.get('.overall-score').text()).toBe('Quality: 73');
     expect(wrapper.get('.overall-score').classes()).toContain('score-medium');
   });
 
@@ -656,7 +656,7 @@ describe('ArticleTagsScores', () => {
     await flushPromises();
 
     expect(wrapper.find('.analysis-state').exists()).toBe(false);
-    expect(wrapper.get('.overall-score').text()).toBe('Quality: 78/100');
+    expect(wrapper.get('.overall-score').text()).toBe('Quality: 78');
   });
 
   it('preserves skipped-feed score presentation', async () => {
@@ -669,7 +669,7 @@ describe('ArticleTagsScores', () => {
     });
     await flushPromises();
 
-    expect(wrapper.get('.overall-score').text()).toBe('Quality: 63/100');
+    expect(wrapper.get('.overall-score').text()).toBe('Quality: 63');
     expect(wrapper.find('.analysis-state').exists()).toBe(false);
   });
 
