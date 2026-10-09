@@ -345,6 +345,7 @@ export const getSettings = async (req, res, _next) => {
       sidebarSettings: await loadSidebarSettings(userId),
       openArticleLinksInNewTab,
       markAsReadOnScroll,
+      ...(process.env.RSSMONSTER_MODE === 'desktop' ? { DesktopEnabled: true } : {}),
       AIEnabled: aiEnabled,
       AssistantEnabled: isAssistantEnabled(await getInferenceEnvironment()) && available.assistant
     });

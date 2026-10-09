@@ -266,3 +266,12 @@ preparation progress, and Clear offline data uses the shared destructive confirm
 dialog to remove the current account's profile and article records. Storage estimates
 and Wi-Fi detection are omitted in Phase 1. The page describes downloaded read/saved
 state and clearly excludes offline mutations, search, live rankings and external media.
+
+### Desktop background refresh
+
+Electron installations offer Background refresh in Automation for the local
+administrator. The profile-wide settings use authenticated Desktop REST routes and
+are persisted outside article preferences. The section follows existing panel,
+form, and capability-gating conventions. The compact activity component polls the
+Desktop activity endpoint; it does not schedule feed fetching. Self-hosted settings
+navigation and reading surfaces do not mount it. See [Desktop](../../../../desktop/README.md#background-refresh-and-desktop-settings).

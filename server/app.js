@@ -160,6 +160,10 @@ app.use("/api/sidebar", sidebarRoutes);
 app.use("/api/greader", greaderRoutes);
 app.use("/rss", rssRoutes);
 
+// Only the Desktop host supplies this router; self-hosted installations keep their routes.
+let desktopRouter;
+app.use('/api/desktop', (req, res, next) => desktopRouter ? desktopRouter(req, res, next) : next());
+
 // Expected inference-disable failures are capability responses, not server errors.
 app.use(handleInferenceDisabledError);
 
@@ -172,8 +176,10 @@ app.use(errorController.get404);
 export const startServer = async ({
   port = process.env.PORT || 3000,
   host,
-  staticDirectory
+  staticDirectory,
+  desktopRoutes
 } = {}) => {
+  desktopRouter = desktopRoutes;
   // DB
   await sequelize.authenticate();
   await getAuthConfiguration();

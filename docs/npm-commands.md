@@ -61,7 +61,7 @@ not launch Electron. Use the Desktop commands below for the local SQLite app.
 ## Desktop Commands
 
 Run these commands from `desktop`, or use `npm run <command> --prefix desktop`
-from the repository root. Desktop manages its own local inference and AI worker;
+from the repository root. Desktop manages its own crawler, local inference, and AI worker;
 do not start the root development stack for a normal Desktop session.
 
 | Command | Arguments | What it does and when to use it |
@@ -75,6 +75,7 @@ do not start the root development stack for a normal Desktop session.
 | `npm run desktop:build:mac` | Optional architecture | Builds macOS artifacts. |
 | `npm run desktop:build:win` | Optional architecture | Builds both the NSIS installer and separate Windows portable executable. |
 | `npm run desktop:build:linux` | Optional architecture | Builds Linux AppImage and Debian artifacts. |
+| `npm run test:tray` | None | Runs a native Electron tray/window, Desktop settings, and crawler lifecycle smoke test with disposable SQLite storage; requires a desktop session and a built frontend. |
 | `npm run test:electron` | None | Runs the graphical Electron smoke test with disposable storage and local models. |
 | `npm run test:packaged` | Optional executable path; `--portable` for the actual Windows portable launcher | Verifies a shipped executable, API, models, persistence, and shutdown. Portable verification also moves the folder and checks that no AppData profile is created. |
 

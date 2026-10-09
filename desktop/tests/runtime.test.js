@@ -30,3 +30,12 @@ test('managed inference enables AI only after readiness, then drains both servic
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('background worker imports without a window, respects feed eligibility and settings, then exits cleanly', { timeout: 60_000 }, async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'rssmonster-background-runtime-'));
+  try {
+    await execute(process.execPath, [fileURLToPath(new URL('./helpers/background-runtime-check.js', import.meta.url)), directory], { timeout: 55_000 });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

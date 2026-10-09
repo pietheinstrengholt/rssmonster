@@ -41,13 +41,34 @@ subscriptions and article retention.
 - Desktop now manages a bundled local inference service and AI worker for
   ModernBERT classification, Qwen3 embeddings, and Qwen3.5 generation. Models
   download on first launch and are reused on later starts.
-- The reader opens while models initialize. Desktop feed refresh remains manual,
-  and the Assistant remains disabled by default.
+- The reader opens while models initialize. Background refresh starts when local
+  services are ready; manual refresh remains available and the Assistant stays disabled by default.
 - Added a portable Windows executable alongside the existing installer. It needs
   no installation and stores SQLite, secrets, models, and application state in a
   `data/` directory beside the executable.
 - The portable folder can be moved or backed up as a complete unit. Upgrades
   replace the executable while preserving `data/`.
+
+### Desktop background refresh and system tray
+
+- Desktop now runs the existing crawl worker against its local SQLite database,
+  refreshing eligible feeds while the reader window is hidden. Existing feed
+  intervals, caching, retries, leases, and sequential SQLite limits remain intact.
+- Added profile-wide Background refresh settings: automatic checks and tray
+  continuation default on, checks default to 15 minutes (5/15/30/60 options),
+  and sign-in startup and start-minimized default off. Preferences persist beside
+  the database and apply at runtime where supported.
+- Closing the window hides it when the tray is enabled; tray Open restores the
+  same window, Refresh uses the existing worker, and Quit drains managed services.
+  Missing tray support preserves an accessible window and close-to-exit behavior.
+- Added real background activity, last-run counts, and next-check timestamps in
+  the tray and reader. Refresh history and AI Processing distinguish feed results
+  from enrichment. Crawl-process failures clear the schedule and support explicit retry.
+- Sign-in startup uses Electron's native APIs for packaged Windows installations.
+  Portable, development, Linux, and current unsigned macOS builds explain why the
+  control is unavailable. No portable registry/shortcut workaround is installed.
+- Desktop settings require a local administrator; in-app results remain user
+  scoped. Self-hosted deployment scheduling and semantic behavior are unchanged.
 
 ### Behavior-driven personalization
 

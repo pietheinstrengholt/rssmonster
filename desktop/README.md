@@ -1,9 +1,9 @@
 # RSSMonster Desktop
 
 Electron runs the existing Express backend and Vue frontend over loopback HTTP.
-Desktop uses SQLite and manual feed refresh. It starts the existing local inference
-service and AI worker as Electron utility processes; no crawl worker or scheduled
-feed refresh runs. The renderer continues using REST, with no Node APIs exposed.
+Desktop uses SQLite and runs the existing crawler, local inference service, and
+AI worker as Electron utility processes. Eligible feeds refresh automatically,
+including while the window is hidden in the system tray. The renderer continues using REST, with no Node APIs exposed.
 
 Local defaults are ModernBERT (`onnx-community/ModernBERT-base-nli-ONNX`, q8)
 classification, `onnx-community/Qwen3-Embedding-0.6B-ONNX` embeddings (1024 dimensions),
@@ -109,8 +109,8 @@ feed-trust script's CLI guard also tolerates packaged launches without `argv[1]`
 
 The package excludes `.env`, local databases/logs, repository metadata, tests,
 fixtures, documentation, development dependencies, models/caches, unrelated scripts
-and the crawl worker entry point. It includes the shared inference source and AI
-worker, with their production dependencies. ONNX Runtime and Sharp use their
+and the crawl worker entry point. It includes the shared inference source, AI worker, and crawl worker/pipeline
+modules used by the Desktop-managed entry point, with their production dependencies. ONNX Runtime and Sharp use their
 published Node-API binaries; build on the target OS for release verification.
 
 ## Data and lifecycle
@@ -120,7 +120,8 @@ Installed application data remains under Electron's `app.getPath('userData')`
 
 - SQLite: `rssmonster.sqlite` and its SQLite sidecars.
 - Authentication: persistent `secrets.json` (keep with database backups).
-- AI worker status: `ai-worker-health.json`.
+- Worker status: `ai-worker-health.json` and `crawl-worker-health.json`.
+- Desktop preferences: `desktop-settings.json`.
 - Models: `models/` (downloaded weights; reusable across restarts).
 - Chromium profile/cache: Electron's user profile, outside the installed application.
 
@@ -128,19 +129,79 @@ Logs go to stdout/stderr; no application log files are written into the bundle.
 Versioned artifacts do not change the profile name or database path. Pending existing
 migrations run before the HTTP listener starts, without model sync or a seed command.
 Desktop configures immediate SQLite write transactions in both the HTTP process
-and AI worker to avoid deferred read-to-write lock conflicts. First-time users
+and managed AI/crawl workers to avoid deferred read-to-write lock conflicts. First-time users
 register through the existing UI. Existing feed-level AI switches
 and saved processing preferences are preserved; enable AI on existing feeds if
 they were created with analysis or embeddings disabled.
 
-Closing the final window exits on all platforms. Chromium connections close, the
-listener stops, accepted
-requests/manual crawls drain, the AI worker stops, inference exits, and Sequelize
-closes before Electron exits. A stuck service is terminated after its drain deadline. Active
-crawls may delay quitting until their existing deadlines settle. Existing short-lived
-parser worker **threads** remain for timeout/memory isolation; desktop worker
-**processes** do not schedule feeds; only the AI worker is started. Frontend database polling and its PWA service worker do
-not schedule feed crawling.
+Closing the window hides it by default when the native tray is available. Use
+**Quit RSSMonster** in the tray to stop the application. Disabling tray continuation
+restores close-to-exit. If tray creation fails, the window stays accessible and
+closing it exits. Second-instance launches and tray Open restore the same window.
+
+On quit, scheduled work stops first, the crawl child drains its current iteration,
+accepted HTTP requests/manual crawls drain, then the AI worker and inference stop
+and Sequelize closes. A managed child exceeding the existing 40-second drain
+limit is terminated. Feed leases and crawl-run heartbeat recovery remain in effect.
+No polling loop continues after shutdown. Parser worker threads remain unchanged.
+
+## Background refresh and Desktop settings
+
+**Settings → Background refresh** is available to the local administrator. Settings
+live in `userData/desktop-settings.json` (portable: `data/desktop-settings.json`),
+written atomically and retained across upgrades. They describe this Desktop profile,
+not an individual user's article preferences. Other users can view their own
+refresh results and AI activity, but cannot modify application lifecycle settings.
+
+| Setting | Default | Behavior |
+| --- | --- | --- |
+| Automatically refresh feeds | On | Run the existing crawl worker after local AI services are ready. Manual refresh remains available when disabled. |
+| Refresh interval | 15 minutes | Choose 5, 15, 30, or 60 minutes between completed cycles. Due-feed rules, `nextFetchAt`, leases, retries, and HTTP cache policy remain authoritative. |
+| Continue running in system tray | On | Hide the window on close and keep all services running. |
+| Launch RSSMonster when signing in | Off | Native Electron login item, supported for packaged Windows installations. |
+| Start minimized to tray | Off | Hide the window on the next launch; requires tray continuation and an available tray. |
+
+Desktop supplies its interval to `createCrawlWorker`, using its existing interruptible
+sleep and `runSemanticPipeline`. It does not change `CRAWL_WORKER_INTERVAL_MS` or
+Server settings for self-hosted workers. SQLite still forces sequential user/feed
+processing and immediate write transactions. Manual REST refreshes and scheduled
+cycles coordinate through the existing active-user crawl constraint and feed leases;
+tray Refresh wakes the same child, or starts one bounded cycle when disabled.
+Changing the interval wakes that loop; changing unrelated tray preferences does not.
+Disabling automation drains the crawl child before acknowledging the change.
+No independent timer fetches feeds, and no additional nightly archiving job is added.
+
+The native tray and compact in-app indicator read real crawl runs, active processing
+jobs, the critical-pipeline lease, and worker lifecycle messages. Feed crawling and
+post-crawl/AI processing are distinct states. Last-refresh counts belong to the latest
+recorded feed run, including cycles importing zero articles. Next refresh means the
+next eligibility check, not a promise that each feed will fetch. There is no next
+schedule while disabled, starting, running, or after a worker exit. Failed cycles
+retain the existing retry interval when the worker remains alive. Hover for timestamps; use
+Refresh history and AI Processing for details. Worker health files stay under userData.
+A crawl-process exit shows an error and clears the schedule; explicit tray Refresh
+retries it without an automatic restart storm. Inference/AI startup failures retain
+the existing application shutdown behavior.
+
+The renderer remains sandboxed and uses authenticated `/api/desktop/settings` and
+`/api/desktop/activity` REST endpoints. Settings writes require the existing
+administrator middleware. Activity counts/results are scoped to the logged-in user;
+the native tray shows profile-wide activity. No renderer Node or preload API is added.
+
+### Platform limitations
+
+- Windows installers use Electron's native login-item APIs with one `RSSMonster`
+  entry and reflect OS changes to its enabled state. This requires no administrator
+  privileges. Start-minimized is read from the profile on each launch.
+- Windows portable sign-in startup is disabled: launchers extract Electron to a
+  temporary location and their original executable can move. No custom registry or
+  shortcut workaround is installed. Portable storage and tray refresh remain supported.
+- The current unsigned macOS builds do not offer sign-in startup; Electron requires
+  signed/notarized builds for reliable registration. The menu-bar icon uses template
+  rendering. Dock activation restores the window.
+- Linux sign-in startup is left to the desktop environment. Tray availability and
+  click behavior depend on its StatusNotifier/AppIndicator support. If native tray
+  initialization fails, hide-on-close and start-minimized are unavailable.
 
 ### Windows portable
 
@@ -173,7 +234,7 @@ The runtime receives the same data root through its existing interface.
 
 Close RSSMonster fully before copying or moving its complete folder, including
 `data/`. Keep database and secrets together to preserve accounts/authentication.
-To upgrade, close the app and replace only `RSSMonster.exe`; preserve `data/`.
+To upgrade, quit the app fully and replace only `RSSMonster.exe`; preserve `data/`.
 Migrations run normally on the next launch. The launcher temporarily extracts
 application binaries to Windows' temp directory and removes them on normal exit;
 persistent RSSMonster state stays beside the launcher.
@@ -226,3 +287,14 @@ media remain ordinary RSS reader content.
 Deferred: automatic release publication, auto-update/update servers, Apple
 signing/notarization, Windows signing, crash reporting, telemetry, tray mode,
 notifications, OS/protocol integrations and background crawling.
+
+### Background refresh validation
+
+`npm test --prefix desktop` covers settings persistence, manager/tray behavior,
+packaging completeness, and a real multi-process SQLite crawl fixture without a
+window. `npm run test:tray --prefix desktop` additionally uses native Electron,
+the rendered Settings navigation, and a managed utility crawler with disposable
+storage. It needs a built frontend and a GUI/tray session but no model download.
+The existing `test:electron` and `test:packaged` checks still cover local AI readiness,
+enrichment, manual refresh, persistence, and shutdown. Packaged persistence checks
+explicitly choose close-to-exit mode; ordinary users retain the tray default.

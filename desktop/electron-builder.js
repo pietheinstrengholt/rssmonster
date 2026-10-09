@@ -14,10 +14,11 @@ export default {
   npmRebuild: true,
   afterPack: context => verifyPackagedRuntime(context.packager.getResourcesDir(context.appOutDir)),
   files: [
-    'desktop/{main,runtime,database,services,service-process,inference-config,storage}.js',
+    'desktop/{main,runtime,database,services,service-process,inference-config,storage,settings,background,api,tray,crawl-process}.js',
     'inference/src/**/*',
     'inference/package.json',
     'desktop/dist/**/*',
+    'desktop/resources/**/*',
     'server/**/*',
     'LICENSE.md',
     '!**/{.git,.github,tests,test,__tests__,coverage,logs}/**/*',

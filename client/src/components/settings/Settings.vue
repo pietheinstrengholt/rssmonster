@@ -129,6 +129,7 @@ const createAsyncSettingsSection = loader => defineAsyncComponent({
 });
 
 // This component lazily loads device-specific offline reading settings.
+const SettingsDesktopBackground = createAsyncSettingsSection(() => import('./SettingsDesktopBackground.vue'));
 const SettingsOfflineReading = createAsyncSettingsSection(() => import('./SettingsOfflineReading.vue'));
 // This component lazily loads Smart Folder settings.
 const SettingsSmartFolders = createAsyncSettingsSection(() => import('./SettingsSmartFolders.vue'));
@@ -173,6 +174,7 @@ export default {
   },
   components: {
     SettingsWelcome,
+    SettingsDesktopBackground,
     SettingsSmartFolders,
     SettingsOfflineReading,
     SettingsGeneratedFeeds,
@@ -235,6 +237,7 @@ export default {
         { key: 'account', group: '', label: 'Account', icon: 'person-circle', visible: true },
         { key: 'smartfolders', group: 'Reading', label: 'Smart Folders', icon: 'folder-fill', visible: true },
         { key: 'offlineReading', group: 'Reading', label: 'Offline reading', icon: 'download', visible: true },
+        { key: 'desktopBackground', group: 'Automation', label: 'Background refresh', icon: 'arrow-repeat', visible: Boolean(this.selectionStore.currentSelection.DesktopEnabled) && this.authStore.role === 'admin' },
         { key: 'generatedFeeds', group: 'Automation', label: 'Generated Feeds', icon: 'rss-fill', visible: true },
         { key: 'actions', group: 'Automation', label: 'Actions', icon: 'lightning-charge-fill', visible: true },
         { key: 'webhooks', group: 'Automation', label: 'Webhooks', icon: 'diagram-3', visible: true },
@@ -264,6 +267,7 @@ export default {
     activeComponent() {
       return {
         welcome: 'SettingsWelcome',
+        desktopBackground: 'SettingsDesktopBackground',
         account: 'SettingsAccount',
         inference: 'SettingsInference',
         server: 'SettingsServer',

@@ -23,6 +23,11 @@ describe('Express smoke test', () => {
     await sequelize.authenticate();
   }, 50_000);
 
+  it('does not expose Desktop lifecycle routes in self-hosted mode', async () => {
+    const res = await request(app).get('/api/desktop/settings');
+    expect(res.status).toBe(404);
+  });
+
   it('responds to health check', async () => {
     const res = await request(app).get('/api/health');
 

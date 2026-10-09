@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { localInferenceEnvironment } from './inference-config.js';
 
-export const startServiceProcess = (utilityProcess, role, userData, environment, onFailure) => {
+export const startServiceProcess = (utilityProcess, role, userData, environment, onFailure, onMessage = () => {}) => {
   const child = utilityProcess.fork(fileURLToPath(new URL('./service-process.js', import.meta.url)), [role], {
     cwd: userData, env: environment, stdio: 'pipe', serviceName: `RSSMonster ${role}`
   });
@@ -25,9 +25,11 @@ export const startServiceProcess = (utilityProcess, role, userData, environment,
   return new Promise((resolve, reject) => {
     child.once('exit', code => reject(new Error(`Desktop ${role} failed to start (${code})`)));
     child.on('message', message => {
+      onMessage(message);
+      if (message.type === 'finished') stopping = true;
       if (message.type === 'ready') resolveReady();
       if (message.type !== 'listening') return;
-      resolve({ url: message.url, ready, stop: () => {
+      resolve({ url: message.url, ready, send: message => { if (!exited && !stopping) child.postMessage(message); }, stop: () => {
         stoppingPromise ??= (async () => {
           stopping = true;
           if (exited) return;
@@ -46,5 +48,7 @@ export const createDesktopServices = (utilityProcess, onFailure) => ({
   startInference: userData => startServiceProcess(utilityProcess, 'inference', userData,
     localInferenceEnvironment(userData), onFailure),
   startAiWorker: userData => startServiceProcess(utilityProcess, 'ai-worker', userData,
-    { ...process.env, PROCESSING_JOB_CONCURRENCY: '1' }, onFailure)
+    { ...process.env, PROCESSING_JOB_CONCURRENCY: '1' }, onFailure),
+  startCrawlWorker: (userData, settings, onMessage, onFailure) => startServiceProcess(utilityProcess, 'crawl-worker', userData,
+    { ...process.env, RSSMONSTER_DESKTOP_CRAWL_SETTINGS: JSON.stringify(settings) }, onFailure, onMessage)
 });

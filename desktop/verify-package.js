@@ -12,6 +12,15 @@ export const verifyPackagedRuntime = async (
   const entries = new Set(listPackage(path.join(resourcesDirectory, 'app.asar')).map(name => name.replaceAll('\\', '/')));
   const required = [
     '/desktop/storage.js',
+    '/desktop/settings.js',
+    '/desktop/background.js',
+    '/desktop/api.js',
+    '/desktop/tray.js',
+    '/desktop/crawl-process.js',
+    '/desktop/resources/tray.png',
+    '/server/src/workers/crawlWorker.js',
+    '/server/src/workers/nightlyArchiving.js',
+    '/server/scripts/runSemanticPipeline.js',
     '/desktop/service-process.js',
     '/inference/src/index.js',
     '/server/src/workers/aiWorker.js',

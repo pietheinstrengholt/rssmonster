@@ -222,6 +222,50 @@ describe('crawl worker', () => {
     await workerPromise;
   });
 
+  it('manual wake interrupts a scheduled delay without overlapping an active cycle', async () => {
+    vi.useFakeTimers();
+    let runs = 0;
+    let release;
+    let active = 0;
+    let maximumActive = 0;
+    const worker = createCrawlWorker({
+      intervalMs: 300000,
+      registerProcessHandlers: false,
+      logger: { log: vi.fn(), error: vi.fn() },
+      loadDependencies: async () => ({
+        closeDatabase: async () => {},
+        runCrawl: async () => {
+          runs++; active++;
+          maximumActive = Math.max(maximumActive, active);
+          if (runs === 2) await new Promise(resolve => { release = resolve; });
+          active--;
+        }
+      })
+    });
+    try {
+      const running = worker.start();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(runs).toBe(1);
+      await vi.advanceTimersByTimeAsync(299999);
+      expect(runs).toBe(1);
+      worker.wake();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(runs).toBe(2);
+      worker.wake(); worker.wake();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(runs).toBe(2);
+      release();
+      await vi.advanceTimersByTimeAsync(0);
+      await vi.advanceTimersByTimeAsync(300000);
+      expect(runs).toBe(3);
+      expect(maximumActive).toBe(1);
+      await worker.shutdown();
+      await running;
+      await vi.advanceTimersByTimeAsync(600000);
+      expect(runs).toBe(3);
+    } finally { vi.useRealTimers(); }
+  });
+
   // This test verifies installed process handlers request shutdown and are removed afterward.
   it('handles process signals and fatal process errors', async () => {
     const logger = { error: vi.fn(), log: vi.fn() };

@@ -24,6 +24,7 @@ const DEFAULT_ARTICLE_FILTERS = Object.freeze({
 });
 const SUPPORTED_SELECTION_FIELDS = [
   'AIEnabled',
+  'DesktopEnabled',
   'AssistantEnabled',
   'status',
   'categoryId',
@@ -62,6 +63,7 @@ const briefingSearchQuery = ({
 // This function creates the default article selection contract.
 const defaultSelection = () => ({
   AIEnabled: false,
+  DesktopEnabled: false,
   AssistantEnabled: false,
   ...DEFAULT_ARTICLE_FILTERS,
   sort: 'desc',
@@ -234,6 +236,7 @@ export const useSelectionStore = defineStore('selection', {
         uiStore.setOpenArticleLinksInNewTab(data.openArticleLinksInNewTab);
         this.setCurrentSelection(this.currentSelection.smartFolderId !== null ? {
           AIEnabled: data.AIEnabled,
+          DesktopEnabled: Boolean(data.DesktopEnabled),
           AssistantEnabled: data.AssistantEnabled,
           markAsReadOnScroll: data.markAsReadOnScroll
         } : data);

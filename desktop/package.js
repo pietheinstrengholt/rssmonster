@@ -68,9 +68,10 @@ export const prepareApplication = async ({ platform = process.platform, arch = p
     }
   }
 
-  for (const file of ['main.js', 'runtime.js', 'database.js', 'services.js', 'service-process.js', 'inference-config.js', 'storage.js']) {
+  for (const file of ['main.js', 'runtime.js', 'database.js', 'services.js', 'service-process.js', 'inference-config.js', 'storage.js', 'settings.js', 'background.js', 'api.js', 'tray.js', 'crawl-process.js']) {
     await cp(path.join(desktopDirectory, file), path.join(stageDirectory, 'desktop', file));
   }
+  await cp(path.join(desktopDirectory, 'resources'), path.join(stageDirectory, 'desktop/resources'), { recursive: true });
   await cp(path.join(desktopDirectory, 'dist'), path.join(stageDirectory, 'desktop/dist'), { recursive: true });
   await cp(path.resolve(desktopDirectory, '../LICENSE.md'), path.join(stageDirectory, 'LICENSE.md'));
   await cp(path.join(serverDirectory, 'app.js'), path.join(stageDirectory, 'server/app.js'));
@@ -90,6 +91,7 @@ export const prepareApplication = async ({ platform = process.platform, arch = p
   await writeJson(path.join(stageDirectory, 'inference/package.json'), { type: 'module', version: inference.version });
   // HTTP controllers, status services and a migration import these shared modules.
   for (const file of [
+    'scripts/runSemanticPipeline.js', 'src/workers/crawlWorker.js', 'src/workers/nightlyArchiving.js',
     'scripts/calculateFeedTrust.js', 'scripts/runIslandsCommand.js',
     'seeders/20260520104500-island-taxonomy.js', 'seeders/package.json',
     'src/workers/aiWorker.js', 'src/workers/crawlWorkerHealth.js', 'src/workers/aiWorkerHealth.js', 'src/workers/workerHealth.js'

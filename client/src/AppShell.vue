@@ -6,7 +6,7 @@
         class="app-shell__sidebar"
       >
         <!-- Sidebar events -->
-        <app-sidebar :mark-visible-articles-read="markVisibleArticlesRead" @forceReload="forceReload" @logout="$emit('logout')"></app-sidebar>
+        <app-sidebar :mark-visible-articles-read="markVisibleArticlesRead" @forceReload="forceReload" @logout="$emit('logout')" @open-settings="openBackgroundSettings"></app-sidebar>
       </div>
       <div class="app-shell__main-frame">
         <div
@@ -24,6 +24,8 @@
         ></app-mobile-toolbar>
         <!-- Toolbar events -->
         <app-desktop-toolbar v-if="isDesktopShell === true" id="desktop-toolbar" :settings-open="showSettingsModal" @forceReload="forceReload" @open-settings="openSettings"></app-desktop-toolbar>
+
+        <DesktopActivity v-if="selectionStore.currentSelection.DesktopEnabled && !showPersistentSidebar" @details="openBackgroundSettings" />
 
         <!-- Error handling -->
         <app-error v-if="uiStore.fatalError" :type="uiStore.fatalError.type" @retry="forceReload"/>
@@ -355,6 +357,7 @@ import { SHELL_MODE } from './config/responsiveLayout.js';
 
 import ArticleFeed from "./components/articles/ArticleFeed.vue";
 import ActionErrorNotice from './components/shared/ActionErrorNotice.vue';
+import DesktopActivity from './components/shared/DesktopActivity.vue';
 import ConnectivityStatus from './components/shared/ConnectivityStatus.vue';
 
 // This function identifies request timeouts that should preserve the current online state.
@@ -398,6 +401,7 @@ const Error = defineAsyncComponent(() =>  import("./components/shared/AppError.v
 export default {
   emits: ['logout'],
   components: {
+    DesktopActivity,
     ActionErrorNotice,
     ConnectivityStatus,
     appSidebar: Sidebar,
@@ -502,6 +506,10 @@ export default {
     openInterestArticle(articleId) {
       this.closeSettings();
       void this.$nextTick(() => this.$refs.articleFeed?.openExampleArticle(articleId));
+    },
+    openBackgroundSettings() {
+      this.openSettings();
+      this.settingsSection = this.authStore.role === 'admin' ? 'desktopBackground' : 'crawlStatistics';
     },
     openSettings() {
       this.settingsSection = 'welcome';

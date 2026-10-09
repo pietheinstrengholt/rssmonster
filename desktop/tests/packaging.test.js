@@ -19,7 +19,7 @@ test('Windows produces separate installer and portable artifacts', () => {
   assert.equal(configuration.portable.artifactName, '${productName}-Portable-${version}-${arch}.${ext}');
 });
 
-for (const omitted of [null, 'parser', 'migration', 'inference', 'storage']) {
+for (const omitted of [null, 'parser', 'migration', 'inference', 'storage', 'crawler', 'tray']) {
   test(`packaged runtime ${omitted ? `rejects missing ${omitted}` : 'contains parser and ESM migrations'}`, async () => {
     const directory = await mkdtemp(path.join(tmpdir(), 'rssmonster-package-regression-'));
     try {
@@ -28,7 +28,11 @@ for (const omitted of [null, 'parser', 'migration', 'inference', 'storage']) {
       const resources = path.join(directory, 'resources');
       await Promise.all([source, migrations, resources].map(dir => mkdir(dir)));
       await writeFile(path.join(migrations, '20260911000000-settings.mjs'), 'export const up = () => {};');
-      const files = ['desktop/service-process.js', 'server/src/workers/aiWorker.js'];
+      const files = ['desktop/service-process.js', 'server/src/workers/aiWorker.js',
+        'desktop/settings.js', 'desktop/background.js', 'desktop/api.js', 'desktop/tray.js', 'desktop/crawl-process.js',
+        'server/src/workers/nightlyArchiving.js', 'server/scripts/runSemanticPipeline.js'];
+      if (omitted !== 'crawler') files.push('server/src/workers/crawlWorker.js');
+      if (omitted !== 'tray') files.push('desktop/resources/tray.png');
       if (omitted !== 'storage') files.push('desktop/storage.js');
       if (omitted !== 'inference') files.push('inference/src/index.js');
       if (omitted !== 'parser') files.push('node_modules/feedsmith/dist/node_modules/trousse/dist/is.mjs');

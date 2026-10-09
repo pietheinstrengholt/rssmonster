@@ -34,6 +34,14 @@ try {
     process.parentPort.postMessage({ type: 'listening' });
     await running;
     process.exit(process.exitCode || 0);
+  } else if (process.argv[2] === 'crawl-worker') {
+    const { startDesktopCrawlWorker } = await import('./crawl-process.js');
+    worker = await startDesktopCrawlWorker(process.parentPort, JSON.parse(process.env.RSSMONSTER_DESKTOP_CRAWL_SETTINGS));
+    const running = worker.start();
+    process.parentPort.postMessage({ type: 'listening' });
+    await running;
+    if (!stopping && !process.exitCode) process.parentPort.postMessage({ type: 'finished' });
+    process.exit(process.exitCode || 0);
   } else throw new Error('Unknown desktop service');
 } catch (error) {
   console.error('Desktop service failed:', error);

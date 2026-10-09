@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { copyFile, mkdtemp, readFile, rename, rm, stat, mkdir, symlink } from 'node:fs/promises';
+import { copyFile, mkdtemp, readFile, rename, rm, stat, mkdir, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { once } from 'node:events';
@@ -41,6 +41,11 @@ const fixture = createServer((_req, res) => {
     </item></channel></rss>`);
 });
 await new Promise(resolve => fixture.listen(0, '127.0.0.1', resolve));
+// This persistence verifier exercises close-to-exit; tray lifecycle has a separate native smoke test.
+await mkdir(profile, { recursive: true });
+await writeFile(path.join(profile, 'desktop-settings.json'), JSON.stringify({
+  automaticRefresh: true, refreshIntervalMinutes: 15, continueInTray: false, launchAtLogin: false, startMinimized: false
+}));
 const credentials = { username: 'package-test', password: 'package-test-password' };
 let previousSecrets;
 let previousToken;

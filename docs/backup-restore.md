@@ -66,7 +66,7 @@ long-lived plaintext copy. Never include this file in an image or repository.
 
 ## Desktop backups
 
-Close RSSMonster fully before copying its data so SQLite and any WAL/SHM sidecars
+Choose **Quit RSSMonster** in the tray before copying Desktop data so SQLite and any WAL/SHM sidecars
 remain consistent. Keep `rssmonster.sqlite` and `secrets.json` together; the latter
 contains persistent authentication secrets. A database-only copy does not preserve
 those secrets.
@@ -75,7 +75,7 @@ Installed Desktop stores data in Electron's application-data directory, normally
 `%APPDATA%\RSSMonster` on Windows. Back up that complete directory. Windows
 portable Desktop stores everything under `data/` beside the portable executable;
 back up or move the complete RSSMonster folder, including the executable and `data/`.
-Downloaded models and Chromium state are included in that folder.
+Downloaded models, `desktop-settings.json`, and Chromium state are included in that folder.
 
 To restore a portable backup, close the app, preserve a separate copy of the current
 folder, and restore the complete backup into a writable location. Launch the backed-up

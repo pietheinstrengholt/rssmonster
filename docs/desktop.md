@@ -54,10 +54,49 @@ notarization are planned separately.
 4. Read articles, organize subscriptions, and save
    [bookmarks]({% link bookmarks.md %}).
 
-**Desktop refresh is manual.** Feeds are fetched through actions in the app;
-there is no scheduled crawler or crawl worker checking for updates. Closing
-the last window exits RSSMonster and stops its local server. An active refresh
-may need time to finish before shutdown completes.
+Desktop checks eligible feeds automatically while it is running. By default,
+closing the window hides it in the system tray; background refresh and AI processing
+continue. Click the tray icon or choose **Open RSSMonster** to return to the reader.
+Use **Quit RSSMonster** in the tray to stop the app and its services. If the tray is
+unavailable or continuation is disabled, closing the window exits.
+
+## Background refresh settings
+
+The local administrator can open **Settings → Background refresh**:
+
+| Setting | Default | Options |
+| --- | --- | --- |
+| Automatically refresh feeds | On | On / Off |
+| Refresh interval | 15 minutes | 5, 15, 30, or 60 minutes |
+| Continue running in system tray | On | On / Off |
+| Launch RSSMonster when signing in | Off | On / Off where supported |
+| Start minimized to tray | Off | On / Off; requires tray continuation |
+
+The interval is the delay between completed eligibility checks. It does not force
+all feeds to refresh: feed-specific intervals, publisher caching, and retry deadlines
+still apply. Changing it wakes the existing worker. Turning automatic refresh off
+lets current work finish and stops future scheduled cycles; manual **Refresh feeds**
+and tray **Refresh feeds now** remain available. Checks start after local AI services
+are ready and continue while the window is hidden.
+
+The tray shows current activity, last refresh, next eligibility check, and the new
+article count from the latest recorded feed run. The compact reader indicator shows
+refreshing, processing, disabled, or error states. Hover for timestamps and open
+**Refresh history** or **AI Processing** for details. Feed completion does not mean
+AI enrichment has finished. A worker failure clears the next check; tray Refresh
+can retry it without restarting the app.
+
+Sign-in startup uses the native operating-system API for installed Windows builds.
+It is unavailable in development, Windows portable builds, Linux, and the current
+unsigned macOS releases; Settings explains the limitation. Portable executables
+can move and extract into temporary locations, so RSSMonster registers no startup
+entry for them. On Linux, configure startup through your desktop environment.
+Tray behavior depends on the desktop environment. If a tray cannot be initialized,
+RSSMonster opens its window and keeps close-to-exit available.
+
+These preferences are stored in `desktop-settings.json` alongside the database,
+including under portable `data/`. They apply to the Desktop profile and are kept
+across restarts and upgrades. Start-minimized applies on the next launch.
 
 ## What runs on your computer
 
@@ -76,7 +115,8 @@ of disk space. The reader opens while models initialize; AI becomes available on
 all models are ready and the window reloads. Subsequent launches reuse cached models.
 The local inference endpoint is configured automatically and protected with a
 per-launch API key. The AI worker processes enrichment jobs, not scheduled feed
-refreshes. Both services stop when you close the app.
+refreshes. The existing crawl worker handles scheduled feed checks. All managed
+services stop when you quit the app fully.
 
 ## Storage, backups, and updates
 
@@ -87,6 +127,7 @@ name **RSSMonster**. The important files are:
 - `rssmonster.sqlite`: subscriptions, articles, accounts, and reading state.
 - `models/`: downloaded local models, reusable across restarts and upgrades.
 - `secrets.json`: persistent authentication secrets; keep this with the database.
+- `desktop-settings.json`: background-refresh, tray, and startup preferences.
 
 The same directory also holds the browser profile and caches. Data is stored
 outside the installed application, so replacing the app with a newer version
@@ -125,7 +166,7 @@ directory still uses the directory containing the portable executable.
 
 Close RSSMonster fully before backing up or moving the complete RSSMonster folder.
 Keep `secrets.json` with the database to preserve authentication secrets. To upgrade,
-close the app and replace only `RSSMonster.exe`, preserving `data/`; database
+quit the app fully and replace only `RSSMonster.exe`, preserving `data/`; database
 migrations run on the next launch. The installer continues using its existing
 `%APPDATA%\RSSMonster` profile. Installed and portable profiles are separate and
 are not automatically migrated between modes.
@@ -179,7 +220,7 @@ for platform-specific commands, native SQLite handling, and verification details
 
 ## Current scope
 
-Desktop provides a local SQLite reader with manual refresh. Background crawling,
-tray mode, notifications, signing, notarization,
-and auto-update are outside this initial version. The self-hosted version retains
+Desktop provides a local SQLite reader with manual and background refresh,
+native tray controls, and managed local inference. Native article notifications,
+signing, notarization, and auto-update remain outside this version. The self-hosted version retains
 its existing worker and optional inference functionality.

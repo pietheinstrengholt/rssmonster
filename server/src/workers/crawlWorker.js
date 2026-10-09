@@ -255,7 +255,8 @@ export const createCrawlWorker = ({
     return runPromise;
   };
 
-  return { shutdown, start };
+  // Desktop manual refresh wakes the existing loop; an active iteration is never overlapped.
+  return { shutdown, start, wake: interruptSleep };
 };
 
 // This function starts the production worker when this module is the Node entry point.

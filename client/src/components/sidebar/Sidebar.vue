@@ -20,6 +20,8 @@
         @select="refreshFeeds"
       />
 
+      <DesktopActivity v-if="selectionStore.currentSelection.DesktopEnabled" @details="$emit('open-settings')" />
+
       <FeedRefreshProgress
         v-if="refreshProgress.visible"
         class="sidebar-refresh-progress-panel"
@@ -470,6 +472,7 @@ import SidebarCategoryGroup from './SidebarCategoryGroup.vue';
 import SidebarFeedItem from './SidebarFeedItem.vue';
 import SidebarNavItem from './SidebarNavItem.vue';
 import SidebarSectionTitle from './SidebarSectionTitle.vue';
+import DesktopActivity from '../shared/DesktopActivity.vue';
 import FeedRefreshProgress from '../shared/FeedRefreshProgress.vue';
 import { formatCount } from './formatCount.js';
 import { formatTagName } from '../../utils/tags';
@@ -483,6 +486,7 @@ import {
 export default {
   components: {
     FeedRefreshProgress,
+    DesktopActivity,
     SidebarActionButton,
     SidebarCategoryGroup,
     SidebarFeedItem,
@@ -492,7 +496,7 @@ export default {
   props: {
     markVisibleArticlesRead: { type: Function, default: null }
   },
-  emits: ['forceReload', 'logout'],
+  emits: ['forceReload', 'logout', 'open-settings'],
   // This initializes component-owned sidebar activity state.
   data() {
     return {

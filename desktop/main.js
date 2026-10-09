@@ -1,6 +1,8 @@
-import { app, BrowserWindow, dialog, Menu, session, utilityProcess } from 'electron';
+import { app, BrowserWindow, dialog, Menu, Tray, nativeImage, session, utilityProcess } from 'electron';
 import { startRuntime } from './runtime.js';
 import { createDesktopServices } from './services.js';
+import { createDesktopSettings, createLoginSettings } from './settings.js';
+import { createDesktopTray } from './tray.js';
 import { configureDesktopStorage } from './storage.js';
 
 app.setName('RSSMonster');
@@ -14,10 +16,12 @@ try {
 let runtime;
 let startup;
 let shuttingDown = false;
+let tray;
 
 const shutdown = async (exitCode = process.exitCode || 0) => {
   if (shuttingDown) return;
   shuttingDown = true;
+  tray?.stop();
   try {
     await startup?.catch(() => {});
     BrowserWindow.getAllWindows().forEach(window => window.destroy());
@@ -39,10 +43,13 @@ if (storageError) {
   app.quit();
 } else {
   app.on('second-instance', () => {
+    if (tray) { tray.open(); return; }
     const window = BrowserWindow.getAllWindows()[0];
     if (window?.isMinimized()) window.restore();
+    window?.show();
     window?.focus();
   });
+  app.on('activate', () => tray?.open());
   app.on('before-quit', event => {
     event.preventDefault();
     void shutdown();
@@ -53,10 +60,15 @@ if (storageError) {
 
   startup = app.whenReady().then(async () => {
     Menu.setApplicationMenu(null);
+    const settings = await createDesktopSettings(dataDirectory, {
+      login: createLoginSettings(app),
+      trayAvailable: () => Boolean(tray?.available()),
+      onChange: async () => { await runtime?.background.configure(); tray?.applySettings(); }
+    });
     runtime = await startRuntime(dataDirectory, createDesktopServices(utilityProcess, error => {
       console.error(error);
       void shutdown(1);
-    }));
+    }), { settings });
     if (shuttingDown) return;
     session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
     session.defaultSession.setPermissionCheckHandler(() => false);
@@ -77,7 +89,10 @@ if (storageError) {
     });
     window.webContents.on('will-attach-webview', event => event.preventDefault());
     await window.loadURL(runtime.origin);
-    if (!shuttingDown) window.show();
+    if (!shuttingDown) {
+      tray = createDesktopTray({ app, Tray, Menu, nativeImage, window, settings, runtime, quit: () => { void shutdown(); } });
+      if (!settings.get().settings.startMinimized || !settings.get().settings.continueInTray || !tray.available()) window.show();
+    }
     console.log(`RSSMonster desktop ready at ${runtime.origin}`);
     void runtime.ready.then(() => {
       if (!shuttingDown) {
