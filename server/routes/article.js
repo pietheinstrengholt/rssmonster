@@ -15,6 +15,7 @@ router.get('/:articleId', userMiddleware.isLoggedIn, articleController.getArticl
 router.post('/:articleId/tags', userMiddleware.isLoggedIn, articleController.articleAddTags);
 router.delete('/:articleId/tags/:tagId', userMiddleware.isLoggedIn, articleController.articleRemoveTag);
 router.post('/markasread', userMiddleware.isLoggedIn, articleController.markAsRead);
+router.post('/sync-actions', userMiddleware.isLoggedIn, articleController.syncActions);
 router.post('/markclicked', userMiddleware.isLoggedIn, articleController.markClicked);
 router.post('/markclicked/:articleId', userMiddleware.isLoggedIn, articleController.markClicked);
 router.post('/marknotinterested/:articleId', userMiddleware.isLoggedIn, articleController.markNotInterested);

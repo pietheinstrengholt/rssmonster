@@ -1,5 +1,5 @@
 <template>
-  <p v-if="offlineReadingStore.readOnly" class="app-notice app-notice--info" role="status">Downloaded articles · Offline reading · Read and saved changes require a connection. Search and live rankings are unavailable.</p>
+  <p v-if="offlineReadingStore.readOnly" class="app-notice app-notice--info" role="status">Downloaded articles · Offline reading · {{ articles.length }} on this device · Read and saved changes are stored on this device and synchronize when connected. Search and live rankings are unavailable.</p>
   <SmartFoldersGridOverview
     v-if="showSmartFoldersOverview"
     :smart-folders="overviewStore.smartFolders"
@@ -18,6 +18,8 @@
 </template>
 
 <script>
+import { articleStateActions } from '../../services/articleStateActions.js';
+import { OFFLINE_STATE_EVENT, sameOfflineAccount } from '../../services/offlineCoordination.js';
 import { useOfflineReadingStore } from '../../store/offlineReading.js';
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
@@ -206,7 +208,7 @@ export default {
 
     // Groups the stable collection labels and counts rendered by either layout.
     collectionSummary() {
-      if (this.offlineReadingStore.readOnly) return { status: '%', selectedTag: null, sourceCount: null, unreadCount: 0, totalCount: this.articles.length };
+      if (this.offlineReadingStore.readOnly) return { status: '%', selectedTag: null, sourceCount: new Set(this.articles.map(article => article.feedId)).size, unreadCount: this.articles.filter(article => article.status === 'unread').length, totalCount: this.articles.length };
       return {
         status: this.selectionStore.currentSelection.status,
         selectedTag: this.selectionStore.currentSelection.tag,
@@ -323,6 +325,7 @@ export default {
 
   // Starts scroll handling and article observers after mounting.
   mounted() {
+    window.addEventListener(OFFLINE_STATE_EVENT, this.reconcileOfflineState);
     this.connectScrollContainer(this.scrollRoot);
     window.addEventListener("scroll", this.handleScroll, { passive: true });
     window.addEventListener("keydown", this.handleGlobalShortcut);
@@ -331,6 +334,7 @@ export default {
 
   // Finalize while the old layout and article context still exist.
   beforeUnmount() {
+    window.removeEventListener(OFFLINE_STATE_EVENT, this.reconcileOfflineState);
     this.activeRequestId += 1;
     this.teardownObservers();
   },
@@ -353,6 +357,36 @@ export default {
   },
 
   methods: {
+    async reconcileOfflineState(event) {
+      if (!sameOfflineAccount(event.detail?.account, this.offlineReadingStore.account)) return;
+      // The initiating control owns its optimistic count delta. Broadcast/replay patches never repeat it.
+      if (event.detail.local && !event.detail.remote) return;
+      const requestId = this.activeRequestId;
+      const sessionId = this.offlineReadingStore.sessionId;
+      if (event.detail.discarded) {
+        const cached = await this.offlineReadingStore.loadSnapshot().catch(() => null);
+        if (!cached || requestId !== this.activeRequestId || sessionId !== this.offlineReadingStore.sessionId) return;
+        const records = new Map(cached.map(article => [String(article.id), article]));
+        this.articles = this.articles.map(article => {
+          const next = { ...article };
+          for (const action of event.detail.discardedActions || []) {
+            if (String(action.articleId) === String(article.id) && action.baseValue !== undefined) next[action.kind === 'set-status' ? 'status' : 'favoriteInd'] = action.baseValue;
+          }
+          const stored = records.get(String(article.id));
+          return stored ? { ...next, status: stored.status, favoriteInd: stored.favoriteInd } : next;
+        });
+        return;
+      }
+      const unavailable = new Set((event.detail.sent || []).filter(action => event.detail.results?.some(result => result.actionId === action.actionId && result.errorCode === 'ARTICLE_UNAVAILABLE')).map(action => String(action.articleId)));
+      const records = new Map((event.detail.articles || []).map(article => [String(article.id), article]));
+      const articles = await articleStateActions.overlay(this.articles.filter(article => !unavailable.has(String(article.id))).map(article => ({ ...article, ...records.get(String(article.id)), feed: { ...article.feed, ...records.get(String(article.id))?.feed } }))).catch(error => {
+        if (sessionId === this.offlineReadingStore.sessionId) notifyActionError('Could not reconcile local article changes.', error);
+        return null;
+      });
+      if (!articles || requestId !== this.activeRequestId || sessionId !== this.offlineReadingStore.sessionId) return;
+      this.articles = articles;
+      this.container = this.container.filter(id => !unavailable.has(String(id)));
+    },
     ...articleFeedPaginationMethods,
     ...articleFeedVisibilityMethods,
     ...articleFeedReadStateMethods,
@@ -518,7 +552,7 @@ export default {
       const updateType = requestedFavoriteInd ? 'mark' : 'unmark';
       this.pendingFavoriteArticleIds.add(articleKey);
       try {
-        const response = await markAsFavorite(id, updateType);
+        const response = await markAsFavorite(id, updateType, article);
         const persistedFavoriteInd = response.data.favoriteInd === 1
           ? 1
           : response.data.favoriteInd === 0
@@ -636,7 +670,7 @@ export default {
       }
 
       try {
-        const response = await markManyAsFavorite(unfavoritedArticles.map(article => article.id), 'mark');
+        const response = await markManyAsFavorite(unfavoritedArticles.map(article => article.id), 'mark', unfavoritedArticles);
         const updatedArticles = response.data.articles || [];
 
         for (const updatedArticle of updatedArticles) {

@@ -20,6 +20,8 @@ export const PRECACHE_GLOB_PATTERNS = Object.freeze([
   'assets/DesktopToolbar-*.css',
   'assets/MobileToolbar-*.js',
   'assets/MobileToolbar-*.css',
+  'assets/MobilePullToRefresh-*.js',
+  'assets/MobilePullToRefresh-*.css',
   'assets/MobileMenuOverlay-*.js',
   'assets/MobileMenuOverlay-*.css',
   'assets/ArticleReaderLayout-*.js',
@@ -49,6 +51,7 @@ export const CORE_DYNAMIC_MODULES = Object.freeze([
   'src/components/shell/DesktopToolbar.vue',
   'src/components/shell/MobileMenuOverlay.vue',
   'src/components/shell/MobileToolbar.vue',
+  'src/components/shell/MobilePullToRefresh.vue',
   'src/components/sidebar/Sidebar.vue',
   'src/services/authenticatedShell.js'
 ]);

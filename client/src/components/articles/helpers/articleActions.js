@@ -68,7 +68,7 @@ export const articleActionMethods = {
     const requestedFavoriteInd = previousFavoriteInd === 1 ? 0 : 1;
 
     try {
-      const response = await markArticleAsFavoriteAPI(this.id, updateType);
+      const response = await markArticleAsFavoriteAPI(this.id, updateType, { id: this.id, favoriteInd: this.favoriteInd, status: this.status, feedId: this.feedId, feed: this.feed, duplicateOfArticleId: this.duplicateOfArticleId });
       const persistedFavoriteInd = response.data.favoriteInd === 1
         ? 1
         : response.data.favoriteInd === 0

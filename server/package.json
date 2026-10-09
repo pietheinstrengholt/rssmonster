@@ -12,7 +12,7 @@
   "scripts": {
     "test": "vitest run",
     "test:debug": "RSSMONSTER_TEST_DEBUG=true vitest run",
-    "test:sqlite": "vitest run tests/config tests/models tests/migrations tests/articleSearch tests/workers tests/app/health.test.js tests/app/express.smoke.test.js tests/controllers/feedObservability.controller.test.js",
+    "test:sqlite": "vitest run tests/config tests/models tests/migrations tests/articleSearch tests/workers tests/app/health.test.js tests/app/express.smoke.test.js tests/controllers/feedObservability.controller.test.js tests/controllers/articleSyncActions.test.js",
     "test:semantic-report": "vitest run tests/semantic/semanticRegression.batches.test.js",
     "test:semantic-trace": "RSSMONSTER_TEST_DEBUG=true SEMANTIC_REPORT_LEVEL=trace vitest run tests/semantic/semanticRegression.batches.test.js",
     "test:coverage": "vitest run --coverage",

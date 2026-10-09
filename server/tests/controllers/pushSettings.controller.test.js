@@ -34,7 +34,7 @@ afterEach(async () => {
 
 describe('Web Push server settings', () => {
   it.each(['get', 'put', 'delete'])('requires current administrator access for %s', async method => {
-    expect((await request(app)[method]('/api/setting/server/push')).status).toBe(400);
+    expect((await request(app)[method]('/api/setting/server/push')).status).toBe(401);
     expect((await endpoint(method, user)).status).toBe(403);
     await admin.update({ role: 'user' });
     try { expect((await endpoint(method)).status).toBe(403); } finally { await admin.update({ role: 'admin' }); }
@@ -56,7 +56,7 @@ describe('Web Push server settings', () => {
     expect(await getPushConfiguration()).toMatchObject({ enabled: true, ...keys });
     const browser = await request(app).get('/api/push/configuration').set('Authorization', token(user));
     expect(browser.body).toEqual({ enabled: true, publicKey: keys.publicKey });
-    expect((await request(app).get('/api/push/configuration')).status).toBe(400);
+    expect((await request(app).get('/api/push/configuration')).status).toBe(401);
   });
   it('retains saved keys, clears them, and restores the complete environment configuration', async () => {
     const keys = pair();

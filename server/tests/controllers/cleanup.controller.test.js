@@ -57,7 +57,7 @@ describe('archiving settings and cleanup', () => {
 
   it('requires authentication for settings and cleanup', async () => {
     for (const [method, path] of [['get', '/api/setting/archiving'], ['put', '/api/setting/archiving'], ['post', '/api/cleanup']]) {
-      expect((await request(app)[method](path)).status).toBe(400);
+      expect((await request(app)[method](path)).status).toBe(401);
       const legacyToken = jwt.sign({ username: 'missing-user' }, getJwtSecret());
       expect((await request(app)[method](path).set('Authorization', `Bearer ${legacyToken}`)).status).toBe(401);
     }

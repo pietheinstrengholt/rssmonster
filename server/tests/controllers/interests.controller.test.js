@@ -20,9 +20,9 @@ async function fixture() {
 describe('My interests read API', () => {
   it('requires authentication and returns an empty owned collection', async () => {
     const owner = await fixture();
-    expect((await request(app).get('/api/interests')).status).toBe(400);
-    expect((await request(app).get('/api/interests/1')).status).toBe(400);
-    expect((await request(app).patch('/api/interests/1').send({ muted: true })).status).toBe(400);
+    expect((await request(app).get('/api/interests')).status).toBe(401);
+    expect((await request(app).get('/api/interests/1')).status).toBe(401);
+    expect((await request(app).patch('/api/interests/1').send({ muted: true })).status).toBe(401);
     const response = await owner.get('');
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ interests: [], summary: { total: 0, positive: 0, negative: 0, neutral: 0, active: 0, archived: 0 } });

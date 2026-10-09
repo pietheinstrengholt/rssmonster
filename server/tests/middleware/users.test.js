@@ -141,7 +141,7 @@ describe('user authentication middleware', () => {
 
     await userMiddleware.isLoggedIn({ headers: {} }, res, vi.fn());
 
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.status).toHaveBeenCalledWith(401);
     expect(res.send).toHaveBeenCalledWith({
       message: 'Your session is not valid!'
     });
@@ -187,7 +187,7 @@ describe('user authentication middleware', () => {
       vi.fn()
     );
 
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.status).toHaveBeenCalledWith(401);
     expect(res.send).toHaveBeenCalledWith({
       message: 'Your session is not valid!'
     });
@@ -211,6 +211,6 @@ describe('user authentication middleware', () => {
     }, res, next);
 
     expect(next).not.toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.status).toHaveBeenCalledWith(401);
   });
 });

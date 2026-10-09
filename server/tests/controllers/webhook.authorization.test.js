@@ -37,7 +37,7 @@ describe('Webhook management API', () => {
     const created = await post(owner);
     const id = created.body.webhook.id;
     const unauthenticated = await request(app).get('/api/webhooks');
-    expect(unauthenticated.status).toBe(400);
+    expect(unauthenticated.status).toBe(401);
 
     const list = await request(app).get('/api/webhooks').set('Authorization', auth(other));
     const detail = await request(app).get(`/api/webhooks/${id}`).set('Authorization', auth(other));

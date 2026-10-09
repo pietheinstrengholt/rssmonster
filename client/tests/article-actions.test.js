@@ -119,7 +119,7 @@ describe('articleActionMethods', () => {
     context.markAsFavorite();
     await flushPromises();
 
-    expect(markAsFavorite).toHaveBeenCalledWith(42, 'mark');
+    expect(markAsFavorite).toHaveBeenCalledWith(42, 'mark', expect.objectContaining({ id: expect.any(Number) }));
     expect(context.overviewStore.applyFavoriteDelta).toHaveBeenCalledWith({
       categoryId: 3,
       feedId: 8,
@@ -144,7 +144,7 @@ describe('articleActionMethods', () => {
     context.markAsFavorite();
     await flushPromises();
 
-    expect(markAsFavorite).toHaveBeenCalledWith(42, 'unmark');
+    expect(markAsFavorite).toHaveBeenCalledWith(42, 'unmark', expect.objectContaining({ id: expect.any(Number) }));
     expect(context.overviewStore.applyFavoriteDelta).toHaveBeenCalledWith({
       categoryId: undefined,
       feedId: 8,

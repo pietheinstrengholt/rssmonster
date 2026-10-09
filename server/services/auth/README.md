@@ -83,3 +83,9 @@ All runtime local-auth gates use the async resolver. Response serializers resolv
 local-auth policy before calling the synchronous User serializer. OIDC discovery,
 transaction fingerprints, callback origin validation, and CORS consume the resolved
 provider configuration; existing cache and pending-flow invalidation rules apply.
+
+
+Invalid, expired and revoked JWT sessions consistently return HTTP 401 from the
+user middleware. Unrelated input validation remains HTTP 400. Client session expiry
+clears credentials and downloaded content for privacy while retaining account-scoped
+pending article state; successful same-account validation is required for replay.

@@ -1,6 +1,7 @@
 import { API_BASE_URL } from '../api/client.js';
 import { fetchArticlePage } from '../api/articles.js';
 import { offlineDatabase } from './offlineDatabase.js';
+import { withOfflineAccountLease } from './offlineCoordination.js';
 
 export const OFFLINE_ARTICLE_LIMITS = Object.freeze([100, 250, 1000, 2500, 5000]);
 export const offlineApiOrigin = () => new URL(API_BASE_URL, window.location.origin).origin;
@@ -11,14 +12,14 @@ export const latestOfflineSelection = Object.freeze({
   minAdvertisementScore: 0, minSentimentScore: 0, minOverallQualityScore: 0, minQualityScore: 0
 });
 
-export const createOfflineReadingService = (database = offlineDatabase, fetchPage = (params, pagination) => fetchArticlePage(params, pagination)) => {
+export const createOfflineReadingService = (database = offlineDatabase, fetchPage = (params, pagination) => fetchArticlePage(params, pagination), coordinate = (_account, work) => work(null)) => {
   const jobs = new Map();
   const key = account => JSON.stringify([account.apiOrigin, account.userId]);
   const getProfile = account => database.getProfile(account);
   const refreshSnapshot = (account, progress = () => {}) => {
     const accountKey = key(account);
     if (jobs.has(accountKey)) return jobs.get(accountKey);
-    const job = (async () => {
+    const job = coordinate(account, async lease => {
       const profile = await getProfile(account);
       if (!profile?.enabled) return profile;
       const generation = crypto.randomUUID();
@@ -40,14 +41,14 @@ export const createOfflineReadingService = (database = offlineDatabase, fetchPag
             seen.add(String(id));
             batch.push(article);
           }
-          if (!await database.writeGeneration(account, generation, batch)) return null;
+          if (!await database.writeGeneration(account, generation, batch, false, lease)) return null;
           articles.push(...batch);
           progress({ status: 'preparing', prepared: articles.length, total: profile.articleLimit });
           cursor = page.hasMore ? page.nextCursor : null;
           if (page.hasMore && (!cursor || !batch.length)) throw new Error('Incomplete article page. Please refresh again.');
         } while (cursor && articles.length < profile.articleLimit);
         // Activation and pruning share a single transaction after every page is persisted.
-        const ready = await database.writeGeneration(account, generation, articles, true);
+        const ready = await database.writeGeneration(account, generation, articles, true, lease);
         if (ready) progress({ status: 'ready', prepared: articles.length, total: profile.articleLimit });
         return ready || null;
       } catch (error) {
@@ -55,7 +56,7 @@ export const createOfflineReadingService = (database = offlineDatabase, fetchPag
         progress({ status: 'error', prepared: articles.length, total: profile.articleLimit });
         throw error;
       }
-    })().finally(() => { if (jobs.get(accountKey) === job) jobs.delete(accountKey); });
+    }).finally(() => { if (jobs.get(accountKey) === job) jobs.delete(accountKey); });
     jobs.set(accountKey, job);
     return job;
   };
@@ -76,4 +77,4 @@ export const createOfflineReadingService = (database = offlineDatabase, fetchPag
     async settleRefresh(account) { await jobs.get(key(account))?.catch(() => {}); }
   };
 };
-export const offlineReading = createOfflineReadingService();
+export const offlineReading = createOfflineReadingService(offlineDatabase, undefined, (account, work) => withOfflineAccountLease(account, work, offlineDatabase, 10000));

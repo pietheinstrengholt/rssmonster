@@ -314,3 +314,43 @@ same JWT bearer authentication. See [Assistant and MCP]({% link assistant.md %})
 The web client uses these same routes, so its network requests and the
 corresponding files in `server/routes/` are useful references for exact payload
 shapes not covered on this overview page.
+
+
+## Durable article state synchronization
+
+`POST /api/articles/sync-actions` requires the existing bearer session. Invalid,
+expired and revoked sessions return HTTP 401; malformed bodies return HTTP 400
+before any mutation. The authenticated user supplies ownership, never the body.
+
+```json
+{"actions":[{"actionId":"8792c568-3795-4987-a8fc-53591c57100d","articleId":42,"kind":"set-status","value":"read"}]}
+```
+
+`actions` contains 1–50 assignments in order. Each UUID targets a positive safe
+integer article ID; `set-status` accepts `read`/`unread`, `set-favorite` accepts a
+boolean. Only explicit canonical, visible, owned articles are affected; Event
+siblings are never expanded. Missing, filtered and foreign targets all return
+`ARTICLE_UNAVAILABLE`, without exposing foreign state.
+
+HTTP 200 contains `results` (one per UUID with `outcome` and optional `errorCode`),
+`articles` (current accessible state: `id`, `status`, `favoriteInd`, `readAt`,
+`favoritedAt`, `feedId`, `feed.id`, `feed.categoryId`) and `serverTime` (informational).
+Outcomes are `applied`, `noop`, `duplicate`, `rejected` and `retry`.
+`ACTION_ID_REUSED` rejects altered UUID payloads. `SYNC_WRITE_FAILED` asks for an
+unchanged retry; subsequent actions receive `PREVIOUS_ACTION_RETRY` to preserve
+order. A retry or ambiguous HTTP failure must reuse the original UUID/payload.
+
+Mutation, receipt and applicable personalization job commit in one transaction.
+Identical UUID replay has no second state, timestamp, observation or job effect.
+No-op assignments do not refresh interaction clocks. Receipts return current state,
+not historical projections. Read and favorite fields resolve independently by last
+server-accepted assignment; delayed offline intent can overwrite a newer online
+value. Client clocks and `updatedAt` are not conflict revisions.
+
+Migration `20261009000000-add-article-sync-actions.mjs` creates
+`article_sync_actions`, unique on `(userId, actionId)`, with normalized payload,
+terminal outcome/error and timestamps. User deletion cascades; article deletion
+retains receipts. Receipt rollback deliberately refuses data deletion: restore a
+pre-upgrade backup if rolling back. Apply migrations through the normal operator
+upgrade procedure before serving clients that use this endpoint. No production
+migration is performed by implementation tests.

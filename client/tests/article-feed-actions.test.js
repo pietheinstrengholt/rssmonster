@@ -199,7 +199,7 @@ describe('ArticleFeed actions', () => {
     await context.toggleShortcutArticleFavorite({ id: 1 });
     await context.toggleShortcutArticleFavorite({ id: 99 });
 
-    expect(markAsFavorite).toHaveBeenCalledWith(1, 'mark');
+    expect(markAsFavorite).toHaveBeenCalledWith(1, 'mark', expect.objectContaining({ id: expect.any(Number) }));
     expect(context.overviewStore.applyFavoriteDelta).toHaveBeenCalledWith({
       categoryId: 20,
       feedId: 10,
@@ -276,7 +276,7 @@ describe('ArticleFeed actions', () => {
     await context.favoriteReaderArticles([{ id: 2, favoriteInd: 1 }]);
     await context.markReaderArticlesClicked([]);
 
-    expect(markManyAsFavorite).toHaveBeenCalledWith([1], 'mark');
+    expect(markManyAsFavorite).toHaveBeenCalledWith([1], 'mark', expect.arrayContaining([expect.objectContaining({ id: expect.any(Number) })]));
     expect(markManyAsFavorite).toHaveBeenCalledOnce();
     expect(markManyClicked).toHaveBeenCalledWith([1, 2]);
     expect(markManyClicked).toHaveBeenCalledOnce();

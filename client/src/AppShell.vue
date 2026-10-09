@@ -337,6 +337,7 @@
 </style>
 
 <script>
+import { OFFLINE_STATE_EVENT, OFFLINE_SESSION_EVENT } from './services/offlineCoordination.js';
 import { useOfflineReadingStore } from './store/offlineReading.js';
 import { useAuthStore } from './store/auth.js';
 import { validateSession } from './api/auth.js';
@@ -503,6 +504,12 @@ export default {
 
   },
   methods: {
+    handleOfflineStateChange(event) {
+      this.offlineReadingStore?.handleStateChange(event);
+      // Backend outages can recover while the browser still reports online; successful replay is another recovery opportunity.
+      if (!event.detail?.local && this.offlineReadingStore?.readOnly && ['idle', 'failed'].includes(this.offlineReadingStore.syncStatus) && navigator.onLine !== false) void this.recoverConnectivity();
+    },
+    handleOfflineSessionChange(event) { this.offlineReadingStore?.handleSessionChange(event); },
     openInterestArticle(articleId) {
       this.closeSettings();
       void this.$nextTick(() => this.$refs.articleFeed?.openExampleArticle(articleId));
@@ -607,6 +614,8 @@ export default {
       window.addEventListener('app:error', this.handleAppError);
       window.addEventListener('offline', this.handleBrowserOffline);
       window.addEventListener('online', this.handleBrowserOnline);
+      window.addEventListener(OFFLINE_STATE_EVENT, this.handleOfflineStateChange);
+      window.addEventListener(OFFLINE_SESSION_EVENT, this.handleOfflineSessionChange);
       window.addEventListener('orientationchange', this.handleOrientationChange);
       document.addEventListener('visibilitychange', this.handleOverviewVisibilityChange);
     },
@@ -618,6 +627,8 @@ export default {
       window.removeEventListener('app:error', this.handleAppError);
       window.removeEventListener('offline', this.handleBrowserOffline);
       window.removeEventListener('online', this.handleBrowserOnline);
+      window.removeEventListener(OFFLINE_STATE_EVENT, this.handleOfflineStateChange);
+      window.removeEventListener(OFFLINE_SESSION_EVENT, this.handleOfflineSessionChange);
       window.removeEventListener('orientationchange', this.handleOrientationChange);
       document.removeEventListener('visibilitychange', this.handleOverviewVisibilityChange);
     },
@@ -630,11 +641,13 @@ export default {
       ) return;
 
       this.overviewIntervalId = setInterval(() => {
+        void this.offlineReadingStore?.synchronize();
         this.getOverview(false);
       }, (document.hidden ? 300 : 60) * 1000);
     },
     // Reschedule active polling without restarting a paused or disconnected shell.
     handleOverviewVisibilityChange() {
+      if (!document.hidden) void this.offlineReadingStore?.synchronize();
       if (this.overviewIntervalId === null) return;
       this.stopOverviewPolling();
       this.startOverviewPolling();
@@ -765,6 +778,7 @@ export default {
       }
 
       if (this.overviewReloading) return;
+      await this.offlineReadingStore?.synchronize(true);
 
       const articleFeedRefs = Array.isArray(this.$refs.articleFeed)
         ? this.$refs.articleFeed
@@ -825,6 +839,8 @@ export default {
               throw error;
             }
           }
+          await this.offlineReadingStore?.synchronize(true);
+          if (this.isUnmounting || token !== this.authStore?.token || sessionRequestId !== this.authStore?.sessionRequestId) return false;
           this.offlineReadingStore?.setReadOnly(false);
           await this.overviewStore.fetchOverviewSplit({ initial: true });
           await this.$nextTick();

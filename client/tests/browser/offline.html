@@ -10,20 +10,36 @@ const removeDatabase = () => new Promise((resolve, reject) => {
 });
 window.testOfflineDatabase = async () => {
   await removeDatabase();
-  const database = await openOfflineDatabase();
+  const database = await new Promise((resolve, reject) => {
+    const request = indexedDB.open(OFFLINE_DATABASE_NAME, 1);
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore('profiles', { keyPath: ['apiOrigin', 'userId'] });
+      const articles = request.result.createObjectStore('articles', { keyPath: ['apiOrigin', 'userId', 'generation', 'articleId'] });
+      articles.createIndex('account', ['apiOrigin', 'userId']);
+      articles.createIndex('publication', ['apiOrigin', 'userId', 'generation', 'publicationDate', 'articleId']);
+    };
+    request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
+  });
   assert(database.version === 1, 'versioned schema');
   assert(database.objectStoreNames.contains('profiles') && database.objectStoreNames.contains('articles'), 'required stores');
+  await new Promise(resolve => {
+    const tx = database.transaction(['profiles', 'articles'], 'readwrite');
+    tx.objectStore('profiles').put({ apiOrigin: 'https://one.example', userId: 1, enabled: true, activeGeneration: 'legacy' });
+    tx.objectStore('articles').put({ apiOrigin: 'https://one.example', userId: 1, generation: 'legacy', articleId: 9, publicationDate: 1, article: { id: 9, content: 'Version one content' } });
+    tx.oncomplete = resolve;
+  });
   database.close();
   // Exercise a real versionchange transaction: existing records survive the next upgrade.
   const account = { apiOrigin: 'https://one.example', userId: 1 };
-  await offlineDatabase.updateProfile(account, { enabled: true });
   await new Promise((resolve, reject) => {
     const request = indexedDB.open(OFFLINE_DATABASE_NAME, 2);
     request.onupgradeneeded = event => upgradeOfflineDatabase(request.result, event.oldVersion);
     request.onsuccess = () => {
-      const tx = request.result.transaction('profiles');
+      const tx = request.result.transaction(['profiles', 'articles']);
       const profile = tx.objectStore('profiles').get([account.apiOrigin, account.userId]);
       profile.onsuccess = () => assert(profile.result.enabled, 'upgrade preserves profile');
+      const article = tx.objectStore('articles').get([account.apiOrigin, 1, 'legacy', 9]);
+      article.onsuccess = () => assert(article.result.article.content === 'Version one content', 'upgrade preserves article DTO');
       tx.oncomplete = () => { request.result.close(); resolve(); };
     };
     request.onerror = () => reject(request.error);
@@ -38,7 +54,7 @@ window.testOfflineDatabase = async () => {
     assert(await offlineDatabase.writeGeneration(scope, generation, articles), 'staging succeeds');
     assert(await offlineDatabase.writeGeneration(scope, generation, articles, true), 'activation succeeds');
   };
-  const article = (id, publishedAt) => ({ id, publishedAt, content: `<p>Article ${id}</p>` });
+  const article = (id, publishedAt) => ({ id, publishedAt, status: 'unread', favoriteInd: 0, content: `<p>Article ${id}</p>` });
   for (const scope of accounts) await install(scope, 'old', [article(1, '2026-09-01')]);
   const profile = await offlineDatabase.getProfile(account);
   await offlineDatabase.beginGeneration(account, profile, 'new');
@@ -58,13 +74,57 @@ window.testOfflineDatabase = async () => {
   assert(records.filter(row => row.apiOrigin === account.apiOrigin && row.userId === account.userId).every(row => row.generation === 'ready'), 'obsolete generations pruned');
   assert((await offlineDatabase.loadSnapshot(otherUser))[0].id === 1, 'user isolation');
   assert((await offlineDatabase.loadSnapshot(otherOrigin))[0].id === 1, 'API origin isolation');
+  const assign = (kind, value) => ({ actionId: crypto.randomUUID(), articleId: 2, kind, value, baseValue: kind === 'set-status' ? 'unread' : 0 });
+  await offlineDatabase.enqueueActions(account, [assign('set-status', 'read'), assign('set-favorite', true)], 0);
+  await offlineDatabase.enqueueActions(account, [assign('set-status', 'unread')], 0);
+  assert((await offlineDatabase.getActions(account)).length === 2, 'undispatched same-field compaction');
+  assert((await offlineDatabase.loadSnapshot(account)).find(row => row.id === 2).favoriteInd === 1, 'favorite overlay');
+  const firstLease = await offlineDatabase.acquireLease(account, 'first', 1000);
+  assert(!await offlineDatabase.acquireLease(account, 'second'), 'only one tab owns replay');
+  const sent = await offlineDatabase.dispatchActions(account, firstLease);
+  await offlineDatabase.enqueueActions(account, [assign('set-status', 'read')], 0);
+  assert((await offlineDatabase.getActions(account)).length === 3, 'dispatched payload is immutable');
+  await offlineDatabase.retryActions(account, firstLease, sent, Date.now() + 5000, 'timeout after commit');
+  assert((await offlineDatabase.getActions(account))[0].actionId === sent[0].actionId, 'restart preserves ambiguous UUID');
+  await new Promise(resolve => setTimeout(resolve, 1005));
+  const lease = await offlineDatabase.acquireLease(account, 'second');
+  assert(lease && !await offlineDatabase.renewLease(account, firstLease), 'expired tab cannot renew or write');
+  assert(!await offlineDatabase.acknowledgeActions(account, firstLease, sent, { results: [], articles: [] }), 'stale acknowledgement fenced');
+  assert(await offlineDatabase.acknowledgeActions(account, lease, sent, { results: sent.map(action => ({ actionId: action.actionId, outcome: 'duplicate' })), articles: [{ id: 2, status: 'unread', favoriteInd: 1 }] }), 'durable replay acknowledged');
+  assert((await offlineDatabase.loadSnapshot(account)).find(row => row.id === 2).status === 'read', 'new intent survives older acknowledgement');
+  await offlineDatabase.releaseLease(account, lease);
+  await install(account, 'refreshed', articles);
+  assert((await offlineDatabase.loadSnapshot(account)).find(row => row.id === 2).status === 'read', 'snapshot refresh overlays pending intent');
+  const pending = await offlineDatabase.getActions(account);
+  let aborted = false;
+  try { await offlineDatabase.enqueueActions(account, [{ ...pending[0], kind: 'set-favorite', value: false }], 0); } catch { aborted = true; }
+  assert(aborted && (await offlineDatabase.getActions(account)).length === 1, 'unique UUID transaction abort retains queue');
+  assert((await offlineDatabase.getActions(otherUser)).length === 0, 'queue account isolation');
+  const previous = await offlineDatabase.invalidateSession(account);
+  let fenced = false;
+  try { await offlineDatabase.enqueueActions(account, [assign('set-status', 'unread')], 0); } catch { fenced = true; }
+  assert(fenced && previous.epoch === 1, 'logout fences old local actions');
+  assert((await offlineDatabase.getActions(account)).length === 1, 'expiry preserves pending intent');
   await offlineDatabase.clearSnapshot(account);
+  assert((await offlineDatabase.getActions(account)).length === 1, 'clearing downloads retains queued changes');
+  await offlineDatabase.discardActions(account);
+  assert((await offlineDatabase.getActions(account)).length === 0, 'explicit discard removes intent');
   assert(await offlineDatabase.getProfile(account) === null, 'clear removes profile');
   assert((await offlineDatabase.loadSnapshot(account)).length === 0, 'clear removes active articles');
   assert((await offlineDatabase.loadSnapshot(otherUser)).length === 1, 'clear preserves other user');
   assert((await offlineDatabase.loadSnapshot(otherOrigin)).length === 1, 'clear preserves other origin');
   assert(!await offlineDatabase.writeGeneration(account, 'ready', articles, true), 'logout cannot resurrect a cleared profile');
+  const unavailableAccount = { ...account, userId: 3 };
+  await install(unavailableAccount, 'unavailable', [article(2, '2026-10-01')]);
+  await offlineDatabase.enqueueActions(unavailableAccount, [assign('set-status', 'read')], 0);
+  const unavailableLease = await offlineDatabase.acquireLease(unavailableAccount, 'unavailable');
+  const missing = await offlineDatabase.dispatchActions(unavailableAccount, unavailableLease);
+  await offlineDatabase.acknowledgeActions(unavailableAccount, unavailableLease, missing, { results: [{ actionId: missing[0].actionId, outcome: 'rejected', errorCode: 'ARTICLE_UNAVAILABLE' }], articles: [] });
+  assert((await offlineDatabase.getActions(unavailableAccount))[0].state === 'failed', 'terminal failure is retained');
+  assert((await offlineDatabase.loadSnapshot(unavailableAccount)).length === 0, 'unavailable content removed');
+  assert((await offlineDatabase.getProfile(unavailableAccount)).preparedArticleCount === 0, 'download count reconciles removals');
+  assert(!await offlineDatabase.completeSynchronization(unavailableAccount, unavailableLease), 'terminal failure cannot advance successful synchronization');
   await removeDatabase();
-  return 'PASS: native IndexedDB creation, upgrade, date/ID ordering, atomic activation, interruption, pruning and account/origin isolation';
+  return 'PASS: native IndexedDB creation, upgrade, date/ID ordering, atomic activation, interruption, pruning, account/origin isolation, compaction, restart, immutable dispatch, lease expiry, overlays, abort, logout and explicit discard';
 };
 </script></body></html>

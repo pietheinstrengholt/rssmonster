@@ -101,7 +101,7 @@ describe('Sidebar mark-as-read scope', () => {
     await button('Mark all visible as read').trigger('click');
     await flushPromises();
     const ids = viewMode === 'reader' ? [1, 4, 7] : [1, 4];
-    expect(markArticlesAsRead).toHaveBeenCalledWith(ids);
+    expect(markArticlesAsRead).toHaveBeenCalledWith(ids, 'none', expect.arrayContaining([expect.objectContaining({ id: expect.any(Number) })]));
     expect(markAllAsRead).not.toHaveBeenCalled();
     expect(context.articles.filter(article => article.status === 'read').map(article => article.id))
       .toEqual(viewMode === 'reader' ? [1, 4, 6, 7] : [1, 4, 6]);

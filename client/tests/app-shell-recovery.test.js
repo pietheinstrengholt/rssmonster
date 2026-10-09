@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { flushPromises } from '@vue/test-utils';
 import AppShell from '../src/AppShell.vue';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
@@ -240,6 +241,7 @@ describe('AppShell connectivity recovery', () => {
     const toolbarRetry = AppShell.methods.forceReload.call(context);
 
     expect(repeatedRetry).toBe(firstRetry);
+    await flushPromises();
     expect(context.overviewStore.fetchOverviewSplit).toHaveBeenCalledOnce();
     expect(context.startOverviewPolling).not.toHaveBeenCalled();
 
@@ -417,4 +419,11 @@ describe('AppShell connectivity recovery', () => {
     expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
     expect(context.databaseRefreshActive).toBe(false);
   });
+});
+
+
+it('recovers an offline collection after successful replay while the browser already reports online', () => {
+  const context = { offlineReadingStore: { readOnly: true, syncStatus: 'idle', handleStateChange: vi.fn() }, recoverConnectivity: vi.fn() };
+  AppShell.methods.handleOfflineStateChange.call(context, { detail: {} });
+  expect(context.recoverConnectivity).toHaveBeenCalledOnce();
 });

@@ -54,7 +54,7 @@ const validateRegister = async (req, res, next) => {
   next();
 };
 
-const invalidSession = res => res.status(400).send({
+const invalidSession = res => res.status(401).send({
   message: 'Your session is not valid!'
 });
 

@@ -262,10 +262,13 @@ The Reading navigation includes Offline reading immediately after Smart Folders.
 The device/account setting defaults to 100 articles and supports 100, 250, 1000, 2500 and 5000.
 Enabling or changing the limit prepares a safe replacement snapshot while connected;
 disabling stops future refreshes and retains existing downloads. Refresh now exposes
-preparation progress, and Clear offline data uses the shared destructive confirmation
-dialog to remove the current account's profile and article records. Storage estimates
-and Wi-Fi detection are omitted in Phase 1. The page describes downloaded read/saved
-state and clearly excludes offline mutations, search, live rankings and external media.
+preparation progress, and Clear downloaded articles uses the shared destructive
+confirmation dialog to remove the current account's profile and article records while
+preserving pending intent. The page reports pending/failed state assignments and last
+successful synchronization. Discard unsynchronized changes is a separate confirmed
+action that cannot undo accepted server effects. Read/unread and saved/unsaved changes
+work offline; observations, search, live rankings and external media require a connection.
+Storage estimates and Wi-Fi detection are omitted.
 
 ### Desktop background refresh
 

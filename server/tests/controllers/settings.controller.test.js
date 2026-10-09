@@ -84,7 +84,7 @@ describe('settings controller', () => {
       expect(response.status).toBe(400);
     }
     const response = await request(app).patch('/api/setting/view-mode').send({ viewMode: 'full' });
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(401);
     expect(await Setting.findOne({ where: { userId: user.id } })).toBeNull();
   });
 
@@ -112,7 +112,7 @@ describe('settings controller', () => {
       expect(response.status).toBe(400);
     }
     const response = await request(app).patch('/api/setting/article-links').send({ openArticleLinksInNewTab: true });
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(401);
   });
 
   it('returns the standard defaults when AI is disabled', async () => {

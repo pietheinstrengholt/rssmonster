@@ -296,9 +296,9 @@ describe('manual article tagging API', () => {
   });
 
   it('requires authentication using the existing middleware contract', async () => {
-    expect((await request(app).get('/api/tags?scope=all')).status).toBe(400);
-    expect((await request(app).post(`/api/articles/${article.id}/tags`).send({ tags: ['new'] })).status).toBe(400);
-    expect((await request(app).delete(`/api/articles/${article.id}/tags/${existing.id}`)).status).toBe(400);
+    expect((await request(app).get('/api/tags?scope=all')).status).toBe(401);
+    expect((await request(app).post(`/api/articles/${article.id}/tags`).send({ tags: ['new'] })).status).toBe(401);
+    expect((await request(app).delete(`/api/articles/${article.id}/tags/${existing.id}`)).status).toBe(401);
     const missingUser = `Bearer ${jwt.sign({}, getJwtSecret())}`;
     expect((await assign(['new'], article.id, missingUser)).status).toBe(401);
     expect((await remove(existing.id, article.id, missingUser)).status).toBe(401);

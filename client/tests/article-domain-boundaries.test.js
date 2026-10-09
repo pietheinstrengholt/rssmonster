@@ -317,7 +317,7 @@ describe('Article API actions', () => {
     articleActionMethods.markAsFavorite.call(context);
     await flushPromises();
 
-    expect(markAsFavorite).toHaveBeenCalledWith(42, 'mark');
+    expect(markAsFavorite).toHaveBeenCalledWith(42, 'mark', expect.objectContaining({ id: expect.any(Number) }));
     expect(applyFavoriteDelta).toHaveBeenCalledWith({
       categoryId: 2,
       feedId: 3,

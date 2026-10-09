@@ -153,8 +153,8 @@ Recommendation thresholds deliberately allow no results.
 ## Can I read offline after installing the app?
 
 Installation caches the application shell. Enable **Settings → Offline reading**
-while connected to download a limited selection for read-only access on that
-device. Read and saved changes still require server access. See
+while connected to download a limited selection on that device. Read/unread and
+saved/unsaved changes persist offline and synchronize when the same account reconnects. See
 [Web App and Notifications]({% link web-app-and-notifications.md %}).
 
 ## Can RSSMonster email my briefing or reset my password?

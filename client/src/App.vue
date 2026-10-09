@@ -334,8 +334,8 @@ export default {
     },
     // This function routes session expiry through the root session cleanup flow.
     handleAuthExpired() {
-      console.warn('Session expired — logging out');
-      this.logout();
+      console.warn('Session expired — authentication required');
+      this.logout({ expired: true });
     },
     async confirmEmailFromLocation() {
       const url = new URL(window.location.href);
@@ -413,7 +413,7 @@ export default {
           this.message = 'Cannot validate your session. Connect to RSSMonster and reload to sign in.';
           return;
         }
-        this.logout({ preservePasswordReset: Boolean(this.passwordResetMode) });
+        this.logout({ expired: true, preservePasswordReset: Boolean(this.passwordResetMode) });
       }
     },
     // This function bootstraps the configured development user while retaining normal login fallback.
@@ -708,7 +708,7 @@ export default {
       }
     },
     // This function clears Axios, Pinia, and cookie authentication state together.
-    logout({ preservePasswordReset = false } = {}) {
+    logout({ preservePasswordReset = false, expired = false } = {}) {
       this.authStore.clearSession();
       Cookies.remove('token');
 
@@ -731,7 +731,7 @@ export default {
       this.enrollmentEmail = '';
       this.enrollmentSavedEmail = '';
       this.emailEnrollmentVerified = false;
-      this.message = '';
+      this.message = expired ? 'Your session expired. Sign in to synchronize any unsynchronized changes.' : '';
     }
   }
 };

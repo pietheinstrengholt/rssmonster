@@ -1,6 +1,7 @@
 import api from './client';
 import { newerUnreadSelection } from '../services/unreadBaseline.js';
 import { normalizeSortValueForApi } from '../services/queryValidation';
+import { articleStateActions } from '../services/articleStateActions.js';
 
 // Normalizes sort identifiers and disables settings persistence for folder requests.
 const normalizeArticleParams = params => {
@@ -12,22 +13,36 @@ const normalizeArticleParams = params => {
   return normalized;
 };
 
+const overlayResponse = async response => {
+  if (!response) return response;
+  if (Array.isArray(response.data)) response.data = await articleStateActions.overlay(response.data);
+  else {
+    if (response.data?.page?.articles) response.data.page.articles = await articleStateActions.overlay(response.data.page.articles);
+    if (response.data?.firstPage) response.data.firstPage = await articleStateActions.overlay(response.data.firstPage);
+  }
+  return response;
+};
+
+export const syncArticleActions = (actions, token) => api.post('/articles/sync-actions', { actions }, {
+  headers: { Authorization: `Bearer ${token}` }, allowOfflineSync: true, suppressGlobalError: true
+});
+
 /**
  * Fetch article IDs based on current selection
  */
-export const fetchArticleIds = params =>
-  api.get('/articles', { params: { ...normalizeArticleParams(params), includeFirstPage: true } });
+export const fetchArticleIds = async params =>
+  overlayResponse(await api.get('/articles', { params: { ...normalizeArticleParams(params), includeFirstPage: true } }));
 
 // Fetches one bounded page from a stable database-native article snapshot.
-export const fetchArticlePage = (params, { pageSize, cursor = null } = {}) =>
-  api.get('/articles', {
+export const fetchArticlePage = async (params, { pageSize, cursor = null } = {}) =>
+  overlayResponse(await api.get('/articles', {
     params: {
       ...normalizeArticleParams(params),
       pagination: 'cursor',
       pageSize,
       ...(cursor ? { cursor } : {})
     }
-  });
+  }));
 
 // Counts unread arrivals using the active selection's other filters.
 export const fetchNewerArticleCount = (params, snapshotMaxArticleId) =>
@@ -42,11 +57,11 @@ export const fetchDailyBriefing = params =>
 /**
  * Fetch article details by IDs
  */
-export const fetchArticleDetails = (articleIds, sort) =>
-  api.post('/articles/details', {
+export const fetchArticleDetails = async (articleIds, sort) =>
+  overlayResponse(await api.post('/articles/details', {
     articleIds: articleIds.join(','),
     sort: normalizeSortValueForApi(sort)
-  });
+  }));
 
 // This function fetches semantic recommendations for one selected Reader article.
 export const fetchArticleRecommendations = articleId =>
@@ -73,29 +88,37 @@ export const fetchDuplicateArticles = articleId =>
 /**
  * Mark article as seen
  */
-export const markArticleSeen = (id, payload) =>
-  api.post(`/articles/markasseen/${id}`, payload, {
-    suppressGlobalError: true,
-    timeout: 30000
-  });
+const disconnected = () => navigator.onLine === false || articleStateActions.offline();
+const articlesFor = (ids, articles = []) => ids.map(id => articles.find(article => String(article.id) === String(id)) || { id });
+const stateOnlyReadFallback = articles => error => {
+  if (!articleStateActions.available() || articles.some(article => article.duplicateOfArticleId != null) ||
+    !(['ERR_NETWORK', 'ECONNABORTED', 'ETIMEDOUT'].includes(error.code) || error.response?.status >= 500)) throw error;
+  return bulkAssignment(articles, 'set-status', 'read');
+};
+const bulkAssignment = async (articles, kind, value) => {
+  const response = await articleStateActions.assign(articles, kind, value);
+  return { data: { articles: response.data.articles || [response.data] } };
+};
 
-/**
- * Mark article as unread
- */
-export const markArticleUnread = (id) =>
-  api.post(`/articles/marktounread/${id}`);
-
-/**
- * Favorite / unfavorite article
- */
-export const markAsFavorite = (articleId, update) =>
-  api.post(`/articles/markasfavorite/${articleId}`, { update });
-
-/**
- * Favorite / unfavorite multiple articles
- */
-export const markManyAsFavorite = (articleIds, update) =>
-  api.post('/articles/markasfavorite', { articleIds, update });
+export const markArticleSeen = (id, payload, article = { id }) => {
+  if (articleStateActions.available() && (article.duplicateOfArticleId == null || disconnected()) && payload.markRead && (disconnected() || (payload.recordObservation === false && payload.grouping !== 'event'))) {
+    return articleStateActions.assign([article], 'set-status', 'read');
+  }
+  return articleStateActions.online(() => api.post(`/articles/markasseen/${id}`, payload, { suppressGlobalError: true, timeout: 30000 }),
+    payload.markRead ? async error => {
+      const response = await stateOnlyReadFallback([article])(error);
+      return { data: response.data.articles[0] };
+    } : undefined);
+};
+export const markArticleUnread = (id, article = { id }) => articleStateActions.available() && (article.duplicateOfArticleId == null || disconnected())
+  ? articleStateActions.assign([article], 'set-status', 'unread')
+  : articleStateActions.online(() => api.post(`/articles/marktounread/${id}`));
+export const markAsFavorite = (id, update, article = { id }) => articleStateActions.available() && (article.duplicateOfArticleId == null || disconnected())
+  ? articleStateActions.assign([article], 'set-favorite', update === 'mark')
+  : articleStateActions.online(() => api.post(`/articles/markasfavorite/${id}`, { update }));
+export const markManyAsFavorite = (articleIds, update, articles) => articleStateActions.available() && (!articles?.some(article => article.duplicateOfArticleId != null) || disconnected())
+  ? bulkAssignment(articlesFor(articleIds, articles), 'set-favorite', update === 'mark')
+  : articleStateActions.online(() => api.post('/articles/markasfavorite', { articleIds, update }));
 
 /**
  * Mark article as clicked
@@ -131,14 +154,15 @@ export const markMoreLikeThis = (articleId) =>
  * Mark all matching articles as read
  */
 export const markAllAsRead = (currentSelection, snapshotArticleIds) =>
-  api.post('/articles/markasread', {
+  articleStateActions.online(() => api.post('/articles/markasread', {
     ...normalizeArticleParams(currentSelection),
     scope: 'matching',
     ...(snapshotArticleIds === undefined ? {} : { snapshotArticleIds })
-  });
+  }));
 
 /**
  * Mark selected articles as read
  */
-export const markArticlesAsRead = (articleIds, grouping = 'none') =>
-  api.post('/articles/markasread', { articleIds, grouping });
+export const markArticlesAsRead = (articleIds, grouping = 'none', articles) => articleStateActions.available() && (disconnected() || (grouping !== 'event' && !articles?.some(article => article.duplicateOfArticleId != null)))
+  ? bulkAssignment(articlesFor(articleIds, articles), 'set-status', 'read')
+  : articleStateActions.online(() => api.post('/articles/markasread', { articleIds, grouping }), stateOnlyReadFallback(articlesFor(articleIds, articles)));

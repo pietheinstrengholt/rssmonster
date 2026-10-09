@@ -302,7 +302,7 @@ describe('auth controller', () => {
 
     expect(loginRes.status).toBe(404);
     expect(loginRes.body).not.toHaveProperty('token');
-    expect(validateRes.status).toBe(400);
+    expect(validateRes.status).toBe(401);
   });
 
   it('never enables development login in production', async () => {

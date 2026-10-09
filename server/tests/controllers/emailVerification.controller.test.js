@@ -47,8 +47,8 @@ describe('email verification controller', () => {
     const change = await request(app).patch('/api/auth/email').send({ email: 'x@example.com' });
     const verification = await request(app).post('/api/auth/verify-email/request');
 
-    expect(change.status).toBe(400);
-    expect(verification.status).toBe(400);
+    expect(change.status).toBe(401);
+    expect(verification.status).toBe(401);
   });
 
   it('changes only the authenticated account and clears its verification status', async () => {

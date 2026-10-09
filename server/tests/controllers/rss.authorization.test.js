@@ -62,7 +62,7 @@ describe('RSS authorization', () => {
   it('requires JWT authentication', async () => {
     const res = await request(app).get('/rss');
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(401);
     expect(res.body).toEqual({ message: 'Your session is not valid!' });
   });
 

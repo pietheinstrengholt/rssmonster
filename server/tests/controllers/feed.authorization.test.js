@@ -336,8 +336,8 @@ describe('feed ownership authorization', () => {
     const queryTokenResponse = await request(app)
       .get(`/api/feeds/refresh/${jobId}/events?token=${bearerToken}`);
 
-    expect(unauthenticatedResponse.status).toBe(400);
-    expect(queryTokenResponse.status).toBe(400);
+    expect(unauthenticatedResponse.status).toBe(401);
+    expect(queryTokenResponse.status).toBe(401);
   });
 
   it('GET refresh events hides jobs owned by another user', async () => {

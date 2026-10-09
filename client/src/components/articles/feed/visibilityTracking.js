@@ -104,6 +104,7 @@ export const articleFeedVisibilityMethods = {
   // Exposure shares the existing seen endpoint, with zero seconds and no read transition.
   // A zero local duration also deduplicates repeated observer callbacks in this collection.
   recordArticleExposure(articleId) {
+    if (this.offlineReadingStore?.readOnly || navigator.onLine === false) return false;
     if (this.visibleDuration.has(articleId)) return false;
     this.visibleDuration.set(articleId, 0);
     if (this.articles.find(article => Number(article.id) === articleId)?.firstSeen) {
@@ -114,6 +115,7 @@ export const articleFeedVisibilityMethods = {
   },
 
   async flushReadingTime() {
+    if (this.offlineReadingStore?.readOnly || navigator.onLine === false) return;
     const durations = this.persistedVisibleDuration;
     const selection = { ...this.selectionStore.currentSelection };
     const observations = [...this.visibleDuration].map(([id, ms]) => ({ id, ms,
@@ -158,6 +160,13 @@ export const articleFeedVisibilityMethods = {
   refreshReadingTime() {
     window.clearTimeout(this.readingTimer);
     this.readingTimer = null;
+    if (this.offlineReadingStore?.readOnly || navigator.onLine === false) {
+      // Offline reading records state only; never carry an offline interval into later evidence.
+      this.visibleSince.clear();
+      this.visibleDuration.clear();
+      this.activeReadingArticleId = null;
+      return;
+    }
     if (document.visibilityState !== 'visible') {
       this.pauseReadingTime();
       return;
@@ -360,6 +369,7 @@ export const articleFeedVisibilityMethods = {
 
   // Adds an article's current visible interval to its accumulated duration.
   finalizeVisibleDuration(articleId) {
+    if (this.offlineReadingStore?.readOnly || navigator.onLine === false) { this.visibleSince.delete(articleId); return; }
     const start = this.visibleSince.get(articleId);
     if (typeof start !== 'number') return;
 
@@ -372,7 +382,6 @@ export const articleFeedVisibilityMethods = {
 
   // Persists a passed article with bounded retries before committing it to the pool.
   async addToPool(articleId) {
-    if (this.offlineReadingStore?.readOnly || navigator.onLine === false) return;
     if (this.pool.has(articleId) || this.pendingSeenArticleIds.has(articleId)) return;
 
     // FINALIZE VISIBILITY IF ARTICLE IS STILL VISIBLE

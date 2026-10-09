@@ -77,7 +77,7 @@ describe('email enrollment controller', () => {
     await request(app)
       .post('/api/auth/validate')
       .set('Authorization', `Bearer ${enrollmentToken}`)
-      .expect(400);
+      .expect(401);
 
     const first = await request(app)
       .put('/api/auth/email-enrollment')

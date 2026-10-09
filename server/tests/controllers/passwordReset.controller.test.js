@@ -94,7 +94,7 @@ describe('password reset controller', () => {
       .set('Authorization', `Bearer ${newLogin.body.token}`);
 
     expect(confirmation.status).toBe(200);
-    expect(oldValidation.status).toBe(400);
+    expect(oldValidation.status).toBe(401);
     expect(oldPasswordLogin.status).toBe(401);
     expect(newLogin.status).toBe(200);
     expect(newValidation.status).toBe(200);

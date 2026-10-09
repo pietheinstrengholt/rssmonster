@@ -21,6 +21,8 @@ import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.
 import { retryDatabaseWrite } from '../utils/databaseRetry.js';
 import { addArticleTags, removeArticleTag } from '../services/articles/articleTags.js';
 import { markArticlesRead } from '../services/articles/bulkRead.js';
+import { articleStateValues } from '../services/articles/articleInteractionState.js';
+import { validSyncActions, synchronizeArticleActions } from '../services/articles/syncActions.js';
 import { normalizeTagList, normalizeTagName } from '../services/crawl/persistence/tags.js';
 
 const RELATED_STORY_ARTICLE_LIMIT = 50;
@@ -99,6 +101,16 @@ const serializeRelatedStoryArticle = articleRow => {
 
 // This function normalizes article grouping values used by API consumers.
 const normalizeGrouping = value => (value === 'event' ? value : 'none');
+
+const syncActions = async (req, res) => {
+  const userId = req.userData?.userId;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized: missing userId' });
+  if (!validSyncActions(req.body)) return res.status(400).json({ error: 'actions must contain 1 to 50 valid state assignments' });
+  try { return res.status(200).json(await synchronizeArticleActions(userId, req.body.actions)); } catch (error) {
+    console.error('Error synchronizing article actions:', error);
+    return res.status(500).json({ error: 'Unable to synchronize article actions' });
+  }
+};
 
 // This function attaches feed-level predicted affinity hints to unread articles.
 const attachPredictedAffinity = articles => {
@@ -1023,10 +1035,7 @@ const updateArticleStatus = async (userId, articleId, status) => {
       return { success: false, statusCode: 404, message: "Article not found" };
     }
 
-    await article.update({
-      status,
-      readAt: status === 'read' ? new Date() : null
-    });
+    await article.update(articleStateValues('set-status', status));
     return { success: true, statusCode: 200, article: article };
   } catch (error) {
     return { success: false, statusCode: 400, error: error };
@@ -1143,8 +1152,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
     let shouldMarkRead = false;
     const readArticles = [];
     if (markRead) {
-      payload.status = 'read';
-      payload.readAt = new Date();
+      Object.assign(payload, articleStateValues('set-status', 'read'));
       shouldMarkRead = true;
       if (article.status === 'unread') {
         readArticles.push({
@@ -1304,7 +1312,7 @@ const articleMarkAsFavorite = async (req, res, _next) => {
         });
       }
 
-      await Promise.all(articles.map(article => updateArticleBehavior(article, { favoriteInd, favoritedAt: favoriteInd ? new Date() : null })));
+      await Promise.all(articles.map(article => updateArticleBehavior(article, articleStateValues('set-favorite', Boolean(favoriteInd)))));
       return res.status(200).json({ articles });
     }
 
@@ -1331,7 +1339,7 @@ const articleMarkAsFavorite = async (req, res, _next) => {
         message: "Article not found"
       });
     }
-    await updateArticleBehavior(article, { favoriteInd, favoritedAt: favoriteInd ? new Date() : null });
+    await updateArticleBehavior(article, articleStateValues('set-favorite', Boolean(favoriteInd)));
     return res.status(200).json(article);
   } catch (err) {
     console.error('Error in articleMarkAsFavorite:', err);
@@ -1367,6 +1375,7 @@ const articleMarkAllAsRead = async (req, res, _next) => {
 };
 
 export default {
+  syncActions,
   articleAddTags,
   articleRemoveTag,
   getDailyBriefing,

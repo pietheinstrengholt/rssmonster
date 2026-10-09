@@ -271,32 +271,61 @@ Future store changes should preserve:
 
 When adding state, first identify its owner. Authentication facts belong to authentication, article membership and presentation choices belong to selection, server navigation snapshots and counts belong to overview, and transient application chrome belongs to UI. If no existing domain clearly owns it, reconsider whether it should be component-local before creating another global concern.
 
-## Offline reading (Phase 1)
+## Offline reading and synchronization
 
-`offlineReading.js` owns device/account configuration, preparation progress and the
-read-only offline presentation flag. `services/offlineReading.js` downloads an
-ungrouped chronological collection with `persistSettings: false`; it never uses the
-current search, Smart Folder, ranking or read filter. Native IndexedDB
-(`rssmonster-offline`, version 1) stores profiles and existing article detail DTOs,
-scoped by API origin and user ID. A generation is staged separately and activation
-and pruning commit together. A failed refresh retains the active generation.
+`offlineReading.js` owns account/device configuration, snapshot progress, offline
+presentation and synchronization status. Article collections remain component-local.
+`services/offlineReading.js` downloads an independent bounded all-status selection
+using cursor pagination. Activation and generation pruning commit together; failed
+refreshes retain the previous active generation. Limits are 100, 250, 1,000, 2,500
+and 5,000. No credentials are stored in IndexedDB.
 
-A local identity marker binds the previously validated account to a SHA-256
-fingerprint of its existing session cookie. Credentials are not stored in IndexedDB.
-An unreachable validation endpoint can unlock an enabled active snapshot; this does
-not establish server authentication. Recovery validates the current session before
-restoring online state. Explicit invalid authentication and logout clear only the
-account's profile and articles. Offline actions and automatic read/attention writes
-are blocked, with no queue or replay. Browser storage deletion/eviction still removes
-downloads.
+`rssmonster-offline` version 2 preserves v1 `profiles` and `articles`. New stores:
 
-Regression coverage lives in `tests/offline-*.test.js` and
-`tests/settings-offline-reading.test.js`. For native IndexedDB checks, serve the
-client with Vite on port 5173 and run `npm run test:offline-browser` with an existing
-Playwright installation (`PLAYWRIGHT_MODULE`) and browser
-(`READING_BROWSER_EXECUTABLE`); the script does not install dependencies.
-Pass `OFFLINE_PWA_BASE_URL` pointing at a production preview to also exercise a real
-service-worker-controlled offline reload, validated recovery and invalid-session logout.
+- `pendingActions`: auto-increment `localSequence`; account, account/order,
+  unique account/UUID and account/article/field indexes. Records hold explicit
+  desired state, UUID, creation time, dispatch state, attempts, next retry time,
+  bounded error code and the baseline value used for local discard.
+- `syncAccounts`: account key, session epoch, renewable lease owner/deadline,
+  last successful synchronization and durable reconciliation flag.
+
+`articleStateActions.js` atomically queues assignments and patches cached DTOs;
+visible controls change only after commit. Unsent assignments to the same field
+compact into a new UUID at the end of the queue. Dispatched actions remain immutable.
+Hydration overlays ordered pending intent on both online responses and downloads.
+Normal online Event/observation endpoints retain their behavior and reconcile cache
+state while sharing the snapshot/replay lease.
+Online duplicate-row controls retain their legacy endpoints. If a canonical explicit
+read request loses connectivity or receives a server failure before offline mode
+activates, only its explicit read assignment is queued; observations and Event
+expansion are never replayed. Authorization and validation failures do not queue.
+
+`articleSynchronization.js` validates the captured account/token, sends at most 50
+ordered actions, acknowledges receipt outcomes atomically, preserves newer intent,
+then refreshes authoritative overview and Smart Folder counts. Only successful
+reconciliation with no remaining actions advances `lastSync`. Ambiguous requests
+retain their UUID and payload with exponential backoff/jitter (up to five minutes)
+and server Retry-After guidance. Startup, local actions, reconnect/recovery,
+foreground, existing polling and manual refresh trigger replay. An IndexedDB lease
+and epoch fence serialize replay and snapshot activation across tabs; BroadcastChannel
+notifies account-local collections and session invalidation. No Background Sync is
+required. Terminal rejections are retained separately and do not contribute overlays.
+
+The identity marker binds the validated account to the existing cookie's SHA-256
+fingerprint. Network failure can unlock a prepared snapshot; invalid authentication
+returns 401 and clears content/credentials without deleting the queue. Explicit
+logout also clears content while retaining pending intent. Same-account reauthentication
+resumes replay; another account never loads or sends it. Queue storage is independent
+of cache enable/disable, configuration, generation replacement and download clearing.
+Explicit discard invalidates in-flight local completions and cannot reverse already
+accepted server effects. Browser eviction remains a durability limitation.
+
+Run `npm run test:coverage`, `npm run lint` and `npm run build` from `client/`.
+Native IndexedDB coverage uses `npm run test:offline-browser` against Vite's configured
+port 8080 (override `READING_TEST_BASE_URL`), with an existing Playwright module
+(`PLAYWRIGHT_MODULE`) and Chromium (`READING_BROWSER_EXECUTABLE`). Nothing is downloaded.
+Set `OFFLINE_PWA_BASE_URL` to a production preview to exercise service-worker-controlled
+cold startup, durable controls across offline reload, replay and expired-session logout.
 
 Offline implementation files:
 

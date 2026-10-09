@@ -23,7 +23,7 @@ describe('administrator inference settings API', () => {
     expect(response.status).toBe(403);
   });
   it('requires authentication and current database administrator role', async () => {
-    expect((await request(app).get('/api/setting/inference')).status).toBe(400);
+    expect((await request(app).get('/api/setting/inference')).status).toBe(401);
     const token = authorization(admin);
     await admin.update({ role: 'user' });
     expect((await request(app).get('/api/setting/inference').set('Authorization', token)).status).toBe(403);

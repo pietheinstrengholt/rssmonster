@@ -146,6 +146,7 @@ describe('PWA cache policy', () => {
       'src/components/shell/MobileMenuOverlay.vue': {
         file: 'assets/MobileMenuOverlay-AbCd1234.js'
       },
+      'src/components/shell/MobilePullToRefresh.vue': { file: 'assets/MobilePullToRefresh-AbCd1234.js', css: ['assets/MobilePullToRefresh-AbCd1234.css'] },
       'src/components/shell/MobileToolbar.vue': {
         file: 'assets/MobileToolbar-AbCd1234.js'
       },

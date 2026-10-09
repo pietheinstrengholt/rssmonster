@@ -477,3 +477,11 @@ owns menu keyboard/outside-click handling, and custom dates use native date inpu
 Calendar bounds intersect the age cutoff and existing search filters. The query
 keeps an inclusive `publishedAfter` and exclusive `publishedBefore` across pages.
 Scrolling only changes the separate current-article date label, never the filter.
+
+
+Offline read/unread and favorite/unfavorite controls persist via
+`articleStateActions` before emitting visible updates. Bulk offline operations use
+explicit loaded IDs; automatic offline reads omit observation evidence. Replay
+broadcasts patch local collections with pending overlays, preserving scroll and
+selection and avoiding a second optimistic count delta. Online Event/observation
+requests keep their existing endpoint semantics and reconcile cached state.

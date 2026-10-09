@@ -156,7 +156,7 @@ describe('Sidebar settings API', () => {
 
   it.each(['get', 'put'])('requires authentication for %s', async method => {
     const response = await request(app)[method]('/api/sidebar/settings').send({ settings: defaults });
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(401);
     expect(response.body).toHaveProperty('message');
   });
 });

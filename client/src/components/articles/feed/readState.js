@@ -52,6 +52,13 @@ export const articleFeedReadStateMethods = {
   async flushPool() {
     if ((!this.totalCount && !this.container.length) || this.isFlushed) return;
 
+    if (this.offlineReadingStore?.readOnly || navigator.onLine === false) {
+      try {
+        await this.markReaderArticlesRead(this.articles);
+        this.isFlushed = true;
+      } catch (error) { notifyActionError('Could not save these read changes on this device.', error); }
+      return;
+    }
     const selection = { ...(this.loadedSelection || this.selectionStore.currentSelection) };
     const restrictToSnapshot = Boolean(this.showingNewOnly || selection.publishedAfter || selection.publishedBefore);
     const snapshotArticleIds = [...this.container];
@@ -96,24 +103,26 @@ export const articleFeedReadStateMethods = {
 
   // Persists an article's seen status and updates local read state.
   async markArticleSeen(articleId, visibleSeconds = 0, options = {}) {
-    if (this.offlineReadingStore?.readOnly || navigator.onLine === false) return false;
     const selection = options.selection || this.selectionStore.currentSelection;
     const shouldMarkRead = !options.attentionOnly && ['unread', 'briefing'].includes(selection.status)
       && (options.markAsReadOnScroll ?? this.selectionStore.effectiveMarkAsReadOnScroll) === true
       && !this.manualUnreadArticleIds.has(Number(articleId));
 
+    const offline = this.offlineReadingStore?.readOnly || navigator.onLine === false;
+    if (offline && !shouldMarkRead) return false;
+
     try {
       const response = await markArticleSeen(articleId, {
         // Event-wide automatic reads must not reach a sibling deliberately kept unread.
-        grouping: shouldMarkRead && this.manualUnreadArticleIds.size > 0 ? 'none' : selection.grouping,
-        visibleSeconds,
-        recordObservation: options.recordObservation ?? true,
+        grouping: offline || (shouldMarkRead && this.manualUnreadArticleIds.size > 0) ? 'none' : selection.grouping,
+        visibleSeconds: offline ? 0 : visibleSeconds,
+        recordObservation: offline ? false : options.recordObservation ?? true,
         markRead: shouldMarkRead,
-        ...(options.readingWordCount !== undefined ? { readingWordCount: options.readingWordCount } : {}),
+        ...(!offline && options.readingWordCount !== undefined ? { readingWordCount: options.readingWordCount } : {}),
         selectedStatus: options.attentionOnly ? 'read' : shouldMarkRead
           ? 'unread'
           : (selection.status === 'unread' ? 'read' : selection.status)
-      });
+      }, (this.articles || []).find(article => String(article.id) === String(articleId)) || { id: articleId });
 
       this.applyArticleSeenResponse(response.data, {
         updateReadCounts: shouldMarkRead
@@ -158,7 +167,7 @@ export const articleFeedReadStateMethods = {
 
     if (!previousArticleId || String(previousArticleId) === String(id)) return;
 
-    const previousArticle = this.articles.find(article => String(article.id) === String(previousArticleId));
+    const previousArticle = (this.articles || []).find(article => String(article.id) === String(previousArticleId));
     if (!previousArticle || previousArticle.status === 'read'
       || this.manualUnreadArticleIds.has(Number(previousArticleId))) return;
 
@@ -190,7 +199,7 @@ export const articleFeedReadStateMethods = {
         recordObservation: false,
         markRead: true,
         selectedStatus: 'unread'
-      });
+      }, (this.articles || []).find(article => String(article.id) === String(articleId)) || { id: articleId });
 
       this.applyArticleSeenResponse(response.data, {
         updateReadCounts: wasUnread
@@ -220,7 +229,7 @@ export const articleFeedReadStateMethods = {
       if (status === 'read') {
         this.manualUnreadArticleIds.add(normalizedArticleId);
         if (this.seenPersistenceQueue) await this.seenPersistenceQueue;
-        const response = await markArticleUnread(id);
+        const response = await markArticleUnread(id, (this.articles || []).find(article => String(article.id) === String(id)) || { id });
         this.updateArticleStatusLocal(response.data);
         this.overviewStore.decreaseReadCount(response.data);
         this.pool.delete(normalizedArticleId);
@@ -233,7 +242,7 @@ export const articleFeedReadStateMethods = {
         recordObservation: false,
         markRead: true,
         selectedStatus: 'unread'
-      });
+      }, (this.articles || []).find(article => String(article.id) === String(id)) || { id });
 
       this.applyArticleSeenResponse(response.data, {
         updateReadCounts: status !== 'read'
@@ -271,7 +280,7 @@ export const articleFeedReadStateMethods = {
       if (status === 'read') {
         this.manualUnreadArticleIds.add(pendingArticleId);
         if (this.seenPersistenceQueue) await this.seenPersistenceQueue;
-        const response = await markArticleUnread(id);
+        const response = await markArticleUnread(id, (this.articles || []).find(article => String(article.id) === String(id)) || { id });
         this.updateArticleStatusLocal(response.data);
         this.overviewStore.decreaseReadCount(response.data);
         this.pool.delete(pendingArticleId);
@@ -284,7 +293,7 @@ export const articleFeedReadStateMethods = {
         recordObservation: false,
         markRead: true,
         selectedStatus: 'unread'
-      });
+      }, (this.articles || []).find(article => String(article.id) === String(id)) || { id });
 
       this.applyArticleSeenResponse(response.data, { updateReadCounts: status !== 'read' });
       this.manualUnreadArticleIds.delete(pendingArticleId);
@@ -343,7 +352,7 @@ export const articleFeedReadStateMethods = {
     const unreadArticles = articles.filter(article => article.status !== 'read');
     if (!unreadArticles.length) return;
 
-    const response = await markArticlesAsRead(unreadArticles.map(article => article.id));
+    const response = await markArticlesAsRead(unreadArticles.map(article => article.id), 'none', unreadArticles);
     const updatedArticles = response.data.articles || [];
 
     for (const article of updatedArticles) {
@@ -354,7 +363,9 @@ export const articleFeedReadStateMethods = {
       this.pool.add(normalizedArticleId);
     }
 
-    await this.overviewStore.fetchOverviewSplit({ forceUpdate: true });
+    if (this.offlineReadingStore?.readOnly || navigator.onLine === false) {
+      for (const article of updatedArticles) this.overviewStore.increaseReadCount(article);
+    } else await this.overviewStore.fetchOverviewSplit({ forceUpdate: true });
   },
 
   // Toggles the selected reader article between read and unread.

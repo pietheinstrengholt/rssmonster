@@ -42,6 +42,7 @@ import OidcTransactionModel from './oidcTransaction.js';
 import CategoryModel from './category.js';
 import FeedModel from './feed.js';
 import ArticleModel from './article.js';
+import ArticleSyncActionModel from './articleSyncAction.js';
 import TagModel from './tag.js';
 import ActionModel from './action.js';
 import SettingModel from './setting.js';
@@ -78,6 +79,7 @@ const OidcTransaction = OidcTransactionModel(sequelize);
 const Category = CategoryModel(sequelize);
 const Feed = FeedModel(sequelize);
 const Article = ArticleModel(sequelize);
+const ArticleSyncAction = ArticleSyncActionModel(sequelize);
 const Tag = TagModel(sequelize);
 const Action = ActionModel(sequelize);
 const Setting = SettingModel(sequelize);
@@ -114,6 +116,8 @@ OidcTransaction.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
 OidcTransaction.belongsTo(User, { foreignKey: 'linkUserId', as: 'linkUser', onDelete: 'CASCADE' });
 
 // User ↔ Action
+User.hasMany(ArticleSyncAction, { foreignKey: 'userId', onDelete: 'CASCADE' });
+ArticleSyncAction.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE' });
 User.hasMany(Action, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Action.belongsTo(User, { foreignKey: 'userId' });
 
@@ -336,6 +340,7 @@ export default {
   Category,
   Feed,
   Article,
+  ArticleSyncAction,
   Tag,
   Action,
   Setting,

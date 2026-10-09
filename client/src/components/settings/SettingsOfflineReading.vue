@@ -92,7 +92,7 @@
           <BootstrapIcon icon="info-circle" decorative />
           <span>
             Offline reading is disabled. Existing downloads are retained until
-            you clear offline data.
+            you clear downloaded articles.
           </span>
         </div>
       </section>
@@ -176,7 +176,16 @@
               </div>
             </dl>
 
+            <dl class="offline-status-list" aria-live="polite">
+              <div><dt>Synchronization</dt><dd>{{ offlineReadingStore.syncStatus }}</dd></div>
+              <div><dt>Pending changes</dt><dd>{{ offlineReadingStore.pendingCount }}</dd></div>
+              <div><dt>Failed changes</dt><dd>{{ offlineReadingStore.failedCount }}</dd></div>
+              <div><dt>Last synchronized</dt><dd>{{ offlineReadingStore.lastSync ? new Date(offlineReadingStore.lastSync).toLocaleString() : 'Never' }}</dd></div>
+            </dl>
+            <p v-if="offlineReadingStore.syncError" role="status">{{ offlineReadingStore.syncError }}</p>
             <div class="offline-status-actions">
+              <button class="app-button app-button--secondary" type="button" :disabled="offlineReadingStore.syncStatus === 'synchronizing'" @click="offlineReadingStore.synchronize(true)">Retry synchronization</button>
+              <button class="app-button app-button--outline-danger" type="button" :disabled="saving || !(offlineReadingStore.pendingCount || offlineReadingStore.failedCount)" @click="confirmDiscard = true">Discard unsynchronized changes</button>
               <button
                 class="app-button app-button--primary"
                 type="button"
@@ -199,7 +208,7 @@
                 @click="confirmClear = true"
               >
                 <BootstrapIcon icon="trash" decorative />
-                Clear offline data
+                Clear downloaded articles
               </button>
             </div>
           </div>
@@ -254,15 +263,18 @@
 
     <ConfirmDialog
       v-if="confirmClear"
-      title="Clear offline data?"
-      confirm-label="Clear offline data"
+      title="Clear downloaded articles?"
+      confirm-label="Clear downloaded articles"
       :busy="saving"
       @confirm="clear"
       @cancel="confirmClear = false"
       @close="confirmClear = false"
     >
       Remove this account's downloaded articles and offline reading
-      configuration from this device?
+      configuration from this device? Unsynchronized changes will be retained.
+    </ConfirmDialog>
+    <ConfirmDialog v-if="confirmDiscard" title="Discard unsynchronized changes?" confirm-label="Discard changes" :busy="saving" @confirm="discard" @cancel="confirmDiscard = false" @close="confirmDiscard = false">
+      Permanently remove this account's pending and failed changes from this device. Changes already accepted by the server cannot be undone. Downloaded states return to their stored baseline until refreshed.
     </ConfirmDialog>
   </div>
 </template>
@@ -279,9 +291,9 @@ export default {
   name: 'SettingsOfflineReading',
   components: { SettingsPageIntro, ConfirmDialog },
   data: () => ({
-    saving: false, error: '', confirmClear: false, limits: OFFLINE_ARTICLE_LIMITS,
-    available: ['Full article text', 'Basic article metadata', 'Existing tags included in article DTOs', 'Current read/saved state from the downloaded snapshot'],
-    unavailable: ['External embeds', 'Video/audio streams', 'Live recommendations/ranking changes', 'Server-wide search/results', 'New read/saved changes made while offline']
+    saving: false, error: '', confirmClear: false, confirmDiscard: false, limits: OFFLINE_ARTICLE_LIMITS,
+    available: ['Full article text', 'Basic article metadata', 'Existing tags included in article DTOs', 'Read/unread and saved/unsaved changes, synchronized when connected'],
+    unavailable: ['External embeds', 'Video/audio streams', 'Live recommendations/ranking changes', 'Server-wide search/results']
   }),
   computed: {
     ...mapStores(useAuthStore, useOfflineReadingStore),
@@ -293,6 +305,10 @@ export default {
     if (!this.offlineReadingStore.account) await this.offlineReadingStore.initialize(this.authStore.userId);
   },
   methods: {
+    async discard() {
+      this.saving = true;
+      try { await this.offlineReadingStore.discardPendingChanges(); this.confirmDiscard = false; } catch (error) { this.error = error.message; } finally { this.saving = false; }
+    },
     async configure(changes) {
       this.saving = true;
       this.error = '';

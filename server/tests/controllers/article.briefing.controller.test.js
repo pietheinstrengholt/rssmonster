@@ -404,7 +404,7 @@ describe('GET /api/articles/briefing', () => {
   it('requires authentication', async () => {
     const response = await request(app).get('/api/articles/briefing');
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(401);
     expect(response.body).toEqual({ message: 'Your session is not valid!' });
   });
 

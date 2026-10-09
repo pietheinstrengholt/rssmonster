@@ -120,7 +120,7 @@ describe('settings processing jobs status', () => {
     expect(JSON.stringify(response.body)).not.toContain('private content');
 
     const unauthenticated = await request(app).get('/api/setting/processing-jobs');
-    expect(unauthenticated.status).toBe(400);
+    expect(unauthenticated.status).toBe(401);
   });
 
   it('retries a bounded owned batch and ignores caller-supplied owners and active jobs', async () => {
@@ -152,7 +152,7 @@ describe('settings processing jobs status', () => {
     const empty = await request(app).post('/api/setting/processing-jobs/retry')
       .set('Authorization', authHeaderFor(user));
     expect(empty.body).toEqual({ requeuedCount: 0, recoveredCount: 0, remainingCount: 0 });
-    expect((await request(app).post('/api/setting/processing-jobs/retry')).status).toBe(400);
+    expect((await request(app).post('/api/setting/processing-jobs/retry')).status).toBe(401);
   });
 
   it('clears only the current user succeeded and dead jobs', async () => {
@@ -192,6 +192,6 @@ describe('settings processing jobs status', () => {
     }
 
     const unauthenticated = await request(app).delete('/api/setting/processing-jobs');
-    expect(unauthenticated.status).toBe(400);
+    expect(unauthenticated.status).toBe(401);
   });
 });

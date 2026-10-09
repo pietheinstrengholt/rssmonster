@@ -201,7 +201,7 @@ describe('account settings controller', () => {
     const staleSession = await request(app)
       .get('/api/auth/account')
       .set('Authorization', `Bearer ${owner.token}`);
-    expect(staleSession.status).toBe(400);
+    expect(staleSession.status).toBe(401);
   });
 
   it('clears verification and pauses digest delivery when the email changes', async () => {

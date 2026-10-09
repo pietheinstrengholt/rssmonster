@@ -94,14 +94,14 @@ describe('article feed read-state reconciliation', () => {
     await context.addToPool(2);
 
     expect(context.articles[1].status).toBe('unread');
-    expect(markArticleSeen).toHaveBeenCalledWith(2, expect.objectContaining({ markRead: false }));
+    expect(markArticleSeen).toHaveBeenCalledWith(2, expect.objectContaining({ markRead: false }), expect.objectContaining({ id: expect.any(Number) }));
     expect(context.manualUnreadArticleIds.has(2)).toBe(true);
 
     context.resetReadTracking();
     markArticleSeen.mockResolvedValue({ data: { id: 2, status: 'read', readArticles: [context.articles[1]] } });
     await context.addToPool(2);
 
-    expect(markArticleSeen).toHaveBeenLastCalledWith(2, expect.objectContaining({ markRead: true }));
+    expect(markArticleSeen).toHaveBeenLastCalledWith(2, expect.objectContaining({ markRead: true }), expect.objectContaining({ id: expect.any(Number) }));
     expect(context.articles[1].status).toBe('read');
   });
 
@@ -120,7 +120,7 @@ describe('article feed read-state reconciliation', () => {
     finishAutomaticRead({ data: { id: 2, status: 'read' } });
     await Promise.all([scrolling, manualUnread]);
 
-    expect(markArticleUnread).toHaveBeenCalledWith(2);
+    expect(markArticleUnread).toHaveBeenCalledWith(2, expect.objectContaining({ id: expect.any(Number) }));
     expect(context.articles[1].status).toBe('unread');
   });
 
@@ -133,7 +133,7 @@ describe('article feed read-state reconciliation', () => {
 
     expect(markArticleSeen).toHaveBeenCalledWith(1, expect.objectContaining({
       grouping: 'none', markRead: true
-    }));
+    }), expect.objectContaining({ id: expect.any(Number) }));
   });
 
   it('keeps a manually unread Event sibling unread when leaving another Minimal article', async () => {
@@ -166,8 +166,8 @@ describe('article feed read-state reconciliation', () => {
     markArticleSeen.mockResolvedValue({ data: { id: 1, status: 'read' } });
     await context.toggleArticleReadStatus({ id: 1, status: 'unread' });
     await context.finishReadingSession();
-    expect(markArticleSeen).toHaveBeenNthCalledWith(1, 1, expect.objectContaining({ visibleSeconds: 0, recordObservation: false, markRead: true }));
-    expect(markArticleSeen).toHaveBeenNthCalledWith(2, 1, expect.objectContaining({ visibleSeconds: 20, readingWordCount: 100, recordObservation: true, markRead: false }));
+    expect(markArticleSeen).toHaveBeenNthCalledWith(1, 1, expect.objectContaining({ visibleSeconds: 0, recordObservation: false, markRead: true }), expect.objectContaining({ id: expect.any(Number) }));
+    expect(markArticleSeen).toHaveBeenNthCalledWith(2, 1, expect.objectContaining({ visibleSeconds: 20, readingWordCount: 100, recordObservation: true, markRead: false }), expect.objectContaining({ id: expect.any(Number) }));
     clock.mockRestore();
   });
 
@@ -175,7 +175,7 @@ describe('article feed read-state reconciliation', () => {
     const context = createContext();
     markArticleSeen.mockResolvedValue({ data: { id: 1, status: 'unread', attentionBucket: 3 } });
     await context.markArticleSeen(1, 120, { attentionOnly: true, selection: { grouping: 'none', status: 'unread' } });
-    expect(markArticleSeen).toHaveBeenCalledWith(1, { grouping: 'none', visibleSeconds: 120, selectedStatus: 'read', recordObservation: true, markRead: false });
+    expect(markArticleSeen).toHaveBeenCalledWith(1, { grouping: 'none', visibleSeconds: 120, selectedStatus: 'read', recordObservation: true, markRead: false }, expect.objectContaining({ id: expect.any(Number) }));
     expect(context.articles[0].status).toBe('unread');
     expect(context.overviewStore.increaseReadCount).not.toHaveBeenCalled();
   });
@@ -221,7 +221,7 @@ describe('article feed read-state reconciliation', () => {
       recordObservation: true,
       markRead: true,
       selectedStatus: 'unread'
-    });
+    }, expect.objectContaining({ id: expect.any(Number) }));
     expect(context.articles.map(article => article.status)).toEqual(['read', 'read', 'read']);
     expect(context.overviewStore.increaseReadCount).toHaveBeenCalledTimes(2);
     expect(context.overviewStore.decreaseActiveSmartFolderCount).toHaveBeenCalledOnce();
@@ -251,7 +251,7 @@ describe('article feed read-state reconciliation', () => {
       recordObservation: true,
       markRead: false,
       selectedStatus: 'read'
-    });
+    }, expect.objectContaining({ id: expect.any(Number) }));
     expect(context.articles[0].status).toBe('unread');
     expect(context.overviewStore.increaseReadCount).not.toHaveBeenCalled();
     expect(context.overviewStore.decreaseActiveSmartFolderCount).not.toHaveBeenCalled();
@@ -281,7 +281,7 @@ describe('article feed read-state reconciliation', () => {
       recordObservation: true,
       markRead: true,
       selectedStatus: 'unread'
-    });
+    }, expect.objectContaining({ id: expect.any(Number) }));
     expect(context.articles[0].status).toBe('read');
     expect(context.overviewStore.increaseReadCount).toHaveBeenCalledOnce();
     expect(context.overviewStore.decreaseActiveSmartFolderCount).toHaveBeenCalledOnce();
@@ -311,7 +311,7 @@ describe('article feed read-state reconciliation', () => {
       recordObservation: false,
       markRead: true,
       selectedStatus: 'unread'
-    });
+    }, expect.objectContaining({ id: expect.any(Number) }));
     expect(context.articles[0].status).toBe('read');
     expect(context.overviewStore.increaseReadCount).toHaveBeenCalledOnce();
     expect(context.overviewStore.decreaseActiveSmartFolderCount).toHaveBeenCalledOnce();
@@ -340,7 +340,7 @@ describe('article feed read-state reconciliation', () => {
       recordObservation: true,
       markRead: true,
       selectedStatus: 'unread'
-    });
+    }, expect.objectContaining({ id: expect.any(Number) }));
     expect(context.articles[0].status).toBe('read');
     expect(context.overviewStore.increaseReadCount).toHaveBeenCalledWith(
       expect.objectContaining({ id: 1, feedId: 10 })
@@ -373,7 +373,7 @@ describe('article feed read-state reconciliation', () => {
       recordObservation: true,
       markRead: false,
       selectedStatus: 'briefing'
-    });
+    }, expect.objectContaining({ id: expect.any(Number) }));
     expect(context.articles[0].status).toBe('unread');
     expect(context.overviewStore.increaseReadCount).not.toHaveBeenCalled();
   });
@@ -403,7 +403,7 @@ describe('article feed read-state reconciliation', () => {
 
     expect(context.articles[0].status).toBe(enabled ? 'read' : 'unread');
     if (enabled) {
-      expect(markArticleSeen).toHaveBeenCalledWith(1, expect.objectContaining({ markRead: true }));
+      expect(markArticleSeen).toHaveBeenCalledWith(1, expect.objectContaining({ markRead: true }), expect.objectContaining({ id: expect.any(Number) }));
       expect(context.overviewStore.increaseReadCount).toHaveBeenCalledOnce();
     } else {
       expect(markArticleSeen).not.toHaveBeenCalled();
@@ -483,7 +483,7 @@ describe('article feed read-state reconciliation', () => {
     await Promise.resolve();
 
     expect(markArticleSeen).toHaveBeenCalledOnce();
-    expect(markArticleSeen).toHaveBeenCalledWith(1, expect.any(Object));
+    expect(markArticleSeen).toHaveBeenCalledWith(1, expect.any(Object), expect.objectContaining({ id: expect.any(Number) }));
 
     resolveFirstRequest({
       data: { ...context.articles[0], status: 'read' }
@@ -516,7 +516,7 @@ describe('article feed read-state reconciliation', () => {
       recordObservation: false,
       markRead: true,
       selectedStatus: 'unread'
-    });
+    }, expect.objectContaining({ id: expect.any(Number) }));
     expect(context.pool).toContain(1);
     expect(context.activeMinimalArticleId).toBeNull();
     expect(context.pendingReadStatusArticleIds.size).toBe(0);
@@ -542,7 +542,7 @@ describe('article feed read-state reconciliation', () => {
     await context.toggleMinimalArticleReadStatus({ id: 2, status: 'read' });
     await context.toggleMinimalArticleReadStatus({ id: 1, status: 'unread' });
 
-    expect(markArticleUnread).toHaveBeenCalledWith(2);
+    expect(markArticleUnread).toHaveBeenCalledWith(2, expect.objectContaining({ id: expect.any(Number) }));
     expect(context.overviewStore.decreaseReadCount).toHaveBeenCalledOnce();
     expect(context.pool).not.toContain(2);
     expect(context.activeMinimalArticleId).toBeNull();
@@ -611,7 +611,7 @@ describe('article feed read-state reconciliation', () => {
 
     await context.markReaderArticlesRead(context.articles);
 
-    expect(markArticlesAsRead).toHaveBeenCalledWith([1, 3]);
+    expect(markArticlesAsRead).toHaveBeenCalledWith([1, 3], 'none', expect.arrayContaining([expect.objectContaining({ id: 1 }), expect.objectContaining({ id: 3 })]));
     expect(context.pool).toEqual(new Set([1, 3]));
     expect(context.overviewStore.fetchOverviewSplit).toHaveBeenCalledWith({
       forceUpdate: true
@@ -634,4 +634,16 @@ describe('article feed read-state reconciliation', () => {
       error
     );
   });
+});
+
+
+it('queues automatic offline read state without carrying reading evidence or Event expansion', async () => {
+  const context = createContext({ offlineReadingStore: { readOnly: true } });
+  markArticleSeen.mockResolvedValue({ data: { ...context.articles[0], status: 'read' } });
+  expect(await context.markArticleSeen(1, 120, { markAsReadOnScroll: true, readingWordCount: 400 })).toBe(true);
+  expect(markArticleSeen).toHaveBeenCalledWith(1, expect.objectContaining({ grouping: 'none', visibleSeconds: 0, recordObservation: false, markRead: true }), expect.objectContaining({ id: 1 }));
+  expect(markArticleSeen.mock.calls[0][1]).not.toHaveProperty('readingWordCount');
+  markArticleSeen.mockClear();
+  expect(await context.markArticleSeen(1, 120, { attentionOnly: true })).toBe(false);
+  expect(markArticleSeen).not.toHaveBeenCalled();
 });

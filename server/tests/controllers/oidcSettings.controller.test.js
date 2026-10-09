@@ -42,7 +42,7 @@ afterEach(async () => {
 
 describe('OIDC server settings', () => {
   it.each(['get', 'put', 'delete'])('requires an authenticated current administrator for %s', async method => {
-    expect((await request(app)[method]('/api/setting/server/oidc')).status).toBe(400);
+    expect((await request(app)[method]('/api/setting/server/oidc')).status).toBe(401);
     expect((await endpoint(method, user)).status).toBe(403);
     await admin.update({ role: 'user' });
     try { expect((await endpoint(method)).status).toBe(403); } finally { await admin.update({ role: 'admin' }); }

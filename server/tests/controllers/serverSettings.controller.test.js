@@ -29,7 +29,7 @@ afterEach(async () => {
 
 describe('server settings', () => {
   it.each(['get', 'put'])('requires a current administrator for %s', async method => {
-    expect((await request(app)[method]('/api/setting/server')).status).toBe(400);
+    expect((await request(app)[method]('/api/setting/server')).status).toBe(401);
     expect((await settings(method, user).send({ allowRegistration: false })).status).toBe(403);
     const token = authorization(admin);
     await admin.update({ role: 'user' });

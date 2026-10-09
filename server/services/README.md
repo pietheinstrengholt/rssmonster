@@ -120,3 +120,17 @@ taxonomy names and Article recommendations. The shared `vectors/embeddingModel.j
 helper rejects unknown or incompatible provenance before numerical comparison.
 Unknown vectors are not assigned the configured model on reuse. Model changes
 require explicit re-embedding; this check does not rebuild or backfill data.
+
+
+### Offline article state receipts
+
+`articles/syncActions.js` processes authenticated explicit state assignments in
+order, locking User before Article to match `updateArticleBehavior()`. Per-action
+transactions include the mutation, immutable UUID receipt and personalization
+refresh request. `articles/articleInteractionState.js` shares read/favorite field
+assignment with existing controllers. Sync does not record observations or expand
+Events. `ArticleSyncAction` is registered through the model factory; no article FK
+allows receipts to outlive deleted content. See `docs/rssmonster-api.md` for the
+contract and conflict policy. MySQL focused coverage is
+`tests/controllers/articleSyncActions.test.js`; it is also explicitly included in
+`npm run test:sqlite` after `npm run db` against an isolated SQLite test file.

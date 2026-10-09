@@ -334,7 +334,7 @@ describe('user controller administration', () => {
       await userMiddleware.isLoggedIn({
         headers: { authorization: `Bearer ${oldToken}` }
       }, oldSessionRes, oldSessionNext);
-      expect(oldSessionRes.status).toHaveBeenCalledWith(400);
+      expect(oldSessionRes.status).toHaveBeenCalledWith(401);
       expect(oldSessionNext).not.toHaveBeenCalled();
 
       const newSessionNext = vi.fn();

@@ -77,7 +77,7 @@ describe('Reader article toolbar', () => {
     markAsFavorite.mockResolvedValue({ data: { favoriteInd: 0 } });
     await button('Remove from saved').trigger('click');
     await flushPromises();
-    expect(markAsFavorite).toHaveBeenLastCalledWith(42, 'unmark');
+    expect(markAsFavorite).toHaveBeenLastCalledWith(42, 'unmark', expect.objectContaining({ id: expect.any(Number) }));
     expect(wrapper.emitted('update-favorite').at(-1)).toEqual([{ id: 42, favoriteInd: 0 }]);
   });
 

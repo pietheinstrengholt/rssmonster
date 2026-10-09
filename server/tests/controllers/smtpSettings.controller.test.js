@@ -42,7 +42,7 @@ afterEach(async () => {
 
 describe('SMTP settings API', () => {
   it.each(['get', 'put', 'delete'])('requires authentication and current admin role for %s', async method => {
-    expect((await request(app)[method]('/api/setting/server/smtp')).status).toBe(400);
+    expect((await request(app)[method]('/api/setting/server/smtp')).status).toBe(401);
     expect((await endpoint(method, user).send({ overrides: {}, passwordAction: 'keep' })).status).toBe(403);
     const token = authorization(admin);
     await admin.update({ role: 'user' });

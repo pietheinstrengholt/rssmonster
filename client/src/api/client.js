@@ -19,9 +19,10 @@ const api = axios.create({
 let offlineReadOnly = false;
 export const setOfflineReadOnly = value => { offlineReadOnly = value; };
 
-// Offline reading is read-only, including automatic attention/read tracking.
+// Unsupported offline operations stay blocked. Replay validates the account first.
 api.interceptors.request.use(config => {
-  if ((offlineReadOnly || navigator.onLine === false) && !config.url.includes('/auth/validate')) {
+  const authenticatedReplay = config.allowOfflineSync && config.url === '/articles/sync-actions';
+  if ((offlineReadOnly || navigator.onLine === false) && !config.url.includes('/auth/validate') && !(authenticatedReplay && navigator.onLine !== false)) {
     return Promise.reject(new axios.AxiosError('This action requires a connection to RSSMonster.', 'ERR_OFFLINE', config));
   }
   return config;

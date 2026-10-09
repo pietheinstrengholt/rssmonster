@@ -54,7 +54,7 @@ describe('Generated Feed management API', () => {
       request(app).post('/api/generated-feeds/1/regenerate-token')
     ]);
 
-    expect(responses.map(response => response.status)).toEqual([400, 400, 400, 400, 400, 400]);
+    expect(responses.map(response => response.status)).toEqual([401, 401, 401, 401, 401, 401]);
   });
 
   it('creates, lists, reads, and updates only mutable configuration', async () => {

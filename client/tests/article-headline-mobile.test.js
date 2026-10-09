@@ -212,7 +212,7 @@ describe('mobile Headlines', () => {
       await wrapper.findAll('[role="menuitem"]').find(item => item.text() === label).trigger('click');
       await flushPromises();
     }
-    expect(favoriteApi.mock.calls).toEqual([[42, 'mark'], [42, 'unmark']]);
+    expect(favoriteApi.mock.calls.map(call => call.slice(0, 2))).toEqual([[42, 'mark'], [42, 'unmark']]);
     expect(wrapper.emitted('update-favorite')).toEqual([[{ id: 42, favoriteInd: 1 }], [{ id: 42, favoriteInd: 0 }]]);
     expect(wrapper.emitted('minimal-article-opened')).toBeUndefined();
   });

@@ -29,7 +29,7 @@ afterEach(async () => {
 });
 describe('crawl settings API and runtime', () => {
   it.each(['get', 'put', 'delete'])('requires a current administrator for %s', async method => {
-    expect((await request(app)[method]('/api/setting/server/crawl')).status).toBe(400);
+    expect((await request(app)[method]('/api/setting/server/crawl')).status).toBe(401);
     expect((await endpoint(method, user)).status).toBe(403);
     await admin.update({ role: 'user' });
     try { expect((await endpoint(method)).status).toBe(403); } finally { await admin.update({ role: 'admin' }); }

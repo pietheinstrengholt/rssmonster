@@ -37,7 +37,7 @@ describe('recommendation diagnostic API', () => {
     const owner = await fixture(); const foreign = await fixture();
     expect((await request(app).get(`/api/articles/${foreign.article.id}`).set('Authorization', owner.authorization).query({ diagnostics: 'true' })).status).toBe(404);
     expect((await request(app).get('/api/articles').set('Authorization', owner.authorization).query({ diagnostics: 'true', pagination: 'cursor' })).status).toBe(400);
-    // Missing sessions use the existing authentication middleware's 400 contract.
-    expect((await request(app).get('/api/articles').query({ diagnostics: 'true' })).status).toBe(400);
+    // Missing sessions use the existing authentication middleware's 401 contract.
+    expect((await request(app).get('/api/articles').query({ diagnostics: 'true' })).status).toBe(401);
   });
 });

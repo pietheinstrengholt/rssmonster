@@ -144,7 +144,7 @@ describe('ArticleFeed view loading', () => {
     });
     await flushPromises();
 
-    expect(markArticleUnread).toHaveBeenCalledWith(42);
+    expect(markArticleUnread).toHaveBeenCalledWith(42, expect.objectContaining({ id: expect.any(Number) }));
     wrapper.unmount();
   });
 

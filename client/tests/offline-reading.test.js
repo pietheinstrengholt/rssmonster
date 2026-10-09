@@ -27,19 +27,22 @@ const createDatabase = () => {
 const page = (ids, cursor = null) => ({ data: { page: { itemIds: ids, articles: ids.map(article), hasMore: Boolean(cursor), nextCursor: cursor } } });
 
 describe('offline schema upgrades', () => {
-  it('creates the account keys and publication index at version 1', () => {
+  it('creates account snapshots and an independent action queue at version 2', () => {
     const index = vi.fn();
     const createObjectStore = vi.fn(() => ({ createIndex: index }));
     upgradeOfflineDatabase({ createObjectStore }, 0);
     expect(createObjectStore.mock.calls).toEqual([
       ['profiles', { keyPath: ['apiOrigin', 'userId'] }],
-      ['articles', { keyPath: ['apiOrigin', 'userId', 'generation', 'articleId'] }]
+      ['articles', { keyPath: ['apiOrigin', 'userId', 'generation', 'articleId'] }],
+      ['pendingActions', { keyPath: 'localSequence', autoIncrement: true }],
+      ['syncAccounts', { keyPath: ['apiOrigin', 'userId'] }]
     ]);
     expect(index).toHaveBeenCalledWith('publication', ['apiOrigin', 'userId', 'generation', 'publicationDate', 'articleId']);
+    expect(index).toHaveBeenCalledWith('accountAction', ['apiOrigin', 'userId', 'actionId'], { unique: true });
   });
   it('preserves the current schema during subsequent upgrades', () => {
     const createObjectStore = vi.fn();
-    upgradeOfflineDatabase({ createObjectStore }, 1);
+    upgradeOfflineDatabase({ createObjectStore }, 2);
     expect(createObjectStore).not.toHaveBeenCalled();
   });
 });

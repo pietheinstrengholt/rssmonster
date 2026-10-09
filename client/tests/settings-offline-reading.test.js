@@ -68,11 +68,11 @@ describe('offline Settings', () => {
     await flushPromises();
     expect(wrapper.find('progress').exists()).toBe(false);
   });
-  it('confirms Clear offline data and removes configuration and articles', async () => {
-    await button('Clear offline data').trigger('click');
+  it('confirms Clear downloaded articles and removes configuration and articles', async () => {
+    await button('Clear downloaded articles').trigger('click');
     expect(offlineReading.clearSnapshot).not.toHaveBeenCalled();
-    expect(wrapper.get('[role="dialog"]').text()).toContain('Clear offline data?');
-    const confirm = wrapper.get('[role="dialog"]').findAll('button').find(item => item.text() === 'Clear offline data');
+    expect(wrapper.get('[role="dialog"]').text()).toContain('Clear downloaded articles?');
+    const confirm = wrapper.get('[role="dialog"]').findAll('button').find(item => item.text() === 'Clear downloaded articles');
     await confirm.trigger('click');
     await flushPromises();
     expect(offlineReading.clearSnapshot).toHaveBeenCalledWith(offlineAccount(1));

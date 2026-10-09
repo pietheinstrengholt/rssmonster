@@ -81,24 +81,36 @@ not need to reinstall the app for ordinary server updates.
 Installation alone does not download your article archive. The service worker
 caches the interface and application assets after an online visit. To prepare
 articles, sign in while connected and open **Settings → Offline reading**. Enable
-offline reading and choose **Articles to keep offline**: 50, 100, or 500 of
-your latest articles. Preparation starts when you enable it or change the
-limit; **Refresh now** updates the downloaded selection while connected.
-The status panel shows the number prepared and the last refresh. Downloads are
-stored on this device for this account and server.
+offline reading and choose **Articles to keep offline**: 100, 250, 1,000,
+2,500, or 5,000 of your latest articles. Preparation starts when you enable it
+or change the limit; **Refresh now** updates downloads while connected.
+Downloads are stored on this device for this account and server.
 
-When the server cannot be reached, a previously validated session with a
-prepared offline library can open the downloaded articles in read-only mode.
-You can read their stored text, metadata, tags, and read/saved state as captured
-at download time. External embeds and streams, live recommendations and
-rankings, server search, and new read/saved changes are unavailable offline.
-Changes made while disconnected are not queued for later upload. Reconnect to
-resume normal reading and refresh the selection. A private instance must remain
-reachable through the network or VPN used for online access.
+When the server cannot be reached, a previously validated session with a prepared
+offline library can open downloaded text, metadata and tags. Read/unread and
+saved/unsaved changes are persisted before appearing in the interface. They survive
+closing and reopening the PWA and synchronize automatically when the same account
+can authenticate with the server. Automatic read transitions save only read state;
+offline exposure duration and attention are never uploaded. Bulk offline actions
+cover the explicit articles in the downloaded collection, without Event expansion.
+External embeds, streams, live rankings, server search, clicks, feedback and tag
+editing require a connection.
 
-Disabling offline reading retains existing downloads. **Clear offline data**
-removes this account's downloaded articles and offline configuration from the
-device. Signing out also clears the saved offline data for that account.
+Offline Settings shows pending/failed changes, synchronization status and the last
+successful synchronization. **Retry synchronization** retries pending requests.
+Terminal failures remain visible until explicitly discarded; retry does not silently
+recreate rejected actions. A delayed offline assignment can overwrite a newer
+server assignment to the same field; read and saved state are independent.
+
+Disabling offline reading retains downloads and pending intent. **Clear downloaded
+articles** removes this account's content and configuration, retaining queued changes.
+**Discard unsynchronized changes** requires confirmation and permanently removes
+pending/failed intent. It cannot undo a change already accepted by the server.
+Both signing out and automatic session expiry clear credentials, visible user state
+and downloaded content for privacy. Expiry displays a sign-in explanation; neither
+operation discards queued intent. Sign in as the same account to resume it. Another
+account or server cannot replay it. Clearing browser storage or browser eviction can
+remove both downloads and pending changes.
 
 ## Enable notifications
 
