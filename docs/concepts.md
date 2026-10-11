@@ -21,8 +21,8 @@ A metadata correction or extraction repair is not necessarily a new revision.
 
 RSSMonster stores source and presentation data separately. Raw source content
 (`contentOriginal`), sanitized presentation HTML (`contentHtml`), canonical plain
-text (`contentText`), and description fields have distinct purposes. Historical
-`contentStripped` data is not interchangeable with all of these representations.
+text (`contentText`), raw publisher description (`description`), and its sanitized
+HTML (`descriptionHtml`) and visible text (`descriptionText`) have distinct purposes.
 API JSON omits raw `contentOriginal`; use the returned normalized content fields.
 
 ## Duplicates, events, and interests

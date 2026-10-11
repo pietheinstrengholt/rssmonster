@@ -1,6 +1,6 @@
 import db from '../models/index.js';
 const { Article, Feed, Category, GeneratedFeed } = db;
-import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { executeGeneratedFeedExpression } from '../services/generatedFeeds/generatedFeedExecution.js';
 import { buildRssXml } from '../services/rss/rssRenderer.js';
 
@@ -16,7 +16,7 @@ const loadRssArticles = async ({ userId, itemIds }) => {
     where: {
       id: itemIds,
       userId,
-      ...canonicalArticleWhere()
+      ...unfilteredCanonicalArticleWhere()
     },
     include: [Feed]
   });
@@ -45,7 +45,7 @@ const generateRss = async (req, res, next) => {
       ? Math.max(minLimit, Math.min(parsedLimit, maxLimit))
       : 50;
 
-    const where = { userId, ...canonicalArticleWhere() };
+    const where = { userId, ...unfilteredCanonicalArticleWhere() };
     if (feedId) {
       where.feedId = feedId;
     }

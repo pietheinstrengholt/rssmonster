@@ -178,7 +178,7 @@ coverage**, while personalization coverage may legitimately be sparse.
 | Event/corroboration | Optional; zero without an Event. |
 | Island, embedding | Optional; not Recommended prerequisites. |
 | Quality components | Unavailable/nonfinite article components default to 70. |
-| FeedTrust | Missing/nonfinite trust defaults to 0.5; finite stored values remain meaningful. |
+| FeedTrust | Unavailable trust (missing, null, or nonfinite) uses the neutral prior 0.75; finite estimated values, including zero, remain meaningful. |
 | Freshness | Article model uses zero for missing publication time; a plain object without freshness uses 0.5. |
 | Matching rule tags | Optional; no boost without a match. |
 

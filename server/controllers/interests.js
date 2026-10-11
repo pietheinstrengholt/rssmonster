@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { isActiveIsland } from '../services/islands/islandDeadline.js';
 import { islandSupportArticleIds } from '../services/islands/islandSupport.js';
 
@@ -71,7 +71,7 @@ async function detail(req, res) {
     if (!island) return res.status(404).json({ error: 'Interest not found' });
     const ids = islandSupportArticleIds(island.supportArticleIds);
     const articles = ids.length ? await db.Article.findAll({
-      where: { id: ids, userId, ...canonicalArticleWhere() },
+      where: { id: ids, userId, ...unfilteredCanonicalArticleWhere() },
       attributes: ['id', 'title', 'imageUrl', 'publishedAt'],
       include: [{ model: db.Feed, attributes: ['id', 'feedName'], where: { userId }, required: true }]
     }) : [];

@@ -1,5 +1,5 @@
 import db from '../../models/index.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { applyArticleScoreEligibility } from './articleScoreEligibility.js';
 
 const { Setting } = db;
@@ -19,7 +19,7 @@ export const buildVisibleArticleWhere = async userId => {
 
   return applyArticleScoreEligibility({
     userId,
-    ...canonicalArticleWhere(),
+    ...unfilteredCanonicalArticleWhere(),
     filteredInd: false
   }, {
     minAdvertisementScore: settings?.minAdvertisementScore,

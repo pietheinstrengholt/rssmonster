@@ -18,7 +18,7 @@ const mocked = vi.hoisted(() => ({
     update: vi.fn()
   },
   assignArticleToEvent: vi.fn(),
-  canonicalArticleWhere: vi.fn(),
+  unfilteredCanonicalArticleWhere: vi.fn(),
   computeEventStrength: vi.fn(),
   embedArticle: vi.fn(),
   eventCacheForArticle: vi.fn(),
@@ -65,7 +65,7 @@ vi.mock('../../services/articles/embedArticle.js', () => ({
 }));
 
 vi.mock('../../services/duplicates/articleDuplicates.js', () => ({
-  canonicalArticleWhere: mocked.canonicalArticleWhere
+  unfilteredCanonicalArticleWhere: mocked.unfilteredCanonicalArticleWhere
 }));
 
 vi.mock('../../services/events/eventPipelineDebug.js', () => ({
@@ -114,7 +114,7 @@ describe('semantic pipeline scopes orchestration', () => {
     mocked.enqueueSemanticLabels.mockReset().mockResolvedValue(undefined);
 
     mocked.Article.update.mockResolvedValue([0]);
-    mocked.canonicalArticleWhere.mockReturnValue({ duplicateOfArticleId: null });
+    mocked.unfilteredCanonicalArticleWhere.mockReturnValue({ duplicateOfArticleId: null });
     mocked.eventCacheForUser.mockResolvedValue({ type: 'user-cache' });
     mocked.eventCacheForArticle.mockResolvedValue({ type: 'article-cache' });
 

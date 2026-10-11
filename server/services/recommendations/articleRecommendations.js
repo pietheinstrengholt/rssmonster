@@ -1,7 +1,7 @@
 import { embeddingSimilarity, hasEmbeddingModel } from '../vectors/embeddingModel.js';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { hasUsableVector, parseVector } from '../vectors/index.js';
 
 // Provides the shared dependencies used by this recommendation service.
@@ -37,7 +37,7 @@ async function loadRecommendationSource(userId, articleId) {
     where: {
       id: articleId,
       userId,
-      ...canonicalArticleWhere()
+      ...unfilteredCanonicalArticleWhere()
     },
     attributes: [
       'id',
@@ -54,7 +54,7 @@ function buildCandidateWhere(userId, source) {
   return {
     userId,
     id: { [Op.ne]: source.id },
-    ...canonicalArticleWhere(),
+    ...unfilteredCanonicalArticleWhere(),
     articleVector: { [Op.ne]: null },
     ...(source.embedding_model
       ? { embedding_model: source.embedding_model }

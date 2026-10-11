@@ -68,7 +68,10 @@ Article processing conceptually follows:
 
 Do not reorder these stages casually.
 
-`contentOriginal`, `contentStripped`, `contentText`, and `description` are distinct contracts. Do not treat them as interchangeable.
+`contentOriginal` preserves publisher source, `contentHtml` stores sanitized reading
+HTML, and `contentText` stores canonical visible text. `description` preserves the
+publisher description; `descriptionHtml` and `descriptionText` store its sanitized
+HTML and visible text. These Article fields are distinct contracts. Do not treat them as interchangeable.
 
 Deterministic identity takes precedence over semantic similarity. Similar content is not automatically duplicate content.
 

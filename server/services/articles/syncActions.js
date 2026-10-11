@@ -1,5 +1,5 @@
 import db from '../../models/index.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { updateArticleBehavior } from './updateArticleBehavior.js';
 import { articleStateValues } from './articleInteractionState.js';
 import { retryDatabaseTransaction } from '../../utils/databaseRetry.js';
@@ -27,7 +27,7 @@ const applyAction = (userId, action) => retryDatabaseTransaction(db.sequelize, a
       ...(receipt.errorCode ? { errorCode: receipt.errorCode } : {}) };
   }
   const article = await Article.findOne({
-    where: { id: action.articleId, userId, ...canonicalArticleWhere() },
+    where: { id: action.articleId, userId, ...unfilteredCanonicalArticleWhere() },
     include: [{ model: Feed, required: true }], transaction, lock: transaction.LOCK.UPDATE
   });
   let outcome = 'rejected';
@@ -57,7 +57,7 @@ export const synchronizeArticleActions = async (userId, actions) => {
   }
   // Return current state, never an old receipt's historical projection or foreign rows.
   const articles = await Article.findAll({
-    where: { userId, id: { [Op.in]: [...new Set(actions.map(action => action.articleId))] }, ...canonicalArticleWhere() },
+    where: { userId, id: { [Op.in]: [...new Set(actions.map(action => action.articleId))] }, ...unfilteredCanonicalArticleWhere() },
     attributes: ['id', 'status', 'favoriteInd', 'readAt', 'favoritedAt', 'feedId'],
     include: [{ model: Feed, required: true, attributes: ['id', 'categoryId'] }]
   });

@@ -108,7 +108,7 @@ describe('recommendation evaluation and recalculation', () => {
     await db.Tag.create({ userId: other.user.id, articleId: article.id, name: 'Foreign rule', tagType: 'rule' });
     const { rows } = await run(user.id);
     expect(rows[0].breakdown).toMatchObject({ corroboration: 0, ruleBoost: 0 });
-    expect(rows[0].breakdown.quality).toBeCloseTo(0.8 * 0.7 + 0.5 * 0.3);
+    expect(rows[0].breakdown.quality).toBeCloseTo(0.8 * 0.7 + 0.75 * 0.3);
   });
 
   it('preserves newer evaluations and returns an empty report for a user with no articles', async () => {

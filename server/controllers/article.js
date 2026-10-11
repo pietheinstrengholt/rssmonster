@@ -17,7 +17,7 @@ import { refreshExpiredArticleInterests } from '../services/recommendations/refr
 import { loadInterestIslandAttributions } from '../services/recommendations/recommendationAttribution.js';
 import { createRequestPersonalization } from '../services/recommendations/requestPersonalization.js';
 import { explainArticleInterests } from '../services/score/scoreArticlesFromIslands.js';
-import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { retryDatabaseWrite } from '../utils/databaseRetry.js';
 import { addArticleTags, removeArticleTag } from '../services/articles/articleTags.js';
 import { markArticlesRead } from '../services/articles/bulkRead.js';
@@ -221,7 +221,7 @@ const loadArticleDetails = async (userId, articlesArray, personalization = creat
         ]
       }
     ],
-    where: { userId, id: articlesArray, ...canonicalArticleWhere() }
+    where: { userId, id: articlesArray, ...unfilteredCanonicalArticleWhere() }
   });
 
   // Preserve incoming ID order
@@ -446,7 +446,7 @@ const getDuplicateArticles = async (req, res) => {
     }
 
     const canonicalArticle = await Article.findOne({
-      where: { id: articleId, userId, ...canonicalArticleWhere() },
+      where: { id: articleId, userId, ...unfilteredCanonicalArticleWhere() },
       attributes: ['id']
     });
 
@@ -498,7 +498,7 @@ const getArticle = async (req, res, _next) => {
       where: {
         id: articleId,
         userId: userId,
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       },
       include: [
         {
@@ -593,7 +593,7 @@ const getDevelopingStoryArticles = async (req, res, _next) => {
 
   try {
     const sourceArticle = await Article.findOne({
-      where: { id: articleId, userId, ...canonicalArticleWhere() },
+      where: { id: articleId, userId, ...unfilteredCanonicalArticleWhere() },
       attributes: ['id', 'status', 'eventId'],
       include: [{
         model: Event,
@@ -627,7 +627,7 @@ const getDevelopingStoryArticles = async (req, res, _next) => {
         eventId: sourceArticle.eventId,
         userId,
         id: { [Op.ne]: sourceArticle.id },
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       },
       attributes: ['id', 'title', 'url', 'publishedAt'],
       include: [{
@@ -674,7 +674,7 @@ const getStorySourceArticles = async (req, res, _next) => {
 
   try {
     const sourceArticle = await Article.findOne({
-      where: { id: articleId, userId, ...canonicalArticleWhere() },
+      where: { id: articleId, userId, ...unfilteredCanonicalArticleWhere() },
       attributes: ['id', 'eventId', 'feedId'],
       include: [{
         model: Event,
@@ -700,7 +700,7 @@ const getStorySourceArticles = async (req, res, _next) => {
         userId,
         id: { [Op.ne]: sourceArticle.id },
         feedId: { [Op.ne]: sourceArticle.feedId },
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       },
       attributes: ['id', 'title', 'url', 'publishedAt'],
       include: [{
@@ -798,7 +798,7 @@ const markAsRead = async (req, res, _next) => {
 // Mark article as clicked
 const incrementArticleClickCount = async article => {
   await updateArticleBehavior(Article, { clickedAmount: db.sequelize.literal('clickedAmount + 1'), lastClickedAt: new Date() }, {
-    where: { id: article.id, userId: article.userId, ...canonicalArticleWhere() }
+    where: { id: article.id, userId: article.userId, ...unfilteredCanonicalArticleWhere() }
   });
   return article.reload();
 };
@@ -822,7 +822,7 @@ const markClicked = async (req, res, _next) => {
         where: {
           id: { [Op.in]: articleIds },
           userId: userId,
-          ...canonicalArticleWhere()
+          ...unfilteredCanonicalArticleWhere()
         }
       });
 
@@ -855,7 +855,7 @@ const markClicked = async (req, res, _next) => {
       where: {
         id: articleId,
         userId: userId,
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       }
     });
 
@@ -901,7 +901,7 @@ const markNotInterested = async (req, res, _next) => {
       where: {
         id: articleId,
         userId: userId,
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       }
     });
 
@@ -911,7 +911,7 @@ const markNotInterested = async (req, res, _next) => {
 
     // Write both flags atomically, including unchanged values, so concurrent feedback cannot conflict.
     await updateArticleBehavior(Article, { negativeInd: 1, positiveInd: 0, negativeFeedbackAt: new Date(), positiveFeedbackAt: null }, {
-      where: { id: article.id, userId, ...canonicalArticleWhere() }
+      where: { id: article.id, userId, ...unfilteredCanonicalArticleWhere() }
     });
 
     res.status(200).json({ 
@@ -942,7 +942,7 @@ const markMoreLikeThis = async (req, res, _next) => {
       where: {
         id: articleId,
         userId: userId,
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       }
     });
 
@@ -957,7 +957,7 @@ const markMoreLikeThis = async (req, res, _next) => {
       positiveFeedbackAt: new Date(),
       negativeFeedbackAt: null
     }, {
-      where: { id: article.id, userId, ...canonicalArticleWhere() }
+      where: { id: article.id, userId, ...unfilteredCanonicalArticleWhere() }
     });
 
     res.status(200).json({
@@ -1023,7 +1023,7 @@ const updateArticleStatus = async (userId, articleId, status) => {
       where: {
         id: articleId,
         userId: userId,
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       },
       include: [{
         model: Feed,
@@ -1101,7 +1101,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
       where: {
         id: articleId,
         userId,
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       },
       include: [
         {
@@ -1197,7 +1197,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
       const eventWhere = {
         id: { [Op.ne]: articleId },
         userId: userId,
-        ...canonicalArticleWhere(),
+        ...unfilteredCanonicalArticleWhere(),
         eventId: { [Op.in]: relatedEventIds }
       };
 
@@ -1298,7 +1298,7 @@ const articleMarkAsFavorite = async (req, res, _next) => {
         where: {
           id: { [Op.in]: articleIds },
           userId: userId,
-          ...canonicalArticleWhere()
+          ...unfilteredCanonicalArticleWhere()
         },
         include: [{
           model: Feed,
@@ -1326,7 +1326,7 @@ const articleMarkAsFavorite = async (req, res, _next) => {
       where: {
         id: articleId,
         userId: userId,
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       },
       include: [{
         model: Feed,
@@ -1363,7 +1363,7 @@ const articleMarkAllAsRead = async (req, res, _next) => {
       where: {
         status: "unread",
         userId: userId,
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       }
     }));
 

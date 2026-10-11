@@ -6,7 +6,7 @@ import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } fro
 import db from '../../models/index.js';
 import { articleEventSimilarityThreshold, eventClusteringFeedInclude } from './categoryClustering.js';
 import { EVENT_LIFECYCLE, MAX_CANDIDATES } from '../config/semanticConfig.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { resolveDevelopingArticleIdForAssignment } from './developingArticlePointer.js';
 import { buildCanonicalEventProjection } from './eventProjection.js';
 import { evaluateArticleAgainstEvent, evaluateCandidateSignal, normalizeVector, tokenSet, extractEntitySet, MAX_OCCURRENCE_MEMBERS } from './eventOccurrencePolicy.js';
@@ -101,7 +101,7 @@ export async function assignArticleToExistingEvent({
     where: {
       id: article.id,
       userId: article.userId,
-      ...canonicalArticleWhere()
+      ...unfilteredCanonicalArticleWhere()
     },
     attributes: [
       'id',
@@ -148,7 +148,7 @@ export async function assignArticleToExistingEvent({
     where: {
       eventId: lockedEvent.id,
       userId: article.userId,
-      ...canonicalArticleWhere()
+      ...unfilteredCanonicalArticleWhere()
     },
     attributes: ['id', 'userId', 'feedId', 'title', 'description', 'publishedAt', 'createdAt', 'articleVector', 'embedding_model'],
     order: [['id', 'ASC']],

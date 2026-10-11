@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import db from '../../models/index.js';
 import { enqueueProcessingJob } from './processingJobQueue.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { scoreArticlesFromIslandsForUser } from '../score/scoreArticlesFromIslands.js';
 import { runIslandCalibrationForUser } from '../islands/runIslandCalibration.js';
 
@@ -48,7 +48,7 @@ export async function handleExplicitFeedbackRefresh(job, { assertLease }) {
   await assertLease();
   if (!job.articleId) { const result = { skipReason: 'missing-source', candidatesRescored: 0 }; logRefresh(job, result); return result; }
   const source = await db.Article.findOne({ where: {
-    id: job.articleId, userId: job.userId, ...canonicalArticleWhere(), filteredInd: false
+    id: job.articleId, userId: job.userId, ...unfilteredCanonicalArticleWhere(), filteredInd: false
   }, attributes: ['id', 'articleVector', 'embedding_model'] });
   if (!source?.articleVector) { const result = { skipReason: 'missing-source-vector', candidatesRescored: 0 }; logRefresh(job, result); return result; }
   const result = await scoreArticlesFromIslandsForUser(job.userId, { relatedToArticle: source, assertLease });

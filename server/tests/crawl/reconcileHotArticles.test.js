@@ -18,7 +18,7 @@ vi.mock('../../models/index.js', () => ({
 }));
 
 vi.mock('../../services/duplicates/articleDuplicates.js', () => ({
-  canonicalArticleWhere: () => ({
+  unfilteredCanonicalArticleWhere: () => ({
     duplicateOfArticleId: null,
     filteredInd: false
   })

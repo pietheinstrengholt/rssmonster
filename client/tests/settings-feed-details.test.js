@@ -92,6 +92,10 @@ describe('SettingsFeedDetails', () => {
     expect(wrapper.get('#feed-details-title').text()).toBe('Example Feed');
     expect(wrapper.text()).toContain('https://example.com/feed.xml');
     expect(wrapper.text()).toContain('Healthy');
+    expect(wrapper.get('.feed-details__metrics').attributes('aria-label')).toBe('Feed overview health summary');
+    expect(wrapper.get('.feed-details__metric span').text()).toBe('Feed overview health');
+    expect(wrapper.findAll('.feed-details__table th').map(header => header.text())).toContain('Feed crawl result');
+    expect(wrapper.text()).toContain('Feed crawl results (30 days)');
     expect(wrapper.text()).toContain('75%');
     expect(wrapper.text()).toContain('820 ms');
     expect(wrapper.text()).toContain('Recent Crawl History');

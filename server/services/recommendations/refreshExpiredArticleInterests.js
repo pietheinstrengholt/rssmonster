@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { ISLAND_INACTIVITY_DAYS } from '../islands/islandDeadline.js';
 import { createRequestPersonalization } from './requestPersonalization.js';
 
@@ -32,7 +32,7 @@ export async function refreshExpiredArticleInterests(userId, articles, now = Dat
     const batch = articles.slice(start, start + BATCH_SIZE);
     const missingIds = batch.filter(article => !personalization.hasEvaluation(article.id)).map(article => article.id);
     const rows = missingIds.length ? await db.Article.findAll({
-      where: { userId, id: missingIds, ...canonicalArticleWhere(), filteredInd: false },
+      where: { userId, id: missingIds, ...unfilteredCanonicalArticleWhere(), filteredInd: false },
       attributes: ['id', 'title', 'description', 'articleVector', 'embedding_model',
         'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd'], raw: true
     }) : [];

@@ -119,7 +119,7 @@ diluting several explicit negative signals.
 ## Evidence Confidence
 
 Each component has its own confidence. An uncertain observation is blended
-toward the neutral value `0.75` before the four components are combined:
+toward the neutral prior `0.75` before the four components are combined:
 
 ```text
 effective component =
@@ -140,6 +140,14 @@ This is intentionally evidence-aware rather than based on publication count
 alone. A high-quality weekly source can establish strong FeedTrust, while a
 high-volume source does not gain trust merely by publishing often. With no
 usable evidence, every component resolves to `0.75`, so FeedTrust does too.
+
+The **neutral prior** is the baseline used before sufficient source evidence is
+available; it is not a measured endorsement of the source. An **estimated
+FeedTrust value** combines observed components with this prior according to their
+confidence. The Feed model starts at `0.75`. Ranking also uses `0.75` when the
+Feed association or trust value is missing, null, or nonfinite. Valid finite
+estimates, including zero, are retained and bounded to 0–1 for ranking. An estimate
+of `0.75` can therefore coincide with the prior without implying absent evidence.
 
 ## Stored Supporting Metrics
 

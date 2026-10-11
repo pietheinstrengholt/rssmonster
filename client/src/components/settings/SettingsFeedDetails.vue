@@ -48,9 +48,9 @@
         <span v-if="retryNotice.detail">{{ retryNotice.detail }}</span>
       </div>
 
-      <section class="feed-details__metrics" aria-label="Feed health summary">
+      <section class="feed-details__metrics" aria-label="Feed overview health summary">
         <article class="feed-details__metric" :class="`feed-details__metric--${healthKey.toLowerCase()}`">
-          <span>Health</span>
+          <span>Feed overview health</span>
           <strong>{{ healthLabel }}</strong>
         </article>
         <article class="feed-details__metric">
@@ -87,7 +87,7 @@
             <div v-else class="feed-details__table-wrap">
               <table class="feed-details__table">
                 <thead>
-                  <tr><th>Time</th><th>Result</th><th>Duration</th><th>Items</th><th>Details</th></tr>
+                  <tr><th>Time</th><th>Feed crawl result</th><th>Duration</th><th>Items</th><th>Details</th></tr>
                 </thead>
                 <tbody>
                   <tr v-for="crawl in recentCrawls" :key="crawl.id" :class="{ 'is-selected': selectedCrawlId === crawl.id }">
@@ -129,7 +129,7 @@
                 <h5>Attempt summary</h5>
                 <div v-if="attemptSummary.length === 0" class="feed-details__empty feed-details__empty--compact">No attempt diagnostics.</div>
                 <table v-else class="feed-details__attempts">
-                  <thead><tr><th>#</th><th>Attempt</th><th>Result</th><th>HTTP</th></tr></thead>
+                  <thead><tr><th>#</th><th>Attempt</th><th>Fetch outcome</th><th>HTTP</th></tr></thead>
                   <tbody>
                     <tr v-for="(attempt, index) in attemptSummary" :key="`${attempt.type}-${index}`">
                       <td>{{ index + 1 }}</td><td>{{ attempt.type || 'ATTEMPT' }}</td><td>{{ attempt.outcome || 'UNKNOWN' }}</td><td>{{ attempt.httpStatus ?? '—' }}</td>
@@ -150,7 +150,7 @@
 
         <aside class="feed-details__secondary">
           <section class="feed-details__panel">
-            <h4>Crawl Health (30 days)</h4>
+            <h4>Feed crawl results (30 days)</h4>
             <div v-if="crawlHealth.length === 0" class="feed-details__empty">No crawl observations in the last 30 days.</div>
             <div v-else class="feed-details__chart" role="img" :aria-label="crawlHealthDescription">
               <div v-for="day in crawlHealth" :key="day.date" class="feed-details__chart-day" :title="chartDayLabel(day)">
@@ -259,9 +259,9 @@ export default {
     recentCrawls() { return this.observability?.recentCrawls || []; },
     // Returns daily aggregate chart observations.
     crawlHealth() { return this.observability?.crawlHealth || []; },
-    // Preserves only supported backend-owned health labels.
+    // Preserves only supported backend-owned overview health labels.
     healthKey() { return HEALTH_LABELS[this.feed.health] ? this.feed.health : 'UNKNOWN'; },
-    // Converts the backend health key into visible text.
+    // Converts the backend overview health key into visible text.
     healthLabel() { return HEALTH_LABELS[this.healthKey]; },
     // Allows manual retries for every feed not explicitly disabled by the backend.
     canRetryFeed() { return this.feed.status !== 'disabled' && this.healthKey !== 'DISABLED'; },
@@ -284,7 +284,7 @@ export default {
         recovered: result.recovered + (Number(day.recovered) || 0),
         failed: result.failed + (Number(day.failed) || 0)
       }), { success: 0, recovered: 0, failed: 0 });
-      return `Thirty-day crawl health: ${totals.success} successful, ${totals.recovered} recovered, ${totals.failed} failed.`;
+      return `Thirty-day Feed crawl results: ${totals.success} successful, ${totals.recovered} recovered, ${totals.failed} failed.`;
     }
   },
   methods: {

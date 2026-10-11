@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { getEmailConfiguration } from '../email/configuration.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { enqueueEmail } from '../email/emailService.js';
 import { searchArticles } from '../articleSearch/articleSearch.service.js';
 import { extractBriefingExcerpt } from './dailyBriefing.service.js';
@@ -74,7 +74,7 @@ const loadPresentationArticles = async (userId, ids) => {
     where: {
       id: { [Op.in]: ids },
       userId,
-      ...canonicalArticleWhere()
+      ...unfilteredCanonicalArticleWhere()
     },
     attributes: ['id', 'url', 'title', 'contentText', 'publishedAt'],
     include: [{

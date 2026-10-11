@@ -1,7 +1,7 @@
 import { literal } from 'sequelize';
 
 const DEFAULT_ARTICLE_SCORE = 70;
-const DEFAULT_FEED_TRUST = 0.5;
+const NEUTRAL_FEED_TRUST = 0.75;
 const QUALITY_WEIGHTS = { qualityScore: 0.5, sentimentScore: 0.25, advertisementScore: 0.25 };
 
 // SQL filtering uses the same components, fallback, and bounds as the public quality value.
@@ -31,13 +31,13 @@ export const computeArticleQuality = article => {
   return Math.max(0, Math.min(100, overall)) / 100;
 };
 
-// Returns the normalized source-trust signal used by the established Quality sort.
+// Uses the FeedTrust neutral prior when source evidence is unavailable; zero is a valid estimate.
 export const computeFeedTrust = article => {
   const feed = article?.get?.('Feed') ?? article?.get?.('feed') ?? article?.Feed ?? article?.feed;
-  const feedTrust = Number(feed?.feedTrust);
+  const feedTrust = Number(feed?.feedTrust ?? NEUTRAL_FEED_TRUST);
   return Number.isFinite(feedTrust)
     ? Math.max(0, Math.min(1, feedTrust))
-    : DEFAULT_FEED_TRUST;
+    : NEUTRAL_FEED_TRUST;
 };
 
 // Computes the normalized Quality ranking signal shared by every intelligent sort.

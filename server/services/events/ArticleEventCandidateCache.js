@@ -5,7 +5,7 @@ import {
   EVENT_MAX_GAP_HOURS,
   MAX_CANDIDATES
 } from '../config/semanticConfig.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { articleEventTimestamp, HOUR_MS } from './articleEventTime.js';
 
 // Provides the shared dependencies used by this service.
@@ -99,7 +99,7 @@ export default class ArticleEventCandidateCache {
     // Builds the where assembled while performing for user.
     const where = {
       userId,
-      ...canonicalArticleWhere(),
+      ...unfilteredCanonicalArticleWhere(),
       publishedAt: { [Op.gte]: cutoff },
       articleVector: { [Op.ne]: null }
     };

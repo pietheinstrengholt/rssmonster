@@ -70,7 +70,7 @@ vi.mock('../../services/crawl/persistence/tags.js', () => ({
 }));
 
 vi.mock('../../services/duplicates/articleDuplicates.js', () => ({
-  canonicalArticleWhere: vi.fn(() => ({
+  unfilteredCanonicalArticleWhere: vi.fn(() => ({
     duplicateOfArticleId: null,
     filteredInd: false
   }))

@@ -1,7 +1,7 @@
 import { Op } from 'sequelize';
 
 import db from '../../../models/index.js';
-import { canonicalArticleWhere } from '../../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../../duplicates/articleDuplicates.js';
 import normalizeUrl from '../content/normalizeUrl.js';
 
 const { Article, Hotlink } = db;
@@ -73,7 +73,7 @@ const reconcileHotArticles = async ({ processedUserIds, cutoffDate, transaction 
       where: {
         userId: { [Op.in]: userIds },
         publishedAt: { [Op.gte]: cutoff },
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       },
       ...(transaction ? { transaction } : {}),
       raw: true
@@ -104,7 +104,7 @@ const reconcileHotArticles = async ({ processedUserIds, cutoffDate, transaction 
       where: {
         id: { [Op.in]: sourceArticleIds },
         userId: { [Op.in]: userIds },
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       },
       ...(transaction ? { transaction } : {}),
       raw: true

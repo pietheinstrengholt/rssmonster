@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { loadIslandEvidence } from '../islands/islandInterestConfidence.js';
 import { explainArticleInterests } from '../score/scoreArticlesFromIslands.js';
 import { computeRecommended, computeRecommendedBreakdown } from './recommendedScore.js';
@@ -28,7 +28,7 @@ export async function runRecommendationScores(options = {}, onRow = async () => 
   const context = await loadIslandEvidence(userId, { now });
   const islandContext = { ...context, fallbackEvidence: [], implicitEvidence: [] };
   const upperId = await db.Article.max('id', { where: { userId } });
-  const baseWhere = { userId, ...canonicalArticleWhere(), status: status === 'all' ? { [Op.ne]: 'duplicate' } : status };
+  const baseWhere = { userId, ...unfilteredCanonicalArticleWhere(), status: status === 'all' ? { [Op.ne]: 'duplicate' } : status };
   const summary = { mode, userId, status, limit, order: 'publishedAt DESC, id DESC', evaluatedAt: new Date(now).toISOString(),
     processedCount: 0, persistedCount: 0, changedCount: 0, skippedNewerCount: 0,
     positiveCount: 0, negativeCount: 0, neutralCount: 0, zeroReasons: {},

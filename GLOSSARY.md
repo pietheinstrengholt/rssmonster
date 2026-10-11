@@ -2,6 +2,8 @@
 
 This glossary records domain language and confirmed decisions grounded in the
 code and documentation. Use the linked sources for implementation details.
+Coverage includes server domain concepts and externally meaningful operational contracts, rather than every model
+field or implementation helper.
 
 ## Confirmed domain decisions
 
@@ -175,7 +177,6 @@ These fields have separate contracts:
 | `contentText` | Canonical visible text derived from sanitized reading HTML. |
 | `description` | Selected raw publisher description, not display-safe HTML. |
 | `descriptionHtml` / `descriptionText` | Sanitized description HTML and its visible text. |
-| `contentStripped` | Historical representation, not a universal substitute for the current fields. |
 | `contentSourceHash` | Publisher source fingerprint, used for source comparisons. |
 | `contentTextHash` | Canonical visible-text fingerprint, used for text comparisons. |
 
@@ -199,6 +200,16 @@ Eligibility decides whether an Article qualifies under ownership, canonical
 visibility, source scope, state, query, and score gates. Ranking cannot restore
 an ineligible Article. Stored-record counts can exceed visible or grouped counts.
 See [Article Search](server/services/articleSearch/README.md#article-eligibility).
+
+### Unfiltered canonical Article selection
+
+`unfilteredCanonicalArticleWhere()` selects Articles with no duplicate pointer and
+`filteredInd = false`. Canonical identity alone does not require an Article to be
+unfiltered. This shared predicate does not establish ownership or complete
+visibility: callers add `userId`, legacy duplicate-status exclusions where required,
+and query-specific eligibility rules. See
+[selection predicate](server/services/duplicates/articleDuplicates.js) and
+[search eligibility](server/services/articleSearch/README.md#article-eligibility).
 
 ### Filtered Article and Feed item filter
 
@@ -365,7 +376,8 @@ of quality and sentiment despite the name. See [Scoring](docs/scoring.md).
 
 User-specific recent source history combining Article quality, exposure-backed
 engagement, deterministic originality, and explicit negative feedback. Sparse
-evidence is pulled toward 0.75. It differs from fetch reliability, personal
+evidence is pulled toward the neutral prior 0.75. Ranking uses the same prior
+when trust is unavailable, while preserving finite estimated values, including zero. It differs from fetch reliability, personal
 affinity, and factual verification. See [FeedTrust](docs/feedtrust.md).
 
 ### Originality and duplication rate
@@ -432,11 +444,21 @@ A crawl run records a user's invocation and progress/outcome. Ownership heartbea
 and active-run protection support recovery. `nextFetchAt` is Feed scheduling
 authority. See [Crawling](docs/crawling.md).
 
-### Feed health
+### Feed state
 
-Fetch state: active, error, or disabled, with failure history and possible muting
-or backoff. An unchanged response is successful. Retrieval reliability differs
+Stored subscription state (`Feed.status`): `active`, `error`, or `disabled`, with
+failure history and possible muting or backoff. An unchanged response is successful. Retrieval reliability differs
 from FeedTrust. See [Crawling](docs/crawling.md) and [Feed model](server/models/feed.js).
+
+### Feed overview health
+
+The derived current condition displayed in the Feed overview: `NEW`, `HEALTHY`,
+`RECOVERED`, `DEGRADED`, `FAILING`, or `DISABLED`. It combines Feed state and recent
+reliability history, independently of FeedTrust. Recovered overview health means
+the source is currently operational and its latest crawl required recovery,
+subject to reliability rules. It is separate from the result of a single attempt.
+See [health derivation](server/services/feeds/feedOverviewHealth.js) and
+[Feed terminology](docs/feeds-and-categories.md).
 
 ### Initial import and ongoing admission window
 
@@ -509,3 +531,187 @@ Permanent deletion of eligible Article records under the owner's age/count limit
 and unread/favorite/click protections. It does not move Articles to another archive
 or remove subscriptions. Stored-record limits differ from visible navigation
 counts. See [Archiving](docs/archiving.md).
+
+## Additional server contracts
+
+### Feed URL identity, alias, and reconciliation
+
+Feed URL identity is a conservative HTTP(S) comparison key, separate from the
+fetch URL and Article URL normalization. It removes fragments and normalizes safe
+percent escapes; it does not apply Article tracking-parameter removal. A Feed URL
+alias preserves a user-scoped historical endpoint identity. Feed reconciliation
+transactionally converges subscriptions discovered to represent the same Feed,
+including their Articles and aliases. This differs from Article duplicate suppression.
+See [Feed identity](server/services/feeds/feedUrlIdentity.js),
+[aliases](server/services/feeds/feedUrlAliases.js), and
+[reconciliation](server/services/feeds/feedReconciliation.js).
+
+### Publisher self URL
+
+A publisher-declared Feed endpoint, validated before becoming trusted Feed identity
+or a promoted fetch URL. Declaration alone does not authorize endpoint replacement.
+This is Feed identity evidence, separate from an entry's GUID or Article URL.
+See [self-identity validation](server/services/feeds/feedSelfIdentity.js).
+
+### Fetch outcome and Feed crawl result
+
+A fetch outcome describes acquisition: `changed`, `unchanged`, `not_modified`,
+`rate_limited`, `transient_failure`, `permanent_failure`, `malformed`,
+`security_rejected`, `too_large`, or `timed_out`. A Feed crawl result records the
+final per-Feed outcome within a crawl run: `SUCCESS`, `RECOVERED`, or `FAILED`,
+with timing, recovery diagnostics, and entry-processing counts. Successful retrieval
+need not insert Articles. These statuses differ from Feed state, Feed overview health, and job status.
+See [fetch contract](server/services/feeds/http/contracts.js) and
+[crawl result model](server/models/feedCrawlResult.js).
+
+### Conditional fetch, refresh schedule, and backoff
+
+Conditional fetch uses accepted ETag/Last-Modified validators; HTTP 304 and an
+unchanged response-body hash avoid repeated entry processing. Scheduling combines
+adaptive activity or a manual interval with publisher cache freshness, Retry-After,
+failure backoff, and stable per-Feed jitter. A zero manual interval disables scheduled
+refresh. Fetch-body hashes differ from Article source/text hashes; publisher cache
+freshness differs from Article freshness used in ranking.
+See [acquisition and scheduling](server/services/feeds/README.md).
+
+### Content kind
+
+Adapter metadata distinguishing literal text from HTML for the selected body and
+description. Known content kind controls normalization; text resembling markup
+must not be interpreted as HTML merely because of its appearance.
+See [content-kind contract](server/services/crawl/content/README.md#content-kind-contract).
+
+### Embedding-space compatibility
+
+Semantic comparison requires matching nonempty model identifiers and compatible
+vector dimensions. Equal dimensions alone do not establish a shared coordinate
+system. Missing or incompatible provenance supplies no semantic match; it does not
+remove an otherwise eligible Article from Recommended.
+See [vector compatibility](server/services/vectors/embeddingModel.js).
+
+### Island taxonomy
+
+A shared vocabulary of interest concepts, with identity, display/category names,
+optional model-qualified vectors, and active/hidden/archived status. Compatible
+semantic matches can supply Island names. Taxonomy entries are not user-owned
+Interest Islands and do not establish personal preference.
+See [taxonomy model](server/models/islandTaxonomy.js) and
+[name resolution](server/services/islands/islandVectorUtils.js).
+
+### Island support and behavioral snapshot
+
+Support Article IDs are bounded retrieval hints for current behavioral evidence,
+rather than Event-style membership. Ownership, visibility, behavior timestamps,
+and compatible similarity must still be checked. Calibration snapshots and audit
+history record already-used evidence; they must not become additional interactions
+on replay. See [support](server/services/islands/islandSupport.js) and
+[calibration replay](server/services/jobs/README.md#conservative-scoping-and-replay).
+
+### Generated semantic label
+
+Optional presentation text for an Event or Island derived from bounded Article-title
+context. Labels explain persisted relationships; they are not independent membership,
+interest, or ranking evidence. See
+[label generation](server/services/semanticLabels/semanticLabeling.js).
+
+### Offline Article state action and receipt
+
+An authenticated, ordered explicit read/unread or favorite assignment carrying a
+client UUID. A per-user receipt makes replay idempotent and survives Article deletion.
+Reusing an ID with different action content is rejected. Each action commits
+separately; a retryable failure defers later actions. Sync returns current Article
+state, does not record exposure, and does not expand Event read scope.
+See [sync service](server/services/articles/syncActions.js) and
+[receipt model](server/models/articleSyncAction.js).
+
+### Processing failure
+
+An append-only abnormal processing observation recording stage, type, severity,
+subject, timing, and retry context. It can describe crawl or other work and is
+separate from a dead processing job or the final Feed crawl result.
+See [failure model](server/models/processingFailure.js) and
+[recording](server/services/observability/processingFailures.js).
+
+### User settings and server settings
+
+User settings store account-specific selection and behavior preferences, with
+separate Sidebar, Briefing, and Archiving settings. Server settings store shared
+runtime configuration overrides, including authentication, SMTP, inference, and
+push configuration. Server configuration is not personal preference evidence.
+See [user settings](server/models/setting.js),
+[server settings](server/models/serverSetting.js), and
+[runtime configuration](server/services/serverSettings.js).
+
+### Local authentication, OIDC identity, and application session
+
+Local authentication uses an RSSMonster password. An OIDC identity links the exact
+provider issuer/subject pair to one User; email equality never merges accounts.
+OIDC-only users have no local password. Both sign-in methods issue application
+sessions, distinct from provider tokens and login transactions. Provider claims
+and account roles are separate contracts.
+See [authentication](server/services/auth/README.md).
+
+### Assistant tool token and MCP
+
+MCP exposes authenticated tools for RSSMonster data and operations. The Assistant
+uses the same server-owned handlers through a separate, short-lived token scoped
+to user, password version, audience, and allowed tools. Model arguments cannot
+choose ownership. Tool credentials differ from application login sessions.
+See [Assistant tool boundary](server/services/agent/README.md).
+
+### Fever and Google Reader compatibility
+
+External reader protocols adapting Feed/Category and Article state to client
+terminology such as groups, streams, labels, and starred items. Their credentials
+and response formats are protocol-specific; they still operate on the authenticated
+user's library. These names do not introduce another domain Category or Favorite.
+See [Fever](server/controllers/fever.js) and
+[Google Reader](server/controllers/greader.js).
+
+### Daily digest and email outbox
+
+A daily digest is an emailed selection from the Briefing's Recommended and Top
+Stories results, with bounded sections and deduplication across sections. Scheduling
+and delivery deduplication use the user's configured local calendar date; sending
+does not mark Articles read. The email outbox persists rendered messages before
+leased delivery with bounded retries. Delivery states are `pending`, `sending`,
+`sent`, `failed`, and `cancelled`; SMTP delivery is at least once.
+See [digest selection](server/services/dailyBriefing/dailyBriefingEmail.service.js),
+[scheduler](server/services/dailyBriefing/dailyBriefingScheduler.js), and
+[email delivery](server/services/email/README.md).
+
+### Email verification and password reset
+
+Separate token-based account workflows: verification establishes control of an
+email address; password reset recovers local credentials. Neither is Article
+feedback or an OIDC identity link. Passwordless provider accounts have
+provider-managed email and cannot use local-password recovery.
+See [verification](server/services/email/emailVerification.js),
+[reset](server/services/email/passwordReset.js), and
+[account policy](server/services/auth/README.md).
+
+### Push subscription
+
+A user-owned browser notification endpoint with delivery keys. VAPID identifies
+the application server to the push service; it is separate from the user's Feed
+subscriptions. Expired endpoints are removed, and replacing VAPID keys may require
+browser resubscription. See [Web Push](server/services/push/README.md).
+
+## Resolved terminology conflicts
+
+These notes record resolved discrepancies and the agreed current terminology.
+
+### Resolved: FeedTrust prior and ranking fallback
+
+The neutral prior is 0.75: the Feed model starts there, the estimator blends sparse
+component evidence toward it, and ranking uses it for missing, null, or nonfinite
+trust. An estimated FeedTrust value reflects source evidence blended according to
+confidence; finite estimates, including zero, remain meaningful. A value equal to
+the prior does not alone establish whether evidence was available.
+
+Previously, ranking used 0.5 for missing/nonfinite trust and converted null to zero.
+The ranking fallback now follows the neutral prior. See
+[FeedTrust terminology](docs/feedtrust.md#evidence-confidence),
+[Feed model](server/models/feed.js),
+[estimator](server/scripts/calculateFeedTrust.js), and
+[ranking fallback](server/services/articles/articleQuality.js).

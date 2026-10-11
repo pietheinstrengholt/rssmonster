@@ -6,7 +6,7 @@ import {
   EVENT_LIFECYCLE,
   EVENT_STRENGTH_CONFIG
 } from '../config/semanticConfig.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { selectDevelopingArticleId } from './developingArticlePointer.js';
 import { buildCanonicalEventProjection } from './eventProjection.js';
 
@@ -97,7 +97,7 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
     where: {
       eventId: { [Op.in]: ownedEventIds },
       userId,
-      ...canonicalArticleWhere(),
+      ...unfilteredCanonicalArticleWhere(),
       ...(excludedArticleIds.length ? { id: { [Op.notIn]: excludedArticleIds } } : {})
     },
     attributes: [

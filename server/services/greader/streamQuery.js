@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { findFeedByUrlAlias } from '../feeds/feedUrlAliases.js';
 import {
   getGreaderParameterValues,
@@ -349,7 +349,7 @@ export const buildGreaderStreamScope = async ({ req, userId }) => {
   // Parses the reader timestamp while building greader stream scope.
   const stopTime = parseReaderTimestamp(scalarParameter(req, 'nt'));
   // Builds the where assembled while building greader stream scope.
-  const where = { userId, ...canonicalArticleWhere() };
+  const where = { userId, ...unfilteredCanonicalArticleWhere() };
   // Derives the stream id through apply primary targets while building greader stream scope.
   const streamId = await applyPrimaryTargets(
     where,

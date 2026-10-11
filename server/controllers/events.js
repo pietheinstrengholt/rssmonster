@@ -1,6 +1,6 @@
 import db from '../models/index.js';
 import { Op } from 'sequelize';
-import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
 const { Article, Event, Feed, Tag } = db;
 
@@ -34,7 +34,7 @@ const getEventArticles = async (req, res) => {
       where: {
         eventId,
         userId,
-        ...canonicalArticleWhere(),
+        ...unfilteredCanonicalArticleWhere(),
         ...(articleId ? { id: { [Op.ne]: articleId } } : {})
       },
       include: [

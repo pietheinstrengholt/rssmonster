@@ -122,12 +122,12 @@
               </select>
             </div>
 
-            <!-- Status -->
+            <!-- Feed state -->
             <div
               class="update-feed__field"
               v-if="overviewStore.categories.length > 0"
             >
-              <label class="app-form-label" for="update-feed-status">Status</label>
+              <label class="app-form-label" for="update-feed-status">Feed state</label>
               <select
                 id="update-feed-status"
                 class="app-form-select"
