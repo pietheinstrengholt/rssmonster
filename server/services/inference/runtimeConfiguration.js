@@ -6,7 +6,7 @@ const model = async () => (await import('../../models/index.js')).default.Infere
 const readOverrides = async () => (await (await model()).findByPk(1, { attributes: ['runtimeOverrides'], logging: false }))?.runtimeOverrides ?? null;
 
 export const INFERENCE_RUNTIME_FIELDS = Object.freeze([
-  { key: 'INFERENCE_TIMEOUT_MS', label: 'Request timeout', group: 'Timeouts and recovery', defaultValue: 30000, type: 'number', unit: 'ms' },
+  { key: 'INFERENCE_TIMEOUT_MS', label: 'Request timeout', group: 'Timeouts and recovery', defaultValue: 120000, type: 'number', unit: 'ms' },
   { key: 'INFERENCE_AGENT_TIMEOUT_MS', label: 'Assistant timeout', group: 'Timeouts and recovery', defaultValue: 300000, type: 'number', unit: 'ms' },
   { key: 'INFERENCE_CIRCUIT_FAILURE_THRESHOLD', label: 'Circuit failure threshold', group: 'Timeouts and recovery', defaultValue: 5, type: 'number', help: 'Consecutive availability failures before opening the affected capability’s circuit.' },
   { key: 'INFERENCE_CIRCUIT_COOLDOWN_MS', label: 'Circuit cooldown', group: 'Timeouts and recovery', defaultValue: 30000, type: 'number', unit: 'ms', help: 'Minimum wait before allowing one recovery probe.' },

@@ -10,7 +10,7 @@ import {
   InferenceCircuitOpenError
 } from './inferenceCircuitBreaker.js';
 
-const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 120_000;
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const QUALIFYING_HTTP_STATUSES = new Set([502, 503, 504]);
 const RECOGNIZED_INFERENCE_ERRORS = new Set(['not_ready', 'inference_queue_full']);

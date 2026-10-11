@@ -589,7 +589,7 @@ reverse proxy so client addresses are interpreted correctly.
 | --- | --- | --- |
 | `INFERENCE_BASE_URL` | `http://127.0.0.1:3001` | Explicit environment URL takes precedence over Settings. Without either, the local default is used. |
 | `INFERENCE_API_KEY` | unset | Optional opaque shared secret; set the exact same value on server/workers and inference. No inference key disables authentication. |
-| `INFERENCE_TIMEOUT_MS` | `30000` | Timeout for embeddings, classification, recommendations, and feed rediscovery. |
+| `INFERENCE_TIMEOUT_MS` | `120000` | Timeout for embeddings, classification, recommendations, and feed rediscovery. |
 | `INFERENCE_AGENT_TIMEOUT_MS` | `300000` | Timeout for streamed assistant model requests. |
 | `INFERENCE_CIRCUIT_FAILURE_THRESHOLD` | `5` | Consecutive qualifying failures before a capability-specific server inference circuit opens. Must be a positive integer. |
 | `INFERENCE_CIRCUIT_COOLDOWN_MS` | `30000` | Minimum open-circuit cooldown before one half-open probe is allowed. Must be a positive integer. |

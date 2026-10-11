@@ -20,6 +20,16 @@ beforeEach(async () => {
 afterEach(async () => { await db.InferenceSetting.destroy({ where: {} }); vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
 describe('inference runtime overrides', () => {
+  it('reports the inherited 120-second request timeout when no timeout is configured', async () => {
+    vi.stubEnv('INFERENCE_TIMEOUT_MS', undefined);
+    expect(await getInferenceRuntimeSettings()).toMatchObject({
+      overridden: false,
+      fields: expect.arrayContaining([
+        expect.objectContaining({ key: 'INFERENCE_TIMEOUT_MS', defaultValue: 120000, value: 120000, environmentValue: 120000 })
+      ])
+    });
+  });
+
   it('stores all nine values only in inference_settings and restores current environment values', async () => {
     const serverRows = await db.ServerSetting.count();
     vi.stubEnv('INFERENCE_TIMEOUT_MS', '17000');

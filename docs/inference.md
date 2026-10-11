@@ -382,7 +382,7 @@ timeout:
 ```env
 # server/.env
 INFERENCE_BASE_URL=http://127.0.0.1:3001
-INFERENCE_TIMEOUT_MS=30000
+INFERENCE_TIMEOUT_MS=120000
 INFERENCE_AGENT_TIMEOUT_MS=300000
 INFERENCE_AI_ENABLED=true
 SKIP_ARTICLE_CLASSIFICATION_ANALYSIS=false
@@ -790,7 +790,7 @@ capability assigned to OpenAI does not load its corresponding local model.
 In **Settings → AI / Inference → Runtime configuration**, enable **Override
 environment default** to save these settings together:
 
-- `INFERENCE_TIMEOUT_MS` (30,000 ms) and `INFERENCE_AGENT_TIMEOUT_MS` (300,000 ms).
+- `INFERENCE_TIMEOUT_MS` (120,000 ms) and `INFERENCE_AGENT_TIMEOUT_MS` (300,000 ms).
 - `INFERENCE_CIRCUIT_FAILURE_THRESHOLD` (5 consecutive availability failures)
   and `INFERENCE_CIRCUIT_COOLDOWN_MS` (30,000 ms before a recovery probe).
 - `INFERENCE_AI_ENABLED` and `INFERENCE_ASSISTANT_ENABLED`: Automatic, Enabled,

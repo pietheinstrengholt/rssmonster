@@ -22,7 +22,7 @@ Configure the RSSMonster server to reach inference:
 ```env
 # server/.env
 INFERENCE_BASE_URL=http://127.0.0.1:3001
-INFERENCE_TIMEOUT_MS=30000
+INFERENCE_TIMEOUT_MS=120000
 # Optional assistant reasoning override; use only a value supported by the model.
 ASSISTANT_REASONING_EFFORT=
 ```
