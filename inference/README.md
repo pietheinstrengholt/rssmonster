@@ -172,8 +172,15 @@ Relative cache paths are resolved from the `inference` project directory. Model 
 ```bash
 cd inference
 npm install
-cp .env.example .env
+cp .env.example .env # Optional: customize providers and model settings
 ```
+
+When `.env` is missing, embedding, generation, and classification default to the
+local models above, with `q4` generation, `q8` classification, 1024 embedding
+dimensions, an embedding batch size of 8, and four pending jobs per queue.
+Explicit process environment settings take precedence, including the legacy
+`ARTICLE_SCORING_PROVIDER` alias. Existing `.env` files retain their configured
+behavior. The assistant remains optional and requires separate configuration.
 
 ## Run
 
