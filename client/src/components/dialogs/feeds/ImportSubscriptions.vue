@@ -18,7 +18,7 @@
       <BootstrapIcon icon="upload" aria-hidden="true" />
       Choose OPML file
     </button>
-    <p v-if="opmlMessage" role="status">{{ opmlMessage }}</p>
+    <p v-if="opmlMessage" class="import-subscriptions__message" role="status">{{ opmlMessage }}</p>
     <template #footer>
       <button type="button" class="app-button app-button--secondary" @click="uiStore.setShowModal('')">Cancel</button>
       <button v-if="opmlMessage" type="button" class="app-button app-button--primary" @click="uiStore.setShowModal('')">Start reading</button>
@@ -47,3 +47,14 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.import-subscriptions__message {
+  margin: 0.75rem 0 0;
+  color: var(--color-success);
+  font-family: var(--font-family);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+</style>
