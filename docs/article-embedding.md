@@ -55,6 +55,10 @@ embedding. The worker pauses new optional claims while the critical post-crawl
 pipeline is active, preserving the ordered embedding → Event → Island
 scoring path.
 
+This is execution order, not an Event-to-Island hierarchy. Islands form from
+Article behavior, and candidate Article vectors match Islands directly.
+Event membership is not required for personalization.
+
 After a normal crawl, RSSMonster limits semantic processing to the users and
 new articles touched by that crawl. Existing vectors are reused rather than
 requested again.

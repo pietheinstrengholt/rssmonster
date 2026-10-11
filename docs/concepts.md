@@ -74,8 +74,11 @@ Chronological ordering alone therefore does not remove every active filter.
 
 ## Reading feedback
 
-Read state, exposure, clicks, bookmarks, and explicit **More like this** or
-**Not interested** feedback provide different signals. Interest Islands use
+Read state tracks the reading queue; exposure records on-screen visibility.
+Neither alone establishes engagement or personal preference, including manual,
+automatic, bulk, and grouped-Event read actions. Unread state does not imply dislike.
+Observed deep reads, clicks, bookmarks, and explicit **More like this** or
+**Not interested** feedback provide separate behavioral evidence. Interest Islands use
 behavioral evidence for personal relevance; FeedTrust uses its own bounded
 engagement model. Fresh installations may have little useful personal evidence,
 and zero related recommendations is a valid outcome.

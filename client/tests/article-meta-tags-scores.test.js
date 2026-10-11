@@ -549,7 +549,7 @@ describe('ArticleTagsScores', () => {
   });
 
   // Verifies the summary includes every dimension, including the neutral baseline score.
-  it('renders the backend overall quality score with an individual score breakdown', async () => {
+  it('renders the backend overall article quality score with an individual score breakdown', async () => {
     const wrapper = mountArticleTagsScores({
       advertisementScore: 100,
       sentimentScore: 70,
@@ -573,7 +573,7 @@ describe('ArticleTagsScores', () => {
 
     const panel = document.querySelector('.quality-explanation-panel');
     expect(panel.getAttribute('role')).toBe('dialog');
-    expect(panel.textContent).toContain('Overall quality');
+    expect(panel.textContent).toContain('Overall article quality');
     expect([...panel.querySelectorAll('.article-explanation-list strong:first-child')]
       .map(item => item.textContent)).toEqual([
       'Writing quality',
@@ -594,12 +594,12 @@ describe('ArticleTagsScores', () => {
     expect(qualityIcons).toEqual(['pencil-square', 'chat-square-text-fill', 'megaphone']);
     expect(qualityIcons.every(icon => bootstrapIconNames.includes(icon))).toBe(true);
     expect(panel.textContent).toContain('Clarity, structure, and substance');
-    expect(panel.textContent).toContain('63/100 overall quality');
+    expect(panel.textContent).toContain('63/100 overall article quality');
     wrapper.unmount();
   });
 
   // Verifies the average badge uses the existing score-severity thresholds.
-  it('assigns severity from the overall quality score', async () => {
+  it('assigns severity from the overall article quality score', async () => {
     const wrapper = mountArticleTagsScores({
       advertisementScore: 90,
       sentimentScore: 80,

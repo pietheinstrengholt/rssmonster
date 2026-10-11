@@ -56,7 +56,7 @@ export function createArticleSignals({
 
   const usableQuality = hasUsableArticleAnalysis(aiAnalysisStatus) ? quality : undefined;
   if (hasHighQualityArticleSignal({ quality: usableQuality })) {
-    signals.push({ label: 'High overall quality', icon: 'stars' });
+    signals.push({ label: 'High overall article quality', icon: 'stars' });
   }
 
   if (eventSourceScore > 6) {

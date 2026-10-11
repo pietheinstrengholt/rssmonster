@@ -26,9 +26,9 @@ beforeEach(() => {
 });
 
 describe('SmartFolderEditor', () => {
-  it('edits Overall quality out of 100 while preserving normalized saved expressions', async () => {
+  it('edits Overall article quality out of 100 while preserving normalized saved expressions', async () => {
     const wrapper = mountEditor();
-    const label = wrapper.findAll('label').find(item => item.text().includes('Minimum overall quality'));
+    const label = wrapper.findAll('label').find(item => item.text().includes('Minimum overall article quality'));
     expect(label.text()).toContain('80/100');
     expect(label.get('input').attributes('max')).toBe('100');
     await label.get('input').setValue('75');

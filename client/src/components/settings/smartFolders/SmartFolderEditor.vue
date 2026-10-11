@@ -183,7 +183,7 @@
                 </legend>
 
                 <label class="smart-folder-range">
-                    <span>Minimum overall quality</span>
+                    <span>Minimum overall article quality</span>
                     <strong>{{ Math.round(draftConfig.scores.quality * 100) }}/100</strong>
                     <input
                         :value="draftConfig.scores.quality * 100"

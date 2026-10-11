@@ -24,6 +24,10 @@ entry extraction and normalization
   → island scoring
 ```
 
+This sequence describes execution order. Events group occurrence coverage;
+Islands form from Article behavior and match candidate Article vectors directly.
+Event membership is not required for Island formation or personal interest scoring.
+
 A feed item filter can reject an entry before identity lookup; an Action can
 store an entry as filtered. These are different paths. Deterministic identity
 is resolved before semantic matching, and missing semantic evidence must not

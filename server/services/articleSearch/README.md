@@ -508,7 +508,7 @@ Search supports human time intent. Users may ask for concrete dates, relative pe
 
 Relative time is evaluated at request time. A saved search containing relative time remains dynamic: "today" and "last week" move as time moves.
 
-First-seen age is a different concept from publication date. Publication date describes when the article says it was published. First seen describes when RSSMonster encountered the article.
+First-seen age measures time since the Article first appeared on screen. `firstSeen` records first on-screen exposure, not when RSSMonster fetched or stored the Article. Publication date describes when the article says it was published; insertion time records storage. Exposure does not prove reading. The timestamp is preserved once set, including after marking unread. Legacy mark-read calls can also populate it, so historical values do not guarantee observed exposure.
 
 ## Text Relevance
 

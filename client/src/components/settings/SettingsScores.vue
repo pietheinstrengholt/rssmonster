@@ -50,10 +50,10 @@
         </button>
       </div>
 
-      <p>Overall quality is scored out of 100: 50% writing quality, 25% tone, and 25% ad-free content. It matches the article badge and Smart Folder quality filter. Articles awaiting analysis remain visible.</p>
+      <p>Overall article quality is scored out of 100: 50% writing quality, 25% tone, and 25% ad-free content. It matches the article badge and Smart Folder quality filter. Articles awaiting analysis remain visible.</p>
       <component v-for="group in thresholdGroups" :key="group.label" :is="group.advanced ? 'details' : 'div'" class="scores-threshold-list" :open="group.advanced && advancedInitiallyOpen ? true : undefined">
         <summary v-if="group.advanced">Advanced — component thresholds</summary>
-        <p v-if="group.advanced">These additional filters apply alongside Overall quality. Set each to 0 to turn it off.</p>
+        <p v-if="group.advanced">These additional filters apply alongside Overall article quality. Set each to 0 to turn it off.</p>
         <div v-for="score in group.scores" :key="score.key" class="scores-threshold-row">
           <span class="scores-icon-tile" :class="score.iconClass" aria-hidden="true">
             <BootstrapIcon :icon="score.icon" />
@@ -358,7 +358,7 @@ export default {
     },
     thresholdGroups() {
       return [
-        { label: 'Overall quality', scores: [{ key: 'overallQualityScore', inputId: 'overallQualityScore', title: 'Overall quality', icon: 'gem', iconClass: 'scores-icon-tile--quality', thresholdDescription: 'Minimum overall quality, out of 100. Set to 0 to turn off this filter.' }] },
+        { label: 'Overall article quality', scores: [{ key: 'overallQualityScore', inputId: 'overallQualityScore', title: 'Overall article quality', icon: 'gem', iconClass: 'scores-icon-tile--quality', thresholdDescription: 'Minimum overall article quality, out of 100. Set to 0 to turn off this filter.' }] },
         { label: 'Advanced', advanced: true, scores: this.scoreTypes }
       ];
     }

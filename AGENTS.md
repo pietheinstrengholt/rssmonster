@@ -180,6 +180,12 @@ When asked to audit, investigate, review, or analyze, do not modify code unless 
 
 For MySQL/Sequelize query-performance investigations, use the `mysql-performance` skill. You may inspect the local MySQL slow-query and error logs and query the local development Performance Schema without asking the user to paste diagnostic output.
 
+## Domain vocabulary
+
+- Read the project's domain glossary (`GLOSSARY.md`). Use GLOSSARY.md vocabulary for the domain language. Avoid inventing new terms or using synonyms for existing terms.
+- Naming a deepened module after a concept not in `GLOSSARY.md`? Add the term to `GLOSSARY.md`. Create the file lazily if it doesn't exist.
+- Sharpening a fuzzy term during the conversation?** Update `GLOSSARY.md` right there.
+
 ## Final Standard
 
 Prefer: `inspect before assuming · reuse before creating · extend before replacing · fix before refactoring · bounded before unbounded`

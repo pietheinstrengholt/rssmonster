@@ -4,17 +4,19 @@
 
 This document defines how RSSMonster groups individual Articles into semantic Events.
 
-```
-Article
-    ↓
-▶ Event
-    ↓
-Interest Island
+```text
+Article coverage → Event (one occurrence)
+Article behavior → Interest Island (signed personal preference)
+Candidate Article vector → direct Island comparison → interestScore
 ```
 
 Events represent **one real-world news story**.
 
-They are the first semantic layer built from individual Articles.
+Events and Interest Islands are separate relationships built from Articles.
+Island formation uses Article behavior, and candidate Articles match Islands
+directly, including Articles without an Event. Event membership is not required
+for personalization. The crawl processes Events before Island scoring as an
+execution order, not an Event-to-Island hierarchy.
 
 Their purpose is to group independent coverage of the same occurrence while leaving
 unique or ambiguous stories eventless. This is separate from canonical duplicate

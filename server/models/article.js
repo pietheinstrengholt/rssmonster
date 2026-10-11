@@ -71,7 +71,7 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false
       },
-      // Tracks the reading state, defaulting to unread and also supporting duplicate suppression.
+      // Tracks the reading state, defaulting to unread and also supporting duplicate suppression. Read/unread tracks whether an Article remains in your reading queue.
       status: {
         type: DataTypes.STRING,
         allowNull: false,

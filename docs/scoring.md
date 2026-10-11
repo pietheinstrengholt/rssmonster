@@ -12,11 +12,23 @@ meaning. A score may describe one article, a source's recent history, personal
 relevance, or the importance of a current story. No single score decides
 whether an article is allowed to exist or be read.
 
+| Concept | Meaning | Use |
+| --- | --- | --- |
+| Overall article quality (`articleQuality`) | Article content quality, independent of source trust and personal interest. | Overall article quality badge and article-quality thresholds, including `quality:` expressions. |
+| FeedTrust | Recent source value in the user's account. | Source contribution to Quality & source trust ranking. |
+| Personal interest (`interestScore`) | Signed relevance to the user. | Personalization contribution to Recommended. |
+
+**Quality & source trust** ranking combines 70% articleQuality with 30% FeedTrust.
+Recommended uses that combined ranking signal alongside personal interest and
+other signals. These ranking combinations do not change Overall article quality badges
+or Article-only quality thresholds. A high-quality article may come from an
+inconsistent source or cover a subject the user dislikes.
+
 ## Core Signals
 
-### Overall quality
+### Overall article quality
 
-Overall quality asks: **How good is this particular article?**
+Overall article quality asks: **How good is this particular article?**
 
 It is a normalized `0.0`–`1.0` content score derived from the article's stored
 quality, sentiment, and advertising scores. Feed reputation is not inserted
@@ -34,7 +46,7 @@ divided by `100` once. A missing component uses the neutral-good value `70`.
 Higher `advertisementScore` means less promotional content, so all three inputs
 have the same higher-is-better direction.
 
-The article badge, Settings → Scores → Overall quality, and Smart Folder quality
+The article badge, Settings → Scores → Overall article quality, and Smart Folder quality
 control show this score out of 100. The badge preserves fractional points so that
 an article shown as 74.75 does not appear to meet a minimum of 75. Smart Folder
 expressions retain their normalized syntax: `quality:>=0.75` means at least 75/100.
@@ -47,7 +59,7 @@ owns a quality component, consistent with the component-filter exemption policy.
 
 The existing source-aware ranking remains separate: its menu label is
 **Quality & source trust**. Recommended and Top Stories weights are unchanged.
-“High overall quality” uses the article-only score, never the Recommended score.
+“High overall article quality” uses the article-only score, never the Recommended score.
 
 ### FeedTrust
 

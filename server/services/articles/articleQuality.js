@@ -22,6 +22,8 @@ const articleScore = (article, key) => {
 };
 
 // Computes the normalized article-only quality shared by model presentation and ranking.
+// Overall article quality drives the badge and quality gates; source trust and
+// personal interest must not change this content-only value.
 export const computeArticleQuality = article => {
   const overall = Object.entries(QUALITY_WEIGHTS)
     .reduce((total, [field, weight]) => total + articleScore(article, field) * weight, 0);
@@ -39,6 +41,8 @@ export const computeFeedTrust = article => {
 };
 
 // Computes the normalized Quality ranking signal shared by every intelligent sort.
+// "Quality & source trust" combines signals for ordering, not article-quality
+// filtering. Recommended adds personal interest separately.
 export const computeQuality = article => (
   computeArticleQuality(article) * 0.7 + computeFeedTrust(article) * 0.3
 );

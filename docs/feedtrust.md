@@ -11,6 +11,11 @@ FeedTrust is RSSMonster's user-specific estimate of **how consistently valuable
 a subscribed source has been as a source of articles**. Every feed has a score
 from `0.0` to `1.0`.
 
+FeedTrust contributes to **Quality & source trust** ranking, which combines
+70% article quality and 30% FeedTrust. It does not change the Article's Overall
+quality badge or article-quality thresholds. Recommended additionally considers
+personal interest and other signals; FeedTrust is not itself subject relevance.
+
 The score summarizes recent source value. It is not:
 
 - factual-accuracy verification;
@@ -20,7 +25,7 @@ The score summarizes recent source value. It is not:
 - a penalty for covering events that other publishers also cover; or
 - a reflection of whether the feed is muted.
 
-[Article quality]({% link scoring.md %}#article-quality) asks how good one particular
+[Overall article quality]({% link scoring.md %}#overall-article-quality) asks how good one particular
 article is. FeedTrust asks whether the source has produced consistently
 valuable articles across its recent history. Interest Islands and Recommended
 ranking remain responsible for personal relevance.

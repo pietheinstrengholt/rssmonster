@@ -41,12 +41,12 @@ afterEach(() => {
 });
 
 describe('score settings', () => {
-  it('makes Overall quality primary and keeps active component filters discoverable under Advanced', async () => {
+  it('makes Overall article quality primary and keeps active component filters discoverable under Advanced', async () => {
     const { stores, wrapper } = mountScores({ minOverallQualityScore: 75 });
     const advanced = wrapper.findAll('details').find(detail => detail.text().includes('Advanced — component thresholds'));
     expect(advanced.attributes('open')).toBeUndefined();
     expect(wrapper.get('#overallQualityScore').element.value).toBe('75');
-    await wrapper.get('[aria-label="Overall quality threshold value"]').setValue('80');
+    await wrapper.get('[aria-label="Overall article quality threshold value"]').setValue('80');
     await wrapper.get('.scores-save-button').trigger('click');
     await flushPromises();
     expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({ minOverallQualityScore: 80 }));

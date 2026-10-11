@@ -260,7 +260,7 @@ describe('Article relevance signals', () => {
     };
 
     expect(createArticleSignals(article)).toEqual([
-      { label: 'High overall quality', icon: 'stars' },
+      { label: 'High overall article quality', icon: 'stars' },
       { label: 'Trending', icon: 'graph-up-arrow' },
       { label: 'Trusted source (Trusted Feed)', icon: 'shield-fill-check' }
     ]);
@@ -287,7 +287,7 @@ describe('Article relevance signals', () => {
     });
 
     expect(wrapper.vm.articleSignals).toEqual([
-      { label: 'High overall quality', icon: 'stars' },
+      { label: 'High overall article quality', icon: 'stars' },
       { label: 'Major event', icon: 'broadcast' },
       { label: 'Official Feed (Public Agency)', icon: 'patch-check-fill' }
     ]);
