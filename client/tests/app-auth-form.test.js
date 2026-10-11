@@ -104,7 +104,7 @@ describe('App authentication form', () => {
   });
 
   it('keeps provider sign-in available alongside the local registration form', async () => {
-    authApi.getAuthConfiguration.mockResolvedValueOnce({ oidcEnabled: true, registrationEnabled: true });
+    authApi.getAuthConfiguration.mockResolvedValueOnce({ oidcEnabled: true, registrationEnabled: true, emailEnabled: true });
     const wrapper = await mountAuthForm();
     wrapper.vm.switchAuthMode(true);
     await flushPromises();
@@ -140,7 +140,7 @@ describe('App authentication form', () => {
     wrapper.unmount();
   });
   it('blocks signup while preserving login and password recovery when registration is disabled', async () => {
-    authApi.getAuthConfiguration.mockResolvedValueOnce({ registrationEnabled: false, emailEnabled: false });
+    authApi.getAuthConfiguration.mockResolvedValueOnce({ registrationEnabled: false, emailEnabled: true });
     authApi.login.mockResolvedValueOnce({ message: 'Signed in.' });
     authApi.requestPasswordReset.mockResolvedValueOnce({ message: 'Reset requested.' });
     const wrapper = await mountAuthForm();
@@ -170,7 +170,7 @@ describe('App authentication form', () => {
     expect(wrapper.text()).not.toContain('Create an account');
     wrapper.vm.switchAuthMode(true);
     expect(wrapper.vm.showSignup).toBe(false);
-    expect(wrapper.text()).toContain('Forgot password?');
+    expect(wrapper.text()).not.toContain('Forgot password?');
     wrapper.unmount();
   });
 
@@ -400,7 +400,35 @@ describe('App authentication form', () => {
     expect(window.location.hash).toBe('');
   });
 
+  it.each([false, undefined])('hides password recovery unless email is enabled (%s)', async emailEnabled => {
+    authApi.getAuthConfiguration.mockResolvedValueOnce({ emailEnabled });
+    const wrapper = await mountAuthForm();
+
+    expect(wrapper.text()).not.toContain('Forgot password?');
+    expect(wrapper.find('#reset-email').exists()).toBe(false);
+    wrapper.vm.startPasswordReset();
+    await flushPromises();
+    expect(wrapper.find('#reset-email').exists()).toBe(false);
+    await wrapper.vm.requestPasswordReset();
+    expect(authApi.requestPasswordReset).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it('keeps password recovery unavailable when configuration cannot be loaded', async () => {
+    authApi.getAuthConfiguration.mockRejectedValueOnce(new Error('Network error'));
+    const wrapper = await mountAuthForm();
+
+    expect(wrapper.text()).not.toContain('Forgot password?');
+    wrapper.vm.startPasswordReset();
+    await flushPromises();
+    expect(wrapper.find('#reset-email').exists()).toBe(false);
+    await wrapper.vm.requestPasswordReset();
+    expect(authApi.requestPasswordReset).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
   it('requests a reset from the forgot-password state', async () => {
+    authApi.getAuthConfiguration.mockResolvedValueOnce({ emailEnabled: true });
     authApi.requestPasswordReset.mockResolvedValueOnce({
       message: 'If that address can receive password resets, an email has been queued.'
     });

@@ -8,7 +8,7 @@ const status = { state: 'partial', ready: true, capabilities: { embeddings: { co
 beforeEach(() => {
   vi.clearAllMocks(); fetchInferenceSettings.mockResolvedValue({ data: { ...configuration(), status } });
   saveInferenceSettings.mockResolvedValue({ data: configuration() }); testInferenceSettings.mockResolvedValue({ data: status });
-  clearInferenceSettings.mockResolvedValue({ data: configuration('none') });
+  clearInferenceSettings.mockResolvedValue({ data: { ...configuration('default'), baseUrl: 'http://127.0.0.1:3001', apiKeyConfigured: false } });
 });
 const render = async () => { const wrapper = mount(SettingsInference); await flushPromises(); return wrapper; };
 describe('Inference Settings', () => {
@@ -71,12 +71,15 @@ describe('Inference Settings', () => {
     expect(saveInferenceSettings).toHaveBeenCalledWith({ baseUrl: 'http://inference', apiKeyAction: action, ...(action === 'replace' ? { apiKey: 'new-key' } : {}) });
     expect(wrapper.vm.apiKey).toBe(''); expect(wrapper.emitted('forceReload')).toBeTruthy();
   });
-  it('requires confirmation and clears configuration', async () => {
+  it('requires confirmation and restores the local default connection', async () => {
     const wrapper = await render();
     await wrapper.findAll('button').find(button => button.text() === 'Remove connection').trigger('click');
     expect(clearInferenceSettings).not.toHaveBeenCalled();
     await wrapper.findAll('button').find(button => button.text() === 'Confirm removal').trigger('click'); await flushPromises();
-    expect(clearInferenceSettings).toHaveBeenCalled(); expect(wrapper.text()).toContain('No inference service configured.');
+    expect(clearInferenceSettings).toHaveBeenCalled();
+    expect(wrapper.get('#inference-endpoint').element.value).toBe('http://127.0.0.1:3001');
+    expect(wrapper.text()).toContain('Connected and ready.');
+    expect(wrapper.text()).not.toContain('Remove connection');
   });
   it.each(['unreachable', 'unauthorized', 'not_ready', 'incompatible'])('shows safe %s status', async state => {
     fetchInferenceSettings.mockResolvedValue({ data: { ...configuration(), status: { state } } });

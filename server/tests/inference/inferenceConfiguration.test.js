@@ -14,10 +14,24 @@ afterEach(async () => { await db.InferenceSetting.destroy({ where: {} }); vi.uns
 const save = (extra = {}) => saveInferenceConfiguration({ baseUrl: 'http://inference.example/', apiKeyAction: 'replace', apiKey: secret, ...extra });
 
 describe('deployment inference configuration', () => {
-  it('resolves none, ignores a key alone, and never assumes localhost', async () => {
+  it('defaults to localhost without inheriting an environment key alone', async () => {
     vi.stubEnv('INFERENCE_API_KEY', secret);
-    expect(await getEffectiveInferenceConfiguration()).toEqual({ source: 'none', baseUrl: null, apiKey: null, configurable: true });
-    await expect(requestInferenceJson('/api/test', {})).rejects.toMatchObject({ code: 'INFERENCE_DISABLED' });
+    expect(await getEffectiveInferenceConfiguration()).toEqual({ source: 'default', baseUrl: 'http://127.0.0.1:3001', apiKey: null, configurable: true });
+    expect(await getInferenceConfigurationMetadata()).toEqual({ configurationSource: 'default', baseUrl: 'http://127.0.0.1:3001', apiKeyConfigured: false, configurable: true });
+    const fetchImplementation = vi.fn(async () => new Response('{}'));
+    await requestInferenceJson('/api/test', {}, { fetchImplementation });
+    expect(fetchImplementation.mock.calls[0][0]).toBe('http://127.0.0.1:3001/api/test');
+    expect(fetchImplementation.mock.calls[0][1].headers['X-Inference-API-Key']).toBeUndefined();
+  });
+  it.each([undefined, '', '   '])('uses the local fallback when the environment URL is %j', async value => {
+    vi.stubEnv('INFERENCE_BASE_URL', value);
+    expect(await getEffectiveInferenceConfiguration()).toMatchObject({ source: 'default', baseUrl: 'http://127.0.0.1:3001' });
+  });
+  it('keeps the inference kill switch effective with the local fallback', async () => {
+    vi.stubEnv('INFERENCE_AI_ENABLED', 'false');
+    const fetchImplementation = vi.fn();
+    await expect(requestInferenceJson('/api/test', {}, { fetchImplementation })).rejects.toMatchObject({ code: 'INFERENCE_DISABLED' });
+    expect(fetchImplementation).not.toHaveBeenCalled();
   });
   it.each(['keep', 'replace', 'remove'])('probes an unsaved endpoint without authentication using %s', async apiKeyAction => {
     const fetchImplementation = vi.fn(async url => new Response(JSON.stringify(url.endsWith('/ready')
@@ -31,7 +45,7 @@ describe('deployment inference configuration', () => {
       expect(options.headers['X-Inference-API-Key']).toBeUndefined();
     }
     expect(await db.InferenceSetting.count()).toBe(0);
-    expect((await getInferenceStatus()).state).toBe('not_configured');
+    expect((await getEffectiveInferenceConfiguration()).baseUrl).toBe('http://127.0.0.1:3001');
   });
   it('keeps the saved configuration and status cache unchanged after a draft probe', async () => {
     await save();
@@ -70,7 +84,7 @@ describe('deployment inference configuration', () => {
     await saveInferenceConfiguration({ baseUrl: 'http://inference.example', apiKeyAction: 'remove' });
     expect((await getEffectiveInferenceConfiguration()).apiKey).toBeNull();
     await clearInferenceConfiguration();
-    expect((await getEffectiveInferenceConfiguration()).source).toBe('none');
+    expect((await getEffectiveInferenceConfiguration()).source).toBe('default');
   });
   it.each(['INFERENCE_BASE_URL', 'INFERENCE_URL'])('prioritizes %s and rejects direct writes without reading stale DB credentials', async name => {
     await save();
@@ -106,7 +120,10 @@ describe('deployment inference configuration', () => {
     expect(fetchImplementation.mock.calls[3][0]).toContain('http://new.example');
     expect(fetchImplementation.mock.calls[3][1].headers['X-Inference-API-Key']).toBe('new-key');
     await getInferenceStatus({ fetchImplementation, refresh: true }); expect(fetchImplementation).toHaveBeenCalledTimes(9);
-    await clearInferenceConfiguration(); expect((await getInferenceStatus()).state).toBe('not_configured');
+    await clearInferenceConfiguration();
+    expect((await getInferenceStatus({ fetchImplementation })).ready).toBe(true);
+    expect(fetchImplementation.mock.calls[9][0]).toContain('http://127.0.0.1:3001/');
+    expect(fetchImplementation.mock.calls[9][1].headers['X-Inference-API-Key']).toBeUndefined();
   });
   it.each([
     ['unauthorized', 401, {}], ['incompatible', 200, { apiVersion: '999' }],

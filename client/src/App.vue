@@ -149,7 +149,7 @@
         <p v-else-if="showSignup" class="auth-register">Already a member? <a href="#!" @click.prevent="switchAuthMode(false)">Click here to sign in</a></p>
         <template v-else-if="localAuthEnabled">
           <p v-if="registrationEnabled" class="auth-register">Not a member? <a href="#!" @click.prevent="switchAuthMode(true)">Create an account</a></p>
-          <p class="auth-register auth-register--secondary"><a href="#!" @click.prevent="startPasswordReset">Forgot password?</a></p>
+          <p v-if="passwordResetEnabled" class="auth-register auth-register--secondary"><a href="#!" @click.prevent="startPasswordReset">Forgot password?</a></p>
         </template>
       </section>
 
@@ -254,6 +254,9 @@ export default {
       return authApi.getOidcLoginUrl();
     },
     ...mapStores(useAuthStore),
+    passwordResetEnabled() {
+      return this.localAuthEnabled && this.registrationEmailEnabled;
+    },
     authFormTitle() {
       if (this.emailEnrollmentMode) return 'Verify your email address';
       if (this.passwordResetMode === 'request') return 'Reset your password';
@@ -467,7 +470,7 @@ export default {
       this.message = '';
     },
     startPasswordReset() {
-      if (this.localAuthEnabled === false) return;
+      if (!this.passwordResetEnabled) return;
       this.showSignup = false;
       this.passwordResetMode = 'request';
       this.message = '';
@@ -480,7 +483,7 @@ export default {
       this.message = '';
     },
     async requestPasswordReset() {
-      if (this.localAuthEnabled === false) return;
+      if (!this.passwordResetEnabled) return;
       try {
         const response = await authApi.requestPasswordReset(this.resetEmail);
         this.message = response.message;

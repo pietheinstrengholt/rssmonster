@@ -241,9 +241,9 @@ connection, startup, and contract failure states.
 1. A nonempty `INFERENCE_BASE_URL` makes the connection environment-managed.
 2. Legacy `INFERENCE_URL` remains a fallback with the same environment precedence.
 3. Otherwise, the deployment's saved Settings connection is used.
-4. Without either, no inference endpoint is configured. There is no implicit localhost connection.
+4. Without either, the endpoint defaults to `http://127.0.0.1:3001`. Settings remains editable; removing a saved connection restores this default.
 
-An environment key alone never creates an endpoint or replaces a database key.
+An environment key alone is ignored for the local default and never replaces a database key.
 Environment values are never copied into the database. When an environment URL
 exists, Settings hides endpoint/key inputs and Save/Remove controls entirely;
 capability status and refresh remain visible. Direct update/delete API calls are
@@ -253,7 +253,7 @@ normal permissions to consume intelligent features.
 
 Explicit `INFERENCE_AI_ENABLED=false` remains a deployment kill switch, and
 `INFERENCE_ASSISTANT_ENABLED=false` can prohibit assistant use. These switches
-are optional permission overrides; enabling them alone does not create a connection.
+are optional permission overrides; disabling inference prevents use of the local fallback as well.
 Existing article and semantic skip flags and per-feed preferences remain respected.
 
 ### Deployment examples

@@ -2,6 +2,9 @@ import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes } f
 import { validateHeaderValue } from 'node:http';
 import { getFeverCredentialSecret } from '../../config/auth.js';
 
+export const DEFAULT_INFERENCE_URL = 'http://127.0.0.1:3001';
+const defaultConfiguration = () => ({ source: 'default', baseUrl: DEFAULT_INFERENCE_URL, apiKey: null, configurable: true });
+
 export class InferenceConfigurationError extends Error {
   constructor(message = 'Inference configuration could not be read', status = 400) {
     super(message); this.code = 'INFERENCE_CONFIGURATION_INVALID'; this.status = status;
@@ -43,7 +46,7 @@ export const getEffectiveInferenceConfiguration = async ({ environment = process
   if (configured) return configured;
   const row = await (await model()).unscoped().findByPk(1);
   return row?.baseUrl ? { source: 'database', baseUrl: row.baseUrl, apiKey: decrypt(row.apiKeyEncrypted), configurable: true }
-    : { source: 'none', baseUrl: null, apiKey: null, configurable: true };
+    : defaultConfiguration();
 };
 export const inferenceConfigurationIdentity = config => createHash('sha256')
   .update(JSON.stringify([config.source, config.baseUrl, config.apiKey])).digest('hex');
@@ -61,8 +64,8 @@ export const getInferenceConfigurationMetadata = async () => {
   const environment = getEnvironmentInferenceConfiguration();
   if (environment) return serializeInferenceConfiguration(environment);
   const row = await (await model()).unscoped().findByPk(1);
-  return serializeInferenceConfiguration({ source: row?.baseUrl ? 'database' : 'none', configurable: true,
-    baseUrl: row?.baseUrl ?? null, apiKey: Boolean(row?.apiKeyEncrypted) });
+  return serializeInferenceConfiguration(row?.baseUrl ? { source: 'database', configurable: true,
+    baseUrl: row.baseUrl, apiKey: Boolean(row.apiKeyEncrypted) } : defaultConfiguration());
 };
 const assertConfigurable = () => {
   if (getEnvironmentInferenceConfiguration()) throw new InferenceConfigurationError('Inference is configured by the deployment', 409);

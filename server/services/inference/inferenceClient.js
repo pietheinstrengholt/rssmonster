@@ -1,7 +1,7 @@
 import { getInferenceEnvironment } from './runtimeConfiguration.js';
 import { randomUUID } from 'node:crypto';
 import { validateHeaderValue } from 'node:http';
-import { getEffectiveInferenceConfiguration, getEnvironmentInferenceConfiguration, inferenceConfigurationIdentity } from './configuration.js';
+import { DEFAULT_INFERENCE_URL, getEffectiveInferenceConfiguration, getEnvironmentInferenceConfiguration, inferenceConfigurationIdentity } from './configuration.js';
 import { InferenceDisabledError } from '../../config/intelligentFeatures.js';
 import { assertInferenceEnabled, isAssistantEnabled } from '../../config/intelligentFeatures.js';
 import {
@@ -10,7 +10,6 @@ import {
   InferenceCircuitOpenError
 } from './inferenceCircuitBreaker.js';
 
-const DEFAULT_INFERENCE_URL = 'http://127.0.0.1:3001';
 const DEFAULT_TIMEOUT_MS = 30_000;
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const QUALIFYING_HTTP_STATUSES = new Set([502, 503, 504]);
