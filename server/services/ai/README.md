@@ -30,7 +30,7 @@ There is no dynamic provider registration or generic prompt API.
 | Embedding | `embedTexts(texts, options)`, `getEmbeddingInfo(options)` | Validate non-empty text batches, model metadata, vector counts/dimensions, and finite vector elements. Return the inference envelope unchanged. `embed` aliases `embedTexts` on the registry. |
 | Generation | `generateSmartFolderRecommendations({ insights }, options)`, `rediscoverFeed(input, options)`, `generateSemanticLabels(input, options)` | Preserve each workload's existing request and response contract. Empty recommendations, `url:null`, and null labels are valid results. |
 | Classification | `classifyArticle(input, options)` | Validate the combined article analysis response: separate summary bullets, tags, advertisement, sentiment, and quality scores. The HTTP API has no separate scoring-only endpoint. |
-| Assistant | `chat(request, options)`, `stream(request, options)` | Preserve the Agents SDK model envelope and NDJSON event objects. Carry cancellation outside serialized payloads. |
+| Assistant | `runStream(request, options)`, legacy `chat(request, options)`, `stream(request, options)` | Stream inference-owned agent runs or preserve legacy model envelopes. Carry cancellation outside serialized payloads. |
 
 Options carry the existing request ID, caller signal, timeout, and transport test
 injection through to the provider. Capability validators never quote input or
@@ -52,8 +52,10 @@ safe diagnostics without requiring domain code to import the transport.
   deterministic fallback labels, and presentation-only writes.
 - Smart Folder and feed services retain meaningful named operations. Controller
   insights map to the existing `{ insights }` contract.
-- The agent model provider only adapts the assistant capability to the Agents SDK.
-  The SDK is used for orchestration and server-owned tools, not direct vendor calls.
+- The chat controller sends runs to inference, which owns the Agents SDK loop.
+  Authenticated HTTP callbacks reuse the shared MCP handlers on the server;
+  database scope and input validation never move into inference. Legacy assistant
+  model capability operations remain available for compatibility.
 
 ## Availability and health
 

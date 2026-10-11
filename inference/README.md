@@ -4,7 +4,7 @@ This is RSSMonster's isolated inference boundary. It is intended to listen only 
 
 The service owns all provider credentials and model calls, plus optional local
 embedding inference. It provides embeddings, article classification, assistant
-model access, Smart Folder recommendations, and feed rediscovery. It has no
+agent orchestration, Smart Folder recommendations, and feed rediscovery. It has no
 database access or RSSMonster persistence logic.
 
 ## Connection reliability
@@ -58,7 +58,7 @@ feed rediscovery, and semantic labels. Optional remote workload overrides are
 `GENERATION_ARTICLE_MODEL`, `GENERATION_SMART_FOLDER_MODEL`, and
 `GENERATION_FEED_REDISCOVERY_MODEL`. Local generation uses one loaded model.
 `OPENAI_OMIT_TEMPERATURE` remains the shared compatibility switch for generated
-text and remote scores; assistant reasoning remains configured in server/.env.
+text and remote scores; assistant reasoning is configured in inference/.env.
 
 `GENERATION_REASONING_EFFORT` and `CLASSIFICATION_REASONING_EFFORT` are optional
 per-request controls for compatible backends. Unset or blank sends no
@@ -239,7 +239,13 @@ By default the service listens at `http://127.0.0.1:3001`. Configure the listene
   Its optional `language` tag is validated and included as an advisory hint in
   generation and remote scoring prompts; article text takes precedence when it
   conflicts. Fixed local scoring inputs remain unchanged.
-- `POST /api/assistant/model` and `/api/assistant/model/stream` provide the model boundary used by the server-owned agent tools.
+- `POST /api/assistant/run/stream` runs the agent loop and streams NDJSON progress,
+  tool status, and a terminal answer. Configure `ASSISTANT_TOOL_URL` to the server's
+  `/api/agent/tools` endpoint on a private network or HTTPS. The server supplies
+  short-lived user-scoped tokens; database access stays on the server.
+  See [assistant orchestration](../docs/inference.md#assistant-orchestration-and-database-tools).
+- `POST /api/assistant/model` and `/api/assistant/model/stream` retain the legacy
+  model boundary for compatibility.
 - `POST /api/smart-folder-recommendations` generates personalized folder suggestions.
 - `POST /api/feed-rediscovery` suggests a replacement for a broken feed URL.
 - `POST /api/semantic-labels` generates event and interest-island labels from

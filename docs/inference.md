@@ -8,7 +8,7 @@ nav_order: 3
 # Inference
 
 RSSMonster uses a standalone service for every provider inference call. It
-handles embeddings, article classification, assistant model requests, Smart
+handles embeddings, article classification, assistant agent runs, Smart
 Folder recommendations, and feed rediscovery. The server retains authenticated
 tools and database/business logic; the inference process has no database access.
 
@@ -23,7 +23,45 @@ Embeddings, combined article classification, named generation workloads, and
 assistant model requests share one RSSMonster inference provider adapter. That
 adapter alone knows inference HTTP paths; `inferenceClient` owns transport,
 request IDs, cancellation, timeouts, safe errors, and existing circuit breakers.
-Agent tools and orchestration remain server-owned.
+Agent orchestration runs in inference; database tool handlers remain server-owned.
+
+### Assistant orchestration and database tools
+
+`POST /api/agent` keeps the existing authenticated chat SSE contract. The server
+compacts history and sends input, shared tool schemas, and a short-lived callback
+token to `POST /api/assistant/run/stream`. Inference owns the Agents SDK loop,
+instructions, model calls and tool selection. It returns NDJSON progress and a
+terminal result; the server sanitizes rendered HTML and constructs semantic history.
+
+Inference calls `POST /api/agent/tools` on the application server. Configure
+`ASSISTANT_TOOL_URL` in **inference/.env** to the URL reachable from inference:
+
+```env
+# Same machine:
+ASSISTANT_TOOL_URL=http://127.0.0.1:3000/api/agent/tools
+# Private Docker network (use the application service name):
+# ASSISTANT_TOOL_URL=http://rssmonster:3000/api/agent/tools
+```
+
+These callbacks reuse the existing MCP tool handlers. Every callback checks its
+signed user scope, allowed tool names, account existence, current password version,
+and the original Zod input schema. The token expires after five minutes and uses a
+separate derived signing key, so it cannot authenticate as an application session.
+No JWT secret or database credentials are sent to inference or the model. Callback
+tokens stay outside model context and logs. The callback URL comes only from
+inference configuration; requests cannot select it, and redirects are rejected.
+Tool calls have a 30-second timeout and are cancelled when the chat disconnects;
+an already-started database action may still finish. Calls are not automatically retried.
+
+Set the same `INFERENCE_API_KEY` on server and inference, and connect them over a
+private network or HTTPS. Keep the existing `INFERENCE_BASE_URL`; the configured
+inference timeout now bounds the entire agent run, including tool calls, rather
+than each separate model round trip. Increase it if multi-step runs need more
+time; callback tokens expire after five minutes.
+Move any `ASSISTANT_REASONING_EFFORT` value from server/.env to inference/.env.
+The application server keeps `@modelcontextprotocol/sdk`; only inference needs
+`@openai/agents`. Existing `/api/assistant/model` endpoints remain for compatibility.
+Upgrade server and inference together: the new server requires the run endpoint.
 
 The AI health layer combines `/health`, `/ready`, and validated `/api/capabilities`
 metadata. Server feature permissions may restrict use but never establish remote
@@ -521,7 +559,7 @@ For canonical remote configuration without a model, the default is
 `gpt-4o-mini` for article/label work and `gpt-4.1-mini` for folder/feed work.
 Set `OPENAI_OMIT_TEMPERATURE=true` if your generation or classification endpoint
 rejects explicit temperature values; this existing shared compatibility switch
-is preserved. Assistant reasoning remains an optional server-side
+is preserved. Assistant reasoning is an optional inference-side
 `ASSISTANT_REASONING_EFFORT` setting.
 
 #### Optional reasoning controls for structured output
