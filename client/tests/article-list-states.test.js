@@ -35,7 +35,7 @@ describe('ArticleEmptyState', () => {
 
   it.each([
     { noFeeds: true },
-    ...['unread', 'read', 'favorite', 'hot', 'clicked'].map(currentStatus => ({ currentStatus })),
+    ...['unread', 'read', 'saved', 'hot', 'openedOriginal'].map(currentStatus => ({ currentStatus })),
     { selectedTag: 'security' },
     { currentStatus: 'briefing', searchQuery: 'unread:true' },
     { showingNewOnly: true, searchQuery: 'Science' }
@@ -50,7 +50,7 @@ describe('ArticleEmptyState', () => {
     expect(wrapper.text()).not.toContain('Search tips');
   });
 
-  it.each(['unread', 'read', 'favorite', 'clicked', 'hot'])('offers search recovery for an empty %s search', async currentStatus => {
+  it.each(['unread', 'read', 'saved', 'openedOriginal', 'hot'])('offers search recovery for an empty %s search', async currentStatus => {
     const wrapper = mount(ArticleEmptyState, {
       props: { currentStatus, searchQuery: 'nonexistent term' }
     });
@@ -111,9 +111,9 @@ describe('ArticleEmptyState', () => {
     expect(wrapper.emitted('open-smart-folders')).toHaveLength(1);
   });
 
-  it('routes an empty favorites collection back to unread articles', async () => {
+  it('routes an empty saved collection back to unread articles', async () => {
     const wrapper = mount(ArticleEmptyState, {
-      props: { currentStatus: 'favorite' }
+      props: { currentStatus: 'saved' }
     });
 
     expect(wrapper.get('h2').text()).toBe('No saved articles yet');
@@ -125,10 +125,10 @@ describe('ArticleEmptyState', () => {
   });
 
   it('explains saved articles and opened originals without conflating read status', async () => {
-    const wrapper = mount(ArticleEmptyState, { props: { currentStatus: 'favorite' } });
+    const wrapper = mount(ArticleEmptyState, { props: { currentStatus: 'saved' } });
     expect(wrapper.get('h2').text()).toBe('No saved articles yet');
     expect(wrapper.text()).toContain('Save an article to find it here later');
-    await wrapper.setProps({ currentStatus: 'clicked' });
+    await wrapper.setProps({ currentStatus: 'openedOriginal' });
     expect(wrapper.get('h2').text()).toBe('No opened originals yet');
     expect(wrapper.text()).toContain('Articles opened on their original websites appear here, separately from read status.');
     await wrapper.setProps({ selectedTag: 'security' });

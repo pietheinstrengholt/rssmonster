@@ -179,8 +179,8 @@ const compareArticleCandidates = (first, second) => {
   const firstCanonical = first.duplicateOfArticleId ? 0 : 1;
   const secondCanonical = second.duplicateOfArticleId ? 0 : 1;
   if (firstCanonical !== secondCanonical) return secondCanonical - firstCanonical;
-  const firstEngaged = Number(first.favoriteInd || 0) + Number(first.clickedAmount || 0);
-  const secondEngaged = Number(second.favoriteInd || 0) + Number(second.clickedAmount || 0);
+  const firstEngaged = Number(first.savedInd || 0) + Number(first.openedOriginalCount || 0);
+  const secondEngaged = Number(second.savedInd || 0) + Number(second.openedOriginalCount || 0);
   if (firstEngaged !== secondEngaged) return secondEngaged - firstEngaged;
   return first.id - second.id;
 };
@@ -191,9 +191,9 @@ const buildMergedArticleValues = (survivor, losers, survivorFeedId) => {
   const excluded = new Set([
     'id', 'userId', 'feedId', 'urlHash', 'normalizedUrlHash', 'createdAt', 'updatedAt',
     'eventId', 'duplicateOfArticleId', 'duplicateCount', 'status', 'filteredInd',
-    'favoriteInd', 'negativeInd', 'positiveInd', 'clickedAmount', 'hotInd', 'hotlinks',
+    'savedInd', 'negativeInd', 'positiveInd', 'openedOriginalCount', 'hotInd', 'hotlinks',
     'firstSeen', 'readAt', 'publishedAt', 'modifiedAt',
-    'lastClickedAt', 'favoritedAt', 'positiveFeedbackAt', 'negativeFeedbackAt', 'lastMeaningfulReadAt'
+    'lastOpenedOriginalAt', 'savedAt', 'positiveFeedbackAt', 'negativeFeedbackAt', 'lastMeaningfulReadAt'
   ]);
   for (const attribute of Object.keys(Article.rawAttributes)) {
     if (excluded.has(attribute) || Article.rawAttributes[attribute].type?.key === 'VIRTUAL') continue;
@@ -204,11 +204,11 @@ const buildMergedArticleValues = (survivor, losers, survivorFeedId) => {
   const articles = [survivor, ...losers];
   values.status = articles.some(article => article.status === 'read') ? 'read' : survivor.status;
   values.filteredInd = articles.every(article => Boolean(article.filteredInd));
-  values.favoriteInd = Math.max(...articles.map(article => Number(article.favoriteInd || 0)));
+  values.savedInd = Math.max(...articles.map(article => Number(article.savedInd || 0)));
   values.negativeInd = Math.max(...articles.map(article => Number(article.negativeInd || 0)));
   values.positiveInd = Math.max(...articles.map(article => Number(article.positiveInd || 0)));
-  values.clickedAmount = Math.max(...articles.map(article => Number(article.clickedAmount || 0)));
-  for (const field of ['lastClickedAt', 'favoritedAt', 'positiveFeedbackAt', 'negativeFeedbackAt', 'lastMeaningfulReadAt']) {
+  values.openedOriginalCount = Math.max(...articles.map(article => Number(article.openedOriginalCount || 0)));
+  for (const field of ['lastOpenedOriginalAt', 'savedAt', 'positiveFeedbackAt', 'negativeFeedbackAt', 'lastMeaningfulReadAt']) {
     values[field] = articles.reduce((value, article) => latestDate(value, article[field]), null);
   }
   values.hotInd = Math.max(...articles.map(article => Number(article.hotInd || 0)));

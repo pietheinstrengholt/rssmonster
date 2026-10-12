@@ -17,7 +17,7 @@ function optionValues(options) {
 describe('article selection option configuration', () => {
   it('preserves the canonical status, sort, and grouping vocabulary', () => {
     expect(optionValues(ARTICLE_STATUS_OPTIONS)).toEqual([
-      'briefing', 'unread', 'favorite', 'hot', 'clicked', 'read'
+      'briefing', 'unread', 'saved', 'hot', 'openedOriginal', 'read'
     ]);
     expect(ARTICLE_STATUS_OPTIONS.map(option => option.label)).toEqual([
       'Daily briefing', 'Unread', 'Saved', 'Hot', 'Opened originals', 'Read'
@@ -41,19 +41,19 @@ describe('article selection option configuration', () => {
     }))).toEqual(['full', 'summarized', 'summaryBullets', 'minimal']);
     expect(optionValues(getAvailableArticleOptions(ARTICLE_STATUS_OPTIONS, {
       aiEnabled: false
-    }))).toEqual(['unread', 'favorite', 'hot', 'clicked', 'read']);
+    }))).toEqual(['unread', 'saved', 'hot', 'openedOriginal', 'read']);
   });
 
   it('retains Sidebar ordering, icons, and its Saved label', () => {
     expect(optionValues(SIDEBAR_STATUS_OPTIONS)).toEqual([
-      'briefing', 'unread', 'read', 'favorite', 'hot', 'clicked'
+      'briefing', 'unread', 'read', 'saved', 'hot', 'openedOriginal'
     ]);
-    expect(getArticleStatusOption('favorite')).toMatchObject({
+    expect(getArticleStatusOption('saved')).toMatchObject({
       label: 'Saved',
       sidebarLabel: 'Saved',
       icon: 'bookmark-fill',
-      iconClass: 'icon-star',
-      countKey: 'favoriteCount'
+      iconClass: 'icon-saved',
+      countKey: 'savedCount'
     });
   });
 });

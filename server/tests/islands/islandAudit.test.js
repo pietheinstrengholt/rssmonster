@@ -36,7 +36,7 @@ describe('island population audit', () => {
   it('returns an empty audit without querying when there is no evidence', async () => {
     const result = await buildPopulationAuditEntry({ userId: 7 });
 
-    expect(result.metrics).toEqual({ relatedArticleCount: 0, starredCount: 0, clickedCount: 0, positiveCount: 0, meaningfulReadCount: 0, negativeCount: 0 });
+    expect(result.metrics).toEqual({ relatedArticleCount: 0, savedCount: 0, openedOriginalCount: 0, positiveCount: 0, meaningfulReadCount: 0, negativeCount: 0 });
     expect(result.sourceArticles.articles).toEqual([]);
     expect(mocks.articleFindAll).not.toHaveBeenCalled();
     expect(mocks.query).not.toHaveBeenCalled();
@@ -44,10 +44,10 @@ describe('island population audit', () => {
 
   it('loads explicit user-owned articles and sorts signal evidence deterministically', async () => {
     mocks.articleFindAll.mockResolvedValue([
-      { id: 'bad', title: 'Ignored', favoriteInd: 1, clickedAmount: 9, negativeInd: 1 },
-      { id: '3', title: 'Negative', favoriteInd: 0, clickedAmount: 0, negativeInd: 1 },
-      { id: '2', title: 'Clicked', favoriteInd: 0, clickedAmount: 2, negativeInd: 0 },
-      { id: '1', title: 'Starred', favoriteInd: 1, clickedAmount: 0, negativeInd: 0 }
+      { id: 'bad', title: 'Ignored', savedInd: 1, openedOriginalCount: 9, negativeInd: 1 },
+      { id: '3', title: 'Negative', savedInd: 0, openedOriginalCount: 0, negativeInd: 1 },
+      { id: '2', title: 'OpenedOriginal', savedInd: 0, openedOriginalCount: 2, negativeInd: 0 },
+      { id: '1', title: 'Saved', savedInd: 1, openedOriginalCount: 0, negativeInd: 0 }
     ]);
 
     const result = await buildPopulationAuditEntry({ userId: 7, articleIds: [3, 2, 1], transaction: 'tx' });
@@ -56,9 +56,9 @@ describe('island population audit', () => {
       where: expect.objectContaining({ userId: 7 }),
       transaction: 'tx'
     }));
-    expect(result.metrics).toEqual({ relatedArticleCount: 3, starredCount: 1, clickedCount: 1, positiveCount: 0, meaningfulReadCount: 0, negativeCount: 1 });
+    expect(result.metrics).toEqual({ relatedArticleCount: 3, savedCount: 1, openedOriginalCount: 1, positiveCount: 0, meaningfulReadCount: 0, negativeCount: 1 });
     expect(result.sourceArticles.articles.map(article => article.id)).toEqual([1, 2, 3]);
-    expect(result.sourceArticles.starredArticleIds).toEqual([1]);
+    expect(result.sourceArticles.savedArticleIds).toEqual([1]);
   });
 
   it('retains explicit and reading clocks, legacy fallback, and bounded rule provenance', async () => {

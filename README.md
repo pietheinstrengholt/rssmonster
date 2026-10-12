@@ -101,7 +101,7 @@ for layout, typography, and interaction details.
 ### Organization
 
 Arrange subscriptions into categories, label articles with tags, and keep
-favorites for later. [Feed item filters](docs/feed-item-filters.md) accept or
+saved articles for later. [Feed item filters](docs/feed-item-filters.md) accept or
 exclude future entries per subscription. [Automated actions](docs/actions.md)
 apply regular-expression rules to bookmark, mark read, tag, hide, or override
 scores on matching incoming articles.

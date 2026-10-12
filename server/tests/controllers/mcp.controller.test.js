@@ -9,7 +9,7 @@ const articleAttributesForSummary = [
   'feedId',
   'publishedAt',
   'status',
-  'favoriteInd',
+  'savedInd',
   'contentSummaryBullets',
   'contentText'
 ];
@@ -157,7 +157,7 @@ describe('MCP controller', () => {
 
     await mcpController.postMcp(req, res);
 
-    expect(mocked.handlers.size).toBe(19);
+    expect(mocked.handlers.size).toBe(22);
     expect(mocked.handlers.has('categories')).toBe(true);
     expect(mocked.handlers.has('search_articles')).toBe(true);
     expect(mocked.handlers.has('search_articles_by_keyword')).toBe(true);
@@ -183,7 +183,7 @@ describe('MCP controller', () => {
     }
     expect(mcpModule.RSSMONSTER_MCP_INSTRUCTIONS).toContain('Neutral status is all');
     expect(mcpModule.RSSMONSTER_MCP_INSTRUCTIONS).toContain('search_feed_by_name: return ranked');
-    expect(mcpModule.RSSMONSTER_MCP_INSTRUCTIONS).not.toContain('clicked by the user (clickedAmount > 0).\n      - Optionally filter');
+    expect(mcpModule.RSSMONSTER_MCP_INSTRUCTIONS).not.toContain('openedOriginal by the user (openedOriginalCount > 0).\n      - Optionally filter');
     expect(mcpModule.RSSMONSTER_MCP_INSTRUCTIONS).not.toContain('internal cache of URLs');
   });
 
@@ -194,8 +194,8 @@ describe('MCP controller', () => {
       'search_articles_by_keyword',
       'search_articles_by_time',
       'articles_by_feed_id',
-      'favorite_articles',
-      'search_clicked_articles'
+      'saved_articles',
+      'search_opened_original_articles'
     ];
     for (const toolName of feedTools) {
       const feedId = mocked.schemas.get(toolName).feedId;
@@ -279,14 +279,14 @@ describe('MCP controller', () => {
       ['search_articles_by_keyword', { search: 'security', status: 'unread' }],
       ['search_articles_by_time', { from: '2026-07-01T00:00:00.000Z', status: 'unread' }],
       ['articles_by_feed_id', { feedId: 2, status: 'unread' }],
-      ['favorite_articles', { status: 'read' }],
+      ['saved_articles', { status: 'read' }],
       ['hot_articles', { sort: 'DESC', status: 'unread' }],
       ['feeds_by_category_id', { categoryId: 3 }],
       ['popular_tags', {}],
       ['articles_by_tag', { tag: 'security' }],
       ['search_tag_by_keyword', { keyword: 'sec' }],
-      ['search_clicked_articles', {}],
-      ['tags_clicked_articles', {}],
+      ['search_opened_original_articles', {}],
+      ['tags_opened_original_articles', {}],
       ['category_details', { categoryId: 3 }],
       ['get_article_content', { articleIds: [7], format: 'text' }]
     ];
@@ -315,7 +315,7 @@ describe('MCP controller', () => {
       'feed.feedName': 'The Verge',
       publishedAt: '2026-07-15T10:00:00.000Z',
       status: 'unread',
-      favoriteInd: 0
+      savedInd: 0
     }]);
     await mcpController.postMcp(createRequest(), createResponse());
 
@@ -325,9 +325,9 @@ describe('MCP controller', () => {
       categoryIds: [4],
       tags: ['privacy', 'security'],
       status: 'unread',
-      favorite: false,
+      saved: false,
       hot: true,
-      clicked: true,
+      openedOriginal: true,
       from: '2026-07-01T00:00:00.000Z',
       to: '2026-08-01T00:00:00.000Z',
       dateBasis: 'published',
@@ -347,11 +347,11 @@ describe('MCP controller', () => {
     expect(query.where).toMatchObject({
       userId: 42,
       status: 'unread',
-      favoriteInd: 0,
+      savedInd: 0,
       hotInd: 1
     });
     expect(query.where.feedId[Op.in]).toEqual([2, 3]);
-    expect(query.where.clickedAmount[Op.gt]).toBe(0);
+    expect(query.where.openedOriginalCount[Op.gt]).toBe(0);
     expect(query.where.publishedAt[Op.between]).toEqual([
       new Date('2026-07-01T00:00:00.000Z'),
       new Date('2026-08-01T00:00:00.000Z')
@@ -371,9 +371,9 @@ describe('MCP controller', () => {
         categoryIds: [4],
         tags: ['privacy', 'security'],
         status: 'unread',
-        favorite: false,
+        saved: false,
         hot: true,
-        clicked: true,
+        openedOriginal: true,
         dateBasis: 'published'
       },
       sort: 'published_desc'
@@ -400,7 +400,7 @@ describe('MCP controller', () => {
         feedId: 2,
         'feed.feedName': 'Security Feed',
         status: 'unread',
-        favoriteInd: 0,
+        savedInd: 0,
         publishedAt: '2026-07-31T08:00:00.000Z'
       }
     ];
@@ -423,7 +423,7 @@ describe('MCP controller', () => {
           'feedId',
           'publishedAt',
           'status',
-          'favoriteInd',
+          'savedInd',
           'contentSummaryBullets',
           'contentText'
         ],
@@ -438,7 +438,7 @@ describe('MCP controller', () => {
     const textConditions = mocked.articleFindAll.mock.calls[0][0].where[Op.and];
     expect(textConditions[0][Op.or].map(condition => condition.attribute.args[0].col))
       .toEqual(['title', 'contentText']);
-    expect(toolData(result).articles[0]).toEqual({
+    expect(toolData(result).articles[0]).toMatchObject({
       id: 7,
       title: 'Security update',
       url: 'https://example.com/security',
@@ -447,7 +447,7 @@ describe('MCP controller', () => {
       feedName: 'Security Feed',
       publishedAt: '2026-07-31T08:00:00.000Z',
       status: 'unread',
-      favoriteInd: 0,
+      savedInd: 0,
       summaryBullets: ['First point'],
       contentExcerpt: 'A detailed summary with extra whitespace.'
     });
@@ -528,7 +528,7 @@ describe('MCP controller', () => {
     });
     expect(mocked.articleFindAll).toHaveBeenNthCalledWith(1, expect.objectContaining({
       attributes: [
-        'id', 'title', 'url', 'author', 'feedId', 'publishedAt', 'status', 'favoriteInd'
+        'id', 'title', 'url', 'author', 'feedId', 'publishedAt', 'status', 'savedInd'
       ],
       limit: 16,
       offset: 0
@@ -640,7 +640,7 @@ describe('MCP controller', () => {
     });
   });
 
-  it('serves time, feed, favorite, hot, and clicked article tools', async () => {
+  it('serves time, feed, saved, hot, and openedOriginal article tools', async () => {
     const article = {
       id: 7,
       title: 'Security update',
@@ -667,7 +667,7 @@ describe('MCP controller', () => {
       status: 'unread',
       from: '2026-07-01T00:00:00.000Z'
     });
-    const favorites = await mocked.handlers.get('favorite_articles')({
+    const saved = await mocked.handlers.get('saved_articles')({
       feedId: 2,
       status: 'read'
     });
@@ -675,39 +675,39 @@ describe('MCP controller', () => {
       sort: 'DESC',
       status: 'unread'
     });
-    const clicked = await mocked.handlers.get('search_clicked_articles')({
+    const openedOriginal = await mocked.handlers.get('search_opened_original_articles')({
       feedId: 2
     });
 
     expect(toolData(recent).articles).toHaveLength(1);
     expect(toolData(byFeed).totalArticles).toBe(1);
-    expect(toolData(favorites).totalFavorites).toBe(1);
+    expect(toolData(saved).totalSaved).toBe(1);
     expect(hot.isError).toBe(false);
     expect(toolData(hot).totalHotArticles).toBe(1);
-    expect(toolData(clicked).totalClicked).toBe(1);
+    expect(toolData(openedOriginal).totalOpenedOriginal).toBe(1);
   });
 
-  it('does not expose unsupported favorite or click event-time filters', async () => {
+  it('does not expose unsupported saved or click event-time filters', async () => {
     mocked.articleFindAll.mockResolvedValue([]);
     await mcpController.postMcp(createRequest(), createResponse());
 
-    await mocked.handlers.get('favorite_articles')({ status: 'unread' });
-    const favoriteQuery = mocked.articleFindAll.mock.calls.at(-1)[0];
-    await mocked.handlers.get('search_clicked_articles')({});
-    const clickedQuery = mocked.articleFindAll.mock.calls.at(-1)[0];
+    await mocked.handlers.get('saved_articles')({ status: 'unread' });
+    const savedQuery = mocked.articleFindAll.mock.calls.at(-1)[0];
+    await mocked.handlers.get('search_opened_original_articles')({});
+    const openedOriginalQuery = mocked.articleFindAll.mock.calls.at(-1)[0];
 
-    for (const toolName of ['favorite_articles', 'search_clicked_articles']) {
+    for (const toolName of ['saved_articles', 'search_opened_original_articles']) {
       expect(mocked.schemas.get(toolName)).not.toHaveProperty('from');
       expect(mocked.schemas.get(toolName)).not.toHaveProperty('to');
       expect(mocked.schemas.get(toolName)).not.toHaveProperty('dateBasis');
     }
-    expect(favoriteQuery.where).not.toHaveProperty('updatedAt');
-    expect(clickedQuery.where).not.toHaveProperty('updatedAt');
-    expect(favoriteQuery.order[0]).toEqual(['publishedAt', 'DESC']);
-    expect(clickedQuery.order[0]).toEqual(['publishedAt', 'DESC']);
+    expect(savedQuery.where).not.toHaveProperty('updatedAt');
+    expect(openedOriginalQuery.where).not.toHaveProperty('updatedAt');
+    expect(savedQuery.order[0]).toEqual(['publishedAt', 'DESC']);
+    expect(openedOriginalQuery.order[0]).toEqual(['publishedAt', 'DESC']);
   });
 
-  it('defaults neutral article retrieval and favorites to all read statuses', async () => {
+  it('defaults neutral article retrieval and saved to all read statuses', async () => {
     mocked.articleFindAll.mockResolvedValue([]);
     mocked.feedFindOne.mockResolvedValue({ id: 2, feedName: 'Security' });
     await mcpController.postMcp(createRequest(), createResponse());
@@ -716,7 +716,7 @@ describe('MCP controller', () => {
       ['search_articles_by_keyword', { search: 'security' }],
       ['search_articles_by_time', { from: '2026-07-01T00:00:00.000Z' }],
       ['articles_by_feed_id', { feedId: 2 }],
-      ['favorite_articles', {}],
+      ['saved_articles', {}],
       ['hot_articles', { sort: 'DESC' }]
     ];
     for (const [name, input] of calls) {
@@ -816,12 +816,13 @@ describe('MCP controller', () => {
     const searched = await mocked.handlers.get('search_tag_by_keyword')({
       keyword: 'sec'
     });
-    const clickedTags = await mocked.handlers.get('tags_clicked_articles')();
+    const openedOriginalTags = await mocked.handlers.get('tags_opened_original_articles')();
 
     expect(toolData(popular).popularTags).toHaveLength(1);
     expect(toolData(tagged).totalArticles).toBe(1);
     expect(toolData(searched).totalMatches).toBe(1);
-    expect(toolData(clickedTags)).toEqual({
+    expect(toolData(openedOriginalTags)).toEqual({
+      totalOpenedOriginalArticles: 1,
       totalClickedArticles: 1,
       topTags: [{ name: 'security', count: 2 }]
     });
@@ -835,10 +836,11 @@ describe('MCP controller', () => {
     const tagged = await mocked.handlers.get('articles_by_tag')({
       tag: 'missing'
     });
-    const clickedTags = await mocked.handlers.get('tags_clicked_articles')();
+    const openedOriginalTags = await mocked.handlers.get('tags_opened_original_articles')();
 
     expect(toolData(tagged).totalArticles).toBe(0);
-    expect(toolData(clickedTags)).toEqual({
+    expect(toolData(openedOriginalTags)).toEqual({
+      totalOpenedOriginalArticles: 0,
       totalClickedArticles: 0,
       topTags: []
     });

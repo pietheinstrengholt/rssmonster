@@ -38,8 +38,8 @@ const analysis = {
 
 const actionResult = {
   status: 'unread',
-  favoriteInd: false,
-  clickedAmount: 0,
+  savedInd: false,
+  openedOriginalCount: 0,
   hotInd: false,
   tags: []
 };

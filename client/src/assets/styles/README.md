@@ -47,7 +47,7 @@ Use the following semantic rules:
 | Amber        | warnings, degraded states and cautionary actions             |
 | Blue         | navigation, selected states, links and primary actions      |
 | Green        | successful completion and confirmed success states          |
-| Red / Pink   | favorites, errors and destructive states                    |
+| Red / Pink   | saved, errors and destructive states                    |
 | Gray / Navy  | content, metadata, surfaces and structural interface chrome |
 
 This relationship is the default color language for both light and dark themes. A color should keep

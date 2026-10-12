@@ -7,7 +7,7 @@ const representativeArticle = {
   id: 26,
   feedId: 7,
   status: 'read',
-  favoriteInd: 1,
+  savedInd: 1,
   url: 'https://publisher.example/articles/café',
   title: 'Unicode — café ☕',
   author: 'Zoë Reporter',
@@ -95,11 +95,11 @@ describe('Google Reader article serializer', () => {
     expect(JSON.stringify(serialized)).not.toContain('descriptionPayload');
   });
 
-  it('deduplicates state/category entries and accepts integer-like favorites', () => {
+  it('deduplicates state/category entries and accepts integer-like saved', () => {
     const serialized = serializeGreaderArticle({
       ...representativeArticle,
       status: 'unread',
-      favoriteInd: '1',
+      savedInd: '1',
       feed: {
         ...representativeArticle.feed,
         category: {

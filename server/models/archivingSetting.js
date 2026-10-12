@@ -18,12 +18,12 @@ export default (sequelize) => sequelize.define(
       allowNull: false,
       defaultValue: true
     },
-    neverDeleteFavorites: {
+    neverDeleteSaved: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true
     },
-    neverDeleteClickedArticles: {
+    neverDeleteOpenedOriginalArticles: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false

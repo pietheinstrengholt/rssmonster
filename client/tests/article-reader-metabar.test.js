@@ -12,16 +12,16 @@ const measure = async () => {
   await nextTick();
 };
 const render = (label = ref('Badge one')) => {
-  const clicked = vi.fn();
+  const openedOriginal = vi.fn();
   wrapper = mount(ArticleReaderMetabar, {
     attachTo: document.body,
     attrs: { style: 'column-gap: 6px' },
     slots: {
       leading: () => h('span', 'Feed icon'),
-      default: () => [label.value, 'Badge two', 'Badge three'].map((text, index) => h(ArticleReaderBadge, { key: index }, { default: () => h('button', { onClick: clicked }, text) }))
+      default: () => [label.value, 'Badge two', 'Badge three'].map((text, index) => h(ArticleReaderBadge, { key: index }, { default: () => h('button', { onClick: openedOriginal }, text) }))
     }
   });
-  return clicked;
+  return openedOriginal;
 };
 const button = text => wrapper.findAll('button').find(item => item.text() === text);
 
@@ -52,7 +52,7 @@ describe('Reader metadata overflow', () => {
   });
 
   it('moves only overflowing badges into the disclosure as space shrinks', async () => {
-    const clicked = render(); await measure();
+    const openedOriginal = render(); await measure();
     paneWidth = 300; resize(); await measure();
     expect(show().attributes('aria-expanded')).toBe('false');
     expect(panel().text()).toBe('Badge three');
@@ -63,7 +63,7 @@ describe('Reader metadata overflow', () => {
     expect(panel().attributes('inert')).toBeUndefined();
     expect(document.activeElement.textContent).toBe('Badge two');
     await button('Badge two').trigger('click');
-    expect(clicked).toHaveBeenCalledTimes(1);
+    expect(openedOriginal).toHaveBeenCalledTimes(1);
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await nextTick();
     expect(panel().attributes('inert')).toBeDefined();

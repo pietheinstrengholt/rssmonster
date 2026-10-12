@@ -2,6 +2,7 @@
 import db from '../models/index.js';
 import { previewAction as previewActionSample } from '../services/actions/previewAction.js';
 import { compileActionRegex } from '../utils/actionRegex.js';
+import { canonicalArticleStatus } from '../utils/articleStateContract.js';
 const { Action } = db;
 
 const getActions = async (req, res, next) => {
@@ -43,7 +44,7 @@ const createAction = async (req, res, next) => {
       .map(a => ({
         userId,
         name: a.name || '',
-        actionType: a.actionType || '',
+        actionType: canonicalArticleStatus(a.actionType || ''),
         regularExpression: a.regularExpression || '',
         tagValue: a.tagValue || null
       }));

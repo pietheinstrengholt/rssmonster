@@ -19,10 +19,10 @@ describe('evidence-grounded Island labels', () => {
     const headline = 'Orchestra performs a benefit concert in Amsterdam';
     const values = { userId: user.id, feedId: feed.id, title: headline, status: 'read',
       articleVector: [1, 0], embedding_model: model, publishedAt: new Date(),
-      favoriteInd: 1, favoritedAt: new Date() };
+      savedInd: 1, savedAt: new Date() };
     await db.Article.bulkCreate([values, { ...values, title: 'Musicians return for a second benefit concert' }]);
     const held = await db.Article.create({ ...values, title: 'An independent review of the orchestra concert',
-      status: 'unread', favoriteInd: 0, favoritedAt: null, articleVector: [0.8, 0.6] });
+      status: 'unread', savedInd: 0, savedAt: null, articleVector: [0.8, 0.6] });
     const taxonomy = await db.IslandTaxonomy.create({ identity: `boxing-${randomUUID()}`,
       displayName: 'Boxing', categoryName: 'Sport', vector: [0.28, 0.96], embedding_model: model });
     await db.IslandTaxonomy.create({ identity: `hidden-${randomUUID()}`, displayName: 'Hidden label',

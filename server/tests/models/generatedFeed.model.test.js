@@ -59,7 +59,7 @@ describe('GeneratedFeed model', () => {
     await expect(GeneratedFeed.create({
       userId: user.id,
       name: 'Second',
-      expression: 'favorite:true limit:50',
+      expression: 'saved:true limit:50',
       token
     })).rejects.toMatchObject({ name: 'SequelizeUniqueConstraintError' });
   });
@@ -100,7 +100,7 @@ describe('GeneratedFeed model', () => {
     const generatedFeed = await GeneratedFeed.create({
       userId: user.id,
       name: 'Owned Feed',
-      expression: 'favorite:true limit:50',
+      expression: 'saved:true limit:50',
       token: validToken(uniqueValue('association-token'))
     });
 

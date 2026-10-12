@@ -26,11 +26,11 @@ describe('two canonical semantic batches', () => {
     for (const batch of batches) {
       const feeds = new Set(batch.feeds.map(f => f.id));
       expect(batch.articles.every(a => feeds.has(a.feedId))).toBe(true);
-      for (const field of ['favoriteInd', 'negativeInd', 'clickedAmount']) expect(batch.articles.some(a => a[field] > 0)).toBe(true);
+      for (const field of ['savedInd', 'negativeInd', 'openedOriginalCount']) expect(batch.articles.some(a => a[field] > 0)).toBe(true);
     }
     const held = articles.filter(a => a.regression.heldOut || a.regression.role === 'held-out');
     expect(held).toHaveLength(160);
-    expect(held.every(a => a.regression.batch === 2 && !a.favoriteInd && !a.negativeInd && !a.clickedAmount)).toBe(true);
+    expect(held.every(a => a.regression.batch === 2 && !a.savedInd && !a.negativeInd && !a.openedOriginalCount)).toBe(true);
   });
 
   it('keeps each cached vector bound to its unchanged semantic input', async () => {

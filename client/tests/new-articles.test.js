@@ -9,7 +9,7 @@ import { loadUnreadBaseline, saveUnreadBaseline, newerUnreadSelection } from '..
 vi.mock('../src/api/articles.js', () => ({
   fetchArticleIds: vi.fn(), fetchArticlePage: vi.fn(), fetchNewerArticleCount: vi.fn(),
   fetchArticleDetails: vi.fn(), markArticleSeen: vi.fn(), markArticleUnread: vi.fn(),
-  markAsFavorite: vi.fn(), markManyClicked: vi.fn(), markManyAsFavorite: vi.fn(),
+  markAsSaved: vi.fn(), markManyOpenedOriginal: vi.fn(), markManyAsSaved: vi.fn(),
   markAllAsRead: vi.fn(), markArticlesAsRead: vi.fn()
 }));
 

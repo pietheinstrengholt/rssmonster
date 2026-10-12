@@ -25,7 +25,7 @@ async function fixture() {
 describe('collective Island selection', () => {
   it.each(['positive', 'negative'])('lets coherent %s reading evidence compete at capacity and generalize to held-out articles', async sign => {
     const { user, add } = await fixture();
-    for (let i = 0; i < 20; i++) await add(i, { favoriteInd: 1, favoritedAt: new Date(now) });
+    for (let i = 0; i < 20; i++) await add(i, { savedInd: 1, savedAt: new Date(now) });
     const heldVector = vector(20).map((value, index) => value * 0.8 + Number(index === 21) * 0.6);
     const held = await add(20, { status: 'unread', articleVector: heldVector });
     const unrelated = await add(22, { status: 'unread' });
@@ -61,10 +61,10 @@ describe('collective Island selection', () => {
 
   it('keeps an incumbent for a marginal challenger, then reuses the challenger ID when evidence becomes stronger', async () => {
     const { user, add } = await fixture();
-    await add(0, { favoriteInd: 1, favoritedAt: new Date(now - day) });
+    await add(0, { savedInd: 1, savedAt: new Date(now - day) });
     await calibrate(user.id, 1);
     const [incumbent] = await active(user.id);
-    const challengerSource = await add(1, { favoriteInd: 1, favoritedAt: new Date(now) });
+    const challengerSource = await add(1, { savedInd: 1, savedAt: new Date(now) });
     await calibrate(user.id, 1);
     expect((await active(user.id)).map(row => row.id)).toEqual([incumbent.id]);
     const challenger = await db.Island.findOne({ where: { userId: user.id, archivedInd: true } });
@@ -84,11 +84,11 @@ describe('collective Island selection', () => {
     await add(0, { attentionBucket: 3, lastMeaningfulReadAt: new Date(now - 89 * day) });
     await calibrate(user.id, 1);
     const [incumbent] = await active(user.id);
-    await add(1, { clickedAmount: 1000, lastClickedAt: new Date(now) });
+    await add(1, { openedOriginalCount: 1000, lastOpenedOriginalAt: new Date(now) });
     await calibrate(user.id, 1);
     expect((await active(user.id)).map(row => row.id)).toEqual([incumbent.id]);
     vi.setSystemTime(now + 1000);
-    await add(1, { clickedAmount: 1, lastClickedAt: new Date() });
+    await add(1, { openedOriginalCount: 1, lastOpenedOriginalAt: new Date() });
     await calibrate(user.id, 1);
     const [replacement] = await active(user.id);
     expect(replacement.id).not.toBe(incumbent.id);

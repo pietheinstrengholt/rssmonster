@@ -176,7 +176,7 @@ restart schedules the next 03:00 rather than replaying missed nights.
 
 Users are processed sequentially using their `archiving_settings` and the same
 cleanup service as the Cleanup dialog. Users without a settings row use the model
-defaults. Count limits take priority over age; checked unread, favorite and clicked
+defaults. Count limits take priority over age; checked unread, saved and openedOriginal
 protections remain in effect. The worker logs each successful user transaction,
 including when nothing was removed:
 

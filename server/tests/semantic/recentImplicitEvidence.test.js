@@ -23,12 +23,12 @@ describe('recent implicit held-out transfer with frozen embeddings', () => {
     const records = [];
     for (const type of ['click', 'deep-read']) {
       const source = { ...sourceFixture, ...byId.get(sourceFixture.sourceId), id: sourceFixture.sourceId,
-        positiveInd: 0, favoriteInd: 0, negativeInd: 0, clickedAmount: type === 'click' ? 1 : 0,
-        attentionBucket: type === 'deep-read' ? 3 : 0, lastClickedAt: new Date(now), lastMeaningfulReadAt: new Date(now) };
+        positiveInd: 0, savedInd: 0, negativeInd: 0, openedOriginalCount: type === 'click' ? 1 : 0,
+        attentionBucket: type === 'deep-read' ? 3 : 0, lastOpenedOriginalAt: new Date(now), lastMeaningfulReadAt: new Date(now) };
       const context = { ...prepareIslandEvidence([], [source]), now };
       for (const fixture of targets) {
         const candidate = { ...fixture, ...byId.get(fixture.sourceId), id: fixture.sourceId,
-          positiveInd: 0, favoriteInd: 0, negativeInd: 0, clickedAmount: 0, attentionBucket: 0 };
+          positiveInd: 0, savedInd: 0, negativeInd: 0, openedOriginalCount: 0, attentionBucket: 0 };
         expect(candidate.id).not.toBe(source.id);
         expect(candidate.articleVector).toBeDefined();
         const result = evaluateArticleInterest(candidate, context);

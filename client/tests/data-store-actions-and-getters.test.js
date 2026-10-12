@@ -50,9 +50,9 @@ const createCounts = (overrides = {}) => ({
   briefingCount: 1,
   unreadCount: 4,
   readCount: 3,
-  favoriteCount: 2,
+  savedCount: 2,
   hotCount: 1,
-  clickedCount: 1,
+  openedOriginalCount: 1,
   categories: [],
   ...overrides
 });
@@ -150,7 +150,7 @@ describe('data store remaining actions and getters', () => {
   ])('resets article filters while preserving %s sorting and %s grouping', (sort, grouping) => {
     const { selectionStore: store } = createStores();
     store.setCurrentSelection({
-      status: 'favorite',
+      status: 'saved',
       categoryId: 4,
       feedId: 9,
       search: 'science',
@@ -446,14 +446,14 @@ describe('data store remaining actions and getters', () => {
     expect(store.categories[0].feeds[0].feedName).toBe('Moved in place');
   });
 
-  // Verifies no-op favorite changes and missing read-count owners do not mutate totals.
-  it('ignores no-op favorite deltas and missing read-count ownership', () => {
+  // Verifies no-op saved changes and missing read-count owners do not mutate totals.
+  it('ignores no-op saved deltas and missing read-count ownership', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { overviewStore: store } = createStores();
     store.addCategory({ id: 1, feeds: [] });
 
-    store.applyFavoriteDelta({ categoryId: 1, feedId: 2, delta: 0 });
-    store.applyFavoriteDelta({ categoryId: 999, feedId: 2, delta: 1 });
+    store.applySavedDelta({ categoryId: 1, feedId: 2, delta: 0 });
+    store.applySavedDelta({ categoryId: 999, feedId: 2, delta: 1 });
     store.increaseReadCount({
       feedId: 999,
       feed: { categoryId: 1 }
@@ -463,8 +463,8 @@ describe('data store remaining actions and getters', () => {
       feed: { categoryId: 999 }
     });
 
-    expect(store.favoriteCount).toBe(1);
-    expect(store.categories[0].favoriteCount).toBe(0);
+    expect(store.savedCount).toBe(1);
+    expect(store.categories[0].savedCount).toBe(0);
     expect(warn).toHaveBeenCalledTimes(2);
     warn.mockRestore();
   });
@@ -480,9 +480,9 @@ describe('data store remaining actions and getters', () => {
       briefingCount: 6,
       unreadCount: 5,
       readCount: 4,
-      favoriteCount: 3,
+      savedCount: 3,
       hotCount: 2,
-      clickedCount: 1,
+      openedOriginalCount: 1,
       topTags: ['rss'],
       unreadsSinceLastUpdate: -2.8,
       categories: [{
@@ -508,9 +508,9 @@ describe('data store remaining actions and getters', () => {
       overviewStore.briefingCount,
       overviewStore.unreadCount,
       overviewStore.readCount,
-      overviewStore.favoriteCount,
+      overviewStore.savedCount,
       overviewStore.hotCount,
-      overviewStore.clickedCount
+      overviewStore.openedOriginalCount
     ]).toEqual([6, 5, 4, 3, 2, 1]);
     expect(overviewStore.topTags).toEqual(['rss']);
     expect(uiStore.chatAssistantOpen).toBe(true);

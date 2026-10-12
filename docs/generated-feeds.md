@@ -106,7 +106,7 @@ event:true eventCount:>=3 sort:topStories
 ```
 
 Expressions can select by text, title, author, tag, language, read state,
-favorite state, dates, scores, Events, Interest Islands, and other supported
+saved state, dates, scores, Events, Interest Islands, and other supported
 article properties. They can also control ordering with tokens such as
 `sort:desc`, `sort:asc`, `sort:quality`, `sort:recommended`, and
 `sort:topStories`.

@@ -5,9 +5,9 @@ import { behaviorRecencyWeight, SIGNAL_HALF_LIFE_DAYS } from '../../services/isl
 const now = Date.parse('2026-09-14T12:00:00Z');
 const daysAgo = days => new Date(now - days * 86400000);
 const signals = [
-  { name: 'click', field: 'lastClickedAt', state: { clickedAmount: 1 }, weight: 1, halfLife: 30, key: 'positiveScore' },
+  { name: 'click', field: 'lastOpenedOriginalAt', state: { openedOriginalCount: 1 }, weight: 1, halfLife: 30, key: 'positiveScore' },
   { name: 'deep read', field: 'lastMeaningfulReadAt', state: { attentionBucket: 3 }, weight: 1, halfLife: 90, key: 'positiveScore' },
-  { name: 'favorite', field: 'favoritedAt', state: { favoriteInd: 1 }, weight: 4, halfLife: 365, key: 'positiveScore' },
+  { name: 'saved', field: 'savedAt', state: { savedInd: 1 }, weight: 4, halfLife: 365, key: 'positiveScore' },
   { name: 'more-like-this', field: 'positiveFeedbackAt', state: { positiveInd: 1 }, weight: 8, halfLife: 730, key: 'positiveScore' },
   { name: 'not-interested', field: 'negativeFeedbackAt', state: { negativeInd: 1 }, weight: 8, halfLife: 365, key: 'negativeScore' }
 ];
@@ -32,20 +32,20 @@ describe('signal-specific Island decay', () => {
   });
 
   it.each([7, 30, 90, 180, 365])('retains strong explicit evidence longer than implicit evidence after %i days', age => {
-    const [click, deepRead, favorite, positive] = signals.map(signal => score(signal, age) / signal.weight);
+    const [click, deepRead, saved, positive] = signals.map(signal => score(signal, age) / signal.weight);
     expect(click).toBeLessThan(deepRead);
-    expect(deepRead).toBeLessThan(favorite);
-    expect(favorite).toBeLessThan(positive);
+    expect(deepRead).toBeLessThan(saved);
+    expect(saved).toBeLessThan(positive);
   });
 
   it('decays independently before summing and keeps capped click magnitude and signal snapshots', () => {
-    const result = computeArticleSignals({ publishedAt: daysAgo(0), clickedAmount: 20, lastClickedAt: daysAgo(30),
-      attentionBucket: 4, lastMeaningfulReadAt: daysAgo(180), favoriteInd: 1, favoritedAt: daysAgo(0),
+    const result = computeArticleSignals({ publishedAt: daysAgo(0), openedOriginalCount: 20, lastOpenedOriginalAt: daysAgo(30),
+      attentionBucket: 4, lastMeaningfulReadAt: daysAgo(180), savedInd: 1, savedAt: daysAgo(0),
       positiveInd: 1, positiveFeedbackAt: daysAgo(730) });
     expect(result.positiveScore).toBe(2 / 2 + 1 / 4 + 4 + 8 / 2);
-    expect(result.positiveSignals).toEqual({ clicks: 2, deepReads: 1, stars: 1, positives: 1, negatives: 0 });
+    expect(result.positiveSignals).toEqual({ openedOriginals: 2, deepReads: 1, saves: 1, positives: 1, negatives: 0 });
     const negative = computeArticleSignals({ negativeInd: 1, negativeFeedbackAt: daysAgo(365),
-      positiveInd: 1, positiveFeedbackAt: daysAgo(0), favoriteInd: 1, favoritedAt: daysAgo(0) });
+      positiveInd: 1, positiveFeedbackAt: daysAgo(0), savedInd: 1, savedAt: daysAgo(0) });
     expect(negative.positiveScore).toBe(4);
     expect(negative.negativeScore).toBe(4);
   });

@@ -165,8 +165,8 @@ The command:
 2. Clears every article vector and model identifier.
 3. Removes events, islands,
    duplicate relationships, and derived interest scores.
-4. Generates new article vectors only for starred articles
-   (`favoriteInd=1`) and articles with at least one click (`clickedAmount>0`).
+4. Generates new article vectors only for saved articles
+   (`savedInd=1`) and articles with at least one click (`openedOriginalCount>0`).
 5. Reloads the shared island taxonomy seed and regenerates all taxonomy vectors.
 6. Rebuilds duplicate detection, historical events, event and behavioral
    Islands and article interest scores.

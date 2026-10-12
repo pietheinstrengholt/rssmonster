@@ -34,7 +34,7 @@ than saying a feature cannot be added or approximated.
 | **Self-hosted** | Yes; documented Docker Compose profiles | Yes; single binary, packages, and official container images are documented |
 | **Chronological reading** | Always available alongside alternative rankings | The central, predictable reading model |
 | **Interface** | Responsive modes including a richer three-pane desktop Reader view | Responsive, distraction-free, minimalist interface with keyboard and touch support |
-| **Organization and search** | Categories, tags, favorites, advanced search expressions, and Smart Folders | Categories, bookmarks, full-text PostgreSQL search, and per-feed include/exclude filters |
+| **Organization and search** | Categories, tags, saved, advanced search expressions, and Smart Folders | Categories, bookmarks, full-text PostgreSQL search, and per-feed include/exclude filters |
 | **Reusable article views** | Smart Folders save composable state, date, score, source, and semantic filters | No comparable saved-query view is highlighted in the official feature documentation |
 | **Related coverage** | Semantic related articles, Events are built in when semantic processing is enabled | Semantic related-article and Event grouping are not documented as built-in features |
 | **Duplicates and revisions** | Deterministic identity and revision handling plus duplicate analysis are built into processing | Comparable cross-source semantic duplicate/revision analysis is not documented as built in |

@@ -117,7 +117,7 @@ describe('application dropdown runtime boundary', () => {
     expect(document.activeElement).toBe(items[2].element);
   });
 
-  it('does not close or emit when a disabled action is clicked', async () => {
+  it('does not close or emit when a disabled action is openedOriginal', async () => {
     const wrapper = mountDropdown();
     const trigger = wrapper.get('#test-dropdown');
 

@@ -79,7 +79,7 @@ export const APPROVED_COLOR_EXCEPTIONS = [
     file: 'src/components/sidebar/SidebarNavItem.vue',
     literal: 'currentColor',
     maxOccurrences: 1,
-    reason: 'Makes the clicked-state icon inherit the navigation item color.'
+    reason: 'Makes the openedOriginal-state icon inherit the navigation item color.'
   }
 ];
 

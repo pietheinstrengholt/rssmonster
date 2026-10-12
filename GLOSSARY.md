@@ -1,6 +1,216 @@
 # Domain glossary
 
-## Bulk read
+## Unresolved inconsistencies and conflicts
+
+These observations come from the client code and its supporting documentation.
+They are recorded for later resolution; the definitions below describe current
+usage rather than deciding new names or changing behavior. Naming differences do
+not necessarily indicate a functional defect.
+
+| Area | Current inconsistency or conflict | Evidence |
+| --- | --- | --- |
+| Reading-mode names | **Expanded** is `full`; **Headlines** is `minimal`; documentation also calls these Full stream and Compact list. **Summary Bullets** appears as Summary bullets and Summarized Bullets in other surfaces/docs. These are aliases, not additional modes. | [Selection options](client/src/config/articleSelectionOptions.js), [article documentation](client/src/components/articles/README.md), [shell documentation](client/src/components/shell/README.md) |
+| Summarized / AI summary | The mobile description for **Summarized** says “Show the AI generated summary,” but this mode takes the first 100 words of canonical `contentText`. Stored summary bullets are a separate presentation. | [Selection options](client/src/config/articleSelectionOptions.js), [content component](client/src/components/articles/ArticleContent.vue), [content service](client/src/services/articleContentService.js) |
+| Event / story / similar articles | Grouping is called **Events**, mobile calls it **Cluster per event**, and the Event-expansion control says **similar articles**. That control fetches Event members, rather than a general similarity search. **Developing story** and **Same story, different sources** add further story terminology. | [Selection options](client/src/config/articleSelectionOptions.js), [metadata](client/src/components/articles/ArticleMeta.vue), [Event expansion](client/src/components/articles/helpers/articleExpansion.js), [story sources](client/src/components/articles/ArticleStorySourcesPopover.vue) |
+| Developing events / developing stories | The ordinary `includeDevelopingEvents` setting, Briefing's developing-events summary preference, and `developing:true`/“Show only developing stories” have different scopes. Smart Folder preview chips label `developing:true` **Developing events**, obscuring the strict developing-story filter. | [Unread preferences](client/src/components/dialogs/UnreadConfigurationModal.vue), [Briefing contract](client/src/components/briefing/README.md), [query preview](client/src/services/currentViewSmartFolder.js) |
+| Daily Briefing's 24-hour period | **Last 24 hours** stores `24h`, but the selection builds `@today`. Briefing documentation records a calendar-day article/context window versus a rolling one-day overview count. | [Selection store](client/src/store/selection.js), [Briefing period documentation](client/src/components/briefing/README.md#selection-period) |
+| Briefing scope | The sidebar count and structured introduction describe the global briefing; the displayed list can retain category, feed, or tag scope. They need not describe the same visible collection. | [Briefing selection](client/src/components/briefing/README.md#daily-briefing-selection), [selection store](client/src/store/selection.js) |
+| Publication date / first seen | Smart Folder **Date range → Last 7 days / Last 30 days** and **Relative range** generate `firstSeen` expressions. Unread age/date controls instead constrain publication time. “Last week” uses `@lastweek`, a different expression. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query builder](client/src/components/settings/smartFolders/smartFolderQuery.js), [date filters](client/src/services/articleDateRange.js), [query tests](client/tests/smart-folder-query.test.js) |
+| Quality | **Quality** can mean article-only overall quality, the `qualityScore` writing component, or source-aware `sort:quality`. Query preview chips abbreviate the source-aware sort to **Quality**, whereas the main menu says **Quality & source trust**. Inputs also use different scales. | [Quality explanation](client/src/components/articles/ArticleQualityExplanation.vue), [Scores settings](client/src/components/settings/SettingsScores.vue), [query preview](client/src/services/currentViewSmartFolder.js), [scoring contract](docs/scoring.md) |
+| Quality precision | The scoring guide says the badge preserves fractional points so 74.75 cannot appear to meet a threshold of 75. The current explanation component uses `Math.round(this.quality * 100)`, displaying 75 for that value. | [Scoring guide](docs/scoring.md#overall-quality), [quality explanation](client/src/components/articles/ArticleQualityExplanation.vue) |
+| Sentiment / Tone | Current controls describe `sentimentScore` as **Tone**, emotional neutrality and balance. Settings documentation still describes higher sentiment as more positive and lower sentiment as negative/alarmist. These are different descriptions of the assessment. | [Scores settings](client/src/components/settings/SettingsScores.vue), [quality explanation](client/src/components/articles/ArticleQualityExplanation.vue), [Settings documentation](client/src/components/settings/README.md#scores) |
+| AI provider and defaults | Scores help claims an OpenAI key is required and absent-key articles receive 70. AI / Inference exposes a configurable service with separate capabilities; the Settings README flags the OpenAI-only copy as outdated. The neutral component fallback is separate from pending/failed analysis presentation. | [Scores settings](client/src/components/settings/SettingsScores.vue), [Inference settings](client/src/components/settings/SettingsInference.vue), [Settings documentation](client/src/components/settings/README.md), [analysis presentation](client/src/services/articleAnalysisPresentation.js) |
+| Interest match | Briefing's “Show only interest-matched articles” includes nonzero negative interest according to its documented eligibility contract. “Matches your interests” can sound like a positive recommendation, while the interest inspector distinguishes positive, neutral, and negative preference. | [Briefing preferences](client/src/components/briefing/README.md#article-selection), [interest presentation](client/src/services/interestPresentation.js), [article metadata](client/src/components/articles/ArticleMeta.vue) |
+| High-trust priority | Unread and Briefing expose similar **Prioritize high-trust coverage** wording, but the documented ranking effects differ. Briefing priority changes structured-summary ordering; Unread has a legacy chronological trust override. Neither is the article-only overall-quality value. | [Unread preferences](client/src/components/dialogs/UnreadConfigurationModal.vue), [Briefing coverage quality](client/src/components/briefing/README.md#coverage-quality), [scoring modes](docs/scoring.md#chronological) |
+| Source / official feed / independence | Source counts refer to feeds, Original source is publisher-declared attribution, and Official Sources are configured domain mappings. The article signal calls an official-source article **Official Feed**. These meanings should not be conflated with verified provenance or independent reporting. | [Story sources](client/src/components/articles/ArticleStorySourcesPopover.vue), [article signals](client/src/components/articles/helpers/articleSignals.js), [article attribution](client/src/components/articles/README.md#experience-model), [Official Sources](client/src/components/settings/README.md#official-sources) |
+| Refresh / crawl | “Refresh” can reload database-backed article results, crawl subscribed feeds, prepare offline downloads, or reload an insight snapshot. Pull-to-refresh explicitly does not crawl feeds. | [Shell refresh behavior](client/src/components/shell/README.md#layout-and-scroll-ownership), [feed refresh stream](client/src/services/feedRefreshStream.js), [offline reading](client/src/services/offlineReading.js) |
+| Settings names | Navigation uses **Your interests**, **Refresh history**, and **Health & errors** for sections/components/docs also called Islands, Crawl Statistics, and Observability. Cleanup uses an API contract named archiving, although the UI describes deletion. | [Settings navigation](client/src/components/settings/Settings.vue), [Settings documentation](client/src/components/settings/README.md), [Cleanup](client/src/components/dialogs/Cleanup.vue) |
+| Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
+
+## Resolved contract migrations
+
+**Saved and Opened originals:** canonical UI, source, API, database and persisted
+expression names are now `saved` and `openedOriginal`. Legacy names remain only
+at compatibility boundaries and in historical migrations/fixtures. See the
+[saved/opened-original migration guide](docs/saved-opened-original-migration.md)
+for field mappings, aliases and upgrade requirements.
+
+## Scope and usage
+
+This glossary covers domain language found in client components, stores,
+composables, services, API wrappers, and client tests. Supporting repository
+documentation supplies established scoring and processing meanings where the
+client consumes server results. It is not an exhaustive backend schema glossary.
+Code identifiers in backticks record existing contracts, not proposed renames.
+
+## Articles, subscriptions, and organization
+
+### Article
+
+A stored item presented for browsing or reading, with its title, publication URL,
+content, source metadata, read/save/opened state, and optional analysis, media,
+Event, and recommendation data. Reading an Article in RSSMonster and opening its
+original website are separate actions.
+
+### Canonical Article, duplicate, and revision
+
+A canonical Article is the primary record to which duplicate versions refer
+through `duplicateOfArticleId`. **Duplicates** expands supporting versions after
+that Article. An Event sibling or semantic recommendation is not automatically a
+duplicate. A publisher revision is updated coverage of an existing item rather
+than necessarily a new Article; the client consumes the server's identity and
+revision decisions.
+
+Evidence: [Article API](client/src/api/articles.js),
+[expansion behavior](client/src/components/articles/helpers/articleExpansion.js),
+[domain invariants](AGENTS.md#domain-invariants).
+
+### Feed and subscription
+
+A Feed is a subscribed source of Articles. Its subscription has a display name,
+feed URL, category, scheduling/configuration, health, and optional authentication.
+The feed URL used for fetching and its origin website are different destinations.
+Disabling a Feed and setting its update interval to manual-only are separate
+configuration choices.
+
+### Category
+
+A user-managed grouping of Feeds, used to scope Articles and aggregate feed
+counts. Categories can be reordered and have a name, icon, and optional Event
+clustering behavior. Selecting a Feed retains its parent Category.
+
+### Event clustering behavior
+
+A Category's optional `aggressive`, `moderate`, or `conservative` clustering
+choice; a null value selects Server default. This controls semantic processing,
+whereas the article **Grouping** selector controls presentation of its results.
+
+Evidence: [Sidebar contract](client/src/components/sidebar/README.md),
+[feed editing](client/src/components/dialogs/feeds/UpdateFeed.vue),
+[clustering choices](client/src/components/dialogs/categories/CategoryClusteringSelect.vue).
+
+### Tag, rule tag, and Top Tags
+
+A Tag is an Article label used for navigation and search. Stored names are
+normalized to lowercase; display formatting can change capitalization. Tags can
+be edited through article controls or assigned by Actions. Rule-assigned tags
+also appear in server-supplied recommendation explanations. **Top Tags** is a
+fetched, status/presentation-scoped navigation snapshot, not a count recomputed
+from only the rendered Articles. The Smart Folder visual editor accepts one tag
+despite labeling its field **Tags**.
+
+Evidence: [Tag normalization](client/src/utils/tags.js),
+[tag dialog](client/src/components/articles/ArticleTagDialog.vue),
+[recommendation reasons](client/src/services/articleRecommendationPresentation.js),
+[Sidebar counts](client/src/components/sidebar/README.md#count-expectations).
+
+### Smart Folder
+
+A named, saved Article expression with a result limit and its own optional
+mark-read-on-scroll preference. Its expression owns sort and grouping while
+active. Leaving it restores ordinary presentation; editing search exits the
+saved-folder context. Counts are fetched snapshots. **Save current view** creates
+a draft from supported filters, not an exact clone of every navigation ID,
+publication-age control, or advanced component threshold.
+
+### Search expression and condition
+
+Search and Smart Folders share a language of free text, quoted values, filter
+tokens, date expressions, and presentation tokens. Examples include
+`unread:true`, `saved:true`, `openedOriginal:true`, `seen:true`,
+`hot:true`, `event:true`, `developing:true`, `briefing:true`, `eventCount:>=2`,
+`tag:ai`, `title:"climate policy"`, `author:Jane`, `language:en`,
+`quality:>=0.75`, `freshness:>=0.5`, `firstSeen:7d`, `id:>100`, `@today`,
+`sort:recommended`, `grouping:event`, and `limit:50`. These are client-recognized
+expressions; validation does not itself evaluate Articles. Automation Action,
+feed item-filter, and Webhook conditions have separate languages.
+
+Evidence: [Query validation](client/src/services/queryValidation.js),
+[Smart Folder presentation](client/src/services/smartFolderPresentation.js),
+[current-view conversion](client/src/services/currentViewSmartFolder.js).
+
+## Collection and reading state
+
+### Selection, scope, and collection
+
+**Selection** is the active set of Article filters and presentation choices.
+**Scope** narrows it by Feed, Category, Tag, search, or Smart Folder. A
+**collection** is the ordered result loaded for that selection. Status options
+include read/unread state, saved/opened/Hot subsets, and Daily Briefing; they are
+not mutually exclusive properties of an Article. Selecting a Category, Feed,
+Tag, or Smart Folder clears incompatible filters through the selection store.
+
+### Snapshot, loaded Articles, and visible Articles
+
+A collection snapshot stabilizes pagination and selection identity. Loaded
+Articles are those fetched into the client; visible Articles are on-screen rows
+or cards in the active reading viewport. **Mark selection read**, **Mark all
+visible as read**, and selected-row-relative actions therefore have different
+targets. Temporarily inserted Event members and duplicates remain associated
+with their parent.
+
+### New Articles and unread baseline
+
+The new-Articles banner counts matching unread arrivals newer than the current
+snapshot's maximum Article ID. The unread baseline is stored per browser,
+account, and selection scope. “New” here means a newer stored ID, not necessarily
+a newer publication timestamp; adopting new arrivals reloads the collection.
+
+### Selection count, total count, and sidebar preferences
+
+Sidebar counts describe the selected status or saved-expression snapshot;
+Category counts aggregate their Feeds. **Show total count** displays selected/total
+(for example, 9/109). **Declutter counts** omits redundant totals, and
+**Hide zero-count items** hides empty navigation entries while retaining the
+All feeds filters. These are display preferences, not Article visibility rules.
+
+Evidence: [Selection store](client/src/store/selection.js),
+[Article collection documentation](client/src/components/articles/README.md#collection-loading),
+[unread baseline](client/src/services/unreadBaseline.js),
+[new-Articles banner](client/src/components/articles/NewArticlesBanner.vue),
+[sidebar preferences](client/src/components/dialogs/SidebarConfigurationModal.vue).
+
+### Read and Unread
+
+An Article's completion state, changed explicitly or by established reading
+interactions. Reader marks the previously selected unread Article read when
+selection moves away; scrolling preferences govern passed Articles in stream
+and Headlines presentations. Read state is independent of saving, opening the
+original, and negative-interest feedback.
+
+### Seen, first seen, attention, and deep read
+
+**Seen** records exposure, with `firstSeen` preserving the initial exposure
+time. Headline-only exposure can record zero seconds without marking read.
+**Attention** is accumulated visible reading time for actual readable content,
+including already-read Articles and when automatic mark-read is disabled.
+**Deep reads** is a server-supplied behavioral-evidence category shown in the
+interest inspector; it is not synonymous with read status or any headline
+exposure. The client does not define the learned deep-read threshold.
+
+### Saved, unsaved, and opened originals
+
+**Saved** is the bookmark flag (`savedInd`, status/query `saved`); **unsaved**
+clears it. **Opened originals** uses `openedOriginalCount` and status/query
+`openedOriginal`, which can also be explicitly marked or cleared. The clocks are
+`savedAt` and `lastOpenedOriginalAt`. Legacy `favorite`, `star` and `clicked`
+expressions remain accepted aliases. An Action can mark
+an original opened without navigating there, so the state is not proof of an
+actual browser visit. Neither state implies read completion.
+
+### Mark as read while scrolling
+
+An optional read-state transition after an unread Article has been visible and
+passed above the viewport. Ordinary selections, Daily Briefing, and Smart
+Folders own separate effective preferences. Reader's selection-change behavior
+and attention observation are independent of this switch.
+
+Evidence: [Read-state contract](docs/marking-articles-read.md),
+[visibility tracking](client/src/components/articles/feed/visibilityTracking.js),
+[interest evidence](client/src/services/interestPresentation.js),
+[Actions](client/src/components/settings/SettingsActions.vue).
+
+### Bulk read
 
 An explicit operation that marks unread, owned, canonical Articles as read using
 selected article IDs, a supplied list snapshot, or a matching query. An empty
@@ -8,3 +218,364 @@ snapshot selects nothing. Event grouping can include canonical unread siblings o
 selected Event members. Completed writes remain completed if a later write fails.
 
 See [manual and bulk actions](docs/marking-articles-read.md#manual-and-bulk-actions).
+
+### Publication date, date range, age cutoff, and first-seen range
+
+Publication time (`publishedAt`) drives chronological ordering and freshness.
+Unread calendar ranges use local-day boundaries; custom ranges include the
+chosen end day through an exclusive next-day boundary. An unread **age cutoff**
+is a rolling publication-age limit fixed when a collection starts.
+`firstSeen:7d` instead filters first-seen recency. Date and age selections reset
+the competing control in the selection store.
+
+Evidence: [Date ranges](client/src/services/articleDateRange.js),
+[age cutoffs](client/src/services/articleAgeCutoff.js),
+[Smart Folder query builder](client/src/components/settings/smartFolders/smartFolderQuery.js).
+
+## Reading presentation and content
+
+### Reader, Expanded, Headlines, Summarized, and Summary Bullets
+
+- **Reader** (`reader`): a list pane and selected-Article reading pane, alongside
+  the sidebar at widths of at least 1024px; below that it falls back to a stream.
+- **Expanded** (`full`): a continuous stream of available rich Article content.
+- **Headlines** (`minimal`): compact rows with content revealed for the opened row.
+- **Summarized** (`summarized`): the first 100 words of normalized `contentText`.
+- **Summary Bullets** (`summaryBullets`): stored `contentSummaryBullets`, with an
+  explicit unavailable state when no usable summary exists.
+
+**Expand** in the Reader toolbar hides its list pane while preserving the
+selected Article. It is separate from switching to **Expanded** mode.
+**Listen** uses browser speech synthesis for currently rendered readable text.
+
+### Shell mode
+
+Width-driven navigation presentation: **mobile** below 768px, **hybrid** from
+768–879px, and **desktop** at 880px and above. These shell modes are separate from
+Article view modes and Reader's 1024px layout boundary. Tablet/touch and portrait
+behavior can additionally affect interactions.
+
+### Predicted reading affinity
+
+Server-supplied `presentation.predictedAffinity`: `deep`, `medium`, `skim`, or
+`cold`. For unread Articles the client uses it to vary bullet detail and hide
+the fallback image for cold affinity. This is a presentation hint, distinct from
+the Recommended score and recorded deep-read evidence.
+
+### Theme mode and Reader text size
+
+**Theme mode** is `system`, `light`, or `dark`; system mode follows the device's
+color-scheme preference, while explicit modes override it. **Reader text size**
+is Small, Medium, or Large, stored as a browser preference with Medium as the
+fallback. It affects Reader typography rather than Article content or read state.
+
+Evidence: [Reading modes](client/src/config/articleSelectionOptions.js),
+[Article presentation](client/src/components/articles/Article.vue),
+[Reader behavior](client/src/components/articles/README.md#desktop-reader),
+[shell boundaries](client/src/config/responsiveLayout.js),
+[theme modes](client/src/services/theme.js),
+[Reader text size](client/src/services/readerTextSize.js).
+
+### Content, description, summary, and preview
+
+Rich display content uses `contentHtml`, then legacy `content`, then
+`descriptionHtml`, then an escaped legacy `description` fallback. `contentText`
+is canonical plain text used for the shortened preview; summary bullets are a
+separate stored analysis output. A **preview** is content/media available inside
+RSSMonster, with an explicit fallback linking to the original when unavailable.
+The server's `contentOriginal`, `contentStripped`, `contentText`, and
+`description` contracts remain distinct; client presentation is not permission
+to interchange those processing fields.
+
+### Media, lead image, authors, and Original source
+
+**Media** is the normalized attachment object, covering video, audio, image,
+gallery, and other attachments. A **lead image** is separate fallback imagery,
+omitted when already present in rich content or unsuitable for display.
+**Authors** is the ordered structured byline; legacy `author` remains an unsplit
+compatibility fallback. **Original source** is publisher-declared source
+attribution, separate from the subscribed Feed, author, and original Article URL.
+
+Evidence: [Article content selection](client/src/components/articles/Article.vue),
+[content normalization](client/src/services/articleContentService.js),
+[media and attribution contracts](client/src/components/articles/README.md),
+[content field invariants](AGENTS.md#domain-invariants).
+
+## Events, interests, and ranking
+
+### Event, representative Article, and Event grouping
+
+An **Event** groups coverage of an occurrence; generated names explain its
+presentation rather than independently establishing identity. A
+**representative Article** is the server-selected Article representing that
+Event. **Event grouping** (`grouping:event`) changes which Event coverage is
+presented together; expanding **similar articles** fetches other Event members.
+`grouping:none` presents the ungrouped collection. Neither grouping nor matching
+generated labels makes Articles deterministic duplicates.
+
+### Developing story and developing Article
+
+A **developing Article** is selected by the server to surface new coverage of an
+Event already seen by the user. The strict **developing story** predicate
+(`isDevelopingStory`, queried through `developing:true`) concerns the unread
+developing Article when it differs from the representative. Including developing
+coverage is distinct from restricting a collection to that predicate. Briefing
+also has a separate preference for developing coverage in its morning summary.
+
+### Coverage, source diversity, Trending, and Major event
+
+Coverage uses Event Article counts; source diversity uses distinct Feed counts.
+The client labels Events with more than four sources **Trending**, or more than
+six **Major event**, with Major event taking precedence. **Same story, different
+sources** opens other feeds' coverage. These labels are coverage signals, not
+assertions of factual verification or publisher independence.
+
+### Interest Island, interest evidence, and preference
+
+An **Interest Island** is a learned personal-interest cluster, presented in
+**Your interests** and the interest inspector. Evidence includes saved Articles,
+opened originals, deep reads, and negative feedback. Preference can be positive,
+neutral, or negative; Island activity state and signed weight are separate from
+relationship confidence. The client displays server attribution and does not
+recompute semantic confidence. Recalculating Islands rebuilds the user's
+interest data from existing evidence.
+
+### More like this, Not Interested, and mute Feed
+
+**More like this** records explicit positive recommendation feedback.
+**Not Interested** records negative preference without removing the current
+rendered Article. **Mute Feed for 7 days** is a separate confirmed source action,
+not a synonym for either negative feedback or permanently disabling a Feed.
+
+### Recommended and related recommendations
+
+**Recommended** (`sort:recommended`) is personalized ordering from the server's
+combined interest, freshness, source-aware quality, coverage, rule, and Hot
+signals. An eligible Article can have a finite score without an Event, Island,
+or interest match. The displayed percentage is a signed score scale, not a
+probability. Explanation reasons describe contributions, not a new score
+computed by the client. Reader **recommendations** are a separate fetched list
+for a selected Article, distinct from expanding its Event or duplicates.
+
+### Top Stories, Newest, and Oldest
+
+**Top Stories** (`sort:topStories`) is non-personalized, Event-driven ordering
+using coverage plus freshness and quality; Articles without Events remain
+eligible. **Newest** (`desc`) and **Oldest** (`asc`) are chronological ordering,
+subject to the documented optional Unread high-trust override.
+
+Evidence: [Event presentation](client/src/components/articles/ArticleMeta.vue),
+[Event API](client/src/api/events.js),
+[Briefing developing filters](client/src/components/briefing/README.md#article-selection),
+[signal labels](client/src/components/articles/helpers/articleSignals.js),
+[interest evidence](client/src/services/interestPresentation.js),
+[Article feedback](client/src/components/articles/helpers/articleActions.js),
+[recommendation presentation](client/src/services/articleRecommendationPresentation.js),
+[ranking contract](docs/scoring.md).
+
+### Overall quality, writing quality, Tone, and Ad-free content
+
+**Overall quality** (`quality`) is article-only content quality on a normalized
+0–1 scale: 50% writing quality, 25% tone, and 25% ad-free content. Its UI uses a
+0–100 scale. **Writing quality** (`qualityScore`), **Tone** (`sentimentScore`), and
+**Ad-free content** (`advertisementScore`) are separate 0–100 components, with
+higher values better. Higher advertisement score means less promotion.
+**Score thresholds** restrict eligibility; 0 disables the corresponding Settings
+gate. Query `quality:>=0.75` means overall quality of at least 75/100.
+
+### Quality & source trust, FeedTrust, and official source
+
+**Quality & source trust** (`sort:quality`) combines article quality with
+**FeedTrust** (`feedTrust`), a user-specific source-history score. It is separate
+from the article's overall-quality badge and filters. The client labels a Feed
+trusted above 0.85. An **official source** matches an enabled organization/domain
+mapping and is presented with its configured organization when available.
+Official and trusted-source labels are separate signals; the former takes
+precedence in the signal bar. Trust is separate from crawl reliability.
+
+### Freshness and Hot
+
+**Freshness** is publication-time recency used by rankings and normalized query
+thresholds. **Hot** (`hotInd`) means recent stored coverage is linked by accepted
+Articles from other subscribed Feeds in the user's account. `hotlinks` counts
+qualifying link observations, not readers or necessarily distinct Feeds. Hot is
+not equivalent to Trending, Major event, quality, or personal interest.
+
+Evidence: [Quality breakdown](client/src/components/articles/ArticleQualityExplanation.vue),
+[threshold controls](client/src/components/settings/SettingsScores.vue),
+[trust/official labels](client/src/components/articles/helpers/articleSignals.js),
+[scoring definitions](docs/scoring.md), [Hot definition](docs/hot-articles.md).
+
+## Briefing and delivery
+
+### Daily Briefing and morning summary
+
+An AI-enabled, event-aware recent Article collection selected with the user's
+Briefing preferences. It defaults to seven days, read and unread Articles, one
+required source, and Hot inclusion. The **context strip** gives collection
+statistics; the **morning summary** (“The stories shaping your morning”) presents
+up to four distinct Event stories with source-grounded excerpts. The structured
+introduction is separate from the normal Article list, and is compact in Reader.
+
+### Briefing preferences
+
+Per-user eligibility and presentation choices: selection period (`24h`/`7d`),
+unread-only, scrolling read behavior, Hot inclusion, minimum distinct sources,
+interest-only or developing-story-only selection, summary developing coverage,
+and summary high-trust priority. The two “show only” choices are mutually
+exclusive. Some preferences are server-side and need not appear in query text.
+
+### Daily briefing email, SMTP, and Web Push
+
+**Daily briefing email** is optional scheduled delivery using the account's
+verified email, chosen local delivery time/timezone, and empty-briefing policy.
+**SMTP** configures server outbound mail, including verification/reset messages.
+**Web Push** sends browser notifications for new Articles; server VAPID
+configuration and a browser's notification subscription are different concerns.
+
+Evidence: [Briefing contract](client/src/components/briefing/README.md),
+[account delivery controls](client/src/components/settings/SettingsAccount.vue),
+[SMTP configuration](client/src/components/settings/SettingsSmtp.vue),
+[Push configuration](client/src/components/settings/SettingsPush.vue),
+[browser subscriptions](client/src/services/pushNotifications.js).
+
+## Automation and feed operations
+
+### Action and Action condition
+
+An ordered crawl-time rule for incoming Articles. Conditions support literal
+phrases or advanced regular expressions. Types include discard, save, mark read,
+mark original opened, mark advertisement, mark low quality, and assign tag.
+**Discard** hides an Article from normal queries; it is separate from cleanup
+deletion. Advertisement/low-quality Actions explicitly override a component to
+0. Changes to the ordered collection remain drafts until saved.
+
+### Feed item filter
+
+A Feed-level inclusion/exclusion regular expression with optional `title`,
+`content`, `url`, `author`, or `category` field selection and leading `!` negation.
+For example, `!title:/advertorial/i` excludes matching titles. It is separate
+from saved-search expressions and post-match Actions.
+
+### Webhook and Generated Feed
+
+A **Webhook** sends matching Articles to an external endpoint; field/operator
+conditions use **ALL** or **ANY** matching, with a signing-secret control.
+A **Generated Feed** exposes a saved Article expression as RSS through a private
+shareable URL. It uses Smart Folder expression syntax but is an outbound result,
+not an incoming subscription or an HTML/XPath Feed.
+
+### HTML/XPath Feed and OPML
+
+An **HTML/XPath Feed** extracts items from a web page using configured XPath
+selectors for item boundaries, title, URL, content, and optional metadata.
+Preview checks extraction before saving. **OPML** is the subscription interchange
+format used to import/export Feed and Category hierarchy; import preview is
+separate from committing the import.
+
+### Crawl, refresh, update interval, and background refresh
+
+A **crawl** fetches/processes subscribed feed items. **Update interval** controls
+automatic scheduling, including adaptive publisher-activity scheduling or
+manual-only. **Feed refresh** can start crawling and display streamed progress.
+**Collection refresh** reloads stored Article results and overview counts.
+**Background refresh** is Electron's profile-wide scheduling facility, managed
+through Desktop settings rather than Article preferences.
+
+### Feed health, refresh history, and Cleanup
+
+**Feed health** describes fetch/processing reliability and failures, separate
+from source trust. **Refresh history** summarizes completed/failed user-triggered
+crawls, including new/updated Article totals. **Cleanup** deletes retained
+Articles under age/count limits and unread/saved/opened protections. Count limits
+take priority over age, and protected Articles can leave counts above a limit.
+
+Evidence: [Actions](client/src/components/settings/SettingsActions.vue),
+[phrase conditions](client/src/services/actionConditions.js),
+[item filters](client/src/services/itemFilterValidation.js),
+[Webhook conditions](client/src/services/webhookConditions.js),
+[Webhooks](client/src/components/settings/SettingsWebhooks.vue),
+[Generated Feeds](client/src/components/settings/SettingsGeneratedFeeds.vue),
+[HTML/XPath extraction](client/src/components/dialogs/feeds/HtmlXpathFeed.vue),
+[OPML import](client/src/mixins/opmlImportFlow.js),
+[Feed configuration](client/src/components/dialogs/feeds/UpdateFeed.vue),
+[Desktop settings](client/src/components/settings/SettingsDesktopBackground.vue),
+[operational sections](client/src/components/settings/README.md),
+[Cleanup](client/src/components/dialogs/Cleanup.vue).
+
+## Offline reading, account, and processing
+
+### Offline profile, downloaded snapshot, and synchronization
+
+An **offline profile** belongs to this device/browser and account, scoped by API
+origin and user ID. Its **downloaded snapshot** contains a bounded recent Article
+collection prepared while connected; replacing it activates a complete new
+generation. Disabling future refreshes retains existing downloads.
+**Synchronization** sends queued read/unread and save/unsave assignments and
+reconciles accepted server state. Pending and failed assignments remain distinct
+from downloaded content and the last successful synchronization.
+
+### Unsynchronized intent and clear downloads
+
+Unsynchronized intent is a queued state assignment, not a replay of reading
+observations or all Article actions. **Clear downloaded articles** removes the
+current account's profile/content while preserving pending intent.
+**Discard unsynchronized changes** is a separate action that cannot undo effects
+already accepted by the server. Offline reading does not supply live search,
+rankings, observations, or external media.
+
+### Account, role, and authentication
+
+Account state identifies the signed-in user and separates user preferences/data
+from administrator-only server configuration. Roles include `user` and `admin`.
+**Local authentication** uses RSSMonster credentials; **provider sign-in** uses
+OpenID Connect (OIDC). Linking a provider, provisioning an account, email
+verification, password replacement, and deleting an account are separate flows.
+
+### Inference, capabilities, and assistant
+
+**AI / Inference** is the deployment connection serving optional embeddings,
+generation, classification, and assistant capabilities. Feature flags/capability
+status control client availability. **Classification** provides Article analysis;
+**embeddings** support semantic relationships; **generation** supports generated
+presentation labels. The **assistant** is the optional question/chat surface,
+separate from ordinary search and Smart Folder expressions.
+
+### Draft, saved settings, environment defaults, and effective configuration
+
+A **draft** is a local edit awaiting a successful save. **Reset to defaults** can
+reset only that draft; it does not universally persist immediately.
+Administrator **environment overrides** replace deployment defaults with saved
+server configuration. **Restore environment defaults** removes those overrides.
+**Effective configuration** is the server-reported configuration currently in
+force. Inference **Test connection** probes the draft without saving, whereas
+**Refresh** checks the saved connection.
+
+### Article analysis, processing jobs, and semantic labels
+
+Article analysis can be pending, processing, or failed; those states suppress
+unusable scores/summaries for the current version. **AI Processing** presents the
+server's background queue health as healthy, busy, degraded, or stalled, with
+user-facing job labels **Article analysis** and **Semantic labels**.
+**Awaiting recovery** means unfinished analysis without an active job.
+Retrying failed jobs and clearing completed/dead history are distinct operations.
+
+### Health & errors, failure group, and occurrence
+
+**Health & errors** (Observability) is the user's processing-failure inbox.
+A **failure group** combines abnormal outcomes by stable fingerprint; an
+**occurrence** is one captured failure with identifiers, stage, message, retry
+state, stack/context, and time. These failure occurrences are not news Events.
+Clearing failure records is separate from clearing processing-job history.
+
+Evidence: [Offline snapshots](client/src/services/offlineReading.js),
+[state assignments](client/src/services/articleStateActions.js),
+[offline Settings contract](client/src/components/settings/README.md#offline-reading),
+[account controls](client/src/components/settings/SettingsAccount.vue),
+[OIDC configuration](client/src/components/settings/SettingsOidc.vue),
+[Inference capabilities](client/src/components/settings/SettingsInference.vue),
+[runtime overrides](client/src/components/settings/SettingsInferenceRuntime.vue),
+[assistant](client/src/components/assistant/ChatAssistant.vue),
+[analysis states](client/src/services/articleAnalysisPresentation.js),
+[queue operations](client/src/components/settings/SettingsProcessingJobs.vue),
+[failure inspection](client/src/components/settings/SettingsObservability.vue).

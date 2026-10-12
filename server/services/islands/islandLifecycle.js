@@ -23,9 +23,9 @@ export function summarizeIslandLifecycle(articles, vector, embeddingModel = null
   for (const { article, signals, score } of evidence) {
     const counts = signals.positiveSignals;
     const raw = {
-      lastClickedAt: counts.clicks * SIGNAL_WEIGHTS.click,
+      lastOpenedOriginalAt: counts.openedOriginals * SIGNAL_WEIGHTS.openedOriginal,
       lastMeaningfulReadAt: counts.deepReads * SIGNAL_WEIGHTS.deepRead,
-      favoritedAt: counts.stars * SIGNAL_WEIGHTS.star,
+      savedAt: counts.saves * SIGNAL_WEIGHTS.save,
       positiveFeedbackAt: counts.positives * SIGNAL_WEIGHTS.positive,
       negativeFeedbackAt: counts.negatives * SIGNAL_WEIGHTS.negative
     };
@@ -38,7 +38,7 @@ export function summarizeIslandLifecycle(articles, vector, embeddingModel = null
       const time = signalTimestamp(article, field);
       const recency = behaviorRecencyWeight(time, SIGNAL_HALF_LIFE_DAYS[field]);
       if (strength * recency < DEFAULT_ARTICLE_SIGNAL_THRESHOLD) continue;
-      // Normalize each signal independently so aging clicks cannot dilute a surviving favorite.
+      // Normalize each signal independently so aging openedOriginals cannot dilute a surviving saved.
       signalRetention = Math.max(signalRetention, recency);
     }
     // A strong surviving preference must not be diluted by a large volume of old weak history.

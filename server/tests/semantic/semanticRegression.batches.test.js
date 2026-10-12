@@ -34,8 +34,8 @@ describe('two-batch semantic simulation', () => {
     expect(Math.max(...batches[0].articles.map(a => Date.parse(a.publishedAt))))
       .toBeLessThan(Math.min(...batches[1].articles.map(a => Date.parse(a.publishedAt))));
     for (const b of batches) {
-      expect(b.articles.some(a => a.favoriteInd)).toBe(true);
-      expect(b.articles.some(a => a.clickedAmount)).toBe(true);
+      expect(b.articles.some(a => a.savedInd)).toBe(true);
+      expect(b.articles.some(a => a.openedOriginalCount)).toBe(true);
       expect(b.articles.some(a => a.negativeInd)).toBe(true);
     }
     const taxonomy = JSON.parse(await readFile(await resolveSemanticVectorFixturePath('island-taxonomy'), 'utf8'));
@@ -70,7 +70,7 @@ describe('two-batch semantic simulation', () => {
         const { results } = await explainArticleInterests(user.id, held);
         for (const article of held) {
           const original = heldFixtures.find(a => a.url === article.url);
-          expect(Number(article.favoriteInd) + Number(article.negativeInd) + Number(article.clickedAmount)).toBe(0);
+          expect(Number(article.savedInd) + Number(article.negativeInd) + Number(article.openedOriginalCount)).toBe(0);
           const diagnostics = results.get(String(article.id));
           expect(diagnostics.seedSelf).toBe(false);
           report.heldOut.push({ sourceId: original.sourceId, title: article.title, scenario: original.regression.scenario,

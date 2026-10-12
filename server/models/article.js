@@ -99,9 +99,9 @@ export default (sequelize) => {
        * - firstSeen: first time visible on screen; not publication time or proof of reading.
        * - attentionBucket: estimate from eligible time with readable article content.
        * - lastMeaningfulReadAt: latest qualifying deep-reading observation.
-       * - lastClickedAt: existing click actions, not opening content internally.
+       * - lastOpenedOriginalAt: existing click actions, not opening content internally.
        * - readAt: automatic or explicit read-state transitions, not proof of reading.
-       * - favoritedAt: favorite actions only.
+       * - savedAt: saved actions only.
        *
        * First/last observation timestamps and accumulated duration belong to the
        * current frontend reading session. There is no persisted generic "last
@@ -113,15 +113,15 @@ export default (sequelize) => {
        */
       // Latest signal times; null retains unknown interaction time for legacy state.
       // Updated by existing click actions; an internal list/Reader opening is not an outbound click.
-      lastClickedAt: { type: DataTypes.DATE, allowNull: true },
-      // Updated only by favorite actions; clearing the favorite clears its active signal clock.
-      favoritedAt: { type: DataTypes.DATE, allowNull: true },
+      lastOpenedOriginalAt: { type: DataTypes.DATE, allowNull: true },
+      // Updated only by saved actions; clearing the saved clears its active signal clock.
+      savedAt: { type: DataTypes.DATE, allowNull: true },
       positiveFeedbackAt: { type: DataTypes.DATE, allowNull: true },
       negativeFeedbackAt: { type: DataTypes.DATE, allowNull: true },
       // Updated by a qualifying deep-reading observation (bucket >= 3), never read-state changes alone.
       lastMeaningfulReadAt: { type: DataTypes.DATE, allowNull: true },
-      // Marks whether the user has saved the article as a favorite.
-      favoriteInd: {
+      // Marks whether the user has saved the article as saved.
+      savedInd: {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
@@ -138,7 +138,7 @@ export default (sequelize) => {
         defaultValue: 0
       },
       // Counts the user's outbound link clicks from this article.
-      clickedAmount: {
+      openedOriginalCount: {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
@@ -405,7 +405,7 @@ export default (sequelize) => {
            *
            * Derived from:
            * - attentionBucket (primary signal)
-           * - clickedAmount (outbound engagement)
+           * - openedOriginalCount (outbound engagement)
            *
            * Bucket semantics:
            * 0 = no sufficient recorded attention (not an inferred skip or dislike)
@@ -416,7 +416,7 @@ export default (sequelize) => {
            */
 
           const bucket = this.getDataValue('attentionBucket') ?? 0;
-          const clickedAmount = this.getDataValue('clickedAmount') ?? 0;
+          const openedOriginalCount = this.getDataValue('openedOriginalCount') ?? 0;
 
           // Base score from bucket (dominant signal)
           let base;
@@ -429,10 +429,10 @@ export default (sequelize) => {
           }
 
           // Logarithmic reinforcement (bounded, non-dominant)
-          const clickBoost = Math.min(Math.log2(clickedAmount + 1) / 5, 0.15);
+          const openedOriginalBoost = Math.min(Math.log2(openedOriginalCount + 1) / 5, 0.15);
 
           return Math.min(
-            Number((base + clickBoost).toFixed(4)),
+            Number((base + openedOriginalBoost).toFixed(4)),
             1
           );
         }

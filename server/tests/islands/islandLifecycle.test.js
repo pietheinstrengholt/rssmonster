@@ -11,7 +11,7 @@ const start = Date.parse('2026-09-14T12:00:00Z');
 const at = days => new Date(start + days * 86400000);
 const advance = days => vi.setSystemTime(at(days));
 const calibrate = userId => runIslandCalibrationForUser(userId, { generateLabels: false });
-async function fixture(behavior = { clickedAmount: 1, lastClickedAt: at(0) }) {
+async function fixture(behavior = { openedOriginalCount: 1, lastOpenedOriginalAt: at(0) }) {
   const user = await db.User.create({ username: `lifecycle-${randomUUID()}` });
   const category = await db.Category.create({ userId: user.id, name: 'Lifecycle' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Lifecycle', url: `https://${user.id}.example/rss` });
@@ -102,7 +102,7 @@ describe('behavior-driven Island lifecycle', () => {
     const refresh = () => mode === 'matched' ? calibrate(user.id) : persistIslandProfilesForUser(user.id, []);
     for (const day of [60, 100]) {
       advance(day);
-      await source.update({ clickedAmount: 2, lastClickedAt: at(day) });
+      await source.update({ openedOriginalCount: 2, lastOpenedOriginalAt: at(day) });
       await refresh(); await island.reload();
       expect(Number(island.weight)).toBeLessThan(0);
       expect(island.lastBehaviorAt).toEqual(at(0));
@@ -121,8 +121,8 @@ describe('behavior-driven Island lifecycle', () => {
   });
 
   it('does not renew a positive aggregate from a newer negative Article, then reactivates when the result turns negative', async () => {
-    const { user, values } = await fixture({ favoriteInd: 1, favoritedAt: at(0) });
-    await db.Article.bulkCreate([1, 2].map(() => ({ ...values, status: 'read', favoriteInd: 1, favoritedAt: at(0) })));
+    const { user, values } = await fixture({ savedInd: 1, savedAt: at(0) });
+    await db.Article.bulkCreate([1, 2].map(() => ({ ...values, status: 'read', savedInd: 1, savedAt: at(0) })));
     await calibrate(user.id);
     const island = await ownedIsland(user.id);
     advance(60);
@@ -143,14 +143,14 @@ describe('behavior-driven Island lifecycle', () => {
     expect(await db.Island.count({ where: { userId: user.id } })).toBe(1);
   });
 
-  it('preserves early archival against opposing clicks but allows an explicit preference reversal', async () => {
+  it('preserves early archival against opposing openedOriginals but allows an explicit preference reversal', async () => {
     const { user, source } = await fixture({ negativeInd: 1, negativeFeedbackAt: at(0) });
     await calibrate(user.id);
     const island = await ownedIsland(user.id);
     advance(20);
     await island.update({ archivedInd: true, archivedAt: at(20) });
     advance(30);
-    await source.update({ clickedAmount: 2, lastClickedAt: at(30) });
+    await source.update({ openedOriginalCount: 2, lastOpenedOriginalAt: at(30) });
     await calibrate(user.id); await island.reload();
     expect(Number(island.weight)).toBeLessThan(0);
     expect(island).toMatchObject({ archivedInd: true, archivedAt: at(20), lastBehaviorAt: at(0) });
@@ -173,12 +173,12 @@ describe('behavior-driven Island lifecycle', () => {
   });
 
   it('keeps persistent recent engagement active while separating technical and behavioral timestamps', async () => {
-    const { user, source } = await fixture({ favoriteInd: 1, favoritedAt: at(0) });
+    const { user, source } = await fixture({ savedInd: 1, savedAt: at(0) });
     await calibrate(user.id);
     const island = await ownedIsland(user.id);
     for (const day of [89, 178, 365]) {
       advance(day);
-      await source.update({ lastClickedAt: at(day), clickedAmount: 2 });
+      await source.update({ lastOpenedOriginalAt: at(day), openedOriginalCount: 2 });
       await calibrate(user.id);
       await island.reload();
       expect(island.archivedInd).toBe(false);
@@ -214,10 +214,10 @@ describe('behavior-driven Island lifecycle', () => {
     expect(island.updatedAt).toEqual(at(91));
     expect(island.archivedInd).toBe(true);
     expect(island.archivedAt).toEqual(at(90));
-    await source.reload(); expect(source.lastClickedAt).toEqual(at(0));
+    await source.reload(); expect(source.lastOpenedOriginalAt).toEqual(at(0));
 
     advance(92);
-    await source.update({ favoriteInd: 1, favoritedAt: at(92) });
+    await source.update({ savedInd: 1, savedAt: at(92) });
     await calibrate(user.id);
     await island.reload(); await candidate.reload();
     expect(island.archivedInd).toBe(false);
@@ -229,8 +229,8 @@ describe('behavior-driven Island lifecycle', () => {
   });
 
   it('expires strong historical interest at its deadline independently of remaining strength', async () => {
-    const { user, source, values } = await fixture({ favoriteInd: 1, favoritedAt: at(0) });
-    await db.Article.bulkCreate([1, 2, 3, 4].map(() => ({ ...values, status: 'read', favoriteInd: 1, favoritedAt: at(0) })));
+    const { user, source, values } = await fixture({ savedInd: 1, savedAt: at(0) });
+    await db.Article.bulkCreate([1, 2, 3, 4].map(() => ({ ...values, status: 'read', savedInd: 1, savedAt: at(0) })));
     await calibrate(user.id);
     const island = await ownedIsland(user.id);
     advance(365);
@@ -241,7 +241,7 @@ describe('behavior-driven Island lifecycle', () => {
     expect(await buildInterestIslandProfilesForUser(user.id)).toHaveLength(1);
     await calibrate(user.id); await island.reload();
     expect(island.archivedInd).toBe(true);
-    await source.reload(); expect(source.favoritedAt).toEqual(at(0));
+    await source.reload(); expect(source.savedAt).toEqual(at(0));
   });
 
   it('archives an unmatched exhausted click even when its row was just updated, without touching another user', async () => {
@@ -260,7 +260,7 @@ describe('behavior-driven Island lifecycle', () => {
   });
 
   it('does not reactivate archived strong old support without an interaction newer than archival', async () => {
-    const { user } = await fixture({ favoriteInd: 1, favoritedAt: at(0) });
+    const { user } = await fixture({ savedInd: 1, savedAt: at(0) });
     await calibrate(user.id);
     const island = await ownedIsland(user.id);
     advance(1);
@@ -272,12 +272,12 @@ describe('behavior-driven Island lifecycle', () => {
   });
 
   it('uses legacy publication as activity and ignores exhausted, contradictory or future clocks', () => {
-    const base = { id: 1, embedding_model: 'test-model', articleVector: [1, 0], publishedAt: at(-10), favoriteInd: 1 };
+    const base = { id: 1, embedding_model: 'test-model', articleVector: [1, 0], publishedAt: at(-10), savedInd: 1 };
     expect(summarizeIslandLifecycle([base], [1, 0], 'test-model').lastBehaviorAt).toEqual(at(-10));
-    const mixed = { ...base, favoritedAt: at(-365), clickedAmount: 1, lastClickedAt: at(-180), positiveInd: 1,
+    const mixed = { ...base, savedAt: at(-365), openedOriginalCount: 1, lastOpenedOriginalAt: at(-180), positiveInd: 1,
       positiveFeedbackAt: at(0), negativeInd: 1, negativeFeedbackAt: at(-365) };
     expect(summarizeIslandLifecycle([mixed], [1, 0], 'test-model').lastBehaviorAt).toEqual(at(-365));
-    expect(summarizeIslandLifecycle([{ ...base, favoritedAt: at(1) }], [1, 0], 'test-model').lastBehaviorAt).toEqual(at(-10));
+    expect(summarizeIslandLifecycle([{ ...base, savedAt: at(1) }], [1, 0], 'test-model').lastBehaviorAt).toEqual(at(-10));
     expect(isStaleIsland({ updatedAt: at(0) })).toBe(true);
   });
 
@@ -289,40 +289,40 @@ describe('behavior-driven Island lifecycle', () => {
     expect(islandArchiveState(legacy, { confidence: 1, lastBehaviorAt: at(-1) }).archivedInd).toBe(true);
   });
 
-  it('does not let many old weak clicks dilute a surviving explicit preference', () => {
-    const oldClicks = Array.from({ length: 50 }, (_, id) => ({ id, embedding_model: 'test-model', articleVector: [1, 0], clickedAmount: 1, lastClickedAt: at(-150) }));
+  it('does not let many old weak openedOriginals dilute a surviving explicit preference', () => {
+    const oldClicks = Array.from({ length: 50 }, (_, id) => ({ id, embedding_model: 'test-model', articleVector: [1, 0], openedOriginalCount: 1, lastOpenedOriginalAt: at(-150) }));
     expect(islandArchiveState(null, summarizeIslandLifecycle(oldClicks, [1, 0], 'test-model')).archivedInd).toBe(true);
-    const support = summarizeIslandLifecycle([...oldClicks, { id: 51, embedding_model: 'test-model', articleVector: [1, 0], favoriteInd: 1, favoritedAt: at(-60) }], [1, 0], 'test-model');
+    const support = summarizeIslandLifecycle([...oldClicks, { id: 51, embedding_model: 'test-model', articleVector: [1, 0], savedInd: 1, savedAt: at(-60) }], [1, 0], 'test-model');
     expect(isStaleIsland(support)).toBe(false);
     expect(support.confidence).toBeGreaterThan(0.12);
     expect(islandArchiveState(null, support).archivedInd).toBe(false);
   });
 
-  it.each([1, 3, 20])('does not dilute a surviving favorite with %i exhausted clicks on the same Article', clickedAmount => {
-    const favorite = { id: 1, embedding_model: 'test-model', articleVector: [1, 0], favoriteInd: 1, favoritedAt: at(-365), publishedAt: at(-2000) };
-    const alone = summarizeIslandLifecycle([favorite], [1, 0], 'test-model');
-    const mixed = summarizeIslandLifecycle([{ ...favorite, clickedAmount, lastClickedAt: at(-365) }], [1, 0], 'test-model');
+  it.each([1, 3, 20])('does not dilute a surviving saved with %i exhausted openedOriginals on the same Article', openedOriginalCount => {
+    const saved = { id: 1, embedding_model: 'test-model', articleVector: [1, 0], savedInd: 1, savedAt: at(-365), publishedAt: at(-2000) };
+    const alone = summarizeIslandLifecycle([saved], [1, 0], 'test-model');
+    const mixed = summarizeIslandLifecycle([{ ...saved, openedOriginalCount, lastOpenedOriginalAt: at(-365) }], [1, 0], 'test-model');
     expect(mixed.confidence).toBeGreaterThanOrEqual(alone.confidence);
     expect(mixed.lastBehaviorAt).toEqual(alone.lastBehaviorAt);
     expect(islandArchiveState(null, mixed).archivedInd).toBe(true);
   });
 
-  it('expires favorite and click history at the same deadline regardless of their different half-lives', async () => {
-    const data = await fixture({ favoriteInd: 1, favoritedAt: at(0), clickedAmount: 3, lastClickedAt: at(0) });
+  it('expires saved and click history at the same deadline regardless of their different half-lives', async () => {
+    const data = await fixture({ savedInd: 1, savedAt: at(0), openedOriginalCount: 3, lastOpenedOriginalAt: at(0) });
     await calibrate(data.user.id);
     const island = await ownedIsland(data.user.id);
     for (const day of [90, 130, 180, 210, 365]) {
       advance(day);
       await calibrate(data.user.id); await island.reload();
-      const alone = summarizeIslandLifecycle([{ ...data.source.get({ plain: true }), clickedAmount: 0 }], island.islandVector, 'test-model');
+      const alone = summarizeIslandLifecycle([{ ...data.source.get({ plain: true }), openedOriginalCount: 0 }], island.islandVector, 'test-model');
       expect(islandArchiveState(null, alone).archivedInd).toBe(true);
       expect(island.archivedInd).toBe(true);
       expect(island.archivedAt).toEqual(at(90));
     }
   });
 
-  it('keeps expired mixed favorite history inactive on repeated calibration', async () => {
-    const data = await fixture({ favoriteInd: 1, favoritedAt: at(0), clickedAmount: 1, lastClickedAt: at(0) });
+  it('keeps expired mixed saved history inactive on repeated calibration', async () => {
+    const data = await fixture({ savedInd: 1, savedAt: at(0), openedOriginalCount: 1, lastOpenedOriginalAt: at(0) });
     await calibrate(data.user.id);
     const island = await ownedIsland(data.user.id);
     advance(365);
@@ -340,9 +340,9 @@ describe('behavior-driven Island lifecycle', () => {
   });
 
   it.each([
-    { favoriteInd: 1, favoritedAt: at(0) },
+    { savedInd: 1, savedAt: at(0) },
     { negativeInd: 1, negativeFeedbackAt: at(0) },
-    { clickedAmount: 1, lastClickedAt: at(0) }
+    { openedOriginalCount: 1, lastOpenedOriginalAt: at(0) }
   ])('excludes expired Islands during scoring before archival is persisted: %j', async behavior => {
     const { user } = await fixture(behavior);
     await calibrate(user.id);
@@ -360,11 +360,11 @@ describe('behavior-driven Island lifecycle', () => {
   });
 
   it('reactivates from evidence after expiry but before delayed archival, preserving its ID', async () => {
-    const { user, source } = await fixture({ favoriteInd: 1, favoritedAt: at(0) });
+    const { user, source } = await fixture({ savedInd: 1, savedAt: at(0) });
     await calibrate(user.id);
     const island = await ownedIsland(user.id);
     advance(100);
-    await source.update({ favoritedAt: at(95) });
+    await source.update({ savedAt: at(95) });
     await calibrate(user.id); await island.reload();
     expect(island).toMatchObject({ archivedInd: false, lastBehaviorAt: at(95) });
     advance(185);
@@ -393,12 +393,12 @@ describe('behavior-driven Island lifecycle', () => {
   });
 
   it('continues to account for meaningful negative evidence when normalizing mixed support', () => {
-    const favorite = { id: 1, embedding_model: 'test-model', articleVector: [1, 0], favoriteInd: 1, favoritedAt: at(-365) };
-    const opposed = { ...favorite, negativeInd: 1, negativeFeedbackAt: at(-365) };
+    const saved = { id: 1, embedding_model: 'test-model', articleVector: [1, 0], savedInd: 1, savedAt: at(-365) };
+    const opposed = { ...saved, negativeInd: 1, negativeFeedbackAt: at(-365) };
     expect(summarizeIslandLifecycle([opposed], [1, 0], 'test-model').retainedSupport).toBeCloseTo(2 / 12, 10);
     expect(summarizeIslandLifecycle([opposed], [1, 0], 'test-model').confidence)
-      .toBeLessThan(summarizeIslandLifecycle([favorite], [1, 0], 'test-model').confidence);
-    const cancelled = { ...favorite, negativeInd: 1, negativeFeedbackAt: at(-730) };
+      .toBeLessThan(summarizeIslandLifecycle([saved], [1, 0], 'test-model').confidence);
+    const cancelled = { ...saved, negativeInd: 1, negativeFeedbackAt: at(-730) };
     expect(summarizeIslandLifecycle([cancelled], [1, 0], 'test-model').confidence).toBe(0);
   });
 });

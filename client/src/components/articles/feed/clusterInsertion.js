@@ -25,11 +25,11 @@ export function insertClusterArticlesIntoCollection(articles, { articleId, artic
     return article;
   });
 
-  // Find the index of the clicked article after re-homing.
-  const clickedIndex = nextArticles.findIndex(article => article.id === articleId);
+  // Find the index of the openedOriginal article after re-homing.
+  const openedOriginalIndex = nextArticles.findIndex(article => article.id === articleId);
 
-  if (clickedIndex === -1) {
-    reportError('Could not find clicked article in articles list');
+  if (openedOriginalIndex === -1) {
+    reportError('Could not find openedOriginal article in articles list');
     return nextArticles;
   }
 
@@ -40,7 +40,7 @@ export function insertClusterArticlesIntoCollection(articles, { articleId, artic
     clusterParentId: articleId
   }));
 
-  nextArticles.splice(clickedIndex + 1, 0, ...markedArticles);
+  nextArticles.splice(openedOriginalIndex + 1, 0, ...markedArticles);
   return nextArticles;
 }
 
@@ -52,9 +52,9 @@ export function removeDuplicateArticlesFromCollection(articles, articleId) {
 // Inserts duplicate children after their canonical parent without mutating the input collection.
 export function insertDuplicateArticlesIntoCollection(articles, { articleId, articles: duplicateArticles }, reportError = console.error) {
   const nextArticles = removeDuplicateArticlesFromCollection(articles, articleId);
-  const clickedIndex = nextArticles.findIndex(article => article.id === articleId);
+  const openedOriginalIndex = nextArticles.findIndex(article => article.id === articleId);
 
-  if (clickedIndex === -1) {
+  if (openedOriginalIndex === -1) {
     reportError('Could not find canonical article in articles list');
     return nextArticles;
   }
@@ -65,7 +65,7 @@ export function insertDuplicateArticlesIntoCollection(articles, { articleId, art
     duplicateParentId: articleId
   }));
 
-  nextArticles.splice(clickedIndex + 1, 0, ...markedArticles);
+  nextArticles.splice(openedOriginalIndex + 1, 0, ...markedArticles);
   return nextArticles;
 }
 

@@ -21,9 +21,9 @@ vi.mock('../src/api/articles', () => ({
   markArticleSeen: vi.fn(),
   markArticleUnread: vi.fn(),
   markArticlesAsRead: vi.fn(),
-  markAsFavorite: vi.fn(),
-  markManyAsFavorite: vi.fn(),
-  markManyClicked: vi.fn()
+  markAsSaved: vi.fn(),
+  markManyAsSaved: vi.fn(),
+  markManyOpenedOriginal: vi.fn()
 }));
 
 // This function creates a promise whose completion order is controlled by the test.
@@ -367,7 +367,7 @@ describe('ArticleFeed loading races', () => {
     const pending = deferred();
     fetchNewerArticleCount.mockReturnValue(pending.promise);
     const check = ArticleFeed.methods.checkForNewerArticles.call(context);
-    context.selectionStore.currentSelection = { status: 'favorite' };
+    context.selectionStore.currentSelection = { status: 'saved' };
     pending.resolve({ data: { newerArticleCount: 3 } });
     await check;
 

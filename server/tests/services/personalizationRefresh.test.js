@@ -43,11 +43,11 @@ describe('durable personalization refresh', () => {
     await updateArticleBehavior(source, { positiveInd: 1, positiveFeedbackAt: new Date() });
     const deadline = (await jobs(user.id))[0].availableAt;
     await Promise.all(Array.from({ length: 5 }, () => updateArticleBehavior(db.Article, {
-      clickedAmount: db.sequelize.literal('clickedAmount + 1'), lastClickedAt: new Date()
+      openedOriginalCount: db.sequelize.literal('openedOriginalCount + 1'), lastOpenedOriginalAt: new Date()
     }, { where: { id: source.id, userId: user.id } })));
     expect(await jobs(user.id)).toHaveLength(1);
     expect((await jobs(user.id))[0].availableAt).toEqual(deadline);
-    await source.reload(); expect(source.clickedAmount).toBe(5);
+    await source.reload(); expect(source.openedOriginalCount).toBe(5);
     expect((await claimProcessingJobs({ userId: user.id, now: new Date(deadline.getTime() - 1) })).filter(job => job.type === PERSONALIZATION_REFRESH_TYPE)).toHaveLength(0);
     const job = await claim(user.id);
     expect((await executeClaimedProcessingJob(job)).status).toBe('succeeded');
@@ -65,14 +65,14 @@ describe('durable personalization refresh', () => {
 
   it('refreshes interest after unfavoriting and applies explicit negative feedback without a crawl', async () => {
     const { user, source, candidate } = await fixture();
-    await updateArticleBehavior(source, { favoriteInd: 1, favoritedAt: new Date() });
+    await updateArticleBehavior(source, { savedInd: 1, savedAt: new Date() });
     await executeClaimedProcessingJob(await claim(user.id));
     await candidate.reload(); expect(candidate.interestScore).toBeGreaterThan(0);
-    const favoriteScore = candidate.interestScore;
-    await updateArticleBehavior(source, { favoriteInd: 0, favoritedAt: null });
+    const savedScore = candidate.interestScore;
+    await updateArticleBehavior(source, { savedInd: 0, savedAt: null });
     await executeClaimedProcessingJob(await claim(user.id));
     // Existing durable Island memory remains; removing support reduces its authority.
-    await candidate.reload(); expect(candidate.interestScore).toBeLessThan(favoriteScore);
+    await candidate.reload(); expect(candidate.interestScore).toBeLessThan(savedScore);
     await updateArticleBehavior(source, { negativeInd: 1, negativeFeedbackAt: new Date() });
     await executeClaimedProcessingJob(await claim(user.id));
     await candidate.reload(); expect(candidate.interestScore).toBeLessThan(0);
@@ -103,14 +103,14 @@ describe('durable personalization refresh', () => {
 
   it('retains actions arriving during a run as one follow-up and reactivates completed work', async () => {
     const { user, source } = await fixture();
-    await updateArticleBehavior(source, { favoriteInd: 1, favoritedAt: new Date() });
+    await updateArticleBehavior(source, { savedInd: 1, savedAt: new Date() });
     const job = await claim(user.id);
     expect(await claimProcessingJobs({ userId: user.id })).toHaveLength(0);
     expect(await completePersonalizationRefresh(job, 'another-worker')).toBeNull();
     expect((await jobs(user.id))[0].status).toBe('running');
     const run = vi.spyOn(calibration, 'runIslandCalibrationForUser').mockImplementationOnce(async () => {
-      await updateArticleBehavior(source, { favoriteInd: 0, favoritedAt: null });
-      await updateArticleBehavior(source, { clickedAmount: 2, lastClickedAt: new Date() });
+      await updateArticleBehavior(source, { savedInd: 0, savedAt: null });
+      await updateArticleBehavior(source, { openedOriginalCount: 2, lastOpenedOriginalAt: new Date() });
     }).mockResolvedValue({});
     expect(await executeClaimedProcessingJob(job)).toMatchObject({ status: 'succeeded', refreshPending: true });
     expect(await jobs(user.id)).toHaveLength(1);
@@ -124,12 +124,12 @@ describe('durable personalization refresh', () => {
   it('rolls back refresh requests with behavior and ignores non-behavior or unmatched updates', async () => {
     const { user, source } = await fixture();
     await expect(db.sequelize.transaction(async transaction => {
-      await updateArticleBehavior(source, { favoriteInd: 1, favoritedAt: new Date() }, { transaction });
+      await updateArticleBehavior(source, { savedInd: 1, savedAt: new Date() }, { transaction });
       throw new Error('rollback');
     })).rejects.toThrow('rollback');
-    await source.reload(); expect(Number(source.favoriteInd)).toBe(0);
+    await source.reload(); expect(Number(source.savedInd)).toBe(0);
     await updateArticleBehavior(source, { status: 'unread' });
-    await updateArticleBehavior(db.Article, { favoriteInd: 1, favoritedAt: new Date() }, { where: { id: -1, userId: user.id } });
+    await updateArticleBehavior(db.Article, { savedInd: 1, savedAt: new Date() }, { where: { id: -1, userId: user.id } });
     expect(await jobs(user.id)).toHaveLength(0);
   });
 
@@ -137,7 +137,7 @@ describe('durable personalization refresh', () => {
   // SQLite's immediate transaction serializes writers before this race can occur.
   it.skipIf(db.sequelize.getDialect() === 'sqlite')('does not lose a request racing terminal completion', async () => {
     const { user, source } = await fixture();
-    await updateArticleBehavior(source, { favoriteInd: 1, favoritedAt: new Date() });
+    await updateArticleBehavior(source, { savedInd: 1, savedAt: new Date() });
     const job = await claim(user.id);
     const findOne = db.ProcessingJob.findOne.bind(db.ProcessingJob);
     let completed = false;
@@ -149,7 +149,7 @@ describe('durable personalization refresh', () => {
       }
       return row;
     });
-    await updateArticleBehavior(source, { favoriteInd: 0, favoritedAt: null });
+    await updateArticleBehavior(source, { savedInd: 0, savedAt: null });
     expect(completed).toBe(true);
     expect((await jobs(user.id))[0].status).toBe('pending');
   });

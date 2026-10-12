@@ -16,7 +16,7 @@ article links to check details against the source.
 ## What the assistant can access
 
 Authenticated tools can search articles, fetch selected article content, list feeds
-and categories, find tags, and retrieve favorite, clicked, or hot articles. Search
+and categories, find tags, and retrieve saved, openedOriginal, or hot articles. Search
 results are bounded and scoped to your account. Content retrieval works on
 explicitly selected articles; it does not read your entire archive in one call.
 The assistant also has a crawl tool that can request a feed refresh.

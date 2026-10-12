@@ -679,7 +679,7 @@ export const getStreamItemContents = async (req, res) => {
 
 /**
  * POST /api/greader/reader/api/0/edit-tag
- * Edit tags on articles (mark read/unread/starred)
+ * Edit tags on articles (mark read/unread/saved)
  */
 export const editTag = async (req, res) => {
   try {
@@ -712,11 +712,11 @@ export const editTag = async (req, res) => {
       updates.readAt = mutationTime;
     }
     if (removeSet.has(STARRED_STREAM)) {
-      updates.favoriteInd = 0;
-      updates.favoritedAt = null;
+      updates.savedInd = 0;
+      updates.savedAt = null;
     } else if (addSet.has(STARRED_STREAM)) {
-      updates.favoriteInd = 1;
-      updates.favoritedAt = mutationTime;
+      updates.savedInd = 1;
+      updates.savedAt = mutationTime;
     }
 
     // Unsupported state tags are intentionally ignored for client compatibility.

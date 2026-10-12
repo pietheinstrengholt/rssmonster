@@ -217,11 +217,11 @@ const postSmartFolder = async (req, res, next) => {
  * --------------------------------------------------- */
 const collectSmartFolderSignals = async (
   userId,
-  { days = 365, maxFavoriteTitles = 500 } = {}
+  { days = 365, maxSavedTitles = 500 } = {}
 ) => {
   const since = new Date(Date.now() - days * 86400000);
 
-  const [articleStats, feeds, tagStats, favoriteArticles, existingSmartFolders] = await Promise.all([
+  const [articleStats, feeds, tagStats, savedArticles, existingSmartFolders] = await Promise.all([
     Article.findAll({
       where: {
         userId,
@@ -232,8 +232,8 @@ const collectSmartFolderSignals = async (
         [fn('COUNT', col('id')), 'total'],
         [fn('SUM', literal(`CASE WHEN status = 'unread' THEN 1 ELSE 0 END`)), 'unread'],
         [fn('SUM', literal(`CASE WHEN status = 'read' THEN 1 ELSE 0 END`)), 'read'],
-        [fn('SUM', literal(`CASE WHEN clickedAmount > 0 THEN 1 ELSE 0 END`)), 'clicked'],
-        [fn('SUM', literal(`CASE WHEN favoriteInd = 1 THEN 1 ELSE 0 END`)), 'favorite']
+        [fn('SUM', literal(`CASE WHEN openedOriginalCount > 0 THEN 1 ELSE 0 END`)), 'openedOriginal'],
+        [fn('SUM', literal(`CASE WHEN savedInd = 1 THEN 1 ELSE 0 END`)), 'saved']
       ],
       group: ['feedId'],
       raw: true
@@ -256,12 +256,12 @@ const collectSmartFolderSignals = async (
     Article.findAll({
       where: {
         userId,
-        favoriteInd: 1,
+        savedInd: 1,
         publishedAt: { [Op.gte]: since }
       },
       attributes: ['title', 'publishedAt', 'feedId'],
       order: [['publishedAt', 'DESC']],
-      limit: maxFavoriteTitles,
+      limit: maxSavedTitles,
       raw: true
     }),
     SmartFolder.findAll({
@@ -278,8 +278,8 @@ const collectSmartFolderSignals = async (
       total: 0,
       unread: 0,
       read: 0,
-      clicked: 0,
-      favorite: 0
+      openedOriginal: 0,
+      saved: 0
     });
   }
 
@@ -290,8 +290,8 @@ const collectSmartFolderSignals = async (
     feed.total = Number(stat.total) || 0;
     feed.unread = Number(stat.unread) || 0;
     feed.read = Number(stat.read) || 0;
-    feed.clicked = Number(stat.clicked) || 0;
-    feed.favorite = Number(stat.favorite) || 0;
+    feed.openedOriginal = Number(stat.openedOriginal) || 0;
+    feed.saved = Number(stat.saved) || 0;
   }
 
   /* -----------------------------------
@@ -301,16 +301,16 @@ const collectSmartFolderSignals = async (
     totalArticles: 0,
     unread: 0,
     read: 0,
-    clicked: 0,
-    favorite: 0
+    openedOriginal: 0,
+    saved: 0
   };
 
   for (const f of feedMap.values()) {
     engagement.totalArticles += f.total;
     engagement.unread += f.unread;
     engagement.read += f.read;
-    engagement.clicked += f.clicked;
-    engagement.favorite += f.favorite;
+    engagement.openedOriginal += f.openedOriginal;
+    engagement.saved += f.saved;
   }
 
   // Map feedId to feedName
@@ -327,7 +327,7 @@ const collectSmartFolderSignals = async (
       name: t.name,
       count: Number(t.count) || 0
     })),
-    favoriteItems: favoriteArticles.map(a => ({
+    savedItems: savedArticles.map(a => ({
       feed: feedNames.get(a.feedId),
       title: a.title
     })),
@@ -342,7 +342,7 @@ const distillSmartFolderInsights = (raw) => {
   const feeds = raw.feeds
     .filter(f =>
       f.total >= 5 ||
-      f.favorite > 0 ||
+      f.saved > 0 ||
       (f.total > 0 && f.unread / f.total >= 0.7)
     )
     .map(f => ({
@@ -350,15 +350,15 @@ const distillSmartFolderInsights = (raw) => {
       unreadRatio: f.total
         ? Number((f.unread / f.total).toFixed(2))
         : 0,
-      favorite: f.favorite,
+      saved: f.saved,
       volume: f.total
     }))
     .sort((a, b) => b.volume - a.volume)
     .slice(0, 15)
-    .map(({ name, unreadRatio, favorite }) => ({
+    .map(({ name, unreadRatio, saved }) => ({
       name,
       unreadRatio,
-      favorite
+      saved
     }));
 
   /* -----------------------------------
@@ -367,10 +367,10 @@ const distillSmartFolderInsights = (raw) => {
   const topTags = raw.tags.slice(0, 12).map(t => t.name);
 
   /* -----------------------------------
-   * Favorite article overview
+   * Saved article overview
    * ----------------------------------- */
-  const favoriteItems = Array.isArray(raw.favoriteItems)
-    ? raw.favoriteItems.slice(0, 10).map(item => ({
+  const savedItems = Array.isArray(raw.savedItems)
+    ? raw.savedItems.slice(0, 10).map(item => ({
         feed: item.feed,
         title: item.title
       }))
@@ -391,7 +391,7 @@ const distillSmartFolderInsights = (raw) => {
 
     engagement: {
       unreadRatio,
-      favoriteArticles: raw.engagement.favorite
+      savedArticles: raw.engagement.saved
     },
 
     feeds,
@@ -401,7 +401,7 @@ const distillSmartFolderInsights = (raw) => {
       longTailTagCount: Math.max(raw.tags.length - topTags.length, 0)
     },
 
-    favoriteItems,
+    savedItems,
 
     existingSmartFolders: raw.existingSmartFolders || []
   };

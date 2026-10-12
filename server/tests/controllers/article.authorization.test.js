@@ -124,43 +124,43 @@ describe('article ownership authorization', () => {
   it('returns the persisted click count after incrementing an owned article', async () => {
     const owner = await createUser(uniqueName('article-click-owner'));
     const { article } = await createArticleFor(owner);
-    await article.update({ clickedAmount: 2 });
+    await article.update({ openedOriginalCount: 2 });
 
     const res = await request(app)
-      .post(`/api/articles/markclicked/${article.id}`)
+      .post(`/api/articles/mark-opened-original/${article.id}`)
       .set('Authorization', authHeaderFor(owner));
 
     await article.reload();
 
     expect(res.status).toBe(200);
-    expect(res.body.clickedAmount).toBe(3);
-    expect(article.clickedAmount).toBe(3);
+    expect(res.body.openedOriginalCount).toBe(3);
+    expect(article.openedOriginalCount).toBe(3);
   });
 
-  it('marks and unmarks an owned article as clicked without incrementing explicit marks', async () => {
+  it('marks and unmarks an owned article as opened original without incrementing explicit marks', async () => {
     const owner = await createUser(uniqueName('article-click-toggle-owner'));
     const { article } = await createArticleFor(owner);
     const authorization = authHeaderFor(owner);
 
     const markResponse = await request(app)
-      .post(`/api/articles/markclicked/${article.id}`)
+      .post(`/api/articles/mark-opened-original/${article.id}`)
       .set('Authorization', authorization)
       .send({ update: 'mark' });
     const secondMarkResponse = await request(app)
-      .post(`/api/articles/markclicked/${article.id}`)
+      .post(`/api/articles/mark-opened-original/${article.id}`)
       .set('Authorization', authorization)
       .send({ update: 'mark' });
     const unmarkResponse = await request(app)
-      .post(`/api/articles/markclicked/${article.id}`)
+      .post(`/api/articles/mark-opened-original/${article.id}`)
       .set('Authorization', authorization)
       .send({ update: 'unmark' });
 
     await article.reload();
 
-    expect(markResponse.body.clickedAmount).toBe(1);
-    expect(secondMarkResponse.body.clickedAmount).toBe(1);
-    expect(unmarkResponse.body.clickedAmount).toBe(0);
-    expect(article.clickedAmount).toBe(0);
+    expect(markResponse.body.openedOriginalCount).toBe(1);
+    expect(secondMarkResponse.body.openedOriginalCount).toBe(1);
+    expect(unmarkResponse.body.openedOriginalCount).toBe(0);
+    expect(article.openedOriginalCount).toBe(0);
   });
 
   it('preserves concurrent click increments for one article', async () => {
@@ -170,17 +170,17 @@ describe('article ownership authorization', () => {
 
     const responses = await Promise.all([
       request(app)
-        .post(`/api/articles/markclicked/${article.id}`)
+        .post(`/api/articles/mark-opened-original/${article.id}`)
         .set('Authorization', authorization),
       request(app)
-        .post(`/api/articles/markclicked/${article.id}`)
+        .post(`/api/articles/mark-opened-original/${article.id}`)
         .set('Authorization', authorization)
     ]);
 
     await article.reload();
 
     expect(responses.map(response => response.status)).toEqual([200, 200]);
-    expect(article.clickedAmount).toBe(2);
+    expect(article.openedOriginalCount).toBe(2);
   });
 
   it('GET article by ID hides filtered articles from their owner', async () => {
@@ -1374,14 +1374,14 @@ describe('article ownership authorization', () => {
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
-      clickedAmount: 4,
+      openedOriginalCount: 4,
       url: `https://example.com/${owner.username}/second-click`,
       title: `${owner.username} second click`,
       publishedAt: new Date('2026-05-01T11:00:00Z')
     });
 
     const response = await request(app)
-      .post('/api/articles/markclicked')
+      .post('/api/articles/mark-opened-original')
       .set('Authorization', authHeaderFor(owner))
       .send({ articleIds: [article.id, secondArticle.id] });
 
@@ -1389,10 +1389,11 @@ describe('article ownership authorization', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.articles).toEqual(expect.arrayContaining([
-      { id: article.id, clickedAmount: 1 },
-      { id: secondArticle.id, clickedAmount: 5 }
+      expect.objectContaining({ id: article.id, openedOriginalCount: 1, clickedAmount: 1 }),
+      expect.objectContaining({ id: secondArticle.id, openedOriginalCount: 5, clickedAmount: 5 })
     ]));
-    expect([article.clickedAmount, secondArticle.clickedAmount]).toEqual([1, 5]);
+    expect(response.body.articles).toHaveLength(2);
+    expect([article.openedOriginalCount, secondArticle.openedOriginalCount]).toEqual([1, 5]);
   });
 
   it('preserves concurrent batch click increments', async () => {
@@ -1411,11 +1412,11 @@ describe('article ownership authorization', () => {
 
     const responses = await Promise.all([
       request(app)
-        .post('/api/articles/markclicked')
+        .post('/api/articles/mark-opened-original')
         .set('Authorization', authorization)
         .send({ articleIds }),
       request(app)
-        .post('/api/articles/markclicked')
+        .post('/api/articles/mark-opened-original')
         .set('Authorization', authorization)
         .send({ articleIds })
     ]);
@@ -1423,7 +1424,7 @@ describe('article ownership authorization', () => {
     await Promise.all([article.reload(), secondArticle.reload()]);
 
     expect(responses.map(response => response.status)).toEqual([200, 200]);
-    expect([article.clickedAmount, secondArticle.clickedAmount]).toEqual([2, 2]);
+    expect([article.openedOriginalCount, secondArticle.openedOriginalCount]).toEqual([2, 2]);
   });
 
   // Verifies click tracking validates an otherwise empty batch request.
@@ -1431,7 +1432,7 @@ describe('article ownership authorization', () => {
     const owner = await createUser(uniqueName('click-validation-owner'));
 
     const response = await request(app)
-      .post('/api/articles/markclicked')
+      .post('/api/articles/mark-opened-original')
       .set('Authorization', authHeaderFor(owner))
       .send({});
 
@@ -1473,33 +1474,33 @@ describe('article ownership authorization', () => {
     expect(response.body).toEqual({ message: 'articleIds is not set' });
   });
 
-  // Verifies favorite actions cover validation, batch updates, and single-article clearing.
-  it('validates and updates favorite state for batch and single requests', async () => {
-    const owner = await createUser(uniqueName('favorite-owner'));
+  // Verifies saved actions cover validation, batch updates, and single-article clearing.
+  it('validates and updates saved state for batch and single requests', async () => {
+    const owner = await createUser(uniqueName('saved-owner'));
     const { article, feed } = await createArticleFor(owner);
     const secondArticle = await Article.create({
       userId: owner.id,
       feedId: feed.id,
       status: 'unread',
-      url: `https://example.com/${owner.username}/second-favorite`,
-      title: `${owner.username} second favorite`,
+      url: `https://example.com/${owner.username}/second-saved`,
+      title: `${owner.username} second saved`,
       publishedAt: new Date('2026-05-01T11:00:00Z')
     });
 
     const missingUpdateResponse = await request(app)
-      .post('/api/articles/markasfavorite')
+      .post('/api/articles/mark-saved')
       .set('Authorization', authHeaderFor(owner))
       .send({ articleIds: [article.id] });
     const missingIdsResponse = await request(app)
-      .post('/api/articles/markasfavorite')
+      .post('/api/articles/mark-saved')
       .set('Authorization', authHeaderFor(owner))
       .send({ update: 'mark' });
     const batchResponse = await request(app)
-      .post('/api/articles/markasfavorite')
+      .post('/api/articles/mark-saved')
       .set('Authorization', authHeaderFor(owner))
       .send({ update: 'mark', articleIds: `${article.id},${secondArticle.id}` });
     const singleResponse = await request(app)
-      .post(`/api/articles/markasfavorite/${article.id}`)
+      .post(`/api/articles/mark-saved/${article.id}`)
       .set('Authorization', authHeaderFor(owner))
       .send({ update: 'unmark' });
 
@@ -1509,20 +1510,20 @@ describe('article ownership authorization', () => {
     expect(missingIdsResponse.status).toBe(400);
     expect(batchResponse.status).toBe(200);
     expect(singleResponse.status).toBe(200);
-    expect(article.favoriteInd).toBe(0);
-    expect(secondArticle.favoriteInd).toBe(1);
+    expect(article.savedInd).toBe(0);
+    expect(secondArticle.savedInd).toBe(1);
   });
 
-  // Verifies favorite updates distinguish missing batches and unavailable single articles.
-  it('returns not found for unavailable favorite targets', async () => {
-    const owner = await createUser(uniqueName('missing-favorite-owner'));
+  // Verifies saved updates distinguish missing batches and unavailable single articles.
+  it('returns not found for unavailable saved targets', async () => {
+    const owner = await createUser(uniqueName('missing-saved-owner'));
 
     const batchResponse = await request(app)
-      .post('/api/articles/markasfavorite')
+      .post('/api/articles/mark-saved')
       .set('Authorization', authHeaderFor(owner))
       .send({ update: 'mark', articleIds: ['2147483647'] });
     const singleResponse = await request(app)
-      .post('/api/articles/markasfavorite/2147483647')
+      .post('/api/articles/mark-saved/2147483647')
       .set('Authorization', authHeaderFor(owner))
       .send({ update: 'mark' });
 
@@ -1548,9 +1549,9 @@ describe('article ownership authorization', () => {
       .post('/api/articles/marktounread/1')
       .set('Authorization', authorization);
 
-    vi.spyOn(Article, 'findOne').mockRejectedValueOnce(new Error('favorite lookup failed'));
-    const favoriteResponse = await request(app)
-      .post('/api/articles/markasfavorite/1')
+    vi.spyOn(Article, 'findOne').mockRejectedValueOnce(new Error('saved lookup failed'));
+    const savedResponse = await request(app)
+      .post('/api/articles/mark-saved/1')
       .set('Authorization', authorization)
       .send({ update: 'mark' });
 
@@ -1558,8 +1559,8 @@ describe('article ownership authorization', () => {
     expect(seenResponse.body).toEqual({ error: 'Unable to mark article as read' });
     expect(unreadResponse.status).toBe(400);
     expect(unreadResponse.body).toEqual({ message: 'Error updating article' });
-    expect(favoriteResponse.status).toBe(500);
-    expect(favoriteResponse.body).toEqual({ error: 'Unable to update article favorite status' });
+    expect(savedResponse.status).toBe(500);
+    expect(savedResponse.body).toEqual({ error: 'Unable to update article saved status' });
   });
 
   // Verifies synchronous request failures reach the remaining controller catch handler.
@@ -1642,13 +1643,13 @@ describe('article ownership authorization', () => {
       ['get', '/api/articles/duplicates/1', undefined],
       ['get', '/api/articles/1', undefined],
       ['post', '/api/articles/markasread', {}],
-      ['post', '/api/articles/markclicked', {}],
+      ['post', '/api/articles/mark-opened-original', {}],
       ['post', '/api/articles/marknotinterested/1', {}],
       ['post', '/api/articles/markmorelikethis/1', {}],
       ['post', '/api/articles/details', { articleIds: '1' }],
       ['post', '/api/articles/markasseen/1', {}],
       ['post', '/api/articles/marktounread/1', {}],
-      ['post', '/api/articles/markasfavorite/1', { update: 'mark' }],
+      ['post', '/api/articles/mark-saved/1', { update: 'mark' }],
       ['post', '/api/articles/markallasread', {}]
     ];
 

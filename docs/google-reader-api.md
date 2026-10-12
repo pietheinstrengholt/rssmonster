@@ -79,7 +79,7 @@ checks proxy/header transport, not account credentials.
 | `/reader/api/0/stream/contents[/<stream>]` | GET | Supported |
 | `/reader/api/0/stream/items/ids` | GET | Partial: repeated `s` targets always merge; per-stream limits with `merge=false` are unsupported |
 | `/reader/api/0/stream/items/contents` | GET, POST | Supported |
-| `/reader/api/0/edit-tag` | POST | Read and starred states supported |
+| `/reader/api/0/edit-tag` | POST | Read and saved states supported |
 | `/reader/api/0/mark-all-as-read` | POST | Supported |
 | `/reader/api/0/rename-tag` | POST | Feed categories supported |
 | `/reader/api/0/disable-tag` | POST | Feed categories supported; repeated `s` accepted |
@@ -106,7 +106,7 @@ still be recorded during release smoke testing.
 
 - Reading list: `user/-/state/com.google/reading-list`
 - Read state: `user/-/state/com.google/read`
-- Starred state: `user/-/state/com.google/starred`
+- Saved state: `user/-/state/com.google/saved`
 - Feed: `feed/<percent-encoded subscription URL>`
 - Compatibility input also normalizes duplicated `feed/feed/<reference>`
   prefixes for feed streams and subscription operations.

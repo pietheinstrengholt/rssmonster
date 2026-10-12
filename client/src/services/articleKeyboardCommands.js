@@ -3,7 +3,7 @@ export const ARTICLE_KEYBOARD_COMMAND = Object.freeze({
   PREVIOUS: 'previous',
   OPEN: 'open',
   TOGGLE_READ: 'toggle-read',
-  TOGGLE_FAVORITE: 'toggle-favorite'
+  TOGGLE_SAVED: 'toggle-saved'
 });
 
 const ARTICLE_COMMAND_BY_KEY = Object.freeze({
@@ -15,7 +15,7 @@ const ARTICLE_COMMAND_BY_KEY = Object.freeze({
   o: ARTICLE_KEYBOARD_COMMAND.OPEN,
   m: ARTICLE_KEYBOARD_COMMAND.TOGGLE_READ,
   r: ARTICLE_KEYBOARD_COMMAND.TOGGLE_READ,
-  s: ARTICLE_KEYBOARD_COMMAND.TOGGLE_FAVORITE
+  s: ARTICLE_KEYBOARD_COMMAND.TOGGLE_SAVED
 });
 
 // Returns whether an event may be interpreted as an article keyboard shortcut.

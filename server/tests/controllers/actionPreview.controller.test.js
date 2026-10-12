@@ -36,7 +36,7 @@ describe('read-only action preview', () => {
     expect(response.body.articles.map(article => article.title).sort()).toEqual(['Body match', 'Learn C++']);
     expect(await db.Action.count({ where: { userId: owner.userId } })).toBe(0);
     expect((await rows[0].reload()).status).toBe('unread');
-    expect(rows[0].favoriteInd).toBe(0);
+    expect(rows[0].savedInd).toBe(0);
   });
 
   it('bounds the sample and displayed results, and resets global regex state between fields', async () => {

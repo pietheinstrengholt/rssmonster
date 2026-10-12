@@ -1,9 +1,10 @@
+import { canonicalArticleState } from '../../utils/articleStateContract.js';
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';
 
 export const batchFixtureUrl = batch => new URL(`../fixtures/semantic-regression-batch${String(batch).padStart(3, '0')}.json`, import.meta.url);
-export const loadSemanticBatch = async batch => JSON.parse(await readFile(batchFixtureUrl(batch), 'utf8'));
+export const loadSemanticBatch = async batch => canonicalArticleState(JSON.parse(await readFile(batchFixtureUrl(batch), 'utf8')));
 
 // Isolated gold tests reuse subsets of the two canonical batches. They retain their
 // original chronology; the main simulation always uses the seven-day timestamps.

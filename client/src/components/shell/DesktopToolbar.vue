@@ -18,7 +18,7 @@
         </template>
         <template #menu="{ menuProps }">
           <div v-bind="menuProps">
-            <button v-for="option in dropdown.options" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': dropdown.selectedValue === option.value }" :title="option.description" :aria-description="option.description" role="menuitem" @click="dropdownOptionClicked(dropdown.type, option.value)">{{ option.label }}</button>
+            <button v-for="option in dropdown.options" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': dropdown.selectedValue === option.value }" :title="option.description" :aria-description="option.description" role="menuitem" @click="dropdownOptionOpenedOriginal(dropdown.type, option.value)">{{ option.label }}</button>
           </div>
         </template>
       </AppDropdown>
@@ -928,7 +928,7 @@ export default {
       this.selectionStore.setGrouping(value);
     },
     // This function updates the selected article status or reloads the current one.
-    statusClicked: function(status) {
+    statusOpenedOriginal: function(status) {
       const currentSelection = this.selectionStore.currentSelection;
       if (status === currentSelection.status && currentSelection.smartFolderId === null) {
         this.$emit('forceReload');
@@ -937,22 +937,22 @@ export default {
       }
     },
     // This function updates the active article view mode.
-    viewModeClicked: function(filter) {
+    viewModeOpenedOriginal: function(filter) {
       this.selectionStore.setViewMode(filter);
     },
     // This function updates the active article sort order.
-    sortClicked: function(sort) {
+    sortOpenedOriginal: function(sort) {
       if (this.briefingPresentationControlsDisabled) return;
       this.selectionStore.setSelectedSort(sort);
     },
     // This function routes a configured dropdown option to its matching handler.
-    dropdownOptionClicked: function(type, value) {
+    dropdownOptionOpenedOriginal: function(type, value) {
       if (type === 'status') {
-        this.statusClicked(value);
+        this.statusOpenedOriginal(value);
       } else if (type === 'viewMode') {
-        this.viewModeClicked(value);
+        this.viewModeOpenedOriginal(value);
       } else if (type === 'sort') {
-        this.sortClicked(value);
+        this.sortOpenedOriginal(value);
       } else if (type === 'grouping') {
         this.setGrouping(value);
       }

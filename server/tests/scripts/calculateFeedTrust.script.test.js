@@ -34,9 +34,9 @@ const createArticle = (overrides = {}) => ({
   id: 1,
   status: 'read',
   duplicateOfArticleId: null,
-  favoriteInd: 0,
+  savedInd: 0,
   negativeInd: 0,
-  clickedAmount: 0,
+  openedOriginalCount: 0,
   attentionBucket: 3,
   qualityScore: 75,
   sentimentScore: 75,
@@ -133,8 +133,8 @@ describe('feed trust command', () => {
       sentimentScore: 20,
       advertisementScore: 20,
       attentionBucket: 4,
-      favoriteInd: 1,
-      clickedAmount: 1
+      savedInd: 1,
+      openedOriginalCount: 1
     }));
 
     expect(highQualityNoEngagement.result.trust)

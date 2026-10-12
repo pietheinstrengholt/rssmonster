@@ -12,7 +12,7 @@ let wrapper;
 const dto = {
   id: 41, title: 'Downloaded article', publishedAt: '2026-10-01T12:00:00Z',
   content: '<p>The full downloaded article body.</p>', contentText: 'The full downloaded article body.',
-  status: 'unread', favoriteInd: 1, feedId: 2, feed: { id: 2, name: 'Example feed' },
+  status: 'unread', savedInd: 1, feedId: 2, feed: { id: 2, name: 'Example feed' },
   tags: []
 };
 beforeEach(() => {

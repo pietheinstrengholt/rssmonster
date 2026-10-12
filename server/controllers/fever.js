@@ -168,13 +168,13 @@ export const postFever = async (req, res, _next) => {
           arr['unread_item_ids'] = unread_item_ids.join(",");
         }
 
-        //return string/comma-separated list with id's from starred articles
+        //return string/comma-separated list with id's from saved articles
         if ("saved_item_ids" in req.query) {
           const saved_item_ids = [];
           const articles = await Article.findAll({
             attributes: ["id"],
             where: {
-              favoriteInd: 1,
+              savedInd: 1,
               userId: loggedInUser.id,
               ...canonicalArticleWhere()
             },
@@ -273,7 +273,7 @@ export const postFever = async (req, res, _next) => {
               author: article.author || '',
               html: article.contentHtml || article.descriptionHtml || '',
               url: article.url || '',
-              is_saved: parseInt(article.favoriteInd),
+              is_saved: parseInt(article.savedInd),
               is_read: (article.status === 'read' ? 1 : 0),
               created_on_time: Math.floor(article.publishedAt / 1000)
             };
@@ -611,14 +611,14 @@ function genUpdate(req_body_as) {
 
     case "saved":
       return {
-        favoriteInd: 1,
-        favoritedAt: new Date()
+        savedInd: 1,
+        savedAt: new Date()
       };
 
     case "unsaved":
       return {
-        favoriteInd: 0,
-        favoritedAt: null
+        savedInd: 0,
+        savedAt: null
       };
   }
 }
@@ -732,7 +732,7 @@ async function appendFeverSyncIds(response, userId, state) {
     stateWhere = { status: 'unread' };
   } else if (state === 'saved' || state === 'unsaved') {
     responseField = 'saved_item_ids';
-    stateWhere = { favoriteInd: 1 };
+    stateWhere = { savedInd: 1 };
   } else {
     return;
   }
@@ -839,7 +839,7 @@ async function getFeverLinks(userId, query, now = new Date()) {
 
   const pageUrls = pageLinks.map(link => link.url);
   const localArticles = await Article.findAll({
-    attributes: ['id', 'feedId', 'title', 'url', 'normalizedUrl', 'favoriteInd'],
+    attributes: ['id', 'feedId', 'title', 'url', 'normalizedUrl', 'savedInd'],
     where: {
       userId,
       ...canonicalArticleWhere(),
@@ -873,7 +873,7 @@ async function getFeverLinks(userId, query, now = new Date()) {
       temperature: sourceIds.length,
       is_item: localArticle ? 1 : 0,
       is_local: localArticle ? 1 : 0,
-      is_saved: localArticle ? Number(localArticle.favoriteInd) : 0,
+      is_saved: localArticle ? Number(localArticle.savedInd) : 0,
       title: localArticle?.title || link.url,
       url: link.url,
       item_ids: sourceIds.join(',')

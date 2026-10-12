@@ -172,9 +172,9 @@ export default {
           briefing: 'Your briefing is clear',
           unread: 'You’re all caught up',
           read: 'No read articles yet',
-          favorite: 'No saved articles yet',
+          saved: 'No saved articles yet',
           hot: 'Nothing is trending here yet',
-          clicked: 'No opened originals yet'
+          openedOriginal: 'No opened originals yet'
         };
         return statusTitles[this.currentStatus] || 'No articles found';
       }
@@ -183,9 +183,9 @@ export default {
         briefing: 'Daily Briefing',
         unread: 'unread',
         read: 'read',
-        favorite: 'saved',
+        saved: 'saved',
         hot: 'hot',
-        clicked: 'opened original'
+        openedOriginal: 'opened original'
       };
       const statusLabel = statusLabels[this.currentStatus] || 'matching';
       return `No ${statusLabel} articles tagged ${formatTagName(this.selectedTag)}`;
@@ -199,9 +199,9 @@ export default {
         briefing: 'There are no briefing articles in this view. Refresh your feeds or adjust the current filters.',
         unread: 'There are no unread articles in this view. Refresh your feeds or enjoy the clear queue.',
         read: 'Articles you finish will appear here. Clear the current filters to widen this view.',
-        favorite: 'Save an article to find it here later, or clear the current filters to look elsewhere.',
+        saved: 'Save an article to find it here later, or clear the current filters to look elsewhere.',
         hot: 'No articles meet the current hot threshold. Refresh your feeds or adjust the filters.',
-        clicked: 'Articles opened on their original websites appear here, separately from read status. Clear the current filters to widen this view.'
+        openedOriginal: 'Articles opened on their original websites appear here, separately from read status. Clear the current filters to widen this view.'
       };
       return statusDescriptions[this.currentStatus]
         || 'There are no articles that match the current filters. Try adjusting them or check back later.';
@@ -212,7 +212,7 @@ export default {
     },
     // This gives collection-specific empty states a useful route back into reading.
     viewUnreadIsPrimaryAction() {
-      return !this.hasTagSelection && ['read', 'favorite', 'hot', 'clicked'].includes(this.currentStatus);
+      return !this.hasTagSelection && ['read', 'saved', 'hot', 'openedOriginal'].includes(this.currentStatus);
     },
     primaryActionLabel() {
       if (this.noFeeds) return 'Add a feed';

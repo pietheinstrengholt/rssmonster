@@ -45,10 +45,10 @@ const buildQuery = overrides => buildArticleSearchQuery({
   workingSort: 'desc',
   qualityFilter: null,
   freshnessFilter: null,
-  starFilter: null,
+  savedFilter: null,
   unreadFilter: null,
   readFilter: null,
-  clickedFilter: null,
+  openedOriginalFilter: null,
   seenFilter: null,
   hotFilter: null,
   status: '%',
@@ -159,8 +159,8 @@ describe('articleSearchExecutor.service', () => {
   // Maps status vocabulary to the corresponding article state predicate.
   it.each([
     ['hot', 'hotInd', 1],
-    ['clicked', 'clickedAmount', { [Op.gt]: 0 }],
-    ['favorite', 'favoriteInd', 1],
+    ['openedOriginal', 'openedOriginalCount', { [Op.gt]: 0 }],
+    ['saved', 'savedInd', 1],
     ['unread', 'status', 'unread']
   ])('maps %s status to %s', (status, field, expected) => {
     const query = buildQuery({ status });

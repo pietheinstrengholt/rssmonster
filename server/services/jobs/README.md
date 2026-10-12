@@ -58,9 +58,9 @@ crawl lease pauses new AI-worker claims while embedding and semantic graph work 
 
 ## Behavior-driven personalization refresh
 
-Normal Article actions and Fever/GReader favorite mutations use
+Normal Article actions and Fever/GReader saved mutations use
 `articles/updateArticleBehavior.js` to commit behavior and a `personalization_refresh`
-job together. Favorite/unfavorite, explicit positive/negative feedback, clicks and
+job together. Saved/unsaved, explicit positive/negative feedback, clicks and
 observed deep reads request a refresh. Read-state toggles alone do not.
 
 There is one reusable job per user. A two-second window from the first request
@@ -145,8 +145,8 @@ worker scans eligible owned articles in batches of 200, but evaluates and writes
 only the related subset. This bounds memory and avoids full-library rescoring; it
 does not promise constant-time candidate discovery.
 
-Favorites remain strong explicit fallback evidence under the existing evaluator,
-and favorite/unfavorite continue requesting durable calibration. They do not
+Saved remain strong explicit fallback evidence under the existing evaluator,
+and saved/unsaved continue requesting durable calibration. They do not
 schedule this extra fast job. Clicks and deep reads likewise retain the durable
 path. Recommended sees fast results on the next fetch after the worker finishes;
 HTTP responses do not wait for scoring, and worker availability/crawl pauses still

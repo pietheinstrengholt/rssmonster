@@ -24,7 +24,7 @@ within the dialog to reach all options, including **Show feed favicon icons**.
 
 **Default: enabled.** Shows the current selection count followed by the total,
 such as `9/109`: nine articles match the selected status out of 109 articles.
-The selected count changes when you switch between Unread, Read, Favorites,
+The selected count changes when you switch between Unread, Read, Saved,
 Daily briefing, or another status. The total combines unread and read articles.
 
 This format applies to categories, feeds, **All categories**, and pinned shortcuts.
@@ -54,7 +54,7 @@ and categories with no articles matching the current status. A feed showing `0/4
 can therefore be hidden even though it contains articles. Categories containing
 matching feeds stay visible.
 
-The **All feeds** filters, such as Daily briefing, Unread, Read, Clicked, and Hot,
+The **All feeds** filters, such as Daily briefing, Unread, Read, OpenedOriginal, and Hot,
 remain available at zero. Pinned shortcuts also remain available. Feeds in the
 **Inactive feeds** group are kept accessible even when their selected count is zero.
 This setting changes visibility only; it does not delete articles or subscriptions.
@@ -111,7 +111,7 @@ if none of its articles match the current selection.
 
 **Default: disabled.** Sorts categories and their feeds by the selected article
 count, highest first. For example, Unread puts the feeds with the most unread
-articles first; Favorites uses saved articles instead. Switching status changes
+articles first; Saved uses saved articles instead. Switching status changes
 the ordering accordingly.
 
 While enabled, **Sort sidebar category items by** is disabled and its saved choice
@@ -126,7 +126,7 @@ while dynamic sorting is enabled.
 | --- | --- |
 | Manual order | Uses your saved order and makes manual reordering available. |
 | Name | Sorts alphabetically, ignoring case and handling numbers naturally. |
-| Selected count | Sorts highest first using the current status, such as Unread or Favorites. |
+| Selected count | Sorts highest first using the current status, such as Unread or Saved. |
 | Total count | Sorts highest first by unread plus read articles. |
 | Recently active | Sorts by the latest new article received, newest first. Categories use the latest receipt among their feeds; feeds with no received articles come last. |
 

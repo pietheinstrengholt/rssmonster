@@ -56,22 +56,22 @@ const createOverview = (overrides = {}) => ({
   briefingPrioritizeHighTrust: false,
   unreadCount: 5,
   readCount: 4,
-  favoriteCount: 3,
+  savedCount: 3,
   hotCount: 2,
-  clickedCount: 1,
+  openedOriginalCount: 1,
   categories: [{
     id: 1,
     briefingCount: 2,
     unreadCount: 5,
     readCount: 4,
-    favoriteCount: 3,
+    savedCount: 3,
     feeds: [{
       id: 10,
       categoryId: 1,
       briefingCount: 2,
       unreadCount: 5,
       readCount: 4,
-      favoriteCount: 3
+      savedCount: 3
     }]
   }],
   ...overrides
@@ -119,7 +119,7 @@ describe('data store overview and count behavior', () => {
       briefingCount: 2,
       unreadCount: 5,
       readCount: 4,
-      favoriteCount: 3,
+      savedCount: 3,
       errorCount: 0
     });
     expect(store.unreadCount).toBe(5);
@@ -179,7 +179,7 @@ describe('data store overview and count behavior', () => {
       feedName: 'Example Feed',
       unreadCount: 11,
       readCount: 0,
-      favoriteCount: 0,
+      savedCount: 0,
       errorCount: 0
     });
     expect(store.categories[0].name).toBe('Technology');
@@ -248,21 +248,21 @@ describe('data store overview and count behavior', () => {
     store.$patch({
       unreadCount: 5,
       readCount: 4,
-      favoriteCount: 3,
+      savedCount: 3,
       categories: [{
         id: 1,
         unreadCount: 5,
         readCount: 4,
-        favoriteCount: 3,
+        savedCount: 3,
         hotCount: 2,
-        clickedCount: 1,
+        openedOriginalCount: 1,
         feeds: [{
           id: 10,
           unreadCount: 5,
           readCount: 4,
-          favoriteCount: 3,
+          savedCount: 3,
           hotCount: 2,
-          clickedCount: 1
+          openedOriginalCount: 1
         }]
       }]
     });
@@ -272,10 +272,10 @@ describe('data store overview and count behavior', () => {
           id: 1,
           unreadCount: 0,
           readCount: 0,
-          favoriteCount: 0,
+          savedCount: 0,
           feeds: [
-            { id: 10, unreadCount: 0, readCount: 0, favoriteCount: 0 },
-            { id: 11, unreadCount: 0, readCount: 0, favoriteCount: 0 }
+            { id: 10, unreadCount: 0, readCount: 0, savedCount: 0 },
+            { id: 11, unreadCount: 0, readCount: 0, savedCount: 0 }
           ]
         }, {
           id: 2,
@@ -291,25 +291,25 @@ describe('data store overview and count behavior', () => {
       expect(store.overviewCountsStatus).toBe('error');
     });
 
-    expect(store).toMatchObject({ unreadCount: 5, readCount: 4, favoriteCount: 3 });
+    expect(store).toMatchObject({ unreadCount: 5, readCount: 4, savedCount: 3 });
     expect(store.categories[0]).toMatchObject({
       unreadCount: 5,
       readCount: 4,
-      favoriteCount: 3,
+      savedCount: 3,
       hotCount: 2,
-      clickedCount: 1
+      openedOriginalCount: 1
     });
     expect(store.categories[0].feeds[0]).toMatchObject({
       unreadCount: 5,
       readCount: 4,
-      favoriteCount: 3,
+      savedCount: 3,
       hotCount: 2,
-      clickedCount: 1
+      openedOriginalCount: 1
     });
     expect(store.categories[0].feeds[1]).toMatchObject({
       unreadCount: 0,
       readCount: 0,
-      favoriteCount: 0
+      savedCount: 0
     });
     expect(store.categories[1]).toMatchObject({ unreadCount: 0, readCount: 0 });
   });
@@ -360,12 +360,12 @@ describe('data store overview and count behavior', () => {
       data: { tags: [{ name: 'security', count: 3 }] }
     });
 
-    selectionStore.setSelectedStatus('favorite');
+    selectionStore.setSelectedStatus('saved');
     await vi.waitFor(() => {
       expect(fetchTopTags).toHaveBeenCalledWith({
         grouping: 'none',
         includeDevelopingEvents: false,
-        status: 'favorite'
+        status: 'saved'
       });
     });
     expect(store.topTags).toEqual([{ name: 'security', count: 3 }]);
@@ -681,26 +681,26 @@ describe('data store overview and count behavior', () => {
     expect(store.categories[0]).toMatchObject({ unreadCount: 5, readCount: 4 });
     expect(store.categories[0].feeds[0]).toMatchObject({ unreadCount: 4, readCount: 5 });
 
-    store.applyFavoriteDelta({
+    store.applySavedDelta({
       categoryId: '1',
       feedId: '10',
       delta: 2
     });
 
     expect(warn).toHaveBeenCalledTimes(2);
-    expect(store.favoriteCount).toBe(5);
-    expect(store.categories[0].favoriteCount).toBe(5);
-    expect(store.categories[0].feeds[0].favoriteCount).toBe(5);
+    expect(store.savedCount).toBe(5);
+    expect(store.categories[0].savedCount).toBe(5);
+    expect(store.categories[0].feeds[0].savedCount).toBe(5);
   });
 
-  // Verifies compatibility favorite actions clamp totals and error state can be reset.
-  it('clamps favorite wrappers and manages fatal errors', () => {
+  // Verifies compatibility saved actions clamp totals and error state can be reset.
+  it('clamps saved wrappers and manages fatal errors', () => {
     const store = createStore();
 
-    store.decreaseFavoriteCount();
-    expect(store.favoriteCount).toBe(0);
-    store.increaseFavoriteCount();
-    expect(store.favoriteCount).toBe(1);
+    store.decreaseSavedCount();
+    expect(store.savedCount).toBe(0);
+    store.increaseSavedCount();
+    expect(store.savedCount).toBe(1);
 
     const uiStore = useUiStore();
     const error = new Error('fatal');

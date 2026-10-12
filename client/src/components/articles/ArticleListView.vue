@@ -56,8 +56,8 @@
         :tabindex="minimalArticleTabindex(article.id)"
         :isMinimalContentOpen="String(article.id) === String(activeMinimalArticleId)"
         @update-tags="$emit('update-tags', $event)"
-        @update-favorite="$emit('update-favorite', $event)"
-        @update-clicked="$emit('update-clicked', $event)"
+        @update-saved="$emit('update-saved', $event)"
+        @update-openedOriginal="$emit('update-opened-original', $event)"
         @minimal-article-opened="openMinimalArticle"
         @minimal-article-closed="$emit('minimal-article-closed', $event)"
         @toggle-read-status="$emit('toggle-read-status', $event)"
@@ -158,8 +158,8 @@ export default {
   },
   emits: [
     'update-tags',
-    'update-favorite',
-    'update-clicked',
+    'update-saved',
+    'update-opened-original',
     'minimal-article-opened',
     'minimal-article-closed',
     'toggle-read-status',
@@ -171,7 +171,7 @@ export default {
     'article-not-interested',
     'inspect-interest',
     'shortcut-toggle-read',
-    'shortcut-toggle-favorite',
+    'shortcut-toggle-saved',
     'flush-pool',
     'bulk-action',
     'clear-filters',
@@ -328,7 +328,7 @@ export default {
     }
   },
   methods: {
-    // Keeps the clicked headline in place when the previously open article collapses.
+    // Keeps the openedOriginal headline in place when the previously open article collapses.
     openMinimalArticle(article) {
       const element = this.getArticleElement(article.id);
       const top = element?.getBoundingClientRect().top;
@@ -429,9 +429,9 @@ export default {
         return;
       }
 
-      if (command === ARTICLE_KEYBOARD_COMMAND.TOGGLE_FAVORITE) {
+      if (command === ARTICLE_KEYBOARD_COMMAND.TOGGLE_SAVED) {
         event.preventDefault();
-        this.toggleSelectedFavorite();
+        this.toggleSelectedSaved();
         return;
       }
 
@@ -532,12 +532,12 @@ export default {
 
       this.$emit('shortcut-toggle-read', { id: article.id, status: article.status });
     },
-    // Requests a favorite toggle for the selected article.
-    toggleSelectedFavorite() {
+    // Requests a saved toggle for the selected article.
+    toggleSelectedSaved() {
       const article = this.selectedArticle();
       if (!article) return;
 
-      this.$emit('shortcut-toggle-favorite', { id: article.id });
+      this.$emit('shortcut-toggle-saved', { id: article.id });
     }
   }
 }

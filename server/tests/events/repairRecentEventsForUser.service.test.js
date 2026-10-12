@@ -1137,7 +1137,7 @@ describe('repairRecentEventsForUser', () => {
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
       createdAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0],
-      status: 'favorite'
+      status: 'saved'
     }));
 
     await representativeArticle.update({ eventId: event.id });
@@ -1155,7 +1155,7 @@ describe('repairRecentEventsForUser', () => {
 
     expect(eventId).toBe(event.id);
     expect(incomingArticle.eventId).toBe(event.id);
-    expect(incomingArticle.status).toBe('favorite');
+    expect(incomingArticle.status).toBe('saved');
     expect(event.developingArticleId).toBe(representativeArticle.id);
   });
 

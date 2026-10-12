@@ -14,7 +14,7 @@ async function fixture(count) {
   const category = await db.Category.create({ userId: user.id, name: 'Capacity' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Capacity', url: `https://${user.id}.example/rss` });
   const sources = []; const islands = [];
-  const add = async (index, behavior = { clickedAmount: 1, lastClickedAt: now }) => db.Article.create({
+  const add = async (index, behavior = { openedOriginalCount: 1, lastOpenedOriginalAt: now }) => db.Article.create({
     userId: user.id, feedId: feed.id, title: `Distinct technical interest ${index}`, status: 'read', publishedAt: new Date('2022-01-01'), embedding_model: 'test-model', articleVector: vector(index), ...behavior
   });
   for (let i = 0; i < count; i++) {
@@ -49,7 +49,7 @@ describe('persisted active Island capacity', () => {
 
   it('reduces 25 qualifying existing Islands to 20 using current support, including strong negative evidence, without touching another user', async () => {
     const data = await fixture(25); const other = await fixture(2);
-    await data.sources[24].update({ clickedAmount: 0, negativeInd: 1, negativeFeedbackAt: now });
+    await data.sources[24].update({ openedOriginalCount: 0, negativeInd: 1, negativeFeedbackAt: now });
     // Stored positive weight must not hide the stronger current negative evidence.
     const result = await persistIslandProfilesForUser(data.user.id, []);
     expect(result.persistenceSummary.activeIslandCount).toBe(20);
@@ -112,7 +112,7 @@ describe('persisted active Island capacity', () => {
 
   it('allows a new profile below capacity', async () => {
     const data = await fixture(15);
-    await data.add(15, { favoriteInd: 1, favoritedAt: now });
+    await data.add(15, { savedInd: 1, savedAt: now });
     await calibrate(data.user.id);
     expect(await activeIds(data.user.id)).toHaveLength(16);
   });
@@ -120,7 +120,7 @@ describe('persisted active Island capacity', () => {
   it('does not let strong expired history consume formation or active capacity', async () => {
     const data = await fixture(20);
     const old = new Date(now.getTime() - 100 * 86400000);
-    for (const source of data.sources) await source.update({ clickedAmount: 0, lastClickedAt: null, favoriteInd: 1, favoritedAt: old });
+    for (const source of data.sources) await source.update({ openedOriginalCount: 0, lastOpenedOriginalAt: null, savedInd: 1, savedAt: old });
     for (const island of data.islands) await island.update({ lastBehaviorAt: old, weight: 1 });
     const fresh = await data.add(20);
     await calibrate(data.user.id);
@@ -136,11 +136,11 @@ describe('persisted active Island capacity', () => {
 
   it('keeps a weaker reactivation dormant at capacity and does not duplicate it on replay', async () => {
     const data = await fixture(21);
-    for (const row of data.sources.slice(0, 20)) await row.update({ favoriteInd: 1, favoritedAt: now });
+    for (const row of data.sources.slice(0, 20)) await row.update({ savedInd: 1, savedAt: now });
     await data.islands[20].update({ archivedInd: true, archivedAt: new Date(now.getTime() - 86400000) });
     // Supply the eligible weak profile explicitly so this tests persistence competition, not formation's bound.
     const all = await buildInterestIslandProfilesForUser(data.user.id);
-    const weak = { label: 'Weak return', embedding_model: 'test-model', vector: vector(20), weight: 0.3157, positiveSignals: { clicks: 1 }, articles: [{ articleId: data.sources[20].id, score: 2 }] };
+    const weak = { label: 'Weak return', embedding_model: 'test-model', vector: vector(20), weight: 0.3157, positiveSignals: { openedOriginals: 1 }, articles: [{ articleId: data.sources[20].id, score: 2 }] };
     all.push(weak);
     await persistIslandProfilesForUser(data.user.id, all);
     await data.islands[20].reload();
@@ -163,7 +163,7 @@ describe('persisted active Island capacity', () => {
 
   it('serializes concurrent persistence for the same user and applies a smaller requested cap consistently', async () => {
     const data = await fixture(1);
-    await data.add(1, { favoriteInd: 1, favoritedAt: now });
+    await data.add(1, { savedInd: 1, savedAt: now });
     const profiles = await buildInterestIslandProfilesForUser(data.user.id, { maxIslands: 2 });
     await Promise.all([1, 2].map(() => persistIslandProfilesForUser(data.user.id, profiles, { maxIslands: 2 })));
     expect(await activeIds(data.user.id)).toHaveLength(2);

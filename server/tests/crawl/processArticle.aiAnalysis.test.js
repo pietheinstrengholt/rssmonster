@@ -183,8 +183,8 @@ describe('processArticle AI analysis controls', () => {
     mocked.applyActions.mockReturnValue({
       shouldDiscard: false,
       status: 'unread',
-      favoriteInd: false,
-      clickedAmount: 0,
+      savedInd: false,
+      openedOriginalCount: 0,
       hotInd: false,
       tags: [],
       advertisementScore: null,
@@ -339,8 +339,8 @@ describe('processArticle AI analysis controls', () => {
     mocked.applyActions.mockReturnValue({
       shouldDiscard: false,
       status: 'unread',
-      favoriteInd: false,
-      clickedAmount: 0,
+      savedInd: false,
+      openedOriginalCount: 0,
       hotInd: false,
       tags: ['rule-tag'],
       advertisementScore: null,
@@ -682,8 +682,8 @@ describe('processArticle AI analysis controls', () => {
     mocked.applyActions.mockReturnValue({
       shouldDiscard: false,
       status: 'read',
-      favoriteInd: 1,
-      clickedAmount: 1,
+      savedInd: 1,
+      openedOriginalCount: 1,
       tags: ['updated-rule'],
       advertisementScore: 0,
       qualityScore: 0
@@ -1004,8 +1004,8 @@ describe('processArticle AI analysis controls', () => {
     mocked.applyActions.mockReturnValue({
       shouldDiscard: true,
       status: 'unread',
-      favoriteInd: 0,
-      clickedAmount: 0,
+      savedInd: 0,
+      openedOriginalCount: 0,
       tags: ['ignored-rule-tag'],
       advertisementScore: 100,
       qualityScore: 100
@@ -1141,8 +1141,8 @@ describe('processArticle AI analysis controls', () => {
       shouldDiscard: true,
       status: 'unread',
       filteredInd: false,
-      favoriteInd: false,
-      clickedAmount: 0,
+      savedInd: false,
+      openedOriginalCount: 0,
       hotInd: false,
       tags: [],
       advertisementScore: null,

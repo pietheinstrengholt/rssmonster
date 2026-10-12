@@ -35,7 +35,7 @@ and future releases; it does not mean that a workflow is impossible.
 | **Self-hosted** | Yes; Docker Compose quick start and a more comprehensive deployment are documented | Yes; Docker and conventional web-server installations are documented |
 | **Chronological reading** | Always available alongside Quality, Recommended, and Top Stories ordering | Central to the reading workflow, with newest/oldest ordering and filters |
 | **Reading interface** | Responsive modes including a three-pane desktop Reader view | Responsive web interface with configurable views and themes |
-| **Feed organization** | Feeds, categories, tags, favorites, Smart Folders, Events and Interest Islands | Feeds, categories, labels, favorites, and saved user queries |
+| **Feed organization** | Feeds, categories, tags, saved, Smart Folders, Events and Interest Islands | Feeds, categories, labels, saved, and saved user queries |
 | **Reusable filtered views** | Smart Folders use the same composable expressions as search, including state, date, score, and semantic filters | User queries save search and filter combinations for quick access |
 | **Related coverage** | Semantic similarity, related articles, Events are built in when semantic processing is enabled | Semantic related-article and Event grouping are not documented as built-in features |
 | **Duplicates and revisions** | Deterministic identity and revision handling plus duplicate analysis are built into article processing | Comparable cross-source semantic duplicate/revision analysis is not documented as built in |

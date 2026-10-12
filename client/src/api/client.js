@@ -1,3 +1,4 @@
+import { canonicalArticleState } from '../services/articleStateContract.js';
 import axios from 'axios';
 
 export const CONNECTIVITY_ERROR_EVENT = 'app:connectivity-error';
@@ -125,7 +126,14 @@ export const setAuthToken = (token) => {
 };
 
 api.interceptors.response.use(
-  rejectUnexpectedHtml,
+  response => {
+    const accepted = rejectUnexpectedHtml(response);
+    // OPML downloads and assistant streams are not Article-state JSON contracts.
+    if (!accepted.config?.responseType || accepted.config.responseType === 'json') {
+      accepted.data = canonicalArticleState(accepted.data);
+    }
+    return accepted;
+  },
   handleApiError
 );
 

@@ -29,7 +29,7 @@ vi.mock('../src/services/actionNotifications.js', () => ({
   notifyActionError: vi.fn()
 }));
 
-const defaults = { neverDeleteUnread: true, neverDeleteFavorites: true, neverDeleteClicked: false,
+const defaults = { neverDeleteUnread: true, neverDeleteSaved: true, neverDeleteOpenedOriginals: false,
   maximumAgeValue: 7, maximumAgeUnit: 'years', maximumArticlesPerFeed: null, maximumArticlesTotal: null };
 let wrapper;
 const button = label => wrapper.findAll('button').find(item => item.text() === label);

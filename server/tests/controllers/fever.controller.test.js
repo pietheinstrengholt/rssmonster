@@ -683,7 +683,7 @@ describe('Fever API compatibility', () => {
       feed.update({
         favicon: `data:image/gif;base64,${TEST_FAVICON_BASE64}`
       }),
-      linkedArticle.update({ favoriteInd: 1 })
+      linkedArticle.update({ savedInd: 1 })
     ]);
 
     const res = await request(app)
@@ -844,9 +844,9 @@ describe('Fever API compatibility', () => {
     ]);
 
     expect(linkedArticle.status).toBe('unread');
-    expect(linkedArticle.favoriteInd).toBe(0);
+    expect(linkedArticle.savedInd).toBe(0);
     expect(unlinkedArticle.status).toBe('unread');
-    expect(unlinkedArticle.favoriteInd).toBe(0);
+    expect(unlinkedArticle.savedInd).toBe(0);
   });
 
   it('accepts seconds and milliseconds for feed mark-before cutoffs', async () => {

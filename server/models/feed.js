@@ -158,13 +158,13 @@ export default (sequelize) => {
         defaultValue: 0
       },
       // Stores the average outbound-click count across sampled feed articles.
-      feedClickAvg: {
+      feedOpenedOriginalAvg: {
         type: DataTypes.FLOAT,
         allowNull: false,
         defaultValue: 0
       },
       // Stores the proportion of sampled feed articles receiving an outbound click.
-      feedClickRatio: {
+      feedOpenedOriginalRatio: {
         type: DataTypes.FLOAT,
         allowNull: false,
         defaultValue: 0

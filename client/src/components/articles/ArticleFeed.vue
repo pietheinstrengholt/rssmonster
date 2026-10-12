@@ -5,12 +5,12 @@
     :smart-folders="overviewStore.smartFolders"
     @selectSmartFolder="selectSmartFolderFromOverview"
   />
-  <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" @vue:mounted="observeLoadMoreSentinel" @vue:updated="observeLoadMoreSentinel" @vue:unmounted="observeLoadMoreSentinel" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @clear-search="clearSearch" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @load-more="getContent()" @reading-article-changing="handleReadingArticleChange" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @select-recommendation="openReaderRecommendation" @update-tags="updateArticleTags" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
+  <ArticleReaderLayout v-else-if="isReaderLayoutActive" ref="articleLayout" @vue:mounted="observeLoadMoreSentinel" @vue:updated="observeLoadMoreSentinel" @vue:unmounted="observeLoadMoreSentinel" :articles="articles" :container="container" :collection-summary="collectionSummary" :collection-progress="readerCollectionProgress" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @clear-search="clearSearch" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @load-more="getContent()" @reading-article-changing="handleReadingArticleChange" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @select-recommendation="openReaderRecommendation" @update-tags="updateArticleTags" @update-saved="updateSavedInd" @update-openedOriginal="updateOpenedOriginalInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-saved="toggleShortcutArticleSaved" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
     <template #before-context="{ readerMode }">
       <NewArticlesBanner v-if="selectionStore.currentSelection.status === 'unread'" :count="newerArticleCount" :loading="isLoading" :reader-mode="readerMode" @show-new="showNewArticles" @show-full="showFullUnreadList" />
     </template>
   </ArticleReaderLayout>
-  <ArticleListView v-else ref="articleLayout" @vue:mounted="observeLoadMoreSentinel" @vue:updated="observeLoadMoreSentinel" @vue:unmounted="observeLoadMoreSentinel" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @bulk-action="handleReaderBulkAction" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @clear-search="clearSearch" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @load-more="getContent()" @update-tags="updateArticleTags" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
+  <ArticleListView v-else ref="articleLayout" @vue:mounted="observeLoadMoreSentinel" @vue:updated="observeLoadMoreSentinel" @vue:unmounted="observeLoadMoreSentinel" :articles="articles" :container="container" :scroll-root="scrollRoot" :collection-summary="collectionSummary" :collection-progress="streamCollectionProgress" :view-mode="selectionStore.currentSelection.viewMode" :activeMinimalArticleId="activeMinimalArticleId" @bulk-action="handleReaderBulkAction" @flush-pool="flushPool" @clear-filters="clearFilters" @clear-tag="clearTag" @view-tag-status="viewTagStatus" @clear-search="clearSearch" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @retry-pagination="retryPagination" @load-more="getContent()" @update-tags="updateArticleTags" @update-saved="updateSavedInd" @update-openedOriginal="updateOpenedOriginalInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-saved="toggleShortcutArticleSaved" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle" @inspect-interest="$emit('inspect-interest', $event)">
     <template #before-context="{ readerMode, headlineMode }">
       <NewArticlesBanner v-if="selectionStore.currentSelection.status === 'unread'" :count="newerArticleCount" :loading="isLoading" :reader-mode="readerMode" :headline-mode="headlineMode" @show-new="showNewArticles" @show-full="showFullUnreadList" />
     </template>
@@ -30,9 +30,9 @@ import { defineAsyncComponent } from 'vue';
 import ArticleListView from "./ArticleListView.vue";
 import NewArticlesBanner from "./NewArticlesBanner.vue";
 import {
-  markAsFavorite,
-  markManyClicked,
-  markManyAsFavorite
+  markAsSaved,
+  markManyOpenedOriginal,
+  markManyAsSaved
 } from '../../api/articles';
 import { articleFeedClusterInsertionMethods } from './feed/clusterInsertion.js';
 import {
@@ -106,7 +106,7 @@ export default {
       scrollResetFrameId: null,
       scrollResetTimeoutId: null,
       showSmartFoldersOverview: false,
-      pendingFavoriteArticleIds: new Set()
+      pendingSavedArticleIds: new Set()
     };
   },
 
@@ -370,10 +370,10 @@ export default {
         this.articles = this.articles.map(article => {
           const next = { ...article };
           for (const action of event.detail.discardedActions || []) {
-            if (String(action.articleId) === String(article.id) && action.baseValue !== undefined) next[action.kind === 'set-status' ? 'status' : 'favoriteInd'] = action.baseValue;
+            if (String(action.articleId) === String(article.id) && action.baseValue !== undefined) next[action.kind === 'set-status' ? 'status' : 'savedInd'] = action.baseValue;
           }
           const stored = records.get(String(article.id));
-          return stored ? { ...next, status: stored.status, favoriteInd: stored.favoriteInd } : next;
+          return stored ? { ...next, status: stored.status, savedInd: stored.savedInd } : next;
         });
         return;
       }
@@ -539,41 +539,41 @@ export default {
         window.dispatchEvent(new CustomEvent('rssmonster:focus-search'));
       }
     },
-    // Toggles an article favorite state from a keyboard shortcut.
-    async toggleShortcutArticleFavorite({ id }) {
+    // Toggles an article saved state from a keyboard shortcut.
+    async toggleShortcutArticleSaved({ id }) {
       const article = this.articles.find(item => String(item.id) === String(id));
       if (!article) return;
 
       const articleKey = String(article.id);
-      if (this.pendingFavoriteArticleIds.has(articleKey)) return;
+      if (this.pendingSavedArticleIds.has(articleKey)) return;
 
-      const previousFavoriteInd = article.favoriteInd === 1 ? 1 : 0;
-      const requestedFavoriteInd = previousFavoriteInd === 1 ? 0 : 1;
-      const updateType = requestedFavoriteInd ? 'mark' : 'unmark';
-      this.pendingFavoriteArticleIds.add(articleKey);
+      const previousSavedInd = article.savedInd === 1 ? 1 : 0;
+      const requestedSavedInd = previousSavedInd === 1 ? 0 : 1;
+      const updateType = requestedSavedInd ? 'mark' : 'unmark';
+      this.pendingSavedArticleIds.add(articleKey);
       try {
-        const response = await markAsFavorite(id, updateType, article);
-        const persistedFavoriteInd = response.data.favoriteInd === 1
+        const response = await markAsSaved(id, updateType, article);
+        const persistedSavedInd = response.data.savedInd === 1
           ? 1
-          : response.data.favoriteInd === 0
+          : response.data.savedInd === 0
             ? 0
-            : requestedFavoriteInd;
-        const delta = persistedFavoriteInd - previousFavoriteInd;
+            : requestedSavedInd;
+        const delta = persistedSavedInd - previousSavedInd;
 
         if (delta !== 0) {
-          this.overviewStore.applyFavoriteDelta({
+          this.overviewStore.applySavedDelta({
             categoryId: response.data.feed?.categoryId,
             feedId: response.data.feedId,
             delta
           });
         }
 
-        this.updateFavoriteInd({ id, favoriteInd: persistedFavoriteInd });
+        this.updateSavedInd({ id, savedInd: persistedSavedInd });
       } catch (error) {
-        console.error('Error toggling article favorite:', error);
+        console.error('Error toggling article saved:', error);
         notifyActionError('Could not update saved status. Please try again.', error);
       } finally {
-        this.pendingFavoriteArticleIds.delete(articleKey);
+        this.pendingSavedArticleIds.delete(articleKey);
       }
     },
 
@@ -607,13 +607,13 @@ export default {
       if (!['reader', 'full', 'summarized', 'summaryBullets', 'minimal'].includes(this.selectionStore.currentSelection.viewMode)) return;
 
       try {
-        if (action === 'favorite-visible') {
-          await this.favoriteReaderArticles(this.getVisibleReaderArticles());
+        if (action === 'saved-visible') {
+          await this.savedReaderArticles(this.getVisibleReaderArticles());
           return;
         }
 
-        if (action === 'mark-visible-clicked') {
-          await this.markReaderArticlesClicked(this.getVisibleReaderArticles());
+        if (action === 'mark-visible-opened-original') {
+          await this.markReaderArticlesOpenedOriginal(this.getVisibleReaderArticles());
           return;
         }
 
@@ -656,66 +656,66 @@ export default {
       }
     },
 
-    // Favorites each visible reader article that is not already favorited.
-    async favoriteReaderArticles(articles) {
-      const unfavoritedArticles = articles.filter(article =>
-        article.favoriteInd !== 1
-        && !this.pendingFavoriteArticleIds.has(String(article.id))
+    // Saved each visible reader article that is not already saved.
+    async savedReaderArticles(articles) {
+      const unsavedArticles = articles.filter(article =>
+        article.savedInd !== 1
+        && !this.pendingSavedArticleIds.has(String(article.id))
       );
-      if (!unfavoritedArticles.length) return;
+      if (!unsavedArticles.length) return;
 
-      const articleKeys = unfavoritedArticles.map(article => String(article.id));
+      const articleKeys = unsavedArticles.map(article => String(article.id));
       for (const articleKey of articleKeys) {
-        this.pendingFavoriteArticleIds.add(articleKey);
+        this.pendingSavedArticleIds.add(articleKey);
       }
 
       try {
-        const response = await markManyAsFavorite(unfavoritedArticles.map(article => article.id), 'mark', unfavoritedArticles);
+        const response = await markManyAsSaved(unsavedArticles.map(article => article.id), 'mark', unsavedArticles);
         const updatedArticles = response.data.articles || [];
 
         for (const updatedArticle of updatedArticles) {
-          this.applyReaderFavoriteResponse(updatedArticle);
+          this.applyReaderSavedResponse(updatedArticle);
         }
       } finally {
         for (const articleKey of articleKeys) {
-          this.pendingFavoriteArticleIds.delete(articleKey);
+          this.pendingSavedArticleIds.delete(articleKey);
         }
       }
     },
 
-    // Applies the local and overview count changes for a favorited reader article.
-    applyReaderFavoriteResponse(updatedArticle) {
+    // Applies the local and overview count changes for a saved reader article.
+    applyReaderSavedResponse(updatedArticle) {
       const article = this.articles.find(item => String(item.id) === String(updatedArticle.id));
       if (!article) return;
 
-      const previousFavoriteInd = article.favoriteInd === 1 ? 1 : 0;
-      const persistedFavoriteInd = updatedArticle.favoriteInd === 0 ? 0 : 1;
-      const delta = persistedFavoriteInd - previousFavoriteInd;
+      const previousSavedInd = article.savedInd === 1 ? 1 : 0;
+      const persistedSavedInd = updatedArticle.savedInd === 0 ? 0 : 1;
+      const delta = persistedSavedInd - previousSavedInd;
 
       if (delta !== 0) {
-        this.overviewStore.applyFavoriteDelta({
+        this.overviewStore.applySavedDelta({
           categoryId: updatedArticle.feed?.categoryId,
           feedId: updatedArticle.feedId,
           delta
         });
       }
-      this.updateFavoriteInd({
+      this.updateSavedInd({
         id: updatedArticle.id,
-        favoriteInd: persistedFavoriteInd
+        savedInd: persistedSavedInd
       });
     },
 
-    // Marks each visible reader article as clicked.
-    async markReaderArticlesClicked(articles) {
+    // Marks each visible reader article as opened original.
+    async markReaderArticlesOpenedOriginal(articles) {
       if (!articles.length) return;
 
-      const response = await markManyClicked(articles.map(article => article.id));
+      const response = await markManyOpenedOriginal(articles.map(article => article.id));
       const updatedArticles = response.data.articles || [];
 
       for (const article of updatedArticles) {
-        this.updateClickedInd({
+        this.updateOpenedOriginalInd({
           id: article.id,
-          clickedAmount: article.clickedAmount
+          openedOriginalCount: article.openedOriginalCount
         });
       }
     },
@@ -777,19 +777,19 @@ export default {
       }
     },
 
-    // Updates an article's local favorite indicator.
-    updateFavoriteInd({ id, favoriteInd }) {
+    // Updates an article's local saved indicator.
+    updateSavedInd({ id, savedInd }) {
       const idx = this.articles.findIndex(a => a.id === id);
       if (idx !== -1) {
-        this.articles[idx].favoriteInd = favoriteInd;
+        this.articles[idx].savedInd = savedInd;
       }
     },
 
     // Updates an article's local click count.
-    updateClickedInd({ id, clickedAmount }) {
+    updateOpenedOriginalInd({ id, openedOriginalCount }) {
       const idx = this.articles.findIndex(a => a.id === id);
       if (idx !== -1) {
-        this.articles[idx].clickedAmount = clickedAmount;
+        this.articles[idx].openedOriginalCount = openedOriginalCount;
       }
     },
 

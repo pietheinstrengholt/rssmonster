@@ -32,11 +32,11 @@
         </button>
       </div>
       <div class="bulk-action-menu-section">
-        <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('favorite-visible')">
+        <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('saved-visible')">
           <BootstrapIcon icon="bookmark" aria-hidden="true" />
           <span>Save all visible articles</span>
         </button>
-        <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('mark-visible-clicked')">
+        <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('mark-visible-opened-original')">
           <BootstrapIcon icon="box-arrow-up-right" aria-hidden="true" />
           <span>Mark all visible originals as opened</span>
         </button>

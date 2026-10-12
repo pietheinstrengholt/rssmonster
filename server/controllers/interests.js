@@ -21,7 +21,7 @@ function presentInterest(island, now) {
     muted: Boolean(island.mutedInd),
     ...(weight < 0
       ? (signals.negatives == null ? {} : { evidence: { negativeFeedback: signals.negatives } })
-      : { evidence: { favorites: signals.stars ?? 0, clicks: signals.clicks ?? 0, deepReads: signals.deepReads ?? 0 } })
+      : { evidence: { saved: signals.saves ?? 0, openedOriginals: signals.openedOriginals ?? 0, deepReads: signals.deepReads ?? 0 } })
   };
 }
 

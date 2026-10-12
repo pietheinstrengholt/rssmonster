@@ -92,8 +92,8 @@ describe('ArticleListView keyboard navigation', () => {
     expect(context.minimalArticleRefs[1].$el.focus).toHaveBeenCalled();
   });
 
-  // Verifies open, read, and favorite shortcuts act on the selected article.
-  it('routes open, read, and favorite shortcuts for the selected article', () => {
+  // Verifies open, read, and saved shortcuts act on the selected article.
+  it('routes open, read, and saved shortcuts for the selected article', () => {
     const context = createContext({ selectedArticleId: 2 });
     for (const key of ['Enter', 'm', 's']) {
       context.handleMinimalKeydown({
@@ -109,7 +109,7 @@ describe('ArticleListView keyboard navigation', () => {
       { id: 2, status: 'read' }
     );
     expect(context.$emit).toHaveBeenCalledWith(
-      'shortcut-toggle-favorite',
+      'shortcut-toggle-saved',
       { id: 2 }
     );
   });
@@ -189,7 +189,7 @@ describe('ArticleListView keyboard navigation', () => {
     context.handleMinimalKeydown({ key: 'x', target: document.body, preventDefault });
     context.openSelectedArticle();
     context.toggleSelectedReadStatus();
-    context.toggleSelectedFavorite();
+    context.toggleSelectedSaved();
 
     expect(preventDefault).not.toHaveBeenCalled();
     expect(context.$emit).not.toHaveBeenCalled();

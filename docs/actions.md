@@ -20,7 +20,7 @@ AI processing.
 1. Open **Settings → Actions**.
 2. Select **Add Action**.
 3. Enter a descriptive **Name** so you can recognize the rule later.
-4. Choose the **Type**, such as **Assign tag** or **Set favorite**.
+4. Choose the **Type**, such as **Assign tag** or **Set saved**.
 5. Enter a **Regular Expression** to identify matching articles.
 6. For **Assign tag**, also enter the **Tag value** to add.
 7. Select **Save Changes** to save your rules.
@@ -45,30 +45,30 @@ Select the tag on an article or in the sidebar to find related articles, or
 search for `tag:verstappen`. See [Tags]({% link tag.md %}) for more ways to organize
 and find tagged articles.
 
-## Example: mark matching articles as favorites
+## Example: mark matching articles as saved
 
 To save incoming articles mentioning Nintendo or Zelda, add another rule with:
 
 - **Name:** Save Nintendo and Zelda news
-- **Type:** Set favorite
+- **Type:** Set saved
 - **Regular Expression:** `/nintendo|zelda/i`
 
 The `|` means “or,” so either word is enough to match. RSSMonster automatically
-bookmarks matching articles, making them available in **Favorites** in the
-sidebar. Setting a favorite does not itself mark the article as read. See
-[Bookmarks]({% link bookmarks.md %}) for more about favorites.
+bookmarks matching articles, making them available in **Saved** in the
+sidebar. Setting a saved does not itself mark the article as read. See
+[Bookmarks]({% link bookmarks.md %}) for more about saved.
 
-To both tag and favorite the same articles, create two actions with the same
-regular expression: one with **Assign tag**, and one with **Set favorite**.
+To both tag and saved the same articles, create two actions with the same
+regular expression: one with **Assign tag**, and one with **Set saved**.
 
 ## Available actions
 
 | Type | Result |
 | --- | --- |
 | Discard article | Store a filtered record hidden from normal queries; skip AI analysis for that entry. This is not physical deletion. |
-| Set favorite | Bookmark the article. |
+| Set saved | Bookmark the article. |
 | Mark as read | Set its read state. |
-| Mark as clicked | Set its clicked/read-later indicator. |
+| Mark as opened original | Set its openedOriginal/read-later indicator. |
 | Mark as advertisement | Override the advertisement score to `0`; this score measures absence of advertising, so lower means more promotional. |
 | Mark as low quality | Override the quality score to `0`. |
 | Assign tag | Add the supplied tag. |

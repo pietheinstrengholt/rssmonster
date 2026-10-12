@@ -50,8 +50,8 @@ const createArticleFixture = async user => {
     userId: user.id,
     feedId: feed.id,
     status: 'unread',
-    favoriteInd: 1,
-    clickedAmount: 2,
+    savedInd: 1,
+    openedOriginalCount: 2,
     url: `https://example.com/${uniqueName('article')}`,
     title: 'Island overview article',
     contentOriginal: '<p>Article body</p>',
@@ -81,8 +81,8 @@ const createEventFixture = async user => {
     userId: user.id,
     feedId: feed.id,
     status: 'unread',
-    favoriteInd: 1,
-    clickedAmount: 1,
+    savedInd: 1,
+    openedOriginalCount: 1,
     url: `https://example.com/${uniqueName('event-article-1')}`,
     title: 'First event article',
     contentOriginal: '<p>Article body</p>',
@@ -94,8 +94,8 @@ const createEventFixture = async user => {
     userId: user.id,
     feedId: feed.id,
     status: 'unread',
-    favoriteInd: 0,
-    clickedAmount: 0,
+    savedInd: 0,
+    openedOriginalCount: 0,
     url: `https://example.com/${uniqueName('event-article-2')}`,
     title: 'Second event article',
     contentOriginal: '<p>Article body</p>',
@@ -186,7 +186,7 @@ describe('settings islands overview', () => {
       islandVector: [1, 0, 0],
       populationAudit: [{
         sourceArticles: {
-          starredArticleIds: [article.id]
+          savedArticleIds: [article.id]
         }
       }]
     });
@@ -212,8 +212,8 @@ describe('settings islands overview', () => {
       id: article.id,
       title: 'Island overview article',
       evidence: [
-        { type: 'favorite', label: 'Favorite' },
-        { type: 'click', label: '2 clicks' }
+        { type: 'saved', label: 'Saved' },
+        { type: 'openedOriginal', label: '2 opened originals' }
       ]
     });
   });
@@ -226,7 +226,7 @@ describe('settings islands overview', () => {
       role: 'user'
     });
     const { article } = await createArticleFixture(user);
-    await article.update({ favoriteInd: 0, clickedAmount: 0, attentionBucket: 3 });
+    await article.update({ savedInd: 0, openedOriginalCount: 0, attentionBucket: 3 });
     const island = await Island.create({ lastBehaviorAt: new Date(),
       userId: user.id,
       label: 'PC Gaming',

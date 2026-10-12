@@ -38,7 +38,7 @@ describe('Open original action', () => {
     expect(headline.attributes()).toMatchObject({ href: 'https://example.com/article', target: '_blank', rel: 'noopener noreferrer' });
     expect(headline.text()).toBe('Article title');
     await headline.trigger('click');
-    expect(wrapper.emitted('article-clicked')).toEqual([[]]);
+    expect(wrapper.emitted('article-opened-original')).toEqual([[]]);
   });
 
   it.each(['', 'javascript:alert(1)', '/relative/article'])('omits the original action for an unusable URL: %s', url => {
@@ -106,8 +106,8 @@ describe('ArticleHeader media icon', () => {
   it('shows only the video kind icon when video media is present', () => {
     const wrapper = mountArticleHeader({
       hasVideoMedia: true,
-      clickedAmount: 1,
-      favoriteInd: 1,
+      openedOriginalCount: 1,
+      savedInd: 1,
       hotInd: 1
     });
     const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
@@ -116,12 +116,12 @@ describe('ArticleHeader media icon', () => {
     expect(wrapper.find('.media-video-icon').exists()).toBe(true);
   });
 
-  it('hides the clicked icon next to the article title', () => {
-    const wrapper = mountArticleHeader({ clickedAmount: 2, hasInterestScore: false });
+  it('hides the openedOriginal icon next to the article title', () => {
+    const wrapper = mountArticleHeader({ openedOriginalCount: 2, hasInterestScore: false });
     const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
 
     expect(icons).not.toContain('arrow-up-right-square-fill');
-    expect(wrapper.find('.clicked-icon').exists()).toBe(false);
+    expect(wrapper.find('.opened-original-icon').exists()).toBe(false);
   });
 
   it('hides the recommendation icon next to the article title', () => {
@@ -321,41 +321,41 @@ describe('ArticleHeader Reader presentation', () => {
     });
 
     expect(wrapper.get('h1.article-reader-title').text()).toBe('Article title');
-    expect(wrapper.get('.article-reader-favorite [data-icon]').attributes('data-icon')).toBe('bookmark');
-    await wrapper.get('.article-reader-favorite').trigger('click');
+    expect(wrapper.get('.article-reader-saved [data-icon]').attributes('data-icon')).toBe('bookmark');
+    await wrapper.get('.article-reader-saved').trigger('click');
     await wrapper.get('.article-reader-read').trigger('click');
-    expect(wrapper.emitted('toggle-favorite')).toHaveLength(1);
+    expect(wrapper.emitted('toggle-saved')).toHaveLength(1);
     expect(wrapper.emitted('toggle-read-status')).toHaveLength(1);
 
     await wrapper.setProps({
       title: 'Second article',
-      favoriteInd: 1,
-      favoritePending: true,
+      savedInd: 1,
+      savedPending: true,
       status: 'read'
     });
     expect(wrapper.get('h1').text()).toContain('Second article');
-    expect(wrapper.get('.article-reader-favorite').attributes('aria-pressed')).toBe('true');
-    expect(wrapper.get('.article-reader-favorite').element.disabled).toBe(true);
-    expect(wrapper.get('.article-reader-favorite [data-icon]').attributes('data-icon')).toBe('bookmark-fill');
+    expect(wrapper.get('.article-reader-saved').attributes('aria-pressed')).toBe('true');
+    expect(wrapper.get('.article-reader-saved').element.disabled).toBe(true);
+    expect(wrapper.get('.article-reader-saved [data-icon]').attributes('data-icon')).toBe('bookmark-fill');
     expect(wrapper.get('.article-reader-read').text()).toBe('Mark as unread');
     wrapper.getComponent({ name: 'ArticleActionsMenu' }).vm.$emit('more-like-this');
     expect(wrapper.emitted('more-like-this')).toHaveLength(1);
   });
 
   it('preserves the stream header when mobile retains the Reader preference', () => {
-    const wrapper = mountArticleHeader({ viewMode: 'reader', readerDetail: false, favoriteInd: 1 });
+    const wrapper = mountArticleHeader({ viewMode: 'reader', readerDetail: false, savedInd: 1 });
     expect(wrapper.find('.article-reader-source').exists()).toBe(false);
     expect(wrapper.find('.article-reader-read').exists()).toBe(false);
-    expect(wrapper.find('.article-reader-favorite').exists()).toBe(false);
+    expect(wrapper.find('.article-reader-saved').exists()).toBe(false);
     expect(wrapper.find('h5.article-header-left').exists()).toBe(true);
-    expect(wrapper.find('.star-icon').exists()).toBe(true);
+    expect(wrapper.find('.saved-icon').exists()).toBe(true);
     expect(wrapper.getComponent({ name: 'ArticleActionsMenu' }).props('isReaderMode')).toBe(true);
   });
 
   it.each(['full', 'summarized', 'summaryBullets', 'minimal'])('keeps Reader controls out of %s mode', viewMode => {
     const wrapper = mountArticleHeader({ viewMode });
     expect(wrapper.find('.article-reader-source').exists()).toBe(false);
-    expect(wrapper.find('.article-reader-favorite').exists()).toBe(false);
+    expect(wrapper.find('.article-reader-saved').exists()).toBe(false);
     expect(wrapper.find('.article-reader-read').exists()).toBe(false);
     expect(wrapper.find('h5.article-header-left').exists()).toBe(true);
   });

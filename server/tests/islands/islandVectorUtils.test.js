@@ -41,19 +41,19 @@ describe('island vector utilities', () => {
 
   it('normalizes, adds, and merges positive signal counters', () => {
     const accumulator = buildPositiveSignalsAccumulator();
-    addPositiveSignals(accumulator, { positives: 1, stars: 2, clicks: 3, deepReads: 4, negatives: 5 });
+    addPositiveSignals(accumulator, { positives: 1, saves: 2, openedOriginals: 3, deepReads: 4, negatives: 5 });
 
-    expect(accumulator).toEqual({ positives: 1, stars: 2, clicks: 3, deepReads: 4, negatives: 5 });
-    expect(normalizePositiveSignals({ stars: '2', clicks: null })).toEqual({
+    expect(accumulator).toEqual({ positives: 1, saves: 2, openedOriginals: 3, deepReads: 4, negatives: 5 });
+    expect(normalizePositiveSignals({ saves: '2', openedOriginals: null })).toEqual({
       positives: 0,
-      stars: 2,
-      clicks: 0,
+      saves: 2,
+      openedOriginals: 0,
       deepReads: 0,
       negatives: 0
     });
-    expect(mergePositiveSignals({ positives: 1, stars: 2 }, { positives: 2, stars: 3 })).toMatchObject({
+    expect(mergePositiveSignals({ positives: 1, saves: 2 }, { positives: 2, saves: 3 })).toMatchObject({
       positives: 3,
-      stars: 5
+      saves: 5
     });
   });
 

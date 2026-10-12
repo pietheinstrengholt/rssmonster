@@ -23,7 +23,7 @@ views.
 | `K` or Up Arrow | Select the previous article. |
 | `Enter` or `O` | Open the selected article on its original website. |
 | `M` or `R` | Toggle the selected article between read and unread. |
-| `S` | Toggle the selected article's favorite status. |
+| `S` | Toggle the selected article's saved status. |
 
 In Reader mode, moving to another article marks the previously selected unread
 article as read. See [Marking Articles Read]({% link marking-articles-read.md %}) for the

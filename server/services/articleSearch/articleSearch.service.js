@@ -1,6 +1,7 @@
 // Coordinates article search across query parsing, settings thresholds, tag/feed lookups, and sorting.
 // The service returns article ids while keeping database filtering and in-memory ranking behind helper modules.
 import db from '../../models/index.js';
+import { canonicalArticleStatus } from '../../utils/articleStateContract.js';
 // Provides the shared dependencies used by this service.
 const { Article, BriefingPreference, Setting } = db;
 import { Op } from 'sequelize';
@@ -98,7 +99,7 @@ const applyCursorPosition = (articleQuery, sort, position) => {
 
 /**
  * Get all article IDs based on query parameters with advanced filtering.
- * Supports field filters in search string: favorite:true/false, unread:true/false, clicked:true/false,
+ * Supports field filters in search string: saved:true/false, unread:true/false, openedOriginal:true/false,
  * event:true/false, briefing:true/false, developing:true/false, eventCount:>=2, tag:name, title:text, author:text, language:en,
  * sort:desc/asc/topStories/recommended/quality, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
@@ -135,6 +136,7 @@ export const searchArticles = async ({
     includeDiagnostics = false,
     personalization = null // Optional request-owned evidence shared with article delivery
 }) => {
+    status = canonicalArticleStatus(status);
     // Rejects processing when user id is unavailable.
     if (!userId) {
         throw new Error("Missing userId");
@@ -245,10 +247,10 @@ export const searchArticles = async ({
     } = parsedQuery;
 
     const {
-      star: starFilter = null,
+      saved: savedFilter = null,
       unread: unreadFilter = null,
       read: readFilter = null,
-      clicked: clickedFilter = null,
+      openedOriginal: openedOriginalFilter = null,
       tag: tagFilter = null,
       seen: seenFilter = null,
       firstSeenAge: firstSeenAgeFilter = null,
@@ -420,10 +422,10 @@ export const searchArticles = async ({
       workingSort: databaseSort,
       qualityFilter,
       freshnessFilter,
-      starFilter,
+      savedFilter,
       unreadFilter: unreadOnly ? true : unreadFilter,
       readFilter: unreadOnly ? null : readFilter,
-      clickedFilter,
+      openedOriginalFilter,
       seenFilter,
       hotFilter,
       status,

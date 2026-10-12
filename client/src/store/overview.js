@@ -17,9 +17,9 @@ const COUNT_FIELDS = [
   'briefingCount',
   'unreadCount',
   'readCount',
-  'favoriteCount',
+  'savedCount',
   'hotCount',
-  'clickedCount'
+  'openedOriginalCount'
 ];
 const OVERVIEW_COUNT_FIELDS = [...COUNT_FIELDS];
 const SMART_FOLDER_COUNT_REFRESH_DELAY_MS = 500;
@@ -46,9 +46,9 @@ const normalizeFeed = (feed = {}) => ({
   briefingCount: normalizeCount(feed.briefingCount),
   unreadCount: normalizeCount(feed.unreadCount),
   readCount: normalizeCount(feed.readCount),
-  favoriteCount: normalizeCount(feed.favoriteCount),
+  savedCount: normalizeCount(feed.savedCount),
   hotCount: normalizeCount(feed.hotCount),
-  clickedCount: normalizeCount(feed.clickedCount),
+  openedOriginalCount: normalizeCount(feed.openedOriginalCount),
   errorCount: normalizeCount(feed.errorCount)
 });
 
@@ -58,9 +58,9 @@ const normalizeCategory = (category = {}) => ({
   briefingCount: normalizeCount(category.briefingCount),
   unreadCount: normalizeCount(category.unreadCount),
   readCount: normalizeCount(category.readCount),
-  favoriteCount: normalizeCount(category.favoriteCount),
+  savedCount: normalizeCount(category.savedCount),
   hotCount: normalizeCount(category.hotCount),
-  clickedCount: normalizeCount(category.clickedCount),
+  openedOriginalCount: normalizeCount(category.openedOriginalCount),
   feeds: (category.feeds || []).map(normalizeFeed)
 });
 
@@ -134,9 +134,9 @@ const initialOverviewState = () => ({
   briefingCount: 0,
   unreadCount: 0,
   readCount: 0,
-  favoriteCount: 0,
+  savedCount: 0,
   hotCount: 0,
-  clickedCount: 0,
+  openedOriginalCount: 0,
   unreadsSinceLastUpdate: 0,
   currentSelectionNewArticleCount: 0,
   articleAvailabilityRevision: 0,
@@ -318,9 +318,9 @@ export const useOverviewStore = defineStore('overview', {
         briefingShowOnlyDevelopingEventArticles,
         unreadCount,
         readCount,
-        favoriteCount,
+        savedCount,
         hotCount,
-        clickedCount,
+        openedOriginalCount,
         categories
       },
       { initial = false, forceUpdate = false } = {}
@@ -342,9 +342,9 @@ export const useOverviewStore = defineStore('overview', {
       });
       this.unreadCount = unreadCount;
       this.readCount = readCount;
-      this.favoriteCount = favoriteCount;
+      this.savedCount = savedCount;
       this.hotCount = hotCount;
-      this.clickedCount = clickedCount;
+      this.openedOriginalCount = openedOriginalCount;
       this.categories = normalizeCategories(categories);
       this.articleAvailabilityRevision += 1;
       useUiStore().setChatAssistantOpen(false);
@@ -381,9 +381,9 @@ export const useOverviewStore = defineStore('overview', {
         briefingShowOnlyDevelopingEventArticles,
         unreadCount,
         readCount,
-        favoriteCount,
+        savedCount,
         hotCount,
-        clickedCount,
+        openedOriginalCount,
         categories
       },
       { initial = false, forceUpdate = false } = {}
@@ -405,9 +405,9 @@ export const useOverviewStore = defineStore('overview', {
       });
       this.unreadCount = unreadCount;
       this.readCount = readCount;
-      this.favoriteCount = favoriteCount;
+      this.savedCount = savedCount;
       this.hotCount = hotCount;
-      this.clickedCount = clickedCount;
+      this.openedOriginalCount = openedOriginalCount;
       this.categories = mergeOverviewCounts(this.categories, categories);
       this.articleAvailabilityRevision += 1;
       useUiStore().setChatAssistantOpen(false);
@@ -510,7 +510,7 @@ export const useOverviewStore = defineStore('overview', {
         this.topTagsScopeStatus = selection.status;
       }
 
-      if (!['briefing', 'unread', 'read', 'favorite', 'hot', 'clicked'].includes(selection.status)) {
+      if (!['briefing', 'unread', 'read', 'saved', 'hot', 'openedOriginal'].includes(selection.status)) {
         this.topTags = [];
         this.topTagsStatus = 'success';
         return true;
@@ -564,30 +564,30 @@ export const useOverviewStore = defineStore('overview', {
       }
     },
 
-    // This action reconciles one favorite transition across global, category, and feed counts.
-    applyFavoriteDelta({ categoryId, feedId, delta }) {
+    // This action reconciles one saved transition across global, category, and feed counts.
+    applySavedDelta({ categoryId, feedId, delta }) {
       const safeDelta = Number(delta) || 0;
       if (!safeDelta) return;
 
-      this.favoriteCount = normalizeCount(this.favoriteCount + safeDelta);
+      this.savedCount = normalizeCount(this.savedCount + safeDelta);
       const category = this.categories.find(item => idsMatch(item.id, categoryId));
       if (!category) return;
 
-      category.favoriteCount = normalizeCount(category.favoriteCount + safeDelta);
+      category.savedCount = normalizeCount(category.savedCount + safeDelta);
       const feed = category.feeds.find(item => idsMatch(item.id, feedId));
       if (feed) {
-        feed.favoriteCount = normalizeCount(feed.favoriteCount + safeDelta);
+        feed.savedCount = normalizeCount(feed.savedCount + safeDelta);
       }
     },
 
-    // This compatibility action changes only the global favorite total.
-    increaseFavoriteCount() {
-      this.favoriteCount = normalizeCount(this.favoriteCount + 1);
+    // This compatibility action changes only the global saved total.
+    increaseSavedCount() {
+      this.savedCount = normalizeCount(this.savedCount + 1);
     },
 
-    // This compatibility action changes only the global favorite total.
-    decreaseFavoriteCount() {
-      this.favoriteCount = normalizeCount(this.favoriteCount - 1);
+    // This compatibility action changes only the global saved total.
+    decreaseSavedCount() {
+      this.savedCount = normalizeCount(this.savedCount - 1);
     },
 
     // This action adds a normalized category returned by the API.

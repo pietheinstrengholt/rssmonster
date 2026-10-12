@@ -29,7 +29,7 @@ They update automatically as new articles arrive.
 3. (Optional) Set `limitCount` to cap results (50 by default).
 4. Save. The folder updates itself as content changes.
 
-Use the same tokens as the search bar: status (`unread:true`, `favorite:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), quality (`quality:>0.7`), freshness (`freshness:>=0.5`), event grouping (`event:true`, `eventCount:>=3`), hot items (`hot:true`), and sorts.
+Use the same tokens as the search bar: status (`unread:true`, `saved:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), quality (`quality:>0.7`), freshness (`freshness:>=0.5`), event grouping (`event:true`, `eventCount:>=3`), hot items (`hot:true`), and sorts.
 
 ## Save an existing search as a Smart Folder
 
@@ -82,5 +82,5 @@ of today's list: its results update as articles arrive or their state changes.
 ---
 
 ## AI Suggestions (Optional)
-- When an OpenAI or Qwen generation provider is configured in the inference service, RSSMonster can propose Smart Folders from your reading patterns (feeds, tags, starred items).
+- When an OpenAI or Qwen generation provider is configured in the inference service, RSSMonster can propose Smart Folders from your reading patterns (feeds, tags, saved items).
 - Suggestions follow the same search syntax and avoid duplicating your existing folders.

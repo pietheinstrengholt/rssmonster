@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { articleStateActions } from '../src/services/articleStateActions.js';
 import { offlineDatabase } from '../src/services/offlineDatabase.js';
-import { markArticleSeen, markArticleUnread, markAsFavorite, markArticlesAsRead } from '../src/api/articles.js';
+import { markArticleSeen, markArticleUnread, markAsSaved, markArticlesAsRead } from '../src/api/articles.js';
 import api from '../src/api/client.js';
 vi.mock('../src/api/client.js', () => ({ default: { post: vi.fn() }, API_BASE_URL: 'https://reader.example/api' }));
-const article = { id: 42, status: 'unread', favoriteInd: 0, feedId: 2, feed: { categoryId: 1 } };
+const article = { id: 42, status: 'unread', savedInd: 0, feedId: 2, feed: { categoryId: 1 } };
 afterEach(() => { articleStateActions.clearSession(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const offline = () => {
   vi.stubGlobal('indexedDB', {});
@@ -12,16 +12,16 @@ const offline = () => {
   return vi.spyOn(offlineDatabase, 'enqueueActions').mockResolvedValue([]);
 };
 describe('offline interaction API integration', () => {
-  it('persists read/unread and favorite/unfavorite with metadata before returning visible state', async () => {
+  it('persists read/unread and saved/unsaved with metadata before returning visible state', async () => {
     const enqueue = offline();
     expect((await markArticleSeen(42, { markRead: true, recordObservation: true, visibleSeconds: 200, grouping: 'event' }, article)).data.status).toBe('read');
     expect((await markArticleUnread(42, article)).data.status).toBe('unread');
-    expect((await markAsFavorite(42, 'mark', article)).data.favoriteInd).toBe(1);
-    expect((await markAsFavorite(42, 'unmark', article)).data.favoriteInd).toBe(0);
+    expect((await markAsSaved(42, 'mark', article)).data.savedInd).toBe(1);
+    expect((await markAsSaved(42, 'unmark', article)).data.savedInd).toBe(0);
     expect(api.post).not.toHaveBeenCalled();
     expect(enqueue.mock.calls.map(call => call[1][0])).toEqual([
       expect.objectContaining({ kind: 'set-status', value: 'read' }), expect.objectContaining({ kind: 'set-status', value: 'unread' }),
-      expect.objectContaining({ kind: 'set-favorite', value: true }), expect.objectContaining({ kind: 'set-favorite', value: false })
+      expect.objectContaining({ kind: 'set-saved', value: true }), expect.objectContaining({ kind: 'set-saved', value: false })
     ]);
     expect(enqueue.mock.calls[0][1][0]).not.toHaveProperty('visibleSeconds');
   });
@@ -41,9 +41,9 @@ it('preserves the existing online endpoint for a duplicate row while reconciling
   vi.spyOn(offlineDatabase, 'acquireLease').mockResolvedValue({ owner: 'test', epoch: 0 });
   vi.spyOn(offlineDatabase, 'releaseLease').mockResolvedValue();
   const patch = vi.spyOn(offlineDatabase, 'reconcileArticles').mockResolvedValue(true);
-  api.post.mockResolvedValue({ data: { ...article, duplicateOfArticleId: 10, favoriteInd: 1 } });
-  await markAsFavorite(42, 'mark', { ...article, duplicateOfArticleId: 10 });
-  expect(api.post).toHaveBeenCalledWith('/articles/markasfavorite/42', { update: 'mark' });
+  api.post.mockResolvedValue({ data: { ...article, duplicateOfArticleId: 10, savedInd: 1 } });
+  await markAsSaved(42, 'mark', { ...article, duplicateOfArticleId: 10 });
+  expect(api.post).toHaveBeenCalledWith('/articles/mark-saved/42', { update: 'mark' });
   expect(enqueue).not.toHaveBeenCalled(); expect(patch).toHaveBeenCalledOnce();
 });
 

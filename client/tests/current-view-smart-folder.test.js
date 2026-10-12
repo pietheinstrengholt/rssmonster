@@ -101,7 +101,7 @@ describe('current view draft', () => {
 });
 describe('save current view', () => {
   beforeEach(() => { selection.setSelectedSearch('title:news'); });
-  it.each(['unread', 'favorite', 'hot', 'read', 'briefing', 'clicked'])('hides for the %s sidebar selection', async status => {
+  it.each(['unread', 'saved', 'hot', 'read', 'briefing', 'openedOriginal'])('hides for the %s sidebar selection', async status => {
     render();
     selection.setSelectedStatus(status); await flushPromises();
     expect(button('Save as smart folder')).toBeUndefined();

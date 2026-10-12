@@ -33,18 +33,18 @@ describe('My interests read API', () => {
     await foreign.island({ label: 'Private' });
     const lastBehaviorAt = new Date(Math.floor(Date.now() / 1000) * 1000 - 60000);
     const positive = await owner.island({ generatedLabel: 'Generated', lastBehaviorAt,
-      positiveSignals: { stars: 2, clicks: 4, deepReads: 3, positives: 1 },
+      positiveSignals: { saves: 2, openedOriginals: 4, deepReads: 3, positives: 1 },
       islandVector: [1, 0], embedding_model: 'private-model', populationAudit: [{ private: true }] });
-    const negative = await owner.island({ weight: -0.8, positiveSignals: { negatives: 2, stars: 1 } });
+    const negative = await owner.island({ weight: -0.8, positiveSignals: { negatives: 2, saves: 1 } });
     const legacy = await owner.island({ weight: -0.2 });
     const neutral = await owner.island({ weight: 0, generatedLabel: '   ' });
     const response = await owner.get('');
     expect(response.status).toBe(200);
     expect(response.body.summary).toMatchObject({ total: 4, positive: 1, negative: 2, neutral: 1 });
     const byId = new Map(response.body.interests.map(row => [Number(row.id), row]));
-    expect(byId.get(positive.id)).toEqual({ id: positive.id, name: 'Generated', polarity: 'positive', weight: 0.5,
+    expect(byId.get(positive.id)).toMatchObject({ id: positive.id, name: 'Generated', polarity: 'positive', weight: 0.5,
       evidenceStrength: 50, lastActivityAt: lastBehaviorAt.toISOString(), lifecycle: 'active', muted: false,
-      evidence: { favorites: 2, clicks: 4, deepReads: 3 } });
+      evidence: { saved: 2, openedOriginals: 4, deepReads: 3 } });
     expect(byId.get(negative.id)).toMatchObject({ name: 'Interest', polarity: 'negative', evidenceStrength: 80, evidence: { negativeFeedback: 2 } });
     expect(byId.get(legacy.id)).not.toHaveProperty('evidence');
     expect(byId.get(neutral.id)).toMatchObject({ name: 'Interest', polarity: 'neutral', evidenceStrength: 0 });

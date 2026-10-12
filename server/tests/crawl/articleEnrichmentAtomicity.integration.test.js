@@ -29,8 +29,8 @@ const analysis = {
 const actionResult = {
   shouldDiscard: false,
   status: 'unread',
-  favoriteInd: false,
-  clickedAmount: 0,
+  savedInd: false,
+  openedOriginalCount: 0,
   hotInd: false,
   tags: [],
   advertisementScore: null,
@@ -151,8 +151,8 @@ describe('article enrichment transaction atomicity', () => {
     const clock = new Date('2026-08-28T12:00:00Z');
     const retained = { eventId: event.id, aiAnalysisCompletedAt: clock, aiAnalysisProvenance: null,
       articleVector: [1, 0], embedding_model: 'test-model', interestScore: 0.5,
-      status: 'read', readAt: clock, favoriteInd: 1, favoritedAt: clock,
-      clickedAmount: 2, lastClickedAt: clock, positiveInd: 1, positiveFeedbackAt: clock,
+      status: 'read', readAt: clock, savedInd: 1, savedAt: clock,
+      openedOriginalCount: 2, lastOpenedOriginalAt: clock, positiveInd: 1, positiveFeedbackAt: clock,
       negativeInd: 0, negativeFeedbackAt: null, firstSeen: clock,
       attentionBucket: 3, lastMeaningfulReadAt: clock, interestScoredAt: clock };
     await article.update(retained);

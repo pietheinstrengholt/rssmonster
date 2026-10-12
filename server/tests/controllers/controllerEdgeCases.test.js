@@ -274,12 +274,12 @@ describe('RSS controller edge cases', () => {
 
     await rssController.generateRss(
       createRequest({
-        originalUrl: '/rss?feedId=9&categoryId=3&limit=500&starred=true&unread=true',
+        originalUrl: '/rss?feedId=9&categoryId=3&limit=500&saved=true&unread=true',
         query: {
           categoryId: '3',
           feedId: '9',
           limit: '500',
-          starred: 'true',
+          saved: 'true',
           unread: 'true'
         }
       }),
@@ -289,7 +289,7 @@ describe('RSS controller edge cases', () => {
 
     expect(mocked.articleFindAll).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({
-        favoriteInd: 1,
+        savedInd: 1,
         feedId: '9',
         status: 'unread',
         userId: 42
@@ -303,7 +303,7 @@ describe('RSS controller edge cases', () => {
     expect(res.set).toHaveBeenCalledWith('Content-Type', 'application/rss+xml');
     expect(res.set).toHaveBeenCalledWith(
       'Content-Location',
-      'https://rss.example.test/rss?feedId=9&categoryId=3&limit=500&starred=true&unread=true'
+      'https://rss.example.test/rss?feedId=9&categoryId=3&limit=500&saved=true&unread=true'
     );
     expect(res.send.mock.calls[0][0]).toContain('<title>No title</title>');
     expect(res.send.mock.calls[0][0]).toContain('Fallback content');

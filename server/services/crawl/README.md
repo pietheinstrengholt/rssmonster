@@ -450,7 +450,7 @@ false while preserving retained analysis. Source-only revisions that do not reru
 actions preserve the existing filteredInd state.
 
 Provider, feed, and rule tags may be reconciled during updates; inferred tags retain their analysis provenance.
-Null or unknown tag types are treated as manual and are preserved. Existing read, favorite,
+Null or unknown tag types are treated as manual and are preserved. Existing read, saved,
 click, and attention state is also preserved because action-versus-user provenance is not stored.
 
 ---
@@ -624,7 +624,7 @@ Rules may:
 
 - set filteredInd to true, so articles are hidden from normal queries and skipped for AI enrichment. In the front-end this is called discard.
 - mark read
-- favorite
+- saved
 - add tags
 - adjust scores
 

@@ -27,7 +27,7 @@ over duplicating production formulas.
 Keep tests small and focused. Use minimal fixtures and factories with overrides.
 
 ```js
-createArticle({ favorite: true, positiveInd: 3 });
+createArticle({ saved: true, positiveInd: 3 });
 ```
 
 Use short behavioral names:

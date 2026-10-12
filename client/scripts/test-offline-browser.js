@@ -14,6 +14,7 @@ try {
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(`${process.env.READING_TEST_BASE_URL || 'http://localhost:8080'}/tests/browser/offline.html`);
   await page.waitForFunction(() => Boolean(window.testOfflineDatabase));
+  console.log(await page.evaluate(() => window.testOfflineContractMigration()));
   console.log(await page.evaluate(() => window.testOfflineDatabase()));
   assert.deepEqual(errors, []);
   const secondTab = await page.context().newPage();
@@ -57,7 +58,7 @@ try {
     appPage.on('pageerror', error => appErrors.push(error.message));
     const dto = { id: 41, title: 'Offline browser article', publishedAt: '2026-10-01T12:00:00Z',
       content: '<p>Full article body available after an offline cold reload.</p>', contentText: 'Full article body available after an offline cold reload.',
-      status: 'unread', favoriteInd: 1, feedId: 2, feed: { id: 2, categoryId: 1, name: 'Browser feed' }, tags: [] };
+      status: 'unread', savedInd: 1, feedId: 2, feed: { id: 2, categoryId: 1, name: 'Browser feed' }, tags: [] };
     const receipts = new Map();
     let invalid = false;
     let offline = false;
@@ -77,7 +78,7 @@ try {
         const results = actions.map(action => {
           if (receipts.has(action.actionId)) return { actionId: action.actionId, outcome: 'duplicate' };
           if (action.kind === 'set-status') dto.status = action.value;
-          else dto.favoriteInd = Number(action.value);
+          else dto.savedInd = Number(action.value);
           receipts.set(action.actionId, action);
           return { actionId: action.actionId, outcome: 'applied' };
         });
@@ -170,7 +171,7 @@ try {
     }, initialGeneration);
     await appPage.waitForFunction(() => window.offlineRecoveryReady);
     assert.equal(await queuedCount(), 0, 'recovery durably acknowledges pending changes');
-    assert.equal(dto.status, 'read'); assert.equal(dto.favoriteInd, 0);
+    assert.equal(dto.status, 'read'); assert.equal(dto.savedInd, 0);
     assert.equal(receipts.size, 2, 'server effects occur once');
     assert.equal(snapshotRefreshes, 1, `recovery refreshes exactly once: ${JSON.stringify(articleQueries)}`);
     await appPage.getByRole('button', { name: 'Open settings', exact: true }).click();

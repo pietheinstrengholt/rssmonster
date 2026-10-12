@@ -98,7 +98,7 @@ describe('island profile persistence', () => {
   });
 
   it('updates a semantic match with snapshot signals from behavioral evidence', async () => {
-    const island = existingIsland({ positiveSignals: { stars: 1 } });
+    const island = existingIsland({ positiveSignals: { saves: 1 } });
     mocks.islandFindAll.mockResolvedValue([island]);
 
     const result = await persistInterestIslandProfiles(3, [{
@@ -106,13 +106,13 @@ describe('island profile persistence', () => {
       weight: 0.8,
       label: 'Updated',
       articles: [{ articleId: 5, score: 4 }],
-      positiveSignals: { positives: 1, stars: 2, clicks: 1, negatives: 1 }
+      positiveSignals: { positives: 1, saves: 2, openedOriginals: 1, negatives: 1 }
     }], 'tx');
 
     expect(island.update).toHaveBeenCalledWith(expect.objectContaining({
       label: 'Updated',
       weight: 0.8,
-      positiveSignals: expect.objectContaining({ positives: 1, stars: 2, clicks: 1, negatives: 1 })
+      positiveSignals: expect.objectContaining({ positives: 1, saves: 2, openedOriginals: 1, negatives: 1 })
     }), { transaction: 'tx' });
     expect(result.summary).toMatchObject({
       updatedIslandCount: 1,
@@ -121,19 +121,19 @@ describe('island profile persistence', () => {
     });
   });
 
-  it('replaying full profiles preserves counters while genuine new clicks are reflected', async () => {
+  it('replaying full profiles preserves counters while genuine new openedOriginals are reflected', async () => {
     const island = existingIsland();
     mocks.islandFindAll.mockResolvedValue([island]);
 
-    const profile = { embedding_model: 'test-model', vector: [1, 0], weight: 0.6, label: 'Local AI', articles: [{ articleId: 8, score: 6 }], positiveSignals: { stars: 1, clicks: 1 } };
+    const profile = { embedding_model: 'test-model', vector: [1, 0], weight: 0.6, label: 'Local AI', articles: [{ articleId: 8, score: 6 }], positiveSignals: { saves: 1, openedOriginals: 1 } };
     await persistInterestIslandProfiles(3, [profile], 'tx');
     const first = structuredClone(island.positiveSignals);
     await persistInterestIslandProfiles(3, [profile], 'tx');
     await persistInterestIslandProfiles(3, [profile], 'tx');
     expect(island.positiveSignals).toEqual(first);
-    expect(island.positiveSignals).toMatchObject({ stars: 1, clicks: 1 });
-    await persistInterestIslandProfiles(3, [{ ...profile, positiveSignals: { stars: 1, clicks: 2 } }], 'tx');
-    expect(island.positiveSignals).toMatchObject({ stars: 1, clicks: 2 });
+    expect(island.positiveSignals).toMatchObject({ saves: 1, openedOriginals: 1 });
+    await persistInterestIslandProfiles(3, [{ ...profile, positiveSignals: { saves: 1, openedOriginals: 2 } }], 'tx');
+    expect(island.positiveSignals).toMatchObject({ saves: 1, openedOriginals: 2 });
   });
 
   it.each([false, true])('resolves a matched label against archived history (matched archive state: %s)', async archivedInd => {
@@ -141,7 +141,7 @@ describe('island profile persistence', () => {
     const matched = existingIsland({ id: 9, label: 'Previous', archivedInd });
     mocks.islandFindAll.mockResolvedValue([history, matched]);
     const profile = { embedding_model: 'test-model', vector: [1, 0], weight: 0.6,
-      label: 'Local AI', articles: [{ articleId: 8, score: 6 }], positiveSignals: { stars: 1 } };
+      label: 'Local AI', articles: [{ articleId: 8, score: 6 }], positiveSignals: { saves: 1 } };
     await persistInterestIslandProfiles(3, [profile], 'tx');
     expect(matched.label).toBe('Local AI (2)');
     expect(matched.id).toBe(9);
@@ -180,7 +180,7 @@ describe('island profile persistence', () => {
       weight: 0.7,
       label: 'AI',
       articles: [{ articleId: 1, score: 1 }],
-      positiveSignals: { stars: 1 }
+      positiveSignals: { saves: 1 }
     }], 'tx');
 
     expect(mocks.islandCreate).toHaveBeenCalledWith(expect.objectContaining({ label: 'AI (2)', userId: 3 }), { transaction: 'tx' });
@@ -235,7 +235,7 @@ describe('island profile persistence', () => {
       weight: 0.5,
       label: 'Behavioral',
       articles: [{ articleId: 12, score: 2 }],
-      positiveSignals: { clicks: 1 }
+      positiveSignals: { openedOriginals: 1 }
     }], 'tx');
 
     expect(result.summary).toMatchObject({
@@ -246,9 +246,9 @@ describe('island profile persistence', () => {
   it('describes each article engagement signal while updating distinct islands', async () => {
     const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
     const signals = [
-      { stars: 1 },
+      { saves: 1 },
       { positives: 1 },
-      { clicks: 1 },
+      { openedOriginals: 1 },
       { negatives: 1 },
       {}
     ];
@@ -271,9 +271,9 @@ describe('island profile persistence', () => {
     expect(result.summary.updatedIslandCount).toBe(5);
     expect(consoleLog.mock.calls.map(([message]) => message)).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('engagement=star'),
+        expect.stringContaining('engagement=saved'),
         expect.stringContaining('engagement=positive'),
-        expect.stringContaining('engagement=click'),
+        expect.stringContaining('engagement=opened-original'),
         expect.stringContaining('engagement=negative'),
         expect.stringContaining('engagement=behavior')
       ])

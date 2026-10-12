@@ -1,3 +1,4 @@
+import { canonicalArticleStatus } from '../utils/articleStateContract.js';
 import { getInferenceEnvironment } from '../services/inference/runtimeConfiguration.js';
 import { isActiveIsland, islandExpiresAt } from '../services/islands/islandDeadline.js';
 import { loadSidebarSettings } from '../services/sidebarSettings.js';
@@ -317,7 +318,7 @@ export const getSettings = async (req, res, _next) => {
       if (startupViewMode === 'last-used') {
         categoryId = settings.categoryId;
         feedId = settings.feedId;
-        status = settings.status;
+        status = canonicalArticleStatus(settings.status);
         sort = settings.sort;
         viewMode = settings.viewMode || 'full';
         grouping = settings.grouping || 'none';
@@ -709,13 +710,13 @@ export const getIslandsOverview = async (req, res, _next) => {
         populationAudit.flatMap(entry => {
           const source = entry?.sourceArticles || {};
           const auditArticleIds = Array.isArray(entry?.articleIds) ? entry.articleIds : [];
-          const starred = Array.isArray(source.starredArticleIds) ? source.starredArticleIds : [];
-          const clicked = Array.isArray(source.clickedArticleIds) ? source.clickedArticleIds : [];
+          const saved = Array.isArray(source.savedArticleIds) ? source.savedArticleIds : [];
+          const openedOriginal = Array.isArray(source.openedOriginalArticleIds) ? source.openedOriginalArticleIds : [];
           const negative = Array.isArray(source.negativeArticleIds) ? source.negativeArticleIds : [];
           const articles = Array.isArray(source.articles) ? source.articles.map(article => article.id) : [];
           const positive = Array.isArray(source.positiveArticleIds) ? source.positiveArticleIds : [];
           const meaningfulRead = Array.isArray(source.meaningfulReadArticleIds) ? source.meaningfulReadArticleIds : [];
-          return [...auditArticleIds, ...starred, ...clicked, ...negative, ...positive, ...meaningfulRead, ...articles]
+          return [...auditArticleIds, ...saved, ...openedOriginal, ...negative, ...positive, ...meaningfulRead, ...articles]
             .map(Number)
             .filter(Number.isFinite);
         })
@@ -743,8 +744,8 @@ export const getIslandsOverview = async (req, res, _next) => {
           a.title,
           a.url,
           a.publishedAt,
-          a.favoriteInd,
-          a.clickedAmount,
+          a.savedInd,
+          a.openedOriginalCount,
           a.positiveInd,
           a.attentionBucket,
           a.negativeInd,
@@ -779,18 +780,18 @@ export const getIslandsOverview = async (req, res, _next) => {
       const { populationAudit, populationSourceArticleIds } = auditByIslandId.get(islandId);
 
       const sourceArticleSnapshots = new Map();
-      const historicalStarredIds = new Set();
-      const historicalClickedIds = new Set();
+      const historicalSavedIds = new Set();
+      const historicalOpenedOriginalIds = new Set();
       const historicalNegativeIds = new Set();
       const historicalPositiveIds = new Set();
       const historicalMeaningfulReadIds = new Set();
       for (const entry of populationAudit) {
         const source = entry?.sourceArticles || {};
-        for (const articleId of Array.isArray(source.starredArticleIds) ? source.starredArticleIds : []) {
-          historicalStarredIds.add(Number(articleId));
+        for (const articleId of Array.isArray(source.savedArticleIds) ? source.savedArticleIds : []) {
+          historicalSavedIds.add(Number(articleId));
         }
-        for (const articleId of Array.isArray(source.clickedArticleIds) ? source.clickedArticleIds : []) {
-          historicalClickedIds.add(Number(articleId));
+        for (const articleId of Array.isArray(source.openedOriginalArticleIds) ? source.openedOriginalArticleIds : []) {
+          historicalOpenedOriginalIds.add(Number(articleId));
         }
         for (const articleId of Array.isArray(source.negativeArticleIds) ? source.negativeArticleIds : []) {
           historicalNegativeIds.add(Number(articleId));
@@ -809,8 +810,8 @@ export const getIslandsOverview = async (req, res, _next) => {
           sourceArticleSnapshots.set(articleId, {
             positiveInd: Math.max(Number(previous.positiveInd || 0), Number(article.positiveInd || 0)),
             attentionBucket: Math.max(Number(previous.attentionBucket || 0), Number(article.attentionBucket || 0)),
-            favoriteInd: Math.max(Number(previous.favoriteInd || 0), Number(article.favoriteInd || 0)),
-            clickedAmount: Math.max(Number(previous.clickedAmount || 0), Number(article.clickedAmount || 0)),
+            savedInd: Math.max(Number(previous.savedInd || 0), Number(article.savedInd || 0)),
+            openedOriginalCount: Math.max(Number(previous.openedOriginalCount || 0), Number(article.openedOriginalCount || 0)),
             negativeInd: Math.max(Number(previous.negativeInd || 0), Number(article.negativeInd || 0))
           });
         }
@@ -821,17 +822,17 @@ export const getIslandsOverview = async (req, res, _next) => {
         const articleId = Number(article.id);
         const snapshot = sourceArticleSnapshots.get(articleId) || {};
         const evidence = [];
-        const clickedAmount = Math.max(Number(article.clickedAmount || 0), Number(snapshot.clickedAmount || 0));
+        const openedOriginalCount = Math.max(Number(article.openedOriginalCount || 0), Number(snapshot.openedOriginalCount || 0));
 
         if (Number(article.positiveInd || 0) === 1 || Number(snapshot.positiveInd || 0) === 1 || historicalPositiveIds.has(articleId)) evidence.push({ type: 'positive', label: 'Positive feedback' });
-        if (Number(article.favoriteInd || 0) === 1 || Number(snapshot.favoriteInd || 0) === 1 || historicalStarredIds.has(articleId)) {
-          evidence.push({ type: 'favorite', label: 'Favorite' });
+        if (Number(article.savedInd || 0) === 1 || Number(snapshot.savedInd || 0) === 1 || historicalSavedIds.has(articleId)) {
+          evidence.push({ type: 'saved', label: 'Saved' });
         }
-        if (clickedAmount > 0 || historicalClickedIds.has(articleId)) {
-          const clickLabel = clickedAmount > 0
-            ? `${clickedAmount} ${clickedAmount === 1 ? 'click' : 'clicks'}`
-            : 'Clicked';
-          evidence.push({ type: 'click', label: clickLabel });
+        if (openedOriginalCount > 0 || historicalOpenedOriginalIds.has(articleId)) {
+          const openedOriginalLabel = openedOriginalCount > 0
+            ? `${openedOriginalCount} ${openedOriginalCount === 1 ? 'opened original' : 'opened originals'}`
+            : 'Opened original';
+          evidence.push({ type: 'openedOriginal', label: openedOriginalLabel });
         }
         if (Number(article.attentionBucket || 0) >= 3 || Number(snapshot.attentionBucket || 0) >= 3 || historicalMeaningfulReadIds.has(articleId)) evidence.push({ type: 'deepRead', label: 'Deep read' });
         if (Number(article.negativeInd || 0) === 1 || Number(snapshot.negativeInd || 0) === 1 || historicalNegativeIds.has(articleId)) {

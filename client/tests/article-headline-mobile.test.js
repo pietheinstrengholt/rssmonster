@@ -171,30 +171,30 @@ describe('mobile Headlines', () => {
     expect(wrapper.get('button[aria-label="Article actions"]').exists()).toBe(true);
   });
 
-  it('keeps contextual favorites in the menu without a separate row button', async () => {
+  it('keeps contextual saved in the menu without a separate row button', async () => {
     const wrapper = mountRow();
     expect(wrapper.find('button[aria-label="Save article"]').exists()).toBe(false);
     const menu = wrapper.get('button[aria-label="Article actions"]');
     await menu.trigger('click');
-    const favorite = () => wrapper.findAll('[role="menuitem"]').find(item => /^(Save article|Remove from saved)$/.test(item.text()));
-    expect(favorite().text()).toBe('Save article');
-    await favorite().trigger('click');
-    expect(wrapper.emitted('toggle-favorite')).toHaveLength(1);
-    await wrapper.setProps({ favoriteInd: 1, favoritePending: true });
+    const saved = () => wrapper.findAll('[role="menuitem"]').find(item => /^(Save article|Remove from saved)$/.test(item.text()));
+    expect(saved().text()).toBe('Save article');
+    await saved().trigger('click');
+    expect(wrapper.emitted('toggle-saved')).toHaveLength(1);
+    await wrapper.setProps({ savedInd: 1, savedPending: true });
     await menu.trigger('click');
-    expect(favorite().text()).toBe('Remove from saved');
-    expect(favorite().attributes('disabled')).toBeDefined();
+    expect(saved().text()).toBe('Remove from saved');
+    expect(saved().attributes('disabled')).toBeDefined();
     expect(wrapper.text()).toContain('More like this');
-    await wrapper.setProps({ favoritePending: false });
-    await favorite().trigger('click');
-    expect(wrapper.emitted('toggle-favorite')).toHaveLength(2);
+    await wrapper.setProps({ savedPending: false });
+    await saved().trigger('click');
+    expect(wrapper.emitted('toggle-saved')).toHaveLength(2);
   });
 
-  it('uses the existing favorite API and updates the contextual menu after each toggle', async () => {
+  it('uses the existing saved API and updates the contextual menu after each toggle', async () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
-    const favoriteApi = vi.spyOn(articleApi, 'markAsFavorite')
-      .mockResolvedValueOnce({ data: { favoriteInd: 1 } })
-      .mockResolvedValueOnce({ data: { favoriteInd: 0 } });
+    const savedApi = vi.spyOn(articleApi, 'markAsSaved')
+      .mockResolvedValueOnce({ data: { savedInd: 1 } })
+      .mockResolvedValueOnce({ data: { savedInd: 0 } });
     const stores = createFocusedStores({
       overview: { categories: [] },
       selection: { currentSelection: { viewMode: 'minimal', grouping: 'none' } }
@@ -202,7 +202,7 @@ describe('mobile Headlines', () => {
     const wrapper = mount(Article, {
       props: {
         id: 42, title: 'A headline', contentText: 'Article text', feed: { feedName: 'A source' },
-        onUpdateFavorite: ({ favoriteInd }) => wrapper.setProps({ favoriteInd })
+        onUpdateSaved: ({ savedInd }) => wrapper.setProps({ savedInd })
       },
       global: { plugins: [stores.pinia] }
     });
@@ -212,8 +212,8 @@ describe('mobile Headlines', () => {
       await wrapper.findAll('[role="menuitem"]').find(item => item.text() === label).trigger('click');
       await flushPromises();
     }
-    expect(favoriteApi.mock.calls.map(call => call.slice(0, 2))).toEqual([[42, 'mark'], [42, 'unmark']]);
-    expect(wrapper.emitted('update-favorite')).toEqual([[{ id: 42, favoriteInd: 1 }], [{ id: 42, favoriteInd: 0 }]]);
+    expect(savedApi.mock.calls.map(call => call.slice(0, 2))).toEqual([[42, 'mark'], [42, 'unmark']]);
+    expect(wrapper.emitted('update-saved')).toEqual([[{ id: 42, savedInd: 1 }], [{ id: 42, savedInd: 0 }]]);
     expect(wrapper.emitted('minimal-article-opened')).toBeUndefined();
   });
 
@@ -232,9 +232,9 @@ describe('mobile Headlines', () => {
     const wrapper = mountRow({ isMobilePortrait: false, imageUrl, tags: [{ id: 1, name: 'OpenAI', tagType: 'rule' }] });
     expect(wrapper.get('button[aria-label="Filter articles by tag Openai"]').exists()).toBe(true);
     expect(wrapper.find('img').exists()).toBe(false);
-    const favorite = wrapper.get('button[aria-label="Save article"]');
+    const saved = wrapper.get('button[aria-label="Save article"]');
     const menu = wrapper.get('button[aria-label="Article actions"]');
-    expect(menu.element.compareDocumentPosition(favorite.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(menu.element.compareDocumentPosition(saved.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('shows the summarized lead image on desktop', () => {

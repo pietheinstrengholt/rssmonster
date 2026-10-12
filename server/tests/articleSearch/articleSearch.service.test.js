@@ -151,16 +151,16 @@ describe('articleSearch.service', () => {
       qualityScore: 70
     });
 
-    articles.starred = await Article.create({
+    articles.saved = await Article.create({
       userId: user.id,
       feedId: feed.id,
-      url: 'https://example.com/article-starred',
+      url: 'https://example.com/article-saved',
       title: 'Rust Memory Safety Guide',
       description: 'Understanding memory safety in Rust programming language.',
       contentOriginal: '<p>Rust provides memory safety without garbage collection through its ownership system.</p>',
       contentHtml: 'Rust provides memory safety without garbage collection through its ownership system.',
       status: 'read',
-      favoriteInd: 1,
+      savedInd: 1,
       firstSeen: hoursAgo(23),
       publishedAt: hoursAgo(24),
       advertisementScore: 95,
@@ -168,16 +168,16 @@ describe('articleSearch.service', () => {
       qualityScore: 90
     });
 
-    articles.clicked = await Article.create({
+    articles.openedOriginal = await Article.create({
       userId: user.id,
       feedId: feed.id,
-      url: 'https://example.com/article-clicked',
+      url: 'https://example.com/article-opened-original',
       title: 'Docker Container Best Practices',
       description: 'Best practices for Docker containers in production.',
       contentOriginal: '<p>Learn the best practices for running Docker containers in production environments.</p>',
       contentHtml: 'Learn the best practices for running Docker containers in production environments.',
       status: 'read',
-      clickedAmount: 3,
+      openedOriginalCount: 3,
       publishedAt: hoursAgo(48),
       advertisementScore: 80,
       sentimentScore: 75,
@@ -218,8 +218,8 @@ describe('articleSearch.service', () => {
     // ---- Tags ----
     await Tag.create({ articleId: articles.recent.id, userId: user.id, name: 'javascript' });
     await Tag.create({ articleId: articles.recent.id, userId: user.id, name: 'framework' });
-    await Tag.create({ articleId: articles.starred.id, userId: user.id, name: 'rust' });
-    await Tag.create({ articleId: articles.clicked.id, userId: user.id, name: 'docker' });
+    await Tag.create({ articleId: articles.saved.id, userId: user.id, name: 'rust' });
+    await Tag.create({ articleId: articles.openedOriginal.id, userId: user.id, name: 'docker' });
   });
 
   it.each([null, { pageSize: 1 }])('filters newer unread IDs within the selected feed and text scope (%j)', async pagination => {
@@ -275,9 +275,9 @@ describe('articleSearch.service', () => {
       expect(result.itemIds).toContain(articles.recent.id);
       expect(result.itemIds).toContain(articles.old.id);
       expect(result.itemIds).toContain(articles.lowQuality.id);
-      // starred and clicked are read
-      expect(result.itemIds).not.toContain(articles.starred.id);
-      expect(result.itemIds).not.toContain(articles.clicked.id);
+      // saved and openedOriginal are read
+      expect(result.itemIds).not.toContain(articles.saved.id);
+      expect(result.itemIds).not.toContain(articles.openedOriginal.id);
       expect(result.itemIds).not.toContain(articles.discarded.id);
     });
 
@@ -291,15 +291,15 @@ describe('articleSearch.service', () => {
       expect(result.itemIds).not.toContain(articles.discarded.id);
     });
 
-    it('returns favorite articles when status is favorite', async () => {
-      const result = await searchArticles({ userId: user.id, status: 'favorite' });
-      expect(result.itemIds).toContain(articles.starred.id);
+    it('returns saved articles when status is saved', async () => {
+      const result = await searchArticles({ userId: user.id, status: 'saved' });
+      expect(result.itemIds).toContain(articles.saved.id);
       expect(result.itemIds.length).toBe(1);
     });
 
-    it('keeps legacy star status as a favorite alias', async () => {
+    it('keeps legacy star status as a saved alias', async () => {
       const result = await searchArticles({ userId: user.id, status: 'star' });
-      expect(result.itemIds).toContain(articles.starred.id);
+      expect(result.itemIds).toContain(articles.saved.id);
       expect(result.itemIds.length).toBe(1);
     });
 
@@ -382,7 +382,7 @@ describe('articleSearch.service', () => {
 
     it('searches with quoted exact phrase', async () => {
       const result = await searchArticles({ userId: user.id, search: '"memory safety"', status: '%' });
-      expect(result.itemIds).toContain(articles.starred.id);
+      expect(result.itemIds).toContain(articles.saved.id);
       expect(result.itemIds).not.toContain(articles.recent.id);
     });
 
@@ -441,7 +441,7 @@ describe('articleSearch.service', () => {
 
     it('combines title: filter with text search', async () => {
       const result = await searchArticles({ userId: user.id, search: 'title:Docker', status: '%' });
-      expect(result.itemIds).toContain(articles.clicked.id);
+      expect(result.itemIds).toContain(articles.openedOriginal.id);
       expect(result.itemIds).not.toContain(articles.recent.id);
     });
 
@@ -495,56 +495,56 @@ describe('articleSearch.service', () => {
   // ============================
 
   describe('field filters', () => {
-    it('filters by favorite:true', async () => {
-      const result = await searchArticles({ userId: user.id, search: 'favorite:true' });
-      expect(result.itemIds).toContain(articles.starred.id);
+    it('filters by saved:true', async () => {
+      const result = await searchArticles({ userId: user.id, search: 'saved:true' });
+      expect(result.itemIds).toContain(articles.saved.id);
       result.itemIds.forEach(id => {
-        expect(id).toBe(articles.starred.id);
+        expect(id).toBe(articles.saved.id);
       });
     });
 
-    it('keeps legacy star:true as a favorite alias', async () => {
+    it('keeps legacy star:true as a saved alias', async () => {
       const result = await searchArticles({ userId: user.id, search: 'star:true' });
-      expect(result.itemIds).toContain(articles.starred.id);
+      expect(result.itemIds).toContain(articles.saved.id);
     });
 
     it('filters by unread:true', async () => {
       const result = await searchArticles({ userId: user.id, search: 'unread:true' });
       expect(result.itemIds).toContain(articles.recent.id);
-      expect(result.itemIds).not.toContain(articles.starred.id);
-      expect(result.itemIds).not.toContain(articles.clicked.id);
+      expect(result.itemIds).not.toContain(articles.saved.id);
+      expect(result.itemIds).not.toContain(articles.openedOriginal.id);
     });
 
     it('filters by read:true', async () => {
       const result = await searchArticles({ userId: user.id, search: 'read:true' });
-      expect(result.itemIds).toContain(articles.starred.id);
-      expect(result.itemIds).toContain(articles.clicked.id);
+      expect(result.itemIds).toContain(articles.saved.id);
+      expect(result.itemIds).toContain(articles.openedOriginal.id);
       expect(result.itemIds).not.toContain(articles.recent.id);
     });
 
-    it('filters by clicked:true', async () => {
-      const result = await searchArticles({ userId: user.id, search: 'clicked:true' });
-      expect(result.itemIds).toContain(articles.clicked.id);
+    it('filters by openedOriginal:true', async () => {
+      const result = await searchArticles({ userId: user.id, search: 'openedOriginal:true' });
+      expect(result.itemIds).toContain(articles.openedOriginal.id);
       expect(result.itemIds).not.toContain(articles.recent.id);
     });
 
     it('filters by seen:true and seen:false', async () => {
       const seenResult = await searchArticles({ userId: user.id, search: 'seen:true', status: '%' });
       expect(seenResult.itemIds).toContain(articles.recent.id);
-      expect(seenResult.itemIds).toContain(articles.starred.id);
+      expect(seenResult.itemIds).toContain(articles.saved.id);
       expect(seenResult.itemIds).not.toContain(articles.old.id);
 
       const unseenResult = await searchArticles({ userId: user.id, search: 'seen:false', status: '%' });
       expect(unseenResult.itemIds).toContain(articles.old.id);
       expect(unseenResult.itemIds).not.toContain(articles.recent.id);
-      expect(unseenResult.itemIds).not.toContain(articles.starred.id);
+      expect(unseenResult.itemIds).not.toContain(articles.saved.id);
     });
 
     it('combines multiple field filters', async () => {
-      const result = await searchArticles({ userId: user.id, search: 'star:true read:true' });
-      expect(result.itemIds).toContain(articles.starred.id);
-      // clicked is read but not starred
-      expect(result.itemIds).not.toContain(articles.clicked.id);
+      const result = await searchArticles({ userId: user.id, search: 'saved:true read:true' });
+      expect(result.itemIds).toContain(articles.saved.id);
+      // openedOriginal is read but not saved
+      expect(result.itemIds).not.toContain(articles.openedOriginal.id);
     });
   });
 
@@ -743,8 +743,8 @@ describe('articleSearch.service', () => {
         const result = await searchArticles({ userId: user.id, search: malformedFilter });
 
         expect(result.itemIds).toContain(articles.recent.id);
-        expect(result.itemIds).not.toContain(articles.starred.id);
-        expect(result.itemIds).not.toContain(articles.clicked.id);
+        expect(result.itemIds).not.toContain(articles.saved.id);
+        expect(result.itemIds).not.toContain(articles.openedOriginal.id);
       }
     );
 
@@ -752,8 +752,8 @@ describe('articleSearch.service', () => {
       const result = await searchArticles({ userId: user.id, search: 'quality:>=0' });
 
       expect(result.itemIds).toContain(articles.recent.id);
-      expect(result.itemIds).toContain(articles.starred.id);
-      expect(result.itemIds).toContain(articles.clicked.id);
+      expect(result.itemIds).toContain(articles.saved.id);
+      expect(result.itemIds).toContain(articles.openedOriginal.id);
     });
 
     it('filters out articles below minAdvertisementScore', async () => {
@@ -775,7 +775,7 @@ describe('articleSearch.service', () => {
       });
       // lowQuality has qualityScore=20
       expect(result.itemIds).not.toContain(articles.lowQuality.id);
-      expect(result.itemIds).toContain(articles.starred.id);
+      expect(result.itemIds).toContain(articles.saved.id);
     });
 
     it('filters out articles below minSentimentScore', async () => {
@@ -799,9 +799,9 @@ describe('articleSearch.service', () => {
       });
       // Only articles meeting all three thresholds
       expect(result.itemIds).toContain(articles.old.id); // 70/70/70
-      expect(result.itemIds).toContain(articles.starred.id); // 95/90/90
+      expect(result.itemIds).toContain(articles.saved.id); // 95/90/90
       expect(result.itemIds).toContain(articles.recent.id); // 90/80/85
-      expect(result.itemIds).toContain(articles.clicked.id); // 80/75/80
+      expect(result.itemIds).toContain(articles.openedOriginal.id); // 80/75/80
       expect(result.itemIds).not.toContain(articles.lowQuality.id); // 10/30/20
     });
 
@@ -942,13 +942,13 @@ describe('articleSearch.service', () => {
 
     it('filters by tag: search token', async () => {
       const result = await searchArticles({ userId: user.id, search: 'tag:rust', status: '%' });
-      expect(result.itemIds).toContain(articles.starred.id);
+      expect(result.itemIds).toContain(articles.saved.id);
       expect(result.itemIds.length).toBe(1);
     });
 
     it('tag: search token overrides tag parameter', async () => {
       const result = await searchArticles({ userId: user.id, search: 'tag:docker', tag: 'javascript', status: '%' });
-      expect(result.itemIds).toContain(articles.clicked.id);
+      expect(result.itemIds).toContain(articles.openedOriginal.id);
       expect(result.itemIds).not.toContain(articles.recent.id);
     });
   });
@@ -1350,8 +1350,8 @@ describe('articleSearch.service', () => {
         const result = await searchArticles({ userId: user.id, search: invalidDate });
 
         expect(result.itemIds).toContain(articles.recent.id);
-        expect(result.itemIds).not.toContain(articles.starred.id);
-        expect(result.itemIds).not.toContain(articles.clicked.id);
+        expect(result.itemIds).not.toContain(articles.saved.id);
+        expect(result.itemIds).not.toContain(articles.openedOriginal.id);
       }
     );
 

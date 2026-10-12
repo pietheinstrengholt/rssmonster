@@ -27,7 +27,7 @@ describe('Smart Folder presentation ownership', () => {
     store.setSmartFolder(folder);
     store.setSmartFolder({ id: 2, query: 'sort:quality grouping:none' });
     const actions = {
-      status: () => store.setSelectedStatus('favorite'),
+      status: () => store.setSelectedStatus('saved'),
       category: () => store.selectCategory(3),
       feed: () => store.selectFeed(4, 3),
       tag: () => store.setTag('news'),

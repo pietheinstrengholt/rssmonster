@@ -8,7 +8,7 @@ nav_order: 6
 # Bookmarks
 
 Bookmarks let you save articles that you want to revisit. RSSMonster calls
-bookmarked articles **Favorites** in the interface, so the Favorites collection
+bookmarked articles **Saved** in the interface, so the Saved collection
 is where you can quickly rediscover everything you have saved.
 
 Bookmarks are also a strong signal of explicit interest. RSSMonster uses them,
@@ -20,18 +20,18 @@ negative feedback, when it builds and recalibrates your interest islands.
 To bookmark an article:
 
 1. Select the three-dot **Article actions** button on the article.
-2. Select **Mark as favorite**.
+2. Select **Mark as saved**.
 
-The menu action changes to **Unmark favorite** after the article is saved. Use
+The menu action changes to **Unmark saved** after the article is saved. Use
 it to remove the article from your bookmarks.
 
-You can also press `S` while an article is selected to toggle its favorite
+You can also press `S` while an article is selected to toggle its saved
 status. See [Keyboard Shortcuts]({% link keyboard-shortcuts.md %}) for the complete
 keyboard reference.
 
 ## Find Your Bookmarks
 
-Select **Favorites** in the sidebar to see bookmarked articles. Bookmarks remain
+Select **Saved** in the sidebar to see bookmarked articles. Bookmarks remain
 available independently of whether an article is read or unread, making this
 collection useful for research, reference material, recipes, tutorials, and
 anything else you may want to find again later.
@@ -39,13 +39,13 @@ anything else you may want to find again later.
 Bookmarks can also be included in a Search or Smart Folder query:
 
 ```text
-favorite:true
+saved:true
 ```
 
 For example, this query shows bookmarked Nintendo articles ordered by quality:
 
 ```text
-favorite:true Nintendo sort:quality
+saved:true Nintendo sort:quality
 ```
 
 The legacy alias `star:true` has the same effect. See the
@@ -54,14 +54,14 @@ build saved views around bookmarks.
 
 ## Assign Bookmarks Automatically
 
-Automation rules can mark matching incoming articles as favorites during a
+Automation rules can mark matching incoming articles as saved during a
 feed crawl. This is useful when you consistently want to save articles about a
 particular subject, project, person, or source.
 
 In **Settings → Actions**, add an action with:
 
 - a descriptive name;
-- **Set favorite** as the action type; and
+- **Set saved** as the action type; and
 - a regular expression that identifies matching articles.
 
 For example, `[Nn]intendo|[Zz]elda` bookmarks incoming articles when either

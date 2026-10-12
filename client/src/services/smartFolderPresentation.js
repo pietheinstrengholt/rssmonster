@@ -1,4 +1,5 @@
 import { normalizeSortValueForApi } from './queryValidation.js';
+import { canonicalArticleExpression } from './articleStateContract.js';
 
 // Keeps quoted values intact when reading presentation tokens from a saved expression.
 export const tokenizeSmartFolderExpression = query => (
@@ -23,6 +24,7 @@ export function smartFolderPresentation(query) {
 
 // Makes legacy folders explicit without rebuilding or discarding their search expression.
 export function completeSmartFolderQuery(query, limitCount) {
+  query = canonicalArticleExpression(query);
   const tokens = tokenizeSmartFolderExpression(query).map(token => token.replace(/[.,;]+$/, ''));
   const presentation = smartFolderPresentation(query);
   const parts = [String(query || '').trim()];

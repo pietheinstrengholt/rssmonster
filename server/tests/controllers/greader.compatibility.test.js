@@ -338,12 +338,12 @@ describe('Google Reader API compatibility foundation', () => {
 
       expect(response.status).toBe(200);
       expect(fixture.oldUnread.status).toBe('read');
-      expect(fixture.oldUnread.favoriteInd).toBe(1);
+      expect(fixture.oldUnread.savedInd).toBe(1);
     });
 
     it('[current] parses multiple query r parameters as an array and removes every tag', async () => {
       const fixture = await createFixture();
-      await fixture.sameTimestampRead.update({ favoriteInd: 1 });
+      await fixture.sameTimestampRead.update({ savedInd: 1 });
 
       const response = await request(app)
         .post('/api/greader/reader/api/0/edit-tag')
@@ -359,7 +359,7 @@ describe('Google Reader API compatibility foundation', () => {
       expect(response.status).toBe(200);
       expect(fixture.sameTimestampRead.status).toBe('unread');
       expect(fixture.sameTimestampRead.readAt).toBeNull();
-      expect(fixture.sameTimestampRead.favoriteInd).toBe(0);
+      expect(fixture.sameTimestampRead.savedInd).toBe(0);
     });
 
     it('[current] accepts query-only POST mutations without requiring a parsed body', async () => {
@@ -389,7 +389,7 @@ describe('Google Reader API compatibility foundation', () => {
         .query({ i: [fixture.oldUnread.id, fixture.newUnread.id] })
         .type('form')
         .send({
-          i: fixture.sameTimestampStarred.id,
+          i: fixture.sameTimestampSaved.id,
           a: READ_STREAM,
           T: greaderActionTokenFor(fixture.user)
         })
@@ -399,7 +399,7 @@ describe('Google Reader API compatibility foundation', () => {
       );
 
       expect(response.status).toBe(200);
-      expect(fixture.sameTimestampStarred.status).toBe('read');
+      expect(fixture.sameTimestampSaved.status).toBe('read');
       expect(fixture.oldUnread.status).toBe('read');
       expect(fixture.newUnread.status).toBe('read');
     });
@@ -415,7 +415,7 @@ describe('Google Reader API compatibility foundation', () => {
       expect(response.body.id).toBe(READING_LIST_STREAM);
       expect(responseItemIds(response)).toEqual([
         toGreaderItemId(fixture.newUnread.id),
-        toGreaderItemId(fixture.sameTimestampStarred.id),
+        toGreaderItemId(fixture.sameTimestampSaved.id),
         toGreaderItemId(fixture.sameTimestampRead.id),
         toGreaderItemId(fixture.oldUnread.id)
       ]);
@@ -443,19 +443,19 @@ describe('Google Reader API compatibility foundation', () => {
       expect(response.status).toBe(200);
       expect(responseItemIds(response)).toEqual([
         toGreaderItemId(fixture.newUnread.id),
-        toGreaderItemId(fixture.sameTimestampStarred.id),
+        toGreaderItemId(fixture.sameTimestampSaved.id),
         toGreaderItemId(fixture.oldUnread.id)
       ]);
     });
 
-    it('[current] returns the starred stream', async () => {
+    it('[current] returns the saved stream', async () => {
       const fixture = await createFixture();
 
       const response = await getStream(fixture.user, STARRED_STREAM);
 
       expect(response.status).toBe(200);
       expect(responseItemIds(response)).toEqual([
-        toGreaderItemId(fixture.sameTimestampStarred.id)
+        toGreaderItemId(fixture.sameTimestampSaved.id)
       ]);
     });
 
@@ -574,7 +574,7 @@ describe('Google Reader API compatibility foundation', () => {
       expect(response.body.items).toHaveLength(3);
     });
 
-    it('[current] applies it starred inclusion', async () => {
+    it('[current] applies it saved inclusion', async () => {
       const fixture = await createFixture();
 
       const response = await getStream(fixture.user, READING_LIST_STREAM, {
@@ -583,7 +583,7 @@ describe('Google Reader API compatibility foundation', () => {
 
       expect(response.status).toBe(200);
       expect(responseItemIds(response)).toEqual([
-        toGreaderItemId(fixture.sameTimestampStarred.id)
+        toGreaderItemId(fixture.sameTimestampSaved.id)
       ]);
     });
 
@@ -603,14 +603,14 @@ describe('Google Reader API compatibility foundation', () => {
 
       expect(responseItemIds(descending)).toEqual([
         toGreaderItemId(fixture.newUnread.id),
-        toGreaderItemId(fixture.sameTimestampStarred.id),
+        toGreaderItemId(fixture.sameTimestampSaved.id),
         toGreaderItemId(fixture.sameTimestampRead.id),
         toGreaderItemId(fixture.oldUnread.id)
       ]);
       expect(responseItemIds(ascending)).toEqual([
         toGreaderItemId(fixture.oldUnread.id),
         toGreaderItemId(fixture.sameTimestampRead.id),
-        toGreaderItemId(fixture.sameTimestampStarred.id),
+        toGreaderItemId(fixture.sameTimestampSaved.id),
         toGreaderItemId(fixture.newUnread.id)
       ]);
     });
@@ -642,7 +642,7 @@ describe('Google Reader API compatibility foundation', () => {
 
       expect(response.status).toBe(200);
       expect(responseItemIds(response)).toEqual([
-        toGreaderItemId(fixture.sameTimestampStarred.id)
+        toGreaderItemId(fixture.sameTimestampSaved.id)
       ]);
     });
 
@@ -661,11 +661,11 @@ describe('Google Reader API compatibility foundation', () => {
 
       expect(responseItemIds(firstPage)).toEqual([
         toGreaderItemId(fixture.newUnread.id),
-        toGreaderItemId(fixture.sameTimestampStarred.id)
+        toGreaderItemId(fixture.sameTimestampSaved.id)
       ]);
       expect(firstPage.body.continuation).toBe(
-        `${new Date(fixture.sameTimestampStarred.publishedAt).getTime()}:` +
-        fixture.sameTimestampStarred.id
+        `${new Date(fixture.sameTimestampSaved.publishedAt).getTime()}:` +
+        fixture.sameTimestampSaved.id
       );
       expect(responseItemIds(secondPage)).toEqual([
         toGreaderItemId(fixture.sameTimestampRead.id),
@@ -692,7 +692,7 @@ describe('Google Reader API compatibility foundation', () => {
       ]).toEqual([
         toGreaderItemId(fixture.oldUnread.id),
         toGreaderItemId(fixture.sameTimestampRead.id),
-        toGreaderItemId(fixture.sameTimestampStarred.id),
+        toGreaderItemId(fixture.sameTimestampSaved.id),
         toGreaderItemId(fixture.newUnread.id)
       ]);
     });
@@ -710,7 +710,7 @@ describe('Google Reader API compatibility foundation', () => {
       );
 
       expect(responseItemIds(queryResponse)).toEqual([
-        toGreaderItemId(fixture.sameTimestampStarred.id)
+        toGreaderItemId(fixture.sameTimestampSaved.id)
       ]);
       expect(conflictResponse.status).toBe(400);
       expect(conflictResponse.text).toBe(
@@ -730,7 +730,7 @@ describe('Google Reader API compatibility foundation', () => {
 
       expect(response.status).toBe(200);
       expect(responseItemIds(response)).toEqual([
-        toGreaderItemId(fixture.sameTimestampStarred.id)
+        toGreaderItemId(fixture.sameTimestampSaved.id)
       ]);
     });
 
@@ -793,7 +793,7 @@ describe('Google Reader API compatibility foundation', () => {
       expect(response.status).toBe(200);
       expect(response.body.itemRefs).toEqual([
         { id: String(fixture.newUnread.id) },
-        { id: String(fixture.sameTimestampStarred.id) }
+        { id: String(fixture.sameTimestampSaved.id) }
       ]);
     });
 
@@ -806,7 +806,7 @@ describe('Google Reader API compatibility foundation', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.itemRefs).toEqual([
-        { id: String(fixture.sameTimestampStarred.id) },
+        { id: String(fixture.sameTimestampSaved.id) },
         { id: String(fixture.sameTimestampRead.id) }
       ]);
     });
@@ -844,14 +844,14 @@ describe('Google Reader API compatibility foundation', () => {
       const response = await getItemContents(fixture.user, [
         String(fixture.oldUnread.id),
         Number(fixture.newUnread.id).toString(16).padStart(16, '0'),
-        toGreaderItemId(fixture.sameTimestampStarred.id)
+        toGreaderItemId(fixture.sameTimestampSaved.id)
       ]);
 
       expect(response.status).toBe(200);
       expect(responseItemIds(response)).toEqual([
         toGreaderItemId(fixture.oldUnread.id),
         toGreaderItemId(fixture.newUnread.id),
-        toGreaderItemId(fixture.sameTimestampStarred.id)
+        toGreaderItemId(fixture.sameTimestampSaved.id)
       ]);
     });
 
@@ -878,13 +878,13 @@ describe('Google Reader API compatibility foundation', () => {
       const response = await getItemContents(fixture.user, [
         toGreaderItemId(fixture.newUnread.id),
         String(fixture.oldUnread.id),
-        toGreaderItemId(fixture.sameTimestampStarred.id)
+        toGreaderItemId(fixture.sameTimestampSaved.id)
       ]);
 
       expect(responseItemIds(response)).toEqual([
         toGreaderItemId(fixture.newUnread.id),
         toGreaderItemId(fixture.oldUnread.id),
-        toGreaderItemId(fixture.sameTimestampStarred.id)
+        toGreaderItemId(fixture.sameTimestampSaved.id)
       ]);
     });
 
@@ -892,14 +892,14 @@ describe('Google Reader API compatibility foundation', () => {
       const fixture = await createFixture();
       const response = await getItemContents(fixture.user, [
         String(fixture.oldUnread.id),
-        toGreaderItemId(fixture.sameTimestampStarred.id),
+        toGreaderItemId(fixture.sameTimestampSaved.id),
         toGreaderItemId(fixture.oldUnread.id),
-        String(fixture.sameTimestampStarred.id)
+        String(fixture.sameTimestampSaved.id)
       ]);
 
       expect(responseItemIds(response)).toEqual([
         toGreaderItemId(fixture.oldUnread.id),
-        toGreaderItemId(fixture.sameTimestampStarred.id)
+        toGreaderItemId(fixture.sameTimestampSaved.id)
       ]);
     });
   });
@@ -958,7 +958,7 @@ describe('Google Reader API compatibility foundation', () => {
         .set('Authorization', greaderAuthHeaderFor(fixture.user));
       await fixture.oldUnread.reload();
       expect(starResponse.status).toBe(200);
-      expect(fixture.oldUnread.favoriteInd).toBe(1);
+      expect(fixture.oldUnread.savedInd).toBe(1);
 
       const unstarResponse = await request(app)
         .post('/api/greader/reader/api/0/edit-tag')
@@ -972,12 +972,12 @@ describe('Google Reader API compatibility foundation', () => {
       await fixture.oldUnread.reload();
 
       expect(unstarResponse.status).toBe(200);
-      expect(fixture.oldUnread.favoriteInd).toBe(0);
+      expect(fixture.oldUnread.savedInd).toBe(0);
     });
 
     it('[compatible] applies repeated conflicting tags once with remove precedence', async () => {
       const fixture = await createFixture();
-      await fixture.oldUnread.update({ favoriteInd: 1 });
+      await fixture.oldUnread.update({ savedInd: 1 });
       const updateSpy = vi.spyOn(Article, 'update');
 
       try {
@@ -999,7 +999,7 @@ describe('Google Reader API compatibility foundation', () => {
         expect(updateSpy).toHaveBeenCalledTimes(1);
         expect(fixture.oldUnread.status).toBe('unread');
         expect(fixture.oldUnread.readAt).toBeNull();
-        expect(fixture.oldUnread.favoriteInd).toBe(0);
+        expect(fixture.oldUnread.savedInd).toBe(0);
       } finally {
         updateSpy.mockRestore();
       }
@@ -1067,7 +1067,7 @@ describe('Google Reader API compatibility foundation', () => {
         expect(response.text).not.toContain('Forced mutation failure');
         expect(fixture.oldUnread.status).toBe('unread');
         expect(fixture.oldUnread.readAt).toBeNull();
-        expect(fixture.oldUnread.favoriteInd).toBe(0);
+        expect(fixture.oldUnread.savedInd).toBe(0);
       } finally {
         Article.removeHook('afterBulkUpdate', hookName);
       }
@@ -1163,7 +1163,7 @@ describe('Google Reader API compatibility foundation', () => {
       expect(response.status).toBe(200);
       expect(fixture.oldUnread.status).toBe('read');
       expect(fixture.sameTimestampRead.readAt.getTime()).toBe(originalReadAt);
-      expect(fixture.sameTimestampStarred.status).toBe('unread');
+      expect(fixture.sameTimestampSaved.status).toBe('unread');
       expect(fixture.newUnread.status).toBe('unread');
     });
 
@@ -1839,22 +1839,22 @@ describe('Google Reader API compatibility foundation', () => {
       const fixture = await createFixture();
 
       const response = await getItemContents(fixture.user, [
-        fixture.sameTimestampStarred.id,
+        fixture.sameTimestampSaved.id,
         fixture.oldUnread.id
       ]);
-      const starredItem = response.body.items[0];
+      const savedItem = response.body.items[0];
       const oldItem = response.body.items[1];
 
-      expect(starredItem).toMatchObject({
-        id: toGreaderItemId(fixture.sameTimestampStarred.id),
+      expect(savedItem).toMatchObject({
+        id: toGreaderItemId(fixture.sameTimestampSaved.id),
         crawlTimeMsec: String(
-          new Date(fixture.sameTimestampStarred.createdAt).getTime()
+          new Date(fixture.sameTimestampSaved.createdAt).getTime()
         ),
-        timestampUsec: toUsec(fixture.sameTimestampStarred.publishedAt),
+        timestampUsec: toUsec(fixture.sameTimestampSaved.publishedAt),
         published: Math.floor(
-          new Date(fixture.sameTimestampStarred.publishedAt).getTime() / 1000
+          new Date(fixture.sameTimestampSaved.publishedAt).getTime() / 1000
         ),
-        title: 'Starred article',
+        title: 'Saved article',
         categories: [
           READING_LIST_STREAM,
           STARRED_STREAM,
@@ -1866,10 +1866,10 @@ describe('Google Reader API compatibility foundation', () => {
           htmlUrl: ''
         },
         canonical: [{
-          href: fixture.sameTimestampStarred.url
+          href: fixture.sameTimestampSaved.url
         }],
         alternate: [{
-          href: fixture.sameTimestampStarred.url,
+          href: fixture.sameTimestampSaved.url,
           type: 'text/html'
         }]
       });

@@ -144,8 +144,8 @@ const loadArticleDetails = async (userId, articlesArray, personalization = creat
       'id',
       'feedId',
       'status',
-      'favoriteInd',
-      'clickedAmount',
+      'savedInd',
+      'openedOriginalCount',
       'hotInd',
       'media',
       'url',
@@ -194,8 +194,8 @@ const loadArticleDetails = async (userId, articlesArray, personalization = creat
           'feedDeepReadRatio',
           'feedSkimRatio',
           'feedIgnoreRatio',
-          'feedClickAvg',
-          'feedClickRatio',
+          'feedOpenedOriginalAvg',
+          'feedOpenedOriginalRatio',
           'feedAttentionSampleSize'
         ]
       },
@@ -515,8 +515,8 @@ const getArticle = async (req, res, _next) => {
             'feedDeepReadRatio',
             'feedSkimRatio',
             'feedIgnoreRatio',
-            'feedClickAvg',
-            'feedClickRatio',
+            'feedOpenedOriginalAvg',
+            'feedOpenedOriginalRatio',
             'feedAttentionSampleSize'
           ]
         },
@@ -795,15 +795,15 @@ const markAsRead = async (req, res, _next) => {
   }
 };
 
-// Mark article as clicked
-const incrementArticleClickCount = async article => {
-  await updateArticleBehavior(Article, { clickedAmount: db.sequelize.literal('clickedAmount + 1'), lastClickedAt: new Date() }, {
+// Mark article as opened original
+const incrementArticleOpenedOriginalCount = async article => {
+  await updateArticleBehavior(Article, { openedOriginalCount: db.sequelize.literal('openedOriginalCount + 1'), lastOpenedOriginalAt: new Date() }, {
     where: { id: article.id, userId: article.userId, ...canonicalArticleWhere() }
   });
   return article.reload();
 };
 
-const markClicked = async (req, res, _next) => {
+const markOpenedOriginal = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
@@ -831,14 +831,14 @@ const markClicked = async (req, res, _next) => {
       }
 
       const updatedArticles = await Promise.all(
-        articles.map(incrementArticleClickCount)
+        articles.map(incrementArticleOpenedOriginalCount)
       );
 
       return res.status(200).json({
-        message: "Articles marked as clicked",
+        message: "Articles marked as opened originals",
         articles: updatedArticles.map(article => ({
           id: article.id,
-          clickedAmount: article.clickedAmount
+          openedOriginalCount: article.openedOriginalCount
         }))
       });
     }
@@ -864,22 +864,22 @@ const markClicked = async (req, res, _next) => {
     }
 
     if (update) {
-      const clickedAmount = update === 'mark'
-        ? Math.max(Number(article.clickedAmount) || 0, 1)
+      const openedOriginalCount = update === 'mark'
+        ? Math.max(Number(article.openedOriginalCount) || 0, 1)
         : 0;
-      await updateArticleBehavior(article, { clickedAmount, lastClickedAt: update === 'mark' ? new Date() : null });
+      await updateArticleBehavior(article, { openedOriginalCount, lastOpenedOriginalAt: update === 'mark' ? new Date() : null });
     } else {
-      await incrementArticleClickCount(article);
+      await incrementArticleOpenedOriginalCount(article);
     }
 
     res.status(200).json({ 
-      message: update === 'unmark' ? "Article unmarked as clicked" : "Article marked as clicked",
+      message: update === 'unmark' ? "Article unmarked as opened original" : "Article marked as opened original",
       articleId: articleId,
-      clickedAmount: article.clickedAmount
+      openedOriginalCount: article.openedOriginalCount
     });
   } catch (err) {
-    console.error("Error in markClicked:", err);
-    return res.status(500).json({ error: 'Unable to mark article as clicked' });
+    console.error("Error in markOpenedOriginal:", err);
+    return res.status(500).json({ error: 'Unable to mark article as opened original' });
   }
 };
 
@@ -1271,8 +1271,8 @@ const articleMarkToUnread = async (req, res, _next) => {
   }
 };
 
-// Mark article as favorite
-const articleMarkAsFavorite = async (req, res, _next) => {
+// Mark article as saved
+const articleMarkAsSaved = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
@@ -1287,11 +1287,11 @@ const articleMarkAsFavorite = async (req, res, _next) => {
 
     if (update === undefined) {
       return res.status(400).json({
-        message: "Favorite indicator is not set"
+        message: "Saved indicator is not set"
       });
     }
 
-    const favoriteInd = update === "mark" ? 1 : 0;
+    const savedInd = update === "mark" ? 1 : 0;
 
     if (!articleId && articleIds.length > 0) {
       const articles = await Article.findAll({
@@ -1312,7 +1312,7 @@ const articleMarkAsFavorite = async (req, res, _next) => {
         });
       }
 
-      await Promise.all(articles.map(article => updateArticleBehavior(article, articleStateValues('set-favorite', Boolean(favoriteInd)))));
+      await Promise.all(articles.map(article => updateArticleBehavior(article, articleStateValues('set-saved', Boolean(savedInd)))));
       return res.status(200).json({ articles });
     }
 
@@ -1339,11 +1339,11 @@ const articleMarkAsFavorite = async (req, res, _next) => {
         message: "Article not found"
       });
     }
-    await updateArticleBehavior(article, articleStateValues('set-favorite', Boolean(favoriteInd)));
+    await updateArticleBehavior(article, articleStateValues('set-saved', Boolean(savedInd)));
     return res.status(200).json(article);
   } catch (err) {
-    console.error('Error in articleMarkAsFavorite:', err);
-    return res.status(500).json({ error: 'Unable to update article favorite status' });
+    console.error('Error in articleMarkAsSaved:', err);
+    return res.status(500).json({ error: 'Unable to update article saved status' });
   }
 };
 
@@ -1386,12 +1386,12 @@ export default {
   getDevelopingStoryArticles,
   getStorySourceArticles,
   markAsRead,
-  markClicked,
+  markOpenedOriginal,
   markNotInterested,
   markMoreLikeThis,
   articleDetails,
   articleMarkAsSeen,
   articleMarkToUnread,
-  articleMarkAsFavorite,
+  articleMarkAsSaved,
   articleMarkAllAsRead
 }

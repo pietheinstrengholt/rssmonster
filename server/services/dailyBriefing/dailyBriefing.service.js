@@ -446,7 +446,7 @@ export async function getDailyBriefing({
           'id',
           'title',
           'contentText', 'description', 'articleVector', 'embedding_model', 'positiveInd', 'negativeInd',
-          'favoriteInd', 'clickedAmount', 'attentionBucket', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd',
+          'savedInd', 'openedOriginalCount', 'attentionBucket', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd',
           'publishedAt',
           'interestScore',
           'interestScoredAt',

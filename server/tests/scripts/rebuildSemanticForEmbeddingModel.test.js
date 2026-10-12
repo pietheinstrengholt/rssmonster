@@ -31,8 +31,8 @@ describe('semantic model rebuild script', () => {
 
     expect(where.articleVector).toBeNull();
     expect(where[Op.or]).toHaveLength(2);
-    expect(where[Op.or][0]).toEqual({ favoriteInd: 1 });
-    expect(where[Op.or][1].clickedAmount[Op.gt]).toBe(0);
+    expect(where[Op.or][0]).toEqual({ savedInd: 1 });
+    expect(where[Op.or][1].openedOriginalCount[Op.gt]).toBe(0);
   });
 
   it('reports scope without invoking destructive or inference rebuild stages in dry-run mode', async () => {

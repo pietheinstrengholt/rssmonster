@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Article from '../src/components/articles/Article.vue';
 import {
   fetchDuplicateArticles,
-  markAsFavorite,
-  markClicked,
+  markAsSaved,
+  markOpenedOriginal,
   markNotInterested
 } from '../src/api/articles.js';
 import { fetchEventArticles } from '../src/api/events.js';
@@ -30,11 +30,11 @@ import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
   fetchDuplicateArticles: vi.fn(),
-  markAsFavorite: vi.fn(),
-  markClicked: vi.fn(),
+  markAsSaved: vi.fn(),
+  markOpenedOriginal: vi.fn(),
   markMoreLikeThis: vi.fn(),
   markNotInterested: vi.fn(),
-  updateClickedStatus: vi.fn()
+  updateOpenedOriginalStatus: vi.fn()
 }));
 
 vi.mock('../src/api/events.js', () => ({
@@ -50,7 +50,7 @@ function createSwipeContext() {
   const context = {
     ...createArticleMobileSwipeState(),
     isMobilePortrait: true,
-    markAsFavorite: vi.fn()
+    markAsSaved: vi.fn()
   };
   context.resetSwipe = clearSuppressClick =>
     articleMobileSwipeMethods.resetSwipe.call(context, clearSuppressClick);
@@ -151,7 +151,7 @@ describe('Article mobile swipe behavior', () => {
       if (stage !== 'end') expect(move.preventDefault).not.toHaveBeenCalled();
       viewport.scale = 2;
       articleMobileSwipeMethods.onSwipeTouchEnd.call(context);
-      expect(context.markAsFavorite).not.toHaveBeenCalled();
+      expect(context.markAsSaved).not.toHaveBeenCalled();
       expect(context.swipeTranslateX).toBe(0);
     } finally {
       vi.unstubAllGlobals();
@@ -169,7 +169,7 @@ describe('Article mobile swipe behavior', () => {
     expect(context.resetSwipe).toHaveBeenCalledOnce();
   });
 
-  it('caps horizontal movement and favorites after crossing the threshold', () => {
+  it('caps horizontal movement and saved after crossing the threshold', () => {
     vi.useFakeTimers();
     const context = createSwipeContext();
     const preventDefault = vi.fn();
@@ -188,7 +188,7 @@ describe('Article mobile swipe behavior', () => {
 
     articleMobileSwipeMethods.onSwipeTouchEnd.call(context);
 
-    expect(context.markAsFavorite).toHaveBeenCalledOnce();
+    expect(context.markAsSaved).toHaveBeenCalledOnce();
     expect(context.swipeTranslateX).toBe(0);
     expect(context.swipeSuppressClick).toBe(true);
 
@@ -210,7 +210,7 @@ describe('Article mobile swipe behavior', () => {
 
     expect(context.swipeTracking).toBe(false);
     expect(context.swipeTranslateX).toBe(0);
-    expect(context.markAsFavorite).not.toHaveBeenCalled();
+    expect(context.markAsSaved).not.toHaveBeenCalled();
   });
 });
 
@@ -295,96 +295,96 @@ describe('Article relevance signals', () => {
 });
 
 describe('Article API actions', () => {
-  it('reconciles favorite counts and emits the existing update payload', async () => {
-    markAsFavorite.mockResolvedValue({
+  it('reconciles saved counts and emits the existing update payload', async () => {
+    markAsSaved.mockResolvedValue({
       data: {
         feedId: 3,
         feed: { categoryId: 2 },
-        favoriteInd: 1
+        savedInd: 1
       }
     });
-    const applyFavoriteDelta = vi.fn();
+    const applySavedDelta = vi.fn();
     const context = {
       ...createFocusedStores({
-        overview: { applyFavoriteDelta }
+        overview: { applySavedDelta }
       }),
       id: 42,
-      favoriteInd: 0,
-      favoriteMutationPending: false,
+      savedInd: 0,
+      savedMutationPending: false,
       $emit: vi.fn()
     };
 
-    articleActionMethods.markAsFavorite.call(context);
+    articleActionMethods.markAsSaved.call(context);
     await flushPromises();
 
-    expect(markAsFavorite).toHaveBeenCalledWith(42, 'mark', expect.objectContaining({ id: expect.any(Number) }));
-    expect(applyFavoriteDelta).toHaveBeenCalledWith({
+    expect(markAsSaved).toHaveBeenCalledWith(42, 'mark', expect.objectContaining({ id: expect.any(Number) }));
+    expect(applySavedDelta).toHaveBeenCalledWith({
       categoryId: 2,
       feedId: 3,
       delta: 1
     });
     expect(context.$emit).toHaveBeenCalledWith(
-      'update-favorite',
-      { id: 42, favoriteInd: 1 }
+      'update-saved',
+      { id: 42, savedInd: 1 }
     );
   });
 
-  it('guards duplicate favorite requests and applies one persisted transition', async () => {
-    let resolveFavorite;
-    const pendingFavorite = new Promise(resolve => {
-      resolveFavorite = resolve;
+  it('guards duplicate saved requests and applies one persisted transition', async () => {
+    let resolveSaved;
+    const pendingSaved = new Promise(resolve => {
+      resolveSaved = resolve;
     });
-    markAsFavorite.mockReturnValue(pendingFavorite);
-    const applyFavoriteDelta = vi.fn();
+    markAsSaved.mockReturnValue(pendingSaved);
+    const applySavedDelta = vi.fn();
     const context = {
       ...createFocusedStores({
-        overview: { applyFavoriteDelta }
+        overview: { applySavedDelta }
       }),
       id: 42,
-      favoriteInd: 0,
-      favoriteMutationPending: false,
+      savedInd: 0,
+      savedMutationPending: false,
       $emit: vi.fn()
     };
 
-    const firstMutation = articleActionMethods.markAsFavorite.call(context);
-    const secondMutation = articleActionMethods.markAsFavorite.call(context);
+    const firstMutation = articleActionMethods.markAsSaved.call(context);
+    const secondMutation = articleActionMethods.markAsSaved.call(context);
 
-    expect(markAsFavorite).toHaveBeenCalledOnce();
-    expect(context.favoriteMutationPending).toBe(true);
+    expect(markAsSaved).toHaveBeenCalledOnce();
+    expect(context.savedMutationPending).toBe(true);
 
-    resolveFavorite({
+    resolveSaved({
       data: {
         feedId: 3,
         feed: { categoryId: 2 },
-        favoriteInd: 1
+        savedInd: 1
       }
     });
     await Promise.all([firstMutation, secondMutation]);
 
-    expect(applyFavoriteDelta).toHaveBeenCalledOnce();
+    expect(applySavedDelta).toHaveBeenCalledOnce();
     expect(context.$emit).toHaveBeenCalledOnce();
-    expect(context.favoriteMutationPending).toBe(false);
+    expect(context.savedMutationPending).toBe(false);
   });
 
   it('updates clicks but keeps articles in place after negative feedback', async () => {
-    markClicked.mockResolvedValue({ data: { clickedAmount: 4 } });
+    markOpenedOriginal.mockResolvedValue({ data: { openedOriginalCount: 4 } });
     markNotInterested.mockResolvedValue({});
     const context = {
       id: 42,
-      clickedAmount: 3,
-      clickMutationPending: false,
+      openedOriginalCount: 3,
+      openedOriginalMutationPending: false,
       $emit: vi.fn()
     };
 
-    articleActionMethods.articleClicked.call(context);
+    articleActionMethods.articleOpenedOriginal.call(context);
     articleActionMethods.markNotInterested.call(context);
     await flushPromises();
 
-    expect(markClicked).toHaveBeenCalledWith(42);
+    expect(markOpenedOriginal).toHaveBeenCalledWith(42);
     expect(markNotInterested).toHaveBeenCalledWith(42);
     expect(context.$emit).toHaveBeenCalledWith(
-      'update-clicked',
-      { id: 42, clickedAmount: 4 }
+      'update-opened-original',
+      { id: 42, openedOriginalCount: 4 }
     );
     expect(context.$emit).not.toHaveBeenCalledWith(
       'article-not-interested',
@@ -393,18 +393,18 @@ describe('Article API actions', () => {
   });
 
   it('does not emit a fabricated click count when persistence fails', async () => {
-    markClicked.mockRejectedValue(new Error('offline'));
+    markOpenedOriginal.mockRejectedValue(new Error('offline'));
     const context = {
       id: 42,
-      clickedAmount: 5,
-      clickMutationPending: false,
+      openedOriginalCount: 5,
+      openedOriginalMutationPending: false,
       $emit: vi.fn()
     };
 
-    await articleActionMethods.articleClicked.call(context);
+    await articleActionMethods.articleOpenedOriginal.call(context);
 
     expect(context.$emit).not.toHaveBeenCalled();
-    expect(context.clickMutationPending).toBe(false);
+    expect(context.openedOriginalMutationPending).toBe(false);
   });
 
   it('keeps extracted behavior on the Article Options API surface', () => {
@@ -412,8 +412,8 @@ describe('Article API actions', () => {
       .toBe(articleMobileSwipeMethods.onSwipeTouchMove);
     expect(Article.methods.viewEventArticles)
       .toBe(articleExpansionMethods.viewEventArticles);
-    expect(Article.methods.markAsFavorite)
-      .toBe(articleActionMethods.markAsFavorite);
+    expect(Article.methods.markAsSaved)
+      .toBe(articleActionMethods.markAsSaved);
     expect(Article.computed.articleSignals)
       .toBe(articleSignalComputed.articleSignals);
   });

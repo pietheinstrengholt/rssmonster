@@ -89,7 +89,7 @@ describe('interest funnel diagnostics', () => {
     const user = await db.User.create({ username: `signed-name-${randomUUID()}` });
     const foreign = await db.User.create({ username: `signed-other-${randomUUID()}` });
     const values = { ...island, id: undefined, userId: user.id, label: 'Databases',
-      positiveSignals: { stars: 2, negatives: 1 },
+      positiveSignals: { saves: 2, negatives: 1 },
       populationAudit: [{ metrics: { relatedArticleCount: 3 } }] };
     const positive = await db.Island.create({ lastBehaviorAt: now, ...values, weight: 0.9 });
     const other = await db.Island.create({ lastBehaviorAt: now, ...values, label: ' databases! ', weight });

@@ -63,11 +63,11 @@ function strongestArticleEngagement(article = {}) {
   // Returns early when number exceeds value.
   if (Number(signals.deepReads || 0) > 0) return 'deep-read';
   // Returns early when number exceeds value.
-  if (Number(signals.stars || 0) > 0) return 'star';
+  if (Number(signals.saves || 0) > 0) return 'saved';
   // Returns early when number exceeds value.
   if (Number(signals.positives || 0) > 0) return 'positive';
   // Returns early when number exceeds value.
-  if (Number(signals.clicks || 0) > 0) return 'click';
+  if (Number(signals.openedOriginals || 0) > 0) return 'opened-original';
   // Returns early when number exceeds value.
   if (Number(signals.negatives || 0) > 0) return 'negative';
   return 'behavior';
@@ -116,8 +116,8 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
   let updatedIslandCount = 0;
   let archivedIslandCount = 0;
   let updatedWithPositiveSignalCount = 0;
-  let updatedWithStarSignalCount = 0;
-  let updatedWithClickSignalCount = 0;
+  let updatedWithSavedSignalCount = 0;
+  let updatedWithOpenedOriginalSignalCount = 0;
   let updatedWithNegativeSignalCount = 0;
 
   // Processes each persistable profiles entry in turn.
@@ -199,16 +199,16 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       }
 
       // Handles the case where number exceeds value.
-      if (Number(profile?.positiveSignals?.stars || 0) > 0) {
-        updatedWithStarSignalCount += 1;
+      if (Number(profile?.positiveSignals?.saves || 0) > 0) {
+        updatedWithSavedSignalCount += 1;
       }
       // Handles the case where number exceeds value.
       if (Number(profile?.positiveSignals?.positives || 0) > 0) {
         updatedWithPositiveSignalCount += 1;
       }
       // Handles the case where number exceeds value.
-      if (Number(profile?.positiveSignals?.clicks || 0) > 0) {
-        updatedWithClickSignalCount += 1;
+      if (Number(profile?.positiveSignals?.openedOriginals || 0) > 0) {
+        updatedWithOpenedOriginalSignalCount += 1;
       }
       // Handles the case where number exceeds value.
       if (Number(profile?.positiveSignals?.negatives || 0) > 0) {
@@ -309,8 +309,8 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       updatedIslandCount,
       updatedBySignals: {
         positives: updatedWithPositiveSignalCount,
-        stars: updatedWithStarSignalCount,
-        clicks: updatedWithClickSignalCount,
+        saves: updatedWithSavedSignalCount,
+        openedOriginals: updatedWithOpenedOriginalSignalCount,
         negativeInd: updatedWithNegativeSignalCount
       }
     });

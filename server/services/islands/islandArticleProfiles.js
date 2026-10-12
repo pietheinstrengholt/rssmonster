@@ -14,7 +14,7 @@ import {
   resolveIslandCapacity,
   ISLAND_DEBUG,
   SIGNAL_WEIGHTS,
-  MAX_ARTICLE_CLICKS,
+  MAX_ARTICLE_OPENED_ORIGINALS,
   SIGNAL_HALF_LIFE_DAYS,
   addPositiveSignals,
   articleMagnitude,
@@ -33,10 +33,10 @@ const { Article } = db;
 export function computeArticleSignals(article) {
   // Legacy contradictory explicit flags resolve to negative, matching behavioral fallback.
   const positives = article.positiveInd === 1 && article.negativeInd !== 1 ? 1 : 0;
-  // Selects the stars based on whether article favorite status is 1.
-  const stars = article.favoriteInd === 1 ? 1 : 0;
+  // Selects the saves based on whether article saved status is 1.
+  const saves = article.savedInd === 1 ? 1 : 0;
   // Cap scored click evidence without changing the stored click counter.
-  const clicks = Math.min(article.clickedAmount || 0, MAX_ARTICLE_CLICKS);
+  const openedOriginals = Math.min(article.openedOriginalCount || 0, MAX_ARTICLE_OPENED_ORIGINALS);
   // Selects the deep reads based on whether article reaches 3.
   const deepReads = (article.attentionBucket || 0) >= 3 ? 1 : 0;
   // Selects the negative based on whether article negative status is 1.
@@ -47,8 +47,8 @@ export function computeArticleSignals(article) {
   // Derives the positive score required while computing article signals.
   const positiveScore = (
     positives * SIGNAL_WEIGHTS.positive * recency('positiveFeedbackAt') +
-    stars * SIGNAL_WEIGHTS.star * recency('favoritedAt') +
-    clicks * SIGNAL_WEIGHTS.click * recency('lastClickedAt') +
+    saves * SIGNAL_WEIGHTS.save * recency('savedAt') +
+    openedOriginals * SIGNAL_WEIGHTS.openedOriginal * recency('lastOpenedOriginalAt') +
     deepReads * SIGNAL_WEIGHTS.deepRead * recency('lastMeaningfulReadAt')
   );
 
@@ -61,8 +61,8 @@ export function computeArticleSignals(article) {
     engagementScore: Math.max(0, positiveScore),
     positiveSignals: {
       positives,
-      stars,
-      clicks,
+      saves,
+      openedOriginals,
       deepReads,
       negatives: negative
     }
@@ -75,9 +75,9 @@ export function qualifyingArticleBehaviorTime(article, signals = computeArticleS
   if (![-1, 1].includes(preferenceSign) || Math.abs(signals.positiveScore - signals.negativeScore) < DEFAULT_ARTICLE_SIGNAL_THRESHOLD) return null;
   const counts = signals.positiveSignals;
   const strengths = {
-    lastClickedAt: counts.clicks * SIGNAL_WEIGHTS.click,
+    lastOpenedOriginalAt: counts.openedOriginals * SIGNAL_WEIGHTS.openedOriginal,
     lastMeaningfulReadAt: counts.deepReads * SIGNAL_WEIGHTS.deepRead,
-    favoritedAt: counts.stars * SIGNAL_WEIGHTS.star,
+    savedAt: counts.saves * SIGNAL_WEIGHTS.save,
     positiveFeedbackAt: counts.positives * SIGNAL_WEIGHTS.positive,
     negativeFeedbackAt: counts.negatives * SIGNAL_WEIGHTS.negative
   };
@@ -133,7 +133,7 @@ export function buildArticleIslandWeight(articleProfiles) {
 
   // Derives the average score required while building article island weight.
   const averageScore = articleProfiles.reduce((sum, article) => sum + article.score, 0) / articleProfiles.length;
-  // A favorite, deep read and capped clicks retain the existing seven-point scale,
+  // A saved, deep read and capped openedOriginals retain the existing seven-point scale,
   // so reducing click evidence does not amplify unchanged signals.
   const denominator = Math.max(1, ISLAND_SIGNAL_NORMALIZATION);
   // Derives the breadth bonus required while building article island weight.
@@ -278,8 +278,8 @@ export async function loadIslandBehavioralArticles(userId, { transaction } = {})
       articleVector: { [Op.ne]: null },
       [Op.or]: [
         { positiveInd: 1 },
-        { favoriteInd: 1 },
-        { clickedAmount: { [Op.gt]: 0 } },
+        { savedInd: 1 },
+        { openedOriginalCount: { [Op.gt]: 0 } },
         { attentionBucket: { [Op.gte]: 3 } },
         { negativeInd: 1 }
       ]
@@ -294,8 +294,8 @@ export async function loadIslandBehavioralArticles(userId, { transaction } = {})
       'articleVector',
       'embedding_model',
       'positiveInd',
-      'favoriteInd',
-      'clickedAmount',
+      'savedInd',
+      'openedOriginalCount',
       'attentionBucket',
       'negativeInd',
       'publishedAt',

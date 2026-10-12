@@ -83,16 +83,16 @@ describe('sidebar style cascade', () => {
   });
 
   it('uses a restrained semantic icon palette for All feeds statuses', () => {
-    for (const status of ['briefing', 'unread', 'read', 'favorite', 'hot', 'clicked']) {
+    for (const status of ['briefing', 'unread', 'read', 'saved', 'hot', 'opened-original']) {
       expect(themeSource.match(new RegExp(`--sidebar-icon-${status}:`, 'g'))).toHaveLength(2);
     }
 
     expect(sidebarRowSources[0]).toContain('.icon-briefing { color: var(--sidebar-icon-briefing); }');
     expect(sidebarRowSources[0]).toContain('.icon-unread { color: var(--sidebar-icon-unread); }');
     expect(sidebarRowSources[0]).toContain('.icon-read { color: var(--sidebar-icon-read); }');
-    expect(sidebarRowSources[0]).toContain('.icon-star { color: var(--sidebar-icon-favorite); }');
+    expect(sidebarRowSources[0]).toContain('.icon-saved { color: var(--sidebar-icon-saved); }');
     expect(sidebarRowSources[0]).toContain('.icon-hot { color: var(--sidebar-icon-hot); }');
-    expect(sidebarRowSources[0]).toContain('.icon-clicked { color: var(--sidebar-icon-clicked); }');
+    expect(sidebarRowSources[0]).toContain('.icon-opened-original { color: var(--sidebar-icon-opened-original); }');
     expect(sidebarRowSources[0]).toMatch(
       /\.sidebar-status-item\.selected \.sidebar-icon \{[\s\S]*?color: var\(--sidebar-row-selected-text\);/
     );

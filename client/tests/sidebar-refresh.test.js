@@ -39,8 +39,8 @@ const mountSidebar = () => {
     overview: {
       briefingCount: 0,
       categories: [],
-      clickedCount: 0,
-      favoriteCount: 0,
+      openedOriginalCount: 0,
+      savedCount: 0,
       fetchSmartFolders: vi.fn().mockResolvedValue({}),
       fetchTopTags: vi.fn().mockResolvedValue({}),
       hotCount: 0,

@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe('ArticleStorySourcesPopover', () => {
-  it('loads different-source articles when the source badge is clicked', async () => {
+  it('loads different-source articles when the source badge is openedOriginal', async () => {
     fetchStorySourceArticles.mockResolvedValue({
       data: {
         hasMore: false,

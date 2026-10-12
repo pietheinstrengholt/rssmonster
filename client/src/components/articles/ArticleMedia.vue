@@ -50,7 +50,7 @@
       target="_blank"
       rel="noopener noreferrer"
       :aria-label="linkLabel"
-      @click="$emit('media-clicked')"
+      @click="$emit('media-opened-original')"
     >
       <img
         v-if="thumbnailUrl"
@@ -99,7 +99,7 @@ const PROVIDER_LABELS = {
 };
 
 export default {
-  emits: ['media-clicked'],
+  emits: ['media-opened-original'],
   props: {
     media: { type: Object, required: true },
     articleUrl: { type: String, default: '' },

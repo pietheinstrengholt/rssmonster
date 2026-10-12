@@ -12,12 +12,12 @@ describe('buildArticlePersistenceValues', () => {
   it('stores initial rule clocks but excludes interaction clocks from source revisions', () => {
     const time = new Date('2026-09-14T12:00:00Z');
     const values = buildArticlePersistenceValues({ id: 7, userId: 42 }, {
-      title: 'Initial state', favoriteInd: 1, favoritedAt: time, clickedAmount: 1, lastClickedAt: time
+      title: 'Initial state', savedInd: 1, savedAt: time, openedOriginalCount: 1, lastOpenedOriginalAt: time
     });
-    expect(values).toMatchObject({ favoritedAt: time, lastClickedAt: time });
+    expect(values).toMatchObject({ savedAt: time, lastOpenedOriginalAt: time });
     const revision = selectMutableArticleSourceValues(values);
-    expect(revision).not.toHaveProperty('favoritedAt');
-    expect(revision).not.toHaveProperty('lastClickedAt');
+    expect(revision).not.toHaveProperty('savedAt');
+    expect(revision).not.toHaveProperty('lastOpenedOriginalAt');
   });
 
   it('maps shared create and update fields with explicit identities', () => {

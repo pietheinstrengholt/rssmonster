@@ -25,8 +25,8 @@ describe('resolvePredictedAffinity', () => {
         feedAttentionAvg: 0,
         feedDeepReadRatio: 0,
         feedSkimRatio: 0,
-        feedClickAvg: 0,
-        feedClickRatio: 0,
+        feedOpenedOriginalAvg: 0,
+        feedOpenedOriginalRatio: 0,
         feedAttentionSampleSize: 2
       }
     });
@@ -43,8 +43,8 @@ describe('resolvePredictedAffinity', () => {
         feedDeepReadRatio: 0,
         feedSkimRatio: 0.1,
         feedIgnoreRatio: 0.2,
-        feedClickAvg: 0.6,
-        feedClickRatio: 0.3,
+        feedOpenedOriginalAvg: 0.6,
+        feedOpenedOriginalRatio: 0.3,
         feedAttentionSampleSize: 2
       }
     });
@@ -61,8 +61,8 @@ describe('resolvePredictedAffinity', () => {
         feedDeepReadRatio: 0.13,
         feedSkimRatio: 0.2,
         feedIgnoreRatio: 0.1,
-        feedClickAvg: 0.4,
-        feedClickRatio: 0.2,
+        feedOpenedOriginalAvg: 0.4,
+        feedOpenedOriginalRatio: 0.2,
         feedAttentionSampleSize: 30
       }
     });

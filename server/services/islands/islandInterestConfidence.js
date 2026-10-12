@@ -15,15 +15,15 @@ export const IMPLICIT_EVIDENCE_LIMIT = 100;
 export const IMPLICIT_WINDOW_DAYS = 7;
 const IMPLICIT_HALF_LIFE_DAYS = 3;
 const IMPLICIT_SIGNALS = [
-  { field: 'lastClickedAt', type: 'click', authority: 0.05 },
+  { field: 'lastOpenedOriginalAt', type: 'click', authority: 0.05 },
   { field: 'lastMeaningfulReadAt', type: 'deep-read', authority: 0.10 }
 ];
 const DAY_MS = 86400000;
 const similarity = (a, b, modelA, modelB) => embeddingSimilarity(a, b, modelA, modelB, { parseStrings: true, coerceNumbers: true });
-export const isBehavioralEvidence = a => Boolean(a.positiveInd || a.favoriteInd || a.negativeInd || a.clickedAmount > 0 || a.attentionBucket >= 3);
+export const isBehavioralEvidence = a => Boolean(a.positiveInd || a.savedInd || a.negativeInd || a.openedOriginalCount > 0 || a.attentionBucket >= 3);
 
-const explicitSign = article => article.negativeInd ? -1 : article.positiveInd || article.favoriteInd ? 1 : 0;
-const implicitOnly = article => !explicitSign(article) && (article.clickedAmount > 0 || article.attentionBucket >= 3);
+const explicitSign = article => article.negativeInd ? -1 : article.positiveInd || article.savedInd ? 1 : 0;
+const implicitOnly = article => !explicitSign(article) && (article.openedOriginalCount > 0 || article.attentionBucket >= 3);
 // Implicit recency requires an observed interaction, never publication as a proxy.
 const implicitSignalAge = (source, field, now) => source[field] == null ? NaN : (now - new Date(source[field]).getTime()) / DAY_MS;
 const recentImplicitTimestamp = (source, now) => Math.max(...IMPLICIT_SIGNALS
@@ -38,7 +38,7 @@ export function islandCohesion(members, vector, embeddingModel = null) {
   const similarities = unique.map(article => similarity(article.articleVector, vector, article.embedding_model, embeddingModel)).filter(Number.isFinite).sort((a, b) => a - b);
   const n = similarities.length;
   const median = n ? (similarities[Math.floor((n - 1) / 2)] + similarities[Math.floor(n / 2)]) / 2 : null;
-  const positive = unique.filter(a => (a.positiveInd && !a.negativeInd) || a.favoriteInd || a.clickedAmount > 0 || a.attentionBucket >= 3).length;
+  const positive = unique.filter(a => (a.positiveInd && !a.negativeInd) || a.savedInd || a.openedOriginalCount > 0 || a.attentionBucket >= 3).length;
   const negative = unique.filter(a => a.negativeInd).length;
   const singleton = unique.length === 1;
   const lowCohesion = median != null && median < DEFAULT_ARTICLE_AFFINITY_THRESHOLD;
@@ -102,32 +102,32 @@ export function prepareIslandEvidence(islands, evidence, explicitEvidence = evid
   });
   return { islands: prepared, fallbackEvidence,
     implicitEvidence: [...new Map(implicitEvidence.filter(implicitOnly).map(article => [String(article.id), article])).values()],
-    suppressedExplicitEvidenceCount: explicitEvidence.filter(a => a.negativeInd || a.positiveInd || a.favoriteInd).length - fallbackEvidence.length };
+    suppressedExplicitEvidenceCount: explicitEvidence.filter(a => a.negativeInd || a.positiveInd || a.savedInd).length - fallbackEvidence.length };
 }
 
 // Apply interaction windows and stable interaction ordering before the existing evidence bounds.
 export async function loadIslandEvidence(userId, { transaction, now = Date.now(), positiveOnly = false } = {}) {
   const where = { userId, ...canonicalArticleWhere(), filteredInd: false, articleVector: { [Op.ne]: null } };
-  const attributes = ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'userId', 'feedId', 'publishedAt', 'articleVector', 'embedding_model', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', ...BEHAVIOR_TIMESTAMP_FIELDS];
+  const attributes = ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'userId', 'feedId', 'publishedAt', 'articleVector', 'embedding_model', 'positiveInd', 'negativeInd', 'savedInd', 'openedOriginalCount', 'attentionBucket', ...BEHAVIOR_TIMESTAMP_FIELDS];
   const query = (extra, limit, fields = BEHAVIOR_TIMESTAMP_FIELDS) => db.Article.findAll({ where: { ...where, ...extra }, attributes,
     order: [[behaviorTimestampExpression(db.sequelize, fields, now), 'DESC'], ['id', 'ASC']], limit, raw: true, transaction });
   const recent = field => db.Sequelize.where(behaviorTimestampExpression(db.sequelize, [field], now), {
     [Op.gte]: new Date(now - EXPLICIT_WINDOW_DAYS * DAY_MS), [Op.lte]: new Date(now)
   });
-  const implicitQuery = (field, condition) => query({ positiveInd: 0, negativeInd: 0, favoriteInd: 0,
+  const implicitQuery = (field, condition) => query({ positiveInd: 0, negativeInd: 0, savedInd: 0,
     ...condition, [field]: { [Op.gte]: new Date(now - IMPLICIT_WINDOW_DAYS * DAY_MS), [Op.lte]: new Date(now) }
   }, IMPLICIT_EVIDENCE_LIMIT, [field]);
-  const [islands, evidence, negative, positive, clicked, read] = await Promise.all([
+  const [islands, evidence, negative, positive, openedOriginal, read] = await Promise.all([
     db.Island.findAll({ where: { userId, ...activeIslandWhere(now), mutedInd: false,
       ...(positiveOnly ? { weight: { [Op.gt]: 0 } } : {}) }, attributes: ['id', 'userId', 'label', 'generatedLabel', 'weight', 'islandVector', 'embedding_model', 'supportArticleIds'], order: [['id', 'ASC']], raw: true, transaction }),
     query({ [Op.and]: [db.Sequelize.where(behaviorTimestampExpression(db.sequelize, BEHAVIOR_TIMESTAMP_FIELDS, now), { [Op.ne]: null })],
-      [Op.or]: [{ positiveInd: 1 }, { favoriteInd: 1 }, { negativeInd: 1 }, { clickedAmount: { [Op.gt]: 0 } }, { attentionBucket: { [Op.gte]: 3 } }] }, EVIDENCE_LIMIT),
+      [Op.or]: [{ positiveInd: 1 }, { savedInd: 1 }, { negativeInd: 1 }, { openedOriginalCount: { [Op.gt]: 0 } }, { attentionBucket: { [Op.gte]: 3 } }] }, EVIDENCE_LIMIT),
     query({ negativeInd: 1, [Op.and]: [recent('negativeFeedbackAt')] }, EXPLICIT_EVIDENCE_LIMIT, ['negativeFeedbackAt']),
     query({ negativeInd: 0, [Op.or]: [
       { positiveInd: 1, [Op.and]: [recent('positiveFeedbackAt')] },
-      { favoriteInd: 1, [Op.and]: [recent('favoritedAt')] }
-    ] }, EXPLICIT_EVIDENCE_LIMIT, ['positiveFeedbackAt', 'favoritedAt']),
-    implicitQuery('lastClickedAt', { clickedAmount: { [Op.gt]: 0 } }),
+      { savedInd: 1, [Op.and]: [recent('savedAt')] }
+    ] }, EXPLICIT_EVIDENCE_LIMIT, ['positiveFeedbackAt', 'savedAt']),
+    implicitQuery('lastOpenedOriginalAt', { openedOriginalCount: { [Op.gt]: 0 } }),
     implicitQuery('lastMeaningfulReadAt', { attentionBucket: { [Op.gte]: 3 } })
   ]);
   const supportIslandsByArticleId = new Map();
@@ -146,7 +146,7 @@ export async function loadIslandEvidence(userId, { transaction, now = Date.now()
   const confidenceEvidence = [...new Map([...evidence, ...support].map(article => [String(article.id), article])).values()];
   // Two bounded reads preserve each signal's clock; deduplicate and apply one
   // combined cap so an Article with both signals occupies only one slot.
-  const implicit = [...new Map([...clicked, ...read].map(article => [String(article.id), article])).values()]
+  const implicit = [...new Map([...openedOriginal, ...read].map(article => [String(article.id), article])).values()]
     .sort((a, b) => recentImplicitTimestamp(b, now) - recentImplicitTimestamp(a, now) || Number(a.id) - Number(b.id))
     .slice(0, IMPLICIT_EVIDENCE_LIMIT);
   return { ...prepareIslandEvidence(islands, confidenceEvidence, [...negative, ...positive], implicit), now };
@@ -198,7 +198,7 @@ export function evaluateArticleInterest(article, context, threshold = 0.62) {
     if (candidates[0]?.contribution) paths.push(candidates[0]);
   }
   for (const source of context.fallbackEvidence) {
-    const fields = source.negativeInd ? ['negativeFeedbackAt'] : ['positiveFeedbackAt', 'favoritedAt'];
+    const fields = source.negativeInd ? ['negativeFeedbackAt'] : ['positiveFeedbackAt', 'savedAt'];
     for (const field of fields.filter(field => activeSignal(source, field))) {
       const timestamp = signalTimestamp(source, field, context.now);
       const age = timestamp == null ? NaN : (context.now - new Date(timestamp).getTime()) / DAY_MS;

@@ -17,7 +17,7 @@ export function summarizeIslandSelection(articles, vector, embeddingModel, weigh
   const signedEvidence = support.reduce((sum, row) => sum + row.score, 0);
   const explicitSupportCount = support.filter(({ article }) => {
     const signals = computeArticleSignals({ positiveInd: article.positiveInd, negativeInd: article.negativeInd,
-      favoriteInd: article.favoriteInd, publishedAt: article.publishedAt, favoritedAt: article.favoritedAt,
+      savedInd: article.savedInd, publishedAt: article.publishedAt, savedAt: article.savedAt,
       positiveFeedbackAt: article.positiveFeedbackAt, negativeFeedbackAt: article.negativeFeedbackAt });
     return Math.abs(signals.positiveScore - signals.negativeScore) >= DEFAULT_ARTICLE_SIGNAL_THRESHOLD;
   }).length;

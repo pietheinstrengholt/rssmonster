@@ -59,7 +59,7 @@ not signs that a long-running project is obsolete.
 
 ## Where RSSMonster differs
 
-RSSMonster retains rules, tags, favorites, search, and chronological sorting,
+RSSMonster retains rules, tags, saved, search, and chronological sorting,
 but adds a different kind of structure. Semantic similarity connects related
 articles; [Events]({{ '/events.html' | relative_url }}) group reports about one
 occurrence; and [Interest Islands]({{ '/interest-islands.html' | relative_url }})

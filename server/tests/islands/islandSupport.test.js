@@ -17,7 +17,7 @@ async function graph() {
   const category = await db.Category.create({ userId: user.id, name: 'Support' });
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Support', url: `https://${user.id}.example/rss` });
   const values = { userId: user.id, feedId: feed.id, title: candidate.title, status: 'read',
-    articleVector: [1, 0], embedding_model: 'test-model', favoriteInd: 1, favoritedAt: new Date(now - 30 * day),
+    articleVector: [1, 0], embedding_model: 'test-model', savedInd: 1, savedAt: new Date(now - 30 * day),
     publishedAt: new Date(now - 30 * day) };
   return { user, values };
 }
@@ -25,7 +25,7 @@ async function graph() {
 const calibrate = async userId => db.sequelize.transaction(async transaction =>
   persistInterestIslandProfiles(userId, await buildInterestIslandProfilesForUser(userId, { transaction }), transaction));
 const distract = values => db.Article.bulkCreate(Array.from({ length: EVIDENCE_LIMIT + 1 }, () => ({
-  ...values, favoriteInd: 0, favoritedAt: null, attentionBucket: 3,
+  ...values, savedInd: 0, savedAt: null, attentionBucket: 3,
   lastMeaningfulReadAt: new Date(now), articleVector: [0, 1]
 })));
 
@@ -33,7 +33,7 @@ describe('retained Island support', () => {
   it('keeps older calibrated support and held-out confidence when unrelated recent behavior fills the sample', async () => {
     const { user, values } = await graph();
     const sources = await db.Article.bulkCreate(Array.from({ length: 6 }, (_, index) => ({
-      ...values, favoritedAt: new Date(now - (30 + index) * day)
+      ...values, savedAt: new Date(now - (30 + index) * day)
     })));
     const [island] = await calibrate(user.id);
     expect(island.supportArticleIds).toEqual(sources.map(article => String(article.id)));
@@ -65,7 +65,7 @@ describe('retained Island support', () => {
     await sources[1].update({ userId: foreign.user.id });
     await sources[2].update({ filteredInd: true });
     await sources[3].update({ duplicateOfArticleId: sources[8].id });
-    await sources[4].update({ favoriteInd: 0 });
+    await sources[4].update({ savedInd: 0 });
     await sources[5].update({ embedding_model: 'other-model' });
     await sources[6].update({ articleVector: [0, 1] });
     await sources[7].update({ articleVector: null });
@@ -87,7 +87,7 @@ describe('retained Island support', () => {
     expect(island.supportArticleIds).toEqual(initialIds);
     await calibrate(user.id);
     expect((await island.reload()).supportArticleIds).toEqual(initialIds);
-    await sources[0].update({ favoriteInd: 0 });
+    await sources[0].update({ savedInd: 0 });
     await sources[1].update({ filteredInd: true });
     await expect(db.sequelize.transaction(async transaction => {
       const profiles = await buildInterestIslandProfilesForUser(user.id, { transaction });
@@ -101,7 +101,7 @@ describe('retained Island support', () => {
 
   it('refreshes unmatched active Island support and preserves negative interest', async () => {
     const { user, values } = await graph();
-    const source = await db.Article.create({ ...values, favoriteInd: 0, favoritedAt: null,
+    const source = await db.Article.create({ ...values, savedInd: 0, savedAt: null,
       negativeInd: 1, negativeFeedbackAt: new Date(now - 30 * day) });
     const island = await db.Island.create({ userId: user.id, label: 'Existing negative preference',
       weight: -0.8, islandVector: [1, 0], embedding_model: 'test-model', lastBehaviorAt: new Date(now - 30 * day) });

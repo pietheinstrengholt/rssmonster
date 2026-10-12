@@ -31,8 +31,8 @@ describe('behavioral article island profiles', () => {
       id: index + 2, title: 'Repeated recent interest', articleVector: [0, 1], embedding_model: 'test-model',
       attentionBucket: 3, lastMeaningfulReadAt: new Date(Date.now() - (index + 1) * 1000)
     }));
-    const strong = { id: 1, title: 'Older favorite', articleVector: [1, 0], embedding_model: 'test-model',
-      favoriteInd: 1, favoritedAt: new Date(Date.now() - 80 * 86400000) };
+    const strong = { id: 1, title: 'Older saved', articleVector: [1, 0], embedding_model: 'test-model',
+      savedInd: 1, savedAt: new Date(Date.now() - 80 * 86400000) };
     mocks.findAll.mockResolvedValue([...rows.reverse(), strong]);
     const profiles = await buildInterestIslandProfilesForUser(12);
     expect(profiles.summary.discoveryProfileCount).toBe(ISLAND_DISCOVERY_PROFILE_LIMIT);
@@ -47,7 +47,7 @@ describe('behavioral article island profiles', () => {
     const rows = [0, 40, 60, 70, 80, 90, 100].map((angle, index) => ({
       id: index + 1, title: `Angle ${angle}`, embedding_model: 'test-model',
       articleVector: [Math.cos(angle * Math.PI / 180), Math.sin(angle * Math.PI / 180)],
-      clickedAmount: 1, lastClickedAt: new Date()
+      openedOriginalCount: 1, lastOpenedOriginalAt: new Date()
     }));
     mocks.findAll.mockResolvedValue(rows);
     const profiles = await buildInterestIslandProfilesForUser(12);
@@ -61,8 +61,8 @@ describe('behavioral article island profiles', () => {
   it('does not let a fresh opposing click make expired negative evidence consume a formation slot', async () => {
     mocks.findAll.mockResolvedValue([
       { id: 1, title: 'Old dislike', articleVector: [1, 0], embedding_model: 'model-a', negativeInd: 1,
-        negativeFeedbackAt: new Date(Date.now() - 100 * 86400000), clickedAmount: 2, lastClickedAt: new Date() },
-      { id: 2, title: 'New interest', articleVector: [0, 1], embedding_model: 'model-a', clickedAmount: 1, lastClickedAt: new Date() }
+        negativeFeedbackAt: new Date(Date.now() - 100 * 86400000), openedOriginalCount: 2, lastOpenedOriginalAt: new Date() },
+      { id: 2, title: 'New interest', articleVector: [0, 1], embedding_model: 'model-a', openedOriginalCount: 1, lastOpenedOriginalAt: new Date() }
     ]);
     const profiles = await buildInterestIslandProfilesForUser(12, { maxIslands: 1 });
     expect(profiles).toHaveLength(1);
@@ -81,27 +81,27 @@ describe('behavioral article island profiles', () => {
     expect(mocks.findAll.mock.calls[0][0].attributes).toContain('embedding_model');
   });
 
-  it.each([[0, 0], [1, 1], [2, 2], [3, 2], [20, 2]])('scores %i clicks as %i points before decay', (clickedAmount, expected) => {
-    const result = computeArticleSignals({ clickedAmount, lastClickedAt: new Date() });
+  it.each([[0, 0], [1, 1], [2, 2], [3, 2], [20, 2]])('scores %i openedOriginals as %i points before decay', (openedOriginalCount, expected) => {
+    const result = computeArticleSignals({ openedOriginalCount, lastOpenedOriginalAt: new Date() });
     expect(result.positiveScore).toBe(expected);
-    expect(result.positiveSignals.clicks).toBe(expected);
+    expect(result.positiveSignals.openedOriginals).toBe(expected);
   });
 
-  it('keeps unchanged favorite evidence on the existing Island normalization scale', () => {
+  it('keeps unchanged saved evidence on the existing Island normalization scale', () => {
     expect(buildArticleIslandWeight([{ score: 4 }])).toBe(0.6014);
   });
 
-  it('keeps a fresh favorite, capped clicks and deep read below a fresh dislike', () => {
-    const result = computeArticleSignals({ favoriteInd: 1, clickedAmount: 20, attentionBucket: 3,
+  it('keeps a fresh saved, capped openedOriginals and deep read below a fresh dislike', () => {
+    const result = computeArticleSignals({ savedInd: 1, openedOriginalCount: 20, attentionBucket: 3,
       negativeInd: 1, publishedAt: new Date() });
     expect(result.positiveScore - result.negativeScore).toBe(-1);
   });
 
-  it('caps clicks and combines positive and deep-read signals', () => {
+  it('caps openedOriginals and combines positive and deep-read signals', () => {
     const result = computeArticleSignals({
       positiveInd: 1,
-      favoriteInd: 1,
-      clickedAmount: 8,
+      savedInd: 1,
+      openedOriginalCount: 8,
       attentionBucket: 3,
       negativeInd: 0,
       publishedAt: new Date()
@@ -111,7 +111,7 @@ describe('behavioral article island profiles', () => {
       positiveScore: 15,
       negativeScore: 0,
       engagementScore: 15,
-      positiveSignals: { positives: 1, stars: 1, clicks: 2, deepReads: 1, negatives: 0 }
+      positiveSignals: { positives: 1, saves: 1, openedOriginals: 2, deepReads: 1, negatives: 0 }
     });
   });
 
@@ -126,17 +126,17 @@ describe('behavioral article island profiles', () => {
   });
 
   it('preserves independent engagement when resolving contradictory explicit feedback', () => {
-    expect(computeArticleSignals({ positiveInd: 1, negativeInd: 1, favoriteInd: 1,
-      clickedAmount: 8, attentionBucket: 3, publishedAt: new Date() }))
+    expect(computeArticleSignals({ positiveInd: 1, negativeInd: 1, savedInd: 1,
+      openedOriginalCount: 8, attentionBucket: 3, publishedAt: new Date() }))
       .toEqual({ positiveScore: 7, negativeScore: 8, engagementScore: 7,
-        positiveSignals: { positives: 0, stars: 1, clicks: 2, deepReads: 1, negatives: 1 } });
+        positiveSignals: { positives: 0, saves: 1, openedOriginals: 2, deepReads: 1, negatives: 1 } });
   });
 
   it('leaves below-threshold evidence unassigned when the community cap is reached', async () => {
     mocks.findAll.mockResolvedValue([
       { id: 1, title: 'Primary', embedding_model: 'test-model', articleVector: [1, 0], positiveInd: 1, publishedAt: new Date() },
-      { id: 2, title: 'Related', embedding_model: 'test-model', articleVector: [0.99, 0.01], favoriteInd: 1, publishedAt: new Date() },
-      { id: 3, title: 'Different', embedding_model: 'test-model', articleVector: [0, 1], clickedAmount: 1, publishedAt: new Date() },
+      { id: 2, title: 'Related', embedding_model: 'test-model', articleVector: [0.99, 0.01], savedInd: 1, publishedAt: new Date() },
+      { id: 3, title: 'Different', embedding_model: 'test-model', articleVector: [0, 1], openedOriginalCount: 1, publishedAt: new Date() },
       { id: 4, title: 'No vector', embedding_model: 'test-model', articleVector: null, positiveInd: 1 },
       { id: 5, title: 'No signal', embedding_model: 'test-model', articleVector: [1, 0] }
     ]);
@@ -151,6 +151,6 @@ describe('behavioral article island profiles', () => {
     const uncapped = await buildInterestIslandProfilesForUser(12, { maxIslands: 2 });
     expect(uncapped.map(profile => profile.articles.map(article => article.articleId))).toEqual([[1, 2], [3]]);
     expect(uncapped.summary.unassignedBehavioralProfiles).toBe(0);
-    expect(profiles[0].positiveSignals).toEqual({ positives: 1, stars: 1, clicks: 0, deepReads: 0, negatives: 0 });
+    expect(profiles[0].positiveSignals).toEqual({ positives: 1, saves: 1, openedOriginals: 0, deepReads: 0, negatives: 0 });
   });
 });

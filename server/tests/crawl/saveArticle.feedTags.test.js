@@ -65,8 +65,8 @@ const saveArguments = () => [
   },
   {
     status: 'unread',
-    favoriteInd: false,
-    clickedAmount: 0,
+    savedInd: false,
+    openedOriginalCount: 0,
     hotInd: false,
     tags: []
   }
@@ -174,8 +174,8 @@ describe('saveArticle feed tags', () => {
       },
       {
         status: 'unread',
-        favoriteInd: false,
-        clickedAmount: 0,
+        savedInd: false,
+        openedOriginalCount: 0,
         hotInd: false,
         tags: ['rule-tag', 'hardware']
       }
@@ -273,8 +273,8 @@ describe('saveArticle feed tags', () => {
       },
       {
         status: 'unread',
-        favoriteInd: false,
-        clickedAmount: 0,
+        savedInd: false,
+        openedOriginalCount: 0,
         hotInd: false,
         tags: []
       }
@@ -316,8 +316,8 @@ describe('saveArticle feed tags', () => {
         shouldDiscard: true,
         status: 'unread',
         filteredInd: false,
-        favoriteInd: 1,
-        clickedAmount: 2,
+        savedInd: 1,
+        openedOriginalCount: 2,
         hotInd: true,
         tags: ['rule-tag']
       }
@@ -329,8 +329,8 @@ describe('saveArticle feed tags', () => {
       expect.objectContaining({
         status: 'unread',
         filteredInd: true,
-        favoriteInd: undefined,
-        clickedAmount: undefined,
+        savedInd: undefined,
+        openedOriginalCount: undefined,
         hotInd: undefined,
         hotlinks: undefined,
         contentOriginal: '<p>Discarded body</p>',

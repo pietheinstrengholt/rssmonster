@@ -138,9 +138,9 @@ async function main() {
         'id',
         'feedId',
         'status',
-        'favoriteInd',
+        'savedInd',
         'negativeInd',
-        'clickedAmount',
+        'openedOriginalCount',
         'title',
         'description',
         'contentOriginal',
@@ -184,9 +184,9 @@ async function main() {
         publishedAt: articlePublished(article),
         feedId: feedIdMap.get(article.feedId),
         status: article.status || 'unread',
-        favoriteInd: article.favoriteInd || 0,
+        savedInd: article.savedInd || 0,
         negativeInd: article.negativeInd || 0,
-        clickedAmount: article.clickedAmount || 0
+        openedOriginalCount: article.openedOriginalCount || 0
       }))
       .filter(article => article.feedId)
   };

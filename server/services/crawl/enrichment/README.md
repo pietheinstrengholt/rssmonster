@@ -8,7 +8,7 @@ applyActions.js
 evaluate user action regular expressions;
 inspect explicit publisher fields;
 return action results without database writes;
-support discard/filter, read, favorite, clicked, advertisement, quality, and tag actions;
+support discard/filter, read, saved, openedOriginal, advertisement, quality, and tag actions;
 preserve deterministic action ordering;
 handle invalid regular expressions safely.
 
@@ -23,8 +23,8 @@ invalid legacy rules are logged and skipped during crawling.
 
 shouldDiscard
 status
-favoriteInd
-clickedAmount
+savedInd
+openedOriginalCount
 advertisementScore
 qualityScore
 tags

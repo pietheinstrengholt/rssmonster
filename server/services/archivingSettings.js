@@ -3,8 +3,8 @@ import db from '../models/index.js';
 
 const fields = {
   neverDeleteUnread: 'neverDeleteUnreadArticles',
-  neverDeleteFavorites: 'neverDeleteFavorites',
-  neverDeleteClicked: 'neverDeleteClickedArticles',
+  neverDeleteSaved: 'neverDeleteSaved',
+  neverDeleteOpenedOriginals: 'neverDeleteOpenedOriginalArticles',
   maximumAgeValue: 'maximumArticleAge',
   maximumAgeUnit: 'maximumArticleAgeUnit',
   maximumArticlesPerFeed: 'maximumArticlesPerFeed',
@@ -13,8 +13,8 @@ const fields = {
 
 export const archivingSettingsSchema = z.strictObject({
   neverDeleteUnread: z.boolean(),
-  neverDeleteFavorites: z.boolean(),
-  neverDeleteClicked: z.boolean(),
+  neverDeleteSaved: z.boolean(),
+  neverDeleteOpenedOriginals: z.boolean(),
   maximumAgeValue: z.number().int().min(1).max(2147483647),
   maximumAgeUnit: z.enum(['days', 'weeks', 'months', 'years']),
   maximumArticlesPerFeed: z.number().int().min(1).max(1000000).nullable(),

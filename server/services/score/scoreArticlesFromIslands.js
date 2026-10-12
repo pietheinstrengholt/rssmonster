@@ -61,7 +61,7 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
     const batch = await Article.findAll({ where: {
       userId, status: 'unread', ...canonicalArticleWhere(), filteredInd: false, id: { [Op.gt]: afterId },
       ...(createdAtFrom ? { createdAt: { [Op.gte]: createdAtFrom } } : {})
-    }, attributes: ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'articleVector', 'embedding_model', 'interestScore', 'positiveInd', 'negativeInd', 'favoriteInd', 'clickedAmount', 'attentionBucket'],
+    }, attributes: ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'articleVector', 'embedding_model', 'interestScore', 'positiveInd', 'negativeInd', 'savedInd', 'openedOriginalCount', 'attentionBucket'],
     order: [['id', 'ASC']], limit: ARTICLE_BATCH_SIZE, transaction });
     if (!batch.length) break;
     summary.scannedCount += batch.length;

@@ -266,7 +266,7 @@ describe('ArticleFeed visibility tracking', () => {
       ...createFocusedStores({
         selection: {
           currentSelection: {
-            status: 'favorite',
+            status: 'saved',
             markAsReadOnScroll: false
           }
         }

@@ -92,7 +92,7 @@ describe('offline authentication', () => {
   it('blocks offline mutations before they reach the network', async () => {
     const adapter = vi.fn();
     setOfflineReadOnly(true);
-    await expect(api.post('/articles/markasfavorite/1', { update: 'mark' }, { adapter })).rejects.toMatchObject({ code: 'ERR_OFFLINE' });
+    await expect(api.post('/articles/mark-saved/1', { update: 'mark' }, { adapter })).rejects.toMatchObject({ code: 'ERR_OFFLINE' });
     expect(adapter).not.toHaveBeenCalled();
   });
 });

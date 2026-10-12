@@ -12,10 +12,10 @@ export async function updateArticleBehavior(target, values, options = {}) {
     throw new TypeError('Behavior updates require an owned user');
   }
   const triggerReasons = [
-    ...(Object.hasOwn(values, 'favoritedAt') ? [values.favoriteInd ? 'favorite' : 'unfavorite'] : []),
+    ...(Object.hasOwn(values, 'savedAt') ? [values.savedInd ? 'saved' : 'unsaved'] : []),
     ...(values.positiveFeedbackAt ? ['more-like-this'] : []),
     ...(values.negativeFeedbackAt ? ['not-interested'] : []),
-    ...(Object.hasOwn(values, 'lastClickedAt') ? [values.lastClickedAt ? 'click' : 'click-cleared'] : []),
+    ...(Object.hasOwn(values, 'lastOpenedOriginalAt') ? [values.lastOpenedOriginalAt ? 'opened-original' : 'opened-original-cleared'] : []),
     ...(values.lastMeaningfulReadAt ? ['deep-read'] : [])
   ];
   const write = async transaction => {

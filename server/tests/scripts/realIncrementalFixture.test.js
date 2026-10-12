@@ -27,10 +27,10 @@ describe('real incremental fixture export', () => {
     expect(containsSecret('-----BEGIN PRIVATE KEY-----')).toBe(true);
     const row = { id: 987, userId: 123, eventId: 456, url: 'https://news.example.org/story',
       title: 'An original headline', description: 'An original description', publishedAt: '2026-09-01T00:00:00Z',
-      favoriteInd: 1, negativeInd: 1, clickedAmount: 20, password: 'private', contentOriginal: null };
+      savedInd: 1, negativeInd: 1, openedOriginalCount: 20, password: 'private', contentOriginal: null };
     const exported = sanitizeArticle(row, 'real-incremental-001', 301);
     expect(exported).toMatchObject({ sourceId: 'real-incremental-001', feedId: 301, contentOriginal: null,
-      title: row.title, description: row.description, favoriteInd: 0, negativeInd: 0, clickedAmount: 0 });
+      title: row.title, description: row.description, savedInd: 0, negativeInd: 0, openedOriginalCount: 0 });
     for (const field of ['id', 'userId', 'eventId', 'password']) expect(exported).not.toHaveProperty(field);
     expect(exported.regression).toMatchObject({ originallyEventLinked: true });
   });
@@ -52,7 +52,7 @@ describe('real incremental fixture export', () => {
       expect(vector.articleVector).toHaveLength(1024);
       expect(vector.articleVector.every(Number.isFinite)).toBe(true);
       expect(fixture.feeds.some(f => f.id === article.feedId)).toBe(true);
-      expect(article.favoriteInd + article.negativeInd + article.clickedAmount).toBe(0);
+      expect(article.savedInd + article.negativeInd + article.openedOriginalCount).toBe(0);
       expect(Number.isFinite(Date.parse(article.publishedAt))).toBe(true);
       expect(article.regression.scenario).toBe('real-background');
     }

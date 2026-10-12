@@ -71,7 +71,7 @@ feeds will be checked twice.
 | --- | --- |
 | `npm run semantic:repair` | Repair the recent semantic window for all users, or one user with `--userId=<id>`. It repairs Events and refreshes interest scores without rebuilding all history. |
 | `npm run semantic:all` | Run a full historical semantic rebuild for all users. Supports `--userId=<id>` and `--batchSize=<count>`. This is substantially heavier than a recent repair. |
-| `npm run semantic:model-rebuild` | Clear incompatible vectors and semantic state after changing embedding models, then rebuild vectors only for starred or clicked articles. Requires `--dry-run` or explicit `--confirm`; see [Model Usage]({% link model-usage.md %}#reset-and-rebuild-an-existing-environment). |
+| `npm run semantic:model-rebuild` | Clear incompatible vectors and semantic state after changing embedding models, then rebuild vectors only for saved or openedOriginal articles. Requires `--dry-run` or explicit `--confirm`; see [Model Usage]({% link model-usage.md %}#reset-and-rebuild-an-existing-environment). |
 | `npm run events` | Re-evaluate recent Event assignment independently of scoring. The default scope is `recent-repair`; pass `--scope=incremental` for only currently unassigned recent articles and optionally `--userId=<id>`. |
 | `npm run events:backfill` | Backfill missing Events from historical vectorized articles. The package command accepts additional `--userId=<id>` or `--batchSize=<count>` arguments. |
 | `npm run islands` | Recalibrate Interest Islands for users and refresh article interest scores. |

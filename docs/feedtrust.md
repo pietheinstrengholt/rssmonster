@@ -67,7 +67,7 @@ uses the existing signals:
 
 | Signal | Engagement points |
 | --- | ---: |
-| Favorite or bookmark | `1.0` |
+| Saved or bookmark | `1.0` |
 | At least one outbound click | `0.5` |
 | Attention bucket 1 | `0.25` |
 | Attention bucket 2 | `0.75` |
@@ -78,7 +78,7 @@ One article contributes at most `2.5` points. The average is normalized to
 `0.0`–`1.0`.
 
 Only meaningfully exposed articles form the denominator: articles marked read,
-or articles with an attention bucket, click, favorite, or explicit negative
+or articles with an attention bucket, click, saved, or explicit negative
 action. A large unread backlog therefore does not automatically make a source
 look less valuable merely because the user could not consume every item.
 
@@ -143,7 +143,7 @@ The same batch also refreshes feed-level attention and click statistics:
 - average attention among measured articles;
 - deep-read and skim ratios;
 - ignored-article ratio;
-- average clicks and clicked-article ratio; and
+- average clicks and openedOriginal-article ratio; and
 - attention sample count.
 
 These fields help predict reading affinity for new unread articles. They are

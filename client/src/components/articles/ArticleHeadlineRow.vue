@@ -16,7 +16,7 @@
     <img v-if="thumbnailUrl" :src="thumbnailUrl" class="article-list-thumbnail" alt="" width="72" height="72" loading="lazy" decoding="async" @error="failedImageUrl = thumbnailUrl" />
     <div class="article-list-main">
       <h5 class="article-list-title">
-        <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" @click="$emit('article-clicked')"><HighlightedText :text="title" :terms="highlightTerms" /></a>
+        <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" @click="$emit('article-opened-original')"><HighlightedText :text="title" :terms="highlightTerms" /></a>
         <span v-else class="article-link"><HighlightedText :text="title" :terms="highlightTerms" /></span>
       </h5>
       <div class="article-list-meta">
@@ -42,13 +42,13 @@
           <button v-if="hasHiddenRuleTags" type="button" class="tag-disclosure" :aria-expanded="tagsExpanded ? 'true' : 'false'" :aria-label="tagsExpanded ? 'Show fewer tags' : `Show ${hiddenRuleTagCount} more tags`" @click.stop="tagsExpanded = !tagsExpanded">{{ tagsExpanded ? 'Show less' : `+${hiddenRuleTagCount}` }}</button>
         </div>
       </div>
-      <ArticlePreviewFallback v-if="!hasArticlePreview" :url="url" @open-original="$emit('article-clicked')" />
+      <ArticlePreviewFallback v-if="!hasArticlePreview" :url="url" @open-original="$emit('article-opened-original')" />
     </div>
     <div class="article-list-actions">
       <span class="article-list-time">{{ formatDate(publishedAt) }}</span>
-      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :status="status" @toggle-read-status="$emit('toggle-read-status')" :clickedAmount="clickedAmount" :clickPending="clickPending" :favoriteInd="favoriteInd" :favoritePending="favoritePending" @toggle-clicked="$emit('toggle-clicked')" @toggle-favorite="$emit('toggle-favorite')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
-      <button v-if="!isMobilePortrait" class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" :disabled="favoritePending" @click.stop="$emit('toggle-favorite')">
-        <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
+      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :status="status" @toggle-read-status="$emit('toggle-read-status')" :openedOriginalCount="openedOriginalCount" :openedOriginalPending="openedOriginalPending" :savedInd="savedInd" :savedPending="savedPending" @toggle-openedOriginal="$emit('toggle-opened-original')" @toggle-saved="$emit('toggle-saved')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
+      <button v-if="!isMobilePortrait" class="article-list-action-button article-list-saved-button" type="button" :aria-label="savedLabel" :title="savedLabel" :disabled="savedPending" @click.stop="$emit('toggle-saved')">
+        <BootstrapIcon :icon="savedInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
       </button>
     </div>
   </div>
@@ -66,7 +66,7 @@ import { usableHttpUrl } from '../../utils/content.js';
 
 export default {
   components: { ArticleActionsMenu, ArticleDevelopingStoryPopover, ArticlePreviewFallback, ArticleStorySourcesPopover, HighlightedText },
-  emits: ['article-clicked', 'article-touched', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags', 'not-interested', 'select-tag', 'swipe-cancel', 'swipe-touch-end', 'swipe-touch-move', 'swipe-touch-start', 'toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'view-duplicate-articles', 'view-event-articles'],
+  emits: ['article-opened-original', 'article-touched', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags', 'not-interested', 'select-tag', 'swipe-cancel', 'swipe-touch-end', 'swipe-touch-move', 'swipe-touch-start', 'toggle-opened-original', 'toggle-saved', 'toggle-read-status', 'view-duplicate-articles', 'view-event-articles'],
   data() {
     return {
       tagsExpanded: false,
@@ -81,10 +81,10 @@ export default {
     url: { type: String, default: '' },
     title: { type: String, default: '' },
     status: { type: String, default: '' },
-    clickedAmount: { type: Number, default: 0 },
-    clickPending: { type: Boolean, default: false },
-    favoriteInd: { type: Number, default: 0 },
-    favoritePending: { type: Boolean, default: false },
+    openedOriginalCount: { type: Number, default: 0 },
+    openedOriginalPending: { type: Boolean, default: false },
+    savedInd: { type: Number, default: 0 },
+    savedPending: { type: Boolean, default: false },
     hotInd: { type: Number, default: 0 },
     mobileSwipeStyle: { type: Object, default: () => ({}) },
     feedFavicon: { type: String, default: '' },
@@ -139,9 +139,9 @@ export default {
     showSimilarBadge() {
       return !this.isEventArticle && this.eventId !== null && this.eventArticleCountTotal > 1 && this.grouping !== 'none';
     },
-    // Returns the accessible label for the favorite toggle.
-    favoriteLabel() {
-      return this.favoriteInd === 1 ? 'Remove from saved' : 'Save article';
+    // Returns the accessible label for the saved toggle.
+    savedLabel() {
+      return this.savedInd === 1 ? 'Remove from saved' : 'Save article';
     }
   },
   methods: {
@@ -401,8 +401,8 @@ export default {
   color: var(--article-heading-text);
 }
 
-.article-list-favorite-button .bi {
-  color: var(--article-star-icon);
+.article-list-saved-button .bi {
+  color: var(--article-saved-icon);
 }
 
 /* A passive read tint must not override the keyboard-selected row. */

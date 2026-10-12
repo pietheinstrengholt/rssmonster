@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises } from '@vue/test-utils';
 
 import {
-  markAsFavorite,
-  markClicked,
+  markAsSaved,
+  markOpenedOriginal,
   markMoreLikeThis,
   markNotInterested,
-  updateClickedStatus
+  updateOpenedOriginalStatus
 } from '../src/api/articles.js';
 import { muteFeed } from '../src/api/feeds.js';
 import { articleActionMethods } from '../src/components/articles/helpers/articleActions.js';
@@ -14,11 +14,11 @@ import { notifyActionError, notifyActionSuccess } from '../src/services/actionNo
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
-  markAsFavorite: vi.fn(),
-  markClicked: vi.fn(),
+  markAsSaved: vi.fn(),
+  markOpenedOriginal: vi.fn(),
   markMoreLikeThis: vi.fn(),
   markNotInterested: vi.fn(),
-  updateClickedStatus: vi.fn()
+  updateOpenedOriginalStatus: vi.fn()
 }));
 
 vi.mock('../src/api/feeds.js', () => ({
@@ -34,7 +34,7 @@ vi.mock('../src/services/actionNotifications.js', () => ({
 const createContext = (overrides = {}) => {
   const stores = createFocusedStores({
     overview: {
-      applyFavoriteDelta: vi.fn()
+      applySavedDelta: vi.fn()
     }
   });
   return {
@@ -42,9 +42,9 @@ const createContext = (overrides = {}) => {
     id: 42,
     feedId: 8,
     feed: { feedName: 'Example Feed' },
-    clickedAmount: 0,
-    clickMutationPending: false,
-    favoriteInd: 0,
+    openedOriginalCount: 0,
+    openedOriginalMutationPending: false,
+    savedInd: 0,
     $emit: vi.fn(),
     ...articleActionMethods,
     ...overrides
@@ -64,105 +64,105 @@ afterEach(() => {
 });
 
 describe('articleActionMethods', () => {
-  // Verifies click tracking always reconciles the local clicked state.
-  it('marks an article clicked and emits the local update', async () => {
+  // Verifies click tracking always reconciles the local openedOriginal state.
+  it('marks an article openedOriginal and emits the local update', async () => {
     const context = createContext();
-    markClicked.mockResolvedValue();
+    markOpenedOriginal.mockResolvedValue();
 
-    context.articleClicked();
+    context.articleOpenedOriginal();
     await flushPromises();
 
-    expect(markClicked).toHaveBeenCalledWith(42);
-    expect(context.$emit).toHaveBeenCalledWith('update-clicked', {
+    expect(markOpenedOriginal).toHaveBeenCalledWith(42);
+    expect(context.$emit).toHaveBeenCalledWith('update-opened-original', {
       id: 42,
-      clickedAmount: 1
+      openedOriginalCount: 1
     });
   });
 
-  it('marks an article as clicked from the actions menu', async () => {
+  it('marks an article as opened original from the actions menu', async () => {
     const context = createContext();
-    updateClickedStatus.mockResolvedValue({ data: { clickedAmount: 1 } });
+    updateOpenedOriginalStatus.mockResolvedValue({ data: { openedOriginalCount: 1 } });
 
-    await context.toggleClicked();
+    await context.toggleOpenedOriginal();
 
-    expect(updateClickedStatus).toHaveBeenCalledWith(42, 'mark');
-    expect(context.$emit).toHaveBeenCalledWith('update-clicked', {
+    expect(updateOpenedOriginalStatus).toHaveBeenCalledWith(42, 'mark');
+    expect(context.$emit).toHaveBeenCalledWith('update-opened-original', {
       id: 42,
-      clickedAmount: 1
+      openedOriginalCount: 1
     });
-    expect(context.clickMutationPending).toBe(false);
+    expect(context.openedOriginalMutationPending).toBe(false);
   });
 
-  it('unmarks a clicked article from the actions menu', async () => {
-    const context = createContext({ clickedAmount: 3 });
-    updateClickedStatus.mockResolvedValue({ data: { clickedAmount: 0 } });
+  it('unmarks a openedOriginal article from the actions menu', async () => {
+    const context = createContext({ openedOriginalCount: 3 });
+    updateOpenedOriginalStatus.mockResolvedValue({ data: { openedOriginalCount: 0 } });
 
-    await context.toggleClicked();
+    await context.toggleOpenedOriginal();
 
-    expect(updateClickedStatus).toHaveBeenCalledWith(42, 'unmark');
-    expect(context.$emit).toHaveBeenCalledWith('update-clicked', {
+    expect(updateOpenedOriginalStatus).toHaveBeenCalledWith(42, 'unmark');
+    expect(context.$emit).toHaveBeenCalledWith('update-opened-original', {
       id: 42,
-      clickedAmount: 0
+      openedOriginalCount: 0
     });
   });
 
-  // Verifies marking a favorite updates overview counts and the article state.
-  it('marks an article as favorite', async () => {
+  // Verifies marking a saved updates overview counts and the article state.
+  it('marks an article as saved', async () => {
     const context = createContext();
-    markAsFavorite.mockResolvedValue({
+    markAsSaved.mockResolvedValue({
       data: {
         feedId: 8,
         feed: { categoryId: 3 }
       }
     });
 
-    context.markAsFavorite();
+    context.markAsSaved();
     await flushPromises();
 
-    expect(markAsFavorite).toHaveBeenCalledWith(42, 'mark', expect.objectContaining({ id: expect.any(Number) }));
-    expect(context.overviewStore.applyFavoriteDelta).toHaveBeenCalledWith({
+    expect(markAsSaved).toHaveBeenCalledWith(42, 'mark', expect.objectContaining({ id: expect.any(Number) }));
+    expect(context.overviewStore.applySavedDelta).toHaveBeenCalledWith({
       categoryId: 3,
       feedId: 8,
       delta: 1
     });
-    expect(context.$emit).toHaveBeenCalledWith('update-favorite', {
+    expect(context.$emit).toHaveBeenCalledWith('update-saved', {
       id: 42,
-      favoriteInd: 1
+      savedInd: 1
     });
   });
 
-  // Verifies unmarking a favorite decrements overview counts.
-  it('unmarks an existing favorite', async () => {
-    const context = createContext({ favoriteInd: 1 });
-    markAsFavorite.mockResolvedValue({
+  // Verifies unmarking a saved decrements overview counts.
+  it('unmarks an existing saved', async () => {
+    const context = createContext({ savedInd: 1 });
+    markAsSaved.mockResolvedValue({
       data: {
         feedId: 8,
         feed: null
       }
     });
 
-    context.markAsFavorite();
+    context.markAsSaved();
     await flushPromises();
 
-    expect(markAsFavorite).toHaveBeenCalledWith(42, 'unmark', expect.objectContaining({ id: expect.any(Number) }));
-    expect(context.overviewStore.applyFavoriteDelta).toHaveBeenCalledWith({
+    expect(markAsSaved).toHaveBeenCalledWith(42, 'unmark', expect.objectContaining({ id: expect.any(Number) }));
+    expect(context.overviewStore.applySavedDelta).toHaveBeenCalledWith({
       categoryId: undefined,
       feedId: 8,
       delta: -1
     });
-    expect(context.$emit).toHaveBeenCalledWith('update-favorite', {
+    expect(context.$emit).toHaveBeenCalledWith('update-saved', {
       id: 42,
-      favoriteInd: 0
+      savedInd: 0
     });
   });
 
-  // Verifies favorite failures are logged and surfaced without local mutation.
-  it('reports a favorite failure', async () => {
-    const error = new Error('favorite failed');
+  // Verifies saved failures are logged and surfaced without local mutation.
+  it('reports a saved failure', async () => {
+    const error = new Error('saved failed');
     const context = createContext();
-    markAsFavorite.mockRejectedValue(error);
+    markAsSaved.mockRejectedValue(error);
 
-    context.markAsFavorite();
+    context.markAsSaved();
     await flushPromises();
 
     expect(context.$emit).not.toHaveBeenCalled();

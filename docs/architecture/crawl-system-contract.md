@@ -129,13 +129,13 @@ These invariants describe behavior that must survive a complete crawler refactor
    Once an item resolves to an existing publisher Article, meaningful corrections belong to that Article. Publisher-owned content and source metadata may change according to their authority; reconciliation must not recreate the Article or treat an internal extraction change as a new publisher revision.
 
 2. **Publisher reconciliation MUST protect user-owned interaction and metadata state.**
-   A corrected headline or body must not reset reading state, favorites, feedback, clicks, attention, interaction timestamps, manual tags, or equivalent user-owned state. Source authority does not grant authority over the user's actions.
+   A corrected headline or body must not reset reading state, saved, feedback, clicks, attention, interaction timestamps, manual tags, or equivalent user-owned state. Source authority does not grant authority over the user's actions.
 
 3. **Sparse updates MUST NOT erase useful stored source content without evidence of intended removal.**
    A Feed may later supply only a description or omit previously available metadata. Absence or emptiness alone must not silently destroy the richer stored representation of the same item.
 
 4. **A revision MUST NOT become a new ingestion event or replay creation-time effects.**
-   Finding the same Article again does not justify reapplying an existing favorite, click-like action, or other committed automation effect. Revision reconciliation must preserve the replay guarantee even when source content has changed.
+   Finding the same Article again does not justify reapplying an existing saved, click-like action, or other committed automation effect. Revision reconciliation must preserve the replay guarantee even when source content has changed.
 
 5. **Revisions MUST follow the semantic contract's source-correction boundary.**
    [semantic-system-contract.md](semantic-system-contract.md#articles) defines which existing analysis and semantic state revisions retain and prohibits revision-triggered re-enrichment or semantic reprocessing. Retained derived state refers to its previously analyzed representation; it must not be presented as newly computed from the correction. Independent ranking and personalization activity remains subject to that contract.
@@ -154,13 +154,13 @@ These invariants describe behavior that must survive a complete crawler refactor
 ## User-configured automation
 
 1. **Automation MUST represent explicit user configuration rather than inferred behavior.**
-   Rules may intentionally favorite, filter or discard, tag, or override a score for matching Articles. Crawling or matching content is not itself an interaction; the configured action supplies the authority for the resulting change. Automation may change only the state governed by that action.
+   Rules may intentionally saved, filter or discard, tag, or override a score for matching Articles. Crawling or matching content is not itself an interaction; the configured action supplies the authority for the resulting change. Automation may change only the state governed by that action.
 
 2. **Rule-created preference evidence MUST reside on the Article and retain the configured action's meaning.**
-   A rule-applied favorite may supply Article-level preference evidence without a later click or read because the user explicitly configured it. It does not imply that the Article was read, and a tag or score override must not automatically become a favorite or reading signal. Article and Island evidence semantics, including the effect of removing a rule, are defined by [semantic-system-contract.md](semantic-system-contract.md).
+   A rule-applied saved may supply Article-level preference evidence without a later click or read because the user explicitly configured it. It does not imply that the Article was read, and a tag or score override must not automatically become a saved or reading signal. Article and Island evidence semantics, including the effect of removing a rule, are defined by [semantic-system-contract.md](semantic-system-contract.md).
 
 3. **Encountering an Article again MUST NOT renew an unchanged automation outcome.**
-   Applying the same favorite again must not refresh its interaction time or count it as fresh Island support. Equivalent rules and Article input should produce equivalent actions, subject to the replay guarantee; newly matching canonical Articles may provide distinct rule-created preference evidence under the semantic contract.
+   Applying the same saved again must not refresh its interaction time or count it as fresh Island support. Equivalent rules and Article input should produce equivalent actions, subject to the replay guarantee; newly matching canonical Articles may provide distinct rule-created preference evidence under the semantic contract.
 
 4. **Discard automation MAY preserve Article identity while excluding ordinary participation.**
    A retained discarded Article can support later recognition and reconciliation without remaining visible in ordinary reading or independently contributing to semantic, preference, or recommendation evidence. Its persistence does not override the filtered-Article eligibility rules in the semantic contract.
@@ -269,7 +269,7 @@ These invariants describe behavior that must survive a complete crawler refactor
 ## Replay safety and determinism
 
 1. **Running the same crawl against materially unchanged source state MUST NOT create additional identity or effects.**
-   With unchanged applicable configuration, repeated processing must not create additional Articles, favorites, clicks, tags, preference evidence, semantic evidence, or equivalent side effects. It must not refresh interaction timestamps or make old evidence appear new. A retry may finish previously missing work, but an already committed outcome must not be counted again.
+   With unchanged applicable configuration, repeated processing must not create additional Articles, saved, clicks, tags, preference evidence, semantic evidence, or equivalent side effects. It must not refresh interaction timestamps or make old evidence appear new. A retry may finish previously missing work, but an already committed outcome must not be counted again.
 
 2. **Replay correctness MUST survive changes in execution conditions.**
    Caches, retries, parallelism, process restarts, and scheduling may affect cost and timing, but must not weaken identity, ownership, persistence, or replay guarantees. Supported implementations must preserve these semantics regardless of their internal execution or storage strategy.

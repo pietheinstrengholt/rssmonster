@@ -35,32 +35,32 @@ describe('Article interaction clocks across APIs', () => {
     expect(jobs[0].status).toBe('pending');
   });
 
-  it('timestamps today’s favorite of a 2022 article, clears unfavorites, and supports bulk writes', async () => {
+  it('timestamps today’s saved of a 2022 article, clears unsaved, and supports bulk writes', async () => {
     const { article, post } = await fixture();
-    expect((await post('markasfavorite', { update: 'mark' })).status).toBe(200);
-    await article.reload(); fresh(article.favoritedAt);
+    expect((await post('mark-saved', { update: 'mark' })).status).toBe(200);
+    await article.reload(); fresh(article.savedAt);
     expect(article.publishedAt).toEqual(old);
-    expect(article.favoriteInd).toBe(1);
-    expect((await post('markasfavorite', { update: 'unmark', articleIds: [article.id] }, null)).status).toBe(200);
-    await article.reload(); expect(article.favoritedAt).toBeNull(); expect(article.favoriteInd).toBe(0);
-    expect((await post('markasfavorite', { update: 'mark', articleIds: [article.id] }, null)).status).toBe(200);
-    await article.reload(); fresh(article.favoritedAt);
+    expect(article.savedInd).toBe(1);
+    expect((await post('mark-saved', { update: 'unmark', articleIds: [article.id] }, null)).status).toBe(200);
+    await article.reload(); expect(article.savedAt).toBeNull(); expect(article.savedInd).toBe(0);
+    expect((await post('mark-saved', { update: 'mark', articleIds: [article.id] }, null)).status).toBe(200);
+    await article.reload(); fresh(article.savedAt);
   });
 
-  it('refreshes atomic repeated clicks, bulk clicks and mark/unmark state without resetting the counter', async () => {
+  it('refreshes atomic repeated openedOriginals, bulk clicks and mark/unmark state without resetting the counter', async () => {
     const { article, post } = await fixture();
-    await article.update({ clickedAmount: 2, lastClickedAt: old });
-    const responses = await Promise.all([post('markclicked'), post('markclicked')]);
+    await article.update({ openedOriginalCount: 2, lastOpenedOriginalAt: old });
+    const responses = await Promise.all([post('mark-opened-original'), post('mark-opened-original')]);
     expect(responses.map(r => r.status)).toEqual([200, 200]);
-    await article.reload(); expect(article.clickedAmount).toBe(4); fresh(article.lastClickedAt);
-    await article.update({ lastClickedAt: old });
-    expect((await post('markclicked', { articleIds: [article.id] }, null)).status).toBe(200);
-    await article.reload(); expect(article.clickedAmount).toBe(5); fresh(article.lastClickedAt);
-    await article.update({ lastClickedAt: old });
-    expect((await post('markclicked', { update: 'mark' })).status).toBe(200);
-    await article.reload(); expect(article.clickedAmount).toBe(5); fresh(article.lastClickedAt);
-    expect((await post('markclicked', { update: 'unmark' })).status).toBe(200);
-    await article.reload(); expect(article.clickedAmount).toBe(0); expect(article.lastClickedAt).toBeNull();
+    await article.reload(); expect(article.openedOriginalCount).toBe(4); fresh(article.lastOpenedOriginalAt);
+    await article.update({ lastOpenedOriginalAt: old });
+    expect((await post('mark-opened-original', { articleIds: [article.id] }, null)).status).toBe(200);
+    await article.reload(); expect(article.openedOriginalCount).toBe(5); fresh(article.lastOpenedOriginalAt);
+    await article.update({ lastOpenedOriginalAt: old });
+    expect((await post('mark-opened-original', { update: 'mark' })).status).toBe(200);
+    await article.reload(); expect(article.openedOriginalCount).toBe(5); fresh(article.lastOpenedOriginalAt);
+    expect((await post('mark-opened-original', { update: 'unmark' })).status).toBe(200);
+    await article.reload(); expect(article.openedOriginalCount).toBe(0); expect(article.lastOpenedOriginalAt).toBeNull();
   });
 
   it('uses independent explicit feedback clocks and clears the opposite state', async () => {
@@ -92,8 +92,8 @@ describe('Article interaction clocks across APIs', () => {
       const response = await request(app).post('/api/fever').type('form').send({ api_key: key, mark: 'item', as: state, id: article.id });
       expect(response.status).toBe(200); expect(response.body.auth).toBe(1);
       await article.reload();
-      if (state === 'saved') fresh(article.favoritedAt);
-      else expect(article.favoritedAt).toBeNull();
+      if (state === 'saved') fresh(article.savedAt);
+      else expect(article.savedAt).toBeNull();
     }
   });
 
@@ -107,8 +107,8 @@ describe('Article interaction clocks across APIs', () => {
         .send({ i: article.id, a: star, ...(removing ? { r: star } : {}), T: createGreaderActionToken(user, token) });
       expect(response.status).toBe(200);
       await article.reload();
-      if (removing) expect(article.favoritedAt).toBeNull();
-      else fresh(article.favoritedAt);
+      if (removing) expect(article.savedAt).toBeNull();
+      else fresh(article.savedAt);
     }
   });
 });
@@ -116,7 +116,7 @@ describe('Article interaction clocks across APIs', () => {
 describe('observed Article attention evidence', () => {
   it('bulk mark-read preserves prior attention and creates none for unobserved articles', async () => {
     const { user, article, post } = await fixture();
-    await article.update({ firstSeen: old, attentionBucket: 3, lastMeaningfulReadAt: old, lastClickedAt: old, favoritedAt: old });
+    await article.update({ firstSeen: old, attentionBucket: 3, lastMeaningfulReadAt: old, lastOpenedOriginalAt: old, savedAt: old });
     const unseen = await db.Article.create({ userId: user.id, feedId: article.feedId, title: 'Unopened' });
     expect((await post('markallasread', {}, null)).status).toBe(200);
     await article.reload();
@@ -128,27 +128,27 @@ describe('observed Article attention evidence', () => {
     expect(article.firstSeen).toEqual(old);
     expect(article.attentionBucket).toBe(3);
     expect(article.lastMeaningfulReadAt).toEqual(old);
-    expect(article.lastClickedAt).toEqual(old);
-    expect(article.favoritedAt).toEqual(old);
+    expect(article.lastOpenedOriginalAt).toEqual(old);
+    expect(article.savedAt).toEqual(old);
     expect(unseen.firstSeen).toBeNull();
     expect(unseen.attentionBucket).toBe(0);
     expect(unseen.lastMeaningfulReadAt).toBeNull();
-    expect(unseen.lastClickedAt).toBeNull();
-    expect(unseen.favoritedAt).toBeNull();
+    expect(unseen.lastOpenedOriginalAt).toBeNull();
+    expect(unseen.savedAt).toBeNull();
   });
 
   it.each([[0, 0], [2, 0], [3, 1], [15, 2], [45, 3], [75, 4]])(
     'classifies %i seconds of 200 displayed words as bucket %i without unrelated state changes', async (seconds, bucket) => {
       const { article, post } = await fixture();
-      await article.update({ firstSeen: old, lastClickedAt: old, favoritedAt: old });
+      await article.update({ firstSeen: old, lastOpenedOriginalAt: old, savedAt: old });
       expect((await post('markasseen', {
         visibleSeconds: seconds, readingWordCount: 200, recordObservation: true, markRead: false
       })).status).toBe(200);
       await article.reload();
       expect(article.attentionBucket).toBe(bucket);
       expect(article.firstSeen).toEqual(old);
-      expect(article.lastClickedAt).toEqual(old);
-      expect(article.favoritedAt).toEqual(old);
+      expect(article.lastOpenedOriginalAt).toEqual(old);
+      expect(article.savedAt).toEqual(old);
       expect(article.readAt).toBeNull();
       expect(article.status).toBe('unread');
       if (bucket >= 3) fresh(article.lastMeaningfulReadAt);

@@ -26,7 +26,7 @@ async function fixture() {
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Elapsed', url: `https://${user.id}.example/rss` });
   const values = { userId: user.id, feedId: feed.id, title: 'Kubernetes technical deployment',
     publishedAt: at(-10), embedding_model: 'test-model', articleVector: [1, 0] };
-  const source = await db.Article.create({ ...values, status: 'read', clickedAmount: 1, lastClickedAt: at(0) });
+  const source = await db.Article.create({ ...values, status: 'read', openedOriginalCount: 1, lastOpenedOriginalAt: at(0) });
   const candidate = await db.Article.create({ ...values, status: 'unread' });
   // Nonidentical centroid exposes accidental repeated blending on a timed refresh.
   const island = await db.Island.create({ userId: user.id, label: 'Kubernetes', weight: 0.8,
@@ -79,7 +79,7 @@ describe('elapsed-time personalization refresh', () => {
     expect(graph.candidate.interestScoredAt).toEqual(at(30));
     expect(graph.user.personalizationRefreshedAt).toEqual(at(30));
     expect(graph.island.islandVector).toEqual(vector);
-    expect(graph.source.lastClickedAt).toEqual(at(0));
+    expect(graph.source.lastOpenedOriginalAt).toEqual(at(0));
     expect(graph.source.interestScoredAt).toBeNull();
     for (const article of [filtered, duplicate]) {
       await article.reload(); expect(Number(article.interestScore)).toBeCloseTo(0.5); expect(article.interestScoredAt).toBeNull();
@@ -139,10 +139,10 @@ describe('elapsed-time personalization refresh', () => {
     await fixture();
     const graph = await fixture();
     await enqueueDuePersonalizationRefreshes({ limit: 2 });
-    await updateArticleBehavior(graph.source, { favoriteInd: 1, favoritedAt: at(0) });
+    await updateArticleBehavior(graph.source, { savedInd: 1, savedAt: at(0) });
     const job = await refreshJob(graph.user.id);
     expect(job.availableAt.getTime()).toBeLessThanOrEqual(start + 2000);
-    expect(job.payload.triggerReasons).toEqual(['elapsed_time', 'favorite']);
+    expect(job.payload.triggerReasons).toEqual(['elapsed_time', 'saved']);
     expect((await execute(graph.user.id)).status).toBe('succeeded');
     await graph.island.reload(); expect(graph.island.islandVector).not.toEqual([0.8, 0.6]);
   });
@@ -178,7 +178,7 @@ describe('elapsed-time personalization refresh', () => {
 
   it('decays negative memory without turning absence of new behavior into positive evidence', async () => {
     const graph = await fixture();
-    await graph.source.update({ clickedAmount: 0, lastClickedAt: null, negativeInd: 1, negativeFeedbackAt: at(0) });
+    await graph.source.update({ openedOriginalCount: 0, lastOpenedOriginalAt: null, negativeInd: 1, negativeFeedbackAt: at(0) });
     await runIslandCalibrationForUser(graph.user.id, { generateLabels: false });
     await graph.candidate.reload();
     const original = Number(graph.candidate.interestScore);

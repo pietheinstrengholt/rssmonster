@@ -66,8 +66,8 @@ const hasUsableArticleQuality = article => {
 const hasMeaningfulExposure = article => (
   article.status === 'read' ||
   Number(article.attentionBucket) > 0 ||
-  Number(article.clickedAmount) > 0 ||
-  Boolean(article.favoriteInd) ||
+  Number(article.openedOriginalCount) > 0 ||
+  Boolean(article.savedInd) ||
   Number(article.negativeInd) === 1
 );
 
@@ -112,9 +112,9 @@ export async function calculateFeedTrustForFeed(feedId) {
       'id',
       'status',
       'duplicateOfArticleId',
-      'favoriteInd',
+      'savedInd',
       'negativeInd',
-      'clickedAmount',
+      'openedOriginalCount',
       'attentionBucket',
       'qualityScore',
       'sentimentScore',
@@ -144,8 +144,8 @@ export async function calculateFeedTrustForFeed(feedId) {
   const engagementArticles = articles.filter(hasMeaningfulExposure);
   const engagementSum = engagementArticles.reduce((sum, article) => {
     const explicitEngagement =
-      (article.favoriteInd ? 1 : 0) +
-      (article.clickedAmount > 0 ? 0.5 : 0);
+      (article.savedInd ? 1 : 0) +
+      (article.openedOriginalCount > 0 ? 0.5 : 0);
     const attentionEngagement =
       attentionWeightFromBucket(article.attentionBucket);
 
@@ -263,13 +263,13 @@ export async function calculateFeedTrustForFeed(feedId) {
   const feedIgnoreRatio =
     articles.length > 0 ? ignored / articles.length : 0;
 
-  const clickedArticles = articles.filter(article => (article.clickedAmount ?? 0) > 0).length;
-  const totalClicks = articles.reduce(
-    (sum, article) => sum + Math.max(Number(article.clickedAmount ?? 0), 0),
+  const openedOriginalArticles = articles.filter(article => (article.openedOriginalCount ?? 0) > 0).length;
+  const totalOpenedOriginals = articles.reduce(
+    (sum, article) => sum + Math.max(Number(article.openedOriginalCount ?? 0), 0),
     0
   );
-  const feedClickAvg = articles.length > 0 ? totalClicks / articles.length : 0;
-  const feedClickRatio = articles.length > 0 ? clamp(clickedArticles / articles.length) : 0;
+  const feedOpenedOriginalAvg = articles.length > 0 ? totalOpenedOriginals / articles.length : 0;
+  const feedOpenedOriginalRatio = articles.length > 0 ? clamp(openedOriginalArticles / articles.length) : 0;
 
   /* ============================================================
    * UPDATE FEED
@@ -284,8 +284,8 @@ export async function calculateFeedTrustForFeed(feedId) {
     feedDeepReadRatio,
     feedSkimRatio,
     feedIgnoreRatio,
-    feedClickAvg,
-    feedClickRatio,
+    feedOpenedOriginalAvg,
+    feedOpenedOriginalRatio,
     feedAttentionSampleSize: attentionSamples,
     feedAttentionUpdatedAt: now
   });
@@ -310,8 +310,8 @@ export async function calculateFeedTrustForFeed(feedId) {
     feedDeepReadRatio,
     feedSkimRatio,
     feedIgnoreRatio,
-    feedClickAvg,
-    feedClickRatio,
+    feedOpenedOriginalAvg,
+    feedOpenedOriginalRatio,
     feedAttentionSampleSize: attentionSamples,
     sampleConfidence,
 
@@ -369,8 +369,8 @@ export async function calculateFeedTrustForAllFeeds({ userId = null } = {}) {
         `deep=${(result.feedDeepReadRatio * 100).toFixed(0)}% ` +
         `skim=${(result.feedSkimRatio * 100).toFixed(0)}% ` +
         `ignore=${(result.feedIgnoreRatio * 100).toFixed(0)}% ` +
-        `clickAvg=${result.feedClickAvg.toFixed(2)} ` +
-        `clickRatio=${(result.feedClickRatio * 100).toFixed(0)}% ` +
+        `clickAvg=${result.feedOpenedOriginalAvg.toFixed(2)} ` +
+        `openedOriginalRatio=${(result.feedOpenedOriginalRatio * 100).toFixed(0)}% ` +
         `samples=${result.feedAttentionSampleSize}`
       );
     } catch (err) {

@@ -61,7 +61,7 @@ Each folder has a name, result limit, and generated search query. A folder can b
 
 The editor supports:
 
-- Read, unread, favorite, clicked, and hot state filters
+- Read, unread, saved, openedOriginal, and hot state filters
 - Fixed or relative date ranges
 - Tag, title, author, language, and free-text matching
 - Quality and freshness thresholds when AI is enabled
@@ -80,9 +80,9 @@ When AI features are enabled, the section can analyze reading behavior and sugge
 Actions defines ordered crawl-time automation. Each rule matches article titles or content with a regular expression and then applies one operation:
 
 - Discard the article from normal queries
-- Mark it as a favorite
+- Mark it as saved
 - Mark it as read
-- Mark it as clicked
+- Mark it as opened original
 - Override its advertisement score as advertising
 - Override its quality score as low quality
 - Assign a custom tag
@@ -122,7 +122,7 @@ The data is a fetched snapshot. It changes only when the section is loaded or re
 ### Islands
 
 Islands explains the interest clusters RSSMonster has learned from reading,
-favorite, and click behavior. The overview is read-only, with one explicit
+saved, and click behavior. The overview is read-only, with one explicit
 recalculation action that rebuilds the signed-in user's Islands and article
 interest scores from existing evidence.
 

@@ -38,8 +38,8 @@ export function resolvePredictedAffinity({ article, feed }) {
     feedDeepReadRatio = 0,
     feedSkimRatio = 0,
     feedIgnoreRatio = 0,
-    feedClickAvg = 0,
-    feedClickRatio = 0,
+    feedOpenedOriginalAvg = 0,
+    feedOpenedOriginalRatio = 0,
     feedAttentionSampleSize = 0
   } = feed;
 
@@ -52,18 +52,18 @@ export function resolvePredictedAffinity({ article, feed }) {
   // Derives the ignore ratio through metric while resolving predicted affinity.
   const ignoreRatio = metric(feedIgnoreRatio);
   // Derives the click ratio through metric while resolving predicted affinity.
-  const clickRatio = metric(feedClickRatio);
+  const openedOriginalRatio = metric(feedOpenedOriginalRatio);
   // Derives the click avg signal through clamp while resolving predicted affinity.
-  const clickAvgSignal = clamp(Math.log2(Math.max(Number(feedClickAvg) || 0, 0) + 1) / 2);
+  const openedOriginalAvgSignal = clamp(Math.log2(Math.max(Number(feedOpenedOriginalAvg) || 0, 0) + 1) / 2);
   // Derives the click signal through clamp while resolving predicted affinity.
-  const clickSignal = clamp(clickRatio * 0.7 + clickAvgSignal * 0.3);
+  const openedOriginalSignal = clamp(openedOriginalRatio * 0.7 + openedOriginalAvgSignal * 0.3);
   // Derives the sample size through max while resolving predicted affinity.
   const sampleSize = Math.max(Number(feedAttentionSampleSize) || 0, 0);
   // Derives the engagement score through clamp while resolving predicted affinity.
   const engagementScore = clamp(
     attentionScore * 0.5 +
     deepReadRatio * 0.2 +
-    clickSignal * 0.2 +
+    openedOriginalSignal * 0.2 +
     skimRatio * 0.1 -
     ignoreRatio * 0.25
   );
@@ -73,7 +73,7 @@ export function resolvePredictedAffinity({ article, feed }) {
    * ------------------------------------------------------------ */
 
   // Not enough behavioral data and no meaningful click signal → safe default
-  if (sampleSize < 8 && clickSignal < 0.08) {
+  if (sampleSize < 8 && openedOriginalSignal < 0.08) {
     return {
       predictedAffinity: 'cold',
       confidence: 0.25,
@@ -117,28 +117,28 @@ export function resolvePredictedAffinity({ article, feed }) {
   } else if (
     engagementScore >= 0.27 ||
     attentionScore >= 0.30 ||
-    clickSignal >= 0.18
+    openedOriginalSignal >= 0.18
   ) {
     // Normal engaged reading (most good feeds)
     predictedAffinity = 'medium';
     confidence = clamp(
       0.45 +
       engagementScore * 0.45 +
-      clickSignal * 0.25 +
+      openedOriginalSignal * 0.25 +
       Math.min(sampleSize / 100, 0.15)
     );
   // Handles the case where attention score reaches 0.18 or skim ratio reaches 0.6 or click signal reaches 0.08.
   } else if (
     attentionScore >= 0.18 ||
     skimRatio >= 0.60 ||
-    clickSignal >= 0.08
+    openedOriginalSignal >= 0.08
   ) {
     // Headline / scanning value
     predictedAffinity = 'skim';
     confidence = clamp(
       0.40 +
       engagementScore * 0.35 +
-      clickSignal * 0.3 +
+      openedOriginalSignal * 0.3 +
       Math.min(sampleSize / 150, 0.1)
     );
   } else {

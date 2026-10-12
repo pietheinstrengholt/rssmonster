@@ -58,7 +58,7 @@ const createArticle = (fixture, values) =>
   Article.create({
     userId: fixture.user.id,
     status: 'unread',
-    favoriteInd: 0,
+    savedInd: 0,
     author: 'Fixture Reporter',
     description: 'Fixture fallback description',
     contentHtml: '<p>Fixture sanitized body</p>',
@@ -124,11 +124,11 @@ export const createGreaderCompatibilityFixture = async (options = {}) => {
     createdAt: new Date('2026-05-01T10:06:00.000Z'),
     updatedAt: new Date('2026-05-01T10:06:00.000Z')
   });
-  fixture.sameTimestampStarred = await createArticle(fixture, {
+  fixture.sameTimestampSaved = await createArticle(fixture, {
     feedId: secondaryFeed.id,
-    favoriteInd: 1,
-    url: 'https://beta.example.test/articles/starred',
-    title: 'Starred article',
+    savedInd: 1,
+    url: 'https://beta.example.test/articles/saved',
+    title: 'Saved article',
     publishedAt: new Date('2026-05-01T10:00:00.000Z'),
     firstSeen: new Date('2026-05-01T10:07:00.000Z'),
     createdAt: new Date('2026-05-01T10:08:00.000Z'),
@@ -171,7 +171,7 @@ export const createGreaderCompatibilityFixture = async (options = {}) => {
   fixture.canonicalArticles = [
     fixture.oldUnread,
     fixture.sameTimestampRead,
-    fixture.sameTimestampStarred,
+    fixture.sameTimestampSaved,
     fixture.newUnread
   ];
 

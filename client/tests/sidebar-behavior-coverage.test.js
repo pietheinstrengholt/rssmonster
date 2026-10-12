@@ -114,7 +114,7 @@ describe('Sidebar navigation and action coverage', () => {
     const stores = createStores();
     stores.overviewStore.currentSelectionNewArticleCount = 3;
     stores.selectionStore.$patch({ currentSelection: {
-      status: 'favorite',
+      status: 'saved',
       categoryId: '10',
       feedId: '11',
       smartFolderId,

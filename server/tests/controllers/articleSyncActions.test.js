@@ -20,39 +20,65 @@ const fixture = async () => {
 const action = (article, kind = 'set-status', value = 'read') => ({ actionId: randomUUID(), articleId: article.id, kind, value });
 
 describe('receipt-backed article synchronization', () => {
-  it('applies read, unread, favorite and unfavorite independently without observation evidence or Event expansion', async () => {
+  it('keeps legacy save assignments replay-safe after canonical delivery', async () => {
+    const { article, post } = await fixture();
+    const legacy = action(article, 'set-favorite', true);
+    expect((await post([legacy])).body.results[0].outcome).toBe('applied');
+    expect((await post([{ ...legacy, kind: 'set-saved' }])).body.results[0].outcome).toBe('duplicate');
+    await article.reload();
+    expect(article.savedInd).toBe(1);
+    const receipt = await db.ArticleSyncAction.findOne({ where: { actionId: legacy.actionId } });
+    expect(receipt.kind).toBe('set-saved');
+  });
+  it('shares canonical and legacy HTTP routes, including additive property aliases', async () => {
+    const { article, post } = await fixture();
+    await post([action(article, 'set-saved', true)]);
+    const user = await db.User.findByPk(article.userId);
+    const token = jwt.sign({ userId: user.id, role: 'user' }, getJwtSecret());
+    const call = path => request(app).post(path).set('Authorization', `Bearer ${token}`);
+    expect((await call(`/api/articles/markasfavorite/${article.id}`).send({ update: 'unmark' })).status).toBe(200);
+    expect((await call(`/api/articles/mark-saved/${article.id}`).send({ update: 'mark' })).status).toBe(200);
+    const opened = await call(`/api/articles/mark-opened-original/${article.id}`).send();
+    expect(opened.status).toBe(200);
+    expect(opened.body).toMatchObject({ openedOriginalCount: 1, clickedAmount: 1 });
+    const legacyOpened = await call(`/api/articles/markclicked/${article.id}`).send();
+    expect(legacyOpened.body).toMatchObject({ openedOriginalCount: 2, clickedAmount: 2 });
+    const details = await request(app).get(`/api/articles/${article.id}`).set('Authorization', `Bearer ${token}`);
+    expect(details.body.article).toMatchObject({ savedInd: 1, favoriteInd: 1, openedOriginalCount: 2, clickedAmount: 2 });
+  });
+  it('applies read, unread, saved and unsaved independently without observation evidence or Event expansion', async () => {
     const { user, article, feed, post } = await fixture();
     const event = await db.Event.create({ userId: user.id, name: 'Event', representativeArticleId: article.id });
     await article.update({ eventId: event.id, firstSeen: new Date('2025-01-01'), attentionBucket: 3, lastMeaningfulReadAt: new Date('2025-01-01') });
     const sibling = await db.Article.create({ userId: user.id, feedId: feed.id, title: 'Sibling', eventId: event.id });
-    const first = await post([action(article), action(article, 'set-favorite', true)]);
+    const first = await post([action(article), action(article, 'set-saved', true)]);
     expect(first.status).toBe(200);
     expect(first.body.results.map(result => result.outcome)).toEqual(['applied', 'applied']);
-    expect(first.body.articles[0]).toMatchObject({ status: 'read', favoriteInd: 1, feed: { categoryId: feed.categoryId } });
+    expect(first.body.articles[0]).toMatchObject({ status: 'read', savedInd: 1, feed: { categoryId: feed.categoryId } });
     await sibling.reload(); expect(sibling.status).toBe('unread');
-    expect((await post([action(article, 'set-status', 'unread'), action(article, 'set-favorite', false)])).status).toBe(200);
+    expect((await post([action(article, 'set-status', 'unread'), action(article, 'set-saved', false)])).status).toBe(200);
     await article.reload();
     expect(article.status).toBe('unread'); expect(article.readAt).toBeNull();
-    expect(article.favoriteInd).toBe(0); expect(article.favoritedAt).toBeNull();
+    expect(article.savedInd).toBe(0); expect(article.savedAt).toBeNull();
     expect(article.firstSeen.toISOString()).toBe('2025-01-01T00:00:00.000Z');
     expect(article.attentionBucket).toBe(3); expect(article.lastMeaningfulReadAt.toISOString()).toBe('2025-01-01T00:00:00.000Z');
-    expect(article.clickedAmount).toBe(0);
+    expect(article.openedOriginalCount).toBe(0);
   });
   it('retries an ambiguous committed request without refreshing clocks or requesting personalization twice', async () => {
     const { user, article, post } = await fixture();
-    const actions = [action(article), action(article, 'set-favorite', true)];
+    const actions = [action(article), action(article, 'set-saved', true)];
     expect((await post(actions)).status).toBe(200);
     await article.reload();
-    const readAt = article.readAt; const favoritedAt = article.favoritedAt;
+    const readAt = article.readAt; const savedAt = article.savedAt;
     const job = await db.ProcessingJob.findOne({ where: { userId: user.id, type: 'personalization_refresh' } });
     const requestId = job.payload.requestId;
     const replay = await post(actions);
     expect(replay.body.results.map(result => result.outcome)).toEqual(['duplicate', 'duplicate']);
     await article.reload(); await job.reload();
-    expect(article.readAt).toEqual(readAt); expect(article.favoritedAt).toEqual(favoritedAt);
+    expect(article.readAt).toEqual(readAt); expect(article.savedAt).toEqual(savedAt);
     expect(job.payload.requestId).toBe(requestId);
     expect(await db.ArticleSyncAction.count({ where: { userId: user.id } })).toBe(2);
-    expect((await post([action(article), action(article, 'set-favorite', true)])).body.results.map(result => result.outcome)).toEqual(['noop', 'noop']);
+    expect((await post([action(article), action(article, 'set-saved', true)])).body.results.map(result => result.outcome)).toEqual(['noop', 'noop']);
     await job.reload(); expect(job.payload.requestId).toBe(requestId);
   });
   it('rejects UUID reuse with another payload and returns current rather than historical state', async () => {
@@ -86,7 +112,7 @@ describe('receipt-backed article synchronization', () => {
   });
   it('serializes concurrent duplicate deliveries into one receipt and one effect', async () => {
     const { user, article, post } = await fixture();
-    const saved = action(article, 'set-favorite', true);
+    const saved = action(article, 'set-saved', true);
     const responses = await Promise.all([post([saved]), post([saved])]);
     expect(responses.map(response => response.body.results[0].outcome).sort()).toEqual(['applied', 'duplicate']);
     expect(await db.ArticleSyncAction.count({ where: { userId: user.id } })).toBe(1);
@@ -94,10 +120,10 @@ describe('receipt-backed article synchronization', () => {
   it('rolls back state and personalization if receipt persistence fails, and stops later assignments', async () => {
     const { user, article } = await fixture();
     const create = vi.spyOn(db.ArticleSyncAction, 'create').mockRejectedValueOnce(new Error('Receipt unavailable'));
-    const response = await synchronizeArticleActions(user.id, [action(article, 'set-favorite', true), action(article)]);
+    const response = await synchronizeArticleActions(user.id, [action(article, 'set-saved', true), action(article)]);
     create.mockRestore();
     expect(response.results.map(result => result.outcome)).toEqual(['retry', 'retry']);
-    await article.reload(); expect(article.favoriteInd).toBe(0); expect(article.status).toBe('unread');
+    await article.reload(); expect(article.savedInd).toBe(0); expect(article.status).toBe('unread');
     expect(await db.ProcessingJob.count({ where: { userId: user.id } })).toBe(0);
     expect(await db.ArticleSyncAction.count({ where: { userId: user.id } })).toBe(0);
   });

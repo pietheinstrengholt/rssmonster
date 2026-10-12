@@ -100,7 +100,7 @@ describe('RDF identity persistence', () => {
       ...original.articleData,
       externalId: original.articleData.normalizedUrl,
       externalIdType: 'normalized-url'
-    }, { tags: [] }, { status: 'read', favoriteInd: 1, clickedAmount: 2 });
+    }, { tags: [] }, { status: 'read', savedInd: 1, openedOriginalCount: 2 });
     const originalId = saved.article.id;
 
     const upgrade = await updateArticle(feed, original.articleData);
@@ -119,7 +119,7 @@ describe('RDF identity persistence', () => {
     const stored = await db.Article.findByPk(originalId);
     expect(stored).toMatchObject({
       externalId: 'https://example.com/stable/42', externalIdType: 'rdf-about',
-      url: 'https://example.com/new-slug', status: 'read', favoriteInd: 1, clickedAmount: 2
+      url: 'https://example.com/new-slug', status: 'read', savedInd: 1, openedOriginalCount: 2
     });
     expect(await db.Article.count({ where: { feedId: feed.id } })).toBe(1);
     expect(await updateArticle(feed, revised.articleData)).toMatchObject({ matched: true, changed: false });

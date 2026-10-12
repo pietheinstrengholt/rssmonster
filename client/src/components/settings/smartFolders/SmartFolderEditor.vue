@@ -66,13 +66,13 @@
                 </label>
 
                 <label class="smart-folder-check">
-                    <input v-model="draftConfig.status.favorite" class="app-form-check-input" type="checkbox" />
+                    <input v-model="draftConfig.status.saved" class="app-form-check-input" type="checkbox" />
                     <BootstrapIcon icon="bookmark-fill" />
                     Saved
                 </label>
 
                 <label class="smart-folder-check">
-                    <input v-model="draftConfig.status.clicked" class="app-form-check-input" type="checkbox" />
+                    <input v-model="draftConfig.status.openedOriginal" class="app-form-check-input" type="checkbox" />
                     <BootstrapIcon icon="arrow-up-right-square-fill" />
                     Opened originals
                 </label>

@@ -117,9 +117,9 @@ describe('manager controller', () => {
       total: 0,
       readCount: 0,
       unreadCount: 0,
-      favoriteCount: 0,
+      savedCount: 0,
       hotCount: 0,
-      clickedCount: 0,
+      openedOriginalCount: 0,
       categories: [
         {
           id: 3,
@@ -128,9 +128,9 @@ describe('manager controller', () => {
           readCount: 0,
           unreadCount: 0,
           briefingCount: 0,
-          favoriteCount: 0,
+          savedCount: 0,
           hotCount: 0,
-          clickedCount: 0,
+          openedOriginalCount: 0,
           feeds: [
             {
               id: 8,
@@ -139,9 +139,9 @@ describe('manager controller', () => {
               readCount: 0,
               unreadCount: 0,
               briefingCount: 0,
-              favoriteCount: 0,
+              savedCount: 0,
               hotCount: 0,
-              clickedCount: 0
+              openedOriginalCount: 0
             }
           ]
         }

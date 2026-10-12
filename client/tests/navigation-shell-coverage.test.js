@@ -58,8 +58,8 @@ function createStore() {
       readCount: 2,
       feeds: []
     }],
-    clickedCount: 1,
-    favoriteCount: 2,
+    openedOriginalCount: 1,
+    savedCount: 2,
     hotCount: 3,
     readCount: 8,
     smartFolders: [{ id: 20, name: 'Research', ArticleCount: 6 }],
@@ -229,11 +229,11 @@ describe('desktop toolbar interactions', () => {
     const store = createStore();
     const wrapper = mountToolbar(DesktopToolbar, store);
 
-    wrapper.vm.dropdownOptionClicked('viewMode', 'minimal');
-    wrapper.vm.dropdownOptionClicked('sort', 'asc');
-    wrapper.vm.dropdownOptionClicked('grouping', 'none');
-    wrapper.vm.dropdownOptionClicked('grouping', 'event');
-    wrapper.vm.dropdownOptionClicked('unknown', 'ignored');
+    wrapper.vm.dropdownOptionOpenedOriginal('viewMode', 'minimal');
+    wrapper.vm.dropdownOptionOpenedOriginal('sort', 'asc');
+    wrapper.vm.dropdownOptionOpenedOriginal('grouping', 'none');
+    wrapper.vm.dropdownOptionOpenedOriginal('grouping', 'event');
+    wrapper.vm.dropdownOptionOpenedOriginal('unknown', 'ignored');
     wrapper.vm.handleForceReload();
     wrapper.vm.chatAssistant();
 

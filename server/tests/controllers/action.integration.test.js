@@ -39,7 +39,7 @@ describe('action replacement persistence', () => {
       expect(res.status).toHaveBeenCalledWith(201);
     };
     const rules = [
-      { name: 'Save first', actionType: 'favorite', regularExpression: '/topic/i' },
+      { name: 'Save first', actionType: 'saved', regularExpression: '/topic/i' },
       { name: 'Discard next', actionType: 'discard', regularExpression: '/topic/i' }
     ];
     for (const ordered of [rules, [...rules].reverse()]) {
@@ -49,7 +49,7 @@ describe('action replacement persistence', () => {
       expect(res.json.mock.calls[0][0].actions.map(action => action.name)).toEqual(ordered.map(action => action.name));
       const crawlRules = await resolveArticleActions({ userId: owner.id });
       expect(crawlRules.map(action => action.name)).toEqual(ordered.map(action => action.name));
-      expect(applyActions(crawlRules, { title: 'topic' }).favoriteInd).toBe(ordered[0].actionType === 'favorite' ? 1 : 0);
+      expect(applyActions(crawlRules, { title: 'topic' }).savedInd).toBe(ordered[0].actionType === 'saved' ? 1 : 0);
     }
     expect(await Action.count({ where: { userId: other.id } })).toBe(1);
   });
@@ -73,7 +73,7 @@ describe('action replacement persistence', () => {
 
     await actionController.createAction({
       userData: { userId: owner.id },
-      body: { actions: [{ name: 'Replacement', actionType: 'favorite', regularExpression: 'new' }] }
+      body: { actions: [{ name: 'Replacement', actionType: 'saved', regularExpression: 'new' }] }
     }, res, next);
 
     expect(next).toHaveBeenCalledWith(error);

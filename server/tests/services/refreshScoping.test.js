@@ -35,10 +35,10 @@ describe('conservative refresh scoping and replay', () => {
     const reference = await fixture(now);
     const queued = await fixture(now);
     const untouched = await fixture(now);
-    const finalBehavior = { favoriteInd: 1, favoritedAt: new Date(now), clickedAmount: 2, lastClickedAt: new Date(now) };
+    const finalBehavior = { savedInd: 1, savedAt: new Date(now), openedOriginalCount: 2, lastOpenedOriginalAt: new Date(now) };
     await reference.source.update(finalBehavior);
-    await updateArticleBehavior(queued.source, { favoriteInd: 1, favoritedAt: new Date(now) });
-    for (const clicks of [1, 2]) await updateArticleBehavior(queued.source, { clickedAmount: clicks, lastClickedAt: new Date(now) });
+    await updateArticleBehavior(queued.source, { savedInd: 1, savedAt: new Date(now) });
+    for (const openedOriginals of [1, 2]) await updateArticleBehavior(queued.source, { openedOriginalCount: openedOriginals, lastOpenedOriginalAt: new Date(now) });
     expect(await db.ProcessingJob.count({ where: { userId: queued.user.id } })).toBe(1);
     await runIslandCalibrationForUser(reference.user.id, { generateLabels: false });
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -50,7 +50,7 @@ describe('conservative refresh scoping and replay', () => {
     expect(queued.island.weight).toEqual(reference.island.weight);
     const metric = log.mock.calls.filter(([label]) => label === '[PERSONALIZATION REFRESH]').map(([, payload]) => JSON.parse(payload)).at(-1);
     expect(metric).toMatchObject({ userId: queued.user.id, islandsChanged: 1, candidatesRescored: 2, interestScoresChanged: 1 });
-    expect(metric.triggerReasons).toEqual(['favorite', 'click']);
+    expect(metric.triggerReasons).toEqual(['saved', 'opened-original']);
     expect(metric.calibrationDurationMs).toBeGreaterThanOrEqual(0);
     expect(await scores(untouched)).toEqual([{ interest: 0, recommended: computeRecommended(untouched.related) }, { interest: 0, recommended: computeRecommended(untouched.unrelated) }]);
     await untouched.island.reload(); expect(untouched.island.islandVector).toEqual([0.8, 0.6]);
@@ -62,7 +62,7 @@ describe('conservative refresh scoping and replay', () => {
     const now = Date.now(); vi.spyOn(Date, 'now').mockReturnValue(now);
     const graph = await fixture(now);
     const reference = await fixture(now);
-    const behavior = { favoriteInd: 1, favoritedAt: new Date(now) };
+    const behavior = { savedInd: 1, savedAt: new Date(now) };
     await reference.source.update(behavior);
     await runIslandCalibrationForUser(reference.user.id, { generateLabels: false });
     await updateArticleBehavior(graph.source, behavior);
@@ -81,8 +81,8 @@ describe('conservative refresh scoping and replay', () => {
   it('replays scoring after archival without reactivating or refreshing behavioral activity', async () => {
     const now = Date.now(); vi.spyOn(Date, 'now').mockReturnValue(now);
     const graph = await fixture(now);
-    const lastClickedAt = new Date(Math.floor(now / 1000) * 1000 - 90 * 86400000);
-    await updateArticleBehavior(graph.source, { clickedAmount: 1, lastClickedAt });
+    const lastOpenedOriginalAt = new Date(Math.floor(now / 1000) * 1000 - 90 * 86400000);
+    await updateArticleBehavior(graph.source, { openedOriginalCount: 1, lastOpenedOriginalAt });
     vi.spyOn(scoring, 'default').mockRejectedValueOnce(new Error('scoring interrupted after archive'));
     expect((await executeClaimedProcessingJob(await claim(graph.user.id, now))).status).toBe('pending');
     await graph.island.reload();
@@ -94,14 +94,14 @@ describe('conservative refresh scoping and replay', () => {
     await graph.island.reload(); await graph.source.reload(); await graph.related.reload();
     expect(graph.island.archivedInd).toBe(true);
     expect(graph.island.archivedAt).toEqual(archivedAt);
-    expect(graph.source.lastClickedAt).toEqual(lastClickedAt);
+    expect(graph.source.lastOpenedOriginalAt).toEqual(lastOpenedOriginalAt);
     expect(Number(graph.related.interestScore)).toBe(0);
   });
 
   it('rolls back Islands if the replay checkpoint cannot be committed', async () => {
     const now = Date.now(); vi.spyOn(Date, 'now').mockReturnValue(now);
     const graph = await fixture(now);
-    await updateArticleBehavior(graph.source, { favoriteInd: 1, favoritedAt: new Date(now) });
+    await updateArticleBehavior(graph.source, { savedInd: 1, savedAt: new Date(now) });
     const update = db.ProcessingJob.prototype.update;
     let failed = false;
     vi.spyOn(db.ProcessingJob.prototype, 'update').mockImplementation(function (values, options) {
@@ -122,7 +122,7 @@ describe('conservative refresh scoping and replay', () => {
   it('does not write unchanged persisted scores on repeated evaluation, including MySQL FLOAT round-trips', async () => {
     const now = Date.now(); vi.spyOn(Date, 'now').mockReturnValue(now);
     const graph = await fixture(now);
-    await graph.source.update({ favoriteInd: 1, favoritedAt: new Date(now) });
+    await graph.source.update({ savedInd: 1, savedAt: new Date(now) });
     await runIslandCalibrationForUser(graph.user.id, { generateLabels: false });
     const expected = await scores(graph);
     const writes = vi.spyOn(db.Article, 'update');

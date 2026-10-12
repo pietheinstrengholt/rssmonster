@@ -1,6 +1,7 @@
 // Parses article search strings into structured filters, text search terms, sort order, and limits.
 // It understands RSS Monster's compact query language so the search service can build database predicates.
 import { isValidUtcCalendarDate } from './articleDateParser.service.js';
+import { canonicalArticleStatus, canonicalArticleExpression } from '../../utils/articleStateContract.js';
 
 // Defines the date day pattern enforced by this service.
 const DATE_DAY_PATTERN = /@"?last\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)"?/i;
@@ -10,10 +11,12 @@ const DATE_DAYS_AGO_PATTERN = /@"?(\d+)\s+days\s+ago"?/i;
 const ISO_DATE_TOKEN_PATTERN = /^@(\d{4}-\d{2}-\d{2})$/;
 export const MAX_ARTICLE_SEARCH_LENGTH = 4096;
 const BOOLEAN_FILTER_KEYS = [
+  'saved',
   'favorite',
   'star',
   'unread',
   'read',
+  'openedOriginal',
   'clicked',
   'seen',
   'hot',
@@ -35,7 +38,7 @@ const KNOWN_FILTER_KEYS = new Set([
   'eventcount',
   'limit',
   'id'
-]);
+].map(key => key.toLowerCase()));
 
 // Identifies an invalid persisted expression without changing lenient interactive search behavior.
 export class ArticleExpressionValidationError extends Error {
@@ -305,8 +308,8 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc', strict = 
       const value = parseBooleanFilter(cleaned, key);
       // Handles the case where value is not value.
       if (value !== null) {
-        // Selects the result based on whether key is favorite.
-        filters[key === 'favorite' ? 'star' : key] = value;
+        // Selects the result based on whether key is saved.
+        filters[canonicalArticleStatus(key)] = value;
         matchedBooleanFilter = true;
         break;
       }
@@ -575,7 +578,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc', strict = 
 
 // Completes legacy saved expressions while retaining their original filters and explicit choices.
 export const normalizeSmartFolderExpression = expression => {
-  const query = String(expression ?? '').trim();
+  const query = canonicalArticleExpression(String(expression ?? '').trim());
   const parsed = parseArticleQuery({ search: query });
   const tokens = tokenizeSearch(query).map(trimTrailingPunctuation);
   const parts = [query];

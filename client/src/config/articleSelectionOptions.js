@@ -13,9 +13,9 @@ export const ARTICLE_STATUS_OPTIONS = createOptions([
     requiresAI: true
   },
   { value: 'unread', label: 'Unread', icon: 'record-circle-fill', iconClass: 'icon-unread', countKey: 'unreadCount' },
-  { value: 'favorite', label: 'Saved', sidebarLabel: 'Saved', icon: 'bookmark-fill', iconClass: 'icon-star', countKey: 'favoriteCount' },
+  { value: 'saved', label: 'Saved', sidebarLabel: 'Saved', icon: 'bookmark-fill', iconClass: 'icon-saved', countKey: 'savedCount' },
   { value: 'hot', label: 'Hot', icon: 'fire', iconClass: 'icon-hot', countKey: 'hotCount' },
-  { value: 'clicked', label: 'Opened originals', description: 'Articles opened on their original websites, separately from read status.', icon: 'arrow-up-right-square-fill', iconClass: 'icon-clicked', countKey: 'clickedCount' },
+  { value: 'openedOriginal', label: 'Opened originals', description: 'Articles opened on their original websites, separately from read status.', icon: 'arrow-up-right-square-fill', iconClass: 'icon-opened-original', countKey: 'openedOriginalCount' },
   { value: 'read', label: 'Read', icon: 'circle-fill', iconClass: 'icon-read', countKey: 'readCount' }
 ]);
 
@@ -47,9 +47,9 @@ export const SIDEBAR_STATUS_OPTIONS = Object.freeze([
   STATUS_OPTIONS_BY_VALUE.get('briefing'),
   STATUS_OPTIONS_BY_VALUE.get('unread'),
   STATUS_OPTIONS_BY_VALUE.get('read'),
-  STATUS_OPTIONS_BY_VALUE.get('favorite'),
+  STATUS_OPTIONS_BY_VALUE.get('saved'),
   STATUS_OPTIONS_BY_VALUE.get('hot'),
-  STATUS_OPTIONS_BY_VALUE.get('clicked')
+  STATUS_OPTIONS_BY_VALUE.get('openedOriginal')
 ]);
 
 // This function returns one status definition for count and label lookups.

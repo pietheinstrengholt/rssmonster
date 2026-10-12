@@ -3,10 +3,10 @@ import { createArticleStateActions } from '../src/services/articleStateActions.j
 import { overlayPendingActions } from '../src/services/offlineDatabase.js';
 
 const account = { apiOrigin: 'https://reader.example', userId: 1 };
-const article = { id: 41, status: 'unread', favoriteInd: 0 };
+const article = { id: 41, status: 'unread', savedInd: 0 };
 afterEach(() => vi.unstubAllGlobals());
 describe('durable article assignments', () => {
-  it('publishes effective read and favorite state only after persistence completes', async () => {
+  it('publishes effective read and saved state only after persistence completes', async () => {
     let complete;
     const database = { enqueueActions: vi.fn(() => new Promise(resolve => { complete = resolve; })) };
     const publish = vi.fn();
@@ -24,7 +24,7 @@ describe('durable article assignments', () => {
     const publish = vi.fn();
     const service = createArticleStateActions({ enqueueActions: vi.fn().mockRejectedValue(new DOMException('Quota', 'QuotaExceededError')) }, publish);
     service.setSession(account, 0);
-    await expect(service.assign([article], 'set-favorite', true)).rejects.toThrow('Quota');
+    await expect(service.assign([article], 'set-saved', true)).rejects.toThrow('Quota');
     expect(publish).not.toHaveBeenCalled();
   });
   it('does not publish a completion under a switched account', async () => {
@@ -41,12 +41,12 @@ describe('durable article assignments', () => {
   it('overlays fields independently in local order and excludes terminal failures', () => {
     const actions = [
       { articleId: 41, kind: 'set-status', value: 'read', state: 'dispatched' },
-      { articleId: 41, kind: 'set-favorite', value: true, state: 'pending' },
+      { articleId: 41, kind: 'set-saved', value: true, state: 'pending' },
       { articleId: 41, kind: 'set-status', value: 'unread', state: 'pending' },
-      { articleId: 41, kind: 'set-favorite', value: false, state: 'failed' }
+      { articleId: 41, kind: 'set-saved', value: false, state: 'failed' }
     ];
-    expect(overlayPendingActions([article], actions)).toEqual([{ ...article, status: 'unread', favoriteInd: 1 }]);
-    expect(article.favoriteInd).toBe(0);
+    expect(overlayPendingActions([article], actions)).toEqual([{ ...article, status: 'unread', savedInd: 1 }]);
+    expect(article.savedInd).toBe(0);
   });
 });
 

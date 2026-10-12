@@ -9,7 +9,7 @@ afterEach(() => { wrapper?.unmount(); });
 const button = label => wrapper.findAll('button').find(item => item.attributes('aria-label') === label || item.text() === label);
 const names = () => wrapper.findAll('input[placeholder="Action name"]').map(input => input.element.value);
 const load = async () => {
-  fetchActions.mockResolvedValueOnce({ data: { actions: ['First', 'Second'].map(name => ({ name, actionType: 'favorite', regularExpression: '/topic/i', tagValue: '' })) } });
+  fetchActions.mockResolvedValueOnce({ data: { actions: ['First', 'Second'].map(name => ({ name, actionType: 'saved', regularExpression: '/topic/i', tagValue: '' })) } });
   wrapper = mount(SettingsActions, { attachTo: document.body, global: { stubs: { BootstrapIcon: true } } });
   await flushPromises();
 };

@@ -60,7 +60,7 @@ describe('Smart Folder query domain', () => {
 
   it.each([
     ['unread:true tag:news', true],
-    ['favorite:true', false],
+    ['saved:true', false],
     ['unread:true unread:false', false],
     ['unread:false unread:true', true],
     ['"unread:true"', false]
@@ -78,7 +78,7 @@ describe('Smart Folder query domain', () => {
 
   it('parses every supported editor domain and preserves unknown tokens as free text', () => {
     const config = parseSmartFolderQuery(
-      'read:true favorite:true clicked:true hot:true firstSeen:12h '
+      'read:true saved:true openedOriginal:true hot:true firstSeen:12h '
       + 'tag:"machine learning" title:"Daily Brief" author:Jane language:nl '
       + 'quality:>=0.80 freshness:>=.45 developing:true sort:asc '
       + 'limit:75 unknown:value "free phrase"'
@@ -89,8 +89,8 @@ describe('Smart Folder query domain', () => {
       status: {
         unread: false,
         read: true,
-        favorite: true,
-        clicked: true,
+        saved: true,
+        openedOriginal: true,
         hot: true
       },
       date: {
@@ -138,8 +138,8 @@ describe('Smart Folder query domain', () => {
       status: {
         unread: true,
         read: false,
-        favorite: true,
-        clicked: true,
+        saved: true,
+        openedOriginal: true,
         hot: true
       },
       date: {
@@ -166,7 +166,7 @@ describe('Smart Folder query domain', () => {
     });
 
     expect(buildSmartFolderQuery(config)).toBe(
-      'unread:true favorite:true clicked:true hot:true firstSeen:3d '
+      'unread:true saved:true openedOriginal:true hot:true firstSeen:3d '
       + 'tag:security title:"Daily Brief" author:"Jane Doe" language:en '
       + '"zero trust" quality:>=0.70 freshness:>=0.50 event:true '
       + 'eventCount:>=3 sort:desc grouping:none limit:40'
@@ -174,7 +174,7 @@ describe('Smart Folder query domain', () => {
   });
 
   it('round-trips a representable query through the editor configuration', () => {
-    const query = 'unread:true favorite:true firstSeen:8h tag:security '
+    const query = 'unread:true saved:true firstSeen:8h tag:security '
       + 'title:"Daily Brief" author:"Jane Doe" language:en "zero trust" '
       + 'quality:>=0.70 freshness:>=0.50 event:true sort:recommended grouping:none limit:40';
 

@@ -66,7 +66,7 @@ describe('AppShell connectivity recovery', () => {
   it.each([false, true])('checks arrivals without reloading the active query: %s', async hasNewArticles => {
     const context = connectRecoveryMethods(createRecoveryContext());
     const selection = {
-      status: 'favorite', sort: 'recommended', grouping: 'event', search: 'science', smartFolderId: 20
+      status: 'saved', sort: 'recommended', grouping: 'event', search: 'science', smartFolderId: 20
     };
     context.selectionStore.currentSelection = { ...selection };
     const refreshArticleIds = vi.fn().mockResolvedValue(true);
@@ -89,7 +89,7 @@ describe('AppShell connectivity recovery', () => {
     context.$refs.articleFeed = {
       refreshArticleIds,
       checkForNewerArticles: vi.fn().mockImplementation(async () => {
-        context.selectionStore.currentSelection = { status: 'favorite' };
+        context.selectionStore.currentSelection = { status: 'saved' };
         return true;
       })
     };

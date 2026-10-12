@@ -59,8 +59,8 @@ const createStores = ({ AIEnabled = true, AssistantEnabled = true } = {}) => {
       name: 'Technology',
       unreadCount: 4
     }],
-    clickedCount: 3,
-    favoriteCount: 2,
+    openedOriginalCount: 3,
+    savedCount: 2,
     hotCount: 1,
     readCount: 9,
     smartFolders: [{
@@ -129,7 +129,7 @@ describe('DesktopToolbar behavior coverage', () => {
     await wrapper.get('button[aria-label="Tune your briefing"]').trigger('click');
     expect(uiStore.showModal).toBe('BriefingPreferences');
 
-    for (const status of ['hot', 'favorite', 'read', 'clicked']) {
+    for (const status of ['hot', 'saved', 'read', 'openedOriginal']) {
       selectionStore.currentSelection.status = status;
       await wrapper.vm.$nextTick();
       expect(wrapper.find('button[aria-label="Tune your briefing"]').exists()).toBe(false);
@@ -217,12 +217,12 @@ describe('DesktopToolbar behavior coverage', () => {
     const setGrouping = vi.spyOn(stores.selectionStore, 'setGrouping').mockImplementation(() => {});
     const wrapper = mountDesktopToolbar();
 
-    wrapper.vm.dropdownOptionClicked('status', 'read');
-    wrapper.vm.dropdownOptionClicked('viewMode', 'minimal');
-    wrapper.vm.dropdownOptionClicked('sort', 'asc');
-    wrapper.vm.dropdownOptionClicked('grouping', 'none');
-    wrapper.vm.dropdownOptionClicked('grouping', 'event');
-    wrapper.vm.dropdownOptionClicked('unknown', 'ignored');
+    wrapper.vm.dropdownOptionOpenedOriginal('status', 'read');
+    wrapper.vm.dropdownOptionOpenedOriginal('viewMode', 'minimal');
+    wrapper.vm.dropdownOptionOpenedOriginal('sort', 'asc');
+    wrapper.vm.dropdownOptionOpenedOriginal('grouping', 'none');
+    wrapper.vm.dropdownOptionOpenedOriginal('grouping', 'event');
+    wrapper.vm.dropdownOptionOpenedOriginal('unknown', 'ignored');
 
     expect(setStatus).toHaveBeenCalledWith('read');
     expect(setViewMode).toHaveBeenCalledWith('minimal');
@@ -365,7 +365,7 @@ describe('MobileToolbar behavior coverage', () => {
 
     wrapper.vm.setGrouping('none');
     wrapper.vm.setGrouping('event');
-    wrapper.vm.sortClicked('quality');
+    wrapper.vm.sortOpenedOriginal('quality');
     wrapper.vm.emitClickEvent('mobile', 'mobile');
 
     expect(setGrouping).toHaveBeenCalledOnce();
@@ -414,7 +414,7 @@ describe('MobileToolbar behavior coverage', () => {
     await settingsButton.trigger('click');
     expect(setShowModal).toHaveBeenLastCalledWith('BriefingPreferences');
 
-    stores.selectionStore.currentSelection.status = 'favorite';
+    stores.selectionStore.currentSelection.status = 'saved';
     await wrapper.vm.$nextTick();
     expect(wrapper.find('.mobile-selection-settings-button').exists()).toBe(false);
   });

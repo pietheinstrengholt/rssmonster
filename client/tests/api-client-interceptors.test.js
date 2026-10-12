@@ -76,6 +76,21 @@ describe('shared API base URL', () => {
 });
 
 describe('shared API response interceptor', () => {
+  it('normalizes JSON Article-state aliases while preserving canonical values', async () => {
+    const response = await api.get('/articles', { adapter: resolveResponse({
+      data: { articles: [{ id: 41, favoriteInd: 1, savedInd: 0, clickedAmount: 3 }] }
+    }) });
+    expect(response.data.articles).toEqual([{ id: 41, savedInd: 0, openedOriginalCount: 3 }]);
+  });
+  it.each(['blob', 'stream', 'arraybuffer'])('preserves the original %s response object', async responseType => {
+    const data = responseType === 'blob' ? new Blob(['<opml/>'], { type: 'text/xml' })
+      : responseType === 'stream' ? new ReadableStream({ start(controller) { controller.close(); } })
+        : new ArrayBuffer(8);
+    const response = await api.get('/export', { responseType,
+      adapter: resolveResponse({ data, contentType: responseType === 'stream' ? 'text/event-stream' : 'application/octet-stream' })
+    });
+    expect(response.data).toBe(data);
+  });
   // This test verifies ordinary JSON API responses remain unchanged.
   it('passes through JSON success responses', async () => {
     const response = await api.get('/articles', {

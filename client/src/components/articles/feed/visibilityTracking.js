@@ -54,8 +54,8 @@ const waitBeforeSeenRetry = attempt => new Promise(resolve => {
 // Creates observer and timing state for rendered feed articles.
 // Capture contract: keep first/last observation timestamps and accumulated duration
 // local to the current reading session. Persist firstSeen for actual exposure and
-// attention from eligible readable-content time; never use readAt, lastClickedAt,
-// favoritedAt or lastMeaningfulReadAt as a generic "last observed" timestamp.
+// attention from eligible readable-content time; never use readAt, lastOpenedOriginalAt,
+// savedAt or lastMeaningfulReadAt as a generic "last observed" timestamp.
 // Exposure remains separate from eligible time attributed to one active content area.
 export function createArticleFeedVisibilityState() {
   return {

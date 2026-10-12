@@ -89,7 +89,7 @@ const createSwipeContext = (overrides = {}) => {
   const context = {
     ...createArticleMobileSwipeState(),
     isMobilePortrait: false,
-    markAsFavorite: vi.fn(),
+    markAsSaved: vi.fn(),
     ...overrides
   };
   context.resetSwipe = vi.fn(clearSuppressClick =>
@@ -122,9 +122,9 @@ describe('Article description fallback safety', () => {
 
 describe('ArticleActionsMenu', () => {
   // Verifies every menu command preserves the parent-facing event contract.
-  it('labels favorite state and emits every available action', async () => {
+  it('labels saved state and emits every available action', async () => {
     const wrapper = mount(ArticleActionsMenu, {
-      props: { favoriteInd: 1 },
+      props: { savedInd: 1 },
       global: { stubs: { BootstrapIcon: BootstrapIconStub } }
     });
     const items = wrapper.findAll('[role="menuitem"]');
@@ -139,9 +139,9 @@ describe('ArticleActionsMenu', () => {
       'Not Interested',
       'Mute Feed for 7 Days'
     ]);
-    expect(items[0].get('.recommendation-favorite-icon').attributes('data-icon')).toBe('bookmark-fill');
-    expect(items[0].get('.recommendation-favorite-icon').attributes('data-context')).toBe('control');
-    expect(items[1].get('.recommendation-clicked-icon').attributes('data-icon')).toBe('arrow-up-right-square-fill');
+    expect(items[0].get('.recommendation-saved-icon').attributes('data-icon')).toBe('bookmark-fill');
+    expect(items[0].get('.recommendation-saved-icon').attributes('data-context')).toBe('control');
+    expect(items[1].get('.recommendation-opened-original-icon').attributes('data-icon')).toBe('arrow-up-right-square-fill');
     expect(items[6].get('.recommendation-negative-icon').attributes('data-icon')).toBe('hand-thumbs-down-fill');
     expect(items[7].get('.recommendation-mute-icon').attributes('data-icon')).toBe('slash-circle');
     expect(items[7].get('.recommendation-mute-icon').attributes('data-context')).toBe('control');
@@ -152,8 +152,8 @@ describe('ArticleActionsMenu', () => {
       await item.trigger('click');
     }
 
-    expect(wrapper.emitted('toggle-favorite')).toEqual([[]]);
-    expect(wrapper.emitted('toggle-clicked')).toEqual([[]]);
+    expect(wrapper.emitted('toggle-saved')).toEqual([[]]);
+    expect(wrapper.emitted('toggle-opened-original')).toEqual([[]]);
     expect(wrapper.emitted('toggle-read-status')).toEqual([[]]);
     expect(wrapper.emitted('not-interested')).toEqual([[]]);
     expect(wrapper.emitted('more-like-this')).toEqual([[]]);
@@ -162,20 +162,20 @@ describe('ArticleActionsMenu', () => {
     expect(wrapper.emitted('manage-tags')).toEqual([[]]);
   });
 
-  // Verifies an unfavorited article uses the marking label.
-  it('offers to mark an unfavorited article', () => {
+  // Verifies an unsaved article uses the marking label.
+  it('offers to mark an unsaved article', () => {
     const wrapper = mount(ArticleActionsMenu, {
       global: { stubs: { BootstrapIcon: BootstrapIconStub } }
     });
 
-    const favoriteItem = wrapper.get('[role="menuitem"]');
-    expect(favoriteItem.text()).toBe('Save article');
-    expect(favoriteItem.get('.recommendation-favorite-icon').attributes('data-icon')).toBe('bookmark');
+    const savedItem = wrapper.get('[role="menuitem"]');
+    expect(savedItem.text()).toBe('Save article');
+    expect(savedItem.get('.recommendation-saved-icon').attributes('data-icon')).toBe('bookmark');
   });
 
-  it('offers to unmark a clicked article', () => {
+  it('offers to unmark a openedOriginal article', () => {
     const wrapper = mount(ArticleActionsMenu, {
-      props: { clickedAmount: 2 },
+      props: { openedOriginalCount: 2 },
       global: { stubs: { BootstrapIcon: BootstrapIconStub } }
     });
 
@@ -185,7 +185,7 @@ describe('ArticleActionsMenu', () => {
   // Every article menu offers the current read-state action.
   it.each([false, true])('offers a read-status toggle in reader mode %s', async isReaderMode => {
     const wrapper = mount(ArticleActionsMenu, {
-      props: { favoriteInd: 1, isReaderMode, status: 'read' },
+      props: { savedInd: 1, isReaderMode, status: 'read' },
       global: { stubs: { BootstrapIcon: BootstrapIconStub } }
     });
 
@@ -231,12 +231,12 @@ describe('ArticleActionsMenu', () => {
 });
 
 describe('ArticleHeadlineRow state presentation', () => {
-  it('keeps read state on typography and favorite, hot, and developing states on icons', () => {
+  it('keeps read state on typography and saved, hot, and developing states on icons', () => {
     const wrapper = mount(ArticleHeadlineRow, {
       props: {
         title: 'Combined article states',
         status: 'read',
-        favoriteInd: 1,
+        savedInd: 1,
         hotInd: 1,
         isDevelopingStory: true,
         hasArticlePreview: true
@@ -502,8 +502,8 @@ describe('ArticleHeader actions', () => {
         viewMode: 'reader',
         readerDetail: true,
         status: 'read',
-        clickedAmount: 1,
-        favoriteInd: 1,
+        openedOriginalCount: 1,
+        savedInd: 1,
         hotInd: 1
       },
       global: {
@@ -511,7 +511,7 @@ describe('ArticleHeader actions', () => {
           BootstrapIcon: BootstrapIconStub,
           ArticleActionsMenu: {
             props: ['isReaderMode', 'status'],
-            emits: ['toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed'],
+            emits: ['toggle-saved', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed'],
             template: '<button class="actions-stub" :data-reader="isReaderMode" :data-status="status" @click="$emit(\'toggle-read-status\')"></button>'
           }
         }
@@ -529,7 +529,7 @@ describe('ArticleHeader actions', () => {
     await wrapper.get('.article-link').trigger('click');
     await wrapper.get('.actions-stub').trigger('click');
 
-    expect(wrapper.emitted('article-clicked')).toEqual([[]]);
+    expect(wrapper.emitted('article-opened-original')).toEqual([[]]);
     expect(wrapper.emitted('toggle-read-status')).toEqual([[]]);
   });
 
@@ -690,7 +690,7 @@ describe('Article mobile swipe coverage', () => {
     expect(context.resetSwipe).toHaveBeenCalledTimes(2);
   });
 
-  // Verifies leftward and short rightward gestures never toggle favorite.
+  // Verifies leftward and short rightward gestures never toggle saved.
   it('handles leftward and below-threshold swipe movement', () => {
     const context = createSwipeContext({ isMobilePortrait: true });
     articleMobileSwipeMethods.onSwipeTouchStart.call(context, {
@@ -708,7 +708,7 @@ describe('Article mobile swipe coverage', () => {
       cancelable: false
     });
     articleMobileSwipeMethods.onSwipeTouchEnd.call(context);
-    expect(context.markAsFavorite).not.toHaveBeenCalled();
+    expect(context.markAsSaved).not.toHaveBeenCalled();
   });
 
   // Verifies inactive gestures and reset options preserve suppression semantics.

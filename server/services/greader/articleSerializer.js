@@ -16,9 +16,9 @@ const dateMilliseconds = value => {
   return Number.isFinite(milliseconds) ? Math.trunc(milliseconds) : 0;
 };
 
-// This function identifies persisted integer favorite values as starred state.
-const isFavorite = value => {
-  // Coerces the numeric into the representation required while checking favorite.
+// This function identifies persisted integer saved values as saved state.
+const isSaved = value => {
+  // Coerces the numeric into the representation required while checking saved.
   const numeric = Number(value);
   return Number.isFinite(numeric) && numeric !== 0;
 };
@@ -35,7 +35,7 @@ const serializeCategories = article => {
   return [...new Set([
     READING_LIST_STREAM,
     ...(article.status === 'read' ? [READ_STREAM] : []),
-    ...(isFavorite(article.favoriteInd) ? [STARRED_STREAM] : []),
+    ...(isSaved(article.savedInd) ? [STARRED_STREAM] : []),
     ...(categoryName
       ? [`${LABEL_PREFIX}${categoryName}`]
       : [])
@@ -118,4 +118,4 @@ export const serializeGreaderArticle = article => {
   };
 };
 
-export { dateMilliseconds, isFavorite, serializeEnclosures };
+export { dateMilliseconds, isSaved, serializeEnclosures };

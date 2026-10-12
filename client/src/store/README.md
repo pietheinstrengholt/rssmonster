@@ -122,15 +122,15 @@ Briefing count data received with an overview also refreshes the selection-owned
 The overview domain owns the shared navigation hierarchy and the counts projected into Sidebar and Shell:
 
 - Categories and their feeds
-- Daily Briefing, Unread, Read, Favorites, Hot, and Clicked global totals
-- Read, unread, favorite, hot, and clicked totals for categories and feeds when returned by the server
+- Daily Briefing, Unread, Read, Saved, Hot, and OpenedOriginal global totals
+- Read, unread, saved, hot, and openedOriginal totals for categories and feeds when returned by the server
 - Smart Folder definitions and result-count snapshots
 - Top Tag snapshots for the active grouping
 - The difference between the latest unread total and the previous overview total
 
-Category and feed responses normalize read, unread, favorite, and feed-error counters to finite nonnegative values, and missing feed collections become empty collections. Count-preserving structure refreshes also normalize the five displayed article-status dimensions while merging cached values.
+Category and feed responses normalize read, unread, saved, and feed-error counters to finite nonnegative values, and missing feed collections become empty collections. Count-preserving structure refreshes also normalize the five displayed article-status dimensions while merging cached values.
 
-Direct authoritative responses currently rely on the server to return valid Hot and Clicked category/feed values and valid global totals. Those fields are not all passed through the same client-side normalization as read, unread, and favorite. Future changes should preserve the server contract or extend normalization consistently rather than assuming every incoming counter is already guarded by the client.
+Direct authoritative responses currently rely on the server to return valid Hot and OpenedOriginal category/feed values and valid global totals. Those fields are not all passed through the same client-side normalization as read, unread, and saved. Future changes should preserve the server contract or extend normalization consistently rather than assuming every incoming counter is already guarded by the client.
 
 The selected category and feed are derived by combining selection-owned identifiers with overview-owned records. Wildcards or missing records produce no selected entity rather than a fabricated placeholder.
 
@@ -154,9 +154,9 @@ Initial and forced refreshes reset the unread-arrival delta to zero. Ordinary ba
 
 Smart Folder definitions and Smart Folder counts are separate resources. Definitions publish first with a safe count fallback, then counts refresh in the background. A count failure retains the loaded folders and their last known counts.
 
-Top Tags are fetched for the active Daily Briefing, Unread, Read, Favorites, Hot, or Clicked collection. Changing article status requests a new ranked snapshot whose counts represent matching articles, independent of event grouping. Daily Briefing preference changes refresh its snapshot so its period and eligibility rules remain aligned with the article collection. If selection context changes again before an older response arrives, only the newest response may update the store.
+Top Tags are fetched for the active Daily Briefing, Unread, Read, Saved, Hot, or OpenedOriginal collection. Changing article status requests a new ranked snapshot whose counts represent matching articles, independent of event grouping. Daily Briefing preference changes refresh its snapshot so its period and eligibility rules remain aligned with the article collection. If selection context changes again before an older response arrives, only the newest response may update the store.
 
-Smart Folder and Top Tag counts are snapshots. They do not reconcile on scrolling, article opening, or every read/favorite transition. Explicit refreshes and relevant management operations replace them.
+Smart Folder and Top Tag counts are snapshots. They do not reconcile on scrolling, article opening, or every read/saved transition. Explicit refreshes and relevant management operations replace them.
 
 ## Resource-state contract
 
@@ -203,7 +203,7 @@ decrements the global, owning-category, and owning-feed Briefing counters once
 for the displayed event group. Briefings that include read articles leave these
 counters unchanged.
 
-Favorite transitions reconcile the favorite total across the same hierarchy. Deltas can represent one or several articles and are clamped at zero. A no-op transition must not change a count.
+Saved transitions reconcile the saved total across the same hierarchy. Deltas can represent one or several articles and are clamped at zero. A no-op transition must not change a count.
 
 If the owning category or feed cannot be found, hierarchical reconciliation stops and a diagnostic is logged. The next authoritative overview refresh repairs any drift.
 
@@ -216,7 +216,7 @@ Subscription mutations keep the cached hierarchy coherent:
 - Moving a feed subtracts its contribution from the source category and adds it to the destination without changing global totals.
 - Removing a category or feed subtracts its contribution from applicable global and category totals.
 
-Current immediate organizational reconciliation covers read, unread, and favorite counts. Hot and clicked contributions are carried in authoritative overview snapshots but are not adjusted by local category/feed move or removal bookkeeping. Those dimensions rely on the next overview refresh after subscription changes. Future work should expand the local reconciliation deliberately if all five dimensions must update before that refresh.
+Current immediate organizational reconciliation covers read, unread, and saved counts. Hot and openedOriginal contributions are carried in authoritative overview snapshots but are not adjusted by local category/feed move or removal bookkeeping. Those dimensions rely on the next overview refresh after subscription changes. Future work should expand the local reconciliation deliberately if all five dimensions must update before that refresh.
 
 ## Feed refresh state
 

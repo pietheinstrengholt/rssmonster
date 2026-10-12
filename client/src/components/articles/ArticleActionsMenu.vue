@@ -7,8 +7,8 @@
     </template>
     <template #menu="{ menuProps }">
       <ul v-bind="menuProps">
-      <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="favoritePending" @click="$emit('toggle-favorite')"><BootstrapIcon :icon="favoriteInd ? 'bookmark-fill' : 'bookmark'" context="control" class="recommendation-action-icon recommendation-favorite-icon" />{{ favoriteInd ? 'Remove from saved' : 'Save article' }}</button></li>
-      <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="clickPending || offlineReadingStore.readOnly" @click="$emit('toggle-clicked')"><BootstrapIcon icon="arrow-up-right-square-fill" class="recommendation-action-icon recommendation-clicked-icon" />{{ clickedAmount > 0 ? 'Remove from opened originals' : 'Mark original as opened' }}</button></li>
+      <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="savedPending" @click="$emit('toggle-saved')"><BootstrapIcon :icon="savedInd ? 'bookmark-fill' : 'bookmark'" context="control" class="recommendation-action-icon recommendation-saved-icon" />{{ savedInd ? 'Remove from saved' : 'Save article' }}</button></li>
+      <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="openedOriginalPending || offlineReadingStore.readOnly" @click="$emit('toggle-opened-original')"><BootstrapIcon icon="arrow-up-right-square-fill" class="recommendation-action-icon recommendation-opened-original-icon" />{{ openedOriginalCount > 0 ? 'Remove from opened originals' : 'Mark original as opened' }}</button></li>
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" @click="$emit('toggle-read-status')"><BootstrapIcon :icon="status === 'read' ? 'circle-fill' : 'record-circle-fill'" context="control" class="recommendation-action-icon recommendation-status-icon" />{{ status === 'read' ? 'Mark as unread' : 'Mark as read' }}</button></li>
       <li role="none"><hr class="app-dropdown__divider" /></li>
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="tagEditingDisabled || offlineReadingStore.readOnly" :title="tagEditingDisabled ? 'Tag the original article instead.' : undefined" @click="openTagDialog('add-tags')"><BootstrapIcon icon="tag" context="control" class="recommendation-action-icon" />Add tags</button></li>
@@ -29,7 +29,7 @@ import AppDropdown from '../shared/AppDropdown.vue';
 
 export default {
   components: { AppDropdown },
-  emits: ['toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags'],
+  emits: ['toggle-opened-original', 'toggle-saved', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags'],
   computed: { ...mapStores(useOfflineReadingStore) },
   methods: {
     openTagDialog(event) {
@@ -41,11 +41,11 @@ export default {
     }
   },
   props: {
-    clickedAmount: { type: Number, default: 0 },
-    clickPending: { type: Boolean, default: false },
+    openedOriginalCount: { type: Number, default: 0 },
+    openedOriginalPending: { type: Boolean, default: false },
     tagEditingDisabled: { type: Boolean, default: false },
-    favoriteInd: { type: Number, default: 0 },
-    favoritePending: { type: Boolean, default: false },
+    savedInd: { type: Number, default: 0 },
+    savedPending: { type: Boolean, default: false },
     isReaderMode: { type: Boolean, default: false },
     status: { type: String, default: '' }
   }
@@ -109,12 +109,12 @@ export default {
   color: var(--recommendation-positive-icon);
 }
 
-.recommendation-favorite-icon {
-  color: var(--article-star-icon);
+.recommendation-saved-icon {
+  color: var(--article-saved-icon);
 }
 
-.recommendation-clicked-icon {
-  color: var(--article-clicked-icon);
+.recommendation-opened-original-icon {
+  color: var(--article-opened-original-icon);
 }
 
 .recommendation-status-icon {

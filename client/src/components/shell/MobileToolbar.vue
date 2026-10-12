@@ -77,9 +77,9 @@
           </template>
           <template #menu="{ menuProps }">
             <div v-bind="menuProps">
-        <button v-for="option in visibleStatusOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === option.value }" :title="option.description" :aria-description="option.description" role="menuitem" @click="statusClicked(option.value)">{{ option.label }} {{ getStatusCount(option.value) }}</button>
+        <button v-for="option in visibleStatusOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === option.value }" :title="option.description" :aria-description="option.description" role="menuitem" @click="statusOpenedOriginal(option.value)">{{ option.label }} {{ getStatusCount(option.value) }}</button>
         <hr class="app-dropdown__divider">
-        <button v-for="option in visibleSortOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === option.value }" role="menuitem" :disabled="briefingPresentationControlsDisabled" :title="briefingPresentationControlsDisabled ? briefingPresentationDisabledTitle : null" @click="sortClicked(option.value)">{{ option.label }}</button>
+        <button v-for="option in visibleSortOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === option.value }" role="menuitem" :disabled="briefingPresentationControlsDisabled" :title="briefingPresentationControlsDisabled ? briefingPresentationDisabledTitle : null" @click="sortOpenedOriginal(option.value)">{{ option.label }}</button>
         <hr v-if="isAIEnabled" class="app-dropdown__divider">
         <button v-for="option in visibleGroupingOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.grouping === option.value }" role="menuitem" :disabled="briefingPresentationControlsDisabled" :title="briefingPresentationControlsDisabled ? briefingPresentationDisabledTitle : null" @click="setGrouping(option.value)">{{ option.mobileLabel }}</button>
             </div>
@@ -718,12 +718,12 @@ export default {
       }
     },
     // This function updates the active article sort order.
-    sortClicked: function(sort) {
+    sortOpenedOriginal: function(sort) {
       if (this.briefingPresentationControlsDisabled) return;
       this.selectionStore.setSelectedSort(sort);
     },
     // This function updates the selected status, clearing smart folders before reloading.
-    statusClicked: function(status) {
+    statusOpenedOriginal: function(status) {
       const currentSelection = this.selectionStore.currentSelection;
       if (status === currentSelection.status && currentSelection.smartFolderId === null) {
         this.$emit('forceReload');

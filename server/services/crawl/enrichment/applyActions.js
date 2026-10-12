@@ -6,8 +6,8 @@
    - read
    - advertisement
    - bad quality
-   - favorite
-   - clicked
+   - saved
+   - openedOriginal
    - tag (assign tag)
 ====================================================== */
 import { logFeedDebug } from '../../feeds/feedLogging.js';
@@ -17,8 +17,8 @@ import { compileActionRegex, matchesActionArticle } from '../../../utils/actionR
 function applyActions(actions, article = {}) {
   // Builds the result assembled while applying actions.
   const result = {
-    favoriteInd: 0,
-    clickedAmount: 0,
+    savedInd: 0,
+    openedOriginalCount: 0,
     status: 'unread',
     filteredInd: false,
     shouldDiscard: false,
@@ -69,18 +69,20 @@ function applyActions(actions, article = {}) {
         result.qualityScore = 0;
         break;
 
-      // Favorite action: marks article as a favorite
+      // Saved action: marks article as saved
+      case 'saved':
       case 'favorite':
-      // Applies the star-specific behavior.
+      // Retain legacy automation types during the contract migration.
       case 'star':
-        result.favoriteInd = 1;
-        result.favoritedAt = new Date();
+        result.savedInd = 1;
+        result.savedAt = new Date();
         break;
 
-      // Clicked action: read-later indicator
+      // Opened-original state is independent of read status.
+      case 'openedOriginal':
       case 'clicked':
-        result.clickedAmount = 1;
-        result.lastClickedAt = new Date();
+        result.openedOriginalCount = 1;
+        result.lastOpenedOriginalAt = new Date();
         break;
 
       // Tag action: assign a tag to the article

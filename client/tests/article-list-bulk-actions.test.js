@@ -32,7 +32,7 @@ describe('article list bulk actions', () => {
     await more().trigger('click');
     expect(wrapper.get('[role="menu"]').isVisible()).toBe(true);
     await action('Save all visible articles').trigger('click');
-    expect(wrapper.emitted('bulk-action')[0][0]).toEqual({ action: 'favorite-visible', selectedArticleId: 1 });
+    expect(wrapper.emitted('bulk-action')[0][0]).toEqual({ action: 'saved-visible', selectedArticleId: 1 });
     expect(more().attributes('aria-expanded')).toBe('false');
   });
 

@@ -42,9 +42,9 @@ unless a filter's detailed description below states otherwise.
 | Author | `author:name`, `author:"full name"` |
 | Tag | `tag:name`, `tag:"multiword name"` |
 | Language | `language:en`, using an exact two- or three-letter code |
-| Favorite | `favorite:true`, `favorite:false`, `star:true`, `star:false` |
+| Saved | `saved:true`, `saved:false`, `star:true`, `star:false` |
 | Read state | `unread:true`, `unread:false`, `read:true`, `read:false` |
-| Interaction state | `clicked:true`, `clicked:false`, `seen:true`, `seen:false` |
+| Interaction state | `openedOriginal:true`, `openedOriginal:false`, `seen:true`, `seen:false` |
 | Hot state | `hot:true`, `hot:false` |
 | Event membership | `event:true`, `event:false` |
 | Briefing eligibility | `briefing:true`, `briefing:false` |
@@ -78,8 +78,8 @@ operators are not part of the query language.
 ### Article state
 
 - `unread:true|false` includes unread or read articles. `read:true|false` provides the inverse form.
-- `favorite:true|false` includes starred or unstarred articles. `star:true|false` is an alias with the same behavior.
-- `clicked:true|false` includes articles with at least one outbound click or with no clicks.
+- `saved:true|false` includes saved or unsaved articles. `favorite:true|false` and `star:true|false` remain aliases with the same behavior.
+- `openedOriginal:true|false` includes articles with at least one recorded original opening or none. `clicked:true|false` remains an alias.
 - `seen:true|false` includes articles that have or have not appeared on screen.
 - `hot:true|false` includes articles marked hot or not hot within the active feed/category scope.
 

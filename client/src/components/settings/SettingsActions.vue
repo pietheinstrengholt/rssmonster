@@ -152,7 +152,7 @@
   color: var(--settings-danger-text);
 }
 
-.actions-type-icon--star {
+.actions-type-icon--saved {
   background: var(--badge-quality-bg);
   color: var(--badge-quality-text);
 }
@@ -162,7 +162,7 @@
   color: var(--settings-info-text);
 }
 
-.actions-type-icon--clicked {
+.actions-type-icon--opened-original {
   background: var(--settings-info-bg);
   color: var(--settings-info-text);
 }
@@ -452,9 +452,9 @@ export default {
       saving: false,
       actionTypes: [
         { value: 'discard', label: 'Discard', selectLabel: 'Discard article', icon: 'trash', iconClass: 'actions-type-icon--discard', description: 'Hides the article from normal queries.' },
-        { value: 'favorite', label: 'Saved', selectLabel: 'Save article', icon: 'bookmark', iconClass: 'actions-type-icon--star', description: 'Saves the article for later.' },
+        { value: 'saved', label: 'Saved', selectLabel: 'Save article', icon: 'bookmark', iconClass: 'actions-type-icon--saved', description: 'Saves the article for later.' },
         { value: 'read', label: 'Read', selectLabel: 'Mark as read', icon: 'eye', iconClass: 'actions-type-icon--read', description: 'Automatically marks the article as read.' },
-        { value: 'clicked', label: 'Opened originals', selectLabel: 'Mark original as opened', icon: 'cursor', iconClass: 'actions-type-icon--clicked', description: 'Marks the original as opened without changing read status.' },
+        { value: 'openedOriginal', label: 'Opened originals', selectLabel: 'Mark original as opened', icon: 'cursor', iconClass: 'actions-type-icon--opened-original', description: 'Marks the original as opened without changing read status.' },
         { value: 'advertisement', label: 'Mark as advertisement', selectLabel: 'Mark as advertisement', icon: 'megaphone', iconClass: 'actions-type-icon--advertisement', description: 'Overrides the advertisement score to 0.' },
         { value: 'badquality', label: 'Mark as low quality', selectLabel: 'Mark as low quality', icon: 'arrow-down-square', iconClass: 'actions-type-icon--badquality', description: 'Overrides the quality score to 0.' },
         { value: 'tag', label: 'Assign tag', selectLabel: 'Assign tag', icon: 'tag', iconClass: 'actions-type-icon--tag', description: 'Adds a custom tag to the article.' }
@@ -529,7 +529,7 @@ export default {
     // This function adds one editable action after the authoritative collection has loaded.
     addAction() {
       if (!this.loaded || this.saving) return;
-      this.actions.push({ name: '', actionType: 'favorite', regularExpression: '', tagValue: '' });
+      this.actions.push({ name: '', actionType: 'saved', regularExpression: '', tagValue: '' });
     },
     // This function removes one local action while the editor is available.
     removeAction(index) {

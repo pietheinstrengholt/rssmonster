@@ -58,7 +58,7 @@ const uploadGreaderOpml = (req, res, next) => {
  * - GET /reader/api/0/stream/contents/* - Get articles
  * - GET /reader/api/0/stream/items/ids - Get article IDs
  * - POST /reader/api/0/stream/items/contents - Get articles by ID
- * - POST /reader/api/0/edit-tag - Mark read/unread/starred
+ * - POST /reader/api/0/edit-tag - Mark read/unread/saved
  * - POST /reader/api/0/mark-all-as-read - Mark all as read
  * - POST /reader/api/0/rename-tag - Rename category
  * - POST /reader/api/0/disable-tag - Delete category
@@ -126,7 +126,7 @@ router.get('/reader/api/0/stream/items/ids', greaderController.getStreamItemIds)
 router.post('/reader/api/0/stream/items/contents', greaderController.getStreamItemContents);
 router.get('/reader/api/0/stream/items/contents', greaderController.getStreamItemContents);
 
-// Edit tags (mark read/unread/starred)
+// Edit tags (mark read/unread/saved)
 router.post('/reader/api/0/edit-tag', validateGreaderActionToken, greaderController.editTag);
 
 // Mark all as read

@@ -54,13 +54,13 @@ describe('original source persistence', () => {
   it('updates attribution without changing identity, user state or content, and retains missing provenance', async () => {
     const candidate = async source => (await buildArticleCandidate({ feed, entry: parse(rss(source)) })).articleData;
     const initial = await candidate('<source url="https://agency.test/feed">Agency</source>');
-    const { article } = await saveArticle(feed, initial, { tags: [] }, { status: 'read', favoriteInd: 1 });
+    const { article } = await saveArticle(feed, initial, { tags: [] }, { status: 'read', savedInd: 1 });
     expect((await article.reload()).originalSource).toEqual(initial.originalSource);
     const revised = await candidate('<source url="https://agency.test/new">New agency name</source>');
     const plan = await updateArticle(feed, revised);
     expect(plan).toMatchObject({ matched: true, changed: true, changes: { contentChanged: false, metadataChanged: true } });
     await applyArticleUpdate({ updatePlan: plan, userId: user.id });
-    expect(await article.reload()).toMatchObject({ id: article.id, externalId: '42', status: 'read', favoriteInd: 1, originalSource: revised.originalSource });
+    expect(await article.reload()).toMatchObject({ id: article.id, externalId: '42', status: 'read', savedInd: 1, originalSource: revised.originalSource });
     expect(await updateArticle(feed, revised)).toMatchObject({ changed: false });
     expect(await updateArticle(feed, await candidate(''))).toMatchObject({ changed: false });
   });

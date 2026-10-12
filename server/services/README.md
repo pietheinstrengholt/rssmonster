@@ -28,7 +28,7 @@ See [Events](events/README.md).
 
 `islands/runIslandCalibration.js` builds behavioral profiles, persists Islands and
 rescores unread articles. A normal crawl scores new articles against existing
-Islands. Favorites, explicit feedback, clicks and attention remain the evidence;
+Islands. Saved, explicit feedback, clicks and attention remain the evidence;
 audit entries and previous scores never become new behavioral input.
 See [Interest Islands](islands/README.md).
 
@@ -127,7 +127,7 @@ require explicit re-embedding; this check does not rebuild or backfill data.
 `articles/syncActions.js` processes authenticated explicit state assignments in
 order, locking User before Article to match `updateArticleBehavior()`. Per-action
 transactions include the mutation, immutable UUID receipt and personalization
-refresh request. `articles/articleInteractionState.js` shares read/favorite field
+refresh request. `articles/articleInteractionState.js` shares read/saved field
 assignment with existing controllers. Sync does not record observations or expand
 Events. `ArticleSyncAction` is registered through the model factory; no article FK
 allows receipts to outlive deleted content. See `docs/rssmonster-api.md` for the

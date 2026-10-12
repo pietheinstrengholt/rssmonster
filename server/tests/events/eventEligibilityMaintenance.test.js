@@ -17,7 +17,7 @@ async function fixture(count = 3) {
   const otherFeed = await db.Feed.create({ userId: user.id, categoryId: otherCategory.id, feedName: 'Keep', url: `https://${user.id}.example/b` });
   const articles = [];
   for (let index = 0; index < count; index++) articles.push(await db.Article.create({ userId: user.id,
-    feedId: index ? otherFeed.id : feed.id, title: `Occurrence ${index}`, status: 'unread', favoriteInd: index ? 1 : 0,
+    feedId: index ? otherFeed.id : feed.id, title: `Occurrence ${index}`, status: 'unread', savedInd: index ? 1 : 0,
     createdAt: new Date(Date.now() - (index ? 0 : 10 * 86400000)),
     publishedAt: new Date('2026-09-17T00:00:00Z'), articleVector: [1, index / 10], embedding_model: 'test-model' }));
   const event = await db.Event.create({ userId: user.id, representativeArticleId: articles[0].id,
@@ -35,11 +35,11 @@ const response = () => {
 describe('Event eligibility maintenance', () => {
   it('dissolves a singleton, clears assignments and preserves Article state', async () => {
     const { user, articles: [article], event } = await fixture(1);
-    await article.update({ favoriteInd: 1, clickedAmount: 2, interestScore: 0.3 });
+    await article.update({ savedInd: 1, openedOriginalCount: 2, interestScore: 0.3 });
     const result = await reconcileTouchedEvents(user.id, [event.id]);
     await article.reload();
     expect(await db.Event.findByPk(event.id)).toBeNull();
-    expect(article).toMatchObject({ eventId: null, status: 'unread', favoriteInd: 1, clickedAmount: 2 });
+    expect(article).toMatchObject({ eventId: null, status: 'unread', savedInd: 1, openedOriginalCount: 2 });
     expect(Number(article.interestScore)).toBe(0.3);
     expect(result.articlesByEventId[event.id]).toEqual([]);
   });
@@ -72,7 +72,7 @@ describe('Event eligibility maintenance', () => {
     }
     expect(await db.Event.findByPk(event.id)).toBeNull();
     for (const article of articles) { await article.reload(); expect(article.eventId).toBeNull(); }
-    expect(articles[2]).toMatchObject({ filteredInd: false, favoriteInd: 1 });
+    expect(articles[2]).toMatchObject({ filteredInd: false, savedInd: 1 });
   });
 
   it('dissolves the old pair atomically when a member becomes a duplicate', async () => {
@@ -80,7 +80,7 @@ describe('Event eligibility maintenance', () => {
     await markArticleAsDuplicate(articles[0], articles[1]);
     expect(await db.Event.findByPk(event.id)).toBeNull();
     await articles[1].reload();
-    expect(articles[1]).toMatchObject({ eventId: null, favoriteInd: 1, duplicateCount: 1 });
+    expect(articles[1]).toMatchObject({ eventId: null, savedInd: 1, duplicateCount: 1 });
   });
 
   it.each(['feed', 'category', 'cleanup'])('repairs the representative before %s deletion can cascade away a valid Event', async mode => {
@@ -116,14 +116,14 @@ describe('Event eligibility maintenance', () => {
     for (const article of articles) { await article.reload(); expect(article.eventId).toBe(event.id); }
   });
 
-  it('keeps membership when an Article becomes favorited during cleanup selection', async () => {
+  it('keeps membership when an Article becomes saved during cleanup selection', async () => {
     const { user, articles: [article], event } = await fixture();
     await db.ArchivingSetting.create({ userId: user.id, maximumArticleAge: 7, maximumArticleAgeUnit: 'days' });
     await article.update({ status: 'read' });
     const findEvents = db.Event.findAll.bind(db.Event);
     const boundary = vi.spyOn(db.Event, 'findAll').mockImplementationOnce(async options => {
       // Selection has read the old flag, but the removal transaction has not locked it yet.
-      await article.update({ favoriteInd: 1 });
+      await article.update({ savedInd: 1 });
       return findEvents(options);
     });
     try {
@@ -132,7 +132,7 @@ describe('Event eligibility maintenance', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ deletedCount: 0 }));
       await article.reload(); await event.reload();
-      expect(article).toMatchObject({ status: 'read', favoriteInd: 1, eventId: event.id });
+      expect(article).toMatchObject({ status: 'read', savedInd: 1, eventId: event.id });
       expect(event).toMatchObject({ representativeArticleId: article.id, articleCount: 3 });
     } finally { boundary.mockRestore(); }
   });

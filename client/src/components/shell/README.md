@@ -87,7 +87,7 @@ Global stacking uses semantic tokens from `assets/styles/theme.css`: `--layer-co
 
 Both toolbar variants control the same article-selection dimensions:
 
-- **Status** chooses Daily briefing, Unread, Favorites, Hot, Clicked, or Read.
+- **Status** chooses Daily briefing, Unread, Saved, Hot, OpenedOriginal, or Read.
 - **Sort** chooses Oldest or Newest, with additional AI ordering when available.
 - **Grouping** chooses ungrouped articles or Event clusters when AI is available.
 - **Search** updates the shared article query.
@@ -120,7 +120,7 @@ The filter and action groups may shrink, and dropdown labels may compress, but c
 Desktop presents separate dropdowns for:
 
 - **View:** Reader, Expanded, Summarized, Summary Bullets when AI is enabled, and Headlines.
-- **Show:** Daily briefing when AI is enabled, Unread, Favorite, Hot, Clicked, and Read.
+- **Show:** Daily briefing when AI is enabled, Unread, Saved, Hot, OpenedOriginal, and Read.
 - **Sort:** Newest and Oldest, plus Top Stories, Recommended, and Quality when AI is enabled.
 - **Grouping:** None, Events when AI is enabled.
 
@@ -274,7 +274,7 @@ When an assistant provider is configured, the sheet can open or close the assist
 
 ## Count behavior
 
-Status and category counts are projections of shared overview state. They update reactively as the store reconciles reading, unread, favorite, clicked, crawl, and overview changes. Navigation only changes which count dimension is displayed; it does not itself create or remove articles.
+Status and category counts are projections of shared overview state. They update reactively as the store reconciles reading, unread, saved, openedOriginal, crawl, and overview changes. Navigation only changes which count dimension is displayed; it does not itself create or remove articles.
 
 Smart-folder counts are loaded snapshots and do not follow every article interaction. The shell must not make them appear live merely because the status and category counts are live.
 

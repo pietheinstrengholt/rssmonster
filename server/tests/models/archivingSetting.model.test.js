@@ -12,8 +12,8 @@ describe('ArchivingSetting', () => {
 
     expect(await settings.reload()).toMatchObject({
       neverDeleteUnreadArticles: true,
-      neverDeleteFavorites: true,
-      neverDeleteClickedArticles: false,
+      neverDeleteSaved: true,
+      neverDeleteOpenedOriginalArticles: false,
       maximumArticleAge: 7,
       maximumArticleAgeUnit: 'years',
       maximumArticlesPerFeed: null,

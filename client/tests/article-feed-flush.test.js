@@ -17,9 +17,9 @@ vi.mock('../src/api/articles.js', () => ({
   markArticlesAsRead: vi.fn(),
   markArticleUnread: vi.fn(),
   markArticleSeen: vi.fn(),
-  markAsFavorite: vi.fn(),
-  markManyClicked: vi.fn(),
-  markManyAsFavorite: vi.fn()
+  markAsSaved: vi.fn(),
+  markManyOpenedOriginal: vi.fn(),
+  markManyAsSaved: vi.fn()
 }));
 
 beforeEach(() => {

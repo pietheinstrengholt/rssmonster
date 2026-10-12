@@ -144,7 +144,7 @@ upgrade cannot be recovered. Future article cleanup does not erase receipt histo
 **Sort sidebar category items by** defaults to **Manual order**, which preserves
 saved category and feed order. **Name** sorts A–Z; **Selected count** and **Total
 count** sort highest first. Selected count follows the current status (for example,
-Unread or Favorites), regardless of the count display options. **Recently active**
+Unread or Saved), regardless of the count display options. **Recently active**
 sorts by the latest new article receipt, with feeds that have never received an
 article last; categories use the latest receipt among their feeds. Equal values
 retain manual order. Automatic sorting hides **Reorder** and does not overwrite
@@ -152,7 +152,7 @@ manual order. The Inactive feeds group stays at the bottom, with its feeds sorte
 by the chosen option. Smart Folders, tags, and All feeds filters are unaffected.
 
 **Sort by current selection** enables dynamic sorting, highest count first for
-Unread, Favorites, Hot, or whichever status is selected. It is disabled by default.
+Unread, Saved, Hot, or whichever status is selected. It is disabled by default.
 While enabled, the other sort selector is disabled and its stored choice is
 ignored; turning dynamic sorting off restores that choice. Reorder remains hidden
 while dynamic sorting is on, and Inactive feeds stay in their bottom group.

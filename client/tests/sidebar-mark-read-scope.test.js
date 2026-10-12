@@ -123,7 +123,7 @@ describe('Sidebar mark-as-read scope', () => {
     expect(markAllAsRead).not.toHaveBeenCalled();
   });
 
-  it('blocks repeat clicks, preserves unread state on failure, and allows retry', async () => {
+  it('blocks repeat openedOriginals, preserves unread state on failure, and allows retry', async () => {
     const { uiStore, context } = setup();
     uiStore.sidebarSettings.markReadVisibleOnly = true;
     let reject;

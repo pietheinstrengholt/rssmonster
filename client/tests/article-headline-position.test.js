@@ -16,7 +16,7 @@ afterEach(() => {
   else delete HTMLElement.prototype.scrollIntoView;
 });
 
-it.each(['list', 'shell', 'window'])('keeps the clicked headline in place on the %s scroll surface', async surface => {
+it.each(['list', 'shell', 'window'])('keeps the openedOriginal headline in place on the %s scroll surface', async surface => {
   const stores = createFocusedStores({
     selection: { currentSelection: { viewMode: 'minimal', grouping: 'none' } }
   });

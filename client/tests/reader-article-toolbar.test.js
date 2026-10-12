@@ -3,13 +3,13 @@ import { flushPromises, mount } from '@vue/test-utils';
 import Article from '../src/components/articles/Article.vue';
 import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
 import { createFocusedStores } from './helpers/focusedStores.js';
-import { fetchArticleRecommendations, markAsFavorite, markClicked } from '../src/api/articles.js';
+import { fetchArticleRecommendations, markAsSaved, markOpenedOriginal } from '../src/api/articles.js';
 
 vi.mock('../src/api/articles.js', async importOriginal => ({
   ...await importOriginal(),
   fetchArticleRecommendations: vi.fn(),
-  markAsFavorite: vi.fn(),
-  markClicked: vi.fn()
+  markAsSaved: vi.fn(),
+  markOpenedOriginal: vi.fn()
 }));
 
 let wrapper;
@@ -20,7 +20,7 @@ const article = {
 };
 const stores = () => createFocusedStores({
   selection: { currentSelection: { viewMode: 'reader', grouping: 'none' } },
-  overview: { applyFavoriteDelta: vi.fn() }
+  overview: { applySavedDelta: vi.fn() }
 });
 const button = name => wrapper.findAll('button').find(item => item.attributes('aria-label') === name || item.text() === name);
 const render = props => {
@@ -29,8 +29,8 @@ const render = props => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  markAsFavorite.mockResolvedValue({ data: { favoriteInd: 1 } });
-  markClicked.mockResolvedValue({ data: { clickedAmount: 1 } });
+  markAsSaved.mockResolvedValue({ data: { savedInd: 1 } });
+  markOpenedOriginal.mockResolvedValue({ data: { openedOriginalCount: 1 } });
   fetchArticleRecommendations.mockResolvedValue({ data: { articles: [] } });
 });
 afterEach(() => { wrapper?.unmount(); wrapper = null; });
@@ -71,23 +71,23 @@ describe('Reader article toolbar', () => {
     render();
     await button('Save article').trigger('click');
     await flushPromises();
-    expect(wrapper.emitted('update-favorite')).toEqual([[{ id: 42, favoriteInd: 1 }]]);
-    await wrapper.setProps({ favoriteInd: 1 });
+    expect(wrapper.emitted('update-saved')).toEqual([[{ id: 42, savedInd: 1 }]]);
+    await wrapper.setProps({ savedInd: 1 });
     expect(button('Remove from saved').attributes('aria-pressed')).toBe('true');
-    markAsFavorite.mockResolvedValue({ data: { favoriteInd: 0 } });
+    markAsSaved.mockResolvedValue({ data: { savedInd: 0 } });
     await button('Remove from saved').trigger('click');
     await flushPromises();
-    expect(markAsFavorite).toHaveBeenLastCalledWith(42, 'unmark', expect.objectContaining({ id: expect.any(Number) }));
-    expect(wrapper.emitted('update-favorite').at(-1)).toEqual([{ id: 42, favoriteInd: 0 }]);
+    expect(markAsSaved).toHaveBeenLastCalledWith(42, 'unmark', expect.objectContaining({ id: expect.any(Number) }));
+    expect(wrapper.emitted('update-saved').at(-1)).toEqual([{ id: 42, savedInd: 0 }]);
   });
 
   it('disables saving while the request is pending', async () => {
     let finish;
-    markAsFavorite.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    markAsSaved.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
     render();
     await button('Save article').trigger('click');
     expect(button('Save article').attributes('disabled')).toBeDefined();
-    finish({ data: { favoriteInd: 1 } });
+    finish({ data: { savedInd: 1 } });
     await flushPromises();
     expect(button('Save article').attributes('disabled')).toBeUndefined();
   });
@@ -99,8 +99,8 @@ describe('Reader article toolbar', () => {
     expect(links[0].attributes()).toMatchObject({ href: article.url, target: '_blank', rel: 'noopener noreferrer' });
     await links[0].trigger('click');
     await flushPromises();
-    expect(markClicked).toHaveBeenCalledTimes(1);
-    expect(wrapper.emitted('update-clicked')).toEqual([[{ id: 42, clickedAmount: 1 }]]);
+    expect(markOpenedOriginal).toHaveBeenCalledTimes(1);
+    expect(wrapper.emitted('update-opened-original')).toEqual([[{ id: 42, openedOriginalCount: 1 }]]);
     expect(wrapper.get('h1').text()).toBe(article.title);
     expect(wrapper.text()).toContain('Original article body.');
   });

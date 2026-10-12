@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const fields = {
-  lastClickedAt: ['ISLAND_CLICK_HALF_LIFE_DAYS', 30],
+  lastOpenedOriginalAt: ['ISLAND_OPENED_ORIGINAL_HALF_LIFE_DAYS', 30],
   lastMeaningfulReadAt: ['ISLAND_DEEP_READ_HALF_LIFE_DAYS', 90],
-  favoritedAt: ['ISLAND_FAVORITE_HALF_LIFE_DAYS', 365],
+  savedAt: ['ISLAND_SAVED_HALF_LIFE_DAYS', 365],
   positiveFeedbackAt: ['ISLAND_POSITIVE_FEEDBACK_HALF_LIFE_DAYS', 730],
   negativeFeedbackAt: ['ISLAND_NEGATIVE_FEEDBACK_HALF_LIFE_DAYS', 365]
 };
@@ -16,6 +16,14 @@ const clear = () => Object.values(fields).forEach(([name]) => vi.stubEnv(name, '
 afterEach(() => { vi.unstubAllEnvs(); vi.resetModules(); });
 
 describe('Island decay configuration', () => {
+  it('retains legacy half-life variables while preferring valid canonical values', async () => {
+    clear();
+    vi.stubEnv('ISLAND_CLICK_HALF_LIFE_DAYS', '17.5');
+    vi.stubEnv('ISLAND_FAVORITE_HALF_LIFE_DAYS', '62');
+    expect(await load()).toMatchObject({ lastOpenedOriginalAt: 17.5, savedAt: 62 });
+    vi.stubEnv('ISLAND_OPENED_ORIGINAL_HALF_LIFE_DAYS', '31');
+    expect(await load()).toMatchObject({ lastOpenedOriginalAt: 31, savedAt: 62 });
+  });
   it('uses documented defaults and ignores the retired time-constant and floor options', async () => {
     clear();
     vi.stubEnv('ISLAND_RECENCY_HALF_LIFE_DAYS', '1');

@@ -143,7 +143,7 @@
               :article-id="article.id ?? article.event?.developingArticleId"
               icon-class="article-reader__developing-icon"
             />
-            <span v-if="article.favoriteInd === 1" class="article-reader__badge article-reader__badge--favorite">Saved</span>
+            <span v-if="article.savedInd === 1" class="article-reader__badge article-reader__badge--saved">Saved</span>
             <span v-if="article.hotInd === 1" class="article-reader__badge article-reader__badge--hot">Hot</span>
             <span v-if="similarCount(article)" class="article-reader__badge">{{ similarCount(article) }} similar</span>
           </span>
@@ -204,8 +204,8 @@
         @update-reader-text-size="setReaderTextSize"
         :key="selectedArticle.id"
         @update-tags="$emit('update-tags', $event)"
-        @update-favorite="$emit('update-favorite', $event)"
-        @update-clicked="$emit('update-clicked', $event)"
+        @update-saved="$emit('update-saved', $event)"
+        @update-openedOriginal="$emit('update-opened-original', $event)"
         @toggle-read-status="$emit('toggle-read-status', $event)"
         @event-articles-loaded="$emit('event-articles-loaded', $event)"
         @event-articles-collapsed="$emit('event-articles-collapsed', $event)"
@@ -222,8 +222,8 @@
         reader-detail
         :reader-text-size="readerTextSize"
         @update-tags="$emit('update-tags', $event)"
-        @update-favorite="$emit('update-favorite', $event)"
-        @update-clicked="$emit('update-clicked', $event)"
+        @update-saved="$emit('update-saved', $event)"
+        @update-openedOriginal="$emit('update-opened-original', $event)"
         @toggle-read-status="$emit('toggle-read-status', $event)"
         @event-articles-loaded="$emit('event-articles-loaded', $event)"
         @event-articles-collapsed="$emit('event-articles-collapsed', $event)"
@@ -270,7 +270,7 @@ import { formatTagName } from '../../utils/tags';
 import { usableHttpUrl } from '../../utils/content';
 import {
   fetchArticleRecommendations,
-  markClicked as markArticleClickedAPI
+  markOpenedOriginal as markArticleOpenedOriginalAPI
 } from '../../api/articles';
 import { notifyActionError } from '../../services/actionNotifications.js';
 import { summarizeArticleContent } from '../../services/articleContentService.js';
@@ -297,8 +297,8 @@ export default {
   },
   emits: [
     'update-tags',
-    'update-favorite',
-    'update-clicked',
+    'update-saved',
+    'update-opened-original',
     'toggle-read-status',
     'event-articles-loaded',
     'event-articles-collapsed',
@@ -309,7 +309,7 @@ export default {
     'reading-article-changing',
     'mark-previous-article-read',
     'shortcut-toggle-read',
-    'shortcut-toggle-favorite',
+    'shortcut-toggle-saved',
     'flush-pool',
     'clear-filters',
     'clear-search',
@@ -350,7 +350,7 @@ export default {
       readerTextSize: readReaderTextSize(),
       isReaderEndStateDismissed: false,
       showCollectionDetails: false,
-      pendingClickedArticleIds: new Set(),
+      pendingOpenedOriginalArticleIds: new Set(),
       recommendations: [],
       recommendationsLoading: false,
       recommendationsError: false,
@@ -721,7 +721,7 @@ export default {
         this.toggleSelectedReadStatus();
       } else {
         event.preventDefault();
-        this.toggleSelectedFavorite();
+        this.toggleSelectedSaved();
       }
     },
     // Opens the selected article through the existing article link behavior.
@@ -736,10 +736,10 @@ export default {
         status: this.selectedArticle.status
       });
     },
-    // Requests a favorite toggle for the selected reader article.
-    toggleSelectedFavorite() {
+    // Requests a saved toggle for the selected reader article.
+    toggleSelectedSaved() {
       if (!this.selectedArticle) return;
-      this.$emit('shortcut-toggle-favorite', { id: this.selectedArticle.id });
+      this.$emit('shortcut-toggle-saved', { id: this.selectedArticle.id });
     },
     // Returns the feed label for a row in the reader article list.
     feedName(article) {
@@ -769,27 +769,27 @@ export default {
         .map(usableHttpUrl)
         .find(Boolean) || '';
     },
-    // Tracks an original-article link through the same clicked-article behavior as the reader panel.
+    // Tracks an original-article link through the same openedOriginal-article behavior as the reader panel.
     async trackOriginalArticleClick(article) {
       const articleKey = String(article.id);
-      if (this.pendingClickedArticleIds.has(articleKey)) return;
+      if (this.pendingOpenedOriginalArticleIds.has(articleKey)) return;
 
-      this.pendingClickedArticleIds.add(articleKey);
+      this.pendingOpenedOriginalArticleIds.add(articleKey);
       try {
-        const response = await markArticleClickedAPI(article.id);
-        const responseClickedAmount = Number(response?.data?.clickedAmount);
-        const currentClickedAmount = Number(article.clickedAmount) || 0;
-        this.$emit('update-clicked', {
+        const response = await markArticleOpenedOriginalAPI(article.id);
+        const responseOpenedOriginalCount = Number(response?.data?.openedOriginalCount);
+        const currentOpenedOriginalCount = Number(article.openedOriginalCount) || 0;
+        this.$emit('update-opened-original', {
           id: article.id,
-          clickedAmount: Number.isFinite(responseClickedAmount)
-            ? responseClickedAmount
-            : currentClickedAmount + 1
+          openedOriginalCount: Number.isFinite(responseOpenedOriginalCount)
+            ? responseOpenedOriginalCount
+            : currentOpenedOriginalCount + 1
         });
       } catch (error) {
         console.error(`Error recording reader click for article ${article.id}:`, error);
         notifyActionError('Could not record this article click. Please try again.', error);
       } finally {
-        this.pendingClickedArticleIds.delete(articleKey);
+        this.pendingOpenedOriginalArticleIds.delete(articleKey);
       }
     },
     // Returns the related article count when available.
@@ -1134,7 +1134,7 @@ export default {
   padding: 4px 7px;
 }
 
-.article-reader__badge--favorite {
+.article-reader__badge--saved {
   background: var(--badge-quality-bg);
   color: var(--badge-quality-text);
 }

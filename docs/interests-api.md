@@ -19,7 +19,7 @@ Each interest contains:
   "lastActivityAt": "2026-09-25T08:00:00.000Z",
   "lifecycle": "active",
   "muted": false,
-  "evidence": { "favorites": 2, "clicks": 4, "deepReads": 1 }
+  "evidence": { "saved": 2, "clicks": 4, "deepReads": 1 }
 }
 ```
 

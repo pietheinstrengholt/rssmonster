@@ -7,7 +7,7 @@
  *   node scripts/backfillEngagedArticleVectors.js --userId=3
  *   node scripts/backfillEngagedArticleVectors.js --batchSize=100
  *   node scripts/backfillEngagedArticleVectors.js --limit=500
- *   node scripts/backfillEngagedArticleVectors.js --stars-and-clicks-only
+ *   node scripts/backfillEngagedArticleVectors.js --saved-and-opened-originals-only
  */
 
 import dotenv from 'dotenv';
@@ -37,7 +37,7 @@ function parseArgs(argv) {
   for (const arg of argv.slice(2)) {
     if (arg === '--dry-run') {
       options.dryRun = true;
-    } else if (arg === '--stars-and-clicks-only') {
+    } else if (['--saved-and-opened-originals-only', '--stars-and-clicks-only'].includes(arg)) {
       options.includeFeedbackSignals = false;
     } else if (arg.startsWith('--batchSize=')) {
       options.batchSize = Number(arg.split('=')[1]);
@@ -76,8 +76,8 @@ export function buildEngagedVectorTargetWhere({
   includeFeedbackSignals = true
 } = {}) {
   const engagementConditions = [
-    { favoriteInd: 1 },
-    { clickedAmount: { [Op.gt]: 0 } }
+    { savedInd: 1 },
+    { openedOriginalCount: { [Op.gt]: 0 } }
   ];
 
   if (includeFeedbackSignals) {
@@ -114,10 +114,10 @@ async function fetchBatch({ userId, afterId, batchSize, includeFeedbackSignals }
       'contentText',
       'articleVector',
       'embedding_model',
-      'favoriteInd',
+      'savedInd',
       'positiveInd',
       'negativeInd',
-      'clickedAmount'
+      'openedOriginalCount'
     ]
   });
 }

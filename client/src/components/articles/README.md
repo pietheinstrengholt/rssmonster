@@ -53,7 +53,7 @@ For unread articles with a predicted reading affinity, the amount of summary det
 
 ### Compact list
 
-The compact view emphasizes headlines. Each row contains an explicit read-state control, the feed identity, title, concise metadata, time, favorite control, and an overflow menu. Read rows are visually quieter than unread rows.
+The compact view emphasizes headlines. Each row contains an explicit read-state control, the feed identity, title, concise metadata, time, saved control, and an overflow menu. Read rows are visually quieter than unread rows.
 
 Selecting a row expands its available content beneath the headline. Opening another row closes the previous reading context and treats the previous article as reviewed. A compact row without usable preview content says so and provides a direct route to the original article.
 
@@ -165,7 +165,7 @@ Starting a new selection resets pagination, visible-article tracking, temporary 
 
 ## Article header
 
-The article header presents the title as a link to the original publication. Opening that link records that the article was clicked.
+The article header presents the title as a link to the original publication. Opening that link records that the article was opened original.
 
 Compact icons before the title explain the article type or why it may deserve attention. They can identify:
 
@@ -173,7 +173,7 @@ Compact icons before the title explain the article type or why it may deserve at
 - Video content.
 - A developing story.
 - Previous clicks.
-- Favorite or hot status.
+- Saved or hot status.
 - Recommendation relevance.
 - Membership in a larger event.
 
@@ -186,15 +186,15 @@ read/unread directly in the sticky toolbar and also in its article actions menu.
 
 The three-dot menu holds actions that should remain available without occupying the main reading surface. These include:
 
-- Marking or unmarking a favorite.
+- Marking or unmarking a saved.
 - Marking the article as read or unread in reader mode.
 - Marking an article as not interesting.
 - Asking for more content like the current article.
 - Muting the feed for seven days after confirmation.
 
-Marking an article as not interesting saves negative preference feedback without removing it from the current rendered collection. More like this, Not Interested, and source muting show dismissible success notices after the API succeeds; mute notices include the confirmed end date. Favorite and clicked changes are reflected in the article and in applicable collection counts. Repeated input is ignored while the same change is still being saved, preventing accidental double updates.
+Marking an article as not interesting saves negative preference feedback without removing it from the current rendered collection. More like this, Not Interested, and source muting show dismissible success notices after the API succeeds; mute notices include the confirmed end date. Saved and openedOriginal changes are reflected in the article and in applicable collection counts. Repeated input is ignored while the same change is still being saved, preventing accidental double updates.
 
-On mobile portrait screens, swiping an article to the right reveals a favorite action. Crossing the action threshold toggles favorite state; ordinary vertical scrolling must not trigger it. Links and controls inside the article remain independently usable.
+On mobile portrait screens, swiping an article to the right reveals a saved action. Crossing the action threshold toggles saved state; ordinary vertical scrolling must not trigger it. Links and controls inside the article remain independently usable.
 
 ## Metadata and labels
 
@@ -346,7 +346,7 @@ Keyboard navigation supports high-volume reading without requiring pointer movem
 - Up Arrow or `K` moves to the previous article.
 - Enter or `O` opens the selected original article.
 - `M` or `R` toggles read status.
-- `S` toggles favorite status.
+- `S` toggles saved status.
 - Uppercase `R` refreshes the current collection.
 - `/` moves focus to search.
 
@@ -389,7 +389,7 @@ Article helpers remain grouped by behavior rather than merged back into `Article
 | `feed/readState.js` | Options API domain reconciliation helper | Article/container state, request generation, selection and overview stores, read-state collections, pagination refresh, and its own status-update methods. Its reset method owns only pool, pending-read, and seen-retry state. |
 | `helpers/articleActions.js` | Options API action helper | Article identifiers and props, mutation guards, overview reconciliation, `$emit`, confirmation, and API-backed action methods. |
 | `helpers/articleExpansion.js` | Options API action helper | Article identifier, expansion flags, selection grouping, and `$emit`. |
-| `helpers/mobileSwipe.js` | Options API gesture helper | Component-owned swipe state, portrait eligibility, favorite action, reset method, touch events, and the suppression timer. |
+| `helpers/mobileSwipe.js` | Options API gesture helper | Component-owned swipe state, portrait eligibility, saved action, reset method, touch events, and the suppression timer. |
 
 The lifecycle helpers deliberately retain Options API instance access for behavior that still coordinates component and store state. Collection replacement is explicit in `ArticleFeed`: pagination requests one orchestration method, which delegates to owner-specific pagination, visibility, and read-tracking resets. A future controller extraction should inject named getters and actions; passing the entire component instance as a generic context would only rename the hidden coupling.
 
@@ -422,7 +422,7 @@ Future changes should preserve these rules:
 - Adapt media to its usefulness and available dimensions.
 - Record first-seen and visible-duration history once.
 - Use passive observation only for the initial reading transition.
-- Preserve explicit read, unread, favorite, and filtering choices.
+- Preserve explicit read, unread, saved, and filtering choices.
 - Keep pointer, touch, and keyboard behavior consistent with the same article state.
 
 
@@ -479,7 +479,7 @@ keeps an inclusive `publishedAfter` and exclusive `publishedBefore` across pages
 Scrolling only changes the separate current-article date label, never the filter.
 
 
-Offline read/unread and favorite/unfavorite controls persist via
+Offline read/unread and saved/unsaved controls persist via
 `articleStateActions` before emitting visible updates. Bulk offline operations use
 explicit loaded IDs; automatic offline reads omit observation evidence. Replay
 broadcasts patch local collections with pending overlays, preserving scroll and

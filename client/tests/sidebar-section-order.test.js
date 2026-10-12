@@ -31,8 +31,8 @@ const mountSidebar = (sectionOrder, pinned = false) => {
   selection = useSelectionStore();
   ui = useUiStore();
   ui.setSidebarSettings({ ...ui.sidebarSettings, sectionOrder });
-  overview.categories = [{ id: 10, name: 'Technology', pinned, unreadCount: 5, readCount: 4, favoriteCount: 2, feeds: [
-    { id: 101, categoryId: 10, feedName: 'Example', pinned, unreadCount: 5, readCount: 4, favoriteCount: 2 }
+  overview.categories = [{ id: 10, name: 'Technology', pinned, unreadCount: 5, readCount: 4, savedCount: 2, feeds: [
+    { id: 101, categoryId: 10, feedName: 'Example', pinned, unreadCount: 5, readCount: 4, savedCount: 2 }
   ] }];
   overview.smartFolders = [{ id: 30, name: 'Research', ArticleCount: 11, query: 'tag:research' }];
   overview.topTags = [{ name: 'javascript', count: 7 }];
@@ -111,7 +111,7 @@ describe('Sidebar section order', () => {
     expect(wrapper.get('[id="101"]').element).toBe(original.element);
     expect(wrapper.get('[id="101"]').text()).toContain('5/9');
     expect(wrapper.get('[id="101"]').attributes('aria-current')).toBe('page');
-    selection.currentSelection.status = 'favorite';
+    selection.currentSelection.status = 'saved';
     await flushPromises();
     expect(titles()[1]).toBe('Top tags in Saved');
     expect(wrapper.get('[id="101"]').text()).toContain('2/9');

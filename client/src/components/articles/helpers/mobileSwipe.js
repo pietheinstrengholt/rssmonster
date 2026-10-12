@@ -32,9 +32,9 @@ export const articleMobileSwipeComputed = {
   }
 };
 
-// Groups right-swipe favorite behavior for portrait eligibility supplied by Article.
+// Groups right-swipe saved behavior for portrait eligibility supplied by Article.
 export const articleMobileSwipeMethods = {
-  // Starts tracking a right-swipe favorite gesture in mobile portrait mode.
+  // Starts tracking a right-swipe saved gesture in mobile portrait mode.
   onSwipeTouchStart(event) {
     if (!this.isMobilePortrait || isViewportZoomed() || event.touches.length !== 1) {
       this.resetSwipe();
@@ -78,7 +78,7 @@ export const articleMobileSwipeMethods = {
     if (event.cancelable) event.preventDefault();
   },
 
-  // Toggles favorite status when the swipe crosses the threshold.
+  // Toggles saved status when the swipe crosses the threshold.
   onSwipeTouchEnd() {
     if (!this.swipeTracking) return;
 
@@ -90,7 +90,7 @@ export const articleMobileSwipeMethods = {
     const shouldToggle = this.swipeTranslateX >= SWIPE_THRESHOLD;
     this.swipeTracking = false;
 
-    if (shouldToggle) this.markAsFavorite();
+    if (shouldToggle) this.markAsSaved();
 
     this.resetSwipe(false);
     if (this.swipeSuppressClick) {

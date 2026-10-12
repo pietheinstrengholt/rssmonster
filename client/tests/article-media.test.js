@@ -80,7 +80,7 @@ describe('ArticleMedia', () => {
     expect(wrapper.find('video').exists()).toBe(false);
 
     await link.trigger('click');
-    expect(wrapper.emitted('media-clicked')).toHaveLength(1);
+    expect(wrapper.emitted('media-opened-original')).toHaveLength(1);
   });
 
   it('falls back to the article URL and lead image when feed media URLs are unsafe', () => {

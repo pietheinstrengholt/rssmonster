@@ -22,7 +22,7 @@ Last updated: 2026-08-08
 
 RSSMonster is designed as a calm, information-dense reading workspace. The interface gives most of the screen to feeds and article content, then uses a fixed navigation sidebar, a compact toolbar, and quiet metadata to keep a large library manageable. Its closest visual relatives are focused productivity tools and desktop mail or feed readers rather than a consumer news homepage.
 
-The system is built from pale neutral surfaces, thin borders, native system typography, and one primary blue selection language. Orange identifies the RSSMonster brand and feed creation, green confirms successful or completed actions, and red or pink marks favorites, errors, warnings, and destructive actions. Supporting badge colors appear only when they communicate article signals such as similarity, duplication, quality, sentiment, or rule-generated tags.
+The system is built from pale neutral surfaces, thin borders, native system typography, and one primary blue selection language. Orange identifies the RSSMonster brand and feed creation, green confirms successful or completed actions, and red or pink marks saved, errors, warnings, and destructive actions. Supporting badge colors appear only when they communicate article signals such as similarity, duplication, quality, sentiment, or rule-generated tags.
 
 The experience has three related modes. The standard stream presents complete or minimal article rows in one reading pane. Reader mode adds a compact article list beside a dedicated article pane. Mobile mode replaces the persistent desktop chrome with a sticky toolbar and an overlay menu while keeping the same selections, article states, and semantic colors.
 
@@ -54,7 +54,7 @@ The dark theme is deliberately authored rather than inverted. Its page starts at
 | focus border | `#2563EB` | `#60A5FA` | Keyboard focus treatment |
 | similar badge | `#E8F2FE` / `#1D4ED8` | `#1E3A5F` / `#93C5FD` | Related-event article counts |
 | duplicate badge | `#FDF2F8` / `#BE185D` | `#4A1433` / `#F9A8D4` | Duplicate article counts |
-| quality badge | `#EAF7EF` / `#1F5E3A` | `#173D2A` / `#86EFAC` | Positive quality and favorite signals |
+| quality badge | `#EAF7EF` / `#1F5E3A` | `#173D2A` / `#86EFAC` | Positive quality and saved signals |
 | feed badge | `#FFEDD5` / `#EA650D` | `#5C2A14` / `#FDBA74` | Feed, advertisement, and hot-item signals |
 
 ## Typography
@@ -123,7 +123,7 @@ Below 880px, a sticky mobile toolbar takes over. It preserves the same core filt
 
 ### Article stream
 
-The article stream is the default reading surface. Each article begins with a strong linked headline and may include source-platform icons, developing-story signals, clicked, favorite, hot, or recommendation indicators. Provenance follows in 13px muted text, then similarity, duplication, source-diversity, score, and tag badges wrap as needed.
+The article stream is the default reading surface. Each article begins with a strong linked headline and may include source-platform icons, developing-story signals, openedOriginal, saved, hot, or recommendation indicators. Provenance follows in 13px muted text, then similarity, duplication, source-diversity, score, and tag badges wrap as needed.
 
 Expanded content uses 14px text at `1.65` line height. Cards are separated by thin rules, not large gaps or shadows. Event-related articles receive a very pale blue surface. Hot articles may strengthen an orange border, but the design avoids recoloring the whole story.
 
@@ -131,7 +131,7 @@ Expanded content uses 14px text at `1.65` line height. Cards are separated by th
 
 Reader mode is optimized for rapid triage and sustained reading. Its list header summarizes the active collection with unread, event, and source counts plus up to four top tags. The list rows show a 14px bold headline, a two-line 12px preview, 11px source/date metadata, optional status badges, and an optional thumbnail.
 
-The selected article opens in the adjacent reader pane without replacing the list. Keyboard interactions support moving through articles, opening the original, toggling read status, and toggling favorites. Selection and keyboard focus remain separate: the selected row has its blue surface and edge, while `:focus-visible` adds a distinct outline.
+The selected article opens in the adjacent reader pane without replacing the list. Keyboard interactions support moving through articles, opening the original, toggling read status, and toggling saved. Selection and keyboard focus remain separate: the selected row has its blue surface and edge, while `:focus-visible` adds a distinct outline.
 
 ### Article metadata, badges, and signals
 
@@ -182,7 +182,7 @@ At roughly `640px`, article media and floated content adapt to the available wid
 - Keep the native system sans-serif stack for application-owned UI.
 - Keep the 266px desktop sidebar, 58px toolbar rhythm, and three-pane Reader relationship.
 - Keep blue for navigation, selection, links, primary actions, and focus.
-- Keep orange for RSSMonster/feed meaning, amber for warnings, green for success, and red or pink for favorites, errors, and destructive actions.
+- Keep orange for RSSMonster/feed meaning, amber for warnings, green for success, and red or pink for saved, errors, and destructive actions.
 - Keep article surfaces flat and reading-focused, with thin rules instead of routine elevation.
 - Keep metadata compact and quieter than headlines and article content.
 - Keep light and dark themes driven by the resolved `data-theme` tokens.
@@ -216,7 +216,7 @@ At roughly `640px`, article media and floated content adapt to the available wid
 - Preserve visible `:focus-visible` outlines with the 2px semantic focus ring or the established 3px inset list-row outline.
 - Keep touch-priority controls at least 44px high and ordinary controls at least 40px high.
 - Maintain WCAG AA contrast for normal text in both authored themes.
-- Do not use color alone to communicate read, selected, favorite, hot, error, or processing state; pair it with text, an icon, shape, or position.
+- Do not use color alone to communicate read, selected, saved, hot, error, or processing state; pair it with text, an icon, shape, or position.
 - Keep modal keyboard behavior, Escape handling, focus trapping, and focus restoration intact.
 - Respect `prefers-reduced-motion` for loading and transitional effects.
 - Preserve readable publisher content, meaningful image alternatives, safe external-link behavior, and logical heading order.

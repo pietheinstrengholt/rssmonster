@@ -41,10 +41,10 @@ export const buildArticleSearchQuery = ({
   workingSort,
   qualityFilter,
   freshnessFilter,
-  starFilter,
+  savedFilter,
   unreadFilter,
   readFilter,
-  clickedFilter,
+  openedOriginalFilter,
   seenFilter,
   hotFilter,
   status,
@@ -179,10 +179,10 @@ export const buildArticleSearchQuery = ({
     articleQuery.where.language = languageFilter;
   }
 
-  // Handles the case where star filter is not value.
-  if (starFilter !== null) {
-    // Selects the result based on whether star filter is available.
-    articleQuery.where.favoriteInd = starFilter ? 1 : 0;
+  // Handles the case where saved filter is not value.
+  if (savedFilter !== null) {
+    // Selects the result based on whether saved filter is available.
+    articleQuery.where.savedInd = savedFilter ? 1 : 0;
   }
 
   // Handles the case where unread filter is not value.
@@ -197,10 +197,10 @@ export const buildArticleSearchQuery = ({
     articleQuery.where.status = readFilter ? 'read' : 'unread';
   }
 
-  // Handles the case where clicked filter is not value.
-  if (clickedFilter !== null) {
-    // Selects the result based on whether clicked filter is available.
-    articleQuery.where.clickedAmount = clickedFilter ? { [Op.gt]: 0 } : 0;
+  // Handles the case where openedOriginal filter is not value.
+  if (openedOriginalFilter !== null) {
+    // Selects the result based on whether openedOriginal filter is available.
+    articleQuery.where.openedOriginalCount = openedOriginalFilter ? { [Op.gt]: 0 } : 0;
   }
 
   // Handles the case where seen filter is not value.
@@ -215,22 +215,22 @@ export const buildArticleSearchQuery = ({
     articleQuery.where.hotInd = hotFilter ? 1 : 0;
   }
 
-  // Handles the case where star filter is value and unread filter is value and read filter is value and clicked filter is value and hot filter is value.
-  if (starFilter === null && unreadFilter === null && readFilter === null && clickedFilter === null && hotFilter === null) {
+  // Handles the case where saved filter is value and unread filter is value and read filter is value and openedOriginal filter is value and hot filter is value.
+  if (savedFilter === null && unreadFilter === null && readFilter === null && openedOriginalFilter === null && hotFilter === null) {
     // Selects the effective status based on whether status is briefing or has search intent is available and value does not contain status.
-    const effectiveStatus = status === 'briefing' || (hasSearchIntent && !['favorite', 'star', 'hot', 'clicked'].includes(status))
+    const effectiveStatus = status === 'briefing' || (hasSearchIntent && !['saved', 'hot', 'openedOriginal'].includes(status))
       ? '%'
       : status;
 
-    // Handles the case where effective status is favorite or effective status is star.
-    if (effectiveStatus === 'favorite' || effectiveStatus === 'star') {
-      articleQuery.where.favoriteInd = 1;
+    // Applies the canonical saved status after boundary alias normalization.
+    if (effectiveStatus === 'saved') {
+      articleQuery.where.savedInd = 1;
     // Handles the case where effective status is hot.
     } else if (effectiveStatus === 'hot') {
       articleQuery.where.hotInd = 1;
-    // Handles the case where effective status is clicked.
-    } else if (effectiveStatus === 'clicked') {
-      articleQuery.where.clickedAmount = { [Op.gt]: 0 };
+    // Handles the case where effective status is openedOriginal.
+    } else if (effectiveStatus === 'openedOriginal') {
+      articleQuery.where.openedOriginalCount = { [Op.gt]: 0 };
     // Handles the case where effective status is not %.
     } else if (effectiveStatus !== '%') {
       articleQuery.where.status = effectiveStatus;

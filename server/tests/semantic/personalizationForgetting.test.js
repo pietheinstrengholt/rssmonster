@@ -12,9 +12,9 @@ import { computeRecommendedBreakdown } from '../../services/recommendations/reco
 const days = [0, 7, 30, 90, 180, 365];
 const at = day => new Date(Date.UTC(2026, 8, 14, 12) + day * 86400000);
 const signals = {
-  click: ['clickedAmount', 'lastClickedAt', SIGNAL_WEIGHTS.click],
+  click: ['openedOriginalCount', 'lastOpenedOriginalAt', SIGNAL_WEIGHTS.openedOriginal],
   deep: ['attentionBucket', 'lastMeaningfulReadAt', SIGNAL_WEIGHTS.deepRead],
-  favorite: ['favoriteInd', 'favoritedAt', SIGNAL_WEIGHTS.star],
+  saved: ['savedInd', 'savedAt', SIGNAL_WEIGHTS.save],
   positive: ['positiveInd', 'positiveFeedbackAt', SIGNAL_WEIGHTS.positive],
   negative: ['negativeInd', 'negativeFeedbackAt', SIGNAL_WEIGHTS.negative]
 };
@@ -25,14 +25,14 @@ const behavior = (names, day = 0) => Object.fromEntries(names.flatMap(name => {
 const scenarios = [
   { name: 'click', groups: [['click']] },
   { name: 'repeated-deep', groups: [['deep']], count: 3 },
-  { name: 'favorite', groups: [['favorite']] },
+  { name: 'saved', groups: [['saved']] },
   { name: 'more-like-this', groups: [['positive']] },
   { name: 'not-interested', groups: [['negative']] },
-  { name: 'mixed-click-favorite', groups: [['click', 'favorite']] },
+  { name: 'mixed-click-saved', groups: [['click', 'saved']] },
   { name: 'abandoned', groups: [['click']], count: 3 },
   { name: 'reactivated', groups: [['click']], returnDay: 180 },
-  { name: 'simultaneous', groups: [['favorite'], ['click']] },
-  { name: 'event-burst', groups: [['favorite'], ['click']], event: true },
+  { name: 'simultaneous', groups: [['saved'], ['click']] },
+  { name: 'event-burst', groups: [['saved'], ['click']], event: true },
   { name: 'continued-strong', groups: [['positive']], continued: true }
 ];
 const results = [];
@@ -76,7 +76,7 @@ async function snapshot(fixture, day) {
       decayed[name] = raw[name] * weight * behaviorRecencyWeight(row[clock] ?? row.publishedAt, SIGNAL_HALF_LIFE_DAYS[clock]);
     }
     const computed = computeArticleSignals(row);
-    expect(decayed.click + decayed.deep + decayed.favorite + decayed.positive).toBeCloseTo(computed.positiveScore, 10);
+    expect(decayed.click + decayed.deep + decayed.saved + decayed.positive).toBeCloseTo(computed.positiveScore, 10);
     expect(decayed.negative).toBeCloseTo(computed.negativeScore, 10);
     return { group, raw, decayed, clocks: Object.fromEntries(Object.values(signals).map(([, clock]) => [clock, row[clock]])), publishedAt: row.publishedAt };
   });
@@ -126,7 +126,7 @@ describe('controlled Interest Island forgetting evaluation', () => {
       }
       vi.setSystemTime(at(day));
       if (spec.continued && day > 0) await data.sources[0].row.update(behavior(['positive'], day));
-      if (day === spec.returnDay) await data.sources[0].row.update(behavior(['favorite'], day));
+      if (day === spec.returnDay) await data.sources[0].row.update(behavior(['saved'], day));
       await calibrate(data.user.id);
       const current = await snapshot(data, day);
       await calibrate(data.user.id);
@@ -141,7 +141,7 @@ describe('controlled Interest Island forgetting evaluation', () => {
       if (!spec.continued && day !== spec.returnDay) {
         for (const evidence of current.evidence) {
           for (const [name, [, clock]] of Object.entries(signals)) {
-            if (evidence.raw[name] && !(spec.returnDay && name === 'favorite')) expect(evidence.clocks[clock]).toEqual(at(0));
+            if (evidence.raw[name] && !(spec.returnDay && name === 'saved')) expect(evidence.clocks[clock]).toEqual(at(0));
           }
         }
       }
@@ -182,12 +182,12 @@ describe('controlled Interest Island forgetting evaluation', () => {
     for (const day of days.slice(1)) {
       vi.setSystemTime(at(day));
       const contribution = name => computeArticleSignals(behavior([name])).positiveScore;
-      expect(contribution('favorite')).toBeGreaterThan(contribution('click'));
+      expect(contribution('saved')).toBeGreaterThan(contribution('click'));
       const retention = name => contribution(name) / signals[name][2];
       expect(retention('deep')).toBeGreaterThan(retention('click'));
-      expect(retention('favorite')).toBeGreaterThan(retention('deep'));
-      expect(retention('positive')).toBeGreaterThan(retention('favorite'));
-      expect(computeArticleSignals(behavior(['favorite'], day)).positiveScore).toBeGreaterThan(contribution('favorite'));
+      expect(retention('saved')).toBeGreaterThan(retention('deep'));
+      expect(retention('positive')).toBeGreaterThan(retention('saved'));
+      expect(computeArticleSignals(behavior(['saved'], day)).positiveScore).toBeGreaterThan(contribution('saved'));
     }
   });
 });

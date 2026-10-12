@@ -66,7 +66,7 @@ describe('recommendation evaluation and recalculation', () => {
 
   it('uses current Island and runtime ranking evidence, keeps Islands unchanged, and persists scores for read articles', async () => {
     const { user, values } = await fixture();
-    const source = await db.Article.create({ ...values, status: 'read', favoriteInd: 1, favoritedAt: new Date(now) });
+    const source = await db.Article.create({ ...values, status: 'read', savedInd: 1, savedAt: new Date(now) });
     const island = await db.Island.create({ userId: user.id, label: 'Concerts', weight: 0.8,
       islandVector: [1, 0], embedding_model: 'test-model', lastBehaviorAt: new Date(now), supportArticleIds: [String(source.id)] });
     const held = await db.Article.create({ ...values, status: 'read', interestScore: -0.4, hotInd: 1, publishedAt: new Date(now),

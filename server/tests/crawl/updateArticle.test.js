@@ -764,10 +764,10 @@ describe('updateArticle', () => {
     const persistedValues = mocked.articleUpdate.mock.calls[0][0];
     expect(persistedValues).not.toHaveProperty('qualityScore');
     expect(persistedValues).not.toHaveProperty('status');
-    expect(persistedValues).not.toHaveProperty('favoriteInd');
-    expect(persistedValues).not.toHaveProperty('clickedAmount');
+    expect(persistedValues).not.toHaveProperty('savedInd');
+    expect(persistedValues).not.toHaveProperty('openedOriginalCount');
     expect(persistedValues).not.toHaveProperty('attentionBucket');
-    for (const field of ['lastClickedAt', 'favoritedAt', 'positiveFeedbackAt', 'negativeFeedbackAt', 'lastMeaningfulReadAt']) {
+    for (const field of ['lastOpenedOriginalAt', 'savedAt', 'positiveFeedbackAt', 'negativeFeedbackAt', 'lastMeaningfulReadAt']) {
       expect(persistedValues).not.toHaveProperty(field);
     }
     expect(persistedValues).not.toHaveProperty('articleVector');

@@ -32,9 +32,9 @@ function createStore(AIEnabled) {
   overviewStore.$patch({
     briefingCount: 8,
     unreadCount: 12,
-    favoriteCount: 3,
+    savedCount: 3,
     hotCount: 2,
-    clickedCount: 4,
+    openedOriginalCount: 4,
     readCount: 20,
     smartFolders: [],
     categories: []
@@ -115,7 +115,7 @@ describe('toolbar Daily Briefing status', () => {
     const store = createStore(true);
     const wrapper = mount(component);
 
-    wrapper.vm.statusClicked('unread');
+    wrapper.vm.statusOpenedOriginal('unread');
 
     expect(wrapper.emitted('forceReload')).toHaveLength(1);
     expect(store.selectionStore.setSelectedStatus).not.toHaveBeenCalled();
@@ -127,7 +127,7 @@ describe('toolbar Daily Briefing status', () => {
     store.selectionStore.currentSelection.smartFolderId = 42;
     const wrapper = mount(component);
 
-    wrapper.vm.statusClicked('unread');
+    wrapper.vm.statusOpenedOriginal('unread');
 
     expect(store.selectionStore.setSelectedStatus).toHaveBeenCalledWith('unread');
     expect(wrapper.emitted('forceReload')).toBeUndefined();
@@ -149,7 +149,7 @@ describe('toolbar Daily Briefing status', () => {
       expect(groupingButton.text()).toContain('Events');
     }
 
-    wrapper.vm.sortClicked('quality');
+    wrapper.vm.sortOpenedOriginal('quality');
     wrapper.vm.setGrouping('event');
 
     expect(store.selectionStore.setSelectedSort).not.toHaveBeenCalled();
@@ -171,7 +171,7 @@ describe('toolbar Daily Briefing status', () => {
     expect(sortOption.element.disabled).toBe(true);
     expect(groupingOption.element.disabled).toBe(true);
 
-    wrapper.vm.sortClicked('quality');
+    wrapper.vm.sortOpenedOriginal('quality');
     wrapper.vm.setGrouping('event');
 
     expect(store.selectionStore.setSelectedSort).not.toHaveBeenCalled();

@@ -38,9 +38,9 @@ describe('data store domain reconciliation', () => {
     useOverviewStore().$patch({
       unreadCount: 2,
       readCount: 1,
-      favoriteCount: 1,
+      savedCount: 1,
       hotCount: 2,
-      clickedCount: 1
+      openedOriginalCount: 1
     });
 
     store.addCategory({ id: 1, name: 'One' });
@@ -49,17 +49,17 @@ describe('data store domain reconciliation', () => {
       name: 'Two',
       unreadCount: 2,
       readCount: 1,
-      favoriteCount: 1,
+      savedCount: 1,
       hotCount: 2,
-      clickedCount: 1
+      openedOriginalCount: 1
     });
 
     expect(store.categories[0]).toMatchObject({
       unreadCount: 0,
       readCount: 0,
-      favoriteCount: 0,
+      savedCount: 0,
       hotCount: 0,
-      clickedCount: 0,
+      openedOriginalCount: 0,
       feeds: []
     });
     expect(store.updateCategory('1', { name: 'First', iconName: 'rss' })).toBe(true);
@@ -74,9 +74,9 @@ describe('data store domain reconciliation', () => {
     expect(store.categories.map(category => category.id)).toEqual([1]);
     expect(store.unreadCount).toBe(0);
     expect(store.readCount).toBe(0);
-    expect(store.favoriteCount).toBe(0);
+    expect(store.savedCount).toBe(0);
     expect(store.hotCount).toBe(0);
-    expect(store.clickedCount).toBe(0);
+    expect(store.openedOriginalCount).toBe(0);
   });
 
   it('retains category clustering configuration through updates and clearing', () => {
@@ -98,9 +98,9 @@ describe('data store domain reconciliation', () => {
       name: 'One',
       unreadCount: 3,
       readCount: 2,
-      favoriteCount: 1,
+      savedCount: 1,
       hotCount: 2,
-      clickedCount: 1
+      openedOriginalCount: 1
     });
     store.addCategory({ id: 2, name: 'Two' });
 
@@ -110,9 +110,9 @@ describe('data store domain reconciliation', () => {
       feedName: 'Original',
       unreadCount: 3,
       readCount: 2,
-      favoriteCount: 1,
+      savedCount: 1,
       hotCount: 2,
-      clickedCount: 1
+      openedOriginalCount: 1
     })).toBe(true);
     expect(store.addFeed('missing', { id: 99 })).toBe(false);
     expect(store.categories[0].feeds[0]).toMatchObject({ errorCount: 0 });
@@ -125,17 +125,17 @@ describe('data store domain reconciliation', () => {
     expect(store.categories[0]).toMatchObject({
       unreadCount: 0,
       readCount: 0,
-      favoriteCount: 0,
+      savedCount: 0,
       hotCount: 0,
-      clickedCount: 0,
+      openedOriginalCount: 0,
       feeds: []
     });
     expect(store.categories[1]).toMatchObject({
       unreadCount: 3,
       readCount: 2,
-      favoriteCount: 1,
+      savedCount: 1,
       hotCount: 2,
-      clickedCount: 1
+      openedOriginalCount: 1
     });
     expect(store.categories[1].feeds[0]).toMatchObject({
       id: '10',
@@ -153,24 +153,24 @@ describe('data store domain reconciliation', () => {
     useOverviewStore().$patch({
       unreadCount: 1,
       readCount: 0,
-      favoriteCount: 1,
+      savedCount: 1,
       hotCount: 1,
-      clickedCount: 1
+      openedOriginalCount: 1
     });
     store.addCategory({
       id: 1,
       unreadCount: 1,
       readCount: 0,
-      favoriteCount: 1,
+      savedCount: 1,
       hotCount: 1,
-      clickedCount: 1,
+      openedOriginalCount: 1,
       feeds: [{
         id: 10,
         unreadCount: 3,
         readCount: 2,
-        favoriteCount: 4,
+        savedCount: 4,
         hotCount: 2,
-        clickedCount: 3
+        openedOriginalCount: 3
       }]
     });
 
@@ -180,37 +180,37 @@ describe('data store domain reconciliation', () => {
     expect(store.categories[0]).toMatchObject({
       unreadCount: 0,
       readCount: 0,
-      favoriteCount: 0,
+      savedCount: 0,
       hotCount: 0,
-      clickedCount: 0,
+      openedOriginalCount: 0,
       feeds: []
     });
     expect(store.unreadCount).toBe(0);
     expect(store.readCount).toBe(0);
-    expect(store.favoriteCount).toBe(0);
+    expect(store.savedCount).toBe(0);
     expect(store.hotCount).toBe(0);
-    expect(store.clickedCount).toBe(0);
+    expect(store.openedOriginalCount).toBe(0);
   });
 
-  it('applies favorite mark, unmark, and bulk deltas exactly once per transition', () => {
+  it('applies saved mark, unmark, and bulk deltas exactly once per transition', () => {
     const store = createStore();
-    useOverviewStore().$patch({ favoriteCount: 0 });
+    useOverviewStore().$patch({ savedCount: 0 });
     store.addCategory({
       id: 1,
       feeds: [{ id: 10 }]
     });
 
-    store.applyFavoriteDelta({ categoryId: '1', feedId: '10', delta: 1 });
-    store.applyFavoriteDelta({ categoryId: 1, feedId: 10, delta: 2 });
-    expect(store.favoriteCount).toBe(3);
-    expect(store.categories[0].favoriteCount).toBe(3);
-    expect(store.categories[0].feeds[0].favoriteCount).toBe(3);
+    store.applySavedDelta({ categoryId: '1', feedId: '10', delta: 1 });
+    store.applySavedDelta({ categoryId: 1, feedId: 10, delta: 2 });
+    expect(store.savedCount).toBe(3);
+    expect(store.categories[0].savedCount).toBe(3);
+    expect(store.categories[0].feeds[0].savedCount).toBe(3);
 
-    store.applyFavoriteDelta({ categoryId: 1, feedId: 10, delta: -1 });
-    store.applyFavoriteDelta({ categoryId: 1, feedId: 10, delta: -10 });
-    expect(store.favoriteCount).toBe(0);
-    expect(store.categories[0].favoriteCount).toBe(0);
-    expect(store.categories[0].feeds[0].favoriteCount).toBe(0);
+    store.applySavedDelta({ categoryId: 1, feedId: 10, delta: -1 });
+    store.applySavedDelta({ categoryId: 1, feedId: 10, delta: -10 });
+    expect(store.savedCount).toBe(0);
+    expect(store.categories[0].savedCount).toBe(0);
+    expect(store.categories[0].feeds[0].savedCount).toBe(0);
   });
 
   it('reconciles read transitions across global, category, and feed counters', () => {

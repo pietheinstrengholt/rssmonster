@@ -29,7 +29,7 @@ describe('personalization age and latency', () => {
     const foreign = await db.User.create({ username: `refresh-status-other-${randomUUID()}` });
     const request = () => db.sequelize.transaction(async transaction => {
       await db.User.findByPk(user.id, { transaction, lock: transaction.LOCK.UPDATE });
-      return requestPersonalizationRefresh(user.id, { transaction, triggerReasons: ['favorite'] });
+      return requestPersonalizationRefresh(user.id, { transaction, triggerReasons: ['saved'] });
     });
     const job = await request();
     expect((await loadPersonalizationStatus(user.id, now)).durable.state).toBe('pending');

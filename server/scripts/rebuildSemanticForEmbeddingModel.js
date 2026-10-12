@@ -1,7 +1,7 @@
 /**
  * Destructively reset and rebuild semantic state for a newly selected embedding model.
  *
- * Only starred articles and articles with at least one click receive new article
+ * Only saved articles and articles with at least one click receive new article
  * vectors. Feeds, articles, engagement state, tags, and classifications are preserved.
  *
  * Usage:
@@ -82,8 +82,8 @@ async function inspectScope(users, models = { Article, Event, Island, IslandTaxo
         where: {
           ...userWhere,
           [Op.or]: [
-            { favoriteInd: 1 },
-            { clickedAmount: { [Op.gt]: 0 } }
+            { savedInd: 1 },
+            { openedOriginalCount: { [Op.gt]: 0 } }
           ]
         }
       }),
@@ -148,7 +148,7 @@ export async function rebuildSemanticForEmbeddingModel(options = {}, dependencie
   );
   deps.logger.log(
     `[SEMANTIC MODEL REBUILD] users=${users.length} articles=${scope.articles} ` +
-    `vectorsToClear=${scope.vectors} starredOrClickedTargets=${scope.rebuildTargets} ` +
+    `vectorsToClear=${scope.vectors} savedOrOpenedOriginalTargets=${scope.rebuildTargets} ` +
     `events=${scope.events} islands=${scope.islands} ` +
     `taxonomyVectors=${scope.taxonomyVectors}`
   );

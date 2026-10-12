@@ -15,9 +15,9 @@ vi.mock('../src/api/articles.js', () => ({
   markArticleSeen: vi.fn(),
   markArticlesAsRead: vi.fn(),
   markArticleUnread: vi.fn(),
-  markAsFavorite: vi.fn(),
-  markManyAsFavorite: vi.fn(),
-  markManyClicked: vi.fn()
+  markAsSaved: vi.fn(),
+  markManyAsSaved: vi.fn(),
+  markManyOpenedOriginal: vi.fn()
 }));
 
 // This function creates the article selection store required by each feed view.
@@ -313,12 +313,12 @@ describe('ArticleFeed view loading', () => {
     const initialFetchCount = fetchArticlePage.mock.calls.length;
     const scrollArticleListToTop = vi.spyOn(wrapper.vm, 'scrollArticleListToTop');
 
-    wrapper.vm.selectionStore.setCurrentSelection({ status: 'favorite' });
+    wrapper.vm.selectionStore.setCurrentSelection({ status: 'saved' });
     await flushPromises();
 
     expect(fetchArticlePage).toHaveBeenCalledTimes(initialFetchCount + 1);
     expect(fetchArticlePage).toHaveBeenLastCalledWith(
-      expect.objectContaining({ status: 'favorite' }),
+      expect.objectContaining({ status: 'saved' }),
       expect.objectContaining({ pageSize: 20 })
     );
     expect(scrollArticleListToTop).toHaveBeenCalled();

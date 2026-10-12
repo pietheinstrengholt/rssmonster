@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import Article from '../src/components/articles/Article.vue';
 import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
 import previewFallbackSource from '../src/components/articles/ArticlePreviewFallback.vue?raw';
-import { markClicked } from '../src/api/articles';
+import { markOpenedOriginal } from '../src/api/articles';
 import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
@@ -14,11 +14,11 @@ const themeSource = readFileSync(resolve(process.cwd(), 'src/assets/styles/theme
 
 vi.mock('../src/api/articles', () => ({
   fetchDuplicateArticles: vi.fn(),
-  markAsFavorite: vi.fn(),
-  markClicked: vi.fn(() => Promise.resolve()),
+  markAsSaved: vi.fn(),
+  markOpenedOriginal: vi.fn(() => Promise.resolve()),
   markMoreLikeThis: vi.fn(),
   markNotInterested: vi.fn(),
-  updateClickedStatus: vi.fn()
+  updateOpenedOriginalStatus: vi.fn()
 }));
 
 vi.mock('../src/services/actionNotifications.js', () => ({
@@ -27,7 +27,7 @@ vi.mock('../src/services/actionNotifications.js', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
-  markClicked.mockResolvedValue({});
+  markOpenedOriginal.mockResolvedValue({});
 });
 
 // This function creates an article with no preview fields by default.
@@ -179,8 +179,8 @@ describe('ArticleReaderLayout empty previews', () => {
     await Promise.resolve();
 
     expect(selectArticle).not.toHaveBeenCalled();
-    expect(markClicked).toHaveBeenCalledWith(1);
-    expect(wrapper.emitted('update-clicked')).toEqual([[{ id: 1, clickedAmount: 1 }]]);
+    expect(markOpenedOriginal).toHaveBeenCalledWith(1);
+    expect(wrapper.emitted('update-opened-original')).toEqual([[{ id: 1, openedOriginalCount: 1 }]]);
   });
 
   it('renders linkless articles without an empty or unsafe original link', () => {
@@ -200,20 +200,20 @@ describe('ArticleReaderLayout empty previews', () => {
   });
 
   it('uses the persisted click count and suppresses failed reader click updates', async () => {
-    const article = createArticle({ clickedAmount: 3 });
+    const article = createArticle({ openedOriginalCount: 3 });
     const wrapper = mountReader(article);
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    markClicked.mockResolvedValueOnce({ data: { clickedAmount: 4 } });
+    markOpenedOriginal.mockResolvedValueOnce({ data: { openedOriginalCount: 4 } });
 
     await wrapper.vm.trackOriginalArticleClick(article);
 
-    expect(wrapper.emitted('update-clicked')).toEqual([[{ id: 1, clickedAmount: 4 }]]);
+    expect(wrapper.emitted('update-opened-original')).toEqual([[{ id: 1, openedOriginalCount: 4 }]]);
 
     const error = new Error('offline');
-    markClicked.mockRejectedValueOnce(error);
+    markOpenedOriginal.mockRejectedValueOnce(error);
     await wrapper.vm.trackOriginalArticleClick(article);
 
-    expect(wrapper.emitted('update-clicked')).toHaveLength(1);
+    expect(wrapper.emitted('update-opened-original')).toHaveLength(1);
     expect(notifyActionError).toHaveBeenCalledWith(
       'Could not record this article click. Please try again.',
       error
@@ -271,7 +271,7 @@ describe('Article empty previews', () => {
   });
 
   it('uses the existing click behavior without opening the compact row', async () => {
-    markClicked.mockClear();
+    markOpenedOriginal.mockClear();
     const wrapper = mountArticle({ contentHtml: '' }, 'minimal');
     const link = wrapper.get('.article-preview-empty__link');
 
@@ -284,7 +284,7 @@ describe('Article empty previews', () => {
     await link.trigger('click');
     await Promise.resolve();
 
-    expect(markClicked).toHaveBeenCalledWith(1);
+    expect(markOpenedOriginal).toHaveBeenCalledWith(1);
     expect(wrapper.emitted('minimal-article-opened')).toBeUndefined();
   });
 

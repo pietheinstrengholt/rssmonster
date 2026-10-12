@@ -34,6 +34,7 @@ import {
 import { getTrustProxySetting } from './utils/trustProxy.js';
 import { createStaticCacheHeaders } from './utils/staticCache.js';
 import { serveServiceWorkerFallback } from './utils/serviceWorkerFallback.js';
+import { withLegacyArticleState } from './utils/articleStateContract.js';
 
 // Sequelize + models (single source of truth)
 import db from './models/index.js';
@@ -83,7 +84,7 @@ app.set('trust proxy', getTrustProxySetting());
 
 // This function removes server-only article source fields from every JSON response.
 const omitServerOnlyJsonFields = (key, value) =>
-  key === 'contentOriginal' ? undefined : value;
+  key === 'contentOriginal' ? undefined : withLegacyArticleState(value);
 
 app.set('json replacer', omitServerOnlyJsonFields);
 

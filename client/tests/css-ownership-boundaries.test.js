@@ -203,7 +203,7 @@ describe('CSS ownership boundaries', () => {
     expect(articleHeadlineSource).toMatch(/article-list-card\.article-list-card-selected \.article-list-row\)\s*\{[^}]*background:\s*var\(--reader-list-item-selected-background\);[^}]*border-left-color:\s*var\(--reader-list-item-selected-accent\);/s);
     expect(articleHeadlineSource).toMatch(/\.article-list-row\.is-read \.article-list-title \.article-link\s*\{[^}]*color:\s*var\(--text-secondary\);[^}]*font-weight:\s*600;/s);
     expect(articleHeadlineSource).toContain('class="hot-icon"');
-    expect(articleHeadlineSource).not.toMatch(/\.article-list-row\.(?:favorited|hot)\s*\{/);
+    expect(articleHeadlineSource).not.toMatch(/\.article-list-row\.(?:saved|hot)\s*\{/);
     expect(articleHeadlineSource).not.toMatch(/article-list-row\.(?:active|selected)/);
     expect(articleHeadlineSource).not.toMatch(/article-list-card\.event-article \.article-list-row/);
   });
@@ -215,10 +215,10 @@ describe('CSS ownership boundaries', () => {
     }
   });
 
-  // Verifies favorite and hot states stay on indicators instead of styling the expanded article body.
-  it('does not apply favorite or hot state classes to the article body', () => {
-    expect(articleSource).not.toContain("{ favorited: favoriteInd === 1, hot: hotInd === 1 }");
-    expect(articleSource).not.toMatch(/\.article-body\.(?:favorited|hot)/);
+  // Verifies saved and hot states stay on indicators instead of styling the expanded article body.
+  it('does not apply saved or hot state classes to the article body', () => {
+    expect(articleSource).not.toContain("{ saved: savedInd === 1, hot: hotInd === 1 }");
+    expect(articleSource).not.toMatch(/\.article-body\.(?:saved|hot)/);
   });
 
   // Verifies metadata children contribute their badges to one shared wrapping row at every width.

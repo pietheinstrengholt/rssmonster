@@ -26,8 +26,8 @@ These protections take priority over every retention limit:
 | Setting | What it protects | Default |
 | --- | --- | --- |
 | Never delete unread articles | Articles still marked unread. | Checked |
-| Never delete favorited articles | Articles saved as favorites or [bookmarks]({% link bookmarks.md %}). | Checked |
-| Never delete clicked articles | Articles with recorded outbound link clicks. Opening an article inside the reader is not an outbound click. | Unchecked |
+| Never delete saved articles | Articles saved as [bookmarks]({% link bookmarks.md %}). | Checked |
+| Never delete openedOriginal articles | Articles with recorded outbound link clicks. Opening an article inside the reader is not an outbound click. | Unchecked |
 
 Protected articles count toward the limits but cannot be deleted by cleanup.
 If protected articles alone exceed a limit, the retained count stays above it.
@@ -54,7 +54,7 @@ its ongoing admission window (30 days by default) and the user’s maximum artic
 age. The shorter window wins, including when cleanup count limits are configured.
 Count-based deletions alone do not prevent reimports. Existing articles can still
 receive revisions. Initial imports and their failed/interrupted retries retain
-the selected history range. Unread/favorite/click protections apply to stored
+the selected history range. Unread/saved/click protections apply to stored
 articles, not to unseen entries. Entries without usable publication dates retain
 the existing ingestion-time fallback.
 
@@ -68,8 +68,8 @@ restarting the initial import. Migration marks feeds with successful crawl histo
 as established at migration time; that time
 is not a reconstruction of their original import date.
 
-For example, with **Never delete favorited articles** checked, an age of **1 year**,
-a total limit of **1,000**, and no per-feed limit, cleanup keeps favorites and
+For example, with **Never delete saved articles** checked, an age of **1 year**,
+a total limit of **1,000**, and no per-feed limit, cleanup keeps saved and
 removes the oldest eligible articles until at most 1,000 stored articles remain.
 The one-year setting does not protect newer articles in this configuration.
 Other checked protections still apply, and protected articles may prevent the

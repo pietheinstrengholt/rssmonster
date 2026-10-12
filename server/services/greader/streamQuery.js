@@ -16,7 +16,7 @@ export const LABEL_PREFIX = 'user/-/label/';
 export const READING_LIST_STREAM = 'user/-/state/com.google/reading-list';
 // Defines the read stream enforced by this service.
 export const READ_STREAM = 'user/-/state/com.google/read';
-// Defines the starred stream enforced by this service.
+// Defines the saved stream enforced by this service.
 export const STARRED_STREAM = 'user/-/state/com.google/starred';
 // Defines the unread stream enforced by this service.
 export const UNREAD_STREAM = 'user/-/state/com.google/unread';
@@ -196,9 +196,9 @@ export const parseStreamTarget = async (value, userId) => {
   if (target === UNREAD_STREAM) {
     return { id: UNREAD_STREAM, condition: { status: 'unread' } };
   }
-  // Returns early when target is starred stream.
+  // Returns early when target is saved stream.
   if (target === STARRED_STREAM) {
-    return { id: STARRED_STREAM, condition: { favoriteInd: 1 } };
+    return { id: STARRED_STREAM, condition: { savedInd: 1 } };
   }
   // Handles the case where starts with succeeds.
   if (target.startsWith('feed/')) {

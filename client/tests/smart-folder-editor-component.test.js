@@ -9,7 +9,7 @@ const mountEditor = (overrides = {}) => mount(SmartFolderEditor, {
     smartFolder: {
       id: 1,
       name: 'Configured',
-      query: 'read:true favorite:true firstSeen:12h title:"Daily Brief" '
+      query: 'read:true saved:true firstSeen:12h title:"Daily Brief" '
         + 'quality:>=0.80 eventCount:>=4 sort:asc grouping:none limit:75 "free phrase"',
       limitCount: 75
     },
@@ -62,7 +62,7 @@ describe('SmartFolderEditor', () => {
     const wrapper = mountEditor();
 
     expect(wrapper.vm.generatedSmartFolderQuery).toBe(
-      'read:true favorite:true firstSeen:12h title:"Daily Brief" '
+      'read:true saved:true firstSeen:12h title:"Daily Brief" '
       + '"free phrase" quality:>=0.80 eventCount:>=4 sort:asc grouping:none limit:75'
     );
     expect(wrapper.vm.generatedQueryInvalid).toBe(false);

@@ -59,13 +59,13 @@ describe('article controller failure paths', () => {
     ['getDuplicateArticles', articleController.getDuplicateArticles],
     ['getArticle', articleController.getArticle],
     ['markAsRead', articleController.markAsRead],
-    ['markClicked', articleController.markClicked],
+    ['markOpenedOriginal', articleController.markOpenedOriginal],
     ['markNotInterested', articleController.markNotInterested],
     ['markMoreLikeThis', articleController.markMoreLikeThis],
     ['articleDetails', articleController.articleDetails],
     ['articleMarkAsSeen', articleController.articleMarkAsSeen],
     ['articleMarkToUnread', articleController.articleMarkToUnread],
-    ['articleMarkAsFavorite', articleController.articleMarkAsFavorite]
+    ['articleMarkAsSaved', articleController.articleMarkAsSaved]
   ])('%s handles unavailable authentication state', async (_name, handler) => {
     const res = createResponse();
 
@@ -125,7 +125,7 @@ describe('article controller failure paths', () => {
     }));
   });
 
-  it('validates feedback identifiers and reports missing clicked articles', async () => {
+  it('validates feedback identifiers and reports missing openedOriginal articles', async () => {
     const request = { userData: { userId: 1 }, body: {}, params: {} };
 
     // Exercises feedback validation before any article mutation can occur.
@@ -136,7 +136,7 @@ describe('article controller failure paths', () => {
     }
 
     const missingSingleRes = createResponse();
-    await articleController.markClicked(
+    await articleController.markOpenedOriginal(
       { userData: { userId: 1 }, body: {}, params: { articleId: '2147483647' } },
       missingSingleRes,
       vi.fn()
@@ -144,7 +144,7 @@ describe('article controller failure paths', () => {
     expect(missingSingleRes.status).toHaveBeenCalledWith(404);
 
     const missingBatchRes = createResponse();
-    await articleController.markClicked(
+    await articleController.markOpenedOriginal(
       { userData: { userId: 1 }, body: { articleIds: [2147483647] }, params: {} },
       missingBatchRes,
       vi.fn()

@@ -4,11 +4,11 @@
       <BootstrapIcon :icon="status === 'read' ? 'circle' : 'check2'" context="control" aria-hidden="true" />
       <span>{{ readLabel }}</span>
     </button>
-    <button type="button" class="reader-article-toolbar__action" :class="{ 'reader-article-toolbar__action--saved': favoriteInd === 1 }" :aria-label="saveLabel" :title="saveLabel" :aria-pressed="favoriteInd === 1" :disabled="favoritePending" @click="$emit('toggle-favorite')">
-      <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-fill' : 'bookmark'" context="control" aria-hidden="true" />
-      <span>{{ favoriteInd === 1 ? 'Unsave' : 'Save' }}</span>
+    <button type="button" class="reader-article-toolbar__action" :class="{ 'reader-article-toolbar__action--saved': savedInd === 1 }" :aria-label="saveLabel" :title="saveLabel" :aria-pressed="savedInd === 1" :disabled="savedPending" @click="$emit('toggle-saved')">
+      <BootstrapIcon :icon="savedInd === 1 ? 'bookmark-fill' : 'bookmark'" context="control" aria-hidden="true" />
+      <span>{{ savedInd === 1 ? 'Unsave' : 'Save' }}</span>
     </button>
-    <a v-if="safeArticleUrl" class="reader-article-toolbar__action" :href="safeArticleUrl" target="_blank" rel="noopener noreferrer" title="Open original article in a new tab" @click="$emit('article-clicked')">
+    <a v-if="safeArticleUrl" class="reader-article-toolbar__action" :href="safeArticleUrl" target="_blank" rel="noopener noreferrer" title="Open original article in a new tab" @click="$emit('article-opened-original')">
       <BootstrapIcon icon="box-arrow-up-right" context="control" aria-hidden="true" />
       <span>Open original</span>
     </a>
@@ -31,7 +31,7 @@
       <button type="button" class="reader-article-toolbar__action" :title="expandLabel" :aria-label="expandLabel" :aria-pressed="expanded" @click="$emit('toggle-expanded')">
         <BootstrapIcon :icon="expanded ? 'arrows-angle-contract' : 'arrows-angle-expand'" context="control" aria-hidden="true" />
       </button>
-      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :clicked-amount="clickedAmount" :click-pending="clickPending" :favorite-ind="favoriteInd" :favorite-pending="favoritePending" is-reader-mode :status="status" @toggle-clicked="$emit('toggle-clicked')" @toggle-favorite="$emit('toggle-favorite')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
+      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :opened-original-count="openedOriginalCount" :opened-original-pending="openedOriginalPending" :saved-ind="savedInd" :saved-pending="savedPending" is-reader-mode :status="status" @toggle-openedOriginal="$emit('toggle-opened-original')" @toggle-saved="$emit('toggle-saved')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
     </div>
   </nav>
 </template>
@@ -45,7 +45,7 @@ import { useArticleSpeech } from '../../composables/useArticleSpeech.js';
 
 export default {
   components: { ArticleActionsMenu, AppDropdown },
-  emits: ['update-text-size', 'toggle-expanded', 'article-clicked', 'toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags'],
+  emits: ['update-text-size', 'toggle-expanded', 'article-opened-original', 'toggle-opened-original', 'toggle-saved', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags'],
   setup(props) {
     return { speech: useArticleSpeech({ articleId: () => props.articleId, getContent: () => props.getReadingContent(), language: () => props.language }) };
   },
@@ -64,17 +64,17 @@ export default {
     language: { type: String, default: '' },
     url: { type: String, default: '' },
     status: { type: String, default: '' },
-    favoriteInd: { type: Number, default: 0 },
-    favoritePending: { type: Boolean, default: false },
-    clickedAmount: { type: Number, default: 0 },
-    clickPending: { type: Boolean, default: false },
+    savedInd: { type: Number, default: 0 },
+    savedPending: { type: Boolean, default: false },
+    openedOriginalCount: { type: Number, default: 0 },
+    openedOriginalPending: { type: Boolean, default: false },
     tagEditingDisabled: { type: Boolean, default: false }
   },
   computed: {
     expandLabel() { return this.expanded ? 'Restore article layout' : 'Expand article'; },
     safeArticleUrl() { return usableHttpUrl(this.url); },
     readLabel() { return this.status === 'read' ? 'Mark unread' : 'Mark read'; },
-    saveLabel() { return this.favoriteInd === 1 ? 'Remove from saved' : 'Save article'; }
+    saveLabel() { return this.savedInd === 1 ? 'Remove from saved' : 'Save article'; }
   }
 };
 </script>
@@ -131,7 +131,7 @@ export default {
 }
 
 .reader-article-toolbar__action--saved {
-  color: var(--article-star-icon);
+  color: var(--article-saved-icon);
 }
 
 .reader-article-toolbar__action:disabled {

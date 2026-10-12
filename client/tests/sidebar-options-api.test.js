@@ -69,7 +69,7 @@ const initializeStores = () => {
       hotCount: 2,
       feeds: []
     }],
-    clickedCount: 1,
+    openedOriginalCount: 1,
     smartFolders: [{
       id: 30,
       name: 'Research',
@@ -94,7 +94,7 @@ const initializeStores = () => {
       tag: null
     }
   });
-  overviewStore.favoriteCount = 2;
+  overviewStore.savedCount = 2;
   overviewStore.hotCount = 6;
   overviewStore.readCount = 9;
   vi.spyOn(overviewStore, 'fetchSmartFolders').mockResolvedValue({});
@@ -249,7 +249,7 @@ describe('Options API sidebar contracts', () => {
     stores.overviewStore.categories[1].readCount = 0;
     stores.overviewStore.smartFolders.push({ id: 31, name: 'Empty folder', ArticleCount: 0 });
     stores.overviewStore.topTags.unshift({ name: 'empty', count: 0 });
-    stores.overviewStore.clickedCount = 0;
+    stores.overviewStore.openedOriginalCount = 0;
     const wrapper = mountSidebar(stores.pinia);
     expect(wrapper.find('[id="102"]').exists()).toBe(true);
     expect(wrapper.find('[id="20"]').exists()).toBe(true);
@@ -478,13 +478,13 @@ describe('Options API sidebar contracts', () => {
   ])('sorts categories and feeds by %s without changing manual order', async (sortOrder, feeds, categories) => {
     const stores = initializeStores();
     stores.overviewStore.categories[0].feeds = [
-      { id: 101, categoryId: 10, feedName: 'Zulu', unreadCount: 2, readCount: 20, favoriteCount: 9, lastArticleReceivedAt: '2026-01-01' },
-      { id: 102, categoryId: 10, feedName: 'Alpha', unreadCount: 12, readCount: 0, favoriteCount: 0, lastArticleReceivedAt: '2026-01-03' },
-      { id: 103, categoryId: 10, feedName: 'Beta', unreadCount: 12, readCount: 100, favoriteCount: 1 }
+      { id: 101, categoryId: 10, feedName: 'Zulu', unreadCount: 2, readCount: 20, savedCount: 9, lastArticleReceivedAt: '2026-01-01' },
+      { id: 102, categoryId: 10, feedName: 'Alpha', unreadCount: 12, readCount: 0, savedCount: 0, lastArticleReceivedAt: '2026-01-03' },
+      { id: 103, categoryId: 10, feedName: 'Beta', unreadCount: 12, readCount: 100, savedCount: 1 }
     ];
     stores.overviewStore.categories[1].feeds = [{ id: 201, categoryId: 20, feedName: 'Other', lastArticleReceivedAt: '2026-01-04' }];
-    stores.overviewStore.categories[0].favoriteCount = 10;
-    stores.overviewStore.categories[1].favoriteCount = 20;
+    stores.overviewStore.categories[0].savedCount = 10;
+    stores.overviewStore.categories[1].savedCount = 20;
     const original = JSON.parse(JSON.stringify(stores.overviewStore.categories));
     stores.uiStore.sidebarSettings.sortOrder = sortOrder;
     // Sorting uses raw counts even when total badges are hidden.
@@ -496,14 +496,14 @@ describe('Options API sidebar contracts', () => {
     expect(categoryNames()).toEqual(categories);
     expect(wrapper.findAll('button').some(button => button.text() === 'Reorder')).toBe(sortOrder === 'manual');
     if (sortOrder === 'selectedCount') {
-      stores.selectionStore.currentSelection.status = 'favorite';
+      stores.selectionStore.currentSelection.status = 'saved';
       await wrapper.vm.$nextTick();
       expect(feedNames()).toEqual(['Zulu', 'Beta', 'Alpha']);
       expect(categoryNames()).toEqual(['News', 'Technology']);
-      stores.overviewStore.categories[0].feeds[1].favoriteCount = 99;
+      stores.overviewStore.categories[0].feeds[1].savedCount = 99;
       await wrapper.vm.$nextTick();
       expect(feedNames()).toEqual(['Alpha', 'Zulu', 'Beta']);
-      stores.overviewStore.categories[0].feeds[1].favoriteCount = 0;
+      stores.overviewStore.categories[0].feeds[1].savedCount = 0;
     }
     stores.uiStore.sidebarSettings.sortOrder = 'manual';
     await wrapper.vm.$nextTick();
@@ -607,11 +607,11 @@ describe('Options API sidebar contracts', () => {
   it.each(['manual', 'name', 'selectedCount', 'totalCount', 'recentlyActive'])('dynamic sorting overrides %s and follows status changes', async sortOrder => {
     const stores = initializeStores();
     stores.overviewStore.categories[0].feeds = [
-      { id: 101, categoryId: 10, feedName: 'Alpha', unreadCount: 1, readCount: 100, favoriteCount: 20, hotCount: 0, lastArticleReceivedAt: '2026-01-02' },
-      { id: 102, categoryId: 10, feedName: 'Zulu', unreadCount: 9, readCount: 0, favoriteCount: 1, hotCount: 30, lastArticleReceivedAt: '2026-01-01' }
+      { id: 101, categoryId: 10, feedName: 'Alpha', unreadCount: 1, readCount: 100, savedCount: 20, hotCount: 0, lastArticleReceivedAt: '2026-01-02' },
+      { id: 102, categoryId: 10, feedName: 'Zulu', unreadCount: 9, readCount: 0, savedCount: 1, hotCount: 30, lastArticleReceivedAt: '2026-01-01' }
     ];
-    stores.overviewStore.categories[0].favoriteCount = 21;
-    stores.overviewStore.categories[1].favoriteCount = 30;
+    stores.overviewStore.categories[0].savedCount = 21;
+    stores.overviewStore.categories[1].savedCount = 30;
     stores.uiStore.sidebarSettings.sortOrder = sortOrder;
     const wrapper = mountSidebar(stores.pinia);
     const feedNames = () => wrapper.findAllComponents(SidebarFeedItem).map(item => item.text().replace(/[0-9/]+$/, '').trim());
@@ -625,7 +625,7 @@ describe('Options API sidebar contracts', () => {
     expect(wrapper.find('.draggable-stub').exists()).toBe(false);
     expect(wrapper.findAll('button').some(button => ['Reorder', 'Done'].includes(button.text()))).toBe(false);
     expect(feedNames()).toEqual(['Zulu', 'Alpha']);
-    stores.selectionStore.currentSelection.status = 'favorite';
+    stores.selectionStore.currentSelection.status = 'saved';
     await wrapper.vm.$nextTick();
     expect(feedNames()).toEqual(['Alpha', 'Zulu']);
     expect(wrapper.findAllComponents(SidebarCategoryGroup).map(item => item.get('button').text().replace(/[0-9/]+$/, '').trim())).toEqual(['News', 'Technology']);
@@ -708,10 +708,10 @@ describe('Options API sidebar contracts', () => {
     const category = stores.overviewStore.categories[0];
     const feed = category.feeds[0];
     category.pinned = feed.pinned = true;
-    category.favoriteCount = 7;
-    feed.favoriteCount = 2;
+    category.savedCount = 7;
+    feed.savedCount = 2;
     const wrapper = mountSidebar(stores.pinia);
-    for (const status of ['unread', 'favorite', 'briefing', 'hot']) {
+    for (const status of ['unread', 'saved', 'briefing', 'hot']) {
       stores.selectionStore.currentSelection.status = status;
       for (const showTotalCount of [true, false]) {
         stores.uiStore.sidebarSettings.showTotalCount = showTotalCount;

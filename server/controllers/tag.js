@@ -6,15 +6,16 @@ import {
 } from '../services/dailyBriefing/dailyBriefing.service.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { normalizeTagName } from '../services/crawl/persistence/tags.js';
+import { canonicalArticleStatus } from '../utils/articleStateContract.js';
 
 const { Article, BriefingPreference, Tag } = db;
 const TOP_TAG_STATUSES = new Set([
   'briefing',
   'unread',
   'read',
-  'favorite',
+  'saved',
   'hot',
-  'clicked'
+  'openedOriginal'
 ]);
 
 // Applies the same representative-article grouping used by article lists and overview counts.
@@ -77,12 +78,12 @@ const topTagArticleWhere = async ({ userId, status }) => {
     ...canonicalArticleWhere()
   };
 
-  if (status === 'favorite') {
-    where.favoriteInd = 1;
+  if (status === 'saved') {
+    where.savedInd = 1;
   } else if (status === 'hot') {
     where.hotInd = 1;
-  } else if (status === 'clicked') {
-    where.clickedAmount = { [Sequelize.Op.gt]: 0 };
+  } else if (status === 'openedOriginal') {
+    where.openedOriginalCount = { [Sequelize.Op.gt]: 0 };
   } else {
     where.status = status;
   }
@@ -137,7 +138,7 @@ const getTags = async (req, res) => {
       return res.status(200).json({ tags: tags.slice(0, limit), hasMore: tags.length > limit });
     }
 
-    const status = String(req.query?.status || 'unread').toLowerCase();
+    const status = canonicalArticleStatus(String(req.query?.status || 'unread').toLowerCase());
     if (!TOP_TAG_STATUSES.has(status)) {
       return res.status(400).json({ error: 'Unsupported tag status' });
     }

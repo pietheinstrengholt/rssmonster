@@ -103,7 +103,7 @@ describe('article recommendation feedback', () => {
   it('replaces opposing feedback in either direction and keeps repeated requests idempotent', async () => {
     const user = await createUser(uniqueName('feedback-switch'));
     const { article } = await createArticleFor(user);
-    await article.update({ favoriteInd: 1, clickedAmount: 3, attentionBucket: 3 });
+    await article.update({ savedInd: 1, openedOriginalCount: 3, attentionBucket: 3 });
 
     for (const action of ['markmorelikethis', 'marknotinterested', 'marknotinterested', 'markmorelikethis', 'markmorelikethis']) {
       const res = await request(app)
@@ -114,8 +114,8 @@ describe('article recommendation feedback', () => {
       expect(res.status).toBe(200);
       expect(article.positiveInd).toBe(action === 'markmorelikethis' ? 1 : 0);
       expect(article.negativeInd).toBe(action === 'marknotinterested' ? 1 : 0);
-      expect(article.favoriteInd).toBe(1);
-      expect(article.clickedAmount).toBe(3);
+      expect(article.savedInd).toBe(1);
+      expect(article.openedOriginalCount).toBe(3);
       expect(article.attentionBucket).toBe(3);
     }
   });

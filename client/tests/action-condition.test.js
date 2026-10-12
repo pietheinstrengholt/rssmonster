@@ -75,7 +75,7 @@ describe('plain-language action conditions', () => {
     const view = mount(SettingsActions, { global: { stubs: { BootstrapIcon: true } } });
     await flushPromises();
     await view.findAll('button').find(button => button.text() === 'Add Action').trigger('click');
-    expect(view.get('select').element.value).toBe('favorite');
+    expect(view.get('select').element.value).toBe('saved');
     const save = view.findAll('button').find(button => button.text() === 'Save Changes');
     await save.trigger('click');
     expect(view.get('[role="alert"]').text()).toContain('enter a phrase');
@@ -83,7 +83,7 @@ describe('plain-language action conditions', () => {
     await view.get('#action-condition-0').setValue('C++');
     await save.trigger('click');
     await flushPromises();
-    expect(saveActions).toHaveBeenCalledWith([{ name: 'Keep C++', actionType: 'favorite', regularExpression: '/C\\+\\+/i', tagValue: '' }]);
+    expect(saveActions).toHaveBeenCalledWith([{ name: 'Keep C++', actionType: 'saved', regularExpression: '/C\\+\\+/i', tagValue: '' }]);
     expect(view.emitted('saved')).toHaveLength(1);
     view.unmount();
   });

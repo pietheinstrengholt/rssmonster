@@ -123,7 +123,7 @@ Create, edit, move, or delete subscriptions in RSSMonster itself.
 ### Unread and saved IDs
 
 Use `unread_item_ids` and `saved_item_ids` to retrieve comma-separated lists
-of canonical article IDs. Saved items correspond to RSSMonster Favorites or
+of canonical article IDs. Saved items correspond to RSSMonster Saved or
 [Bookmarks]({% link bookmarks.md %}).
 
 Known duplicate records are excluded. This keeps one canonical item in the
@@ -189,8 +189,8 @@ The following combinations are supported for `mark=item`:
 | --- | --- |
 | `read` | Sets the article to read and records `readAt`. |
 | `unread` | Sets the article to unread and clears `readAt`. |
-| `saved` | Adds the article to Favorites. |
-| `unsaved` | Removes the article from Favorites. |
+| `saved` | Adds the article to Saved. |
+| `unsaved` | Removes the article from Saved. |
 
 `id` may contain a comma-separated list of up to 50 unique article IDs.
 Foreign, duplicate, malformed, and non-positive IDs are ignored.
@@ -244,7 +244,7 @@ unchanged.
 | Feed and group mapping | Yes |
 | Item synchronization and pagination | Yes, 50 items per page |
 | Unread synchronization | Yes |
-| Saved/starred synchronization | Yes |
+| Saved/saved synchronization | Yes |
 | Mark individual items read, unread, saved, or unsaved | Yes |
 | Mark a feed, category, or all feeds read | Yes |
 | Revert items read during the previous 24 hours | Yes |

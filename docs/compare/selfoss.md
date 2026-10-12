@@ -29,7 +29,7 @@ This table reflects built-in or officially documented behavior as of
 | **Primary philosophy** | RSS reading plus optional information-management and semantic layers | Multipurpose reader and aggregator for feeds and other data sources |
 | **Self-hosting** | Docker Compose quick start or a more comprehensive deployment | Lightweight PHP application installed on a web server; an unofficial Docker image is documented |
 | **Source extensibility** | RSS/Atom feeds with full-content extraction | Spouts can collect RSS, images, social sources, email, logs, or custom application data |
-| **Traditional reading** | Chronological feeds remain available alongside alternative rankings | A unified traditional stream with newest, unread, and starred views |
+| **Traditional reading** | Chronological feeds remain available alongside alternative rankings | A unified traditional stream with newest, unread, and saved views |
 | **Interface** | Responsive modes including a three-pane desktop Reader view | Adaptive web layout for desktop and mobile |
 | **Filtering and saved views** | Per-feed item filters restrict incoming entries; advanced search expressions power reusable Smart Folders | Source filters can restrict incoming items; streams can be viewed by source or tag |
 | **Story organization** | Related articles, duplicates, Events and Interest Islands when semantic processing is enabled | Source and tag organization; a comparable semantic story hierarchy is not documented |

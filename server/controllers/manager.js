@@ -35,9 +35,9 @@ const OVERVIEW_COUNT_FIELDS = [
   'briefingCount',
   'unreadCount',
   'readCount',
-  'favoriteCount',
+  'savedCount',
   'hotCount',
-  'clickedCount'
+  'openedOriginalCount'
 ];
 
 // Formats a UTC timestamp consistently for MySQL DATETIME and SQLite text comparison.
@@ -49,18 +49,18 @@ const buildCategoriesStructure = categoriesRaw => categoriesRaw.map(categoryRow 
   category.readCount = 0;
   category.unreadCount = 0;
   category.briefingCount = 0;
-  category.favoriteCount = 0;
+  category.savedCount = 0;
   category.hotCount = 0;
-  category.clickedCount = 0;
+  category.openedOriginalCount = 0;
 
   category.feeds = (category.feeds || []).map(feed => ({
     ...feed,
     readCount: 0,
     unreadCount: 0,
     briefingCount: 0,
-    favoriteCount: 0,
+    savedCount: 0,
     hotCount: 0,
-    clickedCount: 0
+    openedOriginalCount: 0
   }));
 
   return category;
@@ -225,9 +225,9 @@ const loadGroupedFeedCounts = (baseWhere, briefingConfig) => Feed.findAll({
     [Sequelize.literal(briefingConfig.countSql), 'briefingCount'],
     [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'unread' THEN 1 END)"), 'unreadCount'],
     [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'read' THEN 1 END)"), 'readCount'],
-    [Sequelize.literal("COUNT(CASE WHEN `articles`.`favoriteInd` = 1 THEN 1 END)"), 'favoriteCount'],
+    [Sequelize.literal("COUNT(CASE WHEN `articles`.`savedInd` = 1 THEN 1 END)"), 'savedCount'],
     [Sequelize.literal("COUNT(CASE WHEN `articles`.`hotInd` = 1 THEN 1 END)"), 'hotCount'],
-    [Sequelize.literal("SUM(CASE WHEN `articles`.`clickedAmount` > 0 THEN 1 ELSE 0 END)"), 'clickedCount']
+    [Sequelize.literal("SUM(CASE WHEN `articles`.`openedOriginalCount` > 0 THEN 1 ELSE 0 END)"), 'openedOriginalCount']
   ],
   replacements: briefingConfig.replacements,
   group: ['feeds.categoryId', 'feeds.id'],
@@ -245,23 +245,23 @@ const mergeCountsIntoStructure = (categories, groupedRows) => {
     const unread = Number(row.unreadCount) || 0;
     const read = Number(row.readCount) || 0;
     const briefing = Number(row.briefingCount) || 0;
-    const favorite = Number(row.favoriteCount) || 0;
+    const saved = Number(row.savedCount) || 0;
     const hot = Number(row.hotCount) || 0;
-    const clicked = Number(row.clickedCount) || 0;
+    const openedOriginal = Number(row.openedOriginalCount) || 0;
 
     feedEntry.feed.unreadCount = unread;
     feedEntry.feed.readCount = read;
     feedEntry.feed.briefingCount = briefing;
-    feedEntry.feed.favoriteCount = favorite;
+    feedEntry.feed.savedCount = saved;
     feedEntry.feed.hotCount = hot;
-    feedEntry.feed.clickedCount = clicked;
+    feedEntry.feed.openedOriginalCount = openedOriginal;
 
     feedEntry.category.unreadCount += unread;
     feedEntry.category.readCount += read;
     feedEntry.category.briefingCount += briefing;
-    feedEntry.category.favoriteCount += favorite;
+    feedEntry.category.savedCount += saved;
     feedEntry.category.hotCount += hot;
-    feedEntry.category.clickedCount += clicked;
+    feedEntry.category.openedOriginalCount += openedOriginal;
   });
 
   return categories;
@@ -282,9 +282,9 @@ const buildCountSnapshot = groupedRows => {
         briefingCount: 0,
         unreadCount: 0,
         readCount: 0,
-        favoriteCount: 0,
+        savedCount: 0,
         hotCount: 0,
-        clickedCount: 0,
+        openedOriginalCount: 0,
         feeds: []
       };
       categories.set(row.categoryId, category);
@@ -313,9 +313,9 @@ export const getOverviewLite = async (req, res, _next) => {
       total: 0,
       readCount: 0,
       unreadCount: 0,
-      favoriteCount: 0,
+      savedCount: 0,
       hotCount: 0,
-      clickedCount: 0,
+      openedOriginalCount: 0,
       categories
     });
   } catch (err) {

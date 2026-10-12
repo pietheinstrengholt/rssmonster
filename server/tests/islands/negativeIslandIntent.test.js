@@ -65,8 +65,8 @@ describe('negative Island intent scope', () => {
   });
 
   it('uses negative flags even with contradictory engagement and ignores positive-only support intent', () => {
-    const support = [source(promotion, { positiveInd: 1, favoriteInd: 1, clickedAmount: 3, attentionBucket: 4 }),
-      source(review, { id: 2, negativeInd: 0, favoriteInd: 1, clickedAmount: 3, attentionBucket: 4 })];
+    const support = [source(promotion, { positiveInd: 1, savedInd: 1, openedOriginalCount: 3, attentionBucket: 4 }),
+      source(review, { id: 2, negativeInd: 0, savedInd: 1, openedOriginalCount: 3, attentionBucket: 4 })];
     const evidence = context(support);
     expect(evidence.islands[0].negativeIntent).toBe('promotion');
     expect(evaluate(review, evidence).paths.find(path => path.islandId === 1).intentCompatibility).toBe(0.05);
@@ -74,7 +74,7 @@ describe('negative Island intent scope', () => {
   });
 
   it('leaves positive Island contributions unchanged across candidate intents', () => {
-    const evidence = context([source(promotion, { negativeInd: 0, favoriteInd: 1 })], 0.8);
+    const evidence = context([source(promotion, { negativeInd: 0, savedInd: 1 })], 0.8);
     for (const title of [promotion, review, technical, 'Unclassified dispatch']) {
       const result = evaluate(title, evidence);
       expect(result.score).toBeCloseTo(0.8 * evidence.islands[0].islandConfidence);

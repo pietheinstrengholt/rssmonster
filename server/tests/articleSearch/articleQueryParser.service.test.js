@@ -9,6 +9,17 @@ import {
 } from '../../services/articleSearch/articleQueryParser.service.js';
 
 describe('articleQueryParser.service', () => {
+  it('accepts canonical and legacy save/opened filters with the same last-token precedence', () => {
+    for (const saved of ['saved', 'favorite', 'star']) {
+      for (const opened of ['openedOriginal', 'clicked']) {
+        expect(validateArticleExpression(`${saved}:true ${opened}:false`).filters).toMatchObject({ saved: true, openedOriginal: false });
+      }
+    }
+    expect(validateArticleExpression('favorite:true saved:false openedOriginal:true clicked:false').filters)
+      .toMatchObject({ saved: false, openedOriginal: false });
+    expect(normalizeSmartFolderExpression('title:"favorite:true clicked:false" favorite:true clicked:false'))
+      .toBe('title:"favorite:true clicked:false" saved:true openedOriginal:false sort:desc grouping:none');
+  });
   it('keeps quoted tag labels separate from full-text phrases', () => {
     const parsed = parseArticleQuery({ search: 'tag:"read later" "AI agents"' });
     expect(parsed.filters.tag).toBe('read later');
@@ -31,13 +42,13 @@ describe('articleQueryParser.service', () => {
       .toBe('developing:true sort:quality grouping:event');
   });
   it('parses mixed filters and quoted text', () => {
-    const result = parseArticleQuery({ search: 'favorite:true quality:>0.7 @today "AI agents"' });
+    const result = parseArticleQuery({ search: 'saved:true quality:>0.7 @today "AI agents"' });
 
     expect(result).toEqual({
       text: 'AI agents',
       textMode: 'exact',
       filters: {
-        star: true,
+        saved: true,
         quality: {
           operator: '>',
           value: 0.7
@@ -52,10 +63,10 @@ describe('articleQueryParser.service', () => {
     });
   });
 
-  it('keeps legacy star filter as a favorite alias', () => {
-    const result = parseArticleQuery({ search: 'star:true' });
+  it('keeps legacy saved filter as saved alias', () => {
+    const result = parseArticleQuery({ search: 'saved:true' });
 
-    expect(result.filters.star).toBe(true);
+    expect(result.filters.saved).toBe(true);
   });
 
   it('parses days ago date expressions', () => {

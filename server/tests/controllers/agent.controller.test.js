@@ -105,7 +105,7 @@ describe('agent controller', () => {
       })
     );
     expect(mocked.agentConstructor.mock.calls[0][0]).not.toHaveProperty('mcpServers');
-    expect(mocked.agentConstructor.mock.calls[0][0].tools).toHaveLength(19);
+    expect(mocked.agentConstructor.mock.calls[0][0].tools).toHaveLength(22);
     expect(mocked.agentConstructor.mock.calls[0][0]).not.toHaveProperty('modelSettings');
     expect(mocked.runnerOptions).toEqual(expect.objectContaining({
       modelProvider: expect.any(Object),

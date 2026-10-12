@@ -17,7 +17,7 @@ describe('articleKeyboardCommands', () => {
     ['o', ARTICLE_KEYBOARD_COMMAND.OPEN],
     ['m', ARTICLE_KEYBOARD_COMMAND.TOGGLE_READ],
     ['r', ARTICLE_KEYBOARD_COMMAND.TOGGLE_READ],
-    ['s', ARTICLE_KEYBOARD_COMMAND.TOGGLE_FAVORITE]
+    ['s', ARTICLE_KEYBOARD_COMMAND.TOGGLE_SAVED]
   ])('maps %s to %s', (key, command) => {
     expect(getArticleKeyboardCommand({ key, target: document.body })).toBe(command);
   });

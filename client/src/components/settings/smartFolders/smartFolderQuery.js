@@ -1,4 +1,5 @@
 import { tokenizeSmartFolderExpression } from '../../../services/smartFolderPresentation.js';
+import { canonicalArticleExpression } from '../../../services/articleStateContract.js';
 import { normalizeTagName } from '../../../utils/tags.js';
 
 // Creates the complete default configuration used by the Smart Folder editor.
@@ -9,8 +10,8 @@ export function createEmptySmartFolderConfig() {
         status: {
             unread: false,
             read: false,
-            favorite: false,
-            clicked: false,
+            saved: false,
+            openedOriginal: false,
             hot: false
         },
         date: {
@@ -54,7 +55,7 @@ export function tokenizeSmartFolderQuery(query) {
 export function smartFolderQueryRequiresUnread(query) {
     let unread = false;
 
-    tokenizeSmartFolderQuery(query).forEach(token => {
+    tokenizeSmartFolderQuery(canonicalArticleExpression(query)).forEach(token => {
         const match = token.replace(/[.,;]+$/, '').match(/^unread:(true|false)$/i);
         if (match) unread = match[1].toLowerCase() === 'true';
     });
@@ -127,7 +128,7 @@ export function parseSmartFolderQuery(query, initialConfig = createEmptySmartFol
     const config = initialConfig;
     const freeText = [];
 
-    tokenizeSmartFolderQuery(query).forEach(token => {
+    tokenizeSmartFolderQuery(canonicalArticleExpression(query)).forEach(token => {
         const cleaned = token.replace(/[.,;]+$/, '');
         const lower = cleaned.toLowerCase();
 
@@ -137,8 +138,8 @@ export function parseSmartFolderQuery(query, initialConfig = createEmptySmartFol
         } else if (lower === 'read:true') {
             config.status.read = true;
             config.status.unread = false;
-        } else if (lower === 'favorite:true' || lower === 'star:true') config.status.favorite = true;
-        else if (lower === 'clicked:true') config.status.clicked = true;
+        } else if (lower === 'saved:true' || lower === 'star:true') config.status.saved = true;
+        else if (lower === 'openedoriginal:true') config.status.openedOriginal = true;
         else if (lower === 'hot:true') config.status.hot = true;
         else if (['@today', '@yesterday', '@lastweek'].includes(lower)) config.date.preset = lower;
         else if (/^firstseen:\d+[hd]$/i.test(cleaned)) applyFirstSeenToken(config, cleaned);
@@ -170,8 +171,8 @@ export function buildSmartFolderQuery(config) {
 
     if (config.status.unread) parts.push('unread:true');
     if (config.status.read) parts.push('read:true');
-    if (config.status.favorite) parts.push('favorite:true');
-    if (config.status.clicked) parts.push('clicked:true');
+    if (config.status.saved) parts.push('saved:true');
+    if (config.status.openedOriginal) parts.push('openedOriginal:true');
     if (config.status.hot) parts.push('hot:true');
 
     if (config.date.useRelative && config.date.relativeAmount) {

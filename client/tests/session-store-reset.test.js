@@ -83,8 +83,8 @@ describe('coordinated Pinia session reset', () => {
     overviewStore.$patch({
       briefingCount: 1,
       categories: [{ id: 4, feeds: [{ id: 8 }] }],
-      clickedCount: 2,
-      favoriteCount: 3,
+      openedOriginalCount: 2,
+      savedCount: 3,
       hotCount: 4,
       overviewCountsError: { message: 'old counts error' },
       overviewCountsStatus: 'error',
@@ -163,8 +163,8 @@ describe('coordinated Pinia session reset', () => {
     expect(overviewStore).toMatchObject({
       briefingCount: 0,
       categories: [],
-      clickedCount: 0,
-      favoriteCount: 0,
+      openedOriginalCount: 0,
+      savedCount: 0,
       hotCount: 0,
       overviewCountsError: null,
       overviewCountsStatus: 'idle',

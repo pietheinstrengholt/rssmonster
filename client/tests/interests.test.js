@@ -11,7 +11,7 @@ import api from '../src/api/client';
 
 vi.mock('../src/api/client', () => ({ default: { get: vi.fn(), put: vi.fn(), post: vi.fn(), patch: vi.fn() }, setAuthToken: vi.fn(), CONNECTIVITY_ERROR_EVENT: 'app:connectivity-error' }));
 const positive = { id: 1, name: 'Space exploration', polarity: 'positive', weight: .75, evidenceStrength: 75,
-  lifecycle: 'active', lastActivityAt: '2026-09-01T10:00:00Z', evidence: { favorites: 2, clicks: 4, deepReads: 1 } };
+  lifecycle: 'active', lastActivityAt: '2026-09-01T10:00:00Z', evidence: { saved: 2, openedOriginals: 4, deepReads: 1 } };
 const negative = { id: 2, name: 'Celebrity coverage', polarity: 'negative', weight: -.4, evidenceStrength: 40,
   lifecycle: 'archived', lastActivityAt: null, evidence: { negativeFeedback: 3 } };
 const summary = { total: 2, positive: 1, negative: 1, neutral: 0, active: 1, archived: 1 };
@@ -254,7 +254,7 @@ describe('Settings Islands interests', () => {
     }
   });
 
-  it('tracks the clicked island when opening Settings from the reader', () => {
+  it('tracks the openedOriginal island when opening Settings from the reader', () => {
     const opener = document.createElement('button');
     document.body.appendChild(opener); opener.focus();
     const shell = { showSettingsModal: false, settingsSection: 'welcome', settingsInterestId: null };

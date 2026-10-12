@@ -72,8 +72,8 @@ export default (sequelize) => {
         type: DataTypes.JSON,
         allowNull: false,
         defaultValue: {
-          stars: 0,
-          clicks: 0,
+          saves: 0,
+          openedOriginals: 0,
           deepReads: 0
         }
       },

@@ -330,9 +330,9 @@ describe('tag controllers', () => {
   });
 
   it.each([
-    ['favorite', 'favoriteInd', 1],
+    ['saved', 'savedInd', 1],
     ['hot', 'hotInd', 1],
-    ['clicked', 'clickedAmount', { [Op.gt]: 0 }]
+    ['openedOriginal', 'openedOriginalCount', { [Op.gt]: 0 }]
   ])('scopes tags to the %s article collection', async (status, field, value) => {
     mocked.articleFindAll.mockResolvedValue([]);
     const res = createResponse();

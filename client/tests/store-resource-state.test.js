@@ -51,9 +51,9 @@ const countResponse = unreadCount => ({
     briefingCount: 0,
     unreadCount,
     readCount: 0,
-    favoriteCount: 0,
+    savedCount: 0,
     hotCount: 0,
-    clickedCount: 0,
+    openedOriginalCount: 0,
     categories: [{ id: 1, unreadCount, feeds: [] }]
   }
 });

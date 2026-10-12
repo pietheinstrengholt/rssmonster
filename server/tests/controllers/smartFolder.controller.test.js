@@ -452,8 +452,8 @@ describe('smartFolder controller', () => {
           userData: { userId: 42 },
           body: {
             smartFolders: [{
-              name: 'Favorites',
-              query: 'favorite:true',
+              name: 'Saved',
+              query: 'saved:true',
               markAsReadOnScroll: true
             }]
           }
@@ -521,20 +521,20 @@ describe('smartFolder controller', () => {
             total: '10',
             unread: '8',
             read: '2',
-            clicked: '3',
-            favorite: '2'
+            openedOriginal: '3',
+            saved: '2'
           },
           {
             feedId: 999,
             total: '5',
             unread: '5',
             read: '0',
-            clicked: '0',
-            favorite: '0'
+            openedOriginal: '0',
+            saved: '0'
           }
         ])
         .mockResolvedValueOnce([
-          { feedId: 1, title: 'Favorite article' }
+          { feedId: 1, title: 'Saved article' }
         ]);
       mocked.feedFindAll.mockResolvedValue([
         { id: 1, feedName: 'Security Feed' },
@@ -565,23 +565,23 @@ describe('smartFolder controller', () => {
           window: 'last 14 days',
           engagement: {
             unreadRatio: 0.8,
-            favoriteArticles: 2
+            savedArticles: 2
           },
           feeds: [
             {
               name: 'Security Feed',
               unreadRatio: 0.8,
-              favorite: 2
+              saved: 2
             }
           ],
           interests: {
             topTags: ['security', 'privacy'],
             longTailTagCount: 0
           },
-          favoriteItems: [
+          savedItems: [
             {
               feed: 'Security Feed',
-              title: 'Favorite article'
+              title: 'Saved article'
             }
           ],
           existingSmartFolders: [
@@ -604,7 +604,7 @@ describe('smartFolder controller', () => {
 
       const result = await smartFolderController.collectSmartFolderSignals(
         42,
-        { days: 7, maxFavoriteTitles: 3 }
+        { days: 7, maxSavedTitles: 3 }
       );
 
       expect(result.window).toEqual({ days: 7 });
@@ -612,8 +612,8 @@ describe('smartFolder controller', () => {
         totalArticles: 0,
         unread: 0,
         read: 0,
-        clicked: 0,
-        favorite: 0
+        openedOriginal: 0,
+        saved: 0
       });
       expect(result.feeds).toEqual([
         {
@@ -621,8 +621,8 @@ describe('smartFolder controller', () => {
           total: 0,
           unread: 0,
           read: 0,
-          clicked: 0,
-          favorite: 0
+          openedOriginal: 0,
+          saved: 0
         }
       ]);
     });

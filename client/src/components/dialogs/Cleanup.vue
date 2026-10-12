@@ -91,8 +91,8 @@ export default {
       message: '',
       protectionOptions: [
         { key: 'neverDeleteUnread', label: 'Never delete unread articles', help: 'Keep all articles that are still unread.' },
-        { key: 'neverDeleteFavorites', label: 'Never delete saved articles', help: 'Keep all articles you have saved.' },
-        { key: 'neverDeleteClicked', label: 'Never delete opened originals', help: 'Keep articles whose original websites you have opened.' }
+        { key: 'neverDeleteSaved', label: 'Never delete saved articles', help: 'Keep all articles you have saved.' },
+        { key: 'neverDeleteOpenedOriginals', label: 'Never delete opened originals', help: 'Keep articles whose original websites you have opened.' }
       ],
       countLimits: [
         { key: 'maximumArticlesPerFeed', label: 'Maximum number of articles to keep per feed', help: 'Keep at most this many articles per feed, subject to protections.', max: 1000000, maximumLabel: '1,000,000' },

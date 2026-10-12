@@ -3,6 +3,7 @@ import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { updateArticleBehavior } from './updateArticleBehavior.js';
 import { articleStateValues } from './articleInteractionState.js';
 import { retryDatabaseTransaction } from '../../utils/databaseRetry.js';
+import { canonicalArticleActionKind } from '../../utils/articleStateContract.js';
 
 const { Article, ArticleSyncAction, Feed, User, Sequelize: { Op } } = db;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -10,7 +11,7 @@ export const validSyncActions = body => Boolean(body && Array.isArray(body.actio
   && body.actions.every(action => action && typeof action.actionId === 'string' && UUID.test(action.actionId)
     && Number.isSafeInteger(action.articleId) && action.articleId > 0
     && ((action.kind === 'set-status' && ['read', 'unread'].includes(action.value))
-      || (action.kind === 'set-favorite' && typeof action.value === 'boolean'))));
+      || (canonicalArticleActionKind(action.kind) === 'set-saved' && typeof action.value === 'boolean'))));
 
 const applyAction = (userId, action) => retryDatabaseTransaction(db.sequelize, async transaction => {
   // Follow the existing behavior-write order: user, receipt, then article.
@@ -20,7 +21,7 @@ const applyAction = (userId, action) => retryDatabaseTransaction(db.sequelize, a
   const value = String(action.value);
   const receipt = await ArticleSyncAction.findOne({ where: { userId, actionId }, transaction });
   if (receipt) {
-    if (Number(receipt.articleId) !== action.articleId || receipt.kind !== action.kind || receipt.value !== value) {
+    if (Number(receipt.articleId) !== action.articleId || canonicalArticleActionKind(receipt.kind) !== action.kind || receipt.value !== value) {
       return { actionId: action.actionId, outcome: 'rejected', errorCode: 'ACTION_ID_REUSED' };
     }
     return { actionId: action.actionId, outcome: receipt.outcome === 'rejected' ? 'rejected' : 'duplicate',
@@ -33,7 +34,7 @@ const applyAction = (userId, action) => retryDatabaseTransaction(db.sequelize, a
   let outcome = 'rejected';
   const errorCode = article ? null : 'ARTICLE_UNAVAILABLE';
   if (article) {
-    const same = action.kind === 'set-status' ? article.status === action.value : Number(article.favoriteInd) === Number(action.value);
+    const same = action.kind === 'set-status' ? article.status === action.value : Number(article.savedInd) === Number(action.value);
     outcome = same ? 'noop' : 'applied';
     if (!same) await updateArticleBehavior(article, articleStateValues(action.kind, action.value), { transaction });
   }
@@ -42,6 +43,7 @@ const applyAction = (userId, action) => retryDatabaseTransaction(db.sequelize, a
 });
 
 export const synchronizeArticleActions = async (userId, actions) => {
+  actions = actions.map(action => ({ ...action, kind: canonicalArticleActionKind(action.kind) }));
   const results = [];
   let blocked = false;
   for (const action of actions) {
@@ -58,7 +60,7 @@ export const synchronizeArticleActions = async (userId, actions) => {
   // Return current state, never an old receipt's historical projection or foreign rows.
   const articles = await Article.findAll({
     where: { userId, id: { [Op.in]: [...new Set(actions.map(action => action.articleId))] }, ...canonicalArticleWhere() },
-    attributes: ['id', 'status', 'favoriteInd', 'readAt', 'favoritedAt', 'feedId'],
+    attributes: ['id', 'status', 'savedInd', 'readAt', 'savedAt', 'feedId'],
     include: [{ model: Feed, required: true, attributes: ['id', 'categoryId'] }]
   });
   return { results, articles, serverTime: new Date().toISOString() };

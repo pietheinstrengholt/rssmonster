@@ -16,20 +16,20 @@
       <BootstrapIcon v-if="hasAudioMedia" icon="headphones" class="article-kind-icon media-audio-icon" title="Audio article" aria-label="Audio article" />
       <BootstrapIcon v-if="hasVideoMedia" icon="play-btn-fill" class="article-kind-icon media-video-icon" />
       <template v-else>
-        <!-- <BootstrapIcon v-if="clickedAmount > 0" icon="arrow-up-right-square-fill" class="article-kind-icon clicked-icon" /> -->
-        <BootstrapIcon v-if="favoriteInd === 1 && !isReaderDetail" icon="bookmark-fill" class="article-kind-icon star-icon" />
+        <!-- <BootstrapIcon v-if="openedOriginalCount > 0" icon="arrow-up-right-square-fill" class="article-kind-icon opened-original-icon" /> -->
+        <BootstrapIcon v-if="savedInd === 1 && !isReaderDetail" icon="bookmark-fill" class="article-kind-icon saved-icon" />
         <BootstrapIcon v-if="hotInd === 1" icon="fire" class="article-kind-icon hot-icon" />
         <!-- <BootstrapIcon v-if="hasInterestScore && !hasSourceIcon && !isDeveloping" icon="award-fill" class="article-kind-icon recommendation-icon" /> -->
         <!-- <BootstrapIcon v-else-if="isGroupedView && eventArticleCountTotal > 1 && !hasSourceIcon && !isDeveloping" icon="megaphone-fill" class="article-kind-icon event-icon" /> -->
       </template>
-      <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" @click="$emit('article-clicked')"><HighlightedText :text="title" :terms="highlightTerms" /></a>
+      <a v-if="safeArticleUrl" ref="originalArticleLink" class="article-link" target="_blank" rel="noopener noreferrer" :href="safeArticleUrl" @click="$emit('article-opened-original')"><HighlightedText :text="title" :terms="highlightTerms" /></a>
       <span v-else class="article-link"><HighlightedText :text="title" :terms="highlightTerms" /></span>
     </component>
     <div v-if="!isReaderDetail || !readerToolbar" class="article-header-actions" :class="{ 'article-reader-actions': isReaderDetail }">
-      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :clickedAmount="clickedAmount" :clickPending="clickPending" :favoriteInd="favoriteInd" :favoritePending="favoritePending" :isReaderMode="isReaderMode" :status="status" @toggle-clicked="$emit('toggle-clicked')" @toggle-favorite="$emit('toggle-favorite')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
+      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :openedOriginalCount="openedOriginalCount" :openedOriginalPending="openedOriginalPending" :savedInd="savedInd" :savedPending="savedPending" :isReaderMode="isReaderMode" :status="status" @toggle-openedOriginal="$emit('toggle-opened-original')" @toggle-saved="$emit('toggle-saved')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
       <template v-if="isReaderDetail">
-        <button type="button" class="article-reader-favorite" :class="{ 'article-reader-favorite--active': favoriteInd === 1 }" :aria-label="favoriteInd === 1 ? 'Remove from saved' : 'Save article'" :aria-pressed="favoriteInd === 1" :disabled="favoritePending" @click="$emit('toggle-favorite')">
-          <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
+        <button type="button" class="article-reader-saved" :class="{ 'article-reader-saved--active': savedInd === 1 }" :aria-label="savedInd === 1 ? 'Remove from saved' : 'Save article'" :aria-pressed="savedInd === 1" :disabled="savedPending" @click="$emit('toggle-saved')">
+          <BootstrapIcon :icon="savedInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
         </button>
         <button type="button" class="app-button app-button--outline-secondary app-button--compact article-reader-read" @click="$emit('toggle-read-status')">
           <BootstrapIcon :icon="status === 'read' ? 'circle' : 'check2'" context="control" aria-hidden="true" />
@@ -48,15 +48,15 @@ import { usableHttpUrl } from '../../utils/content.js';
 
 export default {
   components: { ArticleActionsMenu, ArticleDevelopingStoryPopover, HighlightedText },
-  emits: ['article-clicked', 'toggle-clicked', 'toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags'],
+  emits: ['article-opened-original', 'toggle-opened-original', 'toggle-saved', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags'],
   props: {
     tagEditingDisabled: { type: Boolean, default: false },
     readerDetail: { type: Boolean, default: false },
     readerToolbar: { type: Boolean, default: false },
     articleId: { type: [Number, String], default: null },
-    url: { type: String, default: '' }, title: { type: String, default: '' }, clickedAmount: { type: Number, default: 0 },
-    clickPending: { type: Boolean, default: false },
-    favoriteInd: { type: Number, default: 0 }, favoritePending: { type: Boolean, default: false }, hotInd: { type: Number, default: 0 }, status: { type: String, default: '' },
+    url: { type: String, default: '' }, title: { type: String, default: '' }, openedOriginalCount: { type: Number, default: 0 },
+    openedOriginalPending: { type: Boolean, default: false },
+    savedInd: { type: Number, default: 0 }, savedPending: { type: Boolean, default: false }, hotInd: { type: Number, default: 0 }, status: { type: String, default: '' },
     viewMode: { type: String, default: '' }, hasVideoMedia: { type: Boolean, default: false }, hasAudioMedia: { type: Boolean, default: false },
     isDeveloping: { type: Boolean, default: false },
     hasInterestScore: { type: Boolean, default: false },
@@ -196,12 +196,12 @@ export default {
   margin-bottom: 0;
 }
 
-.star-icon {
-  color: var(--article-star-icon);
+.saved-icon {
+  color: var(--article-saved-icon);
 }
 
-.clicked-icon {
-  color: var(--article-clicked-icon);
+.opened-original-icon {
+  color: var(--article-opened-original-icon);
 }
 
 .hot-icon,
@@ -258,7 +258,7 @@ export default {
   overflow-wrap: anywhere;
 }
 
-.article-reader-favorite {
+.article-reader-saved {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -273,23 +273,23 @@ export default {
   cursor: pointer;
 }
 
-.article-reader-favorite svg {
+.article-reader-saved svg {
   display: block;
   width: 16px;
   height: 16px;
   margin-bottom: 0;
 }
 
-.article-reader-favorite--active {
-  color: var(--article-star-icon);
+.article-reader-saved--active {
+  color: var(--article-saved-icon);
 }
 
-.article-reader-favorite:disabled {
+.article-reader-saved:disabled {
   opacity: 0.5;
   cursor: wait;
 }
 
-.article-reader-favorite:hover:not(:disabled) {
+.article-reader-saved:hover:not(:disabled) {
   background: var(--surface-hover);
 }
 
@@ -297,7 +297,7 @@ export default {
   background: var(--surface-control);
 }
 
-.article-reader-favorite:focus-visible {
+.article-reader-saved:focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }

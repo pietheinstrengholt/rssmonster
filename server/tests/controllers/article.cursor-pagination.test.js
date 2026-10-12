@@ -485,11 +485,11 @@ describe('article cursor pagination', () => {
     expect(count.body).toEqual({ newerArticleCount: 1 });
   });
 
-  it.each(['read', 'favorite', 'hot', 'clicked', '%'])('enforces unread arrivals even when the request status is %s', async status => {
+  it.each(['read', 'saved', 'hot', 'openedOriginal', '%'])('enforces unread arrivals even when the request status is %s', async status => {
     const { user, category, feed } = await createUserFeed('unread-only-arrivals');
     const initial = await createArticle(user, feed, 'Science initial', new Date());
     const readArticle = await createArticle(user, feed, 'Science read arrival', new Date(), {
-      status: 'read', favoriteInd: 1, hotInd: 1, clickedAmount: 2
+      status: 'read', savedInd: 1, hotInd: 1, openedOriginalCount: 2
     });
     const query = { status, categoryId: category.id, feedId: feed.id, sort: 'recommended', newerThanArticleId: initial.id };
     const count = search => request(app).get('/api/articles')

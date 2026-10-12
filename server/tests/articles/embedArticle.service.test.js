@@ -155,7 +155,7 @@ describe('embedArticle token limit guard', () => {
 
     const result = await embedArticle(
       {
-        title: 'Short starred article',
+        title: 'Short saved article',
         contentText: ''
       },
       { allowShortEventText: true }

@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
-import { markArticlesAsRead, markManyAsFavorite, markManyClicked } from '../src/api/articles';
+import { markArticlesAsRead, markManyAsSaved, markManyOpenedOriginal } from '../src/api/articles';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles', async importOriginal => ({
   ...await importOriginal(),
   markArticlesAsRead: vi.fn(),
-  markManyAsFavorite: vi.fn(),
-  markManyClicked: vi.fn()
+  markManyAsSaved: vi.fn(),
+  markManyOpenedOriginal: vi.fn()
 }));
 
 let surface;
@@ -33,8 +33,8 @@ function setup(viewMode = 'reader') {
     context: {
       ...stores,
       ...ArticleFeed.methods,
-      articles: rows.map((row, index) => ({ id: index + 1, status: 'unread', favoriteInd: 0 })),
-      pendingFavoriteArticleIds: new Set(),
+      articles: rows.map((row, index) => ({ id: index + 1, status: 'unread', savedInd: 0 })),
+      pendingSavedArticleIds: new Set(),
       $refs: { articleLayout: viewMode === 'reader'
         ? { getArticleListElement: id => rows[id - 1] }
         : { getArticleElement: id => rows[id - 1] } }
@@ -46,7 +46,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal('innerHeight', 900);
   vi.stubGlobal('innerWidth', 1200);
-  for (const api of [markArticlesAsRead, markManyAsFavorite, markManyClicked]) {
+  for (const api of [markArticlesAsRead, markManyAsSaved, markManyOpenedOriginal]) {
     api.mockResolvedValue({ data: { articles: [] } });
   }
 });
@@ -54,8 +54,8 @@ afterEach(() => { surface?.remove(); vi.unstubAllGlobals(); });
 
 const actions = [
   ['mark-visible-read', markArticlesAsRead],
-  ['favorite-visible', markManyAsFavorite],
-  ['mark-visible-clicked', markManyClicked]
+  ['saved-visible', markManyAsSaved],
+  ['mark-visible-opened-original', markManyOpenedOriginal]
 ];
 
 describe('Reader visible bulk actions', () => {

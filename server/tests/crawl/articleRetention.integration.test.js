@@ -59,9 +59,9 @@ describe('article retention at ingestion', () => {
     const owner = await fixture({ established: false });
     await run(owner, [entry('revision', old)]);
     const [article] = await stored(owner);
-    await article.update({ status: 'read', favoriteInd: 1 });
+    await article.update({ status: 'read', savedInd: 1 });
     expect(await run(owner, [entry('revision', old, 'Revised title')])).toMatchObject({ articlesNew: 0, articlesUpdated: 1, articlesFiltered: 0 });
-    expect(await article.reload()).toMatchObject({ title: 'Revised title', status: 'read', favoriteInd: 1 });
+    expect(await article.reload()).toMatchObject({ title: 'Revised title', status: 'read', savedInd: 1 });
   });
 
   it('uses each owner’s age setting even when count limits are configured', async () => {

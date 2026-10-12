@@ -16,7 +16,7 @@ Learn how to use RSSMonster's core reading, feed management, search, and organiz
 - [Search]({% link search.md %}) finds articles already stored in RSSMonster.
 - [Hot Articles]({% link hot-articles.md %}) explains cross-feed links, Hot status, and its effect on ranking and Daily Briefing.
 - [Tags]({% link tag.md %}) explains publisher, feed, generated, and rule-based tags.
-- [Bookmarks]({% link bookmarks.md %}) keeps favorite articles for later.
+- [Bookmarks]({% link bookmarks.md %}) keeps saved articles for later.
 - [Marking Articles Read]({% link marking-articles-read.md %}) covers read state and bulk actions.
 - [Keyboard Shortcuts]({% link keyboard-shortcuts.md %}) lists navigation and article commands.
 

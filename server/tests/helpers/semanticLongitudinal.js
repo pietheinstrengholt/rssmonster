@@ -10,8 +10,8 @@ export async function longitudinalSnapshot(userId, name) {
   ], order: [['id', 'ASC']] });
   const { results } = await explainArticleInterests(userId, articles);
   const rows = articles.map(a => ({ id: a.id, url: a.url, title: a.title, eventId: a.eventId,
-    status: a.status, duplicateOfArticleId: a.duplicateOfArticleId, favoriteInd: a.favoriteInd,
-    negativeInd: a.negativeInd, clickedAmount: a.clickedAmount,
+    status: a.status, duplicateOfArticleId: a.duplicateOfArticleId, savedInd: a.savedInd,
+    negativeInd: a.negativeInd, openedOriginalCount: a.openedOriginalCount,
     interestScore: Number(a.interestScore || 0), recommended: computeRecommended(a),
     neutralRecommended: computeRecommended({ ...a.get({ plain: true }), interestScore: 0 }),
     corroboration: computeRecommendedBreakdown(a).corroboration,

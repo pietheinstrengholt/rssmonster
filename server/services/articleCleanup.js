@@ -20,9 +20,9 @@ export async function cleanupArticles(userId) {
       // Count limits take priority over age; age applies when no count cap is configured.
       ...(!hasLimits ? { [Op.and]: [where(fn('COALESCE', col('publishedAt'), col('createdAt')), { [Op.lt]: cutoff })] } : {}),
       ...(settings.neverDeleteUnread ? { status: 'read' } : {}),
-      ...(settings.neverDeleteFavorites ? { [Op.or]: [{ favoriteInd: 0 }, { favoriteInd: null }] } : {}),
-      ...(settings.neverDeleteClicked ? {
-        clickedAmount: { [Op.or]: [0, null] }, lastClickedAt: null
+      ...(settings.neverDeleteSaved ? { [Op.or]: [{ savedInd: 0 }, { savedInd: null }] } : {}),
+      ...(settings.neverDeleteOpenedOriginals ? {
+        openedOriginalCount: { [Op.or]: [0, null] }, lastOpenedOriginalAt: null
       } : {})
     };
     let total = settings.maximumArticlesTotal === null ? 0 : await db.Article.count({ where: { userId }, transaction });

@@ -485,7 +485,7 @@ describe('UnreadSelectionContext', () => {
 });
 
 describe('UnreadConfigurationModal', () => {
-  it.each(['hot', 'favorite', 'clicked', 'read'])('shows only applicable preferences for %s', async status => {
+  it.each(['hot', 'saved', 'openedOriginal', 'read'])('shows only applicable preferences for %s', async status => {
     const stores = createStore();
     stores.selectionStore.currentSelection.status = status;
     wrapper = mount(UnreadConfigurationModal, { global: { plugins: [stores.pinia] } });
@@ -502,7 +502,7 @@ describe('UnreadConfigurationModal', () => {
     if (status !== 'read') expect(wrapper.get('[name="markAsReadOnScroll"]').element.checked).toBe(true);
   });
 
-  it.each(['hot', 'favorite', 'clicked', 'read'].flatMap(status =>
+  it.each(['hot', 'saved', 'openedOriginal', 'read'].flatMap(status =>
     [true, false].map(enabled => ({ status, enabled }))
   ))('saves visible $status preferences as $enabled without changing hidden preferences', async ({ status, enabled }) => {
     const setShowModal = vi.fn();

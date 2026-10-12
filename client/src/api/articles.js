@@ -113,30 +113,30 @@ export const markArticleSeen = (id, payload, article = { id }) => {
 export const markArticleUnread = (id, article = { id }) => articleStateActions.available() && (article.duplicateOfArticleId == null || disconnected())
   ? articleStateActions.assign([article], 'set-status', 'unread')
   : articleStateActions.online(() => api.post(`/articles/marktounread/${id}`));
-export const markAsFavorite = (id, update, article = { id }) => articleStateActions.available() && (article.duplicateOfArticleId == null || disconnected())
-  ? articleStateActions.assign([article], 'set-favorite', update === 'mark')
-  : articleStateActions.online(() => api.post(`/articles/markasfavorite/${id}`, { update }));
-export const markManyAsFavorite = (articleIds, update, articles) => articleStateActions.available() && (!articles?.some(article => article.duplicateOfArticleId != null) || disconnected())
-  ? bulkAssignment(articlesFor(articleIds, articles), 'set-favorite', update === 'mark')
-  : articleStateActions.online(() => api.post('/articles/markasfavorite', { articleIds, update }));
+export const markAsSaved = (id, update, article = { id }) => articleStateActions.available() && (article.duplicateOfArticleId == null || disconnected())
+  ? articleStateActions.assign([article], 'set-saved', update === 'mark')
+  : articleStateActions.online(() => api.post(`/articles/mark-saved/${id}`, { update }));
+export const markManyAsSaved = (articleIds, update, articles) => articleStateActions.available() && (!articles?.some(article => article.duplicateOfArticleId != null) || disconnected())
+  ? bulkAssignment(articlesFor(articleIds, articles), 'set-saved', update === 'mark')
+  : articleStateActions.online(() => api.post('/articles/mark-saved', { articleIds, update }));
 
 /**
- * Mark article as clicked
+ * Mark article as opened original
  */
-export const markClicked = (articleId) =>
-  api.post(`/articles/markclicked/${articleId}`);
+export const markOpenedOriginal = (articleId) =>
+  api.post(`/articles/mark-opened-original/${articleId}`);
 
 /**
- * Mark / unmark an article as clicked
+ * Mark / unmark an article as opened original
  */
-export const updateClickedStatus = (articleId, update) =>
-  api.post(`/articles/markclicked/${articleId}`, { update });
+export const updateOpenedOriginalStatus = (articleId, update) =>
+  api.post(`/articles/mark-opened-original/${articleId}`, { update });
 
 /**
- * Mark multiple articles as clicked
+ * Mark multiple articles as opened original
  */
-export const markManyClicked = (articleIds) =>
-  api.post('/articles/markclicked', { articleIds });
+export const markManyOpenedOriginal = (articleIds) =>
+  api.post('/articles/mark-opened-original', { articleIds });
 
 /**
  * Mark article as not interested

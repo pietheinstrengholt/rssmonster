@@ -49,14 +49,14 @@ explicit behavioral signal. The current signal weights are:
 | Signal | Contribution |
 | --- | ---: |
 | Positive feedback | `+8` |
-| Bookmark or favorite | `+4` |
+| Bookmark or saved | `+4` |
 | Outbound click | `+1`, up to two clicks per article (`+2` maximum) |
 | Deep read | `+1` when attention bucket is at least three |
 | Negative feedback | `-8` |
 
 Each signal ages from its own interaction timestamp with a true half-life:
 `weight(age) = 2^(-max(0, ageDays) / halfLifeDays)`. Clicks halve after 30 days,
-deep reads after 90, favorites after 365, more-like-this after 730, and
+deep reads after 90, saved after 365, more-like-this after 730, and
 not-interested after 365. There is no permanent minimum multiplier. These are
 initial product defaults: incidental clicks fade quickly, reading lasts longer,
 and deliberate preferences persist for one or two years before halving.
@@ -101,7 +101,7 @@ Candidate profiles are compared with the user's stored Islands. A similarity
 of at least `0.78` reuses an existing Island. Its vector is blended with the
 new profile using a default new-evidence weight of `0.35`; it is not replaced
 abruptly. Stored behavioral counters are replaced by the current evidence
-snapshot, so recalibrating unchanged favorites/clicks does not count them again.
+snapshot, so recalibrating unchanged saved/clicks does not count them again.
 Audit entries may record each run but are not new behavioral evidence.
 
 If no Island qualifies, RSSMonster creates a new one. This preference for
@@ -146,7 +146,7 @@ lifecycleConfidence = existingSupportConfidence * remainingSupport
 `signalRetention` takes the strongest independently normalized signal whose
 decayed contribution reaches the existing `.05` signal threshold. This is its
 existing recency multiplier; raw weights and decay are unchanged. An aging click
-cannot dilute a surviving favorite, including before that click becomes exhausted.
+cannot dilute a surviving saved, including before that click becomes exhausted.
 `agreement` preserves signed cancellation using the full decayed positive and
 negative evidence. It is 1 for same-direction evidence and 0 for exact cancellation;
 a zero total gives zero agreement. No meaningful signals gives zero retention.
@@ -216,7 +216,7 @@ Each Island keeps a bounded audit history explaining how it was populated.
 An audit entry can include:
 
 - contributing article IDs;
-- counts of related, bookmarked, clicked, and negatively rated articles; and
+- counts of related, bookmarked, openedOriginal, and negatively rated articles; and
 - compact snapshots of source-article evidence.
 
 By default, RSSMonster retains the latest 30 calibration entries and up to 300
@@ -239,7 +239,7 @@ Direct Article → Island matching requires similarity strictly above the
 existing scoring threshold (0.62 by default) and normalizes confidence within the
 trusted range. Weak relationships cannot forward full Island preference.
 
-Explicit likes/favorites/dislikes without a qualifying same-sign Island can also
+Explicit likes/saved/dislikes without a qualifying same-sign Island can also
 transfer through a bounded behavioral fallback. It uses recent source articles,
 semantic confidence and content-intent compatibility. A promotional dislike
 transfers much less to a review than to another promotion, even for the same
@@ -296,7 +296,7 @@ unmuted without becoming active.
 
 ## Refreshing after behavior
 
-Favorites and unfavorites, more-like-this, not-interested, clicks, and meaningful
+Saved and unsaved, more-like-this, not-interested, clicks, and meaningful
 reads request a background personalization refresh. A short two-second batching
 window combines rapid actions into one job per user. Activity during calibration
 requests one follow-up pass. The existing worker recalibrates your Islands and
@@ -316,7 +316,7 @@ finish this job before a refresh can show the new results; the HTTP action itsel
 does not wait for scoring.
 
 The separate, coalesced calibration job still updates durable Island memory.
-Favorites remain explicit preference evidence, but favorite/unfavorite, clicks and
+Saved remain explicit preference evidence, but saved/unsaved, clicks and
 deep reads continue using that durable refresh path without the extra fast job.
 
 ## Calibration and Normal Crawls
@@ -352,9 +352,9 @@ Most installations should use the defaults. The main controls are:
 | `ISLAND_ARTICLE_SIGNAL_THRESHOLD` | `0.05` | Minimum absolute behavioral score admitted to article clustering. |
 | `ISLAND_PROFILE_MATCH_THRESHOLD` | `0.78` | Similarity needed to update an existing Island instead of creating one. |
 | `ISLAND_VECTOR_ALPHA` | `0.35` | Weight of new profile evidence when updating an Island vector. |
-| `ISLAND_CLICK_HALF_LIFE_DAYS` | `30` | Click half-life, using `lastClickedAt`. |
+| `ISLAND_OPENED_ORIGINAL_HALF_LIFE_DAYS` | `30` | Click half-life, using `lastOpenedOriginalAt`. |
 | `ISLAND_DEEP_READ_HALF_LIFE_DAYS` | `90` | Meaningful-read half-life, using `lastMeaningfulReadAt`. |
-| `ISLAND_FAVORITE_HALF_LIFE_DAYS` | `365` | Favorite half-life, using `favoritedAt`. |
+| `ISLAND_SAVED_HALF_LIFE_DAYS` | `365` | Saved half-life, using `savedAt`. |
 | `ISLAND_POSITIVE_FEEDBACK_HALF_LIFE_DAYS` | `730` | More-like-this half-life, using `positiveFeedbackAt`. |
 | `ISLAND_NEGATIVE_FEEDBACK_HALF_LIFE_DAYS` | `365` | Not-interested half-life, using `negativeFeedbackAt`. |
 | `ISLAND_ARTICLE_SCORE_THRESHOLD` | `0.62` | Direct scoring requires similarity strictly above this threshold; confidence is normalized above it. |
@@ -371,10 +371,10 @@ scoring diagnostics. `EVENT_DEBUG=true` also enables Island debug output.
 
 ### Interaction time
 
-Favoriting an article published in 2022 today is fresh favorite evidence. Clicks,
-favorites, explicit positive/negative feedback and meaningful reads have separate
+Favoriting an article published in 2022 today is fresh saved evidence. Clicks,
+saved, explicit positive/negative feedback and meaningful reads have separate
 Article clocks. All signals decay separately before combining; repeated clicks
-and deep reads refresh their respective clocks, and unfavorite clears its clock.
+and deep reads refresh their respective clocks, and unsaved clears its clock.
 Fever/GReader starring uses the same timing semantics. Marking an article read
 without a meaningful visible-duration report does not imply a deep read.
 
@@ -391,7 +391,7 @@ The old positive multiplier was `max(.2, exp(-ageDays / 1460))`, making 1460 an
 exponential time constant (a true half-life of about 1012 days). Negative evidence
 retained 100%. The new percentages below apply to each signal's raw weight:
 
-| Age in days | Old positive | Old negative | Click | Deep read | Favorite | More-like-this | Not-interested |
+| Age in days | Old positive | Old negative | Click | Deep read | Saved | More-like-this | Not-interested |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 7 | 99.5% | 100% | 85.1% | 94.8% | 98.7% | 99.3% | 98.7% |
 | 30 | 98.0% | 100% | 50.0% | 79.4% | 94.5% | 97.2% | 94.5% |
@@ -401,7 +401,7 @@ retained 100%. The new percentages below apply to each signal's raw weight:
 
 Percentages are rounded; decay has no hard cutoff.
 For example, one 90-day-old click contributes `2 × .125 = .25`, while a
-90-day-old favorite contributes about `4 × .843 = 3.37`. A one-year-old dislike
+90-day-old saved contributes about `4 × .843 = 3.37`. A one-year-old dislike
 contributes `-8 × .5 = -4` before the existing formation and confidence formulas.
 
 The five settings accept positive finite days, including fractions; invalid or
@@ -446,7 +446,7 @@ Selection is lexicographic, in this exact order:
 6. Stable Island ID, ascending.
 
 Independent canonical Articles contribute once. Repeated reading across several
-coherent Articles can therefore compete with an isolated favorite; raw click counts
+coherent Articles can therefore compete with an isolated saved; raw click counts
 remain capped. A lone implicit interaction may establish an Island when space is
 available, but receives zero selection priority against existing supported Islands.
 It needs independent repeated behavior or a qualifying explicit preference to

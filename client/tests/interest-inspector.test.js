@@ -11,7 +11,7 @@ import api from '../src/api/client';
 
 vi.mock('../src/api/client', () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn() }, setAuthToken: vi.fn() }));
 const interest = { id: 1, name: 'Space', polarity: 'positive', lifecycle: 'active', evidenceStrength: 75,
-  lastActivityAt: null, evidence: { favorites: 2, clicks: 4, deepReads: 0 }, representativeArticles: [] };
+  lastActivityAt: null, evidence: { saved: 2, openedOriginals: 4, deepReads: 0 }, representativeArticles: [] };
 let wrapper;
 let pinia;
 const show = (value = interest, width = 1400) => {
@@ -24,13 +24,13 @@ afterEach(() => { wrapper?.unmount(); vi.unstubAllGlobals(); vi.restoreAllMocks(
 
 describe('interest explanation', () => {
   it.each([
-    [{ favorites: 1 }, 'primarily from articles you saved'],
-    [{ clicks: 1 }, 'from articles you opened on their original websites'],
+    [{ saved: 1 }, 'primarily from articles you saved'],
+    [{ openedOriginals: 1 }, 'from articles you opened on their original websites'],
     [{ deepReads: 1 }, 'from sustained reading behavior'],
-    [{ favorites: 1, clicks: 1 }, 'from your saved articles and opening original articles'],
-    [{ favorites: 1, deepReads: 1 }, 'from your saved articles and sustained reading behavior'],
-    [{ clicks: 1, deepReads: 1 }, 'from opening original articles and sustained reading behavior'],
-    [{ favorites: 1, clicks: 1, deepReads: 1 }, 'from your saved articles, opening original articles, and sustained reading behavior'],
+    [{ saved: 1, openedOriginals: 1 }, 'from your saved articles and opening original articles'],
+    [{ saved: 1, deepReads: 1 }, 'from your saved articles and sustained reading behavior'],
+    [{ openedOriginals: 1, deepReads: 1 }, 'from opening original articles and sustained reading behavior'],
+    [{ saved: 1, openedOriginals: 1, deepReads: 1 }, 'from your saved articles, opening original articles, and sustained reading behavior'],
     [{}, 'breakdown is not available']
   ])('uses only present positive signals %j', (evidence, text) => {
     expect(interestExplanation({ polarity: 'positive', evidence })).toContain(text);
@@ -74,7 +74,7 @@ describe('contextual inspector', () => {
     }
   });
 
-  it('renders examples with safe images and feedName and emits the clicked ID without writing read state', async () => {
+  it('renders examples with safe images and feedName and emits the openedOriginal ID without writing read state', async () => {
     api.get.mockResolvedValue({ data: { interest: { ...interest, representativeArticles: [
       { id: 10, title: 'Moon', imageUrl: 'https://example.com/moon.jpg', publishedAt: '2026-09-01', feed: { feedName: 'Science' } },
       { id: 11, title: 'Mars', imageUrl: null, feed: { feedName: 'Space news' } }

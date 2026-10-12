@@ -111,8 +111,8 @@ describe('SettingsSmartFolders coordinator', () => {
     context.overviewStore.smartFolders = [
       {
         id: 1,
-        name: 'All favorites',
-        query: 'favorite:true limit:25',
+        name: 'All saved',
+        query: 'saved:true limit:25',
         limitCount: 25,
         markAsReadOnScroll: true
       },
@@ -173,13 +173,13 @@ describe('SettingsSmartFolders coordinator', () => {
 
     context.saveSmartFolderConfig(1, {
       name: 'Edited',
-      query: 'favorite:true limit:100',
+      query: 'saved:true limit:100',
       limitCount: 100,
       markAsReadOnScroll: false
     });
     expect(context.smartFolders[1]).toMatchObject({
       name: 'Edited',
-      query: 'favorite:true limit:100',
+      query: 'saved:true limit:100',
       limitCount: 100
     });
     expect(context.selectedSmartFolderId).toBeNull();
@@ -279,7 +279,7 @@ describe('SettingsSmartFolders coordinator', () => {
       context.overviewStore.smartFolders = [{
         id: 9,
         name: 'Authoritative',
-        query: 'favorite:true limit:50',
+        query: 'saved:true limit:50',
         limitCount: 50
       }];
     });

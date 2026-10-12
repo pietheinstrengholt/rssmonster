@@ -1,10 +1,10 @@
 <template>
   <div ref="articleRoot" :data-reader-text-size="isReaderDetail ? readerTextSize : undefined" class="article-card" :id="`article-${id}`" :class="[{ 'event-article': isEventArticle }, { 'article-list-card': isMinimalView, 'article-reader-detail': isReaderDetail }]" v-bind="filteredAttrs">
-    <ArticleReaderToolbar v-if="isReaderDetail && readerToolbar" :text-size="readerTextSize" @update-text-size="$emit('update-reader-text-size', $event)" :expanded="readerExpanded" @toggle-expanded="$emit('toggle-reader-expanded')" :article-id="id" :get-reading-content="getReadingContent" :language="language" :url="url" :status="status" :favorite-ind="favoriteInd" :favorite-pending="favoriteMutationPending" :clicked-amount="clickedAmount" :click-pending="clickMutationPending" :tag-editing-disabled="Boolean(duplicateOfArticleId)" @article-clicked="articleClicked" @toggle-clicked="toggleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" @add-tags="tagDialogMode = 'add'" @manage-tags="tagDialogMode = 'manage'" />
+    <ArticleReaderToolbar v-if="isReaderDetail && readerToolbar" :text-size="readerTextSize" @update-text-size="$emit('update-reader-text-size', $event)" :expanded="readerExpanded" @toggle-expanded="$emit('toggle-reader-expanded')" :article-id="id" :get-reading-content="getReadingContent" :language="language" :url="url" :status="status" :saved-ind="savedInd" :saved-pending="savedMutationPending" :opened-original-count="openedOriginalCount" :opened-original-pending="openedOriginalMutationPending" :tag-editing-disabled="Boolean(duplicateOfArticleId)" @article-openedOriginal="articleOpenedOriginal" @toggle-openedOriginal="toggleOpenedOriginal" @toggle-saved="markAsSaved" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" @add-tags="tagDialogMode = 'add'" @manage-tags="tagDialogMode = 'manage'" />
     <div v-if="isMinimalView" class="mobile-swipe-shell">
       <div class="mobile-swipe-action" :class="{ 'mobile-swipe-action--ready': isSwipeReady }" aria-hidden="true">
-        <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-x-fill' : 'bookmark-fill'" aria-hidden="true" />
-        <span>{{ favoriteInd === 1 ? 'Remove from saved' : 'Save article' }}</span>
+        <BootstrapIcon :icon="savedInd === 1 ? 'bookmark-x-fill' : 'bookmark-fill'" aria-hidden="true" />
+        <span>{{ savedInd === 1 ? 'Remove from saved' : 'Save article' }}</span>
       </div>
       <ArticleHeadlineRow
         ref="articleHeading"
@@ -16,10 +16,10 @@
         :title="title"
         :highlight-terms="highlightTerms"
         :status="status"
-        :clicked-amount="clickedAmount"
-        :click-pending="clickMutationPending"
-        :favorite-ind="favoriteInd"
-        :favorite-pending="favoriteMutationPending"
+        :opened-original-count="openedOriginalCount"
+        :opened-original-pending="openedOriginalMutationPending"
+        :saved-ind="savedInd"
+        :saved-pending="savedMutationPending"
         :hot-ind="hotInd"
         :mobile-swipe-style="mobileSwipeStyle"
         :feed-favicon="feedFavicon"
@@ -37,18 +37,18 @@
         :published-at="publishedAt"
         :has-article-preview="hasArticlePreview"
         :has-audio-media="hasAudioMedia"
-        @article-clicked="articleClicked"
+        @article-openedOriginal="articleOpenedOriginal"
         @article-touched="articleTouched"
         @swipe-touch-start="onSwipeTouchStart"
         @swipe-touch-move="onSwipeTouchMove"
         @swipe-touch-end="onSwipeTouchEnd"
         @swipe-cancel="resetSwipe"
         @toggle-read-status="toggleMinimalReadStatus"
-        @toggle-clicked="toggleClicked"
+        @toggle-openedOriginal="toggleOpenedOriginal"
         @view-event-articles="viewEventArticles"
         @view-duplicate-articles="viewDuplicateArticles"
         @select-tag="selectTag"
-        @toggle-favorite="markAsFavorite"
+        @toggle-saved="markAsSaved"
         @not-interested="markNotInterested"
         @more-like-this="moreLikeThis"
         @mute-feed="muteFeedSevenDays" @add-tags="tagDialogMode = 'add'" @manage-tags="tagDialogMode = 'manage'"
@@ -56,12 +56,12 @@
     </div>
     <div v-else class="mobile-swipe-shell">
       <div class="mobile-swipe-action" :class="{ 'mobile-swipe-action--ready': isSwipeReady }" aria-hidden="true">
-        <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-x-fill' : 'bookmark-fill'" aria-hidden="true" />
-        <span>{{ favoriteInd === 1 ? 'Remove from saved' : 'Save article' }}</span>
+        <BootstrapIcon :icon="savedInd === 1 ? 'bookmark-x-fill' : 'bookmark-fill'" aria-hidden="true" />
+        <span>{{ savedInd === 1 ? 'Remove from saved' : 'Save article' }}</span>
       </div>
       <div class="article-body mobile-swipe-content" :class="isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : ''" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
         <div class="article-layout">
-          <ArticleHeader :reader-toolbar="isReaderDetail && readerToolbar" :tag-editing-disabled="Boolean(duplicateOfArticleId)" :reader-detail="isReaderDetail" ref="articleHeading" :articleId="storyArticleId" :url="url" :title="title" :highlightTerms="highlightTerms" :clickedAmount="clickedAmount" :clickPending="clickMutationPending" :favoriteInd="favoriteInd" :favoritePending="favoriteMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :hasAudioMedia="hasAudioMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-clicked="toggleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" @add-tags="tagDialogMode = 'add'" @manage-tags="tagDialogMode = 'manage'" />
+          <ArticleHeader :reader-toolbar="isReaderDetail && readerToolbar" :tag-editing-disabled="Boolean(duplicateOfArticleId)" :reader-detail="isReaderDetail" ref="articleHeading" :articleId="storyArticleId" :url="url" :title="title" :highlightTerms="highlightTerms" :openedOriginalCount="openedOriginalCount" :openedOriginalPending="openedOriginalMutationPending" :savedInd="savedInd" :savedPending="savedMutationPending" :hotInd="hotInd" :status="status" :viewMode="selectionStore.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :hasAudioMedia="hasAudioMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-openedOriginal="articleOpenedOriginal" @toggle-openedOriginal="toggleOpenedOriginal" @toggle-saved="markAsSaved" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @mute-feed="muteFeedSevenDays" @add-tags="tagDialogMode = 'add'" @manage-tags="tagDialogMode = 'manage'" />
           <component :is="isReaderDetail ? 'ArticleReaderMetabar' : 'div'" class="meta-row" :class="{ 'article-reader-metabar': isReaderDetail }">
             <template #leading>
               <img v-if="feedFavicon && !faviconFailed" :src="feedFavicon" class="article-reader-favicon" alt="" @error="faviconFailed = true" />
@@ -70,7 +70,7 @@
             <ArticleMeta :authors="authors" :original-source="originalSource" :hide-provenance="isReaderDetail" :articleId="storyArticleId" :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :hasInterestScore="hasInterestScore" :isRecommendationView="isRecommendationView" :recommendation="recommendation" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :aiAnalysisStatus="aiAnalysisStatus" :neutralScore="NEUTRAL_SCORE" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" @inspect-interest="$emit('inspect-interest', $event)" />
             <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="articleTags" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :quality="quality" :aiAnalysisStatus="aiAnalysisStatus" @select-category="selectCategory" @select-tag="selectTag" />
           </component>
-          <ArticlePreviewFallback v-if="!hasArticlePreview" :url="url" @open-original="articleClicked" />
+          <ArticlePreviewFallback v-if="!hasArticlePreview" :url="url" @open-original="articleOpenedOriginal" />
           <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
             <template v-for="(signal, index) in articleSignals" :key="signal.label">
               <span v-if="index > 0" class="signal-divider" aria-hidden="true"></span>
@@ -81,11 +81,11 @@
             </template>
           </div>
         </div>
-        <ArticleMedia v-if="shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" :feedTitle="feed.feedName" @media-clicked="articleClicked" />
+        <ArticleMedia v-if="shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" :feedTitle="feed.feedName" @media-openedOriginal="articleOpenedOriginal" />
         <ArticleContent :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :openArticleLinksInNewTab="uiStore.openArticleLinksInNewTab" :contentText="contentText" :highlightTerms="highlightTerms" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :aiAnalysisStatus="aiAnalysisStatus" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="showMinimalContent" />
       </div>
     </div>
-    <ArticleMedia v-if="isMinimalView && shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" :feedTitle="feed.feedName" @media-clicked="articleClicked" />
+    <ArticleMedia v-if="isMinimalView && shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :contentHtml="displayContent" :title="title" :feedTitle="feed.feedName" @media-openedOriginal="articleOpenedOriginal" />
     <ArticleContent v-if="isMinimalView" :viewMode="selectionStore.currentSelection.viewMode" :content="displayContent" :openArticleLinksInNewTab="uiStore.openArticleLinksInNewTab" :contentText="contentText" :highlightTerms="highlightTerms" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :aiAnalysisStatus="aiAnalysisStatus" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="shouldShowMinimalContent" />
     <ArticleTagDialog v-if="tagDialogMode" :article-id="id" :tags="articleTags" :mode="tagDialogMode" @close="tagDialogMode = null" @updated="updateTags" />
     <div class="article-divider"></div>
@@ -136,7 +136,7 @@ function isSafeMediaUrl(value) {
 export default {
   inheritAttrs: false,
   components: { ArticleTagDialog: defineAsyncComponent(() => import('./ArticleTagDialog.vue')), ArticleHeader, ArticleReaderToolbar, ArticleReaderMetabar, ArticleMeta, ArticleTagsScores, ArticleContent, ArticleHeadlineRow, ArticleMedia, ArticlePreviewFallback },
-  emits: ['update-reader-text-size', 'toggle-reader-expanded', 'update-tags', 'update-favorite', 'update-clicked', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'event-articles-loaded', 'event-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed', 'article-not-interested', 'inspect-interest'],
+  emits: ['update-reader-text-size', 'toggle-reader-expanded', 'update-tags', 'update-saved', 'update-opened-original', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'event-articles-loaded', 'event-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed', 'article-not-interested', 'inspect-interest'],
   props: {
     duplicateOfArticleId: { type: [Number, String], default: null },
     readerDetail: { type: Boolean, default: false },
@@ -157,8 +157,8 @@ export default {
     originalSource: { type: Object, default: null },
     hotInd: { type: Number, default: 0 },
     status: { type: String, default: '' },
-    favoriteInd: { type: Number, default: 0 },
-    clickedAmount: { type: Number, default: 0 },
+    savedInd: { type: Number, default: 0 },
+    openedOriginalCount: { type: Number, default: 0 },
     imageUrl: { type: String, default: '' },
     media: { type: [Boolean, Object, Array, String], default: null },
     contentHtml: { type: String, default: '' },
@@ -200,8 +200,8 @@ export default {
       tagDialogMode: null,
       updatedTags: null,
       faviconFailed: false,
-      favoriteMutationPending: false,
-      clickMutationPending: false,
+      savedMutationPending: false,
+      openedOriginalMutationPending: false,
       NEUTRAL_SCORE
     };
   },

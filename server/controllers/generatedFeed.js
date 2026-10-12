@@ -1,3 +1,4 @@
+import { canonicalArticleExpression } from '../utils/articleStateContract.js';
 import db from '../models/index.js';
 import {
   ArticleExpressionValidationError,
@@ -77,7 +78,7 @@ const validateGeneratedFeedPayload = (body, { partial = false } = {}) => {
       }
       throw error;
     }
-    values.expression = source.expression.trim();
+    values.expression = canonicalArticleExpression(source.expression.trim());
   }
 
   if (Object.hasOwn(source, 'description')) {

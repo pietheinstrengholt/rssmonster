@@ -66,7 +66,7 @@ export function sanitizeArticle(row, sourceId, feedId) {
   const url = publicArticleUrl(row.url);
   if (!url || containsSecret([row.title, row.description, row.contentOriginal, row.contentHtml, row.contentText].join('\n'))) throw new Error('Selected content fails public fixture export checks');
   const publishedAt = new Date(row.publishedAt).toISOString();
-  return { sourceId, feedId, status: 'unread', favoriteInd: 0, negativeInd: 0, clickedAmount: 0, url,
+  return { sourceId, feedId, status: 'unread', savedInd: 0, negativeInd: 0, openedOriginalCount: 0, url,
     title: row.title, description: row.description ?? null, contentOriginal: row.contentOriginal ?? null,
     contentHtml: row.contentHtml ?? null, contentText: row.contentText ?? null, publishedAt, firstSeen: publishedAt,
     language: row.language || 'unknown', qualityScore: row.qualityScore, advertisementScore: row.advertisementScore,

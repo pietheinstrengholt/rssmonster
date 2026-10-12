@@ -182,9 +182,9 @@ export default {
 .icon-briefing { color: var(--sidebar-icon-briefing); }
 .icon-unread { color: var(--sidebar-icon-unread); }
 .icon-read { color: var(--sidebar-icon-read); }
-.icon-star { color: var(--sidebar-icon-favorite); }
+.icon-saved { color: var(--sidebar-icon-saved); }
 .icon-hot { color: var(--sidebar-icon-hot); }
-.icon-clicked { color: var(--sidebar-icon-clicked); }
+.icon-opened-original { color: var(--sidebar-icon-opened-original); }
 .sidebar-status-item.selected .sidebar-icon {
   color: var(--sidebar-row-selected-text);
 }

@@ -86,10 +86,10 @@ publication dates, origin fixture and source IDs remain in regression metadata
 for provenance. Corpus names in that metadata are historical
 identifiers, not additional files to load.
 
-Both batches include favorites, clicks and explicit dislikes. The 160 held-out
+Both batches include saved, clicks and explicit dislikes. The 160 held-out
 articles arrive in Batch002 with no behavior. They are scored against existing
 memory before their optional feedback is applied and before the second Island
-calibration. Two F1 held-out articles receive favorite/click feedback after their
+calibration. Two F1 held-out articles receive saved/click feedback after their
 probe scores, and the suite asserts that at least one existing Island gains
 behavioral members. This tests an initial state and one evolution step; it does not claim
 to simulate four successive feedback/calibration waves.

@@ -1,8 +1,10 @@
+import { canonicalArticleState, canonicalArticleActionKind } from './articleStateContract.js';
+
 export const OFFLINE_DATABASE_NAME = 'rssmonster-offline';
-export const OFFLINE_DATABASE_VERSION = 2;
+export const OFFLINE_DATABASE_VERSION = 3;
 
 // Version 1 keeps identity, configuration and generations separate from credentials.
-export const upgradeOfflineDatabase = (database, oldVersion) => {
+export const upgradeOfflineDatabase = (database, oldVersion, upgradeTransaction) => {
   if (oldVersion < 1) {
     database.createObjectStore('profiles', { keyPath: ['apiOrigin', 'userId'] });
     const articles = database.createObjectStore('articles', {
@@ -19,12 +21,27 @@ export const upgradeOfflineDatabase = (database, oldVersion) => {
     actions.createIndex('accountField', ['apiOrigin', 'userId', 'articleId', 'kind']);
     database.createObjectStore('syncAccounts', { keyPath: ['apiOrigin', 'userId'] });
   }
+  if (oldVersion > 0 && oldVersion < 3) {
+    // Preserve generations, action IDs, receipt identity, retries and account ownership.
+    for (const store of ['articles', ...(oldVersion >= 2 ? ['pendingActions'] : [])]) {
+      const request = upgradeTransaction.objectStore(store).openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) return;
+        const value = cursor.value;
+        cursor.update(store === 'articles'
+          ? { ...value, article: canonicalArticleState(value.article) }
+          : { ...value, kind: canonicalArticleActionKind(value.kind) });
+        cursor.continue();
+      };
+    }
+  }
 };
 
 export const openOfflineDatabase = () => new Promise((resolve, reject) => {
   let blocked = false;
   const request = indexedDB.open(OFFLINE_DATABASE_NAME, OFFLINE_DATABASE_VERSION);
-  request.onupgradeneeded = event => upgradeOfflineDatabase(request.result, event.oldVersion);
+  request.onupgradeneeded = event => upgradeOfflineDatabase(request.result, event.oldVersion, request.transaction);
   request.onerror = () => reject(request.error);
   request.onblocked = () => { blocked = true; reject(new Error('Offline storage is open in another tab. Close it and retry.')); };
   request.onsuccess = () => {
@@ -65,8 +82,8 @@ const deleteArticles = (tx, account, keepGeneration = null) => {
   };
 };
 
-export const actionField = kind => kind === 'set-status' ? 'status' : 'favoriteInd';
-export const actionValue = action => action.kind === 'set-favorite' ? Number(action.value) : action.value;
+export const actionField = kind => kind === 'set-status' ? 'status' : 'savedInd';
+export const actionValue = action => action.kind === 'set-saved' ? Number(action.value) : action.value;
 export const overlayPendingActions = (articles, actions) => {
   const changes = new Map();
   for (const action of actions) {

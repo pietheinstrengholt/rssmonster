@@ -24,8 +24,8 @@ vi.mock('../src/api/actions.js', async importOriginal => ({
 vi.mock('../src/api/articles.js', async importOriginal => ({
   ...await importOriginal(),
   fetchDuplicateArticles: vi.fn().mockResolvedValue({ data: [] }),
-  markAsFavorite: vi.fn().mockResolvedValue({ data: {} }),
-  markClicked: vi.fn().mockResolvedValue({ data: {} }),
+  markAsSaved: vi.fn().mockResolvedValue({ data: {} }),
+  markOpenedOriginal: vi.fn().mockResolvedValue({ data: {} }),
   markMoreLikeThis: vi.fn().mockResolvedValue({ data: {} }),
   markNotInterested: vi.fn().mockResolvedValue({ data: {} })
 }));
@@ -80,7 +80,7 @@ function createReaderContext(overrides = {}) {
     articleItemRefs: {},
     isBulkMenuOpen: false,
     bulkMenuStyle: {},
-    pendingClickedArticleIds: new Set(),
+    pendingOpenedOriginalArticleIds: new Set(),
     selectionStore: { currentSelection: selection, effectiveMarkAsReadOnScroll: false },
     overviewStore: { categories: [], smartFolders: [], unreadsSinceLastUpdate: 0 },
     formatTagName: value => value.toUpperCase(),
@@ -242,8 +242,8 @@ describe('Article high-impact decision coverage', () => {
     })).toBe(0);
     expect(compute(Article, 'hasInterestScore', { interestScore: '0.25' })).toBe(true);
     expect(compute(Article, 'hasInterestScore', { interestScore: 'invalid' })).toBe(false);
-    expect(compute(ArticleHeadlineRow, 'favoriteLabel', { favoriteInd: 1 })).toBe('Remove from saved');
-    expect(compute(ArticleHeadlineRow, 'favoriteLabel', { favoriteInd: 0 })).toBe('Save article');
+    expect(compute(ArticleHeadlineRow, 'savedLabel', { savedInd: 1 })).toBe('Remove from saved');
+    expect(compute(ArticleHeadlineRow, 'savedLabel', { savedInd: 0 })).toBe('Save article');
 
     expect(compute(Article, 'feedFavicon', {
       feed: { favicon: 'direct.ico' },
@@ -326,7 +326,7 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
       [{ search: 'security' }, 'search', 'Search: security'],
       [{ feedId: '7', categoryId: '2' }, 'rss-fill', 'Feed seven'],
       [{ categoryId: '2' }, 'folder-fill', 'Technology'],
-      [{ status: 'favorite' }, 'bookmark-fill', 'Saved'],
+      [{ status: 'saved' }, 'bookmark-fill', 'Saved'],
       [{ status: 'unknown' }, 'collection-fill', 'All articles']
     ];
     context.overviewStore = {
@@ -448,7 +448,7 @@ describe('ArticleReaderLayout high-impact decision coverage', () => {
       context.handleReaderKeydown({ key, target: document.body, preventDefault: vi.fn() });
     }
     expect(context.$emit).toHaveBeenCalledWith('shortcut-toggle-read', { id: 1, status: 'unread' });
-    expect(context.$emit).toHaveBeenCalledWith('shortcut-toggle-favorite', { id: 1 });
+    expect(context.$emit).toHaveBeenCalledWith('shortcut-toggle-saved', { id: 1 });
   });
 
   it('covers article and container watcher resets', () => {
@@ -586,7 +586,7 @@ describe('SettingsActions high-impact decision coverage', () => {
       ...SettingsActions.data(),
       ...SettingsActions.methods,
       loaded: true,
-      actions: [null, { name: 'Keep', actionType: 'favorite', regularExpression: 'keep' }, { name: 'Blank', actionType: ' ' }],
+      actions: [null, { name: 'Keep', actionType: 'saved', regularExpression: 'keep' }, { name: 'Blank', actionType: ' ' }],
       $el: { querySelector: vi.fn(() => ({ focus })) },
       $emit: vi.fn()
     };
@@ -594,11 +594,11 @@ describe('SettingsActions high-impact decision coverage', () => {
     context.focusActionName(1);
     expect(focus).toHaveBeenCalledOnce();
     context.addAction();
-    expect(context.actions.at(-1)).toEqual({ name: '', actionType: 'favorite', regularExpression: '', tagValue: '' });
+    expect(context.actions.at(-1)).toEqual({ name: '', actionType: 'saved', regularExpression: '', tagValue: '' });
     context.removeAction(context.actions.length - 1);
     await context.save();
 
-    expect(saveActions).toHaveBeenCalledWith([{ name: 'Keep', actionType: 'favorite', regularExpression: 'keep' }]);
+    expect(saveActions).toHaveBeenCalledWith([{ name: 'Keep', actionType: 'saved', regularExpression: 'keep' }]);
     expect(context.$emit).toHaveBeenCalledWith('saved');
     expect(context.$emit).toHaveBeenCalledWith('close');
     expect(context.saving).toBe(false);
@@ -765,10 +765,10 @@ describe('Vue template handler coverage', () => {
     expect(introDetails.attributes('open')).toBeDefined();
 
     for (const input of wrapper.findAll('input[type="text"]')) await input.setValue('coverage');
-    for (const select of wrapper.findAll('select')) await select.setValue('favorite');
+    for (const select of wrapper.findAll('select')) await select.setValue('saved');
     for (const button of wrapper.findAll('.actions-edit-button')) await button.trigger('click');
     expect(wrapper.vm.actions[0]).toMatchObject({
-      name: 'coverage', actionType: 'favorite', regularExpression: 'coverage'
+      name: 'coverage', actionType: 'saved', regularExpression: 'coverage'
     });
 
     await wrapper.setData({ loading: true });
@@ -817,7 +817,7 @@ describe('Vue template handler coverage', () => {
     });
     const child = wrapper.findComponent({ name: 'Article' });
     const events = [
-      'update-favorite', 'update-clicked', 'minimal-article-opened', 'minimal-article-closed',
+      'update-saved', 'update-opened-original', 'minimal-article-opened', 'minimal-article-closed',
       'toggle-read-status', 'toggle-minimal-read-status', 'event-articles-loaded',
       'event-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed',
       'article-not-interested'
@@ -908,9 +908,9 @@ describe('Vue template handler coverage', () => {
         publishedAt: '2026-07-31T10:00:00Z',
         feed: { id: 7, categoryId: 2, feedName: 'Feed' },
         status: 'unread',
-        favoriteInd: 1,
+        savedInd: 1,
         hotInd: 1,
-        clickedAmount: 2,
+        openedOriginalCount: 2,
         contentHtml: '<p>Article body</p>',
         imageUrl: 'https://example.com/image.jpg',
         media: { type: 'video', url: 'https://example.com/video' },
@@ -941,9 +941,9 @@ describe('Vue template handler coverage', () => {
     const components = wrapper.findAllComponents(emitterStub);
 
     const eventMap = {
-      'article-clicked': 'articleClicked',
-      'media-clicked': 'articleClicked',
-      'toggle-favorite': 'markAsFavorite',
+      'article-opened-original': 'articleOpenedOriginal',
+      'media-opened-original': 'articleOpenedOriginal',
+      'toggle-saved': 'markAsSaved',
       'not-interested': 'markNotInterested',
       'more-like-this': 'moreLikeThis',
       'mute-feed': 'muteFeedSevenDays',
@@ -957,8 +957,8 @@ describe('Vue template handler coverage', () => {
     }
     await wrapper.vm.$nextTick();
     await flushPromises();
-    expect(wrapper.emitted('update-clicked')).toBeTruthy();
-    expect(wrapper.emitted('update-favorite')).toBeTruthy();
+    expect(wrapper.emitted('update-opened-original')).toBeTruthy();
+    expect(wrapper.emitted('update-saved')).toBeTruthy();
     wrapper.findComponent({ name: 'EmitterStub' }).vm.$emit('toggle-read-status');
     expect(wrapper.emitted('toggle-read-status')).toEqual([[{ id: 11, status: 'unread' }]]);
 
@@ -988,7 +988,7 @@ describe('Vue template handler coverage', () => {
       title: 'Reader article',
       url: 'https://example.com/reader',
       status: 'unread',
-      favoriteInd: 1,
+      savedInd: 1,
       hotInd: 1,
       isDevelopingStory: true,
       description: 'Preview',
@@ -1041,7 +1041,7 @@ describe('Vue template handler coverage', () => {
 
     const articleComponent = wrapper.findComponent({ name: 'Article' });
     const passthroughEvents = [
-      'update-favorite', 'update-clicked', 'toggle-read-status', 'event-articles-loaded',
+      'update-saved', 'update-opened-original', 'toggle-read-status', 'event-articles-loaded',
       'event-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed',
       'article-not-interested'
     ];

@@ -142,10 +142,10 @@ the route names below as the discovery map when building an integration.
 | `POST` | `/api/articles/markallasread` | Mark the selected article set as read |
 | `POST` | `/api/articles/marktounread/:articleId` | Mark an article unread |
 | `POST` | `/api/articles/markasseen/:articleId` | Mark an article seen |
-| `POST` | `/api/articles/markclicked` | Record article clicks in bulk |
-| `POST` | `/api/articles/markclicked/:articleId` | Record an article click |
-| `POST` | `/api/articles/markasfavorite` | Change favorite state in bulk |
-| `POST` | `/api/articles/markasfavorite/:articleId` | Change an article's favorite state |
+| `POST` | `/api/articles/mark-opened-original` | Record article clicks in bulk |
+| `POST` | `/api/articles/mark-opened-original/:articleId` | Record an article click |
+| `POST` | `/api/articles/mark-saved` | Change saved state in bulk |
+| `POST` | `/api/articles/mark-saved/:articleId` | Change an article's saved state |
 | `POST` | `/api/articles/marknotinterested/:articleId` | Record negative interest feedback |
 | `POST` | `/api/articles/markmorelikethis/:articleId` | Record positive interest feedback |
 
@@ -282,7 +282,7 @@ RSSMonster also exposes protocol-specific and machine-oriented interfaces:
 | `/api/greader/*` | `GoogleLogin` token; mutations also require an action token | [Google Reader API]({% link google-reader-api.md %}) |
 | `/api/agent` | JWT bearer token | Accepts agent messages or input and returns an assistant response when the provider is configured |
 | `/mcp` | JWT bearer token | Model Context Protocol transport for authenticated RSSMonster tools |
-| `/rss` | JWT bearer token | Personal RSS output with feed, category, unread, starred, and limit filters |
+| `/rss` | JWT bearer token | Personal RSS output with feed, category, unread, saved, and limit filters |
 
 `/api/agent` requires the AI and assistant enable flags and a configured inference
 provider. MCP exposes authenticated tools independently of the built-in assistant
@@ -327,14 +327,14 @@ before any mutation. The authenticated user supplies ownership, never the body.
 ```
 
 `actions` contains 1–50 assignments in order. Each UUID targets a positive safe
-integer article ID; `set-status` accepts `read`/`unread`, `set-favorite` accepts a
+integer article ID; `set-status` accepts `read`/`unread`, `set-saved` accepts a
 boolean. Only explicit canonical, visible, owned articles are affected; Event
 siblings are never expanded. Missing, filtered and foreign targets all return
 `ARTICLE_UNAVAILABLE`, without exposing foreign state.
 
 HTTP 200 contains `results` (one per UUID with `outcome` and optional `errorCode`),
-`articles` (current accessible state: `id`, `status`, `favoriteInd`, `readAt`,
-`favoritedAt`, `feedId`, `feed.id`, `feed.categoryId`) and `serverTime` (informational).
+`articles` (current accessible state: `id`, `status`, `savedInd`, `readAt`,
+`savedAt`, `feedId`, `feed.id`, `feed.categoryId`) and `serverTime` (informational).
 Outcomes are `applied`, `noop`, `duplicate`, `rejected` and `retry`.
 `ACTION_ID_REUSED` rejects altered UUID payloads. `SYNC_WRITE_FAILED` asks for an
 unchanged retry; subsequent actions receive `PREVIOUS_ACTION_RETRY` to preserve
@@ -343,7 +343,7 @@ order. A retry or ambiguous HTTP failure must reuse the original UUID/payload.
 Mutation, receipt and applicable personalization job commit in one transaction.
 Identical UUID replay has no second state, timestamp, observation or job effect.
 No-op assignments do not refresh interaction clocks. Receipts return current state,
-not historical projections. Read and favorite fields resolve independently by last
+not historical projections. Read and saved fields resolve independently by last
 server-accepted assignment; delayed offline intent can overwrite a newer online
 value. Client clocks and `updatedAt` are not conflict revisions.
 

@@ -44,7 +44,7 @@ candidate Article vector → direct Island comparison → interestScore → Reco
 
 ## Services and persistence
 
-`islandArticleProfiles.js` builds bounded communities from favorites, clicks,
+`islandArticleProfiles.js` builds bounded communities from saved, openedOriginals,
 attention and explicit positive/negative feedback. `islandPersistence.js` matches
 profiles to existing Islands, blends vectors, replaces signal snapshots, and
 records bounded source-article audits. `runIslandCalibration.js` orchestrates
@@ -99,7 +99,7 @@ All sources and candidates belong to the same user. Changes to formation or
 scoring require the frozen before/after workflow in the semantic test README.
 
 Click reduction retains the existing seven-point Island normalization scale, so
-unchanged favorites and other signals are not amplified. Stored click counts and
+unchanged saved and other signals are not amplified. Stored click counts and
 interaction timestamps are retained; only the scored contribution is capped.
 
 ## Formation and replay safety
@@ -127,7 +127,7 @@ and `candidateCommunityCount` counts. Discovery comparisons are bounded by the
 
 Calibration profiles represent complete current evidence snapshots. Updating an
 Island replaces its signal counters with that snapshot; it does not append the
-same favorites or cumulative click counts again on every replay. Real changes in
+same saved or cumulative click counts again on every replay. Real changes in
 current article behavior remain reflected in the next snapshot. Audit history
 continues to record calibration runs and is not used as ranking evidence.
 
@@ -189,7 +189,7 @@ islandConfidence = clamp(support * cohesion * consistency)
 Here clamp without explicit bounds means [0,1]. Missing similarity uses zero.
 `totalSignedArticles` is positiveArticles + negativeArticles; an Article with both
 signs counts in each sign tally. Distinct canonical articles count
-once regardless of replayed calibration, click quantity or favorite strength.
+once regardless of replayed calibration, click quantity or saved strength.
 Sources and days provide capped breadth, not claims of editorial independence.
 Interaction days use each article’s latest active signal; null legacy clocks fall back to publication.
 No observed current support gives legacy Islands confidence .1; a fully coherent
@@ -209,7 +209,7 @@ negativeIslandContribution = islandContribution * intentCompatibility
 A missing or invalid Article vector produces no semantic match. Missing all paths
 means neutral interest and never prevents Recommended calculation.
 
-Explicit likes/favorites and dislikes can outlive community capacity via a bounded
+Explicit likes/saved and dislikes can outlive community capacity via a bounded
 direct evidence fallback. Per sign, at most 100 canonical/unfiltered explicit
 articles with the corresponding interaction within the last 90 days are considered, with stable date/ID
 ordering. No absence of engagement, short read, or unread state counts as negative.
@@ -217,7 +217,7 @@ Evidence without a qualifying same-sign Island uses fallback. An Island whose
 current support contains multiple explicit sign/intent groups also leaves these
 Article-level paths available: its averaged weight cannot represent those distinct
 preferences. This includes negative evidence near a net-positive Island. Explicit negative overrides positive
-flags for this fallback; clicks/deep reads alone do not trigger positive fallback.
+flags for this fallback; openedOriginals/deep reads alone do not trigger positive fallback.
 
 ```
 recency = 2^(-interactionAgeDays/30)
@@ -229,7 +229,7 @@ bound work and influence; they are not a new Island cap or relaxed similarity ga
 A fresh dislike on an old article qualifies through `negativeFeedbackAt`. Replaying unchanged evidence cannot stack
 penalties. Positive fallback follows the same small evidence path when no non-conflicting
 positive Island represents the explicit preference, so capacity does not erase
-likes/favorites either. Conflict detection uses the existing bounded current support,
+likes/saved either. Conflict detection uses the existing bounded current support,
 not audits or generated labels. It does not change durable formation, matching,
 Island weights or support assignment.
 
@@ -237,10 +237,10 @@ Island weights or support assignment.
 
 Clicks and deep reads have an independent, positive-only Article path, including
 when formation or durable capacity cannot admit their interest. At most 100 owned,
-canonical, unfiltered sources with no explicit positive, favorite or negative flag
+canonical, unfiltered sources with no explicit positive, saved or negative flag
 qualify. Each signal must have a known interaction timestamp within seven days;
 publication time cannot establish recent implicit interest. Unknown, future and
-expired clocks are rejected independently. The loader reads at most 100 clicks and
+expired clocks are rejected independently. The loader reads at most 100 openedOriginals and
 100 deep reads, deduplicates Articles, sorts by the newest valid interaction then ID,
 and keeps 100 combined sources. This route has its own bound and is not limited to
 the 500 Articles used for Island confidence.
@@ -284,7 +284,7 @@ weights and does not create another aggregation channel.
 
 Negative Island intent is reconstructed from the existing bounded current Article
 support used for confidence. Only Articles with `negativeInd` set contribute to
-this intent, including those that also have favorites, clicks or deep reads;
+this intent, including those that also have saved, openedOriginals or deep reads;
 positive-only support never determines a negative contribution's intent. A single
 recognizable intent must be unanimous across that negative support. Mixed intents,
 unknown members, or no negative support resolve to unknown and use the existing
@@ -323,12 +323,12 @@ should measure these limits.
 
 ## Preference strength, relationship storage, and diagnostics
 
-Article profile formation uses +8 for more-like-this (`positiveInd`), +4 for favorites,
+Article profile formation uses +8 for more-like-this (`positiveInd`), +4 for saved,
 +1 per outbound click (at most two; +2 total), +1 for attention bucket ≥3, and −8 for
 not-interested (`negativeInd`). Feedback endpoints atomically set the chosen flag
 and clear the opposite flag, so the last write wins even for concurrent requests.
 For legacy rows with both explicit flags set, negative feedback suppresses the
-explicit positive signal in formation, confidence and fallback. Favorites, clicks
+explicit positive signal in formation, confidence and fallback. Saved, openedOriginals
 and deep reads remain independent signals; no historical rows are rewritten.
 Formation evidence applies each signal's half-life separately to its
 interaction clock before summing. The candidate
@@ -389,15 +389,15 @@ cases do not prove optimal ranking or justify raising personalization weights.
 
 ## Interaction timestamps and legacy behavior
 
-Article stores nullable `lastClickedAt`, `favoritedAt`, `positiveFeedbackAt`,
+Article stores nullable `lastOpenedOriginalAt`, `savedAt`, `positiveFeedbackAt`,
 `negativeFeedbackAt`, and `lastMeaningfulReadAt`. The authenticated mutation sets
-server time; unfavorite clears its clock, and explicit feedback clears the
-opposite flag and clock atomically. Repeated clicks/deep-read reports refresh
+server time; unsaved clears its clock, and explicit feedback clears the
+opposite flag and clock atomically. Repeated openedOriginals/deep-read reports refresh
 their clocks. Read/unread toggles do not invent deep-read evidence. Existing
 firstSeen/attention-bucket and Event read-cascade semantics are retained, but the
 deep-read timestamp belongs only to the article actually viewed.
 
-Formation retains +8 positive, +4 favorite, +1 per click (capped at two; +2 total), +1 deep
+Formation retains +8 positive, +4 saved, +1 per click (capped at two; +2 total), +1 deep
 read, and −8 negative weights. Each term, including negative feedback, uses its
 own timestamp and `2^(-max(0, ageDays) / halfLifeDays)`, with no permanent floor.
 `SIGNAL_HALF_LIFE_DAYS` maps interaction fields to positive finite environment
@@ -405,13 +405,13 @@ configuration (invalid/missing values use the defaults):
 
 | Signal / clock | Environment variable | Half-life in days |
 | --- | --- | ---: |
-| Click / `lastClickedAt` | `ISLAND_CLICK_HALF_LIFE_DAYS` | 30 |
+| Click / `lastOpenedOriginalAt` | `ISLAND_OPENED_ORIGINAL_HALF_LIFE_DAYS` | 30 |
 | Deep read / `lastMeaningfulReadAt` | `ISLAND_DEEP_READ_HALF_LIFE_DAYS` | 90 |
-| Favorite / `favoritedAt` | `ISLAND_FAVORITE_HALF_LIFE_DAYS` | 365 |
+| Saved / `savedAt` | `ISLAND_SAVED_HALF_LIFE_DAYS` | 365 |
 | More-like-this / `positiveFeedbackAt` | `ISLAND_POSITIVE_FEEDBACK_HALF_LIFE_DAYS` | 730 |
 | Not-interested / `negativeFeedbackAt` | `ISLAND_NEGATIVE_FEEDBACK_HALF_LIFE_DAYS` | 365 |
 
-These initial defaults let incidental clicks fade within weeks, meaningful reads
+These initial defaults let incidental openedOriginals fade within weeks, meaningful reads
 within months, and deliberate preferences persist across years. They are not
 fitted to regression fixtures. The old 1460-day exponential time constant and .2
 floor are removed; `ISLAND_RECENCY_HALF_LIFE_DAYS` and `ISLAND_RECENCY_MIN_WEIGHT`
@@ -429,7 +429,7 @@ retain normal vector adaptation. See [the scheduler contract](../jobs/README.md#
 Island archival uses
 current decayed support as described below. Explicit negative fallback
 uses `negativeFeedbackAt`, the existing 90-day window and 30-day half-life.
-Positive fallback evaluates positive feedback and favorites on their own clocks
+Positive fallback evaluates positive feedback and saved on their own clocks
 and keeps the strongest positive path; it does not add correlated fallback scores.
 Confidence uses interaction-day breadth with the same count, source and day weights.
 
@@ -442,7 +442,7 @@ excludes evidence without usable active-signal clocks. Recent implicit fallback
 still requires an observed interaction; it never substitutes publication time.
 Usable interaction clocks always override publication; publisher revisions preserve
 these clocks. No migration manufactures interaction dates.
-Automated favorite/click rules stamp when their state is first applied on ingestion;
+Automated saved/click rules stamp when their state is first applied on ingestion;
 re-crawling an existing article does not refresh user behavior. Feed reconciliation
 retains the latest stored clock for each signal without treating merging as an
 interaction. No event-history table, signal weight or semantic threshold is added.
@@ -468,7 +468,7 @@ currently meaningful signal independently: its retained fraction is its existing
 recency multiplier, provided its weighted decayed contribution reaches the Article
 signal cutoff. Take the strongest fraction, then multiply by signed agreement:
 `abs(positiveScore - negativeScore) / (positiveScore + negativeScore)`, clamped to
-0–1 (zero total gives zero). Thus aging clicks cannot dilute a surviving favorite,
+0–1 (zero total gives zero). Thus aging openedOriginals cannot dilute a surviving saved,
 even before they become exhausted, while opposing evidence still reduces support.
 Raw weights, click caps, decay and contradictory-feedback handling are unchanged.
 Lifecycle confidence is existing cohesion/support confidence over currently
@@ -547,7 +547,7 @@ collectiveStrength = min(1, abs(sum(currentSignedArticleEvidence)) / 7)
 The seven-point normalization is shared with the unchanged profile-weight formula.
 Lifecycle confidence already incorporates independent support, cohesion, sign
 consistency and surviving behavior. This measure lets repeated reading evidence
-compete with a single favorite without counting repeated clicks on one Article as
+compete with a single saved without counting repeated openedOriginals on one Article as
 independent support. It selects storage only; it is never a Recommended multiplier.
 
 Capture active incumbent IDs before matching/creation. Their collective strength
@@ -556,7 +556,7 @@ reactivated candidate with fewer than two supporting Articles and no currently
 qualifying explicit preference receives zero selection priority when incumbents
 exist. It may fill a vacancy but cannot displace supported memory on one implicit
 interaction alone. Explicit support uses the same decayed signal cutoff; an
-exhausted old favorite cannot turn a fresh click into an explicit challenger.
+exhausted old saved cannot turn a fresh click into an explicit challenger.
 
 Rank by adjusted `selectionStrength`, incumbency, absolute current profile weight,
 lifecycle confidence, latest meaningful interaction and ascending stable ID.
@@ -579,7 +579,7 @@ See [the exact contract and ordering](../../../docs/interest-islands.md#active-c
 ## Retained lifecycle explanations
 
 Population audits are explanatory snapshots, never behavioral input. Each retained
-entry includes explicit likes/dislikes, favorites, click counts and meaningful-reading
+entry includes explicit likes/dislikes, saved, click counts and meaningful-reading
 buckets, plus their interaction timestamps and publication/read/exposure context.
 `signalTimes` identifies active signals, the effective validated time, and whether it
 came from the interaction, a legacy publication fallback, or no usable clock. The

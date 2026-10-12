@@ -8,7 +8,7 @@ import { articleRetentionCutoff } from '../../services/articleCleanup.js';
 const { User, Category, Feed, Article, ArchivingSetting, Event } = db;
 let app;
 const old = new Date('2010-01-01T12:00:00Z');
-const defaults = { neverDeleteUnread: true, neverDeleteFavorites: true, neverDeleteClicked: false,
+const defaults = { neverDeleteUnread: true, neverDeleteSaved: true, neverDeleteOpenedOriginals: false,
   maximumAgeValue: 7, maximumAgeUnit: 'years', maximumArticlesPerFeed: null, maximumArticlesTotal: null };
 const auth = user => `Bearer ${jwt.sign({ userId: user.id, username: user.username }, getJwtSecret())}`;
 async function graph() {
@@ -37,11 +37,12 @@ describe('archiving settings and cleanup', () => {
     const item = await article(owner);
     const response = await request(app).get('/api/setting/archiving').set('Authorization', auth(owner.user));
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(defaults);
-    const values = { neverDeleteUnread: false, neverDeleteClicked: true, maximumAgeValue: 2, maximumAgeUnit: 'months', maximumArticlesPerFeed: 1000000, maximumArticlesTotal: 1000000000 };
-    expect((await save(owner, values)).body).toEqual({ ...defaults, ...values });
+    expect(response.body).toMatchObject(defaults);
+    expect(response.body).toMatchObject({ neverDeleteFavorites: true, neverDeleteClicked: false });
+    const values = { neverDeleteUnread: false, neverDeleteOpenedOriginals: true, maximumAgeValue: 2, maximumAgeUnit: 'months', maximumArticlesPerFeed: 1000000, maximumArticlesTotal: 1000000000 };
+    expect((await save(owner, values)).body).toMatchObject({ ...defaults, ...values });
     expect(await remaining(owner)).toEqual([item.id]);
-    expect((await request(app).get('/api/setting/archiving').set('Authorization', auth(other.user))).body).toEqual(defaults);
+    expect((await request(app).get('/api/setting/archiving').set('Authorization', auth(other.user))).body).toMatchObject(defaults);
     expect(await ArchivingSetting.count({ where: { userId: owner.user.id } })).toBe(1);
   });
 
@@ -63,20 +64,20 @@ describe('archiving settings and cleanup', () => {
     }
   });
 
-  it('protects unread, favorites, recorded clicks and newer articles while isolating users', async () => {
+  it('protects unread, saved, recorded clicks and newer articles while isolating users', async () => {
     const owner = await graph();
     const other = await graph();
     await article(owner);
     const kept = [];
-    for (const values of [{ status: 'unread' }, { favoriteInd: 1 }, { clickedAmount: 1 }, { lastClickedAt: old }, { createdAt: new Date() }]) {
+    for (const values of [{ status: 'unread' }, { savedInd: 1 }, { openedOriginalCount: 1 }, { lastOpenedOriginalAt: old }, { createdAt: new Date() }]) {
       kept.push((await article(owner, values)).id);
     }
     const foreign = await article(other);
-    await save(owner, { neverDeleteClicked: true });
+    await save(owner, { neverDeleteOpenedOriginals: true });
     expect((await cleanup(owner)).body.deletedCount).toBe(1);
     expect(await remaining(owner)).toEqual(kept);
     expect(await Article.findByPk(foreign.id)).not.toBeNull();
-    await save(owner, { neverDeleteUnread: false, neverDeleteFavorites: false });
+    await save(owner, { neverDeleteUnread: false, neverDeleteSaved: false });
     expect((await cleanup(owner)).body.deletedCount).toBe(4);
     expect(await remaining(owner)).toEqual([kept.at(-1)]);
   });
@@ -95,7 +96,7 @@ describe('archiving settings and cleanup', () => {
     await article(owner, { createdAt: new Date(), publishedAt: old });
     const recentPublication = await article(owner, { publishedAt: new Date() });
     const protectedUnread = await article(owner, { createdAt: new Date(), publishedAt: old, status: 'unread' });
-    await save(owner, { neverDeleteClicked: true });
+    await save(owner, { neverDeleteOpenedOriginals: true });
     expect((await cleanup(owner)).body.deletedCount).toBe(1);
     expect(await remaining(owner)).toEqual([recentPublication.id, protectedUnread.id]);
   });
@@ -114,12 +115,12 @@ describe('archiving settings and cleanup', () => {
     expect((await cleanup(owner)).body.deletedCount).toBe(0);
   });
 
-  it('combines feed and total caps while protecting favorites but allowing newer articles to be removed', async () => {
+  it('combines feed and total caps while protecting saved but allowing newer articles to be removed', async () => {
     const owner = await graph();
     const secondFeed = await Feed.create({ userId: owner.user.id, categoryId: owner.feed.categoryId, feedName: 'Second', url: 'https://example.com/second-combined' });
     await article(owner);
     await article(owner, { feedId: secondFeed.id });
-    const protectedArticle = await article(owner, { favoriteInd: 1 });
+    const protectedArticle = await article(owner, { savedInd: 1 });
     await article(owner, { createdAt: new Date() });
     await save(owner, { maximumArticlesPerFeed: 1, maximumArticlesTotal: 1 });
     expect((await cleanup(owner)).body.deletedCount).toBe(3);
@@ -142,11 +143,11 @@ describe('archiving settings and cleanup', () => {
     const items = await Article.bulkCreate(Array.from({ length: 1503 }, (_, i) => ({
       userId: owner.user.id, feedId: owner.feed.id, title: `Recent ${i}`,
       url: `https://example.com/recent/${owner.user.id}/${i}`,
-      status: i % 2 ? 'unread' : 'read', favoriteInd: 1, clickedAmount: 1,
-      lastClickedAt: recent, createdAt: recent
+      status: i % 2 ? 'unread' : 'read', savedInd: 1, openedOriginalCount: 1,
+      lastOpenedOriginalAt: recent, createdAt: recent
     })));
     const saved = await save(owner, { maximumArticlesTotal: 1000,
-      neverDeleteUnread: false, neverDeleteFavorites: false, neverDeleteClicked: false });
+      neverDeleteUnread: false, neverDeleteSaved: false, neverDeleteOpenedOriginals: false });
     expect(saved.status).toBe(200);
     const response = await cleanup(owner);
     expect(response.status).toBe(200);

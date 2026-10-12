@@ -28,7 +28,7 @@ This table reflects current official documentation as of **2 September 2026**.
 | **Primary philosophy** | RSS reading plus optional semantic relationships and explainable rankings | Google Reader-inspired, straightforward feed reading |
 | **Ways to use it** | Self-hosted through Docker Compose | Self-hosted through Docker or release packages, or a free public instance with documented limits |
 | **Interface** | Responsive modes including a three-pane desktop Reader view | Four layouts, light/dark themes, responsive design, and extensive keyboard shortcuts |
-| **Feed workflow** | Categories, tags, favorites, search, Smart Folders, and chronological views | Feed/category tree, unread state, stars, and rules that mark matching articles read |
+| **Feed workflow** | Categories, tags, saved, search, Smart Folders, and chronological views | Feed/category tree, unread state, stars, and rules that mark matching articles read |
 | **Customization** | Application settings and query-driven views | Custom CSS and JavaScript plus extensive server configuration |
 | **Story organization** | Related articles, duplicates/revisions, Events and Interest Islands | Traditional feed/category organization; comparable semantic story grouping is not documented |
 | **Ranking** | Optional Quality, Recommended, and Top Stories modes with inspectable signals | Conventional feed ordering; user rules automate read state rather than semantic ranking |
@@ -74,7 +74,7 @@ the standard chronological workflow remains intact.
 CommaFeed keeps the mental model close to the classic reader:
 
 ```text
-Feeds -> categories -> articles -> unread / read / starred
+Feeds -> categories -> articles -> unread / read / saved
 ```
 
 RSSMonster can preserve that path or continue into another layer:

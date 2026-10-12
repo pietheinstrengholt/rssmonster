@@ -24,9 +24,9 @@ vi.mock('../src/api/articles', () => ({
   markArticleSeen: vi.fn(),
   markArticleUnread: vi.fn(),
   markArticlesAsRead: vi.fn(),
-  markAsFavorite: vi.fn(),
-  markManyAsFavorite: vi.fn(),
-  markManyClicked: vi.fn()
+  markAsSaved: vi.fn(),
+  markManyAsSaved: vi.fn(),
+  markManyOpenedOriginal: vi.fn()
 }));
 
 vi.mock('../src/api/feeds', () => ({
@@ -205,7 +205,7 @@ describe('recoverable action errors', () => {
       data: {
         actions: [{
           name: 'Keep security',
-          actionType: 'favorite',
+          actionType: 'saved',
           regularExpression: 'security'
         }]
       }

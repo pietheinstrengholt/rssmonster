@@ -9,10 +9,12 @@
  */
 export const expressionPatterns = [
     { name: 'id', regex: /^id:>\d+$/i },
+    { name: 'saved', regex: /^saved:(true|false)$/i },
     { name: 'favorite', regex: /^favorite:(true|false)$/i },
     { name: 'star', regex: /^star:(true|false)$/i },
     { name: 'unread', regex: /^unread:(true|false)$/i },
     { name: 'read', regex: /^read:(true|false)$/i },
+    { name: 'openedOriginal', regex: /^openedOriginal:(true|false)$/i },
     { name: 'clicked', regex: /^clicked:(true|false)$/i },
     { name: 'seen', regex: /^seen:(true|false)$/i },
     { name: 'event', regex: /^event:(true|false)$/i },
@@ -41,7 +43,7 @@ export const expressionPatterns = [
 /**
  * Known keywords for filter expressions.
  */
-export const knownKeywords = ['id', 'favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'event', 'briefing', 'developing', 'eventCount', 'hot', 'tag', 'title', 'author', 'language', 'sort', 'grouping', 'limit', 'quality', 'freshness', 'firstSeen'];
+export const knownKeywords = ['id', 'saved', 'favorite', 'star', 'unread', 'read', 'openedOriginal', 'clicked', 'seen', 'event', 'briefing', 'developing', 'eventCount', 'hot', 'tag', 'title', 'author', 'language', 'sort', 'grouping', 'limit', 'quality', 'freshness', 'firstSeen'];
 
 export const normalizeSortValueForApi = sort => {
     const normalized = String(sort).toLowerCase();
@@ -52,12 +54,12 @@ export const normalizeSortValueForApi = sort => {
 /**
  * Pattern to detect wrong syntax (using = instead of :)
  */
-const wrongSyntaxPattern = /\b(favorite|star|unread|read|clicked|seen|event|briefing|developing|eventCount|hot|tag|title|author|language|sort|grouping|limit|quality|freshness|firstSeen)=/i;
+const wrongSyntaxPattern = /\b(saved|favorite|star|unread|read|openedOriginal|clicked|seen|event|briefing|developing|eventCount|hot|tag|title|author|language|sort|grouping|limit|quality|freshness|firstSeen)=/i;
 
 /**
  * Pattern to detect merged tokens (no space between expressions)
  */
-const mergedTokenPattern = /(\d+\.?\d*|true|false)(favorite|star|unread|read|clicked|seen|event|briefing|developing|eventCount|hot|tag|title|author|language|sort|grouping|limit|quality|freshness|firstSeen|@)/i;
+const mergedTokenPattern = /(\d+\.?\d*|true|false)(saved|favorite|star|unread|read|openedOriginal|clicked|seen|event|briefing|developing|eventCount|hot|tag|title|author|language|sort|grouping|limit|quality|freshness|firstSeen|@)/i;
 
 // Checks that an ISO-shaped date names the same real UTC calendar day.
 const isValidCalendarDate = value => {
@@ -164,7 +166,7 @@ export function validateQuery(query, options = { allowEmpty: true }) {
             const colonIndex = cleaned.indexOf(':');
             if (colonIndex > 0) {
                 const keyword = cleaned.substring(0, colonIndex).toLowerCase();
-                if (!knownKeywords.includes(keyword)) {
+                if (!knownKeywords.some(known => known.toLowerCase() === keyword)) {
                     // Suggest a close known keyword only when the supplied keyword is actually unknown.
                     const similar = knownKeywords.find(kw => levenshteinDistance(keyword, kw) <= 2);
                     if (similar) {

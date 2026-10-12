@@ -133,9 +133,9 @@ describe('Sidebar manager', () => {
 				briefingCount: 7,
 				unreadCount: 0,
 				readCount: 0,
-				favoriteCount: 0,
+				savedCount: 0,
 				hotCount: 0,
-				clickedCount: 0,
+				openedOriginalCount: 0,
 				unreadsSinceLastUpdate: 0,
 				fetchTopTags: vi.fn().mockResolvedValue({}),
 				fetchSmartFolders: vi.fn().mockResolvedValue({})

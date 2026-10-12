@@ -99,9 +99,9 @@ for queue states, concurrency, observability, shutdown, and operator recovery.
 
 [Actions]({% link actions.md %}) apply your rules to incoming articles during a
 crawl. When an article matches a regular expression, RSSMonster can assign a
-tag, mark it as a favorite or read, override a score, or hide it from normal
+tag, mark it as saved or read, override a score, or hide it from normal
 queries. For example, automatically tag articles mentioning Verstappen or save
-Nintendo and Zelda news to Favorites. These rules do not require AI processing.
+Nintendo and Zelda news to Saved. These rules do not require AI processing.
 
 ### Official Feeds
 

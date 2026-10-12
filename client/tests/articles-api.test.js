@@ -54,7 +54,7 @@ describe('articles API', () => {
     });
   });
 
-  it.each(['unread', 'read', 'favorite', 'hot', 'clicked'])('forces unread arrivals from the %s view while retaining dynamic filters', status => {
+  it.each(['unread', 'read', 'saved', 'hot', 'openedOriginal'])('forces unread arrivals from the %s view while retaining dynamic filters', status => {
     const selection = { categoryId: 3, feedId: 4, tag: 'science', search: 'title:Science', sort: 'recommended', grouping: 'event', status };
     fetchNewerArticleCount(selection, 100);
 

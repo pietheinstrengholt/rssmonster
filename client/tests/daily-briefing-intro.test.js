@@ -10,8 +10,8 @@ import { createFocusedStores } from './helpers/focusedStores.js';
 vi.mock('../src/api/articles', () => ({
   fetchDailyBriefing: vi.fn(),
   fetchDuplicateArticles: vi.fn(),
-  markAsFavorite: vi.fn(),
-  markClicked: vi.fn(),
+  markAsSaved: vi.fn(),
+  markOpenedOriginal: vi.fn(),
   markMoreLikeThis: vi.fn(),
   markNotInterested: vi.fn()
 }));

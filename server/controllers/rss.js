@@ -27,11 +27,12 @@ const loadRssArticles = async ({ userId, itemIds }) => {
     .filter(Boolean);
 };
 
-// GET /rss?feedId=456&limit=50&starred=true&unread=true
+// GET /rss?feedId=456&limit=50&saved=true&unread=true
 // Generates an RSS feed from stored articles
 const generateRss = async (req, res, next) => {
   try {
-    const { feedId, categoryId, limit = 50, starred, unread } = req.query;
+    const { feedId, categoryId, limit = 50, unread } = req.query;
+    const saved = req.query.saved ?? req.query.starred;
     const userId = req.userData?.userId;
 
     if (!userId) {
@@ -49,8 +50,8 @@ const generateRss = async (req, res, next) => {
     if (feedId) {
       where.feedId = feedId;
     }
-    if (starred === 'true') {
-      where.favoriteInd = 1;
+    if (saved === 'true') {
+      where.savedInd = 1;
     }
     if (unread === 'true') {
       where.status = 'unread';

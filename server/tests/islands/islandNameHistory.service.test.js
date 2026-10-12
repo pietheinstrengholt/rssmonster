@@ -18,7 +18,7 @@ async function history() {
     { label: 'energy', archivedInd: true, weight: -0.2 }
   ].map(values => ({
     userId: user.id, islandVector: [1, 0], embedding_model: 'test-model',
-    positiveSignals: { stars: 1 }, populationAudit: [{ metrics: { relatedArticleCount: 1 } }],
+    positiveSignals: { saves: 1 }, populationAudit: [{ metrics: { relatedArticleCount: 1 } }],
     lastBehaviorAt: new Date('2026-01-01'), archivedAt: values.archivedInd ? new Date('2026-04-01') : null,
     ...values
   })));

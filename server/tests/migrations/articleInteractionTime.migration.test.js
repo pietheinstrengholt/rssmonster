@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
 import { up, down } from '../../migrations/20260914001000-add-article-interaction-timestamps.mjs';
-import { BEHAVIOR_TIMESTAMP_FIELDS } from '../../services/articles/articleBehaviorTime.js';
+const BEHAVIOR_TIMESTAMP_FIELDS = ['lastClickedAt', 'favoritedAt', 'positiveFeedbackAt', 'negativeFeedbackAt', 'lastMeaningfulReadAt'];
 
 const qi = db.sequelize.getQueryInterface();
 const table = 'interaction_migration_articles';

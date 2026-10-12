@@ -68,14 +68,14 @@ describe('author persistence and filtering', () => {
   it('keeps structured and searchable bylines synchronized during revisions', async () => {
     const candidate = async authors => (await buildArticleCandidate({ feed, entry: parse(json(authors)) })).articleData;
     const initial = await candidate(people);
-    const { article } = await saveArticle(feed, initial, { tags: [] }, { status: 'read', favoriteInd: 1 });
+    const { article } = await saveArticle(feed, initial, { tags: [] }, { status: 'read', savedInd: 1 });
     expect(await article.reload()).toMatchObject({ authors: people, author: 'Alice, Bob' });
     expect(await db.Article.count({ where: { userId: user.id, author: { [Op.like]: '%Bob%' } } })).toBe(1);
     const revised = await candidate([{ name: 'Carol', url: 'https://publisher.test/carol' }]);
     const plan = await updateArticle(feed, revised);
     expect(plan.changes).toMatchObject({ authorChanged: true, contentChanged: false });
     await applyArticleUpdate({ updatePlan: plan, userId: user.id });
-    expect(await article.reload()).toMatchObject({ authors: revised.authors, author: 'Carol', status: 'read', favoriteInd: 1 });
+    expect(await article.reload()).toMatchObject({ authors: revised.authors, author: 'Carol', status: 'read', savedInd: 1 });
     expect(await updateArticle(feed, revised)).toMatchObject({ changed: false });
     expect(await updateArticle(feed, await candidate(undefined))).toMatchObject({ changed: false });
     expect(await db.Article.count({ where: { userId: user.id, author: { [Op.like]: '%Bob%' } } })).toBe(0);

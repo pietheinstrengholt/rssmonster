@@ -147,7 +147,7 @@ Article consolidation use this shared maintenance. Feed consolidation reconciles
 source projections again after all moves. Standalone reconciliation supplies its
 own transaction; callers already mutating membership pass their existing one.
 Cleanup rechecks its removal predicate under lock and deletes only captured IDs,
-so a concurrently favorited Article keeps its membership.
+so a concurrently saved Article keeps its membership.
 
 ## Developing article
 
@@ -513,7 +513,7 @@ Used during normal feed crawling.
 Processes only newly created, canonical, unfiltered, unassigned Articles.
 
 Article interaction status does not control semantic eligibility. `unread`, `read`,
-`favorite`, and other non-duplicate statuses are eligible when the Article is in the
+`saved`, and other non-duplicate statuses are eligible when the Article is in the
 incremental scope. Event assignment must preserve the Article's existing status.
 
 Incremental scope is based on `createdAt`, never `updatedAt`. Publisher revisions may

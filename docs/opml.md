@@ -107,7 +107,7 @@ The export contains:
 
 The file uses OPML 2.0 XML and escapes characters that have a special meaning
 in XML. Empty categories are retained in the outline. Articles, read and
-favorite state, tags, scores, and application settings are not part of the
+saved state, tags, scores, and application settings are not part of the
 export.
 
 You can keep the downloaded file as a subscription backup or import it into

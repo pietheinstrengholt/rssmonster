@@ -1,9 +1,9 @@
 // Each active signal owns its clock. Null clocks are legacy state with unknown interaction time.
 export const BEHAVIOR_TIMESTAMP_FIELDS = [
-  'lastClickedAt', 'favoritedAt', 'positiveFeedbackAt', 'negativeFeedbackAt', 'lastMeaningfulReadAt'
+  'lastOpenedOriginalAt', 'savedAt', 'positiveFeedbackAt', 'negativeFeedbackAt', 'lastMeaningfulReadAt'
 ];
 const signals = {
-  lastClickedAt: ['clickedAmount', '> 0'], favoritedAt: ['favoriteInd', '= 1'],
+  lastOpenedOriginalAt: ['openedOriginalCount', '> 0'], savedAt: ['savedInd', '= 1'],
   positiveFeedbackAt: ['positiveInd', '= 1'], negativeFeedbackAt: ['negativeInd', '= 1'],
   lastMeaningfulReadAt: ['attentionBucket', '>= 3']
 };
@@ -20,7 +20,7 @@ export const signalTimestamp = (article, field, now = Date.now()) =>
   usableBehaviorDate(article[field], now) ?? usableBehaviorDate(article.publishedAt, now);
 export const activeSignal = (article, field) => {
   const [flag] = signals[field];
-  return field === 'lastClickedAt' ? Number(article[flag]) > 0
+  return field === 'lastOpenedOriginalAt' ? Number(article[flag]) > 0
     : field === 'lastMeaningfulReadAt' ? Number(article[flag]) >= 3
       : Number(article[flag]) === 1 && !(field === 'positiveFeedbackAt' && Number(article.negativeInd) === 1);
 };

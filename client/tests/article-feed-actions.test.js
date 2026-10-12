@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
 import {
-  markAsFavorite,
-  markManyAsFavorite,
-  markManyClicked
+  markAsSaved,
+  markManyAsSaved,
+  markManyOpenedOriginal
 } from '../src/api/articles';
 import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
@@ -17,9 +17,9 @@ vi.mock('../src/api/articles', () => ({
   markArticlesAsRead: vi.fn(),
   markArticleUnread: vi.fn(),
   markArticleSeen: vi.fn(),
-  markAsFavorite: vi.fn(),
-  markManyAsFavorite: vi.fn(),
-  markManyClicked: vi.fn()
+  markAsSaved: vi.fn(),
+  markManyAsSaved: vi.fn(),
+  markManyOpenedOriginal: vi.fn()
 }));
 
 vi.mock('../src/services/actionNotifications.js', () => ({
@@ -32,7 +32,7 @@ const createContext = (overrides = {}) => {
     overview: {
       currentSelection: { viewMode: 'reader' },
       smartFolders: [],
-      applyFavoriteDelta: vi.fn(),
+      applySavedDelta: vi.fn(),
       fetchSmartFolders: vi.fn().mockResolvedValue()
     },
     selection: {
@@ -47,10 +47,10 @@ const createContext = (overrides = {}) => {
   return {
     ...stores,
     articles: [
-      { id: 1, favoriteInd: 0, clickedAmount: 0 },
-      { id: 2, favoriteInd: 1, clickedAmount: 1 }
+      { id: 1, savedInd: 0, openedOriginalCount: 0 },
+      { id: 2, savedInd: 1, openedOriginalCount: 1 }
     ],
-    pendingFavoriteArticleIds: new Set(),
+    pendingSavedArticleIds: new Set(),
     showSmartFoldersOverview: false,
     $emit: vi.fn(),
     ...ArticleFeed.methods,
@@ -189,115 +189,115 @@ describe('ArticleFeed actions', () => {
     window.removeEventListener('rssmonster:focus-search', focusListener);
   });
 
-  // Verifies single-article favorite changes reconcile local and overview state.
-  it('toggles a favorite and ignores missing articles', async () => {
+  // Verifies single-article saved changes reconcile local and overview state.
+  it('toggles a saved and ignores missing articles', async () => {
     const context = createContext();
-    markAsFavorite.mockResolvedValue({
-      data: { id: 1, feedId: 10, feed: { categoryId: 20 }, favoriteInd: 1 }
+    markAsSaved.mockResolvedValue({
+      data: { id: 1, feedId: 10, feed: { categoryId: 20 }, savedInd: 1 }
     });
 
-    await context.toggleShortcutArticleFavorite({ id: 1 });
-    await context.toggleShortcutArticleFavorite({ id: 99 });
+    await context.toggleShortcutArticleSaved({ id: 1 });
+    await context.toggleShortcutArticleSaved({ id: 99 });
 
-    expect(markAsFavorite).toHaveBeenCalledWith(1, 'mark', expect.objectContaining({ id: expect.any(Number) }));
-    expect(context.overviewStore.applyFavoriteDelta).toHaveBeenCalledWith({
+    expect(markAsSaved).toHaveBeenCalledWith(1, 'mark', expect.objectContaining({ id: expect.any(Number) }));
+    expect(context.overviewStore.applySavedDelta).toHaveBeenCalledWith({
       categoryId: 20,
       feedId: 10,
       delta: 1
     });
-    expect(context.articles[0].favoriteInd).toBe(1);
-    expect(markAsFavorite).toHaveBeenCalledOnce();
+    expect(context.articles[0].savedInd).toBe(1);
+    expect(markAsSaved).toHaveBeenCalledOnce();
   });
 
-  // Verifies repeated keyboard shortcuts cannot submit duplicate favorite mutations.
-  it('guards duplicate keyboard favorite requests while persistence is pending', async () => {
-    let resolveFavorite;
-    const pendingFavorite = new Promise(resolve => {
-      resolveFavorite = resolve;
+  // Verifies repeated keyboard shortcuts cannot submit duplicate saved mutations.
+  it('guards duplicate keyboard saved requests while persistence is pending', async () => {
+    let resolveSaved;
+    const pendingSaved = new Promise(resolve => {
+      resolveSaved = resolve;
     });
     const context = createContext();
-    markAsFavorite.mockReturnValue(pendingFavorite);
+    markAsSaved.mockReturnValue(pendingSaved);
 
-    const firstMutation = context.toggleShortcutArticleFavorite({ id: 1 });
-    const secondMutation = context.toggleShortcutArticleFavorite({ id: 1 });
+    const firstMutation = context.toggleShortcutArticleSaved({ id: 1 });
+    const secondMutation = context.toggleShortcutArticleSaved({ id: 1 });
 
-    expect(markAsFavorite).toHaveBeenCalledOnce();
-    expect(context.pendingFavoriteArticleIds).toContain('1');
+    expect(markAsSaved).toHaveBeenCalledOnce();
+    expect(context.pendingSavedArticleIds).toContain('1');
 
-    resolveFavorite({
+    resolveSaved({
       data: {
         id: 1,
         feedId: 10,
         feed: { categoryId: 20 },
-        favoriteInd: 1
+        savedInd: 1
       }
     });
     await Promise.all([firstMutation, secondMutation]);
 
-    expect(context.overviewStore.applyFavoriteDelta).toHaveBeenCalledOnce();
-    expect(context.pendingFavoriteArticleIds.size).toBe(0);
+    expect(context.overviewStore.applySavedDelta).toHaveBeenCalledOnce();
+    expect(context.pendingSavedArticleIds.size).toBe(0);
   });
 
-  // Verifies favorite failures preserve state and produce an actionable notification.
-  it('reports favorite failures without mutating the article', async () => {
+  // Verifies saved failures preserve state and produce an actionable notification.
+  it('reports saved failures without mutating the article', async () => {
     const context = createContext();
     const error = new Error('offline');
-    markAsFavorite.mockRejectedValue(error);
+    markAsSaved.mockRejectedValue(error);
 
-    await context.toggleShortcutArticleFavorite({ id: 1 });
+    await context.toggleShortcutArticleSaved({ id: 1 });
 
-    expect(context.articles[0].favoriteInd).toBe(0);
-    expect(context.overviewStore.applyFavoriteDelta).not.toHaveBeenCalled();
+    expect(context.articles[0].savedInd).toBe(0);
+    expect(context.overviewStore.applySavedDelta).not.toHaveBeenCalled();
     expect(notifyActionError).toHaveBeenCalledWith(
       'Could not update saved status. Please try again.',
       error
     );
   });
 
-  // Verifies reader bulk favorite and click actions only send meaningful work.
-  it('favorites only eligible articles and applies click responses', async () => {
+  // Verifies reader bulk saved and click actions only send meaningful work.
+  it('saved only eligible articles and applies click responses', async () => {
     const context = createContext();
-    markManyAsFavorite.mockResolvedValue({
+    markManyAsSaved.mockResolvedValue({
       data: {
-        articles: [{ id: 1, feedId: 10, feed: { categoryId: 20 }, favoriteInd: 1 }]
+        articles: [{ id: 1, feedId: 10, feed: { categoryId: 20 }, savedInd: 1 }]
       }
     });
-    markManyClicked.mockResolvedValue({
+    markManyOpenedOriginal.mockResolvedValue({
       data: {
         articles: [
-          { id: 1, clickedAmount: 2 },
-          { id: 2, clickedAmount: 3 }
+          { id: 1, openedOriginalCount: 2 },
+          { id: 2, openedOriginalCount: 3 }
         ]
       }
     });
 
-    await context.favoriteReaderArticles(context.articles);
-    await context.markReaderArticlesClicked(context.articles);
-    await context.favoriteReaderArticles([{ id: 2, favoriteInd: 1 }]);
-    await context.markReaderArticlesClicked([]);
+    await context.savedReaderArticles(context.articles);
+    await context.markReaderArticlesOpenedOriginal(context.articles);
+    await context.savedReaderArticles([{ id: 2, savedInd: 1 }]);
+    await context.markReaderArticlesOpenedOriginal([]);
 
-    expect(markManyAsFavorite).toHaveBeenCalledWith([1], 'mark', expect.arrayContaining([expect.objectContaining({ id: expect.any(Number) })]));
-    expect(markManyAsFavorite).toHaveBeenCalledOnce();
-    expect(markManyClicked).toHaveBeenCalledWith([1, 2]);
-    expect(markManyClicked).toHaveBeenCalledOnce();
-    expect(context.articles.map(article => article.clickedAmount)).toEqual([2, 3]);
+    expect(markManyAsSaved).toHaveBeenCalledWith([1], 'mark', expect.arrayContaining([expect.objectContaining({ id: expect.any(Number) })]));
+    expect(markManyAsSaved).toHaveBeenCalledOnce();
+    expect(markManyOpenedOriginal).toHaveBeenCalledWith([1, 2]);
+    expect(markManyOpenedOriginal).toHaveBeenCalledOnce();
+    expect(context.articles.map(article => article.openedOriginalCount)).toEqual([2, 3]);
   });
 
   // Verifies bulk actions route by action and guard unsupported view modes.
   it('routes bulk actions and guards unsupported view modes', async () => {
     const context = createContext({
-      favoriteReaderArticles: vi.fn().mockResolvedValue(),
-      markReaderArticlesClicked: vi.fn().mockResolvedValue(),
+      savedReaderArticles: vi.fn().mockResolvedValue(),
+      markReaderArticlesOpenedOriginal: vi.fn().mockResolvedValue(),
       getReaderBulkReadArticles: vi.fn().mockReturnValue([{ id: 2 }]),
       markReaderArticlesRead: vi.fn().mockResolvedValue()
     });
 
     await ArticleFeed.methods.handleReaderBulkAction.call(context, {
-      action: 'favorite-visible',
+      action: 'saved-visible',
       selectedArticleId: 1
     });
     await ArticleFeed.methods.handleReaderBulkAction.call(context, {
-      action: 'mark-visible-clicked',
+      action: 'mark-visible-opened-original',
       selectedArticleId: 1
     });
     await ArticleFeed.methods.handleReaderBulkAction.call(context, {
@@ -305,27 +305,27 @@ describe('ArticleFeed actions', () => {
       selectedArticleId: 1
     });
 
-    expect(context.favoriteReaderArticles).toHaveBeenCalledWith([{ id: 1 }]);
-    expect(context.markReaderArticlesClicked).toHaveBeenCalledWith([{ id: 1 }]);
+    expect(context.savedReaderArticles).toHaveBeenCalledWith([{ id: 1 }]);
+    expect(context.markReaderArticlesOpenedOriginal).toHaveBeenCalledWith([{ id: 1 }]);
     expect(context.markReaderArticlesRead).toHaveBeenCalledWith([{ id: 2 }]);
 
     context.selectionStore.currentSelection.viewMode = 'unsupported';
     await ArticleFeed.methods.handleReaderBulkAction.call(context, {
-      action: 'favorite-visible',
+      action: 'saved-visible',
       selectedArticleId: 1
     });
-    expect(context.favoriteReaderArticles).toHaveBeenCalledOnce();
+    expect(context.savedReaderArticles).toHaveBeenCalledOnce();
   });
 
   // Verifies bulk failures are contained and surfaced to the user.
   it('reports reader bulk action failures', async () => {
     const error = new Error('bulk failed');
     const context = createContext({
-      favoriteReaderArticles: vi.fn().mockRejectedValue(error)
+      savedReaderArticles: vi.fn().mockRejectedValue(error)
     });
 
     await ArticleFeed.methods.handleReaderBulkAction.call(context, {
-      action: 'favorite-visible',
+      action: 'saved-visible',
       selectedArticleId: 1
     });
 
@@ -368,8 +368,8 @@ describe('ArticleFeed actions', () => {
     const pool = new Set([1, 2]);
     const context = createContext({ container: [1, 2], totalCount: 2, pool });
 
-    context.updateFavoriteInd({ id: 99, favoriteInd: 1 });
-    context.updateClickedInd({ id: 99, clickedAmount: 4 });
+    context.updateSavedInd({ id: 99, savedInd: 1 });
+    context.updateOpenedOriginalInd({ id: 99, openedOriginalCount: 4 });
     context.removeArticle({ id: 1 });
     context.forceReload();
     context.refreshFeeds();

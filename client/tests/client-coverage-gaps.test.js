@@ -20,7 +20,7 @@ vi.mock('../src/api/articles.js', async importOriginal => {
   return {
     ...original,
     fetchArticleRecommendations: vi.fn().mockResolvedValue({ data: { articles: [] } }),
-    markClicked: vi.fn().mockResolvedValue({ data: { clickedAmount: 1 } })
+    markOpenedOriginal: vi.fn().mockResolvedValue({ data: { openedOriginalCount: 1 } })
   };
 });
 
@@ -31,7 +31,7 @@ const BootstrapIconStub = {
 
 const ArticleActionsMenuStub = {
   name: 'ArticleActionsMenu',
-  emits: ['more-like-this', 'mute-feed', 'not-interested', 'toggle-favorite', 'toggle-read-status'],
+  emits: ['more-like-this', 'mute-feed', 'not-interested', 'toggle-saved', 'toggle-read-status'],
   template: '<button class="menu-action" @click="$emit(\'more-like-this\')">Menu action</button>'
 };
 
@@ -168,7 +168,7 @@ describe('ArticleHeadlineRow interaction contract', () => {
         url: 'https://example.com/story',
         title: 'Coverage story',
         status: 'unread',
-        favoriteInd: 0,
+        savedInd: 0,
         feedFavicon: 'https://example.com/favicon.ico',
         sourceLabel: 'Example feed',
         eventId: 42,
@@ -210,7 +210,7 @@ describe('ArticleHeadlineRow interaction contract', () => {
     await wrapper.get('.tag-rule').trigger('click');
     await wrapper.get('.preview-original').trigger('click');
     await wrapper.get('.menu-action').trigger('click');
-    await wrapper.get('.article-list-favorite-button').trigger('click');
+    await wrapper.get('.article-list-saved-button').trigger('click');
     wrapper.vm.openOriginalArticle();
 
     expect(wrapper.emitted('article-touched').length).toBeGreaterThanOrEqual(1);
@@ -219,12 +219,12 @@ describe('ArticleHeadlineRow interaction contract', () => {
     expect(wrapper.emitted('swipe-touch-end')).toHaveLength(1);
     expect(wrapper.emitted('swipe-cancel')).toHaveLength(1);
     expect(wrapper.emitted('toggle-read-status')).toHaveLength(1);
-    expect(wrapper.emitted('article-clicked')).toHaveLength(3);
+    expect(wrapper.emitted('article-opened-original')).toHaveLength(3);
     expect(wrapper.emitted('view-event-articles')).toEqual([[42]]);
     expect(wrapper.emitted('view-duplicate-articles')).toHaveLength(1);
     expect(wrapper.emitted('select-tag')[0][0]).toMatchObject({ id: 5 });
     expect(wrapper.emitted('more-like-this')).toHaveLength(1);
-    expect(wrapper.emitted('toggle-favorite')).toHaveLength(1);
+    expect(wrapper.emitted('toggle-saved')).toHaveLength(1);
   });
 
   it('renders safe fallbacks and expanded singular labels', () => {
@@ -233,7 +233,7 @@ describe('ArticleHeadlineRow interaction contract', () => {
         url: 'javascript:alert(1)',
         title: 'Unsafe destination',
         status: 'read',
-        favoriteInd: 1,
+        savedInd: 1,
         eventId: 'event-1',
         eventArticleCountTotal: 2,
         grouping: 'event',
@@ -255,7 +255,7 @@ describe('ArticleHeadlineRow interaction contract', () => {
     expect(wrapper.get('.similar-badge').attributes('aria-label')).toBe('Hide 1 similar article');
     expect(wrapper.get('.duplicate-badge').attributes('aria-label')).toBe('Hide 2 duplicate articles');
     expect(wrapper.findComponent({ name: 'ArticleActionsMenu' }).props()).toMatchObject({ status: 'read' });
-    expect(wrapper.get('.article-list-favorite-button').attributes('aria-label')).toBe('Remove from saved');
+    expect(wrapper.get('.article-list-saved-button').attributes('aria-label')).toBe('Remove from saved');
   });
 });
 
@@ -332,7 +332,7 @@ describe('ArticleReaderLayout interaction and DOM contracts', () => {
     const ArticleItemStub = {
       name: 'Article',
       emits: [
-        'update-favorite', 'update-clicked', 'toggle-read-status', 'event-articles-loaded',
+        'update-saved', 'update-opened-original', 'toggle-read-status', 'event-articles-loaded',
         'event-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed',
         'article-not-interested'
       ],
@@ -383,7 +383,7 @@ describe('ArticleReaderLayout interaction and DOM contracts', () => {
 
     const relatedArticle = wrapper.findAllComponents({ name: 'Article' })[1];
     const passthroughEvents = [
-      'update-favorite', 'update-clicked', 'toggle-read-status', 'event-articles-loaded',
+      'update-saved', 'update-opened-original', 'toggle-read-status', 'event-articles-loaded',
       'event-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed',
       'article-not-interested'
     ];

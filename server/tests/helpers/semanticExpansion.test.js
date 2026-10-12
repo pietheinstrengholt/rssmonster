@@ -18,7 +18,7 @@ describe('semantic expansion fixture contracts', () => {
     const held = articles.filter(a => a.regression.role === 'held-out');
     expect(held).toHaveLength(40);
     expect(articles.filter(a => a.regression.role === 'training')).toHaveLength(24);
-    expect(held.every(a => !a.favoriteInd && !a.negativeInd && !a.positiveInd && !a.clickedAmount)).toBe(true);
+    expect(held.every(a => !a.savedInd && !a.negativeInd && !a.positiveInd && !a.openedOriginalCount)).toBe(true);
     for (const scenario of scenarios.filter(s => s.kind === 'behavior')) {
       const rows = scenarioArticles(scenario);
       const training = rows.filter(a => a.regression.role === 'training');

@@ -32,15 +32,15 @@ export async function buildPopulationAuditEntry({ userId, articleIds = [], trans
       articleIds: [],
       metrics: {
         relatedArticleCount: 0,
-        starredCount: 0,
-        clickedCount: 0,
+        savedCount: 0,
+        openedOriginalCount: 0,
         positiveCount: 0,
         meaningfulReadCount: 0,
         negativeCount: 0
       },
       sourceArticles: {
-        starredArticleIds: [],
-        clickedArticleIds: [],
+        savedArticleIds: [],
+        openedOriginalArticleIds: [],
         positiveArticleIds: [],
         meaningfulReadArticleIds: [],
         negativeArticleIds: [],
@@ -56,7 +56,7 @@ export async function buildPopulationAuditEntry({ userId, articleIds = [], trans
         userId,
         id: { [Op.in]: articleIds }
       },
-      attributes: ['id', 'title', 'feedId', 'favoriteInd', 'clickedAmount', 'negativeInd',
+      attributes: ['id', 'title', 'feedId', 'savedInd', 'openedOriginalCount', 'negativeInd',
         'positiveInd', 'attentionBucket', 'publishedAt', 'readAt', 'firstSeen', ...BEHAVIOR_TIMESTAMP_FIELDS],
       raw: true,
       transaction
@@ -82,14 +82,14 @@ export async function buildPopulationAuditEntry({ userId, articleIds = [], trans
         source: usableBehaviorDate(row[field], now) ? 'interaction'
           : usableBehaviorDate(row.publishedAt, now) ? 'publication_fallback' : 'unavailable'
       }])),
-      favoriteInd: Number(row.favoriteInd || 0),
-      clickedAmount: Number(row.clickedAmount || 0),
+      savedInd: Number(row.savedInd || 0),
+      openedOriginalCount: Number(row.openedOriginalCount || 0),
       negativeInd: Number(row.negativeInd || 0)
     }))
     .filter(row => Number.isFinite(row.id))
     .sort((a, b) => (
-      b.favoriteInd - a.favoriteInd ||
-      b.clickedAmount - a.clickedAmount ||
+      b.savedInd - a.savedInd ||
+      b.openedOriginalCount - a.openedOriginalCount ||
       b.negativeInd - a.negativeInd ||
       a.id - b.id
     ));
@@ -117,20 +117,20 @@ export async function buildPopulationAuditEntry({ userId, articleIds = [], trans
   }
   const positiveRows = articleRows.filter(row => row.positiveInd === 1);
   const meaningfulReadRows = articleRows.filter(row => row.attentionBucket >= 3);
-  // Keeps the starred rows entries eligible while building population audit entry.
-  const starredRows = articleRows.filter(row => row.favoriteInd === 1);
-  // Keeps the clicked rows entries eligible while building population audit entry.
-  const clickedRows = articleRows.filter(row => row.clickedAmount > 0);
+  // Keeps the saved rows entries eligible while building population audit entry.
+  const savedRows = articleRows.filter(row => row.savedInd === 1);
+  // Keeps the openedOriginal rows entries eligible while building population audit entry.
+  const openedOriginalRows = articleRows.filter(row => row.openedOriginalCount > 0);
   // Keeps the negative rows entries eligible while building population audit entry.
   const negativeRows = articleRows.filter(row => row.negativeInd === 1);
 
-  // Derives the starred article id through slice while building population audit entry.
-  const starredArticleIds = starredRows
+  // Derives the saved article id through slice while building population audit entry.
+  const savedArticleIds = savedRows
     .map(row => Number(row.id))
     .slice(0, DEFAULT_AUDIT_MAX_ARTICLE_IDS);
 
-  // Derives the clicked article id through slice while building population audit entry.
-  const clickedArticleIds = clickedRows
+  // Derives the openedOriginal article id through slice while building population audit entry.
+  const openedOriginalArticleIds = openedOriginalRows
     .map(row => Number(row.id))
     .slice(0, DEFAULT_AUDIT_MAX_ARTICLE_IDS);
 
@@ -144,15 +144,15 @@ export async function buildPopulationAuditEntry({ userId, articleIds = [], trans
     articleIds: articleRows.map(row => row.id).slice(0, DEFAULT_AUDIT_MAX_ARTICLE_IDS),
     metrics: {
       relatedArticleCount: articleRows.length,
-      starredCount: starredRows.length,
-      clickedCount: clickedRows.length,
+      savedCount: savedRows.length,
+      openedOriginalCount: openedOriginalRows.length,
       positiveCount: positiveRows.length,
       meaningfulReadCount: meaningfulReadRows.length,
       negativeCount: negativeRows.length
     },
     sourceArticles: {
-      starredArticleIds,
-      clickedArticleIds,
+      savedArticleIds,
+      openedOriginalArticleIds,
       positiveArticleIds: positiveRows.map(row => row.id).slice(0, DEFAULT_AUDIT_MAX_ARTICLE_IDS),
       meaningfulReadArticleIds: meaningfulReadRows.map(row => row.id).slice(0, DEFAULT_AUDIT_MAX_ARTICLE_IDS),
       negativeArticleIds,

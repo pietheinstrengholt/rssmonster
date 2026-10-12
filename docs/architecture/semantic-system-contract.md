@@ -8,7 +8,7 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
    Shared subjects, entities, or user interests alone do not establish an Event.
 
 2. **Event formation and membership MUST NOT depend on user behavior.**
-   Reading, favorites, clicks, feedback, and recommendation scores must not determine which Articles belong together. Events use article titles, descriptions, bodies, and other publisher-supplied content to detect the same occurrence. Event membership is independent of user interaction, personalization, or recommendation.
+   Reading, saved, clicks, feedback, and recommendation scores must not determine which Articles belong together. Events use article titles, descriptions, bodies, and other publisher-supplied content to detect the same occurrence. Event membership is independent of user interaction, personalization, or recommendation.
 
 3. **An Event MUST contain at least two canonical Articles.**
    Members counted toward Event validity MUST exist, belong to the Event’s owner, be unfiltered, and have no `duplicateOfArticleId`. Read/unread state does not affect membership eligibility. When an Event has fewer than two eligible canonical members, its remaining Articles MUST become eventless and the Event MUST stop contributing grouping and ranking evidence.
@@ -75,10 +75,10 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
    An Island represents positive interest or negative preference supported by direct interactions or user-configured rules.
 
 2. **Island evidence MUST originate from user interactions or user-configured preference rules.**
-   Supported evidence includes explicit likes, explicit dislikes, favorites, clicks, meaningful reading engagement, and equivalent actions applied by user-created rules.
+   Supported evidence includes explicit likes, explicit dislikes, saved, clicks, meaningful reading engagement, and equivalent actions applied by user-created rules.
 
 3. **User-configured rules MUST be able to establish and reinforce Islands without subsequent interaction.**
-   For example, a rule that automatically favorites Articles containing “Zelda” must allow matching Articles to contribute positive evidence toward an Island without requiring the user to open or read them.
+   For example, a rule that automatically saved Articles containing “Zelda” must allow matching Articles to contribute positive evidence toward an Island without requiring the user to open or read them.
 
 4. **Article availability alone MUST NOT create or strengthen an Island.**
    Receiving, crawling, storing, or displaying Articles is not preference evidence. An Article matching an explicit user-configured preference rule is not mere availability.
@@ -99,8 +99,8 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
    | --- | --- |
    | `readAt` | Read-state timing and context; marking an Article read alone does not establish meaningful reading or preference. |
    | `firstSeen` | First actual exposure and its timing; exposure alone does not establish preference. |
-   | `favoriteInd`, `favoritedAt` | Active favorite preference and its interaction time, including favorites applied by user-configured rules. |
-   | `clickedAmount`, `lastClickedAt` | Click evidence and its latest interaction time, including equivalent rule-applied actions; repeated counts must have bounded influence. |
+   | `savedInd`, `savedAt` | Active saved preference and its interaction time, including saved applied by user-configured rules. |
+   | `openedOriginalCount`, `lastOpenedOriginalAt` | Click evidence and its latest interaction time, including equivalent rule-applied actions; repeated counts must have bounded influence. |
    | `positiveInd`, `positiveFeedbackAt` | Explicit positive preference and its interaction time. |
    | `negativeInd`, `negativeFeedbackAt` | Explicit negative preference and its interaction time. |
    | `attentionBucket`, `lastMeaningfulReadAt` | Reading-engagement estimate and the latest qualifying meaningful-read time. |
@@ -117,7 +117,7 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
     Repeated engagement with distinct canonical Articles about the same occurrence may increase confidence or preference strength, while correlation-aware saturation prevents publisher volume from dominating the user profile.
 
 12. **Explicit Article-level feedback MUST retain its normal strength regardless of Event membership.**
-    Event normalization MAY limit the additional contribution from repeated coverage, but MUST NOT reduce a single explicit like, dislike, favorite, or equivalent user-configured preference signal merely because its Event contains many Articles. Preserving a signal’s strength does not require unbounded summation of correlated signals.
+    Event normalization MAY limit the additional contribution from repeated coverage, but MUST NOT reduce a single explicit like, dislike, saved, or equivalent user-configured preference signal merely because its Event contains many Articles. Preserving a signal’s strength does not require unbounded summation of correlated signals.
 
 13. **Island formation MUST remain valid when Events are unavailable or removed.**
     Islands must be learnable and reconstructable from Article-level preference evidence without requiring Event state. Event information may improve evidence normalization but must not define the underlying preference.
@@ -138,7 +138,7 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
     Stronger influence requires sufficient supporting evidence or an explicit high-confidence signal, including a user-configured preference rule. Clicks and reading engagement MUST provide bounded implicit evidence. Repeated observations of the same Article MUST NOT count as independent supporting Articles or become equivalent to explicit approval merely through repetition.
 
 19. **Explicit preference signals MUST take precedence over contradictory weaker evidence, and one Article MUST have one effective preference sign for scoring.**
-    Explicit positive or negative feedback takes precedence over favorites, clicks, reading engagement, and other weaker inference from the same Article. Explicit positive and explicit negative feedback are mutually exclusive active states. If inconsistent legacy state contains both, the signal with the most recent valid explicit-feedback timestamp determines the effective sign. An explicit dislike must not be neutralized merely by a favorite, click, or long dwell time. Later qualifying evidence and defined decay may change the resulting preference.
+    Explicit positive or negative feedback takes precedence over saved, clicks, reading engagement, and other weaker inference from the same Article. Explicit positive and explicit negative feedback are mutually exclusive active states. If inconsistent legacy state contains both, the signal with the most recent valid explicit-feedback timestamp determines the effective sign. An explicit dislike must not be neutralized merely by a saved, click, or long dwell time. Later qualifying evidence and defined decay may change the resulting preference.
 
 20. **Active Islands MUST expire after a configured inactivity period of 30–90 days.**
     Use one configured inactivity period for all Islands, regardless of signal type or preference sign. The deadline equals the latest qualifying supporting interaction time plus that period; the Island expires when the deadline is reached. Historical strength must not keep an Island active beyond its deadline. Weight may decay before expiry; renewal does not automatically restore previous strength.
@@ -233,7 +233,7 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
    Revisions may update publisher content, source metadata, and the corresponding sanitized representations and content hashes. A revision MUST NOT trigger or enqueue AI enrichment, quality analysis, score recalculation, embedding generation, semantic duplicate detection, Event creation or reassignment, or Island recalibration. Revisions MUST preserve stored analysis scores, embeddings, and semantic assignments; the Article must not re-enter these processes as a newly ingested Article. Normal runtime ranking and independently triggered personalization refreshes remain permitted.
 
 4. **Publisher updates MUST preserve user-owned state.**
-   Revisions must not reset reading state, favorites, feedback, clicks, interaction timestamps, or manually assigned tags.
+   Revisions must not reset reading state, saved, feedback, clicks, interaction timestamps, or manually assigned tags.
 
 5. **Missing or empty publisher fields MUST NOT erase meaningful stored values without explicit justification.**
    Sparse feed updates must not silently remove existing content or metadata.
@@ -275,7 +275,7 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
     `Article.eventId` is the authoritative membership relationship.
 
 18. **Event assignment MUST preserve Article interaction state.**
-    Joining an Event must not mark the Article read or inherit another Article’s read state, favorites, feedback, clicks, or engagement.
+    Joining an Event must not mark the Article read or inherit another Article’s read state, saved, feedback, clicks, or engagement.
 
 19. **Articles MUST work independently from Islands.**
     Missing Islands or unmatched personalization must not prevent Article ingestion, storage, presentation, or recommendation eligibility.
@@ -284,12 +284,12 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
     Its interaction and preference evidence may contribute regardless of Event membership, subject to semantic eligibility and Island capacity.
 
 21. **Articles MUST carry their own interaction and preference state.**
-    The authoritative interaction columns are `readAt`, `firstSeen`, `favoriteInd`, `favoritedAt`, `clickedAmount`, `lastClickedAt`, `positiveInd`, `positiveFeedbackAt`, `negativeInd`, `negativeFeedbackAt`, `attentionBucket`, and `lastMeaningfulReadAt`. Islands MUST use this Article-level state according to the evidence meanings defined in Interest Islands rule 8, preserving the distinction between exposure, read state, explicit preferences, and meaningful engagement.
+    The authoritative interaction columns are `readAt`, `firstSeen`, `savedInd`, `savedAt`, `openedOriginalCount`, `lastOpenedOriginalAt`, `positiveInd`, `positiveFeedbackAt`, `negativeInd`, `negativeFeedbackAt`, `attentionBucket`, and `lastMeaningfulReadAt`. Islands MUST use this Article-level state according to the evidence meanings defined in Interest Islands rule 8, preserving the distinction between exposure, read state, explicit preferences, and meaningful engagement.
 
     Clearing or deleting a preference signal MUST remove only that signal’s contribution when personalization is next refreshed. Other active signals on the Article remain valid. Retained audits MUST NOT restore removed evidence.
 
 22. **User-configured preference rules MUST be able to create Article-level preference evidence.**
-    A rule-applied favorite or equivalent supported action may influence Islands without requiring a subsequent click or read. Disabling or deleting a preference rule MUST stop future applications. Existing Article-level actions remain until explicitly changed and follow normal decay and expiry; rule removal alone does not reverse them.
+    A rule-applied saved or equivalent supported action may influence Islands without requiring a subsequent click or read. Disabling or deleting a preference rule MUST stop future applications. Existing Article-level actions remain until explicitly changed and follow normal decay and expiry; rule removal alone does not reverse them.
 
 23. **Repeated ingestion MUST NOT manufacture fresh behavioral evidence.**
     Re-crawling, revising, re-embedding, or rescoring an Article must not refresh interaction timestamps or repeatedly count an unchanged rule outcome.
@@ -338,10 +338,10 @@ An Article’s interestScore may be derived from three evidence paths, governed 
     Compare the Article embedding with active Island embeddings. Weight qualifying similarity by the Island’s signed preference strength and evidence confidence.
 
 2. **Explicit-feedback matching.**
-    Compare the Article embedding with eligible user-owned Articles favorited, liked or disliked within the last 90 days. Apply recency decay and intent compatibility. This path is evaluated independently from Island matching and remains available even when the Article also matches an active Island.
+    Compare the Article embedding with eligible user-owned Articles saved, liked or disliked within the last 90 days. Apply recency decay and intent compatibility. This path is evaluated independently from Island matching and remains available even when the Article also matches an active Island.
 
 3. **Recent-behavior matching.**
-    Compare the Article embedding with eligible user-owned Articles clicked or meaningfully read within the last seven days and having no active explicit preference signal. Apply weaker authority, faster recency decay and intent compatibility. This path is evaluated independently from Island matching and explicit-feedback matching.
+    Compare the Article embedding with eligible user-owned Articles openedOriginal or meaningfully read within the last seven days and having no active explicit preference signal. Apply weaker authority, faster recency decay and intent compatibility. This path is evaluated independently from Island matching and explicit-feedback matching.
 
 4. **Self and duplicate evidence exclusion.**
     An Article MUST NOT provide personalization evidence for its own interestScore. The candidate Article itself, retained duplicate records representing the same canonical Article, and repeated representations of the same underlying interaction MUST be excluded from Article-to-Article scoring evidence. The same underlying Article interaction MUST NOT produce multiple independent scoring contributions through duplicate records, repeated retrieval, or multiple evidence collections.

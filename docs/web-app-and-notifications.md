@@ -61,7 +61,7 @@ browsers provide their own installation menus. See
 
 ## Use the installed app
 
-The installed app offers the same reading modes, subscriptions, tags, favorites,
+The installed app offers the same reading modes, subscriptions, tags, saved,
 and settings as RSSMonster in a browser. Sign in to the same server and account
 on another device to access your stored subscriptions and article state.
 Notification permission and subscriptions must be enabled on each device where

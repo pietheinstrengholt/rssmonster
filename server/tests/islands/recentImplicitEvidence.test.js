@@ -8,7 +8,7 @@ import { scoreArticlesFromIslandsForUser } from '../../services/score/scoreArtic
 const now = Date.parse('2026-09-15T12:00:00Z');
 const day = 86400000;
 const target = { id: 99999, title: 'Database technical guide', embedding_model: 'test-model', articleVector: [1, 0] };
-const source = overrides => ({ ...target, id: 1, clickedAmount: 1, lastClickedAt: new Date(now), ...overrides });
+const source = overrides => ({ ...target, id: 1, openedOriginalCount: 1, lastOpenedOriginalAt: new Date(now), ...overrides });
 const evaluate = (sources, candidate = target, islands = []) => evaluateArticleInterest(candidate, { ...prepareIslandEvidence(islands, sources), now });
 afterEach(() => vi.useRealTimers());
 
@@ -23,22 +23,22 @@ describe('recent implicit evidence', () => {
     expect(read.paths).toHaveLength(1);
     expect(read.paths[0]).toMatchObject({ matchType: 'implicit-behavior', implicitType: 'deep-read', seedSelf: false });
     expect(read.seedSelf).toBe(false);
-    expect(evaluate([source({ clickedAmount: 1000 })]).score).toBe(click.score);
+    expect(evaluate([source({ openedOriginalCount: 1000 })]).score).toBe(click.score);
     expect(evaluate(Array.from({ length: 100 }, (_, id) => source({ id }))).score).toBe(click.score);
     expect(evaluate([source(), source()])).toEqual(click);
   });
 
   it('decays rapidly using independent observed clocks and rejects unknown, future and expired interactions', () => {
-    expect(evaluate([source({ lastClickedAt: new Date(now - 3 * day) })]).score).toBe(0.025);
-    expect(evaluate([source({ lastClickedAt: new Date(now - 7 * day) })]).score).toBeGreaterThan(0);
-    for (const lastClickedAt of [null, undefined, 'invalid', new Date(now + 1), new Date(now - 7 * day - 1)]) {
-      const result = evaluate([source({ lastClickedAt, publishedAt: new Date(now) })]);
+    expect(evaluate([source({ lastOpenedOriginalAt: new Date(now - 3 * day) })]).score).toBe(0.025);
+    expect(evaluate([source({ lastOpenedOriginalAt: new Date(now - 7 * day) })]).score).toBeGreaterThan(0);
+    for (const lastOpenedOriginalAt of [null, undefined, 'invalid', new Date(now + 1), new Date(now - 7 * day - 1)]) {
+      const result = evaluate([source({ lastOpenedOriginalAt, publishedAt: new Date(now) })]);
       expect(result).toMatchObject({ score: 0, paths: [], diagnostics: { zeroReason: 'no_recent_fallback_signal' } });
     }
-    const mixed = evaluate([source({ lastClickedAt: new Date(now + day), attentionBucket: 3, lastMeaningfulReadAt: new Date(now - 3 * day) })]);
+    const mixed = evaluate([source({ lastOpenedOriginalAt: new Date(now + day), attentionBucket: 3, lastMeaningfulReadAt: new Date(now - 3 * day) })]);
     expect(mixed.score).toBe(0.05);
     expect(mixed.paths[0].implicitType).toBe('deep-read');
-    expect(evaluate([source({ clickedAmount: 0, attentionBucket: 2 })]).score).toBe(0);
+    expect(evaluate([source({ openedOriginalCount: 0, attentionBucket: 2 })]).score).toBe(0);
   });
 
   it('retains model and similarity gates and never infers negative or amplifies explicit evidence', () => {
@@ -81,11 +81,11 @@ describe('recent implicit evidence', () => {
     const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Implicit', url: `https://${user.id}.example/rss` });
     const values = { userId: user.id, feedId: feed.id, title: target.title, embedding_model: 'test-model', articleVector: [1, 0] };
     await db.Article.create({ ...values, articleVector: [0, 1], positiveInd: 1, positiveFeedbackAt: new Date(now) });
-    const clicked = await db.Article.create({ ...values, clickedAmount: 1, lastClickedAt: new Date(now), status: 'read' });
+    const openedOriginal = await db.Article.create({ ...values, openedOriginalCount: 1, lastOpenedOriginalAt: new Date(now), status: 'read' });
     const candidate = await db.Article.create({ ...values, status: 'unread' });
     const profiles = await buildInterestIslandProfilesForUser(user.id, { maxIslands: 1 });
     expect(profiles.summary.unassignedBehavioralProfiles).toBe(1);
-    expect(profiles.flatMap(profile => profile.articles.map(a => a.articleId))).not.toContain(clicked.id);
+    expect(profiles.flatMap(profile => profile.articles.map(a => a.articleId))).not.toContain(openedOriginal.id);
     const result = await scoreArticlesFromIslandsForUser(user.id, { now });
     await candidate.reload();
     expect(Number(candidate.interestScore)).toBeCloseTo(0.05);
@@ -99,14 +99,14 @@ describe('recent implicit evidence', () => {
     const category = await db.Category.create({ userId: user.id, name: 'Implicit' });
     const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Implicit', url: `https://${user.id}.example/rss` });
     const values = { userId: user.id, feedId: feed.id, title: target.title, embedding_model: 'test-model', articleVector: [1, 0],
-      clickedAmount: 1, lastClickedAt: new Date(now - day), publishedAt: new Date(now) };
+      openedOriginalCount: 1, lastOpenedOriginalAt: new Date(now - day), publishedAt: new Date(now) };
     const older = await db.Article.bulkCreate(Array.from({ length: IMPLICIT_EVIDENCE_LIMIT + 1 }, () => values));
     const fresh = await db.Article.create({ ...values, attentionBucket: 3, lastMeaningfulReadAt: new Date(now), publishedAt: new Date('2020-01-01') });
     const excluded = await db.Article.bulkCreate([
       { ...values, userId: foreign.id }, { ...values, filteredInd: true }, { ...values, duplicateOfArticleId: fresh.id },
-      { ...values, negativeInd: 1 }, { ...values, favoriteInd: 1 }, { ...values, positiveInd: 1 },
-      { ...values, lastClickedAt: null }, { ...values, lastClickedAt: new Date(now + day) },
-      { ...values, lastClickedAt: new Date(now - 8 * day) }
+      { ...values, negativeInd: 1 }, { ...values, savedInd: 1 }, { ...values, positiveInd: 1 },
+      { ...values, lastOpenedOriginalAt: null }, { ...values, lastOpenedOriginalAt: new Date(now + day) },
+      { ...values, lastOpenedOriginalAt: new Date(now - 8 * day) }
     ]);
     const context = await loadIslandEvidence(user.id, { now });
     const ids = context.implicitEvidence.map(a => a.id);

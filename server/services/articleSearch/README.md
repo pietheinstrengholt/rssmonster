@@ -62,7 +62,7 @@ This README documents the search language implemented by the parser and executor
 AI agents unread:true @today sort:recommended
 "climate policy" language:en quality:>=0.7
 title:"OpenAI model" author:"Jane Smith" event:true eventCount:>=3
-tag:security favorite:true firstSeen:24h sort:desc limit:50
+tag:security saved:true firstSeen:24h sort:desc limit:50
 event:false freshness:>0.5
 ```
 
@@ -125,15 +125,15 @@ Boolean filters accept `true` or `false`, case-insensitively.
 
 | Expression | Meaning |
 | --- | --- |
-| `favorite:true` | Favorited articles only. |
-| `favorite:false` | Non-favorited articles only. |
-| `star:true` / `star:false` | Legacy aliases for `favorite`. |
+| `saved:true` | Saved articles only. |
+| `saved:false` | Non-saved articles only. |
+| `favorite:true` / `favorite:false`, `star:true` / `star:false` | Legacy aliases for `saved`. |
 | `unread:true` | Unread articles. |
 | `unread:false` | Read articles. |
 | `read:true` | Read articles. |
 | `read:false` | Unread articles. |
-| `clicked:true` | Articles with one or more recorded clicks. |
-| `clicked:false` | Articles with zero recorded clicks. |
+| `openedOriginal:true` | Articles with one or more recorded clicks. |
+| `openedOriginal:false` | Articles with zero recorded clicks. |
 | `seen:true` | Articles whose `firstSeen` timestamp is present. |
 | `seen:false` | Articles whose `firstSeen` timestamp is absent. |
 | `hot:true` | Hot articles within the selected feed/category scope. |
@@ -349,19 +349,19 @@ This returns at most 25 canonical English unread articles that:
 Another example combines a narrow title with broader content terms:
 
 ```text
-title:"European Union" regulation AI author:"Jane Smith" favorite:true
+title:"European Union" regulation AI author:"Jane Smith" saved:true
 ```
 
 The title must contain `European Union`, the content must contain `regulation`
-or `AI`, the author must contain `Jane Smith`, and the article must be favorited.
+or `AI`, the author must contain `Jane Smith`, and the article must be saved.
 
 ## Request options outside the expression
 
 The search service also receives options from the API/UI:
 
 - `categoryId` and `feedId` establish source scope.
-- `status` supplies the current view (`unread`, `read`, `favorite`, `hot`,
-  `clicked`, or `%` for all).
+- `status` supplies the current view (`unread`, `read`, `saved`, `hot`,
+  `openedOriginal`, or `%` for all).
 - `grouping` is `none` or `event`.
 - minimum advertisement, sentiment, and quality scores establish baseline gates.
 - `countOnly` returns a count instead of article IDs.
@@ -391,7 +391,7 @@ For ordinary article-list requests, recognized expression filters take precedenc
 For example, `unread:false` overrides an unread view. Any non-empty free-text or
 structured search normally relaxes a plain read/unread `status` default to all
 statuses unless an explicit state filter is present. Special status views such as
-favorite, hot, and clicked remain active unless explicitly overridden by their
+saved, hot, and openedOriginal remain active unless explicitly overridden by their
 corresponding filter.
 
 The expression token `grouping:none|event` overrides the API grouping
@@ -484,7 +484,7 @@ Quoted text represents phrase intent. Unquoted text represents term intent. Fiel
 
 When a structured token and an external request parameter describe the same concept, the search expression is the more specific user intent and takes precedence. This allows saved views and UI defaults to be refined from the search box without changing the surrounding view.
 
-Legacy vocabulary remains part of the architecture when it represents the same user concept. For example, "starred" and "favorite" are one conceptual state even if older clients use older language.
+Legacy vocabulary remains part of the architecture when it represents the same user concept. For example, "saved", "favorite" and "star" are one conceptual state even if older clients use older language.
 
 ## Article Eligibility
 
@@ -495,7 +495,7 @@ The fundamental eligibility dimensions are:
 - Ownership: the article belongs to the requesting user.
 - Source scope: the article is in the selected feed/category scope unless the requested concept overrides source locality.
 - Canonical visibility: duplicate or non-canonical articles are excluded according to the product's canonical article rules.
-- Reading state: unread, read, favorite, clicked, seen, hot, or all.
+- Reading state: unread, read, saved, openedOriginal, seen, hot, or all.
 - Text relevance: title and article text match the requested term or phrase intent.
 - Metadata: tag, title, author, language, date, first-seen age, event state, event size, or grouping concept.
 - Quality gates: advertisement, sentiment, and quality thresholds are all satisfied.

@@ -38,25 +38,25 @@ All feeds provides the global article-status views:
 - Daily briefing, when AI features are enabled
 - Unread
 - Read
-- Favorites
+- Saved
 - Hot
-- Clicked
+- OpenedOriginal
 
 Each count represents the selected status across all feeds. The Daily briefing count represents the currently configured briefing period and preferences.
 
-These are live application counts. They can increase or decrease as articles arrive, are read or restored to unread, are favorited or unfavorited, become hot, or are clicked. Article actions reconcile applicable counts immediately, while overview refreshes restore the authoritative server totals. The overview also refreshes periodically and after explicit reload operations.
+These are live application counts. They can increase or decrease as articles arrive, are read or restored to unread, are saved or unsaved, become hot, or have their originals opened. Article actions reconcile applicable counts immediately, while overview refreshes restore the authoritative server totals. The overview also refreshes periodically and after explicit reload operations.
 
 After background overview refreshes, the article list checks for unread arrivals since its loaded snapshot. Unread status is mandatory regardless of the selected view or read/unread search tokens. Source, tag, text search, score, grouping, and result-limit rules remain dynamic. Global unread-count changes alone do not show the row. Selecting it rechecks for matching unread arrivals and reloads only the article list if matches remain, preserving the current selection and saved startup settings. Loading a replacement collection clears the alert and establishes a new snapshot.
 
-Selecting a status changes the meaning of the counts shown for All, categories, and feeds. For example, choosing Favorites makes those rows show favorite totals, while choosing Clicked makes them show clicked totals. Selecting the already active status normally preserves the current view; it also exits an active smart folder when necessary.
+Selecting a status changes the meaning of the counts shown for All, categories, and feeds. For example, choosing Saved makes those rows show saved totals, while choosing OpenedOriginal makes them show openedOriginal totals. Selecting the already active status normally preserves the current view; it also exits an active smart folder when necessary.
 
 ### Top tags
 
-The tags section shows up to five of the most frequent tags in the active article-status collection and appears only when tag data is available. Its heading names that scope, such as **Top tags in Daily briefing**, **Top tags in Unread**, or **Top tags in Favorites**, and tag labels are normalized for display.
+The tags section shows up to five of the most frequent tags in the active article-status collection and appears only when tag data is available. Its heading names that scope, such as **Top tags in Daily briefing**, **Top tags in Unread**, or **Top tags in Saved**, and tag labels are normalized for display.
 
 Selecting a tag scopes articles across all categories and feeds. Selecting the active tag again clears that tag selection.
 
-Each tag count represents matching canonical articles in the active Daily Briefing, Unread, Read, Favorites, Hot, or Clicked collection. Event grouping may collapse those articles visually, but does not change the article count. Switching status requests a new ranked tag snapshot, and tags without matches in that status do not appear. Daily Briefing tag membership follows its saved period, unread-only, score-threshold, source-diversity, interest-match, and developing-event preferences.
+Each tag count represents matching canonical articles in the active Daily Briefing, Unread, Read, Saved, Hot, or OpenedOriginal collection. Event grouping may collapse those articles visually, but does not change the article count. Switching status requests a new ranked tag snapshot, and tags without matches in that status do not appear. Daily Briefing tag membership follows its saved period, unread-only, score-threshold, source-diversity, interest-match, and developing-event preferences.
 
 Tag counts are fetched snapshots. They do not change merely because the user scrolls or opens articles; they change when tag data is explicitly fetched again.
 
@@ -70,13 +70,13 @@ The category area is the hierarchical view of the user's subscriptions. It conta
 
 A category count is the aggregate of the corresponding counts for its underlying feeds. Selecting a category expands that category and scopes the article list to all of its feeds. Selecting an individual feed narrows the scope further. Only the selected category is expanded.
 
-Category and feed counts use the active All feeds status. The supported count dimensions are read, unread, favorites, hot, and clicked. Counts must remain consistent at all three levels:
+Category and feed counts use the active All feeds status. The supported count dimensions are read, unread, saved, hot, and openedOriginal. Counts must remain consistent at all three levels:
 
 1. The global All feeds total.
 2. The category aggregate.
 3. The individual feed total.
 
-These counts are dynamic. Reading an article, restoring it to unread, changing favorite state, clicking an article, receiving new articles, marking a selection as read, or refreshing overview data can change the relevant global, category, and feed totals.
+These counts are dynamic. Reading an article, restoring it to unread, changing saved state, clicking an article, receiving new articles, marking a selection as read, or refreshing overview data can change the relevant global, category, and feed totals.
 
 Category aggregation is also dynamic when subscriptions are managed. Adding or removing a feed must add or remove its contribution. Moving a feed between categories must subtract every applicable count from the source category and add it to the destination category without changing the global totals. Removing a category or feed must also reconcile the affected aggregates. Authoritative overview refreshes recalculate the hierarchy from server data.
 

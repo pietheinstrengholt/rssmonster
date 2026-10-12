@@ -37,51 +37,51 @@ describe('interaction-based Island recency', () => {
     }
   });
 
-  it('treats a favorite made today on a 2022 article as fresh and decays old interaction on a new article', () => {
+  it('treats a saved made today on a 2022 article as fresh and decays old interaction on a new article', () => {
     vi.spyOn(Date, 'now').mockReturnValue(now);
-    expect(computeArticleSignals(source({ favoriteInd: 1, favoritedAt: today })).positiveScore).toBe(4);
-    expect(computeArticleSignals(source({ publishedAt: today, favoriteInd: 1, favoritedAt: old })).positiveScore)
-      .toBeCloseTo(4 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.favoritedAt));
-    expect(computeArticleSignals(source({ favoriteInd: 1, favoritedAt: today })).positiveScore)
-      .toBeGreaterThan(computeArticleSignals(source({ publishedAt: today, favoriteInd: 1, favoritedAt: old })).positiveScore);
+    expect(computeArticleSignals(source({ savedInd: 1, savedAt: today })).positiveScore).toBe(4);
+    expect(computeArticleSignals(source({ publishedAt: today, savedInd: 1, savedAt: old })).positiveScore)
+      .toBeCloseTo(4 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.savedAt));
+    expect(computeArticleSignals(source({ savedInd: 1, savedAt: today })).positiveScore)
+      .toBeGreaterThan(computeArticleSignals(source({ publishedAt: today, savedInd: 1, savedAt: old })).positiveScore);
   });
 
   it('halves the capped two-point click contribution after one click half-life', () => {
     vi.spyOn(Date, 'now').mockReturnValue(now);
-    const lastClickedAt = new Date(now - SIGNAL_HALF_LIFE_DAYS.lastClickedAt * 86400000);
-    expect(computeArticleSignals(source({ clickedAmount: 20, lastClickedAt })).positiveScore).toBeCloseTo(1);
+    const lastOpenedOriginalAt = new Date(now - SIGNAL_HALF_LIFE_DAYS.lastOpenedOriginalAt * 86400000);
+    expect(computeArticleSignals(source({ openedOriginalCount: 20, lastOpenedOriginalAt })).positiveScore).toBeCloseTo(1);
   });
 
   it('decays each positive signal independently, preserving all weights and the click cap', () => {
     vi.spyOn(Date, 'now').mockReturnValue(now);
-    const article = source({ positiveInd: 1, positiveFeedbackAt: old, favoriteInd: 1, favoritedAt: today,
-      clickedAmount: 8, lastClickedAt: old, attentionBucket: 3, lastMeaningfulReadAt: today });
+    const article = source({ positiveInd: 1, positiveFeedbackAt: old, savedInd: 1, savedAt: today,
+      openedOriginalCount: 8, lastOpenedOriginalAt: old, attentionBucket: 3, lastMeaningfulReadAt: today });
     expect(computeArticleSignals(article).positiveScore).toBeCloseTo(8 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.positiveFeedbackAt)
-      + 4 + 2 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.lastClickedAt) + 1);
-    expect(computeArticleSignals({ ...article, favoritedAt: old }).positiveScore).toBeLessThan(computeArticleSignals(article).positiveScore);
+      + 4 + 2 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.lastOpenedOriginalAt) + 1);
+    expect(computeArticleSignals({ ...article, savedAt: old }).positiveScore).toBeLessThan(computeArticleSignals(article).positiveScore);
   });
 
   it('keeps publication as the null-clock legacy fallback, without overriding known clocks', () => {
     vi.spyOn(Date, 'now').mockReturnValue(now);
-    expect(computeArticleSignals(source({ favoriteInd: 1, favoritedAt: null })).positiveScore)
-      .toBeCloseTo(4 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.favoritedAt));
+    expect(computeArticleSignals(source({ savedInd: 1, savedAt: null })).positiveScore)
+      .toBeCloseTo(4 * behaviorRecencyWeight(old, SIGNAL_HALF_LIFE_DAYS.savedAt));
     expect(evaluate(source({ positiveInd: 1, publishedAt: today, positiveFeedbackAt: old })).score).toBe(0);
     expect(evaluate(source({ positiveInd: 1, publishedAt: today, positiveFeedbackAt: null })).score).toBeGreaterThan(0);
   });
 
-  it('uses the sign-specific clock and lets recent favorites survive old positive feedback', () => {
+  it('uses the sign-specific clock and lets recent saved survive old positive feedback', () => {
     expect(evaluate(source({ positiveInd: 1, positiveFeedbackAt: today })).score).toBeGreaterThan(0);
     expect(evaluate(source({ negativeInd: 1, negativeFeedbackAt: today, positiveFeedbackAt: old })).score).toBeLessThan(0);
     expect(evaluate(source({ negativeInd: 1, negativeFeedbackAt: old, positiveFeedbackAt: today, publishedAt: today })).score).toBe(0);
-    const both = evaluate(source({ positiveInd: 1, positiveFeedbackAt: old, favoriteInd: 1, favoritedAt: today }));
-    expect(both.score).toBe(evaluate(source({ favoriteInd: 1, favoritedAt: today })).score);
+    const both = evaluate(source({ positiveInd: 1, positiveFeedbackAt: old, savedInd: 1, savedAt: today }));
+    expect(both.score).toBe(evaluate(source({ savedInd: 1, savedAt: today })).score);
     const monthAgo = new Date(now - 30 * 86400000);
     expect(evaluate(source({ negativeInd: 1, negativeFeedbackAt: monthAgo })).score)
       .toBeCloseTo(evaluate(source({ negativeInd: 1, negativeFeedbackAt: today })).score / 2, 3);
   });
 
   it('uses interaction days for current support breadth', () => {
-    const rows = [source({ id: 1, favoriteInd: 1, favoritedAt: today }), source({ id: 2, favoriteInd: 1, favoritedAt: new Date(now - 86400000) })];
+    const rows = [source({ id: 1, savedInd: 1, savedAt: today }), source({ id: 2, savedInd: 1, savedAt: new Date(now - 86400000) })];
     expect(islandCohesion(rows, [1, 0], 'test-model').distinctInteractionDays).toBe(2);
   });
 
@@ -111,8 +111,8 @@ describe('interaction-based Island recency', () => {
     const category = await db.Category.create({ userId: user.id, name: 'Recency' });
     const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Recency', url: `https://${user.id}.example/rss` });
     const values = { userId: user.id, feedId: feed.id, title: 'Database release', embedding_model: 'test-model', articleVector: [1, 0] };
-    await db.Article.bulkCreate(Array.from({ length: 501 }, () => ({ ...values, publishedAt: today, clickedAmount: 1, lastClickedAt: old })));
-    const fresh = await db.Article.create({ ...values, publishedAt: old, favoriteInd: 1, favoritedAt: today });
+    await db.Article.bulkCreate(Array.from({ length: 501 }, () => ({ ...values, publishedAt: today, openedOriginalCount: 1, lastOpenedOriginalAt: old })));
+    const fresh = await db.Article.create({ ...values, publishedAt: old, savedInd: 1, savedAt: today });
     const negative = await db.Article.create({ ...values, publishedAt: old, negativeInd: 1, negativeFeedbackAt: today });
     const stale = await db.Article.create({ ...values, publishedAt: today, positiveInd: 1, positiveFeedbackAt: old });
     const evidence = await loadIslandEvidence(user.id, { now });

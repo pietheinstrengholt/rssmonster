@@ -1,4 +1,5 @@
 import { archivingSettingsSchema, getArchivingSettings, saveArchivingSettings } from '../services/archivingSettings.js';
+import { canonicalArticleState } from '../utils/articleStateContract.js';
 
 export async function get(req, res) {
   const userId = req.userData?.userId;
@@ -14,7 +15,7 @@ export async function get(req, res) {
 export async function put(req, res) {
   const userId = req.userData?.userId;
   if (!userId) return res.status(401).json({ error: 'Unauthorized: missing userId' });
-  const parsed = archivingSettingsSchema.safeParse(req.body);
+  const parsed = archivingSettingsSchema.safeParse(canonicalArticleState(req.body));
   if (!parsed.success) return res.status(400).json({ error: 'Invalid archiving settings', details: parsed.error.issues });
   try {
     return res.json(await saveArchivingSettings(userId, parsed.data));

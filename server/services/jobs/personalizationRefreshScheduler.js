@@ -12,8 +12,8 @@ const hasPersonalization = sequelize.literal(`(
   OR EXISTS (SELECT 1 FROM articles WHERE articles.userId = users.id
     AND articles.filteredInd = 0 AND articles.duplicateOfArticleId IS NULL
     AND (articles.interestScore <> 0 OR (articles.articleVector IS NOT NULL
-      AND (articles.positiveInd = 1 OR articles.negativeInd = 1 OR articles.favoriteInd = 1
-        OR articles.clickedAmount > 0 OR articles.attentionBucket >= 3))))
+      AND (articles.positiveInd = 1 OR articles.negativeInd = 1 OR articles.savedInd = 1
+        OR articles.openedOriginalCount > 0 OR articles.attentionBucket >= 3))))
 )`);
 // Dead/cancelled work stays visible for operator recovery; the timer cannot reset retry budgets.
 const noOutstandingRefresh = sequelize.literal(`NOT EXISTS (

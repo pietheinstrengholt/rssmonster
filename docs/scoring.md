@@ -76,7 +76,7 @@ an out-of-range contribution.
 Interest is a bounded signed contribution from trusted personal evidence.
 Island paths separate preference strength, Island confidence and relationship
 confidence. Direct vectors determine Island relationships; explicit behavioral
-fallback preserves unrepresented likes/favorites/dislikes with recency and intent
+fallback preserves unrepresented likes/saved/dislikes with recency and intent
 attenuation. The strongest positive and strongest negative contributions are
 combined without blindly summing correlated paths. Positive interest promotes
 relevant material; negative interest penalizes it. FeedTrust is separate.

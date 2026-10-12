@@ -34,9 +34,9 @@ const configuredHalfLife = (name, fallback) => {
 };
 // True half-lives for durable Article evidence, keyed by the signal's interaction clock.
 export const SIGNAL_HALF_LIFE_DAYS = Object.freeze({
-  lastClickedAt: configuredHalfLife('ISLAND_CLICK_HALF_LIFE_DAYS', 30),
+  lastOpenedOriginalAt: configuredHalfLife('ISLAND_OPENED_ORIGINAL_HALF_LIFE_DAYS', configuredHalfLife('ISLAND_CLICK_HALF_LIFE_DAYS', 30)),
   lastMeaningfulReadAt: configuredHalfLife('ISLAND_DEEP_READ_HALF_LIFE_DAYS', 90),
-  favoritedAt: configuredHalfLife('ISLAND_FAVORITE_HALF_LIFE_DAYS', 365),
+  savedAt: configuredHalfLife('ISLAND_SAVED_HALF_LIFE_DAYS', configuredHalfLife('ISLAND_FAVORITE_HALF_LIFE_DAYS', 365)),
   positiveFeedbackAt: configuredHalfLife('ISLAND_POSITIVE_FEEDBACK_HALF_LIFE_DAYS', 730),
   negativeFeedbackAt: configuredHalfLife('ISLAND_NEGATIVE_FEEDBACK_HALF_LIFE_DAYS', 365)
 });
@@ -50,13 +50,13 @@ export const ISLAND_DEBUG = ['1', 'true', 'yes'].includes(
 );
 
 // Click quantity contributes at most two points before recency decay.
-export const MAX_ARTICLE_CLICKS = 2;
+export const MAX_ARTICLE_OPENED_ORIGINALS = 2;
 
 // Defines the signal weights enforced by this service.
 export const SIGNAL_WEIGHTS = {
   positive: 8,
-  star: 4,
-  click: 1,
+  save: 4,
+  openedOriginal: 1,
   deepRead: 1,
   negative: 8,
 };
@@ -64,7 +64,7 @@ export const SIGNAL_WEIGHTS = {
 // Discovery is a bounded workspace; it does not increase active Island capacity.
 export const ISLAND_DISCOVERY_PROFILE_LIMIT = 1000;
 export const ISLAND_REPLACEMENT_MARGIN = 0.10;
-export const ISLAND_SIGNAL_NORMALIZATION = SIGNAL_WEIGHTS.star + SIGNAL_WEIGHTS.deepRead + MAX_ARTICLE_CLICKS * SIGNAL_WEIGHTS.click;
+export const ISLAND_SIGNAL_NORMALIZATION = SIGNAL_WEIGHTS.save + SIGNAL_WEIGHTS.deepRead + MAX_ARTICLE_OPENED_ORIGINALS * SIGNAL_WEIGHTS.openedOriginal;
 
 // These helpers keep scores bounded and avoid zero weights in weighted averages.
 export const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
@@ -127,8 +127,8 @@ export function behaviorRecencyWeight(interactedAt, halfLifeDays) {
 export function buildPositiveSignalsAccumulator() {
   return {
     positives: 0,
-    stars: 0,
-    clicks: 0,
+    saves: 0,
+    openedOriginals: 0,
     deepReads: 0,
     negatives: 0
   };
@@ -137,8 +137,8 @@ export function buildPositiveSignalsAccumulator() {
 // This function adds one positive-signal counter into another.
 export function addPositiveSignals(target, source) {
   target.positives += source.positives || 0;
-  target.stars += source.stars;
-  target.clicks += source.clicks;
+  target.saves += source.saves;
+  target.openedOriginals += source.openedOriginals;
   target.deepReads += source.deepReads;
   target.negatives += source.negatives || 0;
 }
@@ -147,8 +147,8 @@ export function addPositiveSignals(target, source) {
 export function normalizePositiveSignals(source = {}) {
   return {
     positives: Number(source.positives || 0),
-    stars: Number(source.stars || 0),
-    clicks: Number(source.clicks || 0),
+    saves: Number(source.saves || 0),
+    openedOriginals: Number(source.openedOriginals || 0),
     deepReads: Number(source.deepReads || 0),
     negatives: Number(source.negatives || 0)
   };
@@ -162,8 +162,8 @@ export function mergePositiveSignals(existingSignals = {}, incomingSignals = {})
   const incoming = normalizePositiveSignals(incomingSignals);
 
   merged.positives += incoming.positives;
-  merged.stars += incoming.stars;
-  merged.clicks += incoming.clicks;
+  merged.saves += incoming.saves;
+  merged.openedOriginals += incoming.openedOriginals;
   merged.deepReads += incoming.deepReads;
   merged.negatives += incoming.negatives;
 
