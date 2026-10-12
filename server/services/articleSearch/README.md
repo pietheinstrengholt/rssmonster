@@ -28,14 +28,23 @@ The funnel measures selected IDs, not actual browser impressions. With `includeF
 one owned visible article, including zero reason, similarity threshold and pre-selection
 Island match count. `storedScore`, `scoredAt` and `matchesStoredScore` distinguish
 current recomputation from persisted scoring history; current reasons are not asserted
-to explain a stale stored value. This endpoint does not persist refreshed scores.
+to explain a stale stored value. A stale evaluation may be corrected and recorded
+after these diagnostic fields are captured.
 
 When an Island expiry/archival boundary invalidates cached personalization, search
-recomputes interest before Recommended sorting and result limits. Detail endpoints
-apply the same transient correction; `interestEvaluation.scoredAt` then identifies
-the read-time evaluation. Stored scores remain unchanged, and the diagnostic fields
-above still describe persisted history. Morning-summary recommendation ordering uses
-the current interest evaluation already loaded for its explanations.
+recomputes only affected Article evaluations before Recommended sorting and result
+limits. Historical archived Islands do not invalidate scores evaluated after their
+boundary. Unknown current lifecycle clocks use the Island update time for invalidation
+only; technical timestamps never grant active participation.
+
+Detail endpoints apply the same correction. Successful corrections persist only
+`interestScore` and `interestScoredAt`, without changing Article `updatedAt`, user
+behavior or Island state. Bounded transactions lock eligible owned targets and protect
+newer evaluations, including ambiguous same-second writes. Later requests reuse the
+recorded scores until another lifecycle boundary invalidates them. The diagnostic
+fields above describe the stored history observed before this request's correction.
+Morning-summary recommendation ordering uses the current interest evaluation already
+loaded for its explanations.
 
 Article collection requests share one lazy, user-scoped personalization context
 across ranking, first-page details and Island attribution. Evidence and per-Article
@@ -127,7 +136,6 @@ Boolean filters accept `true` or `false`, case-insensitively.
 | --- | --- |
 | `saved:true` | Saved articles only. |
 | `saved:false` | Non-saved articles only. |
-| `favorite:true` / `favorite:false`, `star:true` / `star:false` | Legacy aliases for `saved`. |
 | `unread:true` | Unread articles. |
 | `unread:false` | Read articles. |
 | `read:true` | Read articles. |
@@ -288,8 +296,8 @@ status scope.
 ## Sorting
 
 The toolbar and Smart Folder editor expose Newest, Oldest, Top Stories,
-Recommended, and Quality. The service also retains two aliases for existing
-saved or manually authored expressions.
+Recommended, and Quality & source trust. Expressions use the canonical sort
+values listed below.
 
 | Expression | Behavior |
 | --- | --- |
@@ -484,7 +492,7 @@ Quoted text represents phrase intent. Unquoted text represents term intent. Fiel
 
 When a structured token and an external request parameter describe the same concept, the search expression is the more specific user intent and takes precedence. This allows saved views and UI defaults to be refined from the search box without changing the surrounding view.
 
-Legacy vocabulary remains part of the architecture when it represents the same user concept. For example, "saved", "favorite" and "star" are one conceptual state even if older clients use older language.
+Structured search uses only canonical domain names: `saved` and `openedOriginal`. Historical expressions are converted by migration code; runtime search does not translate retired vocabulary.
 
 ## Article Eligibility
 

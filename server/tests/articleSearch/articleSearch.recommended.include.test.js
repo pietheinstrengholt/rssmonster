@@ -6,7 +6,7 @@ const { Article, BriefingPreference, Feed, Island, Setting, Tag } = db;
 
 describe('articleSearch recommended include wiring', () => {
   beforeEach(() => {
-    vi.spyOn(Island, 'findOne').mockResolvedValue(null);
+    vi.spyOn(Island, 'findAll').mockResolvedValue([]);
     vi.spyOn(Setting, 'findOne').mockResolvedValue({
       minAdvertisementScore: 0,
       minToneScore: 0,

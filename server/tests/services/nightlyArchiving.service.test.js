@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
 import { runNightlyArchiving } from '../../services/nightlyArchiving.js';
+import { resetDatabase } from '../helpers/resetDb.js';
 
 async function fixture(settings, recentRead = false) {
   const user = await db.User.create({ username: `nightly-${Date.now()}-${Math.random()}`, password: 'test-password' });
@@ -20,6 +21,9 @@ async function fixture(settings, recentRead = false) {
 const remaining = userId => db.Article.count({ where: { userId } });
 
 describe('nightly per-user archiving', () => {
+  // This service scans every user, so unrelated files' fixtures must not enter its scenarios.
+  beforeAll(resetDatabase, 30000);
+
   it('uses each user’s settings, applies defaults, logs counts including zero, and continues after user failures', async () => {
     const failed = await fixture({ neverDeleteUnreadArticles: false });
     const capped = await fixture({ neverDeleteUnreadArticles: false, maximumArticlesTotal: 1 });

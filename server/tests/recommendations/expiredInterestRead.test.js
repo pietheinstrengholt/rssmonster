@@ -23,7 +23,7 @@ async function fixture(score = 0.8, islandValues = {}) {
   const candidate = await db.Article.create({ ...values, interestScore: score, interestScoredAt: ago(1) });
   const island = await db.Island.create({ userId: user.id, label: 'Kubernetes', islandVector: [1, 0],
     embedding_model: 'test-model', weight: Math.sign(score), archivedInd: false,
-    lastBehaviorAt: ago(ISLAND_INACTIVITY_DAYS), ...islandValues });
+    lastBehaviorAt: ago(ISLAND_INACTIVITY_DAYS), ...islandValues }, { silent: Boolean(islandValues.updatedAt) });
   return { user, candidate, island, values };
 }
 
@@ -32,14 +32,14 @@ describe('expired cached interest at read time', () => {
   beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(now); });
   afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
-  it.each([0.8, -0.8])('removes cached %s influence at the exact deadline without persisting archival or scores', async score => {
+  it.each([0.8, -0.8])('records corrected %s interest at the exact deadline without changing archival', async score => {
     const { user, candidate, island } = await fixture(score);
     await refreshExpiredArticleInterests(user.id, [candidate]);
     expect(candidate.interestScore).toBe(0);
     expect(candidate.interestScoredAt).toEqual(now);
     await candidate.reload(); await island.reload();
-    expect(Number(candidate.interestScore)).toBeCloseTo(score);
-    expect(candidate.interestScoredAt).toEqual(ago(1));
+    expect(Number(candidate.interestScore)).toBe(0);
+    expect(candidate.interestScoredAt).toEqual(now);
     expect(island.archivedInd).toBe(false);
   });
 
@@ -76,21 +76,22 @@ describe('expired cached interest at read time', () => {
     expect((await search()).itemIds).toEqual([score > 0 ? candidate.id : neutral.id]);
     vi.setSystemTime(now);
     expect((await search()).itemIds).toEqual([score > 0 ? neutral.id : candidate.id]);
-    expect(Number((await candidate.reload()).interestScore)).toBeCloseTo(score);
+    expect(Number((await candidate.reload()).interestScore)).toBe(0);
   });
 
   it('serializes current interest in detail APIs while keeping stored diagnostics identifiable', async () => {
     const { user, candidate } = await fixture();
     const authorization = `Bearer ${jwt.sign({ userId: user.id, username: user.username }, getJwtSecret())}`;
+    const single = await request(app).get(`/api/articles/${candidate.id}?diagnostics=true`).set('Authorization', authorization);
+    expect(single.status).toBe(200);
+    expect(single.body.article.interestScore).toBe(0);
+    expect(single.body.article.interestDiagnostics.storedScore).toBeCloseTo(0.8);
     const detail = await request(app).post('/api/articles/details').set('Authorization', authorization)
       .send({ articleIds: String(candidate.id) });
     expect(detail.status).toBe(200);
     expect(detail.body[0].interestScore).toBe(0);
     expect(detail.body[0].recommendation.reasons.some(reason => reason.code === 'interest_match')).toBe(false);
-    const single = await request(app).get(`/api/articles/${candidate.id}?diagnostics=true`).set('Authorization', authorization);
-    expect(single.status).toBe(200);
-    expect(single.body.article.interestScore).toBe(0);
-    expect(single.body.article.interestDiagnostics.storedScore).toBeCloseTo(0.8);
+    expect(Number((await candidate.reload()).interestScore)).toBe(0);
   });
 
   it.each([1, -1])('keeps ranking and reloaded details on the same request evidence for sign %s', async sign => {
@@ -111,11 +112,15 @@ describe('expired cached interest at read time', () => {
     expect(candidate.interestScore).toBe(score);
     expect(candidate.interestScoredAt).toEqual(now);
 
-    // A separate request must observe the new evidence, without modifying persisted scores.
+    // A separate request records the new evidence; an older context cannot overwrite it.
+    vi.setSystemTime(new Date(now.getTime() + 1000));
     await candidate.reload();
     await refreshExpiredArticleInterests(user.id, [candidate]);
     expect(candidate.interestScore).toBe(0);
-    expect(Number((await candidate.reload()).interestScore)).toBeCloseTo(0.8);
+    expect(Number((await candidate.reload()).interestScore)).toBe(0);
+    await refreshExpiredArticleInterests(user.id, [candidate], personalization.now, personalization);
+    expect(candidate.interestScore).toBe(score);
+    expect(Number((await candidate.reload()).interestScore)).toBe(0);
   });
 
   it('reuses evaluations for attribution while retaining the stored-score match requirement', async () => {
@@ -126,12 +131,100 @@ describe('expired cached interest at read time', () => {
     await refreshExpiredArticleInterests(user.id, [candidate], personalization.now, personalization);
     expect(candidate.interestScore).toBeGreaterThan(0);
     const score = candidate.interestScore;
+    await db.Article.update({ interestScore: 0.8 }, { where: { id: candidate.id } });
     expect((await loadInterestIslandAttributions(user.id, [candidate], personalization)).size).toBe(0);
     await db.Article.update({ interestScore: score }, { where: { id: candidate.id } });
     const shared = await loadInterestIslandAttributions(user.id, [candidate], personalization);
     const independent = await loadInterestIslandAttributions(user.id, [candidate]);
     expect(shared).toEqual(independent);
     expect(shared.get(String(candidate.id))).toMatchObject({ id: active.id, label: 'Current preference' });
+  });
+
+  it.each([
+    { archivedInd: true, archivedAt: ago(3), lastBehaviorAt: null },
+    { archivedInd: false, lastBehaviorAt: null },
+    { archivedInd: false, lastBehaviorAt: new Date(now.getTime() + 86400000) },
+    { archivedInd: true, archivedAt: null, lastBehaviorAt: ago(2) }
+  ])('reuses evaluations after unchanged historical lifecycle state %j', async state => {
+    // Malformed lifecycle state was already present when these scores were evaluated.
+    const { user, candidate } = await fixture(0, { ...state, updatedAt: ago(2) });
+    for (const clock of [now, new Date(now.getTime() + 1000)]) {
+      vi.setSystemTime(clock);
+      await candidate.reload();
+      await refreshExpiredArticleInterests(user.id, [candidate]);
+      expect(candidate.interestScore).toBe(0);
+      expect(candidate.interestScoredAt).toEqual(ago(1));
+    }
+  });
+
+  it('refreshes only scores predating expiry and reuses the correction on later requests', async () => {
+    const { user, candidate, values } = await fixture(0.8, { lastBehaviorAt: ago(ISLAND_INACTIVITY_DAYS + 0.5) });
+    const fresh = await db.Article.create({ ...values, title: 'Already evaluated', interestScore: 0, interestScoredAt: ago(0.25) });
+    const originalUpdatedAt = candidate.updatedAt;
+    vi.setSystemTime(new Date(now.getTime() + 1000));
+    await refreshExpiredArticleInterests(user.id, [candidate, fresh]);
+    const correctedAt = candidate.interestScoredAt;
+    expect(candidate.interestScore).toBe(0);
+    expect(correctedAt).toEqual(new Date(now.getTime() + 1000));
+    expect(fresh.interestScoredAt).toEqual(ago(0.25));
+    await candidate.reload();
+    expect(candidate.interestScore).toBe(0);
+    expect(candidate.interestScoredAt).toEqual(correctedAt);
+    expect(candidate.updatedAt).toEqual(originalUpdatedAt);
+
+    vi.setSystemTime(new Date(now.getTime() + 2000));
+    await refreshExpiredArticleInterests(user.id, [candidate, fresh]);
+    expect(candidate.interestScoredAt).toEqual(correctedAt);
+    expect(fresh.interestScoredAt).toEqual(ago(0.25));
+  });
+
+  it('uses early archival rather than a later expiry to invalidate scores', async () => {
+    const { user, candidate } = await fixture(0, {
+      lastBehaviorAt: ago(ISLAND_INACTIVITY_DAYS + 0.5), archivedInd: true, archivedAt: ago(2)
+    });
+    await refreshExpiredArticleInterests(user.id, [candidate]);
+    expect(candidate.interestScoredAt).toEqual(ago(1));
+  });
+
+  it('does not overwrite an evaluation newer than the request evidence', async () => {
+    const { user, candidate } = await fixture();
+    const personalization = createRequestPersonalization(user.id);
+    const newerAt = new Date(now.getTime() + 1000);
+    await db.Article.update({ interestScore: -0.25, interestScoredAt: newerAt }, { where: { userId: user.id, id: candidate.id } });
+    await refreshExpiredArticleInterests(user.id, [candidate], personalization.now, personalization);
+    expect(candidate.interestScore).toBe(0);
+    await candidate.reload();
+    expect(candidate.interestScore).toBe(-0.25);
+    expect(candidate.interestScoredAt).toEqual(newerAt);
+  });
+
+  it('reuses a worker correction completed after the candidate was loaded', async () => {
+    const { user, candidate } = await fixture(0.8, { lastBehaviorAt: ago(ISLAND_INACTIVITY_DAYS + 0.5) });
+    const correctedAt = ago(0.25);
+    await db.Article.update({ interestScore: 0, interestScoredAt: correctedAt }, { where: { userId: user.id, id: candidate.id } });
+    await refreshExpiredArticleInterests(user.id, [candidate]);
+    expect(candidate.interestScore).toBe(0);
+    expect(candidate.interestScoredAt).toEqual(correctedAt);
+    await candidate.reload();
+    expect(candidate.interestScoredAt).toEqual(correctedAt);
+  });
+
+  it('records neutral legacy evaluations across batches without touching invisible articles', async () => {
+    const { user, candidate, values } = await fixture();
+    const eligible = await db.Article.bulkCreate(Array.from({ length: 201 }, (_, index) => ({
+      ...values, title: `Legacy ${index}`, interestScore: 0.8, interestScoredAt: null
+    })));
+    const filtered = await db.Article.create({ ...values, title: 'Filtered', filteredInd: true, interestScore: 0.8 });
+    const duplicate = await db.Article.create({ ...values, title: 'Duplicate', duplicateOfArticleId: candidate.id, interestScore: 0.8 });
+    await refreshExpiredArticleInterests(user.id, [...eligible, filtered, duplicate]);
+    const rows = await db.Article.findAll({ where: { userId: user.id, id: eligible.map(article => article.id) } });
+    expect(rows).toHaveLength(201);
+    expect(rows.every(article => article.interestScore === 0 && article.interestScoredAt.getTime() === now.getTime())).toBe(true);
+    for (const article of [filtered, duplicate]) {
+      await article.reload();
+      expect(article.interestScore).toBeCloseTo(0.8);
+      expect(article.interestScoredAt).toBeNull();
+    }
   });
 
   it('rejects sharing personalization across users', async () => {
