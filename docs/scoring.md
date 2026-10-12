@@ -34,7 +34,7 @@ divided by `100` once. A missing component uses the neutral-good value `70`.
 Higher `advertisementScore` means less promotional content, so all three inputs
 have the same higher-is-better direction.
 
-The article badge, Settings → Scores → Overall quality, and Smart Folder quality
+The article badge, Settings → Scores → Overall quality, and Smart Folder Overall quality
 control show this score out of 100. The badge preserves fractional points so that
 an article shown as 74.75 does not appear to meet a minimum of 75. Smart Folder
 expressions retain their normalized syntax: `quality:>=0.75` means at least 75/100.
@@ -115,16 +115,24 @@ ranking. The optional Unread high-trust preference is a legacy override that
 can blend bounded FeedTrust into these chronological modes; when disabled,
 ordering is strictly by publication time and stable article ID.
 
-### Quality
+### Quality & source trust
 
-Quality ranking combines the value of the individual article with the source's
+**Quality & source trust** (`sort:quality`) ranking combines the value of the individual article with the source's
 recent record:
 
 ```text
 Quality = 0.70 × articleQuality + 0.30 × feedTrust
 ```
 
+The formulas retain the internal symbol `Quality` for this source-aware score.
 The two inputs remain independently visible and conceptually distinct.
+**Overall quality** names the article-only score and its filters. **Writing
+quality** names only the `qualityScore` component. UI controls and badges use
+0–100; search expressions use the normalized 0–1 score. For example,
+`quality:>=0.75` requires Overall quality of at least 75/100, independently of
+source trust. Query preview chips label the filter **Overall quality** and the
+sort **Quality & source trust**; the `quality` and `sort:quality` identifiers
+remain unchanged.
 
 ### Recommended
 
@@ -165,7 +173,7 @@ coverage**, while personalization coverage may legitimately be sparse.
 | Interest | Optional; zero when missing or nonfinite. |
 | Event/corroboration | Optional; zero without an Event. |
 | Island, embedding | Optional; not Recommended prerequisites. |
-| Quality components | Unavailable/nonfinite article components default to 70. |
+| Article quality components | Unavailable/nonfinite article components default to 70. |
 | FeedTrust | Missing/nonfinite trust defaults to 0.5; finite stored values remain meaningful. |
 | Freshness | Article model uses zero for missing publication time; a plain object without freshness uses 0.5. |
 | Matching rule tags | Optional; no boost without a match. |
@@ -174,7 +182,7 @@ Recommended is computed at runtime. The separate interest updater processes
 canonical, unfiltered, unread Articles; that update scope does not restrict runtime
 Recommended ranking to unread or Island-matched Articles.
 
-Because Quality already contains a bounded FeedTrust contribution, Recommended
+Because Quality & source trust already contains a bounded FeedTrust contribution, Recommended
 does not add FeedTrust again as an independent raw boost. Event coverage,
 cross-source evidence, and event size are not separate Recommended terms;
 corroboration is its only Event-derived contribution.
@@ -200,7 +208,7 @@ Top Stories =
 Top Stories answers which current, corroborated Events matter broadly.
 Recommended answers which articles are likely to matter to this user. Top
 Stories does not use Interest Islands or rule tags. A standalone article
-remains eligible and receives its freshness, Quality, and any Hot contribution.
+remains eligible and receives its freshness, Quality & source trust, and any Hot contribution.
 
 Both sorts add a flat `hotBoost = 0.07` for [Hot articles]({% link hot-articles.md %})
 when `hotInd` is set, otherwise zero.
@@ -210,9 +218,9 @@ unchanged; Top Stories stays within `[0, 1]`.
 ### Supported sorts
 
 The visible toolbar order is **Newest, Oldest, Top Stories, Recommended,
-Quality**. These are the supported sorts for search and Smart Folder expressions.
+Quality & source trust**. These are the supported sorts for search and Smart Folder expressions.
 
-Recommended, Top Stories, and Quality are computed across the complete eligible
+Recommended, Top Stories, and Quality & source trust are computed across the complete eligible
 candidate set before a result limit is applied. Equal scores fall back to
 `publishedAt DESC`, then `id DESC`. These computed modes use a stable ordered ID
 collection for incremental article loading rather than database cursor pages.

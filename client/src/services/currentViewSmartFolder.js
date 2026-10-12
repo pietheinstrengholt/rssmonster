@@ -30,7 +30,7 @@ export function currentViewSmartFolder(selection, { dateRange = 'all' } = {}) {
 // Chips describe the persisted expression, including advanced operators and false values.
 export function smartFolderRulePreview(query) {
   const names = { unread: 'Unread', read: 'Read', saved: 'Saved', favorite: 'Saved', star: 'Saved', openedoriginal: 'Opened originals', clicked: 'Opened originals', hot: 'Hot', event: 'Events', developing: 'Developing stories', seen: 'Seen', briefing: 'Briefing' };
-  const sorts = { desc: 'Newest', asc: 'Oldest', recommended: 'Recommended', quality: 'Quality', topStories: 'Top stories' };
+  const sorts = { desc: 'Newest', asc: 'Oldest', recommended: 'Recommended', quality: 'Quality & source trust', topStories: 'Top stories' };
   return tokenizeSmartFolderQuery(query).filter(token => !/^limit:/i.test(token) && !/^grouping:none$/i.test(token)).map((token, index) => {
     const match = token.match(/^([a-z]+):(.*)$/i);
     const key = match?.[1].toLowerCase() || (token.startsWith('@') ? 'date' : 'text');
@@ -41,7 +41,7 @@ export function smartFolderRulePreview(query) {
     else if (key === 'sort') label = sorts[value] || value;
     else if (key === 'quality' || key === 'freshness') {
       const score = value.match(/^(<=|>=|<|>|=)?([\d.]+)$/);
-      label = score ? `${key === 'quality' ? 'Quality' : 'Freshness'} ${score[1] || '='} ${Math.round(Number(score[2]) * 100)}` : token;
+      label = score ? `${key === 'quality' ? 'Overall quality' : 'Freshness'} ${score[1] || '='} ${Math.round(Number(score[2]) * 100)}${key === 'quality' ? '/100' : ''}` : token;
     } else if (key === 'firstseen') label = `Never seen or first seen within ${value}`;
     else if (key === 'date') label = { '@today': 'Published: last 24 hours', '@yesterday': 'Published: yesterday', '@lastweek': 'Published: last 7 days' }[token] || token;
     else if (!['tag', 'title', 'text'].includes(key)) label = `${key}: ${label}`;

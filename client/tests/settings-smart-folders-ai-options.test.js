@@ -51,7 +51,7 @@ describe('SettingsSmartFolders AI options', () => {
 
     const optionLabels = getSortOptionLabels(wrapper);
 
-    expect(wrapper.text()).not.toContain('Quality & freshness');
+    expect(wrapper.text()).not.toContain('Overall quality & freshness');
     expect(wrapper.text()).not.toContain('Events & Clusters');
     expect(optionLabels).toEqual([
       'Published date (newest)',
@@ -65,7 +65,7 @@ describe('SettingsSmartFolders AI options', () => {
 
     const optionLabels = getSortOptionLabels(wrapper);
 
-    expect(wrapper.text()).toContain('Quality & freshness');
+    expect(wrapper.text()).toContain('Overall quality & freshness');
     expect(wrapper.text()).toContain('Events & Clusters');
     expect(optionLabels).toEqual([
       'Published date (newest)',

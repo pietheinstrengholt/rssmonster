@@ -19,7 +19,7 @@ They update automatically as new articles arrive.
 - Results refresh continuously as new items match the query.
 - Limit: each folder returns up to `limitCount` articles (default 50).
 - Sorting respects the query (`sort:desc|asc`, `sort:topStories`, `sort:recommended`, and `sort:quality`).
-- The editor exposes Newest, Oldest, Top Stories, Recommended, and Quality.
+- The editor exposes Newest, Oldest, Top Stories, Recommended, and Quality & source trust.
 
 ---
 
@@ -29,7 +29,19 @@ They update automatically as new articles arrive.
 3. (Optional) Set `limitCount` to cap results (50 by default).
 4. Save. The folder updates itself as content changes.
 
-Use the same tokens as the search bar: status (`unread:true`, `saved:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), quality (`quality:>0.7`), freshness (`freshness:>=0.5`), event grouping (`event:true`, `eventCount:>=3`), hot items (`hot:true`), and sorts.
+Use the same tokens as the search bar: status (`unread:true`, `saved:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), Overall quality (`quality:>0.7`), freshness (`freshness:>=0.5`), event grouping (`event:true`, `eventCount:>=3`), hot items (`hot:true`), and sorts.
+
+## Overall quality and source-aware sorting
+
+**Overall quality** measures the article alone: 50% Writing quality, 25% Tone,
+and 25% Ad-free content. **Writing quality** is just one component.
+The editor's slider uses 0–100, while the `quality` expression uses 0–1:
+75/100 becomes `quality:>=0.75`. Preview chips identify this article-only filter
+as **Overall quality** and show the threshold out of 100.
+
+**Quality & source trust** (`sort:quality`) combines 70% Overall quality and
+30% FeedTrust to rank results. Source trust affects this ordering, not the
+Overall quality filter. These labels preserve the existing expressions and formulas.
 
 ## Publication time and first seen
 
@@ -77,7 +89,7 @@ suggested folder name before saving. To edit the saved expression later, open
 The action is available across article views, including compact layouts; it is
 hidden for non-search collections, an existing Smart Folder, or Daily Briefing.
 The draft includes the current search expression, status, tag, sort, grouping,
-and quality threshold. The unread view's Today and Yesterday presets are included.
+and Overall quality threshold. The unread view's Today and Yesterday presets are included.
 Feed/category selection and
 publication-date controls without equivalent query rules are omitted; the
 dialog flags that omission. The saved folder is a dynamic query, not a snapshot

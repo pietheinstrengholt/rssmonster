@@ -22,7 +22,7 @@ the search results, open the three-dot **More actions** menu, choose
 
 - `javascript @today sort:recommended` - fresh JavaScript stories ranked by recommended score
 - `title:"rust async" unread:true` - title contains the exact phrase, only unread
-- `tag:ai quality:>0.7 sort:quality` - tagged items with high quality first
+- `tag:ai quality:>0.7 sort:quality` - tagged items ranked by Quality & source trust
 - `author:"Ada Lovelace" language:en` - English-language articles by a matching author
 - `developing:true eventCount:>=3` - unread developing coverage from events with at least three articles
 - `hot:true limit:50` - up to 50 articles marked hot
@@ -51,7 +51,7 @@ unless a filter's detailed description below states otherwise.
 | Developing-story eligibility | `developing:true`, `developing:false` |
 | First-seen age | `firstSeen:12h`, `firstSeen:7d` |
 | Event size | `eventCount:3`, `eventCount:>=3` |
-| Quality score | `quality:0.7`, `quality:=0.7`, `quality:>0.7`, `quality:>=0.7`, `quality:<0.7`, `quality:<=0.7` |
+| Overall quality | `quality:0.7`, `quality:=0.7`, `quality:>0.7`, `quality:>=0.7`, `quality:<0.7`, `quality:<=0.7` |
 | Freshness score | `freshness:0.5`, `freshness:=0.5`, `freshness:>0.5`, `freshness:>=0.5`, `freshness:<0.5`, `freshness:<=0.5` |
 | Publication date | `@today`, `@yesterday`, `@lastweek`, `@YYYY-MM-DD`, `@"N days ago"`, `@N days ago`, `@"last Monday"`, `@last Monday` |
 | Sorting | `sort:desc`, `sort:asc`, `sort:topStories`, `sort:recommended`, `sort:quality` |
@@ -97,7 +97,7 @@ article assignments.
 
 ### Scores
 
-- `quality:>0.7` filters the computed 0–1 article-quality score.
+- `quality:>0.7` filters the computed 0–1 article-only Overall quality score; 0.7 equals 70/100 in the UI.
 - `freshness:>=0.5` filters the computed 0–1 publication-time freshness score.
 
 Both score filters accept `>`, `<`, `>=`, `<=`, or `=`. Omitting the operator uses `>=`, so `quality:0.7` means `quality:>=0.7`.
@@ -112,9 +112,9 @@ Both score filters accept `>`, `<`, `>=`, `<=`, or `=`. Omitting the operator us
 ### Sorting and limits
 
 - `sort:desc` orders newest first; `sort:asc` orders oldest first.
-- `sort:quality` orders by `70%` article quality and `30%` FeedTrust.
-- `sort:recommended` emphasizes personal interest, then freshness, Quality, corroboration, and an applicable rule-match boost.
-- `sort:topStories` emphasizes current Event importance, freshness, and Quality without personal-interest input.
+- `sort:quality` is labeled **Quality & source trust** and orders by `70%` Overall quality and `30%` FeedTrust. It does not change the article-only quality filter.
+- `sort:recommended` emphasizes personal interest, then freshness, Quality & source trust, corroboration, and an applicable rule-match boost.
+- `sort:topStories` emphasizes current Event importance, freshness, and Quality & source trust without personal-interest input.
 - `limit:50` caps the result set and overrides the normal search or Smart Folder limit.
 
 Use a positive integer for `limit`. A value of `0` is treated as though no
@@ -140,8 +140,8 @@ Date filters replace the normal published-date window; they are inclusive of the
 
 - If you provide search text, RSSMonster searches **all statuses** unless you add a status token. Without search text it defaults to unread.
 - When any search expression is used and no `limit` is provided, results are capped at 500 after sorting. Smart folders may apply their own limits.
-- Quality filters run after fetching, so they can reduce results even when the limit is higher.
-- Recommended, Top Stories, and Quality rank the complete eligible candidate set before applying a result limit. They return a stable ordered ID collection for incremental loading rather than cursor-paginating an already limited SQL page.
+- Overall quality filters run after fetching, so they can reduce results even when the limit is higher.
+- Recommended, Top Stories, and Quality & source trust rank the complete eligible candidate set before applying a result limit. They return a stable ordered ID collection for incremental loading rather than cursor-paginating an already limited SQL page.
 
 ---
 

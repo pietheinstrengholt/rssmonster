@@ -188,8 +188,8 @@
             <!-- Quality -->
             <fieldset v-if="aiEnabled" class="smart-folder-panel">
                 <legend>
-                    Quality & freshness
-                    <BootstrapIcon icon="info-circle-fill" title="Set minimum quality and freshness thresholds for matching articles." />
+                    Overall quality & freshness
+                    <BootstrapIcon icon="info-circle-fill" title="Filter by article-only overall quality and freshness. Source trust contributes separately to Quality & source trust sorting." />
                 </legend>
 
                 <label class="smart-folder-range">
@@ -204,6 +204,8 @@
                         step="1"
                     />
                 </label>
+
+                <p class="app-form-help">Overall quality uses 0–100 here and 0–1 in expressions: 75/100 becomes <code>quality:>=0.75</code>. Source trust affects sorting, not this score.</p>
 
                 <label class="smart-folder-range">
                     <span>Minimum freshness</span>

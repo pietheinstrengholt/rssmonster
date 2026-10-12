@@ -64,9 +64,9 @@ The editor supports:
 - Read, unread, saved, openedOriginal, and hot state filters
 - Publication-time presets and first-seen windows (including never-seen articles)
 - Tag, title, author, language, and free-text matching
-- Quality and freshness thresholds when AI is enabled
+- Overall quality and freshness thresholds when AI is enabled
 - Event and cluster filters when AI is enabled
-- Top Stories, Recommended, Quality, and publication-date ordering where supported
+- Top Stories, Recommended, Quality & source trust, and publication-date ordering where supported
 - Maximum result sizes of 50, 100, 250, or 500 articles
 
 In **Article timing**, **Time filter** distinguishes **Published: last 24 hours**
@@ -102,15 +102,20 @@ The section loads the existing collection before allowing additions, edits, dele
 
 ### Scores
 
-Scores controls the maximum accepted values for advertisement, sentiment, and quality scoring. Articles above a configured threshold are hidden from normal feed results.
+Scores provides a minimum Overall quality threshold and optional component thresholds. Articles below an enabled threshold are excluded, subject to the existing awaiting-analysis exemptions.
 
-All thresholds use a range from 0 to 100 and can be adjusted with either a slider or numeric input. Values are clamped to that range. Lower thresholds filter more aggressively; a threshold of 100 allows every score through.
+All thresholds use a range from 0 to 100 and can be adjusted with either a slider or numeric input. Values are clamped to that range. Higher thresholds filter more aggressively; 0 disables the corresponding filter.
 
-The three score meanings are:
+**Overall quality** is article-only: 50% Writing quality, 25% Tone, and 25%
+Ad-free content. Its controls use 0–100; `quality:>=0.75` uses the equivalent
+0–1 scale and means at least 75/100. **Quality & source trust** (`sort:quality`)
+adds FeedTrust for ranking and is separate from this filter.
+
+The three component score meanings are:
 
 - **Advertisement** measures absence of promotion: low values indicate promotion/spam; high values indicate less promotional content.
 - **Sentiment** uses higher values for more positive sentiment and lower values for negative/alarmist content.
-- **Quality** uses higher values for stronger article quality and lower values for shallow or clickbait-oriented content.
+- **Writing quality** (`qualityScore`) uses higher values for stronger writing and informational quality and lower values for shallow or clickbait-oriented content.
 
 Reset to Defaults changes the local controls to their default values. It does not persist until Save Changes is selected. Saving updates the current selection state, reloads visible content and overview data, and returns the Settings content to Welcome.
 

@@ -9,7 +9,6 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Quality | **Quality** can mean article-only overall quality, the `qualityScore` writing component, or source-aware `sort:quality`. Query preview chips abbreviate the source-aware sort to **Quality**, whereas the main menu says **Quality & source trust**. Inputs also use different scales. | [Quality explanation](client/src/components/articles/ArticleQualityExplanation.vue), [Scores settings](client/src/components/settings/SettingsScores.vue), [query preview](client/src/services/currentViewSmartFolder.js), [scoring contract](docs/scoring.md) |
 | Quality precision | The scoring guide says the badge preserves fractional points so 74.75 cannot appear to meet a threshold of 75. The current explanation component uses `Math.round(this.quality * 100)`, displaying 75 for that value. | [Scoring guide](docs/scoring.md#overall-quality), [quality explanation](client/src/components/articles/ArticleQualityExplanation.vue) |
 | Sentiment / Tone | Current controls describe `sentimentScore` as **Tone**, emotional neutrality and balance. Settings documentation still describes higher sentiment as more positive and lower sentiment as negative/alarmist. These are different descriptions of the assessment. | [Scores settings](client/src/components/settings/SettingsScores.vue), [quality explanation](client/src/components/articles/ArticleQualityExplanation.vue), [Settings documentation](client/src/components/settings/README.md#scores) |
 | AI provider and defaults | Scores help claims an OpenAI key is required and absent-key articles receive 70. AI / Inference exposes a configurable service with separate capabilities; the Settings README flags the OpenAI-only copy as outdated. The neutral component fallback is separate from pending/failed analysis presentation. | [Scores settings](client/src/components/settings/SettingsScores.vue), [Inference settings](client/src/components/settings/SettingsInference.vue), [Settings documentation](client/src/components/settings/README.md), [analysis presentation](client/src/services/articleAnalysisPresentation.js) |
@@ -21,6 +20,13 @@ not necessarily indicate a functional defect.
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**Quality terminology:** the article badge and article-only filters use
+**Overall quality**; the `qualityScore` component uses **Writing quality**;
+source-aware `sort:quality` uses **Quality & source trust**, including query
+preview chips. Controls and badges use 0–100, while `quality` expressions retain
+0–1 (`quality:>=0.75` means at least 75/100). Identifiers, scoring formulas, and
+expressions are unchanged. The separate quality-precision issue remains unresolved.
 
 **Publication time and first seen:** Smart Folder time choices explicitly identify
 publication windows and first-seen windows. **Custom first-seen window** replaces

@@ -559,12 +559,12 @@ describe('ArticleTagsScores', () => {
     await flushPromises();
 
     const trigger = wrapper.get('.overall-score');
-    expect(trigger.text()).toBe('Quality: 63');
+    expect(trigger.text()).toBe('Overall quality: 63');
     expect(trigger.element.tagName).toBe('BUTTON');
     expect(trigger.classes()).toContain('score-medium');
     expect(trigger.attributes()).toMatchObject({
       'aria-expanded': 'false',
-      'aria-label': 'Quality 63 out of 100. Show quality breakdown'
+      'aria-label': 'Overall quality 63 out of 100. Show quality breakdown'
     });
     expect(wrapper.findAll('.quality-score, .sentiment-score, .ad-score')).toHaveLength(0);
 
@@ -574,6 +574,7 @@ describe('ArticleTagsScores', () => {
     const panel = document.querySelector('.quality-explanation-panel');
     expect(panel.getAttribute('role')).toBe('dialog');
     expect(panel.textContent).toContain('Overall quality');
+    expect(panel.textContent).toContain('Source trust contributes separately to Quality & source trust sorting.');
     expect([...panel.querySelectorAll('.article-explanation-list strong:first-child')]
       .map(item => item.textContent)).toEqual([
       'Writing quality',
@@ -608,7 +609,7 @@ describe('ArticleTagsScores', () => {
     });
     await flushPromises();
 
-    expect(wrapper.get('.overall-score').text()).toBe('Quality: 73');
+    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 73');
     expect(wrapper.get('.overall-score').classes()).toContain('score-medium');
   });
 
@@ -656,7 +657,7 @@ describe('ArticleTagsScores', () => {
     await flushPromises();
 
     expect(wrapper.find('.analysis-state').exists()).toBe(false);
-    expect(wrapper.get('.overall-score').text()).toBe('Quality: 78');
+    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 78');
   });
 
   it('preserves skipped-feed score presentation', async () => {
@@ -669,7 +670,7 @@ describe('ArticleTagsScores', () => {
     });
     await flushPromises();
 
-    expect(wrapper.get('.overall-score').text()).toBe('Quality: 63');
+    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 63');
     expect(wrapper.find('.analysis-state').exists()).toBe(false);
   });
 

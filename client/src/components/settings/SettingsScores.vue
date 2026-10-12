@@ -50,7 +50,7 @@
         </button>
       </div>
 
-      <p>Overall quality is scored out of 100: 50% writing quality, 25% tone, and 25% ad-free content. It matches the article badge and Smart Folder quality filter. Articles awaiting analysis remain visible.</p>
+      <p>Overall quality is scored out of 100: 50% writing quality, 25% tone, and 25% ad-free content. It matches the Overall quality badge and Smart Folder filter. Search expressions use 0–1: <code>quality:>=0.75</code> means at least 75/100. Source trust contributes separately to Quality &amp; source trust sorting. Articles awaiting analysis remain visible.</p>
       <component v-for="group in thresholdGroups" :key="group.label" :is="group.advanced ? 'details' : 'div'" class="scores-threshold-list" :open="group.advanced && advancedInitiallyOpen ? true : undefined">
         <summary v-if="group.advanced">Advanced — component thresholds</summary>
         <p v-if="group.advanced">These additional filters apply alongside Overall quality. Set each to 0 to turn it off.</p>

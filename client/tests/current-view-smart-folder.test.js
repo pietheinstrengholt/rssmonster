@@ -88,6 +88,14 @@ describe('Reader save current view', () => {
   });
 });
 describe('current view draft', () => {
+  it('distinguishes the article-only quality filter from source-aware sorting', () => {
+    const query = 'quality:>=0.75 sort:quality';
+    expect(smartFolderRulePreview(query)).toMatchObject([
+      { key: 'quality', label: 'Overall quality >= 75/100', value: '>=0.75' },
+      { key: 'sort', label: 'Quality & source trust', value: 'quality' }
+    ]);
+  });
+
   it('uses editor defaults and ignores unsupported navigation and layout while keeping supported grouping', () => {
     const draft = currentViewSmartFolder({ status: 'unread', categoryId: 3, feedId: 5, tag: 'AI', minOverallQualityScore: 80, minQualityScore: 90, minSentimentScore: 50, viewMode: 'summary', grouping: 'event', includeDevelopingEvents: true, ageCutoff: '7d', dateRange: 'custom', sort: 'recommended' });
     expect(draft.query).toBe('unread:true quality:>=0.80 sort:recommended grouping:event limit:50 tag:"AI"');
@@ -100,7 +108,7 @@ describe('current view draft', () => {
     expect(draft.query).toContain('author:"Ada Lovelace" language:nl quality:<0.80 event:false developing:true firstSeen:7d limit:100 sort:asc "Dutch news"');
     expect(draft.query).not.toContain('unsupported');
     expect(draft.limitCount).toBe(100);
-    expect(smartFolderRulePreview(draft.query).map(rule => rule.label)).toEqual(['author: Ada Lovelace', 'language: nl', 'Quality < 80', 'Not Events', 'Developing stories', 'Never seen or first seen within 7d', 'Oldest', 'Dutch news']);
+    expect(smartFolderRulePreview(draft.query).map(rule => rule.label)).toEqual(['author: Ada Lovelace', 'language: nl', 'Overall quality < 80/100', 'Not Events', 'Developing stories', 'Never seen or first seen within 7d', 'Oldest', 'Dutch news']);
   });
   it('maps calendar controls only when the editor has an equivalent date rule', () => {
     expect(currentViewSmartFolder({ status: 'unread' }, { dateRange: 'today' }).query).toContain('@today');
