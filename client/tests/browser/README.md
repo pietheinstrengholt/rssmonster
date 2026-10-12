@@ -81,3 +81,5 @@ The fixture restores legacy `full`/`minimal` preferences and verifies canonical
 labels, API saves, content rendering, and Headlines expansion at 390, 768, 900, and
 1440 pixels in light and dark themes. API responses are intercepted; this is
 component/browser contract validation rather than an authenticated deployment test.
+The same runner verifies that the complete Briefing label fits above its global
+count at 320, 390, and 768 pixels and that its dropdown and Escape dismissal work.

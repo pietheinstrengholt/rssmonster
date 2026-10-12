@@ -69,7 +69,7 @@
       </div>
       <div class="mobile-toolbar-filters">
         <!-- Read Mode Dropdown -->
-        <AppDropdown id="readModeDropdown" :close-key="selectionCloseKey" class="mobile-toolbar-filter">
+        <AppDropdown id="readModeDropdown" :close-key="selectionCloseKey" class="mobile-toolbar-filter" :class="{ 'mobile-toolbar-filter--scoped-count': currentStatusCountLabel }">
           <template #trigger="{ triggerProps }">
             <button v-bind="triggerProps" class="mobile-filter-button" :class="{ 'mobile-filter-button--scoped-count': currentStatusCountLabel }" type="button">
               <template v-if="currentStatusCountLabel">
@@ -276,6 +276,10 @@
   margin-right: 0;
 }
 
+.mobile-toolbar-filter.mobile-toolbar-filter--scoped-count {
+  min-width: max-content;
+}
+
 .mobile-search-panel {
   position: relative;
   width: 100%;
@@ -324,7 +328,7 @@
 }
 
 .mobile-filter-status-label {
-  grid-column: 1;
+  grid-column: 1 / -1;
   grid-row: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -366,7 +370,7 @@
 
 .mobile-filter-button--scoped-count::after {
   grid-column: 2;
-  grid-row: 1 / span 2;
+  grid-row: 2;
   align-self: center;
   margin-left: 0;
 }
@@ -378,6 +382,10 @@
 
   .mobile-filter-button {
     padding: 0 4px;
+  }
+
+  .mobile-filter-status-label {
+    font-size: 0.75rem;
   }
 }
 

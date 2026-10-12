@@ -52,5 +52,25 @@ try {
       }
     }
   }
+  for (const width of [320, 390, 768]) {
+    for (const theme of ['light', 'dark']) {
+      const page = await browser.newPage({ viewport: { width, height: 900 } });
+      await page.route('**/api/**', route => new URL(route.request().url()).pathname.startsWith('/api/')
+        ? route.fulfill({ json: {} }) : route.continue());
+      await page.goto(`${process.env.READING_TEST_BASE_URL || 'http://localhost:8080'}/tests/browser/reading-modes.html?storedStatus=briefing&theme=${theme}`);
+      const trigger = page.getByRole('button', { name: 'Daily briefing global 1234', exact: true });
+      await trigger.waitFor();
+      await page.evaluate(() => document.fonts.ready);
+      const label = trigger.getByText('Daily briefing', { exact: true });
+      assert.ok(await label.evaluate(element => element.scrollWidth <= element.clientWidth),
+        `${width}px ${theme}: the complete Briefing label must fit above its global count`);
+      await trigger.click();
+      await page.getByRole('menuitem', { name: 'Daily briefing (global) 1234', exact: true }).waitFor();
+      await page.keyboard.press('Escape');
+      assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
+      await page.close();
+    }
+  }
   console.log('PASS: legacy preferences restore canonical modes; desktop/mobile labels, saves and all rendered modes work at 390/768/900/1440px in light/dark themes');
+  console.log('PASS: complete Briefing label and global count at 320/390/768px in both themes; dropdown and Escape remain usable');
 } finally { await browser.close(); }

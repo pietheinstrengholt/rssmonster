@@ -1,6 +1,7 @@
 import { createApp, h, ref } from 'vue';
 import { createPinia } from 'pinia';
 import DesktopToolbar from '../../src/components/shell/DesktopToolbar.vue';
+import MobileToolbar from '../../src/components/shell/MobileToolbar.vue';
 import MobileMenuOverlay from '../../src/components/shell/MobileMenuOverlay.vue';
 import ArticleListView from '../../src/components/articles/ArticleListView.vue';
 import ArticleReaderLayout from '../../src/components/articles/ArticleReaderLayout.vue';
@@ -8,13 +9,15 @@ import BootstrapIcon from '../../src/components/shared/BootstrapIcon.vue';
 import bootstrapIconsSprite from 'virtual:bootstrap-icons-sprite';
 import { injectBootstrapIcons } from '../../src/services/bootstrapIcons.js';
 import { useSelectionStore } from '../../src/store/selection.js';
+import { useOverviewStore } from '../../src/store/overview.js';
 import '../../src/assets/styles/theme.css';
 import '../../src/assets/scss/global.scss';
 
 const params = new URLSearchParams(location.search);
 const pinia = createPinia();
 const selection = useSelectionStore(pinia);
-selection.setCurrentSelection({ viewMode: params.get('storedMode') || 'full', AIEnabled: true, status: 'read' });
+selection.setCurrentSelection({ viewMode: params.get('storedMode') || 'full', AIEnabled: true, status: params.get('storedStatus') || 'read' });
+useOverviewStore(pinia).briefingCount = 1234;
 document.documentElement.dataset.theme = params.get('theme') || 'light';
 const mobile = window.matchMedia('(max-width: 879px)').matches;
 const optionsOpen = ref(false);
@@ -29,6 +32,7 @@ const app = createApp({
     const mode = selection.currentSelection.viewMode;
     return [
       h('output', { 'aria-label': 'Selected reading mode' }, mode),
+      mobile && params.get('storedStatus') === 'briefing' ? h(MobileToolbar) : null,
       mobile ? h('button', { onClick: () => { optionsOpen.value = true; } }, 'Reading options') : h(DesktopToolbar),
       mobile ? h(MobileMenuOverlay, { mobile: optionsOpen.value, onMobile: () => { optionsOpen.value = false; } }) : null,
       h(mode === 'reader' && window.matchMedia('(min-width: 1024px)').matches ? ArticleReaderLayout : ArticleListView, {
