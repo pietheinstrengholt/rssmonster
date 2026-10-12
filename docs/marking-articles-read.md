@@ -98,7 +98,7 @@ startup selection, and article-link behavior.
 | Setting | What it changes |
 | --- | --- |
 | Include developing coverage | Includes new coverage for Events you have already seen. See [Events]({% link events.md %}#viewing-event-coverage) for grouped coverage and developing articles. |
-| Prioritize high-trust coverage | Gives coverage from feeds with stronger FeedTrust more prominence in Unread. This can change Newest/Oldest ordering; leave it off for strictly chronological reading. See [Scoring]({% link scoring.md %}#chronological). |
+| Prioritize trusted feeds in Unread | Gives feeds with higher source trust (FeedTrust) more priority in Unread when sorting by Newest or Oldest. Other ranking modes retain their existing ordering. Leave it off for strictly chronological reading. See [Scoring]({% link scoring.md %}#chronological). |
 | Mark as read while scrolling | Marks unread articles as read after you scroll past them, including in Headlines mode. Reader mode instead marks the article you leave when you change selection, independently of this switch. |
 | Use default view on startup | Opens the default unread selection after refreshing or reopening RSSMonster. Turn it off to restore the last-used selection instead. |
 | Open article links in a new tab | Opens links within article bodies in a new tab across reading views, keeping RSSMonster open. When off, links follow the publisher's behavior. Article titles always open in a new tab. |

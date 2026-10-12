@@ -9,13 +9,21 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| High-trust priority | Unread and Briefing expose similar **Prioritize high-trust coverage** wording, but the documented ranking effects differ. Briefing priority changes structured-summary ordering; Unread has a legacy chronological trust override. Neither is the article-only overall-quality value. | [Unread preferences](client/src/components/dialogs/UnreadConfigurationModal.vue), [Briefing coverage quality](client/src/components/briefing/README.md#coverage-quality), [scoring modes](docs/scoring.md#chronological) |
 | Source / official feed / independence | Source counts refer to feeds, Original source is publisher-declared attribution, and Official Sources are configured domain mappings. The article signal calls an official-source article **Official Feed**. These meanings should not be conflated with verified provenance or independent reporting. | [Story sources](client/src/components/articles/ArticleStorySourcesPopover.vue), [article signals](client/src/components/articles/helpers/articleSignals.js), [article attribution](client/src/components/articles/README.md#experience-model), [Official Sources](client/src/components/settings/README.md#official-sources) |
 | Refresh / crawl | “Refresh” can reload database-backed article results, crawl subscribed feeds, prepare offline downloads, or reload an insight snapshot. Pull-to-refresh explicitly does not crawl feeds. | [Shell refresh behavior](client/src/components/shell/README.md#layout-and-scroll-ownership), [feed refresh stream](client/src/services/feedRefreshStream.js), [offline reading](client/src/services/offlineReading.js) |
 | Settings names | Navigation uses **Your interests**, **Refresh history**, and **Health & errors** for sections/components/docs also called Islands, Crawl Statistics, and Observability. Cleanup uses an API contract named archiving, although the UI describes deletion. | [Settings navigation](client/src/components/settings/Settings.vue), [Settings documentation](client/src/components/settings/README.md), [Cleanup](client/src/components/dialogs/Cleanup.vue) |
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**Priority scopes:** **Prioritize trusted feeds in Unread** adds source-trust
+priority when sorting Unread by Newest or Oldest; disabling it preserves strictly
+chronological ordering. Other ranking modes are unchanged. Briefing’s **Use
+Recommended ordering for summary** orders summary stories by Recommended score
+before event-strength fallbacks; article list ordering is unchanged. Recommended
+includes learned preferences, freshness, quality and source trust, rather than
+source trust alone. Neither setting is an article-only Overall quality filter.
+Existing behavior and the persisted `prioritizeHighTrust` contracts are unchanged.
 
 **Learned preferences:** **Show only articles with learned preferences** includes
 positive and negative nonzero stored interest, excluding neutral or absent
@@ -499,7 +507,7 @@ Per-user eligibility and presentation choices: rolling selection period
 (`24h`/`7d`), unread-only, scrolling read behavior, Hot inclusion, minimum distinct
 sources,
 interest-only or developing-story-only selection, summary developing coverage,
-and summary high-trust priority. The two “show only” choices are mutually
+and Recommended summary ordering. The two “show only” choices are mutually
 exclusive. Some preferences are server-side and need not appear in query text.
 
 ### Daily briefing email, SMTP, and Web Push

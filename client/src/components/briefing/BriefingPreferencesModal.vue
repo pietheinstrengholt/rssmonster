@@ -310,11 +310,11 @@
 
               <span class="briefing-preferences-option-content">
                 <span class="briefing-preferences-option-title">
-                  Prioritize high-trust coverage
+                  Use Recommended ordering for summary
                 </span>
 
                 <span class="briefing-preferences-option-description">
-                  Rank events from reliable feeds more prominently.
+                  Rank summary stories by Recommended score, including learned preferences, freshness, quality and source trust. Article list ordering is unchanged.
                 </span>
               </span>
 

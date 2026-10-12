@@ -63,10 +63,10 @@
 
             <span class="unread-preferences-option-content">
               <span class="unread-preferences-option-title">
-                Prioritize high-trust coverage
+                Prioritize trusted feeds in Unread
               </span>
               <span class="unread-preferences-option-description">
-                Rank events from reliable feeds more prominently.
+                Give feeds with higher source trust more priority in Unread when sorting by Newest or Oldest. Turn off for strictly chronological order.
               </span>
             </span>
 

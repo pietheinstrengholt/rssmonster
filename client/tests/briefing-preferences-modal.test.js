@@ -102,6 +102,8 @@ describe('BriefingPreferencesModal dismissal', () => {
     expect(wrapper.get('[name="selectionPeriod"][value="24h"]').element.checked).toBe(true);
     expect(wrapper.get('[name="minDistinctSources"]').element.value).toBe('4');
     expect(wrapper.get('[name="prioritizeHighTrust"]').element.checked).toBe(false);
+    expect(wrapper.text()).toContain('Use Recommended ordering for summary');
+    expect(wrapper.text()).toContain('Article list ordering is unchanged.');
 
     expect(wrapper.text()).not.toContain('Muted interests');
   });

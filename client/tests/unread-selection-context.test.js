@@ -492,7 +492,7 @@ describe('UnreadConfigurationModal', () => {
     await flushPromises();
 
     expect(wrapper.get('.preferences-dialog__title').text()).toBe(`Tune your ${status} selection`);
-    const labels = ['Prioritize high-trust coverage'];
+    const labels = ['Prioritize trusted feeds in Unread'];
     if (status !== 'read') labels.push('Mark as read while scrolling');
     labels.push('Open article links in a new tab');
     expect(wrapper.findAll('.unread-preferences-option-title').map(node => node.text())).toEqual(labels);
@@ -551,13 +551,16 @@ describe('UnreadConfigurationModal', () => {
     );
     expect(wrapper.findAll('.unread-preferences-option-title').map(node => node.text())).toEqual([
       'Include developing coverage',
-      'Prioritize high-trust coverage',
+      'Prioritize trusted feeds in Unread',
       'Mark as read while scrolling',
       'Use default view on startup',
       'Open article links in a new tab'
     ]);
     expect(wrapper.findAll('.unread-preferences-option-description')[0].text()).toBe(
       'Include new coverage for events you have already seen.'
+    );
+    expect(wrapper.findAll('.unread-preferences-option-description')[1].text()).toContain(
+      'in Unread when sorting by Newest or Oldest'
     );
     expect(wrapper.findAll('.unread-preferences-option-description')[2].text()).toContain(
       'This also applies to Headlines mode.'

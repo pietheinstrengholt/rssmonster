@@ -80,10 +80,12 @@ feeds for an event to qualify. One source gives the broadest selection; higher
 values favor stories covered by more of your subscriptions and can substantially
 reduce the briefing. Separate feeds do not necessarily mean independent reporting.
 
-**Prioritize high-trust coverage** uses Recommended ordering before event-strength
+**Use Recommended ordering for summary** uses Recommended ordering before event-strength
 fallbacks in the morning story overview. [FeedTrust]({% link feedtrust.md %}) contributes
 through Recommended's quality component. This setting changes summary ordering;
-it does not set a minimum trust threshold.
+article list ordering is unchanged. Recommended includes learned preferences,
+freshness, quality and source trust. The setting does not apply a minimum trust
+threshold.
 
 ### Save, cancel, or reset
 

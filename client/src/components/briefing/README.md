@@ -22,7 +22,7 @@ The default briefing:
 - Includes both read and unread articles
 - Does not require interest matching or developing-event membership
 - Allows events covered by a single source
-- Does not prioritize high-trust coverage
+- Does not use Recommended ordering for the summary
 
 The selection period is persisted as either `24h` or `7d`; `7d` is the default. The Daily Briefing preference record is one-to-one with its owning user. A user must never have multiple briefing preference rows.
 
@@ -118,8 +118,9 @@ These windows continue across midnight.
 
 Minimum distinct sources requires an eligible event to be represented by a chosen number of separate feeds. The current interface offers values from one through five sources. Higher values favor stories corroborated across more subscriptions but can substantially reduce the briefing.
 
-Prioritize high-trust coverage does not add a raw FeedTrust value to Recommended.
-The article list always receives FeedTrust only through Recommended's bounded
+**Use Recommended ordering for summary** leaves article list ordering unchanged
+and does not add a raw FeedTrust boost. Recommended includes learned preferences,
+freshness, quality and source trust; FeedTrust contributes through its bounded
 Quality contribution. For the structured morning summary, enabling this option
 uses Recommended ordering before the normal event-strength, publication-time,
 and ID fallbacks; disabling it starts directly with event strength. The option
@@ -132,14 +133,14 @@ Saving replaces the complete preference set for the current user. Partial prefer
 
 During a save, duplicate submission is disabled. A failed save keeps the modal open, preserves the draft, and shows an error. A successful save:
 
-- Applies the saved period, unread and scrolling choices, trust priority, and article-type filter to the current Briefing selection
+- Applies the saved period, unread and scrolling choices, Recommended summary ordering, and article-type filter to the current Briefing selection
 - Invalidates the currently displayed structured briefing so it reloads
 - Requests refreshed overview counts
 - Closes the modal
 
 Interest matching, strict event-only filtering, and minimum-source changes may not be visible in the simple article-query text. They still trigger a briefing revision so the article list and structured summary are fetched using the newly persisted server preferences.
 
-Reset to defaults restores the local draft to a seven-day briefing with one required source and Hot articles included; the other optional eligibility, scrolling, developing-event, and trust settings are disabled. The reset is persisted only when Save Changes succeeds.
+Reset to defaults restores the local draft to a seven-day briefing with one required source and Hot articles included; the other optional eligibility, scrolling, developing-event, and Recommended summary ordering settings are disabled. The reset is persisted only when Save Changes succeeds.
 
 ## Data refresh behavior
 

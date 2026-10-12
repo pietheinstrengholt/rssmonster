@@ -129,9 +129,12 @@ an Event receives zero for every Event-derived value.
 
 `sort:desc` orders newest first and `sort:asc` orders oldest first. These modes
 are available when users want a conventional RSS inbox without intelligent
-ranking. The optional Unread high-trust preference is a legacy override that
+ranking. **Prioritize trusted feeds in Unread** is an optional override that
 can blend bounded FeedTrust into these chronological modes; when disabled,
-ordering is strictly by publication time and stable article ID.
+ordering is strictly by publication time and stable article ID. This preference
+does not change Recommended, Top Stories, or Quality & source trust ordering.
+It differs from Briefing’s **Use Recommended ordering for summary**, which uses
+Recommended scores to order summary stories and leaves article list ordering unchanged.
 
 ### Quality & source trust
 
