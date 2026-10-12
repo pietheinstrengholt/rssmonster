@@ -22,7 +22,7 @@ export const ARTICLE_STATUS_OPTIONS = createOptions([
 export const ARTICLE_VIEW_MODE_OPTIONS = createOptions([
   { value: 'reader', label: 'Reader', desktopOnly: true },
   { value: 'expanded', label: 'Expanded', mobileDescription: 'Show the full article content' },
-  { value: 'summarized', label: 'Summarized', mobileDescription: 'Show the AI generated summary' },
+  { value: 'summarized', label: 'Summarized', mobileDescription: 'Show the first 100 words of the article' },
   { value: 'summaryBullets', label: 'Summary bullets', mobileDescription: 'Show short summaries as bullet points', requiresAI: true },
   { value: 'headlines', label: 'Headlines', mobileDescription: 'Show only the article titles' }
 ]);

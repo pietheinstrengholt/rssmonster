@@ -49,7 +49,7 @@ controls and layout differences.
   </tr>
   <tr>
     <td><a href="docs/assets/mode-expanded.png"><img src="docs/assets/mode-expanded.png" alt="RSSMonster Expanded Mode showing full articles in a reading stream"></a></td>
-    <td><a href="docs/assets/mode-summarized.png"><img src="docs/assets/mode-summarized.png" alt="RSSMonster Summarized Mode showing compact article summaries"></a></td>
+    <td><a href="docs/assets/mode-summarized.png"><img src="docs/assets/mode-summarized.png" alt="RSSMonster Summarized Mode showing short article previews"></a></td>
   </tr>
 </table>
 

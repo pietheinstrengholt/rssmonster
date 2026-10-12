@@ -43,7 +43,7 @@ Articles are separated with restrained dividers. Related articles inserted below
 
 ### Summarized
 
-Summarized keeps the same article context while shortening the body to a plain-text preview. It is intended for faster scanning when full source content would be too long.
+Summarized keeps the same article context while displaying the first 100 words of canonical `contentText` as a plain-text preview. This preview does not require AI-generated content. It is intended for faster scanning when full source content would be too long.
 
 ### Summary bullets
 
@@ -243,7 +243,7 @@ The article body is assembled from the best available content, with article text
 Presentation depends on the active reading mode and on whether meaningful text, images, summaries, or video metadata are available:
 
 - Expanded and Reader modes render the available rich article content.
-- Summarized mode presents a shortened plain-text version.
+- Summarized mode presents the first 100 words of canonical `contentText`.
 - Bullet mode presents the available summary points.
 - Headlines reveals rich content only for the opened row.
 

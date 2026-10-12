@@ -50,9 +50,11 @@ browser. Listening uses browser text-to-speech when supported.
 ## Summarized Mode
 
 Summarized mode presents articles as a compact stream of titles, metadata, and
-short summaries. It reduces visual detail while retaining enough context to
-decide what deserves a closer look. When no preview is available, RSSMonster
-offers a link to the original article instead.
+plain-text previews of the first 100 words of each article. These previews use
+article text and do not require AI-generated summaries. Summarized reduces visual
+detail while retaining enough context to decide what deserves a closer look.
+When no preview is available, RSSMonster offers a link to the original article
+instead.
 
 ![RSSMonster in Summarized mode](assets/mode-summarized.png)
 

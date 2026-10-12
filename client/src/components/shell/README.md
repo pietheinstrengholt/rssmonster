@@ -223,7 +223,7 @@ This duplication is intentional: the toolbar dropdown is optimized for quick cha
 The sheet offers:
 
 - **Expanded** for full article content
-- **Summarized content** for generated summaries
+- **Summarized** for the first 100 words of the article
 - **Summary bullets** when AI is enabled
 - **Headlines** for the densest list
 

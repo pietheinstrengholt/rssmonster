@@ -9,7 +9,6 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Summarized / AI summary | The mobile description for **Summarized** says “Show the AI generated summary,” but this mode takes the first 100 words of canonical `contentText`. Stored summary bullets are a separate presentation. | [Selection options](client/src/config/articleSelectionOptions.js), [content component](client/src/components/articles/ArticleContent.vue), [content service](client/src/services/articleContentService.js) |
 | Event / story / similar articles | Grouping is called **Events**, mobile calls it **Cluster per event**, and the Event-expansion control says **similar articles**. That control fetches Event members, rather than a general similarity search. **Developing story** and **Same story, different sources** add further story terminology. | [Selection options](client/src/config/articleSelectionOptions.js), [metadata](client/src/components/articles/ArticleMeta.vue), [Event expansion](client/src/components/articles/helpers/articleExpansion.js), [story sources](client/src/components/articles/ArticleStorySourcesPopover.vue) |
 | Developing events / developing stories | The ordinary `includeDevelopingEvents` setting, Briefing's developing-events summary preference, and `developing:true`/“Show only developing stories” have different scopes. Smart Folder preview chips label `developing:true` **Developing events**, obscuring the strict developing-story filter. | [Unread preferences](client/src/components/dialogs/UnreadConfigurationModal.vue), [Briefing contract](client/src/components/briefing/README.md), [query preview](client/src/services/currentViewSmartFolder.js) |
 | Daily Briefing's 24-hour period | **Last 24 hours** stores `24h`, but the selection builds `@today`. Briefing documentation records a calendar-day article/context window versus a rolling one-day overview count. | [Selection store](client/src/store/selection.js), [Briefing period documentation](client/src/components/briefing/README.md#selection-period) |
@@ -27,6 +26,10 @@ not necessarily indicate a functional defect.
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**Summarized description:** the UI and documentation describe the first 100 words
+of canonical `contentText`. The `summarized` mode and its behavior are unchanged;
+AI-generated **Summary bullets** remain a separate presentation.
 
 Reading modes use **Reader** (`reader`), **Expanded** (`expanded`),
 **Summarized** (`summarized`), **Summary bullets** (`summaryBullets`), and
