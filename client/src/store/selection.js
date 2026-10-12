@@ -19,7 +19,7 @@ const DEFAULT_ARTICLE_FILTERS = Object.freeze({
   tag: null,
   smartFolderId: null,
   minAdvertisementScore: 0,
-  minSentimentScore: 0,
+  minToneScore: 0,
   minOverallQualityScore: 0,
   minQualityScore: 0
 });
@@ -34,7 +34,7 @@ const SUPPORTED_SELECTION_FIELDS = [
   'tag',
   'smartFolderId',
   'minAdvertisementScore',
-  'minSentimentScore',
+  'minToneScore',
   'minOverallQualityScore',
   'minQualityScore',
   'sort',
@@ -510,9 +510,9 @@ export const useSelectionStore = defineStore('selection', {
       this.currentSelection.minAdvertisementScore = value;
     },
 
-    // This action updates the sentiment score threshold.
-    setMinSentimentScore(value) {
-      this.currentSelection.minSentimentScore = value;
+    // This action updates the tone score threshold.
+    setMinToneScore(value) {
+      this.currentSelection.minToneScore = value;
     },
 
     // This action updates the quality score threshold.

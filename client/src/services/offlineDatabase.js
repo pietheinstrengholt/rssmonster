@@ -1,7 +1,7 @@
 import { canonicalArticleState, canonicalArticleActionKind } from './articleStateContract.js';
 
 export const OFFLINE_DATABASE_NAME = 'rssmonster-offline';
-export const OFFLINE_DATABASE_VERSION = 3;
+export const OFFLINE_DATABASE_VERSION = 4;
 
 // Version 1 keeps identity, configuration and generations separate from credentials.
 export const upgradeOfflineDatabase = (database, oldVersion, upgradeTransaction) => {
@@ -21,9 +21,9 @@ export const upgradeOfflineDatabase = (database, oldVersion, upgradeTransaction)
     actions.createIndex('accountField', ['apiOrigin', 'userId', 'articleId', 'kind']);
     database.createObjectStore('syncAccounts', { keyPath: ['apiOrigin', 'userId'] });
   }
-  if (oldVersion > 0 && oldVersion < 3) {
+  if (oldVersion > 0 && oldVersion < 4) {
     // Preserve generations, action IDs, receipt identity, retries and account ownership.
-    for (const store of ['articles', ...(oldVersion >= 2 ? ['pendingActions'] : [])]) {
+    for (const store of ['articles', ...(oldVersion >= 2 && oldVersion < 3 ? ['pendingActions'] : [])]) {
       const request = upgradeTransaction.objectStore(store).openCursor();
       request.onsuccess = () => {
         const cursor = request.result;

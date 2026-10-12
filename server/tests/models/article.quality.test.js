@@ -8,7 +8,7 @@ const { Article, Feed } = db;
 const buildNeutralArticle = feed => {
   const article = Article.build({
     advertisementScore: 70,
-    sentimentScore: 70,
+    toneScore: 70,
     qualityScore: 70
   });
 
@@ -21,9 +21,9 @@ const buildNeutralArticle = feed => {
 
 describe('Article quality virtual score', () => {
   it.each([
-    ['quality', { qualityScore: 100, sentimentScore: 0, advertisementScore: 0 }, 0.5],
-    ['sentiment', { qualityScore: 0, sentimentScore: 100, advertisementScore: 0 }, 0.25],
-    ['advertisement', { qualityScore: 0, sentimentScore: 0, advertisementScore: 100 }, 0.25]
+    ['quality', { qualityScore: 100, toneScore: 0, advertisementScore: 0 }, 0.5],
+    ['tone', { qualityScore: 0, toneScore: 100, advertisementScore: 0 }, 0.25],
+    ['advertisement', { qualityScore: 0, toneScore: 0, advertisementScore: 100 }, 0.25]
   ])('applies the configured %s weight', (_label, scores, expected) => {
     expect(Article.build(scores).quality).toBe(expected);
   });
@@ -31,7 +31,7 @@ describe('Article quality virtual score', () => {
   it('uses the neutral fallback for null scores', () => {
     const article = Article.build({
       qualityScore: null,
-      sentimentScore: null,
+      toneScore: null,
       advertisementScore: null
     });
 
@@ -51,7 +51,7 @@ describe('Article quality virtual score', () => {
   it('uses the same reusable calculation for models and plain objects', () => {
     const scores = {
       qualityScore: 90,
-      sentimentScore: 60,
+      toneScore: 60,
       advertisementScore: 40
     };
 

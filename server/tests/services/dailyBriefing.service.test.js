@@ -72,7 +72,7 @@ describe('dailyBriefing.service', () => {
   it('builds the configured briefing article predicate', async () => {
     mocked.settingFindOne.mockResolvedValue({
       minAdvertisementScore: 40,
-      minSentimentScore: 50,
+      minToneScore: 50,
       minQualityScore: 60
     });
     const dateFrom = new Date('2026-07-24T00:00:00Z');
@@ -280,7 +280,7 @@ describe('dailyBriefing.service', () => {
           freshness: 0.5,
           interestScore: cachedInterest,
           qualityScore: 0,
-          sentimentScore: 0,
+          toneScore: 0,
           advertisementScore: 0,
           Feed: { feedTrust: 0.5 },
           Tags: []
@@ -293,7 +293,7 @@ describe('dailyBriefing.service', () => {
           freshness: 0.5,
           interestScore: 0,
           qualityScore: 100,
-          sentimentScore: 100,
+          toneScore: 100,
           advertisementScore: 100,
           Feed: { feedTrust: 0.5 },
           Tags: []

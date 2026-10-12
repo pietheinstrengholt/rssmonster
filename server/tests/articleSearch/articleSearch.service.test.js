@@ -23,9 +23,9 @@ describe('articleSearch.service', () => {
 
   it('matches the overall quality filter to the public score and Smart Folder threshold', async () => {
     const scores = [
-      { qualityScore: 40, sentimentScore: 70, advertisementScore: 100 },
-      { qualityScore: 80, sentimentScore: 40, advertisementScore: 50 },
-      { qualityScore: 60, sentimentScore: 80, advertisementScore: 90 }
+      { qualityScore: 40, toneScore: 70, advertisementScore: 100 },
+      { qualityScore: 80, toneScore: 40, advertisementScore: 50 },
+      { qualityScore: 60, toneScore: 80, advertisementScore: 90 }
     ];
     const rows = await Article.bulkCreate(scores.map((values, index) => ({
       ...values, userId: user.id, feedId: feed.id, title: `overallqualityfixture ${index}`,
@@ -55,7 +55,7 @@ describe('articleSearch.service', () => {
   it.each(['topStories', 'recommended'])('promotes Hot articles in %s database results', async sort => {
     const values = {
       userId: user.id, feedId: feed.id, status: 'unread',
-      publishedAt: new Date(), qualityScore: 75, sentimentScore: 75, advertisementScore: 75
+      publishedAt: new Date(), qualityScore: 75, toneScore: 75, advertisementScore: 75
     };
     const hot = await Article.create({ ...values, title: 'Hot ranking regression', hotInd: 1 });
     const ordinary = await Article.create({ ...values, title: 'Ordinary ranking regression' });
@@ -110,7 +110,7 @@ describe('articleSearch.service', () => {
       status: 'unread',
       sort: 'desc',
       minAdvertisementScore: 0,
-      minSentimentScore: 0,
+      minToneScore: 0,
       minQualityScore: 0,
       viewMode: 'expanded',
       grouping: 'none'
@@ -132,7 +132,7 @@ describe('articleSearch.service', () => {
       firstSeen: hoursAgo(0.5),
       publishedAt: hoursAgo(1),
       advertisementScore: 90,
-      sentimentScore: 80,
+      toneScore: 80,
       qualityScore: 85
     });
 
@@ -147,7 +147,7 @@ describe('articleSearch.service', () => {
       status: 'unread',
       publishedAt: hoursAgo(72),
       advertisementScore: 70,
-      sentimentScore: 70,
+      toneScore: 70,
       qualityScore: 70
     });
 
@@ -164,7 +164,7 @@ describe('articleSearch.service', () => {
       firstSeen: hoursAgo(23),
       publishedAt: hoursAgo(24),
       advertisementScore: 95,
-      sentimentScore: 90,
+      toneScore: 90,
       qualityScore: 90
     });
 
@@ -180,7 +180,7 @@ describe('articleSearch.service', () => {
       openedOriginalCount: 3,
       publishedAt: hoursAgo(48),
       advertisementScore: 80,
-      sentimentScore: 75,
+      toneScore: 75,
       qualityScore: 80
     });
 
@@ -195,7 +195,7 @@ describe('articleSearch.service', () => {
       status: 'unread',
       publishedAt: hoursAgo(6),
       advertisementScore: 10,
-      sentimentScore: 30,
+      toneScore: 30,
       qualityScore: 20
     });
 
@@ -211,7 +211,7 @@ describe('articleSearch.service', () => {
       filteredInd: true,
       publishedAt: hoursAgo(2),
       advertisementScore: 90,
-      sentimentScore: 90,
+      toneScore: 90,
       qualityScore: 90
     });
 
@@ -339,7 +339,7 @@ describe('articleSearch.service', () => {
             hotInd: 1,
             publishedAt: new Date(),
             advertisementScore: 80,
-            sentimentScore: 80,
+            toneScore: 80,
             qualityScore: 80
           }));
         }
@@ -397,7 +397,7 @@ describe('articleSearch.service', () => {
           status: 'unread',
           publishedAt: new Date(),
           advertisementScore: 90,
-          sentimentScore: 90,
+          toneScore: 90,
           qualityScore: 90
         },
         {
@@ -409,7 +409,7 @@ describe('articleSearch.service', () => {
           status: 'unread',
           publishedAt: new Date(),
           advertisementScore: 90,
-          sentimentScore: 90,
+          toneScore: 90,
           qualityScore: 90
         },
         {
@@ -421,7 +421,7 @@ describe('articleSearch.service', () => {
           status: 'unread',
           publishedAt: new Date(),
           advertisementScore: 90,
-          sentimentScore: 90,
+          toneScore: 90,
           qualityScore: 90
         }
       ]);
@@ -462,7 +462,7 @@ describe('articleSearch.service', () => {
         status: 'unread',
         publishedAt: new Date(),
         advertisementScore: 90,
-        sentimentScore: 90,
+        toneScore: 90,
         qualityScore: 90
       });
 
@@ -569,7 +569,7 @@ describe('articleSearch.service', () => {
             status: values.status,
             publishedAt: new Date(),
             advertisementScore: 80,
-            sentimentScore: 80,
+            toneScore: 80,
             qualityScore: 80
           }));
         }
@@ -654,7 +654,7 @@ describe('articleSearch.service', () => {
             status: 'unread',
             publishedAt: new Date(),
             advertisementScore: 80,
-            sentimentScore: 80,
+            toneScore: 80,
             qualityScore: 80,
             interestScore: values.interestScore,
             hotInd: values.hotInd ?? 0
@@ -778,13 +778,13 @@ describe('articleSearch.service', () => {
       expect(result.itemIds).toContain(articles.saved.id);
     });
 
-    it('filters out articles below minSentimentScore', async () => {
+    it('filters out articles below minToneScore', async () => {
       const result = await searchArticles({
         userId: user.id,
         status: '%',
-        minSentimentScore: 60
+        minToneScore: 60
       });
-      // lowQuality has sentimentScore=30
+      // lowQuality has toneScore=30
       expect(result.itemIds).not.toContain(articles.lowQuality.id);
       expect(result.itemIds).toContain(articles.recent.id);
     });
@@ -794,7 +794,7 @@ describe('articleSearch.service', () => {
         userId: user.id,
         status: '%',
         minAdvertisementScore: 70,
-        minSentimentScore: 70,
+        minToneScore: 70,
         minQualityScore: 70
       });
       // Only articles meeting all three thresholds
@@ -815,7 +815,7 @@ describe('articleSearch.service', () => {
         publishedAt: new Date(),
         aiAnalysisStatus: 'pending',
         advertisementScore: 0,
-        sentimentScore: 0,
+        toneScore: 0,
         qualityScore: 0
       });
 
@@ -824,7 +824,7 @@ describe('articleSearch.service', () => {
           userId: user.id,
           status: '%',
           minAdvertisementScore: 99,
-          minSentimentScore: 99,
+          minToneScore: 99,
           minQualityScore: 99
         });
 
@@ -848,7 +848,7 @@ describe('articleSearch.service', () => {
           publishedAt: new Date(),
           aiAnalysisStatus,
           advertisementScore: 0,
-          sentimentScore: 0,
+          toneScore: 0,
           qualityScore: 0
         });
         const advertisementActionArticle = await Article.create({
@@ -861,7 +861,7 @@ describe('articleSearch.service', () => {
           aiAnalysisStatus,
           advertisementScore: 0,
           advertisementScoreActionOverrideInd: true,
-          sentimentScore: 100,
+          toneScore: 100,
           qualityScore: 100
         });
         const qualityActionArticle = await Article.create({
@@ -873,7 +873,7 @@ describe('articleSearch.service', () => {
           publishedAt: new Date(),
           aiAnalysisStatus,
           advertisementScore: 100,
-          sentimentScore: 100,
+          toneScore: 100,
           qualityScore: 0,
           qualityScoreActionOverrideInd: true
         });
@@ -883,7 +883,7 @@ describe('articleSearch.service', () => {
             userId: user.id,
             status: '%',
             minAdvertisementScore: 99,
-            minSentimentScore: 99,
+            minToneScore: 99,
             minQualityScore: 99
           });
 
@@ -910,7 +910,7 @@ describe('articleSearch.service', () => {
         publishedAt: new Date(),
         aiAnalysisStatus: 'pending',
         advertisementScore: 0,
-        sentimentScore: 0,
+        toneScore: 0,
         qualityScore: 0
       });
 
@@ -1097,7 +1097,7 @@ describe('articleSearch.service', () => {
           status: 'unread',
           publishedAt: now,
           advertisementScore: 75,
-          sentimentScore: 75,
+          toneScore: 75,
           qualityScore: 75
         });
 
@@ -1112,7 +1112,7 @@ describe('articleSearch.service', () => {
           status: 'unread',
           publishedAt: now,
           advertisementScore: 75,
-          sentimentScore: 75,
+          toneScore: 75,
           qualityScore: 75
         });
 
@@ -1196,7 +1196,7 @@ describe('articleSearch.service', () => {
         status: 'unread',
         publishedAt: sharedPublishedAt,
         advertisementScore: 70,
-        sentimentScore: 70,
+        toneScore: 70,
         qualityScore: 70,
         interestScore: 0.1
       });
@@ -1208,7 +1208,7 @@ describe('articleSearch.service', () => {
         status: 'unread',
         publishedAt: sharedPublishedAt,
         advertisementScore: 70,
-        sentimentScore: 70,
+        toneScore: 70,
         qualityScore: 70,
         interestScore: 0.5
       });
@@ -1414,7 +1414,7 @@ describe('articleSearch.service', () => {
         const result = await searchArticles({
           userId: user.id,
           minAdvertisementScore: 0,
-          minSentimentScore: 0,
+          minToneScore: 0,
           minQualityScore: 0,
           minOverallQualityScore: 0,
           resolvedFeedIds: [feed.id],

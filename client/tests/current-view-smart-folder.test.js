@@ -120,7 +120,7 @@ describe('current view draft', () => {
   });
 
   it('uses editor defaults and ignores unsupported navigation and layout while keeping supported grouping', () => {
-    const draft = currentViewSmartFolder({ status: 'unread', categoryId: 3, feedId: 5, tag: 'AI', minOverallQualityScore: 80, minQualityScore: 90, minSentimentScore: 50, viewMode: 'summary', grouping: 'event', includeDevelopingEvents: true, ageCutoff: '7d', dateRange: 'custom', sort: 'recommended' });
+    const draft = currentViewSmartFolder({ status: 'unread', categoryId: 3, feedId: 5, tag: 'AI', minOverallQualityScore: 80, minQualityScore: 90, minToneScore: 50, viewMode: 'summary', grouping: 'event', includeDevelopingEvents: true, ageCutoff: '7d', dateRange: 'custom', sort: 'recommended' });
     expect(draft.query).toBe('unread:true quality:>=0.80 sort:recommended grouping:event limit:50 tag:"AI"');
     expect(validateSmartFolderQuery(draft.query).valid).toBe(true);
     expect(draft.markAsReadOnScroll).toBe(false);

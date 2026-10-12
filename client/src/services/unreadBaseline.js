@@ -1,7 +1,7 @@
 // The baseline belongs to this browser, account and article scope, never server settings.
 const storageKey = (userId, selection) => `rssmonster.unreadBaseline.${userId}.${JSON.stringify([
   selection.categoryId, selection.feedId, selection.search, selection.tag,
-  selection.smartFolderId, selection.minAdvertisementScore, selection.minSentimentScore,
+  selection.smartFolderId, selection.minAdvertisementScore, selection.minToneScore,
   selection.minOverallQualityScore, selection.minQualityScore, selection.grouping, selection.includeDevelopingEvents, selection.sort
 ])}`;
 

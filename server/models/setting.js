@@ -54,8 +54,8 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
-      // Sets the minimum acceptable sentiment score.
-      minSentimentScore: {
+      // Sets the minimum acceptable tone score.
+      minToneScore: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0

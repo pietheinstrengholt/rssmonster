@@ -29,9 +29,12 @@ const stableSerialize = value => {
 };
 
 // Hashes the normalized effective search without exposing it in cursor payloads.
-export const fingerprintArticleSearch = query => (
-  createHash('sha256').update(stableSerialize(query)).digest('base64url')
-);
+export const fingerprintArticleSearch = query => {
+  // Retain the signed-cursor wire key so pre-migration cursors keep their query identity.
+  const { minToneScore, ...wireQuery } = query;
+  if (Object.hasOwn(query, 'minToneScore')) wireQuery.minSentimentScore = minToneScore;
+  return createHash('sha256').update(stableSerialize(wireQuery)).digest('base64url');
+};
 
 const signPayload = encodedPayload => (
   createHmac('sha256', cursorSecret()).update(encodedPayload).digest('base64url')

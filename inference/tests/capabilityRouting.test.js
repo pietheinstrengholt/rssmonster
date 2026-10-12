@@ -7,7 +7,7 @@ vi.mock('openai', () => ({
     this.options = options;
     this.chat = { completions: { create: vi.fn().mockResolvedValue({ choices: [{ message: { content: JSON.stringify({
       contentSummaryBullets: ['summary'], tags: ['tag'], advertisementScore: 80,
-      sentimentScore: 90, qualityScore: 80, smartFolders: [], url: null, event: 'Example event'
+      toneScore: 90, qualityScore: 80, smartFolders: [], url: null, event: 'Example event'
     }) } }] }) } };
     this.embeddings = { create: vi.fn().mockResolvedValue({ data: [{ embedding: [0.1, 0.2] }] }) };
     mocks.clients.push(this);
@@ -102,7 +102,7 @@ describe('independent compatible capability routing', () => {
   it('runs external generation with local classification and no classification credentials', async () => {
     vi.stubEnv('CLASSIFICATION_PROVIDER', 'local');
     vi.stubEnv('CLASSIFICATION_API_KEY', '');
-    mocks.localScore.mockResolvedValue({ advertisementScore: 80, sentimentScore: 80, qualityScore: 80 });
+    mocks.localScore.mockResolvedValue({ advertisementScore: 80, toneScore: 80, qualityScore: 80 });
     const { default: analyze } = await import('../src/classifications/articleClassificationService.js');
     await analyze({ text: 'Article content '.repeat(50) });
     expect(callsFor('GENERATION')).toHaveLength(2);

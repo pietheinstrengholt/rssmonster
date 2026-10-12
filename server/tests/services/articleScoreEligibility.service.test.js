@@ -16,7 +16,7 @@ describe('articleScoreEligibility', () => {
 
     const predicate = buildArticleScoreEligibility({
       minAdvertisementScore: 80,
-      minSentimentScore: 85,
+      minToneScore: 85,
       minQualityScore: 90
     });
 
@@ -30,7 +30,7 @@ describe('articleScoreEligibility', () => {
       }
     ]);
     expect(predicate[Op.and][1][Op.or]).toEqual([
-      { sentimentScore: { [Op.gte]: 85 } },
+      { toneScore: { [Op.gte]: 85 } },
       {
         [Op.and]: [
           { aiAnalysisStatus: { [Op.in]: ['pending', 'processing', 'failed'] } }

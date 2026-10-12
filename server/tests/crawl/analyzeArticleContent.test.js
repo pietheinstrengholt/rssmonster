@@ -65,7 +65,7 @@ describe('analyzeArticleContent', () => {
       contentSummaryBullets: [],
       tags: [],
       advertisementScore: 70,
-      sentimentScore: 70,
+      toneScore: 70,
       qualityScore: 70
     });
     expect(mocked.request).not.toHaveBeenCalled();
@@ -95,7 +95,7 @@ describe('analyzeArticleContent', () => {
       contentSummaryBullets: [],
       tags: [],
       advertisementScore: 70,
-      sentimentScore: 70,
+      toneScore: 70,
       qualityScore: 70
     });
     expect(mocked.recordProcessingFailure).toHaveBeenCalledWith({

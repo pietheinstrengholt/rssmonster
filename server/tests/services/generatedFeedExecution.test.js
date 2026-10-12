@@ -30,7 +30,7 @@ describe('Generated Feed expression execution', () => {
       userId: 27,
       search: 'tag:security sort:quality limit:5000',
       minAdvertisementScore: 0,
-      minSentimentScore: 0,
+      minToneScore: 0,
       minQualityScore: 0,
       minOverallQualityScore: 0,
       status: '%',

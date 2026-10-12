@@ -30,7 +30,7 @@ const scoreEligibility = ({ field, minimum, actionOverrideField = null }) => ({
 // Builds one reusable predicate for every configured article score threshold.
 export const buildArticleScoreEligibility = ({
   minAdvertisementScore = 0,
-  minSentimentScore = 0,
+  minToneScore = 0,
   minQualityScore = 0,
   minOverallQualityScore = 0
 } = {}) => ({
@@ -46,7 +46,7 @@ export const buildArticleScoreEligibility = ({
       minimum: minAdvertisementScore,
       actionOverrideField: 'advertisementScoreActionOverrideInd'
     }),
-    scoreEligibility({ field: 'sentimentScore', minimum: minSentimentScore }),
+    scoreEligibility({ field: 'toneScore', minimum: minToneScore }),
     scoreEligibility({
       field: 'qualityScore',
       minimum: minQualityScore,

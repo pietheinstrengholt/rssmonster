@@ -123,7 +123,7 @@ describe('Briefing Preferences API', () => {
     await Setting.create({
       userId: user.id,
       minAdvertisementScore: 15,
-      minSentimentScore: 25,
+      minToneScore: 25,
       minQualityScore: 35,
       includeDevelopingEvents: false
     });
@@ -185,7 +185,7 @@ describe('Briefing Preferences API', () => {
     expect(Boolean(settings.includeDevelopingEvents)).toBe(false);
     expect(settings).toMatchObject({
       minAdvertisementScore: 15,
-      minSentimentScore: 25,
+      minToneScore: 25,
       minQualityScore: 35
     });
     expect(Boolean(otherSettings.includeDevelopingEvents)).toBe(false);

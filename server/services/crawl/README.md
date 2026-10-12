@@ -664,7 +664,7 @@ Typical enrichment includes:
 
 - summaries
 - inferred tags
-- sentiment score
+- tone score
 - advertisement score
 - quality score
 

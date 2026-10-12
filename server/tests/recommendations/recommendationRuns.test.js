@@ -15,7 +15,7 @@ async function fixture() {
     feedName: 'Evaluation', url: `https://${user.id}.example/rss`, feedTrust: 0.8 });
   const values = { userId: user.id, feedId: feed.id, title: 'Orchestral concert review', status: 'unread',
     publishedAt: new Date(now - 3600000), embedding_model: 'test-model', articleVector: [1, 0],
-    interestScore: 0.7, qualityScore: 80, sentimentScore: 80, advertisementScore: 80 };
+    interestScore: 0.7, qualityScore: 80, toneScore: 80, advertisementScore: 80 };
   return { user, values };
 }
 async function run(userId, options = {}) {

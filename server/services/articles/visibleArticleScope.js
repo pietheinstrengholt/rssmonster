@@ -10,7 +10,7 @@ export const buildVisibleArticleWhere = async userId => {
     where: { userId },
     attributes: [
       'minAdvertisementScore',
-      'minSentimentScore',
+      'minToneScore',
       'minOverallQualityScore',
       'minQualityScore'
     ],
@@ -23,7 +23,7 @@ export const buildVisibleArticleWhere = async userId => {
     filteredInd: false
   }, {
     minAdvertisementScore: settings?.minAdvertisementScore,
-    minSentimentScore: settings?.minSentimentScore,
+    minToneScore: settings?.minToneScore,
     minOverallQualityScore: settings?.minOverallQualityScore,
     minQualityScore: settings?.minQualityScore
   });

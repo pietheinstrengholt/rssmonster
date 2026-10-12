@@ -35,7 +35,7 @@ const createJob = (article, status, values = {}) => ProcessingJob.create({
 beforeEach(async () => {
   ({ user, feed } = await createOwner());
   mocked.analyzeArticleContent.mockReset().mockResolvedValue({
-    contentSummaryBullets: ['Summary'], tags: [], advertisementScore: 90, sentimentScore: 80, qualityScore: 85
+    contentSummaryBullets: ['Summary'], tags: [], advertisementScore: 90, toneScore: 80, qualityScore: 85
   });
 });
 
@@ -60,7 +60,7 @@ describe('stranded article recovery', () => {
     expect(job.payload.scoreOverrides).toEqual({ qualityScore: 95, advertisementScore: null });
     await expect(handleArticleEnrichmentJob(job)).resolves.toMatchObject({ status: 'completed' });
     await article.reload();
-    expect(article).toMatchObject({ aiAnalysisStatus: 'complete', qualityScore: 95, advertisementScore: 90, sentimentScore: 80 });
+    expect(article).toMatchObject({ aiAnalysisStatus: 'complete', qualityScore: 95, advertisementScore: 90, toneScore: 80 });
   });
 
   it('recovers missing history but leaves active, completed, filtered, disabled, and foreign articles alone', async () => {

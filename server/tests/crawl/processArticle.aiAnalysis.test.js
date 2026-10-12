@@ -194,7 +194,7 @@ describe('processArticle AI analysis controls', () => {
       contentSummaryBullets: ['Updated bullet'],
       tags: ['updated-inferred'],
       advertisementScore: 80,
-      sentimentScore: 90,
+      toneScore: 90,
       qualityScore: 80
     });
     mocked.saveArticle.mockResolvedValue({
@@ -314,7 +314,7 @@ describe('processArticle AI analysis controls', () => {
         contentSummaryBullets: [],
         tags: [],
         advertisementScore: 70,
-        sentimentScore: 70,
+        toneScore: 70,
         qualityScore: 70
       },
       expect.any(Object)
@@ -332,7 +332,7 @@ describe('processArticle AI analysis controls', () => {
       contentSummaryBullets: [],
       tags: [],
       advertisementScore: 70,
-      sentimentScore: 70,
+      toneScore: 70,
       qualityScore: 70
     };
     mocked.analyzeArticleContent.mockResolvedValue(defaultAnalysis);

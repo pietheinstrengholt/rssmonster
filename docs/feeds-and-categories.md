@@ -203,7 +203,7 @@ status, and these processing controls:
 | --- | --- |
 | Update interval | Base crawl cadence; publisher caching and retry deadlines can delay the next fetch. |
 | Generate embeddings | Generate article vectors when server inference settings permit it. |
-| Apply AI analysis | Request summaries, generated tags, sentiment, quality, and advertisement analysis when enabled on the server. |
+| Apply AI analysis | Request summaries, generated tags, tone, quality, and advertisement analysis when enabled on the server. |
 | Feed tags | Labels separated by spaces or commas. |
 | Item filter | Accept only future entries matching the [filter expression]({% link feed-item-filters.md %}). |
 

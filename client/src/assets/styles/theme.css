@@ -217,8 +217,8 @@
   --badge-danger-text: #B42318;
   --badge-ad-bg: #FFEDD5;
   --badge-ad-text: #EA650D;
-  --badge-sentiment-bg: #EEF2FF;
-  --badge-sentiment-text: #4338CA;
+  --badge-tone-bg: #EEF2FF;
+  --badge-tone-text: #4338CA;
   --badge-writing-bg: #ECFDF5;
   --badge-writing-text: #047857;
   --badge-tag-rule-bg: #F5EEFD;
@@ -243,9 +243,9 @@
   --article-overall-score-text: var(--badge-quality-text);
   --article-ad-score-background: var(--badge-ad-bg);
   --article-ad-score-text: var(--badge-ad-text);
-  --article-sentiment-score-text: var(--badge-sentiment-text);
-  --article-sentiment-moderate: #D4A017;
-  --article-sentiment-poor: var(--badge-ad-text);
+  --article-tone-score-text: var(--badge-tone-text);
+  --article-tone-moderate: #D4A017;
+  --article-tone-poor: var(--badge-ad-text);
   --article-quality-background: var(--badge-writing-bg);
   --article-quality-positive: var(--badge-writing-text);
   --article-quality-good: #43A047;
@@ -445,8 +445,8 @@
   --badge-danger-text: #FCA5A5;
   --badge-ad-bg: #5C2A14;
   --badge-ad-text: #FDBA74;
-  --badge-sentiment-bg: #252C63;
-  --badge-sentiment-text: #A5B4FC;
+  --badge-tone-bg: #252C63;
+  --badge-tone-text: #A5B4FC;
   --badge-writing-bg: #123F35;
   --badge-writing-text: #6EE7B7;
   --badge-tag-rule-bg: #35205F;
@@ -572,9 +572,9 @@
   --article-rule-tag-background-dark: var(--badge-tag-rule-bg);
   --article-rule-tag-text-dark: var(--badge-tag-rule-text);
   --article-ad-score-text-dark: var(--badge-ad-text);
-  --article-sentiment-score-text-dark: var(--badge-sentiment-text);
-  --article-sentiment-moderate-dark: var(--badge-sentiment-text);
-  --article-sentiment-poor-dark: var(--badge-ad-text);
+  --article-tone-score-text-dark: var(--badge-tone-text);
+  --article-tone-moderate-dark: var(--badge-tone-text);
+  --article-tone-poor-dark: var(--badge-ad-text);
   --article-quality-good-dark: var(--badge-writing-text);
   --article-quality-okay-dark: var(--badge-ad-text);
   --article-quality-poor-dark: var(--badge-quality-text);

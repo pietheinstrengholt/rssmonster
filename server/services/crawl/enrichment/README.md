@@ -34,7 +34,7 @@ perform lightweight AI article analysis;
 create independent default article analysis state;
 apply action-owned analysis score overrides;
 generate summary bullets and tags;
-return advertisement, sentiment, and quality scores;
+return advertisement, tone, and quality scores;
 normalize and validate AI output;
 respect feed AI settings;
 pass resolved article language as an advisory analysis hint;

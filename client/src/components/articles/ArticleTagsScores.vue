@@ -12,7 +12,7 @@
     <ArticleReaderBadge v-if="hasQualityScores">
       <ArticleQualityExplanation
         :advertisement-score="advertisementScore"
-        :sentiment-score="sentimentScore"
+        :tone-score="toneScore"
         :quality-score="qualityScore"
         :quality="quality"
       />
@@ -49,7 +49,7 @@ export default {
     tags: { type: Array, default: () => [] },
     isMobilePortrait: { type: Boolean, default: false },
     advertisementScore: { type: Number, default: undefined },
-    sentimentScore: { type: Number, default: undefined },
+    toneScore: { type: Number, default: undefined },
     quality: { type: Number, default: undefined },
     qualityScore: { type: Number, default: undefined },
     aiAnalysisStatus: { type: String, default: '' }
@@ -68,7 +68,7 @@ export default {
     },
     // Hides the untouched ingestion defaults used when article scoring is disabled.
     hasQualityScores() {
-      const scores = [this.advertisementScore, this.sentimentScore, this.qualityScore];
+      const scores = [this.advertisementScore, this.toneScore, this.qualityScore];
       return hasUsableArticleAnalysis(this.aiAnalysisStatus)
         && Number.isFinite(this.quality)
         && scores.every(Number.isFinite)

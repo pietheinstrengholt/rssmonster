@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getQualityClass,
   getQualityIcon,
-  getSentimentClass,
+  getToneClass,
   scoreLabel
 } from '../src/services/articlePresentation.js';
 
@@ -27,11 +27,11 @@ describe('article presentation helpers', () => {
     ]);
   });
 
-  it('maps sentiment scores to their existing classes', () => {
-    expect([55, 35, 10].map(getSentimentClass)).toEqual([
-      'sentiment-moderate',
-      'sentiment-poor',
-      'sentiment-very-poor'
+  it('maps tone scores to their existing classes', () => {
+    expect([55, 35, 10].map(getToneClass)).toEqual([
+      'tone-moderate',
+      'tone-poor',
+      'tone-very-poor'
     ]);
   });
 

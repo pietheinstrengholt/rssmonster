@@ -211,7 +211,7 @@
                     <option :value="false">No</option>
                   </select>
                   <div class="app-form-help">
-                    Whether articles get AI summary, tags, sentiment, quality, and ad score.
+                    Whether articles get AI summary, tags, tone, quality, and ad score.
                   </div>
                 </div>
               </div>

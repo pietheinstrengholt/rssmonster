@@ -66,7 +66,7 @@ beforeEach(() => {
       prioritizeHighTrust: true,
       startupViewMode: 'default',
       minAdvertisementScore: 10,
-      minSentimentScore: 20,
+      minToneScore: 20,
       minQualityScore: 30
     }
   });

@@ -13,7 +13,7 @@ import { createDefaultArticleAnalysis } from './articleAnalysis.js';
    - summary bullets
    - tags
    - advertisement score
-   - sentiment score
+   - tone score
    - quality score
 ====================================================== */
 

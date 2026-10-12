@@ -84,7 +84,7 @@ export const buildArticleSearchQuery = ({
   if (needsQuality) {
     queryAttributes.push(
       'advertisementScore',
-      'sentimentScore',
+      'toneScore',
       'qualityScore',
       'qualityScoreActionOverrideInd',
       'advertisementScoreActionOverrideInd'
@@ -99,7 +99,7 @@ export const buildArticleSearchQuery = ({
     }
     // Handles the case where query attributes does not contain quality score.
     if (!queryAttributes.includes('qualityScore')) {
-      queryAttributes.push('advertisementScore', 'sentimentScore', 'qualityScore');
+      queryAttributes.push('advertisementScore', 'toneScore', 'qualityScore');
     }
   // Handles the case where needs published is available and query attributes does not contain published at.
   } else if (needsPublished && !queryAttributes.includes('publishedAt')) {

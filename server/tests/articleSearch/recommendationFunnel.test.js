@@ -18,7 +18,7 @@ async function fixture() {
   return { user, neutral, positive, negative, representative, member };
 }
 const stage = (result, name) => [...result.diagnostics.databaseStages, ...result.diagnostics.runtimeStages].find(row => row.stage === name);
-const options = userId => ({ userId, sort: 'recommended', status: '%', minAdvertisementScore: 0, minSentimentScore: 0, minQualityScore: 0 });
+const options = userId => ({ userId, sort: 'recommended', status: '%', minAdvertisementScore: 0, minToneScore: 0, minQualityScore: 0 });
 
 describe('Recommended and Briefing funnels', () => {
   beforeEach(() => {

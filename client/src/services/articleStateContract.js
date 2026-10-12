@@ -1,5 +1,6 @@
 // Normalize old API responses and persisted browser state once at their boundaries.
 const aliases = Object.freeze({
+  sentimentScore: 'toneScore', minSentimentScore: 'minToneScore',
   favoriteInd: 'savedInd', favoritedAt: 'savedAt', clickedAmount: 'openedOriginalCount', lastClickedAt: 'lastOpenedOriginalAt',
   favoriteCount: 'savedCount', clickedCount: 'openedOriginalCount',
   feedClickAvg: 'feedOpenedOriginalAvg', feedClickRatio: 'feedOpenedOriginalRatio',

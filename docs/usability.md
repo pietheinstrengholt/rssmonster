@@ -184,7 +184,7 @@ for installation and Push permissions.
 ## Score thresholds
 
 When AI is enabled, **Settings → Scores** provides minimum advertisement,
-sentiment, and quality component thresholds on a `0`–`100` scale. Higher
+tone, and quality component thresholds on a `0`–`100` scale. Higher
 advertisement scores mean less promotional content. These controls affect
 eligibility; they differ from the normalized `0`–`1` combined quality filter in
 [Search]({% link search.md %}). Pending or failed inferred analysis is not treated as a

@@ -207,7 +207,7 @@ export const buildBriefingArticleWhere = async ({
   // Loads the settings needed while building briefing article where.
   const settings = await Setting.findOne({
     where: { userId },
-    attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore', 'minOverallQualityScore'],
+    attributes: ['minAdvertisementScore', 'minToneScore', 'minQualityScore', 'minOverallQualityScore'],
     raw: true
   });
 
@@ -218,7 +218,7 @@ export const buildBriefingArticleWhere = async ({
     publishedAt: { [Op.between]: [dateFrom, dateTo] }
   }, {
     minAdvertisementScore: settings?.minAdvertisementScore,
-    minSentimentScore: settings?.minSentimentScore,
+    minToneScore: settings?.minToneScore,
     minOverallQualityScore: settings?.minOverallQualityScore,
     minQualityScore: settings?.minQualityScore
   });
@@ -259,7 +259,7 @@ const buildSummaryRecommendationArticle = (event, representativeArticle, current
   interestScore: currentInterest?.score ?? 0,
   interestScoredAt: representativeArticle.interestScoredAt,
   qualityScore: representativeArticle.qualityScore,
-  sentimentScore: representativeArticle.sentimentScore,
+  toneScore: representativeArticle.toneScore,
   advertisementScore: representativeArticle.advertisementScore,
   Feed: representativeArticle.Feed ?? representativeArticle.feed,
   Tags: representativeArticle.Tags ?? [],
@@ -452,7 +452,7 @@ export async function getDailyBriefing({
           'interestScoredAt',
           'hotInd',
           'advertisementScore',
-          'sentimentScore',
+          'toneScore',
           'qualityScore'
         ],
         include: [

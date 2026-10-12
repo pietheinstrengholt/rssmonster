@@ -12,6 +12,7 @@ import qwenGenerationProvider from '../generation/providers/qwenGenerationProvid
 import { getSafeErrorDetails, logInferenceDebug } from '../debug.js';
 import { getInferenceRequestId } from '../middleware/requestLifecycle.js';
 import { isInferenceQueueControlError } from '../queue/inferenceWorkQueue.js';
+import { canonicalToneScore } from './toneScoreContract.js';
 
 const normalizeTagName = tag => String(tag || '').trim().toLowerCase();
 const TAG_HIERARCHY_SEPARATOR = /\s*(?:\/|>|→|›|\|)\s*/u;
@@ -57,7 +58,7 @@ const defaultAnalysis = () => ({
   contentSummaryBullets: [],
   tags: [],
   advertisementScore: 70,
-  sentimentScore: 70,
+  toneScore: 70,
   qualityScore: 70
 });
 
@@ -279,7 +280,7 @@ export async function generateTags({
   return tags;
 }
 
-// Generates only advertisement, sentiment/tone, and writing/information-quality scores.
+// Generates only advertisement, tone, and writing/information-quality scores.
 export async function scoreArticle({
   text,
   title,
@@ -312,7 +313,7 @@ export async function scoreArticle({
     '',
     'Evaluate exactly three independent dimensions:',
     '1. qualityScore: writing craftsmanship, information quality, and readability.',
-    '2. sentimentScore: emotional neutrality and restraint.',
+    '2. toneScore: emotional neutrality and restraint.',
     '3. advertisementScore: absence of commercial or promotional intent.',
     '',
     'Scores must be one of: 0,10,20,30,40,50,60,70,80,90,100.',
@@ -353,8 +354,8 @@ export async function scoreArticle({
     '- the article contains advertising',
     '- the article is short, unless its writing itself is fragmented or incomplete',
     '',
-    'SENTIMENT SCORE',
-    'sentimentScore measures emotional neutrality and restraint.',
+    'TONE SCORE',
+    'toneScore measures emotional neutrality and restraint.',
     'It does NOT measure whether the subject matter is positive or negative.',
     '',
     '- 100: completely calm, factual, neutral, and emotionally restrained.',
@@ -365,7 +366,7 @@ export async function scoreArticle({
     '- 40-50: strongly emotional, polarizing, manipulative, outraged, or fear-driven.',
     '- 0-30: extreme sensationalism, inflammatory rhetoric, manipulation, or agitation.',
     '',
-    'Reduce sentimentScore for:',
+    'Reduce toneScore for:',
     '- sensationalism',
     '- outrage or fear framing',
     '- catastrophizing',
@@ -376,7 +377,7 @@ export async function scoreArticle({
     '- excessive punctuation or capitalization used for emphasis',
     '- emotionally manipulative clickbait',
     '',
-    'Do NOT reduce sentimentScore merely because the article discusses:',
+    'Do NOT reduce toneScore merely because the article discusses:',
     '- death, disasters, war, crime, illness, or other negative events',
     '- positive or celebratory events',
     '- controversial subjects',
@@ -417,7 +418,7 @@ export async function scoreArticle({
     'bucket immediately above and below it and choose the best-fitting bucket.',
     '',
     'Return ONLY valid JSON with exactly these keys and no additional text:',
-    '{"qualityScore":70,"sentimentScore":70,"advertisementScore":70}',
+    '{"qualityScore":70,"toneScore":70,"advertisementScore":70}',
     '',
     `Feed Name: ${feedName || 'unknown'}`,
     `Article Title: ${title || ''}`,
@@ -439,7 +440,7 @@ export async function scoreArticle({
   });
   const scores = {
     advertisementScore: bucketScore(parsed.advertisementScore),
-    sentimentScore: bucketScore(parsed.sentimentScore),
+    toneScore: bucketScore(canonicalToneScore(parsed).toneScore),
     qualityScore: bucketScore(parsed.qualityScore ?? parsed.writingScore)
   };
   logInferenceDebug(

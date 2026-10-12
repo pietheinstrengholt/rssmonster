@@ -26,7 +26,7 @@ const dimensions = [
     values: [100, 70, 20]
   },
   {
-    key: 'sentimentScore',
+    key: 'toneScore',
     labels: ['neutral and calm', 'mildly opinionated', 'strongly emotionally charged'],
     values: [100, 70, 20]
   },

@@ -263,7 +263,7 @@ operator defaults to `>=`. Decimal forms such as `.7` are valid.
 - `freshness` filters its computed publication-time decay score on a 0–1 scale.
 
 These filters run in memory after the database query. They combine with the
-stored minimum advertisement, sentiment, and quality thresholds supplied by the
+stored minimum advertisement, tone, and quality thresholds supplied by the
 request or user settings; they do not replace those baseline gates.
 
 ## Publication date expressions
@@ -363,7 +363,7 @@ The search service also receives options from the API/UI:
 - `status` supplies the current view (`unread`, `read`, `saved`, `hot`,
   `openedOriginal`, or `%` for all).
 - `grouping` is `none` or `event`.
-- minimum advertisement, sentiment, and quality scores establish baseline gates.
+- minimum advertisement, tone, and quality scores establish baseline gates.
 - `countOnly` returns a count instead of article IDs.
 - `includeSnapshot` adds a user-scoped arrival boundary to non-cursor article results.
 - `smartFolderSearch` enables the saved-search execution path.
@@ -498,7 +498,7 @@ The fundamental eligibility dimensions are:
 - Reading state: unread, read, saved, openedOriginal, seen, hot, or all.
 - Text relevance: title and article text match the requested term or phrase intent.
 - Metadata: tag, title, author, language, date, first-seen age, event state, event size, or grouping concept.
-- Quality gates: advertisement, sentiment, and quality thresholds are all satisfied.
+- Quality gates: advertisement, tone, and quality thresholds are all satisfied.
 
 Eligibility is binary. Ranking must not resurrect articles that failed eligibility.
 
@@ -520,7 +520,7 @@ Text relevance determines eligibility, not ranking, unless a future ranking mode
 
 ## Quality and Safety Gates
 
-Search uses score thresholds as gates before ranking. Advertisement score, sentiment score, and quality score represent minimum acceptability levels for the current view.
+Search uses score thresholds as gates before ranking. Advertisement score, tone score, and quality score represent minimum acceptability levels for the current view.
 
 Explicit thresholds supplied by the caller take precedence over stored user defaults. When thresholds are not supplied, user defaults define the baseline. The absence of a stored preference should not make search unusable.
 

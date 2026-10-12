@@ -1,5 +1,6 @@
 // Legacy names are accepted at boundaries; application and database state use the canonical names.
 export const ARTICLE_STATE_ALIASES = Object.freeze({
+  sentimentScore: 'toneScore', minSentimentScore: 'minToneScore',
   favoriteInd: 'savedInd', favoritedAt: 'savedAt', clickedAmount: 'openedOriginalCount', lastClickedAt: 'lastOpenedOriginalAt',
   favoriteCount: 'savedCount', clickedCount: 'openedOriginalCount',
   feedClickAvg: 'feedOpenedOriginalAvg', feedClickRatio: 'feedOpenedOriginalRatio',

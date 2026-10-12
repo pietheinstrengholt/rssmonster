@@ -82,7 +82,7 @@ Article quality is a normalized score (0.0 – 1.0) based on:
 ```text
 articleQuality =
     0.50 × qualityScore
-  + 0.25 × sentimentScore
+  + 0.25 × toneScore
   + 0.25 × advertisementScore
 ```
 

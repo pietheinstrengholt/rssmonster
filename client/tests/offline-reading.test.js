@@ -27,7 +27,7 @@ const createDatabase = () => {
 const page = (ids, cursor = null) => ({ data: { page: { itemIds: ids, articles: ids.map(article), hasMore: Boolean(cursor), nextCursor: cursor } } });
 
 describe('offline schema upgrades', () => {
-  it('creates account snapshots and an independent action queue at version 3', () => {
+  it('creates account snapshots and an independent action queue at version 4', () => {
     const index = vi.fn();
     const createObjectStore = vi.fn(() => ({ createIndex: index }));
     upgradeOfflineDatabase({ createObjectStore }, 0);
@@ -42,7 +42,7 @@ describe('offline schema upgrades', () => {
   });
   it('preserves the current schema during subsequent upgrades', () => {
     const createObjectStore = vi.fn();
-    upgradeOfflineDatabase({ createObjectStore }, 3);
+    upgradeOfflineDatabase({ createObjectStore }, 4);
     expect(createObjectStore).not.toHaveBeenCalled();
   });
 });

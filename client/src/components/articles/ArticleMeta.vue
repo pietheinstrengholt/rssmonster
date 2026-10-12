@@ -1,7 +1,7 @@
 <template>
   <div class="article-meta">
     <!-- <BootstrapIcon v-if="showAnalysisScores && isMobilePortrait && advertisementScore !== undefined && advertisementScore < neutralScore" icon="megaphone-fill" class="mobile-score-icon ad-icon" :title="`Promotional content detected (score: ${advertisementScore})`" /> -->
-    <!-- <BootstrapIcon v-if="showAnalysisScores && isMobilePortrait && sentimentScore !== undefined && sentimentScore < neutralScore" icon="arrow-down-circle-fill" :class="['mobile-score-icon', 'sentiment-icon', getSentimentClass(sentimentScore)]" :title="`Tone quality: ${sentimentScore}`" /> -->
+    <!-- <BootstrapIcon v-if="showAnalysisScores && isMobilePortrait && toneScore !== undefined && toneScore < neutralScore" icon="arrow-down-circle-fill" :class="['mobile-score-icon', 'tone-icon', getToneClass(toneScore)]" :title="`Tone quality: ${toneScore}`" /> -->
     <ArticleReaderBadge v-if="hasProvenance && !hideProvenance">
       <span class="article-provenance">
         <span v-if="hasPublishedAt" class="article-published">{{ formatRelativeDate(publishedAt) }}</span>
@@ -47,7 +47,7 @@
 <script>
 import { defineAsyncComponent } from 'vue';
 import {
-  getSentimentClass
+  getToneClass
 } from '../../services/articlePresentation.js';
 import { formatRelativeDate } from '../../utils/date.js';
 import { hasUsableArticleAnalysis } from '../../services/articleAnalysisPresentation.js';
@@ -65,7 +65,7 @@ export default {
     authors: { type: Array, default: null },
     originalSource: { type: Object, default: null },
     hideProvenance: { type: Boolean, default: false },
-    articleId: { type: [Number, String], default: null }, publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, hasInterestScore: { type: Boolean, default: false }, isRecommendationView: { type: Boolean, default: false }, recommendation: { type: Object, default: null }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, sentimentScore: { type: Number, default: undefined }, aiAnalysisStatus: { type: String, default: '' }, neutralScore: { type: Number, required: true }
+    articleId: { type: [Number, String], default: null }, publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, hasInterestScore: { type: Boolean, default: false }, isRecommendationView: { type: Boolean, default: false }, recommendation: { type: Object, default: null }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, toneScore: { type: Number, default: undefined }, aiAnalysisStatus: { type: String, default: '' }, neutralScore: { type: Number, required: true }
   },
   computed: {
     originalSourceUrl() {
@@ -127,8 +127,8 @@ export default {
   methods: {
     // Formats publication dates as elapsed time.
     formatRelativeDate,
-    // Returns the CSS class for a sentiment score.
-    getSentimentClass
+    // Returns the CSS class for a tone score.
+    getToneClass
   }
 };
 </script>
@@ -254,19 +254,19 @@ export default {
   color: var(--article-ad-score-text);
 }
 
-.mobile-score-icon.sentiment-icon {
-  color: var(--article-sentiment-score-text);
+.mobile-score-icon.tone-icon {
+  color: var(--article-tone-score-text);
 }
 
-.mobile-score-icon.sentiment-moderate {
-  color: var(--article-sentiment-moderate);
+.mobile-score-icon.tone-moderate {
+  color: var(--article-tone-moderate);
 }
 
-.mobile-score-icon.sentiment-poor {
-  color: var(--article-sentiment-poor);
+.mobile-score-icon.tone-poor {
+  color: var(--article-tone-poor);
 }
 
-.mobile-score-icon.sentiment-very-poor {
+.mobile-score-icon.tone-very-poor {
   color: var(--text-danger-placeholder);
 }
 
@@ -318,19 +318,19 @@ export default {
   color: var(--article-ad-score-text-dark);
 }
 
-:global(:root[data-theme='dark'] .article-card .mobile-score-icon.sentiment-icon) {
-  color: var(--article-sentiment-score-text-dark);
+:global(:root[data-theme='dark'] .article-card .mobile-score-icon.tone-icon) {
+  color: var(--article-tone-score-text-dark);
 }
 
-:global(:root[data-theme='dark'] .article-card .mobile-score-icon.sentiment-moderate) {
-  color: var(--article-sentiment-moderate-dark);
+:global(:root[data-theme='dark'] .article-card .mobile-score-icon.tone-moderate) {
+  color: var(--article-tone-moderate-dark);
 }
 
-:global(:root[data-theme='dark'] .article-card .mobile-score-icon.sentiment-poor) {
-  color: var(--article-sentiment-poor-dark);
+:global(:root[data-theme='dark'] .article-card .mobile-score-icon.tone-poor) {
+  color: var(--article-tone-poor-dark);
 }
 
-:global(:root[data-theme='dark'] .article-card .mobile-score-icon.sentiment-very-poor) {
+:global(:root[data-theme='dark'] .article-card .mobile-score-icon.tone-very-poor) {
   color: var(--article-quality-poor-dark);
 }
 </style>

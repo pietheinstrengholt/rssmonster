@@ -19,13 +19,13 @@ whether an article is allowed to exist or be read.
 Overall quality asks: **How good is this particular article?**
 
 It is a normalized `0.0`–`1.0` content score derived from the article's stored
-quality, sentiment, and advertising scores. Feed reputation is not inserted
+quality, tone, and advertising scores. Feed reputation is not inserted
 into the article-level value.
 
 ```text
 articleQuality =
     0.50 × qualityScore
-  + 0.25 × sentimentScore
+  + 0.25 × toneScore
   + 0.25 × advertisementScore
 ```
 

@@ -111,7 +111,7 @@ export const searchArticles = async ({
     feedId = "%",
     status = "unread",
     minAdvertisementScore = null,
-    minSentimentScore = null,
+    minToneScore = null,
     minOverallQualityScore = null,
     minQualityScore = null,
     sort = "desc",
@@ -149,16 +149,16 @@ export const searchArticles = async ({
     /**
      * Smart folder optimization: skip settings fetch when score thresholds are explicit.
      * Fetch user settings to determine score thresholds if not explicitly provided.
-     * If minAdvertisementScore, minSentimentScore, or minQualityScore are not provided,
+     * If minAdvertisementScore, minToneScore, or minQualityScore are not provided,
      * use values from settings; otherwise fallback to 0.
      */
     let userSettings = null;
-    // Handles the case where persist settings is available or min advertisement score is value or min sentiment score is value or min quality score is value.
+    // Handles the case where persist settings is available or min advertisement score is value or min tone score is value or min quality score is value.
     if (
       persistSettings ||
       (status === 'unread' && !smartFolderSearch) ||
       minAdvertisementScore === null ||
-      minSentimentScore === null ||
+      minToneScore === null ||
       minQualityScore === null ||
       minOverallQualityScore === null
     ) {
@@ -166,7 +166,7 @@ export const searchArticles = async ({
             where: { userId },
             attributes: [
               'minAdvertisementScore',
-              'minSentimentScore',
+              'minToneScore',
               'minOverallQualityScore',
               'minQualityScore',
               'prioritizeHighTrust',
@@ -178,13 +178,13 @@ export const searchArticles = async ({
 
     // Derives the final min advertisement score required while performing search articles.
     const finalMinAdvertisementScore = minAdvertisementScore ?? userSettings?.minAdvertisementScore ?? 0;
-    // Derives the final min sentiment score required while performing search articles.
-    const finalMinSentimentScore = minSentimentScore ?? userSettings?.minSentimentScore ?? 0;
+    // Derives the final min tone score required while performing search articles.
+    const finalMinToneScore = minToneScore ?? userSettings?.minToneScore ?? 0;
     // Derives the final min quality score required while performing search articles.
     const finalMinOverallQualityScore = minOverallQualityScore ?? userSettings?.minOverallQualityScore ?? 0;
     const finalMinQualityScore = minQualityScore ?? userSettings?.minQualityScore ?? 0;
 
-    debugLog(`\x1b[32mScore thresholds: adv=${finalMinAdvertisementScore}, sentiment=${finalMinSentimentScore}, quality=${finalMinQualityScore}\x1b[0m`);
+    debugLog(`\x1b[32mScore thresholds: adv=${finalMinAdvertisementScore}, tone=${finalMinToneScore}, quality=${finalMinQualityScore}\x1b[0m`);
 
     // Selects the raw search based on whether status is briefing.
     let rawSearch = search.trim() || (status === 'briefing' ? DEFAULT_BRIEFING_SEARCH : '');
@@ -376,7 +376,7 @@ export const searchArticles = async ({
       ...canonicalArticleWhere()
     }, {
       minAdvertisementScore: finalMinAdvertisementScore,
-      minSentimentScore: finalMinSentimentScore,
+      minToneScore: finalMinToneScore,
       minOverallQualityScore: finalMinOverallQualityScore,
       minQualityScore: finalMinQualityScore
     });
@@ -527,7 +527,7 @@ export const searchArticles = async ({
         grouping: effectiveGrouping,
         includeDevelopingEvents: effectiveIncludeDevelopingEvents,
         minAdvertisementScore: Number(finalMinAdvertisementScore),
-        minSentimentScore: Number(finalMinSentimentScore),
+        minToneScore: Number(finalMinToneScore),
         minOverallQualityScore: Number(finalMinOverallQualityScore),
         minQualityScore: Number(finalMinQualityScore),
         prioritizeHighTrust,
@@ -635,7 +635,7 @@ export const searchArticles = async ({
           status,
           sort: logicalSort,
           minAdvertisementScore: finalMinAdvertisementScore,
-          minSentimentScore: finalMinSentimentScore,
+          minToneScore: finalMinToneScore,
           minOverallQualityScore: finalMinOverallQualityScore,
           minQualityScore: finalMinQualityScore,
           grouping: effectiveGrouping,
@@ -798,7 +798,7 @@ export const searchArticles = async ({
         status: status,
         sort: logicalSort,
         minAdvertisementScore: finalMinAdvertisementScore,
-        minSentimentScore: finalMinSentimentScore,
+        minToneScore: finalMinToneScore,
         minOverallQualityScore: finalMinOverallQualityScore,
         minQualityScore: finalMinQualityScore,
         grouping: effectiveGrouping,

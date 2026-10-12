@@ -129,7 +129,7 @@ export default {
         selection.tag,
         selection.smartFolderId,
         selection.minAdvertisementScore,
-        selection.minSentimentScore,
+        selection.minToneScore,
         selection.minOverallQualityScore,
         selection.minQualityScore,
         selection.sort,

@@ -39,7 +39,7 @@ const createArticle = (overrides = {}) => ({
   openedOriginalCount: 0,
   attentionBucket: 3,
   qualityScore: 75,
-  sentimentScore: 75,
+  toneScore: 75,
   advertisementScore: 75,
   aiAnalysisStatus: 'complete',
   ...overrides
@@ -105,13 +105,13 @@ describe('feed trust command', () => {
   it('raises trust for high article quality and lowers it for low article quality', async () => {
     const high = await calculate(createArticles(8, {
       qualityScore: 95,
-      sentimentScore: 95,
+      toneScore: 95,
       advertisementScore: 95
     }));
     vi.resetModules();
     const low = await calculate(createArticles(8, {
       qualityScore: 20,
-      sentimentScore: 20,
+      toneScore: 20,
       advertisementScore: 20
     }));
 
@@ -123,14 +123,14 @@ describe('feed trust command', () => {
   it('keeps article quality dominant over engagement', async () => {
     const highQualityNoEngagement = await calculate(createArticles(8, {
       qualityScore: 95,
-      sentimentScore: 95,
+      toneScore: 95,
       advertisementScore: 95,
       attentionBucket: 0
     }));
     vi.resetModules();
     const lowQualityMaxEngagement = await calculate(createArticles(8, {
       qualityScore: 20,
-      sentimentScore: 20,
+      toneScore: 20,
       advertisementScore: 20,
       attentionBucket: 4,
       savedInd: 1,
@@ -144,7 +144,7 @@ describe('feed trust command', () => {
   it('allows an excellent weekly source to earn high trust without a volume reward', async () => {
     const { result } = await calculate(createArticles(4, {
       qualityScore: 95,
-      sentimentScore: 95,
+      toneScore: 95,
       advertisementScore: 95,
       attentionBucket: 4
     }));
@@ -157,7 +157,7 @@ describe('feed trust command', () => {
     const { result } = await calculate(createArticles(100, {
       status: 'unread',
       qualityScore: 20,
-      sentimentScore: 20,
+      toneScore: 20,
       advertisementScore: 20,
       attentionBucket: 0
     }));
@@ -225,7 +225,7 @@ describe('feed trust command', () => {
     const { result } = await calculate(createArticles(3, {
       duplicateOfArticleId: undefined,
       qualityScore: null,
-      sentimentScore: null,
+      toneScore: null,
       advertisementScore: null,
       aiAnalysisStatus: 'pending',
       attentionBucket: 0,
@@ -247,7 +247,7 @@ describe('feed trust command', () => {
     expect(query.attributes).toEqual(expect.arrayContaining([
       'duplicateOfArticleId',
       'qualityScore',
-      'sentimentScore',
+      'toneScore',
       'advertisementScore',
       'negativeInd',
       'attentionBucket'

@@ -83,7 +83,7 @@ describe('smartFolder controller', () => {
       mocked.smartFolderFindAll.mockResolvedValue([folderA, folderB]);
       mocked.settingFindOne.mockResolvedValue({
         minAdvertisementScore: 0,
-        minSentimentScore: 0,
+        minToneScore: 0,
         minQualityScore: 0
       });
       mocked.feedFindAll.mockResolvedValue([{ id: 8 }, { id: 13 }]);
@@ -107,7 +107,7 @@ describe('smartFolder controller', () => {
         userId: 42,
         search: 'sort:recommended grouping:none',
         minAdvertisementScore: 0,
-        minSentimentScore: 0,
+        minToneScore: 0,
         minQualityScore: 0,
         minOverallQualityScore: 0,
         resolvedFeedIds: [8, 13],
@@ -120,7 +120,7 @@ describe('smartFolder controller', () => {
         userId: 42,
         search: 'unread:true sort:desc grouping:none',
         minAdvertisementScore: 0,
-        minSentimentScore: 0,
+        minToneScore: 0,
         minQualityScore: 0,
         minOverallQualityScore: 0,
         resolvedFeedIds: [8, 13],

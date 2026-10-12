@@ -23,7 +23,7 @@ const mountSettings = ({ AIEnabled = false, role = 'user', stubs = {} } = {}) =>
       currentSelection: {
         AIEnabled,
         minAdvertisementScore: 0,
-        minSentimentScore: 0,
+        minToneScore: 0,
         minQualityScore: 0
       }
     },

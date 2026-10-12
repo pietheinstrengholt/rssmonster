@@ -248,7 +248,7 @@ const persistAnalysis = async ({ target, analysis, completedAt }) =>
     await article.update({
       contentSummaryBullets: analysis.contentSummaryBullets,
       advertisementScore: analysis.advertisementScore,
-      sentimentScore: analysis.sentimentScore,
+      toneScore: analysis.toneScore,
       qualityScore: analysis.qualityScore,
       aiAnalysisStatus: 'complete',
       aiAnalysisCompletedAt: completedAt,

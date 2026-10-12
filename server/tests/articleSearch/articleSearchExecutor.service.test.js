@@ -80,7 +80,7 @@ describe('articleSearchExecutor.service', () => {
     expect(query.attributes).toEqual(expect.arrayContaining([
       'publishedAt',
       'qualityScore',
-      'sentimentScore',
+      'toneScore',
       'advertisementScore'
     ]));
     expect(query.attributes).not.toContain('interestScore');

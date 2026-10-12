@@ -192,7 +192,7 @@ describe('public Generated Feed RSS endpoint', () => {
       url: `https://example.test/generated-limit-${index}-${Date.now()}`,
       contentHtml: `<p>Generated limit body ${index}</p>`,
       advertisementScore: index === 0 ? 100 : 10,
-      sentimentScore: index === 0 ? 100 : 10,
+      toneScore: index === 0 ? 100 : 10,
       qualityScore: index === 0 ? 100 : 10,
       publishedAt: new Date(Date.UTC(2026, 7, 1, 0, index))
     }));

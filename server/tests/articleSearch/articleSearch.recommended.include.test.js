@@ -9,7 +9,7 @@ describe('articleSearch recommended include wiring', () => {
     vi.spyOn(Island, 'findOne').mockResolvedValue(null);
     vi.spyOn(Setting, 'findOne').mockResolvedValue({
       minAdvertisementScore: 0,
-      minSentimentScore: 0,
+      minToneScore: 0,
       minQualityScore: 0
     });
 

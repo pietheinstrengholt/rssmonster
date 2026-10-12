@@ -26,7 +26,7 @@ const matchingSearchOptions = (userId, query, grouping) => ({
   feedId: query.feedId ?? '%',
   status: 'unread',
   minAdvertisementScore: toScoreThreshold(query.minAdvertisementScore),
-  minSentimentScore: toScoreThreshold(query.minSentimentScore),
+  minToneScore: toScoreThreshold(query.minToneScore),
   minOverallQualityScore: toScoreThreshold(query.minOverallQualityScore),
   minQualityScore: toScoreThreshold(query.minQualityScore),
   sort: query.sort || 'desc',

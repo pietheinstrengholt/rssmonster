@@ -19,7 +19,7 @@ async function fixture(score = 0.8, islandValues = {}) {
   const feed = await db.Feed.create({ userId: user.id, categoryId: category.id, feedName: 'Expiry', url: `https://${user.id}.example/rss` });
   const values = { userId: user.id, feedId: feed.id, title: 'Kubernetes deployment',
     articleVector: [1, 0], embedding_model: 'test-model', publishedAt: ago(3), status: 'unread',
-    advertisementScore: 80, sentimentScore: 80, qualityScore: 80 };
+    advertisementScore: 80, toneScore: 80, qualityScore: 80 };
   const candidate = await db.Article.create({ ...values, interestScore: score, interestScoredAt: ago(1) });
   const island = await db.Island.create({ userId: user.id, label: 'Kubernetes', islandVector: [1, 0],
     embedding_model: 'test-model', weight: Math.sign(score), archivedInd: false,

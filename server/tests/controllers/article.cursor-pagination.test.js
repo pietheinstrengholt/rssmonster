@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
-import { createArticleSearchCursor } from '../../services/articleSearch/articleSearchCursor.service.js';
+import { createArticleSearchCursor, fingerprintArticleSearch } from '../../services/articleSearch/articleSearchCursor.service.js';
 import { MAX_ARTICLE_SEARCH_LENGTH } from '../../services/articleSearch/articleQueryParser.service.js';
 
 const { Article, Category, Event, Feed, Setting, Tag, User, sequelize } = db;
@@ -68,6 +68,15 @@ describe('article cursor pagination', () => {
     app = mod.default;
     await sequelize.authenticate();
   }, 50_000);
+
+  it('retains signed pagination query identity across Tone contract names', () => {
+    expect(fingerprintArticleSearch({ userId: 1, minToneScore: 80, sort: 'desc' }))
+      .toBe(fingerprintArticleSearch({ userId: 1, minSentimentScore: 80, sort: 'desc' }));
+    expect(fingerprintArticleSearch({ userId: 1, minToneScore: 0, minSentimentScore: 80 }))
+      .toBe(fingerprintArticleSearch({ userId: 1, minSentimentScore: 0 }));
+    expect(fingerprintArticleSearch({ userId: 1, minToneScore: 80 }))
+      .not.toBe(fingerprintArticleSearch({ userId: 1, minToneScore: 0 }));
+  });
 
   it('hydrates the same Headlines page for canonical and legacy modes', async () => {
     const { user, feed } = await createUserFeed('reading-mode');

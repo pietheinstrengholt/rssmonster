@@ -60,7 +60,7 @@ const saveArguments = () => [
     contentSummaryBullets: [],
     tags: ['Inferred'],
     advertisementScore: 70,
-    sentimentScore: 70,
+    toneScore: 70,
     qualityScore: 70
   },
   {
@@ -169,7 +169,7 @@ describe('saveArticle feed tags', () => {
         contentSummaryBullets: [],
         tags: ['Inferred', 'Hardware'],
         advertisementScore: 70,
-        sentimentScore: 70,
+        toneScore: 70,
         qualityScore: 70
       },
       {
@@ -268,7 +268,7 @@ describe('saveArticle feed tags', () => {
         contentSummaryBullets: [],
         tags: [],
         advertisementScore: 70,
-        sentimentScore: 70,
+        toneScore: 70,
         qualityScore: 70
       },
       {

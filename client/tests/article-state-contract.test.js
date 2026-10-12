@@ -30,3 +30,9 @@ it('normalizes reading modes in restored browser settings and nested snapshots',
   expect(canonicalArticleState({ viewMode: 'full', settings: { viewMode: 'minimal' }, content: 'full minimal' }))
     .toEqual({ viewMode: 'expanded', settings: { viewMode: 'headlines' }, content: 'full minimal' });
 });
+
+it('normalizes legacy tone scores and thresholds in nested persisted state with canonical precedence', () => {
+  expect(canonicalArticleState({ sentimentScore: 80, toneScore: 0, settings: { minSentimentScore: 25 },
+    articles: [{ sentimentScore: 70 }, { sentimentScore: 80, toneScore: null }], expression: 'quality:>=0.75' }))
+    .toEqual({ toneScore: 0, settings: { minToneScore: 25 }, articles: [{ toneScore: 70 }, { toneScore: null }], expression: 'quality:>=0.75' });
+});

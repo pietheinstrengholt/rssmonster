@@ -58,7 +58,7 @@ const confidenceAdjusted = (observed, confidence) =>
 
 const hasUsableArticleQuality = article => {
   if (['pending', 'processing', 'failed'].includes(article.aiAnalysisStatus)) return false;
-  return ['qualityScore', 'sentimentScore', 'advertisementScore']
+  return ['qualityScore', 'toneScore', 'advertisementScore']
     .every(field => article[field] != null && Number.isFinite(Number(article[field])));
 };
 
@@ -117,7 +117,7 @@ export async function calculateFeedTrustForFeed(feedId) {
       'openedOriginalCount',
       'attentionBucket',
       'qualityScore',
-      'sentimentScore',
+      'toneScore',
       'advertisementScore',
       'aiAnalysisStatus'
     ]

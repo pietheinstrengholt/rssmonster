@@ -186,8 +186,8 @@ describe('articleSort.service', () => {
   // Sorts by virtual quality values from highest to lowest.
   it('sorts by quality score', () => {
     const result = sortArticles([
-      { id: 1, qualityScore: 30, sentimentScore: 30, advertisementScore: 30 },
-      { id: 2, qualityScore: 80, sentimentScore: 80, advertisementScore: 80 }
+      { id: 1, qualityScore: 30, toneScore: 30, advertisementScore: 30 },
+      { id: 2, qualityScore: 80, toneScore: 80, advertisementScore: 80 }
     ], { sortQuality: true });
 
     expect(result.map(article => article.id)).toEqual([2, 1]);
@@ -196,8 +196,8 @@ describe('articleSort.service', () => {
   // Applies the fixed 70/30 Quality formula without an additional preference boost.
   it('combines article quality and feed trust with fixed weights', () => {
     const result = sortArticles([
-      { id: 1, qualityScore: 60, sentimentScore: 60, advertisementScore: 60, Feed: { feedTrust: 0.1 } },
-      { id: 2, qualityScore: 30, sentimentScore: 30, advertisementScore: 30, Feed: { feedTrust: 1 } }
+      { id: 1, qualityScore: 60, toneScore: 60, advertisementScore: 60, Feed: { feedTrust: 0.1 } },
+      { id: 2, qualityScore: 30, toneScore: 30, advertisementScore: 30, Feed: { feedTrust: 1 } }
     ], { sortQuality: true, prioritizeHighTrust: true });
 
     expect(result.map(article => article.id)).toEqual([2, 1]);
@@ -205,9 +205,9 @@ describe('articleSort.service', () => {
 
   it('bounds feed trust and uses the neutral fallback when it is missing', () => {
     const result = sortArticles([
-      { id: 1, qualityScore: 50, sentimentScore: 50, advertisementScore: 50, Feed: { feedTrust: -1 } },
-      { id: 2, qualityScore: 30, sentimentScore: 30, advertisementScore: 30 },
-      { id: 3, qualityScore: 10, sentimentScore: 10, advertisementScore: 10, Feed: { feedTrust: 4 } }
+      { id: 1, qualityScore: 50, toneScore: 50, advertisementScore: 50, Feed: { feedTrust: -1 } },
+      { id: 2, qualityScore: 30, toneScore: 30, advertisementScore: 30 },
+      { id: 3, qualityScore: 10, toneScore: 10, advertisementScore: 10, Feed: { feedTrust: 4 } }
     ], { sortQuality: true });
 
     expect(result.map(article => article.id)).toEqual([3, 2, 1]);

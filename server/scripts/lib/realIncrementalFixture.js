@@ -70,7 +70,7 @@ export function sanitizeArticle(row, sourceId, feedId) {
     title: row.title, description: row.description ?? null, contentOriginal: row.contentOriginal ?? null,
     contentHtml: row.contentHtml ?? null, contentText: row.contentText ?? null, publishedAt, firstSeen: publishedAt,
     language: row.language || 'unknown', qualityScore: row.qualityScore, advertisementScore: row.advertisementScore,
-    sentimentScore: row.sentimentScore, regression: { provenance: 'real', scenario: 'real-background', wave: 1,
+    toneScore: row.toneScore, regression: { provenance: 'real', scenario: 'real-background', wave: 1,
       originallyEventLinked: Boolean(row.eventId),
       originallySyndicated: Boolean(row.duplicateOfArticleId || row.duplicateCount) } };
 }

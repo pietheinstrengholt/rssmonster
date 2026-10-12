@@ -6,7 +6,7 @@ import {
 
 const json = (body, status = 200, headers = {}) => new Response(JSON.stringify(body), { status, headers });
 const input = { text: 'Article content' };
-const analysis = { contentSummaryBullets: [], tags: [], advertisementScore: 70, sentimentScore: 70, qualityScore: 70 };
+const analysis = { contentSummaryBullets: [], tags: [], advertisementScore: 70, toneScore: 70, qualityScore: 70 };
 let ai;
 beforeEach(() => {
   vi.stubEnv('INFERENCE_AI_ENABLED', 'true');

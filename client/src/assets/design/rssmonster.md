@@ -22,7 +22,7 @@ Last updated: 2026-08-08
 
 RSSMonster is designed as a calm, information-dense reading workspace. The interface gives most of the screen to feeds and article content, then uses a fixed navigation sidebar, a compact toolbar, and quiet metadata to keep a large library manageable. Its closest visual relatives are focused productivity tools and desktop mail or feed readers rather than a consumer news homepage.
 
-The system is built from pale neutral surfaces, thin borders, native system typography, and one primary blue selection language. Orange identifies the RSSMonster brand and feed creation, green confirms successful or completed actions, and red or pink marks saved, errors, warnings, and destructive actions. Supporting badge colors appear only when they communicate article signals such as similarity, duplication, quality, sentiment, or rule-generated tags.
+The system is built from pale neutral surfaces, thin borders, native system typography, and one primary blue selection language. Orange identifies the RSSMonster brand and feed creation, green confirms successful or completed actions, and red or pink marks saved, errors, warnings, and destructive actions. Supporting badge colors appear only when they communicate article signals such as similarity, duplication, quality, tone, or rule-generated tags.
 
 The experience has three related modes. The standard stream presents Expanded articles or Headlines rows in one reading pane. Reader mode adds a compact article list beside a dedicated article pane. Mobile mode replaces the persistent desktop chrome with a sticky toolbar and an overlay menu while keeping the same selections, article states, and semantic colors.
 
@@ -135,7 +135,7 @@ The selected article opens in the adjacent reader pane without replacing the lis
 
 ### Article metadata, badges, and signals
 
-Metadata is deliberately quieter than the headline and content. Publication time and source are gray, while compact badges make machine-assisted signals scan-friendly. Similar articles are blue, duplicates pink, ordinary tags gray, quality green, advertisements and hot items orange, sentiment indigo, and rule tags purple.
+Metadata is deliberately quieter than the headline and content. Publication time and source are gray, while compact badges make machine-assisted signals scan-friendly. Similar articles are blue, duplicates pink, ordinary tags gray, quality green, advertisements and hot items orange, tone indigo, and rule tags purple.
 
 These secondary accent families are domain signals, not general navigation colors. They should remain inside their established meanings and should not spread to generic buttons, headings, or decorative panels.
 

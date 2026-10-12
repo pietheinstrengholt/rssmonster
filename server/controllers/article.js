@@ -1,4 +1,4 @@
-import { canonicalArticleViewMode } from '../utils/articleStateContract.js';
+import { canonicalArticleState, canonicalArticleViewMode } from '../utils/articleStateContract.js';
 import htmlToVisibleText from '../services/crawl/content/htmlToVisibleText.js';
 import { updateArticleBehavior } from '../services/articles/updateArticleBehavior.js';
 import db from '../models/index.js';
@@ -169,7 +169,7 @@ const loadArticleDetails = async (userId, articlesArray, personalization = creat
       'eventId',
       'duplicateCount',
       'advertisementScore',
-      'sentimentScore',
+      'toneScore',
       'qualityScore',
       'interestScore',
       'interestScoredAt',
@@ -355,7 +355,7 @@ export const getArticles = async (req, res) => {
       feedId: req.query.feedId,
       status: newerThanArticleId === null ? req.query.status : 'unread',
       minAdvertisementScore: req.query.minAdvertisementScore,
-      minSentimentScore: req.query.minSentimentScore,
+      minToneScore: canonicalArticleState(req.query).minToneScore,
       minOverallQualityScore: req.query.minOverallQualityScore,
       minQualityScore: req.query.minQualityScore,
       sort: req.query.sort,
@@ -737,7 +737,7 @@ const getStorySourceArticles = async (req, res, _next) => {
 const markAsRead = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
-    const body = req.body || {};
+    const body = canonicalArticleState(req.body || {});
     const statusGrouping = normalizeGrouping(body.grouping);
     const articleIds = Array.isArray(body.articleIds)
       ? body.articleIds
@@ -771,7 +771,7 @@ const markAsRead = async (req, res, _next) => {
           categoryId: body.categoryId,
           feedId: body.feedId,
           minAdvertisementScore: body.minAdvertisementScore,
-          minSentimentScore: body.minSentimentScore,
+          minToneScore: body.minToneScore,
           minOverallQualityScore: body.minOverallQualityScore,
           minQualityScore: body.minQualityScore,
           sort: body.sort,

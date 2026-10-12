@@ -16,11 +16,11 @@ export function getQualityClass(score) {
   return 'quality-poor';
 }
 
-// This function returns the CSS class for an article sentiment score.
-export function getSentimentClass(score) {
-  if (score >= 50) return 'sentiment-moderate';
-  if (score >= 30) return 'sentiment-poor';
-  return 'sentiment-very-poor';
+// This function returns the CSS class for an article tone score.
+export function getToneClass(score) {
+  if (score >= 50) return 'tone-moderate';
+  if (score >= 30) return 'tone-poor';
+  return 'tone-very-poor';
 }
 
 // This function returns the display label for an article score.

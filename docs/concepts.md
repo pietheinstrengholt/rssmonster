@@ -46,7 +46,7 @@ article does not universally mark every related article read.
 
 ## Quality, originality, and trust
 
-Article quality combines stored quality, sentiment, and advertising scores into
+Article quality combines stored quality, tone, and advertising scores into
 a normalized `0`–`1` value. Higher advertising scores mean less promotional
 content. AI analysis supplies estimates when enabled; otherwise default values
 can be used. These are ranking signals, not verification of facts.

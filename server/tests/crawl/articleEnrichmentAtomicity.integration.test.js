@@ -22,7 +22,7 @@ const analysis = {
   contentSummaryBullets: [],
   tags: [],
   advertisementScore: 70,
-  sentimentScore: 70,
+  toneScore: 70,
   qualityScore: 70
 };
 
@@ -167,7 +167,7 @@ describe('article enrichment transaction atomicity', () => {
     expect(event).toMatchObject({ representativeArticleId: article.id, developingArticleId: supportingArticle.id, articleCount: 2 });
     expect(article).toMatchObject({ ...retained, aiAnalysisStatus: 'complete',
       contentSummaryBullets: ['Previously analyzed fact'], qualityScore: 70,
-      sentimentScore: 70, advertisementScore: 70 });
+      toneScore: 70, advertisementScore: 70 });
     expect(await Tag.count({ where: { articleId: article.id, tagType: 'inferred', name: 'inferred-topic' } })).toBe(1);
     expect(await ProcessingJob.count({ where: { articleId: article.id } })).toBe(0);
   });

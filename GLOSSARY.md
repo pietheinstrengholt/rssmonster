@@ -9,7 +9,6 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Sentiment / Tone | Current controls describe `sentimentScore` as **Tone**, emotional neutrality and balance. Settings documentation still describes higher sentiment as more positive and lower sentiment as negative/alarmist. These are different descriptions of the assessment. | [Scores settings](client/src/components/settings/SettingsScores.vue), [quality explanation](client/src/components/articles/ArticleQualityExplanation.vue), [Settings documentation](client/src/components/settings/README.md#scores) |
 | AI provider and defaults | Scores help claims an OpenAI key is required and absent-key articles receive 70. AI / Inference exposes a configurable service with separate capabilities; the Settings README flags the OpenAI-only copy as outdated. The neutral component fallback is separate from pending/failed analysis presentation. | [Scores settings](client/src/components/settings/SettingsScores.vue), [Inference settings](client/src/components/settings/SettingsInference.vue), [Settings documentation](client/src/components/settings/README.md), [analysis presentation](client/src/services/articleAnalysisPresentation.js) |
 | Interest match | Briefing's “Show only interest-matched articles” includes nonzero negative interest according to its documented eligibility contract. “Matches your interests” can sound like a positive recommendation, while the interest inspector distinguishes positive, neutral, and negative preference. | [Briefing preferences](client/src/components/briefing/README.md#article-selection), [interest presentation](client/src/services/interestPresentation.js), [article metadata](client/src/components/articles/ArticleMeta.vue) |
 | High-trust priority | Unread and Briefing expose similar **Prioritize high-trust coverage** wording, but the documented ranking effects differ. Briefing priority changes structured-summary ordering; Unread has a legacy chronological trust override. Neither is the article-only overall-quality value. | [Unread preferences](client/src/components/dialogs/UnreadConfigurationModal.vue), [Briefing coverage quality](client/src/components/briefing/README.md#coverage-quality), [scoring modes](docs/scoring.md#chronological) |
@@ -19,6 +18,14 @@ not necessarily indicate a functional defect.
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**Tone contract:** **Tone** measures emotional neutrality and balance, with
+higher scores indicating calmer, more factual language rather than positive news.
+`toneScore` and `minToneScore` are canonical throughout source code, APIs,
+inference, database columns, persisted settings, and cached articles.
+Legacy `sentimentScore` and `minSentimentScore` remain accepted boundary aliases;
+responses expose both names during migration. Scoring, thresholds, formulas, and
+search expressions are unchanged. See [the migration guide](docs/tone-score-migration.md).
 
 **Quality precision:** Overall quality badges, accessible labels, breakdown
 footers, and quality-filter preview chips preserve fractional points and trim
@@ -426,9 +433,12 @@ Evidence: [Event presentation](client/src/components/articles/ArticleMeta.vue),
 
 **Overall quality** (`quality`) is article-only content quality on a normalized
 0–1 scale: 50% writing quality, 25% tone, and 25% ad-free content. Its UI uses a
-0–100 scale. **Writing quality** (`qualityScore`), **Tone** (`sentimentScore`), and
+0–100 scale. **Writing quality** (`qualityScore`), **Tone** (`toneScore`), and
 **Ad-free content** (`advertisementScore`) are separate 0–100 components, with
-higher values better. Higher advertisement score means less promotion.
+higher values better. Higher Tone means more neutral, balanced language, not a
+more positive subject. Higher advertisement score means less promotion.
+`sentimentScore` and `minSentimentScore` are legacy aliases for `toneScore` and
+`minToneScore`.
 **Score thresholds** restrict eligibility; 0 disables the corresponding Settings
 gate. Query `quality:>=0.75` means overall quality of at least 75/100.
 

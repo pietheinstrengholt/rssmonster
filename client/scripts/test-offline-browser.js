@@ -15,6 +15,7 @@ try {
   await page.goto(`${process.env.READING_TEST_BASE_URL || 'http://localhost:8080'}/tests/browser/offline.html`);
   await page.waitForFunction(() => Boolean(window.testOfflineDatabase));
   console.log(await page.evaluate(() => window.testOfflineContractMigration()));
+  console.log(await page.evaluate(() => window.testOfflineToneMigration()));
   console.log(await page.evaluate(() => window.testOfflineDatabase()));
   assert.deepEqual(errors, []);
   const secondTab = await page.context().newPage();
@@ -108,7 +109,7 @@ try {
     await appPage.getByRole('button', { name: 'Close settings', exact: true }).click();
     const initialGeneration = await appPage.evaluate(async () => {
       const database = await new Promise(resolve => {
-        const request = indexedDB.open('rssmonster-offline', 2);
+        const request = indexedDB.open('rssmonster-offline');
         request.onsuccess = () => resolve(request.result);
       });
       const identity = JSON.parse(localStorage.getItem(Object.keys(localStorage).find(key => key.startsWith('rssmonster-offline-identity:'))));
@@ -134,7 +135,7 @@ try {
     await useMenu('Mark as read');
     await useMenu('Remove from saved');
     const queuedCount = async () => appPage.evaluate(async () => {
-      const db = await new Promise(resolve => { const request = indexedDB.open('rssmonster-offline', 2); request.onsuccess = () => resolve(request.result); });
+      const db = await new Promise(resolve => { const request = indexedDB.open('rssmonster-offline'); request.onsuccess = () => resolve(request.result); });
       const actions = await new Promise(resolve => { const request = db.transaction('pendingActions').objectStore('pendingActions').getAll(); request.onsuccess = () => resolve(request.result); });
       db.close(); return actions.length;
     });
@@ -155,7 +156,7 @@ try {
       window.offlineRecoveryReady = false;
       const check = async () => {
         const database = await new Promise(resolve => {
-          const request = indexedDB.open('rssmonster-offline', 2);
+          const request = indexedDB.open('rssmonster-offline');
           request.onsuccess = () => resolve(request.result);
         });
         const identity = JSON.parse(localStorage.getItem(Object.keys(localStorage).find(key => key.startsWith('rssmonster-offline-identity:'))));

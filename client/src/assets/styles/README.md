@@ -290,7 +290,7 @@ border-color: var(--sidebar-action-read-border);
 
 These badge colors are also used in settings pages. Treat them as semantic colors, not article-only colors.
 Several values below are legacy evaluative or domain-specific accents and do not expand the core color
-relationship. Advertisement, sentiment, quality, writing and rule colors should be migration candidates
+relationship. Advertisement, tone, quality, writing and rule colors should be migration candidates
 when their components are revisited; do not reuse those colors for unrelated UI.
 
 ## Light Mode
@@ -320,9 +320,9 @@ when their components are revisited; do not reuse those colors for unrelated UI.
 --badge-ad-bg: #FFEDD5;
 --badge-ad-text: #EA650D;
 
-/* Sentiment */
---badge-sentiment-bg: #EEF2FF;
---badge-sentiment-text: #4338CA;
+/* Tone */
+--badge-tone-bg: #EEF2FF;
+--badge-tone-text: #4338CA;
 
 /* Writing */
 --badge-writing-bg: #ECFDF5;
@@ -360,9 +360,9 @@ when their components are revisited; do not reuse those colors for unrelated UI.
 --badge-ad-bg: #5C2A14;
 --badge-ad-text: #FDBA74;
 
-/* Sentiment */
---badge-sentiment-bg: #252C63;
---badge-sentiment-text: #A5B4FC;
+/* Tone */
+--badge-tone-bg: #252C63;
+--badge-tone-text: #A5B4FC;
 
 /* Writing */
 --badge-writing-bg: #123F35;

@@ -35,7 +35,7 @@ const successfulAnalysis = {
   contentSummaryBullets: ['First fact', 'Second fact'],
   tags: ['Inferred Topic', 'Provider Topic'],
   advertisementScore: 81,
-  sentimentScore: 72,
+  toneScore: 72,
   qualityScore: 83
 };
 
@@ -207,7 +207,7 @@ describe('article_enrichment processing-job handler', () => {
     expect(persisted).toMatchObject({
       contentSummaryBullets: ['First fact', 'Second fact'],
       advertisementScore: 4,
-      sentimentScore: 72,
+      toneScore: 72,
       qualityScore: 97,
       aiAnalysisStatus: 'complete',
       aiAnalysisProvenance: { inputHash: job.payload.expectedAnalysisInputHash,

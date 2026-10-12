@@ -280,16 +280,16 @@ describe('ArticleMeta', () => {
   });
 
   // Verifies mobile metadata keeps analysis score indicators hidden.
-  it('hides the mobile advertisement and sentiment indicators', () => {
+  it('hides the mobile advertisement and tone indicators', () => {
     const wrapper = mountArticleMeta({
       isMobilePortrait: true,
       advertisementScore: 1,
-      sentimentScore: 2
+      toneScore: 2
     });
     const icons = wrapper.findAll('.bootstrap-icon-stub');
 
     expect(icons).toHaveLength(0);
-    expect(wrapper.find('.sentiment-icon').exists()).toBe(false);
+    expect(wrapper.find('.tone-icon').exists()).toBe(false);
     expect(wrapper.find('.ad-icon').exists()).toBe(false);
   });
 
@@ -379,7 +379,7 @@ describe('ArticleMeta', () => {
     const wrapper = mountArticleMeta({
       isMobilePortrait: true,
       advertisementScore: 3,
-      sentimentScore: 3,
+      toneScore: 3,
       event: { id: 12, sourceCount: 3 },
       eventArticleCountTotal: 3,
       grouping: 'none'
@@ -416,7 +416,7 @@ describe('ArticleTagsScores', () => {
   it('hides the quality badge when all scores have the default value', async () => {
     const wrapper = mountArticleTagsScores({
       advertisementScore: 70,
-      sentimentScore: 70,
+      toneScore: 70,
       qualityScore: 70,
       quality: 0.775
     });
@@ -552,7 +552,7 @@ describe('ArticleTagsScores', () => {
   it('renders the backend overall quality score with an individual score breakdown', async () => {
     const wrapper = mountArticleTagsScores({
       advertisementScore: 100,
-      sentimentScore: 70,
+      toneScore: 70,
       qualityScore: 40,
       quality: 0.625
     }, { attachTo: document.body });
@@ -566,7 +566,7 @@ describe('ArticleTagsScores', () => {
       'aria-expanded': 'false',
       'aria-label': 'Overall quality 62.5 out of 100. Show quality breakdown'
     });
-    expect(wrapper.findAll('.quality-score, .sentiment-score, .ad-score')).toHaveLength(0);
+    expect(wrapper.findAll('.quality-score, .tone-score, .ad-score')).toHaveLength(0);
 
     await trigger.trigger('click');
     await flushPromises();
@@ -608,7 +608,7 @@ describe('ArticleTagsScores', () => {
     [0.6, '60', 'score-medium'],
     [0.58, '58', 'score-poor']
   ])('preserves fractional score %s and its severity', async (quality, label, severity) => {
-    const wrapper = mountArticleTagsScores({ advertisementScore: 100, sentimentScore: 70, qualityScore: 40, quality });
+    const wrapper = mountArticleTagsScores({ advertisementScore: 100, toneScore: 70, qualityScore: 40, quality });
     await flushPromises();
     const badge = wrapper.get('.overall-score');
     expect(badge.text()).toBe(`Overall quality: ${label}`);
@@ -620,7 +620,7 @@ describe('ArticleTagsScores', () => {
   it('assigns severity from the overall quality score', async () => {
     const wrapper = mountArticleTagsScores({
       advertisementScore: 90,
-      sentimentScore: 80,
+      toneScore: 80,
       qualityScore: 60,
       quality: 0.725
     });
@@ -636,7 +636,7 @@ describe('ArticleTagsScores', () => {
       const wrapper = mountArticleTagsScores({
         aiAnalysisStatus,
         advertisementScore: 0,
-        sentimentScore: 50,
+        toneScore: 50,
         qualityScore: 50,
         tags: [
           { id: 1, name: 'provider-tag', tagType: 'provider' },
@@ -660,14 +660,14 @@ describe('ArticleTagsScores', () => {
     const wrapper = mountArticleTagsScores({
       aiAnalysisStatus: 'pending',
       advertisementScore: 0,
-      sentimentScore: 50,
+      toneScore: 50,
       qualityScore: 50
     });
 
     await wrapper.setProps({
       aiAnalysisStatus: 'complete',
       advertisementScore: 90,
-      sentimentScore: 80,
+      toneScore: 80,
       qualityScore: 70,
       quality: 0.775
     });
@@ -681,7 +681,7 @@ describe('ArticleTagsScores', () => {
     const wrapper = mountArticleTagsScores({
       aiAnalysisStatus: 'skipped',
       advertisementScore: 100,
-      sentimentScore: 70,
+      toneScore: 70,
       qualityScore: 40,
       quality: 0.625
     });
@@ -695,7 +695,7 @@ describe('ArticleTagsScores', () => {
     const wrapper = mountArticleTagsScores({
       aiAnalysisStatus: 'processing',
       advertisementScore: 0,
-      sentimentScore: 50,
+      toneScore: 50,
       qualityScore: 50
     });
     expect(wrapper.get('.analysis-state').text()).toBe('Analyzing…');
@@ -714,7 +714,7 @@ describe('ArticleTagsScores', () => {
       'mainURL',
       'getQualityIcon',
       'getQualityClass',
-      'getSentimentClass',
+      'getToneClass',
       'scoreLabel'
     ];
 

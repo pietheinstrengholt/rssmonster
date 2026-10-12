@@ -177,7 +177,7 @@
 }
 
 .scores-icon-tile--advertisement { background: var(--settings-orange-bg); color: var(--settings-orange-text); }
-.scores-icon-tile--sentiment { background: var(--badge-sentiment-bg); color: var(--badge-sentiment-text); }
+.scores-icon-tile--tone { background: var(--badge-tone-bg); color: var(--badge-tone-text); }
 .scores-icon-tile--quality { background: var(--badge-quality-bg); color: var(--badge-quality-text); }
 
 .scores-info-row {
@@ -354,7 +354,7 @@ export default {
   computed: {
     ...mapStores(useSelectionStore),
     hasComponentThresholds() {
-      return this.advertisementScore > 0 || this.sentimentScore > 0 || this.qualityScore > 0;
+      return this.advertisementScore > 0 || this.toneScore > 0 || this.qualityScore > 0;
     },
     thresholdGroups() {
       return [
@@ -370,13 +370,13 @@ export default {
         saving: false,
         advancedInitiallyOpen: false,
         advertisementScore: 0,
-        sentimentScore: 0,
+        toneScore: 0,
         qualityScore: 0,
         overallQualityScore: 0,
         scoreOptions: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
         defaultScores: {
           advertisementScore: 0,
-          sentimentScore: 0,
+          toneScore: 0,
           qualityScore: 0,
           overallQualityScore: 0
         },
@@ -391,11 +391,11 @@ export default {
             thresholdDescription: 'Higher values require articles to be more ad-free.'
           },
           {
-            key: 'sentimentScore',
-            inputId: 'sentimentScore',
+            key: 'toneScore',
+            inputId: 'toneScore',
             title: 'Tone',
             icon: 'emoji-smile',
-            iconClass: 'scores-icon-tile--sentiment',
+            iconClass: 'scores-icon-tile--tone',
             explanation: 'Measures emotional neutrality and tone quality, from poor at 0 to excellent at 100.',
             thresholdDescription: 'Higher values require articles to have a better tone.'
           },
@@ -418,8 +418,8 @@ export default {
     if (typeof sel.minAdvertisementScore !== 'undefined') {
         this.advertisementScore = sel.minAdvertisementScore;
     }
-    if (typeof sel.minSentimentScore !== 'undefined') {
-        this.sentimentScore = sel.minSentimentScore;
+    if (typeof sel.minToneScore !== 'undefined') {
+        this.toneScore = sel.minToneScore;
     }
     if (typeof sel.minQualityScore !== 'undefined') {
         this.qualityScore = sel.minQualityScore;
@@ -445,13 +445,13 @@ export default {
       try {
         await saveSettings({
             minAdvertisementScore: this.advertisementScore,
-            minSentimentScore: this.sentimentScore,
+            minToneScore: this.toneScore,
             minOverallQualityScore: this.overallQualityScore,
             minQualityScore: this.qualityScore
         });
         // Update store currentSelection before closing
         this.selectionStore.setMinAdvertisementScore(this.advertisementScore);
-        this.selectionStore.setMinSentimentScore(this.sentimentScore);
+        this.selectionStore.setMinToneScore(this.toneScore);
         this.selectionStore.setMinQualityScore(this.qualityScore);
         this.selectionStore.setMinOverallQualityScore(this.overallQualityScore);
         this.saveError = '';

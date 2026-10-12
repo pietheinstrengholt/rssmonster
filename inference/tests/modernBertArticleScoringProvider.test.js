@@ -72,7 +72,7 @@ describe('ModernBERT article scoring provider', () => {
     await expect(provider.score(input)).rejects.toThrow('temporary failure');
     await expect(provider.score(input)).resolves.toEqual({
       advertisementScore: 0,
-      sentimentScore: 0,
+      toneScore: 0,
       qualityScore: 0
     });
   });
@@ -215,7 +215,7 @@ describe('ModernBERT article scoring provider', () => {
       feedName: 'Feed name'
     })).resolves.toEqual({
       advertisementScore: 90,
-      sentimentScore: 40,
+      toneScore: 40,
       qualityScore: 70
     });
 

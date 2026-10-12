@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createAI } from '../../services/ai/registry.js';
 
-const analysis = () => ({ contentSummaryBullets: ['Summary'], tags: ['science'], advertisementScore: 80, sentimentScore: 90, qualityScore: 70 });
+const analysis = () => ({ contentSummaryBullets: ['Summary'], tags: ['science'], advertisementScore: 80, toneScore: 90, qualityScore: 70 });
 const setup = () => {
   const inference = {
     embedTexts: vi.fn().mockResolvedValue({ model: 'reported-model', dimensions: 2, count: 1, embeddings: [[0.1, 0.2]] }),
@@ -53,12 +53,22 @@ describe('classification capability', () => {
     await expect(ai.classification.classifyArticle(input, requestOptions)).resolves.toEqual(analysis());
     expect(inference.classifyArticle).toHaveBeenCalledWith(input, requestOptions);
   });
+  it('accepts legacy inference scores, while canonical values take precedence', async () => {
+    const { ai, inference } = setup();
+    const { toneScore, ...rest } = analysis();
+    inference.classifyArticle.mockResolvedValue({ ...rest, sentimentScore: toneScore });
+    await expect(ai.classification.classifyArticle({ text: 'Article' })).resolves.toEqual(analysis());
+    inference.classifyArticle.mockResolvedValue({ ...rest, sentimentScore: 90, toneScore: 0 });
+    await expect(ai.classification.classifyArticle({ text: 'Article' })).resolves.toEqual({ ...rest, toneScore: 0 });
+    inference.classifyArticle.mockResolvedValue({ ...rest, sentimentScore: 90, toneScore: null });
+    await expect(ai.classification.classifyArticle({ text: 'Article' })).rejects.toMatchObject({ code: 'AI_INVALID_RESPONSE' });
+  });
   it.each([null, [], {}, { text: 42 }])('rejects malformed classification requests %j', async input => {
     const { ai, inference } = setup();
     await expect(ai.classification.classifyArticle(input)).rejects.toMatchObject({ code: 'AI_INVALID_REQUEST' });
     expect(inference.classifyArticle).not.toHaveBeenCalled();
   });
-  it.each([null, {}, { ...analysis(), tags: [4] }, { ...analysis(), qualityScore: 101 }, { ...analysis(), sentimentScore: NaN }])(
+  it.each([null, {}, { ...analysis(), tags: [4] }, { ...analysis(), qualityScore: 101 }, { ...analysis(), toneScore: NaN }])(
     'rejects malformed classification responses', async response => {
       const { ai, inference } = setup();
       inference.classifyArticle.mockResolvedValue(response);

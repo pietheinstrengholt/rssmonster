@@ -32,7 +32,7 @@ const analysis = {
   contentSummaryBullets: [],
   tags: [],
   advertisementScore: 70,
-  sentimentScore: 70,
+  toneScore: 70,
   qualityScore: 70
 };
 

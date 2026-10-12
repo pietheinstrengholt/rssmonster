@@ -544,7 +544,7 @@ ignore these settings. Restart inference after changing its environment.
 
 Generation applies to summaries, tags, semantic labels, Smart Folder suggestions,
 and feed rediscovery, including configured generation workload model overrides.
-Classification applies only to remote advertisement, sentiment, and quality
+Classification applies only to remote advertisement, tone, and quality
 scoring. No capability borrows the other's reasoning setting, and neither changes
 assistant behavior or a shared model's global preset.
 

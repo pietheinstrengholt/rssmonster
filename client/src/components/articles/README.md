@@ -216,7 +216,7 @@ metadata area. Context includes:
 - Duplicate count.
 - Rule-assigned tags.
 - Category and regular tags.
-- Quality, advertising, sentiment, and writing-quality assessments.
+- Quality, advertising, tone, and writing-quality assessments.
 
 Category and tag labels are navigation controls. Selecting one changes the article collection to that context.
 

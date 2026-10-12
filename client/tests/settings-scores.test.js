@@ -79,11 +79,11 @@ describe('score settings', () => {
     const { wrapper } = mountScores({
       minAdvertisementScore: 15,
       minQualityScore: 35,
-      minSentimentScore: 25
+      minToneScore: 25
     });
 
     expect(wrapper.vm.advertisementScore).toBe(15);
-    expect(wrapper.vm.sentimentScore).toBe(25);
+    expect(wrapper.vm.toneScore).toBe(25);
     expect(wrapper.vm.qualityScore).toBe(35);
     expect(wrapper.findAll('.scores-threshold-row')).toHaveLength(4);
   });
@@ -92,7 +92,7 @@ describe('score settings', () => {
     const { wrapper } = mountScores();
 
     expect(wrapper.vm.advertisementScore).toBe(0);
-    expect(wrapper.vm.sentimentScore).toBe(0);
+    expect(wrapper.vm.toneScore).toBe(0);
     expect(wrapper.vm.qualityScore).toBe(0);
   });
 
@@ -118,13 +118,13 @@ describe('score settings', () => {
     const { wrapper } = mountScores({
       minAdvertisementScore: 15,
       minQualityScore: 35,
-      minSentimentScore: 25
+      minToneScore: 25
     });
 
     await wrapper.get('.scores-reset-button').trigger('click');
 
     expect(wrapper.vm.advertisementScore).toBe(0);
-    expect(wrapper.vm.sentimentScore).toBe(0);
+    expect(wrapper.vm.toneScore).toBe(0);
     expect(wrapper.vm.qualityScore).toBe(0);
     expect(saveSettings).not.toHaveBeenCalled();
   });
@@ -133,12 +133,12 @@ describe('score settings', () => {
     const { stores, wrapper } = mountScores({
       minAdvertisementScore: 10,
       minQualityScore: 30,
-      minSentimentScore: 20
+      minToneScore: 20
     });
     await wrapper.setData({
       advertisementScore: 40,
       qualityScore: 60,
-      sentimentScore: 50
+      toneScore: 50
     });
 
     await wrapper.get('.scores-save-button').trigger('click');
@@ -148,13 +148,13 @@ describe('score settings', () => {
       minOverallQualityScore: 0,
       minAdvertisementScore: 40,
       minQualityScore: 60,
-      minSentimentScore: 50
+      minToneScore: 50
     });
     expect(stores.selectionStore.currentSelection).toMatchObject({
       minOverallQualityScore: 0,
       minAdvertisementScore: 40,
       minQualityScore: 60,
-      minSentimentScore: 50
+      minToneScore: 50
     });
     expect(wrapper.emitted('forceReload')).toHaveLength(1);
     expect(wrapper.emitted('close')).toHaveLength(1);
@@ -166,7 +166,7 @@ describe('score settings', () => {
     const { stores, wrapper } = mountScores({
       minAdvertisementScore: 10,
       minQualityScore: 30,
-      minSentimentScore: 20
+      minToneScore: 20
     });
     await wrapper.setData({ advertisementScore: 90 });
 

@@ -16,7 +16,7 @@ const articleWith = ({
   interestScore,
   freshness,
   qualityScore: quality * 100,
-  sentimentScore: quality * 100,
+  toneScore: quality * 100,
   advertisementScore: quality * 100,
   Feed: { feedTrust: quality },
   event,

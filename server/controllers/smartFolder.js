@@ -43,13 +43,13 @@ const getSmartFolderCountsForUser = async userId => {
     }),
     Setting.findOne({
       where: { userId },
-      attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore', 'minOverallQualityScore']
+      attributes: ['minAdvertisementScore', 'minToneScore', 'minQualityScore', 'minOverallQualityScore']
     }),
     fetchFeedIds({ userId, categoryId: '%', feedId: '%' })
   ]);
 
   const minAdvertisementScore = userSettings?.minAdvertisementScore ?? 0;
-  const minSentimentScore = userSettings?.minSentimentScore ?? 0;
+  const minToneScore = userSettings?.minToneScore ?? 0;
   const minOverallQualityScore = userSettings?.minOverallQualityScore ?? 0;
   const minQualityScore = userSettings?.minQualityScore ?? 0;
 
@@ -59,7 +59,7 @@ const getSmartFolderCountsForUser = async userId => {
         userId,
         search: normalizeSmartFolderExpression(folder.query),
         minAdvertisementScore,
-        minSentimentScore,
+        minToneScore,
         minOverallQualityScore,
         minQualityScore,
         resolvedFeedIds,

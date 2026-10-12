@@ -1,4 +1,4 @@
-import { canonicalArticleStatus, canonicalArticleViewMode } from '../utils/articleStateContract.js';
+import { canonicalArticleState, canonicalArticleStatus, canonicalArticleViewMode } from '../utils/articleStateContract.js';
 import { getInferenceEnvironment } from '../services/inference/runtimeConfiguration.js';
 import { isActiveIsland, islandExpiresAt } from '../services/islands/islandDeadline.js';
 import { loadSidebarSettings } from '../services/sidebarSettings.js';
@@ -285,7 +285,7 @@ export const getSettings = async (req, res, _next) => {
     let status = "unread";
     let sort = aiEnabled ? "recommended" : "desc";
     let minAdvertisementScore = 0;
-    let minSentimentScore = 0;
+    let minToneScore = 0;
     let minQualityScore = 0;
     let minOverallQualityScore = 0;
     let viewMode = aiEnabled ? "reader" : "expanded";
@@ -302,7 +302,7 @@ export const getSettings = async (req, res, _next) => {
     // Always restore durable preferences, regardless of the startup selection behavior.
     if (settings) {
       minAdvertisementScore = settings.minAdvertisementScore || 0;
-      minSentimentScore = settings.minSentimentScore || 0;
+      minToneScore = settings.minToneScore || 0;
       minQualityScore = settings.minQualityScore || 0;
       minOverallQualityScore = settings.minOverallQualityScore || 0;
       includeDevelopingEvents = Boolean(settings.includeDevelopingEvents);
@@ -333,7 +333,7 @@ export const getSettings = async (req, res, _next) => {
       status: status,
       search: null,
       minAdvertisementScore: minAdvertisementScore,
-      minSentimentScore: minSentimentScore,
+      minToneScore: minToneScore,
       minQualityScore: minQualityScore,
       minOverallQualityScore,
       viewMode: viewMode,
@@ -365,12 +365,12 @@ export const setSettings = async (req, res, _next) => {
     }
     const {
       minAdvertisementScore,
-      minSentimentScore,
+      minToneScore,
       minQualityScore,
       minOverallQualityScore,
       includeDevelopingEvents,
       prioritizeHighTrust
-    } = req.body;
+    } = canonicalArticleState(req.body);
 
     // Validate score values (0-100)
     const validateScore = (score, name) => {
@@ -383,7 +383,7 @@ export const setSettings = async (req, res, _next) => {
 
     const validatedSettings = {
       minAdvertisementScore: validateScore(minAdvertisementScore, 'minAdvertisementScore'),
-      minSentimentScore: validateScore(minSentimentScore, 'minSentimentScore'),
+      minToneScore: validateScore(minToneScore, 'minToneScore'),
       minQualityScore: validateScore(minQualityScore, 'minQualityScore')
     };
 

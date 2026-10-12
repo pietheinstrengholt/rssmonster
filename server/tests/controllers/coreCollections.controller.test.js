@@ -376,7 +376,7 @@ describe('tag controllers', () => {
     });
     mocked.settingFindOne.mockResolvedValue({
       minAdvertisementScore: 0.2,
-      minSentimentScore: 0.3,
+      minToneScore: 0.3,
       minQualityScore: 0.4
     });
     mocked.articleFindAll.mockResolvedValue([]);
@@ -409,7 +409,7 @@ describe('tag controllers', () => {
       advertisementScore: { [Op.gte]: 0.2 }
     });
     expect(articleWhere[Op.and][0][Op.and][1][Op.or][0]).toEqual({
-      sentimentScore: { [Op.gte]: 0.3 }
+      toneScore: { [Op.gte]: 0.3 }
     });
     expect(articleWhere[Op.and][0][Op.and][2][Op.or][0]).toEqual({
       qualityScore: { [Op.gte]: 0.4 }

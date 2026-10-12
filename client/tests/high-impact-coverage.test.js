@@ -919,7 +919,7 @@ describe('Vue template handler coverage', () => {
         tags: [{ id: 1, name: 'AI', tagType: 'rule' }],
         quality: 0.9,
         advertisementScore: 20,
-        sentimentScore: 30,
+        toneScore: 30,
         qualityScore: 40,
         isDevelopingStory: true,
         isOfficialSource: true,

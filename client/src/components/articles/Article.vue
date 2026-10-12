@@ -67,8 +67,8 @@
               <img v-if="feedFavicon && !faviconFailed" :src="feedFavicon" class="article-reader-favicon" alt="" @error="faviconFailed = true" />
               <BootstrapIcon v-else icon="rss-fill" context="control" class="article-reader-favicon" aria-hidden="true" />
             </template>
-            <ArticleMeta :authors="authors" :original-source="originalSource" :hide-provenance="isReaderDetail" :articleId="storyArticleId" :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :hasInterestScore="hasInterestScore" :isRecommendationView="isRecommendationView" :recommendation="recommendation" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :aiAnalysisStatus="aiAnalysisStatus" :neutralScore="NEUTRAL_SCORE" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" @inspect-interest="$emit('inspect-interest', $event)" />
-            <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'headlines'" :categoryName="categoryName" :tags="articleTags" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :quality="quality" :aiAnalysisStatus="aiAnalysisStatus" @select-category="selectCategory" @select-tag="selectTag" />
+            <ArticleMeta :authors="authors" :original-source="originalSource" :hide-provenance="isReaderDetail" :articleId="storyArticleId" :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="selectionStore.currentSelection.grouping" :isEventArticle="isEventArticle" :eventExpanded="eventExpanded" :duplicatesExpanded="duplicatesExpanded" :hasInterestScore="hasInterestScore" :isRecommendationView="isRecommendationView" :recommendation="recommendation" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :toneScore="toneScore" :aiAnalysisStatus="aiAnalysisStatus" :neutralScore="NEUTRAL_SCORE" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" @inspect-interest="$emit('inspect-interest', $event)" />
+            <ArticleTagsScores v-if="selectionStore.currentSelection.viewMode !== 'headlines'" :categoryName="categoryName" :tags="articleTags" :isMobilePortrait="isMobilePortrait" :advertisementScore="advertisementScore" :toneScore="toneScore" :qualityScore="qualityScore" :quality="quality" :aiAnalysisStatus="aiAnalysisStatus" @select-category="selectCategory" @select-tag="selectTag" />
           </component>
           <ArticlePreviewFallback v-if="!hasArticlePreview" :url="url" @open-original="articleOpenedOriginal" />
           <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
@@ -169,7 +169,7 @@ export default {
     feedId: { type: [Number, String], default: null },
     tags: { type: Array, default: () => [] },
     advertisementScore: { type: Number, default: undefined },
-    sentimentScore: { type: Number, default: undefined },
+    toneScore: { type: Number, default: undefined },
     quality: { type: Number, default: undefined },
     qualityScore: { type: Number, default: undefined },
     aiAnalysisStatus: { type: String, default: '' },

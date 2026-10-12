@@ -7,7 +7,7 @@ import { computeRecommended, computeRecommendedBreakdown } from './recommendedSc
 
 const BATCH_SIZE = 200;
 const attributes = ['id', 'userId', 'feedId', 'eventId', 'title', 'url', 'description', 'status', 'publishedAt',
-  'articleVector', 'embedding_model', 'interestScore', 'interestScoredAt', 'qualityScore', 'sentimentScore',
+  'articleVector', 'embedding_model', 'interestScore', 'interestScoredAt', 'qualityScore', 'toneScore',
   'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd',
   'hotInd', 'positiveInd', 'negativeInd', 'savedInd', 'openedOriginalCount', 'attentionBucket'];
 

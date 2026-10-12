@@ -7,6 +7,7 @@ import { up, down } from '../../migrations/20260914000000-remove-topics.mjs';
 import { up as addEmbeddingModels } from '../../migrations/20260915000000-add-aggregate-embedding-models.mjs';
 import { up as addInteractionClocks } from '../../migrations/20260914001000-add-article-interaction-timestamps.mjs';
 import { renameReadingStateColumns } from '../../migrations/20261012000000-standardize-saved-opened-original.mjs';
+import { up as standardizeToneScore } from '../../migrations/20261012002000-standardize-tone-score.mjs';
 import { up as addInterestScoredAt } from '../../migrations/20260915001000-add-interest-scored-at.mjs';
 import { up as addPersonalizationRefreshedAt } from '../../migrations/20260915002000-add-personalization-refreshed-at.mjs';
 import { up as addAnalysisProvenance } from '../../migrations/20260917000000-add-article-analysis-provenance.mjs';
@@ -56,6 +57,14 @@ async function installHistoricalSchema() {
   // Keep the current models usable while isolating the historical relationship upgrade.
   await addInteractionClocks(qi, db.Sequelize);
   await renameReadingStateColumns(qi);
+  // This fixture deliberately retains the historical settings table name.
+  const toneTable = name => name === 'user_settings' ? 'settings' : name;
+  await standardizeToneScore({
+    sequelize: qi.sequelize,
+    describeTable: name => qi.describeTable(toneTable(name)),
+    renameColumn: (name, ...args) => qi.renameColumn(toneTable(name), ...args),
+    quoteIdentifier: name => qi.quoteIdentifier(toneTable(name))
+  });
   await addEmbeddingModels(qi, db.Sequelize);
   await addInterestScoredAt(qi, db.Sequelize);
   await addPersonalizationRefreshedAt(qi, db.Sequelize);

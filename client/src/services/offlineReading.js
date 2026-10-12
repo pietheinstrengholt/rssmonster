@@ -9,7 +9,7 @@ export const offlineAccount = userId => ({ apiOrigin: offlineApiOrigin(), userId
 export const latestOfflineSelection = Object.freeze({
   status: '%', categoryId: '%', feedId: '%', search: '', tag: null,
   sort: 'desc', grouping: 'none', includeDevelopingEvents: false, persistSettings: false,
-  minAdvertisementScore: 0, minSentimentScore: 0, minOverallQualityScore: 0, minQualityScore: 0
+  minAdvertisementScore: 0, minToneScore: 0, minOverallQualityScore: 0, minQualityScore: 0
 });
 
 export const createOfflineReadingService = (database = offlineDatabase, fetchPage = (params, pagination) => fetchArticlePage(params, pagination), coordinate = (_account, work) => work(null)) => {

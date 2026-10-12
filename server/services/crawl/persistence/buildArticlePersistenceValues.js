@@ -134,7 +134,7 @@ export default function buildArticlePersistenceValues(feed, data = {}) {
     embedding_model: data.embedding_model || null,
     advertisementScore: data.advertisementScore,
     advertisementScoreActionOverrideInd: Boolean(data.advertisementScoreActionOverrideInd),
-    sentimentScore: data.sentimentScore,
+    toneScore: data.toneScore,
     qualityScore: data.qualityScore,
     qualityScoreActionOverrideInd: Boolean(data.qualityScoreActionOverrideInd),
     publishedAt: normalizeArticleDate(data.publishedAt),

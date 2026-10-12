@@ -108,6 +108,34 @@ describe('article ownership authorization', () => {
     expect(res.body.article).not.toHaveProperty('contentStrippedHash');
   });
 
+  it('accepts legacy Tone thresholds for listing and matching read actions with canonical precedence', async () => {
+    const owner = await createUser(uniqueName('tone-owner'));
+    const foreign = await createUser(uniqueName('tone-foreign'));
+    const { article, feed } = await createArticleFor(owner);
+    const { article: foreignArticle } = await createArticleFor(foreign);
+    await article.update({ toneScore: 40 });
+    await foreignArticle.update({ toneScore: 90 });
+    const auth = authHeaderFor(owner);
+    for (const query of [{ minSentimentScore: 50 }, { minToneScore: 50 }]) {
+      const response = await request(app).get('/api/articles').set('Authorization', auth)
+        .query({ ...query, feedId: feed.id, status: '%', persistSettings: false });
+      expect(response.status).toBe(200);
+      expect(response.body.itemIds).toEqual([]);
+    }
+    const response = await request(app).get('/api/articles').set('Authorization', auth)
+      .query({ minSentimentScore: 50, minToneScore: 0, feedId: feed.id, status: '%', persistSettings: false, includeFirstPage: true });
+    expect(response.status).toBe(200);
+    expect(response.body.firstPage.map(item => item.id)).toEqual([article.id]);
+    expect(response.body.firstPage[0]).toMatchObject({ toneScore: 40, sentimentScore: 40 });
+    for (const [thresholds, expected] of [[{ minSentimentScore: 50 }, 'unread'], [{ minSentimentScore: 50, minToneScore: 0 }, 'read']]) {
+      const marked = await request(app).post('/api/articles/markasread').set('Authorization', auth)
+        .send({ ...thresholds, scope: 'matching', feedId: feed.id });
+      expect(marked.status).toBe(200);
+      expect((await article.reload()).status).toBe(expected);
+    }
+    expect((await foreignArticle.reload()).status).toBe('unread');
+  });
+
   it('GET article by ID rejects foreign-user article', async () => {
     const owner = await createUser(uniqueName('article-owner'));
     const foreignUser = await createUser(uniqueName('article-viewer'));
@@ -234,7 +262,7 @@ describe('article ownership authorization', () => {
     const owner = await createUser(uniqueName('negative-recommended-owner'));
     const { article, feed } = await createArticleFor(owner);
     await feed.update({ feedTrust: 0 });
-    await article.update({ interestScore: -1, qualityScore: 0, sentimentScore: 0, advertisementScore: 0 });
+    await article.update({ interestScore: -1, qualityScore: 0, toneScore: 0, advertisementScore: 0 });
     const response = await request(app)
       .post('/api/articles/details')
       .set('Authorization', authHeaderFor(owner))
@@ -313,7 +341,7 @@ describe('article ownership authorization', () => {
         embedding_model: 'test-model', articleVector: [1, 0],
         interestScore: 0.8,
         advertisementScore: 80,
-        sentimentScore: 80,
+        toneScore: 80,
         qualityScore: 80,
         publishedAt: new Date()
       }),

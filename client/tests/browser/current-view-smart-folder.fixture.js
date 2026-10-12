@@ -14,7 +14,7 @@ createApp({ render: () => h('main', [
   h('section', { 'aria-label': 'Article badge references' }, [
     h(ArticleExplanationPopover, { triggerLabel: 'Reference Recommended', ariaLabel: 'Reference Recommended', dialogTitle: 'Recommended', triggerClass: 'recommended-badge', items: [] }),
     h(ArticleStorySourcesPopover, { sourceCount: 3, articleId: 1 }),
-    h(ArticleQualityExplanation, { quality: 0.8, advertisementScore: 80, sentimentScore: 80, qualityScore: 80 })
+    h(ArticleQualityExplanation, { quality: 0.8, advertisementScore: 80, toneScore: 80, qualityScore: 80 })
   ])
 ]) }).use(pinia).component('BootstrapIcon', BootstrapIcon).mount('#app');
 useSelectionStore(pinia).currentSelection.search = 'title:"A long search phrase to test wrapping in the preview" author:"Ada Lovelace" language:nl quality:>=0.80 event:true firstSeen:7d';

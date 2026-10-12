@@ -268,7 +268,7 @@ export async function insertMissingFixtureArticles(userId, fixture, vectorByCont
       contentHtml: real || longitudinal ? fixtureArticle.contentHtml : fixtureArticle.contentHtml || content,
       ...(real || longitudinal ? { contentText: fixtureArticle.contentText, language: fixtureArticle.language,
         qualityScore: fixtureArticle.qualityScore, advertisementScore: fixtureArticle.advertisementScore,
-        sentimentScore: fixtureArticle.sentimentScore } : {}),
+        toneScore: fixtureArticle.toneScore } : {}),
       ...(real || longitudinal ? {} : { contentSourceHash }),
       articleVector: vectorRecord.articleVector,
       embedding_model: vectorRecord.embeddingModel,

@@ -47,7 +47,7 @@ describe('settings controller', () => {
     const user = await createUser();
     const other = await createUser();
     const auth = authHeaderFor(user);
-    const components = { minAdvertisementScore: 10, minSentimentScore: 20, minQualityScore: 30 };
+    const components = { minAdvertisementScore: 10, minToneScore: 20, minQualityScore: 30 };
     const saved = await request(app).post('/api/setting').set('Authorization', auth)
       .send({ ...components, minOverallQualityScore: 75 });
     expect(saved.status).toBe(200);
@@ -60,6 +60,20 @@ describe('settings controller', () => {
       expect((await request(app).post('/api/setting').set('Authorization', auth)
         .send({ ...components, minOverallQualityScore })).status).toBe(400);
     }
+  });
+
+  it('accepts legacy tone thresholds, emits both names, and isolates users', async () => {
+    const user = await createUser();
+    const other = await createUser();
+    const auth = authHeaderFor(user);
+    for (const [input, expected] of [[{ minSentimentScore: 80 }, 80], [{ minSentimentScore: 80, minToneScore: 0 }, 0]]) {
+      const response = await request(app).post('/api/setting').set('Authorization', auth).send({ minAdvertisementScore: 0, minQualityScore: 0, ...input });
+      expect(response.status).toBe(200);
+      expect((await Setting.findOne({ where: { userId: user.id } })).minToneScore).toBe(expected);
+      expect((await request(app).get('/api/setting').set('Authorization', auth)).body)
+        .toMatchObject({ minToneScore: expected, minSentimentScore: expected });
+    }
+    expect((await request(app).get('/api/setting').set('Authorization', authHeaderFor(other))).body.minToneScore).toBe(0);
   });
 
   it('restores the selected article view without fetching articles and isolates users', async () => {
@@ -144,7 +158,7 @@ describe('settings controller', () => {
         status: 'unread',
         sort: 'desc',
         minAdvertisementScore: 0,
-        minSentimentScore: 0,
+        minToneScore: 0,
         minQualityScore: 0,
         viewMode: 'expanded',
         grouping: 'none',
@@ -181,7 +195,7 @@ describe('settings controller', () => {
         status: 'unread',
         sort: 'recommended',
         minAdvertisementScore: 0,
-        minSentimentScore: 0,
+        minToneScore: 0,
         minQualityScore: 0,
         viewMode: 'reader',
         grouping: 'event',
@@ -213,7 +227,7 @@ describe('settings controller', () => {
       status: 'saved',
       sort: 'quality',
       minAdvertisementScore: 10,
-      minSentimentScore: 20,
+      minToneScore: 20,
       minQualityScore: 30,
       viewMode: 'headlines',
       grouping: 'event',
@@ -236,7 +250,7 @@ describe('settings controller', () => {
         status: 'unread',
         sort: 'desc',
         minAdvertisementScore: 10,
-        minSentimentScore: 20,
+        minToneScore: 20,
         minQualityScore: 30,
         viewMode: 'expanded',
         grouping: 'none',
@@ -265,7 +279,7 @@ describe('settings controller', () => {
       status: 'saved',
       sort: 'quality',
       minAdvertisementScore: 10,
-      minSentimentScore: 20,
+      minToneScore: 20,
       minQualityScore: 30,
       viewMode: 'headlines',
       grouping: 'event',
@@ -284,7 +298,7 @@ describe('settings controller', () => {
         status: 'saved',
         sort: 'quality',
         minAdvertisementScore: 10,
-        minSentimentScore: 20,
+        minToneScore: 20,
         minQualityScore: 30,
         viewMode: 'headlines',
         grouping: 'event',
@@ -304,7 +318,7 @@ describe('settings controller', () => {
       .set('Authorization', authHeaderFor(user))
       .send({
         minAdvertisementScore: 0,
-        minSentimentScore: 0,
+        minToneScore: 0,
         minQualityScore: 0,
         includeDevelopingEvents: true,
         prioritizeHighTrust: true
@@ -332,7 +346,7 @@ describe('settings controller', () => {
       .set('Authorization', authHeaderFor(user))
       .send({
         minAdvertisementScore: 0,
-        minSentimentScore: 0,
+        minToneScore: 0,
         minQualityScore: 0,
         includeDevelopingEvents: 'true'
       });
@@ -348,7 +362,7 @@ describe('settings controller', () => {
       .set('Authorization', authHeaderFor(user))
       .send({
         minAdvertisementScore: 0,
-        minSentimentScore: 0,
+        minToneScore: 0,
         minQualityScore: 0,
         prioritizeHighTrust: 'true'
       });
@@ -363,7 +377,7 @@ describe('settings controller', () => {
     await Setting.create({
       userId: user.id,
       minAdvertisementScore: 15,
-      minSentimentScore: 25,
+      minToneScore: 25,
       minQualityScore: 35,
       includeDevelopingEvents: false
     });
@@ -406,7 +420,7 @@ describe('settings controller', () => {
     expect(Boolean(settings.includeDevelopingEvents)).toBe(true);
     expect(settings).toMatchObject({
       minAdvertisementScore: 15,
-      minSentimentScore: 25,
+      minToneScore: 25,
       minQualityScore: 35
     });
     expect(Boolean(otherSettings.includeDevelopingEvents)).toBe(false);

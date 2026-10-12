@@ -149,7 +149,7 @@ async function saveArticle(
     officialOrganization: data.officialOrganization,
     advertisementScore: analysis?.advertisementScore,
     ...buildActionScoreOverrideIndicators(actionResult),
-    sentimentScore: analysis?.sentimentScore,
+    toneScore: analysis?.toneScore,
     qualityScore: analysis?.qualityScore,
     publishedAt: data.publishedAt || new Date()
   });

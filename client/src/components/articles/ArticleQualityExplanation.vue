@@ -28,7 +28,7 @@ export default {
   props: {
     quality: { type: Number, required: true },
     advertisementScore: { type: Number, required: true },
-    sentimentScore: { type: Number, required: true },
+    toneScore: { type: Number, required: true },
     qualityScore: { type: Number, required: true }
   },
   computed: {
@@ -51,9 +51,9 @@ export default {
         {
           code: 'tone',
           icon: 'chat-square-text-fill',
-          iconClass: scoreSeverityClass(this.sentimentScore),
+          iconClass: scoreSeverityClass(this.toneScore),
           title: 'Tone',
-          value: this.sentimentScore,
+          value: this.toneScore,
           text: 'Neutrality and emotional balance of the writing.'
         },
         {

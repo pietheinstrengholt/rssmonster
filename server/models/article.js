@@ -357,7 +357,7 @@ export default (sequelize) => {
         defaultValue: false
       },
       // Scores emotional neutrality and tone quality from 0 to 100, defaulting to 50.
-      sentimentScore: {
+      toneScore: {
         type: DataTypes.INTEGER,
         defaultValue: 50
       },
@@ -464,7 +464,7 @@ export default (sequelize) => {
            *
            * Weighting:
            * - qualityScore:        50%  (writing clarity, structure, substance)
-           * - sentimentScore:      25%  (tone, neutrality, emotional quality)
+           * - toneScore:      25%  (tone, neutrality, emotional quality)
            * - advertisementScore:  25%  (absence of promotion or marketing)
            *
            * Default behavior:

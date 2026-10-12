@@ -141,7 +141,7 @@ window.testOfflineContractMigration = async () => {
     const tx = database.transaction(['profiles', 'articles', 'pendingActions'], 'readwrite');
     tx.objectStore('profiles').put({ ...account, enabled: true, activeGeneration: 'old' });
     tx.objectStore('articles').put({ ...account, generation: 'old', articleId: 41, publicationDate: 1,
-      article: { id: 41, favoriteInd: 0, favoritedAt: null, clickedAmount: 3, lastClickedAt: '2026-09-01T12:00:00Z' } });
+      article: { id: 41, sentimentScore: 40, favoriteInd: 0, favoritedAt: null, clickedAmount: 3, lastClickedAt: '2026-09-01T12:00:00Z' } });
     tx.objectStore('pendingActions').put({ ...account, localSequence: 17, actionId, articleId: 41,
       kind: 'set-favorite', value: true, state: 'pending', attempts: 2, nextAttemptAt: 123, baseValue: 0 });
     tx.oncomplete = resolve;
@@ -150,14 +150,48 @@ window.testOfflineContractMigration = async () => {
   database.close();
   const [article] = await offlineDatabase.loadSnapshot(account);
   assert(article.savedInd === 1 && article.openedOriginalCount === 3, 'old snapshot and queued save migrate together');
+  assert(article.toneScore === 40 && !Object.hasOwn(article, 'sentimentScore'), 'legacy Tone dimension survives upgrade');
   assert(article.lastOpenedOriginalAt === '2026-09-01T12:00:00Z', 'interaction clock survives upgrade');
   const [action] = await offlineDatabase.getActions(account);
   assert(action.kind === 'set-saved' && action.actionId === actionId && action.localSequence === 17, 'receipt identity and order survive upgrade');
   assert(action.attempts === 2 && action.nextAttemptAt === 123 && action.baseValue === 0, 'retry and reconciliation state survive upgrade');
   const upgraded = await openOfflineDatabase();
-  assert(upgraded.version === 3, 'canonical browser schema is version 3');
+  assert(upgraded.version === 4, 'canonical browser schema is version 4');
   upgraded.close();
   await removeDatabase();
   return 'PASS: version-2 snapshots and pending saves migrate without losing receipt identity, account, counters, clocks or retries';
+};
+window.testOfflineToneMigration = async () => {
+  await removeDatabase();
+  const account = { apiOrigin: 'https://tone.example', userId: 93 };
+  const action = { ...account, localSequence: 19, actionId: crypto.randomUUID(), articleId: 41,
+    kind: 'set-saved', value: true, state: 'pending', attempts: 3, nextAttemptAt: 456, baseValue: 0 };
+  const profile = { ...account, enabled: true, activeGeneration: 'tone' };
+  const database = await new Promise((resolve, reject) => {
+    const request = indexedDB.open(OFFLINE_DATABASE_NAME, 3);
+    request.onupgradeneeded = () => upgradeOfflineDatabase(request.result, 0, request.transaction);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  await new Promise((resolve, reject) => {
+    const tx = database.transaction(['profiles', 'articles', 'pendingActions'], 'readwrite');
+    tx.objectStore('profiles').put(profile);
+    tx.objectStore('articles').put({ ...account, generation: 'tone', articleId: 41, publicationDate: 1,
+      article: { id: 41, sentimentScore: 40, toneScore: 0, savedInd: 0 } });
+    tx.objectStore('articles').put({ ...account, generation: 'tone', articleId: 42, publicationDate: 2,
+      article: { id: 42, sentimentScore: 80 } });
+    tx.objectStore('pendingActions').put(action);
+    tx.oncomplete = resolve;
+    tx.onabort = () => reject(tx.error);
+  });
+  database.close();
+  const articles = await offlineDatabase.loadSnapshot(account);
+  assert(articles.find(item => item.id === 41).toneScore === 0, 'canonical zero wins over old value');
+  assert(articles.find(item => item.id === 42).toneScore === 80, 'version-3 legacy score survives');
+  assert(articles.every(item => !Object.hasOwn(item, 'sentimentScore')), 'cached DTOs use only canonical scores');
+  assert(JSON.stringify(await offlineDatabase.getActions(account)) === JSON.stringify([action]), 'receipt identity, order and retry state unchanged');
+  assert(JSON.stringify(await offlineDatabase.getProfile(account)) === JSON.stringify(profile), 'profile and generation unchanged');
+  await removeDatabase();
+  return 'PASS: version-3 Tone migration preserves scores, canonical precedence, profiles and pending receipt state';
 };
 </script></body></html>

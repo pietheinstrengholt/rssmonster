@@ -29,7 +29,7 @@ There is no dynamic provider registration or generic prompt API.
 | --- | --- | --- |
 | Embedding | `embedTexts(texts, options)`, `getEmbeddingInfo(options)` | Validate non-empty text batches, model metadata, vector counts/dimensions, and finite vector elements. Return the inference envelope unchanged. `embed` aliases `embedTexts` on the registry. |
 | Generation | `generateSmartFolderRecommendations({ insights }, options)`, `rediscoverFeed(input, options)`, `generateSemanticLabels(input, options)` | Preserve each workload's existing request and response contract. Empty recommendations, `url:null`, and null labels are valid results. |
-| Classification | `classifyArticle(input, options)` | Validate the combined article analysis response: separate summary bullets, tags, advertisement, sentiment, and quality scores. The HTTP API has no separate scoring-only endpoint. |
+| Classification | `classifyArticle(input, options)` | Validate the combined article analysis response: separate summary bullets, tags, advertisement, tone, and quality scores. The HTTP API has no separate scoring-only endpoint. |
 | Assistant | `chat(request, options)`, `stream(request, options)` | Preserve the Agents SDK model envelope and NDJSON event objects. Carry cancellation outside serialized payloads. |
 
 Options carry the existing request ID, caller signal, timeout, and transport test

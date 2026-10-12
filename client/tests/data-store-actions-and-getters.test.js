@@ -157,7 +157,7 @@ describe('data store remaining actions and getters', () => {
       tag: 'vue',
       smartFolderId: 3,
       minAdvertisementScore: 0.8,
-      minSentimentScore: 0.6,
+      minToneScore: 0.6,
       minQualityScore: 0.7,
       sort,
       grouping,
@@ -179,7 +179,7 @@ describe('data store remaining actions and getters', () => {
       tag: null,
       smartFolderId: null,
       minAdvertisementScore: 0,
-      minSentimentScore: 0,
+      minToneScore: 0,
       minQualityScore: 0,
       minOverallQualityScore: 0,
       sort,
@@ -405,14 +405,14 @@ describe('data store remaining actions and getters', () => {
 
     expect(uiStore.showModal).toBe('');
     selectionStore.setMinAdvertisementScore(0.2);
-    selectionStore.setMinSentimentScore(0.3);
+    selectionStore.setMinToneScore(0.3);
     selectionStore.setMinQualityScore(0.4);
     uiStore.setShowModal(true);
     uiStore.setMobileSearchOpen(true);
 
     expect(selectionStore.currentSelection).toMatchObject({
       minAdvertisementScore: 0.2,
-      minSentimentScore: 0.3,
+      minToneScore: 0.3,
       minQualityScore: 0.4
     });
     expect(uiStore.showModal).toBe(true);

@@ -9,7 +9,7 @@ export const executeGeneratedFeedExpression = ({ userId, expression }) =>
     userId,
     search: expression,
     minAdvertisementScore: 0,
-    minSentimentScore: 0,
+    minToneScore: 0,
     minOverallQualityScore: 0,
     minQualityScore: 0,
     status: '%',

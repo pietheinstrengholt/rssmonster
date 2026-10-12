@@ -2,7 +2,7 @@ import { literal } from 'sequelize';
 
 const DEFAULT_ARTICLE_SCORE = 70;
 const DEFAULT_FEED_TRUST = 0.5;
-const QUALITY_WEIGHTS = { qualityScore: 0.5, sentimentScore: 0.25, advertisementScore: 0.25 };
+const QUALITY_WEIGHTS = { qualityScore: 0.5, toneScore: 0.25, advertisementScore: 0.25 };
 
 // SQL filtering uses the same components, fallback, and bounds as the public quality value.
 export const articleQualityPercentExpression = () => {
