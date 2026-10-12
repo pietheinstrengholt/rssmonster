@@ -9,7 +9,6 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Daily Briefing's 24-hour period | **Last 24 hours** stores `24h`, but the selection builds `@today`. Briefing documentation records a calendar-day article/context window versus a rolling one-day overview count. | [Selection store](client/src/store/selection.js), [Briefing period documentation](client/src/components/briefing/README.md#selection-period) |
 | Briefing scope | The sidebar count and structured introduction describe the global briefing; the displayed list can retain category, feed, or tag scope. They need not describe the same visible collection. | [Briefing selection](client/src/components/briefing/README.md#daily-briefing-selection), [selection store](client/src/store/selection.js) |
 | Publication date / first seen | Smart Folder **Date range → Last 7 days / Last 30 days** and **Relative range** generate `firstSeen` expressions. Unread age/date controls instead constrain publication time. “Last week” uses `@lastweek`, a different expression. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query builder](client/src/components/settings/smartFolders/smartFolderQuery.js), [date filters](client/src/services/articleDateRange.js), [query tests](client/tests/smart-folder-query.test.js) |
 | Quality | **Quality** can mean article-only overall quality, the `qualityScore` writing component, or source-aware `sort:quality`. Query preview chips abbreviate the source-aware sort to **Quality**, whereas the main menu says **Quality & source trust**. Inputs also use different scales. | [Quality explanation](client/src/components/articles/ArticleQualityExplanation.vue), [Scores settings](client/src/components/settings/SettingsScores.vue), [query preview](client/src/services/currentViewSmartFolder.js), [scoring contract](docs/scoring.md) |
@@ -24,6 +23,11 @@ not necessarily indicate a functional defect.
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**Daily Briefing period:** **Last 24 hours** (`24h`) uses a rolling 24-hour
+publication-time window for article results, structured Briefing context, and
+overview counts. The existing `@today` token resolves to that rolling window.
+The previous calendar-day interpretation in the documentation was outdated.
 
 **Developing coverage scopes:** **Include developing coverage** includes new
 coverage in the Unread view; **Include developing coverage in the summary**
@@ -439,8 +443,9 @@ introduction is separate from the normal Article list, and is compact in Reader.
 
 ### Briefing preferences
 
-Per-user eligibility and presentation choices: selection period (`24h`/`7d`),
-unread-only, scrolling read behavior, Hot inclusion, minimum distinct sources,
+Per-user eligibility and presentation choices: rolling selection period
+(`24h`/`7d`), unread-only, scrolling read behavior, Hot inclusion, minimum distinct
+sources,
 interest-only or developing-story-only selection, summary developing coverage,
 and summary high-trust priority. The two “show only” choices are mutually
 exclusive. Some preferences are server-side and need not appear in query text.

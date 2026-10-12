@@ -97,12 +97,16 @@ Saving refreshes the article list, counts, Top Tags, and structured briefing.
 
 The lookback period controls how far RSSMonster searches for relevant developments:
 
-- **Last 24 hours** provides the more focused current view.
-- **Last 7 days** provides broader weekly coverage.
+- **Last 24 hours** includes articles published within the preceding 24 hours.
+- **Last 7 days** includes articles published within the preceding seven days.
 
 Only these two stored values are valid. Changing the period updates both the article query and the structured briefing context after a successful save.
 
-The current article query and structured introduction interpret `24h` through the application's “Today” date window, while the overview count uses a rolling one-day interval. Around midnight these surfaces can temporarily describe slightly different windows. Future changes should align that interpretation before assuming the label, count, and article results are exactly equivalent.
+Article results, structured Briefing context, and overview counts all use rolling
+publication-time windows, measured backward from their evaluation time. The
+stored `24h` value maps to `@today`, which the date parser resolves to the
+preceding 24 hours. The `7d` value maps to `@lastweek`, a rolling seven-day window.
+These windows continue across midnight.
 
 ### Coverage quality
 

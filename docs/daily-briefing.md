@@ -104,10 +104,12 @@ To focus on ongoing stories, enable **Show only developing stories**.
 ## Understand counts and empty results
 
 The overview and navigation count describe your global briefing, while a selected
-category, feed, or tag can narrow the article list. The current **Last 24 hours**
-query uses the Today date window, whereas the overview count uses a rolling day;
-counts can differ near midnight. A compact category menu can also show zero for
-Briefing because category-specific briefing counts are not supplied.
+category, feed, or tag can narrow the article list. **Last 24 hours** uses a
+rolling publication-time window for the article list, structured Briefing context,
+and overview count: from 24 hours before evaluation through evaluation time.
+**Last 7 days** uses the equivalent rolling seven-day window. A compact category
+menu can also show zero for Briefing because category-specific briefing counts
+are not supplied.
 
 An empty briefing is valid. Try seven days, one source, and disabling interest-only
 or developing-only filters. Global score thresholds still apply.
