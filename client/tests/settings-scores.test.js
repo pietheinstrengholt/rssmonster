@@ -65,7 +65,7 @@ describe('score settings', () => {
     expect(details.get('summary').text()).toBe('Learn how scores work');
     expect(wrapper.findAll('.scores-explanation')).toHaveLength(3);
     expect(wrapper.get('.scores-info-row--filtering').text()).toContain(
-      'Articles scoring below your threshold are automatically hidden. Set a threshold to 0 to see everything.'
+      'Score filters hide articles below your thresholds. Articles waiting for analysis, being analyzed, or with failed analysis are exempt, except for scores set by Actions. Set a threshold to 0 to turn that filter off.'
     );
     expect(wrapper.get('.scores-threshold-heading p').text()).toBe(
       'Choose the minimum score an article must have to remain in your feed.'
@@ -73,6 +73,12 @@ describe('score settings', () => {
 
     await details.get('summary').trigger('click');
     expect(details.attributes('open')).toBeDefined();
+    expect(details.text()).toContain('configured inference service with local models or a compatible remote provider');
+    expect(details.text()).toContain('OpenAI is not required');
+    expect(details.text()).toContain('These defaults are not an AI assessment');
+    expect(details.text()).toContain('An unchanged all-70 fallback does not display an Overall quality badge');
+    expect(details.text()).toContain('Scores and inferred tags stay hidden');
+    expect(details.text()).not.toContain('Without it, articles receive default scores');
   });
 
   it('initializes every available threshold from the current selection', () => {

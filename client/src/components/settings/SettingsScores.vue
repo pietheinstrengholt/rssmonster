@@ -29,11 +29,19 @@
 
         <div class="scores-info-row scores-info-row--filtering">
           <BootstrapIcon icon="funnel" aria-hidden="true" />
-          <p><strong>Filtering:</strong> Articles scoring below your threshold are automatically hidden. Set a threshold to 0 to see everything.</p>
+          <p><strong>Filtering:</strong> Score filters hide articles below your thresholds. Articles waiting for analysis, being analyzed, or with failed analysis are exempt, except for scores set by Actions. Set a threshold to 0 to turn that filter off.</p>
         </div>
         <div class="scores-info-row">
           <BootstrapIcon icon="key" aria-hidden="true" />
-          <p><strong>Requirements:</strong> Scoring requires an OpenAI API key configured in your backend environment. Without it, articles receive default scores of 70.</p>
+          <p><strong>Requirements:</strong> Article scoring uses the configured inference service with local models or a compatible remote provider. OpenAI is not required. Administrators can check availability in AI / Inference.</p>
+        </div>
+        <div class="scores-info-row">
+          <BootstrapIcon icon="bar-chart-fill" aria-hidden="true" />
+          <p><strong>Fallback scores:</strong> New articles start with component scores of 70. These defaults are not an AI assessment. Actions can override Writing quality and Ad-free content. An unchanged all-70 fallback does not display an Overall quality badge.</p>
+        </div>
+        <div class="scores-info-row">
+          <BootstrapIcon icon="info-circle" aria-hidden="true" />
+          <p><strong>Unavailable analysis:</strong> Scores and inferred tags stay hidden while an article waits for analysis, is being analyzed, or has failed analysis. This is separate from using fallback scores when analysis is skipped.</p>
         </div>
       </details>
     </section>

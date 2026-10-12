@@ -45,8 +45,23 @@ Settings stores the independent `minOverallQualityScore` threshold as an integer
 from 0 to 100, with 0 disabling that gate. Existing writing, tone, and ad-free
 thresholds remain separate additional filters under Advanced. Existing preferences
 are preserved by the migration; the new overall threshold starts at 0.
-Articles awaiting analysis remain exempt unless an explicit automation Action
-owns a quality component, consistent with the component-filter exemption policy.
+Article scoring uses the configured inference service, with local models or a
+compatible remote provider. OpenAI is not required. Classification supplies the
+scores; generation supplies summaries and tags in the combined Article analysis.
+Administrators can inspect availability in Settings → AI / Inference.
+
+New articles start with fallback component scores of 70, subject to Action-owned
+overrides. These defaults are not an AI assessment. When analysis is skipped,
+retained scores remain subject to thresholds. Missing/nonfinite components also
+use 70 when computing article quality. An all-70 component set does not show an
+Overall quality badge, regardless of analysis status.
+
+When analysis is pending, processing or failed, inferred scores and tags are hidden.
+These states are exempt from thresholds on inference-owned components. Action-owned
+Writing quality and Ad-free content overrides remain subject to their respective
+thresholds; an override of either also removes the Overall quality exemption.
+Other visibility rules still apply. This analysis-state policy is separate from
+numeric fallback values.
 
 The existing source-aware ranking remains separate: its menu label is
 **Quality & source trust**. Recommended and Top Stories weights are unchanged.

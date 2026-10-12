@@ -119,10 +119,22 @@ The three component score meanings are:
 
 Reset to Defaults changes the local controls to their default values. It does not persist until Save Changes is selected. Saving updates the current selection state, reloads visible content and overview data, and returns the Settings content to Welcome.
 
-Classification uses the configured inference service; OpenAI is not required. Missing
-article quality components retain the defaults documented in the
-[scoring guide](../../../../docs/scoring.md). Some existing UI help text still
-describes the older OpenAI-only setup; that copy is not the backend contract.
+Article scoring uses the configured inference service with local models or a
+compatible remote provider; OpenAI is not required. Administrators can check the
+service and capability availability in **AI / Inference**. Classification supplies
+scores; the combined Article analysis also uses generation for summaries and tags.
+
+New articles start with fallback component scores of 70. These defaults are not
+an AI assessment, and Actions can override Writing quality and Ad-free content.
+When analysis is skipped, those retained scores remain subject to score filters.
+Missing/nonfinite components use the fallback described in the
+[scoring guide](../../../../docs/scoring.md). An all-70 component set does not show
+an Overall quality badge, regardless of analysis status.
+
+Unavailable analysis is separate from numeric fallback values: pending, processing
+and failed states hide inferred scores and tags. Inference-owned scores in these
+states are exempt from score filters. Action-owned score overrides still apply. These exemptions do not bypass
+other visibility rules such as read status or publication windows.
 
 ### Events
 

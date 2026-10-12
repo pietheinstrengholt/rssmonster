@@ -573,7 +573,7 @@ describe('ArticleTagsScores', () => {
 
     const panel = document.querySelector('.quality-explanation-panel');
     expect(panel.getAttribute('role')).toBe('dialog');
-    expect(panel.textContent).toContain('Overall quality');
+    expect(panel.querySelector('h3').textContent).toBe('Overall article quality');
     expect(panel.textContent).toContain('Source trust contributes separately to Quality & source trust sorting.');
     expect([...panel.querySelectorAll('.article-explanation-list strong:first-child')]
       .map(item => item.textContent)).toEqual([
@@ -595,7 +595,7 @@ describe('ArticleTagsScores', () => {
     expect(qualityIcons).toEqual(['pencil-square', 'chat-square-text-fill', 'megaphone']);
     expect(qualityIcons.every(icon => bootstrapIconNames.includes(icon))).toBe(true);
     expect(panel.textContent).toContain('Clarity, structure, and substance');
-    expect(panel.textContent).toContain('62.5/100 overall quality');
+    expect(panel.textContent).toContain('62.5/100 overall article quality');
     wrapper.unmount();
   });
 

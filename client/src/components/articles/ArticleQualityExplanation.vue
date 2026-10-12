@@ -6,10 +6,10 @@
     :trigger-label="`Overall quality: ${overallScoreLabel}`"
     :trigger-class="['score', 'overall-score', scoreSeverityClass(overallScore)]"
     :aria-label="`Overall quality ${overallScoreLabel} out of 100. Show quality breakdown`"
-    dialog-title="Overall quality"
-    summary="Overall quality combines 50% writing quality, 25% tone, and 25% ad-free content. Overall quality filters use this same article-only score. Source trust contributes separately to Quality & source trust sorting."
+    dialog-title="Overall article quality"
+    summary="Overall article quality combines 50% writing quality, 25% tone, and 25% ad-free content. Overall quality filters use this same article-only score. Source trust contributes separately to Quality & source trust sorting."
     :items="qualityItems"
-    :footer-label="`${overallScoreLabel}/100 overall quality`"
+    :footer-label="`${overallScoreLabel}/100 overall article quality`"
   />
 </template>
 

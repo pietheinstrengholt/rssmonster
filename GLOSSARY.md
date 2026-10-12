@@ -9,7 +9,6 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| AI provider and defaults | Scores help claims an OpenAI key is required and absent-key articles receive 70. AI / Inference exposes a configurable service with separate capabilities; the Settings README flags the OpenAI-only copy as outdated. The neutral component fallback is separate from pending/failed analysis presentation. | [Scores settings](client/src/components/settings/SettingsScores.vue), [Inference settings](client/src/components/settings/SettingsInference.vue), [Settings documentation](client/src/components/settings/README.md), [analysis presentation](client/src/services/articleAnalysisPresentation.js) |
 | Interest match | Briefing's “Show only interest-matched articles” includes nonzero negative interest according to its documented eligibility contract. “Matches your interests” can sound like a positive recommendation, while the interest inspector distinguishes positive, neutral, and negative preference. | [Briefing preferences](client/src/components/briefing/README.md#article-selection), [interest presentation](client/src/services/interestPresentation.js), [article metadata](client/src/components/articles/ArticleMeta.vue) |
 | High-trust priority | Unread and Briefing expose similar **Prioritize high-trust coverage** wording, but the documented ranking effects differ. Briefing priority changes structured-summary ordering; Unread has a legacy chronological trust override. Neither is the article-only overall-quality value. | [Unread preferences](client/src/components/dialogs/UnreadConfigurationModal.vue), [Briefing coverage quality](client/src/components/briefing/README.md#coverage-quality), [scoring modes](docs/scoring.md#chronological) |
 | Source / official feed / independence | Source counts refer to feeds, Original source is publisher-declared attribution, and Official Sources are configured domain mappings. The article signal calls an official-source article **Official Feed**. These meanings should not be conflated with verified provenance or independent reporting. | [Story sources](client/src/components/articles/ArticleStorySourcesPopover.vue), [article signals](client/src/components/articles/helpers/articleSignals.js), [article attribution](client/src/components/articles/README.md#experience-model), [Official Sources](client/src/components/settings/README.md#official-sources) |
@@ -18,6 +17,15 @@ not necessarily indicate a functional defect.
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**AI provider and defaults:** Scores help describes the configured inference
+service, which supports local models or compatible remote providers; OpenAI is
+not required. Fallback component values of 70 are defaults, separate from
+pending, processing and failed analysis whose inferred scores and tags are hidden.
+Unavailable inference-owned scores are exempt from score gates, while Action
+score overrides remain effective. Skipped analysis retains scores subject to
+thresholds; all-70 component sets do not display an Overall quality badge.
+Provider configuration, values, status handling and contracts are unchanged.
 
 **Tone contract:** **Tone** measures emotional neutrality and balance, with
 higher scores indicating calmer, more factual language rather than positive news.
@@ -34,7 +42,8 @@ For example, 74.75/100 remains 74.75 rather than appearing to meet a minimum of
 75. Filtering, ranking, and saved expressions are unchanged.
 
 **Quality terminology:** the article badge and article-only filters use
-**Overall quality**; the `qualityScore` component uses **Writing quality**;
+**Overall quality**; the breakdown popup is titled **Overall article quality**.
+The `qualityScore` component uses **Writing quality**;
 source-aware `sort:quality` uses **Quality & source trust**, including query
 preview chips. Controls and badges use 0–100, while `quality` expressions retain
 0–1 (`quality:>=0.75` means at least 75/100). Identifiers, scoring formulas, and
@@ -596,9 +605,11 @@ verification, password replacement, and deleting an account are separate flows.
 
 **AI / Inference** is the deployment connection serving optional embeddings,
 generation, classification, and assistant capabilities. Feature flags/capability
-status control client availability. **Classification** provides Article analysis;
-**embeddings** support semantic relationships; **generation** supports generated
-presentation labels. The **assistant** is the optional question/chat surface,
+status control client availability. **Classification** supplies Article scores;
+**generation** supplies summaries and inferred tags in combined Article analysis,
+as well as generated presentation labels. **Embeddings** support semantic
+relationships. Local models and compatible remote providers are supported;
+OpenAI is not required. The **assistant** is the optional question/chat surface,
 separate from ordinary search and Smart Folder expressions.
 
 ### Draft, saved settings, environment defaults, and effective configuration
